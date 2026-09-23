@@ -4,19 +4,19 @@ Last updated: 2026-09-24. Build in progress. This report does not claim Gonçalo
 
 ## Current state
 
-- Committed: the phase 0 checkpoint is ready for its first local commit; public push is blocked below.
+- Committed: initial checkpoint acbeb88 on main; public push is blocked below.
 - Built: the workspace compiles with TypeScript and Vite.
 - Installed: no Jevellan service or application installed.
 - Running: no persistent Jevellan daemon.
-- Tested: typecheck and lint pass; Vitest passes 8 tests in 3 files; Playwright passes 4 skeleton checks (desktop/phone, light/dark). Live Codex SDK text/tools/usage, continuation, interruption and concurrent bridge isolation passed. Native read-only command denial, isolated Basic Memory configuration and owned process-group cleanup passed. These checks do not establish completed product journeys.
+- Tested: typecheck and lint pass; Vitest passes 41 tests in 4 files; Playwright passes 4 skeleton checks (desktop/phone, light/dark). The committed-history secret scan passed. Live Codex SDK text/tools/usage, continuation, interruption and concurrent bridge isolation passed. Native read-only command denial, isolated Basic Memory configuration and owned process-group cleanup passed. These checks do not establish completed product journeys.
 - Accepted by Gonçalo: not requested or claimed.
 
 ## Phase progress
 
 | Phase | State | Evidence and remaining work |
 | --- | --- | --- |
-| 0 Orientation and skeleton | In progress | Skeleton checks pass. Codex SDK retained after live checks; Safety spike and remaining reference reads continue. Public creation/push and Claude live checks are blocked. |
-| 1 Core and runtimes | Planned | Schemas, accounts, vault, configuration, Rigging and runtime contract tests. |
+| 0 Orientation and skeleton | Local checks complete; external checks blocked | Skeleton, reference map, SDK selection and capability limits recorded. Public creation/push and Claude live checks blocked. Native Codex rule coverage is partial and live denial remains unproven. |
+| 1 Core and runtimes | In progress | Schemas, accounts, vault, configuration, Rigging and full runtime contract tests. |
 | 2 Conversations and memory | Planned | Durable work, verification/publication, memory bridge and UI. |
 | 3 Decisions | Planned | Real Jev wire client, questions, resolution, corrections and manual fallback. |
 | 4 Mesh | Planned | Hub API, device login, owner proxying, switch tokens and external sessions. |
@@ -46,6 +46,8 @@ The prepared Codex test home was moved, never copied, to `~/.jevellan-build/live
 6. Retain the Codex SDK. Points 1–4 of the transport spike passed. The dedicated Jevellan MCP bridge uses per-launch `env_vars` and `default_tools_approval_mode = "approve"`; its own token scopes enforce permissions. The initial `auto` setting prevented unattended tool calls, so it was replaced and the concurrent test rerun successfully. Tokens are never configuration arguments.
 7. Run SDK execution inside a separate owned worker process group. The SDK itself does not expose enough process ownership information for complete descendant cleanup. The local cleanup test proves the wrapper primitive; full adapter cleanup remains a contract-test requirement.
 8. Pin Basic Memory to the installed and probed 0.22.1. Its configuration override and project-constrained resolver were tested using an isolated temporary configuration directory.
+9. Claude read-only launches deny all shell tools as well as editing tools through PreToolUse. Read tools and scoped bridge calls remain available. This avoids pretending a prompt or bypass-mode allowlist enforces read-only access. Live confirmation remains blocked.
+10. Codex Safety is limited by literal prefix rules. The phase 0 parser probe passed 19 exact forms but missed four common variations; its live model made no tool call. Runtime capabilities and documentation must not claim complete command coverage. Integration's per-action rebase exception still needs an implementation that does not mutate shared launch configuration.
 
 ## Definition of done audit
 
@@ -67,4 +69,4 @@ J1–J13 have not run. Their implementation remains planned. No simulated journe
 
 ## Next work
 
-Finish phase 0 reference mapping and Safety transport checks. The verified skeleton is ready for a local checkpoint. Then implement phase 1 without treating unavailable live checks as passes.
+Implement phase 1, starting with validated schemas, isolated homes, the hub vault, configuration revision checks and account selection. Keep full adapter integration and live limitations distinct from fixture evidence.

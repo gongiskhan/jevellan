@@ -11,7 +11,7 @@ Runtime packages are the only plugin type. They provide createRuntime(ctx), the 
 | Continue the same session for repair | Not run: Claude test credential missing | Live SDK passed with prior-turn context |
 | Concurrent per-launch bridge/memory isolation | Not run: Claude test credential missing | Live SDK with fixture MCP passed: two projects, one account, distinct scoped responses |
 | Enforced read-only actions | Not run: Claude test credential missing | Installed native runtime command test passed: exit 1, write denied, no file created; model-driven attempt declined before the tool and is not enforcement evidence |
-| Safety command denials | Pending protocol/unit checks; live blocked | Pending spike |
+| Safety command denials | Hook fixture checks pass for ordinary forms; live blocked | Installed parser denies 19 exact prefixes; four reordered/prefixed variants bypass those rules; live model declined before a tool call |
 | Complete process-group termination | Shared process-group primitive passed locally; full live adapter blocked | Shared primitive passed with a shell descendant ignoring SIGTERM; full adapter contract pending |
 
 The Codex SDK remains the selected execution transport because points 1–4 passed. The read-only control was tested directly through the installed native app-server's command endpoint, without a model or authentication; this is a control probe, not a second stretch transport. Safety and full adapter integration remain unfinished.
@@ -23,6 +23,10 @@ Official references: [Codex SDK](https://learn.chatgpt.com/docs/codex-sdk), [Cod
 ## Enforcement
 
 Writing processes must use their own process group and a minimal environment. Per-launch MCP configuration must never enter the shared account home. Read-only actions must be refused when the adapter cannot enforce their permissions. Safety denies obvious destructive and daemon-control commands; after-stretch git checks detect other changes. Neither is described as a general sandbox.
+
+The Claude hook uses PreToolUse denials, including in bypass mode, as specified by the [SDK permission order](https://code.claude.com/docs/en/agent-sdk/permissions). Its read-only policy denies every shell and editing tool, and allows only named read tools and the scoped bridge; explicit remembering can allow memory tools independently. This callback is tested locally, but end-to-end enforcement is blocked by the missing Claude credential.
+
+The installed Codex [rules language](https://learn.chatgpt.com/docs/agent-configuration/rules) matches literal argument prefixes. `scripts/spikes/codex-safety.mjs` proved that the listed exact prefixes parse as forbidden, while `git -C <project> push`, `git reset HEAD --hard`, `git branch example -D` and `rm -r -f /example` do not. Do not claim equivalent command coverage or an integration-only rebase exception without further adapter evidence. The live test used an inert fixture command, which never executed, but the model made no tool call: that result is unproven, not a pass. Direct git-state changes must be checked after each stretch regardless of runtime.
 
 ## Subscription authentication
 

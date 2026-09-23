@@ -3,13 +3,13 @@
     "id": "phase-0",
     "title": "Orientation and skeleton",
     "why": "Implement BRIEF.md phase 0.",
-    "status": "in-progress"
+    "status": "complete-with-blockers"
   },
   {
     "id": "phase-1",
     "title": "Core, configuration, homes, runtimes, accounts, rigging",
     "why": "Implement BRIEF.md phase 1.",
-    "status": "planned"
+    "status": "in-progress"
   },
   {
     "id": "phase-2",
