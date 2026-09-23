@@ -1,0 +1,16 @@
+{
+  "name": "@jevellan/accounts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@jevellan/core": "0.1.0"
+  }
+}

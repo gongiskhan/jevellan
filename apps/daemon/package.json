@@ -1,0 +1,20 @@
+{
+  "name": "@jevellan/daemon",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@jevellan/core": "0.1.0",
+    "@jevellan/conversations": "0.1.0",
+    "@jevellan/mesh": "0.1.0",
+    "@jevellan/runtime-claude": "0.1.0",
+    "@jevellan/runtime-codex": "0.1.0"
+  }
+}

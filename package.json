@@ -1,0 +1,35 @@
+{
+  "name": "jevellan",
+  "version": "0.1.0",
+  "description": "Autonomous development, coordinated.",
+  "type": "module",
+  "license": "MIT",
+  "engines": { "node": ">=22" },
+  "bin": { "jevellan": "bin/jevellan.mjs" },
+  "workspaces": ["apps/*", "packages/*", "runtimes/*"],
+  "files": ["bin", "apps", "packages", "runtimes", "scripts", "docs", "LICENSE", "NOTICE", "README.md", "roadmap.json", "tsconfig*.json"],
+  "scripts": {
+    "prepare": "node scripts/prepare.mjs",
+    "build": "tsc -b && vite build --config apps/web/vite.config.ts",
+    "typecheck": "tsc -b --pretty false && tsc -p tsconfig.tests.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "start": "node bin/jevellan.mjs start",
+    "scan:secrets": "node scripts/secret-scan.mjs",
+    "check:baseline": "node scripts/check-baseline.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "@playwright/test": "1.63.0",
+    "@types/node": "^22.19.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "eslint": "^9.39.0",
+    "typescript-eslint": "^8.46.0",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "vite": "8.3.0",
+    "vitest": "5.0.1"
+  }
+}

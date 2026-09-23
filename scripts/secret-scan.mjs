@@ -1,0 +1,49 @@
+import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
+
+const patterns = [
+  /\bsk-(?:ant-[A-Za-z0-9_-]*|proj-[A-Za-z0-9_-]*|[A-Za-z0-9_-]{20,})/,
+  /\bgh[pousr]_[A-Za-z0-9]{20,}/,
+  /\bgithub_pat_[A-Za-z0-9_]{20,}/,
+  /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/,
+  /\beyJ[A-Za-z0-9_-]{12,}\.[A-Za-z0-9_-]{12,}\.[A-Za-z0-9_-]{12,}/,
+];
+
+function git(cwd, args) {
+  const result = spawnSync('git', args, { cwd, encoding: null, maxBuffer: 128 * 1024 * 1024, env: { ...process.env, GIT_OPTIONAL_LOCKS: '0' } });
+  if (result.status !== 0) throw new Error('Could not inspect git objects; refusing to push.');
+  return result.stdout;
+}
+
+export function scanSecrets(cwd, revisions = ['--all'], environment = process.env) {
+  const values = Object.entries(environment)
+    .filter(([name, value]) => name.startsWith('JEVELLAN_TEST_') && value)
+    .map(([name, value]) => [name, Buffer.from(value)]);
+  const objects = git(cwd, ['rev-list', '--objects', '--no-object-names', ...revisions]).toString().trim().split('\n').filter(Boolean);
+  const violations = [];
+  for (const oid of new Set(objects)) {
+    if (git(cwd, ['cat-file', '-t', oid]).toString().trim() !== 'blob') continue;
+    const blob = git(cwd, ['cat-file', 'blob', oid]);
+    if (patterns.some((pattern) => pattern.test(blob.toString('utf8')))) violations.push({ oid, reason: 'token or private-key pattern' });
+    for (const [name, value] of values) {
+      if (blob.includes(value)) violations.push({ oid, reason: `value of ${name}` });
+    }
+  }
+  return violations;
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  try {
+    const revisions = process.argv.includes('--pre-push')
+      ? readFileSync(0, 'utf8').trim().split('\n').filter(Boolean).map((line) => line.split(/\s+/)[1]).filter((oid) => oid && !/^0+$/.test(oid))
+      : ['--all'];
+    const violations = revisions.length ? scanSecrets(process.cwd(), revisions) : [];
+    for (const item of violations) console.error(`Push blocked: ${item.reason} in git blob ${item.oid}.`);
+    if (violations.length) process.exitCode = 1;
+    else console.log('Secret scan passed.');
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : 'Secret scan failed.');
+    process.exitCode = 1;
+  }
+}

@@ -1,0 +1,16 @@
+BRIEF.md
+CLAUDE.md
+.claude/
+.codex/
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+*.tsbuildinfo
+coverage/
+test-results/
+playwright-report/
+.jevellan/
+.DS_Store
+*.tgz

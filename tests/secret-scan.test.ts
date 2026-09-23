@@ -1,0 +1,35 @@
+import { afterEach, expect, test } from 'vitest';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { scanSecrets } from '../scripts/secret-scan.mjs';
+
+const dirs: string[] = [];
+afterEach(() => { for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true }); });
+function repository() {
+  const dir = mkdtempSync(join(tmpdir(), 'jevellan-scan-')); dirs.push(dir);
+  execFileSync('git', ['init', '-b', 'main', dir], { stdio: 'ignore' });
+  return { dir, git: (...args: string[]) => execFileSync('git', ['-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', ...args], { cwd: dir, stdio: 'ignore' }) };
+}
+test('blocks token patterns in earlier commits even after removal', () => {
+  const { dir, git } = repository();
+  writeFileSync(join(dir, 'file'), ['ghp', '_', 'A'.repeat(36)].join(''));
+  git('add', '.'); git('commit', '-m', 'first');
+  writeFileSync(join(dir, 'file'), 'clean'); git('add', '.'); git('commit', '-m', 'second');
+  expect(scanSecrets(dir, ['HEAD'], {})).toEqual([expect.objectContaining({ reason: 'token or private-key pattern' })]);
+});
+test('blocks exact test environment values in binary blobs without exposing them', () => {
+  const { dir, git } = repository();
+  const secret = ['fixture', 'private', 'value'].join('-');
+  writeFileSync(join(dir, 'binary'), Buffer.concat([Buffer.from([0, 1, 2]), Buffer.from(secret)]));
+  git('add', '.'); git('commit', '-m', 'fixture');
+  const result = scanSecrets(dir, ['HEAD'], { JEVELLAN_TEST_JEV_KEY: secret });
+  expect(result).toHaveLength(1);
+  expect(JSON.stringify(result)).not.toContain(secret);
+});
+test('passes a clean history', () => {
+  const { dir, git } = repository();
+  writeFileSync(join(dir, 'readme'), 'A clean project.'); git('add', '.'); git('commit', '-m', 'initial');
+  expect(scanSecrets(dir, ['HEAD'], {})).toEqual([]);
+});

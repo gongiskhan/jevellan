@@ -1,0 +1,92 @@
+[
+  {
+    "id": "phase-0",
+    "title": "Orientation and skeleton",
+    "why": "Implement BRIEF.md phase 0.",
+    "status": "in-progress"
+  },
+  {
+    "id": "phase-1",
+    "title": "Core, configuration, homes, runtimes, accounts, rigging",
+    "why": "Implement BRIEF.md phase 1.",
+    "status": "planned"
+  },
+  {
+    "id": "phase-2",
+    "title": "Conversations, stretches, memory and context",
+    "why": "Implement BRIEF.md phase 2.",
+    "status": "planned"
+  },
+  {
+    "id": "phase-3",
+    "title": "Decision layer",
+    "why": "Implement BRIEF.md phase 3.",
+    "status": "planned"
+  },
+  {
+    "id": "phase-4",
+    "title": "Mesh",
+    "why": "Implement BRIEF.md phase 4.",
+    "status": "planned"
+  },
+  {
+    "id": "phase-5",
+    "title": "Install, uninstall, doctor and first run",
+    "why": "Implement BRIEF.md phase 5.",
+    "status": "planned"
+  },
+  {
+    "id": "phase-6",
+    "title": "Improver",
+    "why": "Implement BRIEF.md phase 6.",
+    "status": "planned"
+  },
+  {
+    "id": "phase-7",
+    "title": "Hardening and finish",
+    "why": "Implement BRIEF.md phase 7.",
+    "status": "planned"
+  },
+  {
+    "id": "shells",
+    "title": "Shells",
+    "why": "Attach to and start native sessions using the external session index.",
+    "status": "planned"
+  },
+  {
+    "id": "automatic-device-choice",
+    "title": "Automatic device choice",
+    "why": "Choose a free device for new conversations.",
+    "status": "planned"
+  },
+  {
+    "id": "shared-codex-logins",
+    "title": "Shared Codex subscription logins",
+    "why": "Keep one refresh authority on the hub.",
+    "status": "planned"
+  },
+  {
+    "id": "jev-browser",
+    "title": "Browser automation with Jev",
+    "why": "Use Jev for fast browser testing.",
+    "status": "planned"
+  },
+  {
+    "id": "more-runtimes",
+    "title": "More runtimes",
+    "why": "Add OpenCode, Gemini and Cursor adapters.",
+    "status": "planned"
+  },
+  {
+    "id": "improver-autonomy",
+    "title": "Improver autonomy",
+    "why": "Apply high-confidence proposals with undo.",
+    "status": "planned"
+  },
+  {
+    "id": "native-companion",
+    "title": "Native companion app",
+    "why": "Follow, steer and approve work from a phone.",
+    "status": "planned"
+  }
+]

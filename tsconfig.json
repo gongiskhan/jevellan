@@ -1,0 +1,41 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "packages/core"
+    },
+    {
+      "path": "packages/runtime-contract"
+    },
+    {
+      "path": "packages/accounts"
+    },
+    {
+      "path": "packages/memory"
+    },
+    {
+      "path": "packages/mesh"
+    },
+    {
+      "path": "packages/decisions"
+    },
+    {
+      "path": "packages/conversations"
+    },
+    {
+      "path": "runtimes/claude"
+    },
+    {
+      "path": "runtimes/codex"
+    },
+    {
+      "path": "apps/daemon"
+    },
+    {
+      "path": "packages/cli"
+    },
+    {
+      "path": "apps/web"
+    }
+  ]
+}

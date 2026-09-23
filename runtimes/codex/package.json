@@ -1,0 +1,18 @@
+{
+  "name": "@jevellan/runtime-codex",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@jevellan/core": "0.1.0",
+    "@jevellan/runtime-contract": "0.1.0",
+    "@openai/codex-sdk": "0.156.1"
+  }
+}

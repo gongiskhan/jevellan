@@ -1,0 +1,53 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "composite": false,
+    "declaration": false,
+    "allowJs": true,
+    "checkJs": false
+  },
+  "include": [
+    "tests/**/*.ts",
+    "vitest.config.ts",
+    "playwright.config.ts",
+    "scripts/**/*.mjs"
+  ],
+  "references": [
+    {
+      "path": "packages/core"
+    },
+    {
+      "path": "packages/runtime-contract"
+    },
+    {
+      "path": "packages/accounts"
+    },
+    {
+      "path": "packages/memory"
+    },
+    {
+      "path": "packages/mesh"
+    },
+    {
+      "path": "packages/decisions"
+    },
+    {
+      "path": "packages/conversations"
+    },
+    {
+      "path": "runtimes/claude"
+    },
+    {
+      "path": "runtimes/codex"
+    },
+    {
+      "path": "apps/daemon"
+    },
+    {
+      "path": "packages/cli"
+    },
+    {
+      "path": "apps/web"
+    }
+  ]
+}

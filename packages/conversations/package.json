@@ -1,0 +1,21 @@
+{
+  "name": "@jevellan/conversations",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@jevellan/core": "0.1.0",
+    "@jevellan/runtime-contract": "0.1.0",
+    "@jevellan/accounts": "0.1.0",
+    "@jevellan/memory": "0.1.0",
+    "@jevellan/decisions": "0.1.0",
+    "@jevellan/mesh": "0.1.0"
+  }
+}
