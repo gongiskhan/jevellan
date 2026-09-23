@@ -14,7 +14,7 @@ The intended installation command, once the repository and installer are ready, 
 npx github:gongiskhan/jevellan install
 ```
 
-Development needs Node 22 or newer:
+Development needs Node 22.13+ or 23.4+ (including newer major versions), with built-in SQLite:
 
 ```sh
 npm install

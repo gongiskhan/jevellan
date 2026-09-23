@@ -4,11 +4,11 @@ Last updated: 2026-09-24. Build in progress. This report does not claim Gonçalo
 
 ## Current state
 
-- Committed: initial checkpoint acbeb88 on main; public push is blocked below.
-- Built: the workspace compiles with TypeScript and Vite.
+- Committed: phase 0 checkpoints acbeb88 and a9e3c40 on main; public push is blocked below. Phase 1 is in progress.
+- Built: the workspace compiles with TypeScript and Vite. Phase 1 adds versioned schemas, isolated homes, SQLite configuration revisions, AES-256-GCM secrets, account eligibility/ranking, environment filtering and redaction.
 - Installed: no Jevellan service or application installed.
 - Running: no persistent Jevellan daemon.
-- Tested: typecheck and lint pass; Vitest passes 41 tests in 4 files; Playwright passes 4 skeleton checks (desktop/phone, light/dark). The committed-history secret scan passed. Live Codex SDK text/tools/usage, continuation, interruption and concurrent bridge isolation passed. Native read-only command denial, isolated Basic Memory configuration and owned process-group cleanup passed. These checks do not establish completed product journeys.
+- Tested: typecheck and lint pass; Vitest passes 69 tests in 6 files; Playwright passes 4 skeleton checks (desktop/phone, light/dark). The phase 0 committed-history secret scan passed. Live Codex SDK text/tools/usage, continuation, interruption and concurrent bridge isolation passed. Native read-only command denial, isolated Basic Memory configuration and owned process-group cleanup passed. These checks do not establish completed product journeys.
 - Accepted by Gonçalo: not requested or claimed.
 
 ## Phase progress
@@ -48,6 +48,9 @@ The prepared Codex test home was moved, never copied, to `~/.jevellan-build/live
 8. Pin Basic Memory to the installed and probed 0.22.1. Its configuration override and project-constrained resolver were tested using an isolated temporary configuration directory.
 9. Claude read-only launches deny all shell tools as well as editing tools through PreToolUse. Read tools and scoped bridge calls remain available. This avoids pretending a prompt or bypass-mode allowlist enforces read-only access. Live confirmation remains blocked.
 10. Codex Safety is limited by literal prefix rules. The phase 0 parser probe passed 19 exact forms but missed four common variations; its live model made no tool call. Runtime capabilities and documentation must not claim complete command coverage. Integration's per-action rebase exception still needs an implementation that does not mutate shared launch configuration.
+11. Use Node's built-in SQLite API, with WAL and immediate transactions for revision checks. This avoids a native add-on dependency. Node 22.13 (or 23.4) is the minimum unflagged version, so package engines and the executable check those versions. The test machine has Node 22.22. SQLite remains experimental in Node 22; its warning is retained. See the [Node version history](https://nodejs.org/download/release/latest-jod/docs/api/sqlite.html).
+12. Keep seed models disabled until runtime discovery confirms exact model ids and supported efforts. The seed descriptions are the brief's editable defaults, not claims about a discovered model's current pricing or capability.
+13. Preserve encrypted data when the key is lost: refuse to initialize a replacement key for a populated vault. Authentication tags bind each encrypted secret to its id. Browser-facing summaries contain only saved state and a masked suffix.
 
 ## Definition of done audit
 
