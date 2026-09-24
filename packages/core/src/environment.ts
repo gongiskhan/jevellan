@@ -5,6 +5,7 @@ const LAUNCH = ['JEVELLAN_STRETCH_TOKEN', 'JEVELLAN_DAEMON_URL'];
 export function minimalEnvironment(runtime: 'claude' | 'codex', home: string, auth: Record<string, string> = {}, launch: Record<string, string> = {}, base: NodeJS.ProcessEnv = process.env): Record<string, string> {
   const result: Record<string, string> = {};
   for (const key of BASE) if (base[key] !== undefined) result[key] = base[key]!;
+  result.HOME = home;
   for (const [key, value] of Object.entries(auth)) {
     if (!AUTH[runtime]!.includes(key)) throw new Error(`Unsupported authentication variable for ${runtime}.`);
     result[key] = value;

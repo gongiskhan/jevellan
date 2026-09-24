@@ -44,6 +44,8 @@ export class Homes {
   }
   account(runtime: string, accountId: string): string {
     IdSchema.parse(runtime); IdSchema.parse(accountId);
+    const expected = join(this.root, 'homes', runtime, accountId);
+    if (resolvedPath(expected) !== expected) throw new Error('Account homes cannot alias another directory.');
     this.ensure();
     return this.ensure('homes', IdSchema.parse(runtime), IdSchema.parse(accountId));
   }

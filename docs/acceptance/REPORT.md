@@ -4,19 +4,19 @@ Last updated: 2026-09-24. Build in progress. This report does not claim Gonçalo
 
 ## Current state
 
-- Committed: phase 0 checkpoints acbeb88 and a9e3c40 on main; public push is blocked below. Phase 1 is in progress.
-- Built: the workspace compiles with TypeScript and Vite. Phase 1 adds versioned schemas, isolated homes, SQLite configuration revisions, AES-256-GCM secrets, account eligibility/ranking, environment filtering and redaction.
+- Committed: local phase 0 and phase 1 checkpoints on main; public push is blocked below. Phase 1 is in progress.
+- Built: the workspace compiles with TypeScript and Vite. Phase 1 adds versioned schemas, isolated homes, SQLite configuration revisions, AES-256-GCM secrets, account eligibility/ranking, runtime workers and factories, login drivers, provider probes, APM Rigging delivery, environment filtering and redaction.
 - Installed: no Jevellan service or application installed.
 - Running: no persistent Jevellan daemon.
-- Tested: typecheck and lint pass; Vitest passes 69 tests in 6 files; Playwright passes 4 skeleton checks (desktop/phone, light/dark). The phase 0 committed-history secret scan passed. Live Codex SDK text/tools/usage, continuation, interruption and concurrent bridge isolation passed. Native read-only command denial, isolated Basic Memory configuration and owned process-group cleanup passed. These checks do not establish completed product journeys.
+- Tested: typecheck and lint pass; Vitest passes 101 tests in 11 files; Playwright previously passed 4 skeleton checks (desktop/phone, light/dark). Live Codex production-adapter text/tools/usage, continuation, interruption, per-launch Safety and concurrent scoped bridges passed. Native read-only command denial, isolated Basic Memory configuration, actual APM skill delivery and owned process-group cleanup passed. See [runtime evidence](phase1-runtime.md). These checks do not establish completed product journeys.
 - Accepted by Gonçalo: not requested or claimed.
 
 ## Phase progress
 
 | Phase | State | Evidence and remaining work |
 | --- | --- | --- |
-| 0 Orientation and skeleton | Local checks complete; external checks blocked | Skeleton, reference map, SDK selection and capability limits recorded. Public creation/push and Claude live checks blocked. Native Codex rule coverage is partial and live denial remains unproven. |
-| 1 Core and runtimes | In progress | Schemas, accounts, vault, configuration, Rigging and full runtime contract tests. |
+| 0 Orientation and skeleton | Local checks complete; external checks blocked | Skeleton, reference map, SDK selection and capability limits recorded. Public creation/push and Claude live checks blocked. Phase 0's partial Codex prefix rules were replaced by the tested phase 1 hook. |
+| 1 Core and runtimes | In progress | Backend foundations and adapters implemented; full contract matrix, account/configuration APIs and Settings UI still required. |
 | 2 Conversations and memory | Planned | Durable work, verification/publication, memory bridge and UI. |
 | 3 Decisions | Planned | Real Jev wire client, questions, resolution, corrections and manual fallback. |
 | 4 Mesh | Planned | Hub API, device login, owner proxying, switch tokens and external sessions. |
@@ -47,10 +47,14 @@ The prepared Codex test home was moved, never copied, to `~/.jevellan-build/live
 7. Run SDK execution inside a separate owned worker process group. The SDK itself does not expose enough process ownership information for complete descendant cleanup. The local cleanup test proves the wrapper primitive; full adapter cleanup remains a contract-test requirement.
 8. Pin Basic Memory to the installed and probed 0.22.1. Its configuration override and project-constrained resolver were tested using an isolated temporary configuration directory.
 9. Claude read-only launches deny all shell tools as well as editing tools through PreToolUse. Read tools and scoped bridge calls remain available. This avoids pretending a prompt or bypass-mode allowlist enforces read-only access. Live confirmation remains blocked.
-10. Codex Safety is limited by literal prefix rules. The phase 0 parser probe passed 19 exact forms but missed four common variations; its live model made no tool call. Runtime capabilities and documentation must not claim complete command coverage. Integration's per-action rebase exception still needs an implementation that does not mutate shared launch configuration.
+10. The phase 0 Codex rule parser passed 19 exact forms but missed four common variations; its live model made no tool call. Phase 1 uses the current hook interface for the shared command guard, as recorded below. Arbitrary programs and unsupported native tool paths remain outside its coverage.
 11. Use Node's built-in SQLite API, with WAL and immediate transactions for revision checks. This avoids a native add-on dependency. Node 22.13 (or 23.4) is the minimum unflagged version, so package engines and the executable check those versions. The test machine has Node 22.22. SQLite remains experimental in Node 22; its warning is retained. See the [Node version history](https://nodejs.org/download/release/latest-jod/docs/api/sqlite.html).
 12. Keep seed models disabled until runtime discovery confirms exact model ids and supported efforts. The seed descriptions are the brief's editable defaults, not claims about a discovered model's current pricing or capability.
 13. Preserve encrypted data when the key is lost: refuse to initialize a replacement key for a populated vault. Authentication tags bind each encrypted secret to its id. Browser-facing summaries contain only saved state and a masked suffix.
+14. Set HOME as well as the runtime-specific home variable to the isolated account home for agent processes. This also confines secondary CLI caches and prevents ordinary home-directory discovery from reaching the user's native setup.
+15. Stage APM output under Jevellan before delivering it to account homes. Check ownership hashes before replacing or parking files; preserve loose and externally edited files. A matching fingerprint is insufficient if an owned file disappeared. Keep staging packages available because generated hooks can reference them.
+16. Use node-pty and a headless terminal for UI-driven login. Terminal cells preserve cursor-rendered separators and soft-wrapped tokens; stripping ANSI text does not. Tokens go directly to the encrypted vault callback. The installation prepare step repairs node-pty 1.1.0's missing macOS helper executable bit in this installation only.
+17. Current Codex supports PreToolUse hooks. Its [documented automation flag](https://learn.chatgpt.com/docs/hooks) enables the per-launch hook without persisting a trust record for each stretch. A small CLI shim adds that flag while retaining SDK execution and sandbox controls. Project-local configuration is marked untrusted; Jevellan's account Rigging and per-launch hook are the controlled sources. The native live hook probe and a reordered git-push denial passed. This replaces reliance on prefix rules for the ordinary command forms and permits the integration-only rebase exception in the hook.
 
 ## Definition of done audit
 
@@ -72,4 +76,4 @@ J1–J13 have not run. Their implementation remains planned. No simulated journe
 
 ## Next work
 
-Implement phase 1, starting with validated schemas, isolated homes, the hub vault, configuration revision checks and account selection. Keep full adapter integration and live limitations distinct from fixture evidence.
+Finish phase 1's contract matrix and build the account/configuration APIs and Settings UI. Keep live provider evidence, actual local tooling and simulated fixtures separate.

@@ -15,3 +15,4 @@ export * from './environment.js';
 export * from './configuration.js';
 export * from './vault.js';
 export * from './models.js';
+export * from './rigging.js';

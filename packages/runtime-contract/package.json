@@ -8,9 +8,16 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing.d.ts",
+      "default": "./dist/testing.js"
     }
   },
   "dependencies": {
-    "@jevellan/core": "0.1.0"
+    "@jevellan/core": "0.1.0",
+    "@xterm/headless": "6.0.0",
+    "node-pty": "1.1.0",
+    "zod": "4.6.5"
   }
 }

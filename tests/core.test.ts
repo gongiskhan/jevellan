@@ -123,8 +123,8 @@ test('project validation never falls back to another directory or accepts a nest
 
 test('minimal runtime environment drops test variables and ambient credentials', () => {
   const base = { PATH: '/usr/bin', HOME: '/fixture', USER: 'fixture', JEVELLAN_TEST_JEV_KEY: 'excluded', JEVELLAN_TEST_OPENAI_KEY: 'excluded', ANTHROPIC_API_KEY: 'ambient', CODEX_HOME: '/native', AWS_SECRET_ACCESS_KEY: 'excluded' };
-  expect(minimalEnvironment('codex', '/isolated', {}, { JEVELLAN_STRETCH_TOKEN: 'scope' }, base)).toEqual({ PATH: '/usr/bin', HOME: '/fixture', USER: 'fixture', CODEX_HOME: '/isolated', JEVELLAN_STRETCH_TOKEN: 'scope' });
-  expect(minimalEnvironment('claude', '/isolated', { CLAUDE_CODE_OAUTH_TOKEN: 'intended' }, {}, base)).toEqual({ PATH: '/usr/bin', HOME: '/fixture', USER: 'fixture', CLAUDE_CONFIG_DIR: '/isolated', CLAUDE_CODE_OAUTH_TOKEN: 'intended' });
+  expect(minimalEnvironment('codex', '/isolated', {}, { JEVELLAN_STRETCH_TOKEN: 'scope' }, base)).toEqual({ PATH: '/usr/bin', HOME: '/isolated', USER: 'fixture', CODEX_HOME: '/isolated', JEVELLAN_STRETCH_TOKEN: 'scope' });
+  expect(minimalEnvironment('claude', '/isolated', { CLAUDE_CODE_OAUTH_TOKEN: 'intended' }, {}, base)).toEqual({ PATH: '/usr/bin', HOME: '/isolated', USER: 'fixture', CLAUDE_CONFIG_DIR: '/isolated', CLAUDE_CODE_OAUTH_TOKEN: 'intended' });
   expect(() => minimalEnvironment('claude', '/isolated', { OPENAI_API_KEY: 'wrong' }, {}, base)).toThrow();
   expect(() => minimalEnvironment('codex', '/isolated', {}, { JEVELLAN_TEST_JEV_KEY: 'excluded' }, base)).toThrow();
 });

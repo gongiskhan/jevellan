@@ -1,6 +1,6 @@
 # Runtimes
 
-Runtime packages are the only plugin type. They provide createRuntime(ctx), the versioned adapter contract, declared capabilities, account login/probes, model discovery and isolated launches. The contract implementation is in progress.
+Runtime packages are the only plugin type. They provide createRuntime(ctx), the versioned adapter contract, declared capabilities, account login/probes, model discovery and isolated launches. Both built-in factories are implemented. The published contract runner is available from `@jevellan/runtime-contract/testing`; its full built-in matrix remains in progress. See the [phase 1 evidence](acceptance/phase1-runtime.md) for current production-adapter checks.
 
 ## Phase 0 transport checks
 
@@ -14,7 +14,7 @@ Runtime packages are the only plugin type. They provide createRuntime(ctx), the 
 | Safety command denials | Hook fixture checks pass for ordinary forms; live blocked | Installed parser denies 19 exact prefixes; four reordered/prefixed variants bypass those rules; live model declined before a tool call |
 | Complete process-group termination | Shared process-group primitive passed locally; full live adapter blocked | Shared primitive passed with a shell descendant ignoring SIGTERM; full adapter contract pending |
 
-The Codex SDK remains the selected execution transport because points 1–4 passed. The read-only control was tested directly through the installed native app-server's command endpoint, without a model or authentication; this is a control probe, not a second stretch transport. Safety and full adapter integration remain unfinished.
+The table records the original phase 0 results. The Codex SDK remains the selected execution transport because points 1–4 passed. The read-only control was tested directly through the installed native app-server's command endpoint, without a model or authentication; this is a control probe, not a second stretch transport. Phase 1 additionally passed live production-adapter continuation, interruption, scoped concurrent MCP calls, Safety denial and process-group cleanup.
 
 Runnable probes are in `scripts/spikes/`. They require an explicit isolated home and report booleans and event types, never credentials, output text or native session identifiers. The concurrent probe uses a fixture memory tool; the real Basic Memory bridge will need its own tests. Basic Memory 0.22.1 separately passed configuration-home and project-constraint checks. Codex per-launch MCP configuration must use `default_tools_approval_mode = "approve"` for the Jevellan bridge with `approvalPolicy = "never"`; `auto` blocked the first two fixture attempts. Only this scoped bridge is pre-approved.
 
@@ -26,7 +26,7 @@ Writing processes must use their own process group and a minimal environment. Pe
 
 The Claude hook uses PreToolUse denials, including in bypass mode, as specified by the [SDK permission order](https://code.claude.com/docs/en/agent-sdk/permissions). Its read-only policy denies every shell and editing tool, and allows only named read tools and the scoped bridge; explicit remembering can allow memory tools independently. This callback is tested locally, but end-to-end enforcement is blocked by the missing Claude credential.
 
-The installed Codex [rules language](https://learn.chatgpt.com/docs/agent-configuration/rules) matches literal argument prefixes. `scripts/spikes/codex-safety.mjs` proved that the listed exact prefixes parse as forbidden, while `git -C <project> push`, `git reset HEAD --hard`, `git branch example -D` and `rm -r -f /example` do not. Do not claim equivalent command coverage or an integration-only rebase exception without further adapter evidence. The live test used an inert fixture command, which never executed, but the model made no tool call: that result is unproven, not a pass. Direct git-state changes must be checked after each stretch regardless of runtime.
+The installed Codex [rules language](https://learn.chatgpt.com/docs/agent-configuration/rules) matches literal argument prefixes. The phase 0 probe missed four common reordered forms. The production adapter now supplies the same command guard through a per-launch PreToolUse hook. A CLI shim supplies the [documented hook automation flag](https://learn.chatgpt.com/docs/hooks); the SDK still controls execution, continuation and sandbox permissions. Project configuration is marked untrusted, while account Rigging remains available. A live inert `git -C <project> push` attempt received the hook's denial and did not execute. The executable hook tests include the integration-only rebase exception. Native project-hook exclusion and AGENTS.md loading still need explicit integration coverage. Hooks are not a general sandbox: arbitrary programs, native tool paths outside the matcher, and native hook startup failures remain limitations. Direct git-state changes must be checked after each stretch regardless of runtime.
 
 ## Subscription authentication
 

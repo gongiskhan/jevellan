@@ -1,5 +1,7 @@
 import { expect, test } from 'vitest';
 import { claudePermissionHook, safetyDenial, SAFETY_REASON } from '../packages/runtime-contract/dist/index.js';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 const context = { cwd: '/private/tmp/jevellan-fixture', action: 'implement', daemonPid: 41999 };
 test.each([
@@ -39,4 +41,12 @@ test('the writing hook still enforces Safety', async () => {
   const hook = claudePermissionHook({ ...context, permissions: 'write', memoryWrite: true });
   expect(await hook({ tool_name: 'Bash', tool_input: { command: 'kill -9 41999' } })).toMatchObject({ hookSpecificOutput: { permissionDecision: 'deny' } });
   expect(await hook({ tool_name: 'Edit' })).toEqual({});
+});
+
+test('Codex hook executable refuses reordered commands and permits rebase only in integration', () => {
+  const hook = fileURLToPath(new URL('../runtimes/codex/dist/safety-hook.js', import.meta.url));
+  const call = (command: string, action = 'implement') => JSON.parse(execFileSync(process.execPath, [hook, JSON.stringify({ ...context, action })], { input: JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command } }), encoding: 'utf8' }));
+  for (const command of ['git -C . push origin main', 'git reset HEAD --hard', 'git branch old -D', 'rm -r -f /outside', 'gh repo edit owner/repo --visibility public', 'jevellan restart', 'kill -9 41999', 'git rebase origin/main']) expect(call(command)).toMatchObject({ hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: SAFETY_REASON } });
+  expect(call('git rebase origin/main', 'integrate')).toEqual({});
+  expect(call('git push', 'integrate')).toMatchObject({ hookSpecificOutput: { permissionDecision: 'deny' } });
 });

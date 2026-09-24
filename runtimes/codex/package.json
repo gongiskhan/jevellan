@@ -13,6 +13,14 @@
   "dependencies": {
     "@jevellan/core": "0.1.0",
     "@jevellan/runtime-contract": "0.1.0",
-    "@openai/codex-sdk": "0.156.1"
+    "@openai/codex-sdk": "0.156.1",
+    "zod": "4.6.5"
+  },
+  "jevellan": {
+    "runtime": {
+      "id": "codex",
+      "displayName": "Codex",
+      "entry": "./dist/index.js"
+    }
   }
 }
