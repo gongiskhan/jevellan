@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, readFileSync, existsSync, writeFileSync, readdi
 import { rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { Homes, RiggingDelivery, RiggingItemSchema, type ApmRunner } from '../packages/core/dist/index.js';
+import { Homes, RiggingDelivery, RiggingItemSchema, exportConfiguration, seedConfiguration, type ApmRunner } from '../packages/core/dist/index.js';
 let root: string; let homes: Homes;
 beforeEach(() => { root = mkdtempSync(join(tmpdir(), 'jevellan-rigging-')); mkdirSync(join(root, 'user')); homes = new Homes(join(root, 'jevellan'), join(root, 'user')); });
 afterEach(async () => { await rm(root, { recursive: true, force: true }); });
@@ -47,4 +47,16 @@ test.each(['claude', 'codex'] as const)('installed APM deploys a local skill to 
   const result = await delivery.materialise(runtime, home, [item(runtime)]);
   expect(result[0]?.applied).toBe(true); expect(readFileSync(join(home, 'skills', 'fixture', 'SKILL.md'), 'utf8')).toContain('Read the fixture.');
   expect(readdirSync(native)).toEqual(['sentinel']); expect(readFileSync(join(native, 'sentinel'), 'utf8')).toBe('unchanged');
+}, 120_000);
+
+test('configuration APM dependencies are delivered and removing one parks its owned output', async () => {
+  const pkg = join(root, 'configured-package'); mkdirSync(join(pkg, '.apm', 'skills', 'configured'), { recursive: true });
+  writeFileSync(join(pkg, 'apm.yml'), 'name: configured-package\nversion: 1.0.0\ndescription: Configured fixture\n');
+  writeFileSync(join(pkg, '.apm', 'skills', 'configured', 'SKILL.md'), '---\nname: configured\ndescription: Configured fixture\n---\nUse the configured skill.\n');
+  const configuration = seedConfiguration(); configuration.dependencies.apm = [{ path: pkg }]; homes.ensure(); writeFileSync(homes.at('apm.yml'), exportConfiguration(configuration));
+  const home = homes.account('claude', 'acc_config'); const delivery = new RiggingDelivery(homes);
+  await delivery.materialise('claude', home, []);
+  const target = join(home, 'skills', 'configured', 'SKILL.md'); expect(readFileSync(target, 'utf8')).toContain('Use the configured skill.');
+  configuration.dependencies.apm = []; writeFileSync(homes.at('apm.yml'), exportConfiguration(configuration)); await delivery.materialise('claude', home, []);
+  expect(existsSync(target)).toBe(false); expect(readdirSync(homes.at('rigging', 'parked'), { recursive: true }).some((ref) => String(ref).endsWith('SKILL.md'))).toBe(true);
 }, 120_000);

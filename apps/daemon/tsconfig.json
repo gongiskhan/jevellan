@@ -10,6 +10,8 @@
     "src/**/*.tsx"
   ],
   "references": [
+    { "path": "../../packages/accounts" },
+    { "path": "../../packages/runtime-contract" },
     {
       "path": "../../packages/core"
     },

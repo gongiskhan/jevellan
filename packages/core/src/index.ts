@@ -16,3 +16,5 @@ export * from './configuration.js';
 export * from './vault.js';
 export * from './models.js';
 export * from './rigging.js';
+export * from './store.js';
+export * from './rigging-store.js';

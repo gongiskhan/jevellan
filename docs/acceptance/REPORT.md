@@ -5,10 +5,10 @@ Last updated: 2026-09-24. Build in progress. This report does not claim Gonçalo
 ## Current state
 
 - Committed: local phase 0 and phase 1 checkpoints on main; public push is blocked below. Phase 1 is in progress.
-- Built: the workspace compiles with TypeScript and Vite. Phase 1 adds versioned schemas, isolated homes, SQLite configuration revisions, AES-256-GCM secrets, account eligibility/ranking, runtime workers and factories, login drivers, provider probes, APM Rigging delivery, environment filtering and redaction.
+- Built: the workspace compiles with TypeScript and Vite. Phase 1 adds versioned schemas, isolated homes, SQLite configuration revisions, AES-256-GCM secrets, account eligibility/ranking, runtime workers and factories, login drivers, provider probes, APM Rigging delivery, environment filtering and redaction. The HTTP backend now supports passphrase sessions, account and login operations, model discovery, configuration history/import/export, secret summaries and Rigging edits.
 - Installed: no Jevellan service or application installed.
 - Running: no persistent Jevellan daemon.
-- Tested: typecheck and lint pass; Vitest passes 101 tests in 11 files; Playwright previously passed 4 skeleton checks (desktop/phone, light/dark). Live Codex production-adapter text/tools/usage, continuation, interruption, per-launch Safety and concurrent scoped bridges passed. Native read-only command denial, isolated Basic Memory configuration, actual APM skill delivery and owned process-group cleanup passed. See [runtime evidence](phase1-runtime.md). These checks do not establish completed product journeys.
+- Tested: typecheck and lint pass; Vitest passes 131 tests in 14 files; Playwright passes 4 skeleton checks (desktop/phone, light/dark) using a disposable data home. Live Codex production-adapter text/tools/usage, continuation, interruption, per-launch Safety, concurrent scoped bridges and explicit token refresh passed. Native read-only command denial, isolated Basic Memory configuration, actual APM skill delivery and owned process-group cleanup passed. HTTP tests cover authenticated settings, secret masking, stale revision rejection, simulated provider login and actual APM delivery. See [runtime evidence](phase1-runtime.md). These checks do not establish completed product journeys.
 - Accepted by Gonçalo: not requested or claimed.
 
 ## Phase progress
@@ -16,7 +16,7 @@ Last updated: 2026-09-24. Build in progress. This report does not claim Gonçalo
 | Phase | State | Evidence and remaining work |
 | --- | --- | --- |
 | 0 Orientation and skeleton | Local checks complete; external checks blocked | Skeleton, reference map, SDK selection and capability limits recorded. Public creation/push and Claude live checks blocked. Phase 0's partial Codex prefix rules were replaced by the tested phase 1 hook. |
-| 1 Core and runtimes | In progress | Backend foundations and adapters implemented; full contract matrix, account/configuration APIs and Settings UI still required. |
+| 1 Core and runtimes | In progress | Backend foundations, adapters and account/configuration/Rigging APIs implemented. Full contract matrix and Settings UI still required. |
 | 2 Conversations and memory | Planned | Durable work, verification/publication, memory bridge and UI. |
 | 3 Decisions | Planned | Real Jev wire client, questions, resolution, corrections and manual fallback. |
 | 4 Mesh | Planned | Hub API, device login, owner proxying, switch tokens and external sessions. |
@@ -55,6 +55,9 @@ The prepared Codex test home was moved, never copied, to `~/.jevellan-build/live
 15. Stage APM output under Jevellan before delivering it to account homes. Check ownership hashes before replacing or parking files; preserve loose and externally edited files. A matching fingerprint is insufficient if an owned file disappeared. Keep staging packages available because generated hooks can reference them.
 16. Use node-pty and a headless terminal for UI-driven login. Terminal cells preserve cursor-rendered separators and soft-wrapped tokens; stripping ANSI text does not. Tokens go directly to the encrypted vault callback. The installation prepare step repairs node-pty 1.1.0's missing macOS helper executable bit in this installation only.
 17. Current Codex supports PreToolUse hooks. Its [documented automation flag](https://learn.chatgpt.com/docs/hooks) enables the per-launch hook without persisting a trust record for each stretch. A small CLI shim adds that flag while retaining SDK execution and sandbox controls. Project-local configuration is marked untrusted; Jevellan's account Rigging and per-launch hook are the controlled sources. The native live hook probe and a reordered git-push denial passed. This replaces reliance on prefix rules for the ordinary command forms and permits the integration-only rebase exception in the hook.
+18. Implement the UI passphrase prerequisite with the first Settings APIs. Scrypt uses a random salt; device-bound signed sessions last seven days and logout revokes the session. Cookies are HttpOnly and SameSite=Strict. HTTPS/Tailscale listener integration remains phase 4 work. Browser test servers always use disposable data homes.
+19. Credential replacement creates a new encrypted secret reference and invalidates outstanding probes. A late authentication failure for the previous credential cannot overwrite readiness for the replacement. An unavailable usage query preserves previously confirmed authentication while marking usage unknown. Codex API keys are checked against the provider; ChatGPT probes request an explicit native token refresh, as described in the [app-server authentication contract](https://learn.chatgpt.com/docs/app-server).
+20. Local and package Rigging selections are revisioned hub documents. APM delivery combines these selections with the configuration's APM dependencies. Safety is a locked built-in row whose hook is supplied at launch; it cannot be disabled or edited. Full loose-item discovery and the Project memory item remain later Rigging work.
 
 ## Definition of done audit
 
@@ -76,4 +79,4 @@ J1–J13 have not run. Their implementation remains planned. No simulated journe
 
 ## Next work
 
-Finish phase 1's contract matrix and build the account/configuration APIs and Settings UI. Keep live provider evidence, actual local tooling and simulated fixtures separate.
+Build the Settings UI against the tested APIs and finish phase 1's contract matrix. Keep live provider evidence, actual local tooling and simulated fixtures separate.

@@ -5,6 +5,7 @@ Evidence recorded on 2026-09-24. These are component checks, not completed accep
 | Check | Evidence | Result |
 | --- | --- | --- |
 | Codex model discovery and account readiness | Live, dedicated account home | Five exact model ids returned with supported efforts; authentication ready. No identity or credential values saved. |
+| Codex explicit token refresh | Live, dedicated account home | Native `account/read` with `refreshToken: true` returned Ready and an identity. Only readiness and presence booleans were printed. |
 | Codex production adapter text, tools, usage and continuation | Live | Completed; native session retained; the continuation remembered the earlier word; process group gone after termination. |
 | Codex production adapter interruption | Live | A running shell turn interrupted in 9 ms; the continuation retained its context; process group gone after termination. |
 | Codex per-launch Safety | Live runtime, inert git executable | `git -C <fixture> push` returned the Safety reason. The push-specific marker was absent; the process group was gone. |
@@ -14,6 +15,8 @@ Evidence recorded on 2026-09-24. These are component checks, not completed accep
 | Login capture and usage probing | Simulated terminal CLIs and HTTP responses | Fourteen tests cover wrapped and partial tokens, cursor controls, direct vault capture, device-code fallback, callback scope, usage windows and authentication errors. |
 | Rigging skill delivery | Installed APM 0.10.0, local packages | Actual APM deployments to isolated Claude and Codex staging folders reached the account homes. Native-home sentinels remained unchanged. |
 | Rigging ownership | Simulated APM and temporary homes | Loose files preserved; missing owned files restored; disabled files parked; local modifications and path aliases refused. |
+| Settings account and login HTTP flows | Real local HTTP server and encrypted SQLite vault; simulated provider | Account addition and UI code submission reached Ready. Responses exposed only saved-secret summaries; editing metadata preserved the original credential. |
+| Configuration and Rigging HTTP flows | Real local HTTP server and installed APM | Import preview changed no stored revision; apply used compare-and-swap and stale saves returned 409. A submitted local skill reached the isolated account home and was parked when disabled. |
 
 Repeat live adapter checks after building:
 

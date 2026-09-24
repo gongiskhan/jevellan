@@ -7,6 +7,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { AccountSchema, Homes } from '../packages/core/dist/index.js';
 import { LoginOutput, beginTerminalLogin, loginCallback, type LoginSession } from '../packages/runtime-contract/dist/index.js';
 import { claudeUsage, probeClaude } from '../runtimes/claude/dist/control.js';
+import { probeCodex } from '../runtimes/codex/dist/control.js';
 
 const token = ['sk', 'ant', 'oat01', 'abC9_'.repeat(19) + 'Z'].join('-');
 const intro = 'Token created.\r\nYour OAuth token:\r\n';
@@ -62,4 +63,20 @@ test.each([200, 429, 401, 403, 500])('Claude probe separates authentication from
   const value = account(); const resolved = { account: value, home: homes.account('claude', value.id), env: { CLAUDE_CODE_OAUTH_TOKEN: token } };
   const fetcher = (async (url, options) => { expect(url).toBe('https://api.anthropic.com/v1/messages'); expect(options?.redirect).toBe('error'); return new Response(null, { status, headers: headers() }); }) as typeof fetch;
   const result = await probeClaude(resolved, fetcher); expect(result.auth).toBe(status === 200 || status === 429 ? 'ready' : status === 401 || status === 403 ? 'needs-login' : 'unknown'); expect(JSON.stringify(result)).not.toContain(token);
+});
+
+test.each([200, 429, 401, 403, 500])('Codex API-key readiness checks the provider instead of merely recognizing a saved key (HTTP %i)', async (status) => {
+  const value = AccountSchema.parse({ ...account('codex'), kind: 'api-key', credential: 'shared', paidUse: 'always' });
+  const resolved = { account: value, home: homes.account('codex', value.id), env: { OPENAI_API_KEY: token } };
+  const fetcher = (async (url, options) => { expect(url).toBe('https://api.openai.com/v1/models'); expect(options?.redirect).toBe('error'); expect((options?.headers as Record<string, string>).authorization).toBe(`Bearer ${token}`); return new Response(null, { status }); }) as typeof fetch;
+  const result = await probeCodex(resolved, 'unused', fetcher);
+  expect(result.auth).toBe(status === 200 || status === 429 ? 'ready' : status === 401 || status === 403 ? 'needs-login' : 'unknown'); expect(JSON.stringify(result)).not.toContain(token);
+});
+
+test.each(['ready', 'needs-login', 'unknown'] as const)('Codex subscription checking requests a native token refresh and preserves the %s outcome', async (expected) => {
+  const executable = join(root, 'codex-probe-cli'); const value = account('codex');
+  const reply = expected === 'ready' ? { result: { account: { type: 'chatgpt', email: 'fixture@example.test', planType: 'fixture' }, requiresOpenaiAuth: true } } : { error: { code: -32000, message: expected === 'needs-login' ? '401 authentication failed' : 'The connection failed' } };
+  writeFileSync(executable, `#!/usr/bin/env node\nconst {createInterface}=require('node:readline');createInterface({input:process.stdin}).on('line',line=>{const request=JSON.parse(line); if(!request.id)return;const response=request.method==='initialize'?{result:{}}:request.method==='account/read'&&request.params.refreshToken===true?${JSON.stringify(reply)}:{error:{code:-1,message:'Expected an explicit refresh'}};console.log(JSON.stringify({id:request.id,...response}));});\n`, { mode: 0o700 });
+  const result = await probeCodex({ account: value, home: homes.account('codex', value.id), env: {} }, executable);
+  expect(result.auth).toBe(expected); expect(JSON.stringify(result)).not.toContain('401');
 });

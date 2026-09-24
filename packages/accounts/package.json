@@ -11,6 +11,8 @@
     }
   },
   "dependencies": {
-    "@jevellan/core": "0.1.0"
+    "@jevellan/core": "0.1.0",
+    "@jevellan/runtime-contract": "0.1.0",
+    "zod": "4.6.5"
   }
 }

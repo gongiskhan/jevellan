@@ -1,6 +1,6 @@
 import { createInterface } from 'node:readline';
 import { minimalEnvironment, EffortSchema, type OfferedModel } from '@jevellan/core';
-import { spawnGroup, terminateGroup, type NativeProcess, type ResolvedAccount } from '@jevellan/runtime-contract';
+import { classifyRuntimeError, spawnGroup, terminateGroup, type NativeProcess, type ResolvedAccount } from '@jevellan/runtime-contract';
 import type { ChildProcessWithoutNullStreams } from 'node:child_process';
 import { z } from 'zod';
 
@@ -20,7 +20,7 @@ export class CodexControl {
         const pending = this.#pending.get(reply.id);
         if (!pending) return;
         this.#pending.delete(reply.id);
-        if (reply.error) pending.reject(new Error('Codex control request was refused.')); else pending.resolve(reply.result);
+        if (reply.error) { const error = classifyRuntimeError(reply.error.message); pending.reject(Object.assign(new Error('Codex control request was refused.'), { kind: error.kind })); } else pending.resolve(reply.result);
       } catch { this.#fail(new Error('Codex control returned an invalid response.')); }
     });
     child.stderr.on('data', () => {});
@@ -70,12 +70,25 @@ export async function listCodexModels(account: ResolvedAccount, executable = 'co
   } finally { await control.close(); }
 }
 
-export async function probeCodex(account: ResolvedAccount, executable = 'codex') {
+export async function probeCodex(account: ResolvedAccount, executable = 'codex', fetcher: typeof fetch = fetch) {
+  if (account.account.kind === 'api-key') {
+    const key = account.env.OPENAI_API_KEY;
+    if (!key) return { auth: 'needs-login' as const };
+    try {
+      const response = await fetcher('https://api.openai.com/v1/models', { headers: { authorization: `Bearer ${key}` }, redirect: 'error', signal: AbortSignal.timeout(20_000) });
+      await response.body?.cancel();
+      if (response.status === 401 || response.status === 403) return { auth: 'needs-login' as const, error: 'The provider refused this credential. Replace the API key.' };
+      if (response.ok || response.status === 429) return { auth: 'ready' as const };
+      return { auth: 'unknown' as const, error: `The provider probe returned HTTP ${response.status}. Usage is unknown.` };
+    } catch { return { auth: 'unknown' as const, error: 'The provider probe could not connect. Usage is unknown.' }; }
+  }
   const control = await CodexControl.open(account, executable);
   try {
-    const response = AccountReplySchema.parse(await control.request('account/read', { refreshToken: false }));
+    const response = AccountReplySchema.parse(await control.request('account/read', { refreshToken: true }));
     if (!response.account) return { auth: 'needs-login' as const };
     if (response.account.type === 'amazonBedrock') return { auth: 'unknown' as const, error: 'This credential provider is not supported by this runtime.' };
     return { auth: 'ready' as const, ...(response.account.type === 'chatgpt' ? { identity: { ...(response.account.email ? { email: response.account.email } : {}), plan: response.account.planType } } : {}) };
+  } catch (error) {
+    return (error as { kind?: string }).kind === 'auth' ? { auth: 'needs-login' as const, error: 'Codex could not refresh this login. Log in again.' } : { auth: 'unknown' as const, error: 'The Codex account check could not complete. Usage is unknown.' };
   } finally { await control.close(); }
 }

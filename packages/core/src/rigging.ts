@@ -10,6 +10,7 @@ import { Homes, inside, resolvedPath } from './homes.js';
 import { atomicWrite, stableJson } from './files.js';
 import { RiggingItemSchema, type RiggingItem } from './schemas.js';
 import { minimalEnvironment, SecretRedactor } from './environment.js';
+import { parseConfiguration } from './configuration.js';
 
 const hash = (value: string | Buffer) => createHash('sha256').update(value).digest('hex');
 const StateSchema = z.strictObject({ schema: z.literal('rigging-delivery-v1'), fingerprint: z.string(), files: z.record(z.string(), z.string()) });
@@ -62,13 +63,15 @@ export class RiggingDelivery {
     if (new Set(items.map((item) => item.id)).size !== items.length) throw new Error('Rigging item ids must be unique per runtime.');
     for (const item of items) if (this.redactor.text(item.content) !== item.content) throw new Error('Store credentials in Accounts, not in Rigging content.');
     const selected = items.filter((item) => item.enabled && item.state !== 'parked' && supportedRigging(runtime).includes(item.kind));
-    const fingerprint = hash(stableJson(selected));
+    const configPath = this.homes.at('apm.yml');
+    const configured = existsSync(configPath) ? parseConfiguration(readFileSync(configPath, 'utf8')).dependencies.apm : [];
+    const fingerprint = hash(stableJson({ selected, configured }));
     const statePath = this.homes.at('rigging', 'state', runtime, `${accountId}.json`);
     const previous = existsSync(statePath) ? StateSchema.parse(JSON.parse(readFileSync(statePath, 'utf8'))) : { schema: 'rigging-delivery-v1' as const, fingerprint: '', files: {} as Record<string, string> };
     const results = (): RiggingResult[] => items.map((item) => ({ itemId: item.id, applied: selected.includes(item), ...(!supportedRigging(runtime).includes(item.kind) ? { reason: `Not supported by ${runtime === 'codex' ? 'Codex' : 'Claude Code'}` } : !item.enabled || item.state === 'parked' ? { reason: 'Parked or disabled.' } : {}) }));
     if (previous.fingerprint === fingerprint && Object.entries(previous.files).every(([ref, expected]) => { const path = confined(home, ref); return existsSync(path) && lstatSync(path).isFile() && hash(readFileSync(path)) === expected; })) return results();
     const stage = this.homes.ensure('rigging', 'stages', runtime, accountId, fingerprint);
-    const dependencies: Array<string | { path: string }> = [];
+    const dependencies: Array<string | { path: string } | { repo: string }> = [...configured];
     const settings: Record<string, unknown> = {}; const servers: Record<string, unknown> = {};
     const rules: string[] = [];
     for (const item of selected) {

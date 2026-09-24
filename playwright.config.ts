@@ -9,7 +9,7 @@ export default defineConfig({
     { name: `phone-${colorScheme}`, use: { viewport: { width: 390, height: 844 }, colorScheme: colorScheme as 'light' | 'dark' } },
   ]),
   webServer: {
-    command: 'node bin/jevellan.mjs start --port 19771',
+    command: 'node scripts/test-server.mjs',
     url: 'http://127.0.0.1:19771/api/health',
     reuseExistingServer: false,
   },
