@@ -94,6 +94,7 @@
     </a>
     <nav class="nav" aria-label="Main">
       <a href="#app-tour">The app</a>
+      <a href="#mobile">On your phone</a>
       <a href="#jev">Jev</a>
       <a href="#beyond">Why Jevellan</a>
       <a href="#how">How it sails</a>
@@ -110,6 +111,7 @@
   </div>
   <nav class="mobile-nav" id="mobile-nav" aria-label="Mobile" hidden>
     <a href="#app-tour">The app</a>
+      <a href="#mobile">On your phone</a>
     <a href="#jev">Jev</a>
     <a href="#beyond">Why Jevellan</a>
     <a href="#how">How it sails</a>
@@ -152,6 +154,7 @@
       <p class="eyebrow"><span class="rule"></span>The app<span class="rule"></span></p>
       <h2 id="tour-title">This is Jevellan.</h2>
       <p class="lede">A web app that runs on your own machines and fits in your pocket. Click around: this is a working mock-up of the real thing.</p>
+      <a class="pocket-jump" href="#mobile">Try it on a phone <span aria-hidden="true">↗</span></a>
     </div>
 
     <div class="mock-wrap">
@@ -356,6 +359,70 @@
       <li><span class="pn">5</span><span><b>Correct course or leave a note.</b> It keeps sailing either way.</span></li>
       <li><span class="pn">6</span><span><b>Runtimes, rigging, decisions, the improver and devices,</b> one click away.</span></li>
     </ol>
+  </div>
+</section>
+
+<!-- ============ mobile experience ============ -->
+<section class="section pocket-section" id="mobile" aria-labelledby="pocket-title">
+  <div class="wrap pocket-grid">
+    <div class="pocket-copy">
+      <p class="eyebrow"><span class="rule"></span>On your phone</p>
+      <h2 id="pocket-title">Your whole workflow.<br><em>In your pocket.</em></h2>
+      <p class="lede">Follow the work, understand Jev’s decisions, and steer the next stretch. The same Jevellan, wherever you open it.</p>
+      <p class="pocket-hint">Try the three views <span aria-hidden="true">↓</span></p>
+      <div class="pocket-features" role="group" aria-label="Try the three views"><button type="button" class="pocket-feature" data-pocket-view="follow" aria-pressed="true" aria-controls="pocket-screen"><span class="pocket-number" aria-hidden="true">01</span><span><b>Follow every stretch</b><span>See what is running, what finished, and which machine is doing the work.</span></span><span class="pocket-arrow" aria-hidden="true">↗</span></button>
+<button type="button" class="pocket-feature" data-pocket-view="why" aria-pressed="false" aria-controls="pocket-screen"><span class="pocket-number" aria-hidden="true">02</span><span><b>See why Jev chose it</b><span>Inspect the action, model, effort and probabilities. All the detail, within reach.</span></span><span class="pocket-arrow" aria-hidden="true">↗</span></button>
+<button type="button" class="pocket-feature" data-pocket-view="steer" aria-pressed="false" aria-controls="pocket-screen"><span class="pocket-number" aria-hidden="true">03</span><span><b>Have your say, right there</b><span>Send a correction or add a note without going back to your desk.</span></span><span class="pocket-arrow" aria-hidden="true">↗</span></button></div>
+      <div class="pocket-access"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="13" rx="2"/><path d="M8 21h8M12 16v5"/></svg><p><b>Your agents stay on your machines.</b> Open your Jevellan address in your phone’s browser over your Tailscale network. The work keeps going while you’re away.</p></div>
+    </div>
+
+    <figure class="pocket-device">
+      <div class="pocket-phone" lang="en">
+        <div class="pocket-hardware" aria-hidden="true"><span>9:41</span><i></i><span>▰</span></div>
+        <div class="pocket-appbar"><b>Jevellan</b><span class="pocket-machine"><i></i> MacBook</span></div>
+        <div class="pocket-conversation"><span class="pocket-overline">CONVERSATIONS</span><h3>Dark mode, saved per user</h3><div><span>jevellan-site</span><span class="pocket-running">● Running</span></div></div>
+        <div class="pocket-tabs" role="group" aria-label="Mobile preview views">
+          <button type="button" class="pocket-tab" data-pocket-view="follow" aria-pressed="true" aria-controls="pocket-screen">Progress</button>
+          <button type="button" class="pocket-tab" data-pocket-view="why" aria-pressed="false" aria-controls="pocket-screen">Why</button>
+          <button type="button" class="pocket-tab" data-pocket-view="steer" aria-pressed="false" aria-controls="pocket-screen">Steer</button>
+        </div>
+        <div class="pocket-screen" id="pocket-screen">
+          <div class="pocket-pane" id="pocket-follow" data-pocket-pane="follow">
+            <div class="pocket-request">Add a dark mode and save the choice per user.</div>
+            <ol class="pocket-timeline">
+              <li><span class="pocket-check" aria-hidden="true">✓</span><div><b>Plan <small>Done</small></b><p>Opus · high</p><p>Theme tokens, a toggle, and tests.</p></div></li>
+              <li><span class="pocket-check" aria-hidden="true">✓</span><div><b>Implement <small>Done</small></b><p>Fable · max</p><p>6 files changed. Ready to test.</p></div></li>
+              <li class="pocket-active"><span class="pocket-pulse" aria-hidden="true"></span><div><b>Test <small>Running</small></b><p>Fable · medium</p><p>Checking both themes and the saved preference.</p><code>▸ npm test -- settings</code></div></li>
+            </ol>
+            <button type="button" class="pocket-link" data-pocket-view="why" aria-controls="pocket-screen">Why this step? <span aria-hidden="true">↗</span></button>
+          </div>
+          <div class="pocket-pane" id="pocket-why" data-pocket-pane="why" hidden>
+            <div class="pocket-pane-head"><span class="pocket-overline">JEV'S DECISION</span><h4>Why test next?</h4><p>The implementation changed stored preferences. Verify it before moving on.</p></div>
+            <div class="pocket-score"><span>test</span><meter min="0" max="1" value="0.72" aria-label="Probability of test">72%</meter><b>72%</b></div>
+            <div class="pocket-score"><span>review</span><meter min="0" max="1" value="0.14" aria-label="Probability of review">14%</meter><b>14%</b></div>
+            <div class="pocket-score"><span>implement</span><meter min="0" max="1" value="0.09" aria-label="Probability of implement">9%</meter><b>9%</b></div>
+            <div class="pocket-score"><span>done</span><meter min="0" max="1" value="0.05" aria-label="Probability of done">5%</meter><b>5%</b></div>
+            <dl class="pocket-choices"><div><dt>Model</dt><dd>Fable <span>kept</span></dd></div><div><dt>Effort</dt><dd>medium</dd></div><div><dt>Runs on</dt><dd>MacBook</dd></div></dl>
+            <p class="pocket-footnote">Example decision · same details as desktop</p>
+            <button type="button" class="pocket-link" data-pocket-view="steer" aria-controls="pocket-screen">Change the direction <span aria-hidden="true">↗</span></button>
+          </div>
+          <div class="pocket-pane" id="pocket-steer" data-pocket-pane="steer" hidden>
+            <div class="pocket-pane-head"><span class="pocket-overline">YOU'RE IN CONTROL</span><h4>A thought before it ships?</h4><p>Send a correction or leave a note for the next stretch.</p></div>
+            <form class="pocket-form">
+              <label for="pocket-message">Your message</label>
+              <textarea id="pocket-message" name="message" rows="4" maxlength="500" required>Check keyboard navigation before publishing.</textarea>
+              <div class="pocket-auto"><span>Next step <b>Auto</b></span><span>Model <b>Auto</b></span><span>Effort <b>Auto</b></span></div>
+              <button type="submit" name="intent" value="correction" class="pocket-send">Send correction <span aria-hidden="true">↑</span></button>
+              <button type="submit" name="intent" value="note" class="pocket-note">Add note for the next stretch</button>
+            </form>
+            <p class="pocket-receipt" role="status" aria-live="polite"></p>
+          </div>
+        </div>
+        <div class="pocket-home" aria-hidden="true"><i></i></div>
+      </div>
+      <figcaption>Interactive mobile preview · sample conversation</figcaption>
+    </figure>
+
   </div>
 </section>
 

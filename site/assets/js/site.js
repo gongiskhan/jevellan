@@ -439,6 +439,37 @@
   }
 
   /* ---------------- the app mock-up ---------------- */
+  function showPocket(view) {
+    Array.prototype.forEach.call(document.querySelectorAll('[data-pocket-pane]'), function (pane) {
+      pane.hidden = pane.getAttribute('data-pocket-pane') !== view;
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-pocket-view][aria-pressed]'), function (button) {
+      button.setAttribute('aria-pressed', String(button.getAttribute('data-pocket-view') === view));
+    });
+  }
+
+  document.addEventListener('submit', function (e) {
+    if (!closest(e.target, '.pocket-form')) return;
+    e.preventDefault();
+    var message = e.target.querySelector('textarea');
+    if (!message.value.trim()) {
+      message.setCustomValidity('Enter a message to try this preview.');
+      message.reportValidity();
+      return;
+    }
+    var isNote = e.submitter && e.submitter.value === 'note';
+    var receipt = document.querySelector('.pocket-receipt');
+    receipt.textContent = isNote
+      ? 'Note queued for the next stretch. The current work keeps running.'
+      : 'Correction sent. Jev will use your direction to choose what happens next.';
+  });
+
+  document.addEventListener('input', function (e) {
+    if (!closest(e.target, '.pocket-form textarea')) return;
+    e.target.setCustomValidity('');
+    document.querySelector('.pocket-receipt').textContent = '';
+  });
+
   function mockShowWhy(mock, id, open) {
     var panes = mock.querySelectorAll('.m-why-pane');
     var label = '';
@@ -486,6 +517,18 @@
   /* ---------------- one delegated click handler for everything ---------------- */
   document.addEventListener('click', function (e) {
     var tgt = e.target;
+    var pocketButton = closest(tgt, '[data-pocket-view]');
+    if (pocketButton) {
+      showPocket(pocketButton.getAttribute('data-pocket-view'));
+      if (pocketButton.classList.contains('pocket-link') ||
+          (pocketButton.classList.contains('pocket-feature') && window.innerWidth <= 920)) {
+        document.querySelector('.pocket-tab[aria-pressed="true"]').focus({ preventScroll: true });
+        if (pocketButton.classList.contains('pocket-feature')) {
+          document.querySelector('.pocket-phone').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+        }
+      }
+      return;
+    }
 
     var setLang = closest(tgt, '[data-setlang]');
     if (setLang) {
