@@ -35,6 +35,13 @@ test('budget trimming preserves mandatory context and replaces middle messages w
   expect(result.omitted[0]).toBe('handoffs/1'); expect(result.omitted).toContain(`ledger/${middle.eventId}`); expect(result.text).not.toContain('Disposable middle context');
   expect(ledger.read(`ledger/${middle.eventId}`)).toMatchObject({ data: { text: 'Disposable middle context '.repeat(2000) } });
 });
+test('handoff numbering follows the conversation across closed works and survives trimming', () => {
+  expect(buildBrief(store.load(), ledger, options).text).toContain('Stretch: 1.');
+  plan(); store.close('cancelled'); store.message('Review the existing files.', 'new-work');
+  const result = buildBrief(store.load(), ledger, { ...options, action: 'review', tokenCap: 1 });
+  expect(result.text).toContain('Stretch: 2. Use this exact stretch number in jevellan_handoff.');
+  expect(result.text).not.toContain('Stretch: 1.');
+});
 test('mandatory context above the approximate budget is reported, never silently truncated', () => {
   store.close('done'); const request = 'Exact long request '.repeat(4000); store.message(request, 'large');
   const result = buildBrief(store.load(), ledger, { ...options, tokenCap: 500 });

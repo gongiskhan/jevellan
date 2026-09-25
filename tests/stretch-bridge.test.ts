@@ -94,7 +94,10 @@ test('scope fixes the conversation, stretch and project, and expiry invalidates 
   expect(await call(a.token, 'memory_search', { query: 'memory' })).toMatchObject({ result: { notes: [{ content: 'Memory belonging to project_a' }] } });
   expect(await call(b.token, 'memory_search', { query: 'memory' })).toMatchObject({ result: { notes: [{ content: 'Memory belonging to project_b' }] } });
   await expect(call(a.token, 'memory_read', { permalink: 'project_b/note' })).rejects.toThrow('this project');
-  await expect(call(a.token, 'jevellan_handoff', { ...handoff(), stretch: 2 })).rejects.toThrow('another stretch');
+  await expect(call(a.token, 'jevellan_handoff', { ...handoff(), stretch: 2 })).rejects.toThrow('Use stretch 1 in jevellan_handoff.');
+  expect(a.work.ledger.handoffs()).toHaveLength(0);
+  await call(a.token, 'jevellan_handoff', handoff());
+  expect(a.work.ledger.handoffs()[0]?.stretch).toBe(1);
   await expect(call(a.token, 'jevellan_conversation_read', { pointer: '../project_b/summary.json' })).rejects.toThrow('does not exist');
   await a.close(); await expect(call(a.token, 'memory_search', { query: 'memory' })).rejects.toMatchObject({ status: 401 });
   await expect(call('invalid', 'memory_search', { query: 'memory' })).rejects.toMatchObject({ status: 401 });

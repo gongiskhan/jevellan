@@ -1,44 +1,27 @@
 # Pilot handoff · 25 September 2026
 
-The user requested a short readiness check and a usable pilot, ending the prolonged build. Remaining implementation is deferred for later sessions. This is not section-20 completion or user acceptance.
+The user requested a usable pilot and deferred the remaining build. This is not section-20 completion or user acceptance.
 
 - **App:** https://goncalos-mac-mini-1.tail31efa.ts.net:9444/
-- **Recorded screens and real Codex demonstration:** https://goncalos-mac-mini-1.tail31efa.ts.net:9443/#screens
+- **Source:** https://github.com/gongiskhan/jevellan
+- **Earlier recorded screens and Codex demonstration:** https://goncalos-mac-mini-1.tail31efa.ts.net:9443/#screens
 
-The passphrase and provider accounts have since been configured by the user. The setup instructions and initial pilot observations below describe the original handoff; see the deployed workflow repair section for current status.
+## Current pilot
 
-## Start trying it
+The repaired pilot was deployed at 19:50 UTC, with the follow-up read-only handoff fix activated at 20:10 UTC and the final stretch-context fix deployed after the live conversation reached Done. Preservation checks passed for all accounts, authentication data, projects and existing conversation ledgers. The user-configured Jev and Claude accounts are available. “Todo app” is registered as a separate project, and the new-conversation screen also exposes Add project and a folder picker.
 
-1. Open the app while connected to Tailscale and choose your passphrase. The browser is already open at that page.
-2. The dedicated Codex sign-in and **Jevellan sandbox** project are prepared. Native agent accounts and homes were not used. The sandbox is `/Users/ggomes/dev/jevellan-sandbox`.
-3. Add a Jev key in Settings to try automatic decisions. Without it, use **Pick the next step**, select Reply or another action, and Continue. The existing welcome conversation asks for a read-only explanation of `src/sum.ts`.
-4. Open **Why** to inspect decisions, and the stretch timeline and handoffs to see work and results. Judge quality still needs a live trial.
+The pilot includes the Claude sign-in recovery fix, working tool discovery, an indexed activity observer, actual execution-stage feedback, compact composer controls and grouped tool activity. See [the workflow repair report](workflow-repair-2026-09-25.md) and [login evidence](login-recovery-2026-09-25.md).
 
-## What was checked
+The real “Todo app · live workflow check” conversation reached **Done**. Using the configured accounts, Jev selected implementation and review, Claude submitted accepted handoffs, and Jev selected Done. Jevellan's own `node --test` gate passed **17/17**, with stable HEAD and file contents. Open that conversation, then **Changes → Read output**, to inspect the receipt. Earlier failed stretches remain visible. The live check found and repaired native read-only handoff approval and missing stretch-number context; see the workflow report for the sequence and evidence limits.
 
-| Area | Evidence | Limit |
-| --- | --- | --- |
-| Conversations and stretches | Earlier **live** Codex answer, implementation, handoff, independent tests and local Git publication; recorded in J1/J2 and the progress report | Manual action/model selection |
-| Automatic decision loop | Three focused regression cases passed in 14.23 seconds: implementation decisions, read-only reply closure and stale classification cancellation | Judge responses **simulated** |
-| Pilot | Frozen phase-5 copy builds; actual adapters enabled; dedicated Codex readiness probe passed; HTTPS setup page verified in Chrome | Fresh reply **not completed / not rerun**, as explained below |
-| Wider application | Earlier full browser matrix: 116 passed; current workspace typecheck passed | No fresh full-suite pass or final acceptance claim |
-| Phase-6 backend | 127 application/member API tests passed in three files; separate 30 revision/store/job tests passed | Providers simulated; later small changes and UI not broadly retested; excluded from pilot |
-| Judge | Missing Jev test key and no pilot vault key | Successful live classification and result quality **not verified** |
+## Verification and publication
 
-The first fresh pilot reply stopped before starting a stretch: moving the dedicated account omitted its prior Rigging ownership record, so the guard preserved `hooks.json`. The prior record was restored only after its recorded hash matched the moved file exactly. The running daemon's normal synchronization then reported successful delivery. No daemon restart or code change was needed. The initial failed readiness receipt is preserved; the reply has not been rerun after this repair because first-use passphrase setup is left to the user. Its old blocked notice remains visible until the next explicit attempt.
+The deployed source passed typecheck, lint, production build, 79 final focused backend checks and 16 earlier responsive browser checks. Its application source exactly matches the committed source. The earlier full phase-5 browser matrix passed 116 checks. The full backend run had 973 passes, three test-boundary failures and one missing-key skip; affected cases passed after fixture corrections, but no replacement full-suite pass or final acceptance is claimed.
 
-Final handoff checks: the repository secret scan and whitespace check passed. Both Tailscale URLs returned HTTP 200. Garrison HEAD and its latest recorded status still match; the original baseline status differs only by the already documented upstream drift. Main and the 660-file staged checkpoint were preserved.
+The completed pilot and repairs are committed as `3d1c3fb` and pushed to public `gongiskhan/jevellan`. Worktree and pre-push secret scans passed. Complete repository visibility snapshots were saved outside the checkout before creation and after the first push: all 207 existing repositories are unchanged, and the only addition is public Jevellan. Browser authentication and existing SSH authentication were used; the expired gh API login was not changed.
 
 ## Running copy and deferred work
 
-The pilot now runs independently of the checkout from `~/.jevellan-build/pilot-workflow-fix-2026-09-25/app`, preserving isolated state in `~/.jevellan-build/pilot-2026-09-25/home`. The existing dedicated Codex home was moved, not copied, into this home. Process and HTTPS receipts are saved alongside it. Loopback port 9773 is exposed only through the recorded Tailscale HTTPS port 9444; existing Tailscale routes were compared and preserved. This detached process has no persistent OS service, so automatic startup after reboot is not configured.
+The app runs independently of the checkout from `~/.jevellan-build/pilot-final-fix-2026-09-25/app`, with isolated state in `~/.jevellan-build/pilot-2026-09-25/home`. The dedicated Codex home was moved, never copied, into this home. The pilot listens on loopback port 9773 and the existing Tailscale HTTPS route at 9444. This detached process has no persistent OS service, so automatic startup after reboot is not configured.
 
-The pilot uses the staged phase-5 source snapshot. Unfinished phase-6 suggestion UI, memory/context jobs, complete J10/J12 journeys, broader final checks and the final crucial-issues review are deferred. The older full backend run had 973 passes, three test-boundary failures and one missing-key skip; affected cases passed after fixture corrections, but no replacement full-suite pass is claimed.
-
-The user has now explicitly authorized commit and push. The public repository has been created using the authenticated browser, and SSH authenticates as gongiskhan; the expired gh login has not been changed. Automatic approval review previously rejected committing the prepared checkpoint, citing the earlier preflight-only scope; the staged work is preserved and the rejection was not bypassed. Garrison and native homes remain protected. The separate original build goal is paused and must not automatically resume deferred work.
-
-Post-handoff issue: [Claude sign-in recovery](login-recovery-2026-09-25.md) records the login fix and its focused verification. The user approved the restart, and the patched copy is live at the same URL with accounts, passphrase and conversation ledgers preserved.
-
-## Workflow repair deployed — 2026-09-25
-
-See [the workflow repair report](workflow-repair-2026-09-25.md). The independent build fixes Claude tool discovery and an activity metadata timeout, adds real progress feedback, simplifies the conversation UI and allows browsing project folders. Sixteen responsive browser checks passed. The user explicitly authorized redeployment after removing the daemon restriction. After an earlier filesystem-blocked attempt made no service changes, the current approval review allowed activation. Deployment succeeded at 19:50 UTC, preserving all accounts, authentication data, projects and conversation ledgers. The Todo app project is available; its real-account run is in progress with successful Jev classification and Claude execution.
+Unfinished phase-6 source and evidence remain local and are excluded from the deployed and published pilot. Suggestion UI, memory/context improver jobs, complete J10/J12 journeys, broader final checks and the final crucial-issues review remain deferred. Garrison and native homes remain protected. The original build goal stays paused.

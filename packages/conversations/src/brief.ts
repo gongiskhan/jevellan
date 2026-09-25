@@ -46,6 +46,7 @@ export function buildBrief(view: ConversationView, ledger: ConversationLedger, o
     '# Memory', memory.join('\n\n'), 'Use the memory tools to read more.',
     options.memoryWrite ? 'Record anything about this project that future work needs.' : 'If something is worth remembering, propose it with memory_propose; Jevellan decides whether to save it.',
     '# Your step', `Action: ${options.action}. ${ACTION_DESCRIPTIONS[options.action]}`,
+    `Stretch: ${view.conversation.stretchCount + 1}. Use this exact stretch number in jevellan_handoff.`,
     `Project: ${options.project.name} at ${options.cwd}. Branch policy: ${options.project.branchPolicy}.`,
     'Finish by calling jevellan_handoff exactly once.',
   ].join('\n\n');

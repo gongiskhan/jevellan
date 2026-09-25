@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { claudePermissionHook, safetyDenial, SAFETY_REASON } from '../packages/runtime-contract/dist/index.js';
+import { claudePermissionHook, claudeReadOnlyBridgeTools, safetyDenial, SAFETY_REASON } from '../packages/runtime-contract/dist/index.js';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
@@ -34,9 +34,16 @@ test('the actual Claude hook denies file tools and all shell calls in read-only 
   expect(await hook({ tool_name: 'Read' })).toEqual({});
   expect(await hook({ tool_name: 'ToolSearch', tool_input: { query: 'select:Glob,Grep,mcp__jevellan__jevellan_handoff' } })).toEqual({});
   expect(await hook({ tool_name: 'Glob', tool_input: { pattern: '**/*' } })).toEqual({});
-  expect(await hook({ tool_name: 'mcp__jevellan__jevellan_handoff' })).toEqual({});
-  expect(await hook({ tool_name: 'mcp__jevellan__memory_propose' })).toEqual({});
+  for (const tool of ['jevellan_handoff', 'jevellan_finding', 'jevellan_conversation_search', 'jevellan_conversation_read', 'memory_search', 'memory_read', 'memory_propose']) {
+    expect(claudeReadOnlyBridgeTools(false)).toContain(`mcp__jevellan__${tool}`);
+    expect(await hook({ tool_name: `mcp__jevellan__${tool}` })).toEqual({});
+  }
+  for (const tool of ['mcp__other__jevellan_handoff', 'mcp__jevellan__jevellan_handoff_extra', 'mcp__jevellan__memory_edit']) {
+    expect(claudeReadOnlyBridgeTools(false)).not.toContain(tool);
+    expect(await hook({ tool_name: tool })).toMatchObject({ hookSpecificOutput: { permissionDecision: 'deny' } });
+  }
   const remember = claudePermissionHook({ ...context, permissions: 'read-only', memoryWrite: true });
+  expect(claudeReadOnlyBridgeTools(true)).toContain('mcp__jevellan__memory_write');
   expect(await remember({ tool_name: 'mcp__jevellan__memory_write' })).toEqual({});
   expect(await remember({ tool_name: 'Edit' })).toMatchObject({ hookSpecificOutput: { permissionDecision: 'deny' } });
 });

@@ -52,6 +52,7 @@ test('one repair continues the same session after the bridge loses its writing p
   const runtime = adapter(({ emit }) => { emit({ type: 'text', delta: 'Partial implementation output' }); emit({ type: 'usage', inputTokens: 10, outputTokens: 2, costUsd: 0.01 }); return { status: 'completed' }; }, ({ input, message, emit }) => {
     expect(repair).toHaveBeenCalledOnce(); expect(input.permissions).toBe('read-only'); expect(input.memoryWrite).toBe(false);
     expect(message).toContain('Call jevellan_handoff now');
+    expect(message).toContain(`stretch ${input.stretch}, action ${input.action}`);
     emit({ type: 'usage', inputTokens: 3, outputTokens: 1, costUsd: 0.02, costSource: 'estimated' });
     handoff('partial', 'Repair only reports the work.'); return { status: 'completed' };
   });

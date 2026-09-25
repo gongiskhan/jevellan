@@ -130,7 +130,7 @@ export class StretchExecution {
         if (this.#cancelled) throw new Error('Handoff repair was cancelled.');
         if (!adapter.capabilities.readOnlyEnforced) throw new Error('Runtime cannot enforce a read-only handoff repair.');
         const timeout = this.#correction ? this.options.correctionTimeoutMs ?? 60_000 : this.options.repairTimeoutMs ?? 90_000;
-        const message = `Call jevellan_handoff now with an honest status for what you did.${this.#correction ? ' The user corrected this step; report status partial.' : ''} Do not change code or memory.`;
+        const message = `Call jevellan_handoff now with stretch ${input.stretch}, action ${input.action}, and an honest status for what you did.${this.#correction ? ' The user corrected this step; report status partial.' : ''} Do not change code or memory.`;
         work.ledger.append({ type: 'notice', stretch: input.stretch, data: { schema: 'handoff-repair-v1', mode: adapter.capabilities.continueSession ? 'same-session' : 'fresh-session', timeoutMs: timeout } });
         this.#interruption = undefined;
         let repairResult: RunResult;

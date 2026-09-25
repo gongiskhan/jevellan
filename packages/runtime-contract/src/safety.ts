@@ -75,6 +75,11 @@ export function safetyDenial(command: string, context: SafetyContext): string | 
   return null;
 }
 
+export function claudeReadOnlyBridgeTools(memoryWrite: boolean): string[] {
+  return ['jevellan_finding', 'jevellan_handoff', 'jevellan_conversation_search', 'jevellan_conversation_read', 'memory_search', 'memory_read', 'memory_propose',
+    ...(memoryWrite ? ['memory_write', 'memory_edit'] : [])].map(name => `mcp__jevellan__${name}`);
+}
+
 export function claudePermissionHook(context: SafetyContext & { permissions: 'read-only' | 'write'; memoryWrite: boolean }) {
   return async (input: { tool_name?: string; tool_input?: unknown }) => {
     const tool = input.tool_name ?? '';
@@ -83,9 +88,8 @@ export function claudePermissionHook(context: SafetyContext & { permissions: 're
       // Discovery loads tool definitions; the discovered invocation still passes
       // through this hook. Blocking it also blocks the required MCP handoff.
       const reads = ['Read', 'Glob', 'Grep', 'LS', 'WebSearch', 'WebFetch', 'ToolSearch'];
-      const bridge = /^mcp__jevellan__(?:jevellan_finding|jevellan_handoff|jevellan_conversation_search|jevellan_conversation_read|memory_search|memory_read|memory_propose)$/.test(tool);
-      const memory = context.memoryWrite && /^mcp__jevellan__memory_(?:write|edit)$/.test(tool);
-      if (!reads.includes(tool) && !bridge && !memory) reason = 'This step is read-only. Use the read tools and return a handoff.';
+      const bridge = claudeReadOnlyBridgeTools(context.memoryWrite).includes(tool);
+      if (!reads.includes(tool) && !bridge) reason = 'This step is read-only. Use the read tools and return a handoff.';
     }
     if (tool === 'Bash' && !reason) {
       const command = input.tool_input && typeof input.tool_input === 'object' && 'command' in input.tool_input ? input.tool_input.command : null;

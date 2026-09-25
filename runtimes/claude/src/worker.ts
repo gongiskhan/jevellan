@@ -1,5 +1,5 @@
 import { query, type Query, type Options } from '@anthropic-ai/claude-agent-sdk';
-import { claudePermissionHook, classifyRuntimeError, serveWorker } from '@jevellan/runtime-contract';
+import { claudePermissionHook, claudeReadOnlyBridgeTools, classifyRuntimeError, serveWorker } from '@jevellan/runtime-contract';
 import { z } from 'zod';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -41,7 +41,12 @@ serveWorker((input, daemonPid, executable) => {
         allowDangerouslySkipPermissions: permissions === 'write',
         // Native Claude builds may omit Glob/Grep in favour of Bash. Read-only
         // stretches need those tools because shell execution is not available.
-        ...(permissions === 'read-only' ? { tools: ['Read', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'ToolSearch'] } : {}),
+        ...(permissions === 'read-only' ? {
+          tools: ['Read', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'ToolSearch'],
+          // dontAsk denies MCP calls without an explicit allow rule, even when
+          // PreToolUse permits them. Keep this list shared with the hook policy.
+          allowedTools: claudeReadOnlyBridgeTools(!repairing && input.memoryWrite),
+        } : {}),
         hooks: { PreToolUse: [{ hooks: [async (event) => 'tool_name' in event ? hook(event) : {}] }] },
         // The CLI and stdio MCP children inherit the already-filtered environment.
         // Never serialize a bridge token into the SDK's --mcp-config argument.
