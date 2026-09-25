@@ -50,6 +50,6 @@ The build installs a pre-push scan for token patterns and test-secret values in 
 
 The conversation loop checks Git state after every stretch, requires review of unexplained changes and independently verifies checkpoints before publication. Ownership prevents two conversations from writing the same checkout. Closing work supports publication, retained changes and discard with saved recovery refs. Corrections support undo and redo, including already-published work, with durable history and explicit recovery after interruption. Memory and project-context changes use the same ownership and publication rules. Network outages, external edits and provider failures remain visible in the UI; the acceptance report separates local simulations from live evidence.
 
-[Website coming soon](https://jevellan.build).
+[Website](https://gongiskhan.github.io/jevellan/) · [Português](https://gongiskhan.github.io/jevellan/pt/).
 
 MIT licensed. Extracted from Garrison; see [NOTICE](NOTICE).

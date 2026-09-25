@@ -4,7 +4,7 @@ Last updated: 2026-09-25. Build paused for a user-requested pilot trial; remaini
 
 ## Current state
 
-- Public website: the supplied English/Portuguese design is implemented in `site/`, with mobile header, command wrapping, touch controls and keyboard menu improvements. GitHub Pages is configured to publish through Actions from main; first deployment verification is pending. See [website evidence](website-2026-09-25.md).
+- Public website: the supplied English/Portuguese design is implemented in `site/`, with mobile header, command wrapping, touch controls and keyboard menu improvements. GitHub Pages is live at <https://gongiskhan.github.io/jevellan/> and publishes through Actions from main. The first deployment succeeded; live phone checks and exact source comparisons for both HTML pages and all 11 assets passed. See [website evidence](website-2026-09-25.md).
 
 - User-reported workflow failures and mobile UI repair: [workflow-repair-2026-09-25.md](workflow-repair-2026-09-25.md). Reproduced blocked Claude tool discovery and the activity observer timeout; fixes and responsive checks pass locally. The user explicitly authorized redeployment after removing the daemon restriction. The repaired build is live; activation preserved accounts, authentication, projects and existing ledgers. The real Todo app implementation handed off successfully. A subsequent review exposed native read-only MCP approval denial; that scoped permission fix passed 54 checks and was deployed at 20:10 UTC. The final read-only handoff succeeded, Jev chose Done, and Jevellan independently passed 17/17 tests with stable HEAD and files. The launch brief and repair path now provide exact stretch numbers to remove the guesswork exposed during this run.
 

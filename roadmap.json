@@ -92,7 +92,7 @@
   {
     "id": "public-website",
     "title": "Public website on GitHub Pages",
-    "why": "User-supplied English and Portuguese static site adapted for phones and tablets. Main-only GitHub Actions publishes site/. Responsive browser checks, typecheck, lint, four scanner tests and 212 local link/asset checks pass. Publication verification follows the first workflow run; see docs/acceptance/website-2026-09-25.md.",
-    "status": "deployment-pending"
+    "why": "Published the supplied English and Portuguese static site at https://gongiskhan.github.io/jevellan/ through GitHub Actions on main. Phone, tablet and desktop browser checks pass; live HTML and all 11 assets match the deployed source. Typecheck, lint, four scanner tests, 212 local link/asset checks and pre-push secret scanning pass. See docs/acceptance/website-2026-09-25.md.",
+    "status": "complete"
   }
 ]
