@@ -88,5 +88,11 @@
     "title": "Native companion app",
     "why": "Follow, steer and approve work from a phone.",
     "status": "planned"
+  },
+  {
+    "id": "public-website",
+    "title": "Public website on GitHub Pages",
+    "why": "User-supplied English and Portuguese static site adapted for phones and tablets. Main-only GitHub Actions publishes site/. Responsive browser checks, typecheck, lint, four scanner tests and 212 local link/asset checks pass. Publication verification follows the first workflow run; see docs/acceptance/website-2026-09-25.md.",
+    "status": "deployment-pending"
   }
 ]

@@ -1,0 +1,1492 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Jevellan</title>
+<meta name="description" content="Jevellan runs your coding agents in short, fresh stretches across your accounts and machines. Between stretches, Jev decides what happens next, which model does it and how hard it thinks. Open source.">
+<meta name="theme-color" content="#07111c">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Jevellan · Your agents sail. Jev navigates.">
+<meta property="og:description" content="Autonomous development, coordinated. Your coding agents across your accounts and machines, with Jev deciding every step. Open source.">
+<meta property="og:url" content="https://gongiskhan.github.io/jevellan/">
+<meta property="og:image" content="https://gongiskhan.github.io/jevellan/assets/img/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Jevellan · Your agents sail. Jev navigates.">
+<meta name="twitter:description" content="Autonomous development, coordinated. Your coding agents across your accounts and machines, with Jev deciding every step.">
+<meta name="twitter:image" content="https://gongiskhan.github.io/jevellan/assets/img/og.png">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="alternate" hreflang="en" href="https://gongiskhan.github.io/jevellan/">
+<link rel="alternate" hreflang="pt-PT" href="https://gongiskhan.github.io/jevellan/pt/">
+<link rel="alternate" hreflang="x-default" href="https://gongiskhan.github.io/jevellan/">
+<link rel="preload" href="assets/fonts/bricolage-grotesque-opsz.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/geist-wght.woff2" as="font" type="font/woff2" crossorigin>
+<script data-lang-redirect>
+  (function () {
+    try {
+      var p = localStorage.getItem('jv-lang');
+      var n = (navigator.languages && navigator.languages[0]) || navigator.language || '';
+      if (p === 'pt' || (!p && /^pt\b/i.test(n))) location.replace('pt/' + location.hash);
+    } catch (e) {}
+  })();
+</script>
+<script>
+  (function () {
+    try { var t = localStorage.getItem('jv-theme'); if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+    document.documentElement.classList.add('js');
+  })();
+</script>
+<link rel="stylesheet" href="assets/css/site.css">
+</head>
+<body>
+
+<!-- ============ sprite: signal flags (International Code of Signals) and icons ============ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="flag-C" viewBox="0 0 30 20"><rect width="30" height="20" fill="#1f4e9e"/><rect y="4" width="30" height="12" fill="#fff"/><rect y="8" width="30" height="4" fill="#d52b1e"/><rect x=".4" y=".4" width="29.2" height="19.2" fill="none" stroke="rgba(0,0,0,.28)" stroke-width=".8"/></symbol>
+    <symbol id="flag-D" viewBox="0 0 30 20"><rect width="30" height="20" fill="#f6c425"/><rect y="5" width="30" height="10" fill="#1f4e9e"/><rect x=".4" y=".4" width="29.2" height="19.2" fill="none" stroke="rgba(0,0,0,.28)" stroke-width=".8"/></symbol>
+    <symbol id="flag-G" viewBox="0 0 30 20"><rect width="30" height="20" fill="#f6c425"/><rect x="5" width="5" height="20" fill="#1f4e9e"/><rect x="15" width="5" height="20" fill="#1f4e9e"/><rect x="25" width="5" height="20" fill="#1f4e9e"/><rect x=".4" y=".4" width="29.2" height="19.2" fill="none" stroke="rgba(0,0,0,.28)" stroke-width=".8"/></symbol>
+    <symbol id="flag-H" viewBox="0 0 30 20"><rect width="30" height="20" fill="#fff"/><rect x="15" width="15" height="20" fill="#d52b1e"/><rect x=".4" y=".4" width="29.2" height="19.2" fill="none" stroke="rgba(0,0,0,.28)" stroke-width=".8"/></symbol>
+    <symbol id="flag-I" viewBox="0 0 30 20"><rect width="30" height="20" fill="#f6c425"/><circle cx="15" cy="10" r="5.2" fill="#14171c"/><rect x=".4" y=".4" width="29.2" height="19.2" fill="none" stroke="rgba(0,0,0,.28)" stroke-width=".8"/></symbol>
+    <symbol id="flag-J" viewBox="0 0 30 20"><rect width="30" height="20" fill="#1f4e9e"/><rect y="6.67" width="30" height="6.66" fill="#fff"/><rect x=".4" y=".4" width="29.2" height="19.2" fill="none" stroke="rgba(0,0,0,.28)" stroke-width=".8"/></symbol>
+    <symbol id="flag-K" viewBox="0 0 30 20"><rect width="15" height="20" fill="#f6c425"/><rect x="15" width="15" height="20" fill="#1f4e9e"/><rect x=".4" y=".4" width="29.2" height="19.2" fill="none" stroke="rgba(0,0,0,.28)" stroke-width=".8"/></symbol>
+    <symbol id="flag-L" viewBox="0 0 30 20"><rect width="30" height="20" fill="#f6c425"/><rect x="15" width="15" height="10" fill="#14171c"/><rect y="10" width="15" height="10" fill="#14171c"/><rect x=".4" y=".4" width="29.2" height="19.2" fill="none" stroke="rgba(0,0,0,.28)" stroke-width=".8"/></symbol>
+    <symbol id="flag-M" viewBox="0 0 30 20"><rect width="30" height="20" fill="#1f4e9e"/><path d="M0 0 L30 20 M30 0 L0 20" stroke="#fff" stroke-width="4"/><rect x=".4" y=".4" width="29.2" height="19.2" fill="none" stroke="rgba(0,0,0,.28)" stroke-width=".8"/></symbol>
+    <symbol id="flag-P" viewBox="0 0 30 20"><rect width="30" height="20" fill="#1f4e9e"/><rect x="10" y="6.67" width="10" height="6.66" fill="#fff"/><rect x=".4" y=".4" width="29.2" height="19.2" fill="none" stroke="rgba(0,0,0,.28)" stroke-width=".8"/></symbol>
+    <symbol id="flag-R" viewBox="0 0 30 20"><rect width="30" height="20" fill="#d52b1e"/><rect x="12.5" width="5" height="20" fill="#f6c425"/><rect y="7.5" width="30" height="5" fill="#f6c425"/><rect x=".4" y=".4" width="29.2" height="19.2" fill="none" stroke="rgba(0,0,0,.28)" stroke-width=".8"/></symbol>
+    <symbol id="flag-S" viewBox="0 0 30 20"><rect width="30" height="20" fill="#fff"/><rect x="10" y="6.67" width="10" height="6.66" fill="#1f4e9e"/><rect x=".4" y=".4" width="29.2" height="19.2" fill="none" stroke="rgba(0,0,0,.28)" stroke-width=".8"/></symbol>
+    <symbol id="flag-T" viewBox="0 0 30 20"><rect width="10" height="20" fill="#d52b1e"/><rect x="10" width="10" height="20" fill="#fff"/><rect x="20" width="10" height="20" fill="#1f4e9e"/><rect x=".4" y=".4" width="29.2" height="19.2" fill="none" stroke="rgba(0,0,0,.28)" stroke-width=".8"/></symbol>
+    <symbol id="flag-U" viewBox="0 0 30 20"><rect width="30" height="20" fill="#d52b1e"/><rect x="15" width="15" height="10" fill="#fff"/><rect y="10" width="15" height="10" fill="#fff"/><rect x=".4" y=".4" width="29.2" height="19.2" fill="none" stroke="rgba(0,0,0,.28)" stroke-width=".8"/></symbol>
+    <symbol id="flag-V" viewBox="0 0 30 20"><rect width="30" height="20" fill="#fff"/><path d="M0 0 L30 20 M30 0 L0 20" stroke="#d52b1e" stroke-width="4"/><rect x=".4" y=".4" width="29.2" height="19.2" fill="none" stroke="rgba(0,0,0,.28)" stroke-width=".8"/></symbol>
+    <symbol id="flag-X" viewBox="0 0 30 20"><rect width="30" height="20" fill="#fff"/><rect x="12.5" width="5" height="20" fill="#1f4e9e"/><rect y="7.5" width="30" height="5" fill="#1f4e9e"/><rect x=".4" y=".4" width="29.2" height="19.2" fill="none" stroke="rgba(0,0,0,.28)" stroke-width=".8"/></symbol>
+
+    <symbol id="flag-PT" viewBox="0 0 30 20"><rect width="30" height="20" fill="#da291c"/><rect width="12" height="20" fill="#046a38"/><circle cx="12" cy="10" r="5.3" fill="none" stroke="#ffe900" stroke-width="1.15"/><ellipse cx="12" cy="10" rx="5.3" ry="1.8" fill="none" stroke="#ffe900" stroke-width=".8" transform="rotate(-20 12 10)"/><path d="M9.8 7.2h4.4v3.4c0 1.6-1.1 2.4-2.2 2.8-1.1-.4-2.2-1.2-2.2-2.8z" fill="#da291c" stroke="#ffe900" stroke-width=".3"/><path d="M10.7 8.1h2.6v2.4c0 1-.65 1.5-1.3 1.75-.65-.25-1.3-.75-1.3-1.75z" fill="#fff"/><g fill="#1b3d8f"><circle cx="12" cy="8.8" r=".42"/><circle cx="11.25" cy="9.75" r=".42"/><circle cx="12" cy="9.75" r=".42"/><circle cx="12.75" cy="9.75" r=".42"/><circle cx="12" cy="10.7" r=".42"/></g><rect x=".4" y=".4" width="29.2" height="19.2" fill="none" stroke="rgba(0,0,0,.28)" stroke-width=".8"/></symbol>
+    <symbol id="flag-ES" viewBox="0 0 30 20"><rect width="30" height="20" fill="#aa151b"/><rect y="5" width="30" height="10" fill="#f1bf00"/><rect x=".4" y=".4" width="29.2" height="19.2" fill="none" stroke="rgba(0,0,0,.28)" stroke-width=".8"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 20 20"><path d="M3 5h14M3 10h14M3 15h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-runtime" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="15" height="12" rx="2"/><path d="M6 8.5l2 1.8-2 1.8M10 12h4"/></g></symbol>
+    <symbol id="i-rigging" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5v15M10 3.5l6 11H10M10 5.5l-5 9h5"/><path d="M3 17.5h14"/></g></symbol>
+    <symbol id="i-decisions" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="10" r="7.5"/></g><path d="M10 4.5l1.8 5.5L10 15.5 8.2 10z" fill="currentColor"/></symbol>
+    <symbol id="i-improver" viewBox="0 0 20 20"><path d="M15.5 12.2A6.3 6.3 0 017.8 4.5a6.3 6.3 0 107.7 7.7z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M14 3.5v3M12.5 5h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></symbol>
+    <symbol id="i-devices" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="11" height="8" rx="1.2"/><path d="M1.5 14.5h13"/><rect x="14.5" y="7" width="4" height="9" rx="1"/></g></symbol>
+    <symbol id="i-settings" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 6h9M15 6h2M3 14h2M8 14h9"/><circle cx="13.5" cy="6" r="1.8"/><circle cx="6.5" cy="14" r="1.8"/></g></symbol>
+    <symbol id="i-github" viewBox="0 0 16 16"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.5l2.9 6.1 6.6.7-4.9 4.5 1.4 6.6L12 17.1l-6 3.3 1.4-6.6-4.9-4.5 6.6-.7z"/></symbol>
+    <symbol id="i-lantern" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6M12 2v2M8 7h8l1 2v8l-1 2H8l-1-2V9z"/><path d="M10 21h4"/></g><circle cx="12" cy="13" r="2.6" fill="var(--farol)"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/><circle cx="17" cy="6" r="1" fill="currentColor"/></symbol>
+    <symbol id="i-check" viewBox="0 0 20 20"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 10.5l4 4 8-9"/></symbol>
+    <symbol id="i-compass" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.5"/></g><path d="M12 4.5l2.2 7.5L12 19.5 9.8 12z" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="var(--card)"/></symbol>
+    <symbol id="i-anchor" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2"/><path d="M12 7v14M8 10h8M4.5 14c.5 4 3.8 7 7.5 7s7-3 7.5-7M3 15.5l1.5-1.5 1.5 1.5M18 15.5l1.5-1.5 1.5 1.5"/></g></symbol>
+    <symbol id="i-log" viewBox="0 0 40 40"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M8 6h20l4 4v24H8z"/><path d="M28 6v4h4M13 15h14M13 20h14M13 25h9"/></g><circle cx="29" cy="29" r="6" fill="var(--bg)" stroke="currentColor" stroke-width="1.6"/><path d="M29 26v3l2 1.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+  </defs>
+</svg>
+
+<div id="app">
+<a class="sr-only" href="#main">Skip to content</a>
+
+<!-- ============ header ============ -->
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="#top" aria-label="Jevellan, back to top">
+      <svg class="brand-flag" viewBox="0 0 34 24" aria-hidden="true"><line class="pole" x1="2" y1="1" x2="2" y2="23" stroke-width="2" stroke-linecap="round"/><use href="#flag-PT" x="4" y="1" width="29" height="19.3"/></svg>
+      <span class="brand-word">Jevellan</span>
+    </a>
+    <nav class="nav" aria-label="Main">
+      <a href="#app-tour">The app</a>
+      <a href="#jev">Jev</a>
+      <a href="#beyond">Why Jevellan</a>
+      <a href="#how">How it sails</a>
+      <a href="#install">Install</a>
+    </nav>
+    <div class="header-actions">
+      <span class="lang-switch" role="group" aria-label="Language"><a href="./" hreflang="en" lang="en" data-setlang="en" aria-current="true">EN</a><a href="pt/" hreflang="pt-PT" lang="pt-PT" data-setlang="pt">PT</a></span>
+      <button class="theme-toggle" type="button" id="theme-toggle" aria-label="Switch to night watch">
+        <svg class="lamp" aria-hidden="true"><use href="#i-lantern"/></svg><span class="tt-label">Day watch</span>
+      </button>
+      <a class="btn btn-ink btn-small" href="https://github.com/gongiskhan/jevellan"><svg aria-hidden="true"><use href="#i-github"/></svg><span>Star</span></a>
+      <button class="menu-btn" type="button" id="menu-btn" aria-expanded="false" aria-controls="mobile-nav">Menu</button>
+    </div>
+  </div>
+  <nav class="mobile-nav" id="mobile-nav" aria-label="Mobile" hidden>
+    <a href="#app-tour">The app</a>
+    <a href="#jev">Jev</a>
+    <a href="#beyond">Why Jevellan</a>
+    <a href="#how">How it sails</a>
+    <a href="#install">Install</a>
+  </nav>
+</header>
+
+<main id="main">
+
+<!-- ============ hero ============ -->
+<section class="hero" id="top" aria-labelledby="hero-title">
+  <canvas class="contours" data-seed="11" data-freq="360" aria-hidden="true"></canvas>
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <p class="eyebrow"><span class="dot-jev" aria-hidden="true"></span>Open source · Built for any agent · Powered by Jev</p>
+      <h1 id="hero-title">Your agents sail.<br><em>Jev</em> navigates.</h1>
+      <p class="descriptor">Autonomous development, coordinated.</p>
+      <p class="lede">Jevellan runs your coding agents in short, fresh <b>stretches</b> across your accounts and machines. Between stretches, <b class="jev-word">Jev</b> decides what happens next, which model does it and how hard it thinks. Claude Code and Codex first, more agents on the way.</p>
+      <div class="install-box">
+        <code><span class="prompt" aria-hidden="true">$</span>npx github:gongiskhan/jevellan install</code>
+        <button class="copy-btn" type="button" data-copy="npx github:gongiskhan/jevellan install">Copy</button>
+      </div>
+      <div class="hero-ctas">
+        <a class="btn btn-jev" href="#jev"><svg aria-hidden="true"><use href="#i-compass"/></svg>Meet Jev</a>
+        <a class="btn btn-ghost" href="#app-tour">See the app</a>
+      </div>
+      <p class="hero-note"><span>MIT licensed</span><span>Runs on your machines</span><span>v0.1, just cast off</span></p>
+    </div>
+    <figure class="hero-chart">
+      <div class="route" id="hero-route" role="img" aria-label="An example passage on a nautical chart: from your request, through five stretches (plan with Opus at high effort, implement with Fable at max, test with Fable at medium, review with GPT-6 through Codex at high, implement with Fable at high), to landfall: verified and published."></div>
+      <figcaption><span class="ring" aria-hidden="true"></span>A change of watch: Jev decides. One request, five stretches, three models. Zero dropdowns.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ============ the app (centrepiece) ============ -->
+<section class="section stage" id="app-tour" aria-labelledby="tour-title">
+  <div class="wrap">
+    <div class="section-head center">
+      <p class="eyebrow"><span class="rule"></span>The app<span class="rule"></span></p>
+      <h2 id="tour-title">This is Jevellan.</h2>
+      <p class="lede">A web app that runs on your own machines and fits in your pocket. Click around: this is a working mock-up of the real thing.</p>
+    </div>
+
+    <div class="mock-wrap">
+      <div class="mock" id="mock" data-nt>
+        <div class="mock-chrome" aria-hidden="true"><span class="dots"><i></i><i></i><i></i></span><span class="url">macbook.your-tailnet.ts.net</span></div>
+        <div class="mock-app">
+
+          <aside class="m-side" aria-label="Conversations">
+            <div class="m-brand"><svg class="m-flag" aria-hidden="true"><use href="#flag-PT"/></svg><span>Jevellan</span><button type="button" class="m-close-side" aria-label="Close the sidebar">&#215;</button></div>
+            <button type="button" class="m-new">+ New conversation</button>
+            <div class="m-filters" role="group" aria-label="Filter conversations">
+              <button type="button" class="on" data-f="all">All</button>
+              <button type="button" data-f="running">Running</button>
+              <button type="button" data-f="waiting">Waiting for you</button>
+              <button type="button" data-f="done">Done</button>
+            </div>
+            <ul class="m-list">
+              <li class="on" data-conv="c1" data-state="running" tabindex="0"><span class="sd run"></span><span class="mi"><span class="mt">Dark mode, saved per user</span><span class="mm">jevellan-site · MacBook</span></span><span class="mr">now</span></li>
+              <li data-conv="c2" data-state="waiting" tabindex="0"><span class="sd wait"></span><span class="mi"><span class="mt">Replace moment.js</span><span class="mm">notes-app · Mac mini</span></span><span class="mr">18m</span></li>
+              <li data-conv="c3" data-state="done" tabindex="0"><span class="sd done"></span><span class="mi"><span class="mt">Fix the flaky login test</span><span class="mm">api · dev box</span></span><span class="mr">1h</span></li>
+              <li data-state="running"><span class="sd run"></span><span class="mi"><span class="mt">Migrate billing to v2</span><span class="mm">billing · dev box</span></span><span class="mr">3m</span></li>
+              <li data-state="done"><span class="sd done"></span><span class="mi"><span class="mt">Why is search slow?</span><span class="mm">search · MacBook</span></span><span class="mr">Mon</span></li>
+              <li data-state="done"><span class="sd done"></span><span class="mi"><span class="mt">CSV export for reports</span><span class="mm">reports · Mac mini</span></span><span class="mr">Sun</span></li>
+            </ul>
+            <nav class="m-bottom" aria-label="Settings">
+              <button type="button"><svg aria-hidden="true"><use href="#i-runtime"/></svg>Runtimes</button>
+              <button type="button"><svg aria-hidden="true"><use href="#i-rigging"/></svg>Rigging</button>
+              <button type="button"><svg aria-hidden="true"><use href="#i-decisions"/></svg>Decisions</button>
+              <button type="button"><svg aria-hidden="true"><use href="#i-improver"/></svg>Improver<b class="m-badge">2</b></button>
+              <button type="button"><svg aria-hidden="true"><use href="#i-devices"/></svg>Devices</button>
+              <button type="button"><svg aria-hidden="true"><use href="#i-settings"/></svg>Settings</button>
+            </nav>
+          </aside>
+
+          <section class="m-main" aria-label="Conversation">
+            <div class="m-top">
+              <button type="button" class="m-menu" aria-label="Open the sidebar"><svg aria-hidden="true"><use href="#i-menu"/></svg></button>
+              <span class="m-crumb">Conversations</span>
+              <div class="m-dev">
+                <button type="button" class="m-switch" aria-expanded="false" aria-haspopup="true"><span class="sd run"></span>MacBook &#9662;</button>
+                <div class="m-devmenu" hidden>
+                  <div class="dm-row on"><span class="sd run"></span><span><b>MacBook</b><small>this device · hub · 2 running</small></span></div>
+                  <div class="dm-row"><span class="sd run"></span><span><b>Mac mini</b><small>1 waiting for you</small></span></div>
+                  <div class="dm-row"><span class="sd run"></span><span><b>dev box</b><small>1 running · Codex active in api, 2 min ago</small></span></div>
+                  <div class="dm-row off"><span class="sd off"></span><span><b>old laptop</b><small>Offline since 09:12</small></span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- conversation 1: running -->
+            <div class="m-conv" data-conv="c1">
+              <header class="m-head">
+                <div class="m-title">Dark mode, saved per user</div>
+                <div class="m-meta"><span class="mc">jevellan-site</span><span class="mc">MacBook</span><span class="mc st run">Running</span><button type="button" class="m-cancel">Cancel</button></div>
+              </header>
+              <div class="m-timeline">
+                <div class="m-user">Add a dark mode to the settings page and save the choice per user.</div>
+                <article class="m-stretch" data-s="c1s1">
+                  <div class="m-chips"><span class="mc act">plan</span><span class="mc mdl">Opus</span><span class="mc">high</span><span class="mc acct">Max · personal</span><span class="mc dev">MacBook</span><span class="mc dim">2m 10s</span><span class="mc dim">38k tokens</span></div>
+                  <div class="m-tools">&#9656; 9 tool calls</div>
+                  <p class="m-sum">Plan in four steps: theme tokens, a toggle in Settings, a <code>user_prefs</code> column, and tests for both themes.</p>
+                  <div class="m-links"><button type="button" class="m-link">Plan</button><button type="button" class="m-link m-why-btn" data-why="c1s1">Why</button></div>
+                </article>
+                <article class="m-stretch sel" data-s="c1s2">
+                  <div class="m-chips"><span class="mc act">implement</span><span class="mc mdl">Fable</span><span class="mc">max</span><span class="mc acct">Max · personal</span><span class="mc dev">MacBook</span><span class="mc dim">6m 42s</span><span class="mc dim">112k tokens</span></div>
+                  <div class="m-tools">&#9656; 31 tool calls</div>
+                  <p class="m-sum">Toggle, theme tokens and the saved preference. Six files changed; the fast tests pass.</p>
+                  <div class="m-links"><button type="button" class="m-link">Changes · 6 files</button><button type="button" class="m-link m-why-btn" data-why="c1s2">Why</button></div>
+                </article>
+                <article class="m-stretch live" data-s="c1s3">
+                  <div class="m-chips"><span class="mc act">test</span><span class="mc mdl">Fable</span><span class="mc">medium</span><span class="mc acct">Max · work</span><span class="mc dev">MacBook</span><span class="mc dim">0:48</span></div>
+                  <p class="m-stream"><span class="m-dot" aria-hidden="true"></span>Running the settings tests in both themes, then adding one for the saved preference<span class="caret" aria-hidden="true"></span></p>
+                  <div class="m-tools live">&#9656; npm test -- settings <span>running</span></div>
+                  <div class="m-links"><button type="button" class="m-link m-why-btn" data-why="c1s3">Why</button></div>
+                </article>
+              </div>
+              <div class="m-composer">
+                <div class="m-input">Send a correction, or add a note for the next step.</div>
+                <div class="m-row"><span class="mcl">Next step: <b>Auto</b></span><span class="mcl">Model: <b>Auto</b></span><span class="mcl">Effort: <b>Auto</b></span><span class="m-btns"><button type="button" class="mb dark">Send correction</button><button type="button" class="mb">Add note</button></span></div>
+              </div>
+            </div>
+
+            <!-- conversation 2: waiting for you (runs on another machine) -->
+            <div class="m-conv" data-conv="c2" hidden>
+              <header class="m-head">
+                <div class="m-title">Replace moment.js</div>
+                <div class="m-meta"><span class="mc">notes-app</span><span class="mc">Mac mini</span><span class="mc st wait">Waiting for you</span></div>
+              </header>
+              <div class="m-timeline">
+                <div class="m-user">Replace moment.js with something smaller.</div>
+                <article class="m-stretch" data-s="c2s1">
+                  <div class="m-chips"><span class="mc act">plan</span><span class="mc mdl">Opus</span><span class="mc">high</span><span class="mc acct">Max · work</span><span class="mc dev">Mac mini</span><span class="mc dim">3m 05s</span><span class="mc dim">41k tokens</span></div>
+                  <div class="m-tools">&#9656; 14 tool calls</div>
+                  <p class="m-sum">Two good fits: date-fns (small functions, tree-shakeable) and Day.js (a moment-like API, tiny). The choice changes how every date call reads.</p>
+                  <div class="m-links"><button type="button" class="m-link">Plan</button><button type="button" class="m-link m-why-btn" data-why="c2s1">Why</button></div>
+                </article>
+                <div class="m-ask"><b>Question for you</b>Which do you prefer: date-fns or Day.js?</div>
+                <p class="m-proxied">Running on Mac mini. You're steering it from MacBook.</p>
+              </div>
+              <div class="m-composer">
+                <div class="m-input">Reply to continue this work.</div>
+                <div class="m-row"><span class="mcl">Next step: <b>Auto</b></span><span class="mcl">Model: <b>Auto</b></span><span class="mcl">Effort: <b>Auto</b></span><span class="m-btns"><button type="button" class="mb">Close this work</button><button type="button" class="mb dark">Send</button></span></div>
+              </div>
+            </div>
+
+            <!-- conversation 3: done -->
+            <div class="m-conv" data-conv="c3" hidden>
+              <header class="m-head">
+                <div class="m-title">Fix the flaky login test</div>
+                <div class="m-meta"><span class="mc">api</span><span class="mc">dev box</span><span class="mc st done">Done</span></div>
+              </header>
+              <div class="m-timeline">
+                <div class="m-user">The login test fails about one run in five. Fix it.</div>
+                <article class="m-stretch" data-s="c3s1">
+                  <div class="m-chips"><span class="mc act">implement</span><span class="mc mdl">GPT-6 · Codex</span><span class="mc">high</span><span class="mc acct">ChatGPT Pro</span><span class="mc dev">dev box</span><span class="mc dim">4m 51s</span><span class="mc dim">86k tokens</span></div>
+                  <div class="m-tools">&#9656; 22 tool calls</div>
+                  <p class="m-sum">A race between the session cookie and the redirect. It now waits for the cookie write, and a new regression test runs the login 50 times.</p>
+                  <div class="m-links"><button type="button" class="m-link">Changes · 3 files</button><button type="button" class="m-link m-why-btn" data-why="c3s1">Why</button></div>
+                </article>
+                <article class="m-stretch" data-s="c3s2">
+                  <div class="m-chips"><span class="mc act">review</span><span class="mc mdl">Opus</span><span class="mc">high</span><span class="mc acct">Max · work</span><span class="mc dev">dev box</span><span class="mc dim">1m 58s</span><span class="mc dim">29k tokens</span><span class="mc tag">corrected: effort</span></div>
+                  <div class="m-tools">&#9656; 7 tool calls</div>
+                  <p class="m-sum">No serious findings. One minor: rename <code>waitCookie</code> to <code>waitForSessionCookie</code>.</p>
+                  <div class="m-links"><button type="button" class="m-link m-why-btn" data-why="c3s2">Why</button></div>
+                </article>
+                <div class="m-verified"><b>&#10003; Verified by Jevellan</b><span>npm test passed on 9b41e07, clean tree</span><span>Published to main</span></div>
+              </div>
+              <div class="m-composer">
+                <div class="m-input">Ask a follow-up, or start new work.</div>
+                <div class="m-row"><span class="mcl">Next step: <b>Auto</b></span><span class="mcl">Model: <b>Auto</b></span><span class="mcl">Effort: <b>Auto</b></span><span class="m-btns"><button type="button" class="mb dark">Send</button></span></div>
+              </div>
+            </div>
+          </section>
+
+          <aside class="m-why" aria-label="Why this step">
+            <div class="m-why-head"><b>Why</b><span class="m-why-label">stretch 2 · implement</span><button type="button" class="m-why-close" aria-label="Close">&#215;</button></div>
+
+            <div class="m-why-pane" data-why="c1s1" data-label="stretch 1 · plan" hidden>
+              <div class="wsec"><h6>Next step</h6><div class="bars"><div class="bar win" style="--p:.64"><span class="lbl">plan</span><span class="track"><span class="fill"></span></span><span class="val">0.64</span></div><div class="bar" style="--p:.27"><span class="lbl">implement</span><span class="track"><span class="fill"></span></span><span class="val">0.27</span></div><div class="bar" style="--p:.05"><span class="lbl">reply</span><span class="track"><span class="fill"></span></span><span class="val">0.05</span></div></div><p class="wnote">done isn't allowed on a first decision</p></div>
+              <div class="wsec"><h6>Model</h6><p class="wline">New work, nothing to keep. Picked by Jev.</p><div class="bars"><div class="bar win" style="--p:.58"><span class="lbl">Opus</span><span class="track"><span class="fill"></span></span><span class="val">0.58</span></div><div class="bar" style="--p:.31"><span class="lbl">Fable</span><span class="track"><span class="fill"></span></span><span class="val">0.31</span></div><div class="bar" style="--p:.11"><span class="lbl">GPT-6</span><span class="track"><span class="fill"></span></span><span class="val">0.11</span></div></div></div>
+              <div class="wsec"><h6>Effort</h6><div class="bars"><div class="bar win" style="--p:.62"><span class="lbl">high</span><span class="track"><span class="fill"></span></span><span class="val">0.62</span></div><div class="bar" style="--p:.21"><span class="lbl">xhigh</span><span class="track"><span class="fill"></span></span><span class="val">0.21</span></div></div></div>
+              <div class="wsec"><h6>Account</h6><ul class="rank"><li class="ok">Max · personal · 38% of its week</li><li>Max · work · 51% of its week</li><li class="off">Anthropic API · only when subscriptions run out</li></ul></div>
+              <div class="wsec jevline">Jev · jev-1.13.0 · 118 ms</div>
+            </div>
+
+            <div class="m-why-pane" data-why="c1s2" data-label="stretch 2 · implement">
+              <div class="wsec"><h6>Next step</h6><div class="bars"><div class="bar win" style="--p:.81"><span class="lbl">implement</span><span class="track"><span class="fill"></span></span><span class="val">0.81</span></div><div class="bar" style="--p:.07"><span class="lbl">test</span><span class="track"><span class="fill"></span></span><span class="val">0.07</span></div><div class="bar" style="--p:.06"><span class="lbl">ask-you</span><span class="track"><span class="fill"></span></span><span class="val">0.06</span></div></div></div>
+              <div class="wsec"><h6>Model</h6><p class="wline">Keep Opus? <b>0.22</b>, below 0.6, so switch.</p><div class="bars"><div class="bar win" style="--p:.74"><span class="lbl">Fable</span><span class="track"><span class="fill"></span></span><span class="val">0.74</span></div><div class="bar" style="--p:.18"><span class="lbl">Opus</span><span class="track"><span class="fill"></span></span><span class="val">0.18</span></div><div class="bar" style="--p:.08"><span class="lbl">GPT-6</span><span class="track"><span class="fill"></span></span><span class="val">0.08</span></div></div></div>
+              <div class="wsec"><h6>Effort</h6><div class="bars"><div class="bar win" style="--p:.61"><span class="lbl">max</span><span class="track"><span class="fill"></span></span><span class="val">0.61</span></div><div class="bar" style="--p:.27"><span class="lbl">xhigh</span><span class="track"><span class="fill"></span></span><span class="val">0.27</span></div></div></div>
+              <div class="wsec"><h6>Corrections used</h6><p class="corr">&#8220;When implementing a UI change in jevellan-site, Jevellan chose Opus at high; the user changed it to Fable at max.&#8221;</p></div>
+              <div class="wsec"><h6>Account</h6><ul class="rank"><li class="ok">Max · personal · 58% of its 5 hours</li><li>Max · work · 51% of its week</li><li class="off">Anthropic API · only when subscriptions run out</li></ul></div>
+              <div class="wsec jevline">Jev · jev-1.13.0 · 142 ms</div>
+            </div>
+
+            <div class="m-why-pane" data-why="c1s3" data-label="stretch 3 · test" hidden>
+              <div class="wsec"><h6>Next step</h6><div class="bars"><div class="bar win" style="--p:.72"><span class="lbl">test</span><span class="track"><span class="fill"></span></span><span class="val">0.72</span></div><div class="bar" style="--p:.14"><span class="lbl">review</span><span class="track"><span class="fill"></span></span><span class="val">0.14</span></div><div class="bar" style="--p:.09"><span class="lbl">implement</span><span class="track"><span class="fill"></span></span><span class="val">0.09</span></div></div></div>
+              <div class="wsec"><h6>Model</h6><p class="wline">Keep Fable? <b>0.83</b>, over 0.6: kept. Same model, warm cache.</p></div>
+              <div class="wsec"><h6>Effort</h6><div class="bars"><div class="bar win" style="--p:.58"><span class="lbl">medium</span><span class="track"><span class="fill"></span></span><span class="val">0.58</span></div><div class="bar" style="--p:.30"><span class="lbl">high</span><span class="track"><span class="fill"></span></span><span class="val">0.30</span></div></div></div>
+              <div class="wsec"><h6>Account</h6><ul class="rank"><li class="no">Max · personal · 5-hour window at 92%, over its 90% ceiling</li><li class="ok">Max · work · 10% of its 5 hours</li><li class="off">Anthropic API · subscriptions haven't run out</li></ul></div>
+              <div class="wsec jevline">Jev · jev-1.13.0 · 131 ms</div>
+            </div>
+
+            <div class="m-why-pane" data-why="c2s1" data-label="stretch 1 · plan" hidden>
+              <div class="wsec"><h6>Next step</h6><div class="bars"><div class="bar win" style="--p:.58"><span class="lbl">plan</span><span class="track"><span class="fill"></span></span><span class="val">0.58</span></div><div class="bar" style="--p:.31"><span class="lbl">implement</span><span class="track"><span class="fill"></span></span><span class="val">0.31</span></div><div class="bar" style="--p:.07"><span class="lbl">ask-you</span><span class="track"><span class="fill"></span></span><span class="val">0.07</span></div></div></div>
+              <div class="wsec"><h6>Model</h6><div class="bars"><div class="bar win" style="--p:.63"><span class="lbl">Opus</span><span class="track"><span class="fill"></span></span><span class="val">0.63</span></div><div class="bar" style="--p:.24"><span class="lbl">GPT-6</span><span class="track"><span class="fill"></span></span><span class="val">0.24</span></div></div></div>
+              <div class="wsec"><h6>Effort</h6><div class="bars"><div class="bar win" style="--p:.55"><span class="lbl">high</span><span class="track"><span class="fill"></span></span><span class="val">0.55</span></div><div class="bar" style="--p:.33"><span class="lbl">medium</span><span class="track"><span class="fill"></span></span><span class="val">0.33</span></div></div></div>
+              <div class="wsec"><h6>Account</h6><ul class="rank"><li class="ok">Max · work · on Mac mini, 22% of its week</li><li>Max · personal · 64% of its week</li></ul></div>
+              <div class="wsec jevline">Jev · jev-1.13.0 · 104 ms</div>
+            </div>
+
+            <div class="m-why-pane" data-why="c3s1" data-label="stretch 1 · implement" hidden>
+              <div class="wsec"><h6>Next step</h6><div class="bars"><div class="bar win" style="--p:.79"><span class="lbl">implement</span><span class="track"><span class="fill"></span></span><span class="val">0.79</span></div><div class="bar" style="--p:.12"><span class="lbl">plan</span><span class="track"><span class="fill"></span></span><span class="val">0.12</span></div></div><p class="wnote">a small, clear fix needs no plan</p></div>
+              <div class="wsec"><h6>Model</h6><div class="bars"><div class="bar win" style="--p:.66"><span class="lbl">GPT-6</span><span class="track"><span class="fill"></span></span><span class="val">0.66</span></div><div class="bar" style="--p:.21"><span class="lbl">Opus</span><span class="track"><span class="fill"></span></span><span class="val">0.21</span></div></div></div>
+              <div class="wsec"><h6>Effort</h6><div class="bars"><div class="bar win" style="--p:.57"><span class="lbl">high</span><span class="track"><span class="fill"></span></span><span class="val">0.57</span></div><div class="bar" style="--p:.29"><span class="lbl">xhigh</span><span class="track"><span class="fill"></span></span><span class="val">0.29</span></div></div></div>
+              <div class="wsec"><h6>Account</h6><ul class="rank"><li class="ok">ChatGPT Pro · signed in on dev box</li><li class="off">OpenAI API · never automatically</li></ul></div>
+              <div class="wsec jevline">Jev · jev-1.13.0 · 97 ms</div>
+            </div>
+
+            <div class="m-why-pane" data-why="c3s2" data-label="stretch 2 · review" hidden>
+              <div class="wsec"><h6>Next step</h6><div class="bars"><div class="bar win" style="--p:.61"><span class="lbl">review</span><span class="track"><span class="fill"></span></span><span class="val">0.61</span></div><div class="bar" style="--p:.30"><span class="lbl">done</span><span class="track"><span class="fill"></span></span><span class="val">0.30</span></div></div><p class="wnote">auth touched, so a review</p></div>
+              <div class="wsec"><h6>Model</h6><p class="wline">A reviewer from a different family than the one that wrote the code.</p><div class="bars"><div class="bar win" style="--p:.69"><span class="lbl">Opus</span><span class="track"><span class="fill"></span></span><span class="val">0.69</span></div></div></div>
+              <div class="wsec"><h6>Effort</h6><p class="wline">Jev picked <b>high</b>. You changed it to <b>xhigh</b> afterwards: corrected, nothing undone.</p></div>
+              <div class="wsec"><h6>Account</h6><ul class="rank"><li class="ok">Max · work · 31% of its week</li></ul></div>
+              <div class="wsec jevline">Jev · jev-1.13.0 · 121 ms</div>
+            </div>
+          </aside>
+        </div>
+        <span class="pin p1" aria-hidden="true">1</span>
+        <span class="pin p2" aria-hidden="true">2</span>
+        <span class="pin p3" aria-hidden="true">3</span>
+        <span class="pin p4" aria-hidden="true">4</span>
+        <span class="pin p5" aria-hidden="true">5</span>
+        <span class="pin p6" aria-hidden="true">6</span>
+      </div>
+    </div>
+
+    <ol class="mock-legend">
+      <li><span class="pn">1</span><span><b>Every conversation, every machine.</b> One list, with the state and the machine each one runs on.</span></li>
+      <li><span class="pn">2</span><span><b>Switch machines from the header.</b> No second login.</span></li>
+      <li><span class="pn">3</span><span><b>Every step shows what ran it:</b> action, model, effort, account and machine.</span></li>
+      <li><span class="pn">4</span><span><b>Why:</b> Jev's probabilities, the corrections it saw and how the account was picked.</span></li>
+      <li><span class="pn">5</span><span><b>Correct course or leave a note.</b> It keeps sailing either way.</span></li>
+      <li><span class="pn">6</span><span><b>Runtimes, rigging, decisions, the improver and devices,</b> one click away.</span></li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============ drift ============ -->
+<section class="section alt" id="drift" aria-labelledby="drift-title">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow"><span class="rule"></span>The reef every agent hits</p>
+      <h2 id="drift-title">Long sessions drift.</h2>
+      <p class="lede">The context fills up, the model loses the thread, and someone has to steer by hand. Usually you, at 1 a.m.</p>
+    </div>
+    <figure class="drift-figure">
+      <div class="drift-legend"><span><i class="l-long"></i>One long agent session</span><span><i class="l-saw"></i>Jevellan: a fresh session every stretch</span></div>
+      <div class="drift-scroll">
+        <svg class="drift-svg desktop" viewBox="0 0 900 380" role="img" aria-label="Illustration: one long session's context keeps rising into a band marked 'here be hallucinations', drops at compaction and rises again. Jevellan's context starts low at every stretch, grows while it works and resets at each handoff.">
+          <rect class="danger" x="70" y="30" width="810" height="62"/>
+          <line class="danger-line" x1="70" y1="92" x2="880" y2="92"/>
+          <text class="danger-label" x="90" y="70">Here be hallucinations</text>
+          <g class="serpent" transform="translate(338,54)">
+            <path d="M0 26 c5 -12 13 -12 18 0"/>
+            <path d="M26 26 c6 -16 16 -16 22 0"/>
+            <path d="M56 26 c3 -20 14 -30 24 -22 c5 4 4 10 -2 10"/>
+            <path d="M-14 26 c3 -5 7 -6 10 -2"/>
+            <circle class="serpent-eye" cx="74" cy="8" r="1.6"/>
+            <path class="water" d="M-24 28 h118"/>
+          </g>
+          <line class="axis" x1="70" y1="30" x2="70" y2="330"/>
+          <line class="axis" x1="70" y1="330" x2="880" y2="330"/>
+          <text class="axis-label" transform="translate(44,250) rotate(-90)">context in use</text>
+          <text class="axis-label" x="880" y="366" text-anchor="end">time &#8594;</text>
+          <path class="saw-fill" d="M70,306 C110,302 170,276 232,250 L232,306 C272,302 332,270 394,238 L394,306 C434,302 494,280 556,256 L556,306 C596,302 656,272 718,244 L718,306 C758,302 818,276 880,250 L880,330 L70,330 Z"/>
+          <line class="base" x1="70" y1="306" x2="880" y2="306"/>
+          <path class="saw" d="M70,306 C110,302 170,276 232,250 L232,306 C272,302 332,270 394,238 L394,306 C434,302 494,280 556,256 L556,306 C596,302 656,272 718,244 L718,306 C758,302 818,276 880,250"/>
+          <path class="long" d="M70,300 C120,292 150,270 190,256 S260,218 300,200 S370,154 410,132 S470,98 500,80 L514,68 L522,170 C560,162 600,132 640,112 S720,82 760,72 S830,58 880,52"/>
+          <line class="tick" x1="522" y1="176" x2="522" y2="186"/>
+          <text class="note" x="530" y="194">compaction</text>
+          <text class="note" x="872" y="46" text-anchor="end">one long session</text>
+          <text class="note-jev" x="560" y="226">Jevellan: every stretch starts fresh</text>
+          <text class="note-jev" x="874" y="322" text-anchor="end">brief &#8804; 12k tokens</text>
+          <use href="#flag-P" x="140" y="338" width="21" height="14"/>
+          <use href="#flag-I" x="302" y="338" width="21" height="14"/>
+          <use href="#flag-T" x="464" y="338" width="21" height="14"/>
+          <use href="#flag-R" x="626" y="338" width="21" height="14"/>
+          <use href="#flag-I" x="788" y="338" width="21" height="14"/>
+        </svg>
+        <svg class="drift-svg mobile" viewBox="0 0 360 330" role="img" aria-label="Illustration: one long session's context keeps rising into a band marked 'here be hallucinations'. Jevellan's context starts low at every stretch and resets at each handoff.">
+          <g transform="translate(34,20) scale(0.39,0.8667) translate(-70,-30)">
+            <rect class="danger" x="70" y="30" width="810" height="62"/>
+            <line class="danger-line vs" x1="70" y1="92" x2="880" y2="92"/>
+            <line class="axis vs" x1="70" y1="30" x2="70" y2="330"/>
+            <line class="axis vs" x1="70" y1="330" x2="880" y2="330"/>
+            <path class="saw-fill" d="M70,306 C110,302 170,276 232,250 L232,306 C272,302 332,270 394,238 L394,306 C434,302 494,280 556,256 L556,306 C596,302 656,272 718,244 L718,306 C758,302 818,276 880,250 L880,330 L70,330 Z"/>
+            <line class="base vs" x1="70" y1="306" x2="880" y2="306"/>
+            <path class="saw vs" d="M70,306 C110,302 170,276 232,250 L232,306 C272,302 332,270 394,238 L394,306 C434,302 494,280 556,256 L556,306 C596,302 656,272 718,244 L718,306 C758,302 818,276 880,250"/>
+            <path class="long vs" d="M70,300 C120,292 150,270 190,256 S260,218 300,200 S370,154 410,132 S470,98 500,80 L514,68 L522,170 C560,162 600,132 640,112 S720,82 760,72 S830,58 880,52"/>
+          </g>
+          <text class="danger-label" x="42" y="52" style="font-size:17px">Here be hallucinations</text>
+          <text class="axis-label" transform="translate(18,200) rotate(-90)">context in use</text>
+          <text class="axis-label" x="350" y="326" text-anchor="end">time &#8594;</text>
+          <text class="note" x="216" y="166" style="font-size:10.5px">compaction</text>
+          <text class="note-jev" x="112" y="196" style="font-size:10.5px">Jevellan: every stretch starts fresh</text>
+          <text class="note-jev" x="348" y="274" text-anchor="end" style="font-size:10.5px">brief &#8804; 12k tokens</text>
+          <use href="#flag-P" x="58" y="287" width="16" height="11"/>
+          <use href="#flag-I" x="121" y="287" width="16" height="11"/>
+          <use href="#flag-T" x="184" y="287" width="16" height="11"/>
+          <use href="#flag-R" x="247" y="287" width="16" height="11"/>
+          <use href="#flag-I" x="310" y="287" width="16" height="11"/>
+        </svg>
+      </div>
+      <p class="figure-note">An illustration, not a benchmark. A stretch still grows while it works. It just starts small, and it always starts fresh.</p>
+    </figure>
+  </div>
+</section>
+
+<!-- ============ meet jev ============ -->
+<section class="section chart-grid" id="jev" aria-labelledby="jev-title">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow"><span class="rule"></span>The navigator</p>
+      <h2 id="jev-title">Meet Jev. It can't write a single line.</h2>
+      <p class="lede">That's the point. Jev is <a href="https://typesafe.ai/">TypeSafe AI</a>'s <b>System One model</b>. Hand it the situation and a few typed questions, and it answers each one with a pick and calibrated probabilities, in about a tenth of a second. Your agents write. Jev decides.</p>
+    </div>
+
+    <div class="jev-hero-grid">
+      <div class="jev-window" id="jev-window" aria-live="polite">
+        <div class="jev-titlebar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span>jev-1.13.0 &#9656; decision</span><span class="t-right" id="jev-scene-count">1/5</span></div>
+        <div class="jev-body" id="jev-body"></div>
+      </div>
+
+      <div class="qtypes">
+        <article class="qtype-card">
+          <header><h4>Choice</h4><span class="tag">pick one of up to 255</span></header>
+          <svg class="mini-viz" viewBox="0 0 260 34" preserveAspectRatio="xMinYMid meet" aria-hidden="true">
+            <rect class="t" x="0" y="4" width="44" height="20" rx="2"/><rect class="g" x="0" y="22" width="44" height="2"/>
+            <rect class="t" x="54" y="4" width="44" height="20" rx="2"/><rect class="f" x="54" y="6" width="44" height="18" rx="2"/>
+            <rect class="t" x="108" y="4" width="44" height="20" rx="2"/><rect class="g" x="108" y="21" width="44" height="3"/>
+            <rect class="t" x="162" y="4" width="44" height="20" rx="2"/><rect class="g" x="162" y="22" width="44" height="2"/>
+            <rect class="t" x="216" y="4" width="44" height="20" rx="2"/><rect class="g" x="216" y="23" width="44" height="1"/>
+            <text class="k" x="22" y="33" text-anchor="middle">reply</text><text class="kj" x="76" y="33" text-anchor="middle">impl</text><text class="k" x="130" y="33" text-anchor="middle">test</text><text class="k" x="184" y="33" text-anchor="middle">review</text><text class="k" x="238" y="33" text-anchor="middle">done</text>
+          </svg>
+          <p>One option out of a list you define, with a probability for each.</p>
+          <p class="uses">Jevellan asks: <b>the next step</b>, <b>the model</b>, <b>the effort</b>.</p>
+        </article>
+        <article class="qtype-card">
+          <header><h4>Noul</h4><span class="tag">is it true? 0 to 1</span></header>
+          <svg class="mini-viz" viewBox="0 0 260 34" preserveAspectRatio="xMinYMid meet" aria-hidden="true">
+            <rect class="t" x="0" y="10" width="260" height="10" rx="2"/><rect class="f" x="0" y="10" width="216" height="10" rx="2"/>
+            <rect class="g" x="155" y="6" width="2" height="18"/>
+            <text class="k" x="0" y="33">0</text><text class="k" x="150" y="33">keep if &#8805; 0.6</text><text class="kj" x="260" y="33" text-anchor="end">0.83</text>
+          </svg>
+          <p>A yes-or-no question, answered with how likely yes is.</p>
+          <p class="uses">Jevellan asks: <b>stay on the current model?</b> <b>did you ask me to remember that?</b></p>
+        </article>
+        <article class="qtype-card">
+          <header><h4>Score</h4><span class="tag">rate it on a scale</span></header>
+          <svg class="mini-viz" viewBox="0 0 260 34" preserveAspectRatio="xMinYMid meet" aria-hidden="true">
+            <line class="ln" x1="6" y1="14" x2="254" y2="14"/>
+            <rect class="g" x="5" y="9" width="2" height="10"/><rect class="g" x="87" y="9" width="2" height="10"/><rect class="g" x="170" y="9" width="2" height="10"/><rect class="g" x="252" y="9" width="2" height="10"/>
+            <path class="mk" d="M205 6 l7 8 -7 8 -7 -8z"/>
+            <text class="k" x="6" y="31" text-anchor="middle">0</text><text class="k" x="88" y="31" text-anchor="middle">1</text><text class="k" x="171" y="31" text-anchor="middle">2</text><text class="k" x="253" y="31" text-anchor="middle">3</text><text class="kj" x="205" y="31" text-anchor="middle">2.4</text>
+          </svg>
+          <p>A rating on your own levels. Answers can land between them.</p>
+          <p class="uses">Jevellan asks: <b>how useful is this memory note</b> for the next step?</p>
+        </article>
+      </div>
+    </div>
+
+    <div class="stats" role="list">
+      <div class="stat" role="listitem"><span class="num">193.6<small>&#215;</small></span><span class="what">faster than LLM workflows on System One tasks</span><span class="src">TypeSafe's own evals · <a href="https://typesafe.ai/">typesafe.ai</a></span></div>
+      <div class="stat" role="listitem"><span class="num">444.6<small>&#215;</small></span><span class="what">cheaper on the same workflows</span><span class="src">TypeSafe's own evals · <a href="https://typesafe.ai/blog/introducing-system-one-models-and-jev">launch post</a></span></div>
+      <div class="stat" role="listitem"><span class="num">$42</span><span class="what">per <b>billion</b> input tokens. Output tokens are free.</span><span class="src">TypeSafe pricing · <a href="https://docs.typesafe.ai/">docs</a></span></div>
+      <div class="stat" role="listitem"><span class="num">13<small>%</small></span><span class="what">of Vercel's paid teams used it within 24 hours of launch</span><span class="src">Vercel's fastest-adopted model · <a href="https://thenextweb.com/news/typesafe-jev-decision-model-vercel-fastest-adopted">TNW</a></span></div>
+    </div>
+    <p class="stats-note">Figures as published by TypeSafe and Vercel. TypeSafe says its peak numbers sit at the high end of real use. Ours will go in the <a href="#numbers">logbook</a>.</p>
+
+    <div class="subhead"><h3>The harbour is talking.</h3><p>Launched 15 September 2026. The docks haven't been quiet since.</p></div>
+    <p class="swipe-hint" aria-hidden="true">swipe &#8594;</p>
+    <div class="quotes">
+      <figure class="quote feature wide">
+        <span class="tagline">The hype</span>
+        <blockquote>&#8230;if what I see early on materializes, this is another ChatGPT moment (or another reasoning models moment).</blockquote>
+        <figcaption class="who"><strong>Alex Volkov, host of ThursdAI</strong><a href="https://sub.thursdai.news/p/typesafes-jev-changes-everything">&#8220;TypeSafe's Jev is a ChatGPT moment for decisions&#8221;</a></figcaption>
+      </figure>
+      <figure class="quote">
+        <span class="tagline">The benchmark</span>
+        <blockquote>We're seeing extraordinary results from @typesafeai. [&#8230;] Jev is up to 18x faster (p95) <em>and</em> more accurate.</blockquote>
+        <figcaption class="who"><strong>Guillermo Rauch, CEO of Vercel</strong><a href="https://x.com/rauchg/status/2100307962262872105">on X</a></figcaption>
+      </figure>
+      <figure class="quote">
+        <span class="tagline">The builder</span>
+        <blockquote>it is the only one that hands back a real probability which makes it ideal for automating workflows!!</blockquote>
+        <figcaption class="who"><strong>Nikhil Mudholkar, CTO of Bryo AI</strong><a href="https://techcrunch.com/2026/09/18/a-new-kind-of-ai-model-from-a-chatgpt-inventor-is-thrilling-developers/">via TechCrunch</a></figcaption>
+      </figure>
+      <figure class="quote">
+        <span class="tagline">The maker</span>
+        <blockquote>&#8230;if AI is going to fundamentally change how work gets done, people can't be the only consumers of intelligence.</blockquote>
+        <figcaption class="who"><strong>Diogo Almeida, co-founder and CEO of TypeSafe AI</strong><a href="https://www.theregister.com/ai-and-ml/2026/09/16/typesafe-ai-debuts-model-for-machines-that-plays-doom/5296711">via The Register</a></figcaption>
+      </figure>
+      <figure class="quote">
+        <span class="tagline">The skeptic</span>
+        <blockquote>The problem is old; the architecture and product around it may be new.</blockquote>
+        <figcaption class="who"><strong>Abid Ali Awan</strong><a href="https://www.kdnuggets.com/what-everyone-is-getting-wrong-about-typesafe-ais-jev">KDnuggets</a></figcaption>
+      </figure>
+    </div>
+
+
+    <div class="press" aria-label="Headlines">
+      <a href="https://techcrunch.com/2026/09/18/a-new-kind-of-ai-model-from-a-chatgpt-inventor-is-thrilling-developers/"><span class="p-src">TechCrunch</span><span class="p-h">A new kind of AI model from a ChatGPT inventor is thrilling developers</span></a>
+      <a href="https://www.tomshardware.com/tech-industry/artificial-intelligence/typesafe-ais-jev-offers-an-alternative-to-llms-that-claims-to-be-193x-faster-and-445x-cheaper-system-one-type-model-is-bespoke-for-probabilistic-decision-making"><span class="p-src">Tom's Hardware</span><span class="p-h">TypeSafe AI's Jev offers an alternative to LLMs that claims to be 193x faster and 445x cheaper</span></a>
+      <a href="https://www.latent.space/p/jev"><span class="p-src">Latent Space</span><span class="p-h">Jev: System One models for Prod, not God</span></a>
+      <a href="https://www.theregister.com/ai-and-ml/2026/09/16/typesafe-ai-debuts-model-for-machines-that-plays-doom/5296711"><span class="p-src">The Register</span><span class="p-h">TypeSafe AI debuts model for machines that plays Doom</span></a>
+    </div>
+    <div class="subhead"><h3>Already on the water</h3><p>What people built with Jev in its first week.</p></div>
+    <p class="swipe-hint" aria-hidden="true">swipe &#8594;</p>
+    <div class="builds">
+      <a class="build" href="https://techcrunch.com/2026/09/18/a-new-kind-of-ai-model-from-a-chatgpt-inventor-is-thrilling-developers/">
+        <div class="b-top"><span class="b-kind">Agent safety</span><span class="b-arrow" aria-hidden="true">&#8599;</span></div>
+        <div><h4>Vercel's command reviewer</h4><p>Their agent checks every command before it runs. In Vercel's tests, Jev did that check up to 18&#215; faster than GPT Luna, and more accurately.</p></div>
+        <span class="b-host">techcrunch.com</span>
+      </a>
+      <a class="build" href="https://www.langchain.com/blog/building-a-harness-with-jev">
+        <div class="b-top"><span class="b-kind">Agent harness</span><span class="b-arrow" aria-hidden="true">&#8599;</span></div>
+        <div><h4>LangChain's harness</h4><p>Routes each request to a fast or a strong model, and gates risky tool calls before they execute.</p></div>
+        <span class="b-host">langchain.com</span>
+      </a>
+      <a class="build" href="https://github.com/browser-use/jev-ultrafast">
+        <div class="b-top"><span class="b-kind">Browser agent</span><span class="b-arrow" aria-hidden="true">&#8599;</span></div>
+        <div><h4>Browser Use: jev-ultrafast</h4><p>A browser agent with a dynamic action space, picking its next click with typed decisions.</p></div>
+        <span class="b-host">github.com/browser-use</span>
+      </a>
+      <a class="build" href="https://github.com/gargpratyush/jev-router">
+        <div class="b-top"><span class="b-kind">Model routing</span><span class="b-arrow" aria-hidden="true">&#8599;</span></div>
+        <div><h4>jev-router</h4><p>Per-turn routing for Claude Code and Codex: simple turns to the fast tier, hard ones to the strong tier.</p></div>
+        <span class="b-host">github.com/gargpratyush</span>
+      </a>
+      <a class="build" href="https://github.com/0xNatoshi/jev-codex-router">
+        <div class="b-top"><span class="b-kind">Model routing</span><span class="b-arrow" aria-hidden="true">&#8599;</span></div>
+        <div><h4>Jev Codex Router</h4><p>Picks the model, thinking depth and speed mode for every Codex turn.</p></div>
+        <span class="b-host">github.com/0xNatoshi</span>
+      </a>
+      <a class="build" href="https://github.com/AbdelStark/awesome-typesafe-jev">
+        <div class="b-top"><span class="b-kind">Field guide</span><span class="b-arrow" aria-hidden="true">&#8599;</span></div>
+        <div><h4>Awesome Jev</h4><p>Dozens of agent tools, client libraries in a dozen languages and independent evaluations.</p></div>
+        <span class="b-host">github.com/AbdelStark</span>
+      </a>
+    </div>
+    <div class="callout">
+      <svg class="flag flag-md" aria-hidden="true"><use href="#flag-H"/></svg>
+      <p>Notice the pattern? Most Jev tools pick a model for your next message. <b>Jevellan gives Jev the whole passage:</b> the next step, the model, the effort and the memory, stretch after stretch, until the work is verified and published. <a href="#beyond">See what else is aboard &#8594;</a></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ story ============ -->
+<section class="section alt" id="story" aria-labelledby="story-title">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow"><span class="rule"></span>How we got here</p>
+      <h2 id="story-title">A fair wind, right on course.</h2>
+      <p class="lede">A fair wind blows exactly where you're already heading. We were halfway down the coast, looking for the passage, when Jev showed up.</p>
+    </div>
+    <div class="story-grid">
+      <figure class="story-map">
+        <svg viewBox="0 0 520 800" role="img" aria-label="A stylised chart. A grey route leaves 'Garrison' and sails down the coast of Terra Heuristica, probing four inlets marked as dead ends: duties, levels, routing tables, and flows with a Haiku call. It then enters a strait marked 'Jev, 15 September 2026' and, now in magenta, crosses into open water marked 'Jevellan'.">
+          <rect class="sea-bg" x="0" y="0" width="520" height="800"/>
+          <path class="contour" d="M398,0 C412,60 394,120 402,180 C410,240 398,320 392,380 C386,440 382,520 374,580 C368,620 352,652 344,700 C338,740 344,770 350,800"/>
+          <path class="contour" d="M444,0 C458,90 440,170 448,250 C456,340 438,430 434,520 C430,600 404,660 400,720 C398,760 404,780 410,800"/>
+          <path class="contour" d="M62,0 C56,120 72,240 66,360 C62,460 82,560 94,640 C98,680 86,720 70,760"/>
+          <path class="land" d="M96,0 L370,0 C382,40 364,70 372,104 L358,128 L300,140 L356,152 C372,178 358,206 364,236 L346,258 L286,268 L344,280 C354,306 340,334 344,364 L326,386 L268,394 L322,406 C330,434 314,462 314,492 L298,512 L244,520 L292,532 C296,564 284,596 270,624 C262,634 250,640 230,642 C200,646 170,648 140,640 C128,600 112,540 116,480 C120,400 98,320 104,240 C110,160 90,80 96,0 Z"/>
+          <path class="land" d="M152,684 C202,674 262,678 300,698 C322,718 304,752 268,766 C218,784 168,776 146,756 C130,734 134,700 152,684 Z"/>
+          <text class="land-name" transform="translate(222,440) rotate(-90)" text-anchor="middle">Terra Heuristica</text>
+          <text class="sea-name" transform="translate(46,430) rotate(-90)" text-anchor="middle">Mar Pac&#237;fico</text>
+          <text class="sea-name" x="506" y="608" text-anchor="end">Sea of Rules</text>
+          <text class="sounding" x="476" y="196">31</text><text class="sounding" x="462" y="336">27</text><text class="sounding" x="480" y="470">40</text>
+          <text class="sounding" x="30" y="120">58</text><text class="sounding" x="56" y="250">63</text><text class="sounding" x="24" y="560">71</text><text class="sounding" x="470" y="720">35</text><text class="sounding" x="412" y="772">18</text>
+          <path class="route-dead" d="M470,24 C450,56 424,88 412,118 C414,160 414,200 408,244 C404,290 402,330 398,370 C394,420 390,460 384,500 C380,560 360,620 318,652"/>
+          <path class="route-dead" d="M412,118 C380,126 340,134 314,140"/>
+          <path class="route-dead" d="M408,244 C370,254 330,262 298,268"/>
+          <path class="route-dead" d="M398,370 C360,380 316,390 282,394"/>
+          <path class="route-dead" d="M384,500 C346,508 296,516 258,520"/>
+          <g class="x"><path d="M307,133 l12,12 M319,133 l-12,12"/><path d="M291,261 l12,12 M303,261 l-12,12"/><path d="M275,387 l12,12 M287,387 l-12,12"/><path d="M251,513 l12,12 M263,513 l-12,12"/></g>
+          <text class="lbl" x="424" y="136">duties</text>
+          <text class="lbl" x="420" y="262">levels</text>
+          <text class="lbl" x="410" y="386">routing</text><text class="lbl" x="410" y="400">tables</text>
+          <text class="lbl" x="396" y="516">flows + a</text><text class="lbl" x="396" y="530">Haiku call</text>
+          <path class="route-live" d="M318,652 C290,662 260,652 230,658 C200,664 170,654 140,660 C112,666 92,682 78,706 C64,730 52,750 42,770"/>
+          <circle class="jev-glow" cx="318" cy="652" r="18"/>
+          <circle class="jev-dot" cx="318" cy="652" r="5"/>
+          <text class="lbl-jev" x="330" y="706">the strait: Jev</text>
+          <text class="lbl" x="330" y="722">15 Sep 2026</text>
+          <circle class="start-dot" cx="470" cy="24" r="5"/>
+          <text class="lbl-strong" x="458" y="28" text-anchor="end">Garrison</text>
+          <text class="lbl" x="458" y="43" text-anchor="end">sets sail</text>
+          <text class="lbl-jev" x="58" y="786">Jevellan</text>
+          <g class="scale-bar" transform="translate(378,774)">
+            <rect x="0" y="0" width="20" height="5"/><rect class="w" x="20" y="0" width="20" height="5"/><rect x="40" y="0" width="20" height="5"/><rect class="w" x="60" y="0" width="20" height="5"/>
+          </g>
+          <text class="scale-text" x="462" y="779">1 sprint</text>
+          <rect class="frame" x="3" y="3" width="514" height="794"/>
+          <rect class="frame-inner" x="8" y="8" width="504" height="784"/>
+        </svg>
+      </figure>
+
+      <div>
+        <div class="beats">
+          <div class="beat">
+            <div class="b-mark" aria-hidden="true"><svg viewBox="0 0 48 40"><path d="M4 28 H44 L39 36 H9 Z" fill="currentColor"/><path d="M24 27 V4" stroke="currentColor" stroke-width="1.8"/><path d="M26 6 C33 12 36 19 37 26 H26 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M22 8 L22 26 H11 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></div>
+            <div>
+              <span class="when">Before Jev</span>
+              <h3>We built the ship.</h3>
+              <p>It was called <a href="https://gongiskhan.github.io/agent-garrison/">Garrison</a>: an orchestrator for Claude Code and Codex. It already ran work in short stretches with handoffs, kept a ledger, spread work across accounts on different providers and joined several machines into one mesh. Short, focused stretches were already giving us better work for fewer tokens than one long session.</p>
+            </div>
+          </div>
+          <div class="beat">
+            <div class="b-mark" aria-hidden="true"><svg viewBox="0 0 30 30"><path d="M5 8 C12 2 18 14 25 8 M5 15 C12 9 18 21 25 15 M5 22 C12 16 18 28 25 22" fill="none" stroke="var(--danger)" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+            <div>
+              <span class="when">Every inlet, a dead end</span>
+              <h3>The hard part was the moment between steps.</h3>
+              <p>What next? Which model? How much effort? We wrote duties, levels, routing tables and flows, plus a Haiku call for the ambiguous cases. The rulebook kept growing. The decisions didn't get much better.</p>
+              <div class="dead-list"><span class="dead">duties</span><span class="dead">levels</span><span class="dead">routing tables</span><span class="dead">flows</span><span class="dead">a Haiku call</span></div>
+            </div>
+          </div>
+          <div class="beat jev">
+            <div class="b-mark" aria-hidden="true"><svg viewBox="0 0 24 24" style="color:var(--jev)"><use href="#i-compass"/></svg></div>
+            <div>
+              <span class="when">15 September 2026</span>
+              <h3>Then Jev came along.</h3>
+              <p>TypeSafe released a model built for exactly that moment: fast, typed decisions with honest probabilities. It slid into the gap we'd left, like the slot had been cut for it. Serendipity doesn't usually come with an API.</p>
+            </div>
+          </div>
+          <div class="beat">
+            <div class="b-mark" aria-hidden="true"><svg viewBox="0 0 30 30"><circle cx="15" cy="12" r="5" fill="var(--farol)"/><path d="M3 21 C8 18 12 24 17 21 S25 18 27 21 M3 26 C8 23 12 29 17 26 S25 23 27 26" fill="none" stroke="var(--sea)" stroke-width="1.6" stroke-linecap="round"/></svg></div>
+            <div>
+              <span class="when">Now</span>
+              <h3>Jevellan: through the strait.</h3>
+              <p>We kept the timbers that worked, threw the rulebook overboard and gave Jev the helm. Everything you don't need for building software stayed ashore.</p>
+              <div class="kept-list"><span class="kept">stretches</span><span class="kept">handoffs</span><span class="kept">ledger</span><span class="kept">accounts</span><span class="kept">mesh</span><span class="kept">rigging</span><span class="kept">improver</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="story-diff">
+          <div class="col"><h4>Most Jev projects</h4><p>Start from a prompt and add Jev to route it. The routing decision is the whole product.</p></div>
+          <div class="col us"><h4>Jevellan</h4><p>Started from a working ship, then handed Jev the one job that had never worked well. That head start is why Jev runs the entire passage here, not just the next message.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ more than a router ============ -->
+<section class="section chart-grid" id="beyond" aria-labelledby="beyond-title">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow"><span class="rule"></span>Why Jevellan</p>
+      <h2 id="beyond-title">More than a router.</h2>
+      <p class="lede">A router picks a model for your next message. Jevellan runs the whole job, and brings the ship with it.</p>
+    </div>
+
+    <div class="matrix-card">
+      <div class="matrix-scroll">
+        <table class="matrix">
+          <thead>
+            <tr><th scope="col">What you get</th><th scope="col" class="c">A model router</th><th scope="col" class="c us">Jevellan</th></tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">Picks the model for each turn</th><td class="c"><i class="mk y" role="img" aria-label="yes"></i></td><td class="c us"><i class="mk y" role="img" aria-label="yes"></i></td></tr>
+            <tr><th scope="row">Picks how hard it should think</th><td class="c"><i class="mk s" role="img" aria-label="some do"></i></td><td class="c us"><i class="mk y" role="img" aria-label="yes"></i></td></tr>
+            <tr><th scope="row">Decides what happens next: plan, build, test, review, ask you, or finish</th><td class="c"><i class="mk n" role="img" aria-label="no"></i></td><td class="c us"><i class="mk y" role="img" aria-label="yes"></i></td></tr>
+            <tr><th scope="row">Chooses which project memory each step gets</th><td class="c"><i class="mk n" role="img" aria-label="no"></i></td><td class="c us"><i class="mk y" role="img" aria-label="yes"></i></td></tr>
+            <tr><th scope="row">Keeps your request word for word through pauses and corrections</th><td class="c"><i class="mk n" role="img" aria-label="no"></i></td><td class="c us"><i class="mk y" role="img" aria-label="yes"></i></td></tr>
+            <tr><th scope="row">Runs its own tests on the final commit before calling it done</th><td class="c"><i class="mk n" role="img" aria-label="no"></i></td><td class="c us"><i class="mk y" role="img" aria-label="yes"></i></td></tr>
+            <tr><th scope="row">Publishes to main safely: a lock, conflicts handled, never a force-push</th><td class="c"><i class="mk n" role="img" aria-label="no"></i></td><td class="c us"><i class="mk y" role="img" aria-label="yes"></i></td></tr>
+            <tr><th scope="row">Spreads work across your subscriptions and keys, with rules for paid use</th><td class="c"><i class="mk s" role="img" aria-label="some do"></i></td><td class="c us"><i class="mk y" role="img" aria-label="yes"></i></td></tr>
+            <tr><th scope="row">One list across all your machines, steered from any of them</th><td class="c"><i class="mk n" role="img" aria-label="no"></i></td><td class="c us"><i class="mk y" role="img" aria-label="yes"></i></td></tr>
+            <tr><th scope="row">Correct any step afterwards, with undo, and it learns from it</th><td class="c"><i class="mk n" role="img" aria-label="no"></i></td><td class="c us"><i class="mk y" role="img" aria-label="yes"></i></td></tr>
+            <tr><th scope="row">Brings any agent aboard through one contract</th><td class="c"><i class="mk s" role="img" aria-label="some do"></i></td><td class="c us"><i class="mk y" role="img" aria-label="yes"></i></td></tr>
+            <tr><th scope="row">Your whole setup as one manifest you can share</th><td class="c"><i class="mk n" role="img" aria-label="no"></i></td><td class="c us"><i class="mk y" role="img" aria-label="yes"></i></td></tr>
+            <tr><th scope="row">A web app that works on your phone</th><td class="c"><i class="mk n" role="img" aria-label="no"></i></td><td class="c us"><i class="mk y" role="img" aria-label="yes"></i></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="matrix-foot">
+        <p class="matrix-key"><span><i class="mk y" aria-hidden="true"></i>yes</span><span><i class="mk s" aria-hidden="true"></i>some do</span><span><i class="mk n" aria-hidden="true"></i>not their job</span></p>
+        <p class="small">Routers are lighter, and good at their one job. If a cheaper model per message is all you need, use one. If you want the whole job done, sail with us.</p>
+      </div>
+    </div>
+
+    <div class="feats">
+      <article class="feat">
+        <div class="feat-top"><span class="feat-kicker">Browser checks</span><span class="soon-badge">arriving next</span></div>
+        <h3>Jev Ultrafast, at the wheel of a real browser.</h3>
+        <svg class="feat-viz browser-viz" viewBox="0 0 360 160" role="img" aria-label="A browser showing a settings page. A dotted path clicks the dark mode toggle, then Save, and two screenshots go into the handoff.">
+          <rect class="bw" x="1" y="1" width="250" height="158" rx="8"/>
+          <rect class="bbar" x="1" y="1" width="250" height="22" rx="8"/><rect class="bbar" x="1" y="14" width="250" height="9"/>
+          <circle class="bdot" cx="13" cy="12" r="3"/><circle class="bdot" cx="23" cy="12" r="3"/><circle class="bdot" cx="33" cy="12" r="3"/>
+          <rect class="burl" x="46" y="6" width="190" height="12" rx="6"/><text class="bt" x="54" y="15">localhost:5173/settings</text>
+          <rect class="bline strong" x="16" y="36" width="90" height="8" rx="2"/>
+          <rect class="bline" x="16" y="56" width="150" height="6" rx="2"/><rect class="bline" x="16" y="68" width="120" height="6" rx="2"/>
+          <text class="bt dark" x="16" y="98">Dark mode</text>
+          <rect class="btog" x="180" y="88" width="30" height="16" rx="8"/><circle class="btog-k" cx="202" cy="96" r="6"/>
+          <rect class="bbtn" x="16" y="120" width="56" height="22" rx="5"/><text class="bt light" x="30" y="135">Save</text>
+          <path class="bpath" d="M130 30 C160 50 190 70 196 94 C170 110 120 122 84 130"/>
+          <circle class="bclick" cx="196" cy="96" r="9"/><text class="bnum" x="196" y="100" text-anchor="middle">1</text>
+          <circle class="bclick" cx="80" cy="131" r="9"/><text class="bnum" x="80" y="135" text-anchor="middle">2</text>
+          <rect class="shot" x="270" y="18" width="78" height="48" rx="4"/><rect class="shot-in" x="276" y="24" width="66" height="36" rx="2"/>
+          <rect class="shot" x="270" y="76" width="78" height="48" rx="4"/><rect class="shot-in dark" x="276" y="82" width="66" height="36" rx="2"/>
+          <text class="bt" x="309" y="142" text-anchor="middle">&#8594; handoff</text>
+          <path class="barrow" d="M252 70 L266 70 M260 64 L266 70 L260 76"/>
+        </svg>
+        <p>After a UI change, a test stretch hands your app to Browser Use's Jev-powered browser agent. It picks every click with a typed decision, and its screenshots land in the handoff as evidence.</p>
+        <p class="feat-src">Browser Use reports a Google Flights search in about 7 seconds. <a href="https://github.com/browser-use/jev-ultrafast">jev-ultrafast on GitHub</a></p>
+      </article>
+
+      <article class="feat">
+        <div class="feat-top"><span class="feat-kicker">Berths</span></div>
+        <h3>Every agent. Every model.</h3>
+        <div class="berths" aria-label="Agents and their berths">
+          <div class="berth on"><span class="b-no">01</span><span class="b-name">Claude Code</span><span class="b-st">aboard</span></div>
+          <div class="berth on"><span class="b-no">02</span><span class="b-name">Codex</span><span class="b-st">aboard</span></div>
+          <div class="berth next"><span class="b-no">03</span><span class="b-name">Gemini CLI</span><span class="b-st">next</span></div>
+          <div class="berth next"><span class="b-no">04</span><span class="b-name">OpenCode</span><span class="b-st">next</span></div>
+          <div class="berth next"><span class="b-no">05</span><span class="b-name">Pi</span><span class="b-st">next</span></div>
+          <div class="berth next"><span class="b-no">06</span><span class="b-name">Cursor</span><span class="b-st">next</span></div>
+          <div class="berth yours"><span class="b-no">07</span><span class="b-name">Yours?</span><span class="b-st">write one</span></div>
+        </div>
+        <pre class="contract" aria-label="The berth contract"><code><span class="k">createRuntime</span>(ctx) &#8594; {
+  listModels · beginLogin · probe
+  materialiseRigging · startStretch
+}
+<span class="c">// runContractTests(factory) tells you it's seaworthy</span></code></pre>
+        <p>A berth is a small package that brings an agent aboard, through one contract. Claude Code and Codex are aboard first, with every model they offer. Gemini CLI, OpenCode and Pi are next, and anyone can write one.</p>
+      </article>
+
+      <article class="feat">
+        <div class="feat-top"><span class="feat-kicker">The manifest</span></div>
+        <h3>Your whole setup, in one file.</h3>
+        <pre class="yaml" aria-label="An example manifest"><code><span class="c"># an example manifest (apm.yml)</span>
+<span class="k">name</span>: my-fleet
+<span class="k">dependencies</span>:
+  <span class="k">apm</span>:
+    - my-org/team-conventions   <span class="c"># a skill</span>
+    - my-org/figma-export       <span class="c"># an MCP server</span>
+<span class="k">x-jevellan</span>:
+  <span class="k">runtimes</span>: { claude: on, codex: on }
+  <span class="k">menu</span>: [Fable, Opus, GPT via Codex]
+  <span class="k">routingProfile</span>: |
+    UI work goes to Fable.</code></pre>
+        <div class="chips"><span class="chip">Export</span><span class="chip">Import: validate, diff, apply</span><span class="chip always">apm install · apm uninstall</span></div>
+        <p>Agents, models, rigging and routing rules live in one manifest for <a href="https://microsoft.github.io/apm/">APM</a>, Microsoft's package manager for agent context. Hand it to a friend: importing shows a diff before anything changes, and every package installs and uninstalls cleanly.</p>
+      </article>
+
+      <article class="feat">
+        <div class="feat-top"><span class="feat-kicker">Rigging</span></div>
+        <h3>Whatever your agents support, aboard.</h3>
+        <div class="rig-cloud" aria-label="What rigging can carry">
+          <span>MCP servers</span><span>Skills</span><span>Plugins</span><span>Hooks</span><span>Rules</span><span>Slash commands</span><span>Settings</span>
+        </div>
+        <table class="rig-table mini">
+          <thead><tr><th>Rigging</th><th class="c">Claude Code</th><th class="c">Codex</th><th class="c">Gemini CLI</th></tr></thead>
+          <tbody>
+            <tr><td><span class="it">team-conventions</span></td><td class="c"><span class="tog on" aria-label="on"></span></td><td class="c"><span class="tog on" aria-label="on"></span></td><td class="c"><span class="tog-na">next</span></td></tr>
+            <tr><td><span class="it">figma-export</span></td><td class="c"><span class="tog on" aria-label="on"></span></td><td class="c"><span class="tog" aria-label="off"></span></td><td class="c"><span class="tog-na">next</span></td></tr>
+          </tbody>
+        </table>
+        <p>If the agent supports it, Jevellan can carry it. Choose per agent what goes aboard. It all goes into Jevellan's own homes, never yours.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============ four scales ============ -->
+<section class="section alt" id="how" aria-labelledby="how-title">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow"><span class="rule"></span>The chart, at four scales</p>
+      <h2 id="how-title">Zoom in, from your machines to a single step.</h2>
+      <p class="lede">Every name in monospace below is a word you'll see in the app. The italic one is how a navigator would say it.</p>
+    </div>
+
+    <div class="insets">
+
+      <!-- A: fleet -->
+      <article class="inset" aria-labelledby="inset-a">
+        <header class="inset-head"><span class="code">INSET A</span><h3 id="inset-a">The fleet <span class="chart-name">mesh</span></h3><span class="scale">Scale: all your machines</span></header>
+        <div class="inset-body">
+          <div class="inset-visual">
+            <svg class="fleet-svg" viewBox="0 0 560 300" role="img" aria-label="Three member machines (Mac mini, dev box, old laptop) linked to the hub, a MacBook drawn as a flagship with a lantern. A Cursor session outside Jevellan sits nearby inside a dashed keep-clear ring.">
+              <rect class="sea" x="0" y="0" width="560" height="300" rx="10"/>
+              <path class="contour" d="M40,40 C140,10 260,30 330,20 S500,10 540,60"/>
+              <path class="contour" d="M20,270 C120,250 200,290 300,276 S470,250 548,272"/>
+              <path class="contour" d="M190,120 C220,96 330,96 360,124 C392,154 350,200 290,204 C220,208 168,160 190,120 Z"/>
+              <path class="link" d="M112,74 L276,146"/>
+              <path class="link live" d="M458,82 L290,146"/>
+              <path class="link" d="M448,242 L292,166"/>
+              <circle class="keep-off" cx="66" cy="166" r="30"/>
+              <g transform="translate(52,156)"><path class="boat" d="M0 8 H28 L24 14 H4 Z"/><path d="M14 8 V0" stroke="var(--ink-3)" stroke-width="1.4"/></g>
+              <text class="boat-label" x="14" y="212">Cursor, outside Jevellan</text>
+              <g transform="translate(86,40)"><path class="hull" d="M4 28 H44 L39 36 H9 Z"/><path class="mast" d="M24 27 V4"/><path class="sail" d="M26 6 C33 12 36 19 37 26 H26 Z"/><path class="sail" d="M22 8 L22 26 H11 Z"/><use href="#flag-ES" x="24" y="-2" width="10" height="6.7"/></g>
+              <text class="name" x="110" y="96" text-anchor="middle">Mac mini</text><text class="sub" x="110" y="110" text-anchor="middle">1 waiting for you</text>
+              <g transform="translate(434,48)"><path class="hull" d="M4 28 H44 L39 36 H9 Z"/><path class="mast" d="M24 27 V4"/><path class="sail" d="M26 6 C33 12 36 19 37 26 H26 Z"/><path class="sail" d="M22 8 L22 26 H11 Z"/><use href="#flag-ES" x="24" y="-2" width="10" height="6.7"/></g>
+              <text class="name" x="458" y="104" text-anchor="middle">dev box</text><text class="sub" x="458" y="118" text-anchor="middle">1 running · streams live</text>
+              <g transform="translate(424,210)"><path class="hull" d="M4 28 H44 L39 36 H9 Z"/><path class="mast" d="M24 27 V4"/><path class="sail" d="M26 6 C33 12 36 19 37 26 H26 Z"/><path class="sail" d="M22 8 L22 26 H11 Z"/><use href="#flag-ES" x="24" y="-2" width="10" height="6.7"/></g>
+              <text class="name" x="448" y="264" text-anchor="middle">old laptop</text><text class="sub" x="448" y="278" text-anchor="middle">offline since 09:12</text>
+              <circle class="farol-glow" cx="236" cy="158" r="16"/>
+              <g transform="translate(222,112) scale(1.45)"><path class="hull" d="M4 28 H44 L39 36 H9 Z"/><path class="mast" d="M18 27 V6"/><path class="mast" d="M30 27 V2"/><path class="sail" d="M31 4 C38 10 41 18 42 26 H31 Z"/><path class="sail" d="M29 6 L29 26 H19 Z"/><path class="sail" d="M17 9 L17 26 H8 Z"/><use href="#flag-PT" x="30" y="-5" width="10" height="7"/></g>
+              <circle class="farol" cx="232" cy="154" r="3.4"/>
+              <text class="name" x="285" y="188" text-anchor="middle">MacBook</text><text class="sub" x="285" y="202" text-anchor="middle">hub · 2 running</text>
+              <rect class="tag-bg hub" x="252" y="212" width="66" height="18" rx="9"/><text class="tag-text" x="285" y="224.5" text-anchor="middle">flagship</text>
+            </svg>
+            <p class="fleet-note"><svg class="flag" aria-hidden="true"><use href="#flag-PT"/></svg>The flagship flies Portugal. <svg class="flag" aria-hidden="true"><use href="#flag-ES"/></svg>The fleet flies Spain. Just like 1519.</p>
+            <div class="mini-ui" aria-label="Example conversation list">
+              <div class="mini-ui-bar"><span class="wm">Jevellan</span><span class="small">Conversations, all devices</span><span class="switcher">MacBook &#9662;</span></div>
+              <ul class="conv-list">
+                <li><span class="sdot run"></span><span><span class="t">Dark mode, saved per user</span><br><span class="m">jevellan-site · 2 min ago</span></span><span class="dev">MacBook</span></li>
+                <li><span class="sdot run"></span><span><span class="t">Flaky login test</span><br><span class="m">api · just now</span></span><span class="dev">dev box</span></li>
+                <li><span class="sdot wait"></span><span><span class="t">Which date library?</span><br><span class="m">notes-app · 18 min ago</span></span><span class="dev">Mac mini</span></li>
+              </ul>
+            </div>
+          </div>
+          <dl class="terms">
+            <div class="term"><dt><span class="t">mesh</span><span class="n">the fleet</span></dt><dd>Your machines, joined with a one-time code. Every conversation shows up on every device, and opens and streams from any of them.</dd></div>
+            <div class="term"><dt><span class="t">hub</span><span class="n">the flagship</span></dt><dd>The machine that keeps the shared list, the settings and the encrypted keys. A single machine is its own hub.</dd></div>
+            <div class="term"><dt><span class="t">device</span><span class="n">a ship</span></dt><dd>A conversation runs on the machine you start it from, for its whole life. Steer it from anywhere.</dd></div>
+            <div class="term"><dt><span class="t">switcher</span><span class="n">changing ships</span></dt><dd>Hop to another machine from the header without logging in again.</dd></div>
+            <div class="term"><dt><span class="t">outside agents</span><span class="n">boats in the harbour</span></dt><dd>Jevellan sees Claude Code, Codex and Cursor sessions running outside it, and waits instead of colliding with them.</dd></div>
+            <div class="term"><dt><span class="t">automatic device choice</span><span class="soon">coming about soon</span></dt><dd>Picking a free machine for you. It's in the UI, switched off, so we don't forget.</dd></div>
+          </dl>
+        </div>
+      </article>
+
+      <!-- B: ship -->
+      <article class="inset" aria-labelledby="inset-b">
+        <header class="inset-head"><span class="code">INSET B</span><h3 id="inset-b">The ship <span class="chart-name">runtimes, accounts, rigging</span></h3><span class="scale">Scale: one machine</span></header>
+        <div class="inset-body">
+          <div class="inset-visual">
+            <div class="crews">
+              <div class="crew">
+                <div class="crew-head"><span class="rt-icon" aria-hidden="true">&gt;_</span><h4>Claude Code<span class="via">via the Claude Agent SDK</span></h4></div>
+                <div class="acct">
+                  <div class="acct-top"><span class="name">Max · personal<span class="kind">subscription</span></span><span class="pill resting">resting</span></div>
+                  <div class="gauge"><span>5h</span><span class="g hot" style="--p:92"><i></i></span><span>92%</span></div>
+                  <div class="gauge"><span>week</span><span class="g" style="--p:64"><i></i></span><span>64%</span></div>
+                  <p class="note">Over its 90% ceiling. Back in rotation after the reset.</p>
+                </div>
+                <div class="acct">
+                  <div class="acct-top"><span class="name">Max · work<span class="kind">subscription</span></span><span class="pill jev">in use</span></div>
+                  <div class="gauge"><span>5h</span><span class="g" style="--p:10"><i></i></span><span>10%</span></div>
+                  <div class="gauge"><span>week</span><span class="g" style="--p:51"><i></i></span><span>51%</span></div>
+                </div>
+                <div class="acct">
+                  <div class="acct-top"><span class="name">Anthropic API<span class="kind">api key</span></span><span class="pill locked">waiting</span></div>
+                  <p class="note">Paid use: only when this runtime's subscriptions run out.</p>
+                </div>
+              </div>
+              <div class="crew">
+                <div class="crew-head"><span class="rt-icon" aria-hidden="true">{ }</span><h4>Codex<span class="via">via the Codex SDK</span></h4></div>
+                <div class="acct">
+                  <div class="acct-top"><span class="name">ChatGPT Pro<span class="kind">subscription</span></span><span class="pill ready">ready</span></div>
+                  <div class="devgrid">
+                    <div><span class="sdot done"></span>MacBook</div>
+                    <div><span class="sdot done"></span>Mac mini</div>
+                    <div><span class="sdot wait"></span>dev box<span class="login">Log in on dev box</span></div>
+                  </div>
+                  <p class="note">Signed in per device, one click each, from whichever machine you're on.</p>
+                </div>
+                <div class="acct">
+                  <div class="acct-top"><span class="name">OpenAI API<span class="kind">api key</span></span><span class="pill locked">never</span></div>
+                  <p class="note">Paid use: never automatically.</p>
+                </div>
+              </div>
+            </div>
+            <div class="rigging-tray">
+              <span class="rt-title">Rigging carried on every voyage</span>
+              <div class="chips"><span class="chip always">Safety · always on</span><span class="chip on">Project memory</span><span class="chip">MCP servers</span><span class="chip">skills</span><span class="chip">plugins</span><span class="chip">hooks</span><span class="chip">rules</span><span class="chip">commands</span><span class="chip">settings</span></div>
+            </div>
+            <div class="next-crews" aria-label="More agents on the way"><span class="nc-title">More crews signing on</span><span class="nc">Gemini CLI</span><span class="nc">OpenCode</span><span class="nc">Pi</span><span class="nc">Cursor</span></div>
+          </div>
+          <dl class="terms">
+            <div class="term"><dt><span class="t">runtime</span><span class="n">the crew</span></dt><dd>The coding agents Jevellan drives, each through its own SDK and tools. Claude Code and Codex first; Gemini CLI, OpenCode, Pi and others are next.</dd></div>
+            <div class="term"><dt><span class="t">berth</span><span class="n">a place aboard</span></dt><dd>The small package that brings an agent aboard. One contract for every agent, and a test kit to prove a new one is seaworthy.</dd></div>
+            <div class="term"><dt><span class="t">account</span><span class="n">provisions</span></dt><dd>Subscriptions and API keys, as many as you like per runtime. When one runs low, the next one takes over.</dd></div>
+            <div class="term"><dt><span class="t">paid use</span><span class="n">the emergency rations</span></dt><dd>An API key waits for your rule: always, only when subscriptions run out, or never.</dd></div>
+            <div class="term"><dt><span class="t">rigging</span><span class="n">what the crew carries</span></dt><dd>Whatever the agent supports: MCP servers, skills, plugins, hooks, rules, commands and settings, installed into Jevellan's own homes. Your <code>~/.claude</code> and <code>~/.codex</code> stay untouched.</dd></div>
+            <div class="term"><dt><span class="t">model &amp; effort</span><span class="n">who's on watch, how hard they row</span></dt><dd>Picked for every stretch by Jev, from the menu you set. Any model your agents offer can go on it.</dd></div>
+            <div class="term"><dt><span class="t">manifest</span><span class="n">the ship's papers</span></dt><dd>Your whole setup in one APM file: agents, models, rigging and routing rules. Share it, import it, uninstall it cleanly.</dd></div>
+          </dl>
+        </div>
+      </article>
+
+      <!-- C: voyage -->
+      <article class="inset" aria-labelledby="inset-c">
+        <header class="inset-head"><span class="code">INSET C</span><h3 id="inset-c">The voyage <span class="chart-name">conversations and work</span></h3><span class="scale">Scale: one conversation</span></header>
+        <div class="inset-body">
+          <div class="inset-visual">
+            <div class="voyage">
+              <div class="voyage-head"><span class="t">Dark mode, saved per user</span><span class="m">jevellan-site · MacBook</span></div>
+              <div class="passage">
+                <span class="passage-label"><b>Passage 1</b> one piece of work</span>
+                <div class="msg"><span class="who">you</span>Add a dark mode to the settings page and save the choice per user.</div>
+                <div class="watch-row" aria-label="plan, implement, then a question for you">
+                  <svg class="flag" aria-label="plan"><use href="#flag-P"/></svg><span class="arrow">&#8250;</span>
+                  <svg class="flag" aria-label="implement"><use href="#flag-I"/></svg><span class="arrow">&#8250;</span>
+                  <svg class="flag" aria-label="ask you"><use href="#flag-V"/></svg><span class="pause-chip">waiting for you</span>
+                </div>
+                <div class="msg reply"><span class="who">Jevellan asks</span>Should new users start in light, dark, or follow the system?</div>
+                <div class="msg"><span class="who">you</span>Follow the system.</div>
+                <span class="same-passage">Same passage. The request, the base commit and the counters carry on.</span>
+                <div class="watch-row" aria-label="test, review, implement, done">
+                  <svg class="flag" aria-label="test"><use href="#flag-T"/></svg><span class="arrow">&#8250;</span>
+                  <svg class="flag" aria-label="review"><use href="#flag-R"/></svg><span class="arrow">&#8250;</span>
+                  <svg class="flag" aria-label="implement"><use href="#flag-I"/></svg><span class="arrow">&#8250;</span>
+                  <svg class="flag" aria-label="done"><use href="#flag-C"/></svg><span class="landfall-chip">landfall: verified, published</span>
+                </div>
+              </div>
+              <div class="passage">
+                <span class="passage-label"><b>Passage 2</b> a new request, a new piece of work</span>
+                <div class="msg"><span class="who">you</span>Now add a keyboard shortcut for it.</div>
+                <div class="watch-row"><svg class="flag" aria-label="implement"><use href="#flag-I"/></svg><span class="running-chip">running</span></div>
+              </div>
+            </div>
+          </div>
+          <dl class="terms">
+            <div class="term"><dt><span class="t">conversation</span><span class="n">the voyage</span></dt><dd>Where you talk to Jevellan about one project.</dd></div>
+            <div class="term"><dt><span class="t">work</span><span class="n">a passage</span></dt><dd>One request and everything done for it. Pauses, questions and corrections never start a new one, so your original words stay in every brief.</dd></div>
+            <div class="term"><dt><span class="t">note</span><span class="n">a word to the next watch</span></dt><dd>Adds something to the next stretch's brief without interrupting the one running.</dd></div>
+            <div class="term"><dt><span class="t">correction</span><span class="n">flag X</span></dt><dd>Stops the running stretch and changes course.</dd></div>
+            <div class="term"><dt><span class="t">done</span><span class="n">landfall</span></dt><dd>Jevellan runs the tests itself on the final commit, then publishes to main.</dd></div>
+          </dl>
+        </div>
+      </article>
+
+      <!-- D: watch -->
+      <article class="inset" aria-labelledby="inset-d">
+        <header class="inset-head"><span class="code">INSET D</span><h3 id="inset-d">The watch <span class="chart-name">stretches and handoffs</span></h3><span class="scale">Scale: one step</span></header>
+        <div class="inset-body stacked">
+          <div class="inset-visual">
+            <div class="watch-flow">
+              <div class="wf-box">
+                <h5>Brief in</h5>
+                <div class="brief-stack">
+                  <span class="req">This request, verbatim</span>
+                  <span>What else you said</span>
+                  <span>Constraints · plan</span>
+                  <span>Where things stand</span>
+                  <span>Last 3 handoffs</span>
+                  <span class="mem">Memory: 3 notes</span>
+                  <span class="step">Your step: implement</span>
+                </div>
+              </div>
+              <div class="wf-arrow" aria-hidden="true">&#8594;</div>
+              <div class="wf-box">
+                <h5>Stretch</h5>
+                <div class="term-box" aria-label="An example Codex stretch">
+                  <div class="mag">codex · GPT-6 · high</div>
+                  <div class="dim">fresh session · 0 min</div>
+                  <div>read src/settings/theme.ts</div>
+                  <div>edit 4 files</div>
+                  <div>npm test <span class="okc">&#10003; 38 passed</span></div>
+                  <div class="dim">memory_write "theme tokens"</div>
+                  <div class="mag">jevellan_handoff()</div>
+                </div>
+              </div>
+              <div class="wf-arrow" aria-hidden="true">&#8594;</div>
+              <div class="wf-box">
+                <h5>Handoff out</h5>
+                <div class="handoff-card">
+                  <div><span class="k">status</span><span class="v okc">done</span></div>
+                  <div><span class="k">summary</span><span class="v">Toggle, tokens and saved preference</span></div>
+                  <div><span class="k">evidence</span><span class="v">tests, 4 files</span></div>
+                  <div><span class="k">findings</span><span class="v">1</span></div>
+                  <div><span class="k">blockers</span><span class="v">none</span></div>
+                  <div><span class="k">next?</span><span class="v jevc">review</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="ledger-strip">
+              <div class="lbl"><span>ledger: every event, append-only</span><span>reload mid-stream: no gaps, no repeats</span></div>
+              <div class="ledger-ticks" aria-hidden="true"><i style="left:22%"></i><i style="left:47%"></i><i style="left:71%"></i><i style="left:93%"></i></div>
+            </div>
+          </div>
+          <dl class="terms">
+            <div class="term"><dt><span class="t">stretch</span><span class="n">a watch</span></dt><dd>One fresh session doing one thing: plan, implement, test, review. Then it hands over and goes below.</dd></div>
+            <div class="term"><dt><span class="t">brief</span><span class="n">the orders</span></dt><dd>What a stretch starts from. Built in code, capped at about 12k tokens, with your request always word for word.</dd></div>
+            <div class="term"><dt><span class="t">handoff</span><span class="n">the change of watch</span></dt><dd>What the stretch leaves behind: status, summary, evidence, findings, blockers and a suggestion for what's next.</dd></div>
+            <div class="term"><dt><span class="t">ledger</span><span class="n">the ship's log</span></dt><dd>Every event, in order, never rewritten. It's what the stream, the Why drawer and the improver read.</dd></div>
+            <div class="term"><dt><span class="t">memory</span><span class="n">the charts</span></dt><dd>Notes that live in the project folder and travel through git. Claude Code and Codex read the same ones.</dd></div>
+          </dl>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============ decisions ============ -->
+<section class="section chart-grid" id="decisions" aria-labelledby="decisions-title">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow"><span class="rule"></span>The change of watch</p>
+      <h2 id="decisions-title">Every handoff, Jev gets asked.</h2>
+      <p class="lede">When a stretch hands over, Jevellan lays out the facts and asks Jev a handful of typed questions. Code handles everything that's about resources and limits.</p>
+    </div>
+    <ol class="pipeline" aria-label="What happens at every change of watch">
+      <li class="pstep">
+        <div class="pstep-top"><span class="pstep-num">1</span><span class="pstep-who">stretch</span></div><h4>The handoff lands</h4>
+        <p>Status, summary, evidence, findings and a suggested next step. It's evidence, not an order.</p>
+        <div class="facts"><span>status: done</span><span>tests: passed</span><span>next?: review</span></div>
+      </li>
+      <li class="pstep">
+        <div class="pstep-top"><span class="pstep-num">2</span><span class="pstep-who">code</span></div><h4>Code lays out the chart</h4>
+        <p>Which actions are allowed now, which models have an account ready, and plain facts instead of numbers.</p>
+        <div class="facts"><span>6 files: medium change</span><span>stored data touched</span><span>no verification yet</span></div>
+      </li>
+      <li class="pstep jev">
+        <div class="pstep-top"><span class="pstep-num">3</span><span class="pstep-who">Jev · call A</span></div><h4>What happens next?</h4>
+        <div class="qs">
+          <div class="q"><span class="qtype">Choice</span><span>Next step: reply, plan, implement, test, review, ask you, or done.</span></div>
+          <div class="q"><span class="qtype">Noul</span><span>Did you just ask me to remember something?</span></div>
+        </div>
+      </li>
+      <li class="pstep jev">
+        <div class="pstep-top"><span class="pstep-num">4</span><span class="pstep-who">Jev · call B</span></div><h4>Who takes it, and how hard?</h4>
+        <div class="qs">
+          <div class="q"><span class="qtype">Noul</span><span>Is the current model right for this step?</span></div>
+          <div class="q"><span class="qtype">Choice</span><span>If not, which model?</span></div>
+          <div class="q"><span class="qtype">Choice</span><span>How much effort: low to max.</span></div>
+        </div>
+      </li>
+      <li class="pstep jev">
+        <div class="pstep-top"><span class="pstep-num">5</span><span class="pstep-who">Jev · recall</span></div><h4>What should it remember?</h4>
+        <div class="qs">
+          <div class="q"><span class="qtype">Score</span><span>How useful is each of the top 12 memory notes? Keep the ones scoring 2 or more, up to 5.</span></div>
+        </div>
+      </li>
+      <li class="pstep">
+        <div class="pstep-top"><span class="pstep-num">6</span><span class="pstep-who">code</span></div><h4>Code sets sail</h4>
+        <p>Picks the account (subscriptions first, least used first), builds the brief and starts a fresh session.</p>
+        <div class="facts"><span>Max · work</span><span>brief &#8804; 12k</span><span>new session</span></div>
+      </li>
+    </ol>
+    <div class="pipeline-loop" aria-hidden="true"><span>&#8617;</span><span class="line"></span><b>repeat at the next handoff, until landfall</b></div>
+
+    <div class="split">
+      <div class="split-col jevside">
+        <h3><span class="who">Jev</span>decides meaning.</h3>
+        <ul class="split-list">
+          <li><svg style="color:var(--jev)" aria-hidden="true"><use href="#i-compass"/></svg><span><b>The next step</b>, from the actions code allows right now.</span></li>
+          <li><svg style="color:var(--jev)" aria-hidden="true"><use href="#i-compass"/></svg><span><b>The model</b>, reading the one-line description you wrote for each.</span></li>
+          <li><svg style="color:var(--jev)" aria-hidden="true"><use href="#i-compass"/></svg><span><b>The effort</b>, separately, because the same model fits easy and hard work.</span></li>
+          <li><svg style="color:var(--jev)" aria-hidden="true"><use href="#i-compass"/></svg><span><b>The memory</b> worth bringing along for this step.</span></li>
+        </ul>
+      </div>
+      <div class="split-col">
+        <h3><span class="who">Code</span>decides resources.</h3>
+        <ul class="split-list">
+          <li><svg aria-hidden="true"><use href="#i-anchor"/></svg><span><b>Which account pays</b>: logged in, under its ceiling, allowed to spend.</span></li>
+          <li><svg aria-hidden="true"><use href="#i-anchor"/></svg><span><b>Guards</b>: step limits, no-progress, repeated test failures, a cost cap.</span></li>
+          <li><svg aria-hidden="true"><use href="#i-anchor"/></svg><span><b>Git</b>: checkpoints, its own test run, and publishing only when it passes.</span></li>
+          <li><svg aria-hidden="true"><use href="#i-anchor"/></svg><span><b>Where it runs</b>: the machine you started on, in the exact checkout you set up.</span></li>
+        </ul>
+      </div>
+      <div class="split-foot"><b>Jev never compares numbers.</b><span>Code turns them into facts first: &#8220;large change&#8221;, not &#8220;14 files&#8221;.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ example passage ============ -->
+<section class="section alt" id="passage" aria-labelledby="passage-title">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow"><span class="rule"></span>An example passage</p>
+      <h2 id="passage-title">One request, three models, zero dropdowns.</h2>
+      <p class="lede">Five stretches across three models, three effort levels and three accounts, all chosen by Jev. Open any stretch to see why. That's the Why drawer, and every stretch in the app has one.</p>
+    </div>
+    <div class="passage-grid">
+      <div>
+        <div class="request-bubble"><span class="who">you</span><span>Add a dark mode to the settings page and save the choice per user.</span></div>
+        <div class="log">
+          <details open>
+            <summary><svg class="flag" aria-hidden="true"><use href="#flag-P"/></svg>
+              <span class="row-main"><span class="row-title"><span class="n">stretch 1</span><span class="a">plan</span><span class="why-short">Several parts to touch and stored data: plan first.</span></span>
+              <span class="row-chips"><span class="rc model">Opus</span><span class="rc effort">high</span><span class="rc acct">Max · personal</span><span class="rc dev">MacBook</span></span></span>
+              <span class="why-toggle">Why</span></summary>
+            <div class="why">
+              <div><h5>Next step</h5><div class="bars"><div class="bar win" style="--p:.64"><span class="lbl">plan</span><span class="track"><span class="fill"></span></span><span class="val">0.64</span></div><div class="bar" style="--p:.27"><span class="lbl">implement</span><span class="track"><span class="fill"></span></span><span class="val">0.27</span></div><div class="bar" style="--p:.05"><span class="lbl">reply</span><span class="track"><span class="fill"></span></span><span class="val">0.05</span></div></div></div>
+              <div><h5>Model &amp; effort</h5><div class="bars"><div class="bar win" style="--p:.58"><span class="lbl">Opus</span><span class="track"><span class="fill"></span></span><span class="val">0.58</span></div><div class="bar" style="--p:.31"><span class="lbl">Fable</span><span class="track"><span class="fill"></span></span><span class="val">0.31</span></div><div class="bar win" style="--p:.62"><span class="lbl">high</span><span class="track"><span class="fill"></span></span><span class="val">0.62</span></div></div></div>
+              <div><h5>Account</h5><ul class="acct-rank"><li class="chosen"><span class="v">&#10003;</span>Max · personal: 38% of its week</li><li><span class="muted">2</span>Max · work: 51% of its week</li><li><span class="muted">&#9675;</span>API key: only when subscriptions run out</li></ul></div>
+            </div>
+          </details>
+          <details>
+            <summary><svg class="flag" aria-hidden="true"><use href="#flag-I"/></svg>
+              <span class="row-main"><span class="row-title"><span class="n">stretch 2</span><span class="a">implement</span><span class="why-short">UI judged by eye goes to Fable, at max.</span></span>
+              <span class="row-chips"><span class="rc model">Fable</span><span class="rc effort">max</span><span class="rc acct">Max · personal</span><span class="rc dev">MacBook</span></span></span>
+              <span class="why-toggle">Why</span></summary>
+            <div class="why">
+              <div><h5>Next step</h5><div class="bars"><div class="bar win" style="--p:.81"><span class="lbl">implement</span><span class="track"><span class="fill"></span></span><span class="val">0.81</span></div><div class="bar" style="--p:.07"><span class="lbl">test</span><span class="track"><span class="fill"></span></span><span class="val">0.07</span></div><div class="bar" style="--p:.06"><span class="lbl">ask you</span><span class="track"><span class="fill"></span></span><span class="val">0.06</span></div></div></div>
+              <div><h5>Model &amp; effort</h5><p class="plain">Keep Opus? <b>0.22</b>, under the 0.6 bar, so switch.</p><div class="bars"><div class="bar win" style="--p:.74"><span class="lbl">Fable</span><span class="track"><span class="fill"></span></span><span class="val">0.74</span></div><div class="bar win" style="--p:.61"><span class="lbl">max</span><span class="track"><span class="fill"></span></span><span class="val">0.61</span></div></div></div>
+              <div><h5>Account</h5><ul class="acct-rank"><li class="chosen"><span class="v">&#10003;</span>Max · personal: 58% of its 5 hours</li><li><span class="muted">2</span>Max · work: 51% of its week</li></ul></div>
+            </div>
+          </details>
+          <details>
+            <summary><svg class="flag" aria-hidden="true"><use href="#flag-T"/></svg>
+              <span class="row-main"><span class="row-title"><span class="n">stretch 3</span><span class="a">test</span><span class="why-short">Same model, fresh session, warm cache. Personal account is resting.</span></span>
+              <span class="row-chips"><span class="rc model kept">Fable</span><span class="rc effort">medium</span><span class="rc acct">Max · work</span><span class="rc dev">MacBook</span></span></span>
+              <span class="why-toggle">Why</span></summary>
+            <div class="why">
+              <div><h5>Next step</h5><div class="bars"><div class="bar win" style="--p:.72"><span class="lbl">test</span><span class="track"><span class="fill"></span></span><span class="val">0.72</span></div><div class="bar" style="--p:.14"><span class="lbl">review</span><span class="track"><span class="fill"></span></span><span class="val">0.14</span></div><div class="bar" style="--p:.09"><span class="lbl">implement</span><span class="track"><span class="fill"></span></span><span class="val">0.09</span></div></div></div>
+              <div><h5>Model &amp; effort</h5><p class="plain">Keep Fable? <b>0.83</b>, over the bar: kept.</p><div class="bars"><div class="bar win" style="--p:.58"><span class="lbl">medium</span><span class="track"><span class="fill"></span></span><span class="val">0.58</span></div><div class="bar" style="--p:.30"><span class="lbl">high</span><span class="track"><span class="fill"></span></span><span class="val">0.30</span></div></div></div>
+              <div><h5>Account</h5><ul class="acct-rank"><li><span class="x">&#10007;</span>Max · personal: 5-hour window at 92%, over its 90% ceiling</li><li class="chosen"><span class="v">&#10003;</span>Max · work: 10% of its 5 hours</li><li><span class="muted">&#9675;</span>API key: subscriptions haven't run out</li></ul></div>
+            </div>
+          </details>
+          <details>
+            <summary><svg class="flag" aria-hidden="true"><use href="#flag-R"/></svg>
+              <span class="row-main"><span class="row-title"><span class="n">stretch 4</span><span class="a">review</span><span class="why-short">Stored data changed: review, by another model family.</span></span>
+              <span class="row-chips"><span class="rc model">GPT-6 · Codex</span><span class="rc effort">high</span><span class="rc acct">ChatGPT Pro</span><span class="rc dev">MacBook</span></span></span>
+              <span class="why-toggle">Why</span></summary>
+            <div class="why">
+              <div><h5>Next step</h5><div class="bars"><div class="bar win" style="--p:.66"><span class="lbl">review</span><span class="track"><span class="fill"></span></span><span class="val">0.66</span></div><div class="bar" style="--p:.21"><span class="lbl">done</span><span class="track"><span class="fill"></span></span><span class="val">0.21</span></div><div class="bar" style="--p:.08"><span class="lbl">test</span><span class="track"><span class="fill"></span></span><span class="val">0.08</span></div></div></div>
+              <div><h5>Model &amp; effort</h5><p class="plain">Keep Fable? <b>0.18</b>. Your profile prefers a reviewer from a different family.</p><div class="bars"><div class="bar win" style="--p:.71"><span class="lbl">GPT-6</span><span class="track"><span class="fill"></span></span><span class="val">0.71</span></div><div class="bar win" style="--p:.66"><span class="lbl">high</span><span class="track"><span class="fill"></span></span><span class="val">0.66</span></div></div></div>
+              <div><h5>Account</h5><ul class="acct-rank"><li class="chosen"><span class="v">&#10003;</span>ChatGPT Pro: signed in on this MacBook</li><li><span class="muted">&#9675;</span>OpenAI API key: never automatically</li></ul></div>
+            </div>
+          </details>
+          <details>
+            <summary><svg class="flag" aria-hidden="true"><use href="#flag-I"/></svg>
+              <span class="row-main"><span class="row-title"><span class="n">stretch 5</span><span class="a">implement</span><span class="why-short">The review found one serious issue. Fix it.</span></span>
+              <span class="row-chips"><span class="rc model">Fable</span><span class="rc effort">high</span><span class="rc acct">Max · work</span><span class="rc dev">MacBook</span></span></span>
+              <span class="why-toggle">Why</span></summary>
+            <div class="why">
+              <div><h5>Next step</h5><div class="bars"><div class="bar win" style="--p:.77"><span class="lbl">implement</span><span class="track"><span class="fill"></span></span><span class="val">0.77</span></div><div class="bar" style="--p:.09"><span class="lbl">ask you</span><span class="track"><span class="fill"></span></span><span class="val">0.09</span></div><div class="bar" style="--p:.06"><span class="lbl">done</span><span class="track"><span class="fill"></span></span><span class="val">0.06</span></div></div></div>
+              <div><h5>Model &amp; effort</h5><p class="plain">Keep GPT-6? <b>0.12</b>. Back to the UI model.</p><div class="bars"><div class="bar win" style="--p:.64"><span class="lbl">Fable</span><span class="track"><span class="fill"></span></span><span class="val">0.64</span></div><div class="bar win" style="--p:.64"><span class="lbl">high</span><span class="track"><span class="fill"></span></span><span class="val">0.64</span></div></div></div>
+              <div><h5>Account</h5><ul class="acct-rank"><li><span class="x">&#10007;</span>Max · personal: still resting</li><li class="chosen"><span class="v">&#10003;</span>Max · work: 27% of its 5 hours</li></ul></div>
+            </div>
+          </details>
+          <div class="landfall-row">
+            <svg class="flag" aria-hidden="true"><use href="#flag-C"/></svg>
+            <div><span class="t">done: landfall</span><p>Jev picked done (0.86). Jevellan ran the tests itself on the final commit, then published to main.</p></div>
+          </div>
+        </div>
+      </div>
+      <aside class="side-stack">
+        <div class="receipt" aria-label="Example verification receipt">
+          <div class="r-title">VERIFICATION RECEIPT</div>
+          <div class="r-row"><span>work</span><span>dark mode, per user</span></div>
+          <div class="r-row"><span>command</span><span>npm test</span></div>
+          <div class="r-row"><span>exit</span><span class="r-ok">0 &#10003;</span></div>
+          <div class="r-row"><span>commit</span><span>7f3c2a1</span></div>
+          <div class="r-row"><span>tree clean</span><span class="r-ok">yes</span></div>
+          <div class="r-row"><span>published</span><span>main, no force</span></div>
+          <div class="r-foot">written by Jevellan, not by an agent</div>
+        </div>
+        <div class="profile-card">
+          <header><h4>Your routing profile</h4><span>plain words · editable</span></header>
+          <ol>
+            <li>Prefer staying on the current model when it fits the next step.</li>
+            <li><mark>UI, visual work and anything judged by looking goes to Fable.</mark></li>
+            <li>Long, well-specified implementation prefers GPT through Codex.</li>
+            <li>Review only when the change is large or risky. <mark>Prefer a reviewer from a different model family.</mark></li>
+            <li>Effort follows difficulty, not importance.</li>
+          </ol>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ============ travel light ============ -->
+<section class="section chart-grid" id="lean" aria-labelledby="lean-title">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow"><span class="rule"></span>Travel light</p>
+      <h2 id="lean-title">Small context. Sharp agents.</h2>
+      <p class="lede">Every stretch starts in a fresh session with only what it needs, so the model spends its attention on your code instead of the last three hours of chat.</p>
+    </div>
+    <div class="lean-grid">
+      <article class="lean-card full">
+        <h3>What a stretch starts with</h3>
+        <div class="window-bar">
+          <div class="wb-track" role="img" aria-label="The context window: a small share goes to the agent's own system prompt, a sliver to the action contract, a small share to the brief, and the rest stays free for work.">
+            <div class="wb-seg native">native prompt</div>
+            <div class="wb-seg contract" title="action contract"></div>
+            <div class="wb-seg brief">brief</div>
+            <div class="wb-seg room">the rest: room to read code and think</div>
+          </div>
+          <div class="wb-legend">
+            <div><i style="background:var(--ink-2)"></i><span><b>The agent's own system prompt</b>Exactly what the agent uses on its own. Same quality as using it directly.</span></div>
+            <div><i style="background:var(--sea)"></i><span><b>An action contract</b>Under 200 words: what this step must do and hand back.</span></div>
+            <div><i style="background:var(--jev)"></i><span><b>The brief, at most ~12k tokens</b>Built in code, in this order:</span></div>
+          </div>
+          <ol class="brief-list">
+            <li><span><b>This request</b>, word for word<em class="nt">never trimmed</em></span></li>
+            <li><span><b>Everything else you said</b> about this work</span></li>
+            <li><span><b>Constraints</b><em class="nt">never trimmed</em></span></li>
+            <li><span><b>The plan</b>, in full<em class="nt">never trimmed</em></span></li>
+            <li><span><b>Where things stand</b></span></li>
+            <li><span><b>The last 3 handoffs</b></span></li>
+            <li><span><b>Findings</b> with pointers</span></li>
+            <li><span><b>Memory</b>, at most 2k tokens, picked by Jev</span></li>
+            <li><span><b>Your step</b> and how to hand off</span></li>
+          </ol>
+        </div>
+        <p class="small">Illustrative proportions. When the brief runs long, the oldest handoffs go first. Anything else it needs, the agent can look up in the ledger or in memory.</p>
+      </article>
+      <article class="lean-card">
+        <h3>Two homes, never mixed</h3>
+        <div class="homes">
+          <div class="home yours">
+            <span class="h-title">Your setup</span>
+            <span class="h-path">~/.claude<br>~/.codex<br>~/.basic-memory</span>
+            <span>That skill you installed at 2 a.m. in March. The MCP server from a hackathon.</span>
+            <span class="stamp">never changed</span>
+          </div>
+          <div class="home ours">
+            <span class="h-title">Jevellan's homes</span>
+            <span class="h-path">~/.jevellan/homes/<br>&#160;&#160;claude/&lt;account&gt;/<br>&#160;&#160;codex/&lt;account&gt;/</span>
+            <ul><li>that account's login</li><li>the rigging you switched on</li><li>nothing else</li></ul>
+          </div>
+        </div>
+        <p class="small">The project's bridge, permissions and memory are handed to each stretch at launch and never saved into the home. Two stretches on one account, in two projects, each see only their own.</p>
+      </article>
+      <article class="lean-card">
+        <h3>Only what's needed aboard</h3>
+        <table class="rig-table">
+          <thead><tr><th>Rigging</th><th class="c">Claude Code</th><th class="c">Codex</th></tr></thead>
+          <tbody>
+            <tr><td><span class="it">Safety</span><span class="src">built in · blocks git push, force and service restarts</span></td><td class="c"><span class="tog locked" aria-label="always on"></span></td><td class="c"><span class="tog locked" aria-label="always on"></span></td></tr>
+            <tr><td><span class="it">Project memory</span><span class="src">built in · capture hooks</span></td><td class="c"><span class="tog on" aria-label="on"></span></td><td class="c"><span class="tog on" aria-label="on"></span></td></tr>
+            <tr><td><span class="it">team-conventions</span><span class="src">skill · your package</span></td><td class="c"><span class="tog on" aria-label="on"></span></td><td class="c"><span class="tog on" aria-label="on"></span></td></tr>
+            <tr><td><span class="it">figma-export</span><span class="src">MCP server · local</span></td><td class="c"><span class="tog on" aria-label="on"></span></td><td class="c"><span class="tog" aria-label="off"></span></td></tr>
+            <tr><td><span class="it">hackathon-thing</span><span class="src">MCP server · local</span></td><td class="c"><span class="tog" aria-label="off"></span></td><td class="c"><span class="tog" aria-label="off"></span></td></tr>
+          </tbody>
+        </table>
+        <p class="small">Choose per runtime in Settings, then Rigging. Everything else stays ashore.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============ helm ============ -->
+<section class="section alt" id="helm" aria-labelledby="helm-title">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow"><span class="rule"></span>Take the helm</p>
+      <h2 id="helm-title">It never waits for you. You can still grab the wheel.</h2>
+      <p class="lede">Jev's decisions don't need your approval. Change any of them afterwards, and Jevellan remembers for next time. Try it:</p>
+    </div>
+    <div class="helm-grid">
+      <div class="demo" id="helm-demo">
+        <div class="demo-head"><span class="t">Dark mode, saved per user</span><span class="m">jevellan-site · MacBook</span><button class="reset" type="button" id="helm-reset">Reset</button></div>
+        <div class="steps" id="helm-steps"></div>
+        <div class="change-pop" id="helm-pop">
+          <h4>Change this step</h4>
+          <div class="diffs"><span>model <del>Opus</del> &#8594; <ins>Fable</ins></span><span>effort <del>high</del> &#8594; <ins>max</ins></span></div>
+          <div class="choices">
+            <button class="choice-btn primary" type="button" id="helm-undo"><span class="c-t"><svg class="flag" aria-hidden="true"><use href="#flag-S"/></svg>Override and undo</span><span class="c-d">Stops what's running, undoes steps 2 and 3, redoes step 2 with Fable at max. Then it carries on by itself.</span></button>
+            <button class="choice-btn" type="button" id="helm-just"><span class="c-t">Just override</span><span class="c-d">Nothing stops, nothing is undone. Recorded, so Jev chooses better next time.</span></button>
+          </div>
+        </div>
+        <div class="demo-notice" id="helm-notice" aria-live="polite">Pick one. Either way, nothing waits for you.</div>
+        <div class="composer" aria-label="Composer while a stretch is running">
+          <div class="input">Send a correction, or add a note for the next step.</div>
+          <div class="row">
+            <span class="ctl">Next step: <b>Auto</b></span><span class="ctl">Model: <b>Auto</b></span><span class="ctl">Effort: <b>Auto</b></span>
+            <span class="btns"><span class="b corr"><svg class="flag" aria-hidden="true"><use href="#flag-X"/></svg>Send correction</span><span class="b note">Add note</span></span>
+          </div>
+        </div>
+      </div>
+      <div class="helm-side">
+        <div class="improver-card">
+          <div class="ic-head">
+            <span class="ic-kicker"><svg width="14" height="14" aria-hidden="true"><use href="#i-moon"/></svg>The middle watch · 03:00</span>
+            <h4>UI implementation goes to Fable, at max</h4>
+          </div>
+          <div class="ic-body">
+            <p class="reason">Overnight, the improver read your corrections: 3 this week, one of them with undo.</p>
+            <div class="diff" aria-label="Suggested edit to the routing profile">
+              <div class="del">UI, visual work and anything judged by looking goes to Fable.</div>
+              <div class="add">UI, visual work and anything judged by looking goes to Fable<mark>, at max effort when implementing</mark>.</div>
+            </div>
+            <p class="checked">Checked against 24 saved cases: <b>22 unchanged, 1 better</b>, 1 worse</p>
+            <div class="ic-actions"><span class="apply">Apply</span><span>Dismiss</span><span>Change it</span></div>
+          </div>
+          <div class="care-line">
+            <span>Memory care for jevellan-site: merged 3 notes, archived 2, fixed 1 link.</span>
+            <span class="links"><span>View changes</span><span>Undo</span></span>
+          </div>
+        </div>
+        <p class="small">The improver never applies routing changes by itself. You apply, dismiss, or say what you want instead in plain words. Only memory care tidies up on its own, and tells you in the morning.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ signal book ============ -->
+<section class="section chart-grid" id="signals" aria-labelledby="signals-title">
+  <div class="wrap">
+    <div class="section-head center">
+      <p class="eyebrow"><span class="rule"></span>The signal book<span class="rule"></span></p>
+      <h2 id="signals-title">Every step flies a flag.</h2>
+      <p class="lede">The italic meanings are the real ones from the International Code of Signals. We checked. Some fit a little too well.</p>
+    </div>
+    <div class="farol-note">
+      <svg class="lanterns" viewBox="0 0 70 70" aria-hidden="true"><circle class="g" cx="22" cy="30" r="12"/><circle class="g" cx="48" cy="30" r="12"/><path class="p" d="M8 14 H62"/><path class="p" d="M22 14 V24 M48 14 V24"/><rect class="h" x="17" y="24" width="10" height="3"/><rect class="h" x="43" y="24" width="10" height="3"/><circle class="l" cx="22" cy="32" r="5"/><circle class="l" cx="48" cy="32" r="5"/><path d="M10 56 C18 50 26 60 35 55 S52 50 60 56" fill="none" stroke="var(--sea)" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <p><span class="flags-inline"><svg class="flag" aria-hidden="true"><use href="#flag-PT"/></svg><svg class="flag" aria-hidden="true"><use href="#flag-ES"/></svg></span>In 1519 Magellan, a Portuguese navigator sailing for the Spanish crown, kept five ships together at night with one light burning on his flagship, the <span class="chart-name">farol</span>, and a few lantern signals. Two lights meant change tack. Three meant shorten sail. Every ship answered in kind. Jevellan does the same for your agents, with flags.</p>
+    </div>
+    <div class="signals">
+      <div class="signal"><div class="s-top"><svg class="flag" aria-hidden="true"><use href="#flag-K"/></svg><span><span class="use">reply</span><span class="letter">K · KILO</span></span></div><p class="ics">&#8220;I wish to communicate with you.&#8221;</p><p class="ours">Answer you. No changes.</p></div>
+      <div class="signal"><div class="s-top"><svg class="flag" aria-hidden="true"><use href="#flag-P"/></svg><span><span class="use">plan</span><span class="letter">P · PAPA</span></span></div><p class="ics">&#8220;All persons should report on board, as the vessel is about to proceed to sea.&#8221;</p><p class="ours">Work out the route before touching anything.</p></div>
+      <div class="signal"><div class="s-top"><svg class="flag" aria-hidden="true"><use href="#flag-I"/></svg><span><span class="use">implement</span><span class="letter">I · INDIA</span></span></div><p class="ics">&#8220;I am altering my course to port.&#8221;</p><p class="ours">Make or fix the change.</p></div>
+      <div class="signal"><div class="s-top"><svg class="flag" aria-hidden="true"><use href="#flag-T"/></svg><span><span class="use">test</span><span class="letter">T · TANGO</span></span></div><p class="ics">&#8220;Keep clear of me.&#8221;</p><p class="ours">Run the tests and add the missing ones.</p></div>
+      <div class="signal"><div class="s-top"><svg class="flag" aria-hidden="true"><use href="#flag-R"/></svg><span><span class="use">review</span><span class="letter">R · ROMEO</span></span></div><p class="ics">No single-flag meaning.</p><p class="ours">An independent review of the change. Neither does &#8220;LGTM&#8221;.</p></div>
+      <div class="signal"><div class="s-top"><svg class="flag" aria-hidden="true"><use href="#flag-U"/></svg><span><span class="use">adversarial review</span><span class="letter">U · UNIFORM</span></span></div><p class="ics">&#8220;You are running into danger.&#8221;</p><p class="ours">Try hard to break it before calling it done.</p></div>
+      <div class="signal"><div class="s-top"><svg class="flag" aria-hidden="true"><use href="#flag-D"/></svg><span><span class="use">integrate</span><span class="letter">D · DELTA</span></span></div><p class="ics">&#8220;Keep clear of me; I am manoeuvring with difficulty.&#8221;</p><p class="ours">Bring in newer work from main and resolve conflicts.</p></div>
+      <div class="signal"><div class="s-top"><svg class="flag" aria-hidden="true"><use href="#flag-V"/></svg><span><span class="use">ask you</span><span class="letter">V · VICTOR</span></span></div><p class="ics">&#8220;I require assistance.&#8221;</p><p class="ours">Stop and ask what only you can answer.</p></div>
+      <div class="signal"><div class="s-top"><svg class="flag" aria-hidden="true"><use href="#flag-C"/></svg><span><span class="use">done</span><span class="letter">C · CHARLIE</span></span></div><p class="ics">&#8220;Affirmative.&#8221;</p><p class="ours">Verified by Jevellan, then published.</p></div>
+      <div class="signal"><div class="s-top"><svg class="flag" aria-hidden="true"><use href="#flag-X"/></svg><span><span class="use">correction</span><span class="letter">X · X-RAY</span></span></div><p class="ics">&#8220;Stop carrying out your intentions and watch for my signals.&#8221;</p><p class="ours">You change course mid-stretch.</p></div>
+      <div class="signal"><div class="s-top"><svg class="flag" aria-hidden="true"><use href="#flag-S"/></svg><span><span class="use">override and undo</span><span class="letter">S · SIERRA</span></span></div><p class="ics">&#8220;I am operating astern propulsion.&#8221;</p><p class="ours">Back up to a step and redo it your way.</p></div>
+      <div class="signal"><div class="s-top"><svg class="flag" aria-hidden="true"><use href="#flag-M"/></svg><span><span class="use">waiting for you</span><span class="letter">M · MIKE</span></span></div><p class="ics">&#8220;My vessel is stopped and making no way through the water.&#8221;</p><p class="ours">Your turn. Reply and it sails on.</p></div>
+      <div class="signal"><div class="s-top"><svg class="flag" aria-hidden="true"><use href="#flag-L"/></svg><span><span class="use">guard</span><span class="letter">L · LIMA</span></span></div><p class="ics">&#8220;You should stop your vessel instantly.&#8221;</p><p class="ours">A limit was reached: steps, no progress, failing tests or cost.</p></div>
+      <div class="signal special"><div class="s-top"><svg class="flag" aria-hidden="true"><use href="#flag-H"/></svg><span><span class="use">Jev deciding</span><span class="letter">H · HOTEL</span></span></div><p class="ics">&#8220;I have a pilot on board.&#8221;</p><p class="ours">Normal operation.</p></div>
+      <div class="signal"><div class="s-top"><svg class="flag" aria-hidden="true"><use href="#flag-G"/></svg><span><span class="use">Jev unavailable</span><span class="letter">G · GOLF</span></span></div><p class="ics">&#8220;I require a pilot.&#8221;</p><p class="ours">You pick the step until Jev is back. There's no rulebook to fall back on.</p></div>
+      <div class="signal special"><div class="s-top"><svg class="flag" aria-hidden="true"><use href="#flag-J"/></svg><span><span class="use">our initial</span><span class="letter">J · JULIETT</span></span></div><p class="ics">&#8220;I am on fire and have dangerous cargo on board: keep well clear of me.&#8221;</p><p class="ours">J is for Jevellan. We're choosing to read that as a compliment.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ numbers ============ -->
+<section class="section alt" id="numbers" aria-labelledby="numbers-title">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow"><span class="rule"></span>By design</p>
+      <h2 id="numbers-title">Numbers we'll put our name to.</h2>
+      <p class="lede">These are built into how Jevellan works, not measured on a good day.</p>
+    </div>
+    <div class="tiles">
+      <div class="tile"><span class="num jevc">&#8804;12k<span class="u">tokens</span></span><span class="what">in the brief every stretch starts from, built in code</span></div>
+      <div class="tile"><span class="num">&#8804;2k<span class="u">tokens</span></span><span class="what">of project memory per stretch, notes picked by Jev</span></div>
+      <div class="tile"><span class="num">&lt;200<span class="u">words</span></span><span class="what">added to the agent's own system prompt</span></div>
+      <div class="tile"><span class="num jevc">4</span><span class="what">things Jev decides at every change of watch: step, model, effort, memory</span></div>
+      <div class="tile"><span class="num">1</span><span class="what">fresh session per stretch. No three-hour context.</span></div>
+      <div class="tile"><span class="num">24</span><span class="what">stretches per piece of work before it stops and asks. Change it if you're brave.</span></div>
+      <div class="tile"><span class="num">0</span><span class="what">force-pushes. Ever.</span></div>
+      <div class="tile"><span class="num">0</span><span class="what">changes to your <code>~/.claude</code>, <code>~/.codex</code> or <code>~/.basic-memory</code></span></div>
+    </div>
+    <div class="logbook">
+      <svg aria-hidden="true"><use href="#i-log"/></svg>
+      <p><b>The logbook.</b> Real-world numbers from real passages go here once the fleet has logged enough watches. Ran Jevellan on something real? Send us yours.</p>
+      <a class="btn btn-ghost btn-small" href="https://github.com/gongiskhan/jevellan/issues">Open an issue</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ install ============ -->
+<section class="section chart-grid" id="install" aria-labelledby="install-title">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow"><span class="rule"></span>Set sail</p>
+      <h2 id="install-title">One command to cast off.</h2>
+      <p class="lede">After that, everything happens in the browser, including logging accounts into your other machines.</p>
+    </div>
+    <div class="install-steps">
+      <div class="istep">
+        <span class="i-n">01 · INSTALL</span>
+        <h3>Run it once</h3>
+        <div class="cmd"><code>npx github:gongiskhan/jevellan install</code><button class="copy-btn" type="button" data-copy="npx github:gongiskhan/jevellan install">Copy</button></div>
+        <p>Checks Node and git, installs its own copy and a background service, and prints the address to open.</p>
+      </div>
+      <div class="istep">
+        <span class="i-n">02 · OPEN IT</span>
+        <h3>Four short steps</h3>
+        <ul class="firstrun"><li>Set a passphrase</li><li>Add your Jev key</li><li>Add an account to Claude Code or Codex</li><li>Add a project</li></ul>
+      </div>
+      <div class="istep">
+        <span class="i-n">03 · SAY WHAT TO BUILD</span>
+        <h3>Then let go of the wheel</h3>
+        <p>Start a conversation on the machine you're on. Jev picks the steps, the models and the effort. You correct whatever you like, whenever you like.</p>
+      </div>
+    </div>
+    <div class="extras">
+      <div class="extra">
+        <h4>Another machine</h4>
+        <p>Settings, then Devices, gives you a one-time code. On the other machine:</p>
+        <div class="cmd"><code>npx github:gongiskhan/jevellan install --join &lt;hub-url&gt; &lt;code&gt;</code><button class="copy-btn" type="button" data-copy="npx github:gongiskhan/jevellan install --join ">Copy</button></div>
+      </div>
+      <div class="extra">
+        <h4>Leaving</h4>
+        <p><code>jevellan uninstall</code> stops the service and keeps your data. <code>jevellan uninstall --purge</code> scuttles everything it installed, and nothing else.</p>
+      </div>
+      <div class="extra">
+        <h4>You'll need</h4>
+        <ul class="needs">
+          <li><span>Node 22 or newer, and git</span></li>
+          <li><span>A Claude or ChatGPT subscription, or an API key</span></li>
+          <li><span>A Jev key from the <a href="https://console.typesafe.ai/">TypeSafe console</a></span></li>
+          <li class="opt"><span>Tailscale, if you want more than one machine</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="faq">
+      <div>
+        <h3>Questions from the crew</h3>
+        <p class="small" style="margin-top:10px">Anything else, ask on <a href="https://github.com/gongiskhan/jevellan">GitHub</a>.</p>
+      </div>
+      <div class="faq-list">
+        <details><summary>Do I need a Jev key?</summary><div class="a"><p>To let Jevellan steer itself, yes. Without one you pick each step yourself <svg class="flag" aria-hidden="true"><use href="#flag-G"/></svg>(flag G: &#8220;I require a pilot&#8221;). There's no rulebook to fall back on. We threw it overboard.</p></div></details>
+        <details><summary>Will it touch my ~/.claude or ~/.codex?</summary><div class="a"><p>No. Jevellan keeps its own homes under <code>~/.jevellan</code>, one per account. Your settings, logins and memory stay exactly as they are.</p></div></details>
+        <details><summary>Can it push to my main branch?</summary><div class="a"><p>Only Jevellan publishes, only when the work is done, only after its own test run passes on the final commit, and never with <code>--force</code>. Agents don't push.</p></div></details>
+        <details><summary>Can I use my Claude subscription?</summary><div class="a"><p>Jevellan uses the accounts you give it. Anthropic's terms restrict third-party tools from offering Claude subscription logins without their approval. Jevellan has no such approval, so using your own subscription token is your decision. API keys always work.</p></div></details>
+        <details><summary>What if I disagree with Jev?</summary><div class="a"><p>Change any step afterwards: override and undo, or just override. It never stops to ask first, and your corrections shape its next decisions.</p></div></details>
+        <details><summary>Which agents and models does it work with?</summary><div class="a"><p>Claude Code and Codex first, with every model they offer. Gemini CLI, OpenCode, Pi and more are next, each through a berth. Anyone can write a berth: one contract, and a test kit that says when it works.</p></div></details>
+        <details><summary>Why the name?</summary><div class="a"><p><svg class="flag" aria-hidden="true"><use href="#flag-PT"/></svg><svg class="flag" aria-hidden="true"><use href="#flag-ES"/></svg>Jev plus Magellan. Jev itself is reportedly a wink at the Jevons paradox. Magellan, Fern&#227;o de Magalh&#227;es, was a Portuguese navigator who sailed around the world for Spain. Jevellan is Portuguese too, and sails for everyone.</p></div></details>
+        <details><summary>Is it ready?</summary><div class="a"><p>It's v0.1 and freshly launched. Expect weather. Issues and pull requests are very welcome.</p></div></details>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ============ footer ============ -->
+<footer class="site-footer">
+  <canvas class="contours" data-seed="29" data-freq="420" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <div class="footer-cta">
+      <svg class="clouds" viewBox="0 0 360 120" role="img" aria-label="The Large and Small Magellanic Clouds, with one extra star.">
+        <ellipse class="c1" cx="110" cy="60" rx="92" ry="38" transform="rotate(-12 110 60)"/>
+        <ellipse class="c1" cx="262" cy="74" rx="48" ry="24" transform="rotate(-20 262 74)"/>
+        <circle class="star" cx="70" cy="58" r="1.4"/><circle class="star" cx="96" cy="44" r="1"/><circle class="star" cx="122" cy="66" r="1.6"/><circle class="star" cx="150" cy="52" r="1.1"/><circle class="star" cx="104" cy="78" r="1.2"/><circle class="star" cx="138" cy="84" r="0.9"/><circle class="star" cx="84" cy="70" r="1"/>
+        <circle class="star" cx="250" cy="72" r="1.2"/><circle class="star" cx="270" cy="66" r="1"/><circle class="star" cx="262" cy="84" r="1.3"/><circle class="star" cx="284" cy="78" r="0.9"/>
+        <path class="star big" d="M330 22 l3.2 6.6 7.2 1 -5.2 5 1.2 7.2 -6.4 -3.4 -6.4 3.4 1.2 -7.2 -5.2 -5 7.2 -1z"/>
+        <text x="110" y="116" text-anchor="middle">Large Magellanic Cloud</text>
+        <text x="262" y="116" text-anchor="middle">Small Magellanic Cloud</text>
+        <text x="324" y="58" text-anchor="middle">yours?</text>
+      </svg>
+      <h2>Magellan got two galaxies named after him. <em>We'd settle for a star.</em></h2>
+      <a class="btn btn-jev" href="https://github.com/gongiskhan/jevellan"><svg aria-hidden="true"><use href="#i-star"/></svg>Star Jevellan on GitHub</a>
+    </div>
+    <div class="footer-grid">
+      <div>
+        <a class="brand" href="#top"><svg class="brand-flag" viewBox="0 0 34 24" aria-hidden="true"><line class="pole" x1="2" y1="1" x2="2" y2="23" stroke-width="2" stroke-linecap="round"/><use href="#flag-PT" x="4" y="1" width="29" height="19.3"/></svg><span class="brand-word">Jevellan</span></a>
+        <p style="margin-top:12px">Autonomous development, coordinated. Your coding agents across your accounts and machines, with Jev deciding every step.</p>
+        <p class="made"><svg class="flag" aria-hidden="true"><use href="#flag-PT"/></svg>Made in Portugal, like the original navigator. <svg class="flag" aria-hidden="true"><use href="#flag-ES"/></svg>He sailed for Spain. We sail for everyone.</p>
+      </div>
+      <div>
+        <h4>Project</h4>
+        <ul>
+          <li><a href="https://github.com/gongiskhan/jevellan">GitHub</a></li>
+          <li><a href="#install">Install</a></li>
+          <li><a href="https://github.com/gongiskhan/jevellan/blob/main/roadmap.json">Roadmap</a></li>
+          <li><a href="https://github.com/gongiskhan/jevellan/blob/main/LICENSE">MIT License</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Jev</h4>
+        <ul>
+          <li><a href="https://typesafe.ai/">TypeSafe AI</a></li>
+          <li><a href="https://docs.typesafe.ai/">Jev docs</a></li>
+          <li><a href="https://console.typesafe.ai/">Get a Jev key</a></li>
+          <li><a href="https://gongiskhan.github.io/agent-garrison/">Garrison, the old ship</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="egg">
+      <span>Jev is a product of TypeSafe AI. Jevellan is an independent open source project, not affiliated with TypeSafe AI.</span>
+      <code title="base64">SmV2IGRlY2lkZXMuIFlvdXIgYWdlbnRzIGRvLg==</code>
+      <span>Set in Bricolage Grotesque, Geist, JetBrains Mono and EB Garamond, a typeface from Magellan's century.</span>
+    </div>
+  </div>
+</footer>
+
+</div>
+<script src="assets/js/site.js" defer></script>
+</body>
+</html>

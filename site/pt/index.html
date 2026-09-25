@@ -1,0 +1,1432 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
+<title>Jevellan</title>
+<meta content="O Jevellan corre os seus agentes de programação em stretches curtos, cada um numa sessão nova, nas suas contas e máquinas. Entre stretches, o Jev decide o que vem a seguir, que modelo o faz e com que esforço pensa. Open source." name="description"/>
+<meta content="#07111c" name="theme-color"/>
+<meta content="website" property="og:type"/>
+<meta content="Jevellan · Os agentes zarpam. O Jev dá o rumo." property="og:title"/>
+<meta content="Desenvolvimento autónomo, coordenado. Os seus agentes de programação nas suas contas e máquinas, com o Jev a decidir cada passo. Open source." property="og:description"/>
+<meta content="https://gongiskhan.github.io/jevellan/pt/" property="og:url"/>
+<meta content="https://gongiskhan.github.io/jevellan/assets/img/og-pt.png" property="og:image"/>
+<meta content="1200" property="og:image:width"/>
+<meta content="630" property="og:image:height"/>
+<meta content="summary_large_image" name="twitter:card"/>
+<meta content="Jevellan · Os agentes zarpam. O Jev dá o rumo." name="twitter:title"/>
+<meta content="Desenvolvimento autónomo, coordenado. Os seus agentes de programação nas suas contas e máquinas, com o Jev a decidir cada passo." name="twitter:description"/>
+<meta content="https://gongiskhan.github.io/jevellan/assets/img/og-pt.png" name="twitter:image"/>
+<link href="../assets/img/favicon.svg" rel="icon" type="image/svg+xml"/>
+<link href="https://gongiskhan.github.io/jevellan/" hreflang="en" rel="alternate"/>
+<link href="https://gongiskhan.github.io/jevellan/pt/" hreflang="pt-PT" rel="alternate"/>
+<link href="https://gongiskhan.github.io/jevellan/" hreflang="x-default" rel="alternate"/>
+<link as="font" crossorigin="" href="../assets/fonts/bricolage-grotesque-opsz.woff2" rel="preload" type="font/woff2"/>
+<link as="font" crossorigin="" href="../assets/fonts/geist-wght.woff2" rel="preload" type="font/woff2"/>
+<script data-lang-redirect="">
+  (function () {
+    try { if (localStorage.getItem('jv-lang') === 'en') location.replace('../' + location.hash); } catch (e) {}
+  })();
+</script>
+<script>
+  (function () {
+    try { var t = localStorage.getItem('jv-theme'); if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+    document.documentElement.classList.add('js');
+  })();
+</script>
+<link href="../assets/css/site.css" rel="stylesheet"/>
+</head>
+<body>
+<!-- ============ sprite: signal flags (International Code of Signals) and icons ============ -->
+<svg aria-hidden="true" focusable="false" height="0" style="position:absolute" width="0">
+<defs>
+<symbol id="flag-C" viewBox="0 0 30 20"><rect fill="#1f4e9e" height="20" width="30"></rect><rect fill="#fff" height="12" width="30" y="4"></rect><rect fill="#d52b1e" height="4" width="30" y="8"></rect><rect fill="none" height="19.2" stroke="rgba(0,0,0,.28)" stroke-width=".8" width="29.2" x=".4" y=".4"></rect></symbol>
+<symbol id="flag-D" viewBox="0 0 30 20"><rect fill="#f6c425" height="20" width="30"></rect><rect fill="#1f4e9e" height="10" width="30" y="5"></rect><rect fill="none" height="19.2" stroke="rgba(0,0,0,.28)" stroke-width=".8" width="29.2" x=".4" y=".4"></rect></symbol>
+<symbol id="flag-G" viewBox="0 0 30 20"><rect fill="#f6c425" height="20" width="30"></rect><rect fill="#1f4e9e" height="20" width="5" x="5"></rect><rect fill="#1f4e9e" height="20" width="5" x="15"></rect><rect fill="#1f4e9e" height="20" width="5" x="25"></rect><rect fill="none" height="19.2" stroke="rgba(0,0,0,.28)" stroke-width=".8" width="29.2" x=".4" y=".4"></rect></symbol>
+<symbol id="flag-H" viewBox="0 0 30 20"><rect fill="#fff" height="20" width="30"></rect><rect fill="#d52b1e" height="20" width="15" x="15"></rect><rect fill="none" height="19.2" stroke="rgba(0,0,0,.28)" stroke-width=".8" width="29.2" x=".4" y=".4"></rect></symbol>
+<symbol id="flag-I" viewBox="0 0 30 20"><rect fill="#f6c425" height="20" width="30"></rect><circle cx="15" cy="10" fill="#14171c" r="5.2"></circle><rect fill="none" height="19.2" stroke="rgba(0,0,0,.28)" stroke-width=".8" width="29.2" x=".4" y=".4"></rect></symbol>
+<symbol id="flag-J" viewBox="0 0 30 20"><rect fill="#1f4e9e" height="20" width="30"></rect><rect fill="#fff" height="6.66" width="30" y="6.67"></rect><rect fill="none" height="19.2" stroke="rgba(0,0,0,.28)" stroke-width=".8" width="29.2" x=".4" y=".4"></rect></symbol>
+<symbol id="flag-K" viewBox="0 0 30 20"><rect fill="#f6c425" height="20" width="15"></rect><rect fill="#1f4e9e" height="20" width="15" x="15"></rect><rect fill="none" height="19.2" stroke="rgba(0,0,0,.28)" stroke-width=".8" width="29.2" x=".4" y=".4"></rect></symbol>
+<symbol id="flag-L" viewBox="0 0 30 20"><rect fill="#f6c425" height="20" width="30"></rect><rect fill="#14171c" height="10" width="15" x="15"></rect><rect fill="#14171c" height="10" width="15" y="10"></rect><rect fill="none" height="19.2" stroke="rgba(0,0,0,.28)" stroke-width=".8" width="29.2" x=".4" y=".4"></rect></symbol>
+<symbol id="flag-M" viewBox="0 0 30 20"><rect fill="#1f4e9e" height="20" width="30"></rect><path d="M0 0 L30 20 M30 0 L0 20" stroke="#fff" stroke-width="4"></path><rect fill="none" height="19.2" stroke="rgba(0,0,0,.28)" stroke-width=".8" width="29.2" x=".4" y=".4"></rect></symbol>
+<symbol id="flag-P" viewBox="0 0 30 20"><rect fill="#1f4e9e" height="20" width="30"></rect><rect fill="#fff" height="6.66" width="10" x="10" y="6.67"></rect><rect fill="none" height="19.2" stroke="rgba(0,0,0,.28)" stroke-width=".8" width="29.2" x=".4" y=".4"></rect></symbol>
+<symbol id="flag-R" viewBox="0 0 30 20"><rect fill="#d52b1e" height="20" width="30"></rect><rect fill="#f6c425" height="20" width="5" x="12.5"></rect><rect fill="#f6c425" height="5" width="30" y="7.5"></rect><rect fill="none" height="19.2" stroke="rgba(0,0,0,.28)" stroke-width=".8" width="29.2" x=".4" y=".4"></rect></symbol>
+<symbol id="flag-S" viewBox="0 0 30 20"><rect fill="#fff" height="20" width="30"></rect><rect fill="#1f4e9e" height="6.66" width="10" x="10" y="6.67"></rect><rect fill="none" height="19.2" stroke="rgba(0,0,0,.28)" stroke-width=".8" width="29.2" x=".4" y=".4"></rect></symbol>
+<symbol id="flag-T" viewBox="0 0 30 20"><rect fill="#d52b1e" height="20" width="10"></rect><rect fill="#fff" height="20" width="10" x="10"></rect><rect fill="#1f4e9e" height="20" width="10" x="20"></rect><rect fill="none" height="19.2" stroke="rgba(0,0,0,.28)" stroke-width=".8" width="29.2" x=".4" y=".4"></rect></symbol>
+<symbol id="flag-U" viewBox="0 0 30 20"><rect fill="#d52b1e" height="20" width="30"></rect><rect fill="#fff" height="10" width="15" x="15"></rect><rect fill="#fff" height="10" width="15" y="10"></rect><rect fill="none" height="19.2" stroke="rgba(0,0,0,.28)" stroke-width=".8" width="29.2" x=".4" y=".4"></rect></symbol>
+<symbol id="flag-V" viewBox="0 0 30 20"><rect fill="#fff" height="20" width="30"></rect><path d="M0 0 L30 20 M30 0 L0 20" stroke="#d52b1e" stroke-width="4"></path><rect fill="none" height="19.2" stroke="rgba(0,0,0,.28)" stroke-width=".8" width="29.2" x=".4" y=".4"></rect></symbol>
+<symbol id="flag-X" viewBox="0 0 30 20"><rect fill="#fff" height="20" width="30"></rect><rect fill="#1f4e9e" height="20" width="5" x="12.5"></rect><rect fill="#1f4e9e" height="5" width="30" y="7.5"></rect><rect fill="none" height="19.2" stroke="rgba(0,0,0,.28)" stroke-width=".8" width="29.2" x=".4" y=".4"></rect></symbol>
+<symbol id="flag-PT" viewBox="0 0 30 20"><rect fill="#da291c" height="20" width="30"></rect><rect fill="#046a38" height="20" width="12"></rect><circle cx="12" cy="10" fill="none" r="5.3" stroke="#ffe900" stroke-width="1.15"></circle><ellipse cx="12" cy="10" fill="none" rx="5.3" ry="1.8" stroke="#ffe900" stroke-width=".8" transform="rotate(-20 12 10)"></ellipse><path d="M9.8 7.2h4.4v3.4c0 1.6-1.1 2.4-2.2 2.8-1.1-.4-2.2-1.2-2.2-2.8z" fill="#da291c" stroke="#ffe900" stroke-width=".3"></path><path d="M10.7 8.1h2.6v2.4c0 1-.65 1.5-1.3 1.75-.65-.25-1.3-.75-1.3-1.75z" fill="#fff"></path><g fill="#1b3d8f"><circle cx="12" cy="8.8" r=".42"></circle><circle cx="11.25" cy="9.75" r=".42"></circle><circle cx="12" cy="9.75" r=".42"></circle><circle cx="12.75" cy="9.75" r=".42"></circle><circle cx="12" cy="10.7" r=".42"></circle></g><rect fill="none" height="19.2" stroke="rgba(0,0,0,.28)" stroke-width=".8" width="29.2" x=".4" y=".4"></rect></symbol>
+<symbol id="flag-ES" viewBox="0 0 30 20"><rect fill="#aa151b" height="20" width="30"></rect><rect fill="#f1bf00" height="10" width="30" y="5"></rect><rect fill="none" height="19.2" stroke="rgba(0,0,0,.28)" stroke-width=".8" width="29.2" x=".4" y=".4"></rect></symbol>
+<symbol id="i-menu" viewBox="0 0 20 20"><path d="M3 5h14M3 10h14M3 15h14" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"></path></symbol>
+<symbol id="i-runtime" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><rect height="12" rx="2" width="15" x="2.5" y="4"></rect><path d="M6 8.5l2 1.8-2 1.8M10 12h4"></path></g></symbol>
+<symbol id="i-rigging" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M10 2.5v15M10 3.5l6 11H10M10 5.5l-5 9h5"></path><path d="M3 17.5h14"></path></g></symbol>
+<symbol id="i-decisions" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="10" r="7.5"></circle></g><path d="M10 4.5l1.8 5.5L10 15.5 8.2 10z" fill="currentColor"></path></symbol>
+<symbol id="i-improver" viewBox="0 0 20 20"><path d="M15.5 12.2A6.3 6.3 0 017.8 4.5a6.3 6.3 0 107.7 7.7z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="1.5"></path><path d="M14 3.5v3M12.5 5h3" stroke="currentColor" stroke-linecap="round" stroke-width="1.4"></path></symbol>
+<symbol id="i-devices" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><rect height="8" rx="1.2" width="11" x="2.5" y="4"></rect><path d="M1.5 14.5h13"></path><rect height="9" rx="1" width="4" x="14.5" y="7"></rect></g></symbol>
+<symbol id="i-settings" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"><path d="M3 6h9M15 6h2M3 14h2M8 14h9"></path><circle cx="13.5" cy="6" r="1.8"></circle><circle cx="6.5" cy="14" r="1.8"></circle></g></symbol>
+<symbol id="i-github" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" fill="currentColor"></path></symbol>
+<symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.7-4.9 4.5 1.4 6.6L12 17.1l-6 3.3 1.4-6.6-4.9-4.5 6.6-.7z" fill="currentColor"></path></symbol>
+<symbol id="i-lantern" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"><path d="M9 4h6M12 2v2M8 7h8l1 2v8l-1 2H8l-1-2V9z"></path><path d="M10 21h4"></path></g><circle cx="12" cy="13" fill="var(--farol)" r="2.6"></circle></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"></path><circle cx="17" cy="6" fill="currentColor" r="1"></circle></symbol>
+<symbol id="i-check" viewBox="0 0 20 20"><path d="M4 10.5l4 4 8-9" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></symbol>
+<symbol id="i-compass" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.5"></circle></g><path d="M12 4.5l2.2 7.5L12 19.5 9.8 12z" fill="currentColor"></path><circle cx="12" cy="12" fill="var(--card)" r="1.3"></circle></symbol>
+<symbol id="i-anchor" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"><circle cx="12" cy="5" r="2"></circle><path d="M12 7v14M8 10h8M4.5 14c.5 4 3.8 7 7.5 7s7-3 7.5-7M3 15.5l1.5-1.5 1.5 1.5M18 15.5l1.5-1.5 1.5 1.5"></path></g></symbol>
+<symbol id="i-log" viewBox="0 0 40 40"><g fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="1.6"><path d="M8 6h20l4 4v24H8z"></path><path d="M28 6v4h4M13 15h14M13 20h14M13 25h9"></path></g><circle cx="29" cy="29" fill="var(--bg)" r="6" stroke="currentColor" stroke-width="1.6"></circle><path d="M29 26v3l2 1.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.6"></path></symbol>
+</defs>
+</svg>
+<div id="app">
+<a class="sr-only" href="#main">Saltar para o conteúdo</a>
+<!-- ============ header ============ -->
+<header class="site-header">
+<div class="wrap header-inner">
+<a aria-label="Jevellan, voltar ao topo" class="brand" href="#top">
+<svg aria-hidden="true" class="brand-flag" viewBox="0 0 34 24"><line class="pole" stroke-linecap="round" stroke-width="2" x1="2" x2="2" y1="1" y2="23"></line><use height="19.3" href="#flag-PT" width="29" x="4" y="1"></use></svg>
+<span class="brand-word">Jevellan</span>
+</a>
+<nav aria-label="Principal" class="nav">
+<a href="#app-tour">A app</a>
+<a href="#jev">Jev</a>
+<a href="#beyond">Porquê o Jevellan</a>
+<a href="#how">Como navega</a>
+<a href="#install">Instalar</a>
+</nav>
+<div class="header-actions">
+<span aria-label="Idioma" class="lang-switch" role="group"><a data-setlang="en" href="../" hreflang="en" lang="en">EN</a><a aria-current="true" data-setlang="pt" href="./" hreflang="pt-PT" lang="pt-PT">PT</a></span>
+<button aria-label="Mudar para a vigia da noite" class="theme-toggle" id="theme-toggle" type="button">
+<svg aria-hidden="true" class="lamp"><use href="#i-lantern"></use></svg><span class="tt-label">Vigia de dia</span>
+</button>
+<a class="btn btn-ink btn-small" href="https://github.com/gongiskhan/jevellan"><svg aria-hidden="true"><use href="#i-github"></use></svg><span>Star</span></a>
+<button aria-controls="mobile-nav" aria-expanded="false" class="menu-btn" id="menu-btn" type="button">Menu</button>
+</div>
+</div>
+<nav aria-label="Telemóvel" class="mobile-nav" hidden="" id="mobile-nav">
+<a href="#app-tour">A app</a>
+<a href="#jev">Jev</a>
+<a href="#beyond">Porquê o Jevellan</a>
+<a href="#how">Como navega</a>
+<a href="#install">Instalar</a>
+</nav>
+</header>
+<main id="main">
+<!-- ============ hero ============ -->
+<section aria-labelledby="hero-title" class="hero" id="top">
+<canvas aria-hidden="true" class="contours" data-freq="360" data-seed="11"></canvas>
+<div class="wrap hero-grid">
+<div class="hero-copy">
+<p class="eyebrow"><span aria-hidden="true" class="dot-jev"></span>Open source · Feito para qualquer agente · Movido a Jev</p>
+<h1 id="hero-title">Os agentes zarpam.<br/>O <em>Jev</em> dá o rumo.</h1>
+<p class="descriptor">Desenvolvimento autónomo, coordenado.</p>
+<p class="lede">O Jevellan corre os seus agentes de programação em <b>stretches</b> curtos, cada um numa sessão nova, nas suas contas e máquinas. Entre stretches, o <b class="jev-word">Jev</b> decide o que vem a seguir, que modelo o faz e com que esforço pensa. Claude Code e Codex primeiro, mais agentes a caminho.</p>
+<div class="install-box">
+<code><span aria-hidden="true" class="prompt">$</span>npx github:gongiskhan/jevellan install</code>
+<button class="copy-btn" data-copy="npx github:gongiskhan/jevellan install" type="button">Copiar</button>
+</div>
+<div class="hero-ctas">
+<a class="btn btn-jev" href="#jev"><svg aria-hidden="true"><use href="#i-compass"></use></svg>Conheça o Jev</a>
+<a class="btn btn-ghost" href="#app-tour">Ver a app</a>
+</div>
+<p class="hero-note"><span>Licença MIT</span><span>Corre nas suas máquinas</span><span>v0.1, acabado de zarpar</span></p>
+</div>
+<figure class="hero-chart">
+<div aria-label="Uma travessia de exemplo numa carta náutica: do seu pedido, por cinco stretches (plan com Opus em high, implement com Fable em max, test com Fable em medium, review com GPT-6 através do Codex em high, implement com Fable em high), até terra à vista: verificado e publicado." class="route" id="hero-route" role="img"></div>
+<figcaption><span aria-hidden="true" class="ring"></span>Rendição do quarto: o Jev decide. Um pedido, cinco stretches, três modelos. Zero menus.</figcaption>
+</figure>
+</div>
+</section>
+<!-- ============ the app (centrepiece) ============ -->
+<section aria-labelledby="tour-title" class="section stage" id="app-tour">
+<div class="wrap">
+<div class="section-head center">
+<p class="eyebrow"><span class="rule"></span>A app<span class="rule"></span></p>
+<h2 id="tour-title">Isto é o Jevellan.</h2>
+<p class="lede">Uma aplicação web que corre nas suas próprias máquinas e cabe no seu bolso. Clique à vontade: é uma maqueta funcional da aplicação real, em inglês como a própria aplicação.</p>
+</div>
+<div class="mock-wrap">
+<div class="mock" data-nt="" id="mock">
+<div aria-hidden="true" class="mock-chrome"><span class="dots"><i></i><i></i><i></i></span><span class="url">macbook.your-tailnet.ts.net</span></div>
+<div class="mock-app">
+<aside aria-label="Conversations" class="m-side">
+<div class="m-brand"><svg aria-hidden="true" class="m-flag"><use href="#flag-PT"></use></svg><span>Jevellan</span><button aria-label="Close the sidebar" class="m-close-side" type="button">×</button></div>
+<button class="m-new" type="button">+ New conversation</button>
+<div aria-label="Filter conversations" class="m-filters" role="group">
+<button class="on" data-f="all" type="button">All</button>
+<button data-f="running" type="button">Running</button>
+<button data-f="waiting" type="button">Waiting for you</button>
+<button data-f="done" type="button">Done</button>
+</div>
+<ul class="m-list">
+<li class="on" data-conv="c1" data-state="running" tabindex="0"><span class="sd run"></span><span class="mi"><span class="mt">Dark mode, saved per user</span><span class="mm">jevellan-site · MacBook</span></span><span class="mr">now</span></li>
+<li data-conv="c2" data-state="waiting" tabindex="0"><span class="sd wait"></span><span class="mi"><span class="mt">Replace moment.js</span><span class="mm">notes-app · Mac mini</span></span><span class="mr">18m</span></li>
+<li data-conv="c3" data-state="done" tabindex="0"><span class="sd done"></span><span class="mi"><span class="mt">Fix the flaky login test</span><span class="mm">api · dev box</span></span><span class="mr">1h</span></li>
+<li data-state="running"><span class="sd run"></span><span class="mi"><span class="mt">Migrate billing to v2</span><span class="mm">billing · dev box</span></span><span class="mr">3m</span></li>
+<li data-state="done"><span class="sd done"></span><span class="mi"><span class="mt">Why is search slow?</span><span class="mm">search · MacBook</span></span><span class="mr">Mon</span></li>
+<li data-state="done"><span class="sd done"></span><span class="mi"><span class="mt">CSV export for reports</span><span class="mm">reports · Mac mini</span></span><span class="mr">Sun</span></li>
+</ul>
+<nav aria-label="Settings" class="m-bottom">
+<button type="button"><svg aria-hidden="true"><use href="#i-runtime"></use></svg>Runtimes</button>
+<button type="button"><svg aria-hidden="true"><use href="#i-rigging"></use></svg>Rigging</button>
+<button type="button"><svg aria-hidden="true"><use href="#i-decisions"></use></svg>Decisions</button>
+<button type="button"><svg aria-hidden="true"><use href="#i-improver"></use></svg>Improver<b class="m-badge">2</b></button>
+<button type="button"><svg aria-hidden="true"><use href="#i-devices"></use></svg>Devices</button>
+<button type="button"><svg aria-hidden="true"><use href="#i-settings"></use></svg>Settings</button>
+</nav>
+</aside>
+<section aria-label="Conversation" class="m-main">
+<div class="m-top">
+<button aria-label="Open the sidebar" class="m-menu" type="button"><svg aria-hidden="true"><use href="#i-menu"></use></svg></button>
+<span class="m-crumb">Conversations</span>
+<div class="m-dev">
+<button aria-expanded="false" aria-haspopup="true" class="m-switch" type="button"><span class="sd run"></span>MacBook ▾</button>
+<div class="m-devmenu" hidden="">
+<div class="dm-row on"><span class="sd run"></span><span><b>MacBook</b><small>this device · hub · 2 running</small></span></div>
+<div class="dm-row"><span class="sd run"></span><span><b>Mac mini</b><small>1 waiting for you</small></span></div>
+<div class="dm-row"><span class="sd run"></span><span><b>dev box</b><small>1 running · Codex active in api, 2 min ago</small></span></div>
+<div class="dm-row off"><span class="sd off"></span><span><b>old laptop</b><small>Offline since 09:12</small></span></div>
+</div>
+</div>
+</div>
+<!-- conversation 1: running -->
+<div class="m-conv" data-conv="c1">
+<header class="m-head">
+<div class="m-title">Dark mode, saved per user</div>
+<div class="m-meta"><span class="mc">jevellan-site</span><span class="mc">MacBook</span><span class="mc st run">Running</span><button class="m-cancel" type="button">Cancel</button></div>
+</header>
+<div class="m-timeline">
+<div class="m-user">Add a dark mode to the settings page and save the choice per user.</div>
+<article class="m-stretch" data-s="c1s1">
+<div class="m-chips"><span class="mc act">plan</span><span class="mc mdl">Opus</span><span class="mc">high</span><span class="mc acct">Max · personal</span><span class="mc dev">MacBook</span><span class="mc dim">2m 10s</span><span class="mc dim">38k tokens</span></div>
+<div class="m-tools">▸ 9 tool calls</div>
+<p class="m-sum">Plan in four steps: theme tokens, a toggle in Settings, a <code>user_prefs</code> column, and tests for both themes.</p>
+<div class="m-links"><button class="m-link" type="button">Plan</button><button class="m-link m-why-btn" data-why="c1s1" type="button">Why</button></div>
+</article>
+<article class="m-stretch sel" data-s="c1s2">
+<div class="m-chips"><span class="mc act">implement</span><span class="mc mdl">Fable</span><span class="mc">max</span><span class="mc acct">Max · personal</span><span class="mc dev">MacBook</span><span class="mc dim">6m 42s</span><span class="mc dim">112k tokens</span></div>
+<div class="m-tools">▸ 31 tool calls</div>
+<p class="m-sum">Toggle, theme tokens and the saved preference. Six files changed; the fast tests pass.</p>
+<div class="m-links"><button class="m-link" type="button">Changes · 6 files</button><button class="m-link m-why-btn" data-why="c1s2" type="button">Why</button></div>
+</article>
+<article class="m-stretch live" data-s="c1s3">
+<div class="m-chips"><span class="mc act">test</span><span class="mc mdl">Fable</span><span class="mc">medium</span><span class="mc acct">Max · work</span><span class="mc dev">MacBook</span><span class="mc dim">0:48</span></div>
+<p class="m-stream"><span aria-hidden="true" class="m-dot"></span>Running the settings tests in both themes, then adding one for the saved preference<span aria-hidden="true" class="caret"></span></p>
+<div class="m-tools live">▸ npm test -- settings <span>running</span></div>
+<div class="m-links"><button class="m-link m-why-btn" data-why="c1s3" type="button">Why</button></div>
+</article>
+</div>
+<div class="m-composer">
+<div class="m-input">Send a correction, or add a note for the next step.</div>
+<div class="m-row"><span class="mcl">Next step: <b>Auto</b></span><span class="mcl">Model: <b>Auto</b></span><span class="mcl">Effort: <b>Auto</b></span><span class="m-btns"><button class="mb dark" type="button">Send correction</button><button class="mb" type="button">Add note</button></span></div>
+</div>
+</div>
+<!-- conversation 2: waiting for you (runs on another machine) -->
+<div class="m-conv" data-conv="c2" hidden="">
+<header class="m-head">
+<div class="m-title">Replace moment.js</div>
+<div class="m-meta"><span class="mc">notes-app</span><span class="mc">Mac mini</span><span class="mc st wait">Waiting for you</span></div>
+</header>
+<div class="m-timeline">
+<div class="m-user">Replace moment.js with something smaller.</div>
+<article class="m-stretch" data-s="c2s1">
+<div class="m-chips"><span class="mc act">plan</span><span class="mc mdl">Opus</span><span class="mc">high</span><span class="mc acct">Max · work</span><span class="mc dev">Mac mini</span><span class="mc dim">3m 05s</span><span class="mc dim">41k tokens</span></div>
+<div class="m-tools">▸ 14 tool calls</div>
+<p class="m-sum">Two good fits: date-fns (small functions, tree-shakeable) and Day.js (a moment-like API, tiny). The choice changes how every date call reads.</p>
+<div class="m-links"><button class="m-link" type="button">Plan</button><button class="m-link m-why-btn" data-why="c2s1" type="button">Why</button></div>
+</article>
+<div class="m-ask"><b>Question for you</b>Which do you prefer: date-fns or Day.js?</div>
+<p class="m-proxied">Running on Mac mini. You're steering it from MacBook.</p>
+</div>
+<div class="m-composer">
+<div class="m-input">Reply to continue this work.</div>
+<div class="m-row"><span class="mcl">Next step: <b>Auto</b></span><span class="mcl">Model: <b>Auto</b></span><span class="mcl">Effort: <b>Auto</b></span><span class="m-btns"><button class="mb" type="button">Close this work</button><button class="mb dark" type="button">Send</button></span></div>
+</div>
+</div>
+<!-- conversation 3: done -->
+<div class="m-conv" data-conv="c3" hidden="">
+<header class="m-head">
+<div class="m-title">Fix the flaky login test</div>
+<div class="m-meta"><span class="mc">api</span><span class="mc">dev box</span><span class="mc st done">Done</span></div>
+</header>
+<div class="m-timeline">
+<div class="m-user">The login test fails about one run in five. Fix it.</div>
+<article class="m-stretch" data-s="c3s1">
+<div class="m-chips"><span class="mc act">implement</span><span class="mc mdl">GPT-6 · Codex</span><span class="mc">high</span><span class="mc acct">ChatGPT Pro</span><span class="mc dev">dev box</span><span class="mc dim">4m 51s</span><span class="mc dim">86k tokens</span></div>
+<div class="m-tools">▸ 22 tool calls</div>
+<p class="m-sum">A race between the session cookie and the redirect. It now waits for the cookie write, and a new regression test runs the login 50 times.</p>
+<div class="m-links"><button class="m-link" type="button">Changes · 3 files</button><button class="m-link m-why-btn" data-why="c3s1" type="button">Why</button></div>
+</article>
+<article class="m-stretch" data-s="c3s2">
+<div class="m-chips"><span class="mc act">review</span><span class="mc mdl">Opus</span><span class="mc">high</span><span class="mc acct">Max · work</span><span class="mc dev">dev box</span><span class="mc dim">1m 58s</span><span class="mc dim">29k tokens</span><span class="mc tag">corrected: effort</span></div>
+<div class="m-tools">▸ 7 tool calls</div>
+<p class="m-sum">No serious findings. One minor: rename <code>waitCookie</code> to <code>waitForSessionCookie</code>.</p>
+<div class="m-links"><button class="m-link m-why-btn" data-why="c3s2" type="button">Why</button></div>
+</article>
+<div class="m-verified"><b>✓ Verified by Jevellan</b><span>npm test passed on 9b41e07, clean tree</span><span>Published to main</span></div>
+</div>
+<div class="m-composer">
+<div class="m-input">Ask a follow-up, or start new work.</div>
+<div class="m-row"><span class="mcl">Next step: <b>Auto</b></span><span class="mcl">Model: <b>Auto</b></span><span class="mcl">Effort: <b>Auto</b></span><span class="m-btns"><button class="mb dark" type="button">Send</button></span></div>
+</div>
+</div>
+</section>
+<aside aria-label="Why this step" class="m-why">
+<div class="m-why-head"><b>Why</b><span class="m-why-label">stretch 2 · implement</span><button aria-label="Close" class="m-why-close" type="button">×</button></div>
+<div class="m-why-pane" data-label="stretch 1 · plan" data-why="c1s1" hidden="">
+<div class="wsec"><h6>Next step</h6><div class="bars"><div class="bar win" style="--p:.64"><span class="lbl">plan</span><span class="track"><span class="fill"></span></span><span class="val">0.64</span></div><div class="bar" style="--p:.27"><span class="lbl">implement</span><span class="track"><span class="fill"></span></span><span class="val">0.27</span></div><div class="bar" style="--p:.05"><span class="lbl">reply</span><span class="track"><span class="fill"></span></span><span class="val">0.05</span></div></div><p class="wnote">done isn't allowed on a first decision</p></div>
+<div class="wsec"><h6>Model</h6><p class="wline">New work, nothing to keep. Picked by Jev.</p><div class="bars"><div class="bar win" style="--p:.58"><span class="lbl">Opus</span><span class="track"><span class="fill"></span></span><span class="val">0.58</span></div><div class="bar" style="--p:.31"><span class="lbl">Fable</span><span class="track"><span class="fill"></span></span><span class="val">0.31</span></div><div class="bar" style="--p:.11"><span class="lbl">GPT-6</span><span class="track"><span class="fill"></span></span><span class="val">0.11</span></div></div></div>
+<div class="wsec"><h6>Effort</h6><div class="bars"><div class="bar win" style="--p:.62"><span class="lbl">high</span><span class="track"><span class="fill"></span></span><span class="val">0.62</span></div><div class="bar" style="--p:.21"><span class="lbl">xhigh</span><span class="track"><span class="fill"></span></span><span class="val">0.21</span></div></div></div>
+<div class="wsec"><h6>Account</h6><ul class="rank"><li class="ok">Max · personal · 38% of its week</li><li>Max · work · 51% of its week</li><li class="off">Anthropic API · only when subscriptions run out</li></ul></div>
+<div class="wsec jevline">Jev · jev-1.13.0 · 118 ms</div>
+</div>
+<div class="m-why-pane" data-label="stretch 2 · implement" data-why="c1s2">
+<div class="wsec"><h6>Next step</h6><div class="bars"><div class="bar win" style="--p:.81"><span class="lbl">implement</span><span class="track"><span class="fill"></span></span><span class="val">0.81</span></div><div class="bar" style="--p:.07"><span class="lbl">test</span><span class="track"><span class="fill"></span></span><span class="val">0.07</span></div><div class="bar" style="--p:.06"><span class="lbl">ask-you</span><span class="track"><span class="fill"></span></span><span class="val">0.06</span></div></div></div>
+<div class="wsec"><h6>Model</h6><p class="wline">Keep Opus? <b>0.22</b>, below 0.6, so switch.</p><div class="bars"><div class="bar win" style="--p:.74"><span class="lbl">Fable</span><span class="track"><span class="fill"></span></span><span class="val">0.74</span></div><div class="bar" style="--p:.18"><span class="lbl">Opus</span><span class="track"><span class="fill"></span></span><span class="val">0.18</span></div><div class="bar" style="--p:.08"><span class="lbl">GPT-6</span><span class="track"><span class="fill"></span></span><span class="val">0.08</span></div></div></div>
+<div class="wsec"><h6>Effort</h6><div class="bars"><div class="bar win" style="--p:.61"><span class="lbl">max</span><span class="track"><span class="fill"></span></span><span class="val">0.61</span></div><div class="bar" style="--p:.27"><span class="lbl">xhigh</span><span class="track"><span class="fill"></span></span><span class="val">0.27</span></div></div></div>
+<div class="wsec"><h6>Corrections used</h6><p class="corr">“When implementing a UI change in jevellan-site, Jevellan chose Opus at high; the user changed it to Fable at max.”</p></div>
+<div class="wsec"><h6>Account</h6><ul class="rank"><li class="ok">Max · personal · 58% of its 5 hours</li><li>Max · work · 51% of its week</li><li class="off">Anthropic API · only when subscriptions run out</li></ul></div>
+<div class="wsec jevline">Jev · jev-1.13.0 · 142 ms</div>
+</div>
+<div class="m-why-pane" data-label="stretch 3 · test" data-why="c1s3" hidden="">
+<div class="wsec"><h6>Next step</h6><div class="bars"><div class="bar win" style="--p:.72"><span class="lbl">test</span><span class="track"><span class="fill"></span></span><span class="val">0.72</span></div><div class="bar" style="--p:.14"><span class="lbl">review</span><span class="track"><span class="fill"></span></span><span class="val">0.14</span></div><div class="bar" style="--p:.09"><span class="lbl">implement</span><span class="track"><span class="fill"></span></span><span class="val">0.09</span></div></div></div>
+<div class="wsec"><h6>Model</h6><p class="wline">Keep Fable? <b>0.83</b>, over 0.6: kept. Same model, warm cache.</p></div>
+<div class="wsec"><h6>Effort</h6><div class="bars"><div class="bar win" style="--p:.58"><span class="lbl">medium</span><span class="track"><span class="fill"></span></span><span class="val">0.58</span></div><div class="bar" style="--p:.30"><span class="lbl">high</span><span class="track"><span class="fill"></span></span><span class="val">0.30</span></div></div></div>
+<div class="wsec"><h6>Account</h6><ul class="rank"><li class="no">Max · personal · 5-hour window at 92%, over its 90% ceiling</li><li class="ok">Max · work · 10% of its 5 hours</li><li class="off">Anthropic API · subscriptions haven't run out</li></ul></div>
+<div class="wsec jevline">Jev · jev-1.13.0 · 131 ms</div>
+</div>
+<div class="m-why-pane" data-label="stretch 1 · plan" data-why="c2s1" hidden="">
+<div class="wsec"><h6>Next step</h6><div class="bars"><div class="bar win" style="--p:.58"><span class="lbl">plan</span><span class="track"><span class="fill"></span></span><span class="val">0.58</span></div><div class="bar" style="--p:.31"><span class="lbl">implement</span><span class="track"><span class="fill"></span></span><span class="val">0.31</span></div><div class="bar" style="--p:.07"><span class="lbl">ask-you</span><span class="track"><span class="fill"></span></span><span class="val">0.07</span></div></div></div>
+<div class="wsec"><h6>Model</h6><div class="bars"><div class="bar win" style="--p:.63"><span class="lbl">Opus</span><span class="track"><span class="fill"></span></span><span class="val">0.63</span></div><div class="bar" style="--p:.24"><span class="lbl">GPT-6</span><span class="track"><span class="fill"></span></span><span class="val">0.24</span></div></div></div>
+<div class="wsec"><h6>Effort</h6><div class="bars"><div class="bar win" style="--p:.55"><span class="lbl">high</span><span class="track"><span class="fill"></span></span><span class="val">0.55</span></div><div class="bar" style="--p:.33"><span class="lbl">medium</span><span class="track"><span class="fill"></span></span><span class="val">0.33</span></div></div></div>
+<div class="wsec"><h6>Account</h6><ul class="rank"><li class="ok">Max · work · on Mac mini, 22% of its week</li><li>Max · personal · 64% of its week</li></ul></div>
+<div class="wsec jevline">Jev · jev-1.13.0 · 104 ms</div>
+</div>
+<div class="m-why-pane" data-label="stretch 1 · implement" data-why="c3s1" hidden="">
+<div class="wsec"><h6>Next step</h6><div class="bars"><div class="bar win" style="--p:.79"><span class="lbl">implement</span><span class="track"><span class="fill"></span></span><span class="val">0.79</span></div><div class="bar" style="--p:.12"><span class="lbl">plan</span><span class="track"><span class="fill"></span></span><span class="val">0.12</span></div></div><p class="wnote">a small, clear fix needs no plan</p></div>
+<div class="wsec"><h6>Model</h6><div class="bars"><div class="bar win" style="--p:.66"><span class="lbl">GPT-6</span><span class="track"><span class="fill"></span></span><span class="val">0.66</span></div><div class="bar" style="--p:.21"><span class="lbl">Opus</span><span class="track"><span class="fill"></span></span><span class="val">0.21</span></div></div></div>
+<div class="wsec"><h6>Effort</h6><div class="bars"><div class="bar win" style="--p:.57"><span class="lbl">high</span><span class="track"><span class="fill"></span></span><span class="val">0.57</span></div><div class="bar" style="--p:.29"><span class="lbl">xhigh</span><span class="track"><span class="fill"></span></span><span class="val">0.29</span></div></div></div>
+<div class="wsec"><h6>Account</h6><ul class="rank"><li class="ok">ChatGPT Pro · signed in on dev box</li><li class="off">OpenAI API · never automatically</li></ul></div>
+<div class="wsec jevline">Jev · jev-1.13.0 · 97 ms</div>
+</div>
+<div class="m-why-pane" data-label="stretch 2 · review" data-why="c3s2" hidden="">
+<div class="wsec"><h6>Next step</h6><div class="bars"><div class="bar win" style="--p:.61"><span class="lbl">review</span><span class="track"><span class="fill"></span></span><span class="val">0.61</span></div><div class="bar" style="--p:.30"><span class="lbl">done</span><span class="track"><span class="fill"></span></span><span class="val">0.30</span></div></div><p class="wnote">auth touched, so a review</p></div>
+<div class="wsec"><h6>Model</h6><p class="wline">A reviewer from a different family than the one that wrote the code.</p><div class="bars"><div class="bar win" style="--p:.69"><span class="lbl">Opus</span><span class="track"><span class="fill"></span></span><span class="val">0.69</span></div></div></div>
+<div class="wsec"><h6>Effort</h6><p class="wline">Jev picked <b>high</b>. You changed it to <b>xhigh</b> afterwards: corrected, nothing undone.</p></div>
+<div class="wsec"><h6>Account</h6><ul class="rank"><li class="ok">Max · work · 31% of its week</li></ul></div>
+<div class="wsec jevline">Jev · jev-1.13.0 · 121 ms</div>
+</div>
+</aside>
+</div>
+<span aria-hidden="true" class="pin p1">1</span>
+<span aria-hidden="true" class="pin p2">2</span>
+<span aria-hidden="true" class="pin p3">3</span>
+<span aria-hidden="true" class="pin p4">4</span>
+<span aria-hidden="true" class="pin p5">5</span>
+<span aria-hidden="true" class="pin p6">6</span>
+</div>
+</div>
+<ol class="mock-legend">
+<li><span class="pn">1</span><span><b>Todas as conversas, todas as máquinas.</b> Uma só lista, com o estado e a máquina onde cada uma corre.</span></li>
+<li><span class="pn">2</span><span><b>Mude de máquina a partir do cabeçalho.</b> Sem voltar a iniciar sessão.</span></li>
+<li><span class="pn">3</span><span><b>Cada passo mostra quem o fez:</b> ação, modelo, esforço, conta e máquina.</span></li>
+<li><span class="pn">4</span><span><b>Why:</b> as probabilidades do Jev, as correções que viu e como foi escolhida a conta.</span></li>
+<li><span class="pn">5</span><span><b>Corrija o rumo ou deixe uma nota.</b> Continua a navegar de qualquer forma.</span></li>
+<li><span class="pn">6</span><span><b>Runtimes, rigging, decisões, o improver e os dispositivos,</b> à distância de um clique.</span></li>
+</ol>
+</div>
+</section>
+<!-- ============ drift ============ -->
+<section aria-labelledby="drift-title" class="section alt" id="drift">
+<div class="wrap">
+<div class="section-head">
+<p class="eyebrow"><span class="rule"></span>O recife onde todos os agentes encalham</p>
+<h2 id="drift-title">As sessões longas andam à deriva.</h2>
+<p class="lede">O contexto enche, o modelo perde o fio à meada e alguém tem de pegar no leme. Normalmente você, à uma da manhã.</p>
+</div>
+<figure class="drift-figure">
+<div class="drift-legend"><span><i class="l-long"></i>Uma sessão longa de um agente</span><span><i class="l-saw"></i>Jevellan: uma sessão nova em cada stretch</span></div>
+<div class="drift-scroll">
+<svg aria-label="Ilustração: o contexto de uma sessão longa sobe até uma faixa marcada 'aqui há alucinações', cai na compactação e volta a subir. O contexto do Jevellan começa baixo em cada stretch, cresce enquanto trabalha e volta ao início em cada handoff." class="drift-svg desktop" role="img" viewBox="0 0 900 380">
+<rect class="danger" height="62" width="810" x="70" y="30"></rect>
+<line class="danger-line" x1="70" x2="880" y1="92" y2="92"></line>
+<text class="danger-label" x="90" y="70">Aqui há alucinações</text>
+<g class="serpent" transform="translate(338,54)">
+<path d="M0 26 c5 -12 13 -12 18 0"></path>
+<path d="M26 26 c6 -16 16 -16 22 0"></path>
+<path d="M56 26 c3 -20 14 -30 24 -22 c5 4 4 10 -2 10"></path>
+<path d="M-14 26 c3 -5 7 -6 10 -2"></path>
+<circle class="serpent-eye" cx="74" cy="8" r="1.6"></circle>
+<path class="water" d="M-24 28 h118"></path>
+</g>
+<line class="axis" x1="70" x2="70" y1="30" y2="330"></line>
+<line class="axis" x1="70" x2="880" y1="330" y2="330"></line>
+<text class="axis-label" transform="translate(44,250) rotate(-90)">contexto em uso</text>
+<text class="axis-label" text-anchor="end" x="880" y="366">tempo →</text>
+<path class="saw-fill" d="M70,306 C110,302 170,276 232,250 L232,306 C272,302 332,270 394,238 L394,306 C434,302 494,280 556,256 L556,306 C596,302 656,272 718,244 L718,306 C758,302 818,276 880,250 L880,330 L70,330 Z"></path>
+<line class="base" x1="70" x2="880" y1="306" y2="306"></line>
+<path class="saw" d="M70,306 C110,302 170,276 232,250 L232,306 C272,302 332,270 394,238 L394,306 C434,302 494,280 556,256 L556,306 C596,302 656,272 718,244 L718,306 C758,302 818,276 880,250"></path>
+<path class="long" d="M70,300 C120,292 150,270 190,256 S260,218 300,200 S370,154 410,132 S470,98 500,80 L514,68 L522,170 C560,162 600,132 640,112 S720,82 760,72 S830,58 880,52"></path>
+<line class="tick" x1="522" x2="522" y1="176" y2="186"></line>
+<text class="note" x="530" y="194">compactação</text>
+<text class="note" text-anchor="end" x="872" y="46">uma sessão longa</text>
+<text class="note-jev" x="560" y="226">Jevellan: cada stretch começa do zero</text>
+<text class="note-jev" text-anchor="end" x="874" y="322">brief ≤ 12k tokens</text>
+<use height="14" href="#flag-P" width="21" x="140" y="338"></use>
+<use height="14" href="#flag-I" width="21" x="302" y="338"></use>
+<use height="14" href="#flag-T" width="21" x="464" y="338"></use>
+<use height="14" href="#flag-R" width="21" x="626" y="338"></use>
+<use height="14" href="#flag-I" width="21" x="788" y="338"></use>
+</svg>
+<svg aria-label="Ilustração: o contexto de uma sessão longa sobe até uma faixa marcada 'aqui há alucinações'. O contexto do Jevellan começa baixo em cada stretch e volta ao início em cada handoff." class="drift-svg mobile" role="img" viewBox="0 0 360 330">
+<g transform="translate(34,20) scale(0.39,0.8667) translate(-70,-30)">
+<rect class="danger" height="62" width="810" x="70" y="30"></rect>
+<line class="danger-line vs" x1="70" x2="880" y1="92" y2="92"></line>
+<line class="axis vs" x1="70" x2="70" y1="30" y2="330"></line>
+<line class="axis vs" x1="70" x2="880" y1="330" y2="330"></line>
+<path class="saw-fill" d="M70,306 C110,302 170,276 232,250 L232,306 C272,302 332,270 394,238 L394,306 C434,302 494,280 556,256 L556,306 C596,302 656,272 718,244 L718,306 C758,302 818,276 880,250 L880,330 L70,330 Z"></path>
+<line class="base vs" x1="70" x2="880" y1="306" y2="306"></line>
+<path class="saw vs" d="M70,306 C110,302 170,276 232,250 L232,306 C272,302 332,270 394,238 L394,306 C434,302 494,280 556,256 L556,306 C596,302 656,272 718,244 L718,306 C758,302 818,276 880,250"></path>
+<path class="long vs" d="M70,300 C120,292 150,270 190,256 S260,218 300,200 S370,154 410,132 S470,98 500,80 L514,68 L522,170 C560,162 600,132 640,112 S720,82 760,72 S830,58 880,52"></path>
+</g>
+<text class="danger-label" style="font-size:17px" x="42" y="52">Aqui há alucinações</text>
+<text class="axis-label" transform="translate(18,200) rotate(-90)">contexto em uso</text>
+<text class="axis-label" text-anchor="end" x="350" y="326">tempo →</text>
+<text class="note" style="font-size:10.5px" x="216" y="166">compactação</text>
+<text class="note-jev" style="font-size:10.5px" x="112" y="196">Jevellan: cada stretch começa do zero</text>
+<text class="note-jev" style="font-size:10.5px" text-anchor="end" x="348" y="274">brief ≤ 12k tokens</text>
+<use height="11" href="#flag-P" width="16" x="58" y="287"></use>
+<use height="11" href="#flag-I" width="16" x="121" y="287"></use>
+<use height="11" href="#flag-T" width="16" x="184" y="287"></use>
+<use height="11" href="#flag-R" width="16" x="247" y="287"></use>
+<use height="11" href="#flag-I" width="16" x="310" y="287"></use>
+</svg>
+</div>
+<p class="figure-note">Uma ilustração, não um benchmark. Um stretch continua a crescer enquanto trabalha. Só que começa pequeno, e começa sempre do zero.</p>
+</figure>
+</div>
+</section>
+<!-- ============ meet jev ============ -->
+<section aria-labelledby="jev-title" class="section chart-grid" id="jev">
+<div class="wrap">
+<div class="section-head">
+<p class="eyebrow"><span class="rule"></span>O piloto</p>
+<h2 id="jev-title">Conheça o Jev. Não sabe escrever uma única linha.</h2>
+<p class="lede">É mesmo esse o objetivo. O Jev é o <b>modelo System One</b> da <a href="https://typesafe.ai/">TypeSafe AI</a>. Dê-lhe a situação e algumas perguntas tipadas, e ele responde a cada uma com uma escolha e probabilidades calibradas, em cerca de um décimo de segundo. Os seus agentes escrevem. O Jev decide.</p>
+</div>
+<div class="jev-hero-grid">
+<div aria-live="polite" class="jev-window" id="jev-window">
+<div class="jev-titlebar"><span aria-hidden="true" class="lights"><i></i><i></i><i></i></span><span>jev-1.13.0 ▸ decisão</span><span class="t-right" id="jev-scene-count">1/5</span></div>
+<div class="jev-body" id="jev-body"></div>
+</div>
+<div class="qtypes">
+<article class="qtype-card">
+<header><h4>Choice</h4><span class="tag">escolha uma de até 255</span></header>
+<svg aria-hidden="true" class="mini-viz" preserveAspectRatio="xMinYMid meet" viewBox="0 0 260 34">
+<rect class="t" height="20" rx="2" width="44" x="0" y="4"></rect><rect class="g" height="2" width="44" x="0" y="22"></rect>
+<rect class="t" height="20" rx="2" width="44" x="54" y="4"></rect><rect class="f" height="18" rx="2" width="44" x="54" y="6"></rect>
+<rect class="t" height="20" rx="2" width="44" x="108" y="4"></rect><rect class="g" height="3" width="44" x="108" y="21"></rect>
+<rect class="t" height="20" rx="2" width="44" x="162" y="4"></rect><rect class="g" height="2" width="44" x="162" y="22"></rect>
+<rect class="t" height="20" rx="2" width="44" x="216" y="4"></rect><rect class="g" height="1" width="44" x="216" y="23"></rect>
+<text class="k" text-anchor="middle" x="22" y="33">reply</text><text class="kj" text-anchor="middle" x="76" y="33">impl</text><text class="k" text-anchor="middle" x="130" y="33">test</text><text class="k" text-anchor="middle" x="184" y="33">review</text><text class="k" text-anchor="middle" x="238" y="33">done</text>
+</svg>
+<p>Uma opção de uma lista que você define, com uma probabilidade para cada uma.</p>
+<p class="uses">O Jevellan pergunta: <b>o próximo passo</b>, <b>o modelo</b>, <b>o esforço</b>.</p>
+</article>
+<article class="qtype-card">
+<header><h4>Noul</h4><span class="tag">é verdade? de 0 a 1</span></header>
+<svg aria-hidden="true" class="mini-viz" preserveAspectRatio="xMinYMid meet" viewBox="0 0 260 34">
+<rect class="t" height="10" rx="2" width="260" x="0" y="10"></rect><rect class="f" height="10" rx="2" width="216" x="0" y="10"></rect>
+<rect class="g" height="18" width="2" x="155" y="6"></rect>
+<text class="k" x="0" y="33">0</text><text class="k" x="150" y="33">manter se ≥ 0.6</text><text class="kj" text-anchor="end" x="260" y="33">0.83</text>
+</svg>
+<p>Uma pergunta de sim ou não, respondida com a probabilidade de ser sim.</p>
+<p class="uses">O Jevellan pergunta: <b>fico no modelo atual?</b> <b>pediu-me para memorizar isto?</b></p>
+</article>
+<article class="qtype-card">
+<header><h4>Score</h4><span class="tag">avalie numa escala</span></header>
+<svg aria-hidden="true" class="mini-viz" preserveAspectRatio="xMinYMid meet" viewBox="0 0 260 34">
+<line class="ln" x1="6" x2="254" y1="14" y2="14"></line>
+<rect class="g" height="10" width="2" x="5" y="9"></rect><rect class="g" height="10" width="2" x="87" y="9"></rect><rect class="g" height="10" width="2" x="170" y="9"></rect><rect class="g" height="10" width="2" x="252" y="9"></rect>
+<path class="mk" d="M205 6 l7 8 -7 8 -7 -8z"></path>
+<text class="k" text-anchor="middle" x="6" y="31">0</text><text class="k" text-anchor="middle" x="88" y="31">1</text><text class="k" text-anchor="middle" x="171" y="31">2</text><text class="k" text-anchor="middle" x="253" y="31">3</text><text class="kj" text-anchor="middle" x="205" y="31">2.4</text>
+</svg>
+<p>Uma nota nos níveis que você define. A resposta pode ficar entre eles.</p>
+<p class="uses">O Jevellan pergunta: <b>quão útil é esta nota de memória</b> para o próximo passo?</p>
+</article>
+</div>
+</div>
+<div class="stats" role="list">
+<div class="stat" role="listitem"><span class="num">193.6<small>×</small></span><span class="what">mais rápido do que fluxos com LLM em tarefas System One</span><span class="src">avaliações da própria TypeSafe · <a href="https://typesafe.ai/">typesafe.ai</a></span></div>
+<div class="stat" role="listitem"><span class="num">444.6<small>×</small></span><span class="what">mais barato nos mesmos fluxos</span><span class="src">avaliações da própria TypeSafe · <a href="https://typesafe.ai/blog/introducing-system-one-models-and-jev">anúncio</a></span></div>
+<div class="stat" role="listitem"><span class="num">$42</span><span class="what">por cada <b>mil milhões</b> de tokens de entrada. Os tokens de saída são grátis.</span><span class="src">preços da TypeSafe · <a href="https://docs.typesafe.ai/">documentação</a></span></div>
+<div class="stat" role="listitem"><span class="num">13<small>%</small></span><span class="what">das equipas pagas da Vercel usaram-no nas primeiras 24 horas</span><span class="src">o modelo adotado mais depressa na Vercel · <a href="https://thenextweb.com/news/typesafe-jev-decision-model-vercel-fastest-adopted">TNW</a></span></div>
+</div>
+<p class="stats-note">Números publicados pela TypeSafe e pela Vercel. A própria TypeSafe diz que os valores máximos estão no limite superior do uso real. Os nossos vão para o <a href="#numbers">diário de bordo</a>.</p>
+<div class="subhead"><h3>O porto não fala de outra coisa.</h3><p>Lançado a 15 de setembro de 2026. As docas não se calaram desde então. Citações no original.</p></div>
+<p aria-hidden="true" class="swipe-hint">deslize →</p>
+<div class="quotes">
+<figure class="quote feature wide">
+<span class="tagline">O entusiasmo</span>
+<blockquote>…if what I see early on materializes, this is another ChatGPT moment (or another reasoning models moment).</blockquote>
+<figcaption class="who"><strong>Alex Volkov, apresentador do ThursdAI</strong><a href="https://sub.thursdai.news/p/typesafes-jev-changes-everything">“TypeSafe's Jev is a ChatGPT moment for decisions”</a></figcaption>
+</figure>
+<figure class="quote">
+<span class="tagline">O benchmark</span>
+<blockquote>We're seeing extraordinary results from @typesafeai. […] Jev is up to 18x faster (p95) <em>and</em> more accurate.</blockquote>
+<figcaption class="who"><strong>Guillermo Rauch, CEO da Vercel</strong><a href="https://x.com/rauchg/status/2100307962262872105">no X</a></figcaption>
+</figure>
+<figure class="quote">
+<span class="tagline">Quem constrói</span>
+<blockquote>it is the only one that hands back a real probability which makes it ideal for automating workflows!!</blockquote>
+<figcaption class="who"><strong>Nikhil Mudholkar, CTO da Bryo AI</strong><a href="https://techcrunch.com/2026/09/18/a-new-kind-of-ai-model-from-a-chatgpt-inventor-is-thrilling-developers/">via TechCrunch</a></figcaption>
+</figure>
+<figure class="quote">
+<span class="tagline">Quem o criou</span>
+<blockquote>…if AI is going to fundamentally change how work gets done, people can't be the only consumers of intelligence.</blockquote>
+<figcaption class="who"><strong>Diogo Almeida, cofundador e CEO da TypeSafe AI</strong><a href="https://www.theregister.com/ai-and-ml/2026/09/16/typesafe-ai-debuts-model-for-machines-that-plays-doom/5296711">via The Register</a></figcaption>
+</figure>
+<figure class="quote">
+<span class="tagline">O cético</span>
+<blockquote>The problem is old; the architecture and product around it may be new.</blockquote>
+<figcaption class="who"><strong>Abid Ali Awan</strong><a href="https://www.kdnuggets.com/what-everyone-is-getting-wrong-about-typesafe-ais-jev">KDnuggets</a></figcaption>
+</figure>
+</div>
+<div aria-label="Títulos" class="press">
+<a href="https://techcrunch.com/2026/09/18/a-new-kind-of-ai-model-from-a-chatgpt-inventor-is-thrilling-developers/"><span class="p-src">TechCrunch</span><span class="p-h">A new kind of AI model from a ChatGPT inventor is thrilling developers</span></a>
+<a href="https://www.tomshardware.com/tech-industry/artificial-intelligence/typesafe-ais-jev-offers-an-alternative-to-llms-that-claims-to-be-193x-faster-and-445x-cheaper-system-one-type-model-is-bespoke-for-probabilistic-decision-making"><span class="p-src">Tom's Hardware</span><span class="p-h">TypeSafe AI's Jev offers an alternative to LLMs that claims to be 193x faster and 445x cheaper</span></a>
+<a href="https://www.latent.space/p/jev"><span class="p-src">Latent Space</span><span class="p-h">Jev: System One models for Prod, not God</span></a>
+<a href="https://www.theregister.com/ai-and-ml/2026/09/16/typesafe-ai-debuts-model-for-machines-that-plays-doom/5296711"><span class="p-src">The Register</span><span class="p-h">TypeSafe AI debuts model for machines that plays Doom</span></a>
+</div>
+<div class="subhead"><h3>Já no mar</h3><p>O que já se construiu com o Jev na primeira semana.</p></div>
+<p aria-hidden="true" class="swipe-hint">deslize →</p>
+<div class="builds">
+<a class="build" href="https://techcrunch.com/2026/09/18/a-new-kind-of-ai-model-from-a-chatgpt-inventor-is-thrilling-developers/">
+<div class="b-top"><span class="b-kind">Segurança de agentes</span><span aria-hidden="true" class="b-arrow">↗</span></div>
+<div><h4>O revisor de comandos da Vercel</h4><p>O agente deles verifica cada comando antes de o executar. Nos testes da Vercel, o Jev fez essa verificação até 18× mais depressa do que o GPT Luna, e com mais precisão.</p></div>
+<span class="b-host">techcrunch.com</span>
+</a>
+<a class="build" href="https://www.langchain.com/blog/building-a-harness-with-jev">
+<div class="b-top"><span class="b-kind">Harness de agentes</span><span aria-hidden="true" class="b-arrow">↗</span></div>
+<div><h4>O harness da LangChain</h4><p>Encaminha cada pedido para um modelo rápido ou um modelo forte, e trava chamadas de ferramentas arriscadas antes de correrem.</p></div>
+<span class="b-host">langchain.com</span>
+</a>
+<a class="build" href="https://github.com/browser-use/jev-ultrafast">
+<div class="b-top"><span class="b-kind">Agente de browser</span><span aria-hidden="true" class="b-arrow">↗</span></div>
+<div><h4>Browser Use: jev-ultrafast</h4><p>Um agente de browser com um espaço de ações dinâmico, que escolhe o próximo clique com decisões tipadas.</p></div>
+<span class="b-host">github.com/browser-use</span>
+</a>
+<a class="build" href="https://github.com/gargpratyush/jev-router">
+<div class="b-top"><span class="b-kind">Encaminhamento de modelos</span><span aria-hidden="true" class="b-arrow">↗</span></div>
+<div><h4>jev-router</h4><p>Encaminhamento por turno para Claude Code e Codex: turnos simples para o nível rápido, os difíceis para o nível forte.</p></div>
+<span class="b-host">github.com/gargpratyush</span>
+</a>
+<a class="build" href="https://github.com/0xNatoshi/jev-codex-router">
+<div class="b-top"><span class="b-kind">Encaminhamento de modelos</span><span aria-hidden="true" class="b-arrow">↗</span></div>
+<div><h4>Jev Codex Router</h4><p>Escolhe o modelo, a profundidade de raciocínio e o modo de velocidade em cada turno do Codex.</p></div>
+<span class="b-host">github.com/0xNatoshi</span>
+</a>
+<a class="build" href="https://github.com/AbdelStark/awesome-typesafe-jev">
+<div class="b-top"><span class="b-kind">Guia de campo</span><span aria-hidden="true" class="b-arrow">↗</span></div>
+<div><h4>Awesome Jev</h4><p>Dezenas de ferramentas para agentes, bibliotecas cliente numa dúzia de linguagens e avaliações independentes.</p></div>
+<span class="b-host">github.com/AbdelStark</span>
+</a>
+</div>
+<div class="callout">
+<svg aria-hidden="true" class="flag flag-md"><use href="#flag-H"></use></svg>
+<p>Reparou no padrão? A maioria das ferramentas com o Jev escolhe um modelo para a próxima mensagem. <b>O Jevellan entrega ao Jev a travessia inteira:</b> o próximo passo, o modelo, o esforço e a memória, stretch após stretch, até o trabalho estar verificado e publicado. <a href="#beyond">Veja o que mais vai a bordo →</a></p>
+</div>
+</div>
+</section>
+<!-- ============ story ============ -->
+<section aria-labelledby="story-title" class="section alt" id="story">
+<div class="wrap">
+<div class="section-head">
+<p class="eyebrow"><span class="rule"></span>Como chegámos aqui</p>
+<h2 id="story-title">Vento de feição, mesmo no rumo.</h2>
+<p class="lede">Vento de feição é o que sopra exatamente para onde já ia. Estávamos a meio da costa, à procura da passagem, quando o Jev apareceu.</p>
+</div>
+<div class="story-grid">
+<figure class="story-map">
+<svg aria-label="Uma carta estilizada. Uma rota cinzenta sai de 'Garrison' e desce a costa da Terra Heuristica, a sondar quatro enseadas marcadas como becos sem saída: duties, levels, tabelas de routing, e flows com uma chamada ao Haiku. Depois entra num estreito marcado 'Jev, 15 de setembro de 2026' e, já em magenta, sai para mar aberto marcado 'Jevellan'." role="img" viewBox="0 0 520 800">
+<rect class="sea-bg" height="800" width="520" x="0" y="0"></rect>
+<path class="contour" d="M398,0 C412,60 394,120 402,180 C410,240 398,320 392,380 C386,440 382,520 374,580 C368,620 352,652 344,700 C338,740 344,770 350,800"></path>
+<path class="contour" d="M444,0 C458,90 440,170 448,250 C456,340 438,430 434,520 C430,600 404,660 400,720 C398,760 404,780 410,800"></path>
+<path class="contour" d="M62,0 C56,120 72,240 66,360 C62,460 82,560 94,640 C98,680 86,720 70,760"></path>
+<path class="land" d="M96,0 L370,0 C382,40 364,70 372,104 L358,128 L300,140 L356,152 C372,178 358,206 364,236 L346,258 L286,268 L344,280 C354,306 340,334 344,364 L326,386 L268,394 L322,406 C330,434 314,462 314,492 L298,512 L244,520 L292,532 C296,564 284,596 270,624 C262,634 250,640 230,642 C200,646 170,648 140,640 C128,600 112,540 116,480 C120,400 98,320 104,240 C110,160 90,80 96,0 Z"></path>
+<path class="land" d="M152,684 C202,674 262,678 300,698 C322,718 304,752 268,766 C218,784 168,776 146,756 C130,734 134,700 152,684 Z"></path>
+<text class="land-name" text-anchor="middle" transform="translate(222,440) rotate(-90)">Terra Heuristica</text>
+<text class="sea-name" text-anchor="middle" transform="translate(46,430) rotate(-90)">Mar Pacífico</text>
+<text class="sea-name" text-anchor="end" x="506" y="608">Mar das Regras</text>
+<text class="sounding" x="476" y="196">31</text><text class="sounding" x="462" y="336">27</text><text class="sounding" x="480" y="470">40</text>
+<text class="sounding" x="30" y="120">58</text><text class="sounding" x="56" y="250">63</text><text class="sounding" x="24" y="560">71</text><text class="sounding" x="470" y="720">35</text><text class="sounding" x="412" y="772">18</text>
+<path class="route-dead" d="M470,24 C450,56 424,88 412,118 C414,160 414,200 408,244 C404,290 402,330 398,370 C394,420 390,460 384,500 C380,560 360,620 318,652"></path>
+<path class="route-dead" d="M412,118 C380,126 340,134 314,140"></path>
+<path class="route-dead" d="M408,244 C370,254 330,262 298,268"></path>
+<path class="route-dead" d="M398,370 C360,380 316,390 282,394"></path>
+<path class="route-dead" d="M384,500 C346,508 296,516 258,520"></path>
+<g class="x"><path d="M307,133 l12,12 M319,133 l-12,12"></path><path d="M291,261 l12,12 M303,261 l-12,12"></path><path d="M275,387 l12,12 M287,387 l-12,12"></path><path d="M251,513 l12,12 M263,513 l-12,12"></path></g>
+<text class="lbl" x="424" y="136">duties</text>
+<text class="lbl" x="420" y="262">levels</text>
+<text class="lbl" x="410" y="386">routing</text><text class="lbl" x="410" y="400">tables</text>
+<text class="lbl" x="396" y="516">flows + uma</text><text class="lbl" x="396" y="530">chamada Haiku</text>
+<path class="route-live" d="M318,652 C290,662 260,652 230,658 C200,664 170,654 140,660 C112,666 92,682 78,706 C64,730 52,750 42,770"></path>
+<circle class="jev-glow" cx="318" cy="652" r="18"></circle>
+<circle class="jev-dot" cx="318" cy="652" r="5"></circle>
+<text class="lbl-jev" x="330" y="706">o estreito: Jev</text>
+<text class="lbl" x="330" y="722">15 set 2026</text>
+<circle class="start-dot" cx="470" cy="24" r="5"></circle>
+<text class="lbl-strong" text-anchor="end" x="458" y="28">Garrison</text>
+<text class="lbl" text-anchor="end" x="458" y="43">zarpa</text>
+<text class="lbl-jev" x="58" y="786">Jevellan</text>
+<g class="scale-bar" transform="translate(378,774)">
+<rect height="5" width="20" x="0" y="0"></rect><rect class="w" height="5" width="20" x="20" y="0"></rect><rect height="5" width="20" x="40" y="0"></rect><rect class="w" height="5" width="20" x="60" y="0"></rect>
+</g>
+<text class="scale-text" x="462" y="779">1 sprint</text>
+<rect class="frame" height="794" width="514" x="3" y="3"></rect>
+<rect class="frame-inner" height="784" width="504" x="8" y="8"></rect>
+</svg>
+</figure>
+<div>
+<div class="beats">
+<div class="beat">
+<div aria-hidden="true" class="b-mark"><svg viewBox="0 0 48 40"><path d="M4 28 H44 L39 36 H9 Z" fill="currentColor"></path><path d="M24 27 V4" stroke="currentColor" stroke-width="1.8"></path><path d="M26 6 C33 12 36 19 37 26 H26 Z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="1.6"></path><path d="M22 8 L22 26 H11 Z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="1.6"></path></svg></div>
+<div>
+<span class="when">Antes do Jev</span>
+<h3>Construímos o navio.</h3>
+<p>Chamava-se <a href="https://gongiskhan.github.io/agent-garrison/">Garrison</a>: um orquestrador para Claude Code e Codex. Já corria o trabalho em stretches curtos com handoffs, mantinha um ledger, distribuía o trabalho por contas de vários fornecedores e juntava várias máquinas numa só mesh. Os stretches curtos e focados já davam melhor trabalho com menos tokens do que uma sessão longa.</p>
+</div>
+</div>
+<div class="beat">
+<div aria-hidden="true" class="b-mark"><svg viewBox="0 0 30 30"><path d="M5 8 C12 2 18 14 25 8 M5 15 C12 9 18 21 25 15 M5 22 C12 16 18 28 25 22" fill="none" stroke="var(--danger)" stroke-linecap="round" stroke-width="1.8"></path></svg></div>
+<div>
+<span class="when">Cada enseada, um beco sem saída</span>
+<h3>O difícil era o momento entre passos.</h3>
+<p>Que fazer a seguir? Que modelo? Quanto esforço? Escrevemos duties, levels, tabelas de routing e flows, mais uma chamada ao Haiku para os casos ambíguos. O livro de regras não parava de crescer. As decisões não ficavam muito melhores.</p>
+<div class="dead-list"><span class="dead">duties</span><span class="dead">levels</span><span class="dead">tabelas de routing</span><span class="dead">flows</span><span class="dead">uma chamada ao Haiku</span></div>
+</div>
+</div>
+<div class="beat jev">
+<div aria-hidden="true" class="b-mark"><svg style="color:var(--jev)" viewBox="0 0 24 24"><use href="#i-compass"></use></svg></div>
+<div>
+<span class="when">15 de setembro de 2026</span>
+<h3>Depois apareceu o Jev.</h3>
+<p>A TypeSafe lançou um modelo feito exatamente para esse momento: decisões rápidas e tipadas, com probabilidades honestas. Encaixou na lacuna que tínhamos deixado, como se o encaixe tivesse sido talhado para ele. A sorte não costuma vir com API.</p>
+</div>
+</div>
+<div class="beat">
+<div aria-hidden="true" class="b-mark"><svg viewBox="0 0 30 30"><circle cx="15" cy="12" fill="var(--farol)" r="5"></circle><path d="M3 21 C8 18 12 24 17 21 S25 18 27 21 M3 26 C8 23 12 29 17 26 S25 23 27 26" fill="none" stroke="var(--sea)" stroke-linecap="round" stroke-width="1.6"></path></svg></div>
+<div>
+<span class="when">Agora</span>
+<h3>Jevellan: do outro lado do estreito.</h3>
+<p>Ficámos com as tábuas que funcionavam, atirámos o livro de regras borda fora e demos o leme ao Jev. Tudo o que não é preciso para construir software ficou em terra.</p>
+<div class="kept-list"><span class="kept">stretches</span><span class="kept">handoffs</span><span class="kept">ledger</span><span class="kept">contas</span><span class="kept">mesh</span><span class="kept">rigging</span><span class="kept">improver</span></div>
+</div>
+</div>
+</div>
+<div class="story-diff">
+<div class="col"><h4>A maioria dos projetos com o Jev</h4><p>Começam num prompt e juntam o Jev para o encaminhar. A decisão de encaminhamento é o produto inteiro.</p></div>
+<div class="col us"><h4>Jevellan</h4><p>Começou num navio que já funcionava e entregou ao Jev a única tarefa que nunca tinha corrido bem. É por essa vantagem que aqui o Jev conduz a travessia inteira, e não apenas a próxima mensagem.</p></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- ============ more than a router ============ -->
+<section aria-labelledby="beyond-title" class="section chart-grid" id="beyond">
+<div class="wrap">
+<div class="section-head">
+<p class="eyebrow"><span class="rule"></span>Porquê o Jevellan</p>
+<h2 id="beyond-title">Mais do que um router.</h2>
+<p class="lede">Um router escolhe um modelo para a sua próxima mensagem. O Jevellan faz o trabalho inteiro, e traz o navio com ele.</p>
+</div>
+<div class="matrix-card">
+<div class="matrix-scroll">
+<table class="matrix">
+<thead>
+<tr><th scope="col">O que tem</th><th class="c" scope="col">Um router de modelos</th><th class="c us" scope="col">Jevellan</th></tr>
+</thead>
+<tbody>
+<tr><th scope="row">Escolhe o modelo em cada turno</th><td class="c"><i aria-label="sim" class="mk y" role="img"></i></td><td class="c us"><i aria-label="sim" class="mk y" role="img"></i></td></tr>
+<tr><th scope="row">Escolhe com que esforço pensar</th><td class="c"><i aria-label="alguns fazem" class="mk s" role="img"></i></td><td class="c us"><i aria-label="sim" class="mk y" role="img"></i></td></tr>
+<tr><th scope="row">Decide o que vem a seguir: planear, construir, testar, rever, perguntar-lhe ou terminar</th><td class="c"><i aria-label="não" class="mk n" role="img"></i></td><td class="c us"><i aria-label="sim" class="mk y" role="img"></i></td></tr>
+<tr><th scope="row">Escolhe a memória do projeto que cada passo recebe</th><td class="c"><i aria-label="não" class="mk n" role="img"></i></td><td class="c us"><i aria-label="sim" class="mk y" role="img"></i></td></tr>
+<tr><th scope="row">Mantém o seu pedido palavra por palavra, através de pausas e correções</th><td class="c"><i aria-label="não" class="mk n" role="img"></i></td><td class="c us"><i aria-label="sim" class="mk y" role="img"></i></td></tr>
+<tr><th scope="row">Corre os seus próprios testes no commit final antes de dar o trabalho por concluído</th><td class="c"><i aria-label="não" class="mk n" role="img"></i></td><td class="c us"><i aria-label="sim" class="mk y" role="img"></i></td></tr>
+<tr><th scope="row">Publica na main em segurança: um lock, conflitos tratados, nunca um force-push</th><td class="c"><i aria-label="não" class="mk n" role="img"></i></td><td class="c us"><i aria-label="sim" class="mk y" role="img"></i></td></tr>
+<tr><th scope="row">Distribui o trabalho pelas suas subscrições e chaves, com regras para uso pago</th><td class="c"><i aria-label="alguns fazem" class="mk s" role="img"></i></td><td class="c us"><i aria-label="sim" class="mk y" role="img"></i></td></tr>
+<tr><th scope="row">Uma só lista para todas as suas máquinas, conduzida a partir de qualquer uma</th><td class="c"><i aria-label="não" class="mk n" role="img"></i></td><td class="c us"><i aria-label="sim" class="mk y" role="img"></i></td></tr>
+<tr><th scope="row">Corrija qualquer passo depois, com undo, e ele aprende com isso</th><td class="c"><i aria-label="não" class="mk n" role="img"></i></td><td class="c us"><i aria-label="sim" class="mk y" role="img"></i></td></tr>
+<tr><th scope="row">Traz qualquer agente a bordo através de um só contrato</th><td class="c"><i aria-label="alguns fazem" class="mk s" role="img"></i></td><td class="c us"><i aria-label="sim" class="mk y" role="img"></i></td></tr>
+<tr><th scope="row">Toda a sua configuração num manifest que pode partilhar</th><td class="c"><i aria-label="não" class="mk n" role="img"></i></td><td class="c us"><i aria-label="sim" class="mk y" role="img"></i></td></tr>
+<tr><th scope="row">Uma app web que funciona no seu telemóvel</th><td class="c"><i aria-label="não" class="mk n" role="img"></i></td><td class="c us"><i aria-label="sim" class="mk y" role="img"></i></td></tr>
+</tbody>
+</table>
+</div>
+<div class="matrix-foot">
+<p class="matrix-key"><span><i aria-hidden="true" class="mk y"></i>sim</span><span><i aria-hidden="true" class="mk s"></i>alguns fazem</span><span><i aria-hidden="true" class="mk n"></i>não é com eles</span></p>
+<p class="small">Os routers são mais leves e bons na sua única tarefa. Se só precisa de um modelo mais barato por mensagem, use um. Se quer o trabalho inteiro feito, navegue connosco.</p>
+</div>
+</div>
+<div class="feats">
+<article class="feat">
+<div class="feat-top"><span class="feat-kicker">Verificações no browser</span><span class="soon-badge">chega a seguir</span></div>
+<h3>Jev Ultrafast, ao leme de um browser a sério.</h3>
+<svg aria-label="Um browser com uma página de definições. Um caminho tracejado clica no interruptor do modo escuro e depois em Guardar, e duas capturas de ecrã vão para o handoff." class="feat-viz browser-viz" role="img" viewBox="0 0 360 160">
+<rect class="bw" height="158" rx="8" width="250" x="1" y="1"></rect>
+<rect class="bbar" height="22" rx="8" width="250" x="1" y="1"></rect><rect class="bbar" height="9" width="250" x="1" y="14"></rect>
+<circle class="bdot" cx="13" cy="12" r="3"></circle><circle class="bdot" cx="23" cy="12" r="3"></circle><circle class="bdot" cx="33" cy="12" r="3"></circle>
+<rect class="burl" height="12" rx="6" width="190" x="46" y="6"></rect><text class="bt" x="54" y="15">localhost:5173/settings</text>
+<rect class="bline strong" height="8" rx="2" width="90" x="16" y="36"></rect>
+<rect class="bline" height="6" rx="2" width="150" x="16" y="56"></rect><rect class="bline" height="6" rx="2" width="120" x="16" y="68"></rect>
+<text class="bt dark" x="16" y="98">Modo escuro</text>
+<rect class="btog" height="16" rx="8" width="30" x="180" y="88"></rect><circle class="btog-k" cx="202" cy="96" r="6"></circle>
+<rect class="bbtn" height="22" rx="5" width="56" x="16" y="120"></rect><text class="bt light" x="30" y="135">Guardar</text>
+<path class="bpath" d="M130 30 C160 50 190 70 196 94 C170 110 120 122 84 130"></path>
+<circle class="bclick" cx="196" cy="96" r="9"></circle><text class="bnum" text-anchor="middle" x="196" y="100">1</text>
+<circle class="bclick" cx="80" cy="131" r="9"></circle><text class="bnum" text-anchor="middle" x="80" y="135">2</text>
+<rect class="shot" height="48" rx="4" width="78" x="270" y="18"></rect><rect class="shot-in" height="36" rx="2" width="66" x="276" y="24"></rect>
+<rect class="shot" height="48" rx="4" width="78" x="270" y="76"></rect><rect class="shot-in dark" height="36" rx="2" width="66" x="276" y="82"></rect>
+<text class="bt" text-anchor="middle" x="309" y="142">→ handoff</text>
+<path class="barrow" d="M252 70 L266 70 M260 64 L266 70 L260 76"></path>
+</svg>
+<p>Depois de uma alteração de interface, um stretch de teste entrega a sua app ao agente de browser da Browser Use, movido a Jev. Ele escolhe cada clique com uma decisão tipada, e as capturas de ecrã ficam no handoff como prova.</p>
+<p class="feat-src">A Browser Use reporta uma pesquisa no Google Flights em cerca de 7 segundos. <a href="https://github.com/browser-use/jev-ultrafast">jev-ultrafast no GitHub</a></p>
+</article>
+<article class="feat">
+<div class="feat-top"><span class="feat-kicker">Berths</span></div>
+<h3>Todos os agentes. Todos os modelos.</h3>
+<div aria-label="Agentes e os seus berths" class="berths">
+<div class="berth on"><span class="b-no">01</span><span class="b-name">Claude Code</span><span class="b-st">a bordo</span></div>
+<div class="berth on"><span class="b-no">02</span><span class="b-name">Codex</span><span class="b-st">a bordo</span></div>
+<div class="berth next"><span class="b-no">03</span><span class="b-name">Gemini CLI</span><span class="b-st">a seguir</span></div>
+<div class="berth next"><span class="b-no">04</span><span class="b-name">OpenCode</span><span class="b-st">a seguir</span></div>
+<div class="berth next"><span class="b-no">05</span><span class="b-name">Pi</span><span class="b-st">a seguir</span></div>
+<div class="berth next"><span class="b-no">06</span><span class="b-name">Cursor</span><span class="b-st">a seguir</span></div>
+<div class="berth yours"><span class="b-no">07</span><span class="b-name">O seu?</span><span class="b-st">escreva um</span></div>
+</div>
+<pre aria-label="The berth contract" class="contract"><code><span class="k">createRuntime</span>(ctx) → {
+  listModels · beginLogin · probe
+  materialiseRigging · startStretch
+}
+<span class="c">// runContractTests(factory) tells you it's seaworthy</span></code></pre>
+<p>Um berth é um pequeno pacote que traz um agente a bordo, através de um só contrato. Claude Code e Codex são os primeiros a bordo, com todos os modelos que oferecem. Gemini CLI, OpenCode e Pi vêm a seguir, e qualquer pessoa pode escrever um.</p>
+</article>
+<article class="feat">
+<div class="feat-top"><span class="feat-kicker">O manifest</span></div>
+<h3>Toda a sua configuração, num só ficheiro.</h3>
+<pre aria-label="An example manifest" class="yaml"><code><span class="c"># an example manifest (apm.yml)</span>
+<span class="k">name</span>: my-fleet
+<span class="k">dependencies</span>:
+  <span class="k">apm</span>:
+    - my-org/team-conventions   <span class="c"># a skill</span>
+    - my-org/figma-export       <span class="c"># an MCP server</span>
+<span class="k">x-jevellan</span>:
+  <span class="k">runtimes</span>: { claude: on, codex: on }
+  <span class="k">menu</span>: [Fable, Opus, GPT via Codex]
+  <span class="k">routingProfile</span>: |
+    UI work goes to Fable.</code></pre>
+<div class="chips"><span class="chip">Exportar</span><span class="chip">Importar: validar, diff, aplicar</span><span class="chip always">apm install · apm uninstall</span></div>
+<p>Agentes, modelos, rigging e regras de encaminhamento vivem num só manifest do <a href="https://microsoft.github.io/apm/">APM</a>, o gestor de pacotes da Microsoft para contexto de agentes. Passe-o a um amigo: ao importar vê um diff antes de qualquer alteração, e cada pacote instala-se e desinstala-se sem deixar rasto.</p>
+</article>
+<article class="feat">
+<div class="feat-top"><span class="feat-kicker">Rigging</span></div>
+<h3>Tudo o que os seus agentes suportam, a bordo.</h3>
+<div aria-label="O que o rigging pode levar" class="rig-cloud">
+<span>Servidores MCP</span><span>Aptidões</span><span>Plugins</span><span>Hooks</span><span>Regras</span><span>Comandos slash</span><span>Definições</span>
+</div>
+<table class="rig-table mini">
+<thead><tr><th>Rigging</th><th class="c">Claude Code</th><th class="c">Codex</th><th class="c">Gemini CLI</th></tr></thead>
+<tbody>
+<tr><td><span class="it">team-conventions</span></td><td class="c"><span aria-label="ligado" class="tog on"></span></td><td class="c"><span aria-label="ligado" class="tog on"></span></td><td class="c"><span class="tog-na">a seguir</span></td></tr>
+<tr><td><span class="it">figma-export</span></td><td class="c"><span aria-label="ligado" class="tog on"></span></td><td class="c"><span aria-label="desligado" class="tog"></span></td><td class="c"><span class="tog-na">a seguir</span></td></tr>
+</tbody>
+</table>
+<p>Se o agente o suporta, o Jevellan pode levá-lo. Escolha por agente o que vai a bordo. Tudo vai para as pastas do próprio Jevellan, nunca para as suas.</p>
+</article>
+</div>
+</div>
+</section>
+<!-- ============ four scales ============ -->
+<section aria-labelledby="how-title" class="section alt" id="how">
+<div class="wrap">
+<div class="section-head">
+<p class="eyebrow"><span class="rule"></span>A carta, em quatro escalas</p>
+<h2 id="how-title">Aproxime-se, das suas máquinas até um único passo.</h2>
+<p class="lede">Cada nome em monoespaçado é uma palavra que vai ver na app. O itálico é como um navegador o diria.</p>
+</div>
+<div class="insets">
+<!-- A: fleet -->
+<article aria-labelledby="inset-a" class="inset">
+<header class="inset-head"><span class="code">DETALHE A</span><h3 id="inset-a">A frota <span class="chart-name">mesh</span></h3><span class="scale">Escala: todas as suas máquinas</span></header>
+<div class="inset-body">
+<div class="inset-visual">
+<svg aria-label="Três máquinas membro (Mac mini, dev box, portátil antigo) ligadas ao hub, um MacBook desenhado como nau capitânia com uma lanterna. Uma sessão do Cursor fora do Jevellan está perto, dentro de um anel tracejado de afastamento." class="fleet-svg" role="img" viewBox="0 0 560 300">
+<rect class="sea" height="300" rx="10" width="560" x="0" y="0"></rect>
+<path class="contour" d="M40,40 C140,10 260,30 330,20 S500,10 540,60"></path>
+<path class="contour" d="M20,270 C120,250 200,290 300,276 S470,250 548,272"></path>
+<path class="contour" d="M190,120 C220,96 330,96 360,124 C392,154 350,200 290,204 C220,208 168,160 190,120 Z"></path>
+<path class="link" d="M112,74 L276,146"></path>
+<path class="link live" d="M458,82 L290,146"></path>
+<path class="link" d="M448,242 L292,166"></path>
+<circle class="keep-off" cx="66" cy="166" r="30"></circle>
+<g transform="translate(52,156)"><path class="boat" d="M0 8 H28 L24 14 H4 Z"></path><path d="M14 8 V0" stroke="var(--ink-3)" stroke-width="1.4"></path></g>
+<text class="boat-label" x="14" y="212">Cursor, fora do Jevellan</text>
+<g transform="translate(86,40)"><path class="hull" d="M4 28 H44 L39 36 H9 Z"></path><path class="mast" d="M24 27 V4"></path><path class="sail" d="M26 6 C33 12 36 19 37 26 H26 Z"></path><path class="sail" d="M22 8 L22 26 H11 Z"></path><use height="6.7" href="#flag-ES" width="10" x="24" y="-2"></use></g>
+<text class="name" text-anchor="middle" x="110" y="96">Mac mini</text><text class="sub" text-anchor="middle" x="110" y="110">1 à sua espera</text>
+<g transform="translate(434,48)"><path class="hull" d="M4 28 H44 L39 36 H9 Z"></path><path class="mast" d="M24 27 V4"></path><path class="sail" d="M26 6 C33 12 36 19 37 26 H26 Z"></path><path class="sail" d="M22 8 L22 26 H11 Z"></path><use height="6.7" href="#flag-ES" width="10" x="24" y="-2"></use></g>
+<text class="name" text-anchor="middle" x="458" y="104">dev box</text><text class="sub" text-anchor="middle" x="458" y="118">1 a correr · em direto</text>
+<g transform="translate(424,210)"><path class="hull" d="M4 28 H44 L39 36 H9 Z"></path><path class="mast" d="M24 27 V4"></path><path class="sail" d="M26 6 C33 12 36 19 37 26 H26 Z"></path><path class="sail" d="M22 8 L22 26 H11 Z"></path><use height="6.7" href="#flag-ES" width="10" x="24" y="-2"></use></g>
+<text class="name" text-anchor="middle" x="448" y="264">portátil antigo</text><text class="sub" text-anchor="middle" x="448" y="278">offline desde as 09:12</text>
+<circle class="farol-glow" cx="236" cy="158" r="16"></circle>
+<g transform="translate(222,112) scale(1.45)"><path class="hull" d="M4 28 H44 L39 36 H9 Z"></path><path class="mast" d="M18 27 V6"></path><path class="mast" d="M30 27 V2"></path><path class="sail" d="M31 4 C38 10 41 18 42 26 H31 Z"></path><path class="sail" d="M29 6 L29 26 H19 Z"></path><path class="sail" d="M17 9 L17 26 H8 Z"></path><use height="7" href="#flag-PT" width="10" x="30" y="-5"></use></g>
+<circle class="farol" cx="232" cy="154" r="3.4"></circle>
+<text class="name" text-anchor="middle" x="285" y="188">MacBook</text><text class="sub" text-anchor="middle" x="285" y="202">hub · 2 a correr</text>
+<rect class="tag-bg hub" height="18" rx="9" width="66" x="252" y="212"></rect><text class="tag-text" text-anchor="middle" x="285" y="224.5">capitânia</text>
+</svg>
+<p class="fleet-note"><svg aria-hidden="true" class="flag"><use href="#flag-PT"></use></svg>A capitânia arvora Portugal. <svg aria-hidden="true" class="flag"><use href="#flag-ES"></use></svg>A frota arvora Espanha. Tal como em 1519.</p>
+<div aria-label="Lista de conversas de exemplo" class="mini-ui">
+<div class="mini-ui-bar"><span class="wm">Jevellan</span><span class="small">Conversas, todos os dispositivos</span><span class="switcher">MacBook ▾</span></div>
+<ul class="conv-list">
+<li><span class="sdot run"></span><span><span class="t">Modo escuro, guardado por utilizador</span><br/><span class="m">jevellan-site · há 2 min</span></span><span class="dev">MacBook</span></li>
+<li><span class="sdot run"></span><span><span class="t">Teste de login instável</span><br/><span class="m">api · agora mesmo</span></span><span class="dev">dev box</span></li>
+<li><span class="sdot wait"></span><span><span class="t">Que biblioteca de datas?</span><br/><span class="m">notes-app · há 18 min</span></span><span class="dev">Mac mini</span></li>
+</ul>
+</div>
+</div>
+<dl class="terms">
+<div class="term"><dt><span class="t">mesh</span><span class="n">a frota</span></dt><dd>As suas máquinas, ligadas com um código de uso único. Cada conversa aparece em todos os dispositivos, e abre e transmite em direto a partir de qualquer um.</dd></div>
+<div class="term"><dt><span class="t">hub</span><span class="n">a nau capitânia</span></dt><dd>A máquina que guarda a lista partilhada, as definições e as chaves cifradas. Uma máquina sozinha é o seu próprio hub.</dd></div>
+<div class="term"><dt><span class="t">device</span><span class="n">um navio</span></dt><dd>Uma conversa corre na máquina onde a começou, durante toda a vida. Conduza-a a partir de qualquer lado.</dd></div>
+<div class="term"><dt><span class="t">switcher</span><span class="n">mudar de navio</span></dt><dd>Salte para outra máquina a partir do cabeçalho, sem voltar a iniciar sessão.</dd></div>
+<div class="term"><dt><span class="t">outside agents</span><span class="n">barcos no porto</span></dt><dd>O Jevellan vê as sessões do Claude Code, do Codex e do Cursor que correm fora dele, e espera em vez de colidir com elas.</dd></div>
+<div class="term"><dt><span class="t">automatic device choice</span><span class="soon">a virar de bordo em breve</span></dt><dd>Escolher uma máquina livre por si. Já está na interface, desligado, para não nos esquecermos.</dd></div>
+</dl>
+</div>
+</article>
+<!-- B: ship -->
+<article aria-labelledby="inset-b" class="inset">
+<header class="inset-head"><span class="code">DETALHE B</span><h3 id="inset-b">O navio <span class="chart-name">runtimes, contas, rigging</span></h3><span class="scale">Escala: uma máquina</span></header>
+<div class="inset-body">
+<div class="inset-visual">
+<div class="crews">
+<div class="crew">
+<div class="crew-head"><span aria-hidden="true" class="rt-icon">&gt;_</span><h4>Claude Code<span class="via">através do Claude Agent SDK</span></h4></div>
+<div class="acct">
+<div class="acct-top"><span class="name">Max · pessoal<span class="kind">subscrição</span></span><span class="pill resting">em pausa</span></div>
+<div class="gauge"><span>5h</span><span class="g hot" style="--p:92"><i></i></span><span>92%</span></div>
+<div class="gauge"><span>semana</span><span class="g" style="--p:64"><i></i></span><span>64%</span></div>
+<p class="note">Acima do limite de 90%. Volta à rotação depois do reset.</p>
+</div>
+<div class="acct">
+<div class="acct-top"><span class="name">Max · trabalho<span class="kind">subscrição</span></span><span class="pill jev">em uso</span></div>
+<div class="gauge"><span>5h</span><span class="g" style="--p:10"><i></i></span><span>10%</span></div>
+<div class="gauge"><span>semana</span><span class="g" style="--p:51"><i></i></span><span>51%</span></div>
+</div>
+<div class="acct">
+<div class="acct-top"><span class="name">Anthropic API<span class="kind">chave de API</span></span><span class="pill locked">à espera</span></div>
+<p class="note">Uso pago: só quando as subscrições deste runtime se esgotarem.</p>
+</div>
+</div>
+<div class="crew">
+<div class="crew-head"><span aria-hidden="true" class="rt-icon">{ }</span><h4>Codex<span class="via">através do Codex SDK</span></h4></div>
+<div class="acct">
+<div class="acct-top"><span class="name">ChatGPT Pro<span class="kind">subscrição</span></span><span class="pill ready">pronta</span></div>
+<div class="devgrid">
+<div><span class="sdot done"></span>MacBook</div>
+<div><span class="sdot done"></span>Mac mini</div>
+<div><span class="sdot wait"></span>dev box<span class="login">Iniciar sessão no dev box</span></div>
+</div>
+<p class="note">Sessão iniciada por dispositivo, um clique em cada, a partir da máquina onde estiver.</p>
+</div>
+<div class="acct">
+<div class="acct-top"><span class="name">OpenAI API<span class="kind">chave de API</span></span><span class="pill locked">nunca</span></div>
+<p class="note">Uso pago: nunca automaticamente.</p>
+</div>
+</div>
+</div>
+<div class="rigging-tray">
+<span class="rt-title">Rigging levado em todas as viagens</span>
+<div class="chips"><span class="chip always">Safety · sempre ligado</span><span class="chip on">Memória do projeto</span><span class="chip">Servidores MCP</span><span class="chip">aptidões</span><span class="chip">plugins</span><span class="chip">hooks</span><span class="chip">regras</span><span class="chip">comandos</span><span class="chip">definições</span></div>
+</div>
+<div aria-label="Mais agentes a caminho" class="next-crews"><span class="nc-title">Mais tripulações a embarcar</span><span class="nc">Gemini CLI</span><span class="nc">OpenCode</span><span class="nc">Pi</span><span class="nc">Cursor</span></div>
+</div>
+<dl class="terms">
+<div class="term"><dt><span class="t">runtime</span><span class="n">a tripulação</span></dt><dd>Os agentes de programação que o Jevellan conduz, cada um através do seu SDK e das suas ferramentas. Claude Code e Codex primeiro; Gemini CLI, OpenCode, Pi e outros vêm a seguir.</dd></div>
+<div class="term"><dt><span class="t">berth</span><span class="n">um lugar a bordo</span></dt><dd>O pequeno pacote que traz um agente a bordo. Um só contrato para todos os agentes, e um kit de testes que prova que um novo está pronto para navegar.</dd></div>
+<div class="term"><dt><span class="t">account</span><span class="n">os mantimentos</span></dt><dd>Subscrições e chaves de API, tantas quantas quiser por runtime. Quando uma se esgota, a seguinte toma o lugar.</dd></div>
+<div class="term"><dt><span class="t">paid use</span><span class="n">as rações de emergência</span></dt><dd>Uma chave de API espera pela sua regra: sempre, só quando as subscrições se esgotarem, ou nunca.</dd></div>
+<div class="term"><dt><span class="t">rigging</span><span class="n">o que a tripulação leva</span></dt><dd>Tudo o que o agente suporta: servidores MCP, aptidões, plugins, hooks, regras, comandos e definições, instalados nas pastas do próprio Jevellan. O seu <code>~/.claude</code> e o seu <code>~/.codex</code> ficam intactos.</dd></div>
+<div class="term"><dt><span class="t">model &amp; effort</span><span class="n">quem está de quarto, com que força rema</span></dt><dd>Escolhidos pelo Jev para cada stretch, a partir do menu que você define. Qualquer modelo que os seus agentes ofereçam pode entrar.</dd></div>
+<div class="term"><dt><span class="t">manifest</span><span class="n">os papéis do navio</span></dt><dd>Toda a sua configuração num ficheiro APM: agentes, modelos, rigging e regras de encaminhamento. Partilhe-o, importe-o, desinstale-o sem deixar rasto.</dd></div>
+</dl>
+</div>
+</article>
+<!-- C: voyage -->
+<article aria-labelledby="inset-c" class="inset">
+<header class="inset-head"><span class="code">DETALHE C</span><h3 id="inset-c">A viagem <span class="chart-name">conversas e trabalho</span></h3><span class="scale">Escala: uma conversa</span></header>
+<div class="inset-body">
+<div class="inset-visual">
+<div class="voyage">
+<div class="voyage-head"><span class="t">Modo escuro, guardado por utilizador</span><span class="m">jevellan-site · MacBook</span></div>
+<div class="passage">
+<span class="passage-label"><b>Travessia 1</b> um trabalho</span>
+<div class="msg"><span class="who">você</span>Adicione um modo escuro à página de definições e guarde a escolha por utilizador.</div>
+<div aria-label="plan, implement, depois uma pergunta para si" class="watch-row">
+<svg aria-label="plan" class="flag"><use href="#flag-P"></use></svg><span class="arrow">›</span>
+<svg aria-label="implement" class="flag"><use href="#flag-I"></use></svg><span class="arrow">›</span>
+<svg aria-label="perguntar" class="flag"><use href="#flag-V"></use></svg><span class="pause-chip">à sua espera</span>
+</div>
+<div class="msg reply"><span class="who">O Jevellan pergunta</span>Os novos utilizadores começam em claro, em escuro ou a seguir o sistema?</div>
+<div class="msg"><span class="who">você</span>A seguir o sistema.</div>
+<span class="same-passage">A mesma travessia. O pedido, o commit de base e os contadores continuam.</span>
+<div aria-label="test, review, implement, done" class="watch-row">
+<svg aria-label="test" class="flag"><use href="#flag-T"></use></svg><span class="arrow">›</span>
+<svg aria-label="review" class="flag"><use href="#flag-R"></use></svg><span class="arrow">›</span>
+<svg aria-label="implement" class="flag"><use href="#flag-I"></use></svg><span class="arrow">›</span>
+<svg aria-label="done" class="flag"><use href="#flag-C"></use></svg><span class="landfall-chip">terra à vista: verificado, publicado</span>
+</div>
+</div>
+<div class="passage">
+<span class="passage-label"><b>Travessia 2</b> um pedido novo, um trabalho novo</span>
+<div class="msg"><span class="who">você</span>Agora adicione um atalho de teclado.</div>
+<div class="watch-row"><svg aria-label="implement" class="flag"><use href="#flag-I"></use></svg><span class="running-chip">a correr</span></div>
+</div>
+</div>
+</div>
+<dl class="terms">
+<div class="term"><dt><span class="t">conversation</span><span class="n">a viagem</span></dt><dd>Onde fala com o Jevellan sobre um projeto.</dd></div>
+<div class="term"><dt><span class="t">work</span><span class="n">uma travessia</span></dt><dd>Um pedido e tudo o que se faz por ele. Pausas, perguntas e correções nunca começam um novo, por isso as suas palavras originais estão em cada brief.</dd></div>
+<div class="term"><dt><span class="t">note</span><span class="n">um recado para o próximo quarto</span></dt><dd>Acrescenta algo ao brief do próximo stretch sem interromper o que está a correr.</dd></div>
+<div class="term"><dt><span class="t">correction</span><span class="n">bandeira X</span></dt><dd>Para o stretch em curso e muda o rumo.</dd></div>
+<div class="term"><dt><span class="t">done</span><span class="n">terra à vista</span></dt><dd>O Jevellan corre os testes no commit final e depois publica na main.</dd></div>
+</dl>
+</div>
+</article>
+<!-- D: watch -->
+<article aria-labelledby="inset-d" class="inset">
+<header class="inset-head"><span class="code">DETALHE D</span><h3 id="inset-d">O quarto <span class="chart-name">stretches e handoffs</span></h3><span class="scale">Escala: um passo</span></header>
+<div class="inset-body stacked">
+<div class="inset-visual">
+<div class="watch-flow">
+<div class="wf-box">
+<h5>Brief à entrada</h5>
+<div class="brief-stack">
+<span class="req">Este pedido, palavra por palavra</span>
+<span>O que mais disse</span>
+<span>Restrições · plano</span>
+<span>Ponto da situação</span>
+<span>Últimos 3 handoffs</span>
+<span class="mem">Memória: 3 notas</span>
+<span class="step">O seu passo: implement</span>
+</div>
+</div>
+<div aria-hidden="true" class="wf-arrow">→</div>
+<div class="wf-box">
+<h5>Stretch</h5>
+<div aria-label="Um stretch de exemplo no Codex" class="term-box">
+<div class="mag">codex · GPT-6 · high</div>
+<div class="dim">sessão nova · 0 min</div>
+<div>read src/settings/theme.ts</div>
+<div>edit 4 files</div>
+<div>npm test <span class="okc">✓ 38 passed</span></div>
+<div class="dim">memory_write "theme tokens"</div>
+<div class="mag">jevellan_handoff()</div>
+</div>
+</div>
+<div aria-hidden="true" class="wf-arrow">→</div>
+<div class="wf-box">
+<h5>Handoff à saída</h5>
+<div class="handoff-card">
+<div><span class="k">status</span><span class="v okc">done</span></div>
+<div><span class="k">summary</span><span class="v">Interruptor, tokens e preferência guardada</span></div>
+<div><span class="k">evidence</span><span class="v">testes, 4 ficheiros</span></div>
+<div><span class="k">findings</span><span class="v">1</span></div>
+<div><span class="k">blockers</span><span class="v">nenhum</span></div>
+<div><span class="k">next?</span><span class="v jevc">review</span></div>
+</div>
+</div>
+</div>
+<div class="ledger-strip">
+<div class="lbl"><span>ledger: todos os eventos, só se acrescenta</span><span>recarregue a meio: sem falhas nem repetições</span></div>
+<div aria-hidden="true" class="ledger-ticks"><i style="left:22%"></i><i style="left:47%"></i><i style="left:71%"></i><i style="left:93%"></i></div>
+</div>
+</div>
+<dl class="terms">
+<div class="term"><dt><span class="t">stretch</span><span class="n">um quarto</span></dt><dd>Uma sessão nova a fazer uma só coisa: planear, implementar, testar, rever. Depois passa o quarto e vai descansar.</dd></div>
+<div class="term"><dt><span class="t">brief</span><span class="n">as ordens</span></dt><dd>Aquilo com que um stretch começa. Construído em código, limitado a cerca de 12k tokens, com o seu pedido sempre palavra por palavra.</dd></div>
+<div class="term"><dt><span class="t">handoff</span><span class="n">a rendição do quarto</span></dt><dd>O que o stretch deixa para trás: estado, resumo, provas, descobertas, bloqueios e uma sugestão para o passo seguinte.</dd></div>
+<div class="term"><dt><span class="t">ledger</span><span class="n">o diário de bordo</span></dt><dd>Todos os eventos, por ordem, nunca reescritos. É o que o stream, o painel Why e o improver leem.</dd></div>
+<div class="term"><dt><span class="t">memory</span><span class="n">as cartas náuticas</span></dt><dd>Notas que vivem na pasta do projeto e viajam pelo git. O Claude Code e o Codex leem as mesmas.</dd></div>
+</dl>
+</div>
+</article>
+</div>
+</div>
+</section>
+<!-- ============ decisions ============ -->
+<section aria-labelledby="decisions-title" class="section chart-grid" id="decisions">
+<div class="wrap">
+<div class="section-head">
+<p class="eyebrow"><span class="rule"></span>A rendição do quarto</p>
+<h2 id="decisions-title">Em cada handoff, o Jev é consultado.</h2>
+<p class="lede">Quando um stretch passa o quarto, o Jevellan expõe os factos e faz ao Jev meia dúzia de perguntas tipadas. O código trata de tudo o que tem a ver com recursos e limites.</p>
+</div>
+<ol aria-label="O que acontece em cada rendição do quarto" class="pipeline">
+<li class="pstep">
+<div class="pstep-top"><span class="pstep-num">1</span><span class="pstep-who">stretch</span></div><h4>Chega o handoff</h4>
+<p>Estado, resumo, provas, descobertas e um próximo passo sugerido. É uma prova, não uma ordem.</p>
+<div class="facts"><span>status: done</span><span>tests: passed</span><span>next?: review</span></div>
+</li>
+<li class="pstep">
+<div class="pstep-top"><span class="pstep-num">2</span><span class="pstep-who">código</span></div><h4>O código abre a carta</h4>
+<p>Que ações são permitidas agora, que modelos têm uma conta pronta, e factos simples em vez de números.</p>
+<div class="facts"><span>6 ficheiros: alteração média</span><span>dados guardados alterados</span><span>ainda sem verificação</span></div>
+</li>
+<li class="pstep jev">
+<div class="pstep-top"><span class="pstep-num">3</span><span class="pstep-who">Jev · chamada A</span></div><h4>O que vem a seguir?</h4>
+<div class="qs">
+<div class="q"><span class="qtype">Choice</span><span>Próximo passo: responder, planear, implementar, testar, rever, perguntar-lhe ou terminar.</span></div>
+<div class="q"><span class="qtype">Noul</span><span>Acabou de me pedir para memorizar alguma coisa?</span></div>
+</div>
+</li>
+<li class="pstep jev">
+<div class="pstep-top"><span class="pstep-num">4</span><span class="pstep-who">Jev · chamada B</span></div><h4>Quem o faz, e com que esforço?</h4>
+<div class="qs">
+<div class="q"><span class="qtype">Noul</span><span>O modelo atual serve para este passo?</span></div>
+<div class="q"><span class="qtype">Choice</span><span>Se não, qual?</span></div>
+<div class="q"><span class="qtype">Choice</span><span>Quanto esforço: de low a max.</span></div>
+</div>
+</li>
+<li class="pstep jev">
+<div class="pstep-top"><span class="pstep-num">5</span><span class="pstep-who">Jev · memória</span></div><h4>Do que se deve lembrar?</h4>
+<div class="qs">
+<div class="q"><span class="qtype">Score</span><span>Quão útil é cada uma das 12 notas de memória mais relevantes? Ficam as que têm 2 ou mais, até 5.</span></div>
+</div>
+</li>
+<li class="pstep">
+<div class="pstep-top"><span class="pstep-num">6</span><span class="pstep-who">código</span></div><h4>O código larga</h4>
+<p>Escolhe a conta (subscrições primeiro, as menos usadas primeiro), monta o brief e começa uma sessão nova.</p>
+<div class="facts"><span>Max · trabalho</span><span>brief ≤ 12k</span><span>sessão nova</span></div>
+</li>
+</ol>
+<div aria-hidden="true" class="pipeline-loop"><span>↩</span><span class="line"></span><b>repete no próximo handoff, até terra à vista</b></div>
+<div class="split">
+<div class="split-col jevside">
+<h3><span class="who">Jev</span>decide o sentido.</h3>
+<ul class="split-list">
+<li><svg aria-hidden="true" style="color:var(--jev)"><use href="#i-compass"></use></svg><span><b>O próximo passo</b>, entre as ações que o código permite agora.</span></li>
+<li><svg aria-hidden="true" style="color:var(--jev)"><use href="#i-compass"></use></svg><span><b>O modelo</b>, lendo a descrição de uma linha que escreveu para cada um.</span></li>
+<li><svg aria-hidden="true" style="color:var(--jev)"><use href="#i-compass"></use></svg><span><b>O esforço</b>, em separado, porque o mesmo modelo serve para trabalho fácil e difícil.</span></li>
+<li><svg aria-hidden="true" style="color:var(--jev)"><use href="#i-compass"></use></svg><span><b>A memória</b> que vale a pena levar para este passo.</span></li>
+</ul>
+</div>
+<div class="split-col">
+<h3><span class="who">Código</span>decide os recursos.</h3>
+<ul class="split-list">
+<li><svg aria-hidden="true"><use href="#i-anchor"></use></svg><span><b>Que conta paga</b>: com sessão iniciada, abaixo do limite, autorizada a gastar.</span></li>
+<li><svg aria-hidden="true"><use href="#i-anchor"></use></svg><span><b>Guardas</b>: limites de passos, falta de progresso, testes a falhar repetidamente, um teto de custo.</span></li>
+<li><svg aria-hidden="true"><use href="#i-anchor"></use></svg><span><b>Git</b>: checkpoints, a sua própria corrida de testes, e só publica quando passa.</span></li>
+<li><svg aria-hidden="true"><use href="#i-anchor"></use></svg><span><b>Onde corre</b>: na máquina onde começou, no checkout exato que configurou.</span></li>
+</ul>
+</div>
+<div class="split-foot"><b>O Jev nunca compara números.</b><span>O código transforma-os primeiro em factos: “alteração grande”, não “14 ficheiros”.</span></div>
+</div>
+</div>
+</section>
+<!-- ============ example passage ============ -->
+<section aria-labelledby="passage-title" class="section alt" id="passage">
+<div class="wrap">
+<div class="section-head">
+<p class="eyebrow"><span class="rule"></span>Uma travessia de exemplo</p>
+<h2 id="passage-title">Um pedido, três modelos, zero menus.</h2>
+<p class="lede">Cinco stretches com três modelos, três níveis de esforço e três contas, tudo escolhido pelo Jev. Abra qualquer stretch para ver porquê. É o painel Why, e cada stretch da app tem um.</p>
+</div>
+<div class="passage-grid">
+<div>
+<div class="request-bubble"><span class="who">você</span><span>Adicione um modo escuro à página de definições e guarde a escolha por utilizador.</span></div>
+<div class="log">
+<details open="">
+<summary><svg aria-hidden="true" class="flag"><use href="#flag-P"></use></svg>
+<span class="row-main"><span class="row-title"><span class="n">stretch 1</span><span class="a">plan</span><span class="why-short">Várias partes a mexer e dados guardados: primeiro um plano.</span></span>
+<span class="row-chips"><span class="rc model">Opus</span><span class="rc effort">high</span><span class="rc acct">Max · pessoal</span><span class="rc dev">MacBook</span></span></span>
+<span class="why-toggle">Why</span></summary>
+<div class="why">
+<div><h5>Próximo passo</h5><div class="bars"><div class="bar win" style="--p:.64"><span class="lbl">plan</span><span class="track"><span class="fill"></span></span><span class="val">0.64</span></div><div class="bar" style="--p:.27"><span class="lbl">implement</span><span class="track"><span class="fill"></span></span><span class="val">0.27</span></div><div class="bar" style="--p:.05"><span class="lbl">reply</span><span class="track"><span class="fill"></span></span><span class="val">0.05</span></div></div></div>
+<div><h5>Modelo e esforço</h5><div class="bars"><div class="bar win" style="--p:.58"><span class="lbl">Opus</span><span class="track"><span class="fill"></span></span><span class="val">0.58</span></div><div class="bar" style="--p:.31"><span class="lbl">Fable</span><span class="track"><span class="fill"></span></span><span class="val">0.31</span></div><div class="bar win" style="--p:.62"><span class="lbl">high</span><span class="track"><span class="fill"></span></span><span class="val">0.62</span></div></div></div>
+<div><h5>Conta</h5><ul class="acct-rank"><li class="chosen"><span class="v">✓</span>Max · pessoal: 38% da semana</li><li><span class="muted">2</span>Max · trabalho: 51% da semana</li><li><span class="muted">○</span>Chave de API: só quando as subscrições se esgotarem</li></ul></div>
+</div>
+</details>
+<details>
+<summary><svg aria-hidden="true" class="flag"><use href="#flag-I"></use></svg>
+<span class="row-main"><span class="row-title"><span class="n">stretch 2</span><span class="a">implement</span><span class="why-short">Interface avaliada a olho vai para o Fable, em max.</span></span>
+<span class="row-chips"><span class="rc model">Fable</span><span class="rc effort">max</span><span class="rc acct">Max · pessoal</span><span class="rc dev">MacBook</span></span></span>
+<span class="why-toggle">Why</span></summary>
+<div class="why">
+<div><h5>Próximo passo</h5><div class="bars"><div class="bar win" style="--p:.81"><span class="lbl">implement</span><span class="track"><span class="fill"></span></span><span class="val">0.81</span></div><div class="bar" style="--p:.07"><span class="lbl">test</span><span class="track"><span class="fill"></span></span><span class="val">0.07</span></div><div class="bar" style="--p:.06"><span class="lbl">perguntar</span><span class="track"><span class="fill"></span></span><span class="val">0.06</span></div></div></div>
+<div><h5>Modelo e esforço</h5><p class="plain">Manter o Opus? <b>0.22</b>, abaixo da fasquia de 0.6, por isso troca.</p><div class="bars"><div class="bar win" style="--p:.74"><span class="lbl">Fable</span><span class="track"><span class="fill"></span></span><span class="val">0.74</span></div><div class="bar win" style="--p:.61"><span class="lbl">max</span><span class="track"><span class="fill"></span></span><span class="val">0.61</span></div></div></div>
+<div><h5>Conta</h5><ul class="acct-rank"><li class="chosen"><span class="v">✓</span>Max · pessoal: 58% das suas 5 horas</li><li><span class="muted">2</span>Max · trabalho: 51% da semana</li></ul></div>
+</div>
+</details>
+<details>
+<summary><svg aria-hidden="true" class="flag"><use href="#flag-T"></use></svg>
+<span class="row-main"><span class="row-title"><span class="n">stretch 3</span><span class="a">test</span><span class="why-short">Mesmo modelo, sessão nova, cache quente. A conta pessoal está em pausa.</span></span>
+<span class="row-chips"><span class="rc model kept">Fable</span><span class="rc effort">medium</span><span class="rc acct">Max · trabalho</span><span class="rc dev">MacBook</span></span></span>
+<span class="why-toggle">Why</span></summary>
+<div class="why">
+<div><h5>Próximo passo</h5><div class="bars"><div class="bar win" style="--p:.72"><span class="lbl">test</span><span class="track"><span class="fill"></span></span><span class="val">0.72</span></div><div class="bar" style="--p:.14"><span class="lbl">review</span><span class="track"><span class="fill"></span></span><span class="val">0.14</span></div><div class="bar" style="--p:.09"><span class="lbl">implement</span><span class="track"><span class="fill"></span></span><span class="val">0.09</span></div></div></div>
+<div><h5>Modelo e esforço</h5><p class="plain">Manter o Fable? <b>0.83</b>, acima da fasquia: mantido.</p><div class="bars"><div class="bar win" style="--p:.58"><span class="lbl">medium</span><span class="track"><span class="fill"></span></span><span class="val">0.58</span></div><div class="bar" style="--p:.30"><span class="lbl">high</span><span class="track"><span class="fill"></span></span><span class="val">0.30</span></div></div></div>
+<div><h5>Conta</h5><ul class="acct-rank"><li><span class="x">✗</span>Max · pessoal: janela de 5 horas a 92%, acima do limite de 90%</li><li class="chosen"><span class="v">✓</span>Max · trabalho: 10% das suas 5 horas</li><li><span class="muted">○</span>Chave de API: as subscrições ainda não se esgotaram</li></ul></div>
+</div>
+</details>
+<details>
+<summary><svg aria-hidden="true" class="flag"><use href="#flag-R"></use></svg>
+<span class="row-main"><span class="row-title"><span class="n">stretch 4</span><span class="a">review</span><span class="why-short">Dados guardados alterados: revisão, por outra família de modelos.</span></span>
+<span class="row-chips"><span class="rc model">GPT-6 · Codex</span><span class="rc effort">high</span><span class="rc acct">ChatGPT Pro</span><span class="rc dev">MacBook</span></span></span>
+<span class="why-toggle">Why</span></summary>
+<div class="why">
+<div><h5>Próximo passo</h5><div class="bars"><div class="bar win" style="--p:.66"><span class="lbl">review</span><span class="track"><span class="fill"></span></span><span class="val">0.66</span></div><div class="bar" style="--p:.21"><span class="lbl">done</span><span class="track"><span class="fill"></span></span><span class="val">0.21</span></div><div class="bar" style="--p:.08"><span class="lbl">test</span><span class="track"><span class="fill"></span></span><span class="val">0.08</span></div></div></div>
+<div><h5>Modelo e esforço</h5><p class="plain">Manter o Fable? <b>0.18</b>. O seu perfil prefere um revisor de outra família.</p><div class="bars"><div class="bar win" style="--p:.71"><span class="lbl">GPT-6</span><span class="track"><span class="fill"></span></span><span class="val">0.71</span></div><div class="bar win" style="--p:.66"><span class="lbl">high</span><span class="track"><span class="fill"></span></span><span class="val">0.66</span></div></div></div>
+<div><h5>Conta</h5><ul class="acct-rank"><li class="chosen"><span class="v">✓</span>ChatGPT Pro: sessão iniciada neste MacBook</li><li><span class="muted">○</span>Chave da OpenAI API: nunca automaticamente</li></ul></div>
+</div>
+</details>
+<details>
+<summary><svg aria-hidden="true" class="flag"><use href="#flag-I"></use></svg>
+<span class="row-main"><span class="row-title"><span class="n">stretch 5</span><span class="a">implement</span><span class="why-short">A revisão encontrou um problema grave. Corrigir.</span></span>
+<span class="row-chips"><span class="rc model">Fable</span><span class="rc effort">high</span><span class="rc acct">Max · trabalho</span><span class="rc dev">MacBook</span></span></span>
+<span class="why-toggle">Why</span></summary>
+<div class="why">
+<div><h5>Próximo passo</h5><div class="bars"><div class="bar win" style="--p:.77"><span class="lbl">implement</span><span class="track"><span class="fill"></span></span><span class="val">0.77</span></div><div class="bar" style="--p:.09"><span class="lbl">perguntar</span><span class="track"><span class="fill"></span></span><span class="val">0.09</span></div><div class="bar" style="--p:.06"><span class="lbl">done</span><span class="track"><span class="fill"></span></span><span class="val">0.06</span></div></div></div>
+<div><h5>Modelo e esforço</h5><p class="plain">Manter o GPT-6? <b>0.12</b>. De volta ao modelo de interface.</p><div class="bars"><div class="bar win" style="--p:.64"><span class="lbl">Fable</span><span class="track"><span class="fill"></span></span><span class="val">0.64</span></div><div class="bar win" style="--p:.64"><span class="lbl">high</span><span class="track"><span class="fill"></span></span><span class="val">0.64</span></div></div></div>
+<div><h5>Conta</h5><ul class="acct-rank"><li><span class="x">✗</span>Max · pessoal: ainda em pausa</li><li class="chosen"><span class="v">✓</span>Max · trabalho: 27% das suas 5 horas</li></ul></div>
+</div>
+</details>
+<div class="landfall-row">
+<svg aria-hidden="true" class="flag"><use href="#flag-C"></use></svg>
+<div><span class="t">done: terra à vista</span><p>O Jev escolheu done (0.86). O Jevellan correu os testes no commit final e depois publicou na main.</p></div>
+</div>
+</div>
+</div>
+<aside class="side-stack">
+<div aria-label="Recibo de verificação de exemplo" class="receipt">
+<div class="r-title">RECIBO DE VERIFICAÇÃO</div>
+<div class="r-row"><span>work</span><span>modo escuro, por utilizador</span></div>
+<div class="r-row"><span>comando</span><span>npm test</span></div>
+<div class="r-row"><span>saída</span><span class="r-ok">0 ✓</span></div>
+<div class="r-row"><span>commit</span><span>7f3c2a1</span></div>
+<div class="r-row"><span>árvore limpa</span><span class="r-ok">sim</span></div>
+<div class="r-row"><span>publicado</span><span>main, sem force</span></div>
+<div class="r-foot">escrito pelo Jevellan, não por um agente</div>
+</div>
+<div class="profile-card">
+<header><h4>O seu perfil de encaminhamento</h4><span>em palavras simples · editável</span></header>
+<ol>
+<li>Prefira ficar no modelo atual quando serve para o próximo passo.</li>
+<li><mark>Interface, trabalho visual e tudo o que se avalia a olho vai para o Fable.</mark></li>
+<li>A implementação longa e bem especificada prefere GPT através do Codex.</li>
+<li>Reveja só quando a alteração for grande ou arriscada. <mark>Prefira um revisor de outra família de modelos.</mark></li>
+<li>O esforço segue a dificuldade, não a importância.</li>
+</ol>
+</div>
+</aside>
+</div>
+</div>
+</section>
+<!-- ============ travel light ============ -->
+<section aria-labelledby="lean-title" class="section chart-grid" id="lean">
+<div class="wrap">
+<div class="section-head">
+<p class="eyebrow"><span class="rule"></span>Viajar leve</p>
+<h2 id="lean-title">Contexto pequeno. Agentes afiados.</h2>
+<p class="lede">Cada stretch começa numa sessão nova só com o que precisa, para que o modelo gaste a atenção no seu código e não nas últimas três horas de conversa.</p>
+</div>
+<div class="lean-grid">
+<article class="lean-card full">
+<h3>Com o que um stretch começa</h3>
+<div class="window-bar">
+<div aria-label="A janela de contexto: uma pequena parte vai para o prompt de sistema do próprio agente, uma fatia para o contrato de ação, uma pequena parte para o brief, e o resto fica livre para trabalhar." class="wb-track" role="img">
+<div class="wb-seg native">prompt nativo</div>
+<div class="wb-seg contract" title="contrato de ação"></div>
+<div class="wb-seg brief">brief</div>
+<div class="wb-seg room">o resto: espaço para ler código e pensar</div>
+</div>
+<div class="wb-legend">
+<div><i style="background:var(--ink-2)"></i><span><b>O prompt de sistema do próprio agente</b>Exatamente o que o agente usa sozinho. A mesma qualidade de o usar diretamente.</span></div>
+<div><i style="background:var(--sea)"></i><span><b>Um contrato de ação</b>Menos de 200 palavras: o que este passo tem de fazer e entregar.</span></div>
+<div><i style="background:var(--jev)"></i><span><b>O brief, no máximo ~12k tokens</b>Construído em código, por esta ordem:</span></div>
+</div>
+<ol class="brief-list">
+<li><span><b>Este pedido</b>, palavra por palavra<em class="nt">nunca cortado</em></span></li>
+<li><span><b>Tudo o resto que disse</b> sobre este trabalho</span></li>
+<li><span><b>Restrições</b><em class="nt">nunca cortadas</em></span></li>
+<li><span><b>O plano</b>, completo<em class="nt">nunca cortado</em></span></li>
+<li><span><b>Ponto da situação</b></span></li>
+<li><span><b>Os últimos 3 handoffs</b></span></li>
+<li><span><b>Descobertas</b> com referências</span></li>
+<li><span><b>Memória</b>, no máximo 2k tokens, escolhida pelo Jev</span></li>
+<li><span><b>O seu passo</b> e como passar o quarto</span></li>
+</ol>
+</div>
+<p class="small">Proporções ilustrativas. Quando o brief fica longo, os handoffs mais antigos saem primeiro. O que mais precisar, o agente vai buscar ao ledger ou à memória.</p>
+</article>
+<article class="lean-card">
+<h3>Duas pastas, nunca misturadas</h3>
+<div class="homes">
+<div class="home yours">
+<span class="h-title">A sua configuração</span>
+<span class="h-path">~/.claude<br/>~/.codex<br/>~/.basic-memory</span>
+<span>Aquela aptidão que instalou às 2 da manhã em março. O servidor MCP de um hackathon.</span>
+<span class="stamp">nunca alterada</span>
+</div>
+<div class="home ours">
+<span class="h-title">As pastas do Jevellan</span>
+<span class="h-path">~/.jevellan/homes/<br/> claude/&lt;account&gt;/<br/> codex/&lt;account&gt;/</span>
+<ul><li>a sessão dessa conta</li><li>o rigging que ligou</li><li>mais nada</li></ul>
+</div>
+</div>
+<p class="small">A ponte do projeto, as permissões e a memória são entregues a cada stretch no arranque e nunca ficam guardadas na pasta. Dois stretches na mesma conta, em dois projetos, só veem o que é seu.</p>
+</article>
+<article class="lean-card">
+<h3>Só o necessário a bordo</h3>
+<table class="rig-table">
+<thead><tr><th>Rigging</th><th class="c">Claude Code</th><th class="c">Codex</th></tr></thead>
+<tbody>
+<tr><td><span class="it">Safety</span><span class="src">incorporado · bloqueia git push, force e reinícios do serviço</span></td><td class="c"><span aria-label="sempre ligado" class="tog locked"></span></td><td class="c"><span aria-label="sempre ligado" class="tog locked"></span></td></tr>
+<tr><td><span class="it">Memória do projeto</span><span class="src">incorporado · hooks de captura</span></td><td class="c"><span aria-label="ligado" class="tog on"></span></td><td class="c"><span aria-label="ligado" class="tog on"></span></td></tr>
+<tr><td><span class="it">team-conventions</span><span class="src">aptidão · o seu pacote</span></td><td class="c"><span aria-label="ligado" class="tog on"></span></td><td class="c"><span aria-label="ligado" class="tog on"></span></td></tr>
+<tr><td><span class="it">figma-export</span><span class="src">servidor MCP · local</span></td><td class="c"><span aria-label="ligado" class="tog on"></span></td><td class="c"><span aria-label="desligado" class="tog"></span></td></tr>
+<tr><td><span class="it">hackathon-thing</span><span class="src">servidor MCP · local</span></td><td class="c"><span aria-label="desligado" class="tog"></span></td><td class="c"><span aria-label="desligado" class="tog"></span></td></tr>
+</tbody>
+</table>
+<p class="small">Escolha por runtime em Definições, depois Rigging. Tudo o resto fica em terra.</p>
+</article>
+</div>
+</div>
+</section>
+<!-- ============ helm ============ -->
+<section aria-labelledby="helm-title" class="section alt" id="helm">
+<div class="wrap">
+<div class="section-head">
+<p class="eyebrow"><span class="rule"></span>Pegue no leme</p>
+<h2 id="helm-title">Nunca fica à sua espera. Mas pode sempre pegar no leme.</h2>
+<p class="lede">As decisões do Jev não precisam da sua aprovação. Altere qualquer uma depois, e o Jevellan lembra-se para a próxima. Experimente:</p>
+</div>
+<div class="helm-grid">
+<div class="demo" id="helm-demo">
+<div class="demo-head"><span class="t">Modo escuro, guardado por utilizador</span><span class="m">jevellan-site · MacBook</span><button class="reset" id="helm-reset" type="button">Repor</button></div>
+<div class="steps" id="helm-steps"></div>
+<div class="change-pop" id="helm-pop">
+<h4>Alterar este passo</h4>
+<div class="diffs"><span>modelo <del>Opus</del> → <ins>Fable</ins></span><span>esforço <del>high</del> → <ins>max</ins></span></div>
+<div class="choices">
+<button class="choice-btn primary" id="helm-undo" type="button"><span class="c-t"><svg aria-hidden="true" class="flag"><use href="#flag-S"></use></svg>Corrigir e desfazer</span><span class="c-d">Para o que está a correr, desfaz os passos 2 e 3 e refaz o passo 2 com Fable em max. Depois continua sozinho.</span></button>
+<button class="choice-btn" id="helm-just" type="button"><span class="c-t">Só corrigir</span><span class="c-d">Nada para, nada é desfeito. Fica registado, para o Jev escolher melhor da próxima vez.</span></button>
+</div>
+</div>
+<div aria-live="polite" class="demo-notice" id="helm-notice">Escolha uma. Em qualquer dos casos, nada fica à sua espera.</div>
+<div aria-label="Caixa de mensagem enquanto um stretch corre" class="composer">
+<div class="input">Envie uma correção, ou deixe uma nota para o próximo passo.</div>
+<div class="row">
+<span class="ctl">Próximo passo: <b>Auto</b></span><span class="ctl">Modelo: <b>Auto</b></span><span class="ctl">Esforço: <b>Auto</b></span>
+<span class="btns"><span class="b corr"><svg aria-hidden="true" class="flag"><use href="#flag-X"></use></svg>Enviar correção</span><span class="b note">Deixar nota</span></span>
+</div>
+</div>
+</div>
+<div class="helm-side">
+<div class="improver-card">
+<div class="ic-head">
+<span class="ic-kicker"><svg aria-hidden="true" height="14" width="14"><use href="#i-moon"></use></svg>O quarto da madrugada · 03:00</span>
+<h4>Implementação de interface vai para o Fable, em max</h4>
+</div>
+<div class="ic-body">
+<p class="reason">Durante a noite, o improver leu as suas correções: 3 esta semana, uma delas com undo.</p>
+<div aria-label="Alteração sugerida ao perfil de encaminhamento" class="diff">
+<div class="del">Interface, trabalho visual e tudo o que se avalia a olho vai para o Fable.</div>
+<div class="add">Interface, trabalho visual e tudo o que se avalia a olho vai para o Fable<mark>, com esforço max ao implementar</mark>.</div>
+</div>
+<p class="checked">Verificado contra 24 casos guardados: <b>22 iguais, 1 melhor</b>, 1 pior</p>
+<div class="ic-actions"><span class="apply">Aplicar</span><span>Dispensar</span><span>Alterar</span></div>
+</div>
+<div class="care-line">
+<span>Cuidado da memória no jevellan-site: 3 notas fundidas, 2 arquivadas, 1 link corrigido.</span>
+<span class="links"><span>Ver alterações</span><span>Desfazer</span></span>
+</div>
+</div>
+<p class="small">O improver nunca aplica sozinho alterações ao encaminhamento. Você aplica, dispensa, ou diz o que prefere em palavras simples. Só o cuidado da memória arruma sozinho, e avisa-o de manhã.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- ============ signal book ============ -->
+<section aria-labelledby="signals-title" class="section chart-grid" id="signals">
+<div class="wrap">
+<div class="section-head center">
+<p class="eyebrow"><span class="rule"></span>O código de sinais<span class="rule"></span></p>
+<h2 id="signals-title">Cada passo iça uma bandeira.</h2>
+<p class="lede">Os significados em itálico são os reais do Código Internacional de Sinais, aqui traduzidos. Confirmámos. Alguns encaixam bem demais.</p>
+</div>
+<div class="farol-note">
+<svg aria-hidden="true" class="lanterns" viewBox="0 0 70 70"><circle class="g" cx="22" cy="30" r="12"></circle><circle class="g" cx="48" cy="30" r="12"></circle><path class="p" d="M8 14 H62"></path><path class="p" d="M22 14 V24 M48 14 V24"></path><rect class="h" height="3" width="10" x="17" y="24"></rect><rect class="h" height="3" width="10" x="43" y="24"></rect><circle class="l" cx="22" cy="32" r="5"></circle><circle class="l" cx="48" cy="32" r="5"></circle><path d="M10 56 C18 50 26 60 35 55 S52 50 60 56" fill="none" stroke="var(--sea)" stroke-linecap="round" stroke-width="1.6"></path></svg>
+<p><span class="flags-inline"><svg aria-hidden="true" class="flag"><use href="#flag-PT"></use></svg><svg aria-hidden="true" class="flag"><use href="#flag-ES"></use></svg></span>Em 1519, Fernão de Magalhães, navegador português ao serviço da coroa espanhola, mantinha cinco navios juntos à noite com uma luz acesa na nau capitânia, o <span class="chart-name">farol</span>, e alguns sinais de lanterna. Duas luzes queriam dizer mudar de bordo. Três, encurtar vela. Cada navio respondia da mesma forma. O Jevellan faz o mesmo pelos seus agentes, com bandeiras.</p>
+</div>
+<div class="signals">
+<div class="signal"><div class="s-top"><svg aria-hidden="true" class="flag"><use href="#flag-K"></use></svg><span><span class="use">reply</span><span class="letter">K · KILO</span></span></div><p class="ics">“Desejo comunicar consigo.”</p><p class="ours">Responder-lhe. Sem alterações.</p></div>
+<div class="signal"><div class="s-top"><svg aria-hidden="true" class="flag"><use href="#flag-P"></use></svg><span><span class="use">plan</span><span class="letter">P · PAPA</span></span></div><p class="ics">“No porto: todas as pessoas devem regressar a bordo, pois o navio vai largar.”</p><p class="ours">Traçar a rota antes de mexer em alguma coisa.</p></div>
+<div class="signal"><div class="s-top"><svg aria-hidden="true" class="flag"><use href="#flag-I"></use></svg><span><span class="use">implement</span><span class="letter">I · INDIA</span></span></div><p class="ics">“Estou a guinar para bombordo.”</p><p class="ours">Fazer ou corrigir a alteração.</p></div>
+<div class="signal"><div class="s-top"><svg aria-hidden="true" class="flag"><use href="#flag-T"></use></svg><span><span class="use">test</span><span class="letter">T · TANGO</span></span></div><p class="ics">“Mantenha-se afastado de mim.”</p><p class="ours">Correr os testes e acrescentar os que faltam.</p></div>
+<div class="signal"><div class="s-top"><svg aria-hidden="true" class="flag"><use href="#flag-R"></use></svg><span><span class="use">review</span><span class="letter">R · ROMEO</span></span></div><p class="ics">Sem significado isolado.</p><p class="ours">Uma revisão independente da alteração. O “LGTM” também não tem.</p></div>
+<div class="signal"><div class="s-top"><svg aria-hidden="true" class="flag"><use href="#flag-U"></use></svg><span><span class="use">adversarial review</span><span class="letter">U · UNIFORM</span></span></div><p class="ics">“Está a dirigir-se para um perigo.”</p><p class="ours">Tentar a sério partir a alteração antes de a dar por concluída.</p></div>
+<div class="signal"><div class="s-top"><svg aria-hidden="true" class="flag"><use href="#flag-D"></use></svg><span><span class="use">integrate</span><span class="letter">D · DELTA</span></span></div><p class="ics">“Mantenha-se afastado de mim; estou a manobrar com dificuldade.”</p><p class="ours">Trazer o trabalho mais recente da main e resolver conflitos.</p></div>
+<div class="signal"><div class="s-top"><svg aria-hidden="true" class="flag"><use href="#flag-V"></use></svg><span><span class="use">perguntar</span><span class="letter">V · VICTOR</span></span></div><p class="ics">“Preciso de assistência.”</p><p class="ours">Parar e perguntar o que só você sabe responder.</p></div>
+<div class="signal"><div class="s-top"><svg aria-hidden="true" class="flag"><use href="#flag-C"></use></svg><span><span class="use">done</span><span class="letter">C · CHARLIE</span></span></div><p class="ics">“Afirmativo.”</p><p class="ours">Verificado pelo Jevellan, depois publicado.</p></div>
+<div class="signal"><div class="s-top"><svg aria-hidden="true" class="flag"><use href="#flag-X"></use></svg><span><span class="use">correction</span><span class="letter">X · X-RAY</span></span></div><p class="ics">“Suspenda a execução das suas intenções e esteja atento aos meus sinais.”</p><p class="ours">Você muda o rumo a meio de um stretch.</p></div>
+<div class="signal"><div class="s-top"><svg aria-hidden="true" class="flag"><use href="#flag-S"></use></svg><span><span class="use">override and undo</span><span class="letter">S · SIERRA</span></span></div><p class="ics">“Estou a dar máquina a ré.”</p><p class="ours">Recuar até um passo e refazê-lo à sua maneira.</p></div>
+<div class="signal"><div class="s-top"><svg aria-hidden="true" class="flag"><use href="#flag-M"></use></svg><span><span class="use">à sua espera</span><span class="letter">M · MIKE</span></span></div><p class="ics">“O meu navio está parado e sem seguimento.”</p><p class="ours">A vez é sua. Responda e segue viagem.</p></div>
+<div class="signal"><div class="s-top"><svg aria-hidden="true" class="flag"><use href="#flag-L"></use></svg><span><span class="use">guard</span><span class="letter">L · LIMA</span></span></div><p class="ics">“Pare o seu navio imediatamente.”</p><p class="ours">Foi atingido um limite: passos, falta de progresso, testes a falhar ou custo.</p></div>
+<div class="signal special"><div class="s-top"><svg aria-hidden="true" class="flag"><use href="#flag-H"></use></svg><span><span class="use">Jev a decidir</span><span class="letter">H · HOTEL</span></span></div><p class="ics">“Tenho piloto a bordo.”</p><p class="ours">Funcionamento normal.</p></div>
+<div class="signal"><div class="s-top"><svg aria-hidden="true" class="flag"><use href="#flag-G"></use></svg><span><span class="use">Jev indisponível</span><span class="letter">G · GOLF</span></span></div><p class="ics">“Preciso de piloto.”</p><p class="ours">Você escolhe o passo até o Jev voltar. Não há livro de regras para o substituir.</p></div>
+<div class="signal special"><div class="s-top"><svg aria-hidden="true" class="flag"><use href="#flag-J"></use></svg><span><span class="use">a nossa inicial</span><span class="letter">J · JULIETT</span></span></div><p class="ics">“Estou com incêndio e tenho carga perigosa a bordo: mantenha-se bem afastado de mim.”</p><p class="ours">J de Jevellan. Decidimos ler isto como um elogio.</p></div>
+</div>
+</div>
+</section>
+<!-- ============ numbers ============ -->
+<section aria-labelledby="numbers-title" class="section alt" id="numbers">
+<div class="wrap">
+<div class="section-head">
+<p class="eyebrow"><span class="rule"></span>Por construção</p>
+<h2 id="numbers-title">Números que assinamos por baixo.</h2>
+<p class="lede">Estão embutidos na forma como o Jevellan funciona, não foram medidos num dia bom.</p>
+</div>
+<div class="tiles">
+<div class="tile"><span class="num jevc">≤12k<span class="u">tokens</span></span><span class="what">no brief com que cada stretch começa, construído em código</span></div>
+<div class="tile"><span class="num">≤2k<span class="u">tokens</span></span><span class="what">de memória do projeto por stretch, notas escolhidas pelo Jev</span></div>
+<div class="tile"><span class="num">&lt;200<span class="u">palavras</span></span><span class="what">acrescentadas ao prompt de sistema do próprio agente</span></div>
+<div class="tile"><span class="num jevc">4</span><span class="what">coisas que o Jev decide em cada rendição do quarto: passo, modelo, esforço, memória</span></div>
+<div class="tile"><span class="num">1</span><span class="what">sessão nova por stretch. Nada de contextos de três horas.</span></div>
+<div class="tile"><span class="num">24</span><span class="what">stretches por trabalho antes de parar e perguntar. Mude-o se tiver coragem.</span></div>
+<div class="tile"><span class="num">0</span><span class="what">force-pushes. Nunca.</span></div>
+<div class="tile"><span class="num">0</span><span class="what">alterações ao seu <code>~/.claude</code>, <code>~/.codex</code> ou <code>~/.basic-memory</code></span></div>
+</div>
+<div class="logbook">
+<svg aria-hidden="true"><use href="#i-log"></use></svg>
+<p><b>O diário de bordo.</b> Os números reais de travessias reais vêm para aqui quando a frota tiver registado quartos suficientes. Usou o Jevellan em algo a sério? Envie-nos os seus.</p>
+<a class="btn btn-ghost btn-small" href="https://github.com/gongiskhan/jevellan/issues">Abrir uma issue</a>
+</div>
+</div>
+</section>
+<!-- ============ install ============ -->
+<section aria-labelledby="install-title" class="section chart-grid" id="install">
+<div class="wrap">
+<div class="section-head">
+<p class="eyebrow"><span class="rule"></span>Largar amarras</p>
+<h2 id="install-title">Um comando para zarpar.</h2>
+<p class="lede">Depois disso, tudo acontece no browser, incluindo iniciar sessão das contas nas suas outras máquinas.</p>
+</div>
+<div class="install-steps">
+<div class="istep">
+<span class="i-n">01 · INSTALAR</span>
+<h3>Corra uma vez</h3>
+<div class="cmd"><code>npx github:gongiskhan/jevellan install</code><button class="copy-btn" data-copy="npx github:gongiskhan/jevellan install" type="button">Copiar</button></div>
+<p>Verifica o Node e o git, instala a sua própria cópia e um serviço em segundo plano, e mostra o endereço a abrir.</p>
+</div>
+<div class="istep">
+<span class="i-n">02 · ABRA</span>
+<h3>Quatro passos curtos</h3>
+<ul class="firstrun"><li>Defina uma frase-passe</li><li>Adicione a sua chave do Jev</li><li>Adicione uma conta ao Claude Code ou ao Codex</li><li>Adicione um projeto</li></ul>
+</div>
+<div class="istep">
+<span class="i-n">03 · DIGA O QUE CONSTRUIR</span>
+<h3>Depois largue o leme</h3>
+<p>Comece uma conversa na máquina onde está. O Jev escolhe os passos, os modelos e o esforço. Você corrige o que quiser, quando quiser.</p>
+</div>
+</div>
+<div class="extras">
+<div class="extra">
+<h4>Outra máquina</h4>
+<p>Em Definições, depois Dispositivos, recebe um código de uso único. Na outra máquina:</p>
+<div class="cmd"><code>npx github:gongiskhan/jevellan install --join &lt;hub-url&gt; &lt;code&gt;</code><button class="copy-btn" data-copy="npx github:gongiskhan/jevellan install --join " type="button">Copiar</button></div>
+</div>
+<div class="extra">
+<h4>Sair</h4>
+<p><code>jevellan uninstall</code> para o serviço e guarda os seus dados. <code>jevellan uninstall --purge</code> afunda tudo o que instalou, e mais nada.</p>
+</div>
+<div class="extra">
+<h4>Vai precisar de</h4>
+<ul class="needs">
+<li><span>Node 22 ou mais recente, e git</span></li>
+<li><span>Uma subscrição Claude ou ChatGPT, ou uma chave de API</span></li>
+<li><span>Uma chave do Jev, na <a href="https://console.typesafe.ai/">consola da TypeSafe</a></span></li>
+<li class="opt"><span>Tailscale, se quiser mais do que uma máquina</span></li>
+</ul>
+</div>
+</div>
+<div class="faq">
+<div>
+<h3>Perguntas da tripulação</h3>
+<p class="small" style="margin-top:10px">Outras dúvidas, pergunte no <a href="https://github.com/gongiskhan/jevellan">GitHub</a>.</p>
+</div>
+<div class="faq-list">
+<details><summary>Preciso de uma chave do Jev?</summary><div class="a"><p>Para o Jevellan se conduzir sozinho, sim. Sem ela, escolhe cada passo você mesmo <svg aria-hidden="true" class="flag"><use href="#flag-G"></use></svg>(bandeira G: “Preciso de piloto”). Não há livro de regras para o substituir. Atirámo-lo borda fora.</p></div></details>
+<details><summary>Vai mexer no meu ~/.claude ou ~/.codex?</summary><div class="a"><p>Não. O Jevellan tem as suas próprias pastas em <code>~/.jevellan</code>, uma por conta. As suas definições, sessões e memória ficam exatamente como estão.</p></div></details>
+<details><summary>Pode fazer push para a minha main?</summary><div class="a"><p>Só o Jevellan publica, só quando o trabalho está concluído, só depois de os seus próprios testes passarem no commit final, e nunca com <code>--force</code>. Os agentes não fazem push.</p></div></details>
+<details><summary>Posso usar a minha subscrição do Claude?</summary><div class="a"><p>O Jevellan usa as contas que lhe der. Os termos da Anthropic restringem as ferramentas de terceiros de oferecer inícios de sessão com subscrições Claude sem a sua aprovação. O Jevellan não tem essa aprovação, por isso usar o seu próprio token de subscrição é uma decisão sua. As chaves de API funcionam sempre.</p></div></details>
+<details><summary>E se eu discordar do Jev?</summary><div class="a"><p>Altere qualquer passo depois: corrigir e desfazer, ou só corrigir. Nunca para para perguntar antes, e as suas correções moldam as decisões seguintes.</p></div></details>
+<details><summary>Com que agentes e modelos funciona?</summary><div class="a"><p>Claude Code e Codex primeiro, com todos os modelos que oferecem. Gemini CLI, OpenCode, Pi e outros vêm a seguir, cada um através de um berth. Qualquer pessoa pode escrever um berth: um só contrato, e um kit de testes que diz quando funciona.</p></div></details>
+<details><summary>Porquê o nome?</summary><div class="a"><p><svg aria-hidden="true" class="flag"><use href="#flag-PT"></use></svg><svg aria-hidden="true" class="flag"><use href="#flag-ES"></use></svg>Jev mais Magellan, o nome inglês de Magalhães. O próprio nome Jev será uma piscadela de olho ao paradoxo de Jevons. Fernão de Magalhães foi um navegador português que deu a volta ao mundo ao serviço de Espanha. O Jevellan também é português, e navega por todos.</p></div></details>
+<details><summary>Está pronto?</summary><div class="a"><p>Está na v0.1, acabado de lançar. Conte com mar agitado. Issues e pull requests são muito bem-vindos.</p></div></details>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- ============ footer ============ -->
+<footer class="site-footer">
+<canvas aria-hidden="true" class="contours" data-freq="420" data-seed="29"></canvas>
+<div class="wrap">
+<div class="footer-cta">
+<svg aria-label="As Nuvens de Magalhães, Grande e Pequena, com uma estrela a mais." class="clouds" role="img" viewBox="0 0 360 120">
+<ellipse class="c1" cx="110" cy="60" rx="92" ry="38" transform="rotate(-12 110 60)"></ellipse>
+<ellipse class="c1" cx="262" cy="74" rx="48" ry="24" transform="rotate(-20 262 74)"></ellipse>
+<circle class="star" cx="70" cy="58" r="1.4"></circle><circle class="star" cx="96" cy="44" r="1"></circle><circle class="star" cx="122" cy="66" r="1.6"></circle><circle class="star" cx="150" cy="52" r="1.1"></circle><circle class="star" cx="104" cy="78" r="1.2"></circle><circle class="star" cx="138" cy="84" r="0.9"></circle><circle class="star" cx="84" cy="70" r="1"></circle>
+<circle class="star" cx="250" cy="72" r="1.2"></circle><circle class="star" cx="270" cy="66" r="1"></circle><circle class="star" cx="262" cy="84" r="1.3"></circle><circle class="star" cx="284" cy="78" r="0.9"></circle>
+<path class="star big" d="M330 22 l3.2 6.6 7.2 1 -5.2 5 1.2 7.2 -6.4 -3.4 -6.4 3.4 1.2 -7.2 -5.2 -5 7.2 -1z"></path>
+<text text-anchor="middle" x="110" y="116">Grande Nuvem de Magalhães</text>
+<text text-anchor="middle" x="262" y="116">Pequena Nuvem de Magalhães</text>
+<text text-anchor="middle" x="324" y="58">a sua?</text>
+</svg>
+<h2>Magalhães ficou com duas galáxias com o seu nome. <em>Nós contentamo-nos com uma estrela.</em></h2>
+<a class="btn btn-jev" href="https://github.com/gongiskhan/jevellan"><svg aria-hidden="true"><use href="#i-star"></use></svg>Dê uma estrela ao Jevellan no GitHub</a>
+</div>
+<div class="footer-grid">
+<div>
+<a class="brand" href="#top"><svg aria-hidden="true" class="brand-flag" viewBox="0 0 34 24"><line class="pole" stroke-linecap="round" stroke-width="2" x1="2" x2="2" y1="1" y2="23"></line><use height="19.3" href="#flag-PT" width="29" x="4" y="1"></use></svg><span class="brand-word">Jevellan</span></a>
+<p style="margin-top:12px">Desenvolvimento autónomo, coordenado. Os seus agentes de programação nas suas contas e máquinas, com o Jev a decidir cada passo.</p>
+<p class="made"><svg aria-hidden="true" class="flag"><use href="#flag-PT"></use></svg>Feito em Portugal, como o navegador original. <svg aria-hidden="true" class="flag"><use href="#flag-ES"></use></svg>Ele navegou por Espanha. Nós navegamos por todos.</p>
+</div>
+<div>
+<h4>Projeto</h4>
+<ul>
+<li><a href="https://github.com/gongiskhan/jevellan">GitHub</a></li>
+<li><a href="#install">Instalar</a></li>
+<li><a href="https://github.com/gongiskhan/jevellan/blob/main/roadmap.json">Roadmap</a></li>
+<li><a href="https://github.com/gongiskhan/jevellan/blob/main/LICENSE">Licença MIT</a></li>
+</ul>
+</div>
+<div>
+<h4>Jev</h4>
+<ul>
+<li><a href="https://typesafe.ai/">TypeSafe AI</a></li>
+<li><a href="https://docs.typesafe.ai/">Documentação do Jev</a></li>
+<li><a href="https://console.typesafe.ai/">Obter uma chave do Jev</a></li>
+<li><a href="https://gongiskhan.github.io/agent-garrison/">Garrison, o velho navio</a></li>
+</ul>
+</div>
+</div>
+<div class="egg">
+<span>O Jev é um produto da TypeSafe AI. O Jevellan é um projeto open source independente, sem ligação à TypeSafe AI.</span>
+<code title="base64">SmV2IGRlY2lkZXMuIFlvdXIgYWdlbnRzIGRvLg==</code>
+<span>Composto em Bricolage Grotesque, Geist, JetBrains Mono e EB Garamond, um tipo de letra do século de Magalhães.</span>
+</div>
+</div>
+</footer>
+</div>
+<script defer="" src="../assets/js/site.js"></script>
+</body>
+</html>
