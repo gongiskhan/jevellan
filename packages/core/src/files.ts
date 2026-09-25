@@ -12,6 +12,8 @@ export function atomicWrite(path: string, content: string | Uint8Array, mode = 0
   closeSync(fd);
   try { renameSync(temporary, path); }
   catch (error) { unlinkSync(temporary); throw error; }
+  const directory = openSync(dirname(path), 'r');
+  try { fsyncSync(directory); } finally { closeSync(directory); }
 }
 export function readDocument<T>(path: string, schema: DocumentSchema<T>): T {
   return schema.parse(JSON.parse(readFileSync(path, 'utf8')));

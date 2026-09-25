@@ -1,23 +1,36 @@
 import type { DatabaseSync } from 'node:sqlite';
+import { createHash } from 'node:crypto';
+import { z } from 'zod';
 import { parseDocument, stringify } from 'yaml';
-import { ConfigRevisionSchema, ConfigurationSchema, type Configuration, type ConfigRevision } from './schemas.js';
-import { atomicWrite } from './files.js';
+import { ConfigRevisionSchema, ConfigurationSchema, IdSchema, type Configuration, type ConfigRevision } from './schemas.js';
+import { atomicWrite, stableJson } from './files.js';
 import type { Homes } from './homes.js';
+import { existsSync, readFileSync } from 'node:fs';
 
 export class RevisionConflict extends Error {
   readonly status = 409;
   constructor() { super('Settings changed elsewhere. Reloaded the latest version.'); }
 }
+const ConfigurationRequestSchema = z.strictObject({
+  schema: z.literal('configuration-request-v1'), id: IdSchema, deviceId: IdSchema,
+  fingerprint: z.string().regex(/^[a-f0-9]{64}$/), revision: z.number().int().positive(),
+});
 export function parseConfiguration(yaml: string): Configuration {
   const document = parseDocument(yaml, { uniqueKeys: true });
   if (document.errors.length) throw new Error('Invalid configuration YAML.');
   return ConfigurationSchema.parse(document.toJS({ maxAliasCount: 20 }));
 }
 export function exportConfiguration(configuration: Configuration): string { return stringify(ConfigurationSchema.parse(configuration)); }
+export function materialiseConfiguration(homes: Homes, raw: ConfigRevision): ConfigRevision {
+  const revision = ConfigRevisionSchema.parse(raw); const file = homes.at('apm.yml'); const yaml = exportConfiguration(revision.configuration);
+  if (!existsSync(file) || readFileSync(file, 'utf8') !== yaml) atomicWrite(file, yaml);
+  return revision;
+}
 
 export class ConfigurationStore {
   constructor(private readonly db: DatabaseSync) {
     db.exec('CREATE TABLE IF NOT EXISTS configuration_revisions (revision INTEGER PRIMARY KEY, document TEXT NOT NULL)');
+    db.exec('CREATE TABLE IF NOT EXISTS configuration_requests (device_id TEXT NOT NULL, request_id TEXT NOT NULL, document TEXT NOT NULL, PRIMARY KEY(device_id, request_id))');
   }
   current(): ConfigRevision | null {
     const row = this.db.prepare('SELECT document FROM configuration_revisions ORDER BY revision DESC LIMIT 1').get();
@@ -26,14 +39,33 @@ export class ConfigurationStore {
   history(): ConfigRevision[] {
     return this.db.prepare('SELECT document FROM configuration_revisions ORDER BY revision').all().map((row) => ConfigRevisionSchema.parse(JSON.parse(String(row.document))));
   }
-  put(configuration: unknown, expectedRevision: number, changedBy: ConfigRevision['changedBy'], at = new Date().toISOString()): ConfigRevision {
+  put(configuration: unknown, expectedRevision: number, changedBy: ConfigRevision['changedBy'], at = new Date().toISOString(), clientRequestId?: string): ConfigRevision {
     const validated = ConfigurationSchema.parse(configuration);
+    const author = ConfigRevisionSchema.shape.changedBy.parse(changedBy);
+    const requestId = clientRequestId === undefined ? undefined : IdSchema.parse(clientRequestId);
+    const fingerprint = createHash('sha256').update(stableJson({ configuration: validated, expectedRevision, changedBy: author })).digest('hex');
     this.db.exec('BEGIN IMMEDIATE');
     try {
+      if (requestId !== undefined) {
+        const row = this.db.prepare('SELECT document FROM configuration_requests WHERE device_id=? AND request_id=?').get(author.deviceId, requestId);
+        if (row) {
+          const receipt = ConfigurationRequestSchema.parse(JSON.parse(String(row.document)));
+          if (receipt.deviceId !== author.deviceId || receipt.id !== requestId || receipt.fingerprint !== fingerprint) throw new RevisionConflict();
+          const saved = this.db.prepare('SELECT document FROM configuration_revisions WHERE revision=?').get(receipt.revision);
+          if (!saved) throw new Error('The saved configuration result is missing.');
+          const revision = ConfigRevisionSchema.parse(JSON.parse(String(saved.document)));
+          this.db.exec('COMMIT');
+          return revision;
+        }
+      }
       const current = this.current();
       if ((current?.revision ?? 0) !== expectedRevision) throw new RevisionConflict();
       const revision = ConfigRevisionSchema.parse({ schema: 'config-revision-v1', revision: expectedRevision + 1, configuration: validated, changedBy, at });
       this.db.prepare('INSERT INTO configuration_revisions(revision,document) VALUES(?,?)').run(revision.revision, JSON.stringify(revision));
+      if (requestId !== undefined) {
+        const receipt = ConfigurationRequestSchema.parse({ schema: 'configuration-request-v1', id: requestId, deviceId: author.deviceId, fingerprint, revision: revision.revision });
+        this.db.prepare('INSERT INTO configuration_requests(device_id,request_id,document) VALUES(?,?,?)').run(author.deviceId, requestId, JSON.stringify(receipt));
+      }
       this.db.exec('COMMIT');
       return revision;
     } catch (error) { this.db.exec('ROLLBACK'); throw error; }
@@ -41,8 +73,7 @@ export class ConfigurationStore {
   materialise(homes: Homes): ConfigRevision {
     const revision = this.current();
     if (!revision) throw new Error('Configuration has not been initialized.');
-    atomicWrite(homes.at('apm.yml'), exportConfiguration(revision.configuration));
-    return revision;
+    return materialiseConfiguration(homes, revision);
   }
 }
 

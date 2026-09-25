@@ -4,6 +4,12 @@ for await (const chunk of process.stdin) prompt += chunk;
 const send = (event) => process.stdout.write(`${JSON.stringify(event)}\n`);
 send({ type: 'thread.started', thread_id: 'fixture-thread' });
 send({ type: 'turn.started' });
+if (prompt.includes('PATCH_LIFECYCLE')) {
+  const item = { id: 'patch', type: 'file_change', changes: [{ path: 'src/sum.ts', kind: 'update' }] };
+  send({ type: 'item.started', item: { ...item, status: 'in_progress' } });
+  send({ type: 'item.updated', item: { ...item, status: 'in_progress' } });
+  send({ type: 'item.completed', item: { ...item, status: prompt.includes('FAILED_PATCH') ? 'failed' : 'completed' } });
+}
 send({ type: 'item.started', item: { id: 'tool', type: 'command_execution', command: 'fixture read', aggregated_output: '', exit_code: null, status: 'in_progress' } });
 if (prompt.includes('WAIT_FOR_INTERRUPT')) await new Promise((resolve) => setTimeout(resolve, 30_000));
 send({ type: 'item.completed', item: { id: 'tool', type: 'command_execution', command: 'fixture read', aggregated_output: 'fixture', exit_code: 0, status: 'completed' } });

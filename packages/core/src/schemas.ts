@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { RiggingBundleSchema } from './rigging-bundle-schemas.js';
 
 export const IdSchema = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/);
 export const TimestampSchema = z.iso.datetime({ offset: true });
@@ -89,6 +90,12 @@ export const ExternalSessionSchema = z.strictObject({
   runtime: z.enum(['claude', 'codex', 'cursor', 'gemini']), cwd: text,
   projectId: IdSchema.optional(), lastActivityAt: TimestampSchema, source: text,
 });
+export type ExternalSession = z.infer<typeof ExternalSessionSchema>;
+export const ExternalSessionsSchema = z.strictObject({
+  schema: z.literal('external-sessions-v1'), at: TimestampSchema, sessions: z.array(ExternalSessionSchema),
+  unavailable: z.array(z.enum(['claude', 'codex', 'cursor', 'gemini'])),
+});
+export type ExternalSessions = z.infer<typeof ExternalSessionsSchema>;
 export const HeartbeatSchema = z.strictObject({
   schema: z.literal('heartbeat-v1'), deviceId: IdSchema, at: TimestampSchema, version: text,
   runningConversations: z.array(IdSchema), projects: z.array(z.strictObject({ projectId: IdSchema, path: text, branch: text, head: text, dirty: z.boolean(), ahead: count, behind: count })),
@@ -104,10 +111,11 @@ export const WorkSchema = z.strictObject({
 });
 export type Work = z.infer<typeof WorkSchema>;
 export const ConversationStateSchema = z.enum(['idle', 'running', 'waiting-for-you', 'blocked', 'done', 'cancelled']);
+export const NextChoicesSchema = z.strictObject({ action: ActionSchema.exclude(['integrate']).optional(), modelId: IdSchema.optional(), effort: EffortSchema.optional() });
 export const ConversationSchema = z.strictObject({
   schema: z.literal('conversation-v2'), id: IdSchema, title: text, projectId: IdSchema, ownerDeviceId: IdSchema,
   createdAt: TimestampSchema, updatedAt: TimestampSchema, state: ConversationStateSchema, generation: count,
-  current: z.strictObject({ modelId: IdSchema, effort: EffortSchema }).optional(), pins: z.strictObject({ modelId: IdSchema.optional(), effort: EffortSchema.optional() }),
+  current: z.strictObject({ modelId: IdSchema, effort: EffortSchema }).optional(), pins: z.strictObject({ modelId: IdSchema.optional(), effort: EffortSchema.optional() }), once: NextChoicesSchema.default({}),
   stretchCount: count, work: WorkSchema.nullable(), outcome: z.strictObject({ kind: z.literal('finished-elsewhere'), reason: text.optional(), at: TimestampSchema }).optional(),
 });
 export type Conversation = z.infer<typeof ConversationSchema>;
@@ -115,7 +123,7 @@ export const SummarySchema = z.strictObject({
   schema: z.literal('summary-v2'), objective: z.string(), state: z.string(), decisions: z.array(z.string()), nextWork: z.string(), updatedAtStretch: count,
 });
 export type Summary = z.infer<typeof SummarySchema>;
-export const NativeProcessSchema = z.strictObject({ pid: z.number().int().min(2), pgid: z.number().int().min(2), sessionId: text.optional() });
+export const NativeProcessSchema = z.strictObject({ pid: z.number().int().min(2), pgid: z.number().int().min(2), startIdentity: z.string().min(1).max(64).optional(), sessionId: text.optional() });
 export const StretchStatusSchema = z.enum(['running', 'completed', 'interrupted', 'failed', 'timed-out', 'undone']);
 export const UsageSchema = z.strictObject({ inputTokens: count, outputTokens: count, cacheReadTokens: count.optional(), cacheWriteTokens: count.optional(), costUsd: z.number().nonnegative().optional(), costSource: z.enum(['reported', 'estimated', 'unknown']) });
 export const StretchSchema = z.strictObject({
@@ -125,6 +133,25 @@ export const StretchSchema = z.strictObject({
   gitBefore: text.optional(), gitAfter: text.optional(),
 });
 export type Stretch = z.infer<typeof StretchSchema>;
+const CommitIdSchema = z.string().regex(/^[a-f0-9]{40,64}$/);
+export const UndoAppliedSchema = z.strictObject({
+  schema: z.literal('undo-applied-v1'), id: IdSchema, workId: IdSchema,
+  followingWorkId: IdSchema.optional(),
+  fromStretch: z.number().int().positive(), throughStretch: z.number().int().positive(), generation: count,
+  mode: z.enum(['reset', 'revert', 'unchanged', 'external']), before: CommitIdSchema.optional(), after: CommitIdSchema.optional(), savedRef: text.optional(),
+  keepClosed: z.strictObject({ as: z.enum(['done', 'cancelled', 'closed-by-you']), at: TimestampSchema }).optional(),
+}).refine((value) => value.throughStretch >= value.fromStretch, 'Undo must include its starting step.');
+export type UndoApplied = z.infer<typeof UndoAppliedSchema>;
+export const GitUndoPlanSchema = z.strictObject({
+  schema: z.literal('git-undo-plan-v1'), mode: z.enum(['reset', 'revert', 'unchanged']),
+  step: z.number().int().positive(), before: CommitIdSchema, target: CommitIdSchema, sourceTip: CommitIdSchema,
+  commits: z.array(CommitIdSchema), savedRef: text, resultCommit: CommitIdSchema.optional(),
+  ranges: z.array(z.strictObject({ before: CommitIdSchema, after: CommitIdSchema })).min(1).optional(),
+});
+export type GitUndoPlan = z.infer<typeof GitUndoPlanSchema>;
+export const GitUndoResultSchema = z.strictObject({ schema: z.literal('git-undo-result-v1'), plan: GitUndoPlanSchema, after: CommitIdSchema });
+export type GitUndoResult = z.infer<typeof GitUndoResultSchema>;
+export const GitUndoRecoverySchema = z.strictObject({ schema: z.literal('git-undo-recovery-v1'), status: z.enum(['ready', 'completed', 'blocked']), result: GitUndoResultSchema.optional(), reason: text.optional() });
 export const HandoffStatusSchema = z.enum(['done', 'partial', 'blocked', 'failed']);
 export const FindingSchema = z.strictObject({ claim: text, pointer: text });
 export const ResultSchema = z.strictObject({ type: z.enum(['plan', 'answer', 'suggestion', 'merge-draft', 'memory-patch']), ref: text });
@@ -138,37 +165,126 @@ export const HandoffSchema = z.strictObject({
 export type Handoff = z.infer<typeof HandoffSchema>;
 export const VerificationSchema = z.strictObject({
   schema: z.literal('verification-v1'), id: IdSchema, workId: IdSchema, at: TimestampSchema, trigger: z.enum(['done-gate', 'publication']),
-  command: text, exitCode: z.number().int(), passed: z.boolean(), outputRef: text, commit: text, treeClean: z.boolean(),
+  command: text, exitCode: z.number().int(), passed: z.boolean(), outputRef: text, commit: text, treeClean: z.boolean(), headStable: z.boolean().default(true),
+  worktreeBefore: z.string().regex(/^[a-f0-9]{64}$/).optional(), worktreeAfter: z.string().regex(/^[a-f0-9]{64}$/).optional(),
 }).refine((value) => value.passed === (value.exitCode === 0), 'Verification success must match the exit code.');
 export type Verification = z.infer<typeof VerificationSchema>;
 export const LedgerEventSchema = z.strictObject({
   schema: z.literal('ledger-event-v1'), t: TimestampSchema, id: z.number().int().positive(),
-  type: z.enum(['user-message', 'note', 'stretch-start', 'text', 'tool-start', 'tool-end', 'usage', 'finding', 'handoff', 'stretch-end', 'decision', 'override', 'undo', 'steer', 'allowance', 'verification', 'publication', 'ownership', 'memory-queued', 'notice', 'git', 'error', 'state']),
+  type: z.enum(['user-message', 'note', 'stretch-start', 'text', 'tool-start', 'tool-end', 'usage', 'finding', 'handoff', 'stretch-end', 'decision', 'override', 'undo', 'steer', 'allowance', 'verification', 'publication', 'ownership', 'memory-queued', 'notice', 'git', 'error', 'state', 'conversation-control']),
   stretch: z.number().int().positive().optional(), data: z.unknown(),
 });
 export type LedgerEvent = z.infer<typeof LedgerEventSchema>;
+export const BlobDocumentSchema = z.strictObject({ schema: z.literal('conversation-blob-v1'), content: z.json() });
+export const BlobReferenceSchema = z.strictObject({
+  schema: z.literal('blob-ref-v1'), ref: z.string().regex(/^blobs\/[a-f0-9]{64}$/),
+  sha256: z.string().regex(/^[a-f0-9]{64}$/), bytes: z.number().int().positive(),
+}).refine((value) => value.ref === `blobs/${value.sha256}`, 'Blob path must match its digest.');
+export type BlobReference = z.infer<typeof BlobReferenceSchema>;
+export const LedgerLockSchema = z.strictObject({ schema: z.literal('ledger-lock-v1'), pid: z.number().int().min(2) });
+export const DaemonOwnershipSchema = z.strictObject({ schema: z.literal('daemon-ownership-v1'), pid: z.number().int().min(2), startIdentity: text, token: IdSchema, held: z.boolean() });
+export const ConversationCreatedSchema = z.strictObject({ schema: z.literal('conversation-created-v1'), conversation: ConversationSchema });
+export const WorkMessageSchema = z.strictObject({
+  schema: z.literal('work-message-v1'), clientMessageId: IdSchema, text, workId: IdSchema,
+  initialAllowance: z.number().int().positive(), allowanceGranted: count.default(0),
+});
+export const AllowanceEventSchema = z.strictObject({ schema: z.literal('allowance-event-v1'), workId: IdSchema, messageEventId: text.optional(), extra: z.number().int().positive(), via: z.enum(['reply', 'button']) });
+export const GuardKindSchema = z.enum(['steps', 'no-progress', 'test-failures', 'cost']);
+export const WorkControlSchema = z.discriminatedUnion('kind', [
+  z.strictObject({ schema: z.literal('work-control-v1'), kind: z.literal('pause'), state: z.enum(['waiting-for-you', 'blocked']), reason: text, guard: GuardKindSchema.optional() }),
+  z.strictObject({ schema: z.literal('work-control-v1'), kind: z.literal('base-commit'), commit: text }),
+  z.strictObject({ schema: z.literal('work-control-v1'), kind: z.literal('plan-approved'), ref: text, generation: count }),
+  z.strictObject({ schema: z.literal('work-control-v1'), kind: z.literal('close'), closedAs: z.enum(['done', 'cancelled', 'closed-by-you']) }),
+  z.strictObject({ schema: z.literal('work-control-v1'), kind: z.literal('native'), n: z.number().int().positive(), native: NativeProcessSchema }),
+  z.strictObject({ schema: z.literal('work-control-v1'), kind: z.literal('pins'), modelId: IdSchema.nullable().optional(), effort: EffortSchema.nullable().optional() }),
+  z.strictObject({ schema: z.literal('work-control-v1'), kind: z.literal('invalidate'), reason: z.enum(['cancel', 'undo', 'override']) }),
+  z.strictObject({ schema: z.literal('work-control-v1'), kind: z.literal('reopen'), workId: IdSchema }),
+]);
+export type WorkControl = z.infer<typeof WorkControlSchema>;
+export const StretchFinishedSchema = z.strictObject({ schema: z.literal('stretch-finished-v1'), stretch: StretchSchema, changed: z.boolean(), correction: z.boolean(), pause: WorkControlSchema.options[0].optional() });
+export const RestartRecoveryErrorSchema = z.strictObject({ schema: z.literal('restart-recovery-error-v1'), message: text });
+export const CheckoutClaimSchema = z.strictObject({
+  schema: z.literal('checkout-claim-v1'), deviceId: IdSchema, path: text, held: z.boolean(),
+  conversationId: IdSchema, conversationTitle: text, workId: IdSchema, pid: z.number().int().min(2), updatedAt: TimestampSchema,
+});
+export type CheckoutClaim = z.infer<typeof CheckoutClaimSchema>;
+export const PublicationLeaseSchema = z.strictObject({
+  schema: z.literal('publication-lease-v1'), remote: text, owner: IdSchema, token: IdSchema, held: z.boolean(), expiresAt: TimestampSchema,
+});
+export type PublicationLease = z.infer<typeof PublicationLeaseSchema>;
+export const GitSnapshotSchema = z.strictObject({
+  schema: z.literal('git-snapshot-v1'), head: z.string().regex(/^[a-f0-9]{40,64}$/), branch: text, clean: z.boolean(),
+  refsDigest: text, otherRefsDigest: text, remotesDigest: text, remoteHead: z.string().regex(/^[a-f0-9]{40,64}$/).nullable(),
+});
+export type GitSnapshot = z.infer<typeof GitSnapshotSchema>;
+export const GitCheckpointPlanSchema = z.strictObject({
+  schema: z.literal('git-checkpoint-plan-v1'), id: IdSchema, before: GitSnapshotSchema,
+  worktreeDigest: z.string().regex(/^[a-f0-9]{64}$/), tree: CommitIdSchema, after: CommitIdSchema,
+});
+export type GitCheckpointPlan = z.infer<typeof GitCheckpointPlanSchema>;
+export const PublicationEventSchema = z.strictObject({
+  schema: z.literal('publication-event-v1'), workId: IdSchema, status: z.enum(['published', 'blocked', 'external']),
+  commit: text, attempts: z.number().int().nonnegative(), verificationId: IdSchema.optional(), savedRef: text.optional(), notice: text.optional(), verificationExemption: z.literal('memory-only').optional(),
+});
+export type PublicationEvent = z.infer<typeof PublicationEventSchema>;
+const GitObjectSchema = z.string().regex(/^[a-f0-9]{40,64}$/);
+export const MemoryPublicationScopeSchema = z.strictObject({ schema: z.literal('memory-publication-scope-v1'), workId: IdSchema, baseCommit: GitObjectSchema, commit: GitObjectSchema, upstream: GitObjectSchema });
+const GitConflictSideSchema = z.strictObject({ mode: z.string().regex(/^[0-7]{6}$/), oid: GitObjectSchema, content: z.string().nullable() });
+export const GitConflictSchema = z.strictObject({ schema: z.literal('git-conflict-v1'), path: RelativePathSchema,
+  base: GitConflictSideSchema.nullable(), upstream: GitConflictSideSchema.nullable(), local: GitConflictSideSchema.nullable() });
+export type GitConflict = z.infer<typeof GitConflictSchema>;
+export const GitConflictResolutionSchema = z.strictObject({ schema: z.literal('git-conflict-resolution-v1'), path: RelativePathSchema, content: z.string(), mode: z.enum(['100644', '100755']) });
+export type GitConflictResolution = z.infer<typeof GitConflictResolutionSchema>;
+export const MemoryConflictMergeSchema = z.strictObject({ schema: z.literal('memory-conflict-merge-v1'), workId: IdSchema, deviceId: IdSchema, at: TimestampSchema,
+  upstream: GitObjectSchema, commit: GitObjectSchema, files: z.array(z.strictObject({ path: RelativePathSchema, upstream: GitObjectSchema.nullable(), local: GitObjectSchema.nullable() })).min(1) });
 export const ExclusionReasonSchema = z.enum(['needs-login', 'expired', 'usage-ceiling', 'cooling', 'disabled', 'no-account', 'paid-not-allowed', 'unsupported']);
 export type ExclusionReason = z.infer<typeof ExclusionReasonSchema>;
+export const JevCallSchema = z.strictObject({ schema: z.literal('jev-call-v1'), kind: z.enum(['action', 'model', 'memory']), requestedModel: text, returnedModel: text,
+  usage: z.strictObject({ input_tokens: count, output_tokens: count }), latencyMs: z.number().nonnegative() });
+export type JevCall = z.infer<typeof JevCallSchema>;
 export const DecisionRecordSchema = z.strictObject({
   schema: z.literal('decision-v2'), id: IdSchema, conversationId: IdSchema, workId: IdSchema, n: z.number().int().positive(), generation: count,
   trigger: z.enum(['user-message', 'stretch-end', 'resume', 'steer', 'redo']), at: TimestampSchema, latencyMs: z.number().nonnegative(),
-  jev: z.strictObject({ requestedModel: text, returnedModel: text, usage: z.unknown(), calls: count }).optional(),
+  redoOf: IdSchema.optional(), latestMessageEventId: count.optional(), questionSet: z.literal('q-v2').optional(), remember: z.boolean().optional(),
+  jev: z.strictObject({ requestedModel: text, returnedModel: text, usage: z.unknown(), calls: count, records: z.array(JevCallSchema).optional() }).optional(),
   action: z.strictObject({ chosen: ActionSchema, source: z.enum(['jev', 'only-option', 'guard', 'override', 'redo', 'manual']), allowed: z.array(ActionSchema), probabilities: probabilities.optional(), confidence: z.number().min(0).max(1).optional(), guardReason: text.optional() }),
   model: z.strictObject({ chosen: IdSchema, source: z.enum(['kept', 'jev', 'only-option', 'pin', 'override', 'redo', 'manual']), keepCurrentP: z.number().min(0).max(1).optional(), eligible: z.array(z.strictObject({ modelId: IdSchema, p: z.number().min(0).max(1).optional() })), preferredAny: z.strictObject({ modelId: IdSchema, p: z.number().min(0).max(1).optional() }).optional(), excluded: z.array(z.strictObject({ modelId: IdSchema, reason: ExclusionReasonSchema })) }).optional(),
   effort: z.strictObject({ requested: EffortSchema, effective: EffortSchema, source: z.enum(['jev', 'pin', 'override', 'redo', 'manual']), probabilities: probabilities.optional() }).optional(),
   account: z.strictObject({ chosen: IdSchema, ranking: z.array(z.strictObject({ accountId: IdSchema, eligible: z.boolean(), reason: text })) }).optional(),
   device: z.strictObject({ chosen: IdSchema, source: z.literal('here') }).optional(),
   memory: z.strictObject({ candidates: z.array(text), chosen: z.array(text), scores: z.record(z.string(), z.number().min(0).max(3)).optional(), source: z.enum(['jev', 'search-rank']) }).optional(),
-  correctionsShown: z.array(IdSchema), notices: z.array(z.strictObject({ kind: z.enum(['preferred-needs-login', 'jev-unavailable', 'guard', 'effort-adjusted']), text })),
+  context: z.strictObject({ project: text, action: ActionSchema, changeSize: z.enum(['small', 'medium', 'large']), riskyAreasTouched: z.array(text) }).optional(),
+  composer: z.strictObject({ schema: z.literal('composer-bindings-v1'), stretch: z.number().int().positive().nullable(), choices: z.array(z.strictObject({ id: IdSchema, status: z.enum(['applied', 'superseded']) })) }).optional(),
+  correctionsShown: z.array(IdSchema), notices: z.array(z.strictObject({ kind: z.enum(['preferred-needs-login', 'jev-unavailable', 'guard', 'effort-adjusted']), text, accountId: IdSchema.optional() })),
   outcome: z.strictObject({ stretch: z.number().int().positive(), status: StretchStatusSchema, handoffStatus: HandoffStatusSchema.optional() }).optional(),
 });
 export type DecisionRecord = z.infer<typeof DecisionRecordSchema>;
 
+export const ConversationIndexSchema = ConversationSchema.pick({ id: true, title: true, projectId: true, ownerDeviceId: true, state: true, updatedAt: true, current: true }).extend({ schema: z.literal('conversation-index-v1') });
+export type ConversationIndex = z.infer<typeof ConversationIndexSchema>;
+export const DecisionIndexSchema = DecisionRecordSchema.pick({ id: true, conversationId: true, workId: true, at: true, notices: true, outcome: true }).extend({
+  schema: z.literal('decision-index-v1'),
+  action: DecisionRecordSchema.shape.action.pick({ chosen: true, source: true }),
+  model: DecisionRecordSchema.shape.model.unwrap().pick({ chosen: true, source: true }).optional(),
+  effort: DecisionRecordSchema.shape.effort.unwrap().pick({ requested: true, effective: true, source: true }).optional(),
+});
+export type DecisionIndex = z.infer<typeof DecisionIndexSchema>;
+export function conversationIndex(value: Conversation): ConversationIndex {
+  const { id, title, projectId, ownerDeviceId, state, updatedAt, current } = ConversationSchema.parse(value);
+  return ConversationIndexSchema.parse({ schema: 'conversation-index-v1', id, title, projectId, ownerDeviceId, state, updatedAt, ...(current ? { current } : {}) });
+}
+export function decisionIndex(value: DecisionRecord): DecisionIndex {
+  const { id, conversationId, workId, at, notices, outcome, action, model, effort } = DecisionRecordSchema.parse(value);
+  return DecisionIndexSchema.parse({ schema: 'decision-index-v1', id, conversationId, workId, at, notices, ...(outcome ? { outcome } : {}),
+    action: { chosen: action.chosen, source: action.source }, ...(model ? { model: { chosen: model.chosen, source: model.source } } : {}),
+    ...(effort ? { effort: { requested: effort.requested, effective: effort.effective, source: effort.source } } : {}) });
+}
+
 export const RiggingItemSchema = z.strictObject({
   schema: z.literal('rigging-item-v1'), id: IdSchema, runtime: IdSchema, name: text,
   kind: z.enum(['skill', 'mcp', 'hook', 'rule', 'setting', 'command']), state: z.enum(['owned', 'loose', 'parked']),
-  enabled: z.boolean(), builtIn: z.boolean().default(false), content: z.string(), packageRef: text.optional(), updatedAt: TimestampSchema,
+  enabled: z.boolean(), builtIn: z.boolean().default(false), content: z.string(), packageRef: text.optional(), bundle: RiggingBundleSchema.optional(), updatedAt: TimestampSchema,
 });
 export type RiggingItem = z.infer<typeof RiggingItemSchema>;
-export const ErrorDocumentSchema = z.strictObject({ schema: z.literal('error-v1'), code: text, message: text });
+export const ErrorDocumentSchema = z.strictObject({ schema: z.literal('error-v1'), code: text, message: text, retryable: z.boolean().optional() });
 export type DocumentSchema<T> = { parse(value: unknown): T };

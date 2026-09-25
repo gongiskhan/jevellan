@@ -1,0 +1,12 @@
+{
+  "schema": "history-capture-v1",
+  "at": "2026-09-24T16:23:43.982Z",
+  "conversationId": "acceptance_answer_1790265657436",
+  "passed": true,
+  "newModelCalls": 0,
+  "screenshots": [
+    "conversation.png",
+    "why.png",
+    "phone.png"
+  ]
+}

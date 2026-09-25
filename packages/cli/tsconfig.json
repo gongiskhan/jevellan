@@ -11,6 +11,12 @@
   ],
   "references": [
     {
+      "path": "../mesh"
+    },
+    {
+      "path": "../memory"
+    },
+    {
       "path": "../core"
     },
     {

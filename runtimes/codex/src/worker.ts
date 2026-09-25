@@ -2,23 +2,32 @@ import { Codex, type ThreadOptions } from '@openai/codex-sdk';
 import { serveWorker, classifyRuntimeError, type RuntimeEvent } from '@jevellan/runtime-contract';
 import { z } from 'zod';
 import { fileURLToPath } from 'node:url';
+import { realpathSync } from 'node:fs';
+import { projectTrustOverride, projectInstructions } from './configuration.js';
 
 const ItemSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('agent_message'), id: z.string(), text: z.string() }),
   z.object({ type: z.literal('command_execution'), id: z.string(), command: z.string(), aggregated_output: z.string(), exit_code: z.number().int().nullish(), status: z.enum(['in_progress', 'completed', 'failed']) }),
   z.object({ type: z.literal('mcp_tool_call'), id: z.string(), server: z.string(), tool: z.string(), arguments: z.unknown(), result: z.unknown().optional(), error: z.object({ message: z.string() }).nullish(), status: z.enum(['in_progress', 'completed', 'failed']) }),
-  z.object({ type: z.literal('file_change'), id: z.string(), changes: z.array(z.object({ path: z.string(), kind: z.enum(['add', 'delete', 'update']) })), status: z.enum(['completed', 'failed']) }),
+  z.object({ type: z.literal('file_change'), id: z.string(), changes: z.array(z.object({ path: z.string(), kind: z.enum(['add', 'delete', 'update']) })), status: z.enum(['in_progress', 'completed', 'failed']) }),
 ]);
 const EventSchema = z.object({ type: z.string(), thread_id: z.string().optional(), item: z.unknown().optional(), message: z.string().optional(), error: z.object({ message: z.string() }).optional(), usage: z.object({ input_tokens: z.number().int().nonnegative(), output_tokens: z.number().int().nonnegative(), cached_input_tokens: z.number().int().nonnegative().optional(), cache_write_input_tokens: z.number().int().nonnegative().optional() }).optional() });
 
 serveWorker((input, daemonPid, executable) => {
+  const cwd = realpathSync(input.cwd);
+  const instructions = projectInstructions(cwd); let firstTurn = true;
   const env = Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined));
   const mcp = Object.fromEntries(Object.entries(input.launch.mcpServers).map(([name, server]) => [name, { command: server.command, args: server.args, env_vars: ['JEVELLAN_STRETCH_TOKEN', 'JEVELLAN_DAEMON_URL'], default_tools_approval_mode: 'approve' }]));
   const quote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`;
   const safety = [process.execPath, fileURLToPath(new URL('./safety-hook.js', import.meta.url)), JSON.stringify({ cwd: input.cwd, action: input.action, daemonPid })].map(quote).join(' ');
-  const runtime = new Codex({ codexPathOverride: fileURLToPath(new URL('../bin/launch.mjs', import.meta.url)), env, config: { jevellan_executable: executable ?? 'codex', features: { multi_agent: false, hooks: true }, projects: { [input.cwd]: { trust_level: 'untrusted' } }, mcp_servers: mcp, hooks: { PreToolUse: [{ matcher: '^Bash$', hooks: [{ type: 'command', command: safety, timeout: 10 }] }] } } });
-  const options: ThreadOptions = { workingDirectory: input.cwd, model: input.model, modelReasoningEffort: input.effort, sandboxMode: input.permissions === 'read-only' ? 'read-only' : 'workspace-write', approvalPolicy: 'never', networkAccessEnabled: input.permissions === 'write' };
-  const thread = runtime.startThread(options);
+  // SDK object flattening treats dots in project paths as configuration levels.
+  // Keep the path inside a TOML value so the native CLI receives one exact key.
+  const runtime = new Codex({ codexPathOverride: fileURLToPath(new URL('../bin/launch.mjs', import.meta.url)), env,
+    configOverrides: [projectTrustOverride(cwd)],
+    config: { jevellan_executable: executable ?? 'codex', features: { multi_agent: false, hooks: true }, mcp_servers: mcp, hooks: { PreToolUse: [{ matcher: '^Bash$', hooks: [{ type: 'command', command: safety, timeout: 10 }] }] } },
+  });
+  const options: ThreadOptions = { workingDirectory: cwd, model: input.model, modelReasoningEffort: input.effort, sandboxMode: input.permissions === 'read-only' ? 'read-only' : 'workspace-write', approvalPolicy: 'never', networkAccessEnabled: input.permissions === 'write' };
+  let thread = runtime.startThread(options);
   let controller = new AbortController();
   return {
     async interrupt() { controller.abort(); },
@@ -28,7 +37,13 @@ serveWorker((input, daemonPid, executable) => {
       const textById = new Map<string, string>(); const started = new Set<string>(); const ended = new Set<string>();
       let failure: ReturnType<typeof classifyRuntimeError> | undefined; let completed = false;
       try {
-        const { events } = await thread.runStreamed(message, { signal: controller.signal });
+        if (!firstTurn) {
+          if (!thread.id) throw new Error('Codex did not provide a session to continue.');
+          thread = runtime.resumeThread(thread.id, { ...options, sandboxMode: 'read-only', networkAccessEnabled: false });
+        }
+        const prompt = firstTurn && instructions ? `# Project instructions: AGENTS.md\n${instructions}\n\n# Current stretch\n${message}` : message;
+        firstTurn = false;
+        const { events } = await thread.runStreamed(prompt, { signal: controller.signal });
         for await (const raw of events) {
           const event = EventSchema.parse(raw);
           if (event.type === 'thread.started' && event.thread_id) session(event.thread_id);
@@ -43,7 +58,10 @@ serveWorker((input, daemonPid, executable) => {
           const known = ItemSchema.safeParse(event.item);
           if (!known.success) {
             const kind = z.object({ type: z.string() }).parse(event.item).type;
-            if (['agent_message', 'command_execution', 'mcp_tool_call', 'file_change'].includes(kind)) throw new Error('Codex returned a malformed item.');
+            if (['agent_message', 'command_execution', 'mcp_tool_call', 'file_change'].includes(kind)) {
+              const fields = known.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join('; ');
+              throw new Error(`Codex returned a malformed ${kind} item (${fields}).`);
+            }
             continue;
           }
           const item = known.data;

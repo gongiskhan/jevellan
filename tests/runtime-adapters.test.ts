@@ -24,7 +24,16 @@ test.each(['claude', 'codex'] as const)('%s adapter interrupts its SDK turn and 
   const { input, adapter } = setup(runtime); input.brief = 'WAIT_FOR_INTERRUPT';
   const run = adapter.startStretch(input); runs.push(run);
   const iterator = run.events[Symbol.asyncIterator](); expect((await iterator.next()).value?.type).toBe('tool-start');
-  await run.interrupt('steer'); expect((await run.done).status).toBe('interrupted');
+  const first = run.interrupt('steer'); const second = run.interrupt('cancel');
+  expect(first).toBe(second);
+  await Promise.all([first, second]); expect((await run.done).status).toBe('interrupted');
+  await run.terminate(); expect(groupAlive(run.native.pgid)).toBe(false);
+});
+test.each(['claude', 'codex'] as const)('%s timeout interrupts the turn without leaving background cleanup promises', async (runtime) => {
+  const { input, adapter } = setup(runtime); input.brief = 'WAIT_FOR_INTERRUPT'; input.timeoutMs = 1500;
+  const run = adapter.startStretch(input); runs.push(run);
+  expect((await run.done).status).toBe('interrupted');
+  await run.interrupt('timeout');
   await run.terminate(); expect(groupAlive(run.native.pgid)).toBe(false);
 });
 test('Claude model discovery initializes without sending a model turn', async () => {
@@ -35,4 +44,15 @@ test('Codex accepts native null fields while shell and MCP calls run', async () 
   const events = await collectEvents(run); expect((await run.done).status).toBe('completed');
   expect(events.find((event) => event.type === 'tool-end')).toMatchObject({ ok: true, output: 'fixture' });
   expect(events.find((event) => event.type === 'tool-end' && event.id === 'mcp')).toMatchObject({ ok: true });
+});
+
+test.each([false, true])('Codex streams an in-progress patch until its terminal outcome (failed: %s)', async (failed) => {
+  const { input, adapter } = setup('codex'); input.brief = `PATCH_LIFECYCLE ${failed ? 'FAILED_PATCH' : ''}`;
+  const run = adapter.startStretch(input); runs.push(run); const events = await collectEvents(run);
+  expect((await run.done).status).toBe('completed');
+  const patch = events.filter((event) => 'id' in event && event.id === 'patch');
+  expect(patch).toEqual([
+    { type: 'tool-start', id: 'patch', name: 'Edit', input: [{ path: 'src/sum.ts', kind: 'update' }] },
+    { type: 'tool-end', id: 'patch', ok: !failed, output: JSON.stringify([{ path: 'src/sum.ts', kind: 'update' }]) },
+  ]);
 });

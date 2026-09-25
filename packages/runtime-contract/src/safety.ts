@@ -55,7 +55,9 @@ export function safetyDenial(command: string, context: SafetyContext): string | 
     }
     if (program === 'gh' && ((words[0] === 'repo' && ['edit', 'delete'].includes(words[1] ?? '')) ||
         (words[0] === 'api' && words.some((word) => /^(?:private|visibility)=|"(?:private|visibility)"\s*:/.test(word))))) return SAFETY_REASON;
-    if (program === 'jevellan' && words.some((word) => ['stop', 'restart', 'update', 'uninstall'].includes(word))) return SAFETY_REASON;
+    const jevellan = ['jevellan', 'jevellan.mjs'].includes(program) || program === 'node' && basename(words[0] ?? '') === 'jevellan.mjs' ||
+      ['npx', 'npm'].includes(program) && words.some(word => word === 'jevellan' || /^github:gongiskhan\/jevellan(?:#.*)?$/.test(word) || word === 'git+https://github.com/gongiskhan/jevellan.git');
+    if (jevellan && words.some((word) => ['install', 'join', 'stop', 'restart', 'update', 'rollback', 'uninstall'].includes(word))) return SAFETY_REASON;
     if (['launchctl', 'systemctl'].includes(program) && words.some((word) => /(?:dev\.jevellan\.daemon|jevellan\.service)/.test(word))) return SAFETY_REASON;
     if (program === 'kill' && words.some((word) => word === String(context.daemonPid) || word === `-${context.daemonPid}`)) return SAFETY_REASON;
     if (['pkill', 'killall'].includes(program) && words.some((word) => /jevellan|node/.test(word))) return SAFETY_REASON;
@@ -78,7 +80,9 @@ export function claudePermissionHook(context: SafetyContext & { permissions: 're
     const tool = input.tool_name ?? '';
     let reason: string | null = null;
     if (context.permissions === 'read-only') {
-      const reads = ['Read', 'Glob', 'Grep', 'LS', 'WebSearch', 'WebFetch'];
+      // Discovery loads tool definitions; the discovered invocation still passes
+      // through this hook. Blocking it also blocks the required MCP handoff.
+      const reads = ['Read', 'Glob', 'Grep', 'LS', 'WebSearch', 'WebFetch', 'ToolSearch'];
       const bridge = /^mcp__jevellan__(?:jevellan_finding|jevellan_handoff|jevellan_conversation_search|jevellan_conversation_read|memory_search|memory_read|memory_propose)$/.test(tool);
       const memory = context.memoryWrite && /^mcp__jevellan__memory_(?:write|edit)$/.test(tool);
       if (!reads.includes(tool) && !bridge && !memory) reason = 'This step is read-only. Use the read tools and return a handoff.';

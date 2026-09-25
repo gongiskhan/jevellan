@@ -8,6 +8,11 @@
   "bin": { "jevellan": "bin/jevellan.mjs" },
   "workspaces": ["apps/*", "packages/*", "runtimes/*"],
   "files": ["bin", "apps", "packages", "runtimes", "scripts", "docs", "LICENSE", "NOTICE", "README.md", "roadmap.json", "tsconfig*.json"],
+  "dependencies": {
+    "@jevellan/cli": "0.1.0",
+    "@jevellan/web": "0.1.0"
+  },
+  "bundleDependencies": ["@jevellan/cli", "@jevellan/web"],
   "scripts": {
     "prepare": "node scripts/prepare.mjs",
     "build": "tsc -b && vite build --config apps/web/vite.config.ts",

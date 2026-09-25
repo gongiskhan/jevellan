@@ -1,0 +1,12 @@
+{
+  "id": "/",
+  "name": "Jevellan",
+  "short_name": "Jevellan",
+  "description": "Autonomous development, coordinated.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f6f2",
+  "theme_color": "#2b6653",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

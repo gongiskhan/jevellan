@@ -1,0 +1,20 @@
+# Device controls and remote provider login
+
+**Live:** local HTTP between independently served daemon applications, hub membership/session checks, account status reporting, isolated authentication files and Chrome. **Simulated:** provider authorization, device hardware, running-conversation/activity examples and hub outages. This is not actual second-machine acceptance or successful live Jev classification.
+
+Settings now uses the hub's device roster. The header and Devices page show presence, running-conversation counts and outside agent activity, with offline controls disabled. The roster refreshes every thirty seconds. Add a device displays the existing ten-minute join invitation and command. Open and the header switcher obtain the existing target-bound, one-use switch grant, navigate in the same tab and retain the current page without another sign-in.
+
+Per-device account rows now allow login on an available remote device. Start, poll, callback submission and cancellation reach that device through a dedicated login route. The receiving daemon checks the source browser session and both devices' membership with the hub. This route accepts provider-login operations only; it does not expose arbitrary authenticated APIs or treat the source cookie as a target-device sign-in. A missing hub is reported before admission with the existing waiting behavior. A missing/offline target receives an explicit device message.
+
+The selected device owns the native login, its isolated authentication file and its readiness report. The browser keeps the returned device identity when polling or submitting a callback. Existing stable login-start requests and single accepted-code exchange semantics continue across forwarding; no native authentication file is copied to another device.
+
+## Verification
+
+- Typecheck, lint and production build passed.
+- Repository-history/worktree secret scanning and whitespace checks passed. Work remains on main with BRIEF.md ignored and untracked. Unchanged commit-approval and GitHub-authentication blockers were not retried.
+- **68 targeted tests passed in seven files in 10.30 seconds.** Five new application scenarios cover hub-to-member, member-to-hub and member-to-member login; target-only Ready status and authentication files; repeated start/submission; device-code polling; remote cancellation; pre-admission hub loss; offline/revoked targets; and source-session binding. Existing local login, mesh membership/switching, forwarding and browser-request regressions passed in the same run.
+- **16 browser workflows passed in 54.7 seconds** across desktop/390-pixel phone and light/dark. Each layout runs actual local hub and member daemon servers. The new workflow completes a simulated provider login on the member, verifies target-only readiness, inspects activity/offline controls, creates an invitation, and switches to the member's same Settings page without another sign-in. Local login/recovery and account/Rigging/configuration workflows also passed.
+- Phone-light and desktop-dark Devices captures were visually inspected. Invitation codes are not present in the committed captures. The dedicated Claude vision check remains credential-blocked.
+- The first test draft used the wrong presence method name and failed typechecking. The next run passed 65 tests and failed three overly strict fixture assertions: missing status rows for other devices are correct. The corrected assertions require Ready only on the selected device. A fixture timer reference then failed lint and was corrected to the explicit global before the green browser run.
+
+This completes the previously missing device/header controls and remote provider-login UI. Remaining phase 4 work includes other Settings mutation recovery, periodic configuration/APM synchronization, network listeners and full two-daemon J8/J11 journeys. Installation, improver and final verification remain unfinished. The earlier private preview stays fixed; no installed product daemon or preview service was restarted. Existing publication and live-credential blockers were not retried or relabeled as passes.

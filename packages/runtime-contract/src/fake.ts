@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { minimalEnvironment, type RiggingItem } from '@jevellan/core';
 import { AsyncQueue } from './queue.js';
 import { RuntimeEventSchema, RunResultSchema, StretchInputSchema, type RuntimeAdapter, type RuntimeEvent, type StretchInput, type StretchRun, type RunResult } from './contract.js';
-import { groupAlive, terminateGroup, type NativeProcess } from './process-group.js';
+import { groupAlive, terminateGroup, identifySpawnedGroup, type NativeProcess } from './process-group.js';
 
 export type FakeStep = (turn: { input: StretchInput; message: string; signal: AbortSignal; emit(event: RuntimeEvent): void }) => Promise<RunResult> | RunResult;
 
@@ -18,20 +18,20 @@ class FakeRun implements StretchRun {
   constructor(readonly input: StretchInput, readonly step: () => FakeStep) {
     const child = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { cwd: input.cwd, env: minimalEnvironment('codex', input.account.home), detached: true, stdio: 'ignore' });
     if (!child.pid) throw new Error('Fake runtime process failed to start.');
-    this.native = { pid: child.pid, pgid: child.pid, sessionId: `fixture-${randomUUID()}` };
+    this.native = { ...identifySpawnedGroup(child.pid), sessionId: `fixture-${randomUUID()}` };
     child.on('error', () => this.#finish({ status: 'failed', error: { kind: 'other', message: 'Fake runtime process failed.' } }));
     child.on('close', () => this.#finish({ status: this.#terminated ? 'interrupted' : 'failed' }));
     this.#begin(input.brief, input.timeoutMs);
   }
   get events(): AsyncIterable<RuntimeEvent> { return this.#queue; }
   get done(): Promise<RunResult> { return this.#done; }
-  #begin(message: string, timeoutMs: number): void {
+  #begin(message: string, timeoutMs: number, repair = false): void {
     this.#queue = new AsyncQueue(); this.#controller = new AbortController(); this.#settled = false;
     this.#done = new Promise((resolve) => { this.#resolve = resolve; });
     this.#timer = setTimeout(() => { void this.interrupt(); }, timeoutMs);
     const signal = this.#controller.signal;
     queueMicrotask(() => {
-      void Promise.resolve().then(() => this.step()({ input: this.input, message, signal, emit: (raw) => { if (!signal.aborted && !this.#settled) this.#queue.push(RuntimeEventSchema.parse(raw)); } }))
+      void Promise.resolve().then(() => this.step()({ input: repair ? { ...this.input, permissions: 'read-only', memoryWrite: false } : this.input, message, signal, emit: (raw) => { if (!signal.aborted && !this.#settled) this.#queue.push(RuntimeEventSchema.parse(raw)); } }))
         .then((result) => { if (!signal.aborted) this.#finish(RunResultSchema.parse(result)); })
         .catch(() => { if (!signal.aborted) this.#finish({ status: 'failed', error: { kind: 'other', message: 'The scripted runtime failed.' } }); });
     });
@@ -40,7 +40,7 @@ class FakeRun implements StretchRun {
   async interrupt(): Promise<void> { this.#controller.abort(); this.#finish({ status: 'interrupted' }); }
   async continue(message: string, timeoutMs: number): Promise<void> {
     if (!this.#settled || this.#terminated || !groupAlive(this.native.pgid)) throw new Error('Fake session is not available for continuation.');
-    this.#begin(message, timeoutMs); await this.#done;
+    this.#begin(message, timeoutMs, true); await this.#done;
   }
   async terminate(): Promise<void> { this.#terminated = true; this.#controller.abort(); await terminateGroup(this.native); this.#finish({ status: 'interrupted' }); }
 }

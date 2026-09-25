@@ -1,9 +1,9 @@
 import { afterEach, expect, test } from 'vitest';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { scanSecrets } from '../scripts/secret-scan.mjs';
+import { scanSecrets, scanWorkingTree } from '../scripts/secret-scan.mjs';
 
 const dirs: string[] = [];
 afterEach(() => { for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true }); });
@@ -32,4 +32,15 @@ test('passes a clean history', () => {
   const { dir, git } = repository();
   writeFileSync(join(dir, 'readme'), 'A clean project.'); git('add', '.'); git('commit', '-m', 'initial');
   expect(scanSecrets(dir, ['HEAD'], {})).toEqual([]);
+});
+test('scans modified and untracked publishable files without following links or printing secrets', () => {
+  const { dir, git } = repository();
+  writeFileSync(join(dir, 'tracked'), 'clean'); git('add', '.'); git('commit', '-m', 'initial');
+  const secret = ['fixture', 'pending', 'credential'].join('-');
+  writeFileSync(join(dir, 'tracked'), secret); writeFileSync(join(dir, 'untracked'), secret);
+  writeFileSync(join(dir, '.gitignore'), 'ignored\n'); writeFileSync(join(dir, 'ignored'), secret);
+  symlinkSync('ignored', join(dir, 'link'));
+  const results = scanWorkingTree(dir, { JEVELLAN_TEST_JEV_KEY: secret });
+  expect(results.map((entry: { file: string }) => entry.file).sort()).toEqual(['tracked', 'untracked']);
+  expect(JSON.stringify(results)).not.toContain(secret);
 });

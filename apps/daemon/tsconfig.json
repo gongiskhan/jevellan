@@ -11,6 +11,8 @@
   ],
   "references": [
     { "path": "../../packages/accounts" },
+    { "path": "../../packages/decisions" },
+    { "path": "../../packages/memory" },
     { "path": "../../packages/runtime-contract" },
     {
       "path": "../../packages/core"

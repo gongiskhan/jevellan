@@ -1,0 +1,100 @@
+{
+  "schema": "manual-acceptance-v1",
+  "journey": "change",
+  "at": "2026-09-24T16:02:38.245Z",
+  "passed": true,
+  "source": "live-codex-manual-selection",
+  "jevCalled": false,
+  "checks": {
+    "realRuntime": true,
+    "structuredHandoff": true,
+    "workClosed": true,
+    "cleanTree": true,
+    "localOriginMatches": true,
+    "noAttributionTrailers": true,
+    "independentVerification": true,
+    "multiplyOutcomes": true
+  },
+  "screenshots": [
+    "conversation.png",
+    "why.png",
+    "changes.png",
+    "phone.png"
+  ],
+  "launches": [
+    {
+      "action": "implement",
+      "permissions": "write",
+      "memoryWrite": true,
+      "model": "gpt-6-astra",
+      "effort": "low",
+      "beforeHead": "68913801406aaf1ec8d1953eb25f5032689faa54",
+      "beforeStatus": "",
+      "status": "completed",
+      "afterRuntimeHead": "68913801406aaf1ec8d1953eb25f5032689faa54",
+      "afterRuntimeStatus": "M src/sum.test.ts\n M src/sum.ts\n?? .jevellan/"
+    }
+  ],
+  "model": "gpt-6-astra",
+  "context": {
+    "state": "linked",
+    "claudeReadsAgents": false,
+    "linked": true,
+    "gitClean": true
+  },
+  "before": "68913801406aaf1ec8d1953eb25f5032689faa54",
+  "after": "b5af05a9a7a5c37156a987c90a10b7588257c02b",
+  "conversationId": "acceptance_change_1790265758235",
+  "verification": {
+    "command": "npm test",
+    "commit": "b5af05a9a7a5c37156a987c90a10b7588257c02b",
+    "passed": true,
+    "treeClean": true
+  },
+  "diff": "diff --git a/src/sum.test.ts b/src/sum.test.ts\nindex 9abcb53..88bd11f 100644\n--- a/src/sum.test.ts\n+++ b/src/sum.test.ts\n@@ -1,3 +1,19 @@\n-import { sum } from './sum';\n+import { multiply, sum } from './sum';\n \n test('adds two numbers', () => { expect(sum(2, 3)).toBe(5); });\n+\n+test('multiplies positive numbers', () => {\n+  expect(multiply(2, 3)).toBe(6);\n+});\n+\n+test('multiplies negative numbers', () => {\n+  expect(multiply(-2, 3)).toBe(-6);\n+  expect(multiply(2, -3)).toBe(-6);\n+  expect(multiply(-2, -3)).toBe(6);\n+});\n+\n+test('multiplies by zero', () => {\n+  expect(multiply(0, 3)).toBe(0);\n+  expect(multiply(3, 0)).toBe(0);\n+  expect(multiply(0, 0)).toBe(0);\n+});\ndiff --git a/src/sum.ts b/src/sum.ts\nindex 7372ed0..042705a 100644\n--- a/src/sum.ts\n+++ b/src/sum.ts\n@@ -1,3 +1,7 @@\n export function sum(a: number, b: number): number {\n   return a + b;\n }\n+\n+export function multiply(a: number, b: number): number {\n+  return a * b;\n+}",
+  "steps": [
+    {
+      "n": 1,
+      "action": "implement",
+      "model": "gpt-6-astra",
+      "effortRequested": "low",
+      "effortEffective": "low",
+      "status": "completed"
+    }
+  ],
+  "decisions": [
+    {
+      "n": 1,
+      "action": {
+        "chosen": "implement",
+        "source": "manual"
+      },
+      "model": "codex-gpt",
+      "effort": {
+        "requested": "low",
+        "effective": "low",
+        "source": "manual"
+      },
+      "memory": {
+        "candidates": [],
+        "chosen": [],
+        "source": "search-rank"
+      }
+    },
+    {
+      "n": 2,
+      "action": {
+        "chosen": "done",
+        "source": "manual"
+      }
+    }
+  ],
+  "memoryCapture": [
+    {
+      "event": 28,
+      "stretch": 1,
+      "source": "hook",
+      "title": "Step 1 · acceptance_change_1790265758235"
+    }
+  ]
+}

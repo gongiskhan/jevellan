@@ -22,6 +22,49 @@ export async function runContractTests(factory: (context: RuntimeContext) => Run
 
 export async function collectEvents(run: StretchRun): Promise<RuntimeEvent[]> { const events: RuntimeEvent[] = []; for await (const event of run.events) events.push(RuntimeEventSchema.parse(event)); return events; }
 
+export async function checkInterruption(adapter: RuntimeAdapter, input: StretchInput, ready: (event: RuntimeEvent) => boolean): Promise<void> {
+  const run = adapter.startStretch(input); let interrupted = false;
+  try {
+    for await (const event of run.events) {
+      if (!interrupted && ready(event)) {
+        interrupted = true; const start = Date.now(); await run.interrupt('steer');
+        assert(Date.now() - start < 20_000, 'Interruption exceeded its bounded deadline.');
+      }
+    }
+    assert(interrupted, 'The driver never observed a running tool.');
+    assert.equal((await run.done).status, 'interrupted');
+  } finally { await run.terminate(); assert(!groupAlive(run.native.pgid), 'Runtime process group remains alive.'); }
+}
+
+export async function checkConcurrentIsolation(adapter: RuntimeAdapter, cases: readonly [{ input: StretchInput; marker: string }, { input: StretchInput; marker: string }], tool: string): Promise<void> {
+  assert.equal(cases[0].input.account.home, cases[1].input.account.home, 'The check must share one account home.');
+  assert.notEqual(cases[0].input.cwd, cases[1].input.cwd, 'The check needs two projects.');
+  assert.notEqual(cases[0].marker, cases[1].marker);
+  const runs: StretchRun[] = [];
+  try {
+    const attempts = await Promise.allSettled(cases.map(async (entry, index) => {
+      const run = adapter.startStretch(entry.input); runs.push(run);
+      const events = await collectEvents(run); assert.equal((await run.done).status, 'completed');
+      assert(events.some((event) => event.type === 'tool-start' && event.name === tool), 'The scoped tool was not called.');
+      const text = events.flatMap((event) => event.type === 'text' ? [event.delta] : []).join('');
+      assert(text.includes(entry.marker), 'The response did not contain its own scoped memory.');
+      assert(!text.includes(cases[1 - index]!.marker), 'The response leaked another project’s memory.');
+    }));
+    for (const attempt of attempts) if (attempt.status === 'rejected') throw attempt.reason;
+  } finally { await Promise.all(runs.map((run) => run.terminate())); assert(runs.every((run) => !groupAlive(run.native.pgid)), 'Runtime process group remains alive.'); }
+}
+
+export async function checkGroupTermination(adapter: RuntimeAdapter, input: StretchInput, ready: (event: RuntimeEvent) => boolean): Promise<void> {
+  const run = adapter.startStretch(input); let observed = false;
+  try {
+    for await (const event of run.events) if (ready(event)) { observed = true; break; }
+    assert(observed, 'The driver never observed the running descendant.');
+    assert(groupAlive(run.native.pgid), 'The runtime group ended before termination was tested.');
+    await run.terminate(); assert(!groupAlive(run.native.pgid), 'A runtime process remains after termination.');
+    assert.equal((await run.done).status, 'interrupted');
+  } finally { await run.terminate(); }
+}
+
 export async function checkEventsAndContinuation(adapter: RuntimeAdapter, input: StretchInput, continuation: { message: string; expectedText: string }): Promise<void> {
   const run = adapter.startStretch(input);
   try {

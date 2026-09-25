@@ -4,7 +4,7 @@ import { realpathSync } from 'node:fs';
 import { isAbsolute } from 'node:path';
 import { minimalEnvironment, SecretRedactor } from '@jevellan/core';
 import { AsyncQueue } from './queue.js';
-import { groupAlive, terminateGroup, type NativeProcess } from './process-group.js';
+import { groupAlive, terminateGroup, terminateDescendants, rememberProcessTree, identifySpawnedGroup, type NativeProcess } from './process-group.js';
 import { StretchInputSchema, WorkerCommandSchema, WorkerMessageSchema, type RuntimeContext, type RuntimeEvent, type RunResult, type StretchInput, type StretchRun, type WorkerCommand } from './contract.js';
 
 export function launchEnvironment(runtime: 'claude' | 'codex', input: StretchInput): Record<string, string> {
@@ -21,6 +21,7 @@ export class WorkerRun implements StretchRun {
   #done!: Promise<RunResult>;
   #settled = false;
   #terminated = false;
+  #interruption: Promise<void> | undefined;
   #timer: ReturnType<typeof setTimeout> | undefined;
   #child: ChildProcessWithoutNullStreams;
   readonly native: NativeProcess;
@@ -44,7 +45,8 @@ export class WorkerRun implements StretchRun {
     this.#child = spawn(process.execPath, [worker], { cwd: input.cwd, env, detached: true, stdio: ['pipe', 'pipe', 'pipe'] });
     this.#child.on('error', () => this.#finish({ status: 'failed', error: { kind: 'other', message: 'Runtime worker failed to start.' } }));
     if (!this.#child.pid) { clearTimeout(this.#timer); throw new Error('Runtime worker did not start.'); }
-    this.native = { pid: this.#child.pid, pgid: this.#child.pid };
+    try { this.native = identifySpawnedGroup(this.#child.pid); }
+    catch (error) { clearTimeout(this.#timer); throw error; }
     this.#child.stdin.on('error', () => this.#finish({ status: 'failed', error: { kind: 'other', message: 'Runtime command channel closed.' } }));
     this.#child.stderr.on('data', () => { /* SDK diagnostics never bypass the validated event channel. */ });
     const lines = createInterface({ input: this.#child.stdout });
@@ -73,8 +75,10 @@ export class WorkerRun implements StretchRun {
     this.#queue = new AsyncQueue();
     this.#done = new Promise((resolve) => { this.#resolve = resolve; });
     this.#timer = setTimeout(() => {
-      void this.interrupt('timeout');
-      this.#timer = setTimeout(() => { void this.terminate().catch(() => undefined); }, 10_000);
+      void this.interrupt('timeout').catch(() => {
+        this.#finish({ status: 'failed', error: { kind: 'other', message: 'Runtime timeout cleanup failed; process ownership must be retained.' } });
+        void this.terminate().catch(() => undefined);
+      });
     }, timeoutMs);
   }
   #finish(result: RunResult): void {
@@ -84,17 +88,24 @@ export class WorkerRun implements StretchRun {
     this.#queue.close(); this.#resolve(result);
   }
   #send(command: WorkerCommand): void { this.#child.stdin.write(`${JSON.stringify(WorkerCommandSchema.parse(command))}\n`); }
-  async interrupt(reason: 'steer' | 'timeout' | 'cancel'): Promise<void> {
-    if (this.#settled || this.#terminated) return;
+  interrupt(reason: 'steer' | 'timeout' | 'cancel'): Promise<void> {
+    if (this.#interruption) return this.#interruption;
+    if (this.#settled || this.#terminated) return Promise.resolve();
+    this.#interruption = this.#interrupt(reason).finally(() => { this.#interruption = undefined; });
+    return this.#interruption;
+  }
+  async #interrupt(reason: 'steer' | 'timeout' | 'cancel'): Promise<void> {
+    rememberProcessTree(this.native);
     this.#send({ schema: 'runtime-command-v1', type: 'interrupt', reason });
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       const stopped = await Promise.race([this.#done.then(() => true), new Promise<false>((resolve) => { timer = setTimeout(() => resolve(false), 10_000); })]);
       if (!stopped) await this.terminate();
+      else await terminateDescendants(this.native);
     } finally { clearTimeout(timer); }
   }
   async continue(message: string, timeoutMs: number): Promise<void> {
-    if (!this.#settled || this.#terminated || !groupAlive(this.native.pgid)) throw new Error('Runtime session is not available for continuation.');
+    if (!this.#settled || this.#terminated || this.#interruption || !groupAlive(this.native.pgid)) throw new Error('Runtime session is not available for continuation.');
     this.#begin(timeoutMs);
     this.#send({ schema: 'runtime-command-v1', type: 'continue', message, timeoutMs });
     const result = await this.#done;

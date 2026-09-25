@@ -1,10 +1,10 @@
-import { afterEach, beforeEach, expect, test } from 'vitest';
-import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import { afterEach, beforeEach, expect, test, vi } from 'vitest';
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
-import { AccountSchema, Homes } from '../packages/core/dist/index.js';
+import { AccountSchema, Homes, HubUnavailable } from '../packages/core/dist/index.js';
 import { LoginOutput, beginTerminalLogin, loginCallback, type LoginSession } from '../packages/runtime-contract/dist/index.js';
 import { claudeUsage, probeClaude } from '../runtimes/claude/dist/control.js';
 import { probeCodex } from '../runtimes/codex/dist/control.js';
@@ -46,12 +46,73 @@ test('PTY login stores the complete token directly in the vault callback and exp
   await session.submitCode!('approved'); await until(async () => await session.poll() === 'done');
   expect(captured).toBe(token); expect(JSON.stringify(session)).not.toContain(token);
 });
+test('Claude paste submission waits for the terminal input to render before pressing Enter', async () => {
+  const executable = join(root, 'interactive-login-cli');
+  // Like the native terminal form, pasted text updates the input on the next
+  // render. A return bundled into that paste is not a separate submit event.
+  writeFileSync(executable, `#!/usr/bin/env node\nprocess.stdin.setRawMode(true);process.stdout.write('https://claude.ai/oauth/authorize?state=fixture\\r\\n');let rendered='';process.stdin.on('data',chunk=>{const input=chunk.toString();if(input==='\\r'){if(rendered==='fixture-approval')process.stdout.write(${JSON.stringify(intro + token + footer)});}else{setTimeout(()=>{rendered=input.replace(/\\r/g,'');},50);}});\n`, { mode: 0o700 });
+  let captured = ''; const value = account();
+  const session = await beginTerminalLogin('claude', value, homes.account('claude', value.id), { homes, executable, saveSecret: async (_id, secret) => { captured = secret; } }); sessions.push(session);
+  await until(async () => { await session.poll(); return Boolean(session.url); });
+  await session.submitCode!('fixture-approval'); await until(async () => await session.poll() === 'done');
+  expect(captured).toBe(token); expect(JSON.stringify(session)).not.toContain(token);
+});
+test('a native OAuth error ends sign-in even when Claude stays open waiting for Enter', async () => {
+  const executable = join(root, 'failed-login-cli');
+  writeFileSync(executable, `#!/usr/bin/env node\nprocess.stdin.setRawMode(true);process.stdout.write('https://claude.ai/oauth/authorize?state=fixture\\r\\n');process.stdin.on('data',()=>{process.stdout.write('\\r\\nOAuth er');setTimeout(()=>process.stdout.write('ror: rejected private-code\\r\\nPress Enter to retry.'),20);});\n`, { mode: 0o700 });
+  const saveSecret = vi.fn(async () => {}); const value = account();
+  const session = await beginTerminalLogin('claude', value, homes.account('claude', value.id), { homes, executable, saveSecret }); sessions.push(session);
+  await until(async () => { await session.poll(); return Boolean(session.url); });
+  await session.submitCode!('private-code'); await until(async () => await session.poll() === 'failed');
+  expect(session.error).toContain('Start again'); expect(JSON.stringify(session)).not.toContain('private-code'); expect(saveSecret).not.toHaveBeenCalled();
+});
+test('cancelling while pasted text is rendering never sends the delayed Enter', async () => {
+  const executable = join(root, 'cancelled-login-cli');
+  writeFileSync(executable, `#!/usr/bin/env node\nprocess.stdin.setRawMode(true);process.stdout.write('https://claude.ai/oauth/authorize?state=fixture\\r\\n');process.stdin.on('data',input=>{if(input.toString()==='\\r')process.stdout.write(${JSON.stringify(intro + token + footer)});});\n`, { mode: 0o700 });
+  const saveSecret = vi.fn(async () => {}); const value = account();
+  const session = await beginTerminalLogin('claude', value, homes.account('claude', value.id), { homes, executable, saveSecret }); sessions.push(session);
+  await until(async () => { await session.poll(); return Boolean(session.url); });
+  const submission = session.submitCode!('fixture-approval'); await session.cancel(); await submission;
+  expect(await session.poll()).toBe('failed'); expect(saveSecret).not.toHaveBeenCalled();
+});
 test('Codex falls back only when the installed CLI rejects device-code support', async () => {
   const executable = join(root, 'codex-login-cli');
   writeFileSync(executable, "#!/usr/bin/env node\nif(process.argv.includes('--device-auth')){console.log('unexpected argument --device-auth');process.exit(2);}process.stdout.write('https://auth.openai.com/oauth/authorize?state=fixture&redirect_uri=http%3A%2F%2Flocalhost%3A1455%2Fauth%2Fcallback\\r\\n');setInterval(()=>{},1000);\n", { mode: 0o700 });
   const value = account('codex'); const session = await beginTerminalLogin('codex', value, homes.account('codex', value.id), { homes, executable }); sessions.push(session);
   await until(async () => { await session.poll(); return Boolean(session.url); });
   expect(session.instructions).toContain('Paste its full address'); expect(await session.poll()).toBe('pending'); await session.cancel(); expect(await session.poll()).toBe('failed');
+});
+
+test.each(['running', 'exited'])('PTY login retains a completed token through hub loss while the CLI is %s', async phase => {
+  const executable = join(root, 'login-cli'); const submissions = join(root, 'submissions');
+  writeFileSync(executable, `#!/usr/bin/env node\nconst fs=require('node:fs');process.stdout.write('https://claude.ai/oauth/authorize?state=fixture\\r\\n');process.stdin.on('data',()=>{fs.appendFileSync(${JSON.stringify(submissions)},'submitted\\n');process.stdout.write(${JSON.stringify(intro + token + footer)});${phase === 'exited' ? 'setTimeout(()=>process.exit(0),20);' : ''}});\n`, { mode: 0o700 });
+  let offline = true;
+  const capture = vi.fn(async (_id: string, secret: string, requestId?: string) => { expect(secret).toBe(token); expect(requestId).toMatch(/^capture_/); if (offline) throw new HubUnavailable('Fixture hub'); });
+  const value = account(); const session = await beginTerminalLogin('claude', value, homes.account('claude', value.id), { homes, executable, saveSecret: capture }); sessions.push(session);
+  await until(async () => { await session.poll(); return Boolean(session.url); }); await session.submitCode!('approved');
+  await until(async () => { try { await session.poll(); return false; } catch (error) { expect(error).toBeInstanceOf(HubUnavailable); return true; } });
+  if (phase === 'exited') await delay(80);
+  await expect(session.poll()).rejects.toBeInstanceOf(HubUnavailable);
+  offline = false; await until(async () => await session.poll() === 'done');
+  const savedCalls = capture.mock.calls.length; expect(new Set(capture.mock.calls.map(call => call[2])).size).toBe(1);
+  expect(readFileSync(submissions, 'utf8')).toBe('submitted\n'); expect(JSON.stringify(session)).not.toContain(token);
+  expect(await session.poll()).toBe('done'); expect(capture).toHaveBeenCalledTimes(savedCalls);
+});
+
+test('cancelling a PTY login waiting for the hub prevents capture on reconnection', async () => {
+  const executable = join(root, 'login-cli'); writeFileSync(executable, `#!/usr/bin/env node\nprocess.stdout.write(${JSON.stringify(intro + token + footer)});setInterval(()=>{},1000);\n`, { mode: 0o700 });
+  let offline = true; const capture = vi.fn(async () => { if (offline) throw new HubUnavailable('Fixture hub'); }); const value = account();
+  const session = await beginTerminalLogin('claude', value, homes.account('claude', value.id), { homes, executable, saveSecret: capture }); sessions.push(session);
+  await until(async () => { try { await session.poll(); return false; } catch (error) { expect(error).toBeInstanceOf(HubUnavailable); return true; } });
+  await session.cancel(); const attempts = capture.mock.calls.length; offline = false;
+  expect(await session.poll()).toBe('failed'); expect(capture).toHaveBeenCalledTimes(attempts);
+});
+
+test('an ordinary capture failure is terminal rather than a typed hub wait', async () => {
+  const executable = join(root, 'login-cli'); writeFileSync(executable, `#!/usr/bin/env node\nprocess.stdout.write(${JSON.stringify(intro + token + footer)});setInterval(()=>{},1000);\n`, { mode: 0o700 });
+  const capture = vi.fn(async () => { throw Object.assign(new Error('Fixture rejected capture'), { status: 503 }); }); const value = account();
+  const session = await beginTerminalLogin('claude', value, homes.account('claude', value.id), { homes, executable, saveSecret: capture }); sessions.push(session);
+  await until(async () => await session.poll() === 'failed'); expect(capture).toHaveBeenCalledOnce();
 });
 
 const headers = () => new Headers({ 'anthropic-ratelimit-unified-5h-utilization': '0.46', 'anthropic-ratelimit-unified-7d-utilization': '0.17', 'anthropic-ratelimit-unified-5h-reset': '1784659200', 'anthropic-ratelimit-unified-7d-reset': '1785232800' });

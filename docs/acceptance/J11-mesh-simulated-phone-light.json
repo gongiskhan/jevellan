@@ -1,0 +1,18 @@
+{
+  "schema": "j11-mesh-simulated-v1",
+  "layout": "phone-light",
+  "devices": "simulated",
+  "providers": "simulated",
+  "memory": "live-basic-memory",
+  "selection": "manual-search-rank",
+  "compatibilityLinkExcluded": true,
+  "explicitMemoryPublished": true,
+  "readOnlyProposalPreservedCheckout": true,
+  "proposalAppliedByOwner": true,
+  "alreadyOpenIndexRefreshedAfterPull": true,
+  "claudeAndCodexReceivedNote": true,
+  "whyShowsChosenMemory": true,
+  "contextDraftPreservedFiles": true,
+  "contextMergePublished": true,
+  "chosenNote": "Vitest convention for mesh.md"
+}

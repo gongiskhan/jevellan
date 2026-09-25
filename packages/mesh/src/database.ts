@@ -1,8 +1,11 @@
 import { DatabaseSync } from 'node:sqlite';
 import { chmodSync, writeFileSync } from 'node:fs';
 import { ConfigurationStore, IdSchema, SecretRedactor, SecretVault, type DocumentSchema, type Homes } from '@jevellan/core';
+import { migrateSharedIndexes } from './indexes.js';
 
 export class HubDatabase {
+  #transactionDepth = 0;
+  #savepoint = 0;
   readonly db: DatabaseSync;
   readonly configuration: ConfigurationStore;
   readonly vault: SecretVault;
@@ -23,6 +26,7 @@ export class HubDatabase {
     try {
       this.configuration = new ConfigurationStore(this.db);
       this.vault = new SecretVault(this.db, homes, redactor);
+      migrateSharedIndexes(this);
     } catch (error) { this.db.close(); throw error; }
   }
   get<T>(namespace: string, id: string, schema: DocumentSchema<T>): { revision: number; document: T } | null {
@@ -34,15 +38,27 @@ export class HubDatabase {
   }
   put<T>(namespace: string, id: string, schema: DocumentSchema<T>, document: unknown, expectedRevision: number): { revision: number; document: T } {
     const validated = schema.parse(document);
-    this.db.exec('BEGIN IMMEDIATE');
-    try {
+    return this.transaction(() => {
       const current = this.get(namespace, id, schema);
       if ((current?.revision ?? 0) !== expectedRevision) throw Object.assign(new Error('This item changed. Reload it before saving.'), { status: 409 });
       const revision = expectedRevision + 1;
       this.db.prepare('INSERT INTO documents(namespace,id,revision,document) VALUES(?,?,?,?) ON CONFLICT(namespace,id) DO UPDATE SET revision=excluded.revision,document=excluded.document').run(namespace, id, revision, JSON.stringify(validated));
-      this.db.exec('COMMIT');
       return { revision, document: validated };
-    } catch (error) { this.db.exec('ROLLBACK'); throw error; }
+    });
+  }
+  /** Group synchronous document and vault writes; nested groups use savepoints. */
+  transaction<T>(operation: () => T extends PromiseLike<unknown> ? never : T): T {
+    const savepoint = this.#transactionDepth ? `jevellan_${++this.#savepoint}` : null;
+    this.db.exec(savepoint ? `SAVEPOINT ${savepoint}` : 'BEGIN IMMEDIATE');
+    this.#transactionDepth++;
+    try {
+      const result = operation();
+      this.db.exec(savepoint ? `RELEASE SAVEPOINT ${savepoint}` : 'COMMIT');
+      return result;
+    } catch (error) {
+      this.db.exec(savepoint ? `ROLLBACK TO SAVEPOINT ${savepoint}; RELEASE SAVEPOINT ${savepoint}` : 'ROLLBACK');
+      throw error;
+    } finally { this.#transactionDepth--; }
   }
   close(): void { this.db.close(); }
 }

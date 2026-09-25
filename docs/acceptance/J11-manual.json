@@ -1,0 +1,161 @@
+{
+  "schema": "manual-acceptance-v1",
+  "journey": "memory",
+  "at": "2026-09-24T16:22:56.478Z",
+  "passed": true,
+  "source": "live-codex-manual-selection",
+  "jevCalled": false,
+  "checks": {
+    "realRuntime": true,
+    "structuredHandoff": true,
+    "workClosed": true,
+    "cleanTree": true,
+    "localOriginMatches": true,
+    "noAttributionTrailers": true,
+    "explicitRememberSaved": true,
+    "readOnlyProposalAppliedByOwner": true,
+    "memoryOnlyPublished": true,
+    "newConversationRecalledNote": true
+  },
+  "screenshots": [
+    "conversation.png",
+    "why.png",
+    "memory.png",
+    "recall-why.png",
+    "phone.png"
+  ],
+  "launches": [],
+  "model": "gpt-6-astra",
+  "context": {
+    "state": "linked",
+    "claudeReadsAgents": false,
+    "linked": true,
+    "gitClean": true
+  },
+  "before": "b5af05a9a7a5c37156a987c90a10b7588257c02b",
+  "after": "6d422afecab73faeabd1e6fde32e0cdc83f96452",
+  "conversationId": "acceptance_memory_1790265951623",
+  "memory": {
+    "title": "Vitest convention for acceptance",
+    "permalink": "Vitest convention for acceptance.md",
+    "content": "\nThis project uses Vitest with globals enabled.",
+    "proposalTitle": "Global test imports for acceptance",
+    "proposalCommit": "6d422afecab73faeabd1e6fde32e0cdc83f96452",
+    "files": [
+      ".jevellan/memory/Global test imports for acceptance.md",
+      ".jevellan/memory/Step 1 · acceptance_memory_1790265951623.md",
+      ".jevellan/memory/Step 2 · acceptance_memory_1790265951623.md",
+      ".jevellan/memory/Vitest convention for acceptance.md"
+    ]
+  },
+  "steps": [
+    {
+      "n": 1,
+      "action": "reply",
+      "model": "gpt-6-astra",
+      "effortRequested": "low",
+      "effortEffective": "low",
+      "status": "completed"
+    },
+    {
+      "n": 2,
+      "action": "review",
+      "model": "gpt-6-astra",
+      "effortRequested": "low",
+      "effortEffective": "low",
+      "status": "completed"
+    }
+  ],
+  "decisions": [
+    {
+      "n": 1,
+      "action": {
+        "chosen": "reply",
+        "source": "manual"
+      },
+      "model": "codex-gpt",
+      "effort": {
+        "requested": "low",
+        "effective": "low",
+        "source": "manual"
+      },
+      "memory": {
+        "candidates": [
+          "Step 1 · acceptance_change_1790265758235.md",
+          "Arithmetic exports and test command.md"
+        ],
+        "chosen": [
+          "Step 1 · acceptance_change_1790265758235.md",
+          "Arithmetic exports and test command.md"
+        ],
+        "source": "search-rank"
+      }
+    },
+    {
+      "n": 2,
+      "action": {
+        "chosen": "review",
+        "source": "manual"
+      },
+      "model": "codex-gpt",
+      "effort": {
+        "requested": "low",
+        "effective": "low",
+        "source": "manual"
+      },
+      "memory": {
+        "candidates": [
+          "Vitest convention for acceptance.md",
+          "Step 1 · acceptance_memory_1790265951623.md",
+          "Step 1 · acceptance_change_1790265758235.md",
+          "Arithmetic exports and test command.md"
+        ],
+        "chosen": [
+          "Vitest convention for acceptance.md",
+          "Step 1 · acceptance_memory_1790265951623.md",
+          "Step 1 · acceptance_change_1790265758235.md",
+          "Arithmetic exports and test command.md"
+        ],
+        "source": "search-rank"
+      }
+    },
+    {
+      "n": 3,
+      "action": {
+        "chosen": "done",
+        "source": "manual"
+      }
+    }
+  ],
+  "memoryCapture": [
+    {
+      "event": 17,
+      "stretch": 1,
+      "source": "hook",
+      "title": "Step 1 · acceptance_memory_1790265951623"
+    },
+    {
+      "event": 47,
+      "stretch": 2,
+      "source": "agent",
+      "title": "Global test imports for acceptance"
+    },
+    {
+      "event": 53,
+      "stretch": 2,
+      "source": "hook",
+      "title": "Step 2 · acceptance_memory_1790265951623"
+    }
+  ],
+  "recallConversationId": "acceptance_memory_1790265951623_recall",
+  "recall": {
+    "chosen": [
+      "Vitest convention for acceptance.md",
+      "Step 1 · acceptance_memory_1790265951623.md",
+      "Arithmetic exports and test command.md",
+      "Global test imports for acceptance.md",
+      "Step 2 · acceptance_memory_1790265951623.md"
+    ],
+    "source": "search-rank"
+  }
+}

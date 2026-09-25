@@ -8,7 +8,8 @@ test.each([
   'git push', 'git -C . push origin main', '/usr/bin/git push --force', 'git rebase origin/main',
   'git reset HEAD --hard', 'git clean -fd', 'git branch old -D', 'git branch --delete old --force',
   'gh repo edit owner/repo --visibility public', 'gh repo delete owner/repo', 'gh api repos/a/b -f private=true',
-  'jevellan stop', 'jevellan restart', 'jevellan update', 'jevellan uninstall',
+  'jevellan stop', 'jevellan restart', 'jevellan update', 'jevellan uninstall', 'jevellan install', 'jevellan rollback', 'jevellan join',
+  'node /tmp/distribution/bin/jevellan.mjs install', 'npx --yes github:gongiskhan/jevellan update', 'npm exec -- jevellan rollback',
   'launchctl kickstart -k gui/501/dev.jevellan.daemon', 'systemctl --user restart jevellan.service',
   'kill -9 41999', 'sudo pkill -f "node.*jevellan"', 'npm test && git push',
   'env NAME=value command git push', 'bash -lc "git push"', 'rm -rf ../outside', 'rm --force --recursive /outside',
@@ -16,7 +17,7 @@ test.each([
   expect(safetyDenial(command, context)).toBe(SAFETY_REASON);
 });
 
-test.each(['npm test', 'git diff HEAD', 'git status --short', 'kill -9 41998', 'rg "git push" docs/', 'rm -rf build'])('Safety leaves unrelated commands available: %s', (command) => {
+test.each(['npm test', 'git diff HEAD', 'git status --short', 'kill -9 41998', 'rg "git push" docs/', 'rm -rf build', 'jevellan doctor', 'jevellan status', 'jevellan --version'])('Safety leaves unrelated commands available: %s', (command) => {
   expect(safetyDenial(command, context)).toBeNull();
 });
 
@@ -31,6 +32,9 @@ test('the actual Claude hook denies file tools and all shell calls in read-only 
     expect(await hook({ tool_name: tool, tool_input: { command: 'printf changed > file' } })).toMatchObject({ hookSpecificOutput: { permissionDecision: 'deny' } });
   }
   expect(await hook({ tool_name: 'Read' })).toEqual({});
+  expect(await hook({ tool_name: 'ToolSearch', tool_input: { query: 'select:Glob,Grep,mcp__jevellan__jevellan_handoff' } })).toEqual({});
+  expect(await hook({ tool_name: 'Glob', tool_input: { pattern: '**/*' } })).toEqual({});
+  expect(await hook({ tool_name: 'mcp__jevellan__jevellan_handoff' })).toEqual({});
   expect(await hook({ tool_name: 'mcp__jevellan__memory_propose' })).toEqual({});
   const remember = claudePermissionHook({ ...context, permissions: 'read-only', memoryWrite: true });
   expect(await remember({ tool_name: 'mcp__jevellan__memory_write' })).toEqual({});

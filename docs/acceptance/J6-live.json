@@ -1,0 +1,130 @@
+{
+  "schema": "manual-acceptance-v1",
+  "journey": "answer",
+  "at": "2026-09-24T19:04:53.347Z",
+  "passed": true,
+  "source": "live-codex-jev-auth-failure",
+  "jevCalled": true,
+  "jevResponses": [
+    {
+      "at": "2026-09-24T19:04:59.706Z",
+      "status": 401
+    },
+    {
+      "at": "2026-09-24T19:05:07.853Z",
+      "status": 401
+    },
+    {
+      "at": "2026-09-24T19:05:45.297Z",
+      "status": 401
+    }
+  ],
+  "checks": {
+    "realRuntime": true,
+    "structuredHandoff": true,
+    "workClosed": true,
+    "cleanTree": true,
+    "localOriginMatches": true,
+    "noAttributionTrailers": true,
+    "actualAuthenticationRejection": true,
+    "manualAfterRejection": true,
+    "noGitChanges": true
+  },
+  "screenshots": [
+    "unavailable.png",
+    "conversation.png",
+    "why.png",
+    "phone.png"
+  ],
+  "launches": [
+    {
+      "conversationId": "acceptance_answer_1790276693338",
+      "stretch": 1,
+      "action": "reply",
+      "permissions": "read-only",
+      "memoryWrite": false,
+      "model": "gpt-6-astra",
+      "effort": "low",
+      "briefMemoryIncludesRule": true,
+      "beforeHead": "6d422afecab73faeabd1e6fde32e0cdc83f96452",
+      "beforeStatus": "",
+      "status": "completed",
+      "afterRuntimeHead": "6d422afecab73faeabd1e6fde32e0cdc83f96452",
+      "afterRuntimeStatus": ""
+    }
+  ],
+  "model": "gpt-6-astra",
+  "context": {
+    "state": "linked",
+    "claudeReadsAgents": false,
+    "linked": true,
+    "gitClean": true
+  },
+  "rejection": {
+    "kind": "jev-unavailable",
+    "text": "Jev is unavailable (authentication failed). Pick the next step:",
+    "launchesBeforeManual": 0
+  },
+  "before": "6d422afecab73faeabd1e6fde32e0cdc83f96452",
+  "after": "6d422afecab73faeabd1e6fde32e0cdc83f96452",
+  "conversationId": "acceptance_answer_1790276693338",
+  "answer": "src/sum.ts exports two TypeScript functions:\n- sum(a: number, b: number): number returns a + b. Example: sum(2, 3) → 5.\n- multiply(a: number, b: number): number returns a * b. Example: multiply(2, 3) → 6.\nBoth take two numbers and return a number, with no side effects.\nNo code was changed. npm test could not run tests because sandbox permissions blocked creation of a temporary directory (EPERM).",
+  "steps": [
+    {
+      "n": 1,
+      "action": "reply",
+      "model": "gpt-6-astra",
+      "effortRequested": "low",
+      "effortEffective": "low",
+      "status": "completed"
+    }
+  ],
+  "decisions": [
+    {
+      "n": 1,
+      "action": {
+        "chosen": "reply",
+        "source": "manual"
+      },
+      "model": "codex-gpt",
+      "effort": {
+        "requested": "low",
+        "effective": "low",
+        "source": "manual"
+      },
+      "memory": {
+        "candidates": [
+          "Arithmetic exports and test command.md",
+          "Global test imports for acceptance.md",
+          "Step 1 · acceptance_memory_1790265951623.md"
+        ],
+        "chosen": [
+          "Arithmetic exports and test command.md",
+          "Global test imports for acceptance.md",
+          "Step 1 · acceptance_memory_1790265951623.md"
+        ],
+        "source": "search-rank"
+      },
+      "notices": [
+        {
+          "kind": "jev-unavailable",
+          "text": "Jev is unavailable (authentication failed). Pick the next step:"
+        }
+      ]
+    },
+    {
+      "n": 2,
+      "action": {
+        "chosen": "done",
+        "source": "manual"
+      },
+      "notices": [
+        {
+          "kind": "jev-unavailable",
+          "text": "Jev is unavailable (authentication failed). Pick the next step:"
+        }
+      ]
+    }
+  ],
+  "memoryCapture": []
+}

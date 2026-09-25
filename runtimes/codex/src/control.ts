@@ -29,8 +29,8 @@ export class CodexControl {
     child.stdin.on('error', () => this.#fail(new Error('Codex control channel closed.')));
   }
   #fail(error: Error): void { for (const request of this.#pending.values()) request.reject(error); this.#pending.clear(); }
-  static async open(account: ResolvedAccount, executable = 'codex'): Promise<CodexControl> {
-    const { child, native } = await spawnGroup(executable, ['app-server'], { cwd: account.home, env: minimalEnvironment('codex', account.home) });
+  static async open(account: ResolvedAccount, executable = 'codex', configOverrides: readonly string[] = []): Promise<CodexControl> {
+    const { child, native } = await spawnGroup(executable, ['app-server', ...configOverrides.flatMap((value) => ['--config', value])], { cwd: account.home, env: minimalEnvironment('codex', account.home) });
     const control = new CodexControl(child, native);
     try {
       await control.request('initialize', { clientInfo: { name: 'jevellan', version: '0.1.0' } });

@@ -13,7 +13,6 @@ BRIEF.md is the local specification and stays untracked. Read it completely befo
 - No adversarial or security reviews during the build. One crucial-issues review at the end; a second only if the first finds a serious problem.
 - Every stored and received document has a versioned zod schema. TypeScript is strict, ESM, Node 22+, npm workspaces.
 - User logins happen in the UI after installation. Never add heuristic routing. Jev decides meaning; code enforces resources and limits.
-- Agents never restart, stop, update or redeploy the daemon. The installed daemon runs from its own versioned copy.
 - Label evidence live, simulated or not run. Missing credentials are blocked tests, never passes. Do not claim the user's acceptance.
 
 ## Architecture in ten lines

@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, readFileSync, existsSync, writeFileSync, readdi
 import { rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { Homes, RiggingDelivery, RiggingItemSchema, exportConfiguration, seedConfiguration, type ApmRunner } from '../packages/core/dist/index.js';
+import { Homes, RiggingDelivery, RiggingItemSchema, exportConfiguration, projectMemoryHooks, seedConfiguration, type ApmRunner } from '../packages/core/dist/index.js';
 let root: string; let homes: Homes;
 beforeEach(() => { root = mkdtempSync(join(tmpdir(), 'jevellan-rigging-')); mkdirSync(join(root, 'user')); homes = new Homes(join(root, 'jevellan'), join(root, 'user')); });
 afterEach(async () => { await rm(root, { recursive: true, force: true }); });
@@ -35,6 +35,11 @@ test('APM failure changes no account files and account aliases are rejected', as
   await expect(delivery.materialise('claude', home, [item()])).rejects.toThrow('Fixture failure'); expect(readdirSync(home)).toEqual([]);
   symlinkSync(home, join(homes.at('homes', 'claude'), 'acc_alias')); expect(() => homes.account('claude', 'acc_alias')).toThrow('alias');
 });
+test('incomplete APM hook output is refused before changing the account home', async () => {
+  const home = homes.account('codex', 'acc_incomplete'); const delivery = new RiggingDelivery(homes, fakeApm);
+  await expect(delivery.materialise('codex', home, [{ ...item('codex'), id: 'builtin_project_memory', kind: 'hook', content: JSON.stringify(projectMemoryHooks()) }])).rejects.toThrow('required Project memory hooks');
+  expect(readdirSync(home)).toEqual([]);
+});
 test('unsupported Codex commands are reported and stable settings never carry launch tokens', async () => {
   const home = homes.account('codex', 'acc_one'); const delivery = new RiggingDelivery(homes, fakeApm);
   const results = await delivery.materialise('codex', home, [{ ...item('codex'), kind: 'command' }, { ...item('codex'), id: 'settings', kind: 'setting', content: '{"model_reasoning_effort":"high"}' }]);
@@ -46,6 +51,24 @@ test.each(['claude', 'codex'] as const)('installed APM deploys a local skill to 
   const delivery = new RiggingDelivery(homes); const home = homes.account(runtime, 'acc_real_apm');
   const result = await delivery.materialise(runtime, home, [item(runtime)]);
   expect(result[0]?.applied).toBe(true); expect(readFileSync(join(home, 'skills', 'fixture', 'SKILL.md'), 'utf8')).toContain('Read the fixture.');
+  expect(readdirSync(native)).toEqual(['sentinel']); expect(readFileSync(join(native, 'sentinel'), 'utf8')).toBe('unchanged');
+}, 120_000);
+
+test.each(['claude', 'codex'] as const)('APM delivers %s capture hooks idempotently and disabling them preserves other hooks', async (runtime) => {
+  const native = join(homes.userHome, `.${runtime}`); mkdirSync(native); writeFileSync(join(native, 'sentinel'), 'unchanged');
+  const home = homes.account(runtime, 'acc_hooks'); const delivery = new RiggingDelivery(homes);
+  const capture = { ...item(runtime), id: 'builtin_project_memory', kind: 'hook' as const, builtIn: true, content: JSON.stringify(projectMemoryHooks()) };
+  const custom = { ...item(runtime), id: 'custom_hook', kind: 'hook' as const, content: JSON.stringify({ hooks: { PreToolUse: [{ hooks: [{ type: 'command', command: 'echo custom-hook' }] }] } }) };
+  const settings = { ...item(runtime), id: 'settings_hook', kind: 'setting' as const, content: JSON.stringify({ hooks: { Stop: [{ hooks: [{ type: 'command', command: 'echo settings-hook' }] }] } }) };
+  const file = join(home, runtime === 'claude' ? 'settings.json' : 'hooks.json');
+  await delivery.materialise(runtime, home, [capture, custom, settings]);
+  const first = readFileSync(file, 'utf8'); const config = JSON.parse(first) as { hooks: Record<string, unknown[]> };
+  expect(Object.keys(config.hooks).sort()).toEqual(['PreCompact', 'PreToolUse', 'SessionEnd', 'Stop']);
+  expect(config.hooks.Stop).toHaveLength(runtime === 'claude' ? 2 : 1); expect(first).toContain('memory-hook'); expect(first).not.toContain('JEVELLAN_STRETCH_TOKEN');
+  expect(readFileSync(join(home, runtime === 'claude' ? 'settings.json' : 'config.toml'), 'utf8')).toContain('settings-hook');
+  await delivery.materialise(runtime, home, [capture, custom, settings]); expect(readFileSync(file, 'utf8')).toBe(first);
+  await delivery.materialise(runtime, home, [{ ...capture, enabled: false }, custom, settings]);
+  const disabled = readFileSync(file, 'utf8'); expect(disabled).not.toContain('memory-hook'); expect(disabled).toContain('custom-hook');
   expect(readdirSync(native)).toEqual(['sentinel']); expect(readFileSync(join(native, 'sentinel'), 'utf8')).toBe('unchanged');
 }, 120_000);
 

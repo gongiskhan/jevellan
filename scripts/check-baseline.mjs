@@ -10,7 +10,17 @@ function git(args) {
   if (result.status !== 0) throw new Error('Cannot read Garrison baseline state.');
   return result.stdout;
 }
-const headMatches = baseline.split('$ git rev-parse HEAD\n')[1]?.split('\n')[0] === git(['rev-parse', 'HEAD']).trim();
-const statusMatches = baseline.split('$ git status\n')[1] === git(['status']);
-console.log(JSON.stringify({ headMatches, statusMatches }));
+const snapshots = baseline.split(/\n\n(?=--- (?:Current preflight recheck|Baseline for this preflight);|Preflight snapshot:|## Preflight snapshot |=== Requested preflight snapshot )/).map((section) => {
+  const match = /(?:^|\n)(?:\$ )?git(?: -C ~\/dev\/garrison)? rev-parse HEAD\n([a-f0-9]{40,64})\n\n(?:\$ )?git(?: -C ~\/dev\/garrison)? status\n([\s\S]*)$/.exec(section);
+  if (!match) throw new Error('Cannot parse a saved Garrison baseline snapshot.');
+  return { head: match[1], status: match[2] };
+});
+const original = snapshots[0];
+const latest = snapshots.at(-1);
+const head = git(['rev-parse', 'HEAD']).trim(); const status = git(['status']);
+const headMatches = original.head === head;
+const statusMatches = original.status === status;
+const latestHeadMatches = latest.head === head;
+const latestStatusMatches = latest.status === status;
+console.log(JSON.stringify({ headMatches, statusMatches, latestHeadMatches, latestStatusMatches }));
 if (!headMatches || !statusMatches) process.exitCode = 1;

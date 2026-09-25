@@ -1,0 +1,263 @@
+{
+  "schema": "manual-acceptance-attempts-v1",
+  "attempts": [
+    {
+      "schema": "manual-acceptance-v1",
+      "journey": "memory",
+      "at": "2026-09-24T16:05:51.633Z",
+      "passed": false,
+      "source": "live-codex-manual-selection",
+      "jevCalled": false,
+      "checks": {},
+      "screenshots": [],
+      "launches": [
+        {
+          "conversationId": "acceptance_memory_1790265951623",
+          "stretch": 1,
+          "action": "reply",
+          "permissions": "read-only",
+          "memoryWrite": true,
+          "model": "gpt-6-astra",
+          "effort": "low",
+          "briefMemoryIncludesRule": false,
+          "beforeHead": "b5af05a9a7a5c37156a987c90a10b7588257c02b",
+          "beforeStatus": "",
+          "status": "completed",
+          "afterRuntimeHead": "b5af05a9a7a5c37156a987c90a10b7588257c02b",
+          "afterRuntimeStatus": "?? \".jevellan/memory/Vitest convention for acceptance.md\""
+        }
+      ],
+      "model": "gpt-6-astra",
+      "context": {
+        "state": "linked",
+        "claudeReadsAgents": false,
+        "linked": true,
+        "gitClean": true
+      },
+      "memoryWorkId": "work_f90b0559-d0d4-4efc-8c28-7c5b428952b8",
+      "error": "Request failed (400): {\"schema\":\"error-v1\",\"code\":\"request-failed\",\"message\":\"Notes require a running stretch.\"}"
+    },
+    {
+      "schema": "manual-acceptance-v1",
+      "journey": "memory",
+      "at": "2026-09-24T16:12:38.250Z",
+      "passed": false,
+      "source": "live-codex-manual-selection",
+      "jevCalled": false,
+      "checks": {
+        "realRuntime": true,
+        "structuredHandoff": true,
+        "workClosed": true,
+        "cleanTree": true,
+        "localOriginMatches": true,
+        "noAttributionTrailers": true
+      },
+      "screenshots": [],
+      "launches": [
+        {
+          "conversationId": "acceptance_memory_1790265951623",
+          "stretch": 2,
+          "action": "review",
+          "permissions": "read-only",
+          "memoryWrite": false,
+          "model": "gpt-6-astra",
+          "effort": "low",
+          "briefMemoryIncludesRule": true,
+          "beforeHead": "c2ed585950736825565bfbd55492e35ab5f81abd",
+          "beforeStatus": "",
+          "status": "completed",
+          "afterRuntimeHead": "c2ed585950736825565bfbd55492e35ab5f81abd",
+          "afterRuntimeStatus": ""
+        }
+      ],
+      "model": "gpt-6-astra",
+      "context": {
+        "state": "linked",
+        "claudeReadsAgents": false,
+        "linked": true,
+        "gitClean": true
+      },
+      "memoryWorkId": "work_f90b0559-d0d4-4efc-8c28-7c5b428952b8",
+      "before": "b5af05a9a7a5c37156a987c90a10b7588257c02b",
+      "after": "6d422afecab73faeabd1e6fde32e0cdc83f96452",
+      "conversationId": "acceptance_memory_1790265951623",
+      "error": "This memory work changed non-memory files"
+    },
+    {
+      "schema": "manual-acceptance-v1",
+      "journey": "memory",
+      "at": "2026-09-24T16:16:11.019Z",
+      "passed": false,
+      "source": "live-codex-manual-selection",
+      "jevCalled": false,
+      "checks": {
+        "realRuntime": true,
+        "structuredHandoff": true,
+        "workClosed": true,
+        "cleanTree": true,
+        "localOriginMatches": true,
+        "noAttributionTrailers": true,
+        "explicitRememberSaved": true,
+        "readOnlyProposalAppliedByOwner": true,
+        "memoryOnlyPublished": true,
+        "newConversationRecalledNote": true
+      },
+      "screenshots": [
+        "conversation.png",
+        "why.png",
+        "memory.png"
+      ],
+      "launches": [
+        {
+          "conversationId": "acceptance_memory_1790265951623_recall",
+          "stretch": 1,
+          "action": "reply",
+          "permissions": "read-only",
+          "memoryWrite": false,
+          "model": "gpt-6-astra",
+          "effort": "low",
+          "briefMemoryIncludesRule": true,
+          "beforeHead": "6d422afecab73faeabd1e6fde32e0cdc83f96452",
+          "beforeStatus": "",
+          "status": "completed",
+          "afterRuntimeHead": "6d422afecab73faeabd1e6fde32e0cdc83f96452",
+          "afterRuntimeStatus": ""
+        }
+      ],
+      "model": "gpt-6-astra",
+      "context": {
+        "state": "linked",
+        "claudeReadsAgents": false,
+        "linked": true,
+        "gitClean": true
+      },
+      "before": "b5af05a9a7a5c37156a987c90a10b7588257c02b",
+      "after": "6d422afecab73faeabd1e6fde32e0cdc83f96452",
+      "conversationId": "acceptance_memory_1790265951623",
+      "memory": {
+        "title": "Vitest convention for acceptance",
+        "permalink": "Vitest convention for acceptance.md",
+        "content": "\nThis project uses Vitest with globals enabled.",
+        "proposalTitle": "Global test imports for acceptance",
+        "proposalCommit": "6d422afecab73faeabd1e6fde32e0cdc83f96452",
+        "files": [
+          ".jevellan/memory/Global test imports for acceptance.md",
+          ".jevellan/memory/Step 1 · acceptance_memory_1790265951623.md",
+          ".jevellan/memory/Step 2 · acceptance_memory_1790265951623.md",
+          ".jevellan/memory/Vitest convention for acceptance.md"
+        ]
+      },
+      "steps": [
+        {
+          "n": 1,
+          "action": "reply",
+          "model": "gpt-6-astra",
+          "effortRequested": "low",
+          "effortEffective": "low",
+          "status": "completed"
+        },
+        {
+          "n": 2,
+          "action": "review",
+          "model": "gpt-6-astra",
+          "effortRequested": "low",
+          "effortEffective": "low",
+          "status": "completed"
+        }
+      ],
+      "decisions": [
+        {
+          "n": 1,
+          "action": {
+            "chosen": "reply",
+            "source": "manual"
+          },
+          "model": "codex-gpt",
+          "effort": {
+            "requested": "low",
+            "effective": "low",
+            "source": "manual"
+          },
+          "memory": {
+            "candidates": [
+              "Step 1 · acceptance_change_1790265758235.md",
+              "Arithmetic exports and test command.md"
+            ],
+            "chosen": [
+              "Step 1 · acceptance_change_1790265758235.md",
+              "Arithmetic exports and test command.md"
+            ],
+            "source": "search-rank"
+          }
+        },
+        {
+          "n": 2,
+          "action": {
+            "chosen": "review",
+            "source": "manual"
+          },
+          "model": "codex-gpt",
+          "effort": {
+            "requested": "low",
+            "effective": "low",
+            "source": "manual"
+          },
+          "memory": {
+            "candidates": [
+              "Vitest convention for acceptance.md",
+              "Step 1 · acceptance_memory_1790265951623.md",
+              "Step 1 · acceptance_change_1790265758235.md",
+              "Arithmetic exports and test command.md"
+            ],
+            "chosen": [
+              "Vitest convention for acceptance.md",
+              "Step 1 · acceptance_memory_1790265951623.md",
+              "Step 1 · acceptance_change_1790265758235.md",
+              "Arithmetic exports and test command.md"
+            ],
+            "source": "search-rank"
+          }
+        },
+        {
+          "n": 3,
+          "action": {
+            "chosen": "done",
+            "source": "manual"
+          }
+        }
+      ],
+      "memoryCapture": [
+        {
+          "event": 17,
+          "stretch": 1,
+          "source": "hook",
+          "title": "Step 1 · acceptance_memory_1790265951623"
+        },
+        {
+          "event": 47,
+          "stretch": 2,
+          "source": "agent",
+          "title": "Global test imports for acceptance"
+        },
+        {
+          "event": 53,
+          "stretch": 2,
+          "source": "hook",
+          "title": "Step 2 · acceptance_memory_1790265951623"
+        }
+      ],
+      "recallConversationId": "acceptance_memory_1790265951623_recall",
+      "recall": {
+        "chosen": [
+          "Vitest convention for acceptance.md",
+          "Step 1 · acceptance_memory_1790265951623.md",
+          "Arithmetic exports and test command.md",
+          "Global test imports for acceptance.md",
+          "Step 2 · acceptance_memory_1790265951623.md"
+        ],
+        "source": "search-rank"
+      },
+      "error": "expect(locator).toContainText(expected) failed\n\nLocator: getByRole('dialog')\nExpected substring: \"Vitest convention for acceptance.md\"\nReceived string:    \"Why this step×Next step · manualReplyReplyPlanImplementTestReviewAdversarial ReviewAsk youModel · manualcodex-gptcodex-gptEffort · manuallow → lowCorrections usedNoneAccountacc_test: eligible · selectedJevThis step was picked manually.Sep 24, 2026, 5:16 PM\"\nTimeout: 5000ms\n\nCall log:\n  - Expect \"toContainText\" getByRole('dialog') with timeout 5000ms\n  - waiting for getByRole('dialog')\n    14 × locator resolved to <dialog open=\"\" aria-labelledby=\"_r_0_\">…</dialog>\n       - unexpected value \"Why this step×Next step · manualReplyReplyPlanImplementTestReviewAdversarial ReviewAsk youModel · manualcodex-gptcodex-gptEffort · manuallow → lowCorrections usedNoneAccountacc_test: eligible · selectedJevThis step was picked manually.Sep 24, 2026, 5:16 PM\"\n"
+    }
+  ]
+}

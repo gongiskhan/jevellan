@@ -1,0 +1,15 @@
+# Packed application precheck
+
+Before installer implementation, the existing compiled workspace was packed with lifecycle scripts disabled, extracted into a disposable directory outside the checkout and invoked with `--version`. No dependencies or services were installed, and no daemon was started.
+
+The initial package contained the compiled CLI and web application and excluded BRIEF.md, CLAUDE.md, native agent directories and authentication files. It contained no bundled dependencies, and its root manifest declared no production dependencies. The extracted CLI exited with code 1 because it could not resolve `@jevellan/core`. The checkout worked through npm's workspace links, which that packed artifact did not provide.
+
+This is an implementation gap for phase 5, not an environmental blocker or a passing install test. The next packaging change must make the command resolve its production dependencies outside the source checkout before the complete J9 install/update/rollback/uninstall/purge journey runs. npm's [package manifest documentation](https://docs.npmjs.com/files/package.json/#bundledependencies) describes bundling production dependencies for a tarball.
+
+The precheck used real npm packing, extraction and Node execution. Its external `packed-precheck-v1` evidence was validated with a strict Zod schema. J9, fake service-manager installation and the first-run browser walkthrough remain not run.
+
+The root package now declares and bundles the CLI and web workspaces and their production dependency closure. An offline, scripts-disabled lockfile update installed no dependencies. A subsequent real npm dry run contains all twelve internal packages and 210 bundled packages in total, with no protected brief, native-home or authentication paths. Application assets now resolve from the root application, supporting both workspace and bundled package locations.
+
+After typecheck, lint and build passed, a fresh real tarball was extracted outside the checkout. Its CLI printed `0.1.0`; its bundled daemon served health, the compiled UI and its JavaScript asset with HTTP 200 from a temporary local listener. Its project-memory command resolved to that same extracted application's command. Both explicitly isolated user and data homes remained empty, and the listener was closed. The tarball contains 7,635 files, 210 bundled packages and 689,671,928 unpacked bytes, with no protected paths. The external result was validated as `packed-application-check-v1`. This closes the missing-dependency precheck failure; it is not a completed installer or J9 result.
+
+The new service-manager adapter passed **seven isolated tests in 460 milliseconds**. macOS and Linux service commands use an injected fake runner, including repeated start, scoped stop, failure propagation and rejection of changed or aliased definitions. macOS's real property-list parser verified paths with spaces and XML characters. No native service was created, started, stopped or removed. Linux unit rendering is simulated on this macOS machine; native systemd acceptance remains not run. See [service adapter evidence](phase5-services.md).

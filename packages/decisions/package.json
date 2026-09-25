@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@jevellan/core": "0.1.0",
-    "@jevellan/accounts": "0.1.0"
+    "@jevellan/accounts": "0.1.0",
+    "zod": "4.6.5"
   }
 }

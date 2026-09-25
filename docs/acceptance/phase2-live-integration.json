@@ -1,0 +1,89 @@
+{
+  "schema": "manual-integration-acceptance-v1",
+  "at": "2026-09-24T16:39:19.553Z",
+  "passed": true,
+  "source": "live-codex-manual-selection",
+  "jevCalled": false,
+  "checks": {
+    "realRuntime": true,
+    "ownerStartedIntegration": true,
+    "nativeIntegrationTool": true,
+    "savedPreIntegrationRef": true,
+    "nativeRewriteMapping": true,
+    "bothSidesPreserved": true,
+    "verifiedBeforeAndAfterRebase": true,
+    "cleanPublishedTree": true,
+    "ownershipReleased": true,
+    "noAttributionTrailers": true
+  },
+  "screenshots": [
+    "conversation.png",
+    "verification.png",
+    "phone.png"
+  ],
+  "launches": [
+    {
+      "stretch": 1,
+      "action": "implement",
+      "permissions": "write",
+      "beforeHead": "3f2f47ebfe8b28f0b76f2c2bd2f45c4afb08527c",
+      "status": "completed"
+    },
+    {
+      "stretch": 2,
+      "action": "integrate",
+      "permissions": "write",
+      "beforeHead": "4d57b725e497ad6ba53a2a7af744f489de55616b",
+      "status": "completed"
+    }
+  ],
+  "model": "gpt-6-astra",
+  "conversationId": "acceptance_integration_1790267971094",
+  "checkpoint": "4d57b725e497ad6ba53a2a7af744f489de55616b",
+  "upstream": "d95ba1a4df793ff74ddb85c1f961117300c90b2c",
+  "after": "4f06b0be9a403f5fda11deef4673cc243f1674af",
+  "integrationCalls": [
+    {
+      "command": "start",
+      "ok": true
+    },
+    {
+      "command": "continue",
+      "ok": true
+    }
+  ],
+  "rewrites": [
+    {
+      "before": "4d57b725e497ad6ba53a2a7af744f489de55616b",
+      "upstream": "d95ba1a4df793ff74ddb85c1f961117300c90b2c",
+      "after": "6dcb8360a9c819cdedd0be5269629873502d0b18",
+      "pairs": [
+        {
+          "before": "e83a641c0b4f7776e21616d71a38c07237d6b2b7",
+          "after": "88ca317bdfde90d2687e4143b9fc263d44c4706f"
+        },
+        {
+          "before": "4d57b725e497ad6ba53a2a7af744f489de55616b",
+          "after": "6dcb8360a9c819cdedd0be5269629873502d0b18"
+        }
+      ]
+    }
+  ],
+  "verifications": [
+    {
+      "command": "npm test",
+      "commit": "4d57b725e497ad6ba53a2a7af744f489de55616b",
+      "trigger": "done-gate",
+      "passed": true,
+      "treeClean": true
+    },
+    {
+      "command": "npm test",
+      "commit": "4f06b0be9a403f5fda11deef4673cc243f1674af",
+      "trigger": "publication",
+      "passed": true,
+      "treeClean": true
+    }
+  ],
+  "diff": "diff --git a/src/greet.test.ts b/src/greet.test.ts\nindex 5d83606..ac8f28f 100644\n--- a/src/greet.test.ts\n+++ b/src/greet.test.ts\n@@ -1,2 +1,4 @@\n import { greet } from './greet';\n-test('greets by name', () => expect(greet('Sky')).toBe('Hello, Sky!'));\n+test('greets by name', () => expect(greet('Sky')).toBe('Hi, Sky!'));\n+test('greets normally when excited is false', () => expect(greet('Sky', false)).toBe('Hi, Sky!'));\n+test('adds one extra exclamation mark when excited is true', () => expect(greet('Sky', true)).toBe('Hi, Sky!!'));\ndiff --git a/src/greet.ts b/src/greet.ts\nindex 83be4d3..b1cd917 100644\n--- a/src/greet.ts\n+++ b/src/greet.ts\n@@ -1 +1,3 @@\n-export function greet(name: string): string { return 'Hello, ' + name + '!'; }\n+export function greet(name: string, excited: boolean = false): string {\n+  return 'Hi, ' + name + '!' + (excited ? '!' : '');\n+}\ndiff --git a/upstream.txt b/upstream.txt\nnew file mode 100644\nindex 0000000..a0f3e17\n--- /dev/null\n+++ b/upstream.txt\n@@ -0,0 +1 @@\n+Keep the independently published upstream work."
+}

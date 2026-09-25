@@ -1,0 +1,18 @@
+{
+  "schema": "j8-simulated-v1",
+  "layout": "phone-dark",
+  "transport": "live-local-http",
+  "devices": "simulated",
+  "providers": "simulated",
+  "selection": "manual",
+  "separateCheckouts": true,
+  "remoteLoginReadyOnlyOnB": true,
+  "switchedWithoutSignIn": true,
+  "ownerStayedOnB": true,
+  "proxyStreamGrew": true,
+  "correctionInterruptedB": true,
+  "automaticChoiceDisabled": true,
+  "externalSessionVisible": true,
+  "writingBlockedUntilQuiet": true,
+  "writingResumedAfterQuiet": true
+}

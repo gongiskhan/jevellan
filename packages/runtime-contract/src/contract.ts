@@ -45,12 +45,13 @@ export interface StretchRun {
   terminate(): Promise<void>;
 }
 export interface LoginSession {
-  url?: string; userCode?: string; instructions: string;
+  url?: string; userCode?: string; instructions: string; error?: string;
+  validateCode?(code: string): void;
   submitCode?(code: string): Promise<void>;
   poll(): Promise<'pending' | 'done' | 'failed'>;
   cancel(): Promise<void>;
 }
-export type RuntimeContext = { homes: Homes; daemonPid?: number; executable?: string; redactor?: SecretRedactor; saveSecret?: (accountId: string, value: string) => Promise<void> };
+export type RuntimeContext = { homes: Homes; daemonPid?: number; executable?: string; redactor?: SecretRedactor; saveSecret?: (accountId: string, value: string, requestId?: string) => Promise<void> };
 export interface RuntimeAdapter {
   id: string; displayName: string;
   accountKinds: Array<'subscription' | 'api-key'>;

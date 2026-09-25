@@ -1,0 +1,28 @@
+# Phase 5 — Optional Tailscale HTTPS
+
+Status: consolidated component checks and the live packed HTTPS/browser sequence passed. The completed phase-5 browser and installation results are consolidated in [J9](J9.md).
+
+Interactive first installation offers private Tailscale HTTPS when Tailscale is available. `install` and `join` also accept `--https` or `--no-https`; noninteractive calls do not wait for input. The installer selects an unused HTTPS port, records its hostname, external/local ports and pending intent, then enables that exact route before registering the device or starting its service. Existing background and foreground routes are excluded from selection. No Funnel or global Serve reset is used.
+
+The manifest retains the route through updates and rollback. Interrupted setup can reconcile a route whose command succeeded but whose reply was lost. Uninstall checks that the port still has exactly the recorded HTTPS listener and root proxy, removes it, and records removal; edited routes and added handlers are preserved. Data-retaining reinstall restores the same address and local port. A port reused after removal is not adopted or removed during later purge. Changes to the node's recorded hostname are refused.
+
+Members choose HTTPS at their first join, so the hub registers the final address before service startup. Existing HTTP members retain their original registered address; switching an already registered member to a different address is not implemented. The installer refuses that change before stopping its service.
+
+The daemon accepts the configured public HTTPS origin through loopback proxy requests with the matching forwarded host/protocol. Sign-in, device switches and logout issue Secure cookies for those requests. Direct loopback/Tailscale HTTP remains available with its own origin checks; forwarding headers on the Tailscale listener do not grant proxy trust. Device and UI authentication remain required.
+
+## Verification
+
+- The initial affected selection passed 100 checks and failed one network assertion. Inspection showed that Node fetch replaced the supplied Host header, so the test had sent an ordinary allowed HTTP host. The test now uses the HTTP client to transmit the intended host; all six network checks passed in 1.92 seconds. This was a fixture correction, not a relaxed production check.
+- Component cases cover occupied ports, preserved foreground/background routes, repeated setup, lost replies, another target or handler, Funnel changes, changed node identity, retained-data reinstall, joining with the final HTTPS address and explicit/interactive installation choices. Route commands and OS services are simulated in these cases. Local HTTP and the installed Tailscale interface are real in network tests.
+- The consolidated selection passed **101 tests in seven suites in 33.34 seconds**. Typecheck, lint and production build passed. Worktree secret scanning passed. The first packed two-daemon check passed with live Tailscale routes: `/private/tmp/jevellan-install-commands-nByBY4/result.json` (`installation-command-check-v6`). Both real Chrome sign-ins received Secure/httpOnly/SameSite=Strict cookies, and the exact original Serve configuration was restored after removal. Its phone screenshots caught an unfinished resize transition; those captures are not accepted as settled views. The fixture now uses reduced motion, checks closed navigation and checks for overflow before capturing. The capture helper’s initial browser-global lint errors were corrected and spike lint passed.
+- The live check retains its before/after Serve configuration outside the checkout, uses only newly recorded routes, exercises sign-in in installed Chrome, and removes both disposable installations. It does not borrow provider credentials or invoke the native user service manager.
+
+The final live sequence passed with settled captures: `/private/tmp/jevellan-install-commands-vRMQqX/result.json` (`installation-command-check-v6`), log `/private/tmp/jevellan-https-packed-final.log`. Both local devices used actual Tailscale HTTPS and installed Chrome sign-in. Desktop and 390-pixel phone captures were visually inspected, with no page overflow. Both installed homes and all owned daemon/listener processes were removed; before/after Serve configuration is structurally identical, and native-home/profile/Garrison fixtures remained byte-identical. Package preparation, dependency installation, network requests and processes were live; the second device, activity lock and newer release remained explicitly simulated.
+
+Captures: `screenshots/phase5-https-hub-desktop-light.png`, `screenshots/phase5-https-hub-phone-light.png`, `screenshots/phase5-https-member-desktop-light.png`, `screenshots/phase5-https-member-phone-light.png`. These establish the recorded browser views, not a new full browser-suite or automated vision pass.
+
+## References
+
+The installed CLI help was read (client 1.98.9; the running server reports 1.102.3). Tailscale documents background Serve, port/path-specific configuration and removal in its [Serve reference](https://tailscale.com/docs/reference/tailscale-cli/serve). Its [versioned proxy implementation](https://github.com/tailscale/tailscale/blob/v1.98.9/ipn/ipnlocal/serve.go) supplies the forwarded host and HTTPS protocol used by this integration. These references establish the interface; passing component fixtures alone do not establish native route behavior.
+
+The complete first-run walkthrough and combined J9 running-conversation update journey remain unfinished. Successful live Jev classification, Claude acceptance and a physical second device remain separately blocked; this work does not establish user acceptance.

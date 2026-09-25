@@ -9,43 +9,43 @@
     "id": "phase-1",
     "title": "Core, configuration, homes, runtimes, accounts, rigging",
     "why": "Implement BRIEF.md phase 1.",
-    "status": "in-progress"
+    "status": "complete-with-blockers"
   },
   {
     "id": "phase-2",
     "title": "Conversations, stretches, memory and context",
-    "why": "Implement BRIEF.md phase 2.",
-    "status": "planned"
+    "why": "Manual J1/J2, single-device J11 and native conflict integration passed live with Codex. Full unit/integration/contract: 462 tests in 35 files passed. Full browser matrix: 52 workflows passed across desktop/phone and light/dark. Typecheck, lint and build passed. Claude live/vision, commit approval and GitHub publication remain blocked; see docs/acceptance/phase2-live-integration.md.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "phase-3",
     "title": "Decision layer",
-    "why": "Implement BRIEF.md phase 3.",
-    "status": "planned"
+    "why": "Automatic q-v2 execution, scored memory recall, durable records, recovery/Why UI and composer choices/pins are connected. Final backend: 555 passed in 39 files, one missing-key live skip; full browser matrix: 60 passed. Typecheck, lint and build passed. J6 passed with real Jev HTTP 401 responses and real Codex manual continuation, unchanged Git and restored vault state. Completed-history captures used zero new model calls. Successful live classification, Claude live/vision, commit approval and GitHub publication remain blocked. J1–J7/J13 evidence is mapped in docs/acceptance; see phase3-composer.md.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "phase-4",
     "title": "Mesh",
-    "why": "Implement BRIEF.md phase 4.",
-    "status": "planned"
+    "why": "The complete browser matrix passed 108 workflows; the final backend run passed 878 tests in all 59 files with one missing-key skip. Context-merge state preservation and separate web build outputs resolve the preceding failures. J8 and J11 pass with local simulated devices. Actual second-machine, dedicated provider, commit approval and publication limits remain explicit. See docs/acceptance/phase4-settings-boundaries.md.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "phase-5",
     "title": "Install, uninstall, doctor and first run",
-    "why": "Implement BRIEF.md phase 5.",
-    "status": "planned"
+    "why": "Install, join, update, rollback, uninstall, purge, doctor, the installed command and optional HTTPS are implemented. The complete browser matrix passed 116 checks in 30.3 minutes, including all four guided packed installations. Each installed copy preserved 227 notice files. The backend run passed 973 cases with three test-boundary failures and one live-key skip; all four affected cases passed after fixture-only corrections. Typecheck and lint pass. Providers, physical devices and the newer release are simulated where labelled; live credentials, commit approval and publication remain blocked. See docs/acceptance/phase5-first-run.md. Post-handoff Claude login recovery fix is active after the user-approved restart. Accounts, passphrase and conversation ledgers are preserved; successful user sign-in remains pending. See docs/acceptance/login-recovery-2026-09-25.md. Workflow repair prepared: Claude tool discovery, indexed activity scan, real progress, compact conversation UI and server folder picker. Workflow repair is deployed at the existing Tailscale URL with account/authentication/project/ledger preservation checks passing; real Jev classification and Claude implementation are running; see docs/acceptance/workflow-repair-2026-09-25.md.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "phase-6",
     "title": "Improver",
-    "why": "Implement BRIEF.md phase 6.",
-    "status": "planned"
+    "why": "User requested a pilot handoff on 2026-09-25 instead of further build work. Application/member API regression selection passed 127 tests with simulated providers. Partial suggestion UI is typechecked/linted but not browser verified; memory/context jobs and J10/J12 are unfinished. Excluded from the running phase-5 pilot. See docs/acceptance/PILOT.md.",
+    "status": "deferred-by-user"
   },
   {
     "id": "phase-7",
     "title": "Hardening and finish",
-    "why": "Implement BRIEF.md phase 7.",
-    "status": "planned"
+    "why": "User requested quick core checks and a usable pilot. Three focused conversation/automatic-loop regressions and typecheck pass. Full final verification, live successful judge decisions and the crucial-issues review are not complete; section 20 is not claimed. See docs/acceptance/PILOT.md.",
+    "status": "deferred-by-user"
   },
   {
     "id": "shells",

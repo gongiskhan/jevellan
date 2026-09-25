@@ -1,0 +1,27 @@
+# Hub outages during context changes
+
+**Live:** local Git, HTTP, SQLite, isolated homes and owned test processes. **Simulated:** providers, additional devices and hub outages. This checkpoint does not establish a real second-machine journey or successful live Jev classification.
+
+Admitted context operations now wait for shared project and guard reads, draft-launch admission, checkout ownership, file preparation, shared context metadata and checkpoint preparation/application. Each wait belongs to the original work and generation. A draft launch may retry only before its stretch starts; a saved draft is still reviewed and applied separately. A newer request, cancellation or restart prevents a stale continuation from changing files.
+
+Applied context has a durable checkout digest and a content fingerprint that excludes Git's tracked/untracked flag. Staging the already applied files therefore cannot masquerade as a new content edit. Files are applied once, and a lost shared-metadata reply reconciles the current project context and revision. Other settings remain protected by ownership and revision checks. Outside edits stay behind the existing context Changes review.
+
+Context checkpoints now retain an exact prepared plan before moving main. Preparation and application wait separately; an already applied result is recognized without moving main again. Explicit acceptance of reviewed context changes uses the same continuation path and preserves the reviewed plan. Git's file digest includes paths from HEAD as well as the index and working tree, so staging a reviewed deletion does not remove that path from the fingerprint.
+
+Local context choices without a checkpoint wait separately for ownership release after closing. Restart leaves unfinished context cleanup blocked, even when its work already says Done. Explicit Retry can finish that recorded work; it does not reapply its files. No persisted continuation runs automatically. Requests that lose the hub before authentication or admission, and the UI handling of their retry, remain separate work.
+
+## Verification
+
+- The initial context-outage and staged-deletion reproductions both failed in **7.27 seconds**: context had no waiting continuation, and staging a deletion invalidated its own prepared file digest.
+- The first repair passed the deletion case and completed context recovery, then exposed a fixture assertion that incorrectly expected replacement of an already tracked instruction file to remove its Git entry. The corrected assertion verifies the tracked symlink and published target; newly created local links retain their existing exclusion behavior.
+- The corrected initial selection passed **eight cases in 52.31 seconds**, covering deletion, context recovery and existing create/keep/leave/merge/published-undo behavior.
+- The first expanded run passed **14 cases** and had **three fixture failures in 100.50 seconds**. Two observations expired before seeing the injected final-checkpoint outage within five seconds; the observation window is now ten seconds, with no product deadline change. The third attempted a settings write while ownership was held, which the hub correctly refused. The fixture now verifies that refusal before continuing the original context operation.
+- The follow-up selection passed **eight cases in 45.19 seconds**, including draft-launch waits, lost checkpoint results and explicit cleanup retry after restart.
+- The final expanded matrix passed **25 cases in 166.61 seconds**. It covers project and ownership reads, local application, shared metadata, preparation, saved plans, lost applied results, release, later files/history/ref changes, refused settings changes, stale messages, cancellation and restart. Reviewed acceptance has its own pre-application outage, lost-result and changed-after-review cases. Draft-launch cases verify one read-only draft followed by its separately approved application, and no launch after later files, cancellation or restart.
+- The complete Git-policy, context-service, hub-wait and conversation-recovery suites passed **81 tests in four files in 176.04 seconds**, including the new staged-deletion regression. Combined with the outage matrix, **106 distinct targeted backend cases passed**. This is not a clean full expanded backend run or completed section 20 acceptance.
+- **Twelve browser workflows passed in 1.7 minutes** across desktop/phone in light/dark. They cover plans and verified completion, Changes review and checkpoint adoption, plus context drafting, cancellation, reload and approved application. Phone-light Changes review and desktop-dark completed-context captures were inspected. Providers are simulated; Claude vision remains credential-blocked.
+- Typecheck, lint, the production build, secret scanning and whitespace checks passed. The checkpoint is staged on main. The commit-approval and GitHub-authentication blockers remain unchanged; neither rejected action was retried.
+
+## Remaining work
+
+New UI requests, logins and settings writes still need explicit typed hub-unavailable handling and safe retry after partial application. Periodic configuration/APM synchronization, remote provider-login UI, device/header UI, network listeners and full two-daemon J8/J11 remain phase 4 work. Installation, the improver and final verification remain later phases. The fixed private progress preview is unchanged. Successful Jev classification, Claude live/vision, commit approval and GitHub authentication remain separately recorded blockers.

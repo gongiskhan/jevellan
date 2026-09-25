@@ -1,25 +1,36 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
-import { extname, resolve, sep } from 'node:path';
-import { DEFAULT_PORT, HealthSchema, VERSION } from '@jevellan/core';
+import { extname, join, resolve, sep } from 'node:path';
+import { applicationRoot, DEFAULT_PORT, EmptySchema, ErrorDocumentSchema, HealthSchema, VERSION } from '@jevellan/core';
 import { Application, type ApplicationOptions } from './application.js';
 import { handleApi } from './api.js';
+import { closeListeners, detectTailscaleIpv4, listenOnInterfaces } from './network.js';
+import { diagnoseApplication, LocalDiagnostics } from './diagnostics.js';
+import { json, requestBody } from './http.js';
 export * from './application.js';
+export { closeListeners, detectTailscaleIpv4, listenOnInterfaces } from './network.js';
 
-const contentTypes: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.json': 'application/json' };
+const contentTypes: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.json': 'application/json', '.webmanifest': 'application/manifest+json' };
 
-export function createDaemon(options: { application?: Application; allowedOrigins?: readonly string[]; secureCookies?: boolean } = {}) {
-  const webRoot = fileURLToPath(new URL('../../web/dist/', import.meta.url));
-  return createServer(async (request, response) => {
+export function createDaemon(options: { application?: Application; diagnostics?: LocalDiagnostics; allowedOrigins?: readonly string[]; secureCookies?: boolean; proxyOrigin?: string } = {}) {
+  const webRoot = join(applicationRoot(), 'apps', 'web', 'dist');
+  const server = createServer(async (request, response) => {
     try {
       const url = new URL(request.url ?? '/', 'http://127.0.0.1');
+      if (url.pathname === '/api/local/doctor') {
+        if (request.method !== 'POST' || !options.application || !options.diagnostics?.authorized(request)) { json(response, ErrorDocumentSchema.parse({ schema: 'error-v1', code: 'unauthenticated', message: 'Local diagnostics require the installation control file.' }), 401); return; }
+        let release: (() => void) | undefined;
+        try { EmptySchema.parse(await requestBody(request)); release = options.application.lifecycle.enter({ kind: 'request' }); json(response, await diagnoseApplication(options.application)); }
+        catch { json(response, ErrorDocumentSchema.parse({ schema: 'error-v1', code: 'request-failed', message: 'Diagnostics are unavailable while Jevellan is changing or stopping.' }), 503); }
+        finally { release?.(); }
+        return;
+      }
       if (url.pathname === '/api/health' && request.method === 'GET') {
         response.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
         response.end(JSON.stringify(HealthSchema.parse({ schema: 'health-v1', status: 'ok', version: VERSION })));
         return;
       }
-      if (options.application && (url.pathname.startsWith('/api/') || url.pathname.startsWith('/hub/'))) {
+      if (options.application && (url.pathname.startsWith('/api/') || url.pathname.startsWith('/hub/') || url.pathname === '/switch')) {
         await handleApi(options.application, request, response, url, options); return;
       }
       if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/hub/') || request.method !== 'GET') {
@@ -43,15 +54,27 @@ export function createDaemon(options: { application?: Application; allowedOrigin
       response.writeHead(404).end('Not found');
     }
   });
+  server.on('listening', () => {
+    const address = server.address();
+    if (options.application && address && typeof address !== 'string') options.application.conversations.daemonUrl = `http://127.0.0.1:${address.port}`;
+  });
+  return server;
 }
 
-export async function startDaemon(port = DEFAULT_PORT, options: ApplicationOptions = {}) {
-  const application = new Application({ ...options, port });
-  const server = createDaemon({ application });
-  server.once('close', () => { void application.close(); });
-  try { await new Promise<void>((resolve, reject) => {
-    server.once('error', reject);
-    server.listen(port, '127.0.0.1', () => { server.off('error', reject); resolve(); });
-  }); } catch (error) { await application.close(); throw error; }
-  return server;
+export async function startDaemon(port = DEFAULT_PORT, options: ApplicationOptions & { tailscaleAddress?: () => Promise<string | null> } = {}) {
+  const tailscale = await (options.tailscaleAddress ?? detectTailscaleIpv4)();
+  const serverOptions: Parameters<typeof createDaemon>[0] = { allowedOrigins: [] };
+  const listeners = await listenOnInterfaces(() => createDaemon(serverOptions), port, tailscale);
+  let application: Application | undefined;
+  try {
+    application = new Application({ ...options, port: listeners.port, url: options.url ?? listeners.addresses.at(-1)! });
+    serverOptions.application = application;
+    serverOptions.allowedOrigins = [...listeners.addresses, application.device.url];
+    if (application.device.url.startsWith('https://')) serverOptions.proxyOrigin = application.device.url;
+    application.conversations.daemonUrl = listeners.addresses[0]!;
+    serverOptions.diagnostics = new LocalDiagnostics(application, listeners.addresses[0]!);
+  } catch (error) { await closeListeners(listeners.servers); await application?.close(); throw error; }
+  const runningApplication = application;
+  let closing: Promise<void> | undefined;
+  return { ...listeners, application: runningApplication, close: () => closing ??= (async () => { await closeListeners(listeners.servers); try { serverOptions.diagnostics?.close(); } finally { await runningApplication.close(); } })() };
 }

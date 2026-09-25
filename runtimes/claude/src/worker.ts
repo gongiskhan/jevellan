@@ -15,14 +15,19 @@ const Result = z.object({ is_error: z.boolean(), subtype: z.string(), errors: z.
 
 serveWorker((input, daemonPid, executable) => {
   let current: Query | undefined; let sessionId: string | undefined; let interrupted = false;
+  let firstTurn = true;
   let previous = { input: 0, output: 0, read: 0, write: 0, cost: 0 };
   const env = Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined));
-  const hook = claudePermissionHook({ cwd: input.cwd, action: input.action, daemonPid, permissions: input.permissions, memoryWrite: input.memoryWrite });
   const stablePath = join(input.account.home, 'jevellan-mcp.json');
   const stable = existsSync(stablePath) ? StableMcpSchema.parse(JSON.parse(readFileSync(stablePath, 'utf8'))).servers : {};
   return {
     async interrupt() { interrupted = true; await current?.interrupt(); },
     async run(message, timeoutMs, emit, session) {
+      const repairing = !firstTurn;
+      firstTurn = false;
+      if (repairing && !sessionId) return { status: 'failed', error: { kind: 'other', message: 'Claude did not provide a session to continue.' } };
+      const permissions = repairing ? 'read-only' : input.permissions;
+      const hook = claudePermissionHook({ cwd: input.cwd, action: input.action, daemonPid, permissions, memoryWrite: !repairing && input.memoryWrite });
       interrupted = false;
       const controller = new AbortController();
       const timer = setTimeout(() => { interrupted = true; void current?.interrupt(); }, timeoutMs);
@@ -32,8 +37,11 @@ serveWorker((input, daemonPid, executable) => {
         cwd: input.cwd, env, model: input.model, effort: input.effort, abortController: controller,
         systemPrompt: { type: 'preset', preset: 'claude_code', append: input.systemAppend },
         settingSources: ['user', 'project', 'local'], includePartialMessages: true,
-        permissionMode: input.permissions === 'write' ? 'bypassPermissions' : 'dontAsk',
-        allowDangerouslySkipPermissions: input.permissions === 'write',
+        permissionMode: permissions === 'write' ? 'bypassPermissions' : 'dontAsk',
+        allowDangerouslySkipPermissions: permissions === 'write',
+        // Native Claude builds may omit Glob/Grep in favour of Bash. Read-only
+        // stretches need those tools because shell execution is not available.
+        ...(permissions === 'read-only' ? { tools: ['Read', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'ToolSearch'] } : {}),
         hooks: { PreToolUse: [{ hooks: [async (event) => 'tool_name' in event ? hook(event) : {}] }] },
         // The CLI and stdio MCP children inherit the already-filtered environment.
         // Never serialize a bridge token into the SDK's --mcp-config argument.

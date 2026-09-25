@@ -1,0 +1,43 @@
+{
+  "schema": "manual-context-acceptance-v1",
+  "at": "2026-09-24T16:20:39.735Z",
+  "passed": true,
+  "source": "live-codex-manual-selection",
+  "jevCalled": false,
+  "checks": {
+    "readOnlyDraftPreservedFiles": true,
+    "approvedDraftApplied": true,
+    "compatibilityLinkCreated": true,
+    "independentVerification": true,
+    "cleanPublishedTree": true,
+    "noAttributionTrailers": true
+  },
+  "screenshots": [
+    "choice.png",
+    "draft.png",
+    "draft-phone.png",
+    "linked.png"
+  ],
+  "launches": [
+    {
+      "action": "reply",
+      "permissions": "read-only",
+      "memoryWrite": false,
+      "beforeHead": "ad678c0c1bc4dfe58785cbff664e20cdd670257b",
+      "beforeStatus": "",
+      "status": "completed",
+      "afterHead": "ad678c0c1bc4dfe58785cbff664e20cdd670257b",
+      "afterStatus": ""
+    }
+  ],
+  "model": "gpt-6-astra",
+  "conversationId": "conversation_01M3A3G8RY4PBAPFY2G90F7CXQ",
+  "after": "04d8a4f8e9dc94212680951395297556c66ff81f",
+  "draft": "# Project instructions\n\n- Use TypeScript.\n- Run npm test.\n- Do not install dependencies.\n- Prefer named exports.\n- Keep existing tests.\n",
+  "verification": {
+    "command": "npm test",
+    "commit": "04d8a4f8e9dc94212680951395297556c66ff81f",
+    "passed": true,
+    "treeClean": true
+  }
+}

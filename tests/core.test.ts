@@ -42,6 +42,39 @@ test('configuration import round-trips and rejects duplicate keys, unknown secre
   expect(ConfigurationSchema.safeParse({ ...config, 'x-jevellan': { ...config['x-jevellan'], schema: 99 } }).success).toBe(false);
 });
 
+test('configuration request receipts recover the original result after restart and a newer save', () => {
+  const first = hub(); const author = { deviceId: 'first', source: 'ui' as const };
+  const config = seedConfiguration(); const saved = first.configuration.put(config, 0, author, undefined, 'save_first');
+  const newer = structuredClone(config); newer['x-jevellan'].guards.pauseAfterPlan = true;
+  first.configuration.put(newer, 1, author, undefined, 'save_second');
+  first.close(); database = undefined; const reopened = hub();
+  expect(reopened.configuration.put(config, 0, author, undefined, 'save_first')).toEqual(saved);
+  expect(reopened.configuration.current()?.configuration).toEqual(newer);
+  expect(reopened.configuration.history()).toHaveLength(2);
+  expect(() => reopened.configuration.put(newer, 0, author, undefined, 'save_first')).toThrow('Settings changed elsewhere');
+  expect(() => reopened.configuration.put(config, 1, author, undefined, 'save_first')).toThrow('Settings changed elsewhere');
+});
+
+test('configuration receipt IDs are scoped to their device and stale writers still fail', () => {
+  const store = hub(); const config = seedConfiguration(); const first = { deviceId: 'first', source: 'ui' as const }; const second = { deviceId: 'second', source: 'ui' as const };
+  store.configuration.put(config, 0, first, undefined, 'same_id');
+  expect(() => store.configuration.put(config, 0, second, undefined, 'same_id')).toThrow('Settings changed elsewhere');
+  expect(store.configuration.put(config, 1, second, undefined, 'same_id').changedBy).toEqual(second);
+  expect(() => store.configuration.put(config, 0, first)).toThrow('Settings changed elsewhere');
+  expect(store.configuration.history()).toHaveLength(2);
+});
+
+test('configuration revisions and their request receipts roll back together', () => {
+  const store = hub(); const config = seedConfiguration(); const author = { deviceId: 'first', source: 'ui' as const };
+  store.db.exec("CREATE TRIGGER fail_receipt BEFORE INSERT ON configuration_requests BEGIN SELECT RAISE(ABORT, 'fixture failure'); END");
+  expect(() => store.configuration.put(config, 0, author, undefined, 'save_first')).toThrow('fixture failure');
+  expect(store.configuration.current()).toBeNull();
+  store.db.exec('DROP TRIGGER fail_receipt');
+  expect(store.configuration.put(config, 0, author, undefined, 'save_first').revision).toBe(1);
+  const receipts = store.db.prepare('SELECT document FROM configuration_requests').all().map(row => JSON.parse(String(row.document)));
+  expect(receipts).toEqual([{ schema: 'configuration-request-v1', id: 'save_first', deviceId: 'first', fingerprint: expect.stringMatching(/^[a-f0-9]{64}$/), revision: 1 }]);
+});
+
 test('hub documents are validated on every read and use revision checks', () => {
   const store = hub();
   const account = AccountSchema.parse({ schema: 'account-v1', id: 'acc_test', runtime: 'codex', label: 'Test', kind: 'subscription', enabled: true, credential: 'per-device' });

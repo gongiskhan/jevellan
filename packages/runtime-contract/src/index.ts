@@ -1,4 +1,4 @@
-export { spawnGroup, terminateGroup, groupAlive, type NativeProcess } from './process-group.js';
+export { spawnGroup, terminateGroup, groupAlive, processIdentity, type NativeProcess } from './process-group.js';
 export * from './safety.js';
 export * from './contract.js';
 export * from './queue.js';

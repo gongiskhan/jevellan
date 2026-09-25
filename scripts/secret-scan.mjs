@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, lstatSync, readlinkSync } from 'node:fs';
+import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const patterns = [
@@ -33,6 +34,22 @@ export function scanSecrets(cwd, revisions = ['--all'], environment = process.en
   return violations;
 }
 
+export function scanWorkingTree(cwd, environment = process.env) {
+  const values = Object.entries(environment).filter(([name, value]) => name.startsWith('JEVELLAN_TEST_') && value);
+  const files = git(cwd, ['ls-files', '--cached', '--others', '--exclude-standard', '-z']).toString().split('\0').filter(Boolean);
+  const violations = [];
+  for (const file of new Set(files)) {
+    let stat;
+    try { stat = lstatSync(join(cwd, file)); }
+    catch (error) { if (error.code === 'ENOENT') continue; throw error; }
+    if (!stat.isFile() && !stat.isSymbolicLink()) continue;
+    const bytes = stat.isSymbolicLink() ? Buffer.from(readlinkSync(join(cwd, file))) : readFileSync(join(cwd, file));
+    if (patterns.some((pattern) => pattern.test(bytes.toString('utf8')))) violations.push({ file, reason: 'token or private-key pattern' });
+    for (const [name, value] of values) if (bytes.includes(Buffer.from(value))) violations.push({ file, reason: `value of ${name}` });
+  }
+  return violations;
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
     const revisions = process.argv.includes('--pre-push')
@@ -40,7 +57,9 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       : ['--all'];
     const violations = revisions.length ? scanSecrets(process.cwd(), revisions) : [];
     for (const item of violations) console.error(`Push blocked: ${item.reason} in git blob ${item.oid}.`);
-    if (violations.length) process.exitCode = 1;
+    const pending = process.argv.includes('--worktree') ? scanWorkingTree(process.cwd()) : [];
+    for (const item of pending) console.error(`Secret scan blocked: ${item.reason} in file ${item.file}.`);
+    if (violations.length || pending.length) process.exitCode = 1;
     else console.log('Secret scan passed.');
   } catch (error) {
     console.error(error instanceof Error ? error.message : 'Secret scan failed.');

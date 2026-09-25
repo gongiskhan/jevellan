@@ -1,0 +1,25 @@
+# Waiting for the hub at conversation boundaries
+
+**Live:** local HTTP, Git, SQLite, signed sessions, isolated homes and owned test processes. **Simulated:** provider behavior, hub outages and additional devices. This checkpoint does not claim successful live Jev classification, a real second machine or complete section 14 acceptance.
+
+The owner daemon now retains an in-process continuation when an ordinary conversation boundary receives the mesh client's typed `HubUnavailable` error. A successful presence heartbeat wakes those continuations. They retry fresh authority reads; no cached configuration or credential becomes an offline authority. A heartbeat arriving before a failed request settles cannot be lost. Other errors, including an unrelated error carrying status 503, remain failures.
+
+Versioned `hub-wait-v1` ledger records name the work, generation and boundary, and record waiting, completion or interruption. They contain no credential or executable continuation. An admitted stream displays the specified hub-unreachable notice. Cancellation releases a wait. Restart records interruption and requires the user to continue; replay and a later heartbeat cannot recreate the previous daemon's continuation.
+
+Covered boundaries are ordinary launch preparation, automatic decision preparation, post-runtime checkpoint creation, post-runtime guard settings and failed final account reporting. Waiting after a native step finishes does not launch that step again. A deferred checkpoint compares the completed step's file digest and Git snapshot, then checks current outside activity and existing Changes barriers. Later outside edits remain untouched and require review. Restart during a pending checkpoint preserves its evidence and Changes barrier.
+
+## Verification
+
+- Before the fix, both reproduction cases failed: completed Reply and Implement steps remained blocked after reconnection.
+- The initial repaired run passed **four checks in 46.37 seconds**: both continuations, stream survival and shutdown during an outage. Each continuation asserts one runtime launch, one handoff, a completed step and no publication; the writing case creates its expected local checkpoint.
+- The expanded member, wait-lifecycle and restart run passed **33 checks in three files in 111.69 seconds**. It includes all existing member execution/routing scenarios, both repaired continuations, refusal to checkpoint later outside edits, interruption at a waiting checkpoint, a heartbeat racing a failing request, cancellation, ordinary 503 errors and restart without automatic continuation.
+- The following focused authority run initially had 11 passes and one fixture failure: the simulated Jev-availability outage was injected during prelaunch memory preparation instead of after the native step. The fixture now starts that outage after the handoff. The final run passed **12 checks in three files in 19.57 seconds**, with 128 unrelated checks excluded. It covers launch authority, post-step decision authority, final usage reporting, the ordinary automatic loop, immediate missing-key behavior, saved-key recovery, stale classification, cancellation and delayed account/settings reads.
+- Typecheck, lint and the production build passed. The private report returned HTTP 200. No successful live Jev call or real second-device acceptance is implied.
+- The subsequent browser run passed **12 workflows in 1.4 minutes** across desktop/phone and light/dark layouts: plans with streamed work and Why/Changes, reviewed checkpoint acceptance, and decision recovery. These are local simulated-provider browser fixtures; the hub outage itself is exercised by the real local HTTP application checks above. Fresh phone-light and desktop-dark Changes captures were visually inspected: diff, verification receipt and controls remain visible without horizontal overflow. Required Claude SDK vision remains credential-blocked.
+- Full-history/worktree secret scanning and whitespace checks passed. Changes are staged on main. No commit/push retry, reference-repository edit, native-home change, installed-service restart or Tailscale-route change was attempted.
+
+## Scope still open
+
+The subsequent [memory/publication checkpoint](phase4-memory-publication-waits.md) adds queued-memory waits, publication admission and successful-push cleanup. Interruption inside an unfinished rebase, earlier context/undo/settlement operations, new UI requests, logins and settings writes still need their own safe wait boundaries. They must reconcile any already-applied mutation instead of replaying an entire operation. Automatic hub-outage continuation remains incomplete. Periodic synchronization, remote provider-login UI, device/header UI, network setup, two-daemon J8/J11, the installer, improver and final verification also remain.
+
+The fixed private progress preview remains unchanged and returned HTTP 200 during this checkpoint. Successful Jev classification and Claude live/vision remain credential-blocked. Commit approval and GitHub authentication remain separately recorded blockers and were not retried.
