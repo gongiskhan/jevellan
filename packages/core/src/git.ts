@@ -6,7 +6,8 @@ import { inside, resolvedPath, resolveProjectPath, type Homes } from './homes.js
 import { GitRewriteCapture, GitRewritePlanSchema, GitRewriteReceiptSchema, type GitRewriteReceipt } from './git-rewrite.js';
 import { atomicWrite } from './files.js';
 import { SecretRedactor } from './environment.js';
-import { gitEnvironment, runOwnedCommand, type CommandResult } from './command.js';
+import { runOwnedCommand, type CommandResult } from './command.js';
+import { GitSettings, gitFailureMessage } from './git-settings.js';
 import type { CheckoutOwner, CheckoutOwnership } from './locks.js';
 
 const hash = (value: string) => createHash('sha256').update(value).digest('hex');
@@ -14,8 +15,8 @@ export class GitWorkspace {
   constructor(readonly project: Project, readonly deviceId: string, readonly ownership: CheckoutOwnership, readonly owner: CheckoutOwner, readonly redactor = new SecretRedactor()) {}
   get path(): string { return resolveProjectPath(this.project, this.deviceId); }
   async #git(args: string[], permittedFailures: number[] = [], input?: string): Promise<CommandResult> {
-    const result = await runOwnedCommand('git', ['--no-pager', ...args], { cwd: this.path, env: gitEnvironment(), redactOutput: false, ...(input === undefined ? {} : { input }) });
-    if (result.timedOut || (result.code !== 0 && !permittedFailures.includes(result.code))) throw new Error(`Git ${args[0]} failed (${result.code}): ${this.redactor.text(result.stderr.trim())}`);
+    const result = await runOwnedCommand('git', ['--no-pager', ...args], { cwd: this.path, env: new GitSettings(this.ownership.homes).environment(), redactOutput: false, ...(input === undefined ? {} : { input }) });
+    if (result.timedOut || (result.code !== 0 && !permittedFailures.includes(result.code))) throw new Error(`Git ${args[0]} failed (${result.code}): ${gitFailureMessage(result.stderr.trim(), this.redactor)}`);
     return result;
   }
   async head(): Promise<string> { return (await this.#git(['rev-parse', 'HEAD'])).stdout.trim(); }

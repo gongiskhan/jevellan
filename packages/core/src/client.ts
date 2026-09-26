@@ -12,3 +12,4 @@ export * from './bridge-schemas.js';
 export * from './context-schemas.js';
 export * from './rigging-disk-schemas.js';
 export * from './rigging-bundle-schemas.js';
+export * from './git-settings-schemas.js';

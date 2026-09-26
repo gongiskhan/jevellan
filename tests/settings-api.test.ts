@@ -54,6 +54,18 @@ test('UI admission exposes only typed and safely repeatable hub failures', async
   expect(await (await request('/hub/accounts', 'POST', input)).json()).toEqual({ schema: 'error-v1', code: 'request-failed', message: 'Ordinary unavailable response' });
 });
 
+test('Git settings require UI authentication, enforce revisions and reject arbitrary checks', async () => {
+  expect((await fetch(`${base}/api/git/settings`)).status).toBe(401);
+  expect((await fetch(`${base}/api/git/check`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ schema: 'git-check-request-v1', projectId: 'unknown' }) })).status).toBe(401);
+  const initial = await (await request('/api/git/settings')).json();
+  expect(initial).toMatchObject({ schema: 'git-settings-v1', githubTransport: 'machine', revision: 0 });
+  const updated = await request('/api/git/settings', 'PUT', { ...initial, githubTransport: 'ssh' });
+  expect(updated.status).toBe(200); expect(await updated.json()).toMatchObject({ githubTransport: 'ssh', revision: 1 });
+  expect((await request('/api/git/settings', 'PUT', initial)).status).toBe(409);
+  expect((await request('/api/git/check', 'POST', { schema: 'git-check-request-v1', projectId: 'unknown' })).status).toBe(404);
+  expect((await request('/api/git/settings', 'PUT', { ...initial, githubTransport: 'ssh', token: 'unexpected' })).status).toBe(400);
+});
+
 test('UI configuration retry recovers a saved revision after post-save hub loss', async () => {
   const current = ConfigRevisionSchema.parse(await (await request('/hub/config')).json());
   const input = { schema: 'config-write-v1', revision: current.revision, configuration: current.configuration, clientRequestId: 'save_lost' };

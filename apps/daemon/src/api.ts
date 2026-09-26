@@ -1,3 +1,4 @@
+import { handleGitApi } from './git-api.js';
 import { projectFolders } from './project-folders.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { z } from 'zod';
@@ -70,6 +71,7 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     if (method === 'POST' && ['/hub/devices/invitations', '/api/devices/switch'].includes(path)) retryable = true;
     if (await handleMeshUiApi(app, request, response, url, secureCookies)) return;
     if (await handleLoginApi(app, request, response, url, token)) return;
+    if (await handleGitApi(app, request, response, url)) return;
     if (path === '/api/project-folders' && method === 'GET') { send(await projectFolders(app.homes.userHome, url.searchParams.get('path') ?? undefined)); return; }
     if (path === '/hub/projects' && method === 'GET') { await app.conversations.ready; send((await app.conversations.projects())); return; }
     if (path === '/hub/projects' && method === 'PUT') { const input = ProjectWriteSchema.parse(await body(request)); retryable = input.clientRequestId !== undefined; send(await app.conversations.saveProject(input)); return; }

@@ -1,8 +1,10 @@
 # Jevellan build and acceptance report
 
-Last updated: 2026-09-25. Build paused for a user-requested pilot trial; remaining implementation is deferred. This report does not claim Gonçalo's acceptance.
+Last updated: 2026-09-26. Build paused for a user-requested pilot trial; remaining implementation is deferred. This report does not claim Gonçalo's acceptance.
 
 ## Current state
+
+- Git authentication repair: Settings now exposes per-device Git connection preferences and a project connection check. The pilot uses the existing GitHub SSH identity for Jevellan's Git commands; the live `sequoias` read-access check passed. Repository remotes and native Git configuration were preserved. The isolated release passed typecheck, lint, build, targeted backend checks and all four phone/desktop browser layouts, then deployed with account/authentication/project/ledger preservation checks. See [Git settings evidence](git-settings-2026-09-26.md).
 
 - Public website: the supplied English/Portuguese design is implemented in `site/`, with mobile header, command wrapping, touch controls and keyboard menu improvements. GitHub Pages is live at <https://gongiskhan.github.io/jevellan/> and publishes through Actions from main. The first deployment succeeded; live phone checks and exact source comparisons for both HTML pages and all 11 assets passed. The mobile showcase follow-up adds an interactive phone with progress, Why, and steering; local responsive and interaction checks pass. The update is deployed, with the public phone composer verified at 390 pixels. See [website evidence](website-2026-09-25.md).
 
