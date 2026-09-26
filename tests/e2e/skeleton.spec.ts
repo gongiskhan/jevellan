@@ -486,7 +486,7 @@ test('composer choices apply once, keep conversation pins and explain correction
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   expect((await page.request.post('/hub/accounts', { data: { schema: 'add-account-v1', runtime: 'claude', label: 'Composer account', kind: 'subscription', secret: `fixture-${randomUUID()}` } })).ok()).toBe(true);
   const config = await (await page.request.get('/hub/config')).json(); config.configuration['x-jevellan'].guards.pauseAfterPlan = true;
-  config.configuration['x-jevellan'].menu = [{ id: 'composer_model', runtime: 'claude', model: 'claude-fable-5-1', label: 'Composer Fable', description: 'Simulated browser model.', efforts: ['low', 'high'], enabled: true }];
+  config.configuration['x-jevellan'].menu = [...config.configuration['x-jevellan'].menu.filter((model: { id: string }) => model.id !== 'composer_model'), { id: 'composer_model', runtime: 'claude', model: 'claude-fable-5-1', label: 'Composer Fable', description: 'Simulated browser model.', efforts: ['low', 'high'], enabled: true }];
   expect((await page.request.put('/hub/config', { data: { schema: 'config-write-v1', revision: config.revision, configuration: config.configuration } })).ok()).toBe(true);
   expect((await page.request.put('/hub/secrets/jev', { data: { schema: 'save-secret-v1', value: `fixture-${randomUUID()}` } })).ok()).toBe(true);
   await page.goto('/'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('automatic_fixture');

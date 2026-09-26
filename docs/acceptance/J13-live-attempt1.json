@@ -1,0 +1,126 @@
+{
+  "schema": "live-journey-v1",
+  "journey": "J13",
+  "at": "2026-09-26T14:22:35.013Z",
+  "label": "live",
+  "source": "live-claude-jev",
+  "passed": false,
+  "checks": {},
+  "screenshots": [
+    {
+      "file": "J13-live-undo-confirm.png",
+      "expected": "the Change this step confirmation with the Undo and redo button"
+    }
+  ],
+  "launches": [
+    {
+      "conversationId": "live_j13_1790432556589",
+      "stretch": 1,
+      "action": "implement",
+      "permissions": "write",
+      "model": "claude-opus-5-5",
+      "effort": "medium",
+      "account": "acc_01M3EZ8RAZ1XV54M1JNHW9EGC8",
+      "startedAt": "2026-09-26T14:22:58.779Z",
+      "status": "completed"
+    },
+    {
+      "conversationId": "live_j13_1790432556589",
+      "stretch": 2,
+      "action": "test",
+      "permissions": "write",
+      "model": "claude-opus-5-5",
+      "effort": "low",
+      "account": "acc_01M3EZ8RAZ1XV54M1JNHW9EGC8",
+      "startedAt": "2026-09-26T14:23:54.734Z",
+      "status": "interrupted"
+    }
+  ],
+  "observations": [],
+  "accountId": "acc_01M3EZ8RAZ1XV54M1JNHW9EGC8",
+  "menu": [
+    {
+      "id": "claude-fable",
+      "runtime": "claude",
+      "model": "claude-fable-5-1",
+      "enabled": true,
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ]
+    },
+    {
+      "id": "claude-opus",
+      "runtime": "claude",
+      "model": "claude-opus-5-5",
+      "enabled": true,
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ]
+    },
+    {
+      "id": "codex-gpt",
+      "runtime": "codex",
+      "model": "discover-latest-gpt",
+      "enabled": false,
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh"
+      ]
+    },
+    {
+      "id": "claude-sonnet",
+      "runtime": "claude",
+      "model": "claude-sonnet-5",
+      "enabled": false,
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ]
+    }
+  ],
+  "git": {
+    "before": "4784506233f402abfdd71777a276872102cf0dc7"
+  },
+  "firstStep": {
+    "n": 1,
+    "action": "implement",
+    "modelId": "claude-opus",
+    "effort": "medium"
+  },
+  "secondStep": {
+    "n": 2,
+    "action": "test"
+  },
+  "layout": {
+    "undo-confirm": {
+      "scrollY": 48,
+      "documentHeight": 948,
+      "viewportHeight": 900,
+      "title": {
+        "top": 26,
+        "bottom": 51
+      },
+      "topbar": {
+        "top": 0,
+        "bottom": 52
+      },
+      "scrolled": [
+        "html.:48"
+      ]
+    }
+  },
+  "error": "Error: expect(locator).toHaveCount(expected) failed\n\nLocator:  getByRole('dialog')\nExpected: 0\nReceived: 1\nTimeout:  5000ms\n\nCall log:\n  - Expect \"toHaveCount\" getByRole('dialog') with timeout 5000ms\n  - waiting for getByRole('dialog')\n    14 × locator resolved to 1 element\n       - unexpected value \"1\"\n\n    at captureRawStack (/home/ggomes/.jevellan-build/live-2026-09-26/app/node_modules/playwright-core/lib/coreBundle.js:8588:17)\n    at callMatcherAsStep (/home/ggomes/.jevellan-build/live-2026-09-26/app/node_modules/playwright/lib/matchers/expect.js:13310:57)\n    at Object.toHaveCount (/home/ggomes/.jevellan-build/live-2026-09-26/app/node_modules/playwright/lib/matchers/expect.js:13302:23)\n    at /home/ggomes/.jevellan-build/live-2026-09-26/app/scripts/spikes/live-journeys.mjs:330:125"
+}

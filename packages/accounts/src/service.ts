@@ -150,10 +150,11 @@ export class AccountService {
     if (generation !== (this.#generations.get(id) ?? 0) || (await this.#account(id)).account.secretRef !== account.secretRef) return this.status(id);
     const now = new Date().toISOString();
     const value = AccountStatusSchema.parse({
-      schema: 'account-status-v1', accountId: id, deviceId: this.options.deviceId,
+      schema: 'account-status-v2', accountId: id, deviceId: this.options.deviceId,
       auth: probe.auth === 'unknown' && before.auth === 'ready' ? 'ready' : probe.auth,
       usage: probe.usage ?? { source: 'unknown', observedAt: now }, observedAt: now,
       ...(before.coolingUntil && Date.parse(before.coolingUntil) > Date.now() ? { coolingUntil: before.coolingUntil } : {}),
+      ...(Object.entries(before.modelCooling ?? {}).some(([, until]) => Date.parse(until) > Date.now()) ? { modelCooling: Object.fromEntries(Object.entries(before.modelCooling!).filter(([, until]) => Date.parse(until) > Date.now())) } : {}),
       ...(probe.error ? { lastError: this.options.redactor.text(probe.error) } : {}),
     });
     return this.options.store.writeStatus(value, account.secretRef ?? null, probe.identity);
@@ -173,10 +174,10 @@ export class AccountService {
     return result.offered;
   }
   offered() { return this.#run(async () => this.options.store.models()); }
-  recordError(id: string, kind: 'rate-limit' | 'auth' | 'other', credential?: string | null): Promise<AccountStatus> {
+  recordError(id: string, kind: 'rate-limit' | 'auth' | 'other', credential?: string | null, limit: { model?: string; resetsAt?: string } = {}): Promise<AccountStatus> {
     return this.#run(async () => {
       const account = await this.#account(id); const status = await this.status(id);
-      return this.options.store.writeStatus(applyAccountError(status, kind), credential === undefined ? account.account.secretRef ?? null : credential);
+      return this.options.store.writeStatus(applyAccountError(status, kind, Date.now(), limit), credential === undefined ? account.account.secretRef ?? null : credential);
     });
   }
   recordUsage(id: string, usage: unknown, credential?: string | null): Promise<AccountStatus> {

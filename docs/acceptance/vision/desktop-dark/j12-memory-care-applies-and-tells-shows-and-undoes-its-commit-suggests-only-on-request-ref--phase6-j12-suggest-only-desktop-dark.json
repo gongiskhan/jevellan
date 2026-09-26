@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "Disabled for this run.",
+  "test": "J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/screenshots/phase6-j12-suggest-only-desktop-dark.png",
+  "expected": "the Jevellan web app screen for the check \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\" at desktop-dark, rendered completely and legibly"
+}

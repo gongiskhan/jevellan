@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import {
-  AllowanceEventSchema, ComposerOverrideRecordSchema, ConversationControlSchema, ConversationCreatedSchema, ConversationRenamedSchema, ConversationSchema, DecisionRecordSchema, FindingSchema, FinishOutsideOperationSchema, FinishOutsideSchema, HandoffSchema, OverrideRecordSchema, RenameConversationSchema, StretchFinishedSchema, StretchSchema,
+  AllowanceEventSchema, ComposerOverrideRecordSchema, ConversationControlSchema, ConversationCreatedSchema, ConversationOriginSchema, ConversationRenamedSchema, ConversationSchema, DecisionRecordSchema, FindingSchema, FinishOutsideOperationSchema, FinishOutsideSchema, HandoffSchema, OverrideRecordSchema, RenameConversationSchema, StretchFinishedSchema, StretchSchema,
   SummarySchema, UndoAppliedSchema, VerificationSchema, WorkControlSchema, WorkMessageSchema, WorkSchema, stableJson,
   type Conversation, type FinishOutsideOperation, type Handoff, type LedgerEvent, type Stretch, type Summary, type UndoApplied, type Work, type WorkControl,
 } from '@jevellan/core';
@@ -19,6 +19,10 @@ type Finished = ReturnType<typeof StretchFinishedSchema.parse>;
 const zeroCounters = (): Work['counters'] => ({ stretches: 0, reviews: 0, noProgress: 0, testFailures: 0, costUsd: 0, unknownCostStretches: 0 });
 function applyConversationControl(view: ConversationView, raw: unknown, at: string): void {
   const value = ConversationControlSchema.parse(raw); const conversation = view.conversation;
+  if (value.schema === 'conversation-origin-v1') {
+    if (conversation.origin && conversation.origin !== value.origin) throw new Error('This conversation already has another origin.');
+    conversation.origin = value.origin; return;
+  }
   if (value.schema === 'conversation-renamed-v1') {
     if (value.request.previousTitle !== conversation.title) throw new Error('The title changed. Reload before renaming it.');
     conversation.title = value.request.title; return;
@@ -232,7 +236,8 @@ export function replayWork(ledger: ConversationLedger): ConversationView {
         }
       }
     }
-    conversation.updatedAt = event.t;
+    // Recording a legacy conversation's origin is bookkeeping, not activity in the conversation.
+    if (!(event.type === 'conversation-control' && (data as { schema?: unknown }).schema === 'conversation-origin-v1')) conversation.updatedAt = event.t;
   }
   if (!view) throw new Error('Conversation does not exist.');
   ConversationSchema.parse(view.conversation); SummarySchema.parse(view.summary);
@@ -243,7 +248,7 @@ export class ConversationWork {
   constructor(readonly ledger: ConversationLedger, readonly allowance = 24) {
     if (!Number.isSafeInteger(allowance) || allowance < 1) throw new Error('Invalid work allowance.');
   }
-  create(input: Pick<Conversation, 'title' | 'projectId' | 'ownerDeviceId'>): ConversationView {
+  create(input: Pick<Conversation, 'title' | 'projectId' | 'ownerDeviceId' | 'origin'>): ConversationView {
     if (this.ledger.events().length) return this.load();
     const at = new Date().toISOString();
     const conversation = ConversationSchema.parse({ ...input, id: this.ledger.id, schema: 'conversation-v2', createdAt: at, updatedAt: at, state: 'idle', generation: 0, pins: {}, stretchCount: 0, work: null });
@@ -275,6 +280,12 @@ export class ConversationWork {
     const data = FinishOutsideOperationSchema.parse(raw); const view = this.load(); const previous = view.finishes.find((entry) => entry.request.clientRequestId === data.request.clientRequestId);
     if (previous && stableJson(previous) === stableJson(data)) return this.#materialise();
     applyConversationControl(view, data, new Date().toISOString()); this.ledger.append({ type: 'conversation-control', data }); return this.#materialise();
+  }
+  /** Adds the origin as its own ledger event, so the republished index belongs to a new event. */
+  recordOrigin(origin: NonNullable<Conversation['origin']>): ConversationView {
+    const view = this.load(); if (view.conversation.origin === origin) return view;
+    const data = ConversationOriginSchema.parse({ schema: 'conversation-origin-v1', origin }); applyConversationControl(view, data, new Date().toISOString());
+    this.ledger.append({ type: 'conversation-control', data }); return this.#materialise();
   }
   recover(): ConversationView { this.ledger.recoverAbandonedWrite(); this.ledger.recoverHandoffs(); this.#replyReceipts(); return this.#materialise(); }
   #materialise(): ConversationView {

@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "Disabled for this run.",
+  "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/phase2-rigging-local-phone-dark.png",
+  "expected": "the Jevellan web app screen for the check \"loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload\" at phone-dark, rendered completely and legibly"
+}

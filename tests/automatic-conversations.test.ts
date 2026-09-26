@@ -441,3 +441,28 @@ test('progress is available while Jev is pending, streams through execution, and
   });
   expect(phases).toEqual(expect.arrayContaining(['preparing', 'deciding', 'memory', 'starting', 'running', 'saving', 'verifying']));
 });
+
+test('a limit on one model cools only that model: the next step runs on another model and review briefs carry the change', async () => {
+  const config = app.hub.configuration.current()!;
+  config.configuration['x-jevellan'].menu = [
+    { id: 'fable', runtime: 'fake', model: 'scripted-fable', label: 'Fable', description: 'Strongest simulated model.', efforts: ['high'], enabled: true },
+    { id: 'opus', runtime: 'fake', model: 'scripted-opus', label: 'Opus', description: 'Default simulated model.', efforts: ['high'], enabled: true },
+  ];
+  app.hub.configuration.put(config.configuration, config.revision, { deviceId: app.device.deviceId, source: 'ui' });
+  actions = ['implement', 'implement', 'review', 'done'];
+  const limit = { kind: 'rate-limit' as const, scope: 'model' as const, message: "You've reached your Fable limit. Switch to another model to continue." };
+  fake.enqueue(async () => ({ status: 'failed', error: limit })); fake.enqueue(async () => ({ status: 'failed', error: limit }));
+  enqueue('2'); enqueue();
+  await create(); const result = await finished();
+  expect(result.conversation.state, result.pause?.reason).toBe('done');
+  expect(fake.starts.map((input) => [input.action, input.model])).toEqual([['implement', 'scripted-fable'], ['implement', 'scripted-opus'], ['review', 'scripted-opus']]);
+  expect(result.handoffs[0]!.summary).toContain("Runtime error: You've reached your Fable limit.");
+  const second = result.decisions[1]!;
+  expect(second.model).toMatchObject({ chosen: 'opus', excluded: [{ modelId: 'fable', reason: 'cooling' }] });
+  expect(second.account!.ranking).toEqual([expect.objectContaining({ accountId: 'test_account', eligible: true })]);
+  const status = (await app.accounts.status('test_account'));
+  expect(status.coolingUntil).toBeUndefined(); expect(Date.parse(status.modelCooling!['scripted-fable']!)).toBeGreaterThan(Date.now() + 25 * 60_000);
+  const review = fake.starts[2]!.brief.split('# Change under review\n\n')[1]!.split('\n\n# Memory')[0]!;
+  expect(review).toContain(`base commit ${initial.slice(0, 12)}`); expect(review).toContain('- value.txt'); expect(review).toContain('+2');
+  expect(fake.starts[2]!.permissions).toBe('read-only'); expect(fake.starts[1]!.brief).not.toContain('# Change under review');
+}, 60_000);

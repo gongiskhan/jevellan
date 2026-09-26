@@ -22,11 +22,13 @@ function weekStart(at: string): string {
 /**
  * Conversations finished in Jevellan are done without an outside outcome; the week is their last update.
  * Conversations marked "Finished outside Jevellan" count in the week of that answer, with its reason.
+ * Conversations Jevellan starts itself (context operations) are not user work and are left out.
  */
 export function trialLog(conversations: ConversationIndex[], now = Date.now()): TrialLog {
   const weeks = new Map<string, TrialLog['weeks'][number]>();
   const week = (at: string) => { const key = weekStart(at); const value = weeks.get(key) ?? { weekStart: key, inJevellan: 0, outside: 0, reasons: [] }; weeks.set(key, value); return value; };
   for (const conversation of conversations) {
+    if (conversation.origin) continue;
     if (conversation.outcome?.kind === 'finished-elsewhere') {
       const entry = week(conversation.outcome.at); entry.outside++;
       entry.reasons.push({ conversationId: conversation.id, title: conversation.title, projectId: conversation.projectId, at: conversation.outcome.at, reason: conversation.outcome.reason ?? null });

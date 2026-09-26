@@ -19,7 +19,7 @@ import type { RuntimeAdapter, StretchInput } from '@jevellan/runtime-contract';
 import { actionContract, actionPermissions } from './actions.js';
 import { StretchBridges } from './bridge.js';
 import type { IntegrationRunner } from '@jevellan/core';
-import { buildBrief } from './brief.js';
+import { buildBrief, changeUnderReview } from './brief.js';
 import { StretchExecution } from './execution.js';
 import { allowedActions, allowedInitialActions, checkGuards } from './guards.js';
 import { ConversationLedger } from './ledger.js';
@@ -118,6 +118,10 @@ export class ConversationService {
       for (const finish of work.load().finishes.filter((entry) => entry.status === 'requested')) await this.#finishOutside(work, finish.request.clientRequestId);
       if (work.load().conversation.outcome) this.#finishContext(work, 'cancelled');
     }
+    // Context conversations created before `origin` existed get it as a new ledger event, never by
+    // rewriting the index already published for an earlier event.
+    const contextConversations = new Set(this.options.contexts.list().map((record) => record.conversationId));
+    for (const work of this.#works.values()) if (contextConversations.has(work.ledger.id) && !work.load().conversation.origin) work.recordOrigin('context-operation');
     for (const record of this.options.contexts.list()) {
       if (['completed', 'cancelled', 'draft-ready'].includes(record.status)) continue;
       record.status = 'blocked'; record.reason = 'Jevellan restarted during this context change. Inspect the files and retry; no operation was resumed automatically.';
@@ -195,7 +199,7 @@ export class ConversationService {
     const config = (await this.options.settings()); const accounts = await this.options.accounts.list();
     const model = config.menu.find((entry) => (!modelId || entry.id === modelId) && entry.enabled && config.runtimes[entry.runtime]?.enabled
       && this.options.runtimes.get(entry.runtime)?.capabilities.readOnlyEnforced && this.options.runtimes.get(entry.runtime)?.capabilities.mcp
-      && rankAccounts({ accounts: accounts.map((row) => row.account), statuses: accounts.flatMap((row) => row.statuses), runtime: entry.runtime, deviceId: this.options.deviceId }).some((row) => row.eligible));
+      && rankAccounts({ accounts: accounts.map((row) => row.account), statuses: accounts.flatMap((row) => row.statuses), runtime: entry.runtime, model: entry.model, deviceId: this.options.deviceId }).some((row) => row.eligible));
     if (!model) throw conflict('No model can draft this merge right now. Add or enable an eligible account in Runtimes.');
     return model.id;
   }
@@ -224,7 +228,7 @@ export class ConversationService {
     const latest = this.options.contexts.get(input.clientRequestId);
     if (latest) { if (latest.projectId !== id || stableJson(latest.request) !== stableJson(input)) throw conflict('This context request id was already used for another choice.'); return this.contextPanel(id); }
     if (this.options.contexts.list().some(entry => entry.projectId === id && !['completed', 'cancelled'].includes(entry.status))) throw conflict('Finish or cancel the existing context operation first.');
-    const work = this.#load(newId('conversation'), true); work.create({ title: `Context · ${project.name}`, projectId: id, ownerDeviceId: this.options.deviceId });
+    const work = this.#load(newId('conversation'), true); work.create({ title: `Context · ${project.name}`, projectId: id, origin: 'context-operation', ownerDeviceId: this.options.deviceId });
     work.message(input.choice === 'merge' ? 'Merge AGENTS.md and CLAUDE.md into one complete AGENTS.md, preserving both files’ instructions and resolving duplicate wording. Read both files. Do not edit any files. Return the complete merged Markdown as a handoff result of type merge-draft. The user will inspect the diff and apply it separately.' : `Configure project instructions: ${input.choice}.`, input.clientRequestId, 'user-message', settings.guards.maxStretchesPerWork);
     const record = ContextOperationSchema.parse({ schema: 'context-operation-v1', id: input.clientRequestId, projectId: id, conversationId: work.ledger.id, workId: work.load().conversation.work!.id, request: input, before: panel.context,
       generation: work.load().conversation.generation, projectRevision, createdAt: new Date().toISOString(), status: 'requested', ...(modelId ? { modelId } : {}) });
@@ -1239,7 +1243,7 @@ export class ConversationService {
     if (!model?.enabled || !config.runtimes[model.runtime]?.enabled) throw new Error('Choose an enabled model for this step.');
     const adapter = this.options.runtimes.get(model.runtime); const permissions = actionPermissions(action);
     if (!adapter || !adapter.capabilities.mcp || (permissions === 'read-only' ? !adapter.capabilities.readOnlyEnforced : !adapter.capabilities.edit || !adapter.capabilities.shell)) throw new Error('This runtime cannot enforce the capabilities required by this action.');
-    const accounts = await this.options.accounts.list(); const ranking = rankAccounts({ accounts: accounts.map((entry) => entry.account), statuses: accounts.flatMap((entry) => entry.statuses), runtime: model.runtime, deviceId: this.options.deviceId });
+    const accounts = await this.options.accounts.list(); const ranking = rankAccounts({ accounts: accounts.map((entry) => entry.account), statuses: accounts.flatMap((entry) => entry.statuses), runtime: model.runtime, model: model.model, deviceId: this.options.deviceId });
     this.#current(work, generation, operation);
     const selected = ranking.find((entry) => entry.eligible); if (!selected) throw new Error(`No model can run this step right now: ${ranking.filter((entry) => entry.account.runtime === model.runtime).map((entry) => entry.reason).join(', ') || 'no account'}.`);
     const serial = !adapter.capabilities.perLaunchConfig;
@@ -1295,7 +1299,9 @@ export class ConversationService {
         ...prepared?.record, latestMessageEventId: latestMessage.id, remember: choice.remember, ...(jev ? { jev } : {}),
         account: { chosen: selected.account.id, ranking: ranking.map((entry) => ({ accountId: entry.account.id, eligible: entry.eligible, reason: entry.reason })) },
         memory: { candidates: recall.candidates, chosen: recall.chosen, source: recall.source, ...(recall.scores ? { scores: recall.scores } : {}) } });
-      const brief = buildBrief(view, work.ledger, { action, project: workspace.project, cwd: workspace.path, memoryWrite, memory: recall.excerpts });
+      // Read-only reviewers have no shell, so the change they must review is computed here with read-only Git.
+      const change = action === 'review' || action === 'adversarial-review' ? await changeUnderReview(workspace, view.conversation.work!.baseCommit) : undefined;
+      const brief = buildBrief(view, work.ledger, { action, project: workspace.project, cwd: workspace.path, memoryWrite, memory: recall.excerpts, ...(change ? { change } : {}) });
       await this.options.accounts.markUsed(selected.account.id);
       if (memoryWrite) {
         await this.outside.assertIdle(workspace.project, workspace.path, config.guards.externalActivityWindowMin);
@@ -1358,15 +1364,17 @@ export class ConversationService {
       work.finish(n, { status, usage: outcome.usage, ...(gitAfter ? { gitAfter } : {}) }, changed, outcome.correction);
       this.#record(work, { ...decision, outcome: { stretch: n, status, handoffStatus: outcome.handoff.status } });
       await usageUpdates;
+      // A limit on one model cools only that model on this account; any other limit cools the account.
+      const limit = outcome.error?.scope === 'model' ? { model: model.model, ...(outcome.error.resetsAt ? { resetsAt: outcome.error.resetsAt } : {}) } : {};
       if (outcome.error) {
-        try { await this.options.accounts.recordError(selected.account.id, outcome.error.kind, account.account.secretRef ?? null); }
+        try { await this.options.accounts.recordError(selected.account.id, outcome.error.kind, account.account.secretRef ?? null, limit); }
         catch (error) { accountFailure = error; }
       }
       if (failure) throw failure;
       if (accountFailure && !(accountFailure instanceof HubUnavailable)) throw accountFailure;
       if (accountFailure) await this.hubWaits.retry(work, operation.abort.signal, 'account-report', async () => {
         if (streamUsage) await this.options.accounts.recordUsage(selected.account.id, streamUsage, account.account.secretRef ?? null);
-        if (outcome.error) await this.options.accounts.recordError(selected.account.id, outcome.error.kind, account.account.secretRef ?? null);
+        if (outcome.error) await this.options.accounts.recordError(selected.account.id, outcome.error.kind, account.account.secretRef ?? null, limit);
       });
     } finally { if (serial) this.#accountRuns.delete(selected.account.id); }
   }

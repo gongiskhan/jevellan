@@ -38,13 +38,13 @@
   {
     "id": "phase-6",
     "title": "Improver",
-    "why": "Resumed by the user on 2026-09-26 (dev-madrid). Backend complete: routing suggestions, memory care (Apply and tell me / Suggest only, morning cards with published revert), AGENTS.md context suggestions, unified suggestion cards, schedule and jobs settings, last runs, trial log and member dispatch; 78 improver tests pass with simulated Jev and drafts and real git publication. The Settings → Improver UI is rebuilt on that contract. Remaining: browser J10/J12 journeys and live Jev runs. See docs/acceptance/phase6-memory-care.md.",
-    "status": "in-progress"
+    "why": "Routing suggestions, memory care (Apply and tell me / Suggest only, morning cards with published revert), AGENTS.md context suggestions, unified suggestion cards, schedule and jobs settings, last runs, trial log and member dispatch, with the rebuilt Settings → Improver page. Browser J10 and J12 pass in four layouts on their own fixture servers (simulated judge and drafts; Git, ownership, Basic Memory and publication real). A live Jev improver run is not claimed. See docs/acceptance/phase6-memory-care.md, J10.md and J12.md.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "phase-7",
     "title": "Hardening and finish",
-    "why": "Resumed 2026-09-26. Interface overhaul to the website theme is done and the full browser matrix passes (132 in four layouts). Vision checks are wired (tests/e2e/vision.ts); the vision-enabled matrix, the full backend run, live journeys, the crucial-issues review and the final report remain. See docs/acceptance/REPORT.md.",
+    "why": "Resumed 2026-09-26. Interface overhaul to the website theme is done. Full backend 1083 passed (1 skipped) and full browser matrix 140 passed in four layouts on 2026-09-27. Live J1, J2, J5, J6, J7 and J13 passed; J4 partial; J3 blocked without a Codex test login. Remaining: vision-enabled matrix, crucial-issues review and final report. See docs/acceptance/REPORT.md.",
     "status": "in-progress"
   },
   {

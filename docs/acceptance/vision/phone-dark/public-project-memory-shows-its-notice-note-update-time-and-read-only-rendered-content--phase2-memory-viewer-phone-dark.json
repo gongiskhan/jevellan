@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "Disabled for this run.",
+  "test": "public project memory shows its notice, note update time and read-only rendered content",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/phase2-memory-viewer-phone-dark.png",
+  "expected": "the Jevellan web app screen for the check \"public project memory shows its notice, note update time and read-only rendered content\" at phone-dark, rendered completely and legibly"
+}

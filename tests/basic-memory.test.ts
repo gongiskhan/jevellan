@@ -109,3 +109,16 @@ test('an already-open memory index recalls notes pulled from another checkout wi
   expect(readFileSync(join(targetPath, '.jevellan/memory/Vitest.md'), 'utf8')).toBe(content);
   expect(git(targetPath, 'rev-parse', 'HEAD')).toBe(head); expect(git(targetPath, 'status', '--porcelain')).toBe('');
 }, 90_000);
+
+test('a provider write followed by a revert on disk still reindexes, although unchanged folders skip the provider sync', async () => {
+  const bound = memory.project(project('skip'), 'device', () => undefined); const folder = join(root, 'skip', '.jevellan/memory');
+  mkdirSync(folder, { recursive: true }); writeFileSync(join(folder, 'Base.md'), '---\ntitle: Base rule\n---\nKeep the base rule.\n');
+  expect((await bound.search('base', signal())).notes).toHaveLength(1);
+  expect((await bound.search('base', signal())).notes).toHaveLength(1);
+  const written = await bound.write({ title: 'Temporary rule', content: 'A rule that git later removes.' }, signal());
+  expect((await bound.search('temporary', signal())).notes.map(note => note.permalink)).toEqual([written.permalink]);
+  // Undo removes the file, returning the folder to the last synced contents; the index must still drop the note.
+  const file = readdirSync(folder).find(name => name !== 'Base.md')!; await rm(join(folder, file));
+  expect((await bound.search('temporary', signal())).notes).toEqual([]);
+  expect((await bound.search('base', signal())).notes).toHaveLength(1);
+}, 180_000);

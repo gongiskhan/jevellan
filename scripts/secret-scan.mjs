@@ -10,6 +10,13 @@ const patterns = [
   /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/,
   /\beyJ[A-Za-z0-9_-]{12,}\.[A-Za-z0-9_-]{12,}\.[A-Za-z0-9_-]{12,}/,
 ];
+// Exact source text that matches a pattern but is not a credential. Each entry is removed before
+// matching, so any real token elsewhere in the same file is still blocked.
+const allowed = [
+  // scripts/spikes/live-journeys.mjs (J4): a random value in the OAuth token shape, stored to test invalid-token recovery.
+  "`sk-ant-oat01-${randomBytes(40).toString('base64url')}`",
+];
+const flagged = (text) => patterns.some((pattern) => pattern.test(allowed.reduce((rest, entry) => rest.replaceAll(entry, ''), text)));
 
 function git(cwd, args) {
   const result = spawnSync('git', args, { cwd, encoding: null, maxBuffer: 128 * 1024 * 1024, env: { ...process.env, GIT_OPTIONAL_LOCKS: '0' } });
@@ -26,7 +33,7 @@ export function scanSecrets(cwd, revisions = ['--all'], environment = process.en
   for (const oid of new Set(objects)) {
     if (git(cwd, ['cat-file', '-t', oid]).toString().trim() !== 'blob') continue;
     const blob = git(cwd, ['cat-file', 'blob', oid]);
-    if (patterns.some((pattern) => pattern.test(blob.toString('utf8')))) violations.push({ oid, reason: 'token or private-key pattern' });
+    if (flagged(blob.toString('utf8'))) violations.push({ oid, reason: 'token or private-key pattern' });
     for (const [name, value] of values) {
       if (blob.includes(value)) violations.push({ oid, reason: `value of ${name}` });
     }
@@ -44,7 +51,7 @@ export function scanWorkingTree(cwd, environment = process.env) {
     catch (error) { if (error.code === 'ENOENT') continue; throw error; }
     if (!stat.isFile() && !stat.isSymbolicLink()) continue;
     const bytes = stat.isSymbolicLink() ? Buffer.from(readlinkSync(join(cwd, file))) : readFileSync(join(cwd, file));
-    if (patterns.some((pattern) => pattern.test(bytes.toString('utf8')))) violations.push({ file, reason: 'token or private-key pattern' });
+    if (flagged(bytes.toString('utf8'))) violations.push({ file, reason: 'token or private-key pattern' });
     for (const [name, value] of values) if (bytes.includes(Buffer.from(value))) violations.push({ file, reason: `value of ${name}` });
   }
   return violations;

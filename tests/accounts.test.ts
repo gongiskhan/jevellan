@@ -52,3 +52,22 @@ test('only auth and rate-limit failures change readiness; unknown reset cools fo
   expect(applyAccountError(status('test', { usage: { ...usage(100, 1), fiveHourResetsAt: reset } }), 'rate-limit', now).coolingUntil).toBe(reset);
   expect(applyAccountError(status('test', { usage: { ...usage(100, 1), fiveHourResetsAt: reset, weeklyResetsAt: new Date(now + 7 * 24 * 60 * 60_000).toISOString() } }), 'rate-limit', now).coolingUntil).toBe(reset);
 });
+test('a stored v1 status reads as v2 without model cooling', () => {
+  const stored = { schema: 'account-status-v1', accountId: 'old', deviceId: 'here', auth: 'ready', coolingUntil: new Date(now + 60_000).toISOString(), observedAt: new Date(now).toISOString() };
+  expect(AccountStatusSchema.parse(stored)).toEqual({ ...stored, schema: 'account-status-v2' });
+  expect(() => AccountStatusSchema.parse({ ...stored, schema: 'account-status-v2', modelCooling: { fable: 'soon' } })).toThrow();
+});
+test('a limit on one model cools only that model on the account, until its reset or for 30 minutes', () => {
+  const limited = applyAccountError(status('sub'), 'rate-limit', now, { model: 'claude-fable-5-1' });
+  expect(limited.coolingUntil).toBeUndefined(); expect(limited.modelCooling).toEqual({ 'claude-fable-5-1': new Date(now + 30 * 60_000).toISOString() });
+  const byModel = (model: string) => rankAccounts({ accounts: [account('sub')], statuses: [limited], runtime: 'codex', model, deviceId: 'here', now })[0]!;
+  expect(byModel('claude-fable-5-1')).toMatchObject({ eligible: false, reason: 'cooling' }); expect(byModel('claude-opus-5-5')).toMatchObject({ eligible: true, reason: 'eligible' });
+  expect(rankAccounts({ accounts: [account('sub')], statuses: [limited], runtime: 'codex', model: 'claude-fable-5-1', deviceId: 'here', now: now + 31 * 60_000 })[0]!.eligible).toBe(true);
+  const reset = new Date(now + 2 * 3_600_000).toISOString();
+  expect(applyAccountError(limited, 'rate-limit', now + 31 * 60_000, { model: 'gpt', resetsAt: reset }).modelCooling).toEqual({ gpt: reset });
+});
+test('a whole-account limit still cools the account for every model', () => {
+  const cooled = applyAccountError(status('sub'), 'rate-limit', now);
+  expect(cooled.modelCooling).toBeUndefined();
+  for (const model of ['claude-fable-5-1', 'claude-opus-5-5']) expect(rankAccounts({ accounts: [account('sub')], statuses: [cooled], runtime: 'codex', model, deviceId: 'here', now })[0]!.reason).toBe('cooling');
+});

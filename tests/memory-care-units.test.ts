@@ -102,21 +102,30 @@ test('the hub dispatches project jobs to the hub checkout, otherwise the first o
     expect(() => projects.suggest('desktop', retry, input('AGENTS.md'))).toThrow('only change notes in the memory folder');
     expect(() => projects.suggest('laptop', retry, input('.jevellan/memory/a.md'))).toThrow('another job');
     expect(projects.suggest('desktop', retry, input('.jevellan/memory/a.md')).suggestion).toMatchObject({ deviceId: 'desktop', status: 'pending' });
+    // A manual run covers the jobs enabled when it was requested; enabling a job later does not replay it.
+    const current = hub.configuration.current()!; current.configuration['x-jevellan'].improver.memory.enabled = false; current.configuration['x-jevellan'].improver.context.enabled = false;
+    hub.configuration.put(current.configuration, current.revision, { deviceId: 'hub', source: 'ui' }); projects.requestRun('disabled_run', 'hub');
+    const enabled = hub.configuration.current()!; enabled.configuration['x-jevellan'].improver.memory.enabled = true; enabled.configuration['x-jevellan'].improver.context.enabled = true;
+    hub.configuration.put(enabled.configuration, enabled.revision, { deviceId: 'hub', source: 'ui' });
+    expect(projects.poll('hub', new Date().toISOString()).jobs.filter(job => job.scope.cycle.kind === 'manual' && job.scope.cycle.id === 'disabled_run')).toEqual([]);
   } finally { hub.close(); }
 });
 
 test('the trial log counts conversations finished in Jevellan and outside it per week, with the reasons given', () => {
-  const index = (id: string, state: 'done' | 'running' | 'cancelled', updatedAt: string, outcome?: { reason?: string; at: string }): ConversationIndex => conversationIndex(ConversationSchema.parse({
+  const index = (id: string, state: 'done' | 'running' | 'cancelled', updatedAt: string, outcome?: { reason?: string; at: string }, origin?: 'context-operation'): ConversationIndex => conversationIndex(ConversationSchema.parse({
     schema: 'conversation-v2', id, title: `Conversation ${id}`, projectId: 'sandbox', ownerDeviceId: 'hub', createdAt: '2026-09-01T00:00:00.000Z', updatedAt, state, generation: 0, pins: {}, stretchCount: 1, work: null,
-    ...(outcome ? { outcome: { kind: 'finished-elsewhere', ...outcome } } : {}) }));
+    ...(outcome ? { outcome: { kind: 'finished-elsewhere', ...outcome } } : {}), ...(origin ? { origin } : {}) }));
   const log = trialLog([
     index('one', 'done', '2026-09-21T10:00:00.000Z'), index('two', 'done', '2026-09-22T10:00:00.000Z'), index('three', 'running', '2026-09-22T10:00:00.000Z'),
     index('four', 'done', '2026-09-23T10:00:00.000Z', { reason: 'Needed a live browser.', at: '2026-09-23T11:00:00.000Z' }), index('five', 'cancelled', '2026-09-15T10:00:00.000Z', { at: '2026-09-15T11:00:00.000Z' }),
     index('six', 'done', '2026-09-16T10:00:00.000Z'), index('old', 'done', '2026-01-01T10:00:00.000Z'),
+    // Conversations Jevellan starts for context operations are not user work.
+    index('context', 'done', '2026-09-22T10:00:00.000Z', undefined, 'context-operation'), index('context_outside', 'done', '2026-09-22T10:00:00.000Z', { at: '2026-09-22T11:00:00.000Z' }, 'context-operation'),
   ], Date.parse('2026-09-26T12:00:00.000Z'));
   expect(log.weeks).toEqual([
     { weekStart: '2026-09-21', inJevellan: 2, outside: 1, reasons: [{ conversationId: 'four', title: 'Conversation four', projectId: 'sandbox', at: '2026-09-23T11:00:00.000Z', reason: 'Needed a live browser.' }] },
     { weekStart: '2026-09-14', inJevellan: 1, outside: 1, reasons: [{ conversationId: 'five', title: 'Conversation five', projectId: 'sandbox', at: '2026-09-15T11:00:00.000Z', reason: null }] },
   ]);
   expect(index('four', 'done', '2026-09-23T10:00:00.000Z', { at: '2026-09-23T11:00:00.000Z' }).outcome?.kind).toBe('finished-elsewhere');
+  expect(index('context', 'done', '2026-09-22T10:00:00.000Z', undefined, 'context-operation').origin).toBe('context-operation');
 });

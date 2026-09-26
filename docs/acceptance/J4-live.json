@@ -1,0 +1,459 @@
+{
+  "schema": "live-journey-v1",
+  "journey": "J4",
+  "at": "2026-09-26T13:49:10.697Z",
+  "label": "live",
+  "source": "live-claude-jev",
+  "passed": false,
+  "checks": {
+    "preferredNeedsLoginNotice": false,
+    "workDoneAfterLogin": true,
+    "publishedToOrigin": true,
+    "htmlChanged": true,
+    "noTrailers": true,
+    "noBrowserErrors": true
+  },
+  "screenshots": [
+    {
+      "file": "J4-live-invalid-token.png",
+      "expected": "the conversation waiting because the only Claude account needs login"
+    },
+    {
+      "file": "J4-live-conversation.png",
+      "expected": "the finished HTML change with action, model and effort chips per step"
+    },
+    {
+      "file": "J4-live-phone.png",
+      "expected": "the same conversation on a phone"
+    }
+  ],
+  "launches": [
+    {
+      "conversationId": "live_j4_1790430554754",
+      "stretch": 1,
+      "action": "implement",
+      "permissions": "write",
+      "model": "claude-opus-5-5",
+      "effort": "low",
+      "account": "acc_01M3EZ8RAZ1XV54M1JNHW9EGC8",
+      "startedAt": "2026-09-26T13:49:39.848Z",
+      "status": "completed"
+    },
+    {
+      "conversationId": "live_j4_1790430554754",
+      "stretch": 2,
+      "action": "review",
+      "permissions": "read-only",
+      "model": "claude-fable-5-1",
+      "effort": "low",
+      "account": "acc_01M3EZ8RAZ1XV54M1JNHW9EGC8",
+      "startedAt": "2026-09-26T13:50:16.498Z",
+      "status": "failed",
+      "error": {
+        "kind": "other",
+        "message": "Claude returned an unsuccessful result."
+      }
+    },
+    {
+      "conversationId": "live_j4_1790430554754",
+      "stretch": 3,
+      "action": "review",
+      "permissions": "read-only",
+      "model": "claude-opus-5-5",
+      "effort": "low",
+      "account": "acc_01M3EZ8RAZ1XV54M1JNHW9EGC8",
+      "startedAt": "2026-09-26T13:50:39.607Z",
+      "status": "completed"
+    }
+  ],
+  "observations": [
+    "J4: failed checks: preferredNeedsLoginNotice. Steps: 1:implement/claude-opus/low, 2:review/claude-fable/low, 3:review/claude-opus/low"
+  ],
+  "accountId": "acc_01M3EZ8RAZ1XV54M1JNHW9EGC8",
+  "menu": [
+    {
+      "id": "claude-fable",
+      "runtime": "claude",
+      "model": "claude-fable-5-1",
+      "enabled": true,
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ]
+    },
+    {
+      "id": "claude-opus",
+      "runtime": "claude",
+      "model": "claude-opus-5-5",
+      "enabled": true,
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ]
+    },
+    {
+      "id": "codex-gpt",
+      "runtime": "codex",
+      "model": "discover-latest-gpt",
+      "enabled": false,
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh"
+      ]
+    },
+    {
+      "id": "claude-sonnet",
+      "runtime": "claude",
+      "model": "claude-sonnet-5",
+      "enabled": false,
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ]
+    }
+  ],
+  "git": {
+    "before": "d6d00fe98a3149bf36223fa2d591d622246041de",
+    "after": "f9780f69698946aaed999b9f0573619f2747b8eb"
+  },
+  "invalidatedAuth": [
+    "needs-login"
+  ],
+  "conversationId": "live_j4_1790430554754",
+  "state": "done",
+  "steps": [
+    {
+      "n": 1,
+      "workId": "work_c7d1c081-9d58-43a2-8e28-fe5e9100bbf0",
+      "action": "implement",
+      "modelId": "claude-opus",
+      "model": "claude-opus-5-5",
+      "effortRequested": "low",
+      "effortEffective": "low",
+      "account": "acc_01M3EZ8RAZ1XV54M1JNHW9EGC8",
+      "status": "completed",
+      "gitBefore": "d6d00fe98a3149bf36223fa2d591d622246041de",
+      "gitAfter": "33d13b72a28b159661dbaae438e94e0ca49743d6",
+      "costUsd": 0.1258986
+    },
+    {
+      "n": 2,
+      "workId": "work_c7d1c081-9d58-43a2-8e28-fe5e9100bbf0",
+      "action": "review",
+      "modelId": "claude-fable",
+      "model": "claude-fable-5-1",
+      "effortRequested": "low",
+      "effortEffective": "low",
+      "account": "acc_01M3EZ8RAZ1XV54M1JNHW9EGC8",
+      "status": "failed",
+      "gitBefore": "6720fe74d086431592ed4a3e3e4168988ef5d235"
+    },
+    {
+      "n": 3,
+      "workId": "work_c7d1c081-9d58-43a2-8e28-fe5e9100bbf0",
+      "action": "review",
+      "modelId": "claude-opus",
+      "model": "claude-opus-5-5",
+      "effortRequested": "low",
+      "effortEffective": "low",
+      "account": "acc_01M3EZ8RAZ1XV54M1JNHW9EGC8",
+      "status": "completed",
+      "gitBefore": "e2db2155bd7b5c244857e10b2ab849af8eb7e21a",
+      "costUsd": 0.08922740000000001
+    }
+  ],
+  "decisions": [
+    {
+      "n": 1,
+      "workId": "work_c7d1c081-9d58-43a2-8e28-fe5e9100bbf0",
+      "trigger": "resume",
+      "jevModel": "jev-1.13.0",
+      "action": {
+        "chosen": "implement",
+        "source": "jev",
+        "allowed": [
+          "reply",
+          "plan",
+          "implement",
+          "test",
+          "review",
+          "adversarial-review",
+          "ask-you"
+        ],
+        "probabilities": {
+          "review": 0,
+          "ask-you": 0,
+          "test": 0,
+          "implement": 0.99,
+          "reply": 0.01,
+          "adversarial-review": 0,
+          "plan": 0
+        }
+      },
+      "model": {
+        "chosen": "claude-opus",
+        "source": "jev",
+        "eligible": [
+          {
+            "modelId": "claude-fable",
+            "p": 0.47
+          },
+          {
+            "modelId": "claude-opus",
+            "p": 0.53
+          }
+        ],
+        "excluded": []
+      },
+      "effort": {
+        "requested": "low",
+        "effective": "low",
+        "source": "jev",
+        "probabilities": {
+          "low": 0.84,
+          "medium": 0.16,
+          "max": 0,
+          "high": 0,
+          "xhigh": 0
+        }
+      },
+      "notices": [],
+      "correctionsShown": []
+    },
+    {
+      "n": 2,
+      "workId": "work_c7d1c081-9d58-43a2-8e28-fe5e9100bbf0",
+      "trigger": "stretch-end",
+      "jevModel": "jev-1.13.0",
+      "action": {
+        "chosen": "review",
+        "source": "jev",
+        "allowed": [
+          "reply",
+          "plan",
+          "implement",
+          "test",
+          "review",
+          "adversarial-review",
+          "ask-you",
+          "done"
+        ],
+        "probabilities": {
+          "ask-you": 0.02,
+          "test": 0.01,
+          "plan": 0,
+          "implement": 0.01,
+          "adversarial-review": 0,
+          "review": 0.66,
+          "done": 0.16,
+          "reply": 0.14
+        }
+      },
+      "model": {
+        "chosen": "claude-fable",
+        "source": "jev",
+        "keepCurrentP": 0.54,
+        "eligible": [
+          {
+            "modelId": "claude-fable",
+            "p": 0.7
+          },
+          {
+            "modelId": "claude-opus",
+            "p": 0.3
+          }
+        ],
+        "excluded": []
+      },
+      "effort": {
+        "requested": "low",
+        "effective": "low",
+        "source": "jev",
+        "probabilities": {
+          "xhigh": 0,
+          "high": 0.01,
+          "medium": 0.34,
+          "max": 0.17,
+          "low": 0.48
+        }
+      },
+      "notices": [],
+      "correctionsShown": []
+    },
+    {
+      "n": 3,
+      "workId": "work_c7d1c081-9d58-43a2-8e28-fe5e9100bbf0",
+      "trigger": "stretch-end",
+      "jevModel": "jev-1.13.0",
+      "action": {
+        "chosen": "review",
+        "source": "jev",
+        "allowed": [
+          "reply",
+          "plan",
+          "implement",
+          "test",
+          "review",
+          "adversarial-review",
+          "ask-you",
+          "done"
+        ],
+        "probabilities": {
+          "review": 0.48,
+          "adversarial-review": 0,
+          "ask-you": 0.01,
+          "test": 0.01,
+          "done": 0.27,
+          "plan": 0,
+          "reply": 0.18,
+          "implement": 0.05
+        }
+      },
+      "model": {
+        "chosen": "claude-opus",
+        "source": "jev",
+        "keepCurrentP": 0.35,
+        "eligible": [
+          {
+            "modelId": "claude-fable",
+            "p": 0.41
+          },
+          {
+            "modelId": "claude-opus",
+            "p": 0.59
+          }
+        ],
+        "excluded": []
+      },
+      "effort": {
+        "requested": "low",
+        "effective": "low",
+        "source": "jev",
+        "probabilities": {
+          "max": 0.23,
+          "low": 0.37,
+          "high": 0.04,
+          "xhigh": 0,
+          "medium": 0.36
+        }
+      },
+      "notices": [],
+      "correctionsShown": []
+    },
+    {
+      "n": 4,
+      "workId": "work_c7d1c081-9d58-43a2-8e28-fe5e9100bbf0",
+      "trigger": "stretch-end",
+      "jevModel": "jev-1.13.0",
+      "action": {
+        "chosen": "done",
+        "source": "jev",
+        "allowed": [
+          "reply",
+          "plan",
+          "implement",
+          "test",
+          "ask-you",
+          "done"
+        ],
+        "probabilities": {
+          "done": 0.81,
+          "implement": 0,
+          "test": 0.02,
+          "reply": 0.14,
+          "plan": 0,
+          "ask-you": 0.02
+        }
+      },
+      "notices": [],
+      "correctionsShown": []
+    }
+  ],
+  "handoffs": [
+    {
+      "stretch": 1,
+      "action": "implement",
+      "status": "done",
+      "summary": "Added inline <style> to index.html centring h1 (text-align: center) and a small centred footer \"Built with Jevellan\" (0.8rem, 2rem top margin). npm test passes (5/5). No visual browser check done.",
+      "changedFiles": [
+        "index.html"
+      ],
+      "testsRun": {
+        "command": "npm test",
+        "passed": true,
+        "summary": "Test Files 2 passed, Tests 5 passed"
+      },
+      "proposedNext": "review"
+    },
+    {
+      "stretch": 2,
+      "action": "review",
+      "status": "failed",
+      "summary": "Stretch ended without a handoff; last tool: none.",
+      "changedFiles": [],
+      "proposedNext": null
+    },
+    {
+      "stretch": 3,
+      "action": "review",
+      "status": "done",
+      "summary": "Reviewed index.html at HEAD (no shell available, so git diff not run; reviewed the resulting file directly against the request). h1 centred via text-align:center (line 7); small footer \"Built with Jevellan\" present (line 14) styled 0.8rem, centred (line 8). Valid HTML, no serious findings. Outstanding verification: no visual browser check done yet; tests do not cover index.html.",
+      "changedFiles": [],
+      "proposedNext": "done"
+    }
+  ],
+  "works": [
+    {
+      "id": "work_c7d1c081-9d58-43a2-8e28-fe5e9100bbf0",
+      "request": "On the sandbox page (index.html), add a small footer that says \"Built with Jevellan\" and centre the heading.",
+      "baseCommit": "d6d00fe98a3149bf36223fa2d591d622246041de",
+      "counters": {
+        "stretches": 3,
+        "reviews": 2,
+        "noProgress": 0,
+        "testFailures": 0,
+        "costUsd": 0.215126,
+        "unknownCostStretches": 1
+      },
+      "closedAs": "done"
+    }
+  ],
+  "part1": {
+    "state": "waiting-for-you",
+    "pause": "No model can run this step right now: Fable: needs-login, Opus: needs-login.",
+    "decisionWait": {
+      "kind": "no-eligible-model",
+      "text": "No model can run this step right now: Fable: needs-login, Opus: needs-login.",
+      "reasons": [
+        {
+          "modelId": "claude-fable",
+          "reason": "needs-login",
+          "accountIds": [
+            "acc_01M3EZ8RAZ1XV54M1JNHW9EGC8"
+          ]
+        },
+        {
+          "modelId": "claude-opus",
+          "reason": "needs-login",
+          "accountIds": [
+            "acc_01M3EZ8RAZ1XV54M1JNHW9EGC8"
+          ]
+        }
+      ]
+    },
+    "launches": 0,
+    "notices": []
+  },
+  "effortSummary": "1:implement/claude-opus/low, 2:review/claude-fable/low, 3:review/claude-opus/low"
+}

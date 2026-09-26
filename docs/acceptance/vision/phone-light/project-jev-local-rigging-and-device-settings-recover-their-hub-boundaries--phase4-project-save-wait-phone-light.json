@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "Disabled for this run.",
+  "test": "project, Jev, local Rigging and device Settings recover their hub boundaries",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/phase4-project-save-wait-phone-light.png",
+  "expected": "the Jevellan web app screen for the check \"project, Jev, local Rigging and device Settings recover their hub boundaries\" at phone-light, rendered completely and legibly"
+}

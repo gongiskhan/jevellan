@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "Disabled for this run.",
+  "test": "Settings account, login, Rigging and configuration flows work without horizontal overflow",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/phase1-runtimes-phone-light.png",
+  "expected": "the Jevellan web app screen for the check \"Settings account, login, Rigging and configuration flows work without horizontal overflow\" at phone-light, rendered completely and legibly"
+}

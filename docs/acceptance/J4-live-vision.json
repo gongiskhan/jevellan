@@ -1,0 +1,66 @@
+{
+  "schema": "live-vision-v1",
+  "journey": "J4",
+  "checks": [
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J4 live",
+      "layout": "1440x900 light",
+      "screenshot": "screenshots/J4-live-invalid-token.png",
+      "expected": "the conversation waiting because the only Claude account needs login",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "Yes, the conversation is waiting because the Claude account needs login. It shows a 'Waiting for you' status and the banner 'No model can run this step right now: Fable: needs-login, Opus: needs-login.' There is one link, 'Review Claude test subscription'. The screen names only one account, but it never says outright that this is the only one.",
+          "In the sidebar, the J4 subtitle is cut off with an ellipsis ('Live sandbox \u00b7 \u2026'), so the 'dev-madrid' tag is hidden.",
+          "In the sidebar, the J6 title is cut off with an ellipsis ('Continue after Jev reject\u2026').",
+          "The 'Pick the next step' panel still has Model set to Fable and an active Continue button, even though Fable needs login. Clicking Continue will probably fail the same way.",
+          "There is an empty band about 48px high across the top of the window, above the sidebar and header."
+        ]
+      }
+    },
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J4 live, recaptured from history",
+      "layout": "1440x900 light",
+      "screenshot": "screenshots/J4-live-conversation.png",
+      "expected": "the finished conversation with its steps, chips and handoffs",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "The page opens at Step 2. Step 1 isn't visible, so either it is scrolled out of view or it was never rendered.",
+          "The Step 2 card sits almost directly under the Live sandbox / dev-madrid / Done chip row, with very little vertical space between them.",
+          "Step 2 shows its status twice in its header chips ('Fable' and 'Failed'), and its HANDOFF badge also says FAILED, which is redundant.",
+          "The Step 3 handoff text appears again, word for word, in the orange summary box at the bottom, so the result is duplicated.",
+          "Sidebar conversation titles and meta lines are cut short with an ellipsis (e.g., 'J13 \u00b7 Correct decisions afterwar\u2026', 'Live sandbox \u00b7 dev-madr\u2026', 'J6 \u00b7 Continue after Jev rejects t\u2026'). They remain readable and are shown in full in the main view.",
+          "The Step 2 message 'Stretch ended without a handoff; last tool: none.' uses internal wording that users may not understand.",
+          "The FINDING labels are very small and low-contrast, and read as faint next to the finding text."
+        ]
+      }
+    },
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J4 live, recaptured from history",
+      "layout": "390x844 light",
+      "screenshot": "screenshots/J4-live-phone.png",
+      "expected": "the same conversation on a phone",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "The same review summary appears twice: once in the result card and again in the amber message bubble below it.",
+          "The top of the result card is cut off at the top of the scroll area, so its text starts mid-sentence ('the request).'). This looks like normal scrolling, not a layout bug.",
+          "The first finding's file link 'index.html:8' includes a line number, but the other two links are just 'index.html'."
+        ]
+      }
+    }
+  ]
+}

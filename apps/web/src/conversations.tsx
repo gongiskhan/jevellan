@@ -487,7 +487,13 @@ export function ConversationPage({ id, ...props }: PageProps & { id: string }) {
     source?: 'step' | 'working-tree',
     output = false,
   ) => setContent({ ref, title, stretch, source, output });
-  if (!view) return <p className="muted">Loading conversation…</p>;
+  if (!view)
+    return (
+      <p className="page-loading" role="status">
+        <span className="activity-spinner" aria-hidden="true" />
+        Loading conversation…
+      </p>
+    );
   const device = props.data.devices.devices.find((entry) => entry.id === view.conversation.ownerDeviceId);
   const running = view.busy || view.conversation.state === 'running';
   const plan = view.conversation.work?.latestPlanRef;
@@ -1567,7 +1573,8 @@ function StepBlock({
             {props.data.devices.devices.find((entry) => entry.id === step.deviceId)?.name ?? step.deviceId}
           </span>
           <span className="chip dim">
-            {duration(seconds)} · {compactNumber(tokens)} tokens
+            {duration(seconds)}
+            {tokens > 0 && ` · ${compactNumber(tokens)} tokens`}
             {step.usage.costUsd !== undefined &&
               ` · $${step.usage.costUsd.toFixed(3)}${step.usage.costSource === 'estimated' ? ' est.' : ''}`}
           </span>

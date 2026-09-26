@@ -15,7 +15,9 @@ export const ConversationRenamedSchema = z.strictObject({ schema: z.literal('con
 export const FinishOutsideSchema = z.strictObject({ schema: z.literal('finish-outside-v1'), clientRequestId: IdSchema, generation: z.number().int().nonnegative(), reason: z.string().trim().min(1).max(2000).optional() });
 export const FinishOutsideOperationSchema = z.strictObject({ schema: z.literal('finish-outside-operation-v1'), request: FinishOutsideSchema, workId: IdSchema.nullable(), status: z.enum(['requested', 'completed', 'blocked']), retained: z.boolean().optional(), reason: z.string().optional() }).refine((value) => value.status !== 'completed' || value.retained !== undefined, 'Completion must record checkout retention.');
 export type FinishOutsideOperation = z.infer<typeof FinishOutsideOperationSchema>;
-export const ConversationControlSchema = z.union([ConversationRenamedSchema, FinishOutsideOperationSchema]);
+/** Records who started a conversation when that was not known at creation (conversations from before the field existed). */
+export const ConversationOriginSchema = z.strictObject({ schema: z.literal('conversation-origin-v1'), origin: z.enum(['context-operation']) });
+export const ConversationControlSchema = z.union([ConversationRenamedSchema, FinishOutsideOperationSchema, ConversationOriginSchema]);
 export const ManualStepSchema = z.strictObject({ schema: z.literal('manual-step-v1'), generation: z.number().int().nonnegative(), action: ActionSchema.exclude(['integrate']), modelId: IdSchema.optional(), effort: EffortSchema.optional(), remember: z.boolean().default(false) });
 export type ManualStep = z.infer<typeof ManualStepSchema>;
 export const ExternalActivityWaitSchema = z.strictObject({ schema: z.literal('external-activity-wait-v1'), id: IdSchema, workId: IdSchema, generation: z.number().int().nonnegative(), choice: ManualStepSchema, source: z.enum(['manual', 'automatic']) });

@@ -5,10 +5,14 @@ export type WorkerSession = {
   run(message: string, timeoutMs: number, emit: (event: RuntimeEvent) => void, session: (id: string) => void): Promise<RunResult>;
   interrupt(): Promise<void>;
 };
-export function classifyRuntimeError(error: unknown): NonNullable<RunResult['error']> {
+// A limit names what it applies to: "your Fable limit" or "switch to another model" is one model's; "your limit" or
+// "your weekly limit" is the account's. Generic window words never count as a model name.
+const LIMIT_REACHED = /\b(?:reached|hit|exceeded|used up)\b[^.\n]{0,40}\blimit\b|\blimit (?:reached|exceeded)\b|\busage limit\b/i;
+const MODEL_LIMIT = /\b(?:reached|hit|exceeded|used up)\s+(?:your|the)\s+(?!(?:usage|rate|weekly|daily|monthly|hourly|session|plan|account|5-hour|five-hour|limit)\b)[a-z][\w.-]*(?:\s+[\w.-]+){0,2}?\s+(?:model\s+)?(?:usage\s+)?limit\b|\b(?:switch to|use|try)\s+(?:another|a different)\s+model\b/i;
+export function classifyRuntimeError(error: unknown, structuredKind?: 'rate-limit'): NonNullable<RunResult['error']> {
   const message = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Runtime failed.';
-  const kind = /429|rate.limit|quota.exceeded/i.test(message) ? 'rate-limit' : /401|authentication|unauthori[sz]ed|needs.login|token.*(?:expired|revoked)|not.logged.in/i.test(message) ? 'auth' : 'other';
-  return { kind, message: message.slice(0, 2000) };
+  const kind = structuredKind ?? (/429|rate.limit|quota.exceeded/i.test(message) || LIMIT_REACHED.test(message) ? 'rate-limit' : /401|authentication|unauthori[sz]ed|needs.login|token.*(?:expired|revoked)|not.logged.in/i.test(message) ? 'auth' : 'other');
+  return { kind, message: message.slice(0, 2000), ...(kind === 'rate-limit' && MODEL_LIMIT.test(message) ? { scope: 'model' as const } : {}) };
 }
 
 export function serveWorker(factory: (input: StretchInput, daemonPid: number, executable?: string) => WorkerSession): void {

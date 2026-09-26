@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "Disabled for this run.",
+  "test": "context merge is drafted read-only, survives reload, cancels and applies through verified publication",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/phase2-context-linked-phone-light.png",
+  "expected": "the Jevellan web app screen for the check \"context merge is drafted read-only, survives reload, cancels and applies through verified publication\" at phone-light, rendered completely and legibly"
+}

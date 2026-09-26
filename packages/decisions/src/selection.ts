@@ -45,7 +45,7 @@ export function modelCandidates(input: {
     return model.enabled && input.settings.runtimes[model.runtime]?.enabled && runtime?.mcp
       && (writing ? runtime.edit && runtime.shell : runtime.readOnlyEnforced);
   }).map((model) => {
-    const ranking = rankAccounts({ accounts: input.accounts, statuses: input.statuses, runtime: model.runtime, deviceId: input.deviceId, ...(input.now === undefined ? {} : { now: input.now }) }).filter((entry) => entry.account.runtime === model.runtime);
+    const ranking = rankAccounts({ accounts: input.accounts, statuses: input.statuses, runtime: model.runtime, model: model.model, deviceId: input.deviceId, ...(input.now === undefined ? {} : { now: input.now }) }).filter((entry) => entry.account.runtime === model.runtime);
     const excluded = ranking.some((entry) => entry.eligible) ? undefined : ranking[0]?.reason ?? 'no-account';
     return { model, ranking, ...(excluded && excluded !== 'eligible' ? { reason: excluded } : {}) };
   });

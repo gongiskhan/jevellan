@@ -1,0 +1,240 @@
+{
+  "schema": "live-journey-v1",
+  "journey": "J1",
+  "at": "2026-09-26T13:43:43.864Z",
+  "label": "live",
+  "source": "live-claude-jev",
+  "passed": true,
+  "checks": {
+    "workDone": true,
+    "jevDecided": true,
+    "answered": true,
+    "noGitChanges": true,
+    "readOnlyLaunches": true,
+    "whyShowsJevDecision": true,
+    "noBrowserErrors": true
+  },
+  "screenshots": [
+    {
+      "file": "J1-live-conversation.png",
+      "expected": "a finished conversation that answered what src/sum.ts does"
+    },
+    {
+      "file": "J1-live-why.png",
+      "expected": "the Why drawer showing the Jev decision for the answer step with action, model and effort"
+    },
+    {
+      "file": "J1-live-phone.png",
+      "expected": "the same conversation on a phone"
+    }
+  ],
+  "launches": [
+    {
+      "conversationId": "live_j1_1790430224414",
+      "stretch": 1,
+      "action": "reply",
+      "permissions": "read-only",
+      "model": "claude-opus-5-5",
+      "effort": "low",
+      "account": "acc_01M3EZ8RAZ1XV54M1JNHW9EGC8",
+      "startedAt": "2026-09-26T13:43:46.588Z",
+      "status": "completed"
+    }
+  ],
+  "observations": [
+    "J1: all checks passed. Steps: 1:reply/claude-opus/low"
+  ],
+  "accountId": "acc_01M3EZ8RAZ1XV54M1JNHW9EGC8",
+  "menu": [
+    {
+      "id": "claude-fable",
+      "runtime": "claude",
+      "model": "claude-fable-5-1",
+      "enabled": true,
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ]
+    },
+    {
+      "id": "claude-opus",
+      "runtime": "claude",
+      "model": "claude-opus-5-5",
+      "enabled": true,
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ]
+    },
+    {
+      "id": "codex-gpt",
+      "runtime": "codex",
+      "model": "discover-latest-gpt",
+      "enabled": false,
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh"
+      ]
+    },
+    {
+      "id": "claude-sonnet",
+      "runtime": "claude",
+      "model": "claude-sonnet-5",
+      "enabled": false,
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ]
+    }
+  ],
+  "git": {
+    "before": "60d9fddc73bea6970048eab48d32342e752db5da",
+    "after": "60d9fddc73bea6970048eab48d32342e752db5da"
+  },
+  "conversationId": "live_j1_1790430224414",
+  "state": "done",
+  "steps": [
+    {
+      "n": 1,
+      "workId": "work_52b70fa0-7d19-4bd0-a64c-7e20ea817b82",
+      "action": "reply",
+      "modelId": "claude-opus",
+      "model": "claude-opus-5-5",
+      "effortRequested": "low",
+      "effortEffective": "low",
+      "account": "acc_01M3EZ8RAZ1XV54M1JNHW9EGC8",
+      "status": "completed",
+      "gitBefore": "60d9fddc73bea6970048eab48d32342e752db5da",
+      "costUsd": 0.029483000000000002
+    }
+  ],
+  "decisions": [
+    {
+      "n": 1,
+      "workId": "work_52b70fa0-7d19-4bd0-a64c-7e20ea817b82",
+      "trigger": "user-message",
+      "jevModel": "jev-1.13.0",
+      "action": {
+        "chosen": "reply",
+        "source": "jev",
+        "allowed": [
+          "reply",
+          "plan",
+          "implement",
+          "test",
+          "review",
+          "adversarial-review",
+          "ask-you"
+        ],
+        "probabilities": {
+          "implement": 0,
+          "plan": 0,
+          "ask-you": 0.01,
+          "review": 0,
+          "reply": 0.99,
+          "test": 0,
+          "adversarial-review": 0
+        }
+      },
+      "model": {
+        "chosen": "claude-opus",
+        "source": "jev",
+        "eligible": [
+          {
+            "modelId": "claude-fable",
+            "p": 0.25
+          },
+          {
+            "modelId": "claude-opus",
+            "p": 0.75
+          }
+        ],
+        "excluded": []
+      },
+      "effort": {
+        "requested": "low",
+        "effective": "low",
+        "source": "jev",
+        "probabilities": {
+          "high": 0,
+          "xhigh": 0,
+          "low": 0.85,
+          "max": 0,
+          "medium": 0.15
+        }
+      },
+      "notices": [],
+      "correctionsShown": []
+    },
+    {
+      "n": 2,
+      "workId": "work_52b70fa0-7d19-4bd0-a64c-7e20ea817b82",
+      "trigger": "stretch-end",
+      "jevModel": "jev-1.13.0",
+      "action": {
+        "chosen": "done",
+        "source": "jev",
+        "allowed": [
+          "reply",
+          "plan",
+          "implement",
+          "test",
+          "review",
+          "adversarial-review",
+          "ask-you",
+          "done"
+        ],
+        "probabilities": {
+          "review": 0,
+          "done": 0.97,
+          "adversarial-review": 0,
+          "plan": 0,
+          "test": 0,
+          "reply": 0.03,
+          "ask-you": 0,
+          "implement": 0
+        }
+      },
+      "notices": [],
+      "correctionsShown": []
+    }
+  ],
+  "handoffs": [
+    {
+      "stretch": 1,
+      "action": "reply",
+      "status": "done",
+      "summary": "Answered: src/sum.ts exports sum(a: number, b: number): number, which returns a + b. Nothing else is in the file.",
+      "changedFiles": [],
+      "proposedNext": null
+    }
+  ],
+  "works": [
+    {
+      "id": "work_52b70fa0-7d19-4bd0-a64c-7e20ea817b82",
+      "request": "What does src/sum.ts do?",
+      "counters": {
+        "stretches": 1,
+        "reviews": 0,
+        "noProgress": 0,
+        "testFailures": 0,
+        "costUsd": 0.029483000000000002,
+        "unknownCostStretches": 0
+      },
+      "closedAs": "done"
+    }
+  ],
+  "answer": "src/sum.ts exports one function, `sum(a: number, b: number): number`, which returns `a + b`. It has no input checks and no side effects. Nothing else is in the file (src/sum.ts:1-3).",
+  "effortSummary": "1:reply/claude-opus/low"
+}

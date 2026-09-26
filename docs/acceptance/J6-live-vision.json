@@ -1,0 +1,82 @@
+{
+  "schema": "live-vision-v1",
+  "journey": "J6",
+  "checks": [
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J6 live",
+      "layout": "1440x900 light",
+      "screenshot": "screenshots/J6-live-claude-unavailable.png",
+      "expected": "the Jev unavailable notice with action, model and effort pickers and a Continue button",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "The sidebar title 'J6 \u00b7 Continue after Jev reject\u2026' and its status line are cut off with an ellipsis. This is normal truncation, and the full text isn't needed here.",
+          "There is an empty strip about 48px high above the header and sidebar.",
+          "The page has lots of empty space between the notice card and the message box at the bottom."
+        ]
+      }
+    },
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J6 live",
+      "layout": "1440x900 light",
+      "screenshot": "screenshots/J6-live-claude-why.png",
+      "expected": "the Why drawer showing manual sources and the Jev unavailable notice",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "The Why drawer notice says 'Jev is unavailable (authentication failed). Pick the next step:' but nothing follows the colon. It looks like the step choices are missing, though the composer's 'Next step: Auto' control is still available.",
+          "The sidebar title 'J6 \u00b7 Continue after Jev reject\u2026' is cut short with an ellipsis. This looks like intended truncation.",
+          "The drawer says 'picked manually' for Next step, Model and Effort, but the composer below shows 'Auto' for all three. That could confuse people, though it probably reflects the state for the next message rather than the finished step."
+        ]
+      }
+    },
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J6 live, recaptured from history",
+      "layout": "1440x900 light",
+      "screenshot": "screenshots/J6-live-claude-conversation.png",
+      "expected": "the finished conversation with its steps, chips and handoffs",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "Sidebar titles are cut off with an ellipsis (e.g. 'J13 \u00b7 Correct decisions afterwar\u2026', 'J6 \u00b7 Continue after Jev rejects t\u2026'). The full title is readable in the main header.",
+          "The subtitle of the cancelled J13 item in the sidebar is cut off ('dev-madr\u2026') because 'Cancelled' is longer than 'Done'.",
+          "'Read full result' has no visible border, unlike the 'Changes' and 'Why' buttons beside it.",
+          "Muted text is low contrast: the step meta line (13s \u00b7 2.1k tokens \u00b7 $0.069 est.), the 'FINDING' label and the sidebar subtitles.",
+          "There is a large empty gap between the single step card and the composer.",
+          "Only one step and one handoff are shown, and nothing visible relates to the 'Jev rejects the key' scenario in the title. The layout is fine, but the content may not show the expected multi-step flow."
+        ]
+      }
+    },
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J6 live, recaptured from history",
+      "layout": "390x844 light",
+      "screenshot": "screenshots/J6-live-claude-phone.png",
+      "expected": "the same conversation on a phone",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "Inline code chip 'sum(a: number, b: number): number' breaks across lines, so the chip background is split",
+          "Step 1 badge row wraps and leaves 'dev-madrid' alone on a second line",
+          "Large empty gap between the step card and the composer",
+          "Send button looks greyed out with low contrast while the input is empty"
+        ]
+      }
+    }
+  ]
+}

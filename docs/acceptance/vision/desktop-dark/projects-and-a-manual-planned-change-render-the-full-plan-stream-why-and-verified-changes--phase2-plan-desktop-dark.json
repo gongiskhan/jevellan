@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "Disabled for this run.",
+  "test": "Projects and a manual planned change render the full plan, stream, Why and verified Changes",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/screenshots/phase2-plan-desktop-dark.png",
+  "expected": "the Jevellan web app screen for the check \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\" at desktop-dark, rendered completely and legibly"
+}

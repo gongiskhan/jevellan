@@ -15,7 +15,7 @@ export class HubAccounts implements AccountStore {
   #account(id: string) { return this.hub.get('accounts', IdSchema.parse(id), AccountSchema) ?? failure('Account not found.', 404); }
   status(id: string): AccountStatus {
     this.#account(id);
-    return this.hub.get('account-statuses', key(id, this.deviceId), AccountStatusSchema)?.document ?? AccountStatusSchema.parse({ schema: 'account-status-v1', accountId: id, deviceId: this.deviceId, auth: 'missing', observedAt: new Date(this.now()).toISOString() });
+    return this.hub.get('account-statuses', key(id, this.deviceId), AccountStatusSchema)?.document ?? AccountStatusSchema.parse({ schema: 'account-status-v2', accountId: id, deviceId: this.deviceId, auth: 'missing', observedAt: new Date(this.now()).toISOString() });
   }
   get(id: string) {
     const { revision, document: account } = this.#account(id);
@@ -64,7 +64,7 @@ export class HubAccounts implements AccountStore {
       const statuses = this.hub.list('account-statuses', AccountStatusSchema).filter(row => row.document.accountId === id);
       if (!statuses.some(row => row.document.deviceId === this.deviceId)) statuses.push({ revision: 0, document: this.status(id) });
       for (const row of statuses) this.hub.put('account-statuses', key(id, row.document.deviceId), AccountStatusSchema, {
-        schema: 'account-status-v1', accountId: id, deviceId: row.document.deviceId, auth: 'checking', observedAt: new Date(this.now()).toISOString(),
+        schema: 'account-status-v2', accountId: id, deviceId: row.document.deviceId, auth: 'checking', observedAt: new Date(this.now()).toISOString(),
       }, row.revision);
       if (current.document.secretRef) this.hub.vault.remove(current.document.secretRef);
       if (receiptId) this.hub.put('credential-captures', receiptId, CredentialCaptureReceiptSchema, { schema: 'credential-capture-receipt-v1', requestId, deviceId: this.deviceId, accountId: id, fingerprint, secretRef }, 0);

@@ -1,0 +1,100 @@
+{
+  "schema": "live-vision-v1",
+  "journey": "J13",
+  "checks": [
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J13 live",
+      "layout": "1440x900 light",
+      "screenshot": "screenshots/J13-live-undo-confirm.png",
+      "expected": "the Change this step confirmation with the Undo and redo button",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": []
+      }
+    },
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J13 live",
+      "layout": "1440x900 light",
+      "screenshot": "screenshots/J13-live-corrected.png",
+      "expected": "a step showing the corrected effort tag while the work continues, with undone earlier steps struck through",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "The pink status banner at the top is partly scrolled out of view under the header, and its '1s' timer is cut off at the top right",
+          "Sidebar conversation titles and meta lines are truncated with ellipses (e.g. 'J13 \u00b7 Correct decisions after\u2026', 'dev-madr\u2026')",
+          "Step 3's chip says effort 'medium' while its tag says 'corrected: effort \u2192 high'. Step 1 behaves the same way (chips show Opus/low, correction says fable/medium), so chips seem to show the original values, but this could confuse users",
+          "Struck-through step 1 and step 2 text is low-contrast grey, so it is harder to read, though still legible",
+          "Step 2 shows '40s \u00b7 0 tokens', which looks odd"
+        ]
+      }
+    },
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J13 live",
+      "layout": "1440x900 light",
+      "screenshot": "screenshots/J13-live-why-corrections.png",
+      "expected": "the Why drawer listing the corrections used by the next decision, including Override and undo and Just override",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "The composer text box overlaps the tan reply preview above it. The preview's second line is cut off after 'Tests in src/sum.test.ts:41-52 are', which may be intentional clamping.",
+          "The last 'Override and undo' entry in the Corrections used list is cut off at the bottom of the drawer. Its detail line is hidden, but the drawer appears to scroll.",
+          "Long titles in the sidebar are cut off with an ellipsis (e.g. 'J13 \u00b7 Correct decisions afterw\u2026', 'J6 \u00b7 Continue after Jev reject\u2026', and 'Cancelled \u00b7 Live sandbox \u00b7 dev-ma\u2026').",
+          "The top of the conversation, the 'Agent response' row, is partly hidden under the header. This is a normal scroll position.",
+          "The Model section says 'Keep the current model? 0.61', but its bars show Opus 0.53 and Fable 0.47. These are different scores, which could confuse readers."
+        ]
+      }
+    },
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J13 live",
+      "layout": "1440x900 light",
+      "screenshot": "screenshots/J13-live-conversation.png",
+      "expected": "the corrected conversation with undone steps struck through and the redone steps",
+      "result": {
+        "ok": false,
+        "blocking": [
+          "No successful redone steps are visible. Step 4 (implement) and step 5 (review) are struck through and marked Undone, which is correct. The only corrected step that isn't struck through is step 3 (corrected: effort \u2192 high), and it failed ('You've reached your Fable limit\u2026 No valid handoff was received'). Nothing replaces the undone implement or review work in this view, so the screen doesn't show the corrected conversation with its redone steps."
+        ],
+        "cosmetic": [
+          "The step 5 card is cut off at the bottom by the composer. Its 'Agent response' row sits partly under the input box, so the view needs scrolling, but no controls are lost.",
+          "The step order is confusing: step 3, marked 'corrected' and 'Failed', comes before the undone step 4, which also carries a 'corrected: effort \u2192 high' tag. It's unclear which step is the correction of which.",
+          "The undone handoff text is struck through and greyed out, so it's harder to read, though still legible.",
+          "Sidebar conversation titles are cut off with ellipses (e.g. 'J13 \u00b7 Correct decisions after\u2026', 'J6 \u00b7 Continue after Jev reject\u2026'), which looks intended."
+        ]
+      }
+    },
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J13 live",
+      "layout": "390x844 light",
+      "screenshot": "screenshots/J13-live-phone.png",
+      "expected": "the same conversation on a phone",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "The fixed composer at the bottom covers the lower edge of the 'Changes \u00b7 2 files' / 'Why' / 'Read full result' button row. The buttons are still visible and usable, and the rest of the card appears to scroll underneath.",
+          "The 'Step 1 \u00b7 Implement' heading and the handoff summary are struck through because the step was undone. The text is still readable but harder to scan on a small screen.",
+          "The pink dashed 'corrected: model \u2192 claude-fable, effort \u2192 medium' chip uses small, low-contrast text.",
+          "I can't confirm it's the same conversation because only one screenshot was provided. It does show the negate(a) request for src/sum.ts, the dev-madrid sandbox and the Done status."
+        ]
+      }
+    }
+  ]
+}

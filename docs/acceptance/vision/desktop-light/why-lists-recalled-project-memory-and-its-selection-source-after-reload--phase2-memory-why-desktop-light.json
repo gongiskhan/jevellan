@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "Disabled for this run.",
+  "test": "Why lists recalled project memory and its selection source after reload",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/screenshots/phase2-memory-why-desktop-light.png",
+  "expected": "the Jevellan web app screen for the check \"Why lists recalled project memory and its selection source after reload\" at desktop-light, rendered completely and legibly"
+}

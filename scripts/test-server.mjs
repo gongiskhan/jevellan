@@ -1,4 +1,5 @@
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, realpathSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
+import { createServer } from 'node:http';
 import { execFileSync } from 'node:child_process';
 import { rm } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -6,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { z } from 'zod';
-import { AccountSchema, BridgeResultSchema, BridgeToolsSchema, Homes, ProjectSchema, SecretRedactor, readDocument, writeDocument } from '../packages/core/dist/index.js';
+import { AccountSchema, BridgeResultSchema, BridgeToolsSchema, Homes, OverrideRecordSchema, ProjectSchema, SecretRedactor, parseConfiguration, readDocument, writeDocument } from '../packages/core/dist/index.js';
 import { joinMember } from '../packages/mesh/dist/index.js';
 import { FakeRuntime } from '../packages/runtime-contract/dist/index.js';
 import { Application, createDaemon } from '../apps/daemon/dist/index.js';
@@ -49,9 +50,61 @@ async function j11Step(input, emit, runtime) {
   await call('jevellan_handoff', { schema: 'handoff-v2', stretch: input.stretch, action: input.action, status: 'done', summary, evidence: [], findings: [], blockers: [], failedApproaches: [], proposedNext: null, changedFiles: [] });
   return { status: 'completed' };
 }
+// Improver fixtures (J10/J12). Jev judgments, saved-case checks and the generative drafts are simulated:
+// fixed answers and scripted drafts. Git, ownership, publication to the bare origin and Basic Memory are real.
+const savedCaseRequests = new Set(JSON.parse(readFileSync(new URL('../packages/decisions/cases/decision-cases-v1.json', import.meta.url), 'utf8')).cases.map(entry => entry.state.conversation.request));
+function improverAnswers(body, state) {
+  const ids = Object.keys(body.questions);
+  if (ids.every(id => /^(?:consistent_preference|pair_\d+|stale_\d+|rule_\d+)$/.test(id))) return Object.fromEntries(ids.map(id => {
+    // Only the two seeded "Test conventions" notes are duplicates; related rule notes are distinct notes.
+    const duplicate = (body.questions[id].instructions.toLowerCase().match(/test conventions/g) ?? []).length >= 2;
+    return [id, { type: 'noul', noul: id.startsWith('pair_') ? duplicate ? 0.95 : 0.05 : id.startsWith('stale_') ? 0.1 : 0.9 }];
+  }));
+  if (state.schema !== 'decision-state-v1' || !savedCaseRequests.has(state.conversation?.request)) return null;
+  return Object.fromEntries(Object.entries(body.questions).map(([id, question]) => {
+    if (question.type === 'noul') return [id, { type: 'noul', noul: 0 }];
+    if (question.type === 'score') return [id, { type: 'score', score: 3, probabilities: { '0': 0, '1': 0, '2': 0, '3': 1 }, legend: { '0': 'not useful', '1': 'marginally useful', '2': 'useful', '3': 'essential' }, confidence: 1 }];
+    const choice = Object.keys(question.criteria)[0];
+    return [id, { type: 'choice', choice, probabilities: Object.fromEntries(Object.keys(question.criteria).map((option) => [option, option === choice ? 1 : 0])), confidence: 1 }];
+  }));
+}
+async function improverDraft(input) {
+  const has = name => existsSync(join(input.cwd, name)); const read = name => readFileSync(join(input.cwd, name), 'utf8');
+  let type = 'suggestion'; let content;
+  if (has('tasks.json')) {
+    type = 'memory-patch'; const tasks = JSON.parse(read('tasks.json')); const files = new Map();
+    const body = text => text.replace(/^---\n[\s\S]*?\n---\n/, '').trim();
+    for (const [keep, remove] of tasks.merge) { files.set(keep, `${read(`memory/${keep}`).trimEnd()}\n\n${body(read(`memory/${remove}`))}\n`); files.set(remove, null); }
+    for (const path of tasks.reconcile) {
+      const [current, merged = ''] = read(`memory/${path}`).split(/\n## Merged from [^\n]*\n/);
+      files.set(path, `${current.replace(/^status: unresolved\n/m, '').trimEnd()}\n\n## History\n\n${merged.trim()}\n`);
+    }
+    for (const link of tasks.fixLinks) files.set(link.note, (files.get(link.note) ?? read(`memory/${link.note}`)).replaceAll(`[[${link.target}]]`, '[[Test conventions]]'));
+    content = { schema: 'memory-patch-draft-v1', summary: 'Simulated memory care draft.', files: [...files].map(([path, text]) => ({ path, content: text })) };
+  } else if (has('instructions.md')) {
+    content = { schema: 'context-draft-v1', title: 'Run the tests before pushing', reason: 'Three project notes state this working rule.', after: `${read('instructions.md').trimEnd()}\n\n## Working rules\n\n- Run the tests before every push.\n` };
+  } else if (has('previous-draft.json')) {
+    const previous = JSON.parse(read('previous-draft.json'));
+    content = { ...previous, title: `${previous.title}, revised`, after: `${previous.before} ${has('instruction.txt') ? read('instruction.txt').trim() : 'Recomputed.'}` };
+  } else if (has('corrections.json')) {
+    const group = JSON.parse(read('corrections.json')); const settings = parseConfiguration(read('apm.yml'))['x-jevellan']; const evidenceOverrideIds = group.overrides.map(entry => entry.id);
+    const model = group.key.field === 'model' ? settings.menu.find(entry => entry.id === group.key.to) : undefined;
+    // Groups formed by other browser tests' corrections get a generic routing-profile draft.
+    content = model
+      ? { schema: 'routing-draft-v1', title: `Prefer ${model.label} for ${group.key.action} steps`, reason: `${group.overrides.length} consistent corrections chose ${model.label} for ${group.key.action} steps.`,
+        field: { kind: 'menu-description', modelId: model.id }, before: model.description, after: `${model.description} Preferred for ${group.key.action} steps.`, evidenceOverrideIds }
+      : { schema: 'routing-draft-v1', title: `Adjust routing for ${group.key.action ?? group.key.to ?? 'these'} steps`, reason: `${group.overrides.length} consistent corrections changed ${group.key.field}.`,
+        field: { kind: 'routing-profile' }, before: settings.routingProfile, after: `${settings.routingProfile}\nFollow the recent ${group.key.field} corrections.`, evidenceOverrideIds };
+  } else throw new Error('Unknown improver draft fixture.');
+  const response = await fetch(`${input.launch.env.JEVELLAN_DAEMON_URL}/api/bridge`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${input.launch.env.JEVELLAN_STRETCH_TOKEN}` }, body: JSON.stringify({ schema: 'bridge-request-v1', operation: 'call', name: 'jevellan_handoff', arguments: {
+    schema: 'handoff-v2', stretch: input.stretch, action: input.action, status: 'done', summary: 'A simulated improver draft.', evidence: [], findings: [], blockers: [], failedApproaches: [], proposedNext: null, changedFiles: [], result: { type, content } } }) });
+  if (!response.ok) throw new Error('Improver fixture handoff failed.'); return { status: 'completed' };
+}
 const decisionFetch = async (_url, init) => {
   if (init?.method === 'GET') return Response.json({ models: [{ name: 'jev-latest', description: 'Simulated browser fixture.', release_date: '2026-09-22' }] });
   const body = JSON.parse(init.body); const state = JSON.parse(body.state);
+  const improver = improverAnswers(body, state);
+  if (improver) return Response.json({ model: 'jev-browser-simulated', usage: { input_tokens: 25, output_tokens: 15 }, answers: improver });
   const composer = state.conversation.request === 'Exercise composer choices: explain the value.';
   if (!composer && state.conversation.request !== 'Exercise automatic decisions: change the value to two.') return new Response(null, { status: 401 });
   return Response.json({ model: 'jev-browser-simulated', usage: { input_tokens: 25, output_tokens: 15 }, answers: Object.fromEntries(Object.entries(body.questions).map(([id, question]) => {
@@ -66,6 +119,8 @@ const application = new Application({ homes: new Homes(join(root, 'user', '.jeve
   const claude = createClaude(context); const codex = createCodex(context);
   for (const runtime of [claude, codex]) {
     const fake = new FakeRuntime(); fake.capabilities.readOnlyEnforced = true;
+    // Improver drafts get their own scripted queue, so they never take a turn meant for a concurrent conversation.
+    const drafts = new FakeRuntime(); drafts.capabilities.readOnlyEnforced = true;
     runtime.probe = async () => ({ auth: 'ready', identity: { email: 'fixture@example.test' } });
     runtime.listModels = async () => [{ id: runtime.id === 'claude' ? 'claude-fable-5-1' : 'gpt-fixture', label: runtime.id === 'claude' ? 'Fable' : 'GPT fixture', efforts: ['low', 'high'] }];
     runtime.beginLogin = async (account) => {
@@ -82,6 +137,7 @@ const application = new Application({ homes: new Homes(join(root, 'user', '.jeve
       };
     };
     runtime.startStretch = (input) => {
+      if (input.inputCopy) { drafts.enqueue(({ input }) => improverDraft(input)); return drafts.startStretch(input); }
       if (input.cwd === join(root, 'j11-a')) { fake.enqueue(({ input, emit }) => j11Step(input, emit, runtime.id)); return fake.startStretch(input); }
       fake.enqueue(async ({ input, emit, signal }) => {
         emit({ type: 'text', delta: input.action === 'plan' ? 'I will preserve the request and verify the final change.\n' : 'Working on the requested change.\n' });
@@ -191,12 +247,13 @@ const packageArchive = application.homes.ensure('rigging/parked/claude/acc_riggi
 writeFileSync(join(application.homes.account('codex', 'acc_rigging_codex'), 'config.toml'), 'model_reasoning_effort = "high"\n[mcp_servers.fixture_tools]\ncommand = "fixture-tools"\nargs = []\n');
 await application.auth.setup({ schema: 'passphrase-input-v1', passphrase: 'jevellan-browser-fixture' });
 const server = createDaemon({ application });
-let member; let memberServer; let memberHeartbeat;
+let member; let memberServer; let memberHeartbeat; let improverControl;
 let stopping = false;
 async function close() {
   if (stopping) return;
   stopping = true;
   globalThis.clearInterval(memberHeartbeat);
+  improverControl?.close();
   await member?.close();
   if (memberServer) await new Promise(resolve => { memberServer.close(resolve); memberServer.closeAllConnections(); });
   await application.close();
@@ -255,3 +312,38 @@ await application.conversations.saveProject({ schema: 'project-write-v1', revisi
 const j11ContextOrigin = join(root, 'j11-context-origin.git'); git(root, 'clone', '--bare', contextOrigin, j11ContextOrigin);
 const j11Context = join(root, 'j11-context'); git(root, 'clone', j11ContextOrigin, j11Context); git(j11Context, 'config', 'user.name', 'Fixture'); git(j11Context, 'config', 'user.email', 'fixture@example.invalid');
 await application.conversations.saveProject({ schema: 'project-write-v1', revision: 0, project: ProjectSchema.parse({ schema: 'project-v1', id: 'j11_context', name: 'J11 context journey', paths: { [application.device.deviceId]: j11Context }, branchPolicy: 'main', testCommand: 'test -f AGENTS.md', memory: { mode: 'repo', dir: '.jevellan/memory' }, context: { state: 'none' } }) });
+// Improver journeys (J10/J12): a dedicated sandbox with a bare origin, and memory care limited to it.
+const improverOrigin = join(root, 'improver-origin.git'); git(root, 'init', '--bare', '-b', 'main', improverOrigin);
+const improverPath = join(root, 'improver-sandbox'); git(root, 'clone', improverOrigin, improverPath); git(improverPath, 'config', 'user.name', 'Fixture'); git(improverPath, 'config', 'user.email', 'fixture@example.invalid');
+const improverMemory = join(improverPath, '.jevellan/memory'); mkdirSync(improverMemory, { recursive: true });
+writeFileSync(join(improverPath, 'AGENTS.md'), '# Improver sandbox\n\nRun npm test.\n');
+writeFileSync(join(improverMemory, 'old-caching-idea.md'), '---\ntitle: Old caching idea\n---\nWe once considered caching builds in S3.\n');
+const old = new Date(Date.now() - 200 * 86400_000).toISOString();
+git(improverPath, 'add', '-A'); execFileSync('git', ['commit', '-m', 'Seed improver sandbox'], { cwd: improverPath, stdio: 'ignore', env: { ...process.env, GIT_AUTHOR_DATE: old, GIT_COMMITTER_DATE: old } });
+writeFileSync(join(improverMemory, 'test-conventions.md'), '---\ntitle: Test conventions\n---\nUse Vitest with globals enabled.\n');
+writeFileSync(join(improverMemory, 'test-conventions-2.md'), '---\ntitle: Test Conventions\n---\nTests run with Vitest and globals are on.\n');
+writeFileSync(join(improverMemory, 'deploy.md'), '---\ntitle: Deploy notes\nstatus: unresolved\n---\nDeploy with npm run deploy. See [[Missing guide]].\n\n## Merged from laptop on 2026-09-20\n\nDeploy by hand from the release branch.\n');
+for (const [name, title] of [['push-tests.md', 'Run tests before pushing'], ['ci-green.md', 'Always run the tests before a push'], ['pre-push.md', 'Tests must pass before pushing']]) writeFileSync(join(improverMemory, name), `---\ntitle: ${title}\n---\n${title}. Never push with failing tests.\n`);
+git(improverPath, 'add', '-A'); git(improverPath, 'commit', '-m', 'Improver memory notes'); git(improverPath, 'push', '-u', 'origin', 'main');
+await application.conversations.saveProject({ schema: 'project-write-v1', revision: 0, project: ProjectSchema.parse({ schema: 'project-v1', id: 'improver_sandbox', name: 'Improver sandbox', paths: { [application.device.deviceId]: improverPath }, branchPolicy: 'main', testCommand: 'test -f AGENTS.md', memory: { mode: 'repo', dir: '.jevellan/memory' }, context: { state: 'none' } }) });
+{
+  const current = application.hub.configuration.current(); const settings = current.configuration['x-jevellan'].improver;
+  settings.schedule.enabled = false;
+  for (const row of await application.state.projects.list()) if (row.project.id !== 'improver_sandbox') settings.memory.projects[row.project.id] = false;
+  application.hub.configuration.put(current.configuration, current.revision, { deviceId: application.device.deviceId, source: 'install' });
+}
+const correction = (group, n, action, from, to) => {
+  const id = `improver_${group}_${n}`;
+  application.hub.put('overrides', id, OverrideRecordSchema, { schema: 'override-v1', id, request: { schema: 'correct-step-v1', clientRequestId: `request_${id}`, generation: 0, stretch: 1, mode: 'noted', choices: { modelId: to } },
+    conversationId: 'improver_fixture_conversation', projectId: 'improver_sandbox', workId: `work_${id}`, decisionId: `decision_${id}`, at: new Date().toISOString(), action, context: `A ${action} step in the improver fixture.`, changes: [{ field: 'model', from, to }] }, 0);
+};
+for (const n of [1, 2, 3]) { correction('implement', n, 'implement', 'claude-fable', 'codex-gpt'); correction('review', n, 'review', 'claude-fable', 'claude-opus'); }
+// Fixture control for J10's later "seed a third group" step. It listens on this server's own offset only.
+improverControl = createServer((request, response) => {
+  if (request.method === 'POST' && request.url === '/improver/third-group') {
+    for (const n of [1, 2, 3]) if (!application.hub.get('overrides', `improver_plan_${n}`, OverrideRecordSchema)) correction('plan', n, 'plan', 'claude-fable', 'claude-sonnet');
+    response.writeHead(204).end(); return;
+  }
+  response.writeHead(404).end();
+});
+await new Promise(resolve => improverControl.listen(port + 200, '127.0.0.1', resolve));

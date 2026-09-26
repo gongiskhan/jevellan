@@ -16,7 +16,8 @@ export const test = base.extend<{ page: Page }>({
     };
     await use(page);
     if (info.status !== info.expectedStatus || !shots.length) return;
-    const expected = `the Jevellan web app screen for the check "${info.title}" at ${info.project.name}, rendered completely and legibly`;
+    const layout = String(info.project.metadata.layout ?? info.project.name);
+    const expected = `the Jevellan web app screen for the check "${info.title}" at ${layout}, rendered completely and legibly`;
     const failures: string[] = [];
     for (const shot of shots) {
       if (!visionAvailable()) {
@@ -25,7 +26,7 @@ export const test = base.extend<{ page: Page }>({
           label: 'not run',
           reason: process.env.JEVELLAN_VISION === 'off' ? 'Disabled for this run.' : 'JEVELLAN_TEST_CLAUDE_TOKEN is not set.',
           test: info.title,
-          layout: info.project.name,
+          layout,
           screenshot: shot.path,
           expected,
         });
@@ -37,7 +38,7 @@ export const test = base.extend<{ page: Page }>({
         label: 'live',
         model: visionModel,
         test: info.title,
-        layout: info.project.name,
+        layout,
         screenshot: shot.path,
         expected,
         result,

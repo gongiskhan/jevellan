@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "Disabled for this run.",
+  "test": "external activity waits, retries, requires Changes review and publishes after reviewed acceptance",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/phase4-external-review-phone-dark.png",
+  "expected": "the Jevellan web app screen for the check \"external activity waits, retries, requires Changes review and publishes after reviewed acceptance\" at phone-dark, rendered completely and legibly"
+}

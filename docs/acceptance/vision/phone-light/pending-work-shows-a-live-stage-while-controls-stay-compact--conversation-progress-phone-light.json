@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "Disabled for this run.",
+  "test": "pending work shows a live stage while controls stay compact",
+  "layout": "phone-light",
+  "screenshot": "test-results/conversation-progress-phone-light.png",
+  "expected": "the Jevellan web app screen for the check \"pending work shows a live stage while controls stay compact\" at phone-light, rendered completely and legibly"
+}

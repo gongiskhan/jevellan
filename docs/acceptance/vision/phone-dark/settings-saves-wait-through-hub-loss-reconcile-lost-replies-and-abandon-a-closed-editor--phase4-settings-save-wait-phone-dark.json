@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "Disabled for this run.",
+  "test": "Settings saves wait through hub loss, reconcile lost replies and abandon a closed editor",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/phase4-settings-save-wait-phone-dark.png",
+  "expected": "the Jevellan web app screen for the check \"Settings saves wait through hub loss, reconcile lost replies and abandon a closed editor\" at phone-dark, rendered completely and legibly"
+}

@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "Disabled for this run.",
+  "test": "step corrections survive reload and undo launches the requested redo with visible history",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/screenshots/phase2-undo-retry-desktop-dark.png",
+  "expected": "the Jevellan web app screen for the check \"step corrections survive reload and undo launches the requested redo with visible history\" at desktop-dark, rendered completely and legibly"
+}

@@ -273,7 +273,7 @@ export class ProjectImprover {
   }
   #careSuggestion(id: string, project: Project, proposal: { patch: ProjectPatch; counts: MemoryCareCounts; evidence: MemoryNoteRef[]; key: string }): ProjectSuggestionInput {
     return ProjectSuggestionInputSchema.parse({ schema: 'project-suggestion-input-v1', id, kind: 'memory-care', projectId: project.id, projectName: project.name,
-      title: `Memory care for ${project.name}`, reason: `${memoryCareResult(proposal.counts)}. Jev confirmed the duplicates and stale notes; unresolved notes and broken links were collected in code.`,
+      title: `Suggested memory care for ${project.name}`, reason: `${memoryCareResult(proposal.counts)}. Jev confirmed the duplicates and stale notes; unresolved notes and broken links were collected in code.`,
       evidence: proposal.evidence.slice(0, 100), counts: proposal.counts, patch: proposal.patch, suppressionKey: proposal.key });
   }
 

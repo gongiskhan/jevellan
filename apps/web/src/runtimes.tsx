@@ -538,6 +538,15 @@ export function RuntimesPage(props: PageProps & { embedded?: boolean }) {
                   {status?.coolingUntil && Date.parse(status.coolingUntil) > Date.now() && (
                     <p className="notice">Cooling until {dateTime(status.coolingUntil)}</p>
                   )}
+                  {Object.entries(status?.modelCooling ?? {})
+                    .filter(([, until]) => Date.parse(until) > Date.now())
+                    .map(([model, until]) => (
+                      <p className="notice" key={model}>
+                        {props.data.config.configuration['x-jevellan'].menu.find((entry) => entry.model === model)
+                          ?.label ?? model}{' '}
+                        reached its limit on this account. Cooling until {dateTime(until)}; other models can still use it.
+                      </p>
+                    ))}
                   {status?.lastError && <p className="notice">{status.lastError}</p>}
                   <div className="actions">
                     {account.kind === 'subscription' && account.credential !== 'per-device' && (

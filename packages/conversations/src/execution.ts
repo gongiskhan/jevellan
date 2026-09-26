@@ -101,13 +101,15 @@ export class StretchExecution {
     }
     return tail;
   }
-  #fallback(): Handoff {
+  #fallback(error?: RunResult['error']): Handoff {
     const { work, input } = this.options;
     const events = work.ledger.events().filter((event) => event.stretch === input.stretch);
     const last = events.findLast((event) => event.type === 'tool-start');
     const data = last ? work.ledger.data(last) : undefined;
     const tool = data && typeof data === 'object' && 'name' in data && typeof data.name === 'string' ? data.name.slice(0, 200) : 'none';
-    const summary = this.#cancelled ? `Stretch cancelled; last tool: ${tool}.` : `Stretch ended without a handoff; last tool: ${tool}.`;
+    // The runtime's own failure reason is the only evidence the next decision gets about why this step produced nothing.
+    const reason = !this.#cancelled && error ? ` Runtime error: ${work.ledger.redact(error).message.slice(0, 600)}` : '';
+    const summary = this.#cancelled ? `Stretch cancelled; last tool: ${tool}.` : `Stretch ended without a handoff; last tool: ${tool}.${reason}`;
     const handoff = HandoffSchema.parse({ schema: 'handoff-v2', stretch: input.stretch, action: input.action, status: this.#cancelled ? 'partial' : 'failed', summary,
       evidence: last ? [{ kind: 'command', ref: `ledger/${last.id}`, note: 'Last recorded tool; this is not a success claim.' }] : [], findings: [], blockers: this.#cancelled ? [] : ['No valid handoff was received.'], failedApproaches: [], proposedNext: null, changedFiles: [] });
     work.runtimeEvent('error', { kind: 'other', message: summary }, input.stretch);
@@ -160,7 +162,7 @@ export class StretchExecution {
     return this.#outcome(result, repaired, failure);
   }
   #outcome(result: RunResult, repaired: boolean, error?: RunResult['error']): StretchOutcome {
-    const accepted = this.#handoff(); const handoff = accepted ?? this.#fallback();
+    const accepted = this.#handoff(); const handoff = accepted ?? this.#fallback(error);
     const usage = this.#usage;
     const knownCost = usage.length > 0 && usage.every((event) => event.costUsd !== undefined);
     return {

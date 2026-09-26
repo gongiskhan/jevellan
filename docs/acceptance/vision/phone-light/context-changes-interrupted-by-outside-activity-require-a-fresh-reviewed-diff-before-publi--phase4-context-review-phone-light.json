@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "Disabled for this run.",
+  "test": "context changes interrupted by outside activity require a fresh reviewed diff before publication",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/phase4-context-review-phone-light.png",
+  "expected": "the Jevellan web app screen for the check \"context changes interrupted by outside activity require a fresh reviewed diff before publication\" at phone-light, rendered completely and legibly"
+}

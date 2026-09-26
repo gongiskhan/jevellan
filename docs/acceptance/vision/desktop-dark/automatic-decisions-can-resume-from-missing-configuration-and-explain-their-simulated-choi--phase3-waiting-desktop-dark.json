@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "Disabled for this run.",
+  "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/screenshots/phase3-waiting-desktop-dark.png",
+  "expected": "the Jevellan web app screen for the check \"automatic decisions can resume from missing configuration and explain their simulated choices\" at desktop-dark, rendered completely and legibly"
+}

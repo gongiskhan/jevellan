@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "Disabled for this run.",
+  "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/phase6-j10-change-it-phone-dark.png",
+  "expected": "the Jevellan web app screen for the check \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\" at phone-dark, rendered completely and legibly"
+}

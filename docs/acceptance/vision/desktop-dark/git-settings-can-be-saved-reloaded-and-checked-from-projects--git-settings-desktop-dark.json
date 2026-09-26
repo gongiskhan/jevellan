@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "Disabled for this run.",
+  "test": "Git settings can be saved, reloaded and checked from Projects",
+  "layout": "desktop-dark",
+  "screenshot": "test-results/git-settings-desktop-dark.png",
+  "expected": "the Jevellan web app screen for the check \"Git settings can be saved, reloaded and checked from Projects\" at desktop-dark, rendered completely and legibly"
+}

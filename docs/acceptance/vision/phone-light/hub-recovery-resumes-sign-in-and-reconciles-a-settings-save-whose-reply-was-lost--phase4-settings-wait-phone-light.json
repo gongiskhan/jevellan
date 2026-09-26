@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "Disabled for this run.",
+  "test": "hub recovery resumes sign-in and reconciles a settings save whose reply was lost",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/phase4-settings-wait-phone-light.png",
+  "expected": "the Jevellan web app screen for the check \"hub recovery resumes sign-in and reconciles a settings save whose reply was lost\" at phone-light, rendered completely and legibly"
+}

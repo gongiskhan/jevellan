@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "Disabled for this run.",
+  "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/screenshots/phase2-evidence-image-desktop-dark.png",
+  "expected": "the Jevellan web app screen for the check \"file and evidence links show recorded versions, source lines, Markdown, images and verification output\" at desktop-dark, rendered completely and legibly"
+}

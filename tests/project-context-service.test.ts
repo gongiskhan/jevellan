@@ -1,15 +1,17 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readlinkSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, readlinkSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { AccountSchema, ContextPanelSchema, ContextReviewSchema, GitWorkspace, Homes, ProjectSchema, ProjectVisibilitySchema, type ContextOperation, type Project } from '../packages/core/dist/index.js';
+import { AccountSchema, ContextPanelSchema, ContextReviewSchema, ConversationIndexSchema, GitWorkspace, Homes, ProjectSchema, ProjectVisibilitySchema, stableJson, type ContextOperation, type Project } from '../packages/core/dist/index.js';
 import { Application, createDaemon } from '../apps/daemon/dist/index.js';
 import { ProjectContext } from '../packages/memory/dist/index.js';
 import { FakeRuntime } from '../packages/runtime-contract/dist/index.js';
-import { HubUnavailable } from '../packages/mesh/dist/index.js';
+import { HubDatabase, HubIndexes, HubUnavailable } from '../packages/mesh/dist/index.js';
+import { trialLog } from '../apps/daemon/dist/index.js';
+import { createHash } from 'node:crypto';
 
 let root: string; let path: string; let origin: string; let initial: string; let app: Application; let fake: FakeRuntime; let homes: Homes; let project: Project;
 let server: Server; let base: string; let cookie: string;
@@ -139,6 +141,8 @@ test('Create AGENTS.md on project save checkpoints, independently verifies and p
   expect(readFileSync(join(path, 'AGENTS.md'), 'utf8')).toContain('Run tests with `test -f value.txt`'); expect(readlinkSync(join(path, 'CLAUDE.md'))).toBe('AGENTS.md');
   const head = git(path, 'rev-parse', 'HEAD'); expect(head).not.toBe(initial); expect(git(origin, 'rev-parse', 'main')).toBe(head); expect(git(path, 'ls-files')).not.toContain('CLAUDE.md'); expect(git(path, 'status', '--porcelain')).toBe('');
   expect(app.conversations.ledger(record.conversationId).events().some((event) => event.type === 'verification')).toBe(true);
+  // The context conversation is marked as Jevellan's own work, so the trial log leaves it out.
+  expect((await app.conversations.list()).conversations.find((entry) => entry.id === record.conversationId)?.origin).toBe('context-operation');
   expect((await request('/api/projects/project/context/operations', 'POST', record.request)).status).toBe(202); expect(git(path, 'rev-parse', 'HEAD')).toBe(head); expect(fake.starts).toHaveLength(0);
 }, 60_000);
 
@@ -281,4 +285,29 @@ test.each(['open', 'lost-result', 'kept'])('outside activity during context appl
     await proceed('retry', 'recover_context_accept'); record = (await panel()).operations.at(-1)!; expect(record.commit).toBe(accepted);
   }
   await completed(record); expect(git(origin, 'show', 'main:outside.txt')).toBe('Newer outside contribution.'); expect(git(origin, 'rev-parse', 'main')).toBe(git(path, 'rev-parse', 'HEAD')); expect(fake.starts).toHaveLength(0);
+}, 90_000);
+
+test('upgrading a home whose context conversation index was published before origin existed records origin as a new event and keeps index flushes working', async () => {
+  await save({}, true); const record = (await panel()).operations[0]!; await app.conversations.wait(record.conversationId); await completed((await panel()).operations[0]!);
+  await app.conversations.list(); await stop();
+  // Rewrite this home into the pre-upgrade shape: no origin in the ledger, projections or the published index.
+  const legacy = (text: string) => text.replaceAll(',"origin":"context-operation"', '').replaceAll('"origin":"context-operation",', '');
+  const files = (directory: string): string[] => readdirSync(directory).flatMap((name) => statSync(join(directory, name)).isDirectory() ? files(join(directory, name)) : [join(directory, name)]);
+  for (const file of files(homes.at('conversations', record.conversationId))) if (/\.(?:jsonl?|json)$/.test(file)) writeFileSync(file, legacy(readFileSync(file, 'utf8')));
+  const hub = new HubDatabase(homes, 'hub');
+  try {
+    const row = hub.get('conversations', record.conversationId, ConversationIndexSchema)!; const document = { ...row.document }; delete document.origin;
+    hub.put('conversations', record.conversationId, ConversationIndexSchema, document, row.revision);
+    const key = createHash('sha256').update(`conversations\0${record.conversationId}`).digest('hex'); const cursor = hub.db.prepare("SELECT revision, document FROM documents WHERE namespace='index-cursors' AND id=?").get(key)!;
+    hub.db.prepare("UPDATE documents SET document=? WHERE namespace='index-cursors' AND id=?").run(JSON.stringify({ ...JSON.parse(String(cursor.document)), digest: createHash('sha256').update(stableJson(document)).digest('hex') }), key);
+  } finally { hub.close(); }
+  const events = () => app.conversations.ledger(record.conversationId).events();
+  app = new Application({ homes, timers: false, repositoryVisibility: async () => 'PUBLIC', runtimes: () => new Map([['fake', fake]]) }); await app.conversations.ready; await listen();
+  await app.conversations.wait(record.conversationId);
+  const upgraded = events(); expect(upgraded.filter((event) => (event.data as { schema?: string }).schema === 'conversation-origin-v1')).toHaveLength(1);
+  const listed = (await app.conversations.list()).conversations.find((entry) => entry.id === record.conversationId)!;
+  expect(listed.origin).toBe('context-operation'); expect((await app.conversations.view(record.conversationId)).conversation.updatedAt).toBe(listed.updatedAt);
+  expect(trialLog(new HubIndexes(app.hub, app.device.deviceId).conversations()).weeks).toEqual([]);
+  await stop(); app = new Application({ homes, timers: false, repositoryVisibility: async () => 'PUBLIC', runtimes: () => new Map([['fake', fake]]) }); await app.conversations.ready; await listen();
+  expect(events()).toHaveLength(upgraded.length); await app.conversations.wait(record.conversationId);
 }, 90_000);

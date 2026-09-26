@@ -45,7 +45,7 @@ test.each(['work', 'maintenance'] as const)('an exited process releases its %s l
 
 test('the daemon refuses a mutation before it changes state while an installer holds maintenance', async () => {
   const { homes, gate } = fixture(); const daemon = await startDaemon(0, { homes, timers: false, runtimes: () => new Map(), tailscaleAddress: async () => null }); daemons.push(daemon);
-  await daemon.application.conversations.ready; const installer = gate(), release = installer.tryMaintenance()!; releases.push(release);
+  await daemon.application.started; const installer = gate(), release = installer.tryMaintenance()!; releases.push(release);
   const response = await fetch(`${daemon.addresses[0]}/api/auth/setup`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ schema: 'passphrase-input-v1', passphrase: 'disposable fixture phrase' }) });
   expect(response.status).toBe(503); expect(await response.json()).toMatchObject({ message: expect.stringContaining('being updated') });
   const before = await fetch(`${daemon.addresses[0]}/api/auth`); expect(await before.json()).toMatchObject({ configured: false });

@@ -83,10 +83,14 @@ export const AccountUsageSchema = z.strictObject({
   fiveHourResetsAt: TimestampSchema.optional(), weeklyResetsAt: TimestampSchema.optional(),
   source: z.enum(['probe', 'stream', 'unknown']), observedAt: TimestampSchema,
 });
-export const AccountStatusSchema = z.strictObject({
-  schema: z.literal('account-status-v1'), accountId: IdSchema, deviceId: IdSchema, auth: AuthSchema,
-  usage: AccountUsageSchema.optional(), coolingUntil: TimestampSchema.optional(), lastError: z.string().optional(), observedAt: TimestampSchema,
+/** v2 adds per-model cooling, keyed by the runtime's model id, for limits that apply to one model rather than the whole account. */
+const AccountStatusV2Schema = z.strictObject({
+  schema: z.literal('account-status-v2'), accountId: IdSchema, deviceId: IdSchema, auth: AuthSchema,
+  usage: AccountUsageSchema.optional(), coolingUntil: TimestampSchema.optional(), modelCooling: z.record(z.string().min(1).max(200), TimestampSchema).optional(),
+  lastError: z.string().optional(), observedAt: TimestampSchema,
 });
+// Stored v1 statuses have no model cooling; they read as v2 unchanged otherwise.
+export const AccountStatusSchema = z.preprocess((value) => value && typeof value === 'object' && (value as { schema?: unknown }).schema === 'account-status-v1' ? { ...value, schema: 'account-status-v2' } : value, AccountStatusV2Schema);
 export type AccountStatus = z.infer<typeof AccountStatusSchema>;
 
 export const DeviceSchema = z.strictObject({
@@ -138,6 +142,8 @@ export const ConversationSchema = z.strictObject({
   createdAt: TimestampSchema, updatedAt: TimestampSchema, state: ConversationStateSchema, generation: count,
   current: z.strictObject({ modelId: IdSchema, effort: EffortSchema }).optional(), pins: z.strictObject({ modelId: IdSchema.optional(), effort: EffortSchema.optional() }), once: NextChoicesSchema.default({}),
   stretchCount: count, work: WorkSchema.nullable(), outcome: z.strictObject({ kind: z.literal('finished-elsewhere'), reason: text.optional(), at: TimestampSchema }).optional(),
+  /** Set only on conversations Jevellan starts itself; absent means a user request. */
+  origin: z.enum(['context-operation']).optional(),
 });
 export type Conversation = z.infer<typeof ConversationSchema>;
 export const SummarySchema = z.strictObject({
@@ -281,7 +287,7 @@ export const DecisionRecordSchema = z.strictObject({
 });
 export type DecisionRecord = z.infer<typeof DecisionRecordSchema>;
 
-export const ConversationIndexSchema = ConversationSchema.pick({ id: true, title: true, projectId: true, ownerDeviceId: true, state: true, updatedAt: true, current: true, outcome: true }).extend({ schema: z.literal('conversation-index-v1') });
+export const ConversationIndexSchema = ConversationSchema.pick({ id: true, title: true, projectId: true, ownerDeviceId: true, state: true, updatedAt: true, current: true, outcome: true, origin: true }).extend({ schema: z.literal('conversation-index-v1') });
 export type ConversationIndex = z.infer<typeof ConversationIndexSchema>;
 export const DecisionIndexSchema = DecisionRecordSchema.pick({ id: true, conversationId: true, workId: true, at: true, notices: true, outcome: true }).extend({
   schema: z.literal('decision-index-v1'),
@@ -291,8 +297,8 @@ export const DecisionIndexSchema = DecisionRecordSchema.pick({ id: true, convers
 });
 export type DecisionIndex = z.infer<typeof DecisionIndexSchema>;
 export function conversationIndex(value: Conversation): ConversationIndex {
-  const { id, title, projectId, ownerDeviceId, state, updatedAt, current, outcome } = ConversationSchema.parse(value);
-  return ConversationIndexSchema.parse({ schema: 'conversation-index-v1', id, title, projectId, ownerDeviceId, state, updatedAt, ...(current ? { current } : {}), ...(outcome ? { outcome } : {}) });
+  const { id, title, projectId, ownerDeviceId, state, updatedAt, current, outcome, origin } = ConversationSchema.parse(value);
+  return ConversationIndexSchema.parse({ schema: 'conversation-index-v1', id, title, projectId, ownerDeviceId, state, updatedAt, ...(current ? { current } : {}), ...(outcome ? { outcome } : {}), ...(origin ? { origin } : {}) });
 }
 export function decisionIndex(value: DecisionRecord): DecisionIndex {
   const { id, conversationId, workId, at, notices, outcome, action, model, effort } = DecisionRecordSchema.parse(value);

@@ -38,7 +38,7 @@ export async function evaluateDecisionCase(client: DecisionClient, raw: SavedDec
   const runtimes = [...new Set(menu.map(model => model.runtime))];
   const accounts = runtimes.map(runtime => AccountSchema.parse({ schema: 'account-v1', id: `case_${runtime}`, runtime, label: 'Saved case account', kind: 'subscription', enabled: true, credential: 'per-device' }));
   const now = Date.now();
-  const statuses = accounts.map(account => AccountStatusSchema.parse({ schema: 'account-status-v1', accountId: account.id, deviceId: 'saved_cases', auth: 'ready', observedAt: new Date(now).toISOString() }));
+  const statuses = accounts.map(account => AccountStatusSchema.parse({ schema: 'account-status-v2', accountId: account.id, deviceId: 'saved_cases', auth: 'ready', observedAt: new Date(now).toISOString() }));
   const state = DecisionStateSchema.parse(example.state);
   state.rules.routingProfile = settings.routingProfile; state.rules.effortGuide = settings.effortGuide;
   if (state.current) {

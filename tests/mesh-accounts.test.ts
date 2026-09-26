@@ -124,7 +124,7 @@ test('credential exchange is scoped to the current shared account and status rep
   await expect(repository.credential(id, 'unrelated')).rejects.toMatchObject({ status: 409 });
   const codex = await service.add({ schema: 'add-account-v1', runtime: 'codex', label: 'Per device', kind: 'subscription' });
   await expect(repository.credential(codex.account.id, created.account.secretRef!)).rejects.toMatchObject({ status: 409 });
-  const status: AccountStatus = { schema: 'account-status-v1', accountId: id, deviceId: app.device.deviceId, auth: 'ready', observedAt: new Date().toISOString() };
+  const status: AccountStatus = { schema: 'account-status-v2', accountId: id, deviceId: app.device.deviceId, auth: 'ready', observedAt: new Date().toISOString() };
   await expect(repository.writeStatus(status, created.account.secretRef!)).rejects.toMatchObject({ status: 403 });
   expect((await service.status(id)).auth).toBe('checking');
 });

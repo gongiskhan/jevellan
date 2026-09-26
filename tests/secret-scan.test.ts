@@ -28,6 +28,16 @@ test('blocks exact test environment values in binary blobs without exposing them
   expect(result).toHaveLength(1);
   expect(JSON.stringify(result)).not.toContain(secret);
 });
+test('allows only the exact documented fixture expression', () => {
+  const { dir, git } = repository();
+  const fixture = ['`sk', "-ant-oat01-${randomBytes(40).toString('base64url')}`"].join('');
+  writeFileSync(join(dir, 'fixture.mjs'), `await setCredential(${fixture});\n`);
+  git('add', '.'); git('commit', '-m', 'fixture');
+  expect(scanSecrets(dir, ['HEAD'], {})).toEqual([]);
+  writeFileSync(join(dir, 'fixture.mjs'), `await setCredential(${fixture});\nconst key = '${['sk', 'ant', 'oat01', 'A'.repeat(40)].join('-')}';\n`);
+  git('add', '.'); git('commit', '-m', 'token');
+  expect(scanSecrets(dir, ['HEAD'], {})).toEqual([expect.objectContaining({ reason: 'token or private-key pattern' })]);
+});
 test('passes a clean history', () => {
   const { dir, git } = repository();
   writeFileSync(join(dir, 'readme'), 'A clean project.'); git('add', '.'); git('commit', '-m', 'initial');

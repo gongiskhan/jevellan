@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "Disabled for this run.",
+  "test": "J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/J8-guard-phone-light.png",
+  "expected": "the Jevellan web app screen for the check \"J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work\" at phone-light, rendered completely and legibly"
+}

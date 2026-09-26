@@ -1,0 +1,64 @@
+{
+  "schema": "live-vision-v1",
+  "journey": "J5",
+  "checks": [
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J5 live",
+      "layout": "1440x900 light",
+      "screenshot": "screenshots/J5-live-note.png",
+      "expected": "a running step with the note recorded in the conversation",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "A pill-shaped element at the top right (above the 'Live sandbox / dev-madrid / Working' badges) is partly hidden under the sticky header. It is a scroll artifact and does not block anything.",
+          "Sidebar text is cut off with ellipses in 'J6 \u00b7 Continue after Jev rejects\u2026' and 'dev-madr\u2026' on the J5 row.",
+          "The running step shows '0 tokens' after 11s, which may look stale.",
+          "The step card and the agent-working banner are both pink, so the step card doesn't stand out much."
+        ]
+      }
+    },
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J5 live, recaptured from history",
+      "layout": "1440x900 light",
+      "screenshot": "screenshots/J5-live-conversation.png",
+      "expected": "the finished conversation with its steps, chips and handoffs",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "Earlier steps are scrolled out of view. Only Step 4 (TEST) and its handoff show, so the full step list can't be checked from this screenshot alone.",
+          "Just under the sticky header (y\u2248135), part of the previous step's card and its pill buttons shows through the header's bottom edge. It's ordinary scroll clipping, but there's no fade or gap, so it looks cut off.",
+          "The beige final-summary box at the bottom repeats the Step 4 handoff text almost word for word.",
+          "Sidebar titles are shortened with ellipses ('J13 \u00b7 Correct decisions afterwar\u2026', 'J6 \u00b7 Continue after Jev rejects t\u2026'), and in the cancelled J13 row the subtitle is cut to 'dev-madr\u2026'.",
+          "The chevron rows 'Agent response' and '9 tool calls \u00b7 1 failed' use small, low-contrast monospace text, so they're easy to miss."
+        ]
+      }
+    },
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J5 live, recaptured from history",
+      "layout": "390x844 light",
+      "screenshot": "screenshots/J5-live-phone.png",
+      "expected": "the same conversation on a phone",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "There's an empty bordered box just above the composer textarea, and the textarea partly overlaps it. It looks like a leftover or clipped container edge.",
+          "The top card is cut off mid-sentence ('recording was not done.') at the header edge. This is normal scroll clipping, but the card has no visible top boundary.",
+          "The Send button looks very faint (disabled style) with an empty input, so it has low contrast.",
+          "I can't confirm this is the same conversation without a desktop screenshot to compare. The title 'J5 \u00b7 Notes and corrections', the 'dev-madrid' environment and the 'Done' status look consistent."
+        ]
+      }
+    }
+  ]
+}

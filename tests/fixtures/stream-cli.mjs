@@ -12,6 +12,12 @@ createInterface({ input: process.stdin }).on('line', (line) => {
   }
   if (message.type === 'user') {
     send({ type: 'system', subtype: 'init', session_id: session });
+    if (JSON.stringify(message).includes('MODEL_LIMIT_RESULT')) {
+      // The shape Claude Code reports when one model's usage limit is reached: the reason is only in result.
+      send({ type: 'assistant', session_id: session, error: 'rate_limit', message: { content: [] } });
+      send({ type: 'result', subtype: 'success', is_error: true, session_id: session, result: "You've reached your Fable limit. Switch to another model to continue.", modelUsage: {} });
+      return;
+    }
     send({ type: 'assistant', session_id: session, message: { content: [{ type: 'tool_use', id: 'tool', name: 'Read', input: { file_path: 'fixture' } }] } });
     const finish = () => {
       send({ type: 'user', session_id: session, message: { content: [{ type: 'tool_result', tool_use_id: 'tool', content: 'fixture', is_error: false }] } });

@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { AccountSchema, Homes } from '../packages/core/dist/index.js';
 import { createRuntime as claude } from '../runtimes/claude/dist/index.js';
 import { createRuntime as codex } from '../runtimes/codex/dist/index.js';
-import { StretchInputSchema, checkEventsAndContinuation, collectEvents, groupAlive, type StretchInput, type StretchRun } from '../packages/runtime-contract/dist/index.js';
+import { StretchInputSchema, checkEventsAndContinuation, classifyRuntimeError, collectEvents, groupAlive, type StretchInput, type StretchRun } from '../packages/runtime-contract/dist/index.js';
 let root: string; let homes: Homes; const runs: StretchRun[] = [];
 beforeEach(() => { root = mkdtempSync(join(tmpdir(), 'jevellan-adapter-fixture-')); mkdirSync(join(root, 'user')); homes = new Homes(join(root, 'jevellan'), join(root, 'user')); });
 afterEach(async () => { await Promise.all(runs.splice(0).map((run) => run.terminate())); await rm(root, { recursive: true, force: true }); });
@@ -35,6 +35,16 @@ test.each(['claude', 'codex'] as const)('%s timeout interrupts the turn without 
   expect((await run.done).status).toBe('interrupted');
   await run.interrupt('timeout');
   await run.terminate(); expect(groupAlive(run.native.pgid)).toBe(false);
+});
+test('Claude keeps the reason of an error result, such as a model usage limit', async () => {
+  const { input, adapter } = setup('claude'); input.brief = 'MODEL_LIMIT_RESULT';
+  const run = adapter.startStretch(input); runs.push(run);
+  const events = []; for await (const event of run.events) events.push(event);
+  expect(events.some((event) => event.type === 'tool-start')).toBe(false);
+  const result = await run.done;
+  expect(result.status).toBe('failed');
+  expect(result.error).toMatchObject({ kind: 'rate-limit', scope: 'model' }); expect(result.error?.message).toContain("You've reached your Fable limit.");
+  await run.terminate();
 });
 test('Claude model discovery initializes without sending a model turn', async () => {
   const { input, adapter } = setup('claude'); expect(await adapter.listModels(input.account)).toEqual([{ id: 'fixture-model', label: 'Fixture', efforts: ['low', 'high'] }]);
@@ -74,4 +84,14 @@ test('private input-copy launches cannot request writing permissions, memory wri
   const { input } = setup('codex');
   expect(StretchInputSchema.safeParse({ ...input, inputCopy: true }).success).toBe(true);
   for (const change of [{ permissions: 'write' }, { memoryWrite: true }, { action: 'implement' }]) expect(StretchInputSchema.safeParse({ ...input, inputCopy: true, ...change }).success).toBe(false);
+});
+test('runtime errors say whether a limit belongs to one model or to the whole account', () => {
+  for (const message of ["You've reached your Fable limit. Switch to another model to continue.", 'You have hit the Opus 5 usage limit for today.', 'Limit reached for this model; try a different model.'])
+    expect(classifyRuntimeError(message), message).toMatchObject({ kind: 'rate-limit', scope: 'model' });
+  for (const message of ["You've hit your limit · resets 5pm (Europe/Lisbon)", "You've reached your weekly limit.", 'HTTP 429 Too Many Requests', 'Claude AI usage limit reached|1790000000'])
+    expect(classifyRuntimeError(message), message).toEqual({ kind: 'rate-limit', message });
+  expect(classifyRuntimeError('rate_limit')).toEqual({ kind: 'rate-limit', message: 'rate_limit' });
+  expect(classifyRuntimeError('Something unrelated failed.', 'rate-limit')).toEqual({ kind: 'rate-limit', message: 'Something unrelated failed.' });
+  expect(classifyRuntimeError('Invalid API key · Please run /login')).toMatchObject({ kind: 'other' });
+  expect(classifyRuntimeError('401 authentication failed')).toEqual({ kind: 'auth', message: '401 authentication failed' });
 });

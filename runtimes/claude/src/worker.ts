@@ -11,7 +11,7 @@ const ContentMessage = z.object({ message: z.object({ content: z.union([z.string
 const ToolUse = z.object({ type: z.literal('tool_use'), id: z.string(), name: z.string(), input: z.unknown() });
 const ToolResult = z.object({ type: z.literal('tool_result'), tool_use_id: z.string(), content: z.unknown(), is_error: z.boolean().optional() });
 const ModelUsage = z.object({ inputTokens: z.number().nonnegative(), outputTokens: z.number().nonnegative(), cacheReadInputTokens: z.number().nonnegative(), cacheCreationInputTokens: z.number().nonnegative(), costUSD: z.number().nonnegative(), costBasis: z.enum(['list', 'managed', 'unknown']).optional() });
-const Result = z.object({ is_error: z.boolean(), subtype: z.string(), errors: z.array(z.string()).optional(), modelUsage: z.record(z.string(), ModelUsage) });
+const Result = z.object({ is_error: z.boolean(), subtype: z.string(), result: z.string().optional(), errors: z.array(z.string()).optional(), modelUsage: z.record(z.string(), ModelUsage) });
 
 serveWorker((input, daemonPid, executable) => {
   let current: Query | undefined; let sessionId: string | undefined; let interrupted = false;
@@ -31,7 +31,7 @@ serveWorker((input, daemonPid, executable) => {
       interrupted = false;
       const controller = new AbortController();
       const timer = setTimeout(() => { interrupted = true; void current?.interrupt(); }, timeoutMs);
-      let succeeded = false; let failure: ReturnType<typeof classifyRuntimeError> | undefined;
+      let succeeded = false; let failure: ReturnType<typeof classifyRuntimeError> | undefined; let rateLimited = false;
       const started = new Set<string>(); const ended = new Set<string>();
       const options: Options = {
         cwd: input.cwd, env, model: input.model, effort: input.effort, abortController: controller,
@@ -71,7 +71,7 @@ serveWorker((input, daemonPid, executable) => {
               const result = ToolResult.safeParse(block);
               if (result.success && !ended.has(result.data.tool_use_id)) { emit({ type: 'tool-end', id: result.data.tool_use_id, ok: !result.data.is_error, output: typeof result.data.content === 'string' ? result.data.content : JSON.stringify(result.data.content) }); ended.add(result.data.tool_use_id); }
             }
-            if (typeof event.error === 'string') failure = classifyRuntimeError(event.error);
+            if (typeof event.error === 'string') { failure = classifyRuntimeError(event.error); if (event.error === 'rate_limit') rateLimited = true; }
           }
           if (event.type === 'result') {
             const result = Result.parse(event);
@@ -81,7 +81,8 @@ serveWorker((input, daemonPid, executable) => {
             emit({ type: 'usage', inputTokens: delta('input'), outputTokens: delta('output'), cacheReadTokens: delta('read'), cacheWriteTokens: delta('write'), ...(values.length && values.every((usage) => usage.costBasis !== 'unknown') ? { costUsd: delta('cost'), costSource: 'estimated' as const } : {}) });
             previous = totals;
             succeeded = !result.is_error && result.subtype === 'success';
-            if (!succeeded && !interrupted) failure = classifyRuntimeError(result.errors?.join('; ') ?? 'Claude returned an unsuccessful result.');
+            // An error result carries its reason in errors or, for API-level failures such as a model's usage limit, in result.
+            if (!succeeded && !interrupted) failure = classifyRuntimeError(result.errors?.join('; ') || result.result || 'Claude returned an unsuccessful result.', rateLimited ? 'rate-limit' : undefined);
           }
         }
         if (interrupted) return { status: 'interrupted' };

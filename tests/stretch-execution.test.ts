@@ -85,6 +85,13 @@ test('failed repair keeps the original output and records an honest code-written
   expect(work.ledger.events().some((event) => event.type === 'error')).toBe(true);
 });
 
+test('a code-written handoff carries the runtime failure reason for the next decision', async () => {
+  const error = { kind: 'other' as const, message: "You've reached your Fable limit. Switch to another model to continue." };
+  const runtime = adapter(() => ({ status: 'failed', error }), () => ({ status: 'failed', error }));
+  const outcome = await execute(runtime).done;
+  expect(outcome).toMatchObject({ status: 'failed', repaired: false, handoff: { status: 'failed', summary: `Stretch ended without a handoff; last tool: none. Runtime error: ${error.message}` } });
+});
+
 test.each([false, true])('runtime failure remains visible after a successful handoff repair (already streamed: %s)', async (streamed) => {
   const error = { kind: 'other' as const, message: 'Codex returned a malformed file_change item.' };
   const runtime = adapter(({ emit }) => {

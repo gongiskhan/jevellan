@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "Disabled for this run.",
+  "test": "conversation titles, expanded tools and outside outcomes survive updates and reload",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/phase2-controls-outcome-phone-light.png",
+  "expected": "the Jevellan web app screen for the check \"conversation titles, expanded tools and outside outcomes survive updates and reload\" at phone-light, rendered completely and legibly"
+}

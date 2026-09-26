@@ -1,0 +1,105 @@
+{
+  "schema": "live-vision-v1",
+  "journey": "J7",
+  "checks": [
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J7-on live",
+      "layout": "1440x900 light",
+      "screenshot": "screenshots/J7-live-on-plan-waiting.png",
+      "expected": "a finished plan waiting with Go ahead and Change the plan buttons",
+      "result": {
+        "ok": false,
+        "blocking": [
+          "The 'Conversations' header bar (with the dev-madrid selector) is drawn in the middle of the page, around y\u22481070\u20131120, on top of the findings list. It covers the second line of the first FINDING ('decision: keep subtract and divide defined in src/sum.ts...'), so that text is cut off and can't be read. This may be a full-page screenshot artifact from a fixed or sticky header, but as captured the elements overlap.",
+          "The left sidebar (Jevellan logo, New conversation, filters, conversation list, Settings) only starts about halfway down the page (y\u22481070). The top half of the page has no sidebar, and the main content runs full width under where the sidebar should be. This is probably the same fixed-position capture artifact, but the layout is broken in the image."
+        ],
+        "cosmetic": [
+          "The plan JSON block is clipped mid-sentence at '...document every helper in code (TSDoc) and'. It looks like a scroll container with no visible scroll cue or fade, so it isn't obvious there is more text.",
+          "Partway through the JSON block, from the 'grep -c id=\"fn-\"' check onward, the text switches from normal to bold for no clear reason.",
+          "The screen does show a finished plan (HANDOFF DONE) waiting for a decision. The Go ahead and Change the plan buttons are visible and reachable, but so is a separate 'Pick the next step' panel with its own Continue button. Having two ways to proceed right next to each other may confuse users."
+        ]
+      }
+    },
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J7 live, recaptured from history",
+      "layout": "1440x900 light",
+      "screenshot": "screenshots/J7-live-off-conversation.png",
+      "expected": "the finished conversation with its steps, chips and handoffs",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "The scroll area has no top fade or gap. The first visible finding card is cut off right under the header chips (Live sandbox / dev-madrid / Done), so its first line of text is half-clipped and looks cramped.",
+          "The bottom of the scroll area runs under the composer with no fade or padding. A partly hidden finding card peeks out just above the 'What would you like to do next?' box, which looks like an overlap even though scrolling reveals it.",
+          "Only step 3 (Review) is fully visible in this view. Earlier steps and their handoffs are scrolled out, so this screenshot alone doesn't confirm every step shows correctly.",
+          "The Send button is greyed out with low contrast while the composer is empty. This is expected for a disabled state but it's faint.",
+          "Some long conversation titles in the sidebar are cut off with an ellipsis (e.g. 'J13 \u00b7 Correct decisions afterwar\u2026', 'J6 \u00b7 Continue after Jev rejects t\u2026', 'Cancelled \u00b7 Live sandbox \u00b7 dev-madr\u2026'). This is deliberate truncation, not a layout break."
+        ]
+      }
+    },
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J7 live, recaptured from history",
+      "layout": "390x844 light",
+      "screenshot": "screenshots/J7-live-off-phone.png",
+      "expected": "the same conversation on a phone",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "The fixed composer covers the last visible line of the HANDOFF text (\"rewrite index.html as a reference page, power\u2026\"). This looks like normal scroll content under a sticky footer, but the composer has no divider or shadow, so the text looks clipped.",
+          "The model chips (plan, Opus, high, Claude test subscription, dev-madrid) wrap onto a second line with dev-madrid alone on it, which looks slightly unbalanced.",
+          "The Send button is pale grey on a light background. That is expected while the input is empty, but the contrast is low.",
+          "This single screenshot shows the J7 \u00b7 Plan pause off conversation, with the user prompt, the Step 1 plan and the Done handoff. There was nothing to compare it against, so I can't confirm it matches the desktop view."
+        ]
+      }
+    },
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J7 live, recaptured from history",
+      "layout": "1440x900 light",
+      "screenshot": "screenshots/J7-live-on-conversation.png",
+      "expected": "the finished conversation with its steps, chips and handoffs",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "Partway through the handoff JSON (from the 'grep -c' check onward) the text switches to bold and stays bold to the end. Some characters were eaten as formatting, e.g. '(starts with /, , / or //)' has lost its asterisks. The JSON is probably being parsed as markdown instead of shown as literal code.",
+          "The JSON box runs under the message box at the bottom of the screen, so the 'goal' line is cut off in this view. The page appears to scroll, so the rest should be reachable.",
+          "The step list isn't visible here; the handoff fills the screen and any steps are presumably further down.",
+          "Two sidebar titles ('J13 \u00b7 Correct decisions afterwar\u2026') are cut short with an ellipsis and look identical, so they're hard to tell apart."
+        ]
+      }
+    },
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J7 live, recaptured from history",
+      "layout": "390x844 light",
+      "screenshot": "screenshots/J7-live-on-phone.png",
+      "expected": "the same conversation on a phone",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "I can't confirm it's the same conversation because only this screenshot was provided. It does show conversation 'J7 \u00b7 Plan pause on' in the dev-madrid sandbox, and its status is Done.",
+          "The header title 'J7 \u00b7 Plan pause on' may be cut short with no ellipsis to show it.",
+          "The results card is scrolled, so the top of the first finding is clipped under the badges row. It can still be reached by scrolling.",
+          "An empty bordered box peeks out above the message box, like a stacked card or a leftover container.",
+          "The Send button is greyed out while the input is empty. That's expected, but it's low contrast."
+        ]
+      }
+    }
+  ]
+}

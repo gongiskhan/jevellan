@@ -1,0 +1,99 @@
+{
+  "schema": "live-vision-v1",
+  "journey": "J2",
+  "checks": [
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J2 live, recaptured from history",
+      "layout": "1440x900 light",
+      "screenshot": "screenshots/J2-live-conversation.png",
+      "expected": "a finished conversation that added multiply with tests",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "The HANDOFF text lost its '*' characters, likely because markdown turned them into italics. It reads '0.54=2' and '70 is +0' where the summary banner below says '0.5*4=2' and '7*0 is +0'. The text is still readable, but the arithmetic now looks wrong.",
+          "Long conversation titles in the sidebar are cut short with an ellipsis ('J13 \u00b7 Correct decisions afterwar\u2026', 'J6 \u00b7 Continue after Jev rejects t\u2026'), and one metadata line ends in 'dev-madr\u2026'.",
+          "The step 1 card is partly scrolled out of view under the header chips, so its top edge looks clipped. This is normal scroll behaviour.",
+          "The final summary banner repeats the step 2 HANDOFF text word for word."
+        ]
+      }
+    },
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J2 live, recaptured from history",
+      "layout": "1440x900 light",
+      "screenshot": "screenshots/J2-live-changes.png",
+      "expected": "the Changes drawer with the multiply diff",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "The Changes drawer (step 1) is open and lists src/multiply.ts and src/multiply.test.ts, but the diff pane starts with the two .jevellan/memory note files. The actual multiply diff is not visible without scrolling or clicking the file links.",
+          "The diff pane wraps long lines, and the git octal escapes (\\302\\267) in the memory file paths are hard to read.",
+          "The last visible diff line is clipped at the bottom of the viewport, which is expected for a scrollable pane.",
+          "Conversation titles and metadata in the sidebar are cut off with ellipses (e.g. 'J13 \u00b7 Correct decisions afterwar\u2026', 'dev-madr\u2026')."
+        ]
+      }
+    },
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J2 live, recaptured from history",
+      "layout": "1440x900 light",
+      "screenshot": "screenshots/J2-live-changes-receipt.png",
+      "expected": "the Changes drawer showing the passing Jevellan verification receipt for the final commit",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "The drawer header says 'step 1 Changes', which doesn't clearly mark this as the final commit. The screen doesn't show whether commit d6d00fe\u2026 is HEAD or relate it to the 60d9fdd..HEAD range and memory commit 374bafb mentioned in the handoff.",
+          "The diff viewer is scrolled, so its top line is partly clipped at the drawer header. It's still reachable by scrolling.",
+          "The handoff summary appears twice: once in the HANDOFF card and again in the orange result box below it.",
+          "Some sidebar conversation titles are cut off with ellipses (e.g. 'J13 \u00b7 Correct decisions afterwar\u2026', 'J6 \u00b7 Continue after Jev rejects t\u2026')."
+        ]
+      }
+    },
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J2 live, recaptured from history",
+      "layout": "1440x900 light",
+      "screenshot": "screenshots/J2-live-why.png",
+      "expected": "the Why drawer for the implement step with the Jev decision",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "Some sidebar conversation titles and metadata are cut off with an ellipsis (e.g. 'J13 \u00b7 Correct decisions afterwar\u2026', 'J6 \u00b7 Continue after Jev rejects t\u2026', 'dev-madr\u2026'); the full text is not visible without hovering or opening the conversation.",
+          "The Step 2 handoff text is cut off at the bottom by the composer. It can probably be scrolled into view.",
+          "The Step 2 handoff shows '(0.54=2', which looks like a lost '*' (probably read as markdown emphasis) and should likely be '0.5*4=2'."
+        ]
+      }
+    },
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J2 live, recaptured from history",
+      "layout": "390x844 light",
+      "screenshot": "screenshots/J2-live-phone.png",
+      "expected": "the same conversation on a phone",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "The top of the 'YOU' message bubble is cut off where the conversation scrolls under the header chips row, so its top corners and padding are missing.",
+          "Just above the composer, the top border of another card shows through as a thin line.",
+          "The Send button is pale and low contrast, so it looks disabled even though it's readable."
+        ]
+      }
+    }
+  ]
+}

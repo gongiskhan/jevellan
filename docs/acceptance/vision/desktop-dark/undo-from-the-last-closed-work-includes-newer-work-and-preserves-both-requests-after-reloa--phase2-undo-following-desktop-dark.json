@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "Disabled for this run.",
+  "test": "undo from the last closed work includes newer work and preserves both requests after reload",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/screenshots/phase2-undo-following-desktop-dark.png",
+  "expected": "the Jevellan web app screen for the check \"undo from the last closed work includes newer work and preserves both requests after reload\" at desktop-dark, rendered completely and legibly"
+}

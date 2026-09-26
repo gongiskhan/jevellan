@@ -14,7 +14,8 @@ import { ImproverJobs, dueImproverDate } from './improver-jobs.js';
 const hash = (value: unknown) => createHash('sha256').update(typeof value === 'string' ? value : stableJson(value)).digest('hex');
 function conflict(message = 'This suggestion changed. Reload it before deciding.'): never { throw Object.assign(new Error(message), { status: 409 }); }
 function missing(message: string): never { throw Object.assign(new Error(message), { status: 404 }); }
-const ManualCycleSchema = z.strictObject({ schema: z.literal('improver-manual-cycle-v1'), id: IdSchema, deviceId: IdSchema, requestedAt: TimestampSchema });
+const ManualCycleSchema = z.strictObject({ schema: z.literal('improver-manual-cycle-v1'), id: IdSchema, deviceId: IdSchema, requestedAt: TimestampSchema,
+  jobs: z.array(z.strictObject({ kind: z.enum(['memory', 'context']), projectId: IdSchema })) });
 const ReceiptSchema = z.strictObject({ schema: z.literal('project-improver-receipt-v1'), deviceId: IdSchema, requestId: IdSchema, fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
   result: z.union([ProjectSuggestionRowSchema, MemoryCareReportRowSchema]) });
 const UNDO_WINDOW_MS = 30_000;
@@ -56,7 +57,8 @@ export class ProjectImproverHub {
   }
   requestRun(cycleId: string, deviceId: string): string {
     const existing = this.hub.get('improver-manual-cycles', cycleId, ManualCycleSchema);
-    if (!existing) this.hub.put('improver-manual-cycles', cycleId, ManualCycleSchema, { schema: 'improver-manual-cycle-v1', id: cycleId, deviceId, requestedAt: this.#at() }, 0);
+    // A manual run covers the jobs enabled when it was requested; enabling a job later does not replay earlier runs.
+    if (!existing) this.hub.put('improver-manual-cycles', cycleId, ManualCycleSchema, { schema: 'improver-manual-cycle-v1', id: cycleId, deviceId, requestedAt: this.#at(), jobs: this.plannedJobs() }, 0);
     return existing?.document.requestedAt ?? this.hub.get('improver-manual-cycles', cycleId, ManualCycleSchema)!.document.requestedAt;
   }
   /** Project jobs a manual run asked for, for the run receipt. */
@@ -66,11 +68,13 @@ export class ProjectImproverHub {
       ...(settings.context.enabled ? [{ kind: 'context' as const, projectId: project.id }] : []),
     ]);
   }
-  cycles(settings = this.settings()): ImproverJobScope['cycle'][] {
+  /** Due cycles, each with the project jobs it may run (null: whatever is enabled now). */
+  cycles(settings = this.settings()): Array<{ cycle: ImproverJobScope['cycle']; jobs: Set<string> | null }> {
     const date = dueImproverDate(settings, new Date(this.#now()));
     const manual = this.hub.list('improver-manual-cycles', ManualCycleSchema).map(row => row.document).filter(cycle => Date.parse(cycle.requestedAt) >= this.#now() - MANUAL_CYCLE_MS)
       .sort((a, b) => a.requestedAt.localeCompare(b.requestedAt));
-    return [...(date ? [{ kind: 'nightly' as const, date }] : []), ...manual.map(cycle => ({ kind: 'manual' as const, id: cycle.id }))];
+    return [...(date ? [{ cycle: { kind: 'nightly' as const, date }, jobs: null }] : []),
+      ...manual.map(cycle => ({ cycle: { kind: 'manual' as const, id: cycle.id }, jobs: new Set(cycle.jobs.map(job => `${job.kind}\0${job.projectId}`)) }))];
   }
   #job(scope: ImproverJobScope): ImproverJob | null { return this.jobs.list().find(job => stableJson(job.scope) === stableJson(scope)) ?? null; }
 
@@ -79,11 +83,12 @@ export class ProjectImproverHub {
     IdSchema.parse(deviceId); const settings = this.settings();
     this.#recoverTasks(deviceId, startedAt);
     const jobs: ImproverJob[] = [];
-    for (const cycle of this.cycles(settings)) for (const project of this.projects()) {
+    for (const { cycle, jobs: planned } of this.cycles(settings)) for (const project of this.projects()) {
       if (this.designated(project) !== deviceId) continue;
-      const memory = settings.memory.enabled && this.memorySelected(project, settings);
+      const allowed = (kind: 'memory' | 'context') => !planned || planned.has(`${kind}\0${project.id}`);
+      const memory = settings.memory.enabled && this.memorySelected(project, settings) && allowed('memory');
       if (memory) { const claim = this.jobs.claim({ kind: 'memory', projectId: project.id, cycle }, deviceId); if (claim.claimed) jobs.push(claim.job); }
-      if (!settings.context.enabled) continue;
+      if (!settings.context.enabled || !allowed('context')) continue;
       // Context suggestions read the notes that memory care leaves behind.
       const care = memory ? this.#job({ kind: 'memory', projectId: project.id, cycle }) : null;
       if (memory && (!care || care.status === 'running')) continue;

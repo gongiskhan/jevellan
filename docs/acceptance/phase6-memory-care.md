@@ -67,7 +67,7 @@ J12 backend behaviours proven by `tests/memory-care.test.ts`:
 - Only one memory-care suggestion per project waits at a time. Suppression keys are the involved notes' paths and contents.
 - Context groups need three or more related notes (title similarity or mutual search overlap). External-policy projects are skipped for context. AGENTS.md changes are not memory-only, so their publication runs the test command.
 - The morning-card Undo has no time limit; suggestion-card Undo keeps the 30-second window. Projects that do not commit memory (device mode or external) apply and undo on disk, with hash checks.
-- The trial log counts a conversation as finished in Jevellan when its state is `done` without an outside outcome, in the week of its last update (UTC Mondays). Renaming a finished conversation later moves it to the rename's week.
+- The trial log counts a conversation as finished in Jevellan when its state is `done` without an outside outcome, in the week of its last update (UTC Mondays). Renaming a finished conversation later moves it to the rename's week. Conversations Jevellan starts itself are left out: context operations now carry `origin: 'context-operation'` on the conversation and its index entry. Older context conversations are recognised from their recorded context operation.
 - Handoff summaries for the stale-note question come from the executing device's local conversations only.
 
 ## Not done

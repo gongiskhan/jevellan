@@ -28,6 +28,8 @@ export class Application {
   #riggingQueue: Promise<unknown> = Promise.resolve();
   readonly #ownership: DaemonOwnership;
   readonly lifecycle: LifecycleGate;
+  /** Resolves once startup recovery is complete and the startup lifecycle activity is released. */
+  readonly started: Promise<void>;
   readonly #hub: HubDatabase | undefined;
   readonly #mesh: HubMesh | undefined;
   readonly homes: Homes; readonly device: DeviceConfig; readonly redactor: SecretRedactor;
@@ -143,7 +145,7 @@ export class Application {
         ...(options.timers === undefined ? {} : { timers: options.timers }) });
       this.settingsSync = new SettingsSync({ homes: this.homes, redactor: this.redactor, ready: this.conversations.ready, apply: () => this.applyRigging(), ...(options.timers === undefined ? {} : { timers: options.timers }) });
       const releaseStartup = startup; startup = undefined;
-      void improverReady.then(releaseStartup, releaseStartup).catch(() => undefined);
+      this.started = improverReady.then(releaseStartup, releaseStartup).catch(() => undefined);
     } catch (error) { this.#hub?.close(); throw error; }
     } catch (error) { startup?.(); lifecycle?.close(); this.#ownership.close(); throw error; }
   }

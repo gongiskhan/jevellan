@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "Disabled for this run.",
+  "test": "device Settings completes a member login, shows activity, invites and switches without signing in again",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/phase5-join-phone-light.png",
+  "expected": "the Jevellan web app screen for the check \"device Settings completes a member login, shows activity, invites and switches without signing in again\" at phone-light, rendered completely and legibly"
+}

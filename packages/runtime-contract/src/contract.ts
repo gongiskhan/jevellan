@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { AccountSchema, ActionSchema, EffortSchema, IdSchema, NativeProcessSchema, type Account, type AccountStatus, type Effort, type Homes, type RiggingItem, type SecretRedactor } from '@jevellan/core';
 
-export const RuntimeErrorSchema = z.strictObject({ kind: z.enum(['rate-limit', 'auth', 'other']), message: z.string() });
+// scope 'model': a limit on the model that ran, not on the whole account. resetsAt: when the runtime reports it.
+export const RuntimeErrorSchema = z.strictObject({ kind: z.enum(['rate-limit', 'auth', 'other']), message: z.string(), scope: z.enum(['account', 'model']).optional(), resetsAt: z.iso.datetime().optional() });
 export const RuntimeEventSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal('text'), delta: z.string() }),
   z.strictObject({ type: z.literal('tool-start'), id: z.string(), name: z.string(), input: z.unknown() }),
