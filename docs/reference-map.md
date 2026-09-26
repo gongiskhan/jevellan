@@ -134,3 +134,19 @@ Optional HTTPS follows BRIEF.md §§4.3 and 14 and the documented Tailscale Serv
 The complete packed first-run/J9 fixture comes from BRIEF.md §§4.3 and 16. Its initial plain-HTTP browser failure exposed the web forms' secure-context-only identifier API. `tests/ui-identifiers.test.ts` covers identifier generation without that API; the packed browser journey exercises the actual printed address. No additional Garrison behavior was ported. Evidence: [first run](acceptance/phase5-first-run.md).
 
 The guided setup comes from BRIEF.md §15 and reuses the existing account, project and conversation flows. `tests/ui-project-setup.test.ts` and the installed walkthrough cover waiting for instruction-file setup before starting work. `tests/ui-refresh.test.ts` and `tests/e2e/conversation-refresh.spec.ts` cover a completed conversation snapshot becoming visible while stream replay queues a later read; the browser regression failed against the previous build and passed after the correction. These are new Jevellan regressions found during phase-5 acceptance, not additional ported source. Packed installation also verifies that upstream license/notice files and native source metadata survive into the installed copy; its separate receipt does not infer legal permission to publish provider binaries.
+
+
+## Phase 6: improver foundation
+
+Read-only reference: `~/dev/garrison/tests/core-improver.test.ts`, with the associated store read during orientation. Port durability behavior without its historical policy tracks or transcript storage.
+
+| Reference behavior | Jevellan coverage | Evidence limit |
+| --- | --- | --- |
+| Reject invented citations and missing concrete edits | `tests/improver-routing.test.ts` draft validation | Pure component behavior; no generated suggestion yet. |
+| One daily claim wins; completed day does not rerun | `tests/improver-jobs.test.ts` two-connection/restart case | Actual local SQLite, simulated workers. |
+| Failed jobs need retry; expired leases recover; old worker is rejected | `tests/improver-jobs.test.ts` retry/lease cases | No native runtime launched. |
+| Manual work does not suppress the nightly pass | `tests/improver-jobs.test.ts` scope/identity case | Routing, memory and context identities covered. |
+
+Routing decision durability is now covered by `tests/routing-suggestions.test.ts`: competing Apply requests, atomic rollback, lost-reply recovery after later Undo, field-specific reversal, stale conflicts, timed Undo, checked previews and durable dismissal. Private native cleanup/retry behavior is covered by `tests/background-drafts.test.ts`, using the existing stretch runner and bridge. The two-group pipeline and missing-key behavior are covered by `tests/routing-improver.test.ts` with explicit simulated providers. See [routing results](acceptance/phase6-routing.md). Browser decisions and project patch revert remain unfinished.
+
+The combined `tests/routing-draft-integration.test.ts` connects the routing job, private native fixture process, scoped handoff, all saved cases, lifecycle exclusion and explicit Apply. `tests/runtime-adapters.test.ts` verifies private-input-copy compatibility through Codex SDK launch and continuation without changing its sandbox policy. These remain simulated provider checks.

@@ -22,6 +22,6 @@ The completed pilot and repairs are committed as `3d1c3fb` and pushed to public 
 
 ## Running copy and deferred work
 
-The app runs independently of the checkout from `~/.jevellan-build/pilot-final-fix-2026-09-25/app`, with isolated state in `~/.jevellan-build/pilot-2026-09-25/home`. The dedicated Codex home was moved, never copied, into this home. The pilot listens on loopback port 9773 and the existing Tailscale HTTPS route at 9444. This detached process has no persistent OS service, so automatic startup after reboot is not configured.
+The app runs independently of the checkout from `~/.jevellan-build/pilot-git-fix-2026-09-26/app`, with isolated state in `~/.jevellan-build/pilot-2026-09-25/home`. The dedicated Codex home was moved, never copied, into this home. The pilot listens on loopback port 9773 and the existing Tailscale HTTPS route at 9444. This detached process has no persistent OS service, so automatic startup after reboot is not configured.
 
-Unfinished phase-6 source and evidence remain local and are excluded from the deployed and published pilot. Suggestion UI, memory/context improver jobs, complete J10/J12 journeys, broader final checks and the final crucial-issues review remain deferred. Garrison and native homes remain protected. The original build goal stays paused.
+Unfinished phase-6 source and evidence are included in the 2026-09-26 machine-handoff checkpoint on main, but remain excluded from the deployed pilot. See [handoff notes](machine-handoff-2026-09-26.md). Suggestion UI, memory/context improver jobs, complete J10/J12 journeys, broader final checks and the final crucial-issues review remain deferred. Garrison and native homes remain protected. The original build goal stays paused.

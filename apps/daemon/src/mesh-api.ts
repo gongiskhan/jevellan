@@ -5,7 +5,7 @@ import type { Application } from './application.js';
 import { json, requestBody } from './http.js';
 import { SharedStateRequestSchema } from '@jevellan/core';
 import { HubState } from '@jevellan/mesh';
-import { PeerLoginSessionInputSchema } from '@jevellan/core';
+import { ImproverRequestSchema, PeerLoginSessionInputSchema } from '@jevellan/core';
 
 export async function handleMeshDeviceApi(app: Application, request: IncomingMessage, response: ServerResponse, url: URL): Promise<boolean> {
   const path = url.pathname; if (!path.startsWith('/hub/mesh/')) return false;
@@ -19,6 +19,12 @@ export async function handleMeshDeviceApi(app: Application, request: IncomingMes
   const authorization = request.headers.authorization;
   const device = app.devices.authenticate(authorization?.startsWith('Bearer ') ? authorization.slice(7) : undefined);
   const send = (value: unknown) => json(response, app.hub.redactor.document(value));
+  if (path === '/hub/mesh/improver' && method === 'POST') {
+    const input = ImproverRequestSchema.parse(await requestBody(request)); await app.routingImprover!.revisions.ready;
+    app.devices.authenticate(authorization!.slice(7));
+    const result = await app.routingImprover!.request(input, device.id);
+    app.devices.authenticate(authorization!.slice(7)); send(result); return true;
+  }
   if (path === '/hub/mesh/state' && method === 'POST') {
     const input = SharedStateRequestSchema.parse(await requestBody(request)); app.devices.authenticate(authorization!.slice(7));
     const result = await new HubState(app.hub, device.id, 'runtimes' in input ? input.runtimes : [...app.runtimes.keys()]).request(input);

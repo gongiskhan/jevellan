@@ -4,3 +4,5 @@ export * from './selection.js';
 export * from './state.js';
 export * from './memory.js';
 export * from './engine.js';
+export * from './improver.js';
+export * from './evaluation.js';

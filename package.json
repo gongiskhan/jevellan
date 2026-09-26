@@ -20,6 +20,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "eval:decisions": "tsc -b --pretty false && node scripts/eval-decisions.mjs",
     "start": "node bin/jevellan.mjs start",
     "scan:secrets": "node scripts/secret-scan.mjs",
     "check:baseline": "node scripts/check-baseline.mjs"

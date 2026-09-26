@@ -6,6 +6,7 @@ import { IndexRequestSchema, IndexResultSchema } from '@jevellan/core';
 import { SharedStateRequestSchema, SharedStateResultSchema } from '@jevellan/core';
 import { PeerSessionInputSchema, PeerSessionStateSchema } from '@jevellan/core';
 import { PeerLoginSessionInputSchema, PeerLoginSessionStateSchema } from '@jevellan/core';
+import { ImproverRequestSchema, ImproverResultSchema } from '@jevellan/core';
 
 import { HubUnavailable } from '@jevellan/core';
 export { HubUnavailable } from '@jevellan/core';
@@ -97,6 +98,16 @@ export class MemberHubClient {
   checkout(input: unknown) { return this.#request('checkout', CheckoutStoreResultSchema, CheckoutStoreRequestSchema.parse(input)); }
   publication(input: unknown) { return this.#request('publication', PublicationLeaseResultSchema, PublicationLeaseRequestSchema.parse(input)); }
   indexes(input: unknown) { return this.#request('indexes', IndexResultSchema, IndexRequestSchema.parse(input)); }
+  async improver(input: unknown) {
+    const request = ImproverRequestSchema.parse(input); const result = await this.#request('improver', ImproverResultSchema, request);
+    const valid = request.operation === 'state' ? result.schema === 'improver-state-v1'
+      : request.operation === 'run' ? result.schema === 'improver-job-view-v1' && result.scope.kind === 'routing' && result.scope.cycle.kind === 'manual'
+      : request.operation === 'log' ? result.schema === 'routing-improver-log-v1' && result.jobId === request.jobId
+      : request.operation === 'act' ? result.schema === 'routing-suggestion-row-v1' && result.suggestion.id === request.suggestionId
+      : request.operation === 'revision' ? result.schema === 'routing-revision-record-v1' && result.id === request.id
+      : result.schema === 'routing-revision-record-v1' && result.deviceId === this.deviceId && stableJson(result.request) === stableJson(request.input);
+    if (!valid) throw new HubProtocolError(); return result;
+  }
   async state(input: unknown) {
     const request = SharedStateRequestSchema.parse(input);
     if (request.operation === 'jev-put') this.options.redactor.add(request.value);

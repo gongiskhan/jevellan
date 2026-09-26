@@ -26,7 +26,7 @@ serveWorker((input, daemonPid, executable) => {
     configOverrides: [projectTrustOverride(cwd)],
     config: { jevellan_executable: executable ?? 'codex', features: { multi_agent: false, hooks: true }, mcp_servers: mcp, hooks: { PreToolUse: [{ matcher: '^Bash$', hooks: [{ type: 'command', command: safety, timeout: 10 }] }] } },
   });
-  const options: ThreadOptions = { workingDirectory: cwd, model: input.model, modelReasoningEffort: input.effort, sandboxMode: input.permissions === 'read-only' ? 'read-only' : 'workspace-write', approvalPolicy: 'never', networkAccessEnabled: input.permissions === 'write' };
+  const options: ThreadOptions = { workingDirectory: cwd, model: input.model, modelReasoningEffort: input.effort, sandboxMode: input.permissions === 'read-only' ? 'read-only' : 'workspace-write', approvalPolicy: 'never', networkAccessEnabled: input.permissions === 'write', ...(input.inputCopy ? { skipGitRepoCheck: true } : {}) };
   let thread = runtime.startThread(options);
   let controller = new AbortController();
   return {

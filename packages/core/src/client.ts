@@ -1,5 +1,6 @@
 // Browser-safe schemas only: no filesystem, process, vault or SDK imports.
 export * from './schemas.js';
+export * from './improver-schemas.js';
 export * from './composer-schemas.js';
 export * from './mesh-schemas.js';
 export * from './client-schemas.js';

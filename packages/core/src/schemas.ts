@@ -25,18 +25,39 @@ export const GuardsSchema = z.strictObject({
   workCostCapUsd: z.number().positive().nullable().default(null), externalActivityWindowMin: z.number().positive().default(5),
 });
 export type Guards = z.infer<typeof GuardsSchema>;
-export const ConfigurationSchema = z.strictObject({
+
+export const ImproverSettingsSchema = z.strictObject({
+  schema: z.literal('improver-settings-v1'),
+  schedule: z.strictObject({ enabled: z.boolean(), time: z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/) }),
+  routing: z.strictObject({ enabled: z.boolean(), mode: z.literal('suggest') }),
+  memory: z.strictObject({ enabled: z.boolean(), mode: z.enum(['apply-and-tell', 'suggest']), projects: z.record(IdSchema, z.boolean()) }),
+  context: z.strictObject({ enabled: z.boolean(), mode: z.literal('suggest') }),
+});
+export type ImproverSettings = z.infer<typeof ImproverSettingsSchema>;
+export function defaultImproverSettings(): ImproverSettings {
+  return ImproverSettingsSchema.parse({ schema: 'improver-settings-v1', schedule: { enabled: true, time: '03:00' },
+    routing: { enabled: true, mode: 'suggest' }, memory: { enabled: true, mode: 'apply-and-tell', projects: {} }, context: { enabled: true, mode: 'suggest' } });
+}
+const ConfigurationFields = {
   name: text, version: text,
   dependencies: z.strictObject({ apm: z.array(z.union([text, z.strictObject({ path: text }), z.strictObject({ repo: text })])) }),
-  'x-jevellan': z.strictObject({
-    schema: z.literal(1), runtimes: z.record(IdSchema, z.strictObject({ enabled: z.boolean() })),
-    decisions: z.strictObject({ provider: z.literal('jev'), model: text, timeoutMs: z.number().int().positive(), keepCurrentThreshold: z.number().min(0).max(1) }),
-    menu: z.array(ModelOptionSchema).max(19), effortGuide: z.record(EffortSchema, text), routingProfile: text, guards: GuardsSchema,
-  }),
+};
+const SettingsFields = {
+  runtimes: z.record(IdSchema, z.strictObject({ enabled: z.boolean() })),
+  decisions: z.strictObject({ provider: z.literal('jev'), model: text, timeoutMs: z.number().int().positive(), keepCurrentThreshold: z.number().min(0).max(1) }),
+  menu: z.array(ModelOptionSchema).max(19), effortGuide: z.record(EffortSchema, text), routingProfile: text, guards: GuardsSchema,
+};
+export const LegacyConfigurationSchema = z.strictObject({ ...ConfigurationFields, 'x-jevellan': z.strictObject({ schema: z.literal(1), ...SettingsFields }) });
+const CurrentConfigurationSchema = z.strictObject({
+  ...ConfigurationFields, 'x-jevellan': z.strictObject({ schema: z.literal(2), ...SettingsFields, improver: ImproverSettingsSchema }),
 }).superRefine((value, ctx) => {
   const ids = value['x-jevellan'].menu.map((model) => model.id);
   if (new Set(ids).size !== ids.length) ctx.addIssue({ code: 'custom', message: 'Model menu ids must be unique.', path: ['x-jevellan', 'menu'] });
 });
+export const ConfigurationSchema = z.union([CurrentConfigurationSchema, LegacyConfigurationSchema]).transform((value): z.input<typeof CurrentConfigurationSchema> => {
+  const settings = value['x-jevellan'];
+  return { ...value, 'x-jevellan': { ...settings, schema: 2 as const, improver: settings.schema === 2 ? settings.improver : defaultImproverSettings() } };
+}).pipe(CurrentConfigurationSchema);
 export type Configuration = z.infer<typeof ConfigurationSchema>;
 export const ConfigRevisionSchema = z.strictObject({
   schema: z.literal('config-revision-v1'), revision: z.number().int().positive(), configuration: ConfigurationSchema,

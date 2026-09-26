@@ -16,3 +16,4 @@ export * from './indexes.js';
 export * from './context-operations.js';
 export * from './external-activity.js';
 export * from './checkout-history.js';
+export * from './background-drafts.js';

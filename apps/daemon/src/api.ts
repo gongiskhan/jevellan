@@ -11,6 +11,7 @@ import { handleOwnerRequest, proxyConversation } from './owner-proxy.js';
 import { json, requestBody as body } from './http.js';
 import { handleMeshDeviceApi, handleMeshUiApi } from './mesh-api.js';
 import { handleLoginApi } from './login-api.js';
+import { ImproverRequestSchema } from '@jevellan/core';
 
 export { json } from './http.js';
 function failure(message: string, status: number) { return Object.assign(new Error(message), { status }); }
@@ -71,6 +72,10 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     if (method === 'POST' && ['/hub/devices/invitations', '/api/devices/switch'].includes(path)) retryable = true;
     if (await handleMeshUiApi(app, request, response, url, secureCookies)) return;
     if (await handleLoginApi(app, request, response, url, token)) return;
+    if (path === '/api/improver' && method === 'GET') { send(await app.improverRequest({ schema: 'improver-request-v1', operation: 'state' })); return; }
+    if (path === '/api/improver' && method === 'POST') {
+      const input = ImproverRequestSchema.parse(await body(request)); retryable = true; send(await app.improverRequest(input)); return;
+    }
     if (await handleGitApi(app, request, response, url)) return;
     if (path === '/api/project-folders' && method === 'GET') { send(await projectFolders(app.homes.userHome, url.searchParams.get('path') ?? undefined)); return; }
     if (path === '/hub/projects' && method === 'GET') { await app.conversations.ready; send((await app.conversations.projects())); return; }

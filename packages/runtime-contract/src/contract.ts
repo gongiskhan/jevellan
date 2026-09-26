@@ -18,8 +18,8 @@ export const StretchInputSchema = z.strictObject({
   cwd: z.string().min(1), permissions: z.enum(['read-only', 'write']), memoryWrite: z.boolean(), systemAppend: z.string(), brief: z.string(),
   model: z.string().min(1), effort: EffortSchema, account: ResolvedAccountSchema,
   launch: z.strictObject({ mcpServers: z.record(z.string(), z.strictObject({ command: z.string().min(1), args: z.array(z.string()), env: z.record(z.string(), z.string()) })), env: z.record(z.string(), z.string()) }),
-  timeoutMs: z.number().int().positive(),
-});
+  timeoutMs: z.number().int().positive(), inputCopy: z.literal(true).optional(),
+}).refine(value => !value.inputCopy || value.action === 'reply' && value.permissions === 'read-only' && !value.memoryWrite, 'Private input copies only support read-only replies.');
 export type StretchInput = z.infer<typeof StretchInputSchema>;
 export const RunResultSchema = z.strictObject({ status: z.enum(['completed', 'interrupted', 'failed']), error: RuntimeErrorSchema.optional() });
 export type RunResult = z.infer<typeof RunResultSchema>;

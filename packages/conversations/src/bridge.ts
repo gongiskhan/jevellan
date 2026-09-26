@@ -15,7 +15,7 @@ export type ProjectMemory = {
   edit(input: z.infer<typeof MemoryEditSchema>, signal: AbortSignal): Promise<MemoryNote>;
   assertOwnership(): void | Promise<void>;
 };
-type Scope = { work: ConversationWork; stretch: number; memoryWrite: boolean; memory: ProjectMemory; memoryCapture: () => boolean; integration?: IntegrationRunner };
+type Scope = { work: ConversationWork; stretch: number; memoryWrite: boolean; memory: ProjectMemory; memoryCapture: () => boolean; memoryTools?: boolean; integration?: IntegrationRunner };
 const readTools: BridgeTool[] = ['jevellan_finding', 'jevellan_handoff', 'jevellan_conversation_search', 'jevellan_conversation_read', 'memory_search', 'memory_read'];
 const failure = (message: string, status = 403) => Object.assign(new Error(message), { status });
 
@@ -32,7 +32,8 @@ export class StretchTools {
   list() {
     this.#check();
     const integration = this.scope.integration && this.scope.work.load().stretches.find((entry) => entry.n === this.scope.stretch)?.action === 'integrate';
-    return bridgeTools([...readTools, ...(this.#repairing ? [] : [...(integration ? ['jevellan_integrate'] as BridgeTool[] : []), ...(this.scope.memoryWrite ? ['memory_write', 'memory_edit'] as BridgeTool[] : ['memory_propose'] as BridgeTool[])])]);
+    const memoryTools = this.scope.memoryTools !== false;
+    return bridgeTools([...readTools.filter(tool => memoryTools || !tool.startsWith('memory_')), ...(this.#repairing ? [] : [...(integration ? ['jevellan_integrate'] as BridgeTool[] : []), ...(memoryTools ? this.scope.memoryWrite ? ['memory_write', 'memory_edit'] as BridgeTool[] : ['memory_propose'] as BridgeTool[] : [])])]);
   }
   async repair(): Promise<void> { this.#repairing = true; await this.#pending; }
   async close(): Promise<void> { this.#active = false; this.#abort.abort(); await this.#pending; }

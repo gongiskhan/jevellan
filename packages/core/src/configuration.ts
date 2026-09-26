@@ -2,7 +2,7 @@ import type { DatabaseSync } from 'node:sqlite';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { parseDocument, stringify } from 'yaml';
-import { ConfigRevisionSchema, ConfigurationSchema, IdSchema, type Configuration, type ConfigRevision } from './schemas.js';
+import { ConfigRevisionSchema, ConfigurationSchema, IdSchema, LegacyConfigurationSchema, defaultImproverSettings, type Configuration, type ConfigRevision } from './schemas.js';
 import { atomicWrite, stableJson } from './files.js';
 import type { Homes } from './homes.js';
 import { existsSync, readFileSync } from 'node:fs';
@@ -15,6 +15,13 @@ const ConfigurationRequestSchema = z.strictObject({
   schema: z.literal('configuration-request-v1'), id: IdSchema, deviceId: IdSchema,
   fingerprint: z.string().regex(/^[a-f0-9]{64}$/), revision: z.number().int().positive(),
 });
+const LegacyConfigRevisionSchema = ConfigRevisionSchema.extend({ configuration: LegacyConfigurationSchema });
+function requestFingerprint(configuration: unknown, expectedRevision: number, changedBy: ConfigRevision['changedBy']): string {
+  return createHash('sha256').update(stableJson({ configuration, expectedRevision, changedBy })).digest('hex');
+}
+export function configurationDigest(configuration: Configuration): string {
+  return createHash('sha256').update(stableJson(ConfigurationSchema.parse(configuration))).digest('hex');
+}
 export function parseConfiguration(yaml: string): Configuration {
   const document = parseDocument(yaml, { uniqueKeys: true });
   if (document.errors.length) throw new Error('Invalid configuration YAML.');
@@ -28,12 +35,23 @@ export function materialiseConfiguration(homes: Homes, raw: ConfigRevision): Con
 }
 
 export class ConfigurationStore {
-  constructor(private readonly db: DatabaseSync) {
+  readonly #transact: (operation: () => ConfigRevision) => ConfigRevision;
+  constructor(private readonly db: DatabaseSync, transact?: (operation: () => ConfigRevision) => ConfigRevision) {
+    this.#transact = transact ?? (operation => {
+      db.exec('BEGIN IMMEDIATE');
+      try { const result = operation(); db.exec('COMMIT'); return result; }
+      catch (error) { db.exec('ROLLBACK'); throw error; }
+    });
     db.exec('CREATE TABLE IF NOT EXISTS configuration_revisions (revision INTEGER PRIMARY KEY, document TEXT NOT NULL)');
     db.exec('CREATE TABLE IF NOT EXISTS configuration_requests (device_id TEXT NOT NULL, request_id TEXT NOT NULL, document TEXT NOT NULL, PRIMARY KEY(device_id, request_id))');
   }
   current(): ConfigRevision | null {
     const row = this.db.prepare('SELECT document FROM configuration_revisions ORDER BY revision DESC LIMIT 1').get();
+    return row ? ConfigRevisionSchema.parse(JSON.parse(String(row.document))) : null;
+  }
+  revision(number: number): ConfigRevision | null {
+    if (!Number.isSafeInteger(number) || number < 1) throw new Error('A positive configuration revision is required.');
+    const row = this.db.prepare('SELECT document FROM configuration_revisions WHERE revision=?').get(number);
     return row ? ConfigRevisionSchema.parse(JSON.parse(String(row.document))) : null;
   }
   history(): ConfigRevision[] {
@@ -43,18 +61,24 @@ export class ConfigurationStore {
     const validated = ConfigurationSchema.parse(configuration);
     const author = ConfigRevisionSchema.shape.changedBy.parse(changedBy);
     const requestId = clientRequestId === undefined ? undefined : IdSchema.parse(clientRequestId);
-    const fingerprint = createHash('sha256').update(stableJson({ configuration: validated, expectedRevision, changedBy: author })).digest('hex');
-    this.db.exec('BEGIN IMMEDIATE');
-    try {
+    const fingerprint = requestFingerprint(validated, expectedRevision, author);
+    return this.#transact(() => {
       if (requestId !== undefined) {
         const row = this.db.prepare('SELECT document FROM configuration_requests WHERE device_id=? AND request_id=?').get(author.deviceId, requestId);
         if (row) {
           const receipt = ConfigurationRequestSchema.parse(JSON.parse(String(row.document)));
-          if (receipt.deviceId !== author.deviceId || receipt.id !== requestId || receipt.fingerprint !== fingerprint) throw new RevisionConflict();
+          if (receipt.deviceId !== author.deviceId || receipt.id !== requestId) throw new RevisionConflict();
           const saved = this.db.prepare('SELECT document FROM configuration_revisions WHERE revision=?').get(receipt.revision);
           if (!saved) throw new Error('The saved configuration result is missing.');
-          const revision = ConfigRevisionSchema.parse(JSON.parse(String(saved.document)));
-          this.db.exec('COMMIT');
+          const raw: unknown = JSON.parse(String(saved.document));
+          const revision = ConfigRevisionSchema.parse(raw);
+          if (receipt.fingerprint !== fingerprint) {
+            // A schema upgrade must not break recovery of an acknowledged older save.
+            const legacy = LegacyConfigRevisionSchema.safeParse(raw);
+            if (!legacy.success || receipt.revision !== legacy.data.revision
+              || receipt.fingerprint !== requestFingerprint(legacy.data.configuration, legacy.data.revision - 1, legacy.data.changedBy)
+              || fingerprint !== requestFingerprint(revision.configuration, legacy.data.revision - 1, legacy.data.changedBy)) throw new RevisionConflict();
+          }
           return revision;
         }
       }
@@ -66,9 +90,8 @@ export class ConfigurationStore {
         const receipt = ConfigurationRequestSchema.parse({ schema: 'configuration-request-v1', id: requestId, deviceId: author.deviceId, fingerprint, revision: revision.revision });
         this.db.prepare('INSERT INTO configuration_requests(device_id,request_id,document) VALUES(?,?,?)').run(author.deviceId, requestId, JSON.stringify(receipt));
       }
-      this.db.exec('COMMIT');
       return revision;
-    } catch (error) { this.db.exec('ROLLBACK'); throw error; }
+    });
   }
   materialise(homes: Homes): ConfigRevision {
     const revision = this.current();
@@ -81,7 +104,7 @@ export function seedConfiguration(): Configuration {
   return ConfigurationSchema.parse({
     name: 'jevellan-config', version: '1.0.0', dependencies: { apm: [] },
     'x-jevellan': {
-      schema: 1, runtimes: { claude: { enabled: true }, codex: { enabled: true } },
+      schema: 2, improver: defaultImproverSettings(), runtimes: { claude: { enabled: true }, codex: { enabled: true } },
       decisions: { provider: 'jev', model: 'jev-1.13.0', timeoutMs: 4000, keepCurrentThreshold: 0.6 },
       menu: [
         { id: 'claude-fable', runtime: 'claude', model: 'claude-fable-5-1', efforts: ['low', 'medium', 'high', 'max'], label: 'Fable', description: 'The strongest Claude model. UI and visual work, anything judged by looking, deep architecture, stubborn bugs. Uses subscription quota fastest.', enabled: false, unavailableReason: 'Model discovery has not run.' },

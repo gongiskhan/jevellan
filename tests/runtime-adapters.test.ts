@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { AccountSchema, Homes } from '../packages/core/dist/index.js';
 import { createRuntime as claude } from '../runtimes/claude/dist/index.js';
 import { createRuntime as codex } from '../runtimes/codex/dist/index.js';
-import { checkEventsAndContinuation, collectEvents, groupAlive, type StretchInput, type StretchRun } from '../packages/runtime-contract/dist/index.js';
+import { StretchInputSchema, checkEventsAndContinuation, collectEvents, groupAlive, type StretchInput, type StretchRun } from '../packages/runtime-contract/dist/index.js';
 let root: string; let homes: Homes; const runs: StretchRun[] = [];
 beforeEach(() => { root = mkdtempSync(join(tmpdir(), 'jevellan-adapter-fixture-')); mkdirSync(join(root, 'user')); homes = new Homes(join(root, 'jevellan'), join(root, 'user')); });
 afterEach(async () => { await Promise.all(runs.splice(0).map((run) => run.terminate())); await rm(root, { recursive: true, force: true }); });
@@ -55,4 +55,23 @@ test.each([false, true])('Codex streams an in-progress patch until its terminal 
     { type: 'tool-start', id: 'patch', name: 'Edit', input: [{ path: 'src/sum.ts', kind: 'update' }] },
     { type: 'tool-end', id: 'patch', ok: !failed, output: JSON.stringify([{ path: 'src/sum.ts', kind: 'update' }]) },
   ]);
+});
+
+test.each([false, true])('Codex preserves sandbox and approval policy when explicitly reading a private non-Git input copy: %s', async inputCopy => {
+  const { input, adapter } = setup('codex'); input.brief = 'REPORT_INPUT_COPY_OPTIONS'; if (inputCopy) input.inputCopy = true;
+  const run = adapter.startStretch(input); runs.push(run);
+  const inspect = async () => {
+    const events = await collectEvents(run); expect((await run.done).status).toBe('completed');
+    const output = events.find(event => event.type === 'text' && event.delta.includes('fixture-input-copy-options-v1'));
+    expect(output?.type).toBe('text');
+    if (output?.type !== 'text') throw new Error('The SDK did not expose its fixture launch options.');
+    expect(JSON.parse(output.delta)).toEqual({ schema: 'fixture-input-copy-options-v1', inputCopy, sandbox: 'read-only', neverApprove: true, networkDisabled: true, sandboxBypass: false });
+  };
+  await inspect(); await run.continue('REPORT_INPUT_COPY_OPTIONS', 5000); await inspect();
+});
+
+test('private input-copy launches cannot request writing permissions, memory writes or a writing action', () => {
+  const { input } = setup('codex');
+  expect(StretchInputSchema.safeParse({ ...input, inputCopy: true }).success).toBe(true);
+  for (const change of [{ permissions: 'write' }, { memoryWrite: true }, { action: 'implement' }]) expect(StretchInputSchema.safeParse({ ...input, inputCopy: true, ...change }).success).toBe(false);
 });

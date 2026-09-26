@@ -38,7 +38,7 @@
   {
     "id": "phase-6",
     "title": "Improver",
-    "why": "User requested a pilot handoff on 2026-09-25 instead of further build work. Application/member API regression selection passed 127 tests with simulated providers. Partial suggestion UI is typechecked/linted but not browser verified; memory/context jobs and J10/J12 are unfinished. Excluded from the running phase-5 pilot. See docs/acceptance/PILOT.md.",
+    "why": "User requested a pilot handoff on 2026-09-25 instead of further build work. Application/member API regression selection passed 127 tests with simulated providers. Partial suggestion UI is typechecked/linted but not browser verified; memory/context jobs and J10/J12 are unfinished. Excluded from the running phase-5 pilot. See docs/acceptance/PILOT.md. On 2026-09-26 the user requested committing and pushing all remaining work for continuation on another machine. This checkpoint includes the unfinished source, tests and evidence; it does not complete phase 6 or change the running pilot. See docs/acceptance/machine-handoff-2026-09-26.md.",
     "status": "deferred-by-user"
   },
   {

@@ -4,7 +4,8 @@ import { z } from 'zod';
 import { ConsumeSwitchSchema, DaemonOwnership, DeviceConfigSchema, DeviceOriginSchema, DeviceSchema, DeviceSwitchInputSchema, JevConnectionSchema, RiggingApplicationSchema, Homes, ProjectVisibility, RiggingDisk, SecretRedactor, VERSION, newId, readDocument, seedConfiguration, stableJson, writeDocument, type DeviceConfig, type VisibilityProbe } from '@jevellan/core';
 import { DeviceRegistry, HubAccounts, HubCheckoutStore, HubDatabase, HubIndexes, HubMesh, HubPublicationLeases, HubState, MemberAccounts, MemberCheckoutStore, MemberHubClient, MemberIndexes, MemberPublicationLeases, MemberState, MemberUiAuth, UiAuth, memberConnection } from '@jevellan/mesh';
 import { AccountService } from '@jevellan/accounts';
-import { ContextOperations, ConversationService, StretchBridges } from '@jevellan/conversations';
+import { BackgroundDrafts, ContextOperations, ConversationService, StretchBridges } from '@jevellan/conversations';
+import { RoutingImprover } from './routing-improver.js';
 import { migrateContextOperations } from './context-migration.js';
 import { BasicMemory } from '@jevellan/memory';
 import { JevClient, JevError } from '@jevellan/decisions';
@@ -39,11 +40,15 @@ export class Application {
   readonly sessions: ExternalSessionSensor;
   readonly presence: DevicePresence;
   readonly settingsSync: SettingsSync;
+  readonly backgroundDrafts: BackgroundDrafts;
+  readonly routingImprover: RoutingImprover | undefined;
+  readonly #improverTimers: boolean;
   get hub(): HubDatabase { if (!this.#hub) throw new Error('A member has no authoritative hub database.'); return this.#hub; }
   get mesh(): HubMesh { if (!this.#mesh) throw Object.assign(new Error('This operation belongs to the hub.'), { status: 404 }); return this.#mesh; }
   get devices(): DeviceRegistry { return this.mesh.devices; }
   get hubAuth(): UiAuth { return this.mesh.auth; }
   constructor(options: ApplicationOptions = {}) {
+    this.#improverTimers = options.timers !== false;
     this.projectVisibility = new ProjectVisibility(options.repositoryVisibility);
     this.homes = options.homes ?? new Homes(); this.homes.ensure();
     this.#ownership = new DaemonOwnership(this.homes);
@@ -94,11 +99,19 @@ export class Application {
         ...(options.timers === undefined ? {} : { timers: options.timers }),
       });
       this.decisionClient = async () => new JevClient({ key: () => this.state.jev.credential(), timeoutMs: (await this.configuration()).configuration['x-jevellan'].decisions.timeoutMs, ...(options.decisionFetch ? { fetch: options.decisionFetch } : {}) });
+      const accountRuns = new Set<string>();
       this.conversations = new ConversationService({ homes: this.homes, contexts, projects: this.state.projects, deviceId: this.device.deviceId, accounts: this.accounts, runtimes: this.runtimes,
         coordination: this.member ? new MemberCheckoutStore(this.member) : new HubCheckoutStore(this.hub, this.device.deviceId), leases: this.member ? new MemberPublicationLeases(this.member) : new HubPublicationLeases(this.hub, this.device.deviceId), indexes: this.member ? new MemberIndexes(this.member) : new HubIndexes(this.hub, this.device.deviceId),
         bridges: this.bridges, memory: this.memory, redactor: this.redactor, settings: async () => (await this.configuration()).configuration['x-jevellan'], riggingItems: (runtime) => this.rigging.items(runtime),
         deviceLabel: this.device.name, jevAvailable: async () => (await this.state.jev.summary()).saved, externalSessions: (projects, deviceId) => this.sessions.read(projects, deviceId),
-        decisionClient: this.decisionClient, enterOperation: (id, title) => this.lifecycle.enter({ kind: 'conversation', id, title }) });
+        decisionClient: this.decisionClient, accountRuns, enterOperation: (id, title) => this.lifecycle.enter({ kind: 'conversation', id, title }) });
+      this.backgroundDrafts = new BackgroundDrafts({ homes: this.homes, deviceId: this.device.deviceId, accounts: this.accounts, runtimes: this.runtimes, bridges: this.bridges,
+        redactor: this.redactor, settings: async () => (await this.configuration()).configuration['x-jevellan'], riggingItems: runtime => this.rigging.items(runtime),
+        accountRuns, enterOperation: (id, title) => this.lifecycle.enter({ kind: 'settings', id, title }) });
+      const improverReady = Promise.all([this.conversations.ready, this.backgroundDrafts.ready]).then(() => undefined);
+      this.routingImprover = this.#hub ? new RoutingImprover({ hub: this.#hub, deviceId: this.device.deviceId, ready: improverReady,
+        client: this.decisionClient, draft: (request, signal) => this.backgroundDrafts.run(request, signal),
+        evidence: options.decisionFetch || options.runtimes ? 'simulated' : 'live', enterOperation: (id, title) => this.lifecycle.enter({ kind: 'settings', id, title }) }) : undefined;
       this.presence = new DevicePresence({ deviceId: this.device.deviceId, version: VERSION, sensor: this.sessions,
         projects: async () => (await this.state.projects.list()).map(row => row.project), running: () => this.conversations.localRunning(),
         report: async heartbeat => {
@@ -109,10 +122,15 @@ export class Application {
         ...(options.timers === undefined ? {} : { timers: options.timers }) });
       this.settingsSync = new SettingsSync({ homes: this.homes, redactor: this.redactor, ready: this.conversations.ready, apply: () => this.applyRigging(), ...(options.timers === undefined ? {} : { timers: options.timers }) });
       const releaseStartup = startup; startup = undefined;
-      void this.conversations.ready.then(releaseStartup, releaseStartup).catch(() => undefined);
+      void improverReady.then(releaseStartup, releaseStartup).catch(() => undefined);
     } catch (error) { this.#hub?.close(); throw error; }
     } catch (error) { startup?.(); lifecycle?.close(); this.#ownership.close(); throw error; }
   }
+  bindDaemonUrl(url: string): void {
+    this.conversations.daemonUrl = url; this.backgroundDrafts.daemonUrl = url;
+    if (this.#improverTimers) this.routingImprover?.start();
+  }
+  async improverRequest(input: unknown) { return this.member ? this.member.improver(input) : this.routingImprover!.request(input, this.device.deviceId); }
   async configuration() {
     for (let attempt = 0; attempt < 2; attempt++) {
       if (this.#closing) throw Object.assign(new Error('Jevellan is stopping.'), { status: 503 });
@@ -167,6 +185,8 @@ export class Application {
     const failures: unknown[] = [];
     try { await this.settingsSync.close(); await this.#riggingQueue.catch(() => undefined); } catch (error) { failures.push(error); }
     try { await this.presence.close(); } catch (error) { failures.push(error); }
+    try { await this.routingImprover?.close(); } catch (error) { failures.push(error); }
+    try { await this.backgroundDrafts.close(); } catch (error) { failures.push(error); }
     try { await this.conversations.close(); } catch (error) { failures.push(error); }
     const cleanup = await Promise.allSettled([this.accounts.close(), this.bridges.close(), this.memory.close()]);
     for (const result of cleanup) if (result.status === 'rejected') failures.push(result.reason);

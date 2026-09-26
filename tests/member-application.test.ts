@@ -13,6 +13,7 @@ import { ProjectContext } from '../packages/memory/dist/index.js';
 import { Application, createDaemon } from '../apps/daemon/dist/index.js';
 import { FakeRuntime, type RuntimeAdapter, type StretchInput } from '../packages/runtime-contract/dist/index.js';
 import { RiggingDelivery, parseConfiguration } from '../packages/core/dist/index.js';
+import { ImproverJobViewSchema, ImproverStateSchema } from '../packages/core/dist/index.js';
 
 let root: string; let hub: Application; let member: Application; let homes: Homes; let fake: FakeRuntime; let offline: boolean;
 let hubBase: string; let memberBase: string; let hubCookie: string; let cookie: string; let passphrase: string; let path: string; let origin: string; let accountId: string;
@@ -37,6 +38,17 @@ function newMember() {
   const app = new Application({ homes, timers: false, repositoryVisibility: async () => 'PUBLIC', runtimes: () => new Map([['claude', runtime]]), hubFetch: async (...args) => { if (offline) throw new Error('Simulated hub outage'); return fetch(...args); } });
   app.conversations.daemonUrl = memberBase; memberOptions.application = app; return app;
 }
+test('a member forwards repeatable improver requests to the hub and never creates a local job', async () => {
+  const input = { schema: 'improver-request-v1', operation: 'run', clientRequestId: 'member_improver' };
+  const job = ImproverJobViewSchema.parse(await body(await request(memberBase, '/api/improver', cookie, input)));
+  await hub.routingImprover!.wait(job.id);
+  expect(ImproverJobViewSchema.parse(await body(await request(memberBase, '/api/improver', cookie, input))).id).toBe(job.id);
+  const state = ImproverStateSchema.parse(await body(await request(memberBase, '/api/improver', cookie)));
+  expect(state.jobs).toHaveLength(1); expect(state.jobs[0]).toMatchObject({ id: job.id, deviceId: hub.device.deviceId, status: 'complete' });
+  expect(state.jobs[0]).not.toHaveProperty('token'); expect(member.routingImprover).toBeUndefined(); expect(fake.starts).toEqual([]);
+  offline = true; const unavailable = await request(memberBase, '/api/improver', cookie, input);
+  expect(unavailable.status).toBe(503); expect(await unavailable.json()).toMatchObject({ code: 'hub-unavailable', retryable: true });
+});
 beforeEach(async () => {
   root = realpathSync(mkdtempSync(join(tmpdir(), 'jevellan-member-app-'))); mkdirSync(join(root, 'user')); offline = false;
   hub = new Application({ homes: new Homes(join(root, 'hub-home'), join(root, 'user')), timers: false, runtimes: () => new Map() }); hubOptions = { application: hub }; hubBase = await serve(hubOptions);

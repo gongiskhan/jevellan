@@ -10,3 +10,5 @@ export * from './indexes.js';
 export * from './state.js';
 export * from './sessions.js';
 export * from './presence.js';
+export * from './improver-jobs.js';
+export * from './routing-suggestions.js';

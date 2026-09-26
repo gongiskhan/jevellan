@@ -24,7 +24,7 @@ export class HubDatabase {
     this.db.exec('CREATE TABLE IF NOT EXISTS documents (namespace TEXT NOT NULL, id TEXT NOT NULL, revision INTEGER NOT NULL, document TEXT NOT NULL, PRIMARY KEY(namespace,id)); PRAGMA user_version=1;');
     this.redactor = redactor;
     try {
-      this.configuration = new ConfigurationStore(this.db);
+      this.configuration = new ConfigurationStore(this.db, operation => this.transaction(operation));
       this.vault = new SecretVault(this.db, homes, redactor);
       migrateSharedIndexes(this);
     } catch (error) { this.db.close(); throw error; }

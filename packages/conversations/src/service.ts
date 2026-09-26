@@ -50,6 +50,7 @@ export type ConversationServiceOptions = {
   decisionClient?(): DecisionClient | Promise<DecisionClient>; jevAvailable?(): boolean | Promise<boolean>; deviceLabel?: string;
   externalSessions?: ExternalActivityOptions['read'];
   enterOperation?: (id: string, title: string) => () => void;
+  accountRuns?: Set<string>;
 };
 const MANUAL_NOTICE = 'Pick the next step, model and effort.';
 const conflict = (message: string) => Object.assign(new Error(message), { status: 409 });
@@ -64,11 +65,12 @@ export class ConversationService {
   readonly hubWaits = new HubWaits();
   readonly #works = new Map<string, ConversationWork>();
   readonly #operations = new Map<string, Operation>();
-  readonly #accountRuns = new Set<string>();
+  readonly #accountRuns: Set<string>;
   readonly #correcting = new Set<string>();
   #closed = false;
   daemonUrl = '';
   constructor(readonly options: ConversationServiceOptions) {
+    this.#accountRuns = options.accountRuns ?? new Set<string>();
     this.ownership = new CheckoutOwnership(options.coordination, options.homes, options.deviceId); this.leases = options.leases;
     this.indexes = new IndexDelivery(options.indexes);
     this.outside = new ExternalActivityGuard({ deviceId: options.deviceId, deviceName: options.deviceLabel ?? options.deviceId, ...(options.externalSessions ? { read: options.externalSessions } : {}) });

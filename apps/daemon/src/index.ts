@@ -8,6 +8,7 @@ import { closeListeners, detectTailscaleIpv4, listenOnInterfaces } from './netwo
 import { diagnoseApplication, LocalDiagnostics } from './diagnostics.js';
 import { json, requestBody } from './http.js';
 export * from './application.js';
+export * from './routing-improver.js';
 export { closeListeners, detectTailscaleIpv4, listenOnInterfaces } from './network.js';
 
 const contentTypes: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.json': 'application/json', '.webmanifest': 'application/manifest+json' };
@@ -56,7 +57,7 @@ export function createDaemon(options: { application?: Application; diagnostics?:
   });
   server.on('listening', () => {
     const address = server.address();
-    if (options.application && address && typeof address !== 'string') options.application.conversations.daemonUrl = `http://127.0.0.1:${address.port}`;
+    if (options.application && address && typeof address !== 'string') options.application.bindDaemonUrl(`http://127.0.0.1:${address.port}`);
   });
   return server;
 }
@@ -71,7 +72,7 @@ export async function startDaemon(port = DEFAULT_PORT, options: ApplicationOptio
     serverOptions.application = application;
     serverOptions.allowedOrigins = [...listeners.addresses, application.device.url];
     if (application.device.url.startsWith('https://')) serverOptions.proxyOrigin = application.device.url;
-    application.conversations.daemonUrl = listeners.addresses[0]!;
+    application.bindDaemonUrl(listeners.addresses[0]!);
     serverOptions.diagnostics = new LocalDiagnostics(application, listeners.addresses[0]!);
   } catch (error) { await closeListeners(listeners.servers); await application?.close(); throw error; }
   const runningApplication = application;

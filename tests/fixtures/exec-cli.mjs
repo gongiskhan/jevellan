@@ -4,6 +4,12 @@ for await (const chunk of process.stdin) prompt += chunk;
 const send = (event) => process.stdout.write(`${JSON.stringify(event)}\n`);
 send({ type: 'thread.started', thread_id: 'fixture-thread' });
 send({ type: 'turn.started' });
+if (prompt.includes('REPORT_INPUT_COPY_OPTIONS')) {
+  const args = process.argv.slice(2);
+  const report = { schema: 'fixture-input-copy-options-v1', inputCopy: args.includes('--skip-git-repo-check'), sandbox: args[args.indexOf('--sandbox') + 1],
+    neverApprove: args.includes('approval_policy="never"'), networkDisabled: args.includes('sandbox_workspace_write.network_access=false'), sandboxBypass: args.includes('--dangerously-bypass-approvals-and-sandbox') };
+  send({ type: 'item.completed', item: { id: 'options', type: 'agent_message', text: JSON.stringify(report) } });
+}
 if (prompt.includes('PATCH_LIFECYCLE')) {
   const item = { id: 'patch', type: 'file_change', changes: [{ path: 'src/sum.ts', kind: 'update' }] };
   send({ type: 'item.started', item: { ...item, status: 'in_progress' } });
