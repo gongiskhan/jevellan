@@ -71,7 +71,7 @@ export class ConversationService {
   daemonUrl = '';
   constructor(readonly options: ConversationServiceOptions) {
     this.#accountRuns = options.accountRuns ?? new Set<string>();
-    this.ownership = new CheckoutOwnership(options.coordination, options.homes, options.deviceId); this.leases = options.leases;
+    this.ownership = new CheckoutOwnership(options.coordination, options.homes, options.deviceId, process.pid, options.deviceLabel ?? options.deviceId); this.leases = options.leases;
     this.indexes = new IndexDelivery(options.indexes);
     this.outside = new ExternalActivityGuard({ deviceId: options.deviceId, deviceName: options.deviceLabel ?? options.deviceId, ...(options.externalSessions ? { read: options.externalSessions } : {}) });
     this.ready = this.#recover(); void this.ready.catch(() => undefined);
@@ -436,6 +436,17 @@ export class ConversationService {
   }
   async list() { await this.indexes.flush(); return ConversationListSchema.parse({ schema: 'conversations-list-v2', conversations: (await this.options.indexes.conversations()).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)) }); }
   hasLocalConversation(id: string): boolean { return this.#works.has(IdSchema.parse(id)); }
+  /** Summaries of this device's latest finished steps in one project, newest first, for improver judgments. */
+  recentHandoffSummaries(projectId: string, limit = 10): string[] {
+    IdSchema.parse(projectId);
+    return [...this.#works.values()].flatMap((work) => {
+      const view = work.load(); if (view.conversation.projectId !== projectId) return [];
+      return view.handoffs.flatMap((handoff) => {
+        const step = view.stretches.find((entry) => entry.n === handoff.stretch);
+        return step?.endedAt && step.status !== 'undone' ? [{ at: step.endedAt, summary: handoff.summary }] : [];
+      });
+    }).sort((a, b) => b.at.localeCompare(a.at)).slice(0, limit).map((entry) => entry.summary);
+  }
   async ownerDevice(id: string): Promise<string> {
     await this.ready; IdSchema.parse(id);
     const local = this.#works.get(id); if (local) return local.load().conversation.ownerDeviceId;

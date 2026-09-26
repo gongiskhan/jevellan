@@ -13,7 +13,7 @@ import { ProjectContext } from '../packages/memory/dist/index.js';
 import { Application, createDaemon } from '../apps/daemon/dist/index.js';
 import { FakeRuntime, type RuntimeAdapter, type StretchInput } from '../packages/runtime-contract/dist/index.js';
 import { RiggingDelivery, parseConfiguration } from '../packages/core/dist/index.js';
-import { ImproverJobViewSchema, ImproverStateSchema } from '../packages/core/dist/index.js';
+import { ImproverJobViewSchema, ImproverRunSchema, ImproverStateSchema } from '../packages/core/dist/index.js';
 
 let root: string; let hub: Application; let member: Application; let homes: Homes; let fake: FakeRuntime; let offline: boolean;
 let hubBase: string; let memberBase: string; let hubCookie: string; let cookie: string; let passphrase: string; let path: string; let origin: string; let accountId: string;
@@ -48,6 +48,22 @@ test('a member forwards repeatable improver requests to the hub and never create
   expect(state.jobs[0]).not.toHaveProperty('token'); expect(member.routingImprover).toBeUndefined(); expect(fake.starts).toEqual([]);
   offline = true; const unavailable = await request(memberBase, '/api/improver', cookie, input);
   expect(unavailable.status).toBe(503); expect(await unavailable.json()).toMatchObject({ code: 'hub-unavailable', retryable: true });
+});
+test('the hub hands project memory care to the online member that has the checkout; the member runs it over the device protocol', async () => {
+  const config = await hub.state.configuration.current(); const settings = config.configuration['x-jevellan'].improver;
+  settings.schedule.enabled = false; settings.routing.enabled = false; settings.context.enabled = false;
+  await hub.state.configuration.put({ schema: 'config-write-v1', revision: config.revision, configuration: config.configuration });
+  await member.member!.heartbeat({ schema: 'heartbeat-v1', deviceId: member.device.deviceId, at: new Date().toISOString(), version: '0.1.0', runningConversations: [], projects: [], externalSessions: [], load: { cpuPct: 0, memFreeMb: 1024 } });
+  const run = ImproverRunSchema.parse(await body(await request(memberBase, '/api/improver', cookie, { schema: 'improver-request-v1', operation: 'run-now', clientRequestId: 'member_care' })));
+  expect(run).toMatchObject({ routing: null, projects: [{ kind: 'memory', projectId: 'project' }] });
+  await hub.projectImprover.tick(); await hub.projectImprover.idle();
+  expect(ImproverStateSchema.parse(await body(await request(hubBase, '/api/improver', hubCookie))).lastRuns).toEqual([expect.objectContaining({ kind: 'memory', status: 'waiting', result: 'Not run yet.' })]);
+  await member.projectImprover.tick(); await member.projectImprover.idle();
+  const state = ImproverStateSchema.parse(await body(await request(memberBase, '/api/improver', cookie)));
+  expect(state.lastRuns).toEqual([expect.objectContaining({ kind: 'memory', projectId: 'project', deviceId: member.device.deviceId, status: 'complete', result: 'Nothing to tidy.' })]);
+  const log = await body(await request(memberBase, '/api/improver', cookie, { schema: 'improver-request-v1', operation: 'log', jobId: state.lastRuns[0]!.jobId }));
+  expect(log).toMatchObject({ schema: 'project-improver-log-v1', entries: [expect.objectContaining({ stage: 'started' }), expect.objectContaining({ stage: 'synchronized' }), expect.objectContaining({ stage: 'collected' }), expect.objectContaining({ stage: 'complete', note: 'Nothing to tidy.' })] });
+  expect(checkoutClaims().every(claim => !claim.held)).toBe(true); expect(git(path, 'status', '--porcelain')).toBe('');
 });
 beforeEach(async () => {
   root = realpathSync(mkdtempSync(join(tmpdir(), 'jevellan-member-app-'))); mkdirSync(join(root, 'user')); offline = false;

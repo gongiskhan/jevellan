@@ -2,6 +2,7 @@ import { mkdirSync, existsSync, appendFileSync, readFileSync, lstatSync, readdir
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { z } from 'zod';
 import { Homes, MemoryEditSchema, MemoryNoteSchema, MemorySearchSchema, MemoryWriteSchema, ProjectSchema, SecretRedactor, inside, resolveProjectPath, resolvedPath, runOwnedCommand, type MemoryNote, type Project } from '@jevellan/core';
@@ -21,11 +22,28 @@ export function memoryEnvironment(homes: Homes): Record<string, string> {
     BASIC_MEMORY_DISABLE_PERMALINKS: 'true', BASIC_MEMORY_ENSURE_FRONTMATTER_ON_SYNC: 'false', PYTHONDONTWRITEBYTECODE: '1' };
 }
 
+/** Names, sizes and contents of every file under the memory folder, as last indexed. */
+function folderDigest(root: string): string {
+  const digest = createHash('sha256');
+  const visit = (directory: string, prefix: string) => {
+    if (!existsSync(directory)) return;
+    for (const entry of readdirSync(directory, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+      const file = join(directory, entry.name); const name = prefix + entry.name;
+      if (entry.isDirectory()) { digest.update(`d\0${name}\0`); visit(file, `${name}/`); }
+      else if (entry.isFile()) digest.update(`f\0${name}\0`).update(createHash('sha256').update(readFileSync(file)).digest('hex')).update('\0');
+      else digest.update(`o\0${name}\0`);
+    }
+  };
+  visit(root, ''); return digest.digest('hex');
+}
+
 export class BasicMemory {
   readonly env: Record<string, string>;
   readonly #connections = new Set<Connection>();
   readonly #projects = new Map<string, Promise<Connection>>();
   #registration: Promise<unknown> = Promise.resolve();
+  readonly #synced = new Map<string, string>();
+  readonly #writes = new Map<string, number>();
   #version: Promise<void> | undefined;
   #closed = false;
   constructor(readonly homes: Homes, readonly executable = 'basic-memory', readonly redactor = new SecretRedactor()) { this.env = memoryEnvironment(homes); }
@@ -78,13 +96,18 @@ export class BasicMemory {
   }
   async call(name: string, path: string, tool: string, args: Record<string, unknown>, signal: AbortSignal): Promise<unknown> {
     signal.throwIfAborted(); const connection = await this.connection(name, path); signal.throwIfAborted();
+    // A provider write changes the index outside sync; the next sync must run even if files later return to the synced state.
+    if (!['search_notes', 'read_note'].includes(tool)) { const key = `${name}\0${path}`; this.#synced.delete(key); this.#writes.set(key, (this.#writes.get(key) ?? 0) + 1); }
     return this.#call(connection, tool, { ...args, project: name }, signal);
   }
   async sync(name: string, path: string): Promise<void> {
     await this.connection(name, path);
+    // Each provider sync is a full foreground Python run; skip it when no note changed since the last one.
+    if (this.#synced.get(`${name}\0${path}`) === folderDigest(path)) return;
     await this.#syncFiles(name, path);
   }
   async #syncFiles(name: string, path: string): Promise<void> {
+    const digest = folderDigest(path); const writes = this.#writes.get(`${name}\0${path}`) ?? 0;
     const candidate = isAbsolute(this.executable) ? this.executable : this.env.PATH!.split(':').map((directory) => join(directory, this.executable)).find((file) => existsSync(file));
     if (!candidate) throw new Error('Basic Memory is not installed.');
     const python = join(dirname(realpathSync(candidate)), 'python');
@@ -96,6 +119,7 @@ export class BasicMemory {
     if (result.code !== 0) throw new Error(`Basic Memory could not synchronize this project: ${this.redactor.text(result.stderr).trim().slice(-2500) || `exit ${result.code}`}`);
     const receipt = z.strictObject({ schema: z.literal('memory-sync-v1'), project: z.string(), total: z.number().int().nonnegative() }).parse(JSON.parse(result.stdout));
     if (receipt.project !== name) throw new Error('Memory sync returned another project.');
+    if ((this.#writes.get(`${name}\0${path}`) ?? 0) === writes) this.#synced.set(`${name}\0${path}`, digest);
   }
   async close(): Promise<void> {
     this.#closed = true;

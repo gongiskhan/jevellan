@@ -5,7 +5,7 @@ import type { Application } from './application.js';
 import { json, requestBody } from './http.js';
 import { SharedStateRequestSchema } from '@jevellan/core';
 import { HubState } from '@jevellan/mesh';
-import { ImproverRequestSchema, PeerLoginSessionInputSchema } from '@jevellan/core';
+import { ImproverDeviceRequestSchema, ImproverRequestSchema, PeerLoginSessionInputSchema } from '@jevellan/core';
 
 export async function handleMeshDeviceApi(app: Application, request: IncomingMessage, response: ServerResponse, url: URL): Promise<boolean> {
   const path = url.pathname; if (!path.startsWith('/hub/mesh/')) return false;
@@ -23,6 +23,12 @@ export async function handleMeshDeviceApi(app: Application, request: IncomingMes
     const input = ImproverRequestSchema.parse(await requestBody(request)); await app.routingImprover!.revisions.ready;
     app.devices.authenticate(authorization!.slice(7));
     const result = await app.routingImprover!.request(input, device.id);
+    app.devices.authenticate(authorization!.slice(7)); send(result); return true;
+  }
+  if (path === '/hub/mesh/improver-device' && method === 'POST') {
+    const input = ImproverDeviceRequestSchema.parse(await requestBody(request)); await app.improver!.revisions.ready;
+    app.devices.authenticate(authorization!.slice(7));
+    const result = app.improver!.projects.request(device.id, input);
     app.devices.authenticate(authorization!.slice(7)); send(result); return true;
   }
   if (path === '/hub/mesh/state' && method === 'POST') {

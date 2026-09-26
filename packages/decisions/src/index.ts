@@ -6,3 +6,4 @@ export * from './memory.js';
 export * from './engine.js';
 export * from './improver.js';
 export * from './evaluation.js';
+export * from './memory-care.js';

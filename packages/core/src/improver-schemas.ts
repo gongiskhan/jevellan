@@ -1,5 +1,10 @@
 import { z } from 'zod';
-import { ActionSchema, EffortSchema, HandoffSchema, IdSchema, JevCallSchema, TimestampSchema, UsageSchema } from './schemas.js';
+import { ActionSchema, EffortSchema, HandoffSchema, IdSchema, ImproverSettingsSchema, JevCallSchema, TimestampSchema, UsageSchema } from './schemas.js';
+import {
+  ImproverLastRunSchema, ImproverNoticeSchema, MemoryCareCountsSchema, MemoryCareReportActionSchema, MemoryCareReportRowSchema, MemoryCareStateSchema, MemoryNoteRefSchema,
+  ProjectImproverLogSchema, ProjectPatchSchema, ProjectPreviewSchema, ProjectRevisionRecordSchema, ProjectRevisionRequestSchema, ProjectSuggestionActionSchema, ProjectSuggestionRowSchema,
+  ProjectTaskSchema, TrialLogSchema, ImproverSummarySchema,
+} from './project-improver-schemas.js';
 
 const text = z.string().min(1);
 export const RoutingFieldSchema = z.discriminatedUnion('kind', [
@@ -166,16 +171,102 @@ export const ImproverJobViewSchema = z.strictObject({
   schema: z.literal('improver-job-view-v1'), id: IdSchema, scope: ImproverJobScopeSchema, deviceId: IdSchema,
   status: z.enum(['running', 'complete', 'skipped', 'failed']), startedAt: TimestampSchema, finishedAt: TimestampSchema.nullable(), note: z.string().max(1200),
 });
-export const ImproverStateSchema = z.strictObject({
-  schema: z.literal('improver-state-v1'), suggestions: z.array(RoutingSuggestionRowSchema), jobs: z.array(ImproverJobViewSchema),
-  revisions: z.array(RoutingRevisionRecordSchema),
+const CardStatusSchema = z.enum(['pending', 'applying', 'recompute', 'expired', 'applied', 'undoing', 'dismissed', 'undone']);
+/** One card shape for every improver suggestion, whatever job produced it. */
+export const ImproverCardSchema = z.strictObject({
+  schema: z.literal('improver-card-v1'), kind: z.enum(['routing', 'memory-care', 'context']), id: IdSchema, revision: z.number().int().positive(),
+  projectId: IdSchema.nullable(), projectName: z.string().max(200).nullable(), title: z.string().min(1).max(200), reason: z.string().min(1).max(1200),
+  status: CardStatusSchema, decided: z.boolean(), error: z.string().max(1200).nullable(), createdAt: TimestampSchema, updatedAt: TimestampSchema,
+  evidence: z.discriminatedUnion('kind', [
+    z.strictObject({ kind: z.literal('corrections'), total: z.number().int().nonnegative(), withUndo: z.number().int().nonnegative(), items: z.array(z.strictObject({
+      id: IdSchema, at: TimestampSchema, conversationId: IdSchema, conversationTitle: z.string().nullable(), stretch: z.number().int().positive().nullable(),
+      field: z.enum(['action', 'model', 'effort']), from: z.string().nullable(), to: z.string().nullable(), context: z.string(), mode: z.enum(['noted', 'redo', 'once', 'pin']) })) }),
+    z.strictObject({ kind: z.literal('notes'), notes: z.array(MemoryNoteRefSchema) }),
+  ]),
+  change: z.discriminatedUnion('kind', [
+    z.strictObject({ kind: z.literal('field'), field: RoutingFieldSchema, before: z.string(), after: z.string(), diff: z.string() }),
+    z.strictObject({ kind: z.literal('patch'), diff: z.string(), files: z.array(z.strictObject({ path: z.string(), before: z.string().nullable(), after: z.string().nullable() })) }),
+  ]),
+  check: z.strictObject({ evidence: z.enum(['live', 'simulated']), total: z.number().int().positive(), unchanged: z.number().int().nonnegative(), better: z.number().int().nonnegative(), worse: z.number().int().nonnegative(),
+    changed: z.array(z.strictObject({ caseId: IdSchema, title: z.string(), change: z.enum(['better', 'worse']) })) }).nullable(),
+  counts: MemoryCareCountsSchema.nullable(),
+  applied: z.strictObject({ at: TimestampSchema, undoUntil: TimestampSchema, commit: z.string().nullable(), published: z.boolean().nullable() }).nullable(),
+  outcomes: z.array(z.strictObject({ kind: z.enum(['applied', 'applied-after-change', 'dismissed', 'undone']), at: TimestampSchema, reason: z.string().nullable() })),
+  actions: z.strictObject({ apply: z.boolean(), undo: z.boolean(), dismiss: z.boolean(), change: z.boolean() }),
+  requests: z.strictObject({ action: z.enum(['routing-suggestion-action-v1', 'project-suggestion-action-v1']), revision: z.enum(['routing-revision-request-v1', 'project-revision-request-v1']) }),
 });
+export type ImproverCard = z.infer<typeof ImproverCardSchema>;
+export const ImproverStateSchema = z.strictObject({
+  schema: z.literal('improver-state-v2'), cards: z.array(ImproverCardSchema), suggestions: z.array(RoutingSuggestionRowSchema), jobs: z.array(ImproverJobViewSchema),
+  revisions: z.array(RoutingRevisionRecordSchema), projectSuggestions: z.array(ProjectSuggestionRowSchema), projectRevisions: z.array(ProjectRevisionRecordSchema),
+  reports: z.array(MemoryCareReportRowSchema), lastRuns: z.array(ImproverLastRunSchema), trialLog: TrialLogSchema,
+  pending: z.number().int().nonnegative(), notice: ImproverNoticeSchema.nullable(),
+});
+export type ImproverState = z.infer<typeof ImproverStateSchema>;
+export const ImproverRunSchema = z.strictObject({
+  schema: z.literal('improver-run-v1'), id: IdSchema, requestedAt: TimestampSchema, routing: ImproverJobViewSchema.nullable(),
+  projects: z.array(z.strictObject({ kind: z.enum(['memory', 'context']), projectId: IdSchema })),
+});
+export type ImproverRun = z.infer<typeof ImproverRunSchema>;
+const improverRequest = { schema: z.literal('improver-request-v1') };
 export const ImproverRequestSchema = z.discriminatedUnion('operation', [
-  z.strictObject({ schema: z.literal('improver-request-v1'), operation: z.literal('state') }),
-  z.strictObject({ schema: z.literal('improver-request-v1'), operation: z.literal('run'), clientRequestId: IdSchema }),
-  z.strictObject({ schema: z.literal('improver-request-v1'), operation: z.literal('log'), jobId: IdSchema }),
-  z.strictObject({ schema: z.literal('improver-request-v1'), operation: z.literal('revise'), input: RoutingRevisionRequestSchema }),
-  z.strictObject({ schema: z.literal('improver-request-v1'), operation: z.literal('revision'), id: IdSchema }),
-  z.strictObject({ schema: z.literal('improver-request-v1'), operation: z.literal('act'), suggestionId: IdSchema, input: RoutingSuggestionActionSchema }),
+  z.strictObject({ ...improverRequest, operation: z.literal('state') }),
+  z.strictObject({ ...improverRequest, operation: z.literal('summary') }),
+  z.strictObject({ ...improverRequest, operation: z.literal('run'), clientRequestId: IdSchema }),
+  z.strictObject({ ...improverRequest, operation: z.literal('run-now'), clientRequestId: IdSchema }),
+  z.strictObject({ ...improverRequest, operation: z.literal('log'), jobId: IdSchema }),
+  z.strictObject({ ...improverRequest, operation: z.literal('revise'), input: z.union([RoutingRevisionRequestSchema, ProjectRevisionRequestSchema]) }),
+  z.strictObject({ ...improverRequest, operation: z.literal('revision'), id: IdSchema }),
+  z.strictObject({ ...improverRequest, operation: z.literal('act'), suggestionId: IdSchema, input: z.union([RoutingSuggestionActionSchema, ProjectSuggestionActionSchema]) }),
+  z.strictObject({ ...improverRequest, operation: z.literal('report'), reportId: IdSchema, input: MemoryCareReportActionSchema }),
+  z.strictObject({ ...improverRequest, operation: z.literal('notice-seen'), id: z.string().regex(/^[a-f0-9]{64}$/) }),
 ]);
-export const ImproverResultSchema = z.union([ImproverStateSchema, ImproverJobViewSchema, RoutingImproverLogSchema, RoutingRevisionRecordSchema, RoutingSuggestionRowSchema]);
+export type ImproverRequest = z.infer<typeof ImproverRequestSchema>;
+export const ImproverResultSchema = z.union([
+  ImproverStateSchema, ImproverSummarySchema, ImproverRunSchema, ImproverJobViewSchema, RoutingImproverLogSchema, ProjectImproverLogSchema,
+  RoutingRevisionRecordSchema, ProjectRevisionRecordSchema, RoutingSuggestionRowSchema, ProjectSuggestionRowSchema, MemoryCareReportRowSchema,
+]);
+export type ImproverResult = z.infer<typeof ImproverResultSchema>;
+
+/** Device-authenticated protocol between a project-owning device and the hub; never exposed to browsers. */
+export const ProjectSuggestionInputSchema = z.strictObject({
+  schema: z.literal('project-suggestion-input-v1'), id: IdSchema, kind: z.enum(['memory-care', 'context']), projectId: IdSchema, projectName: z.string().min(1).max(200),
+  title: z.string().min(1).max(200), reason: z.string().min(1).max(1200), evidence: z.array(MemoryNoteRefSchema).min(1).max(100), counts: MemoryCareCountsSchema.nullable(),
+  patch: ProjectPatchSchema, suppressionKey: z.string().regex(/^[a-f0-9]{64}$/),
+});
+export type ProjectSuggestionInput = z.infer<typeof ProjectSuggestionInputSchema>;
+export const MemoryCareReportInputSchema = z.strictObject({
+  schema: z.literal('memory-care-report-input-v1'), projectId: IdSchema, projectName: z.string().min(1).max(200), counts: MemoryCareCountsSchema,
+  evidence: z.array(MemoryNoteRefSchema).max(100), patch: ProjectPatchSchema, commit: z.string().regex(/^[a-f0-9]{40,64}$/).nullable(), published: z.boolean(),
+});
+export type MemoryCareReportInput = z.infer<typeof MemoryCareReportInputSchema>;
+export const ProjectTaskResultSchema = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('applied'), commit: z.string().regex(/^[a-f0-9]{40,64}$/).nullable(), published: z.boolean() }),
+  z.strictObject({ kind: z.literal('undone'), commit: z.string().regex(/^[a-f0-9]{40,64}$/).nullable() }),
+  z.strictObject({ kind: z.literal('stale'), note: z.string().min(1).max(1200) }),
+  z.strictObject({ kind: z.literal('recomputed'), suggestion: ProjectSuggestionInputSchema }),
+  z.strictObject({ kind: z.literal('expired'), note: z.string().min(1).max(1200) }),
+  z.strictObject({ kind: z.literal('failed'), note: z.string().min(1).max(1200) }),
+]);
+export type ProjectTaskResult = z.infer<typeof ProjectTaskResultSchema>;
+const deviceRequest = { schema: z.literal('improver-device-request-v1') };
+export const ImproverDeviceRequestSchema = z.discriminatedUnion('operation', [
+  z.strictObject({ ...deviceRequest, operation: z.literal('poll'), startedAt: TimestampSchema }),
+  z.strictObject({ ...deviceRequest, operation: z.literal('renew'), job: ImproverJobSchema }),
+  z.strictObject({ ...deviceRequest, operation: z.literal('finish'), job: ImproverJobSchema, status: z.enum(['complete', 'skipped', 'failed']), note: z.string().max(1200), careState: MemoryCareStateSchema.nullable() }),
+  z.strictObject({ ...deviceRequest, operation: z.literal('log'), job: ImproverJobSchema, stage: ProjectImproverLogSchema.shape.entries.element.shape.stage, note: z.string().max(1200) }),
+  z.strictObject({ ...deviceRequest, operation: z.literal('care-state'), projectId: IdSchema }),
+  z.strictObject({ ...deviceRequest, operation: z.literal('suggest'), job: ImproverJobSchema, suggestion: ProjectSuggestionInputSchema }),
+  z.strictObject({ ...deviceRequest, operation: z.literal('report'), job: ImproverJobSchema, report: MemoryCareReportInputSchema }),
+  z.strictObject({ ...deviceRequest, operation: z.literal('task-result'), taskId: IdSchema, result: ProjectTaskResultSchema }),
+]);
+export type ImproverDeviceRequest = z.infer<typeof ImproverDeviceRequestSchema>;
+export const ImproverDeviceWorkSchema = z.strictObject({
+  schema: z.literal('improver-device-work-v1'), settings: ImproverSettingsSchema, jobs: z.array(ImproverJobSchema),
+  tasks: z.array(z.strictObject({ task: ProjectTaskSchema, suggestion: ProjectSuggestionRowSchema.nullable(), report: MemoryCareReportRowSchema.nullable(), preview: ProjectPreviewSchema.nullable() })),
+  knownKeys: z.record(IdSchema, z.array(z.string().regex(/^[a-f0-9]{64}$/))), open: z.record(IdSchema, z.array(z.enum(['memory-care', 'context']))),
+});
+export type ImproverDeviceWork = z.infer<typeof ImproverDeviceWorkSchema>;
+export const ImproverDeviceAckSchema = z.strictObject({ schema: z.literal('improver-device-ack-v1') });
+export const MemoryCareStateResultSchema = z.strictObject({ schema: z.literal('memory-care-state-result-v1'), state: MemoryCareStateSchema.nullable() });
+export const ImproverDeviceResultSchema = z.union([ImproverDeviceWorkSchema, ImproverJobSchema, ImproverDeviceAckSchema, MemoryCareStateResultSchema, ProjectSuggestionRowSchema, MemoryCareReportRowSchema, ProjectTaskSchema]);

@@ -38,14 +38,14 @@
   {
     "id": "phase-6",
     "title": "Improver",
-    "why": "User requested a pilot handoff on 2026-09-25 instead of further build work. Application/member API regression selection passed 127 tests with simulated providers. Partial suggestion UI is typechecked/linted but not browser verified; memory/context jobs and J10/J12 are unfinished. Excluded from the running phase-5 pilot. See docs/acceptance/PILOT.md. On 2026-09-26 the user requested committing and pushing all remaining work for continuation on another machine. This checkpoint includes the unfinished source, tests and evidence; it does not complete phase 6 or change the running pilot. See docs/acceptance/machine-handoff-2026-09-26.md.",
-    "status": "deferred-by-user"
+    "why": "Resumed by the user on 2026-09-26 (dev-madrid). Backend complete: routing suggestions, memory care (Apply and tell me / Suggest only, morning cards with published revert), AGENTS.md context suggestions, unified suggestion cards, schedule and jobs settings, last runs, trial log and member dispatch; 78 improver tests pass with simulated Jev and drafts and real git publication. The Settings → Improver UI is rebuilt on that contract. Remaining: browser J10/J12 journeys and live Jev runs. See docs/acceptance/phase6-memory-care.md.",
+    "status": "in-progress"
   },
   {
     "id": "phase-7",
     "title": "Hardening and finish",
-    "why": "User requested quick core checks and a usable pilot. Three focused conversation/automatic-loop regressions and typecheck pass. Live judge decisions and the repaired core workflow are verified in the pilot; full final verification and the crucial-issues review remain deferred; section 20 is not claimed. See docs/acceptance/PILOT.md.",
-    "status": "deferred-by-user"
+    "why": "Resumed 2026-09-26. Interface overhaul to the website theme is done and the full browser matrix passes (132 in four layouts). Vision checks are wired (tests/e2e/vision.ts); the vision-enabled matrix, the full backend run, live journeys, the crucial-issues review and the final report remain. See docs/acceptance/REPORT.md.",
+    "status": "in-progress"
   },
   {
     "id": "shells",

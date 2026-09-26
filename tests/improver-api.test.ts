@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { AccountSchema, Homes, ImproverJobViewSchema, ImproverStateSchema, OverrideRecordSchema, RoutingRevisionRecordSchema, RoutingSuggestionRowSchema, groupAlive, parseConfiguration } from '../packages/core/dist/index.js';
+import { AccountSchema, ConversationIndexSchema, Homes, ImproverJobViewSchema, ImproverRunSchema, ImproverStateSchema, ImproverSummarySchema, OverrideRecordSchema, RoutingRevisionRecordSchema, RoutingSuggestionRowSchema, groupAlive, parseConfiguration } from '../packages/core/dist/index.js';
 import type { JevQuestions } from '../packages/decisions/dist/index.js';
 import { FakeRuntime, type StretchInput } from '../packages/runtime-contract/dist/index.js';
 import { Application, createDaemon } from '../apps/daemon/dist/index.js';
@@ -61,6 +61,9 @@ test('normal application HTTP runs the judge, private draft and checks; Change i
   const run = { schema: 'improver-request-v1', operation: 'run', clientRequestId: 'run' }; const job = ImproverJobViewSchema.parse(await request(run));
   await app.routingImprover!.wait(job.id); expect(ImproverJobViewSchema.parse(await request(run)).id).toBe(job.id);
   const state = ImproverStateSchema.parse(await request()); const row = state.suggestions[0]!;
+  expect(state.pending).toBe(1); expect(state.notice?.lines).toEqual(['1 new suggestion from the improver']);
+  expect(state.cards).toEqual([expect.objectContaining({ kind: 'routing', id: row.suggestion.id, revision: row.revision, status: 'pending', requests: { action: 'routing-suggestion-action-v1', revision: 'routing-revision-request-v1' },
+    evidence: expect.objectContaining({ kind: 'corrections', total: 3, withUndo: 0 }), check: expect.objectContaining({ total: 24, evidence: 'simulated' }), change: expect.objectContaining({ kind: 'field', after: 'Prefer GPT for specified backend changes.' }) })]);
   expect(row.suggestion.comparison.cases).toHaveLength(24); expect(row.suggestion.comparison.evidence).toBe('simulated'); expect(questions.filter(id => id === 'consistent_preference')).toHaveLength(1);
   expect(runtime.starts).toHaveLength(1); expect(app.hub.configuration.current()?.revision).toBe(2); expect(state.jobs[0]).not.toHaveProperty('token');
   runtime.enqueue(({ input }) => { expect(readFileSync(join(input.cwd, 'instruction.txt'), 'utf8')).toBe('Only small backend fixes.'); return draft(input, 'Prefer GPT only for small backend fixes.'); });
@@ -79,4 +82,23 @@ test('improver endpoints require a signed-in UI and reject malformed requests be
   expect((await fetch(`${base}/api/improver`)).status).toBe(401);
   const malformed = await fetch(`${base}/api/improver`, { method: 'POST', headers: { Cookie: cookie, Origin: base, 'Content-Type': 'application/json' }, body: JSON.stringify({ schema: 'improver-request-v1', operation: 'run' }) });
   expect(malformed.status).toBe(400); expect(app.routingImprover!.jobs.list()).toEqual([]); expect(runtime.starts).toEqual([]);
+});
+
+test('the improver state carries last runs, the trial log and the badge count; Run now covers every job; device work needs device authentication', async () => {
+  app.hub.put('conversations', 'outside', ConversationIndexSchema, { schema: 'conversation-index-v1', id: 'outside', title: 'Fix the login page', projectId: 'project', ownerDeviceId: app.device.deviceId,
+    state: 'done', updatedAt: new Date().toISOString(), outcome: { kind: 'finished-elsewhere', reason: 'Needed to watch the browser.', at: new Date().toISOString() } }, 0);
+  let state = ImproverStateSchema.parse(await request());
+  expect(state).toMatchObject({ schema: 'improver-state-v2', pending: 0, notice: null, projectSuggestions: [], reports: [] });
+  expect(state.trialLog.weeks).toEqual([expect.objectContaining({ inJevellan: 0, outside: 1, reasons: [expect.objectContaining({ conversationId: 'outside', reason: 'Needed to watch the browser.' })] })]);
+  expect(state.lastRuns).toEqual([expect.objectContaining({ kind: 'routing', status: 'waiting', result: 'Not run yet.' })]);
+  expect(ImproverSummarySchema.parse(await request({ schema: 'improver-request-v1', operation: 'summary' }))).toEqual({ schema: 'improver-summary-v1', pending: 0, notice: null });
+  const input = { schema: 'improver-request-v1', operation: 'run-now', clientRequestId: 'run_now' };
+  const run = ImproverRunSchema.parse(await request(input)); expect(run.routing?.scope).toMatchObject({ kind: 'routing', cycle: { kind: 'manual', id: run.id } }); expect(run.projects).toEqual([]);
+  await app.routingImprover!.wait(run.routing!.id); expect(ImproverRunSchema.parse(await request(input))).toMatchObject({ id: run.id, requestedAt: run.requestedAt, routing: { id: run.routing!.id, status: 'complete' } });
+  state = ImproverStateSchema.parse(await request()); expect(state.lastRuns[0]).toMatchObject({ kind: 'routing', status: 'complete', result: 'No new routing suggestions.' });
+  const poll = JSON.stringify({ schema: 'improver-device-request-v1', operation: 'poll', startedAt: new Date().toISOString() });
+  expect((await fetch(`${base}/hub/mesh/improver-device`, { method: 'POST', headers: { Cookie: cookie, Origin: base, 'Content-Type': 'application/json' }, body: poll })).status).toBe(403);
+  expect((await fetch(`${base}/hub/mesh/improver-device`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: poll })).status).toBe(401);
+  const device = await fetch(`${base}/api/improver`, { method: 'POST', headers: { Cookie: cookie, Origin: base, 'Content-Type': 'application/json' }, body: poll });
+  expect(device.status).toBe(400);
 });

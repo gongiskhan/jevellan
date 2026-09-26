@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
+import { expect, test } from './fixtures.js';
 import { randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { existsSync, lstatSync, mkdirSync, readFileSync, readlinkSync, utimesSync, writeFileSync } from 'node:fs';
@@ -8,6 +9,12 @@ import { AccountListSchema, AccountViewSchema, ContextPanelSchema, ConversationP
 
 const J8EvidenceSchema = z.strictObject({ schema: z.literal('j8-simulated-v1'), layout: z.string(), transport: z.literal('live-local-http'), devices: z.literal('simulated'), providers: z.literal('simulated'), selection: z.literal('manual'), separateCheckouts: z.literal(true), remoteLoginReadyOnlyOnB: z.literal(true), switchedWithoutSignIn: z.literal(true), ownerStayedOnB: z.literal(true), proxyStreamGrew: z.literal(true), correctionInterruptedB: z.literal(true), automaticChoiceDisabled: z.literal(true), externalSessionVisible: z.literal(true), writingBlockedUntilQuiet: z.literal(true), writingResumedAfterQuiet: z.literal(true) });
 const J11EvidenceSchema = z.strictObject({ schema: z.literal('j11-mesh-simulated-v1'), layout: z.string(), devices: z.literal('simulated'), providers: z.literal('simulated'), memory: z.literal('live-basic-memory'), selection: z.literal('manual-search-rank'), compatibilityLinkExcluded: z.literal(true), explicitMemoryPublished: z.literal(true), readOnlyProposalPreservedCheckout: z.literal(true), proposalAppliedByOwner: z.literal(true), alreadyOpenIndexRefreshedAfterPull: z.literal(true), claudeAndCodexReceivedNote: z.literal(true), whyShowsChosenMemory: z.literal(true), contextDraftPreservedFiles: z.literal(true), contextMergePublished: z.literal(true), chosenNote: z.string() });
+
+// The conversation composer stays pinned to the bottom of the screen, so older steps are scrolled to the
+// middle of the viewport before they are clicked, as a person would.
+function centered(locator: Locator) {
+  return { click: async () => { await locator.evaluate((element) => element.scrollIntoView({ block: 'center' })); await locator.click(); } };
+}
 
 async function currentProjectPath(page: Page) {
   const roster = DeviceRosterSchema.parse(await (await page.request.get(new URL('/hub/devices/roster', page.url()).href)).json());
@@ -82,7 +89,7 @@ test('Projects and a manual planned change render the full plan, stream, Why and
   await expect(page.getByRole('heading', { name: 'The full fixture plan' })).toBeVisible(); await expect(page.getByRole('button', { name: 'Go ahead', exact: true })).toBeVisible();
   await page.evaluate(() => window.scrollTo(0, 0)); await page.screenshot({ path: `docs/acceptance/screenshots/phase2-plan-${info.project.name}.png`, fullPage: true });
   await page.getByRole('button', { name: 'Go ahead', exact: true }).click(); await picker.getByRole('combobox', { name: 'Action', exact: true }).selectOption('implement'); await picker.getByRole('button', { name: 'Continue', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Step 2 · Implement' })).toBeVisible(); await expect(picker).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByRole('heading', { name: 'Step 2 · Implement' })).toBeVisible({ timeout: 30_000 }); await expect(picker).toBeVisible({ timeout: 30_000 });
   const implementation = page.locator('.stretch-block').filter({ has: page.getByRole('heading', { name: 'Step 2 · Implement' }) });
   await implementation.getByRole('button', { name: 'Why', exact: true }).click(); await expect(dialog).toContainText('This step was picked manually.'); await expect(dialog).toContainText('Account'); await dialog.getByRole('button', { name: 'Close panel' }).click();
   await page.reload(); await expect(page.getByRole('heading', { name: 'Step 2 · Implement' })).toBeVisible(); await expect(page.getByRole('heading', { name: 'The full fixture plan' })).toBeVisible();
@@ -93,7 +100,7 @@ test('Projects and a manual planned change render the full plan, stream, Why and
   await page.screenshot({ path: `docs/acceptance/screenshots/phase2-settlement-${info.project.name}.png` });
   await dialog.getByRole('button', { name: 'Publish', exact: true }).click();
   await expect(page.getByText('Work closed and published.', { exact: true })).toBeVisible({ timeout: 30_000 });
-  await expect(page.locator('.conversation-page > .muted')).toContainText('Done', { timeout: 30_000 });
+  await expect(page.locator('.conversation-meta')).toContainText('Done', { timeout: 30_000 });
   await implementation.getByRole('button', { name: 'Changes', exact: true }).click(); await expect(dialog).toContainText('+2'); await expect(dialog).toContainText('Jevellan verification'); await expect(dialog).toContainText('Passed');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true); await page.screenshot({ path: `docs/acceptance/screenshots/phase2-changes-${info.project.name}.png` });
   await dialog.getByRole('button', { name: 'Close panel' }).click(); await expect(page.locator('.conversation-row.selected')).toContainText('Done'); await page.evaluate(() => window.scrollTo(0, 0)); await page.screenshot({ path: `docs/acceptance/screenshots/phase2-conversation-${info.project.name}.png`, fullPage: true });
@@ -166,7 +173,7 @@ test('step corrections survive reload and undo launches the requested redo with 
   expect(after.stretches.map((step: { status: string }) => step.status)).toEqual(['undone', 'completed']); expect(after.overrides.map((entry: { request: { mode: string } }) => entry.request.mode)).toEqual(['noted', 'redo']);
   expect(after.decisions.at(-1)).toMatchObject({ trigger: 'redo', action: { source: 'redo', chosen: 'reply' }, effort: { requested: 'low' } });
   await page.getByRole('button', { name: 'Close this work', exact: true }).click(); await dialog.getByRole('button', { name: 'Keep them', exact: true }).click(); await expect(dialog).not.toBeVisible();
-  await expect(page.locator('.conversation-page > .muted')).toContainText('Done'); await expect(page.getByRole('button', { name: 'Cancel', exact: true })).not.toBeVisible();
+  await expect(page.locator('.conversation-meta')).toContainText('Done'); await expect(page.getByRole('button', { name: 'Cancel', exact: true })).not.toBeVisible();
   await page.evaluate(() => window.scrollTo(0, 0)); await page.screenshot({ path: `docs/acceptance/screenshots/phase2-undo-${info.project.name}.png`, fullPage: true });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true); expect(errors).toEqual([]);
 });
@@ -181,14 +188,14 @@ test('blocked files can be reviewed, refreshed and accepted before verified publ
   const picker = page.locator('.manual-picker'); await picker.getByRole('combobox', { name: 'Action', exact: true }).selectOption('reply'); await picker.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Changes need your review' })).toBeVisible({ timeout: 30_000 }); await expect(picker).not.toBeVisible();
   await page.reload(); await page.getByRole('button', { name: 'Review changes', exact: true }).click();
-  const dialog = page.getByRole('dialog'); await expect(dialog).toContainText('+2'); await expect(dialog).toContainText('+Accept this new file after reviewing it.'); await expect(dialog.getByRole('button', { name: 'Continue', exact: true })).toBeEnabled();
+  const dialog = page.getByRole('dialog'); await expect(dialog).toContainText('+2', { timeout: 15_000 }); await expect(dialog).toContainText('+Accept this new file after reviewing it.'); await expect(dialog.getByRole('button', { name: 'Continue', exact: true })).toBeEnabled();
   const id = new URL(page.url()).pathname.split('/')[2]!;
   expect((await page.request.post(`/api/conversations/${id}/messages`, { data: { schema: 'conversation-message-v1', clientMessageId: `review_context_${randomUUID()}`, text: 'Keep the reviewed changes.' } })).ok()).toBe(true);
   await expect(dialog.getByRole('button', { name: 'Continue', exact: true })).toBeDisabled(); await dialog.getByRole('button', { name: 'Refresh changes', exact: true }).click(); await expect(dialog.getByRole('button', { name: 'Continue', exact: true })).toBeEnabled();
   await dialog.getByRole('button', { name: 'Continue', exact: true }).scrollIntoViewIfNeeded(); expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: `docs/acceptance/screenshots/phase2-adoption-${info.project.name}.png` });
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click(); await expect(dialog).not.toBeVisible(); await expect(picker).toBeVisible({ timeout: 30_000 }); await expect(page.getByRole('heading', { name: 'Changes need your review' })).not.toBeVisible();
-  await picker.getByRole('combobox', { name: 'Action', exact: true }).selectOption('done'); await picker.getByRole('button', { name: 'Continue', exact: true }).click(); await expect(page.locator('.conversation-page > .muted')).toContainText('Done', { timeout: 30_000 });
+  await picker.getByRole('combobox', { name: 'Action', exact: true }).selectOption('done'); await picker.getByRole('button', { name: 'Continue', exact: true }).click(); await expect(page.locator('.conversation-meta')).toContainText('Done', { timeout: 30_000 });
   await page.getByRole('button', { name: 'Changes', exact: true }).click(); await expect(dialog).toContainText('Passed'); await expect(dialog).toContainText('review-note.txt'); expect(errors).toEqual([]);
 });
 
@@ -205,7 +212,7 @@ test('undo from the last closed work includes newer work and preserves both requ
   await picker.getByRole('combobox', { name: 'Action', exact: true }).selectOption('implement'); await picker.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Step 1 · Implement' })).toBeVisible({ timeout: 30_000 }); await expect(picker).toBeVisible({ timeout: 30_000 });
   await picker.getByRole('combobox', { name: 'Action', exact: true }).selectOption('done'); await picker.getByRole('button', { name: 'Continue', exact: true }).click();
-  await expect(page.locator('.conversation-page > .muted')).toContainText('Done', { timeout: 30_000 }); const closed = (await read()).closedWorks.at(-1)!;
+  await expect(page.locator('.conversation-meta')).toContainText('Done', { timeout: 30_000 }); const closed = (await read()).closedWorks.at(-1)!;
   const newerRequest = 'Now change the value to three. Keep this newer request in the conversation.';
   await page.getByRole('textbox', { name: 'Message', exact: true }).fill(newerRequest); await page.getByRole('button', { name: 'Send', exact: true }).click();
   await expect(picker).toBeVisible(); const following = (await read()).conversation.work!; expect(following.id).not.toBe(closed.id);
@@ -226,7 +233,7 @@ test('undo from the last closed work includes newer work and preserves both requ
   await page.screenshot({ path: `docs/acceptance/screenshots/phase2-undo-following-${info.project.name}.png`, fullPage: true });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true); expect(errors).toEqual([]);
   await picker.getByRole('combobox', { name: 'Action', exact: true }).selectOption('done'); await picker.getByRole('button', { name: 'Continue', exact: true }).click();
-  await expect(page.locator('.conversation-page > .muted')).toContainText('Done', { timeout: 30_000 });
+  await expect(page.locator('.conversation-meta')).toContainText('Done', { timeout: 30_000 });
 });
 
 test('context merge is drafted read-only, survives reload, cancels and applies through verified publication', async ({ page }, info) => {
@@ -277,7 +284,7 @@ test('conversation titles, expanded tools and outside outcomes survive updates a
   await dialog.getByLabel('Title', { exact: true }).fill(title); await dialog.getByRole('button', { name: 'Save title', exact: true }).click(); await expect(dialog).not.toBeVisible();
   await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible(); await expect(page.locator('.conversation-row.selected')).toContainText(title); expect((await read()).conversation.generation).toBe(generation);
   await picker.getByRole('combobox', { name: 'Action', exact: true }).selectOption('implement'); await picker.getByRole('button', { name: 'Continue', exact: true }).click(); await expect(page.getByRole('heading', { name: 'Step 1 · Implement' })).toBeVisible({ timeout: 30_000 }); await expect(picker).toBeVisible({ timeout: 30_000 });
-  const tool = page.locator('.tool-call'); await tool.locator('summary').click(); await expect(tool).toContainText('The fixture starts with value 1.'); expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  const tool = page.locator('.tool-call'); await page.locator('.tool-activity > summary').first().click(); await tool.locator('summary').click(); await expect(tool).toContainText('The fixture starts with value 1.'); expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   const edges = await tool.evaluate((element) => ['summary', 'pre'].map((selector) => { const box = element.querySelector(selector)!.getBoundingClientRect(); return { left: box.left, right: box.right }; })); expect(edges[0]).toEqual(edges[1]);
   await page.evaluate(() => window.scrollTo(0, 0)); await page.screenshot({ path: `docs/acceptance/screenshots/phase2-controls-title-${info.project.name}.png`, fullPage: true });
   await page.locator('.conversation-heading h1').getByRole('button').click(); await dialog.getByLabel('Title', { exact: true }).fill('Finished in my editor'); await dialog.getByRole('button', { name: 'Save title', exact: true }).click(); await expect(dialog).not.toBeVisible();
@@ -288,7 +295,7 @@ test('conversation titles, expanded tools and outside outcomes survive updates a
   await expect(page.getByRole('button', { name: 'Settle kept changes', exact: true })).toBeVisible(); await expect(picker).not.toBeVisible(); await page.reload();
   await expect(page.getByRole('heading', { name: 'Finished in my editor', exact: true })).toBeVisible(); await expect(page.locator('section.notice')).toContainText(reason);
   const finished = await read(); expect(finished.conversation).toMatchObject({ state: 'done', work: null, outcome: { kind: 'finished-elsewhere', reason } }); expect(finished.finishes[0]).toMatchObject({ status: 'completed', retained: true }); expect(finished.closedWorks[0]?.request).toBe(original);
-  await expect(page.locator('.stretch-block > .markdown')).toContainText('The value is now 2'); expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true); await page.screenshot({ path: `docs/acceptance/screenshots/phase2-controls-outcome-${info.project.name}.png`, fullPage: true });
+  const transcript = page.locator('.stretch-block .step-transcript').first(); await transcript.locator('summary').click(); await expect(transcript).toContainText('The value is now 2'); expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true); await page.screenshot({ path: `docs/acceptance/screenshots/phase2-controls-outcome-${info.project.name}.png`, fullPage: true });
   await page.getByRole('button', { name: 'Settle kept changes', exact: true }).click();
   if (info.project.name.startsWith('desktop')) await dialog.getByRole('button', { name: 'Publish', exact: true }).click();
   else { await dialog.getByRole('button', { name: 'Discard…', exact: true }).click(); await dialog.getByRole('button', { name: 'Discard checkpoints', exact: true }).click(); }
@@ -303,17 +310,17 @@ test('file and evidence links show recorded versions, source lines, Markdown, im
   const account = await page.request.post('/hub/accounts', { data: { schema: 'add-account-v1', runtime: 'claude', label: 'Evidence fixture', kind: 'subscription', secret: `fixture-${randomUUID()}` } }); expect(account.ok()).toBe(true);
   await page.goto('/'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('undo_following'); await page.getByPlaceholder('What should we build or fix?').fill('Exercise evidence navigation with two saved versions.'); await page.getByRole('button', { name: 'Start', exact: true }).click();
   const picker = page.locator('.manual-picker'); await expect(picker).toBeVisible(); const id = new URL(page.url()).pathname.split('/')[2]!;
-  for (const n of [1, 2]) { await picker.getByRole('combobox', { name: 'Action', exact: true }).selectOption('implement'); await picker.getByRole('button', { name: 'Continue', exact: true }).click(); await expect(page.getByRole('heading', { name: `Step ${n} · Implement` })).toBeVisible(); await expect(picker).toBeVisible({ timeout: 30_000 }); }
+  for (const n of [1, 2]) { await picker.getByRole('combobox', { name: 'Action', exact: true }).selectOption('implement'); await picker.getByRole('button', { name: 'Continue', exact: true }).click(); await expect(page.getByRole('heading', { name: `Step ${n} · Implement` })).toBeVisible({ timeout: 30_000 }); await expect(picker).toBeVisible({ timeout: 30_000 }); }
   const first = page.locator('.stretch-block').first(); const panel = page.getByRole('dialog').last();
   await first.locator('.findings').getByRole('button', { name: 'src/example.ts:2', exact: true }).click(); await expect(panel).toContainText('Recorded checkpoint'); await expect(panel.locator('.selected-line')).toContainText('export const amount = 2;'); await expect(panel.locator('.line-number')).toHaveCount(4); await expect(panel).toContainText('<b>plain text</b>');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true); await page.screenshot({ path: `docs/acceptance/screenshots/phase2-evidence-source-${info.project.name}.png` });
   await panel.getByRole('button', { name: 'Open working copy', exact: true }).click(); await expect(panel).toContainText('Current working copy · not a saved step'); await expect(panel.locator('.selected-line')).toContainText('export const amount = 3;'); await panel.getByRole('button', { name: 'Close panel', exact: true }).click();
-  await first.getByRole('button', { name: 'the value', exact: true }).click(); await expect(panel.locator('.selected-line')).toContainText('2'); await panel.getByRole('button', { name: 'Close panel', exact: true }).click();
+  await first.locator('.step-transcript > summary').click(); await first.getByRole('button', { name: 'the value', exact: true }).click(); await expect(panel.locator('.selected-line')).toContainText('2'); await panel.getByRole('button', { name: 'Close panel', exact: true }).click();
   await first.getByRole('button', { name: 'the source', exact: true }).click(); await expect(panel.locator('.selected-line')).toContainText('amount = 2'); await panel.getByRole('button', { name: 'Close panel', exact: true }).click();
   await first.getByRole('button', { name: 'docs/Guide with spaces.md', exact: true }).click(); await expect(panel.getByRole('heading', { name: 'Evidence guide', exact: true })).toBeVisible(); await expect(panel.locator('.markdown li')).toHaveCount(2); await page.screenshot({ path: `docs/acceptance/screenshots/phase2-evidence-markdown-${info.project.name}.png` });
   await panel.getByRole('button', { name: 'Source line', exact: true }).click(); await expect(panel.locator('.selected-line')).toContainText('amount = 2'); await panel.getByRole('button', { name: 'Close panel', exact: true }).click();
   await first.getByRole('button', { name: 'Changes', exact: true }).click(); await expect(panel.getByLabel('Changed files')).toContainText('src/example.ts'); await panel.getByRole('button', { name: 'screen.png', exact: true }).last().click(); await expect(panel.locator('img')).toBeVisible(); await expect.poll(() => panel.locator('img').evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBe(1); await page.screenshot({ path: `docs/acceptance/screenshots/phase2-evidence-image-${info.project.name}.png` }); await panel.getByRole('button', { name: 'Close panel', exact: true }).click(); await panel.getByRole('button', { name: 'Close panel', exact: true }).click();
-  await first.locator('.tool-call summary').click(); await first.locator('.tool-file').getByRole('button', { name: 'value.txt', exact: true }).click(); await expect(panel.getByLabel('File contents')).toContainText('2'); await panel.getByRole('button', { name: 'Close panel', exact: true }).click();
+  await first.locator('.tool-activity > summary').click(); await first.locator('.tool-call summary').click(); await first.locator('.tool-file').getByRole('button', { name: 'value.txt', exact: true }).click(); await expect(panel.getByLabel('File contents')).toContainText('2'); await panel.getByRole('button', { name: 'Close panel', exact: true }).click();
   await picker.getByRole('combobox', { name: 'Action', exact: true }).selectOption('done'); await picker.getByRole('button', { name: 'Continue', exact: true }).click(); await expect(picker).not.toBeVisible();
   await expect.poll(async () => (await (await page.request.get(`/api/conversations/${id}`)).json()).conversation.state).toBe('done');
   await first.getByRole('button', { name: 'Changes', exact: true }).click(); await panel.getByRole('button', { name: 'Read output', exact: true }).last().click(); await expect(panel.getByRole('heading', { name: 'Verification output', exact: true })).toBeVisible(); await expect(panel.locator('.evidence-output')).toBeVisible(); await panel.getByRole('button', { name: 'Close panel', exact: true }).click(); await panel.getByRole('button', { name: 'Close panel', exact: true }).click();
@@ -456,13 +463,13 @@ test('automatic decisions can resume from missing configuration and explain thei
   await page.getByRole('button', { name: 'Review Automatic account', exact: true }).click(); const card = page.locator(`#account-${account.account.id}`); await expect(card).toBeFocused();
   await card.getByRole('button', { name: 'Enable', exact: true }).click(); await expect(card.getByRole('button', { name: 'Disable', exact: true })).toBeVisible();
   await page.goto(conversationPath); await page.getByRole('button', { name: 'Try automatic again', exact: true }).click();
-  await expect(page.locator('.conversation-page > .muted')).toContainText('Done', { timeout: 60_000 });
+  await expect(page.locator('.conversation-meta')).toContainText('Done', { timeout: 60_000 });
   const step = page.locator('.stretch-block'); await expect(step).toHaveCount(1); await expect(step).toContainText('medium → high'); await expect(step).toContainText('Automatic account');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: `docs/acceptance/screenshots/phase3-automatic-${info.project.name}.png`, fullPage: true });
   await step.getByRole('button', { name: 'Why', exact: true }).click(); const dialog = page.getByRole('dialog');
-  await expect(dialog).toContainText('Next step · jev'); await expect(dialog.getByRole('progressbar', { name: 'Implement probability', exact: true })).toHaveAttribute('value', '1');
-  await expect(dialog).toContainText('Model · only-option'); await expect(dialog).toContainText('Effort · jev'); await expect(dialog).toContainText('nearest effort this model supports');
+  await expect(dialog).toContainText('Next step Jev'); await expect(dialog.getByRole('progressbar', { name: 'Implement probability', exact: true })).toHaveAttribute('value', '1');
+  await expect(dialog).toContainText('Model only option'); await expect(dialog).toContainText('Effort Jev'); await expect(dialog).toContainText('nearest effort this model supports');
   await expect(dialog).toContainText('jev-browser-simulated'); await expect(dialog).toContainText('Model and effort');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: `docs/acceptance/screenshots/phase3-why-${info.project.name}.png` });
@@ -494,17 +501,18 @@ test('composer choices apply once, keep conversation pins and explain correction
   await page.getByRole('button', { name: 'Start', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Go ahead', exact: true })).toBeVisible({ timeout: 60_000 }); await expect(page.getByRole('heading', { name: 'Step 1 · Plan', exact: true })).toBeVisible();
   await page.reload(); await page.locator('.composer-options > summary').click(); await expect(controls.getByRole('combobox', { name: 'Next step', exact: true })).toHaveValue(''); await expect(controls.getByRole('combobox', { name: 'Model', exact: true })).toHaveValue('composer_model'); await expect(controls.getByRole('combobox', { name: 'Effort', exact: true })).toHaveValue('low');
-  await page.getByRole('button', { name: 'Go ahead', exact: true }).click(); await expect(page.locator('.conversation-page > .muted')).toContainText('Done', { timeout: 60_000 });
+  await page.getByRole('button', { name: 'Go ahead', exact: true }).click(); await expect(page.locator('.conversation-meta')).toContainText('Done', { timeout: 60_000 });
   const steps = page.locator('.stretch-block'); await expect(steps).toHaveCount(2); await expect(steps.nth(0).getByRole('button', { name: 'Change effort for step 1', exact: true })).toHaveText('high'); await expect(steps.nth(1).getByRole('button', { name: 'Change effort for step 2', exact: true })).toHaveText('low');
-  await steps.nth(1).getByRole('button', { name: 'Why', exact: true }).click(); const dialog = page.getByRole('dialog');
-  await expect(dialog).toContainText('Model · pin'); await expect(dialog).toContainText('Effort · pin'); await expect(dialog.locator('.why-correction').filter({ hasText: 'in Automatic fixture,' })).toHaveCount(3); await expect(dialog).toContainText('action: Auto → plan'); await expect(dialog).toContainText('model: Auto → Composer Fable'); await expect(dialog).toContainText('effort: low → high');
+  await centered(steps.nth(1).getByRole('button', { name: 'Why', exact: true })).click(); const dialog = page.getByRole('dialog');
+  await expect(dialog).toContainText('Model kept for this conversation'); await expect(dialog).toContainText('Effort kept for this conversation'); await expect(dialog.locator('.why-correction').filter({ hasText: 'in Automatic fixture,' })).toHaveCount(3); await expect(dialog).toContainText('action: Auto → plan'); await expect(dialog).toContainText('model: Auto → Composer Fable'); await expect(dialog).toContainText('effort: low → high');
   await dialog.getByRole('heading', { name: 'Corrections used', exact: true }).evaluate((element) => element.scrollIntoView({ block: 'center' })); expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true); await page.screenshot({ path: `docs/acceptance/screenshots/phase3-composer-why-${info.project.name}.png` }); await dialog.getByRole('button', { name: 'Close panel' }).click();
   await page.evaluate(() => window.scrollTo(0, 0)); await page.screenshot({ path: `docs/acceptance/screenshots/phase3-composer-kept-${info.project.name}.png`, fullPage: true });
+  await page.locator('.composer-options > summary').click();
   await controls.getByRole('button', { name: 'Model back to Auto', exact: true }).click(); await expect(controls.getByRole('combobox', { name: 'Model', exact: true })).toHaveValue('');
   await controls.getByRole('button', { name: 'Effort back to Auto', exact: true }).click(); await expect(controls.getByRole('combobox', { name: 'Effort', exact: true })).toHaveValue('');
   await page.reload(); await page.locator('.composer-options > summary').click(); await expect(controls.getByRole('combobox', { name: 'Model', exact: true })).toHaveValue(''); await expect(controls.getByRole('combobox', { name: 'Effort', exact: true })).toHaveValue('');
   await page.locator('.composer textarea').fill('Exercise composer choices: explain the value.'); await page.locator('.composer').getByRole('button', { name: 'Send', exact: true }).click();
-  await expect(steps).toHaveCount(4, { timeout: 60_000 }); await expect(page.locator('.conversation-page > .muted')).toContainText('Done', { timeout: 60_000 });
+  await expect(steps).toHaveCount(4, { timeout: 60_000 }); await expect(page.locator('.conversation-meta')).toContainText('Done', { timeout: 60_000 });
   const id = new URL(page.url()).pathname.split('/')[2]!; const result = ConversationPublicSchema.parse(await (await page.request.get(`/api/conversations/${id}`)).json());
   expect(result.conversation).toMatchObject({ once: {}, pins: {} }); expect(result.decisions.at(-2)).toMatchObject({ model: { source: 'kept' }, effort: { source: 'jev', requested: 'medium', effective: 'high' } });
   expect(result.composerOverrides).toHaveLength(6); expect(result.composerOverrides.every((record) => record.status === 'applied')).toBe(true); await expect(page.locator('.toast.error')).toHaveCount(0); expect(errors).toEqual([]);
@@ -536,7 +544,7 @@ test('external activity waits, retries, requires Changes review and publishes af
   await page.screenshot({ path: `docs/acceptance/screenshots/phase4-external-review-${info.project.name}.png` });
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click(); await expect(dialog).not.toBeVisible(); await expect(page.getByRole('heading', { name: 'Changes need your review', exact: true })).not.toBeVisible();
   await picker.getByRole('combobox', { name: 'Action', exact: true }).selectOption('done'); await picker.getByRole('button', { name: 'Continue', exact: true }).click();
-  await expect(page.locator('.conversation-page > .muted')).toContainText('Done', { timeout: 45_000 }); await expect(page.locator('.stretch-block')).toHaveCount(1);
+  await expect(page.locator('.conversation-meta')).toContainText('Done', { timeout: 45_000 }); await expect(page.locator('.stretch-block')).toHaveCount(1);
   await page.getByRole('button', { name: 'Changes', exact: true }).click(); await expect(dialog).toContainText('Passed'); expect(errors).toEqual([]);
 });
 
@@ -558,7 +566,7 @@ test('context changes interrupted by outside activity require a fresh reviewed d
   await dialog.getByRole('button', { name: 'Continue', exact: true }).scrollIntoViewIfNeeded(); expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: `docs/acceptance/screenshots/phase4-context-review-${info.project.name}.png` });
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click(); await expect(dialog.getByRole('status')).toHaveText('Context change completed.', { timeout: 45_000 });
-  await dialog.getByRole('button', { name: 'Open work', exact: true }).click(); await expect(page.locator('.conversation-page > .muted')).toContainText('Done'); await expect(page.locator('.stretch-block')).toHaveCount(0); expect(errors).toEqual([]);
+  await dialog.getByRole('button', { name: 'Open work', exact: true }).click(); await expect(page.locator('.conversation-meta')).toContainText('Done'); await expect(page.locator('.stretch-block')).toHaveCount(0); expect(errors).toEqual([]);
 });
 
 const message = "Can't reach the hub (Fixture hub). This will continue when it's back.";
@@ -756,7 +764,7 @@ test('J8 simulated mesh journey switches, streams, corrects, logs in remotely an
   const retry = page.getByRole('button', { name: 'Retry', exact: true }); await expect(retry).toBeEnabled(); await expect(page.getByText(/Another agent \(Claude Code\) is active in Mesh journey fixture/).first()).toBeVisible(); await expect(page.locator('.stretch-block')).toHaveCount(0); expect(readFileSync(join(sourcePath, 'value.txt'), 'utf8')).toBe('1\n');
   await retry.scrollIntoViewIfNeeded(); await page.screenshot({ path: `docs/acceptance/screenshots/J8-guard-${info.project.name}.png` });
   const quiet = new Date(Date.now() - 10 * 60_000); utimesSync(journal, quiet, quiet); await retry.click(); await expect(page.locator('.stretch-block')).toHaveCount(1); await expect(picker).toBeVisible({ timeout: 45_000 }); expect(readFileSync(join(sourcePath, 'value.txt'), 'utf8')).toBe('2\n'); expect(readFileSync(join(targetPath, 'value.txt'), 'utf8')).toBe('1\n');
-  await picker.getByRole('combobox', { name: 'Action', exact: true }).selectOption('done'); await picker.getByRole('button', { name: 'Continue', exact: true }).click(); await expect(page.locator('.conversation-page > .muted')).toContainText('Done'); expect(errors).toEqual([]);
+  await picker.getByRole('combobox', { name: 'Action', exact: true }).selectOption('done'); await picker.getByRole('button', { name: 'Continue', exact: true }).click(); await expect(page.locator('.conversation-meta')).toContainText('Done'); expect(errors).toEqual([]);
   writeFileSync(`docs/acceptance/J8-simulated-${info.project.name}.json`, JSON.stringify(J8EvidenceSchema.parse({ schema: 'j8-simulated-v1', layout: info.project.name, transport: 'live-local-http', devices: 'simulated', providers: 'simulated', selection: 'manual', separateCheckouts: true, remoteLoginReadyOnlyOnB: true, switchedWithoutSignIn: true, ownerStayedOnB: true, proxyStreamGrew: true, correctionInterruptedB: true, automaticChoiceDisabled: true, externalSessionVisible: true, writingBlockedUntilQuiet: true, writingResumedAfterQuiet: true }), null, 2) + '\n');
 });
 
@@ -796,7 +804,7 @@ test('J11 simulated mesh journey publishes memory, recalls after pull and review
     if (action === 'reply') await picker.getByRole('checkbox', { name: 'This request explicitly asks to remember something.', exact: true }).setChecked(remember);
     const response = page.waitForResponse(response => response.request().method() === 'POST' && new URL(response.url()).pathname === `/api/conversations/${id}/manual`);
     await picker.getByRole('button', { name: 'Continue', exact: true }).click(); expect((await response).status()).toBe(202);
-    if (action === 'done') await expect(page.locator('.conversation-page > .muted')).toContainText('Done', { timeout: 45_000 });
+    if (action === 'done') await expect(page.locator('.conversation-meta')).toContainText('Done', { timeout: 45_000 });
     else { await expect.poll(async () => (await read(base, id)).stretches[before.stretches.length]?.status, { timeout: 45_000 }).toBe('completed'); await expect(picker).toBeVisible({ timeout: 45_000 }); }
     return read(base, id);
   };
@@ -805,7 +813,7 @@ test('J11 simulated mesh journey publishes memory, recalls after pull and review
   const notes = MemorySearchSchema.parse(await (await page.request.get('/api/projects/j11_fixture/memory?query=Vitest', { timeout: 40_000 })).json()); const note = notes.notes.find(note => note.title === 'Vitest convention for mesh')!; expect(note.content).toContain('globals enabled');
   const reviewed = await step(sourceUrl, sourceId, 'review', claudeModel); expect(reviewed.conversation.work!.id).toBe(workId); expect(reviewed.stretches[1]?.runtime).toBe('claude'); expect(reviewed.handoffs[1]?.summary).toBe('Proposed global test imports without changing the checkout.');
   await expect(page.locator('.stretch-block').nth(1)).toContainText('J11 claude received project memory: Vitest convention for mesh; globals enabled.');
-  const why = async (index: number, label: string) => { await page.locator('.stretch-block').nth(index).getByRole('button', { name: 'Why', exact: true }).click(); const region = dialog.getByRole('region', { name: 'Memory selection' }); await expect(region).toContainText('Selected by search rank.'); await expect(region.getByRole('list', { name: 'Chosen memory' })).toContainText(note.permalink); expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true); await page.screenshot({ path: `docs/acceptance/screenshots/J11-mesh-${label}-${info.project.name}.png` }); await dialog.getByRole('button', { name: 'Close panel', exact: true }).click(); };
+  const why = async (index: number, label: string) => { await centered(page.locator('.stretch-block').nth(index).getByRole('button', { name: 'Why', exact: true })).click(); const region = dialog.getByRole('region', { name: 'Memory selection' }); await expect(region).toContainText('Selected by search rank.'); await expect(region.getByRole('list', { name: 'Chosen memory' })).toContainText(note.permalink); expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true); await page.screenshot({ path: `docs/acceptance/screenshots/J11-mesh-${label}-${info.project.name}.png` }); await dialog.getByRole('button', { name: 'Close panel', exact: true }).click(); };
   await why(1, 'claude-why'); await step(sourceUrl, sourceId, 'done', claudeModel);
   const published = git(sourcePath, 'rev-parse', 'HEAD'); expect(git(join(root, 'j11-origin.git'), 'rev-parse', 'main')).toBe(published); expect(git(sourcePath, 'status', '--porcelain')).toBe('');
   const changed = git(sourcePath, 'diff', '--name-only', '-z', baseline, published).split('\0').filter(Boolean); expect(changed.length).toBeGreaterThan(0); expect(changed.every(path => path.startsWith('.jevellan/memory/'))).toBe(true);

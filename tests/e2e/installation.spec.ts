@@ -2,7 +2,7 @@ import { execFile } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 import { z } from 'zod';
 
 const run = promisify(execFile);

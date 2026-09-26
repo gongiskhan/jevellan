@@ -91,10 +91,10 @@ export class GitWorkspace {
     await this.#git(['merge', '--ff-only', 'refs/remotes/origin/main']);
     return this.head();
   }
-  async checkpoint(action: Action | 'memory', summary: string, before: GitSnapshot, assertCurrent?: () => void | Promise<void>): Promise<{ head: string; committed: boolean }> {
-    if (!['implement', 'test', 'integrate', 'memory'].includes(action)) throw new Error('Read-only actions cannot create checkpoints.');
+  async checkpoint(action: Action | 'memory' | 'context', summary: string, before: GitSnapshot, assertCurrent?: () => void | Promise<void>): Promise<{ head: string; committed: boolean }> {
+    if (!['implement', 'test', 'integrate', 'memory', 'context'].includes(action)) throw new Error('Read-only actions cannot create checkpoints.');
     await this.#write(); await assertCurrent?.();
-    await this.checkAfterStretch(before, action === 'memory' ? 'implement' : action);
+    await this.checkAfterStretch(before, action === 'memory' || action === 'context' ? 'implement' : action);
     if (!await this.clean()) {
       const subject = `${action}: ${summary.split(/\r?\n/)[0] ?? 'Checkpoint'}`.slice(0, 72);
       await assertCurrent?.(); await this.#git(['add', '-A']); await this.ownership.assert(this.project, this.owner); await assertCurrent?.();

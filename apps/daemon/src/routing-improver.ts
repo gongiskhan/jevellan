@@ -1,19 +1,21 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import {
-  BackgroundDraftResultSchema, ImproverJobViewSchema, ImproverRequestSchema, ImproverResultSchema, ImproverStateSchema, RoutingDraftSchema, RoutingImproverLogSchema, RoutingOutcomeContextSchema, applyRoutingField, exportConfiguration, stableJson,
-  type BackgroundDraftRequest, type BackgroundDraftResult, type ImproverJob, type ImproverJobScope, type RoutingGroup, type RoutingImproverLog, type RoutingSuggestionRow,
+  BackgroundDraftResultSchema, ImproverJobViewSchema, ImproverRequestSchema, ImproverStateSchema, RoutingDraftSchema, RoutingImproverLogSchema, RoutingOutcomeContextSchema, applyRoutingField, exportConfiguration, stableJson,
+  type BackgroundDraftRequest, type BackgroundDraftResult, type ImproverJob, type ImproverRequest, type ImproverResult, type ImproverState, type ImproverJobScope, type RoutingGroup, type RoutingImproverLog, type RoutingSuggestionRow,
 } from '@jevellan/core';
 import { HubDatabase, HubIndexes, ImproverJobs, RoutingSuggestions, dueImproverDate } from '@jevellan/mesh';
 import { compareDecisionCases, decisionCaseManifest, judgeRoutingGroup, routingGroups, savedDecisionCases, validateRoutingDraft, type DecisionClient } from '@jevellan/decisions';
 import { RoutingRevisions } from './routing-revisions.js';
+import { routingCard, sortCards } from './improver-cards.js';
 
-type Options = {
+export type RoutingImproverOptions = {
   hub: HubDatabase; deviceId: string; ready: Promise<void>; client(): DecisionClient | Promise<DecisionClient>;
   draft(request: BackgroundDraftRequest, signal: AbortSignal): Promise<BackgroundDraftResult>;
   enterOperation(id: string, title: string): () => void;
   evidence: 'live' | 'simulated';
 };
+type Options = RoutingImproverOptions;
 type Operation = { abort: AbortController; promise: Promise<void> };
 const hash = (value: unknown) => createHash('sha256').update(stableJson(value)).digest('hex');
 
@@ -70,24 +72,38 @@ export class RoutingImprover {
     await this.revisions.request({ schema: 'routing-revision-request-v1', clientRequestId: `recompute_${hash([row.suggestion.id, row.revision])}`,
       suggestionId: row.suggestion.id, revision: row.revision, kind: 'recompute' }, this.options.deviceId);
   }
-  async request(raw: unknown, deviceId: string): Promise<z.infer<typeof ImproverResultSchema>> {
+  async request(raw: unknown, deviceId: string): Promise<ImproverResult> {
     await this.revisions.ready;
     if (this.#closed) throw Object.assign(new Error('The improver is stopping.'), { status: 503 });
     const request = ImproverRequestSchema.parse(raw);
     if (this.options.hub.redactor.text(JSON.stringify(request)) !== JSON.stringify(request)) throw Object.assign(new Error('Remove credentials from the suggestion request.'), { status: 400 });
-    const view = (job: ImproverJob) => ImproverJobViewSchema.parse({ schema: 'improver-job-view-v1', id: job.id, scope: job.scope,
-      deviceId: job.deviceId, status: job.status, startedAt: job.startedAt, finishedAt: job.finishedAt, note: job.note });
-    if (request.operation === 'state') return ImproverStateSchema.parse({ schema: 'improver-state-v1', suggestions: this.suggestions.visible(),
-      jobs: this.jobs.list().map(view).sort((a, b) => b.startedAt.localeCompare(a.startedAt)), revisions: this.revisions.recent() });
-    if (request.operation === 'run') return view(await this.run({ kind: 'manual', id: hash([deviceId, request.clientRequestId]) }));
-    if (request.operation === 'revise') return this.revisions.request(request.input, deviceId);
+    return this.handle(request, deviceId);
+  }
+  view(job: ImproverJob) {
+    return ImproverJobViewSchema.parse({ schema: 'improver-job-view-v1', id: job.id, scope: job.scope, deviceId: job.deviceId, status: job.status, startedAt: job.startedAt, finishedAt: job.finishedAt, note: job.note });
+  }
+  /** Routing state only; the application improver adds project jobs, cards and the trial log. */
+  state(): ImproverState {
+    const suggestions = this.suggestions.visible(); const titles = this.conversationTitles();
+    return ImproverStateSchema.parse({ schema: 'improver-state-v2', cards: sortCards(suggestions.map(row => routingCard(row, titles))), suggestions, jobs: this.jobs.list().map(job => this.view(job)).sort((a, b) => b.startedAt.localeCompare(a.startedAt)),
+      revisions: this.revisions.recent(), projectSuggestions: [], projectRevisions: [], reports: [], lastRuns: [], trialLog: { schema: 'trial-log-v1', weeks: [] },
+      pending: suggestions.filter(row => ['pending', 'recompute'].includes(row.suggestion.status)).length, notice: null });
+  }
+  conversationTitles(): Map<string, string> { return new Map(new HubIndexes(this.options.hub, this.options.deviceId).conversations().map(entry => [entry.id, entry.title])); }
+  protected async handle(request: ImproverRequest, deviceId: string): Promise<ImproverResult> {
+    if (request.operation === 'state') return this.state();
+    if (request.operation === 'run') return this.view(await this.run({ kind: 'manual', id: hash([deviceId, request.clientRequestId]) }));
+    if (request.operation === 'revise' && request.input.schema === 'routing-revision-request-v1') return this.revisions.request(request.input, deviceId);
     if (request.operation === 'revision') return this.revisions.get(request.id);
     if (request.operation === 'log') {
       const log = this.log(request.jobId); if (!log) throw Object.assign(new Error('Run log not found.'), { status: 404 }); return log;
     }
-    const result = this.suggestions.act(request.suggestionId, request.input, deviceId);
-    if (result.suggestion.status === 'recompute') await this.#recompute(result);
-    return result;
+    if (request.operation === 'act' && request.input.schema === 'routing-suggestion-action-v1') {
+      const result = this.suggestions.act(request.suggestionId, request.input, deviceId);
+      if (result.suggestion.status === 'recompute') await this.#recompute(result);
+      return result;
+    }
+    throw Object.assign(new Error('This improver operation is not available here.'), { status: 404 });
   }
   log(jobId: string): RoutingImproverLog | null { return this.options.hub.get('routing-improver-logs', jobId, RoutingImproverLogSchema)?.document ?? null; }
   #current(job: ImproverJob, operation: Operation): void {

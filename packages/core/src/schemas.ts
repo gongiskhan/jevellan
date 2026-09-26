@@ -281,7 +281,7 @@ export const DecisionRecordSchema = z.strictObject({
 });
 export type DecisionRecord = z.infer<typeof DecisionRecordSchema>;
 
-export const ConversationIndexSchema = ConversationSchema.pick({ id: true, title: true, projectId: true, ownerDeviceId: true, state: true, updatedAt: true, current: true }).extend({ schema: z.literal('conversation-index-v1') });
+export const ConversationIndexSchema = ConversationSchema.pick({ id: true, title: true, projectId: true, ownerDeviceId: true, state: true, updatedAt: true, current: true, outcome: true }).extend({ schema: z.literal('conversation-index-v1') });
 export type ConversationIndex = z.infer<typeof ConversationIndexSchema>;
 export const DecisionIndexSchema = DecisionRecordSchema.pick({ id: true, conversationId: true, workId: true, at: true, notices: true, outcome: true }).extend({
   schema: z.literal('decision-index-v1'),
@@ -291,8 +291,8 @@ export const DecisionIndexSchema = DecisionRecordSchema.pick({ id: true, convers
 });
 export type DecisionIndex = z.infer<typeof DecisionIndexSchema>;
 export function conversationIndex(value: Conversation): ConversationIndex {
-  const { id, title, projectId, ownerDeviceId, state, updatedAt, current } = ConversationSchema.parse(value);
-  return ConversationIndexSchema.parse({ schema: 'conversation-index-v1', id, title, projectId, ownerDeviceId, state, updatedAt, ...(current ? { current } : {}) });
+  const { id, title, projectId, ownerDeviceId, state, updatedAt, current, outcome } = ConversationSchema.parse(value);
+  return ConversationIndexSchema.parse({ schema: 'conversation-index-v1', id, title, projectId, ownerDeviceId, state, updatedAt, ...(current ? { current } : {}), ...(outcome ? { outcome } : {}) });
 }
 export function decisionIndex(value: DecisionRecord): DecisionIndex {
   const { id, conversationId, workId, at, notices, outcome, action, model, effort } = DecisionRecordSchema.parse(value);

@@ -14,7 +14,7 @@ const digest = (value: string) => createHash('sha256').update(value).digest('hex
 const sameOwner = (a: CheckoutOwner, b: CheckoutOwner) => a.conversationId === b.conversationId && a.workId === b.workId;
 
 export class CheckoutOwnership {
-  constructor(readonly hub: CoordinationStore, readonly homes: Homes, readonly deviceId: string, readonly pid = process.pid) { IdSchema.parse(deviceId); }
+  constructor(readonly hub: CoordinationStore, readonly homes: Homes, readonly deviceId: string, readonly pid = process.pid, readonly deviceName = deviceId) { IdSchema.parse(deviceId); }
   #key(path: string): string { return digest(`${this.deviceId}\0${path}`); }
   #file(path: string): string { return this.homes.at('locks', `${createHash('sha1').update(path).digest('hex')}.json`); }
   async current(project: Project): Promise<CheckoutClaim | null> {
@@ -24,7 +24,7 @@ export class CheckoutOwnership {
   async acquire(project: Project, owner: CheckoutOwner): Promise<CheckoutClaim> {
     const path = resolveProjectPath(project, this.deviceId); const key = this.#key(path);
     const previous = await this.hub.get('checkout-ownership', key, CheckoutClaimSchema);
-    if (previous?.document.held && !sameOwner(previous.document, owner)) throw new Error(`${project.name} on ${this.deviceId} is in use by "${previous.document.conversationTitle}".`);
+    if (previous?.document.held && !sameOwner(previous.document, owner)) throw new Error(`${project.name} on ${this.deviceName} is in use by "${previous.document.conversationTitle}".`);
     if (previous?.document.held && previous.document.pid !== this.pid) {
       try { process.kill(previous.document.pid, 0); throw new Error('The previous checkout owner process is still alive.'); }
       catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ESRCH') throw error; }

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join, basename } from 'node:path';
 import { afterEach, expect, test, vi } from 'vitest';
 import { DoctorControlSchema, Homes, LifecycleGate, SecretRedactor, doctorControlPath, readDocument, writeDocument } from '../packages/core/dist/index.js';
@@ -15,7 +15,7 @@ import { joinMember } from '../packages/mesh/dist/index.js';
 const roots: string[] = [], daemons: Awaited<ReturnType<typeof startDaemon>>[] = [];
 afterEach(async () => { await Promise.all(daemons.splice(0).map(daemon => daemon.close())); roots.splice(0).forEach(root => rmSync(root, { recursive: true, force: true })); });
 function fixture() {
-  const root = mkdtempSync('/private/tmp/jevellan-doctor-test-'); roots.push(root); const user = join(root, 'user'); mkdirSync(user);
+  const root = mkdtempSync(join(realpathSync('/tmp'), 'jevellan-doctor-test-')); roots.push(root); const user = join(root, 'user'); mkdirSync(user);
   const homes = new Homes(join(user, '.jevellan'), user);
   const canaries = ['.claude', '.codex', '.basic-memory'];
   for (const name of canaries) { mkdirSync(join(user, name)); writeFileSync(join(user, name, 'native'), 'Do not read or change this fixture.'); }

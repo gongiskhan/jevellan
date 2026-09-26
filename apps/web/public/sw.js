@@ -1,5 +1,5 @@
 /* Cache the public app shell only. Accounts, credentials and API data stay online. */
-const shellCache = 'jevellan-shell-v1';
+const shellCache = 'jevellan-shell-v2';
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(shellCache); const response = await fetch('/');

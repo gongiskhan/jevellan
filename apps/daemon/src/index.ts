@@ -9,6 +9,8 @@ import { diagnoseApplication, LocalDiagnostics } from './diagnostics.js';
 import { json, requestBody } from './http.js';
 export * from './application.js';
 export * from './routing-improver.js';
+export * from './improver.js';
+export * from './project-improver.js';
 export { closeListeners, detectTailscaleIpv4, listenOnInterfaces } from './network.js';
 
 const contentTypes: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.json': 'application/json', '.webmanifest': 'application/manifest+json' };

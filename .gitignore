@@ -11,6 +11,7 @@ apps/web/lib/
 *.tsbuildinfo
 coverage/
 test-results/
+test-results-*/
 playwright-report/
 .jevellan/
 .DS_Store

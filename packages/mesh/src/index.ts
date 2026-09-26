@@ -12,3 +12,4 @@ export * from './sessions.js';
 export * from './presence.js';
 export * from './improver-jobs.js';
 export * from './routing-suggestions.js';
+export * from './project-improver.js';

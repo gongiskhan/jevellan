@@ -1,11 +1,13 @@
 import { existsSync } from 'node:fs';
 import { hostname } from 'node:os';
 import { z } from 'zod';
-import { ConsumeSwitchSchema, DaemonOwnership, DeviceConfigSchema, DeviceOriginSchema, DeviceSchema, DeviceSwitchInputSchema, JevConnectionSchema, RiggingApplicationSchema, Homes, ProjectVisibility, RiggingDisk, SecretRedactor, VERSION, newId, readDocument, seedConfiguration, stableJson, writeDocument, type DeviceConfig, type VisibilityProbe } from '@jevellan/core';
-import { DeviceRegistry, HubAccounts, HubCheckoutStore, HubDatabase, HubIndexes, HubMesh, HubPublicationLeases, HubState, MemberAccounts, MemberCheckoutStore, MemberHubClient, MemberIndexes, MemberPublicationLeases, MemberState, MemberUiAuth, UiAuth, memberConnection } from '@jevellan/mesh';
+import { ConsumeSwitchSchema, DaemonOwnership, DeviceConfigSchema, DeviceOriginSchema, DeviceSchema, DeviceSwitchInputSchema, JevConnectionSchema, RiggingApplicationSchema, Homes, ProjectVisibility, RiggingDisk, SecretRedactor, VERSION, newId, readDocument, seedConfiguration, stableJson, writeDocument, type DeviceConfig, type Project, type VisibilityProbe } from '@jevellan/core';
+import { DeviceRegistry, HubAccounts, HubCheckoutStore, HubDatabase, HubIndexes, HubMesh, HubPublicationLeases, HubState, MemberAccounts, MemberCheckoutStore, MemberHubClient, MemberIndexes, MemberPublicationLeases, MemberState, MemberUiAuth, ProjectImproverHub, UiAuth, memberConnection } from '@jevellan/mesh';
 import { AccountService } from '@jevellan/accounts';
 import { BackgroundDrafts, ContextOperations, ConversationService, StretchBridges } from '@jevellan/conversations';
 import { RoutingImprover } from './routing-improver.js';
+import { Improver } from './improver.js';
+import { ProjectImprover, type MemoryPort } from './project-improver.js';
 import { migrateContextOperations } from './context-migration.js';
 import { BasicMemory } from '@jevellan/memory';
 import { JevClient, JevError } from '@jevellan/decisions';
@@ -17,7 +19,8 @@ import { DevicePresence, ExternalSessionSensor, type SessionSensorOptions } from
 import { SettingsSync } from './settings-sync.js';
 import { LifecycleGate } from '@jevellan/core';
 
-export type ApplicationOptions = { homes?: Homes; port?: number; url?: string; runtimes?: (context: RuntimeContext) => ReadonlyMap<string, RuntimeAdapter>; timers?: boolean; repositoryVisibility?: VisibilityProbe; decisionFetch?: typeof fetch; hubFetch?: typeof fetch; nativeSessions?: Omit<SessionSensorOptions, 'homes'> };
+export type ApplicationOptions = { homes?: Homes; port?: number; url?: string; runtimes?: (context: RuntimeContext) => ReadonlyMap<string, RuntimeAdapter>; timers?: boolean; repositoryVisibility?: VisibilityProbe; decisionFetch?: typeof fetch; hubFetch?: typeof fetch; nativeSessions?: Omit<SessionSensorOptions, 'homes'>;
+  /** Test seam for the improver's memory index; production uses the isolated Basic Memory. */ projectMemory?: (project: Project) => MemoryPort };
 
 export class Application {
   #closing: Promise<void> | undefined;
@@ -42,6 +45,8 @@ export class Application {
   readonly settingsSync: SettingsSync;
   readonly backgroundDrafts: BackgroundDrafts;
   readonly routingImprover: RoutingImprover | undefined;
+  readonly improver: Improver | undefined;
+  readonly projectImprover: ProjectImprover;
   readonly #improverTimers: boolean;
   get hub(): HubDatabase { if (!this.#hub) throw new Error('A member has no authoritative hub database.'); return this.#hub; }
   get mesh(): HubMesh { if (!this.#mesh) throw Object.assign(new Error('This operation belongs to the hub.'), { status: 404 }); return this.#mesh; }
@@ -100,8 +105,9 @@ export class Application {
       });
       this.decisionClient = async () => new JevClient({ key: () => this.state.jev.credential(), timeoutMs: (await this.configuration()).configuration['x-jevellan'].decisions.timeoutMs, ...(options.decisionFetch ? { fetch: options.decisionFetch } : {}) });
       const accountRuns = new Set<string>();
+      const leases = this.member ? new MemberPublicationLeases(this.member) : new HubPublicationLeases(this.hub, this.device.deviceId);
       this.conversations = new ConversationService({ homes: this.homes, contexts, projects: this.state.projects, deviceId: this.device.deviceId, accounts: this.accounts, runtimes: this.runtimes,
-        coordination: this.member ? new MemberCheckoutStore(this.member) : new HubCheckoutStore(this.hub, this.device.deviceId), leases: this.member ? new MemberPublicationLeases(this.member) : new HubPublicationLeases(this.hub, this.device.deviceId), indexes: this.member ? new MemberIndexes(this.member) : new HubIndexes(this.hub, this.device.deviceId),
+        coordination: this.member ? new MemberCheckoutStore(this.member) : new HubCheckoutStore(this.hub, this.device.deviceId), leases, indexes: this.member ? new MemberIndexes(this.member) : new HubIndexes(this.hub, this.device.deviceId),
         bridges: this.bridges, memory: this.memory, redactor: this.redactor, settings: async () => (await this.configuration()).configuration['x-jevellan'], riggingItems: (runtime) => this.rigging.items(runtime),
         deviceLabel: this.device.name, jevAvailable: async () => (await this.state.jev.summary()).saved, externalSessions: (projects, deviceId) => this.sessions.read(projects, deviceId),
         decisionClient: this.decisionClient, accountRuns, enterOperation: (id, title) => this.lifecycle.enter({ kind: 'conversation', id, title }) });
@@ -109,9 +115,24 @@ export class Application {
         redactor: this.redactor, settings: async () => (await this.configuration()).configuration['x-jevellan'], riggingItems: runtime => this.rigging.items(runtime),
         accountRuns, enterOperation: (id, title) => this.lifecycle.enter({ kind: 'settings', id, title }) });
       const improverReady = Promise.all([this.conversations.ready, this.backgroundDrafts.ready]).then(() => undefined);
-      this.routingImprover = this.#hub ? new RoutingImprover({ hub: this.#hub, deviceId: this.device.deviceId, ready: improverReady,
+      const hub = this.#hub; const mesh = this.#mesh;
+      this.improver = hub && mesh ? new Improver({ hub, deviceId: this.device.deviceId, ready: improverReady,
         client: this.decisionClient, draft: (request, signal) => this.backgroundDrafts.run(request, signal),
-        evidence: options.decisionFetch || options.runtimes ? 'simulated' : 'live', enterOperation: (id, title) => this.lifecycle.enter({ kind: 'settings', id, title }) }) : undefined;
+        evidence: options.decisionFetch || options.runtimes ? 'simulated' : 'live', enterOperation: (id, title) => this.lifecycle.enter({ kind: 'settings', id, title }),
+        projects: new ProjectImproverHub(hub, { hubId: this.device.deviceId, devices: () => mesh.devices.list() }), kick: () => { void this.projectImprover.tick().catch(() => undefined); } }) : undefined;
+      this.routingImprover = this.improver;
+      const improver = this.improver;
+      this.projectImprover = new ProjectImprover({ deviceId: this.device.deviceId, deviceName: this.device.name, homes: this.homes, redactor: this.redactor, ready: improverReady,
+        hub: async input => this.member ? this.member.improverDevice(input) : improver!.projects.request(this.device.deviceId, input),
+        projects: async () => (await this.state.projects.list()).map(row => row.project), ownership: this.conversations.ownership, leases,
+        assertOutsideIdle: async (project, path) => this.conversations.outside.assertIdle(project, path, (await this.configuration()).configuration['x-jevellan'].guards.externalActivityWindowMin),
+        memory: options.projectMemory ?? (project => {
+          const memory = this.memory.project(project, this.device.deviceId, () => { throw new Error('Memory care reads the index only.'); });
+          return { sync: async () => { await memory.sync(); }, search: async (query, signal) => (await memory.search(query, signal)).notes };
+        }),
+        client: this.decisionClient, jevModel: async () => (await this.configuration()).configuration['x-jevellan'].decisions.model,
+        draft: (request, signal) => this.backgroundDrafts.run(request, signal), handoffs: projectId => this.conversations.recentHandoffSummaries(projectId),
+        enterOperation: (id, title) => this.lifecycle.enter({ kind: 'settings', id, title }), pollMs: this.member ? 15_000 : 60_000 });
       this.presence = new DevicePresence({ deviceId: this.device.deviceId, version: VERSION, sensor: this.sessions,
         projects: async () => (await this.state.projects.list()).map(row => row.project), running: () => this.conversations.localRunning(),
         report: async heartbeat => {
@@ -128,7 +149,7 @@ export class Application {
   }
   bindDaemonUrl(url: string): void {
     this.conversations.daemonUrl = url; this.backgroundDrafts.daemonUrl = url;
-    if (this.#improverTimers) this.routingImprover?.start();
+    if (this.#improverTimers) { this.routingImprover?.start(); this.projectImprover.start(); }
   }
   async improverRequest(input: unknown) { return this.member ? this.member.improver(input) : this.routingImprover!.request(input, this.device.deviceId); }
   async configuration() {
@@ -185,6 +206,7 @@ export class Application {
     const failures: unknown[] = [];
     try { await this.settingsSync.close(); await this.#riggingQueue.catch(() => undefined); } catch (error) { failures.push(error); }
     try { await this.presence.close(); } catch (error) { failures.push(error); }
+    try { await this.projectImprover.close(); } catch (error) { failures.push(error); }
     try { await this.routingImprover?.close(); } catch (error) { failures.push(error); }
     try { await this.backgroundDrafts.close(); } catch (error) { failures.push(error); }
     try { await this.conversations.close(); } catch (error) { failures.push(error); }

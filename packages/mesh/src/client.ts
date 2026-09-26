@@ -6,7 +6,7 @@ import { IndexRequestSchema, IndexResultSchema } from '@jevellan/core';
 import { SharedStateRequestSchema, SharedStateResultSchema } from '@jevellan/core';
 import { PeerSessionInputSchema, PeerSessionStateSchema } from '@jevellan/core';
 import { PeerLoginSessionInputSchema, PeerLoginSessionStateSchema } from '@jevellan/core';
-import { ImproverRequestSchema, ImproverResultSchema } from '@jevellan/core';
+import { ImproverDeviceRequestSchema, ImproverDeviceResultSchema, ImproverRequestSchema, ImproverResultSchema } from '@jevellan/core';
 
 import { HubUnavailable } from '@jevellan/core';
 export { HubUnavailable } from '@jevellan/core';
@@ -100,14 +100,21 @@ export class MemberHubClient {
   indexes(input: unknown) { return this.#request('indexes', IndexResultSchema, IndexRequestSchema.parse(input)); }
   async improver(input: unknown) {
     const request = ImproverRequestSchema.parse(input); const result = await this.#request('improver', ImproverResultSchema, request);
-    const valid = request.operation === 'state' ? result.schema === 'improver-state-v1'
+    const revision = (value: typeof result) => value.schema === 'routing-revision-record-v1' || value.schema === 'project-revision-record-v1' ? value : null;
+    const valid = request.operation === 'state' ? result.schema === 'improver-state-v2'
+      : request.operation === 'summary' ? result.schema === 'improver-summary-v1'
       : request.operation === 'run' ? result.schema === 'improver-job-view-v1' && result.scope.kind === 'routing' && result.scope.cycle.kind === 'manual'
-      : request.operation === 'log' ? result.schema === 'routing-improver-log-v1' && result.jobId === request.jobId
-      : request.operation === 'act' ? result.schema === 'routing-suggestion-row-v1' && result.suggestion.id === request.suggestionId
-      : request.operation === 'revision' ? result.schema === 'routing-revision-record-v1' && result.id === request.id
-      : result.schema === 'routing-revision-record-v1' && result.deviceId === this.deviceId && stableJson(result.request) === stableJson(request.input);
+      : request.operation === 'run-now' ? result.schema === 'improver-run-v1'
+      : request.operation === 'log' ? (result.schema === 'routing-improver-log-v1' || result.schema === 'project-improver-log-v1') && result.jobId === request.jobId
+      : request.operation === 'act' ? (result.schema === 'routing-suggestion-row-v1' || result.schema === 'project-suggestion-row-v1') && result.suggestion.id === request.suggestionId
+      : request.operation === 'report' ? result.schema === 'memory-care-report-row-v1' && result.report.id === request.reportId
+      : request.operation === 'notice-seen' ? result.schema === 'improver-summary-v1'
+      : request.operation === 'revision' ? revision(result)?.id === request.id
+      : revision(result)?.deviceId === this.deviceId && stableJson(revision(result)!.request) === stableJson(request.input);
     if (!valid) throw new HubProtocolError(); return result;
   }
+  /** Device work for project jobs and checkout tasks; separate from browser improver requests. */
+  improverDevice(input: unknown) { return this.#request('improver-device', ImproverDeviceResultSchema, ImproverDeviceRequestSchema.parse(input)); }
   async state(input: unknown) {
     const request = SharedStateRequestSchema.parse(input);
     if (request.operation === 'jev-put') this.options.redactor.add(request.value);

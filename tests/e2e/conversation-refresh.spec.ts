@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect } from '@playwright/test';
-import { ConversationPublicSchema } from '../../packages/core/dist/client.js';
+import { test, expect } from './fixtures.js';
+import { ConversationPublicSchema, DeviceRosterSchema } from '../../packages/core/dist/client.js';
 
 test('conversation renders its first snapshot while a replay refresh is pending', async ({ page }) => {
   const login = await page.request.post('/api/auth/login', { data: { schema: 'passphrase-input-v1', passphrase: 'jevellan-browser-fixture' } });
@@ -43,7 +43,7 @@ test('pending work shows a live stage while controls stay compact', async ({ pag
   await page.goto(`/conversations/${id}`);
   const activity = page.getByRole('region', { name: 'Current activity' });
   await expect(activity).toContainText('Jev is choosing the next step');
-  await expect(page.locator('.conversation-page > .small-text')).not.toContainText('Ready');
+  await expect(page.locator('.conversation-meta')).not.toContainText('Ready');
   await expect(page.getByRole('combobox', { name: 'Next step', exact: true })).not.toBeVisible();
   await page.locator('.composer-options > summary').click();
   await expect(page.getByRole('combobox', { name: 'Next step', exact: true })).toBeVisible();
@@ -58,13 +58,15 @@ test('a project can be added directly without losing the new conversation draft'
   await page.request.post('/api/auth/login', { data: { schema: 'passphrase-input-v1', passphrase: 'jevellan-browser-fixture' } });
   await page.goto('/');
   await page.getByLabel('Message', { exact: true }).fill('Keep my draft while I add a project.');
-  await page.getByRole('button', { name: '＋ Add project', exact: true }).click();
+  await page.getByRole('button', { name: 'Add project', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Add project' })).toBeVisible();
-  await expect(page.getByLabel('Path on Mac.lan', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Browse folders on Mac.lan' }).click();
+  const roster = DeviceRosterSchema.parse(await (await page.request.get('/hub/devices/roster')).json());
+  const device = roster.devices.find(row => row.device.id === roster.currentDeviceId)!.device.name;
+  await expect(page.getByLabel(`Path on ${device}`, { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: `Browse folders on ${device}` }).click();
   await expect(page.getByRole('region', { name: 'Project folders' })).toBeVisible();
   await page.getByRole('button', { name: 'Use this folder' }).click();
-  await expect(page.getByLabel('Path on Mac.lan', { exact: true })).not.toHaveValue('');
+  await expect(page.getByLabel(`Path on ${device}`, { exact: true })).not.toHaveValue('');
   await page.getByRole('button', { name: 'Close panel' }).click();
   await expect(page.locator('.new-conversation-form textarea')).toHaveValue('Keep my draft while I add a project.');
   await expect(page.getByRole('textbox', { name: 'Message', exact: true })).toBeVisible();
