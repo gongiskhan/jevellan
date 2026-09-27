@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/J11-mesh-context-draft-desktop-dark.png",
-  "expected": "the Jevellan web app screen for the check \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\" at desktop-dark, rendered completely and legibly"
+  "expected": "the Jevellan web app \"mesh context draft\" screen, one step of the check \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\", at desktop-dark, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The '+ Symlink → AGENTS.md' line in the CLAUDE.md diff sits right against the bottom of its box, with less padding than the AGENTS.md block above it.",
+      "'Open work' sits below the Cancel/Apply row and is spaced a little tightly against it."
+    ]
+  }
 }

@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "loose Rigging becomes managed with bundled files, durable retry and runtime toggles",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase2-rigging-promote-desktop-light.png",
-  "expected": "the Jevellan web app screen for the check \"loose Rigging becomes managed with bundled files, durable retry and runtime toggles\" at desktop-light, rendered completely and legibly"
+  "expected": "the Jevellan web app \"rigging promote\" screen, one step of the check \"loose Rigging becomes managed with bundled files, durable retry and runtime toggles\", at desktop-light, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The disabled, checked 'Claude Code · Current account' checkbox is very pale and hard to tell apart from an unchecked box. Nothing on screen explains why it is locked.",
+      "The helper text below the 'Install for' group is in small, low-contrast grey and is somewhat hard to read."
+    ]
+  }
 }

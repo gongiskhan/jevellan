@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "hub recovery resumes sign-in and reconciles a settings save whose reply was lost",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase4-settings-wait-desktop-light.png",
-  "expected": "the Jevellan web app screen for the check \"hub recovery resumes sign-in and reconciles a settings save whose reply was lost\" at desktop-light, rendered completely and legibly"
+  "expected": "the Jevellan web app \"settings wait\" screen, one step of the check \"hub recovery resumes sign-in and reconciles a settings save whose reply was lost\", at desktop-light, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The floating 'Can't reach the hub' toast sits over the bottom edge of the Guards card and the left part of the save bar. It hides no controls or text; 'Pause after a plan', the revision note and the Saving… button are all still visible.",
+      "The Routing profile textarea and the effort list above it are scrolled, so their text is cut off at the edges. Both areas scroll, so this is expected.",
+      "The last conversation title in the sidebar is cut off at the bottom of the scrollable list."
+    ]
+  }
 }

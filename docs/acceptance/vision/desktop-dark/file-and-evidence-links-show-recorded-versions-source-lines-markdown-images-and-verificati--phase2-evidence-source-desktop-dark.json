@@ -1,9 +1,20 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-evidence-source-desktop-dark.png",
-  "expected": "the Jevellan web app screen for the check \"file and evidence links show recorded versions, source lines, Markdown, images and verification output\" at desktop-dark, rendered completely and legibly"
+  "expected": "the Jevellan web app \"evidence source\" screen, one step of the check \"file and evidence links show recorded versions, source lines, Markdown, images and verification output\", at desktop-dark, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Exercise evidence navigation …', 'Change the value to three, the…'). This looks like intended truncation.",
+      "The last sidebar list item is partly clipped at the bottom edge above Settings. It looks like normal scroll overflow.",
+      "The Step 2 card is partly hidden behind the composer, with the 'Changes' / 'Why' row half-visible. The content can still be reached by scrolling.",
+      "The recorded checkpoint hash in the evidence panel is small, low-contrast grey text on dark, which makes it harder to read.",
+      "The 'Open recorded step' link in grey is less prominent than 'Open working copy' in pink, so it may be missed."
+    ]
+  }
 }

@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "Why lists recalled project memory and its selection source after reload",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-memory-why-phone-dark.png",
-  "expected": "the Jevellan web app screen for the check \"Why lists recalled project memory and its selection source after reload\" at phone-dark, rendered completely and legibly"
+  "expected": "the Jevellan web app \"memory why\" screen, one step of the check \"Why lists recalled project memory and its selection source after reload\", at phone-dark, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Text just below the header ('high') is partly cut off by the sticky header. It looks like leftover scroll position, not a layout bug.",
+      "The two 'Login recovery <uuid>: eligible' account rows wrap onto a second line, which makes them harder to scan than the other rows."
+    ]
+  }
 }

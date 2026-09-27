@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "Settings saves wait through hub loss, reconcile lost replies and abandon a closed editor",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase4-settings-save-wait-phone-light.png",
-  "expected": "the Jevellan web app screen for the check \"Settings saves wait through hub loss, reconcile lost replies and abandon a closed editor\" at phone-light, rendered completely and legibly"
+  "expected": "the Jevellan web app \"settings save wait\" screen, one step of the check \"Settings saves wait through hub loss, reconcile lost replies and abandon a closed editor\", at phone-light, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Buttons on the page behind the dialog show just below its bottom edge, dimmed but slightly distracting",
+      "The Saving… button is pale and low-contrast, but still readable as disabled"
+    ]
+  }
 }

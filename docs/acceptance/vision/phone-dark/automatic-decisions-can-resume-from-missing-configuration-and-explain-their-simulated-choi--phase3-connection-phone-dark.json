@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase3-connection-phone-dark.png",
-  "expected": "the Jevellan web app screen for the check \"automatic decisions can resume from missing configuration and explain their simulated choices\" at phone-dark, rendered completely and legibly"
+  "expected": "the Jevellan web app \"connection\" screen, one step of the check \"automatic decisions can resume from missing configuration and explain their simulated choices\", at phone-dark, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The settings tab bar cuts off the last tab ('Impro…') at the right edge. It looks like a horizontally scrollable strip, but nothing on screen shows that it scrolls.",
+      "The effort guide inputs for low, high, xhigh and max cut their text off mid-sentence. The full text is only readable by scrolling inside each input.",
+      "The routing profile textarea cuts off a partly visible line at the bottom. The rest of the text is only reachable by scrolling inside the textarea.",
+      "In the model menu card, the 'claude' provider label and model id sit in slightly different horizontal positions from the Enabled/Label row above them."
+    ]
+  }
 }

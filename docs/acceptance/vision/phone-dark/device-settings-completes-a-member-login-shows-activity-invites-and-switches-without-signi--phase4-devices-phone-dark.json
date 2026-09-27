@@ -1,9 +1,20 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "device Settings completes a member login, shows activity, invites and switches without signing in again",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase4-devices-phone-dark.png",
-  "expected": "the Jevellan web app screen for the check \"device Settings completes a member login, shows activity, invites and switches without signing in again\" at phone-dark, rendered completely and legibly"
+  "expected": "the Jevellan web app \"devices\" screen, one step of the check \"device Settings completes a member login, shows activity, invites and switches without signing in again\", at phone-dark, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The horizontal settings tab strip clips labels at both edges ('ssions', 'Gi'). It looks like a scrollable overflow strip, but nothing on screen shows that more tabs are off-screen.",
+      "Pluralization is wrong: '1 running conversations' should be '1 running conversation'.",
+      "In the dev-madrid card, the 'Claude Code active in activity-context-project · 11 minutes ago' line wraps and leaves 'ago' alone on its own line.",
+      "The disabled 'Open' buttons (this device, and the offline device) are low-contrast. This fits a disabled state but is faint.",
+      "The 'Coming later.' helper text under 'Automatic device choice' is low-contrast."
+    ]
+  }
 }

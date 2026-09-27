@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "public project memory shows its notice, note update time and read-only rendered content",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase2-memory-settings-phone-light.png",
-  "expected": "the Jevellan web app screen for the check \"public project memory shows its notice, note update time and read-only rendered content\" at phone-light, rendered completely and legibly"
+  "expected": "the Jevellan web app \"memory settings\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"public project memory shows its notice, note update time and read-only rendered content\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The modal body is scrolled, so the label of the first path field is off the top edge and only its value shows.",
+      "The long path value '/tmp/jevellan-browser-JbUTXu/memory-project…' is cut off at the right edge of the input, which is normal for a single-line text field.",
+      "There is little vertical space between the 'Browse folders on dev-madrid' button and the 'Git policy' label below it.",
+      "The Memory section continues below 'Memory folder' and needs scrolling to see. The fixed footer stays visible, but it could hide any memory controls further down."
+    ]
+  }
 }

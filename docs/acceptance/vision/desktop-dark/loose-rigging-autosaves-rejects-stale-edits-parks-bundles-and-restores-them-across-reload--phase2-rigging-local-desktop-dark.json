@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-rigging-local-desktop-dark.png",
-  "expected": "the Jevellan web app screen for the check \"loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload\" at desktop-dark, rendered completely and legibly"
+  "expected": "the Jevellan web app \"rigging local\" screen, one step of the check \"loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload\", at desktop-dark, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The instruction content in the modal shows as rendered markdown ('Edited local instructions' heading plus body), not an editable text field. That's expected if it's in preview mode, but the editor isn't visible in this step.",
+      "The small '×' dismiss button on the status banner is low-contrast and small, though it's still visible and reachable.",
+      "The 'Source' toggle is pink/magenta, a different accent from the rest of the modal. Readable but not consistent."
+    ]
+  }
 }

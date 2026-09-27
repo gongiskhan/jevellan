@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase2-evidence-image-phone-light.png",
-  "expected": "the Jevellan web app screen for the check \"file and evidence links show recorded versions, source lines, Markdown, images and verification output\" at phone-light, rendered completely and legibly"
+  "expected": "the Jevellan web app \"evidence image\" screen, one step of the check \"file and evidence links show recorded versions, source lines, Markdown, images and verification output\", at phone-light, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The image thumbnail is very small (about 100px wide), so the evidence image is hard to inspect without opening it.",
+      "\"Recorded checkpoint ·\" ends in a trailing separator, and the hash wraps onto the next line, which looks like something is missing after the dot.",
+      "Most of the viewport below the links is empty; the preview could use the available width.",
+      "\"Open recorded step\" is gray, next to the pink \"Open working copy\", so it reads as secondary or disabled even though it is legible."
+    ]
+  }
 }

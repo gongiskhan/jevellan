@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "device Settings completes a member login, shows activity, invites and switches without signing in again",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase4-devices-phone-light.png",
-  "expected": "the Jevellan web app screen for the check \"device Settings completes a member login, shows activity, invites and switches without signing in again\" at phone-light, rendered completely and legibly"
+  "expected": "the Jevellan web app \"devices\" screen, one step of the check \"device Settings completes a member login, shows activity, invites and switches without signing in again\", at phone-light, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The settings tab strip is cut off at both edges: 'sions' on the left and 'Gi' on the right. It looks like a horizontally scrollable tab bar, so the tabs can still be reached.",
+      "The 'Open' buttons for dev-madrid (this device) and Offline fixture look greyed out or disabled. This is probably intended, but their low contrast makes them less noticeable.",
+      "The 'Coming later.' helper text under 'Automatic device choice' is small and low-contrast, but it can still be read."
+    ]
+  }
 }

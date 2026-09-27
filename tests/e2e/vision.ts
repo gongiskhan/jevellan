@@ -61,7 +61,8 @@ export async function judgeScreenshot(image: Buffer, expected: string): Promise<
         options: {
           model,
           cwd: home,
-          maxTurns: 1,
+          // No tools are offered; a refused tool request costs a turn, so allow a short retry.
+          maxTurns: 3,
           allowedTools: [],
           settingSources: [],
           permissionMode: 'dontAsk',

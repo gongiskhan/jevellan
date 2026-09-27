@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "device Settings completes a member login, shows activity, invites and switches without signing in again",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase5-join-phone-dark.png",
-  "expected": "the Jevellan web app screen for the check \"device Settings completes a member login, shows activity, invites and switches without signing in again\" at phone-dark, rendered completely and legibly"
+  "expected": "the Jevellan web app \"join\" screen, one step of the check \"device Settings completes a member login, shows activity, invites and switches without signing in again\", at phone-dark, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The join code field and the end of the command are covered by solid light-gray blocks, so the code itself can't be read in this screenshot. These look like screenshot masks over dynamic values, not a rendering fault, but that's an assumption; if nothing masks them, this is blocking because the join code would be unreadable.",
+      "The command breaks mid-word across lines ('htt' / 'p://127.0.0.1:19774'), which makes it harder to read and copy by eye.",
+      "The dimmed page behind the modal has some low-contrast text (for example, 'Every device runs its own conversations…' and the 'Offline fixture' card), which is expected with a modal backdrop."
+    ]
+  }
 }

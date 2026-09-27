@@ -3,6 +3,7 @@ import { RuntimeEventSchema } from '@jevellan/runtime-contract';
 import { ConversationWork } from './work.js';
 
 export const RESTART_NOTICE = 'Jevellan restarted while this was running. Send a message to continue.';
+export const RESTART_HANDOFF_SUMMARY = 'Jevellan restarted before this step settled. Its recorded output is preserved; completion has not been verified.';
 
 /** Run only after acquiring exclusive daemon-home ownership. Never launches or releases a checkout. */
 export async function recoverRunningWork(work: ConversationWork): Promise<{ recovered: number[]; blocked: Array<{ stretch: number; reason: string }> }> {
@@ -22,7 +23,7 @@ export async function recoverRunningWork(work: ConversationWork): Promise<{ reco
     if (!work.ledger.handoffs().some((handoff) => handoff.stretch === stretch.n)) {
       const last = events.findLast((event) => event.type === 'tool-start');
       work.ledger.acceptHandoff(HandoffSchema.parse({ schema: 'handoff-v2', stretch: stretch.n, action: stretch.action, status: 'partial',
-        summary: 'Jevellan restarted before this step settled. Its recorded output is preserved; completion has not been verified.',
+        summary: RESTART_HANDOFF_SUMMARY,
         evidence: last ? [{ kind: 'command', ref: `ledger/${last.id}`, note: 'Last recorded tool before the restart.' }] : [],
         findings: [], blockers: ['Interrupted by a daemon restart.'], failedApproaches: [], proposedNext: null, changedFiles: [] }));
     }

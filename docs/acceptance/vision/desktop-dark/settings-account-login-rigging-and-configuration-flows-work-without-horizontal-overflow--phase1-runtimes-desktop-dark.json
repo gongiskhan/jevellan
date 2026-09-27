@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "Settings account, login, Rigging and configuration flows work without horizontal overflow",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase1-runtimes-desktop-dark.png",
-  "expected": "the Jevellan web app screen for the check \"Settings account, login, Rigging and configuration flows work without horizontal overflow\" at desktop-dark, rendered completely and legibly"
+  "expected": "the Jevellan web app \"runtimes\" screen, one step of the check \"Settings account, login, Rigging and configuration flows work without horizontal overflow\", at desktop-dark, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The device sign-in panel under Claude Code says \"Codex sign-ins are kept per device for now.\" It should probably name Claude Code.",
+      "The Five hours and Week usage bars are very faint against the dark background.",
+      "The session subtitles in the left sidebar are cut off with an ellipsis (e.g. \"dev-mad…\"). The truncation is intentional and nothing important is lost.",
+      "The \"Log in on Offline fixture\" link is muted and low-contrast, probably because it is disabled while that device is offline."
+    ]
+  }
 }

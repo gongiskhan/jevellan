@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "blocked files can be reviewed, refreshed and accepted before verified publication",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-adoption-desktop-dark.png",
-  "expected": "the Jevellan web app screen for the check \"blocked files can be reviewed, refreshed and accepted before verified publication\" at desktop-dark, rendered completely and legibly"
+  "expected": "the Jevellan web app \"adoption\" screen, one step of the check \"blocked files can be reviewed, refreshed and accepted before verified publication\", at desktop-dark, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Sidebar conversation titles and subtitles are cut short with ellipses (e.g. 'Exercise reviewed checkpoint …', 'Waiting for you · Checkpoint recovery…'). This looks like intended truncation.",
+      "The top of the first user message bubble ('Exercise reviewed checkpoint recovery…') is clipped where the chat scrolls under the header and tag row. The text is still fully readable.",
+      "The yellow notice 'Jev is unavailable (no key configured)' reflects the test environment rather than a layout problem.",
+      "The right panel says 'No checkpoint changes in this step' directly above a list of uncommitted changes, which could confuse a reader. This is a wording issue, not a rendering one."
+    ]
+  }
 }

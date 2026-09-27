@@ -128,7 +128,14 @@ export function ProjectsPage(props: PageProps & { embedded?: boolean }) {
           }}
         />
       )}
-      {memory && <MemoryViewer project={memory} onError={props.onError} close={() => setMemory(undefined)} />}
+      {memory && (
+        <MemoryViewer
+          project={memory}
+          isPublic={visibility[memory.id]?.visibility === 'PUBLIC'}
+          onError={props.onError}
+          close={() => setMemory(undefined)}
+        />
+      )}
       {context && (
         <ContextPanel
           {...props}
@@ -667,10 +674,12 @@ function ContextPanel({ project, close, ...props }: PageProps & { project: Proje
 }
 function MemoryViewer({
   project,
+  isPublic,
   onError,
   close,
 }: {
   project: Project;
+  isPublic: boolean;
   onError(error: unknown): void;
   close(): void;
 }) {
@@ -680,6 +689,7 @@ function MemoryViewer({
   const task = useTask(onError);
   return (
     <Modal title={`Memory · ${project.name}`} close={close}>
+      {isPublic && <PublicMemoryNotice />}
       <form
         className="inline-form"
         onSubmit={(event) => {

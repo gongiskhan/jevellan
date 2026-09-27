@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "blocked files can be reviewed, refreshed and accepted before verified publication",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase2-adoption-desktop-light.png",
-  "expected": "the Jevellan web app screen for the check \"blocked files can be reviewed, refreshed and accepted before verified publication\" at desktop-light, rendered completely and legibly"
+  "expected": "the Jevellan web app \"adoption\" screen, one step of the check \"blocked files can be reviewed, refreshed and accepted before verified publication\", at desktop-light, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Exercise reviewed checkpoint …', 'Waiting for you · Checkpoint recovery…'). This is expected truncation.",
+      "The user message bubble 'Exercise reviewed checkpoint recovery…' sits right under the header tag row and the divider line, so it looks cramped.",
+      "The right-hand Changes panel says 'No checkpoint changes in this step.' even though it lists changed files and an uncommitted diff, which may confuse the reader.",
+      "The 'Jev is unavailable (no key configured).' warning banner appears in the main thread."
+    ]
+  }
 }

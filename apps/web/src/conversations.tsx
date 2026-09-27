@@ -658,8 +658,10 @@ export function ConversationPage({ id, ...props }: PageProps & { id: string }) {
           return null;
         })}
       </div>
-      {view.pause && !(pickerShown && view.pause.reason.endsWith('Pick the next step:')) && (
-        <p className="notice">{view.pause.reason}</p>
+      {/* A "Pick the next step:" pause heads the picker. Without the picker it keeps only its cause,
+          and while work runs again it no longer applies. */}
+      {view.pause && !(view.pause.reason.endsWith('Pick the next step:') && (pickerShown || running)) && (
+        <p className="notice">{view.pause.reason.replace(/\s*Pick the next step:$/, '')}</p>
       )}
       {!running && view.externalWait && !checkpointBlock && !finishing && (
         <div className="actions">

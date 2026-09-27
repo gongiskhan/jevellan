@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "project, Jev, local Rigging and device Settings recover their hub boundaries",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase4-project-save-wait-desktop-dark.png",
-  "expected": "the Jevellan web app screen for the check \"project, Jev, local Rigging and device Settings recover their hub boundaries\" at desktop-dark, rendered completely and legibly"
+  "expected": "the Jevellan web app \"project save wait\" screen, one step of the check \"project, Jev, local Rigging and device Settings recover their hub boundaries\", at desktop-dark, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Browse folders on dev-madrid' button sits too close to the 'Git policy' label below it. There is almost no vertical gap between them.",
+      "The 'Allowed devices' fieldset is cut off at the bottom of the scrolling form area. It is scroll overflow rather than hidden content, but nothing clearly shows that more fields are below.",
+      "The disabled 'Saving…' button has low contrast against the dark background. This is expected for a disabled state but is hard to read."
+    ]
+  }
 }

@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-rigging-mcp-phone-dark.png",
-  "expected": "the Jevellan web app screen for the check \"loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload\" at phone-dark, rendered completely and legibly"
+  "expected": "the Jevellan web app \"rigging mcp\" screen, one step of the check \"loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload\", at phone-dark, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The file is labeled config.toml, but the Content field shows JSON, which may confuse users about the format",
+      "Background page text (Project memory, Safety, tab bar) shows faintly through the modal backdrop; it is still clearly separated from the modal"
+    ]
+  }
 }

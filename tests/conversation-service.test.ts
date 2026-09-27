@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { AccountSchema, CheckpointAdoptionSchema, CheckpointReceiptSchema, DecisionRecordSchema, HandoffSchema, ConversationChangesSchema, ConversationFileSchema, ConversationEventSchema, ConversationPublicSchema, GitWorkspace, Homes, OverrideRecordSchema, ProjectSchema, RedoOperationSchema, StretchSchema, WorkSettlementSchema, groupAlive, spawnGroup, terminateGroup, type Action, type Project } from '../packages/core/dist/index.js';
-import { ConversationWork } from '../packages/conversations/dist/index.js';
+import { ConversationWork, RESTART_NOTICE } from '../packages/conversations/dist/index.js';
 import { DecisionIndexSchema, decisionIndex } from '../packages/core/dist/index.js';
 import { Application, createDaemon } from '../apps/daemon/dist/index.js';
 import { FakeRuntime, type FakeStep, type StretchInput } from '../packages/runtime-contract/dist/index.js';
@@ -972,6 +972,115 @@ test('application startup recovers a recorded running process before serving his
     expect(recovered.conversation.state).toBe('waiting-for-you'); expect(recovered.stretches[0]?.status).toBe('interrupted'); expect(recovered.pause?.reason).toContain('Jevellan restarted'); expect(fake.starts).toHaveLength(0);
   } finally { await terminateGroup(native); }
 }, 30_000);
+
+test('a graceful stop during a running step leaves the work open for restart recovery instead of cancelling it', async () => {
+  await create(); const started = deferred();
+  fake.enqueue(async ({ input, emit, signal }) => {
+    writeFileSync(join(input.cwd, 'value.txt'), '2\n'); emit({ type: 'text', delta: 'Partial change before the stop.' }); started.resolve();
+    await new Promise<void>((resolve) => signal.addEventListener('abort', () => resolve(), { once: true })); return { status: 'interrupted' };
+  });
+  await choose('implement'); await started.promise;
+  const running = await app.conversations.view('conversation'); const workId = running.conversation.work!.id; const pgid = fake.runs[0]!.native.pgid;
+  expect(await app.conversations.ownership.current(project)).toMatchObject({ workId, conversationId: 'conversation', held: true });
+  await restartApplication();
+  expect(groupAlive(pgid)).toBe(false);
+  const recovered = await app.conversations.view('conversation');
+  expect(recovered.conversation.state).toBe('waiting-for-you'); expect(recovered.pause?.reason).toBe(RESTART_NOTICE);
+  expect(recovered.conversation.work?.id).toBe(workId); expect(recovered.closedWorks).toEqual([]);
+  expect(recovered.stretches.map((entry) => entry.status)).toEqual(['interrupted']); expect(recovered.handoffs[0]).toMatchObject({ stretch: 1, status: 'partial' });
+  expect(await app.conversations.ownership.current(project)).toMatchObject({ workId, conversationId: 'conversation', held: true });
+  expect(readFileSync(join(path, 'value.txt'), 'utf8')).toBe('2\n'); expect(git(path, 'rev-parse', 'HEAD')).toBe(initial);
+  await app.conversations.wait('conversation'); expect(fake.starts).toHaveLength(1);
+  await continueAfterRestart();
+}, 60_000);
+
+test('crash recovery at startup routes an interrupted step\'s uncommitted edits through review instead of a dead end', async () => {
+  await create(); const work = new ConversationWork(app.conversations.ledger('conversation')); work.baseCommit(initial); const view = work.load(); const workId = view.conversation.work!.id;
+  await app.conversations.ownership.acquire(project, { conversationId: 'conversation', conversationTitle: 'conversation', workId });
+  const { native } = await spawnGroup(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { cwd: path, env: { PATH: process.env.PATH ?? '', HOME: homes.userHome } });
+  try {
+    work.start(StretchSchema.parse({ schema: 'stretch-v2', n: 1, workId, action: 'implement', modelId: 'fixture-model', runtime: 'fake', model: 'scripted-model', effortRequested: 'high', effortEffective: 'high', accountId: 'acc_fixture', deviceId: app.device.deviceId, decisionId: 'crashed', startedAt: new Date().toISOString(), status: 'running', usage: { inputTokens: 0, outputTokens: 0, costSource: 'unknown' }, native, gitBefore: initial }), view.conversation.generation);
+    writeFileSync(join(path, 'value.txt'), '2\n');
+    await restartApplication(); expect(groupAlive(native.pgid)).toBe(false);
+    const recovered = await app.conversations.view('conversation');
+    expect(recovered.conversation.state).toBe('waiting-for-you'); expect(recovered.pause?.reason).toBe(RESTART_NOTICE); expect(recovered.stretches[0]?.status).toBe('interrupted');
+    expect(fake.starts).toHaveLength(0);
+    await continueAfterRestart(0);
+  } finally { await terminateGroup(native); }
+}, 60_000);
+
+// A crash leaves the running operation behind: the old service never drains it, and startup recovery owns the stretch.
+async function crashApplication(id = 'conversation') {
+  // A dead process writes nothing more: silence the old service's ledger and skip its graceful shutdown.
+  const ledger = app.conversations.ledger(id); vi.spyOn(ledger, 'append').mockImplementation((entry) => ({ schema: 'ledger-event-v1', t: new Date().toISOString(), id: 0, ...entry }) as ReturnType<typeof ledger.append>);
+  vi.spyOn(app.conversations, 'close').mockImplementation(async () => {}); vi.spyOn(app.lifecycle, 'close').mockImplementation(() => {}); await restartApplication();
+}
+
+test('a crash during Integrate leaves the rebase to integration recovery, and publishing continues without a dead end', async () => {
+  await changeProject({ testCommand: 'test "$(cat value.txt)" -ge 2' });
+  await create(); fake.enqueue(implement); await choose('implement'); await app.conversations.wait('conversation');
+  const other = join(root, 'upstream'); git(root, 'clone', origin, other); git(other, 'config', 'user.name', 'Other fixture'); git(other, 'config', 'user.email', 'other@example.invalid');
+  writeFileSync(join(other, 'value.txt'), '3\n'); writeFileSync(join(other, 'upstream.txt'), 'Keep upstream work.\n'); git(other, 'add', '-A'); git(other, 'commit', '-m', 'Change the same value upstream'); git(other, 'push', 'origin', 'main');
+  const rebasing = deferred();
+  fake.enqueue(async ({ input }) => {
+    expect(await integrate(input, 'start')).toMatchObject({ result: { status: 'conflict', conflicts: ['value.txt'] } }); rebasing.resolve();
+    return new Promise(() => {}); // The daemon dies here, mid-rebase.
+  });
+  await choose('done'); await rebasing.promise; expect(git(path, 'status')).toContain('rebase');
+  await crashApplication();
+  const recovered = await app.conversations.view('conversation');
+  expect(recovered.stretches.map((entry) => [entry.action, entry.status])).toEqual([['implement', 'completed'], ['integrate', 'interrupted']]);
+  expect(recovered.checkpointBlocks).toEqual([]); expect(recovered.pause?.reason).toBe(RESTART_NOTICE);
+  git(path, 'rebase', '--abort'); // The rebase belongs to integration recovery; once it is abandoned, publication integrates again.
+  fake.enqueue(async ({ input }) => {
+    expect(input.action).toBe('integrate'); expect(await integrate(input, 'start')).toMatchObject({ result: { status: 'conflict' } });
+    writeFileSync(join(path, 'value.txt'), '5\n'); expect(await integrate(input, 'continue')).toMatchObject({ result: { status: 'clean' } });
+    await handoff(input); return { status: 'completed' };
+  });
+  await choose('done'); await app.conversations.wait('conversation');
+  const finished = await app.conversations.view('conversation');
+  expect(finished.conversation.state, finished.pause?.reason).toBe('done'); expect(git(path, 'status', '--porcelain')).toBe('');
+  expect(git(origin, 'show', 'main:value.txt')).toBe('5'); expect(git(origin, 'show', 'main:upstream.txt')).toBe('Keep upstream work.');
+}, 90_000);
+
+test('a crash after the checkpoint commit keeps the receipt and publishes without a Changes review', async () => {
+  await create(); const work = new ConversationWork(app.conversations.ledger('conversation')); work.baseCommit(initial); const view = work.load(); const workId = view.conversation.work!.id;
+  await app.conversations.ownership.acquire(project, { conversationId: 'conversation', conversationTitle: 'conversation', workId });
+  const { native } = await spawnGroup(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { cwd: path, env: { PATH: process.env.PATH ?? '', HOME: homes.userHome } });
+  try {
+    work.start(StretchSchema.parse({ schema: 'stretch-v2', n: 1, workId, action: 'implement', modelId: 'fixture-model', runtime: 'fake', model: 'scripted-model', effortRequested: 'high', effortEffective: 'high', accountId: 'acc_fixture', deviceId: app.device.deviceId, decisionId: 'crashed', startedAt: new Date().toISOString(), status: 'running', usage: { inputTokens: 0, outputTokens: 0, costSource: 'unknown' }, native, gitBefore: initial }), view.conversation.generation);
+    writeFileSync(join(path, 'value.txt'), '2\n'); git(path, 'commit', '-qam', 'implement: Change the value'); const head = git(path, 'rev-parse', 'HEAD');
+    work.ledger.append({ type: 'git', stretch: 1, data: CheckpointReceiptSchema.parse({ schema: 'checkpoint-receipt-v1', workId, stretch: 1, kind: 'stretch', before: initial, after: head }) });
+    await restartApplication(); expect(groupAlive(native.pgid)).toBe(false);
+    const recovered = await app.conversations.view('conversation');
+    expect(recovered.stretches[0]?.status).toBe('interrupted'); expect(recovered.checkpointBlocks).toEqual([]);
+    fake.enqueue(async ({ input }) => { await handoff(input); return { status: 'completed' }; });
+    await choose('implement'); await app.conversations.wait('conversation'); expect(git(path, 'rev-parse', 'HEAD')).toBe(head);
+    const reply = await request('/api/conversations/conversation/messages', 'POST', { schema: 'conversation-message-v1', clientMessageId: 'finish', text: 'Finish and publish.' });
+    expect(reply.status, await reply.text()).toBeLessThan(300); await app.conversations.wait('conversation');
+    await choose('done'); await app.conversations.wait('conversation');
+    const finished = await app.conversations.view('conversation');
+    expect(finished.conversation.state, finished.pause?.reason).toBe('done'); expect(git(origin, 'rev-parse', 'main')).toBe(head); expect(fake.starts).toHaveLength(1);
+  } finally { await terminateGroup(native); }
+}, 60_000);
+
+// 7.5: "Send a message to continue" must continue. Leftover edits are reviewed and accepted first; nothing launches before that.
+async function continueAfterRestart(launched = 1) {
+  expect((await app.conversations.view('conversation')).checkpointBlocks.map((block) => block.stretch)).toEqual([1]);
+  const sent = await request('/api/conversations/conversation/messages', 'POST', { schema: 'conversation-message-v1', clientMessageId: 'after_restart', text: 'Continue.' });
+  expect(sent.status, await sent.text()).toBeLessThan(300); await app.conversations.wait('conversation');
+  const early = await request('/api/conversations/conversation/manual', 'POST', { schema: 'manual-step-v1', generation: (await app.conversations.view('conversation')).conversation.generation, action: 'implement', modelId: 'fixture-model', effort: 'high' });
+  await early.text(); await app.conversations.wait('conversation');
+  expect(fake.starts).toHaveLength(launched); expect(readFileSync(join(path, 'value.txt'), 'utf8')).toBe('2\n'); expect(git(path, 'rev-parse', 'HEAD')).toBe(initial);
+  const review = await adoptionReview(); expect(review.changes.uncommitted).toContain('+2');
+  const accepted = await acceptFiles(review.input);
+  expect(accepted.checkpointBlocks).toEqual([]); expect(git(path, 'status', '--porcelain')).toBe(''); expect(git(path, 'rev-parse', 'HEAD')).not.toBe(initial);
+  expect(git(path, 'show', 'HEAD:value.txt')).toBe('2'); expect(fake.starts).toHaveLength(launched);
+  fake.enqueue(async ({ input }) => { await handoff(input); return { status: 'completed' }; });
+  await choose('implement'); await app.conversations.wait('conversation');
+  expect(fake.starts).toHaveLength(launched + 1); const after = await app.conversations.view('conversation');
+  expect(after.stretches.at(-1)).toMatchObject({ status: 'completed' }); expect(after.conversation.state).not.toBe('blocked'); expect(readFileSync(join(path, 'value.txt'), 'utf8')).toBe('2\n');
+}
 
 test('rename updates the indexed title during execution without interrupting the native process or changing its request', async () => {
   const opened = await create(); const started = deferred(); const release = deferred();

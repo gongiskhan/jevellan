@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "hub recovery resumes sign-in and reconciles a settings save whose reply was lost",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase4-settings-wait-phone-light.png",
-  "expected": "the Jevellan web app screen for the check \"hub recovery resumes sign-in and reconciles a settings save whose reply was lost\" at phone-light, rendered completely and legibly"
+  "expected": "the Jevellan web app \"settings wait\" screen, one step of the check \"hub recovery resumes sign-in and reconciles a settings save whose reply was lost\", at phone-light, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The fixed wait banner at the bottom sits over the lower part of the Guards form, right below the 'Pause after a plan' checkbox. The fields below it are hidden in this frame. They are probably reachable by scrolling, but this screenshot can't confirm that.",
+      "The last tab label is cut off at the right edge ('Impro…'). The tab strip looks like it scrolls sideways, so this is expected overflow.",
+      "The textarea at the top is partly scrolled out of view, so its text is clipped. This is normal scroll position, not a layout bug."
+    ]
+  }
 }

@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "composer choices apply once, keep conversation pins and explain corrections after reload",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase3-composer-start-desktop-light.png",
-  "expected": "the Jevellan web app screen for the check \"composer choices apply once, keep conversation pins and explain corrections after reload\" at desktop-light, rendered completely and legibly"
+  "expected": "the Jevellan web app \"composer start\" screen, one step of the check \"composer choices apply once, keep conversation pins and explain corrections after reload\", at desktop-light, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Model chip reads 'Composer Fable· kept': there is no space before the separator dot, and the 'kept' suffix is lower contrast than the rest of the chip.",
+      "In the Effort column, 'Keep for this conversation' and 'Back to Auto' are stacked on separate lines and indented slightly from the 'Once, then low' helper text. The Next step and Model columns put their helper text and link on one line, so the three columns don't match.",
+      "Effort column is taller than the others, which leaves empty space below the Next step and Model columns in the choices panel.",
+      "The bottom sidebar item is partly cut off at the scroll edge. This is expected for a scrolling list."
+    ]
+  }
 }

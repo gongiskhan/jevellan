@@ -1,9 +1,20 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "external activity waits, retries, requires Changes review and publishes after reviewed acceptance",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase4-external-wait-desktop-light.png",
-  "expected": "the Jevellan web app screen for the check \"external activity waits, retries, requires Changes review and publishes after reviewed acceptance\" at desktop-light, rendered completely and legibly"
+  "expected": "the Jevellan web app \"external wait\" screen, one step of the check \"external activity waits, retries, requires Changes review and publishes after reviewed acceptance\", at desktop-light, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The same message ('Another agent (Claude Code) is active in External activity fixture on dev-madrid.') appears twice, once in a red banner and once in an amber banner.",
+      "The 'Retry' and 'Try automatic again' buttons sit on separate rows with inconsistent styles (one filled, one outlined) instead of being grouped together.",
+      "The last conversation in the sidebar is cut off partway at the bottom of the scroll area; this is normal scroll overflow, but it looks unfinished.",
+      "Sidebar conversation titles and metadata are truncated with ellipses, which is expected but hides the full titles.",
+      "There is a large empty gap between the 'Pick the next step' panel and the message box at the bottom."
+    ]
+  }
 }

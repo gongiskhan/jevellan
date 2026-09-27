@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "step corrections survive reload and undo launches the requested redo with visible history",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-undo-retry-phone-dark.png",
-  "expected": "the Jevellan web app screen for the check \"step corrections survive reload and undo launches the requested redo with visible history\" at phone-dark, rendered completely and legibly"
+  "expected": "the Jevellan web app \"undo retry\" screen, one step of the check \"step corrections survive reload and undo launches the requested redo with visible history\", at phone-dark, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The error message lists 'disabled' eight times ('No model can run this step right now: disabled, disabled, …') and doesn't name the models, so it's hard to act on.",
+      "A previous card is partly scrolled out of view under the header. That's normal scroll clipping, not a layout overlap.",
+      "The 'Retry undo and redo' button and the 'Pick the next step' panel both appear at once, so it's unclear which action comes first."
+    ]
+  }
 }

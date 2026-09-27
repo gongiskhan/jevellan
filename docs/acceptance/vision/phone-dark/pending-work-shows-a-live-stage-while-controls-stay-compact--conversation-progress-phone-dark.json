@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "pending work shows a live stage while controls stay compact",
   "layout": "phone-dark",
   "screenshot": "test-results/conversation-progress-phone-dark.png",
-  "expected": "the Jevellan web app screen for the check \"pending work shows a live stage while controls stay compact\" at phone-dark, rendered completely and legibly"
+  "expected": "the Jevellan web app \"conversation progress\" screen, one step of the check \"pending work shows a live stage while controls stay compact\", at phone-dark, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "There's a lot of empty space between the user message bubble and the composer on the phone screen.",
+      "The 'Send correction' button looks faded or disabled, and it's hard to tell it apart from the background. It's probably disabled on purpose because the composer is empty.",
+      "The '...' overflow button next to Cancel is low-contrast and small."
+    ]
+  }
 }

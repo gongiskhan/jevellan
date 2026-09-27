@@ -1,9 +1,20 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/J11-mesh-claude-why-desktop-dark.png",
-  "expected": "the Jevellan web app screen for the check \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\" at desktop-dark, rendered completely and legibly"
+  "expected": "the Jevellan web app \"mesh claude why\" screen, one step of the check \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\", at desktop-dark, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Missing space in the fallback card heading: it reads 'Jevis unavailable (authentication failed)' instead of 'Jev is unavailable'.",
+      "At the bottom of the Why panel, the account list is cut off mid-row at 'J8 Codex account: unsupported'. The panel appears to scroll, so the row is still reachable.",
+      "At the bottom of the sidebar, the last conversation row ('Context · Context fixt…') is partly cut off. The list scrolls, so it is still reachable.",
+      "The Why panel repeats the 'Jev is unavailable (authentication failed). Pick the next step:' notice, but without the action controls that go with it. This could confuse users, though the controls are available in the main column.",
+      "Sidebar conversation titles and subtitles are shortened with ellipses. This looks intended, but full titles such as 'Remember that this project us…' can't be read."
+    ]
+  }
 }

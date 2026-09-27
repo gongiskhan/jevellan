@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "Claude sign-in shows pending progress and resumes polling after a connection error",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/login-recovery-phone-light.png",
-  "expected": "the Jevellan web app screen for the check \"Claude sign-in shows pending progress and resumes polling after a connection error\" at phone-light, rendered completely and legibly"
+  "expected": "the Jevellan web app \"login recovery\" screen, one step of the check \"Claude sign-in shows pending progress and resumes polling after a connection error\", at phone-light, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The instruction still says 'Paste the test authorization code.', but no code input is shown because the code was already sent. In this pending state the prompt is out of date and may confuse users.",
+      "The dialog title shows the full recovery UUID, which wraps to two lines and takes up a lot of room on a phone screen.",
+      "The error alert ('Can't reach Jevellan. Try again when it's connected.') sits right under 'Code sent. Waiting for sign-in to finish…' and there's no retry button inside the alert. It's legible, but it's not clear that polling will resume on its own."
+    ]
+  }
 }

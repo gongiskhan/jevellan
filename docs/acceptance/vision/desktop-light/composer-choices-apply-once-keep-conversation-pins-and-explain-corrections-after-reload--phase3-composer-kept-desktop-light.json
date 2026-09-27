@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "composer choices apply once, keep conversation pins and explain corrections after reload",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase3-composer-kept-desktop-light.png",
-  "expected": "the Jevellan web app screen for the check \"composer choices apply once, keep conversation pins and explain corrections after reload\" at desktop-light, rendered completely and legibly"
+  "expected": "the Jevellan web app \"composer kept\" screen, one step of the check \"composer choices apply once, keep conversation pins and explain corrections after reload\", at desktop-light, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The last sidebar conversation item ('Progress fixture') is clipped at the bottom edge of the scrollable list. It's normal scroll overflow.",
+      "Sidebar conversation titles and metadata are cut off with ellipses (e.g. 'Exercise composer choices: ex…', 'Waiting for you · Public memory fixtu…'). This is intended truncation.",
+      "The composer chips 'Model: Composer Fable· kept' and 'Effort: low· kept' have no space before the middle dot.",
+      "The '...' overflow menu next to the conversation title has very low contrast."
+    ]
+  }
 }

@@ -44,8 +44,8 @@
   {
     "id": "phase-7",
     "title": "Hardening and finish",
-    "why": "Resumed 2026-09-26. Interface overhaul to the website theme is done. Full backend 1083 passed (1 skipped) and full browser matrix 140 passed in four layouts on 2026-09-27. Live J1, J2, J5, J6, J7 and J13 passed; J4 partial; J3 blocked without a Codex test login. Remaining: vision-enabled matrix, crucial-issues review and final report. See docs/acceptance/REPORT.md.",
-    "status": "in-progress"
+    "why": "Interface overhaul to the website theme; vision-enabled browser matrix 139 of 140 (the remaining vision judgment passes in four layouts on rerun), 247 of 248 screenshots free of blocking findings after fixing the real defects vision found; full backend 1091 passed, 1 skipped. Crucial-issues review and scoped second review closed: improver Undo and discard safety, restart instead of cancel on graceful stop, and restart continuation through Changes review, each with regression tests. Live J1, J2, J5, J6, J7 and J13 passed; J4 partial; J3 blocked without a Codex test login; a live Jev improver run is not claimed. See docs/acceptance/REPORT.md.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "shells",

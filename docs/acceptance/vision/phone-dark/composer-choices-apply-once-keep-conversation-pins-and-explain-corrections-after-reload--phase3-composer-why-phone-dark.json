@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "composer choices apply once, keep conversation pins and explain corrections after reload",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase3-composer-why-phone-dark.png",
-  "expected": "the Jevellan web app screen for the check \"composer choices apply once, keep conversation pins and explain corrections after reload\" at phone-dark, rendered completely and legibly"
+  "expected": "the Jevellan web app \"composer why\" screen, one step of the check \"composer choices apply once, keep conversation pins and explain corrections after reload\", at phone-dark, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The step label 'Adversarial Rev…' is cut off with an ellipsis in the score list. The rest of the row can still be read.",
+      "The last correction entry ('Just override · effort: high → max') runs past the bottom of the screen and its description is only half visible. This looks like normal scroll overflow, not a layout break.",
+      "The 'Test' row sits right under the header divider with very little top padding. Rows above it may have been scrolled out of view.",
+      "Every score bar reads 0.00 and is empty, so the bar area looks blank."
+    ]
+  }
 }

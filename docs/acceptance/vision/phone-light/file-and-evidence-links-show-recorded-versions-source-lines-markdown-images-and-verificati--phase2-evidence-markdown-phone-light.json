@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase2-evidence-markdown-phone-light.png",
-  "expected": "the Jevellan web app screen for the check \"file and evidence links show recorded versions, source lines, Markdown, images and verification output\" at phone-light, rendered completely and legibly"
+  "expected": "the Jevellan web app \"evidence markdown\" screen, one step of the check \"file and evidence links show recorded versions, source lines, Markdown, images and verification output\", at phone-light, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Show source' link sits right above the 'Evidence guide' heading with almost no space between them, so the two look crowded",
+      "'Open recorded step' is grey next to the pink 'Open working copy', so it's hard to tell whether it's a disabled control or just styled differently",
+      "'Recorded checkpoint ·' ends with a dangling separator, and the commit hash wraps onto its own line below it",
+      "The bottom of the screen is mostly blank; the content fits in the top ~35% of the viewport"
+    ]
+  }
 }

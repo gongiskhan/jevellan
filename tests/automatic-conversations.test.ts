@@ -9,7 +9,7 @@ import type { AddressInfo } from 'node:net';
 import { AccountSchema, ComposerInitialSchema, ComposerOverrideRecordSchema, ConversationPublicSchema, CorrectionRecordSchema, Homes, JevConnectionSchema, ProjectSchema, type Action } from '../packages/core/dist/index.js';
 import { Application, createDaemon } from '../apps/daemon/dist/index.js';
 import { FakeRuntime, type StretchInput } from '../packages/runtime-contract/dist/index.js';
-import { ConversationWork } from '../packages/conversations/dist/index.js';
+import { ConversationWork, RESTART_NOTICE } from '../packages/conversations/dist/index.js';
 import { HubUnavailable } from '../packages/mesh/dist/index.js';
 import type { JevQuestions } from '../packages/decisions/dist/index.js';
 
@@ -331,7 +331,10 @@ test.each(['cancel', 'restart'])('initial composer admission does not relaunch a
     app = new Application({ homes, timers: false, runtimes: () => new Map([['fake', fake]]), decisionFetch: transport }); await app.conversations.ready;
   }
   app.conversations.hubWaits.reachable(); const recovered = await app.conversations.create(input); await app.conversations.wait('automatic');
-  expect(recovered.conversation.state).toBe('cancelled'); expect(recovered.composerOverrides).toHaveLength(1); expect(fake.starts).toHaveLength(0);
+  // Cancel is the user's decision and closes the work; a daemon restart only interrupts it (7.5), keeping the pending choice unconsumed.
+  if (change === 'cancel') expect(recovered.conversation.state).toBe('cancelled');
+  else { expect(recovered.conversation.state).toBe('waiting-for-you'); expect(recovered.pause?.reason).toBe(RESTART_NOTICE); expect(recovered.conversation.work).not.toBeNull(); }
+  expect(recovered.composerOverrides).toHaveLength(1); expect(fake.starts).toHaveLength(0);
   expect(git(path, 'rev-parse', 'HEAD')).toBe(initial);
 });
 

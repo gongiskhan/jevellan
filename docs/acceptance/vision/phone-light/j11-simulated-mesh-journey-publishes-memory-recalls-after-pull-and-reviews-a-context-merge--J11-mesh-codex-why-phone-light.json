@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/J11-mesh-codex-why-phone-light.png",
-  "expected": "the Jevellan web app screen for the check \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\" at phone-light, rendered completely and legibly"
+  "expected": "the Jevellan web app \"mesh codex why\" screen, one step of the check \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\", at phone-light, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The warning banner 'Jev is unavailable (authentication failed). Pick the next step:' ends with a colon, but no step choices appear inside or right after it.",
+      "The account list runs past the bottom of the screen ('Evidence fixture: unsupported' is the last row shown). This looks like normal scrolling, but the screenshot can't confirm that the rest of the list is reachable.",
+      "The 'Chosen memory' entries are small monospace text with tight spacing, and 'Existing.md' looks like an odd or placeholder name.",
+      "The 'picked manually' labels on the right are small and low-contrast, but still readable."
+    ]
+  }
 }

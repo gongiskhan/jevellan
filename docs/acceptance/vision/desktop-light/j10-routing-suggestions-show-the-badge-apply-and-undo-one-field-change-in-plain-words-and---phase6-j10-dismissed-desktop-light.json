@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase6-j10-dismissed-desktop-light.png",
-  "expected": "the Jevellan web app screen for the check \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\" at desktop-light, rendered completely and legibly"
+  "expected": "the Jevellan web app \"j10 dismissed\" screen, one step of the check \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\", at desktop-light, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The dismissal reason \"Plans stay on Fable.\" on the dismissed card is small, light grey text that is easy to miss, though it is still readable.",
+      "The 'Apply and tell me' mode selector next to the unchecked Memory care job looks greyed out and faint compared with the 'Suggest' labels on the other rows.",
+      "The 'Undone' card (Prefer GPT for implement steps) has no status line at the bottom, while the 'Applied' card shows 'Applied. Undo (28s)'. Its layout ends right after the check summary.",
+      "The long diff lines in the GPT card wrap across two lines inside the red and green highlights. They are still readable but a bit dense."
+    ]
+  }
 }

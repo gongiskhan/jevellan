@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/J8-proxy-desktop-light.png",
-  "expected": "the Jevellan web app screen for the check \"J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work\" at desktop-light, rendered completely and legibly"
+  "expected": "the Jevellan web app \"proxy\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Sidebar conversation titles and metadata lines are cut off with ellipses (e.g. 'J8: run on device B while I ste…', 'Waiting for you · Mesh journey fixtur…'). This looks intentional and the full title is shown in the main header.",
+      "The 'Try automatic again' button sits apart from the fallback panel below it, so it's unclear whether it and 'Continue' are alternatives or belong together.",
+      "The fallback panel shows an error message ('Jev is unavailable (authentication failed)') in the same beige color as the 'The user corrected this step.' notice, so the error doesn't stand out."
+    ]
+  }
 }

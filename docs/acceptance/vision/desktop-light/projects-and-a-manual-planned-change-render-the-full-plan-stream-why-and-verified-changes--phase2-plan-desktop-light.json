@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "Projects and a manual planned change render the full plan, stream, Why and verified Changes",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase2-plan-desktop-light.png",
-  "expected": "the Jevellan web app screen for the check \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\" at desktop-light, rendered completely and legibly"
+  "expected": "the Jevellan web app \"plan\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Sidebar conversation titles and subtitles are cut short with an ellipsis ('Change the value to two and v…', 'Waiting for you · Manual conversation…', 'Mesh journey fixture · dev-mad…'). This looks like intended truncation, and the full title appears in the main header.",
+      "There are several ways to choose the next step at once: 'Try automatic again', 'Go ahead' / 'Change the plan', the 'Pick the next step' panel with Continue, and the composer with Next step/Model/Effort chips. This is visually crowded but nothing overlaps.",
+      "The Send button shows in its disabled, low-contrast style because the composer is empty. This is expected, but it is faint next to 'Close this work'."
+    ]
+  }
 }

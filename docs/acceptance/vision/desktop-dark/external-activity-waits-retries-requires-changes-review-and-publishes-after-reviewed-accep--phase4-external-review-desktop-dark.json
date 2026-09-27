@@ -1,9 +1,20 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "external activity waits, retries, requires Changes review and publishes after reviewed acceptance",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase4-external-review-desktop-dark.png",
-  "expected": "the Jevellan web app screen for the check \"external activity waits, retries, requires Changes review and publishes after reviewed acceptance\" at desktop-dark, rendered completely and legibly"
+  "expected": "the Jevellan web app \"external review\" screen, one step of the check \"external activity waits, retries, requires Changes review and publishes after reviewed acceptance\", at desktop-dark, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The same 'Claude Code started working in External activity fixture…' notice appears three times in a row: twice in red and once in amber. This looks like a duplicated retry or wait notice rather than distinct content.",
+      "The step shows a red 'Failed' badge while its handoff shows 'DONE' and a successful summary. The two statuses look contradictory.",
+      "The step and changes panel both say 'No checkpoint changes in this step', yet the panel shows an uncommitted diff to value.txt. This could confuse readers, but the diff is shown clearly.",
+      "The last conversation in the sidebar is cut off at the bottom edge. The list appears to scroll, so it is still reachable.",
+      "Long conversation titles and subtitles in the sidebar are shortened with an ellipsis, which is expected truncation."
+    ]
+  }
 }

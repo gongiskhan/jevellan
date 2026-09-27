@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase3-waiting-desktop-dark.png",
-  "expected": "the Jevellan web app screen for the check \"automatic decisions can resume from missing configuration and explain their simulated choices\" at desktop-dark, rendered completely and legibly"
+  "expected": "the Jevellan web app \"waiting\" screen, one step of the check \"automatic decisions can resume from missing configuration and explain their simulated choices\", at desktop-dark, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Exercise automatic decisions: …', 'Explain the memorybrowserfixt…'). This is expected truncation, and the list still scrolls.",
+      "The last sidebar item is partly clipped at the bottom edge above Settings. The list scrolls, so it can still be reached.",
+      "The long wrapping row of 'Review … fixture' links under 'Try automatic again' looks cluttered, and the two 'Review Login recovery <UUID>' labels are hard to scan.",
+      "There is a large empty gap between the 'Pick the next step' panel and the message box."
+    ]
+  }
 }

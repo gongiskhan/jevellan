@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase6-j12-view-changes-desktop-light.png",
-  "expected": "the Jevellan web app screen for the check \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\" at desktop-light, rendered completely and legibly"
+  "expected": "the Jevellan web app \"j12 view changes\" screen, one step of the check \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\", at desktop-light, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The diff under 'View changes' in the Memory care card is cut off at a fixed height. The last visible line ('-Deploy with npm run deploy. See [[Missing guide]].') is partly cut at the bottom edge. The hunk header says @@ -1,9 +1,8 @@, but only a few lines of it show. The rest seems to be inside a scroll area with no visible scroll indicator, so users may not see that there is more.",
+      "The 'Save schedule and jobs' button uses a low-contrast disabled style, which is hard to read against the white card.",
+      "In the 'Last runs' list, the 'Memory care · Improver sandbox' entry shows a commit badge (08f12117d2) instead of an 'Open log' link, so it lines up differently from the other entries."
+    ]
+  }
 }

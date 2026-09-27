@@ -114,7 +114,7 @@ function ItemEditor({ view, props, close }: { view: View; props: PageProps; clos
   }, [draft, readOnly]);
   return (
     <Modal
-      title={readOnly ? view.item.name : 'Edit local item'}
+      title={readOnly ? view.item.name : `Edit ${view.item.name}`}
       close={() => {
         if (pending.current) {
           controller.current?.abort();
@@ -140,7 +140,7 @@ function ItemEditor({ view, props, close }: { view: View; props: PageProps; clos
         </label>
       )}
       <div className="subheading">
-        <span className="muted" role="status">
+        <span className="muted save-status" role="status">
           {readOnly ? 'Read-only' : status}
         </span>
         <button className="text-button" onClick={() => setPreview(!preview)}>
@@ -167,7 +167,7 @@ function ItemEditor({ view, props, close }: { view: View; props: PageProps; clos
       )}
       {!readOnly && (
         <p className="muted small-text">
-          Local edits save automatically.
+          Edits save automatically.
           {view.item.bundle &&
             ` ${view.item.bundle.fileCount} bundled ${view.item.bundle.fileCount === 1 ? 'file is' : 'files are'} retained when these instructions change.`}
         </p>

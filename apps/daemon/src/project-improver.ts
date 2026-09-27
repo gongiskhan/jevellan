@@ -366,11 +366,12 @@ export class ProjectImprover {
           writeDocument(this.#journal(owner.conversationId), ApplyJournalSchema, { schema: 'improver-apply-journal-v1', projectId: project.id, patch });
           written = true; this.#write(root, patch, 'after');
           if (!git) { await this.#release(workspace, 'unchanged'); return { status: 'applied', commit: null, published: false }; }
-          await workspace.checkpoint(commit.action, commit.summary, before!);
+          // Files Git ignores leave nothing to commit: the change is applied on this device only, with no commit to publish or revert.
+          if (!(await workspace.checkpoint(commit.action, commit.summary, before!)).committed) { await this.#release(workspace, 'unchanged'); return { status: 'applied', commit: null, published: false }; }
           const ledger = new ConversationLedger(this.careHomes, owner.conversationId, { redactor: this.options.redactor });
           const publication = await publishWorkspace(workspace, ledger, this.careHomes, this.options.leases, { baseCommit: base!, nextStretch: () => 1, integrate: async () => false, signal: this.#abort.signal });
           if (publication.status === 'published') { await this.#release(workspace, 'published'); return { status: 'applied', commit: publication.commit, published: true }; }
-          await workspace.discard(base!, await workspace.head(), 1, () => undefined); await this.#release(workspace, 'discarded');
+          await this.#discardLocal(workspace, base!, 1); await this.#release(workspace, 'discarded');
           return { status: 'refused', note: publication.notice ?? 'Publication did not complete. Nothing was changed.' };
         } catch (error) {
           await this.#restore(workspace, root, patch, base, written).catch(() => undefined);
@@ -385,9 +386,27 @@ export class ProjectImprover {
   /** Returns the checkout to its starting point after an interrupted apply, keeping a saved ref for any commit. */
   async #restore(workspace: GitWorkspace, root: string, patch: ProjectPatch, base: string | null, written: boolean): Promise<void> {
     if (written && (!base || await workspace.head() === base) && this.#matches(root, patch, 'after')) this.#write(root, patch, 'before');
-    if (base && await workspace.head() !== base && await workspace.clean()) { await workspace.discard(base, await workspace.head(), 1, () => undefined); await this.#release(workspace, 'discarded'); return; }
+    if (base && await workspace.head() !== base && await workspace.clean()) { await this.#discardLocal(workspace, base, 1); await this.#release(workspace, 'discarded'); return; }
     // Anything else keeps ownership: the checkout needs inspection before other work changes it.
     if (!base || await workspace.head() === base && await workspace.clean()) await this.#release(workspace, 'unchanged');
+  }
+  /**
+   * Drops this operation's unpublished commits, keeping them under a saved ref. Publication may have rebased them onto
+   * newer upstream work, so they are discarded back to that upstream, never past it into someone else's commits.
+   */
+  async #discardLocal(workspace: GitWorkspace, base: string, n: number): Promise<void> {
+    if (await workspace.rebaseInProgress()) await workspace.abortRebase();
+    const head = await workspace.head(); if (head === base) return;
+    const upstream = await workspace.upstream();
+    await workspace.discard(head !== upstream && await workspace.contains(upstream) ? upstream : base, head, n, () => undefined);
+  }
+  /** Only a commit that makes exactly this change, with the improver's own subject, may be reverted. */
+  #ownCommit(root: string, commit: string, patch: ProjectPatch, action: 'memory' | 'context'): boolean {
+    const git = (...args: string[]) => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], env: { PATH: process.env.PATH ?? '/usr/bin:/bin', GIT_OPTIONAL_LOCKS: '0' } });
+    try {
+      const subject = git('show', '-s', '--format=%s', commit).trim(); const changed = git('diff', '--name-only', '--no-renames', '-z', `${commit}^`, commit, '--').split('\0').filter(Boolean).sort();
+      return subject.startsWith(`${action}: `) && changed.join('\0') === patch.files.map(file => file.path).sort().join('\0');
+    } catch { return false; }
   }
   /** Git projects revert the published commit and publish the revert; other projects restore the saved text if unchanged since. */
   async #undo(project: Project, owner: CheckoutOwner, applied: { commit: string | null; patch: ProjectPatch }, action: 'memory' | 'context'): Promise<{ commit: string | null }> {
@@ -399,6 +418,7 @@ export class ProjectImprover {
       }
       let base: string;
       try { base = await workspace.prepare(); } catch (error) { await this.#release(workspace, 'unchanged'); throw error; }
+      if (!this.#ownCommit(root, applied.commit, applied.patch, action)) { await this.#release(workspace, 'unchanged'); throw new Error('The recorded commit is not a change this suggestion made, so Undo will not revert it.'); }
       const parent = execFileSync('git', ['-C', root, 'rev-parse', `${applied.commit}^`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
       try {
         const plan = await workspace.planUndo({ target: parent, sourceTip: applied.commit, step: 1, published: true });
@@ -407,7 +427,7 @@ export class ProjectImprover {
       const ledger = new ConversationLedger(this.careHomes, owner.conversationId, { redactor: this.options.redactor });
       const publication = await publishWorkspace(workspace, ledger, this.careHomes, this.options.leases, { baseCommit: base, nextStretch: () => 2, integrate: async () => false, signal: this.#abort.signal });
       if (publication.status === 'published') { await this.#release(workspace, 'published'); return { commit: publication.commit }; }
-      await workspace.discard(base, await workspace.head(), 2, () => undefined); await this.#release(workspace, 'discarded');
+      await this.#discardLocal(workspace, base, 2); await this.#release(workspace, 'discarded');
       throw new Error(publication.notice ?? `Undo could not be published for ${action === 'memory' ? 'memory care' : 'this context change'}.`);
     });
   }

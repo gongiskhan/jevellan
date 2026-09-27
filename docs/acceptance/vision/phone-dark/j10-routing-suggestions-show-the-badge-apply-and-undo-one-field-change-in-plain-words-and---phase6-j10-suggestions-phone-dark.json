@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase6-j10-suggestions-phone-dark.png",
-  "expected": "the Jevellan web app screen for the check \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\" at phone-dark, rendered completely and legibly"
+  "expected": "the Jevellan web app \"j10 suggestions\" screen, one step of the check \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\", at phone-dark, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The top tab bar cuts off the last tab at the right edge ('Impro…'). It is probably a horizontally scrolling tab strip, but nothing on screen shows that it scrolls.",
+      "'Save schedule and jobs' has low contrast against the card background. It looks disabled, which may be intended because nothing has changed yet.",
+      "The dimmed 'Simulated judge responses.' note and the 'Apply and tell me' placeholder are low-contrast, but still readable."
+    ]
+  }
 }

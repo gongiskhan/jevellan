@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase2-rigging-local-phone-light.png",
-  "expected": "the Jevellan web app screen for the check \"loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload\" at phone-light, rendered completely and legibly"
+  "expected": "the Jevellan web app \"rigging local\" screen, one step of the check \"loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload\", at phone-light, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The page's tab row is cut off at the right edge (\"Imp…\"). It sits behind the dimmed modal overlay and probably scrolls sideways.",
+      "The page behind the modal is dimmed and partly covered, which is expected while a modal is open, but its content (e.g. the browser-promote and browser-package rows) can't be checked in this step.",
+      "The modal's secondary text (\"Local edits save automatically on this account.\" and the bundle description) is small and low-contrast grey, but still readable."
+    ]
+  }
 }

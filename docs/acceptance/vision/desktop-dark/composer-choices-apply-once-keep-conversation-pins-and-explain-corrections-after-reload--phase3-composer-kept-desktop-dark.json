@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "composer choices apply once, keep conversation pins and explain corrections after reload",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase3-composer-kept-desktop-dark.png",
-  "expected": "the Jevellan web app screen for the check \"composer choices apply once, keep conversation pins and explain corrections after reload\" at desktop-dark, rendered completely and legibly"
+  "expected": "the Jevellan web app \"composer kept\" screen, one step of the check \"composer choices apply once, keep conversation pins and explain corrections after reload\", at desktop-dark, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The last sidebar conversation item ('Progress fixture') is cut off at the bottom edge of the scrollable list. This looks like normal scroll clipping.",
+      "Long conversation titles and subtitles in the sidebar are truncated with ellipses (e.g. 'Exercise composer choices: ex…', 'Context · Created instructions …'). The full text isn't visible without opening each conversation.",
+      "The step metadata text (e.g. '2s · 300 tokens · $0.010') and the ', kept' suffixes in the composer chips are small and low-contrast grey on the dark background, though still readable."
+    ]
+  }
 }

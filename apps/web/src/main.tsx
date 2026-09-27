@@ -1,5 +1,6 @@
 import { clientId } from './client-id.js';
 import { useCallback, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import { z } from 'zod';
 import {
@@ -110,6 +111,27 @@ function SignIn({
     </main>
   );
 }
+
+// While a dialog is open the message joins it as a bar at its bottom: the dialog sits in the top layer,
+// and the message usually concerns what was done in it. Otherwise it floats below the header.
+function Toast({ notice, dismiss }: { notice: { text: string; error: boolean }; dismiss(): void }) {
+  const [dialog, setDialog] = useState(() => document.querySelector<HTMLDialogElement>('dialog[open]'));
+  useEffect(() => {
+    const observer = new MutationObserver(() => setDialog(document.querySelector<HTMLDialogElement>('dialog[open]')));
+    observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['open'] });
+    return () => observer.disconnect();
+  }, []);
+  const toast = (
+    <div className={`toast ${notice.error ? 'error' : 'success'}`} role={notice.error ? 'alert' : 'status'}>
+      <span>{notice.text}</span>
+      <button className="icon-button" aria-label="Dismiss message" onClick={dismiss}>
+        ×
+      </button>
+    </div>
+  );
+  return dialog ? createPortal(toast, dialog) : toast;
+}
+
 function App() {
   const [auth, setAuth] = useState<Auth>();
   const [data, setData] = useState<SettingsData>();
@@ -117,7 +139,13 @@ function App() {
   const [sidebar, setSidebar] = useState(false);
   const [notice, setNotice] = useState<{ text: string; error: boolean }>();
   const [theme, setTheme] = useState(() => localStorage.getItem('jevellan-theme') ?? 'system');
-  const reload = useCallback(async (signal?: AbortSignal) => {
+  // Confirmations leave on their own so they never sit over controls; errors stay until dismissed.
+  useEffect(() => {
+    if (!notice || notice.error) return;
+    const timer = setTimeout(() => setNotice((current) => (current === notice ? undefined : current)), 8000);
+    return () => clearTimeout(timer);
+  }, [notice]);
+  const reload =useCallback(async (signal?: AbortSignal) => {
     setData(await loadSettings(signal));
   }, []);
   const onError = useCallback(
@@ -228,14 +256,7 @@ function App() {
   const setup = path.split('?')[0] === '/setup';
   const settings = path.startsWith('/settings');
   const currentPage = path.split('?')[0]!.split('/')[2] ?? 'runtimes';
-  const feedback = notice && (
-    <div className={`toast ${notice.error ? 'error' : 'success'}`} role={notice.error ? 'alert' : 'status'}>
-      <span>{notice.text}</span>
-      <button className="icon-button" aria-label="Dismiss message" onClick={() => setNotice(undefined)}>
-        ×
-      </button>
-    </div>
-  );
+  const feedback = notice && <Toast notice={notice} dismiss={() => setNotice(undefined)} />;
   if (!auth)
     return (
       <>

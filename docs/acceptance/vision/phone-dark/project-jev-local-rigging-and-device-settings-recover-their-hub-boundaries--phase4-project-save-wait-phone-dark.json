@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "project, Jev, local Rigging and device Settings recover their hub boundaries",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase4-project-save-wait-phone-dark.png",
-  "expected": "the Jevellan web app screen for the check \"project, Jev, local Rigging and device Settings recover their hub boundaries\" at phone-dark, rendered completely and legibly"
+  "expected": "the Jevellan web app \"project save wait\" screen, one step of the check \"project, Jev, local Rigging and device Settings recover their hub boundaries\", at phone-dark, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "At the bottom of the scrollable form, the checkbox row starting 'Allow global…' is cut off by the footer divider. This looks like normal scroll clipping and the row should be reachable by scrolling, but nothing on screen shows that the form scrolls.",
+      "The 'Path on dev-madrid' value is cut off at the right edge of the input (…/settings-wait-p). This is normal single-line input overflow."
+    ]
+  }
 }

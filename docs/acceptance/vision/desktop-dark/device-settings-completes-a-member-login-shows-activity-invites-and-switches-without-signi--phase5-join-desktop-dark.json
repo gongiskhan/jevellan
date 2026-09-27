@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "device Settings completes a member login, shows activity, invites and switches without signing in again",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase5-join-desktop-dark.png",
-  "expected": "the Jevellan web app screen for the check \"device Settings completes a member login, shows activity, invites and switches without signing in again\" at desktop-dark, rendered completely and legibly"
+  "expected": "the Jevellan web app \"join\" screen, one step of the check \"device Settings completes a member login, shows activity, invites and switches without signing in again\", at desktop-dark, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The join code field and the code at the end of the npx command both show as solid light-gray blocks with no visible text. They look like deliberate screenshot masks over the secret. If they aren't masks, the join code can't be read and this should be treated as blocking.",
+      "The join code field is a bright light-gray bar that stands out sharply against the dark theme."
+    ]
+  }
 }

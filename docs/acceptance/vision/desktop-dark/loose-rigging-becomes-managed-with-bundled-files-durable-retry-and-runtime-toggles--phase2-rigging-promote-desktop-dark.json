@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "loose Rigging becomes managed with bundled files, durable retry and runtime toggles",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-rigging-promote-desktop-dark.png",
-  "expected": "the Jevellan web app screen for the check \"loose Rigging becomes managed with bundled files, durable retry and runtime toggles\" at desktop-dark, rendered completely and legibly"
+  "expected": "the Jevellan web app \"rigging promote\" screen, one step of the check \"loose Rigging becomes managed with bundled files, durable retry and runtime toggles\", at desktop-dark, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Claude Code · Current account' checkbox is grey and looks disabled, while the Codex checkbox uses the pink accent. It's unclear whether it's locked on purpose or just styled inconsistently.",
+      "The helper text under 'Install for' ('Instructions stay editable. Bundled files are retained…') is small and low-contrast on the dark background, though still readable."
+    ]
+  }
 }

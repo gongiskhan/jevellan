@@ -230,7 +230,7 @@ function DiskEditor({
       {detail.item.problem && <p className="notice">{detail.item.problem}</p>}
       {detail.redacted && <p className="notice">Credentials are hidden. This content is read-only.</p>}
       <div className="subheading">
-        <span role="status" className="muted">
+        <span role="status" className="muted save-status">
           {detail.item.editable ? status : 'Read-only'}
         </span>
         <button className="text-button" onClick={() => setPreview(!preview)}>

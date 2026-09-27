@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "context merge is drafted read-only, survives reload, cancels and applies through verified publication",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase2-context-linked-phone-light.png",
-  "expected": "the Jevellan web app screen for the check \"context merge is drafted read-only, survives reload, cancels and applies through verified publication\" at phone-light, rendered completely and legibly"
+  "expected": "the Jevellan web app \"context linked\" screen, one step of the check \"context merge is drafted read-only, survives reload, cancels and applies through verified publication\", at phone-light, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Current instruction files' disclosure uses a monospace font, while the rest of the dialog uses a proportional one, so it looks inconsistent.",
+      "The dimmed and blurred background (Browser fixture and Improver sandbox cards, top nav tabs) cuts off at the edges. It is covered by the modal, so this is expected and doesn't block anything."
+    ]
+  }
 }

@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "Settings saves wait through hub loss, reconcile lost replies and abandon a closed editor",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase4-settings-save-wait-phone-dark.png",
-  "expected": "the Jevellan web app screen for the check \"Settings saves wait through hub loss, reconcile lost replies and abandon a closed editor\" at phone-dark, rendered completely and legibly"
+  "expected": "the Jevellan web app \"settings save wait\" screen, one step of the check \"Settings saves wait through hub loss, reconcile lost replies and abandon a closed editor\", at phone-dark, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The disabled 'Saving…' button has low-contrast text on the dark background, but it is still readable and clearly shown as disabled.",
+      "Page content behind the modal ('Browser fixture', 'Fixture hub') shows through the dimmed backdrop below the dialog. It doesn't overlap any dialog content.",
+      "The wait notice's text column is fairly narrow next to the 'Stop waiting' button, so the message wraps onto many short lines."
+    ]
+  }
 }

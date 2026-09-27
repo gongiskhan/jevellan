@@ -1,5 +1,6 @@
 import { HandoffSchema, UsageSchema, stableJson, type Handoff, type Stretch } from '@jevellan/core';
 import { RuntimeEventSchema, classifyRuntimeError, type RuntimeAdapter, type RuntimeEvent, type RunResult, type StretchInput, type StretchRun } from '@jevellan/runtime-contract';
+import { RESTART_HANDOFF_SUMMARY } from './recovery.js';
 import { ConversationWork } from './work.js';
 
 export type StretchOutcome = {
@@ -28,6 +29,7 @@ export class StretchExecution {
   #active: StretchRun | undefined;
   #interruption: Promise<void> | undefined;
   #cancelled = false;
+  #stopping = false;
   #correction = false;
   #repairing = false;
   #native = '';
@@ -55,6 +57,12 @@ export class StretchExecution {
   }
   cancel(): Promise<void> {
     this.#cancelled = true;
+    this.#interruption = this.#active?.terminate() ?? Promise.resolve();
+    return this.#interruption;
+  }
+  /** Daemon shutdown: terminate without repair or the cancellation wait; the step is left for restart recovery, not cancelled. */
+  stop(): Promise<void> {
+    this.#cancelled = true; this.#stopping = true;
     this.#interruption = this.#active?.terminate() ?? Promise.resolve();
     return this.#interruption;
   }
@@ -109,6 +117,8 @@ export class StretchExecution {
     const tool = data && typeof data === 'object' && 'name' in data && typeof data.name === 'string' ? data.name.slice(0, 200) : 'none';
     // The runtime's own failure reason is the only evidence the next decision gets about why this step produced nothing.
     const reason = !this.#cancelled && error ? ` Runtime error: ${work.ledger.redact(error).message.slice(0, 600)}` : '';
+    if (this.#stopping) return work.ledger.acceptHandoff(HandoffSchema.parse({ schema: 'handoff-v2', stretch: input.stretch, action: input.action, status: 'partial', summary: RESTART_HANDOFF_SUMMARY,
+      evidence: last ? [{ kind: 'command', ref: `ledger/${last.id}`, note: 'Last recorded tool before the stop.' }] : [], findings: [], blockers: ['Interrupted by a daemon stop.'], failedApproaches: [], proposedNext: null, changedFiles: [] })).handoff;
     const summary = this.#cancelled ? `Stretch cancelled; last tool: ${tool}.` : `Stretch ended without a handoff; last tool: ${tool}.${reason}`;
     const handoff = HandoffSchema.parse({ schema: 'handoff-v2', stretch: input.stretch, action: input.action, status: this.#cancelled ? 'partial' : 'failed', summary,
       evidence: last ? [{ kind: 'command', ref: `ledger/${last.id}`, note: 'Last recorded tool; this is not a success claim.' }] : [], findings: [], blockers: this.#cancelled ? [] : ['No valid handoff was received.'], failedApproaches: [], proposedNext: null, changedFiles: [] });
@@ -158,7 +168,7 @@ export class StretchExecution {
       // until every owned process has gone. Cleanup failure rejects this result.
       if (this.#active) await this.#active.terminate();
     }
-    if (this.#cancelled) await this.#cancelHandoff();
+    if (this.#cancelled && !this.#stopping) await this.#cancelHandoff();
     return this.#outcome(result, repaired, failure);
   }
   #outcome(result: RunResult, repaired: boolean, error?: RunResult['error']): StretchOutcome {

@@ -150,7 +150,7 @@ const application = new Application({ homes: new Homes(join(root, 'user', '.jeve
           mkdirSync(join(input.cwd, 'src'), { recursive: true }); mkdirSync(join(input.cwd, 'docs'), { recursive: true });
           writeFileSync(join(input.cwd, 'src/example.ts'), `// Saved example\nexport const amount = ${input.stretch + 1};\nexport const label = '<b>plain text</b>';\n`);
           writeFileSync(join(input.cwd, 'docs/Guide with spaces.md'), '# Evidence guide\n\n- Read the source\n- Check the screenshot\n\n[Source line](../src/example.ts:2)\n\n![Recorded pixel](../screen.png)\n');
-          writeFileSync(join(input.cwd, 'screen.png'), Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aWQAAAABJRU5ErkJggg==', 'base64'));
+          writeFileSync(join(input.cwd, 'screen.png'), Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAGAAAABACAIAAABqVuVZAAAAjElEQVR42u3WoQ2AMBRF0b8AEyDwTIjGVrFRB6ojqe4GTQiG0pPcCY55L5Z1V6dAAAgQIECAAAECJECAAAECBOhnQPUu6gQIECBAgAABmg8ob2noAAECBAgQIECAHEVAgAABAgQIkJ4BHef1qQABAgQIECAzDwgQIECAAAESIECAAAECBAgQIAqAXtQA0FifkdQuyi4AAAAASUVORK5CYII=', 'base64'));
           emit({ type: 'text', delta: `\nOpen [the source](src/example.ts:2), [the value](value.txt:1), \`docs/Guide with spaces.md\`, or ${input.cwd}/screen.png.\n` });
         }
         if (input.action === 'implement') writeFileSync(join(input.cwd, 'value.txt'), `${value}\n`);

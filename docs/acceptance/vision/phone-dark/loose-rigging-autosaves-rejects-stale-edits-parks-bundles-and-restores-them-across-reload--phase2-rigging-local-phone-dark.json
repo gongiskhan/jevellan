@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-rigging-local-phone-dark.png",
-  "expected": "the Jevellan web app screen for the check \"loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload\" at phone-dark, rendered completely and legibly"
+  "expected": "the Jevellan web app \"rigging local\" screen, one step of the check \"loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload\", at phone-dark, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The success notice sits inside the dialog body, so it looks like part of the form rather than a separate notification.",
+      "Several labels are low-contrast on the dark background: the small 'Local edits save automatically on this account.' line and the 'skills/browser-local' path."
+    ]
+  }
 }

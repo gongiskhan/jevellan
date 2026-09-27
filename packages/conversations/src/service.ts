@@ -25,7 +25,7 @@ import { allowedActions, allowedInitialActions, checkGuards } from './guards.js'
 import { ConversationLedger } from './ledger.js';
 import { MemoryQueue, searchMemoryCandidates } from './memory.js';
 import { publishWorkspace, recoverIntegrationHistory } from './publication.js';
-import { recoverRunningWork } from './recovery.js';
+import { RESTART_NOTICE, recoverRunningWork } from './recovery.js';
 import { externalVerificationCounts, verifyWorkspace } from './verification.js';
 import { ConversationWork } from './work.js';
 import { correctionContext, overrides, redoOperations, undoRange } from './corrections.js';
@@ -39,7 +39,7 @@ import { HubWaits, recoverHubWaits } from './hub-waits.js';
 import { HubUnavailable } from '@jevellan/mesh';
 
 type Settings = Configuration['x-jevellan'];
-type Operation = { progress?: ReturnType<typeof ConversationProgressSchema.parse>; promise: Promise<void>; abort: AbortController; cancelled: boolean; cancellationCleanup?: boolean; redoId?: string; execution?: StretchExecution; decisionAbort?: AbortController; outside?: ReturnType<ExternalActivityGuard['watch']> };
+type Operation = { progress?: ReturnType<typeof ConversationProgressSchema.parse>; promise: Promise<void>; abort: AbortController; cancelled: boolean; shutdown?: boolean; cancellationCleanup?: boolean; redoId?: string; execution?: StretchExecution; decisionAbort?: AbortController; outside?: ReturnType<ExternalActivityGuard['watch']> };
 type PreparedDecision = { record: DecisionRecord; state: string; client: DecisionClient; calls: JevCall[] };
 class StaleDecision extends Error { readonly status = 409; constructor() { super('The conversation changed before this action could proceed. Pick the next step again.'); } }
 export type ConversationServiceOptions = {
@@ -82,7 +82,8 @@ export class ConversationService {
       if (!entry.isDirectory() || !IdSchema.safeParse(entry.name).success) continue;
       const work = this.#load(entry.name); const view = work.load();
       if (view.conversation.ownerDeviceId !== this.options.deviceId) throw new Error('A conversation directory belongs to another device.');
-      await recoverRunningWork(work); recoverHubWaits(work); this.#index(work);
+      for (const n of (await recoverRunningWork(work)).recovered) await this.#blockInterrupted(work, n);
+      recoverHubWaits(work); this.#index(work);
       this.#indexComposer(work);
       for (const adoption of checkpointAdoptions(work).filter((entry) => entry.status !== 'completed')) {
         if (!checkpointBlocks(work).some((block) => adoption.blocks.includes(block.eventId))) continue;
@@ -791,6 +792,7 @@ export class ConversationService {
     try { work.ledger.append({ type: 'notice', data: ConversationOperationSchema.parse({ schema: 'conversation-operation-v1', busy: true }) }); this.#progress(work, 'preparing'); }
     catch (error) { this.#operations.delete(id); release?.(); throw error; }
     operation.promise = Promise.resolve().then(() => run(operation)).catch((error: unknown) => {
+      if (operation.shutdown) return; // Shutdown records its own restart notice once the operation has drained.
       const current = work.load(); this.#notice(work, error instanceof Error ? error.message : 'This step could not finish.', 'error');
       if (current.conversation.work && current.conversation.state !== 'running' && !operation.cancelled) work.pause(error instanceof Error ? error.message : 'This step could not finish.', 'blocked');
     }).finally(() => {
@@ -1224,7 +1226,7 @@ export class ConversationService {
       const question = last.question ?? last.blockers.join('\n'); this.#notice(work, question); work.pause(question); return false;
     }
     await this.#stretch(work, workspace, choice, operation, choice.action === 'ask-you' ? 'reply' : choice.action, source, undefined, prepared);
-    if (operation.cancelled) return false;
+    if (operation.cancelled || operation.shutdown) return false;
     await this.#applyMemory(work, workspace, operation);
     const generation = work.load().conversation.generation;
     const settings = await this.hubWaits.retry(work, operation.abort.signal, 'settings', () => Promise.resolve(this.options.settings())); this.#current(work, generation, operation);
@@ -1343,6 +1345,13 @@ export class ConversationService {
         } });
         operation.execution = execution; outcome = await execution.done;
       } finally { delete operation.execution; await outside.close(); delete operation.outside; await grant.close(); }
+      if (operation.shutdown) {
+        // Restart semantics (7.5): the processes are gone and the token revoked; nothing is checkpointed, the work stays open and owned.
+        work.finish(n, { status: 'interrupted', usage: outcome.usage }, false, false, { schema: 'work-control-v1', kind: 'pause', state: 'waiting-for-you', reason: RESTART_NOTICE });
+        this.#record(work, { ...decision, outcome: { stretch: n, status: 'interrupted', handoffStatus: outcome.handoff.status } });
+        await this.#blockInterrupted(work, n, before);
+        return;
+      }
       this.#progress(work, 'saving');
       const completedDigest = await workspace.workingTreeDigest();
       const changed = completedDigest !== digest;
@@ -1360,7 +1369,7 @@ export class ConversationService {
         failure = error;
         if (!checkpointBlocks(work).some(block => block.workId === workspace.owner.workId && block.stretch === n)) work.ledger.append({ type: 'git', stretch: n, data: CheckpointBlockSchema.parse({ schema: 'checkpoint-block-v1', workId: workspace.owner.workId, stretch: n, before, reason: error instanceof Error ? error.message : 'Checkpoint validation failed.' }) });
       }
-      const status = failure ? operation.cancelled ? 'interrupted' : 'failed' : outcome.status;
+      const status = failure ? operation.cancelled || operation.shutdown ? 'interrupted' : 'failed' : outcome.status;
       work.finish(n, { status, usage: outcome.usage, ...(gitAfter ? { gitAfter } : {}) }, changed, outcome.correction);
       this.#record(work, { ...decision, outcome: { stretch: n, status, handoffStatus: outcome.handoff.status } });
       await usageUpdates;
@@ -1539,11 +1548,53 @@ export class ConversationService {
     }
     this.#index(work); return (await this.view(id));
   }
+  /**
+   * An interrupted step's leftover edits would otherwise dead-end the work: the next writing step refuses a dirty checkout.
+   * Recording them as a checkpoint block routes them through Changes review and Accept, like any other unaccepted change.
+   */
+  async #blockInterrupted(work: ConversationWork, n: number, before?: GitSnapshot): Promise<void> {
+    const view = work.load(); const stretch = view.stretches.find((entry) => entry.n === n); const target = view.conversation.work;
+    if (!stretch?.gitBefore || !target || target.id !== stretch.workId) return;
+    // Only writing steps leave their own edits behind; Integrate history belongs to integration recovery at publication.
+    if (actionPermissions(stretch.action) !== 'write' || stretch.action === 'integrate') return;
+    if (checkpointBlocks(work).some((block) => block.workId === target.id && block.stretch === n)) return;
+    try {
+      const workspace = new GitWorkspace(await this.#project(view.conversation.projectId), this.options.deviceId, this.ownership,
+        { conversationId: work.ledger.id, conversationTitle: view.conversation.title, workId: target.id }, this.options.redactor);
+      if (workspace.project.branchPolicy !== 'main') return;
+      const current = await workspace.snapshot();
+      // A block can only be accepted on main at the step's starting commit. A moved HEAD is a recorded checkpoint (its receipt
+      // and #recordedHead cover it) or history an agent changed; an unfinished Git operation is not a set of files to review.
+      if (current.branch !== 'refs/heads/main' || await workspace.rebaseInProgress() || current.head !== (before?.head ?? stretch.gitBefore) || current.clean) return;
+      // After a crash only the starting commit is known; a writing step always starts from a clean tree on that commit.
+      const boundary = before ?? { ...current, clean: true };
+      work.ledger.append({ type: 'git', stretch: n, data: CheckpointBlockSchema.parse({ schema: 'checkpoint-block-v1', workId: target.id, stretch: n, before: boundary,
+        reason: 'Jevellan restarted while this step was changing files. Open Changes, review what it left and accept it before continuing.' }) });
+    } catch (error) {
+      this.#notice(work, `Jevellan could not inspect the files this step left: ${error instanceof Error ? error.message : 'unknown error'} Open Changes before continuing.`, 'error');
+    }
+  }
+  /**
+   * A daemon stop is a restart, not a cancel (7.5): stop the processes, revoke the stretch token and drain, then leave the
+   * work open, owned and waiting with the restart notice. Nothing is checkpointed, closed or released here.
+   */
+  async #shutdown(id: string): Promise<void> {
+    const work = this.#load(id); const operation = this.#operations.get(id);
+    if (operation) { operation.shutdown = true; operation.abort.abort(); await operation.execution?.stop(); await operation.promise; }
+    if (work.load().conversation.state === 'running') {
+      const result = await recoverRunningWork(work); if (result.blocked.length) throw new Error(result.blocked[0]!.reason);
+      for (const n of result.recovered) await this.#blockInterrupted(work, n);
+    }
+    if (work.load().conversation.state === 'running') throw new Error('Process cleanup could not be confirmed. Checkout ownership remains held.');
+    // Whatever the interrupted operation was waiting on (a decision, the hub, a checkout) will not resume by itself after the restart.
+    const current = work.load();
+    if (operation && current.conversation.work && current.pause?.reason !== RESTART_NOTICE) work.pause(RESTART_NOTICE, 'waiting-for-you');
+  }
   async close(): Promise<void> {
     await this.ready.catch(() => undefined); this.#closed = true;
     const failures: unknown[] = [];
     await Promise.all([...this.#operations.keys()].map(async (id) => {
-      try { await this.cancel(id); }
+      try { await this.#shutdown(id); }
       catch (error) {
         const work = this.#load(id); this.#notice(work, error instanceof Error ? error.message : 'Shutdown could not settle this work.', 'error');
         if (work.load().conversation.work && work.load().conversation.state !== 'running') work.pause('Jevellan stopped before this work could settle. Reconnect to the hub before continuing.', 'blocked');

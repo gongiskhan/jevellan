@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "conversation titles, expanded tools and outside outcomes survive updates and reload",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-controls-title-phone-dark.png",
-  "expected": "the Jevellan web app screen for the check \"conversation titles, expanded tools and outside outcomes survive updates and reload\" at phone-dark, rendered completely and legibly"
+  "expected": "the Jevellan web app \"controls title\" screen, one step of the check \"conversation titles, expanded tools and outside outcomes survive updates and reload\", at phone-dark, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The long conversation title is cut to two lines and ends in an ellipsis ('Unbroken_title_Unbo…'). This looks like an intentional line clamp, but nothing on screen shows the full title.",
+      "The heading 'Jev is unavailable (no key configured). Pick the next step:' is set with very tight letter spacing, so the words look slightly squeezed together.",
+      "The long tool header 'Read project · long_tool_header_…' breaks mid-word across five lines. It's readable but dense.",
+      "The disabled 'Send' button has low contrast against the dark background. This is expected while the input is empty."
+    ]
+  }
 }

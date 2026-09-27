@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "step corrections survive reload and undo launches the requested redo with visible history",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-undo-confirm-phone-dark.png",
-  "expected": "the Jevellan web app screen for the check \"step corrections survive reload and undo launches the requested redo with visible history\" at phone-dark, rendered completely and legibly"
+  "expected": "the Jevellan web app \"undo confirm\" screen, one step of the check \"step corrections survive reload and undo launches the requested redo with visible history\", at phone-dark, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The dialog says the step will be redone with 'Reply, Fable, low', but the dimmed form behind it shows Effort 'high'. This may be a content mismatch between the dialog and the chosen settings rather than a rendering problem.",
+      "The 'Back' button's outline is low-contrast against the dark dialog background, but it is still readable."
+    ]
+  }
 }

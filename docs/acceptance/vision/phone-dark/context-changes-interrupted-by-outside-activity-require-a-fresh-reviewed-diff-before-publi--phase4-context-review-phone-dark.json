@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "context changes interrupted by outside activity require a fresh reviewed diff before publication",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase4-context-review-phone-dark.png",
-  "expected": "the Jevellan web app screen for the check \"context changes interrupted by outside activity require a fresh reviewed diff before publication\" at phone-dark, rendered completely and legibly"
+  "expected": "the Jevellan web app \"context review\" screen, one step of the check \"context changes interrupted by outside activity require a fresh reviewed diff before publication\", at phone-dark, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The modal body is scrolled, so the review card's top edge and any heading above 'Another agent (Claude Code) is active…' are out of view; the text still reads as complete.",
+      "The longest diff line ('+A newer synthetic outside contribution.') nearly touches the right padding of the code block, which is tight but not clipped.",
+      "The 'These files changed since your review. Review changes again.' banner sits at the bottom, away from the Continue button, and Continue still looks enabled next to it. The warning is easy to miss, but the layout is not broken."
+    ]
+  }
 }

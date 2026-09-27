@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase6-j12-suggest-only-phone-light.png",
-  "expected": "the Jevellan web app screen for the check \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\" at phone-light, rendered completely and legibly"
+  "expected": "the Jevellan web app \"j12 suggest only\" screen, one step of the check \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\", at phone-light, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The top tab bar cuts off the last tab ('Impr…') at the right edge. This is likely a horizontally scrolling tab strip, so the tab is still reachable.",
+      "I checked the screenshot only at reduced size (147x2000 from 390x5310); I couldn't crop it for a full-resolution look. Small text in the diff blocks and the project checkbox list looks legible, but I couldn't confirm it pixel by pixel.",
+      "The page is very long (5310px) because of the long 'Last runs' list, so the Trial log and Routing sections are far down the page."
+    ]
+  }
 }

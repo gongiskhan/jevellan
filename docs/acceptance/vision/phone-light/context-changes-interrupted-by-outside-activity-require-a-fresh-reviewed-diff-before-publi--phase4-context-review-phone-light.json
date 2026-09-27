@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "context changes interrupted by outside activity require a fresh reviewed diff before publication",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase4-context-review-phone-light.png",
-  "expected": "the Jevellan web app screen for the check \"context changes interrupted by outside activity require a fresh reviewed diff before publication\" at phone-light, rendered completely and legibly"
+  "expected": "the Jevellan web app \"context review\" screen, one step of the check \"context changes interrupted by outside activity require a fresh reviewed diff before publication\", at phone-light, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The longest diff line ('+A newer synthetic outside contribution.') nearly touches the right edge of the code block, leaving almost no padding.",
+      "The modal content is scrolled, so the top border of the inner card is only just visible under the header.",
+      "The red 'These files changed since your review' banner sits at the bottom of the modal, below the Continue button, so it is easy to miss when deciding whether to continue."
+    ]
+  }
 }

@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "loose Rigging becomes managed with bundled files, durable retry and runtime toggles",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-rigging-promote-phone-dark.png",
-  "expected": "the Jevellan web app screen for the check \"loose Rigging becomes managed with bundled files, durable retry and runtime toggles\" at phone-dark, rendered completely and legibly"
+  "expected": "the Jevellan web app \"rigging promote\" screen, one step of the check \"loose Rigging becomes managed with bundled files, durable retry and runtime toggles\", at phone-dark, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Claude Code · Current account' checkbox is grey and low-contrast, so it's hard to tell whether it's checked but locked or just disabled",
+      "The helper text ('Instructions stay editable...') and the 'Install for' legend are small, low-contrast grey on the dark background, though still readable",
+      "The dimmed page behind the modal still shows through a little around the edges (e.g. the 'Make managed' and 'Restore locally' buttons under the dialog), which looks busy but doesn't block anything"
+    ]
+  }
 }

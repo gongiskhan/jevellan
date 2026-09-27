@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "loose Rigging becomes managed with bundled files, durable retry and runtime toggles",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase2-rigging-managed-phone-light.png",
-  "expected": "the Jevellan web app screen for the check \"loose Rigging becomes managed with bundled files, durable retry and runtime toggles\" at phone-light, rendered completely and legibly"
+  "expected": "the Jevellan web app \"rigging managed\" screen, one step of the check \"loose Rigging becomes managed with bundled files, durable retry and runtime toggles\", at phone-light, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The tab bar behind the modal is clipped at the right edge ('Imp…'), which suggests the row scrolls sideways. It's covered by the modal overlay and doesn't block anything here.",
+      "The large empty space in the Content textarea, below the two lines of content, makes the modal taller than it needs to be.",
+      "The 'Saved' status text is light grey and has somewhat low contrast against the white background."
+    ]
+  }
 }

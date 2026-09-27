@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/J8-proxy-phone-dark.png",
-  "expected": "the Jevellan web app screen for the check \"J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work\" at phone-dark, rendered completely and legibly"
+  "expected": "the Jevellan web app \"proxy\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The card holding the 'Changes' and 'Why' buttons looks cut off at the top: its top border seems to be hidden under the sticky title and tags area, but both buttons are still fully visible and reachable.",
+      "The 'Send' button is dimmed, which looks expected because the input is empty, but it has low contrast against the dark background."
+    ]
+  }
 }

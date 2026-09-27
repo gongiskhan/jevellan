@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "context merge is drafted read-only, survives reload, cancels and applies through verified publication",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase2-context-draft-desktop-light.png",
-  "expected": "the Jevellan web app screen for the check \"context merge is drafted read-only, survives reload, cancels and applies through verified publication\" at desktop-light, rendered completely and legibly"
+  "expected": "the Jevellan web app \"context draft\" screen, one step of the check \"context merge is drafted read-only, survives reload, cancels and applies through verified publication\", at desktop-light, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The diff blocks show blank '-' and '+' lines for trailing newlines, and there is an empty gap between the removed and added sections, which looks slightly odd.",
+      "The file labels are shown in uppercase ('AGENTS.MD', 'CLAUDE.MD') rather than their real filenames ('AGENTS.md', 'CLAUDE.md').",
+      "The 'Open work' link sits below the Cancel/Apply buttons, a little apart from the review content it relates to.",
+      "The modal title 'Context · Context fixture' repeats the word 'Context'."
+    ]
+  }
 }

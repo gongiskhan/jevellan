@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase3-waiting-phone-light.png",
-  "expected": "the Jevellan web app screen for the check \"automatic decisions can resume from missing configuration and explain their simulated choices\" at phone-light, rendered completely and legibly"
+  "expected": "the Jevellan web app \"waiting\" screen, one step of the check \"automatic decisions can resume from missing configuration and explain their simulated choices\", at phone-light, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "There are many 'Review … fixture' links (about 15) stacked between the error notice and the 'Pick the next step' panel. They push the main decision controls far down the screen, so the page is cluttered and hard to scan on a phone.",
+      "Two login recovery links show raw UUIDs ('774bbc6e-…', '935fc804-…'), which wrap across lines and are hard for a person to tell apart.",
+      "The composer's 'Send' button looks disabled, and its low-contrast styling is hard to see against the light background."
+    ]
+  }
 }

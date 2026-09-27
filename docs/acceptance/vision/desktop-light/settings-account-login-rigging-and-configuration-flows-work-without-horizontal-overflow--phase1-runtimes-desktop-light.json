@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "Settings account, login, Rigging and configuration flows work without horizontal overflow",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase1-runtimes-desktop-light.png",
-  "expected": "the Jevellan web app screen for the check \"Settings account, login, Rigging and configuration flows work without horizontal overflow\" at desktop-light, rendered completely and legibly"
+  "expected": "the Jevellan web app \"runtimes\" screen, one step of the check \"Settings account, login, Rigging and configuration flows work without horizontal overflow\", at desktop-light, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "In the left sidebar, some conversation subtitles are cut off with an ellipsis ('Browser fixture · d…', 'dev-mad…'). This is intended truncation.",
+      "The Claude Code card's device sign-in panel says 'Codex sign-ins are kept per device for now.', which looks like copy meant for Codex showing up under Claude Code.",
+      "The 'Login recovery' account name contains a long UUID. It fits, but it's hard to read.",
+      "The 'Log in on Offline fixture' links are shown in muted grey, so they look disabled next to the other active links. This fits the offline state."
+    ]
+  }
 }

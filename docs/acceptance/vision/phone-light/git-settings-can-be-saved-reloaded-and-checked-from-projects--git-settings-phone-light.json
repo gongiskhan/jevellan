@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "Git settings can be saved, reloaded and checked from Projects",
   "layout": "phone-light",
   "screenshot": "test-results/git-settings-phone-light.png",
-  "expected": "the Jevellan web app screen for the check \"Git settings can be saved, reloaded and checked from Projects\" at phone-light, rendered completely and legibly"
+  "expected": "the Jevellan web app \"git settings\" screen, one step of the check \"Git settings can be saved, reloaded and checked from Projects\", at phone-light, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The top tab strip is cut off at the right edge ('Impro…'). It looks like a horizontally scrollable tab bar with no visible scroll hint.",
+      "The repository path in the result is split mid-word across two lines ('activity-context-' / 'origin.git'), and its highlighted background breaks unevenly between them.",
+      "The 'Save Git settings' button looks disabled and has low contrast. That's expected after saving, but the label is faint.",
+      "The explanation text and the gray note under the connection method dropdown are fairly light gray, so contrast is a little low."
+    ]
+  }
 }

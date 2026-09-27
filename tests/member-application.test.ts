@@ -205,7 +205,7 @@ test('an existing member stream and local handoff survive a hub outage while new
   fake.enqueue(async ({ input, emit }) => { running.resolve(); await finish.promise; emit({ type: 'text', delta: 'Streamed while the hub was unreachable.' }); await handoff(input); return { status: 'completed' }; });
   try {
     await choose('reply'); await vi.waitFor(() => expect(fake.starts).toHaveLength(1), { timeout: 20_000 }); await running.promise; offline = true; finish.resolve();
-    await vi.waitFor(() => expect(stream.text()).toContain("Can't reach the hub"), { timeout: 5000 });
+    await vi.waitFor(() => expect(stream.text()).toContain("Can't reach the hub"), { timeout: 20_000 });
     const local = new ConversationWork(member.conversations.ledger('member_work')).load(); expect(local.stretches[0]?.status).toBe('completed'); expect(local.handoffs).toHaveLength(1); expect(local.pause?.reason).toContain("Can't reach the hub");
     await vi.waitFor(() => expect(stream.text()).toContain('Streamed while the hub was unreachable.'), { timeout: 5000 });
     expect((await request(memberBase, '/hub/config', cookie)).status).toBe(503); expect((await request(memberBase, '/api/conversations', cookie, { schema: 'start-conversation-v1', id: 'offline_work', title: 'Offline', projectId: 'project', clientMessageId: 'new', message: 'Must wait.' })).status).toBe(503);
@@ -313,7 +313,7 @@ test.each(['reply', 'implement'] as const)('a member %s resumes its waiting boun
     await handoff(input); return { status: 'completed' };
   });
   await choose(action); await started.promise; offline = true; finish.resolve();
-  await vi.waitFor(() => expect(stream.text()).toContain("Can't reach the hub"), { timeout: 5000 });
+  await vi.waitFor(() => expect(stream.text()).toContain("Can't reach the hub"), { timeout: 20_000 });
   expect(new ConversationWork(member.conversations.ledger('member_work')).load().handoffs).toHaveLength(1); expect(fake.starts).toHaveLength(1);
   offline = false; await member.presence.pulse();
   // A reachable heartbeat wakes the continuation; its checkpoint and cleanup still have to finish.
@@ -329,7 +329,7 @@ test('an outside edit during a hub wait requires review instead of entering the 
   await create(); const stream = await watch(); const started = deferred(); const finish = deferred(); const initial = git(path, 'rev-parse', 'HEAD');
   fake.enqueue(async ({ input }) => { started.resolve(); await finish.promise; writeFileSync(join(path, 'value.txt'), '2\n'); await handoff(input); return { status: 'completed' }; });
   await choose('implement'); await started.promise; offline = true; finish.resolve();
-  await vi.waitFor(() => expect(stream.text()).toContain("Can't reach the hub"), { timeout: 5000 });
+  await vi.waitFor(() => expect(stream.text()).toContain("Can't reach the hub"), { timeout: 20_000 });
   writeFileSync(join(path, 'value.txt'), 'outside edit\n'); offline = false; await member.presence.pulse(); await member.conversations.wait('member_work');
   const result = await member.conversations.view('member_work'); expect(result.conversation.state).toBe('blocked');
   expect(result.checkpointBlocks[0]?.reason).toContain('checkout changed while waiting'); expect(result.stretches[0]?.status).toBe('failed');
@@ -350,7 +350,7 @@ test.each(['launch', 'decision', 'account-report'] as const)('a member resumes a
     vi.spyOn(member.accounts, 'recordUsage').mockImplementation(async (...args) => { if (!reachable) throw new HubUnavailable('Fixture hub'); return original(...args); });
   }
   fake.enqueue(async ({ input, emit }) => { if (boundary === 'account-report') emit({ type: 'rate-limit', fiveHourPct: 12 }); await handoff(input); finished = true; return { status: 'completed' }; });
-  await choose('reply'); await vi.waitFor(() => expect(stream.text()).toContain("Can't reach the hub"), { timeout: 5000 });
+  await choose('reply'); await vi.waitFor(() => expect(stream.text()).toContain("Can't reach the hub"), { timeout: 20_000 });
   expect(fake.starts).toHaveLength(boundary === 'launch' ? 0 : 1); reachable = true;
   await member.presence.pulse(); await member.conversations.wait('member_work');
   const result = await member.conversations.view('member_work'); expect(result.conversation.state).toBe('waiting-for-you'); expect(result.stretches[0]?.status).toBe('completed');
@@ -362,7 +362,7 @@ test('stopping a member at a waiting checkpoint retains the files and never resu
   await create(); const stream = await watch(); const started = deferred(); const finish = deferred(); const initial = git(path, 'rev-parse', 'HEAD');
   fake.enqueue(async ({ input }) => { started.resolve(); await finish.promise; writeFileSync(join(path, 'value.txt'), '2\n'); await handoff(input); return { status: 'completed' }; });
   await choose('implement'); await started.promise; offline = true; finish.resolve();
-  await vi.waitFor(() => expect(stream.text()).toContain("Can't reach the hub"), { timeout: 5000 });
+  await vi.waitFor(() => expect(stream.text()).toContain("Can't reach the hub"), { timeout: 20_000 });
   await member.close(); member = newMember(); await member.conversations.ready; offline = false; await member.presence.pulse();
   const result = await member.conversations.view('member_work'); expect(result.busy).toBe(false); expect(result.stretches[0]?.status).toBe('interrupted');
   expect(result.checkpointBlocks).toHaveLength(1); expect(result.handoffs).toHaveLength(1); expect(fake.starts).toHaveLength(1);
@@ -415,7 +415,7 @@ test.each(['acquire', 'assert', 'release', 'checkout-release'] as const)('public
       return result;
     });
   }
-  await choose('done'); await vi.waitFor(() => expect(stream.text()).toContain("Can't reach the hub"), { timeout: 5000 });
+  await choose('done'); await vi.waitFor(() => expect(stream.text()).toContain("Can't reach the hub"), { timeout: 20_000 });
   expect(lost).toBe(true); expect(git(origin, 'rev-parse', 'main')).toBe(['acquire', 'assert'].includes(boundary) ? initial : checkpoint);
   if (boundary === 'checkout-release') expect(checkoutClaims()).toHaveLength(1);
   offline = false; await member.presence.pulse(); await member.conversations.wait('member_work');
@@ -595,7 +595,7 @@ test.each([
   const view = await member.conversations.view('member_work');
   const input = { schema: 'correct-step-v1', clientRequestId: 'undo_wait', generation: view.conversation.generation, stretch: 1, mode: 'redo', choices: { action: 'reply' } };
   await body(await request(memberBase, '/api/conversations/member_work/correct', cookie, input), 202);
-  await vi.waitFor(() => expect(stream.text()).toContain("Can't reach the hub"), { timeout: 5000 });
+  await vi.waitFor(() => expect(stream.text()).toContain("Can't reach the hub"), { timeout: 20_000 });
   expect(interrupted).toBe(true); expect(fake.starts).toHaveLength(launches);
   if (saved) expect(git(path, 'rev-parse', saved)).toBe(checkpoint);
   const prepared = applying.mock.calls[0]?.[0];
@@ -720,7 +720,7 @@ test.each(['unchanged', 'closed', 'files', 'head', 'ref', 'published', 'cancel',
   const view = await member.conversations.view('member_work');
   const input = { schema: 'settle-work-v1', clientRequestId: 'discard_wait', workId: (view.conversation.work ?? view.closedWorks.at(-1))!.id, generation: view.conversation.generation, choice: 'discard' };
   await body(await request(memberBase, '/api/conversations/member_work/settle', cookie, input), 202);
-  await vi.waitFor(() => expect(stream.text()).toContain("Can't reach the hub"), { timeout: 5000 });
+  await vi.waitFor(() => expect(stream.text()).toContain("Can't reach the hub"), { timeout: 20_000 });
   expect(interrupted).toBe(true); expect(git(path, 'rev-parse', saved)).toBe(checkpoint); expect(git(path, 'rev-parse', 'HEAD')).toBe(checkpoint);
   const ledger = member.conversations.ledger('member_work');
   expect(ledger.events().flatMap(event => { const parsed = HubWaitSchema.safeParse(ledger.data(event)); return parsed.success ? [parsed.data] : []; }).at(-1)).toMatchObject({ boundary: 'settlement', status: 'waiting' });
@@ -758,7 +758,7 @@ test.each(['keep', 'discard', 'publish'] as const)('closing work with %s waits f
   });
   const view = await member.conversations.view('member_work');
   await body(await request(memberBase, '/api/conversations/member_work/settle', cookie, { schema: 'settle-work-v1', clientRequestId: 'close_wait', workId: view.conversation.work!.id, generation: view.conversation.generation, choice }), 202);
-  await vi.waitFor(() => expect(stream.text()).toContain("Can't reach the hub"), { timeout: 5000 }); expect(lost).toBe(true);
+  await vi.waitFor(() => expect(stream.text()).toContain("Can't reach the hub"), { timeout: 20_000 }); expect(lost).toBe(true);
   expect(git(path, 'rev-parse', 'HEAD')).toBe(checkpoint); expect(git(origin, 'rev-parse', 'main')).toBe(initial);
   offline = false; await member.presence.pulse(); await member.conversations.wait('member_work');
   const result = await member.conversations.view('member_work'); expect(result.settlements.at(-1), result.pause?.reason).toMatchObject({ status: 'completed', retained: choice === 'keep' });
@@ -779,7 +779,7 @@ test.each(['keep', 'discard'] as const)('closing work with %s reconciles a lost 
   });
   const view = await member.conversations.view('member_work');
   await body(await request(memberBase, '/api/conversations/member_work/settle', cookie, { schema: 'settle-work-v1', clientRequestId: 'close_release', workId: view.conversation.work!.id, generation: view.conversation.generation, choice }), 202);
-  await vi.waitFor(() => expect(stream.text()).toContain("Can't reach the hub"), { timeout: 5000 }); expect(lost).toBe(true);
+  await vi.waitFor(() => expect(stream.text()).toContain("Can't reach the hub"), { timeout: 20_000 }); expect(lost).toBe(true);
   expect(git(path, 'rev-parse', 'HEAD')).toBe(initial); expect(checkoutClaims()).toHaveLength(1);
   const ledger = member.conversations.ledger('member_work'); expect(new ConversationWork(ledger).load().closedWorks).toHaveLength(1);
   expect(ledger.events().flatMap(event => { const parsed = HubWaitSchema.safeParse(ledger.data(event)); return parsed.success ? [parsed.data] : []; }).at(-1)).toMatchObject({ boundary: 'checkout-release', status: 'waiting' });

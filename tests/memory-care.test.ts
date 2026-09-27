@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, expect, test } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
-  BackgroundDraftResultSchema, CheckoutOwnership, Homes, ImproverStateSchema, MemoryCareReportRowSchema, ProjectRevisionRecordSchema, ProjectSchema, ProjectSuggestionRowSchema,
+  BackgroundDraftResultSchema, CheckoutOwnership, Homes, ImproverStateSchema, MemoryCareReportRowSchema, ProjectRevisionRecordSchema, ProjectSchema, ProjectSuggestionRowSchema, ProjectSuggestionSchema,
   PublicationLeases, SecretRedactor, seedConfiguration, type BackgroundDraftRequest, type BackgroundDraftResult, type ImproverState, type Project,
 } from '../packages/core/dist/index.js';
 import { HubDatabase, ProjectImproverHub } from '../packages/mesh/dist/index.js';
@@ -170,7 +170,7 @@ test('an owned checkout is skipped and reported; the claim is not retried for th
 
 test('three notes stating the same working rule produce an AGENTS.md suggestion that is never auto-applied; Change it and Apply publish it after verification', async () => {
   configure(settings => { settings.memory.enabled = false; settings.routing.enabled = false; });
-  const current = hub.get('projects', 'sandbox', ProjectSchema)!; hub.put('projects', 'sandbox', ProjectSchema, { ...current.document, testCommand: 'test -f AGENTS.md' }, current.revision);
+  const saved = hub.get('projects', 'sandbox', ProjectSchema)!; hub.put('projects', 'sandbox', ProjectSchema, { ...saved.document, testCommand: 'test -f AGENTS.md' }, saved.revision);
   const rules = { 'push-tests.md': 'Run tests before pushing', 'ci-green.md': 'Always run the tests before a push', 'pre-push.md': 'Tests must pass before pushing' };
   for (const [name, title] of Object.entries(rules)) write(`${memory}/${name}`, `---\ntitle: ${title}\n---\n${title}.\n`);
   git(checkout, ['add', '-A']); git(checkout, ['commit', '-m', 'Rules']); git(checkout, ['push']);
@@ -251,3 +251,65 @@ test('plain-language Change it on a project suggestion runs one read-only draft 
   expect((await state()).projectSuggestions[0]!.suggestion.status).toBe('pending');
   expect((await state()).projectRevisions.map(record => record.id)).toEqual([started.id]);
 });
+
+/** Seeds three notes stating one rule and runs the context job, returning its pending card. */
+async function contextSuggestion(id: string) {
+  configure(settings => { settings.memory.enabled = false; settings.routing.enabled = false; });
+  const rules = { 'push-tests.md': 'Run tests before pushing', 'ci-green.md': 'Always run the tests before a push', 'pre-push.md': 'Tests must pass before pushing' };
+  for (const [name, title] of Object.entries(rules)) write(`${memory}/${name}`, `---\ntitle: ${title}\n---\n${title}.\n`);
+  git(checkout, ['add', '-A']); git(checkout, ['commit', '-m', 'Rules']); git(checkout, ['push']);
+  for (const title of Object.values(rules)) searches.set((title.toLowerCase().match(/[\p{L}\p{N}_]+/gu) ?? []).join(' OR '), Object.keys(rules));
+  draftContent = request => ({ schema: 'context-draft-v1', title: 'Run the tests before pushing', reason: 'Three notes state this rule.', after: `${request.files['instructions.md']}\n- Run the tests before every push.\n` });
+  await runNow(id); return (await state()).projectSuggestions[0]!;
+}
+async function apply(row: { revision: number; suggestion: { id: string } }, id: string) {
+  await request({ operation: 'act', suggestionId: row.suggestion.id, input: { schema: 'project-suggestion-action-v1', kind: 'apply', clientRequestId: id, revision: row.revision, previewId: null } });
+  return (await state()).projectSuggestions.find(entry => entry.suggestion.id === row.suggestion.id)!;
+}
+
+test('an instruction change that Git ignores is applied without a commit, and Undo restores the text without reverting anyone else\'s commit', async () => {
+  // AGENTS.md links to a CLAUDE.md that the repository ignores, so the edit leaves nothing to commit.
+  git(checkout, ['rm', '-q', 'AGENTS.md']); write('CLAUDE.md', '# Sandbox\n\nRun npm test.\n'); write('.gitignore', 'CLAUDE.md\n');
+  symlinkSync('CLAUDE.md', join(checkout, 'AGENTS.md')); git(checkout, ['add', '-A']); git(checkout, ['commit', '-m', 'Ignored instructions']); git(checkout, ['push']);
+  const row = await contextSuggestion('ignored'); expect(row.suggestion.patch.files.map(file => file.path)).toEqual(['CLAUDE.md']);
+  const head = git(origin, ['rev-parse', 'main']);
+  const applied = await apply(row, 'apply_ignored');
+  expect(applied.suggestion).toMatchObject({ status: 'applied', applied: { commit: null, published: false } }); expect(applied.suggestion.outcomes.at(-1)?.commit).toBeNull();
+  expect(read('CLAUDE.md')).toContain('- Run the tests before every push.'); expect(git(origin, ['rev-parse', 'main'])).toBe(head); expect(git(checkout, ['rev-parse', 'HEAD'])).toBe(head);
+  await request({ operation: 'act', suggestionId: row.suggestion.id, input: { schema: 'project-suggestion-action-v1', kind: 'undo', clientRequestId: 'undo_ignored', revision: applied.revision } });
+  const undone = (await state()).projectSuggestions[0]!.suggestion;
+  expect(undone.status).toBe('undone'); expect(read('CLAUDE.md')).toBe('# Sandbox\n\nRun npm test.\n');
+  expect(git(origin, ['rev-parse', 'main'])).toBe(head); expect(git(origin, ['log', '--format=%s', '-3', 'main'])).not.toContain('Revert');
+  expect(await new CheckoutOwnership(hub, homes, 'hub').current(project)).toMatchObject({ held: false });
+}, 90_000);
+
+test('Undo refuses a recorded commit that the improver did not create and publishes nothing', async () => {
+  const saved = hub.get('projects', 'sandbox', ProjectSchema)!; hub.put('projects', 'sandbox', ProjectSchema, { ...saved.document, testCommand: 'test -f AGENTS.md' }, saved.revision);
+  const row = await contextSuggestion('foreign'); const applied = await apply(row, 'apply_foreign'); expect(applied.suggestion.status).toBe('applied');
+  const foreign = git(origin, ['rev-parse', 'main^']); const head = git(origin, ['rev-parse', 'main']);
+  // A record from before this check could point at someone else's commit, such as the notes commit before it.
+  const stored = hub.get('project-suggestions', row.suggestion.id, ProjectSuggestionSchema)!;
+  hub.put('project-suggestions', row.suggestion.id, ProjectSuggestionSchema, { ...stored.document, applied: { ...stored.document.applied!, commit: foreign } }, stored.revision);
+  const current = (await state()).projectSuggestions[0]!;
+  await request({ operation: 'act', suggestionId: row.suggestion.id, input: { schema: 'project-suggestion-action-v1', kind: 'undo', clientRequestId: 'undo_foreign', revision: current.revision } });
+  const after = (await state()).projectSuggestions[0]!.suggestion;
+  expect(after.status).toBe('applied'); expect(after.error).toContain('not a change this suggestion made');
+  expect(git(origin, ['rev-parse', 'main'])).toBe(head); expect(git(checkout, ['status', '--porcelain'])).toBe('');
+  expect(await new CheckoutOwnership(hub, homes, 'hub').current(project)).toMatchObject({ held: false });
+}, 90_000);
+
+test('a publication blocked after rebasing onto newer upstream work discards only the improver commit and releases the checkout', async () => {
+  const row = await contextSuggestion('blocked');
+  // The first test run pushes unrelated upstream work (as another device would during the done-gate); the run after the rebase then fails.
+  const other = join(root, 'other'); git(root, ['clone', origin, other]); writeFileSync(join(other, 'upstream.txt'), 'Someone else\'s work.\n'); git(other, ['add', '-A']); git(other, ['commit', '-m', 'Upstream work']);
+  const marker = join(root, 'pushed');
+  const current = hub.get('projects', 'sandbox', ProjectSchema)!;
+  hub.put('projects', 'sandbox', ProjectSchema, { ...current.document, testCommand: `if [ ! -f '${marker}' ]; then git -C '${other}' push -q origin main && touch '${marker}'; fi; test ! -f upstream.txt` }, current.revision);
+  const result = await apply(row, 'apply_blocked');
+  const upstream = git(other, ['rev-parse', 'HEAD']);
+  expect(result.suggestion.status).toBe('pending'); expect(result.suggestion.error).toBeTruthy();
+  expect(git(origin, ['rev-parse', 'main'])).toBe(upstream); expect(git(checkout, ['rev-parse', 'HEAD'])).toBe(upstream); expect(git(checkout, ['status', '--porcelain'])).toBe('');
+  expect(read('AGENTS.md')).toBe('# Sandbox\n\nRun npm test.\n'); expect(read('upstream.txt')).toBe('Someone else\'s work.\n');
+  expect(git(checkout, ['for-each-ref', '--format=%(refname)', 'refs/jevellan/discard/'])).not.toBe('');
+  expect(await new CheckoutOwnership(hub, homes, 'hub').current(project)).toMatchObject({ held: false });
+}, 120_000);

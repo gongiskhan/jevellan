@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/J11-mesh-claude-why-phone-light.png",
-  "expected": "the Jevellan web app screen for the check \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\" at phone-light, rendered completely and legibly"
+  "expected": "the Jevellan web app \"mesh claude why\" screen, one step of the check \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\", at phone-light, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The warning banner ends with 'Pick the next step:' but no step options appear inside it, so it reads as unfinished.",
+      "The chosen memory text breaks awkwardly across two lines ('Vitest convention for mesh.md' / 'Existing.md'), so it's unclear whether this is one filename or two.",
+      "The account list runs to the bottom edge of the screenshot ('Cross-device fixture: unsupported'). It probably scrolls, but there's no visual cue that more entries follow.",
+      "Low-contrast grey text on the uppercase section labels and 'picked manually' is small but still readable."
+    ]
+  }
 }

@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "Projects and a manual planned change render the full plan, stream, Why and verified Changes",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-projects-phone-dark.png",
-  "expected": "the Jevellan web app screen for the check \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\" at phone-dark, rendered completely and legibly"
+  "expected": "the Jevellan web app \"projects\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Project saved.' toast is fixed to the bottom of the viewport and covers the last card ('Undo across works'). Its 'Browse memory' and 'Context' buttons are hidden. The toast is temporary and can be dismissed, so the buttons become reachable again.",
+      "The top tab strip cuts off the last tab ('Impro…') at the right edge. It looks like a horizontally scrolling tab row, so it doesn't block anything.",
+      "The same path, /tmp/jevellan-browser-0gzgr7/project, appears on both 'Browser fixture' and 'Manual conversation fixture'. This is a fixture data issue, not a rendering problem."
+    ]
+  }
 }

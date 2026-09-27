@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/J11-mesh-claude-why-desktop-light.png",
-  "expected": "the Jevellan web app screen for the check \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\" at desktop-light, rendered completely and legibly"
+  "expected": "the Jevellan web app \"mesh claude why\" screen, one step of the check \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\", at desktop-light, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The account list in the right-hand 'Why this step' panel runs past the bottom of the screen. The last visible row ('J8 Codex account: unsupported') is cut in half, but the panel appears to scroll.",
+      "The last conversation in the left sidebar is cut off at the bottom edge above Settings, but the list appears to scroll.",
+      "Long conversation titles and subtitles in the sidebar are cut short with '…', which looks intentional.",
+      "The warning 'Jev is unavailable (authentication failed). Pick the next step:' appears twice: once in the right panel and once in the main step picker."
+    ]
+  }
 }

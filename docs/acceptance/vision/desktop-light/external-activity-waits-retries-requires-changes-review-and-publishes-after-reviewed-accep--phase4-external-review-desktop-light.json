@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "external activity waits, retries, requires Changes review and publishes after reviewed acceptance",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase4-external-review-desktop-light.png",
-  "expected": "the Jevellan web app screen for the check \"external activity waits, retries, requires Changes review and publishes after reviewed acceptance\" at desktop-light, rendered completely and legibly"
+  "expected": "the Jevellan web app \"external review\" screen, one step of the check \"external activity waits, retries, requires Changes review and publishes after reviewed acceptance\", at desktop-light, rendered completely and legibly",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Claude Code started working in External activity fixture while this step ran…' notice appears three times with the same text: twice in red, once in amber. This is redundant and makes it unclear which notice is current.",
+      "Sidebar conversation titles and subtitles are cut off with ellipses, as expected for a narrow list; the last sidebar item is clipped at the bottom edge of the scrollable area.",
+      "Step 1 shows both a 'Failed' badge and a 'DONE' handoff status, and the conversation is marked 'Blocked'. These status signals may confuse the user.",
+      "The 'Send' button looks disabled or low-contrast because the composer is empty; this is expected but faint."
+    ]
+  }
 }
