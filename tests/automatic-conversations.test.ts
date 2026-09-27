@@ -94,6 +94,18 @@ test('failed independent verification reaches the next Jev state and is repaired
   expect(readFileSync(join(path, 'value.txt'), 'utf8')).toBe('2\n'); expect(git(path, 'rev-parse', 'HEAD')).toBe(git(origin, 'rev-parse', 'main'));
 }, 60_000);
 
+test('an answer to Ask you reaches Jev paired with its question, with the resolved blocker no longer open', async () => {
+  actions = ['ask-you']; enqueue(undefined, { question: 'What would you like changed?', blockers: ['The requested change is unspecified.'] }); await create('Change something.');
+  expect((await finished()).conversation.state).toBe('waiting-for-you');
+  actions = ['implement', 'done']; enqueue('2');
+  const sent = await request('/api/conversations/automatic/messages', { schema: 'conversation-message-v1', clientMessageId: 'answer', text: 'You choose.', kind: 'message' }); expect(sent.status).toBe(200);
+  const result = await finished(); expect(result.conversation.state, result.pause?.reason).toBe('done');
+  const [asking, answered] = calls.filter((call) => call.questions.next_action).map((call) => call.state as { conversation: { answeredQuestion?: string; latestUserMessage: string; summary: { nextWork: string }; recentHandoffs: { blockers: string[] }[] } });
+  expect(asking!.conversation.answeredQuestion).toBeUndefined();
+  expect(answered!.conversation).toMatchObject({ answeredQuestion: 'What would you like changed?', latestUserMessage: 'You choose.', summary: { nextWork: '' } });
+  expect(answered!.conversation.recentHandoffs.at(-1)!.blockers).toEqual([]);
+});
+
 test('Ask you uses a read-only question stretch, then waits without scheduling another action', async () => {
   actions = ['ask-you']; enqueue(undefined, { question: 'Which behavior should change?' }); await create('Change something.'); const result = await finished();
   expect(result.conversation.state, result.pause?.reason).toBe('waiting-for-you'); expect(result.pause?.reason).toBe('Which behavior should change?');

@@ -11,7 +11,7 @@ export const DecisionFactsSchema = z.strictObject({
 export const DecisionStateSchema = z.strictObject({
   schema: z.literal('decision-state-v1'),
   rules: z.strictObject({ routingProfile: text, effortGuide: z.record(EffortSchema, text), recentCorrections: z.array(text).max(8) }),
-  conversation: z.strictObject({ request: text, latestUserMessage: text, summary: z.strictObject({ state: text, nextWork: text }),
+  conversation: z.strictObject({ request: text, latestUserMessage: text, answeredQuestion: text.max(600).optional(), summary: z.strictObject({ state: text, nextWork: text }),
     recentHandoffs: z.array(z.strictObject({ action: ActionSchema, status: HandoffStatusSchema, summary: text.max(400), proposedNext: ActionSchema.nullable(), testsRun: z.strictObject({ passed: z.boolean() }).optional(), blockers: z.array(text) })).max(3) }),
   facts: DecisionFactsSchema,
   current: z.strictObject({ modelId: IdSchema, label: text, description: text, effort: EffortSchema }).optional(),
@@ -36,6 +36,8 @@ export function recentCorrections(records: CorrectionRecord[], projectId: string
 export function buildDecisionState(input: {
   settings: Configuration['x-jevellan']; projectId: string; corrections: CorrectionRecord[];
   request: string; latestUserMessage: string; summary: { state: string; nextWork: string };
+  /** The question the latest user message answers, when it arrived after the handoff that asked it. */
+  answeredQuestion?: string | undefined;
   handoffs: Pick<Handoff, 'stretch' | 'action' | 'status' | 'summary' | 'proposedNext' | 'testsRun' | 'blockers'>[];
   facts: DecisionFacts; current?: { model: ModelOption; effort: z.infer<typeof EffortSchema> };
   redactor: Pick<SecretRedactor, 'document'>; tokenCap?: number;
@@ -43,11 +45,14 @@ export function buildDecisionState(input: {
   const cap = input.tokenCap ?? 12_000;
   if (!Number.isSafeInteger(cap) || cap < 1 || cap > 12_000) throw new JevError('invalid-request');
   const corrections = recentCorrections(input.corrections, input.projectId, input.settings.menu);
-  const handoffs = input.handoffs.slice(-3);
+  const handoffs = input.handoffs.slice(-3); const answered = input.answeredQuestion?.trim();
   const packet = DecisionStateSchema.parse(input.redactor.document({
     schema: 'decision-state-v1', rules: { routingProfile: input.settings.routingProfile, effortGuide: input.settings.effortGuide, recentCorrections: corrections.sentences },
-    conversation: { request: input.request, latestUserMessage: input.latestUserMessage, summary: { state: input.summary.state, nextWork: input.summary.nextWork },
-      recentHandoffs: handoffs.map((handoff) => ({ action: handoff.action, status: handoff.status, summary: handoff.summary.slice(0, 400), proposedNext: handoff.proposedNext, blockers: handoff.blockers, ...(handoff.testsRun ? { testsRun: { passed: handoff.testsRun.passed } } : {}) })) },
+    // An answered question is paired with the answer, and the blockers that raised it are no longer open work.
+    conversation: { request: input.request, latestUserMessage: input.latestUserMessage, ...(answered ? { answeredQuestion: answered.slice(0, 600) } : {}),
+      summary: { state: input.summary.state, nextWork: answered ? '' : input.summary.nextWork },
+      recentHandoffs: handoffs.map((handoff, index) => ({ action: handoff.action, status: handoff.status, summary: handoff.summary.slice(0, 400), proposedNext: handoff.proposedNext,
+        blockers: answered && index === handoffs.length - 1 ? [] : handoff.blockers, ...(handoff.testsRun ? { testsRun: { passed: handoff.testsRun.passed } } : {}) })) },
     facts: input.facts,
     ...(input.current ? { current: { modelId: input.current.model.id, label: input.current.model.label, description: input.current.model.description, effort: input.current.effort } } : {}),
   }));

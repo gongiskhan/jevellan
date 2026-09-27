@@ -709,8 +709,12 @@ export class ConversationService {
     const facts = { stretchesThisWork: target.counters.stretches, reviewsThisWork: target.counters.reviews, codeChangedThisWork: paths.some((path) => !path.startsWith(memoryDir)), changedFiles: paths.length,
       ...changes, lastVerification: receipt ? receipt.passed && receipt.headStable && (receipt.treeClean || receipt.worktreeBefore !== undefined && receipt.worktreeBefore === receipt.worktreeAfter) ? 'passed' as const : 'failed' as const : 'none' as const,
       publicationConflict, projectHasTestCommand: !!workspace.project.testCommand };
+    // The latest message answers the last handoff's question when it arrived after that handoff.
+    const asked = view.handoffs.filter((handoff) => active.has(handoff.stretch)).at(-1);
+    const askedEvent = asked && work.ledger.events().findLast((event) => event.type === 'handoff' && event.stretch === asked.stretch);
+    const answeredQuestion = asked && askedEvent && Number(latest.id) > Number(askedEvent.id) ? asked.question ?? (asked.blockers.join('\n') || undefined) : undefined;
     return { ...buildDecisionState({ settings, projectId: workspace.project.id, corrections: await this.corrections(),
-      request: target.request, latestUserMessage: latest.text, summary: view.summary, handoffs: view.handoffs.filter((handoff) => active.has(handoff.stretch)), facts, redactor: this.options.redactor,
+      request: target.request, latestUserMessage: latest.text, answeredQuestion, summary: view.summary, handoffs: view.handoffs.filter((handoff) => active.has(handoff.stretch)), facts, redactor: this.options.redactor,
       ...(current && view.conversation.current ? { current: { model: current, effort: view.conversation.current.effort } } : {}) }), latestMessageEventId: latest.id, facts };
   }
   async #choose(work: ConversationWork, workspace: GitWorkspace, operation: Operation, trigger: DecisionRecord['trigger'], forcedAction?: 'integrate'): Promise<PreparedDecision | undefined> {
