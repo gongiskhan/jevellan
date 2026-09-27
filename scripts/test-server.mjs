@@ -312,6 +312,9 @@ await application.conversations.saveProject({ schema: 'project-write-v1', revisi
 const j11ContextOrigin = join(root, 'j11-context-origin.git'); git(root, 'clone', '--bare', contextOrigin, j11ContextOrigin);
 const j11Context = join(root, 'j11-context'); git(root, 'clone', j11ContextOrigin, j11Context); git(j11Context, 'config', 'user.name', 'Fixture'); git(j11Context, 'config', 'user.email', 'fixture@example.invalid');
 await application.conversations.saveProject({ schema: 'project-write-v1', revision: 0, project: ProjectSchema.parse({ schema: 'project-v1', id: 'j11_context', name: 'J11 context journey', paths: { [application.device.deviceId]: j11Context }, branchPolicy: 'main', testCommand: 'test -f AGENTS.md', memory: { mode: 'repo', dir: '.jevellan/memory' }, context: { state: 'none' } }) });
+// A Git project inside the user's home for the folder picker journey.
+const pickedProject = join(root, 'user', 'picked-project'); mkdirSync(pickedProject); git(pickedProject, 'init', '-b', 'main'); git(pickedProject, 'config', 'user.name', 'Fixture'); git(pickedProject, 'config', 'user.email', 'fixture@example.invalid');
+writeFileSync(join(pickedProject, 'README.md'), '# Picked project\n'); git(pickedProject, 'add', '-A'); git(pickedProject, 'commit', '-m', 'Initial');
 // Improver journeys (J10/J12): a dedicated sandbox with a bare origin, and memory care limited to it.
 const improverOrigin = join(root, 'improver-origin.git'); git(root, 'init', '--bare', '-b', 'main', improverOrigin);
 const improverPath = join(root, 'improver-sandbox'); git(root, 'clone', improverOrigin, improverPath); git(improverPath, 'config', 'user.name', 'Fixture'); git(improverPath, 'config', 'user.email', 'fixture@example.invalid');

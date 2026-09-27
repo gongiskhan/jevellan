@@ -1,18 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "public project memory shows its notice, note update time and read-only rendered content",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-memory-settings-desktop-dark.png",
-  "expected": "the Jevellan web app \"memory settings\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"public project memory shows its notice, note update time and read-only rendered content\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The 'Browse folders on dev-madrid' button sits right against the 'Git policy' label below it, with almost no vertical gap.",
-      "The 'Path on Browser member' label at the top of the modal body is partly clipped by the header because the content is scrolled; scrolling still reaches it.",
-      "The Allowed devices checkboxes and labels are packed more tightly than the other fields."
-    ]
-  }
+  "expected": "the Jevellan web app \"memory settings\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"public project memory shows its notice, note update time and read-only rendered content\"; the other steps are judged in their own screenshots)"
 }

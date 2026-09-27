@@ -5,15 +5,15 @@
   "test": "pending work shows a live stage while controls stay compact",
   "layout": "desktop-dark",
   "screenshot": "test-results/conversation-progress-desktop-dark.png",
-  "expected": "the Jevellan web app \"conversation progress\" screen, one step of the check \"pending work shows a live stage while controls stay compact\", at desktop-dark, rendered completely and legibly",
+  "expected": "the Jevellan web app \"conversation progress\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"pending work shows a live stage while controls stay compact\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar lists 'Progress fixture' as 'Waiting for you' and counts it under the 'Waiting for you 1' filter, but the conversation header shows it as 'Working' with a live stage.",
-      "Sidebar subtitles are cut off with an ellipsis ('Browser fixture · d…', 'dev-mad…'); this looks intentional.",
-      "The 'Send correction' button looks dimmed, probably because the input is empty, and has less contrast than 'Add note'.",
-      "The live stage timer reads '0s'."
+      "Sidebar subtitles are cut off with ellipses ('Browser fixture · d…', 'dev-mad…'). This looks intentional, but the full metadata can't be read at this width.",
+      "The sidebar says 'Waiting for you' for Progress fixture, but the conversation header badge and progress card say 'Working'. The two status labels disagree.",
+      "The 'Send correction' button is low-contrast (it looks disabled while the input is empty), so it's harder to see than 'Add note'.",
+      "The timer on the right of the progress card ('0s') is small and faint against the magenta-tinted background."
     ]
   }
 }

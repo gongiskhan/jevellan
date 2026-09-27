@@ -5,13 +5,14 @@
   "test": "Git settings can be saved, reloaded and checked from Projects",
   "layout": "desktop-light",
   "screenshot": "test-results/git-settings-desktop-light.png",
-  "expected": "the Jevellan web app \"git settings\" screen, one step of the check \"Git settings can be saved, reloaded and checked from Projects\", at desktop-light, rendered completely and legibly",
+  "expected": "the Jevellan web app \"git settings\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Git settings can be saved, reloaded and checked from Projects\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation metadata is truncated with an ellipsis (e.g. 'Browser fixture · dev-mad…'), which is intentional overflow handling",
-      "'Save Git settings' button is shown in a muted, disabled-looking style with low contrast, which is expected when nothing has changed"
+      "Sidebar conversation subtitles are cut off with ellipses ('Browser fixture · d…', 'dev-mad…'). The truncation looks intentional.",
+      "The 'Save Git settings' button has low contrast. It is probably disabled because there are no unsaved changes, but its label is faint.",
+      "The helper text under the connection method and the 'CONNECTED' label use small, light grey text with fairly low contrast. Both are still readable."
     ]
   }
 }

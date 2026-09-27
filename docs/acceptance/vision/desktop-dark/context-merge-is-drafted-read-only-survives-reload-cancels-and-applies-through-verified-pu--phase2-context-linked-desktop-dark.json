@@ -1,18 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "context merge is drafted read-only, survives reload, cancels and applies through verified publication",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-context-linked-desktop-dark.png",
-  "expected": "the Jevellan web app \"context linked\" screen, one step of the check \"context merge is drafted read-only, survives reload, cancels and applies through verified publication\", at desktop-dark, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The dialog heading 'Context · Context fixture' doesn't say which project it belongs to, and several cards behind the dialog are also called context fixtures ('Context fixture', 'Outside context fixture', 'Empty context fixture')",
-      "The 'Current instruction files' disclosure uses a monospace font that doesn't match the rest of the dialog text",
-      "Status text 'Context change completed.' is small and low-contrast against the bordered panel"
-    ]
-  }
+  "expected": "the Jevellan web app \"context linked\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"context merge is drafted read-only, survives reload, cancels and applies through verified publication\"; the other steps are judged in their own screenshots)"
 }

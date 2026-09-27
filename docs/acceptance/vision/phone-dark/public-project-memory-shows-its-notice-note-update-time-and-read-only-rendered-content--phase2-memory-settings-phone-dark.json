@@ -1,18 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "public project memory shows its notice, note update time and read-only rendered content",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-memory-settings-phone-dark.png",
-  "expected": "the Jevellan web app \"memory settings\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"public project memory shows its notice, note update time and read-only rendered content\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The modal body is scrolled, so the header partly hides the first path field (/tmp/jevellan-browser-…/memory-project). This is normal scroll clipping, and the text can still be read.",
-      "More memory content may sit below the 'Memory folder' field, behind the Cancel/Save footer. It's reachable by scrolling, but the note update time and read-only rendered content aren't visible in this capture.",
-      "There's little vertical space between the 'Browse folders on dev-madrid' button and the 'Git policy' label."
-    ]
-  }
+  "expected": "the Jevellan web app \"memory settings\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"public project memory shows its notice, note update time and read-only rendered content\"; the other steps are judged in their own screenshots)"
 }

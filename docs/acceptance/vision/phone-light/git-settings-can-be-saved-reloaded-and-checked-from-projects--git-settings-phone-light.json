@@ -5,15 +5,15 @@
   "test": "Git settings can be saved, reloaded and checked from Projects",
   "layout": "phone-light",
   "screenshot": "test-results/git-settings-phone-light.png",
-  "expected": "the Jevellan web app \"git settings\" screen, one step of the check \"Git settings can be saved, reloaded and checked from Projects\", at phone-light, rendered completely and legibly",
+  "expected": "the Jevellan web app \"git settings\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"Git settings can be saved, reloaded and checked from Projects\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab strip is cut off at the right edge ('Impro…'). It looks like a horizontally scrollable tab bar with no visible scroll hint.",
-      "The repository path in the result is split mid-word across two lines ('activity-context-' / 'origin.git'), and its highlighted background breaks unevenly between them.",
-      "The 'Save Git settings' button looks disabled and has low contrast. That's expected after saving, but the label is faint.",
-      "The explanation text and the gray note under the connection method dropdown are fairly light gray, so contrast is a little low."
+      "The tab bar at the top cuts off the last tab ('Impro…') at the right edge. It looks like a horizontally scrollable strip, but nothing on screen shows that more tabs exist.",
+      "The long remote path '/tmp/jevellan-browser-lzJrbU/activity-context-origin.git' wraps onto a second line in the middle of a word ('context-' / 'origin.git').",
+      "The 'Save Git settings' button is pale and low-contrast. That is expected while it's disabled with nothing to save, but it's less legible than the other controls.",
+      "The small footnote text ('This choice is saved only in Jevellan…') and the grey helper text are light grey on white. They can be read, but the contrast is low."
     ]
   }
 }

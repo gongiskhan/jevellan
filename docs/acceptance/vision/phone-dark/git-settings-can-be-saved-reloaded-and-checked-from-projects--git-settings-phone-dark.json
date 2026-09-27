@@ -5,15 +5,15 @@
   "test": "Git settings can be saved, reloaded and checked from Projects",
   "layout": "phone-dark",
   "screenshot": "test-results/git-settings-phone-dark.png",
-  "expected": "the Jevellan web app \"git settings\" screen, one step of the check \"Git settings can be saved, reloaded and checked from Projects\", at phone-dark, rendered completely and legibly",
+  "expected": "the Jevellan web app \"git settings\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"Git settings can be saved, reloaded and checked from Projects\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab bar cuts off the last tab at the right edge ('Impro…'). It looks like a horizontally scrollable strip, so the tab can probably still be reached.",
-      "The 'Save Git settings' button has very low contrast against the card background. This is probably its disabled or no-changes state, but it is hard to read.",
-      "The small helper text ('This choice is saved only in Jevellan…') is low-contrast gray on dark but still readable.",
-      "The long remote path wraps in the middle of a word ('activity-context-' / 'origin.git')."
+      "The top tab bar cuts off the last tab at the right edge (\"Impro…\"). This looks like a horizontally scrollable tab strip, but nothing on screen shows that more tabs are there.",
+      "The 'Save Git settings' button is dim and low-contrast, probably because there are no unsaved changes. It is readable but faint.",
+      "The helper text in the GitHub connection card (\"This choice is saved only in Jevellan…\") is small, grey and low-contrast against the dark background. It is still legible.",
+      "The repository path wraps in the middle of a word (\"activity-context-\" / \"origin.git\"). It is fully visible, just split across lines."
     ]
   }
 }

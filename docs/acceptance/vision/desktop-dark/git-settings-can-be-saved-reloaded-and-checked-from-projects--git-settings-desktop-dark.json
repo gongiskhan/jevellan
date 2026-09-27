@@ -5,13 +5,14 @@
   "test": "Git settings can be saved, reloaded and checked from Projects",
   "layout": "desktop-dark",
   "screenshot": "test-results/git-settings-desktop-dark.png",
-  "expected": "the Jevellan web app \"git settings\" screen, one step of the check \"Git settings can be saved, reloaded and checked from Projects\", at desktop-dark, rendered completely and legibly",
+  "expected": "the Jevellan web app \"git settings\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"Git settings can be saved, reloaded and checked from Projects\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation subtitles are cut off with an ellipsis (e.g. 'Browser fixture · dev-mad…'). This is normal overflow handling for that list and doesn't affect the Git settings screen.",
-      "The 'Save Git settings' button is low-contrast and looks disabled, probably because nothing has changed yet. It is still visible and reachable."
+      "The 'Save Git settings' button looks disabled or faded against the dark card. Its low contrast makes it hard to see, but it is still readable.",
+      "The helper text 'This choice is saved only in Jevellan on dev-madrid…' is small and low-contrast.",
+      "The sidebar conversation subtitles are cut off with ellipses (e.g. 'Waiting for you · Browser fixture · d…'). This is intentional overflow handling."
     ]
   }
 }

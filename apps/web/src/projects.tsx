@@ -185,15 +185,26 @@ export function ProjectForm({
   const task = useTask(props.onError);
   const save = useSettingsSave();
   const change = (values: Partial<Project>) => setProject({ ...project, ...values });
+  const deviceId = props.data.devices.currentDeviceId;
+  const folderName = (path: string) => path.replace(/\/+$/, '').split('/').at(-1) ?? '';
+  // A new project's name follows its folder until the user types a name of their own.
+  const [nameFollowsFolder, setNameFollowsFolder] = useState(!row);
+  const choosePath = (path: string) =>
+    setProject((current) => ({
+      ...current,
+      paths: { ...current.paths, [deviceId]: path },
+      name: nameFollowsFolder || !current.name.trim() ? folderName(path) : current.name,
+    }));
+  // Opening a folder selects it, so Save works without a separate "Use this folder" click.
   const browse = (path?: string) =>
-    task.run(async () =>
-      setFolders(
-        await api(
-          `/api/project-folders${path ? `?path=${encodeURIComponent(path)}` : ''}`,
-          ProjectFoldersSchema,
-        ),
-      ),
-    );
+    task.run(async () => {
+      const result = await api(
+        `/api/project-folders${path ? `?path=${encodeURIComponent(path)}` : ''}`,
+        ProjectFoldersSchema,
+      );
+      setFolders(result);
+      if (path) choosePath(result.path);
+    });
   return (
     <Modal title={row ? `Edit ${row.project.name}` : 'Add project'} close={close}>
       <form
@@ -211,6 +222,7 @@ export function ProjectForm({
                 createContext: !row && createContext,
                 project: {
                   ...project,
+                  name: project.name.trim() || folderName(paths[deviceId] ?? ''),
                   paths,
                   remoteUrl: project.remoteUrl || undefined,
                   testCommand: project.testCommand || undefined,
@@ -224,7 +236,14 @@ export function ProjectForm({
       >
         <label>
           Name
-          <input required value={project.name} onChange={(event) => change({ name: event.target.value })} />
+          <input
+            value={project.name}
+            placeholder="The folder name"
+            onChange={(event) => {
+              setNameFollowsFolder(!event.target.value.trim());
+              change({ name: event.target.value });
+            }}
+          />
         </label>
         <label>
           Remote URL
@@ -241,7 +260,11 @@ export function ProjectForm({
               required={device.id === props.data.devices.currentDeviceId}
               placeholder="/absolute/path/to/project"
               value={project.paths[device.id] ?? ''}
-              onChange={(event) => change({ paths: { ...project.paths, [device.id]: event.target.value } })}
+              onChange={(event) =>
+                device.id === deviceId
+                  ? choosePath(event.target.value)
+                  : change({ paths: { ...project.paths, [device.id]: event.target.value } })
+              }
             />
           </label>
         ))}
@@ -270,10 +293,7 @@ export function ProjectForm({
                 type="button"
                 disabled={task.busy}
                 onClick={() => {
-                  change({
-                    name: project.name || folders.path.split('/').at(-1) || '',
-                    paths: { ...project.paths, [props.data.devices.currentDeviceId]: folders.path },
-                  });
+                  choosePath(folders.path);
                   setFolders(undefined);
                 }}
               >
@@ -281,6 +301,7 @@ export function ProjectForm({
               </button>
             </div>
             <div className="folder-list">
+              {folders.folders.length === 0 && <p className="muted small-text">No folders inside this one.</p>}
               {folders.folders.map((folder) => (
                 <button
                   type="button"

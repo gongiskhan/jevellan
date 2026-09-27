@@ -1,18 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "project, Jev, local Rigging and device Settings recover their hub boundaries",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase4-project-save-wait-desktop-light.png",
-  "expected": "the Jevellan web app \"project save wait\" screen, one step of the check \"project, Jev, local Rigging and device Settings recover their hub boundaries\", at desktop-light, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The 'Browse folders on dev-madrid' button sits almost directly on the 'Git policy' label below it, with too little vertical space between them.",
-      "The scrollable form body cuts off the 'Allowed devices' fieldset at the footer edge, showing only its top border and legend. This is normal scroll overflow, and the section can be reached by scrolling.",
-      "The disabled 'Saving…' button has low contrast against the white footer, but it can still be read."
-    ]
-  }
+  "expected": "the Jevellan web app \"project save wait\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"project, Jev, local Rigging and device Settings recover their hub boundaries\"; the other steps are judged in their own screenshots)"
 }

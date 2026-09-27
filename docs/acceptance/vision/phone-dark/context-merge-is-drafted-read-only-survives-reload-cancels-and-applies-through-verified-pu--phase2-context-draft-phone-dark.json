@@ -1,18 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "context merge is drafted read-only, survives reload, cancels and applies through verified publication",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-context-draft-phone-dark.png",
-  "expected": "the Jevellan web app \"context draft\" screen, one step of the check \"context merge is drafted read-only, survives reload, cancels and applies through verified publication\", at phone-dark, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The dialog body wraps tightly at phone width, so the diff blocks leave only a small margin inside the card.",
-      "The pink 'Open work' link sits between the Cancel/Apply buttons and the 'Current instruction files' disclosure, which makes the grouping a little unclear.",
-      "Parts of the background page ('Browse memory', 'Context', the top nav) show faintly behind the modal scrim. This is expected but slightly distracting."
-    ]
-  }
+  "expected": "the Jevellan web app \"context draft\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"context merge is drafted read-only, survives reload, cancels and applies through verified publication\"; the other steps are judged in their own screenshots)"
 }

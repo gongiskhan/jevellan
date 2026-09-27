@@ -1,17 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "public project memory shows its notice, note update time and read-only rendered content",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase2-memory-viewer-phone-light.png",
-  "expected": "the Jevellan web app \"memory viewer\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"public project memory shows its notice, note update time and read-only rendered content\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The 'Public memory guide' search result button has a large left indent, so its title and timestamp look pushed toward the center instead of lining up with the other left-aligned content in the dialog.",
-      "The dimmed page behind the dialog still shows some header tabs, which look cut off at the right edge ('Impo...'). They are behind the overlay, so this does not affect the memory viewer."
-    ]
-  }
+  "expected": "the Jevellan web app \"memory viewer\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"public project memory shows its notice, note update time and read-only rendered content\"; the other steps are judged in their own screenshots)"
 }

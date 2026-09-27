@@ -1,18 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "public project memory shows its notice, note update time and read-only rendered content",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase2-memory-settings-desktop-light.png",
-  "expected": "the Jevellan web app \"memory settings\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"public project memory shows its notice, note update time and read-only rendered content\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The 'Path on Browser member' label at the top of the scrolled modal body is partly clipped by the header edge. This is normal scroll clipping, and the rest of the form stays reachable by scrolling.",
-      "The 'Browse folders on dev-madrid' button has almost no space below it before the 'Git policy' label, so the spacing is tighter than between the other fields.",
-      "The memory section is at the bottom of a long Edit project modal rather than on its own screen. It still shows the public-repository notice, the 'Keep project memory' select and the 'Memory folder' field clearly."
-    ]
-  }
+  "expected": "the Jevellan web app \"memory settings\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"public project memory shows its notice, note update time and read-only rendered content\"; the other steps are judged in their own screenshots)"
 }

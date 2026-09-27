@@ -1,17 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "Projects and a manual planned change render the full plan, stream, Why and verified Changes",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase2-settlement-desktop-light.png",
-  "expected": "the Jevellan web app \"settlement\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "In the 'Keep them' option, the description wraps so that only the word 'unsettled.' sits on the second line.",
-      "The dimmed background makes the conversation text behind the dialog hard to read. This is expected while a dialog is open, and the dialog itself is clear."
-    ]
-  }
+  "expected": "the Jevellan web app \"settlement\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)"
 }

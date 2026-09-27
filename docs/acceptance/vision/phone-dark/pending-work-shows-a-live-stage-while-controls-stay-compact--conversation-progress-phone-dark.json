@@ -5,14 +5,14 @@
   "test": "pending work shows a live stage while controls stay compact",
   "layout": "phone-dark",
   "screenshot": "test-results/conversation-progress-phone-dark.png",
-  "expected": "the Jevellan web app \"conversation progress\" screen, one step of the check \"pending work shows a live stage while controls stay compact\", at phone-dark, rendered completely and legibly",
+  "expected": "the Jevellan web app \"conversation progress\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"pending work shows a live stage while controls stay compact\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "There's a lot of empty space between the user message bubble and the composer on the phone screen.",
-      "The 'Send correction' button looks faded or disabled, and it's hard to tell it apart from the background. It's probably disabled on purpose because the composer is empty.",
-      "The '...' overflow button next to Cancel is low-contrast and small."
+      "The large empty area between the user message and the composer is expected with a single message, but it makes the screen feel unbalanced on a phone.",
+      "The 'Send correction' button looks faded next to 'Add note', possibly because it's disabled while the input is empty. On the dark background it has low contrast but can still be read.",
+      "The spinner in the progress card and the '0s' timer are small but still readable."
     ]
   }
 }

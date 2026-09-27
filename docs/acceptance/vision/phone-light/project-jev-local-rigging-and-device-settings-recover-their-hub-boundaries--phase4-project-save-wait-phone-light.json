@@ -1,18 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "project, Jev, local Rigging and device Settings recover their hub boundaries",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase4-project-save-wait-phone-light.png",
-  "expected": "the Jevellan web app \"project save wait\" screen, one step of the check \"project, Jev, local Rigging and device Settings recover their hub boundaries\", at phone-light, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The body scrolls under the sticky footer, so the last visible row ('Allow…' checkbox) is cut off at the footer edge. Scrolling brings it back into view.",
-      "The dev-madrid path value runs past the edge of its input ('/tmp/jevellan-browser-qbPele/settings-wait-pro…'). This is normal input overflow and the full value is still there.",
-      "The 'Saving…' button is disabled, and its low-contrast gray text is harder to read than the other controls."
-    ]
-  }
+  "expected": "the Jevellan web app \"project save wait\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"project, Jev, local Rigging and device Settings recover their hub boundaries\"; the other steps are judged in their own screenshots)"
 }

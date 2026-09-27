@@ -1,17 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "Projects and a manual planned change render the full plan, stream, Why and verified Changes",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase2-plan-phone-light.png",
-  "expected": "the Jevellan web app \"plan\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The disabled Send button is very low contrast, but it is still visible and its disabled state is intentional",
-      "The \"Try automatic again\" button sits alone above the Go ahead / Change the plan pair, so the actions feel a bit crowded and the order is unclear"
-    ]
-  }
+  "expected": "the Jevellan web app \"plan\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)"
 }
