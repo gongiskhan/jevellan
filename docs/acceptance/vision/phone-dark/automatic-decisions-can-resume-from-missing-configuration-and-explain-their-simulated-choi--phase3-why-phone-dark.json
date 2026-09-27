@@ -1,18 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase3-why-phone-dark.png",
-  "expected": "the Jevellan web app \"why\" screen, one step of the check \"automatic decisions can resume from missing configuration and explain their simulated choices\", at phone-dark, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "Next-step label 'Adversarial Rev...' is shortened with an ellipsis; the full label isn't visible at this width",
-      "The second 'Corrections used' entry is cut off at the bottom edge of the viewport. This looks like scrolling content, not a layout bug, but the screenshot alone can't confirm it",
-      "The dark grey track bars for the 0.00 rows have very low contrast against the background"
-    ]
-  }
+  "expected": "the Jevellan web app \"why\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"automatic decisions can resume from missing configuration and explain their simulated choices\"; the other steps are judged in their own screenshots)"
 }

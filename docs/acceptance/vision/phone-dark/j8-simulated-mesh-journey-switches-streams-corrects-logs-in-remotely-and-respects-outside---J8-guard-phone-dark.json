@@ -1,19 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/J8-guard-phone-dark.png",
-  "expected": "the Jevellan web app \"guard\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The same 'Another agent (Claude Code) is active in Mesh journey fixture on dev-madrid.' message appears twice, once in a red banner and once in an amber banner, which is redundant.",
-      "A partly visible message bubble at the top is clipped under the header. This looks like normal scrolling, not broken layout.",
-      "There are two retry buttons ('Retry' and 'Try automatic again') plus a 'Pick the next step' panel. Having this many recovery options is a bit crowded.",
-      "The Send button looks dimmed, which is expected because the message box is empty."
-    ]
-  }
+  "expected": "the Jevellan web app \"guard\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work\"; the other steps are judged in their own screenshots)"
 }

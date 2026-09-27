@@ -1,20 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase3-connection-phone-light.png",
-  "expected": "the Jevellan web app \"connection\" screen, one step of the check \"automatic decisions can resume from missing configuration and explain their simulated choices\", at phone-light, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The tab bar is cut off on the right edge ('Impro…'). It appears to be a horizontally scrollable tab strip, so the tab is still reachable.",
-      "Effort guide inputs cut off their long values mid-text (e.g. 'most implementation, planning a…', 'changes that cut acros…', 'architecture, U…'). This is normal single-line input overflow, but the full guidance can't be read without focusing each field.",
-      "The Routing profile textarea cuts off its content at the bottom, with a partly visible line. It is scrollable and resizable, so this is expected.",
-      "The 'Jev key saved.' toast sits at the bottom next to the 'Saving creates a configuration revision.' footer. No Save button is visible in that footer, so check whether the toast covers a save action. If there is no save button there, this is fine.",
-      "The Jev key input is empty right after the key was saved ('Saved · ••••3246'). This is probably intended masking, but it looks slightly odd."
-    ]
-  }
+  "expected": "the Jevellan web app \"connection\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"automatic decisions can resume from missing configuration and explain their simulated choices\"; the other steps are judged in their own screenshots)"
 }

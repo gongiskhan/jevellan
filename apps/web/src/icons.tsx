@@ -83,6 +83,7 @@ const paths = {
     </>
   ),
   check: <path d="M4 10.5l4 4 8-9" />,
+  tune: <path d="M3 6h8M15 6h2M3 14h2M9 14h8M13 4v4M7 12v4" />,
   why: (
     <>
       <circle cx="10" cy="10" r="7.5" />

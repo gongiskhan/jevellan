@@ -22,13 +22,15 @@ import { api, empty } from './api.js';
 import { ProjectForm } from './projects.js';
 import { waitForProjectSetup } from './project-setup.js';
 import { queuedRefresh } from './refresh.js';
-import { changeComposerDraft, ComposerChoiceSummary, ComposerChoices } from './composer-choices.js';
+import { changeComposerDraft, ComposerOverride } from './composer-choices.js';
 import { Icon } from './icons.js';
 import { EvidenceLink, EvidencePanel, type EvidenceTarget } from './evidence.js';
 import { Markdown, Modal, Panel, dateTime, useDismissible, useTask, type PageProps } from './components.js';
 
 type View = z.infer<typeof ConversationPublicSchema>;
 type Step = View['stretches'][number];
+// The daemon's pause text when no decision client is configured (packages/conversations MANUAL_NOTICE).
+const MANUAL_PICK_NOTICE = 'Pick the next step, model and effort.';
 const stateLabel = (state: string) =>
   ({
     'waiting-for-you': 'Waiting for you',
@@ -323,30 +325,24 @@ export function NewConversation(props: PageProps & { embedded?: boolean }) {
             placeholder="What should we build or fix?"
             value={message}
             onChange={(event) => setMessage(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+                event.preventDefault();
+                event.currentTarget.form?.requestSubmit();
+              }
+            }}
           />
         </label>
-        <details className="composer-options">
-          <summary>
-            <ComposerChoiceSummary
-              once={choices.once}
-              pins={choices.pins}
-              config={props.data.config.configuration['x-jevellan']}
-            />
-          </summary>
-          <ComposerChoices
-            once={choices.once}
-            pins={choices.pins}
-            config={props.data.config.configuration['x-jevellan']}
-            actions={ActionSchema.options.filter(
-              (action) =>
-                action !== 'integrate' && action !== 'done' && (action !== 'test' || !!project?.testCommand),
-            )}
-            disabled={task.busy}
-            change={(field, value, mode) =>
-              setChoices((current) => changeComposerDraft(current, field, value, mode))
-            }
-          />
-        </details>
+        <ComposerOverride
+          once={choices.once}
+          pins={choices.pins}
+          config={props.data.config.configuration['x-jevellan']}
+          actions={ActionSchema.options.filter(
+            (action) => action !== 'integrate' && action !== 'done' && (action !== 'test' || !!project?.testCommand),
+          )}
+          disabled={task.busy}
+          change={(field, value, mode) => setChoices((current) => changeComposerDraft(current, field, value, mode))}
+        />
         <button disabled={task.busy || !available || !props.data.accounts.length || !message.trim()}>
           {task.busy ? 'Starting…' : 'Start'}
         </button>
@@ -414,7 +410,6 @@ export function ConversationPage({ id, ...props }: PageProps & { id: string }) {
     observer.observe(element);
     return () => observer.disconnect();
   }, [loaded]);
-  const choicesMenu = useDismissible();
   const conversationMenu = useDismissible();
   const [correcting, setCorrecting] = useState<Step>();
   const [projects, setProjects] = useState<Project[]>([]);
@@ -517,8 +512,13 @@ export function ConversationPage({ id, ...props }: PageProps & { id: string }) {
     !finishing &&
     view.conversation.work &&
     !view.pause?.guard &&
-    !checkpointBlock
+    !checkpointBlock &&
+    // A manual pick is offered only when Jevellan cannot decide; otherwise the next message goes to Auto.
+    (view.pause?.reason.endsWith('Pick the next step:') || view.pause?.reason === MANUAL_PICK_NOTICE)
   );
+  const lastNotice = events
+    .map((event) => ConversationNoticeSchema.safeParse(event.data))
+    .findLast((notice) => notice.success)?.data?.text;
   return (
     <div className="conversation-page" ref={page}>
       <div className="section-heading conversation-heading">
@@ -660,7 +660,10 @@ export function ConversationPage({ id, ...props }: PageProps & { id: string }) {
       </div>
       {/* A "Pick the next step:" pause heads the picker. Without the picker it keeps only its cause,
           and while work runs again it no longer applies. */}
-      {view.pause && !(view.pause.reason.endsWith('Pick the next step:') && (pickerShown || running)) && (
+      {view.pause &&
+        !(view.pause.reason.endsWith('Pick the next step:') && (pickerShown || running)) &&
+        // A question already posted in the timeline is not repeated as the pause notice.
+        view.pause.reason !== lastNotice && (
         <p className="notice">{view.pause.reason.replace(/\s*Pick the next step:$/, '')}</p>
       )}
       {!running && view.externalWait && !checkpointBlock && !finishing && (
@@ -780,7 +783,7 @@ export function ConversationPage({ id, ...props }: PageProps & { id: string }) {
             </button>
           </div>
         )}
-      {!running && !finishing && view.conversation.work && !view.pause?.guard && !checkpointBlock && (
+      {pickerShown && (
         <ManualPicker
           view={view}
           props={props}
@@ -804,7 +807,8 @@ export function ConversationPage({ id, ...props }: PageProps & { id: string }) {
             value={message}
             onChange={(event) => setMessage(event.target.value)}
             onKeyDown={(event) => {
-              if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+              // Enter sends; Shift+Enter starts a new line.
+              if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
                 event.preventDefault();
                 event.currentTarget.form?.requestSubmit();
               }
@@ -817,15 +821,7 @@ export function ConversationPage({ id, ...props }: PageProps & { id: string }) {
           />
         </label>
         <div className="composer-bar">
-          <details className="composer-options" ref={choicesMenu}>
-            <summary>
-              <ComposerChoiceSummary
-                once={view.conversation.once}
-                pins={view.conversation.pins}
-                config={props.data.config.configuration['x-jevellan']}
-              />
-            </summary>
-            <ComposerChoices
+          <ComposerOverride
               once={view.conversation.once}
               pins={view.conversation.pins}
               config={props.data.config.configuration['x-jevellan']}
@@ -855,7 +851,6 @@ export function ConversationPage({ id, ...props }: PageProps & { id: string }) {
                 )
               }
             />
-          </details>
           <div className="actions">
             <button disabled={task.busy || kept || !!finishing || !message.trim()}>
               {running ? 'Send correction' : 'Send'}

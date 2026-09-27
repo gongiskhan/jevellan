@@ -1,18 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "loose Rigging becomes managed with bundled files, durable retry and runtime toggles",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase2-rigging-managed-desktop-light.png",
-  "expected": "the Jevellan web app \"rigging managed\" screen, one step of the check \"loose Rigging becomes managed with bundled files, durable retry and runtime toggles\", at desktop-light, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The 'Saved' status and 'Preview' link sit above the 'Content' label instead of next to or below it, so the order looks slightly odd.",
-      "The textarea is mostly empty space for a two-line file; it could be shorter.",
-      "The Rigging page behind the modal is blurred and dimmed, so the managed item's background state (bundled files, runtime toggles) can't be checked in this frame."
-    ]
-  }
+  "expected": "the Jevellan web app \"rigging managed\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"loose Rigging becomes managed with bundled files, durable retry and runtime toggles\"; the other steps are judged in their own screenshots)"
 }

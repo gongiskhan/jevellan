@@ -1,19 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase3-automatic-phone-dark.png",
-  "expected": "the Jevellan web app \"automatic\" screen, one step of the check \"automatic decisions can resume from missing configuration and explain their simulated choices\", at phone-dark, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The handoff summary 'Changed the value and kept the requested scope.' appears twice: once in the step card and again in the highlighted box below it.",
-      "There's a large empty gap between the conversation content and the composer.",
-      "The Send button looks dim and low-contrast while the input is empty. It's still visible and reachable, so this is probably the intended disabled state.",
-      "Some labels have fairly low contrast on the dark background: the '1 tool call' disclosure and the 'medium → high' chip."
-    ]
-  }
+  "expected": "the Jevellan web app \"automatic\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"automatic decisions can resume from missing configuration and explain their simulated choices\"; the other steps are judged in their own screenshots)"
 }

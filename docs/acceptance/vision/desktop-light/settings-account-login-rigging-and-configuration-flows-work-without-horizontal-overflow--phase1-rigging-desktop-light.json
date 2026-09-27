@@ -1,18 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "Settings account, login, Rigging and configuration flows work without horizontal overflow",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase1-rigging-desktop-light.png",
-  "expected": "the Jevellan web app \"rigging\" screen, one step of the check \"Settings account, login, Rigging and configuration flows work without horizontal overflow\", at desktop-light, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The Retry button in the warning banner sits directly against the end of the text 'needs to finish.' with no gap.",
-      "Some sidebar conversation subtitles are cut short with an ellipsis ('dev-mad…'). This truncation is intentional.",
-      "The last settings card is only partly visible at the bottom of the viewport; the page scrolls vertically, which is expected."
-    ]
-  }
+  "expected": "the Jevellan web app \"rigging\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Settings account, login, Rigging and configuration flows work without horizontal overflow\"; the other steps are judged in their own screenshots)"
 }

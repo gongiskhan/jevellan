@@ -1,19 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "undo from the last closed work includes newer work and preserves both requests after reload",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase2-undo-following-desktop-light.png",
-  "expected": "the Jevellan web app \"undo following\" screen, one step of the check \"undo from the last closed work includes newer work and preserves both requests after reload\", at desktop-light, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "Sidebar conversation titles and metadata are cut off with ellipses (e.g. 'Change the value to two and p…', 'Waiting for you · Undo across works ·…'). This is expected truncation, but the full titles can't be read in the list.",
-      "The undone step 1 and step 2 cards use struck-through, low-contrast grey text for the step labels, handoff and summaries. It's still readable but faint.",
-      "The fallback panel heading looks tightly spaced ('Jev is unavailable(no key configured).'), with a space possibly missing before the parenthesis.",
-      "The 'corrected: action → reply' badge on step 1 has a dashed pink border that looks different from the other metadata chips."
-    ]
-  }
+  "expected": "the Jevellan web app \"undo following\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"undo from the last closed work includes newer work and preserves both requests after reload\"; the other steps are judged in their own screenshots)"
 }

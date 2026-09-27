@@ -1,18 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-evidence-source-phone-dark.png",
-  "expected": "the Jevellan web app \"evidence source\" screen, one step of the check \"file and evidence links show recorded versions, source lines, Markdown, images and verification output\", at phone-dark, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "Code line 3 ends right at the right edge of the code panel with almost no padding, but it is not cut off",
-      "The checkpoint hash text is small and low-contrast",
-      "A large empty area sits below the action links"
-    ]
-  }
+  "expected": "the Jevellan web app \"evidence source\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"file and evidence links show recorded versions, source lines, Markdown, images and verification output\"; the other steps are judged in their own screenshots)"
 }

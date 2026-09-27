@@ -1,20 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase2-evidence-image-desktop-light.png",
-  "expected": "the Jevellan web app \"evidence image\" screen, one step of the check \"file and evidence links show recorded versions, source lines, Markdown, images and verification output\", at desktop-light, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The image preview in the right panel is a very small thumbnail (about 100x65px), so you can't make out its contents without opening it",
-      "In the conversation column, the top of the step 1 card (a partly visible green badge) is clipped under the sticky tag row because the content is scrolled; that's normal scrolling, not an overlap bug",
-      "The last item in the sidebar list is cut off at the bottom edge because the list scrolls",
-      "Long conversation titles and subtitles in the sidebar are cut short with an ellipsis (intended)",
-      "The recorded checkpoint hash is shown in small monospace text on a low-contrast blue chip"
-    ]
-  }
+  "expected": "the Jevellan web app \"evidence image\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"file and evidence links show recorded versions, source lines, Markdown, images and verification output\"; the other steps are judged in their own screenshots)"
 }

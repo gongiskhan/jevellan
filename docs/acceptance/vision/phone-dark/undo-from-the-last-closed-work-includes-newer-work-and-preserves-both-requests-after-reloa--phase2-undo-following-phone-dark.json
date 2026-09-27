@@ -1,19 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "undo from the last closed work includes newer work and preserves both requests after reload",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-undo-following-phone-dark.png",
-  "expected": "the Jevellan web app \"undo following\" screen, one step of the check \"undo from the last closed work includes newer work and preserves both requests after reload\", at phone-dark, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "Steps 1 and 2 are undone and shown in dim struck-through text with low contrast. This looks deliberate, but it is harder to read on the dark background.",
-      "The 'corrected: action → reply' chip has a dashed pink outline and small text, so it is only just legible.",
-      "The 'Send' button looks dim or disabled while the input is empty. This is expected, but it is low contrast.",
-      "The 'Waiting for you' badge in the header uses small amber text that could use a bit more contrast."
-    ]
-  }
+  "expected": "the Jevellan web app \"undo following\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"undo from the last closed work includes newer work and preserves both requests after reload\"; the other steps are judged in their own screenshots)"
 }

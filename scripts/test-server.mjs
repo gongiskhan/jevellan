@@ -121,6 +121,8 @@ const application = new Application({ homes: new Homes(join(root, 'user', '.jeve
     const fake = new FakeRuntime(); fake.capabilities.readOnlyEnforced = true;
     // Improver drafts get their own scripted queue, so they never take a turn meant for a concurrent conversation.
     const drafts = new FakeRuntime(); drafts.capabilities.readOnlyEnforced = true;
+    // Simulated providers need no native sandbox; the host's own Codex sandbox check does not apply to them.
+    runtime.capabilities = { ...runtime.capabilities, shell: true, readOnlyEnforced: true };
     runtime.probe = async () => ({ auth: 'ready', identity: { email: 'fixture@example.test' } });
     runtime.listModels = async () => [{ id: runtime.id === 'claude' ? 'claude-fable-5-1' : 'gpt-fixture', label: runtime.id === 'claude' ? 'Fable' : 'GPT fixture', efforts: ['low', 'high'] }];
     runtime.beginLogin = async (account) => {
@@ -269,6 +271,7 @@ await joinMember(memberHomes, { schema: 'member-join-input-v1', hubUrl: `http://
 member = new Application({ homes: memberHomes, port: port + 100, timers: false, decisionFetch, runtimes: context => {
   const runtime = createCodex(context);
   const fake = new FakeRuntime(); fake.capabilities.readOnlyEnforced = true;
+  runtime.capabilities = { ...runtime.capabilities, shell: true, readOnlyEnforced: true }; // Simulated provider: no native sandbox.
   runtime.probe = async resolved => ({ auth: existsSync(join(resolved.home, 'auth.json')) && readDocument(join(resolved.home, 'auth.json'), FixtureAuthSchema).fixture_login ? 'ready' : 'missing', identity: { email: 'remote-fixture@example.test' } });
   runtime.listModels = async () => [{ id: 'gpt-fixture', label: 'GPT fixture', efforts: ['low', 'high'] }];
   runtime.beginLogin = async (_account, home) => {

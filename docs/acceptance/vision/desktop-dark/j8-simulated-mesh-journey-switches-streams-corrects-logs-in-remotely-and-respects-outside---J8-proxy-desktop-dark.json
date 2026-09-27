@@ -1,18 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/J8-proxy-desktop-dark.png",
-  "expected": "the Jevellan web app \"proxy\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'J8: run on device B while I ste…', 'Waiting for you · Mesh journey fixtur…'). It looks like intended truncation, and the full title is shown in the main header.",
-      "The small monospace chip text ('Mesh journey fixture', 'Interrupted', 'Next step: Auto') and the low-contrast 'v0.1.0' label are small and dim on the dark background, but still readable.",
-      "The disabled-looking 'Send' button has low contrast next to the prominent 'Close this work' button."
-    ]
-  }
+  "expected": "the Jevellan web app \"proxy\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work\"; the other steps are judged in their own screenshots)"
 }

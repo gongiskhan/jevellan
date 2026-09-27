@@ -1,20 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "pending work shows a live stage while controls stay compact",
   "layout": "desktop-light",
   "screenshot": "test-results/conversation-progress-desktop-light.png",
-  "expected": "the Jevellan web app \"conversation progress\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"pending work shows a live stage while controls stay compact\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The sidebar entry for 'Progress fixture' says 'Waiting for you' with an amber dot, but the conversation header says 'Working' and the live stage is shown. The two statuses disagree.",
-      "The 'Waiting for you 1' filter count doesn't match the conversation's 'Working' state.",
-      "The sidebar subtitles for 'Progress fixture', 'Snapshot refresh fixture' and 'Context · Mesh journey fixture' are cut off with an ellipsis ('d…', 'dev-mad…'). This truncation looks intentional.",
-      "The live-stage timer reads '0s', which is fine for a fresh capture but shows no elapsed progress.",
-      "Most of the space between the user message and the composer is empty."
-    ]
-  }
+  "expected": "the Jevellan web app \"conversation progress\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"pending work shows a live stage while controls stay compact\"; the other steps are judged in their own screenshots)"
 }

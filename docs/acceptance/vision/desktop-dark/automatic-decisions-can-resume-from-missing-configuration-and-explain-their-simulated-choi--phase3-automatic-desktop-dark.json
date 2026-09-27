@@ -1,19 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase3-automatic-desktop-dark.png",
-  "expected": "the Jevellan web app \"automatic\" screen, one step of the check \"automatic decisions can resume from missing configuration and explain their simulated choices\", at desktop-dark, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Exercise automatic decisions: ...', 'Waiting for you · Public memory fixtu...'), which looks intentional",
-      "The last sidebar item is clipped at the bottom edge of the scrollable list",
-      "The final summary box repeats the handoff text word for word",
-      "Much of the main pane below the conversation is empty space"
-    ]
-  }
+  "expected": "the Jevellan web app \"automatic\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"automatic decisions can resume from missing configuration and explain their simulated choices\"; the other steps are judged in their own screenshots)"
 }

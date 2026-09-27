@@ -1,19 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/J11-mesh-claude-why-phone-dark.png",
-  "expected": "the Jevellan web app \"mesh claude why\" screen, one step of the check \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\", at phone-dark, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The account list runs past the bottom of the viewport at 'Cross-device fixture: unsupported'. This looks like normal scroll overflow, not clipping, but the rest of the list isn't visible in this capture.",
-      "'Chosen memory' shows 'Vitest convention for mesh.md' and 'Existing.md' on two lines in monospace, so it's unclear whether that's one name that wrapped or two separate items.",
-      "The amber notice 'Jev is unavailable (authentication failed). Pick the next step:' ends with a colon, but no picker controls sit directly under it inside the notice.",
-      "The status labels in the account list (eligible, needs-login, disabled, unsupported) are low-contrast grey text on the dark background, but they are still readable."
-    ]
-  }
+  "expected": "the Jevellan web app \"mesh claude why\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\"; the other steps are judged in their own screenshots)"
 }

@@ -1,18 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "device Settings completes a member login, shows activity, invites and switches without signing in again",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase5-join-phone-light.png",
-  "expected": "the Jevellan web app \"join\" screen, one step of the check \"device Settings completes a member login, shows activity, invites and switches without signing in again\", at phone-light, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The join command breaks in the middle of the URL ('htt' / 'p://127.0.0.1:19772'), which makes it harder to read and copy by eye.",
-      "The join code field and the code at the end of the command show as plain filled boxes with no text. This looks like the screenshot masked changing values on purpose. If it was not masked, the join code is missing and that would be a blocking problem.",
-      "The page behind the dialog is blurred and dimmed, as expected for a modal. Nothing in the background needs to be reachable."
-    ]
-  }
+  "expected": "the Jevellan web app \"join\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"device Settings completes a member login, shows activity, invites and switches without signing in again\"; the other steps are judged in their own screenshots)"
 }

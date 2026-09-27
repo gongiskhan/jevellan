@@ -1,17 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/J11-mesh-context-draft-phone-dark.png",
-  "expected": "the Jevellan web app \"mesh context draft\" screen, one step of the check \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\", at phone-dark, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "Background page content (the header tabs and the 'This repository is public...' banner) shows through dimmed behind the modal. It is readable but a little distracting.",
-      "The 'Current instruction files' disclosure at the bottom sits close to the modal edge and has little padding below it."
-    ]
-  }
+  "expected": "the Jevellan web app \"mesh context draft\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\"; the other steps are judged in their own screenshots)"
 }

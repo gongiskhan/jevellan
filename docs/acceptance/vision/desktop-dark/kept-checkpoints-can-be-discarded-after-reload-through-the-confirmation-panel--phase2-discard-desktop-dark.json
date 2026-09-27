@@ -1,16 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "kept checkpoints can be discarded after reload through the confirmation panel",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-discard-desktop-dark.png",
-  "expected": "the Jevellan web app \"discard\" screen, one step of the check \"kept checkpoints can be discarded after reload through the confirmation panel\", at desktop-dark, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The background behind the modal is heavily blurred and dimmed, so the conversation content can't be read there. This looks like the intended backdrop effect."
-    ]
-  }
+  "expected": "the Jevellan web app \"discard\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"kept checkpoints can be discarded after reload through the confirmation panel\"; the other steps are judged in their own screenshots)"
 }

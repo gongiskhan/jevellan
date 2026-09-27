@@ -10,6 +10,11 @@ if (prompt.includes('REPORT_INPUT_COPY_OPTIONS')) {
     neverApprove: args.includes('approval_policy="never"'), networkDisabled: args.includes('sandbox_workspace_write.network_access=false'), sandboxBypass: args.includes('--dangerously-bypass-approvals-and-sandbox') };
   send({ type: 'item.completed', item: { id: 'options', type: 'agent_message', text: JSON.stringify(report) } });
 }
+if (prompt.includes('TWO_AGENT_MESSAGES')) {
+  send({ type: 'item.updated', item: { id: 'first', type: 'agent_message', text: 'Checked the' } });
+  send({ type: 'item.completed', item: { id: 'first', type: 'agent_message', text: 'Checked the README.' } });
+  send({ type: 'item.completed', item: { id: 'second', type: 'agent_message', text: 'What would you like changed?' } });
+}
 if (prompt.includes('PATCH_LIFECYCLE')) {
   const item = { id: 'patch', type: 'file_change', changes: [{ path: 'src/sum.ts', kind: 'update' }] };
   send({ type: 'item.started', item: { ...item, status: 'in_progress' } });

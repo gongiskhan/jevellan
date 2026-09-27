@@ -45,11 +45,11 @@ test('pending work shows a live stage while controls stay compact', async ({ pag
   await expect(activity).toContainText('Jev is choosing the next step');
   await expect(page.locator('.conversation-meta')).not.toContainText('Ready');
   await expect(page.getByRole('combobox', { name: 'Next step', exact: true })).not.toBeVisible();
-  await page.locator('.composer-options > summary').click();
+  await page.getByRole('button', { name: /^Override/ }).click();
   await expect(page.getByRole('combobox', { name: 'Next step', exact: true })).toBeVisible();
   await expect(page.getByLabel('Message', { exact: true })).toBeVisible();
   await expect(page.locator('body')).toHaveJSProperty('scrollWidth', await page.locator('body').evaluate(body => body.clientWidth));
-  await page.locator('.composer-options > summary').click();
+  await page.getByRole('dialog', { name: 'Override the next step' }).getByRole('button', { name: 'Done', exact: true }).click();
   await page.screenshot({ path: `test-results/conversation-progress-${test.info().project.name}.png`, fullPage: true });
   await page.request.post(`/api/conversations/${id}/cancel`, { data: { schema: 'empty-request-v1' } });
 });

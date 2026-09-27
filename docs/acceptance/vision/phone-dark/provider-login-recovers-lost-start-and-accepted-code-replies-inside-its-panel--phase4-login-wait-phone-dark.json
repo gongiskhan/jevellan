@@ -1,18 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "provider login recovers lost start and accepted-code replies inside its panel",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase4-login-wait-phone-dark.png",
-  "expected": "the Jevellan web app \"login wait\" screen, one step of the check \"provider login recovers lost start and accepted-code replies inside its panel\", at phone-dark, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The 'Authorization code' label sits almost directly under the 'Open sign-in page' button with almost no space between them, so it looks crowded.",
-      "The disabled 'Continue' button has very low contrast against the dark panel. That's expected for a disabled state, but it's hard to see.",
-      "The wait notice text wraps into a narrow column beside 'Stop waiting', leaving a lot of empty space on the right."
-    ]
-  }
+  "expected": "the Jevellan web app \"login wait\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"provider login recovers lost start and accepted-code replies inside its panel\"; the other steps are judged in their own screenshots)"
 }

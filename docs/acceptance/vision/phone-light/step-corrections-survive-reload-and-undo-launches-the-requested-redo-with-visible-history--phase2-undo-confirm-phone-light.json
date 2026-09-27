@@ -1,17 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "step corrections survive reload and undo launches the requested redo with visible history",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase2-undo-confirm-phone-light.png",
-  "expected": "the Jevellan web app \"undo confirm\" screen, one step of the check \"step corrections survive reload and undo launches the requested redo with visible history\", at phone-light, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The dialog says the step will be redone with 'Reply, Fable, low', but the blurred form behind it shows Effort 'high'. This may just be stale background state, but check that the effort in the dialog matches what was requested.",
-      "The 'Undo and redo' and 'Back' buttons are fairly small tap targets for a phone, but both are fully visible and reachable."
-    ]
-  }
+  "expected": "the Jevellan web app \"undo confirm\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"step corrections survive reload and undo launches the requested redo with visible history\"; the other steps are judged in their own screenshots)"
 }

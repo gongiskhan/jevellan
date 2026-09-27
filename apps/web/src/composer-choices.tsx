@@ -6,6 +6,9 @@ import {
   type Configuration,
   type Conversation,
 } from '@jevellan/core/client';
+import { useState } from 'react';
+import { Modal } from './components.js';
+import { Icon } from './icons.js';
 
 type Field = 'action' | 'model' | 'effort';
 type Mode = 'once' | 'pin';
@@ -49,29 +52,48 @@ const choiceLabel = (config: Configuration['x-jevellan'], field: Field, value: s
             .map((part) => part[0]!.toUpperCase() + part.slice(1))
             .join(' ')
       : value;
-// The collapsed composer shows the three choices as compact pills: "Next step: Auto" and so on.
-export function ComposerChoiceSummary({
-  once,
-  pins,
-  config,
-}: {
+// Overrides are the exception: the composer shows one small button, and only names what is set.
+function overrideText(once: Conversation['once'], pins: Conversation['pins'], config: Configuration['x-jevellan']) {
+  const parts = (['action', 'model', 'effort'] as const).flatMap((field) => {
+    const key = field === 'model' ? 'modelId' : field;
+    const value = once[key] ?? (key === 'action' ? undefined : pins[key]);
+    return value ? [choiceLabel(config, field, value)] : [];
+  });
+  return parts.length ? parts.join(' · ') : undefined;
+}
+export function ComposerOverride(props: {
   once: Conversation['once'];
   pins: Conversation['pins'];
   config: Configuration['x-jevellan'];
+  actions: Action[];
+  disabled: boolean;
+  change(field: Field, value: string | null, mode: Mode): void;
 }) {
+  const [open, setOpen] = useState(false);
+  const set = overrideText(props.once, props.pins, props.config);
   return (
     <>
-      {(['action', 'model', 'effort'] as const).map((field) => {
-        const key = field === 'model' ? 'modelId' : field;
-        const value = once[key] ?? (key === 'action' ? undefined : pins[key]);
-        return (
-          <span className="choice-pill" key={field}>
-            {field === 'action' ? 'Next step' : field === 'model' ? 'Model' : 'Effort'}:{' '}
-            <b>{value ? choiceLabel(config, field, value) : 'Auto'}</b>
-            {key !== 'action' && pins[key] && once[key] === undefined && <i aria-label="kept"> · kept</i>}
-          </span>
-        );
-      })}
+      <button
+        type="button"
+        className={`override-button${set ? ' set' : ''}`}
+        aria-label={set ? `Override: ${set}` : 'Override'}
+        title="Override the next step, model or effort"
+        onClick={() => setOpen(true)}
+      >
+        <Icon name="tune" />
+        <span>{set ?? 'Auto'}</span>
+      </button>
+      {open && (
+        <Modal title="Override the next step" close={() => setOpen(false)}>
+          <p className="muted small-text">Jev chooses automatically. Set a value only to override it.</p>
+          <ComposerChoices {...props} />
+          <div className="form-actions">
+            <button type="button" onClick={() => setOpen(false)}>
+              Done
+            </button>
+          </div>
+        </Modal>
+      )}
     </>
   );
 }

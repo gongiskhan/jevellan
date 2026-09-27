@@ -1,17 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "conversation titles, expanded tools and outside outcomes survive updates and reload",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-controls-finish-phone-dark.png",
-  "expected": "the Jevellan web app \"controls finish\" screen, one step of the check \"conversation titles, expanded tools and outside outcomes survive updates and reload\", at phone-dark, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The background page behind the modal overlay is dimmed and hard to read. That's expected behind a modal.",
-      "The 'Optional' hint sits below the textarea, not next to the label."
-    ]
-  }
+  "expected": "the Jevellan web app \"controls finish\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"conversation titles, expanded tools and outside outcomes survive updates and reload\"; the other steps are judged in their own screenshots)"
 }

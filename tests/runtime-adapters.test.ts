@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { AccountSchema, Homes } from '../packages/core/dist/index.js';
 import { createRuntime as claude } from '../runtimes/claude/dist/index.js';
 import { createRuntime as codex } from '../runtimes/codex/dist/index.js';
+import { codexSandboxCheck } from '../runtimes/codex/dist/control.js';
 import { StretchInputSchema, checkEventsAndContinuation, classifyRuntimeError, collectEvents, groupAlive, type StretchInput, type StretchRun } from '../packages/runtime-contract/dist/index.js';
 let root: string; let homes: Homes; const runs: StretchRun[] = [];
 beforeEach(() => { root = mkdtempSync(join(tmpdir(), 'jevellan-adapter-fixture-')); mkdirSync(join(root, 'user')); homes = new Homes(join(root, 'jevellan'), join(root, 'user')); });
@@ -94,4 +95,28 @@ test('runtime errors say whether a limit belongs to one model or to the whole ac
   expect(classifyRuntimeError('Something unrelated failed.', 'rate-limit')).toEqual({ kind: 'rate-limit', message: 'Something unrelated failed.' });
   expect(classifyRuntimeError('Invalid API key · Please run /login')).toMatchObject({ kind: 'other' });
   expect(classifyRuntimeError('401 authentication failed')).toEqual({ kind: 'auth', message: '401 authentication failed' });
+});
+test('Codex declares no read-only or shell capability when its Linux sandbox cannot start', async () => {
+  // The shape seen on Ubuntu 24.04 with AppArmor restricting unprivileged user namespaces.
+  const broken = join(root, 'codex-no-sandbox'); writeFileSync(broken, '#!/bin/sh\nif [ "$1" = sandbox ]; then echo "bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted" >&2; exit 1; fi\nexit 0\n', { mode: 0o700 });
+  const working = join(root, 'codex-sandbox'); writeFileSync(working, '#!/bin/sh\nexit 0\n', { mode: 0o700 });
+  const home = homes.ensure('runtime-checks', 'codex');
+  const failed = codexSandboxCheck(broken, home, 'linux');
+  expect(failed).toMatchObject({ available: false, reason: expect.stringContaining('bwrap: loopback: Failed RTM_NEWADDR') });
+  expect(codex({ homes, executable: broken }).capabilities).toMatchObject(process.platform === 'linux' ? { readOnlyEnforced: false, shell: false, edit: true } : { readOnlyEnforced: true, shell: true });
+  expect(codexSandboxCheck(working, home, 'linux')).toEqual({ available: true });
+  expect(codex({ homes, executable: working }).capabilities).toMatchObject({ readOnlyEnforced: true, shell: true });
+  // The account check carries the reason, so Settings → Runtimes shows it on the Codex account.
+  if (process.platform === 'linux') expect((await codex({ homes, executable: broken }).probe(setup('codex').input.account)).error).toContain("Codex's sandbox can't start on this device");
+  expect(codexSandboxCheck(broken, home, 'darwin')).toEqual({ available: true });
+  expect(codexSandboxCheck(join(root, 'missing-codex'), home, 'linux')).toEqual({ available: true });
+});
+test('Codex separates consecutive agent messages in the streamed text', async () => {
+  const { input, adapter } = setup('codex'); input.brief = 'TWO_AGENT_MESSAGES';
+  const run = adapter.startStretch(input); runs.push(run);
+  const events = []; for await (const event of run.events) events.push(event);
+  expect((await run.done).status).toBe('completed');
+  const text = events.flatMap((event) => event.type === 'text' ? [event.delta] : []).join('');
+  expect(text).toBe('Checked the README.\n\nWhat would you like changed?\n\nfixture-answer');
+  await run.terminate();
 });

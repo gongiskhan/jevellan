@@ -1,18 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "conversation titles, expanded tools and outside outcomes survive updates and reload",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase2-controls-outcome-desktop-light.png",
-  "expected": "the Jevellan web app \"controls outcome\" screen, one step of the check \"conversation titles, expanded tools and outside outcomes survive updates and reload\", at desktop-light, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "Sidebar conversation titles and subtitles get truncated with ellipses (e.g. 'Context · Created instructions ...', 'Change the value to three, the...'). This is the intended overflow handling, and the active item is still readable.",
-      "At the bottom of the sidebar list, the last item ('Context · M...') is partly clipped by the scroll edge above Settings. The list scrolls, so it can still be reached.",
-      "In the composer row, the Send button looks greyed out or disabled next to the 'Settle kept changes' button. That fits the 'Settle this work's changes' notice, and both buttons are visible."
-    ]
-  }
+  "expected": "the Jevellan web app \"controls outcome\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"conversation titles, expanded tools and outside outcomes survive updates and reload\"; the other steps are judged in their own screenshots)"
 }

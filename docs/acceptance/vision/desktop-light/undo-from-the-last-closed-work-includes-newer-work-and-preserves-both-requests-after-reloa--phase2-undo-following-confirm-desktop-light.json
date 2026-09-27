@@ -1,17 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "undo from the last closed work includes newer work and preserves both requests after reload",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase2-undo-following-confirm-desktop-light.png",
-  "expected": "the Jevellan web app \"undo following confirm\" screen, one step of the check \"undo from the last closed work includes newer work and preserves both requests after reload\", at desktop-light, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The secondary line in the dialog (\"This also undoes the newer open work...\") is light gray-blue on white and has less contrast than the main text, but it can still be read.",
-      "The dimmed background shows the step card's 'Chan...' text sitting partly behind the dialog. This is expected for a modal overlay."
-    ]
-  }
+  "expected": "the Jevellan web app \"undo following confirm\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"undo from the last closed work includes newer work and preserves both requests after reload\"; the other steps are judged in their own screenshots)"
 }

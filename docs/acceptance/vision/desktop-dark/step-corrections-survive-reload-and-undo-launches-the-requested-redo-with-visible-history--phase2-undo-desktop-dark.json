@@ -1,19 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "step corrections survive reload and undo launches the requested redo with visible history",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-undo-desktop-dark.png",
-  "expected": "the Jevellan web app \"undo\" screen, one step of the check \"step corrections survive reload and undo launches the requested redo with visible history\", at desktop-dark, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The same error banner, 'No model can run this step right now: disabled, disabled, …', appears twice in a row between step 1 and step 2. The repeated 'disabled' list is noisy and tells the user nothing useful. It may be leftover state from the undo/redo.",
-      "Step 1 is undone, so its header ('STEP 1 · IMPLEMENT'), 'HANDOFF DONE' label and summary are struck through and dimmed. They're low contrast on the dark background but still readable.",
-      "Step 1's badges wrap onto a second line: the 'corrected: action → reply, effort → low' chip sits alone below the others, which looks a little uneven.",
-      "Conversation titles and subtitles in the sidebar are cut short with an ellipsis (for example 'Change the value to three, the…' and 'Waiting for you · Browser fixture · d…'). This is normal sidebar behaviour, and the full title appears in the main header."
-    ]
-  }
+  "expected": "the Jevellan web app \"undo\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"step corrections survive reload and undo launches the requested redo with visible history\"; the other steps are judged in their own screenshots)"
 }

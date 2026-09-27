@@ -1,18 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "blocked files can be reviewed, refreshed and accepted before verified publication",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-adoption-phone-dark.png",
-  "expected": "the Jevellan web app \"adoption\" screen, one step of the check \"blocked files can be reviewed, refreshed and accepted before verified publication\", at phone-dark, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The '--- a/…' and '+++ b/…' header lines in the diff use red and green highlights with fairly low contrast against the dark background, though they are still readable.",
-      "Both review-note.txt and value.txt are listed, but the Agent evidence section only names value.txt.",
-      "The text 'No checkpoint changes in this step.' sits right above a list of uncommitted changes, which could confuse users even though it is technically accurate."
-    ]
-  }
+  "expected": "the Jevellan web app \"adoption\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"blocked files can be reviewed, refreshed and accepted before verified publication\"; the other steps are judged in their own screenshots)"
 }

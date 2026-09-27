@@ -1,20 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "composer choices apply once, keep conversation pins and explain corrections after reload",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase3-composer-why-desktop-dark.png",
-  "expected": "the Jevellan web app \"composer why\" screen, one step of the check \"composer choices apply once, keep conversation pins and explain corrections after reload\", at desktop-dark, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "In the right 'Why this step' panel, the 'Plan' row and its 0.00 value are partly hidden under the sticky header. This is only because the panel is scrolled.",
-      "The 'YOU' label on the user message bubble is cut off at the top of the conversation area because the conversation is scrolled.",
-      "The Account list at the bottom of the right panel is cut off after 'Context fixture: disabled'. The panel scrolls, so the rest is still reachable.",
-      "The last conversation in the left sidebar is cut off above the Settings footer. The list scrolls, so it is still reachable.",
-      "Long conversation titles and subtitles in the sidebar end in '...' because they are too long for the sidebar. This is by design."
-    ]
-  }
+  "expected": "the Jevellan web app \"composer why\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"composer choices apply once, keep conversation pins and explain corrections after reload\"; the other steps are judged in their own screenshots)"
 }

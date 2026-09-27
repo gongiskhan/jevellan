@@ -1,20 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "conversation titles, expanded tools and outside outcomes survive updates and reload",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase2-controls-title-desktop-light.png",
-  "expected": "the Jevellan web app \"controls title\" screen, one step of the check \"conversation titles, expanded tools and outside outcomes survive updates and reload\", at desktop-light, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The conversation title is cut off with an ellipsis after two lines ('...Unbroken_title_Un…'). This looks like intentional line clamping for a long unbroken title, but the full title isn't visible on this screen.",
-      "In the expanded tool call, a lone chevron sits on its own line above the 'Read project · long_tool_header…' header instead of next to it.",
-      "The long unbroken tool header breaks in the middle of a word ('..._l' / 'ong_tool_header'). It stays readable but looks awkward.",
-      "Sidebar conversation titles and subtitles are cut off with ellipses. This is normal for list items, but the subtitles hide useful text such as the environment name.",
-      "The banner text 'Jev is unavailable (no key configured).' is tightly spaced, so 'Jev is' nearly reads as one word."
-    ]
-  }
+  "expected": "the Jevellan web app \"controls title\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"conversation titles, expanded tools and outside outcomes survive updates and reload\"; the other steps are judged in their own screenshots)"
 }

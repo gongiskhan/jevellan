@@ -1,18 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "composer choices apply once, keep conversation pins and explain corrections after reload",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase3-composer-start-phone-light.png",
-  "expected": "the Jevellan web app \"composer start\" screen, one step of the check \"composer choices apply once, keep conversation pins and explain corrections after reload\", at phone-light, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The 'Model: Composer Fable· kept' chip has no space before the middle dot, so 'Fable·' runs together.",
-      "In the Effort section, 'Back to Auto' drops to its own line below 'Keep for this conversation'. The Next step and Model sections keep it on the same line as the helper text.",
-      "The chip row wraps unevenly: 'Next step' sits alone on the first line, and 'Model' and 'Effort' share the second line."
-    ]
-  }
+  "expected": "the Jevellan web app \"composer start\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"composer choices apply once, keep conversation pins and explain corrections after reload\"; the other steps are judged in their own screenshots)"
 }

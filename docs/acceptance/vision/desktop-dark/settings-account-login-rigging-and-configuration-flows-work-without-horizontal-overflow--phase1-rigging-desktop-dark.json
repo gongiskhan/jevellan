@@ -1,19 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "Settings account, login, Rigging and configuration flows work without horizontal overflow",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase1-rigging-desktop-dark.png",
-  "expected": "the Jevellan web app \"rigging\" screen, one step of the check \"Settings account, login, Rigging and configuration flows work without horizontal overflow\", at desktop-dark, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "In the warning banner, the 'Retry' button sits right against the end of the text ('needs to finish.') with almost no gap.",
-      "Some sidebar conversation subtitles are cut short with an ellipsis ('dev-mad…'); this looks deliberate.",
-      "The last card at the bottom is cut off by the viewport, which is normal for vertical scrolling and isn't horizontal overflow.",
-      "The Safety hook checkboxes are shown greyed out (disabled). They're readable, but their contrast is lower than the active checkboxes."
-    ]
-  }
+  "expected": "the Jevellan web app \"rigging\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"Settings account, login, Rigging and configuration flows work without horizontal overflow\"; the other steps are judged in their own screenshots)"
 }

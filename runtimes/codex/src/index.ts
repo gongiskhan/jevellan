@@ -3,7 +3,7 @@ import { chmodSync } from 'node:fs';
 import { join } from 'node:path';
 import { RiggingDelivery, supportedRigging, minimalEnvironment } from '@jevellan/core';
 import { WorkerRun, ResolvedAccountSchema, beginTerminalLogin, spawnGroup, terminateGroup, type RuntimeAdapter, type RuntimeContext, type ResolvedAccount } from '@jevellan/runtime-contract';
-import { listCodexModels, probeCodex } from './control.js';
+import { codexSandboxCheck, listCodexModels, probeCodex } from './control.js';
 
 export async function prepareApiKey(account: ResolvedAccount, context: RuntimeContext): Promise<void> {
   if (account.account.kind !== 'api-key' || account.account.runtime !== 'codex' || account.home !== context.homes.account('codex', account.account.id)) throw new Error('Codex API login requires an account home owned by Jevellan.');
@@ -30,12 +30,19 @@ export function createRuntime(context: RuntimeContext): RuntimeAdapter {
     if (account.account.runtime !== 'codex' || account.home !== context.homes.account('codex', account.account.id)) throw new Error('Codex requires an account home owned by Jevellan.');
     return account;
   };
+  // Without a working sandbox Codex can't enforce read-only or contain shell commands, so it declares neither.
+  const sandbox = codexSandboxCheck(context.executable, context.homes.ensure('runtime-checks', 'codex'));
   return {
     id: 'codex', displayName: 'Codex', accountKinds: ['subscription', 'api-key'], riggingKinds: supportedRigging('codex'),
-    capabilities: { edit: true, shell: true, mcp: true, images: true, interrupt: true, usage: true, continueSession: true, perLaunchConfig: true, readOnlyEnforced: true },
+    capabilities: { edit: true, shell: sandbox.available, mcp: true, images: true, interrupt: true, usage: true, continueSession: true, perLaunchConfig: true, readOnlyEnforced: sandbox.available },
     listModels: (account) => listCodexModels(checked(account), context.executable),
     beginLogin: (account, home) => beginTerminalLogin('codex', account, home, context),
-    probe: (account) => probeCodex(checked(account), context.executable),
+    probe: async (account) => {
+      if (sandbox.available) return probeCodex(checked(account), context.executable);
+      // The sandbox reason is the one Settings must show, even when the login check itself cannot complete.
+      const result = await probeCodex(checked(account), context.executable).catch(() => ({ auth: 'unknown' as const }));
+      return { ...result, error: sandbox.reason };
+    },
     materialiseRigging: (home, items) => delivery.materialise('codex', home, items),
     startStretch: (input) => new WorkerRun('codex', fileURLToPath(new URL('./worker.js', import.meta.url)), input, context),
   };

@@ -1,20 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "step corrections survive reload and undo launches the requested redo with visible history",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase2-undo-retry-desktop-light.png",
-  "expected": "the Jevellan web app \"undo retry\" screen, one step of the check \"step corrections survive reload and undo launches the requested redo with visible history\", at desktop-light, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The same 'No model can run this step right now' message appears three times: once in a red banner, once in an amber banner and once in the Resume correction card.",
-      "The error message just repeats 'disabled' eight times and never names the models or says why they are unavailable.",
-      "The top of the transcript card is clipped by its scroll area (the dashed line is cut at the top edge), so earlier history is only reachable by scrolling.",
-      "In the 'Pick the next step' heading, the space between 'Pick' and 'the' looks too tight.",
-      "'Blocked' in the conversation header disagrees with the composer chips, which show 'Next step: Auto', 'Model: Auto' and 'Effort: Auto' while the picker above shows Reply / Fable / high."
-    ]
-  }
+  "expected": "the Jevellan web app \"undo retry\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"step corrections survive reload and undo launches the requested redo with visible history\"; the other steps are judged in their own screenshots)"
 }

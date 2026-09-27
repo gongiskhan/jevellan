@@ -15,7 +15,7 @@ const EventSchema = z.object({ type: z.string(), thread_id: z.string().optional(
 
 serveWorker((input, daemonPid, executable) => {
   const cwd = realpathSync(input.cwd);
-  const instructions = projectInstructions(cwd); let firstTurn = true;
+  const instructions = projectInstructions(cwd); let firstTurn = true; let textEmitted = false;
   const env = Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined));
   const mcp = Object.fromEntries(Object.entries(input.launch.mcpServers).map(([name, server]) => [name, { command: server.command, args: server.args, env_vars: ['JEVELLAN_STRETCH_TOKEN', 'JEVELLAN_DAEMON_URL'], default_tools_approval_mode: 'approve' }]));
   const quote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`;
@@ -68,7 +68,8 @@ serveWorker((input, daemonPid, executable) => {
           if (item.type === 'agent_message') {
             const previous = textById.get(item.id) ?? '';
             if (!item.text.startsWith(previous)) throw new Error('Codex rewrote an already streamed message.');
-            if (item.text.length > previous.length) emit({ type: 'text', delta: item.text.slice(previous.length) });
+            // Separate agent messages would otherwise run together in the stretch's text ("…README.What would…").
+            if (item.text.length > previous.length) { emit({ type: 'text', delta: `${previous === '' && textEmitted ? '\n\n' : ''}${item.text.slice(previous.length)}` }); textEmitted = true; }
             textById.set(item.id, item.text); continue;
           }
           if (!started.has(item.id)) {

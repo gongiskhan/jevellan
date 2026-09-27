@@ -1,17 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "device Settings completes a member login, shows activity, invites and switches without signing in again",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase5-join-desktop-light.png",
-  "expected": "the Jevellan web app \"join\" screen, one step of the check \"device Settings completes a member login, shows activity, invites and switches without signing in again\", at desktop-light, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The join code field is a solid grey block, and the code at the end of the npx command is covered by a white box. Both look like the screenshot's deliberate masking of secrets, not a rendering failure. If nothing was supposed to be masked, the code is missing and this would be blocking.",
-      "The backdrop blur makes the page behind hard to read. This is expected behind a modal."
-    ]
-  }
+  "expected": "the Jevellan web app \"join\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"device Settings completes a member login, shows activity, invites and switches without signing in again\"; the other steps are judged in their own screenshots)"
 }

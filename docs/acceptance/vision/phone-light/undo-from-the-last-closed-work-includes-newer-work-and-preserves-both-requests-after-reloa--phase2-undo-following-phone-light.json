@@ -1,19 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "undo from the last closed work includes newer work and preserves both requests after reload",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase2-undo-following-phone-light.png",
-  "expected": "the Jevellan web app \"undo following\" screen, one step of the check \"undo from the last closed work includes newer work and preserves both requests after reload\", at phone-light, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The struck-through 'STEP 1 · IMPLEMENT' / 'STEP 2 · IMPLEMENT' headers, 'HANDOFF' labels and handoff summaries are faint gray text, but they can still be read.",
-      "The dashed pink 'corrected: action → reply' badge and the pink 'Fable' chips have low contrast on the light background.",
-      "The 'Send' button looks disabled, which is expected with an empty composer, but its label is faint.",
-      "The 'Jev is unavailable (no key configured)' heading wraps onto two lines inside the prompt card."
-    ]
-  }
+  "expected": "the Jevellan web app \"undo following\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"undo from the last closed work includes newer work and preserves both requests after reload\"; the other steps are judged in their own screenshots)"
 }

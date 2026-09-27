@@ -1,7 +1,7 @@
 import { createInterface } from 'node:readline';
 import { minimalEnvironment, EffortSchema, type OfferedModel } from '@jevellan/core';
 import { classifyRuntimeError, spawnGroup, terminateGroup, type NativeProcess, type ResolvedAccount } from '@jevellan/runtime-contract';
-import type { ChildProcessWithoutNullStreams } from 'node:child_process';
+import { spawnSync, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { z } from 'zod';
 
 const ReplySchema = z.object({ id: z.number().int().optional(), result: z.unknown().optional(), error: z.object({ code: z.number(), message: z.string() }).optional() });
@@ -91,4 +91,19 @@ export async function probeCodex(account: ResolvedAccount, executable = 'codex',
   } catch (error) {
     return (error as { kind?: string }).kind === 'auth' ? { auth: 'needs-login' as const, error: 'Codex could not refresh this login. Log in again.' } : { auth: 'unknown' as const, error: 'The Codex account check could not complete. Usage is unknown.' };
   } finally { await control.close(); }
+}
+
+/**
+ * On Linux, Codex runs every shell command inside bubblewrap. Hosts that restrict unprivileged user namespaces (for
+ * example Ubuntu 24.04's AppArmor restriction) make that sandbox fail to start, so read-only and shell steps cannot be
+ * enforced. One short native check at startup reports it instead of launching agents that cannot inspect anything.
+ */
+export function codexSandboxCheck(executable = 'codex', home: string, platform: NodeJS.Platform = process.platform): { available: true } | { available: false; reason: string } {
+  if (platform !== 'linux') return { available: true };
+  const result = spawnSync(executable, ['sandbox', '--', 'true'], { cwd: home, env: minimalEnvironment('codex', home), input: '', encoding: 'utf8', timeout: 20_000 });
+  // A missing or hanging executable is reported by the account check and the launch itself, not as a sandbox fault.
+  if (result.error || result.status === 0) return { available: true };
+  const detail = `${result.stderr ?? ''}\n${result.stdout ?? ''}`.split('\n').map((line) => line.trim()).find((line) => /bwrap|bubblewrap|landlock|namespace|sandbox/i.test(line));
+  if (!detail) return { available: true };
+  return { available: false, reason: `Codex's sandbox can't start on this device (${detail.slice(0, 300)}), so its read-only and shell steps can't be enforced and Codex is not used. Allow Codex's bubblewrap to create user namespaces (for example with an AppArmor profile), then restart Jevellan.` };
 }

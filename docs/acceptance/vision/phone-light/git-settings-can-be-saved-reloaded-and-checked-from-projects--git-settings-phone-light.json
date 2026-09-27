@@ -1,19 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "Git settings can be saved, reloaded and checked from Projects",
   "layout": "phone-light",
   "screenshot": "test-results/git-settings-phone-light.png",
-  "expected": "the Jevellan web app \"git settings\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"Git settings can be saved, reloaded and checked from Projects\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The tab bar at the top cuts off the last tab ('Impro…') at the right edge. It looks like a horizontally scrollable strip, but nothing on screen shows that more tabs exist.",
-      "The long remote path '/tmp/jevellan-browser-lzJrbU/activity-context-origin.git' wraps onto a second line in the middle of a word ('context-' / 'origin.git').",
-      "The 'Save Git settings' button is pale and low-contrast. That is expected while it's disabled with nothing to save, but it's less legible than the other controls.",
-      "The small footnote text ('This choice is saved only in Jevellan…') and the grey helper text are light grey on white. They can be read, but the contrast is low."
-    ]
-  }
+  "expected": "the Jevellan web app \"git settings\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"Git settings can be saved, reloaded and checked from Projects\"; the other steps are judged in their own screenshots)"
 }

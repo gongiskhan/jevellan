@@ -1,18 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "conversation titles, expanded tools and outside outcomes survive updates and reload",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-controls-outcome-desktop-dark.png",
-  "expected": "the Jevellan web app \"controls outcome\" screen, one step of the check \"conversation titles, expanded tools and outside outcomes survive updates and reload\", at desktop-dark, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "Long conversation titles and subtitles in the sidebar end in an ellipsis (e.g. 'Context · Created instructions …', 'Exercise reviewed checkpoint r…'). This is intended truncation.",
-      "The last sidebar item is partly clipped at the bottom edge of the scrollable list. That is normal scroll overflow, and the item can be reached by scrolling.",
-      "The '1 tool call' row in step 1 is collapsed. The check expects expanded tools to survive updates and reload, so the expanded state may be worth confirming, but it does not stop the screen from rendering or reading correctly."
-    ]
-  }
+  "expected": "the Jevellan web app \"controls outcome\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"conversation titles, expanded tools and outside outcomes survive updates and reload\"; the other steps are judged in their own screenshots)"
 }

@@ -1,18 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "step corrections survive reload and undo launches the requested redo with visible history",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-undo-phone-dark.png",
-  "expected": "the Jevellan web app \"undo\" screen, one step of the check \"step corrections survive reload and undo launches the requested redo with visible history\", at phone-dark, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The error banner 'No model can run this step right now: disabled, disabled, …' appears twice in a row, and its text repeats 'disabled' eight times instead of naming the models. It looks like a duplicate entry and gives the user no useful detail.",
-      "The undone Step 1 card uses strikethrough on dim text (header, handoff summary, DONE badge). It is still readable, but the contrast is low at phone-dark.",
-      "'Work closed.' is shown in a yellow warning-style banner, which looks more serious than a normal completion message."
-    ]
-  }
+  "expected": "the Jevellan web app \"undo\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"step corrections survive reload and undo launches the requested redo with visible history\"; the other steps are judged in their own screenshots)"
 }

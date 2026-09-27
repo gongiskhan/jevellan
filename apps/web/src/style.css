@@ -1094,46 +1094,21 @@ html:has(.conversation-page) { scroll-padding-top: calc(var(--header-height) + 1
 }
 .composer-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .composer-bar .actions { margin: 0 0 0 auto; gap: 6px; }
-.composer-options { position: relative; }
-.composer-options > summary {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 5px;
-  border-radius: 999px;
-}
-.composer-options > summary::before { display: none; }
-.choice-pill {
-  display: inline-flex;
-  align-items: center;
-  min-height: 26px;
-  padding: 1px 9px;
+.override-button, button.override-button {
+  gap: 6px;
+  min-height: 28px;
+  padding: 3px 11px 3px 9px;
   border: 1px solid var(--edge);
-  border-radius: 999px;
-  background: var(--card);
+  background: transparent;
+  color: var(--ink-3);
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--ink-2);
-  white-space: nowrap;
-  transition: border-color 0.15s ease;
+  font-weight: 500;
 }
-.choice-pill b { color: var(--jev); font-weight: 600; margin-left: 4px; }
-.choice-pill i { font-style: normal; color: var(--ink-3); }
-.composer-options > summary:hover .choice-pill { border-color: var(--edge-strong); }
-.composer-options[open] > summary .choice-pill { border-color: var(--jev-edge); }
-.composer-options .composer-choices {
-  position: absolute;
-  left: 0;
-  bottom: calc(100% + 6px);
-  z-index: 30;
-  width: min(560px, calc(100vw - 24px));
-  padding: 12px;
-  border: 1px solid var(--edge-strong);
-  border-radius: var(--radius);
-  background: var(--card);
-  box-shadow: var(--shadow-pop);
-}
-.new-conversation-form .composer-options .composer-choices { position: static; width: auto; margin-top: 8px; box-shadow: none; }
+.override-button:hover, button.override-button:hover { background: var(--bg-2); border-color: var(--edge-strong); color: var(--ink); }
+.override-button.set, button.override-button.set { border-color: var(--jev-edge); color: var(--jev-ink); background: var(--jev-soft); }
+.override-button span { max-width: 32ch; overflow: hidden; text-overflow: ellipsis; }
+.new-conversation-form .override-button { justify-self: start; }
 .composer-choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
 .composer-choice { display: grid; gap: 6px; align-content: start; min-width: 0; }
 .composer-choice label { margin: 0; }

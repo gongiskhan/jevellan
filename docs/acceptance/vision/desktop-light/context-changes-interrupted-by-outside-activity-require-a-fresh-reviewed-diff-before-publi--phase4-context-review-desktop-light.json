@@ -1,17 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "context changes interrupted by outside activity require a fresh reviewed diff before publication",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase4-context-review-desktop-light.png",
-  "expected": "the Jevellan web app \"context review\" screen, one step of the check \"context changes interrupted by outside activity require a fresh reviewed diff before publication\", at desktop-light, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The modal body is scrolled, so the header partly covers the first line of the intro text ('Another agent (Claude Code) is active in Outside context fixture on dev-madrid...'). The line is still readable, and scrolling up shows the rest.",
-      "The error banner 'These files changed since your review. Review changes again.' sits below the collapsed 'Current instruction files' section. It's far from the Continue and Refresh changes buttons, so it's easy to miss."
-    ]
-  }
+  "expected": "the Jevellan web app \"context review\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"context changes interrupted by outside activity require a fresh reviewed diff before publication\"; the other steps are judged in their own screenshots)"
 }
