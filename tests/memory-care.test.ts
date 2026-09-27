@@ -30,10 +30,19 @@ const stale = `---\ntitle: Old idea about caching\n---\nWe once considered cachi
 function careDraft(request: BackgroundDraftRequest) {
   const tasks = JSON.parse(request.files['tasks.json']!) as { merge: string[][]; reconcile: string[]; fixLinks: Array<{ note: string; target: string }> };
   const files: Array<{ path: string; content: string | null }> = [];
-  for (const [keep, remove] of tasks.merge) files.push({ path: keep!, content: `${request.files[`memory/${keep}`]!}\nMerged: ${request.files[`memory/${remove}`]!.split('---\n')[2]!.trim()}\n` }, { path: remove!, content: null });
+  // Like a careful model: notes linked through any merge entry become one note, kept under the first one seen.
+  const keepOf = new Map<string, string>();
+  for (const group of tasks.merge) { const keep = group.map(path => keepOf.get(path)).find(Boolean) ?? group[0]!; for (const path of group) { const previous = keepOf.get(path); if (previous && previous !== keep) for (const [key, value] of keepOf) if (value === previous) keepOf.set(key, keep); keepOf.set(path, keep); } }
+  const kept = new Map<string, string[]>(); for (const [path, keep] of keepOf) kept.set(keep, [...kept.get(keep) ?? [], path]);
+  for (const [keep, paths] of kept) {
+    const merged = paths.filter(path => path !== keep);
+    files.push({ path: keep, content: `${request.files[`memory/${keep}`]!}${merged.map(path => `\nMerged: ${request.files[`memory/${path}`]!.split('---\n')[2]!.trim()}`).join('')}\n` }, ...merged.map(path => ({ path, content: null })));
+  }
   for (const path of tasks.reconcile) files.push({ path, content: '---\ntitle: Deploy notes\n---\nDeploy with npm run deploy. See [[Test conventions]].\n\n## History\n\nDeploy by hand from the release branch.\n' });
   return { schema: 'memory-patch-draft-v1', summary: 'Merged, reconciled and fixed.', files };
 }
+/** The instruction file the context draft was given, under its real name. */
+const instructionText = (request: BackgroundDraftRequest) => request.files['AGENTS.md'] ?? request.files['CLAUDE.md'] ?? '';
 function result(request: BackgroundDraftRequest, content: unknown): BackgroundDraftResult {
   return BackgroundDraftResultSchema.parse({ schema: 'background-draft-result-v1', runId: request.id, modelId: 'fixture_model', accountId: 'fixture_account', effort: 'high', usage: { inputTokens: 10, outputTokens: 5, costSource: 'unknown' },
     handoff: { schema: 'handoff-v2', stretch: 1, action: 'reply', status: 'done', summary: 'A simulated draft.', result: { type: request.resultType, ref: `blobs/${'a'.repeat(64)}` }, evidence: [], findings: [], blockers: [], failedApproaches: [], proposedNext: null, changedFiles: [] },
@@ -175,7 +184,7 @@ test('three notes stating the same working rule produce an AGENTS.md suggestion 
   for (const [name, title] of Object.entries(rules)) write(`${memory}/${name}`, `---\ntitle: ${title}\n---\n${title}.\n`);
   git(checkout, ['add', '-A']); git(checkout, ['commit', '-m', 'Rules']); git(checkout, ['push']);
   for (const title of Object.values(rules)) searches.set((title.toLowerCase().match(/[\p{L}\p{N}_]+/gu) ?? []).join(' OR '), Object.keys(rules));
-  draftContent = request => ({ schema: 'context-draft-v1', title: 'Run the tests before pushing', reason: 'Three notes state this rule.', after: `${request.files['instructions.md']}\n## Working rules\n\n- Run the tests before every push.\n` });
+  draftContent = request => ({ schema: 'context-draft-v1', title: 'Run the tests before pushing', reason: 'Three notes state this rule.', after: `${instructionText(request)}\n## Working rules\n\n- Run the tests before every push.\n` });
   const head = git(origin, ['rev-parse', 'main']); await runNow('context');
   let view = await state(); const row = view.projectSuggestions[0]!;
   expect(questions.filter(id => id.startsWith('rule_'))).toHaveLength(1);
@@ -202,7 +211,7 @@ test('dismissing a context suggestion records the reason and suppresses the same
   for (const [name, title] of Object.entries(rules)) write(`${memory}/${name}`, `---\ntitle: ${title}\n---\n${title}.\n`);
   git(checkout, ['add', '-A']); git(checkout, ['commit', '-m', 'Rules']); git(checkout, ['push']);
   for (const title of Object.values(rules)) searches.set((title.toLowerCase().match(/[\p{L}\p{N}_]+/gu) ?? []).join(' OR '), Object.keys(rules));
-  draftContent = request => ({ schema: 'context-draft-v1', title: 'Keep commits small', reason: 'Three notes.', after: `${request.files['instructions.md']}\n- Keep commits small.\n` });
+  draftContent = request => ({ schema: 'context-draft-v1', title: 'Keep commits small', reason: 'Three notes.', after: `${instructionText(request)}\n- Keep commits small.\n` });
   await runNow('dismiss'); const row = (await state()).projectSuggestions[0]!;
   await request({ operation: 'act', suggestionId: row.suggestion.id, input: { schema: 'project-suggestion-action-v1', kind: 'dismiss', clientRequestId: 'dismiss', revision: row.revision, reason: 'Already in the README.' } });
   const dismissed = (await state()).projectSuggestions[0]!.suggestion;
@@ -237,7 +246,7 @@ test('plain-language Change it on a project suggestion runs one read-only draft 
   for (const [name, title] of Object.entries(rules)) write(`${memory}/${name}`, `---\ntitle: ${title}\n---\n${title}.\n`);
   git(checkout, ['add', '-A']); git(checkout, ['commit', '-m', 'Rules']); git(checkout, ['push']);
   for (const title of Object.values(rules)) searches.set((title.toLowerCase().match(/[\p{L}\p{N}_]+/gu) ?? []).join(' OR '), Object.keys(rules));
-  draftContent = request => ({ schema: 'context-draft-v1', title: 'Keep commits small', reason: 'Three notes.', after: `${request.files['instructions.md']}\n- Keep commits small.\n` });
+  draftContent = request => ({ schema: 'context-draft-v1', title: 'Keep commits small', reason: 'Three notes.', after: `${instructionText(request)}\n- Keep commits small.\n` });
   await runNow('instruction'); const row = (await state()).projectSuggestions[0]!;
   draftContent = request => {
     expect(request.files['instruction.txt']).toBe('Say it applies to documentation commits too.'); expect(request.files['proposed/AGENTS.md']).toContain('- Keep commits small.');
@@ -259,7 +268,7 @@ async function contextSuggestion(id: string) {
   for (const [name, title] of Object.entries(rules)) write(`${memory}/${name}`, `---\ntitle: ${title}\n---\n${title}.\n`);
   git(checkout, ['add', '-A']); git(checkout, ['commit', '-m', 'Rules']); git(checkout, ['push']);
   for (const title of Object.values(rules)) searches.set((title.toLowerCase().match(/[\p{L}\p{N}_]+/gu) ?? []).join(' OR '), Object.keys(rules));
-  draftContent = request => ({ schema: 'context-draft-v1', title: 'Run the tests before pushing', reason: 'Three notes state this rule.', after: `${request.files['instructions.md']}\n- Run the tests before every push.\n` });
+  draftContent = request => ({ schema: 'context-draft-v1', title: 'Run the tests before pushing', reason: 'Three notes state this rule.', after: `${instructionText(request)}\n- Run the tests before every push.\n` });
   await runNow(id); return (await state()).projectSuggestions[0]!;
 }
 async function apply(row: { revision: number; suggestion: { id: string } }, id: string) {
@@ -313,3 +322,30 @@ test('a publication blocked after rebasing onto newer upstream work discards onl
   expect(git(checkout, ['for-each-ref', '--format=%(refname)', 'refs/jevellan/discard/'])).not.toBe('');
   expect(await new CheckoutOwnership(hub, homes, 'hub').current(project)).toMatchObject({ held: false });
 }, 120_000);
+
+test('memory care merges a cluster of three confirmed duplicates into one note and publishes it', async () => {
+  configure(settings => { settings.context.enabled = false; settings.routing.enabled = false; });
+  // The judge confirms every pair among three notes stating the same rule, as the live judge did.
+  const rules = { 'push-tests.md': 'Run tests before pushing', 'ci-green.md': 'Always run the tests before a push', 'pre-push.md': 'Tests must pass before pushing' };
+  for (const [name, title] of Object.entries(rules)) write(`${memory}/${name}`, `---\ntitle: ${title}\n---\n${title}.\n`);
+  git(checkout, ['add', '-A']); git(checkout, ['commit', '-m', 'Rules']); git(checkout, ['push']);
+  for (const title of Object.values(rules)) searches.set((title.toLowerCase().match(/[\p{L}\p{N}_]+/gu) ?? []).join(' OR '), Object.keys(rules));
+  const head = git(origin, ['rev-parse', 'main']); await runNow('cluster');
+  expect(questions.filter(id => id.startsWith('pair_'))).toHaveLength(4);
+  expect((await state()).lastRuns[0]).toMatchObject({ kind: 'memory', status: 'complete' });
+  const tasks = JSON.parse(drafts[0]!.files['tasks.json']!) as { merge: string[][] };
+  expect(tasks.merge.map(group => [...group].sort())).toContainEqual(['ci-green.md', 'pre-push.md', 'push-tests.md']);
+  const report = (await state()).reports[0]!.report;
+  expect(report.counts.merged).toBe(3); expect(git(origin, ['log', '--format=%s', `${head}..main`])).toBe('memory: nightly care (3 merged, 1 archived, 1 links)');
+  const remaining = Object.keys(rules).filter(name => existsSync(join(checkout, memory, name)));
+  expect(remaining).toHaveLength(1); for (const title of Object.values(rules)) expect(read(`${memory}/${remaining[0]}`)).toContain(`${title}.`);
+  expect(git(checkout, ['status', '--porcelain'])).toBe('');
+}, 90_000);
+
+test('the context draft names the real instruction file, AGENTS.md or the CLAUDE.md it links to', async () => {
+  const saved = hub.get('projects', 'sandbox', ProjectSchema)!; hub.put('projects', 'sandbox', ProjectSchema, { ...saved.document, testCommand: 'test -f AGENTS.md' }, saved.revision);
+  await contextSuggestion('instruction_name');
+  const request = drafts.find(entry => entry.brief.includes('working rule'))!;
+  expect(request.files['AGENTS.md']).toBe('# Sandbox\n\nRun npm test.\n'); expect(request.files).not.toHaveProperty('instructions.md');
+  expect(request.brief).toContain('AGENTS.md'); expect(request.brief).not.toContain('instructions.md');
+}, 90_000);

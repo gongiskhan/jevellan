@@ -1,18 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase6-j12-view-changes-phone-light.png",
-  "expected": "the Jevellan web app \"j12 view changes\" screen, one step of the check \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\", at phone-light, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The top tab bar is clipped on the right: the 'Improver' tab shows only as 'Impro' next to the 'dev-madrid' pill. It looks like a horizontally scrollable tab strip, so the tab is still reachable.",
-      "The screenshot could only be checked at a reduced size (159x2000 from 390x4913). Fine text in the diff blocks, commit hashes and 'Open log' links looks legible and doesn't overlap, but small glyph clipping can't be ruled out at this size.",
-      "The Memory care card's diff is long and dense, with many wrapped path lines, and the page is very tall. That makes it harder to scan on a phone, but nothing is hidden."
-    ]
-  }
+  "expected": "the Jevellan web app \"j12 view changes\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)"
 }

@@ -2,25 +2,27 @@ import { afterEach, beforeEach, expect, test } from 'vitest';
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { AccountSchema, AccountStatusSchema, BackgroundDraftRequestSchema, BridgeToolsSchema, Homes, SecretRedactor, seedConfiguration, type BackgroundDraftRequest } from '../packages/core/dist/index.js';
+import { AccountSchema, AccountStatusSchema, BackgroundDraftRequestSchema, BridgeToolsSchema, Homes, SecretRedactor, seedConfiguration, type AccountStatus, type BackgroundDraftRequest } from '../packages/core/dist/index.js';
+import { applyAccountError } from '../packages/accounts/dist/index.js';
 import { BackgroundDrafts, ConversationLedger, ConversationWork, StretchBridges } from '../packages/conversations/dist/index.js';
 import { FakeRuntime, groupAlive, type StretchInput } from '../packages/runtime-contract/dist/index.js';
 
 let root: string; let homes: Homes; let drafts: BackgroundDrafts; let bridges: StretchBridges; let runtime: FakeRuntime; let settings: ReturnType<typeof seedConfiguration>['x-jevellan'];
-let active: number; let accountRuns: Set<string>;
+let active: number; let accountRuns: Set<string>; let current: AccountStatus | undefined; let recorded: Array<{ kind: string; limit: { model?: string; resetsAt?: string } }>;
 const request: BackgroundDraftRequest = { schema: 'background-draft-request-v1', id: 'draft_one', title: 'Routing suggestion', projectId: null,
   brief: 'Draft one precise routing edit and return the complete JSON through the handoff.', resultType: 'suggestion', files: { 'input.json': '{"routingProfile":"Existing guidance"}' } };
 function create() {
   const account = AccountSchema.parse({ schema: 'account-v1', id: 'account', runtime: 'fake', label: 'Fixture', enabled: true, kind: 'subscription', credential: 'per-device' });
-  const status = () => AccountStatusSchema.parse({ schema: 'account-status-v1', accountId: 'account', deviceId: 'hub', auth: 'ready', observedAt: new Date().toISOString() });
+  const status = () => current ??= AccountStatusSchema.parse({ schema: 'account-status-v1', accountId: 'account', deviceId: 'hub', auth: 'ready', observedAt: new Date().toISOString() });
   return new BackgroundDrafts({ homes, deviceId: 'hub', bridges, redactor: new SecretRedactor(), runtimes: new Map([['fake', runtime]]), settings: () => settings,
     riggingItems: () => [], accountRuns, enterOperation: () => { active++; return () => { active--; }; },
     accounts: { async list() { return [{ schema: 'account-view-v1' as const, revision: 1, account, statuses: [status()] }]; },
-      async resolve() { return { account, home: homes.account('fake', 'account'), env: {} }; }, async markUsed() {}, async recordUsage(_id, usage) { return AccountStatusSchema.parse({ ...status(), usage }); } } });
+      async resolve() { return { account, home: homes.account('fake', 'account'), env: {} }; }, async markUsed() {}, async recordUsage(_id, usage) { return AccountStatusSchema.parse({ ...status(), usage }); },
+      async recordError(_id, kind, _credential, limit = {}) { recorded.push({ kind, limit }); current = applyAccountError(status(), kind, Date.now(), limit); return current; } } });
 }
 beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), 'jevellan-background-drafts-')); mkdirSync(join(root, 'user')); homes = new Homes(join(root, 'home'), join(root, 'user'));
-  bridges = new StretchBridges(new SecretRedactor()); runtime = new FakeRuntime(); runtime.capabilities.readOnlyEnforced = true; active = 0; accountRuns = new Set();
+  bridges = new StretchBridges(new SecretRedactor()); runtime = new FakeRuntime(); runtime.capabilities.readOnlyEnforced = true; active = 0; accountRuns = new Set(); current = undefined; recorded = [];
   settings = seedConfiguration()['x-jevellan']; settings.runtimes.fake = { enabled: true }; settings.menu = [
     { id: 'disabled', runtime: 'fake', model: 'disabled', enabled: false, label: 'Disabled', description: 'Not available.', efforts: ['high'] },
     { id: 'first', runtime: 'fake', model: 'first-model', enabled: true, label: 'First eligible', description: 'A general model.', efforts: ['low', 'medium'] },
@@ -51,6 +53,18 @@ test('the first eligible menu model drafts through a read-only scoped bridge, wi
   expect(runtime.runs.every(run => !groupAlive(run.native.pgid))).toBe(true); expect(active).toBe(0);
   await expect(bridges.request(token, { schema: 'bridge-request-v1', operation: 'list' })).rejects.toThrow('expired');
   expect(JSON.stringify(result)).not.toContain(runtime.runs[0]!.native.sessionId);
+});
+
+test('a model-scoped limit is recorded against the account and the next draft uses the next eligible model', async () => {
+  const resetsAt = new Date(Date.now() + 2 * 3_600_000).toISOString();
+  const limit = { kind: 'rate-limit' as const, scope: 'model' as const, resetsAt, message: "You've reached your First limit. Switch to another model to continue." };
+  runtime.enqueue(async ({ input }) => { expect(input.model).toBe('first-model'); return { status: 'failed', error: limit }; });
+  runtime.enqueue(async () => ({ status: 'failed', error: limit }));
+  await expect(drafts.run(request, new AbortController().signal)).rejects.toThrow('did not finish successfully');
+  expect(recorded).toEqual([{ kind: 'rate-limit', limit: { model: 'first-model', resetsAt } }]);
+  expect(current).toMatchObject({ modelCooling: { 'first-model': resetsAt } }); expect(current?.coolingUntil).toBeUndefined();
+  runtime.enqueue(async ({ input }) => { expect(input.model).toBe('second-model'); await handoff(input); return { status: 'completed' }; });
+  expect(await drafts.run({ ...request, id: 'draft_two' }, new AbortController().signal)).toMatchObject({ modelId: 'second' });
 });
 
 test('completed draft retries survive restart without a second runtime launch; changed contents are refused', async () => {

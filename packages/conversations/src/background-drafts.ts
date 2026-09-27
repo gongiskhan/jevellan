@@ -19,7 +19,7 @@ import { recoverRunningWork } from './recovery.js';
 const RecordSchema = z.strictObject({ schema: z.literal('background-draft-record-v1'), request: BackgroundDraftRequestSchema, fingerprint: z.string().regex(/^[a-f0-9]{64}$/) });
 type Operation = { fingerprint: string; abort: AbortController; promise: Promise<BackgroundDraftResult>; execution?: StretchExecution };
 type Options = {
-  homes: Homes; deviceId: string; accounts: Pick<AccountService, 'list' | 'resolve' | 'markUsed' | 'recordUsage'>; runtimes: ReadonlyMap<string, RuntimeAdapter>; bridges: StretchBridges; redactor: SecretRedactor;
+  homes: Homes; deviceId: string; accounts: Pick<AccountService, 'list' | 'resolve' | 'markUsed' | 'recordUsage' | 'recordError'>; runtimes: ReadonlyMap<string, RuntimeAdapter>; bridges: StretchBridges; redactor: SecretRedactor;
   settings(): Configuration['x-jevellan'] | Promise<Configuration['x-jevellan']>; riggingItems(runtime: string): RiggingItem[] | Promise<RiggingItem[]>;
   accountRuns: Set<string>; enterOperation(id: string, title: string): () => void;
 };
@@ -134,6 +134,12 @@ export class BackgroundDrafts {
           usageUpdates = usageUpdates.then(async () => { try { await this.options.accounts.recordUsage(account.id, snapshot, account.secretRef ?? null); usageFailure = undefined; } catch (error) { usageFailure = error; } });
         } });
         operation.execution = execution; const outcome = await execution.done;
+        // Same account bookkeeping as conversation stretches: a limit on one model cools only that model, so the next
+        // draft's candidates skip it; any other limit or an auth failure applies to the whole account.
+        if (outcome.error) {
+          const limit = outcome.error.scope === 'model' ? { model: selected.model.model, ...(outcome.error.resetsAt ? { resetsAt: outcome.error.resetsAt } : {}) } : {};
+          await this.options.accounts.recordError(account.id, outcome.error.kind, account.secretRef ?? null, limit);
+        }
         let changed = true; try { changed = directoryDigest(cwd) !== before; } catch { /* Unexpected filesystem entries are also a read-only failure. */ }
         work.finish(1, { status: changed ? 'failed' : outcome.status, usage: outcome.usage }, changed, outcome.correction);
         if (changed) throw new Error('The read-only draft changed its input copies. No suggestion was accepted.');

@@ -1,18 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase6-j12-morning-card-desktop-dark.png",
-  "expected": "the Jevellan web app \"j12 morning card\" screen, one step of the check \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\", at desktop-dark, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The 'Save schedule and jobs' button has low contrast and looks disabled.",
-      "The pink notification text on the pink banner in the sidebar is only moderately legible.",
-      "In Last runs, the Memory care row shows a commit hash where the other rows show 'Open log', so the right-hand column is inconsistent."
-    ]
-  }
+  "expected": "the Jevellan web app \"j12 morning card\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)"
 }

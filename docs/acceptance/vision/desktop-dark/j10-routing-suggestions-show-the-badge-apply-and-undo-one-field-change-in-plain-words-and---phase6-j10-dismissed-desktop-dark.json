@@ -1,18 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase6-j10-dismissed-desktop-dark.png",
-  "expected": "the Jevellan web app \"j10 dismissed\" screen, one step of the check \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\", at desktop-dark, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The 'Memory care' mode control ('Apply and tell me') looks like a placeholder-style input, unlike the plain 'Suggest' labels on the other rows. This is inconsistent.",
-      "The dismissed card shows a quoted reason ('Plans stay on Fable.') in muted text with no label.",
-      "The whole page shows only 'Routing' suggestions, while the 'Last runs' card lists only Routing. That fits, but it is a narrow slice of the fixture."
-    ]
-  }
+  "expected": "the Jevellan web app \"j10 dismissed\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)"
 }

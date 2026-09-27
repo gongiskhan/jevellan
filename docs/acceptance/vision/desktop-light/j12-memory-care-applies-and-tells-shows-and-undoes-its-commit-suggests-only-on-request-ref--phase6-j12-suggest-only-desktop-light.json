@@ -1,19 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase6-j12-suggest-only-desktop-light.png",
-  "expected": "the Jevellan web app \"j12 suggest only\" screen, one step of the check \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\", at desktop-light, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The first memory-care diff block ends mid-file (after the test-conventions-2.md header lines). It looks like a scrollable box with a fixed height, but nothing shows that more content is below.",
-      "The sidebar conversation subtitle 'Done · Mesh journey fixture · dev-mad…' is cut off with an ellipsis.",
-      "In Last runs, 'AGENTS.md · Improver sandbox' still says 'Running.' while every other entry is finished, which looks inconsistent in a static screenshot.",
-      "The 'Save schedule and jobs' button is greyed out and hard to see, though that is expected when nothing has changed."
-    ]
-  }
+  "expected": "the Jevellan web app \"j12 suggest only\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)"
 }

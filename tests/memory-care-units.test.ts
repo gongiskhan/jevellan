@@ -6,7 +6,7 @@ import {
   ConversationSchema, Homes, ImproverJobSchema, ProjectSchema, conversationIndex, seedConfiguration, unifiedDiff, type ConversationIndex, type DeviceView, type ImproverJob,
 } from '../packages/core/dist/index.js';
 import { HubDatabase, ProjectImproverHub, checkedPatch } from '../packages/mesh/dist/index.js';
-import { careKey, collectMemoryCandidates, memoryCarePatch, memoryCareCommit, memoryCareResult, patchFile, projectPatch, readMemoryFiles, searchOverlapPairs } from '../packages/memory/dist/index.js';
+import { careKey, collectMemoryCandidates, memoryCarePatch, mergeClusters, memoryCareCommit, memoryCareResult, patchFile, projectPatch, readMemoryFiles, searchOverlapPairs } from '../packages/memory/dist/index.js';
 import { memoryCareQuestions } from '../packages/decisions/dist/index.js';
 import { trialLog } from '../apps/daemon/dist/index.js';
 
@@ -128,4 +128,15 @@ test('the trial log counts conversations finished in Jevellan and outside it per
   ]);
   expect(index('four', 'done', '2026-09-23T10:00:00.000Z', { at: '2026-09-23T11:00:00.000Z' }).outcome?.kind).toBe('finished-elsewhere');
   expect(index('context', 'done', '2026-09-22T10:00:00.000Z', undefined, 'context-operation').origin).toBe('context-operation');
+});
+
+test('confirmed pairs that share notes merge as one cluster, which must keep one note', () => {
+  expect(mergeClusters([['a', 'b'], ['b', 'c'], ['a', 'c'], ['x', 'y']])).toEqual([['a', 'b', 'c'], ['x', 'y']]);
+  note('a.md', '---\ntitle: Alpha\n---\nOne.\n'); note('b.md', '---\ntitle: Alpha.\n---\nTwo.\n'); note('c.md', '---\ntitle: Alpha!\n---\nThree.\n');
+  const files = readMemoryFiles(root, '.jevellan/memory'); const dir = '.jevellan/memory';
+  const pairs = [[`${dir}/a.md`, `${dir}/b.md`], [`${dir}/b.md`, `${dir}/c.md`], [`${dir}/a.md`, `${dir}/c.md`]] as Array<[string, string]>;
+  const confirmed = { pairs, stale: [], unresolved: [], brokenLinks: [] };
+  const draft = (entries: Array<{ path: string; content: string | null }>) => ({ schema: 'memory-patch-draft-v1', summary: 'Merge.', files: entries });
+  expect(memoryCarePatch(dir, files, confirmed, draft([{ path: 'a.md', content: 'One. Two. Three.\n' }, { path: 'b.md', content: null }, { path: 'c.md', content: null }])).counts.merged).toBe(2);
+  expect(() => memoryCarePatch(dir, files, confirmed, draft([{ path: 'a.md', content: null }, { path: 'b.md', content: null }, { path: 'c.md', content: null }]))).toThrow('keep one note of each group');
 });

@@ -1,0 +1,620 @@
+{
+  "schema": "live-improver-journey-v1",
+  "journey": "J12",
+  "label": "live",
+  "source": "live-claude-jev",
+  "build": "bf84de9",
+  "attempts": [
+    {
+      "attempt": "a1",
+      "outcome": "draft blocked: the only Claude test account was over its 90% usage ceiling (weekly 94%)",
+      "j12": {
+        "jobs": [
+          {
+            "job": {
+              "id": "job_e5693bd8e6fe312a7707f2183df81a3ffc48687e6ba66c426f662a14d65329bb",
+              "scope": "memory",
+              "status": "failed",
+              "note": "No eligible model is available for this improver draft."
+            },
+            "log": {
+              "schema": "project-improver-log-v1",
+              "jobId": "job_e5693bd8e6fe312a7707f2183df81a3ffc48687e6ba66c426f662a14d65329bb",
+              "startedAt": "2026-09-27T18:12:12.650Z",
+              "entries": [
+                {
+                  "at": "2026-09-27T18:12:12.659Z",
+                  "stage": "started",
+                  "note": "Checking project memory."
+                },
+                {
+                  "at": "2026-09-27T18:12:27.307Z",
+                  "stage": "synchronized",
+                  "note": "Synchronized the checkout and the memory index."
+                },
+                {
+                  "at": "2026-09-27T18:12:31.623Z",
+                  "stage": "collected",
+                  "note": "7 notes: 4 possible duplicates, 1 unresolved, 1 stale, 1 broken links."
+                },
+                {
+                  "at": "2026-09-27T18:12:31.928Z",
+                  "stage": "judged",
+                  "note": "Jev confirmed 4 duplicate pairs and 1 stale note."
+                },
+                {
+                  "at": "2026-09-27T18:12:31.971Z",
+                  "stage": "failed",
+                  "note": "No eligible model is available for this improver draft."
+                }
+              ]
+            }
+          }
+        ],
+        "published": [],
+        "reports": [],
+        "contextCards": [],
+        "memoryCards": []
+      },
+      "jevCalls": 3
+    },
+    {
+      "attempt": "a2",
+      "outcome": "drafts failed: Fable was chosen and returned its own usage limit; the runner also broke the draft event stream (runner bug, fixed)",
+      "ceiling": {
+        "raised": {
+          "at": "2026-09-27T18:16:10.959Z",
+          "from": 90,
+          "ceilingPct": 98,
+          "status": [
+            {
+              "auth": "ready",
+              "weeklyPct": 94,
+              "fiveHourPct": 3
+            }
+          ]
+        },
+        "restored": {
+          "at": "2026-09-27T18:16:49.597Z",
+          "ceilingPct": 90,
+          "status": [
+            {
+              "auth": "ready",
+              "weeklyPct": 94,
+              "fiveHourPct": 3
+            }
+          ]
+        }
+      },
+      "j12": {
+        "jobs": [
+          {
+            "job": {
+              "id": "job_894e256f5af7b6487d21880f6acf3ce0331992f04fd4b40f37dfc17bccb2a05e",
+              "scope": "memory",
+              "status": "failed",
+              "note": "The improver draft did not finish successfully. Its log is preserved."
+            },
+            "log": {
+              "schema": "project-improver-log-v1",
+              "jobId": "job_894e256f5af7b6487d21880f6acf3ce0331992f04fd4b40f37dfc17bccb2a05e",
+              "startedAt": "2026-09-27T18:16:36.134Z",
+              "entries": [
+                {
+                  "at": "2026-09-27T18:16:39.262Z",
+                  "stage": "started",
+                  "note": "Checking project memory."
+                },
+                {
+                  "at": "2026-09-27T18:16:40.129Z",
+                  "stage": "synchronized",
+                  "note": "Synchronized the checkout and the memory index."
+                },
+                {
+                  "at": "2026-09-27T18:16:42.718Z",
+                  "stage": "collected",
+                  "note": "7 notes: 4 possible duplicates, 1 unresolved, 1 stale, 1 broken links."
+                },
+                {
+                  "at": "2026-09-27T18:16:42.946Z",
+                  "stage": "judged",
+                  "note": "Jev confirmed 4 duplicate pairs and 1 stale note."
+                },
+                {
+                  "at": "2026-09-27T18:16:43.106Z",
+                  "stage": "failed",
+                  "note": "The improver draft did not finish successfully. Its log is preserved."
+                }
+              ]
+            }
+          }
+        ],
+        "firstAttempt": [
+          {
+            "job": {
+              "id": "job_c874edf6d0f5d392a6a1c586d4adf0f9e558aae29b079edb0d7a2c7da8237f86",
+              "scope": "memory",
+              "status": "failed",
+              "note": "The improver draft did not finish successfully. Its log is preserved."
+            },
+            "log": {
+              "schema": "project-improver-log-v1",
+              "jobId": "job_c874edf6d0f5d392a6a1c586d4adf0f9e558aae29b079edb0d7a2c7da8237f86",
+              "startedAt": "2026-09-27T18:16:14.011Z",
+              "entries": [
+                {
+                  "at": "2026-09-27T18:16:14.019Z",
+                  "stage": "started",
+                  "note": "Checking project memory."
+                },
+                {
+                  "at": "2026-09-27T18:16:29.253Z",
+                  "stage": "synchronized",
+                  "note": "Synchronized the checkout and the memory index."
+                },
+                {
+                  "at": "2026-09-27T18:16:33.870Z",
+                  "stage": "collected",
+                  "note": "7 notes: 4 possible duplicates, 1 unresolved, 1 stale, 1 broken links."
+                },
+                {
+                  "at": "2026-09-27T18:16:34.120Z",
+                  "stage": "judged",
+                  "note": "Jev confirmed 4 duplicate pairs and 1 stale note."
+                },
+                {
+                  "at": "2026-09-27T18:16:34.292Z",
+                  "stage": "failed",
+                  "note": "The improver draft did not finish successfully. Its log is preserved."
+                }
+              ]
+            }
+          }
+        ],
+        "published": [],
+        "reports": [],
+        "contextCards": [],
+        "memoryCards": []
+      },
+      "drafts": [
+        {
+          "stretch": 1,
+          "action": "reply",
+          "model": "claude-fable-5-1",
+          "effort": "high",
+          "permissions": "read-only",
+          "costUsd": 0,
+          "startedAt": "2026-09-27T18:16:34.212Z"
+        },
+        {
+          "stretch": 1,
+          "action": "reply",
+          "model": "claude-fable-5-1",
+          "effort": "high",
+          "permissions": "read-only",
+          "costUsd": 0,
+          "startedAt": "2026-09-27T18:16:39.173Z"
+        },
+        {
+          "stretch": 1,
+          "action": "reply",
+          "model": "claude-fable-5-1",
+          "effort": "high",
+          "permissions": "read-only",
+          "costUsd": 0,
+          "startedAt": "2026-09-27T18:16:43.028Z"
+        }
+      ],
+      "jevCalls": 5
+    },
+    {
+      "attempt": "a3",
+      "outcome": "invalid: runner bug (draft event wrapper) failed every draft; no product conclusion",
+      "ceiling": {
+        "raised": {
+          "at": "2026-09-27T18:17:37.485Z",
+          "from": 90,
+          "ceilingPct": 98,
+          "status": [
+            {
+              "auth": "ready",
+              "weeklyPct": 94,
+              "fiveHourPct": 4
+            }
+          ]
+        },
+        "restored": {
+          "at": "2026-09-27T18:18:23.894Z",
+          "ceilingPct": 90,
+          "status": [
+            {
+              "auth": "ready",
+              "weeklyPct": 94,
+              "fiveHourPct": 4
+            }
+          ]
+        }
+      },
+      "menuWorkaround": {
+        "disabled": "claude-fable",
+        "at": "2026-09-27T18:17:39.962Z",
+        "restoredAt": "2026-09-27T18:18:09.599Z"
+      },
+      "jevCalls": 7
+    },
+    {
+      "attempt": "a4",
+      "outcome": "context suggestion passed live; memory care failed validation: \"A merge must keep one note of each pair.\" (three notes stating one rule form a duplicate cluster)",
+      "ceiling": {
+        "raised": {
+          "at": "2026-09-27T18:19:33.879Z",
+          "from": 90,
+          "ceilingPct": 98,
+          "status": [
+            {
+              "auth": "ready",
+              "weeklyPct": 94,
+              "fiveHourPct": 4
+            }
+          ]
+        },
+        "restored": {
+          "at": "2026-09-27T18:22:34.241Z",
+          "ceilingPct": 90,
+          "status": [
+            {
+              "auth": "ready",
+              "weeklyPct": 95,
+              "fiveHourPct": 5
+            }
+          ]
+        }
+      },
+      "menuWorkaround": {
+        "disabled": "claude-fable",
+        "at": "2026-09-27T18:19:36.385Z",
+        "restoredAt": "2026-09-27T18:22:30.038Z"
+      },
+      "j12": {
+        "jobs": [
+          {
+            "job": {
+              "id": "job_5a5d5d08e434fba425d84b3e7970ba68f19ab7921ecad75f0fd26d7423266f66",
+              "scope": "memory",
+              "status": "failed",
+              "note": "A merge must keep one note of each pair."
+            },
+            "log": {
+              "schema": "project-improver-log-v1",
+              "jobId": "job_5a5d5d08e434fba425d84b3e7970ba68f19ab7921ecad75f0fd26d7423266f66",
+              "startedAt": "2026-09-27T18:20:47.158Z",
+              "entries": [
+                {
+                  "at": "2026-09-27T18:21:21.573Z",
+                  "stage": "started",
+                  "note": "Checking project memory."
+                },
+                {
+                  "at": "2026-09-27T18:21:22.389Z",
+                  "stage": "synchronized",
+                  "note": "Synchronized the checkout and the memory index."
+                },
+                {
+                  "at": "2026-09-27T18:21:25.055Z",
+                  "stage": "collected",
+                  "note": "7 notes: 4 possible duplicates, 1 unresolved, 1 stale, 1 broken links."
+                },
+                {
+                  "at": "2026-09-27T18:21:25.290Z",
+                  "stage": "judged",
+                  "note": "Jev confirmed 4 duplicate pairs and 1 stale note."
+                },
+                {
+                  "at": "2026-09-27T18:22:26.757Z",
+                  "stage": "failed",
+                  "note": "A merge must keep one note of each pair."
+                }
+              ]
+            }
+          }
+        ],
+        "firstAttempt": [
+          {
+            "job": {
+              "id": "job_5073198e6dc08bf67cb692a8ab20ff37a3217d581cc1dc5b51fabeee08515469",
+              "scope": "memory",
+              "status": "failed",
+              "note": "A merge must keep one note of each pair."
+            },
+            "log": {
+              "schema": "project-improver-log-v1",
+              "jobId": "job_5073198e6dc08bf67cb692a8ab20ff37a3217d581cc1dc5b51fabeee08515469",
+              "startedAt": "2026-09-27T18:19:36.948Z",
+              "entries": [
+                {
+                  "at": "2026-09-27T18:19:36.955Z",
+                  "stage": "started",
+                  "note": "Checking project memory."
+                },
+                {
+                  "at": "2026-09-27T18:19:52.642Z",
+                  "stage": "synchronized",
+                  "note": "Synchronized the checkout and the memory index."
+                },
+                {
+                  "at": "2026-09-27T18:19:57.047Z",
+                  "stage": "collected",
+                  "note": "7 notes: 4 possible duplicates, 1 unresolved, 1 stale, 1 broken links."
+                },
+                {
+                  "at": "2026-09-27T18:19:57.295Z",
+                  "stage": "judged",
+                  "note": "Jev confirmed 4 duplicate pairs and 1 stale note."
+                },
+                {
+                  "at": "2026-09-27T18:20:46.799Z",
+                  "stage": "failed",
+                  "note": "A merge must keep one note of each pair."
+                }
+              ]
+            }
+          }
+        ],
+        "published": [],
+        "reports": [],
+        "contextCards": [
+          {
+            "title": "State the run-tests-before-push rule once in instructions.md",
+            "reason": "notes/ci-green.md, notes/pre-push.md and notes/push-tests.md each give the same rule in different words: run the tests before pushing and never push with failing tests. This adds it once to the instruction file as a short imperative line, matching the existing 'Run npm test.' style. Nothing else changes.",
+            "status": "pending",
+            "notes": [
+              "Always run the tests before a push",
+              "Tests must pass before pushing",
+              "Run tests before pushing"
+            ]
+          }
+        ],
+        "memoryCards": [],
+        "contextDiff": "diff --git a/AGENTS.md b/AGENTS.md\n\n--- a/AGENTS.md\n\n+++ b/AGENTS.md\n\n@@ -1,3 +1,4 @@\n\n # Improver sandbox\n\n \n\n Run npm test.\n\n+Run the tests before every push. Never push with failing tests.\n\n\n"
+      },
+      "drafts": [
+        {
+          "stretch": 1,
+          "action": "reply",
+          "model": "claude-opus-5-5",
+          "effort": "high",
+          "permissions": "read-only",
+          "costUsd": 0,
+          "startedAt": "2026-09-27T18:19:57.391Z",
+          "status": "completed"
+        },
+        {
+          "stretch": 1,
+          "action": "reply",
+          "model": "claude-opus-5-5",
+          "effort": "high",
+          "permissions": "read-only",
+          "costUsd": 0,
+          "startedAt": "2026-09-27T18:20:49.844Z",
+          "status": "completed"
+        },
+        {
+          "stretch": 1,
+          "action": "reply",
+          "model": "claude-opus-5-5",
+          "effort": "high",
+          "permissions": "read-only",
+          "costUsd": 0,
+          "startedAt": "2026-09-27T18:21:25.368Z",
+          "status": "completed"
+        }
+      ],
+      "jevCalls": 5,
+      "costAfterJ12": 0.6539974,
+      "checks": {
+        "j12Published": false,
+        "j12TreeClean": true,
+        "j12AgentsUntouched": true,
+        "j12ContextSuggested": true,
+        "j10Suggested": false,
+        "noBrowserErrors": true
+      }
+    },
+    {
+      "attempt": "a5",
+      "outcome": "memory care passed live without the three rule notes: published, morning card, View changes, Undo",
+      "ceiling": {
+        "raised": {
+          "at": "2026-09-27T18:23:23.972Z",
+          "from": 90,
+          "ceilingPct": 98,
+          "status": [
+            {
+              "auth": "ready",
+              "weeklyPct": 95,
+              "fiveHourPct": 5
+            }
+          ]
+        },
+        "restored": {
+          "at": "2026-09-27T18:25:26.709Z",
+          "ceilingPct": 90,
+          "status": [
+            {
+              "auth": "ready",
+              "weeklyPct": 95,
+              "fiveHourPct": 5
+            }
+          ]
+        }
+      },
+      "menuWorkaround": {
+        "disabled": "claude-fable",
+        "at": "2026-09-27T18:23:26.844Z",
+        "restoredAt": "2026-09-27T18:25:26.708Z"
+      },
+      "j12": {
+        "jobs": [
+          {
+            "job": {
+              "id": "job_3f9325327a68a99b952526bee43ca929ab047e48880caa54dc8c06fcc728f59e",
+              "scope": "memory",
+              "status": "complete",
+              "note": "Merged 1 note, archived 1, fixed 1 link, reconciled 1"
+            },
+            "log": {
+              "schema": "project-improver-log-v1",
+              "jobId": "job_3f9325327a68a99b952526bee43ca929ab047e48880caa54dc8c06fcc728f59e",
+              "startedAt": "2026-09-27T18:23:27.519Z",
+              "entries": [
+                {
+                  "at": "2026-09-27T18:23:27.530Z",
+                  "stage": "started",
+                  "note": "Checking project memory."
+                },
+                {
+                  "at": "2026-09-27T18:23:49.711Z",
+                  "stage": "synchronized",
+                  "note": "Synchronized the checkout and the memory index."
+                },
+                {
+                  "at": "2026-09-27T18:23:54.372Z",
+                  "stage": "collected",
+                  "note": "4 notes: 1 possible duplicates, 1 unresolved, 1 stale, 1 broken links."
+                },
+                {
+                  "at": "2026-09-27T18:23:54.678Z",
+                  "stage": "judged",
+                  "note": "Jev confirmed 1 duplicate pair and 1 stale note."
+                },
+                {
+                  "at": "2026-09-27T18:24:57.848Z",
+                  "stage": "drafted",
+                  "note": "A read-only memory-care step returned a patch."
+                },
+                {
+                  "at": "2026-09-27T18:25:05.211Z",
+                  "stage": "published",
+                  "note": "Committed 6c105f6a57e6 and published it."
+                },
+                {
+                  "at": "2026-09-27T18:25:05.233Z",
+                  "stage": "complete",
+                  "note": "Merged 1 note, archived 1, fixed 1 link, reconciled 1"
+                }
+              ]
+            }
+          }
+        ],
+        "published": [
+          "6c105f6a57e646860479f92029ab0eedd787b297 memory: nightly care (1 merged, 1 archived, 1 links)"
+        ],
+        "reports": [
+          {
+            "schema": "memory-care-report-row-v1",
+            "revision": 1,
+            "report": {
+              "schema": "memory-care-report-v1",
+              "id": "job_3f9325327a68a99b952526bee43ca929ab047e48880caa54dc8c06fcc728f59e",
+              "jobId": "job_3f9325327a68a99b952526bee43ca929ab047e48880caa54dc8c06fcc728f59e",
+              "projectId": "improver_sandbox",
+              "projectName": "Improver sandbox",
+              "deviceId": "dev_01M3J1PY66HYNRY9EXRC4FPTF4",
+              "counts": {
+                "merged": 1,
+                "archived": 1,
+                "fixedLinks": 1,
+                "reconciled": 1
+              },
+              "evidence": [
+                {
+                  "path": ".jevellan/memory/deploy.md",
+                  "permalink": "deploy.md",
+                  "title": "Deploy notes"
+                },
+                {
+                  "path": ".jevellan/memory/old-caching-idea.md",
+                  "permalink": "old-caching-idea.md",
+                  "title": "Old caching idea"
+                },
+                {
+                  "path": ".jevellan/memory/test-conventions-2.md",
+                  "permalink": "test-conventions-2.md",
+                  "title": "Test Conventions"
+                },
+                {
+                  "path": ".jevellan/memory/test-conventions.md",
+                  "permalink": "test-conventions.md",
+                  "title": "Test conventions"
+                }
+              ],
+              "patch": {
+                "schema": "project-patch-v1",
+                "files": [
+                  {
+                    "path": ".jevellan/memory/archive/old-caching-idea.md",
+                    "before": null,
+                    "beforeText": null,
+                    "after": "---\ntitle: Old caching idea\n---\nWe once considered caching builds in S3.\n"
+                  },
+                  {
+                    "path": ".jevellan/memory/deploy.md",
+                    "before": "3c6124b4fd09ea3eef1e6cb1ad911ddde0190af67617b31abe0eeb1253afce94",
+                    "beforeText": "---\ntitle: Deploy notes\nstatus: unresolved\n---\nDeploy with npm run deploy. See [[Missing guide]].\n\n## Merged from laptop on 2026-09-20\n\nDeploy by hand from the release branch.\n",
+                    "after": "---\ntitle: Deploy notes\n---\nDeploy by hand from the release branch.\n\n## History\n\n- Superseded version: Deploy with npm run deploy. See Missing guide. (Wiki link removed: no matching note exists.)\n- The current by-hand, release-branch instruction was merged from the laptop on 2026-09-20.\n"
+                  },
+                  {
+                    "path": ".jevellan/memory/old-caching-idea.md",
+                    "before": "bb3f32b3547b626a3122e01c89b3036646988f23bf25722f587f53b7d7d07b04",
+                    "beforeText": "---\ntitle: Old caching idea\n---\nWe once considered caching builds in S3.\n",
+                    "after": null
+                  },
+                  {
+                    "path": ".jevellan/memory/test-conventions-2.md",
+                    "before": "e8f848d42ddf341160a465a1b3e2ae1317d3d90cbe946041e9f1ec8a90d2ac3a",
+                    "beforeText": "---\ntitle: Test Conventions\n---\nTests run with Vitest and globals are on.\n",
+                    "after": null
+                  }
+                ],
+                "diff": "diff --git a/.jevellan/memory/archive/old-caching-idea.md b/.jevellan/memory/archive/old-caching-idea.md\nnew file mode 100644\n--- /dev/null\n+++ b/.jevellan/memory/archive/old-caching-idea.md\n@@ -0,0 +1,4 @@\n+---\n+title: Old caching idea\n+---\n+We once considered caching builds in S3.\ndiff --git a/.jevellan/memory/deploy.md b/.jevellan/memory/deploy.md\n--- a/.jevellan/memory/deploy.md\n+++ b/.jevellan/memory/deploy.md\n@@ -1,9 +1,9 @@\n ---\n title: Deploy notes\n-status: unresolved\n ---\n-Deploy with npm run deploy. See [[Missing guide]].\n+Deploy by hand from the release branch.\n \n-## Merged from laptop on 2026-09-20\n+## History\n \n-Deploy by hand from the release branch.\n+- Superseded version: Deploy with npm run deploy. See Missing guide. (Wiki link removed: no matching note exists.)\n+- The current by-hand, release-branch instruction was merged from the laptop on 2026-09-20.\ndiff --git a/.jevellan/memory/old-caching-idea.md b/.jevellan/memory/old-caching-idea.md\ndeleted file mode 100644\n--- a/.jevellan/memory/old-caching-idea.md\n+++ /dev/null\n@@ -1,4 +0,0 @@\n----\n-title: Old caching idea\n----\n-We once considered caching builds in S3.\ndiff --git a/.jevellan/memory/test-conventions-2.md b/.jevellan/memory/test-conventions-2.md\ndeleted file mode 100644\n--- a/.jevellan/memory/test-conventions-2.md\n+++ /dev/null\n@@ -1,4 +0,0 @@\n----\n-title: Test Conventions\n----\n-Tests run with Vitest and globals are on.\n"
+              },
+              "commit": "6c105f6a57e646860479f92029ab0eedd787b297",
+              "published": true,
+              "at": "2026-09-27T18:25:05.218Z",
+              "status": "applied",
+              "error": null,
+              "undoCommit": null,
+              "undoneAt": null
+            }
+          }
+        ],
+        "contextCards": [],
+        "memoryCards": [],
+        "morningCard": "Memory care\nImprover sandbox\nApplied\nSep 27, 2026, 7:25 PM\nMemory care for Improver sandbox: merged 1 note, archived 1, fixed 1 link.\nView changes\nUndo\nCommit 6c105f6a57",
+        "diff": "diff --git a/.jevellan/memory/archive/old-caching-idea.md b/.jevellan/memory/archive/old-caching-idea.md\n\nnew file mode 100644\n\n--- /dev/null\n\n+++ b/.jevellan/memory/archive/old-caching-idea.md\n\n@@ -0,0 +1,4 @@\n\n+---\n\n+title: Old caching idea\n\n+---\n\n+We once considered caching builds in S3.\n\ndiff --git a/.jevellan/memory/deploy.md b/.jevellan/memory/deploy.md\n\n--- a/.jevellan/memory/deploy.md\n\n+++ b/.jevellan/memory/deploy.md\n\n@@ -1,9 +1,9 @@\n\n ---\n\n title: Deploy notes\n\n-status: unresolved\n\n ---\n\n-Deploy with npm run deploy. See [[Missing guide]].\n\n+Deploy by hand from the release branch.\n\n \n\n-## Merged from laptop on 2026-09-20\n\n+## History\n\n \n\n-Deploy by hand from the release branch.\n\n+- Superseded version: Deploy with npm run deploy. See Missing guide. (Wiki link removed: no matching note exists.)\n\n+- The current by-hand, release-branch instruction was merged from the laptop on 2026-09-20.\n\ndiff --git a/.jevellan/memory/old-caching-idea.md b/.jevellan/memory/old-caching-idea.md\n\ndeleted file mode 100644\n\n--- a/.jevellan/memory/old-caching-idea.md\n\n+++ /dev/null\n\n@@ -1,4 +0,0 @@\n\n----\n\n-title: Old caching idea\n\n----\n\n-We once considered caching builds in S3.\n\ndiff --git a/.jevellan/memory/test-conventions-2.md b/.jevellan/memory/test-conventions-2.md\n\ndeleted file mode 100644\n\n--- a/.jevellan/memory/test-conventions-2.md\n\n+++ /dev/null\n\n@@ -1,4 +0,0 @@\n\n----\n\n-title: Test Conventions\n\n----\n\n-Tests run with Vitest and globals are on.\n\n\n",
+        "afterUndo": "Revert \"memory: nightly care (1 merged, 1 archived, 1 links)\""
+      },
+      "drafts": [
+        {
+          "stretch": 1,
+          "action": "reply",
+          "model": "claude-opus-5-5",
+          "effort": "high",
+          "permissions": "read-only",
+          "costUsd": 0,
+          "startedAt": "2026-09-27T18:23:54.848Z",
+          "status": "completed"
+        }
+      ],
+      "jevCalls": 1,
+      "draftCostUsd": 0.25370020000000004,
+      "checks": {
+        "j12Published": true,
+        "j12TreeClean": true,
+        "j12AgentsUntouched": true,
+        "j12Undo": true,
+        "j12ContextSuggested": false
+      }
+    }
+  ]
+}

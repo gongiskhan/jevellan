@@ -157,11 +157,13 @@ export class StretchExecution {
             brief: `Original action: ${input.action}. Stretch: ${input.stretch}.\n# Original request\n${work.load().conversation.work!.request}\n# Tail of this stretch\n${this.#tail()}\n# Required handoff\n${message}` });
           repairResult = await this.#capture(this.#active);
         }
-        if (repairResult.status === 'failed') throw new Error(repairResult.error?.message ?? 'Runtime handoff repair failed.');
+        if (repairResult.status === 'failed') throw Object.assign(new Error(repairResult.error?.message ?? 'Runtime handoff repair failed.'), { runtimeError: repairResult.error });
         repaired = !!this.#handoff();
       }
     } catch (error) {
-      failure = classifyRuntimeError(error);
+      // A failed repair keeps the structured cause (kind, scope, reset time): the original run's when it had one.
+      const repaired = error instanceof Error && 'runtimeError' in error ? error.runtimeError as RunResult['error'] : undefined;
+      failure = failure ?? repaired ?? classifyRuntimeError(error);
       work.runtimeEvent('error', failure, input.stretch);
     } finally {
       // A caller must not checkpoint, release ownership or launch a successor

@@ -12,7 +12,7 @@ import {
 import { ConversationLedger, publishWorkspace } from '@jevellan/conversations';
 import { SAME_NOTE_THRESHOLD, STILL_USEFUL_THRESHOLD, WORKING_RULE_THRESHOLD, judgeContextRules, judgeMemoryCare, type DecisionClient } from '@jevellan/decisions';
 import {
-  careInvolved, careKey, collectMemoryCandidates, memoryCareCommit, memoryCarePatch, memoryCareResult, noteRef, patchFile, projectPatch, readMemoryFiles, searchOverlapPairs, sha256,
+  careInvolved, careKey, collectMemoryCandidates, mergeClusters, memoryCareCommit, memoryCarePatch, memoryCareResult, noteRef, patchFile, projectPatch, readMemoryFiles, searchOverlapPairs, sha256,
   type ConfirmedCare, type MemoryFile,
 } from '@jevellan/memory';
 
@@ -230,7 +230,7 @@ export class ProjectImprover {
     const request: BackgroundDraftRequest = { schema: 'background-draft-request-v1', id: `care_${hash([id, careKey('memory-care', files, [...involved])])}`, title: `Memory care · ${project.name}`, projectId: project.id, resultType: 'memory-patch',
       brief: [
         'Tidy this project\'s memory notes. The files under memory/ are private read-only copies of the notes; do not edit them.',
-        'tasks.json lists the work Jev confirmed. For each pair in "merge", combine both notes into one: keep every distinct fact, keep the better title, and return the other note with content null.',
+        'tasks.json lists the work Jev confirmed. Each entry in "merge" is a group of notes that describe the same thing: combine the whole group into one of its notes, keeping every distinct fact and the best title, and return every other note of the group with content null.',
         'For each note in "reconcile", rewrite the conflicting versions into one current version, remove "status: unresolved" from its frontmatter and keep the superseded text under a "## History" section at the end.',
         'For each entry in "fixLinks", point the link at the right existing note listed in notes.json, or remove the link if nothing fits. Also update links in other notes that pointed at a merged-away note.',
         'Notes in "archive" are moved by Jevellan; do not change them. Do not create new notes.',
@@ -239,7 +239,7 @@ export class ProjectImprover {
       files: {
         ...Object.fromEntries(copies.map(file => [`memory/${file.relative}`, file.content])),
         'notes.json': JSON.stringify(files.filter(file => !file.archived).map(file => ({ path: file.relative, title: file.title, permalink: file.permalink }))),
-        'tasks.json': JSON.stringify({ merge: confirmed.pairs.map(pair => pair.map(relative)), reconcile: confirmed.unresolved.map(relative), fixLinks: confirmed.brokenLinks.map(link => ({ note: relative(link.path), target: link.target })), archive: confirmed.stale.map(relative) }),
+        'tasks.json': JSON.stringify({ merge: mergeClusters(confirmed.pairs).map(cluster => cluster.map(relative)), reconcile: confirmed.unresolved.map(relative), fixLinks: confirmed.brokenLinks.map(link => ({ note: relative(link.path), target: link.target })), archive: confirmed.stale.map(relative) }),
         'draft-schema.json': JSON.stringify(z.toJSONSchema(MemoryPatchDraftSchema)),
       } };
     const result = BackgroundDraftResultSchema.parse(await this.options.draft(request, this.#abort.signal));
@@ -316,8 +316,8 @@ export class ProjectImprover {
     for (const group of confirmed) {
       const key = careKey('context', files, group); const members = group.map(path => files.find(file => file.path === path)!);
       const request: BackgroundDraftRequest = { schema: 'background-draft-request-v1', id: `context_${hash([id, key])}`, title: `Context suggestion · ${project.name}`, projectId: project.id, resultType: 'suggestion',
-        brief: 'Several project memory notes under notes/ state the same working rule. Draft a short addition to the instruction file (instructions.md, the project\'s AGENTS.md) that states this rule once, clearly, in the style of the existing file. Change nothing else. Return a context-draft-v1 JSON object matching draft-schema.json as handoff.result.content with type suggestion, where "after" is the complete new instruction file. Do not edit files.',
-        files: { 'instructions.md': instruction.content ?? '', ...Object.fromEntries(members.map(file => [`notes/${file.relative}`, file.content])), 'draft-schema.json': JSON.stringify(z.toJSONSchema(ContextDraftSchema)) } };
+        brief: `Several project memory notes under notes/ state the same working rule. Draft a short addition to the project's instruction file ${instruction.path} that states this rule once, clearly, in the style of the existing file. Change nothing else. Return a context-draft-v1 JSON object matching draft-schema.json as handoff.result.content with type suggestion, where "after" is the complete new ${instruction.path}. Name ${instruction.path} in the title if you mention the file. Do not edit files.`,
+        files: { [instruction.path]: instruction.content ?? '', ...Object.fromEntries(members.map(file => [`notes/${file.relative}`, file.content])), 'draft-schema.json': JSON.stringify(z.toJSONSchema(ContextDraftSchema)) } };
       const result = BackgroundDraftResultSchema.parse(await this.options.draft(request, this.#abort.signal));
       if (result.runId !== request.id || result.handoff.status !== 'done' || result.handoff.result?.type !== 'suggestion') throw new Error('The context step did not return a completed suggestion.');
       const draft = ContextDraftSchema.parse(typeof result.content === 'string' ? JSON.parse(result.content) : result.content);

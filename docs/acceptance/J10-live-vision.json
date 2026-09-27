@@ -1,0 +1,63 @@
+{
+  "schema": "live-vision-v1",
+  "journey": "J10",
+  "checks": [
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J10 live improver",
+      "layout": "1440x900 light",
+      "screenshot": "screenshots/J10-live-improver-no-suggestions.png",
+      "expected": "Settings \u2192 Improver with routing suggestion cards, their evidence and diffs",
+      "result": {
+        "ok": false,
+        "blocking": [
+          "The screen shows Settings \u2192 Improver, but not a routing suggestion card. The only card under 'Waiting for you (1)' is an AGENTS.md context suggestion ('State the run-tests-before-push rule once in instructions.md'). 'Last runs' says 'Routing \u2014 No new routing suggestions.', so no routing card, routing evidence or routing diff is visible."
+        ],
+        "cosmetic": [
+          "A button at the bottom of the 'Schedule and jobs' panel is cut off by the bottom of the window (it is probably reachable by scrolling).",
+          "The evidence list 'Based on 3 notes' is collapsed, so the source notes are not visible without expanding it.",
+          "The 'Run nightly at' time field (03:00 AM) and the 'Apply and tell me' field on the Memory care row look greyed out and have low contrast."
+        ]
+      }
+    },
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J10 live improver",
+      "layout": "1440x900 light",
+      "screenshot": "screenshots/J10-live-improver-desktop.png",
+      "expected": "Settings \u2192 Improver on desktop",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "The Schedule and jobs card runs past the bottom of the viewport, so a button at about y\u2248890 is only partly visible. It should be reachable by scrolling, but this screenshot can't confirm that the content pane scrolls.",
+          "The 'Run nightly at' time field (03:00 AM) and the Memory care 'Apply and tell me' dropdown look greyed out and have low contrast. That looks deliberate because their checkboxes are off, but the text is faint.",
+          "The sidebar says '1 new suggestion from the improver' and 'Waiting for you (1)' shows the same item, so the same information appears twice.",
+          "The Last runs card is much shorter than the Schedule and jobs card, which leaves a large empty space under it on the right."
+        ]
+      }
+    },
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J10 live improver",
+      "layout": "390x844 light",
+      "screenshot": "screenshots/J10-live-improver-phone.png",
+      "expected": "Settings \u2192 Improver on a phone",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "The active 'Improver' tab is cut off at the right edge of the tab bar and shows as 'Impro'. The bar looks horizontally scrollable, and the header and page title both say Improver, but the selected tab should scroll fully into view.",
+          "The added diff line wraps onto a second line ('with failing tests.') inside the code block. It stays readable, but horizontal scroll or a clearer wrap indent would read better as a diff.",
+          "The 'Schedule and jobs' card is cut off at the bottom of the screen. This is normal page scrolling, not an overlap."
+        ]
+      }
+    }
+  ]
+}

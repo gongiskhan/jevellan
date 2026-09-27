@@ -134,6 +134,18 @@ export function careKey(kind: 'memory-care' | 'context', files: MemoryFile[], pa
   const involved = [...new Set(paths)].sort().map(path => ({ path, content: sha256(files.find(file => file.path === path)?.content ?? '') }));
   return sha256(stableJson({ kind, involved }));
 }
+/** Confirmed pairs that share a note form one cluster; each cluster becomes one note. */
+export function mergeClusters(pairs: Array<[string, string]>): string[][] {
+  const parent = new Map<string, string>();
+  const find = (path: string): string => { let root = path; while (parent.get(root) !== root) root = parent.get(root)!; return root; };
+  for (const [a, b] of pairs) {
+    for (const path of [a, b]) if (!parent.has(path)) parent.set(path, path);
+    const first = find(a); const second = find(b); if (first !== second) parent.set(first, second);
+  }
+  const clusters = new Map<string, string[]>();
+  for (const path of new Set(pairs.flat())) clusters.set(find(path), [...clusters.get(find(path)) ?? [], path]);
+  return [...clusters.values()].map(cluster => cluster.sort()).sort((a, b) => a[0]!.localeCompare(b[0]!));
+}
 export function careInvolved(confirmed: ConfirmedCare): string[] {
   return [...new Set([...confirmed.pairs.flat(), ...confirmed.stale, ...confirmed.unresolved, ...confirmed.brokenLinks.map(link => link.path)])].sort();
 }
@@ -168,7 +180,7 @@ export function memoryCarePatch(memoryDir: string, files: MemoryFile[], confirme
     if (confirmed.stale.includes(path)) throw new Error('Stale notes are archived unchanged.');
     changes.set(path, patchFile(path, existing.content, entry.content));
   }
-  for (const [a, b] of confirmed.pairs) if (changes.get(a)?.after === null && changes.get(b)?.after === null) throw new Error('A merge must keep one note of each pair.');
+  for (const cluster of mergeClusters(confirmed.pairs)) if (cluster.every(path => changes.get(path)?.after === null)) throw new Error('A merge must keep one note of each group of duplicates.');
   const archived: string[] = [];
   for (const path of confirmed.stale) {
     const file = files.find(entry => entry.path === path); if (!file || changes.has(path)) continue;

@@ -1,18 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase6-j10-dismissed-phone-light.png",
-  "expected": "the Jevellan web app \"j10 dismissed\" screen, one step of the check \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\", at phone-light, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The top tab bar cuts off the last tab at the right edge ('Impro…'). It looks like a horizontally scrolling tab strip, so the tab can still be reached, but nothing on screen shows that it scrolls.",
-      "The diff header lines wrap onto a second line on narrow phone widths ('diff --git a/menu/... b/menu/...'), which makes them slightly harder to read.",
-      "The 'Save schedule and jobs' button looks greyed out and has low contrast. That's expected while there are no unsaved changes, but it's faint."
-    ]
-  }
+  "expected": "the Jevellan web app \"j10 dismissed\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)"
 }

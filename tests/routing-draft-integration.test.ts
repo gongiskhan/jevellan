@@ -20,7 +20,7 @@ test('a routing job uses the private native draft, scoped handoff and saved-case
   const status = () => AccountStatusSchema.parse({ schema: 'account-status-v1', accountId: account.id, deviceId: 'hub', auth: 'ready', observedAt: new Date().toISOString() });
   const enterOperation = (id: string, title: string) => gate.enter({ kind: 'settings', id, title });
   const drafts = new BackgroundDrafts({ homes, deviceId: 'hub', bridges, redactor, runtimes: new Map([['fake', runtime]]), settings: () => hub.configuration.current()!.configuration['x-jevellan'], riggingItems: () => [], accountRuns: new Set(), enterOperation,
-    accounts: { async list() { return [{ schema: 'account-view-v1' as const, revision: 1, account, statuses: [status()] }]; }, async resolve() { return { account, home: homes.account('fake', account.id), env: {} }; }, async markUsed() {}, async recordUsage(_id, usage) { return AccountStatusSchema.parse({ ...status(), usage }); } } });
+    accounts: { async list() { return [{ schema: 'account-view-v1' as const, revision: 1, account, statuses: [status()] }]; }, async resolve() { return { account, home: homes.account('fake', account.id), env: {} }; }, async markUsed() {}, async recordUsage(_id, usage) { return AccountStatusSchema.parse({ ...status(), usage }); }, async recordError() { return status(); } } });
   drafts.daemonUrl = 'http://127.0.0.1:9999';
   const client: DecisionClient = { async decide(input) {
     const answers = Object.fromEntries(Object.entries(input.questions).map(([id, question]) => {

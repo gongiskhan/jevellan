@@ -81,8 +81,8 @@ async function improverDraft(input) {
     }
     for (const link of tasks.fixLinks) files.set(link.note, (files.get(link.note) ?? read(`memory/${link.note}`)).replaceAll(`[[${link.target}]]`, '[[Test conventions]]'));
     content = { schema: 'memory-patch-draft-v1', summary: 'Simulated memory care draft.', files: [...files].map(([path, text]) => ({ path, content: text })) };
-  } else if (has('instructions.md')) {
-    content = { schema: 'context-draft-v1', title: 'Run the tests before pushing', reason: 'Three project notes state this working rule.', after: `${read('instructions.md').trimEnd()}\n\n## Working rules\n\n- Run the tests before every push.\n` };
+  } else if (has('AGENTS.md') || has('CLAUDE.md')) {
+    content = { schema: 'context-draft-v1', title: 'Run the tests before pushing', reason: 'Three project notes state this working rule.', after: `${read(has('AGENTS.md') ? 'AGENTS.md' : 'CLAUDE.md').trimEnd()}\n\n## Working rules\n\n- Run the tests before every push.\n` };
   } else if (has('previous-draft.json')) {
     const previous = JSON.parse(read('previous-draft.json'));
     content = { ...previous, title: `${previous.title}, revised`, after: `${previous.before} ${has('instruction.txt') ? read('instruction.txt').trim() : 'Recomputed.'}` };

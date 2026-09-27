@@ -1,0 +1,269 @@
+{
+  "schema": "live-improver-journey-v1",
+  "journey": "J10",
+  "label": "live",
+  "source": "live-claude-jev",
+  "build": "bf84de9",
+  "attempts": [
+    {
+      "attempt": "a1",
+      "corrections": "3 noted per group",
+      "j10": {
+        "jobs": [
+          {
+            "job": {
+              "id": "job_d6f0406f027ffd55bd1d524cdfb37847603d631a1633109b2b173d2129244de9",
+              "scope": "routing",
+              "status": "complete",
+              "note": "No new routing suggestions."
+            },
+            "log": {
+              "schema": "routing-improver-log-v1",
+              "jobId": "job_d6f0406f027ffd55bd1d524cdfb37847603d631a1633109b2b173d2129244de9",
+              "startedAt": "2026-09-27T18:12:34.980Z",
+              "entries": [
+                {
+                  "at": "2026-09-27T18:12:34.984Z",
+                  "groupId": null,
+                  "stage": "started",
+                  "probability": null,
+                  "runId": null,
+                  "suggestionId": null,
+                  "note": "Checking recent corrections for routing preferences."
+                },
+                {
+                  "at": "2026-09-27T18:12:35.230Z",
+                  "groupId": "routing_7c95e9e536378af79a23aad9325b5e7b12ab8e2f90344904d7d0041be3f796d1",
+                  "stage": "judged",
+                  "probability": 0.59,
+                  "runId": null,
+                  "suggestionId": null,
+                  "note": "Checked whether the corrections express a consistent preference."
+                },
+                {
+                  "at": "2026-09-27T18:12:35.474Z",
+                  "groupId": "routing_8b0bc0b426cca1ad1f3ab2c0f5f30963f61b5a0fa5af2dfee34a4f3658869ad7",
+                  "stage": "judged",
+                  "probability": 0.52,
+                  "runId": null,
+                  "suggestionId": null,
+                  "note": "Checked whether the corrections express a consistent preference."
+                },
+                {
+                  "at": "2026-09-27T18:12:35.477Z",
+                  "groupId": null,
+                  "stage": "complete",
+                  "probability": null,
+                  "runId": null,
+                  "suggestionId": null,
+                  "note": "No new routing suggestions."
+                }
+              ]
+            }
+          }
+        ],
+        "cards": [],
+        "suggestions": []
+      },
+      "jevCalls": 3,
+      "checks": {
+        "j12Published": false,
+        "j12TreeClean": true,
+        "j12AgentsUntouched": true,
+        "j12ContextSuggested": false,
+        "j10Suggested": false,
+        "noBrowserErrors": true
+      }
+    },
+    {
+      "attempt": "a2",
+      "corrections": "5 per group (3 noted, 2 Override and undo)",
+      "ceiling": {
+        "raised": {
+          "at": "2026-09-27T18:16:10.959Z",
+          "from": 90,
+          "ceilingPct": 98,
+          "status": [
+            {
+              "auth": "ready",
+              "weeklyPct": 94,
+              "fiveHourPct": 3
+            }
+          ]
+        },
+        "restored": {
+          "at": "2026-09-27T18:16:49.597Z",
+          "ceilingPct": 90,
+          "status": [
+            {
+              "auth": "ready",
+              "weeklyPct": 94,
+              "fiveHourPct": 3
+            }
+          ]
+        }
+      },
+      "j10": {
+        "jobs": [
+          {
+            "job": {
+              "id": "job_f5547541c0f7969b68757bab8e9a1cb3a1d58ffded2adf697d737d5d214551d8",
+              "scope": "routing",
+              "status": "complete",
+              "note": "No new routing suggestions."
+            },
+            "log": {
+              "schema": "routing-improver-log-v1",
+              "jobId": "job_f5547541c0f7969b68757bab8e9a1cb3a1d58ffded2adf697d737d5d214551d8",
+              "startedAt": "2026-09-27T18:16:45.971Z",
+              "entries": [
+                {
+                  "at": "2026-09-27T18:16:45.976Z",
+                  "groupId": null,
+                  "stage": "started",
+                  "probability": null,
+                  "runId": null,
+                  "suggestionId": null,
+                  "note": "Checking recent corrections for routing preferences."
+                },
+                {
+                  "at": "2026-09-27T18:16:46.211Z",
+                  "groupId": "routing_7c95e9e536378af79a23aad9325b5e7b12ab8e2f90344904d7d0041be3f796d1",
+                  "stage": "judged",
+                  "probability": 0.39,
+                  "runId": null,
+                  "suggestionId": null,
+                  "note": "Checked whether the corrections express a consistent preference."
+                },
+                {
+                  "at": "2026-09-27T18:16:46.455Z",
+                  "groupId": "routing_8b0bc0b426cca1ad1f3ab2c0f5f30963f61b5a0fa5af2dfee34a4f3658869ad7",
+                  "stage": "judged",
+                  "probability": 0.32,
+                  "runId": null,
+                  "suggestionId": null,
+                  "note": "Checked whether the corrections express a consistent preference."
+                },
+                {
+                  "at": "2026-09-27T18:16:46.458Z",
+                  "groupId": null,
+                  "stage": "complete",
+                  "probability": null,
+                  "runId": null,
+                  "suggestionId": null,
+                  "note": "No new routing suggestions."
+                }
+              ]
+            }
+          }
+        ],
+        "cards": [],
+        "suggestions": []
+      },
+      "jevCalls": 5,
+      "checks": {
+        "j12Published": false,
+        "j12TreeClean": true,
+        "j12AgentsUntouched": true,
+        "j12ContextSuggested": false,
+        "j10Suggested": false,
+        "noBrowserErrors": true
+      }
+    },
+    {
+      "attempt": "a4",
+      "corrections": "5 per group (3 noted, 2 Override and undo)",
+      "ceiling": {
+        "raised": {
+          "at": "2026-09-27T18:19:33.879Z",
+          "from": 90,
+          "ceilingPct": 98,
+          "status": [
+            {
+              "auth": "ready",
+              "weeklyPct": 94,
+              "fiveHourPct": 4
+            }
+          ]
+        },
+        "restored": {
+          "at": "2026-09-27T18:22:34.241Z",
+          "ceilingPct": 90,
+          "status": [
+            {
+              "auth": "ready",
+              "weeklyPct": 95,
+              "fiveHourPct": 5
+            }
+          ]
+        }
+      },
+      "j10": {
+        "jobs": [
+          {
+            "job": {
+              "id": "job_32551f0c2ff9774ed9b8cc3bf8512dfe82c907cdf8567e58a71684cbee3cb578",
+              "scope": "routing",
+              "status": "complete",
+              "note": "No new routing suggestions."
+            },
+            "log": {
+              "schema": "routing-improver-log-v1",
+              "jobId": "job_32551f0c2ff9774ed9b8cc3bf8512dfe82c907cdf8567e58a71684cbee3cb578",
+              "startedAt": "2026-09-27T18:22:30.493Z",
+              "entries": [
+                {
+                  "at": "2026-09-27T18:22:30.499Z",
+                  "groupId": null,
+                  "stage": "started",
+                  "probability": null,
+                  "runId": null,
+                  "suggestionId": null,
+                  "note": "Checking recent corrections for routing preferences."
+                },
+                {
+                  "at": "2026-09-27T18:22:30.758Z",
+                  "groupId": "routing_7c95e9e536378af79a23aad9325b5e7b12ab8e2f90344904d7d0041be3f796d1",
+                  "stage": "judged",
+                  "probability": 0.37,
+                  "runId": null,
+                  "suggestionId": null,
+                  "note": "Checked whether the corrections express a consistent preference."
+                },
+                {
+                  "at": "2026-09-27T18:22:30.987Z",
+                  "groupId": "routing_8b0bc0b426cca1ad1f3ab2c0f5f30963f61b5a0fa5af2dfee34a4f3658869ad7",
+                  "stage": "judged",
+                  "probability": 0.32,
+                  "runId": null,
+                  "suggestionId": null,
+                  "note": "Checked whether the corrections express a consistent preference."
+                },
+                {
+                  "at": "2026-09-27T18:22:30.990Z",
+                  "groupId": null,
+                  "stage": "complete",
+                  "probability": null,
+                  "runId": null,
+                  "suggestionId": null,
+                  "note": "No new routing suggestions."
+                }
+              ]
+            }
+          }
+        ],
+        "cards": [],
+        "suggestions": []
+      },
+      "jevCalls": 5,
+      "checks": {
+        "j12Published": false,
+        "j12TreeClean": true,
+        "j12AgentsUntouched": true,
+        "j12ContextSuggested": true,
+        "j10Suggested": false,
+        "noBrowserErrors": true
+      }
+    }
+  ]
+}

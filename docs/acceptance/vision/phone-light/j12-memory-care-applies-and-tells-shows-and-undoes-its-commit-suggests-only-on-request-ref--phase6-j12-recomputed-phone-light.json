@@ -1,19 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase6-j12-recomputed-phone-light.png",
-  "expected": "the Jevellan web app \"j12 recomputed\" screen, one step of the check \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\", at phone-light, rendered completely and legibly",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The top tab bar is clipped at the right edge: the last tab ('Impr…') is cut off mid-word. It looks like a horizontally scrolling tab strip, but nothing on screen shows that more tabs are off-screen.",
-      "The diff code blocks use very small monospace text on a dark background. At phone width it reads as dense, though it's still legible.",
-      "The page is very long (about 5,400px): the Last runs list repeats many near-identical 'No working rules to suggest' rows, so the Recently decided section sits far down the page.",
-      "I checked this at the downscaled size I was given (about 145px wide). I couldn't crop the full-resolution image to inspect details, so fine-grained clipping inside the diff blocks isn't verified."
-    ]
-  }
+  "expected": "the Jevellan web app \"j12 recomputed\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)"
 }

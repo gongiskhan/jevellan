@@ -1,0 +1,66 @@
+{
+  "schema": "live-vision-v1",
+  "journey": "J12",
+  "checks": [
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J12 live improver",
+      "layout": "1440x900 light",
+      "screenshot": "screenshots/J12-live-improver-run.png",
+      "expected": "Settings \u2192 Improver after a memory-care run, with the morning card and any AGENTS.md suggestion",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "No AGENTS.md suggestion card is visible. The 'Context suggestions for AGENTS.md' toggle is on, but the only item under 'Waiting for you' is the memory-care card. A suggestion may be further down the page, below the 'Recently decided' heading.",
+          "The 'Waiting for you' section holds an item already marked 'Applied', so it looks like it has nothing left to act on.",
+          "The 'Last runs' panel says '1 jobs have not run yet', which should be '1 job has not run yet'.",
+          "The 'Save schedule and jobs' button is pale and low-contrast. It is probably disabled because nothing has changed, but it could be clearer.",
+          "The 03:00 AM time field is greyed out because 'Run nightly' is unchecked, which is fine but hard to read.",
+          "The Trial log says 'No finished conversations yet' while the sidebar lists a conversation marked Done, which may confuse users.",
+          "The sidebar banner repeats the memory-care summary with a pink dashed border that looks heavy next to the rest of the page.",
+          "The 'Recently decided' heading is cut off at the bottom edge of the viewport, but it scrolls into view."
+        ]
+      }
+    },
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J12 live improver",
+      "layout": "1440x900 light",
+      "screenshot": "screenshots/J12-live-improver-view-changes.png",
+      "expected": "the memory-care report with its diff open",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "The last visible diff line ('-Deploy with npm run deploy. See [[Missing guide]].') is cut in half at the bottom of the diff panel. The panel looks scrollable, but nothing shows that more content is below.",
+          "'1 jobs have not run yet' should read '1 job has not run yet'.",
+          "The 'Suggest' label next to Routing suggestions is small, low-contrast monospace text and sits far from its checkbox.",
+          "The 'Run nightly at' time field (03:00 AM) looks disabled but has no explanation."
+        ]
+      }
+    },
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J12 live improver",
+      "layout": "1440x900 light",
+      "screenshot": "screenshots/J12-live-improver-context.png",
+      "expected": "the AGENTS.md suggestion card with its evidence and diff",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "The evidence list ('Based on 3 notes') starts collapsed, so the three source notes appear only as file names in the body text until it is expanded",
+          "The 'Schedule and jobs' card runs past the bottom of the viewport, so its lower content is only visible after scrolling",
+          "There is a lot of empty space below the diff block inside the dark code panel"
+        ]
+      }
+    }
+  ]
+}
