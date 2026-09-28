@@ -9,7 +9,8 @@ export const ProjectsListSchema = z.strictObject({ schema: z.literal('projects-l
 export const ProjectFoldersSchema = z.strictObject({ schema: z.literal('project-folders-v1'), path: z.string(), parent: z.string().nullable(), folders: z.array(z.strictObject({ name: z.string(), path: z.string() })) });
 export const ProjectVisibilitySchema = z.strictObject({ schema: z.literal('project-visibility-v1'), projectId: IdSchema, deviceId: IdSchema, visibility: z.enum(['PUBLIC', 'PRIVATE', 'INTERNAL', 'UNKNOWN']), checkedAt: z.iso.datetime() });
 export const StartConversationSchema = z.strictObject({ schema: z.literal('start-conversation-v1'), id: IdSchema, projectId: IdSchema, title: z.string().min(1).max(200), message: z.string().min(1).max(100_000), clientMessageId: IdSchema, choices: ComposerInitialSchema.optional() });
-export const ConversationMessageSchema = z.strictObject({ schema: z.literal('conversation-message-v1'), clientMessageId: IdSchema, text: z.string().min(1).max(100_000), kind: z.enum(['message', 'note']).default('message') });
+export const ConversationMessageSchema = z.strictObject({ schema: z.literal('conversation-message-v1'), clientMessageId: IdSchema, text: z.string().min(1).max(100_000), kind: z.enum(['message', 'note']).default('message'),
+  answer: z.strictObject({ stretch: z.number().int().positive(), option: z.number().int().min(0).max(3) }).optional() });
 export const RenameConversationSchema = z.strictObject({ schema: z.literal('rename-conversation-v1'), clientRequestId: IdSchema, previousTitle: z.string().min(1), title: z.string().trim().min(1).max(200) });
 export const ConversationRenamedSchema = z.strictObject({ schema: z.literal('conversation-renamed-v1'), request: RenameConversationSchema });
 export const FinishOutsideSchema = z.strictObject({ schema: z.literal('finish-outside-v1'), clientRequestId: IdSchema, generation: z.number().int().nonnegative(), reason: z.string().trim().min(1).max(2000).optional() });
@@ -77,7 +78,10 @@ export const ConversationProgressSchema = z.strictObject({ schema: z.literal('co
 export const ConversationPublicSchema = z.strictObject({
   schema: z.literal('conversation-view-v1'), progress: ConversationProgressSchema.optional(), conversation: ConversationSchema, summary: SummarySchema, closedWorks: z.array(WorkSchema),
   stretches: z.array(StretchSchema.omit({ native: true })), handoffs: z.array(HandoffSchema),
-  messages: z.array(z.strictObject({ id: z.number().int().positive(), type: z.enum(['user-message', 'note']), clientMessageId: IdSchema, text: z.string(), workId: IdSchema })),
+  messages: z.array(z.strictObject({ id: z.number().int().positive(), type: z.enum(['user-message', 'note']), clientMessageId: IdSchema, text: z.string(), workId: IdSchema,
+    answer: z.strictObject({ stretch: z.number().int().positive(), option: z.number().int().min(0).max(3), label: z.string() }).optional() })),
+  /** The last handoff's question while no message has answered it, with the options to show as buttons. */
+  openQuestion: z.strictObject({ stretch: z.number().int().positive(), text: z.string(), options: z.array(z.strictObject({ label: z.string(), detail: z.string().optional() })) }).optional(),
   pause: WorkControlSchema.options[0].optional(), decisionWait: DecisionWaitSchema.optional(), decisions: z.array(DecisionRecordSchema), busy: z.boolean(), allowed: z.array(ActionSchema),
   settlements: z.array(WorkSettlementSchema), overrides: z.array(OverrideRecordSchema), composerOverrides: z.array(ComposerOverrideRecordSchema).default([]), redos: z.array(RedoOperationSchema),
   finishes: z.array(FinishOutsideOperationSchema).default([]),

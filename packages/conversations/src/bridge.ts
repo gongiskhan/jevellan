@@ -78,6 +78,7 @@ export class StretchTools {
       case 'jevellan_handoff': {
         const handoff = HandoffToolSchema.parse(args);
         if (handoff.stretch !== stretch) throw failure(`This token belongs to another stretch. Use stretch ${stretch} in jevellan_handoff.`);
+        if (handoff.options && !handoff.question) throw failure('Answer options need a question. Put the question in question, or leave options out.');
         const content = handoff.result;
         result = ledger.acceptHandoff({ ...handoff, ...(content && 'content' in content ? { result: { type: content.type, ref: ledger.putBlob(content.content).ref } } : {}) }); break;
       }

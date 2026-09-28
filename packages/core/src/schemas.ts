@@ -188,6 +188,8 @@ export const HandoffSchema = z.strictObject({
   evidence: z.array(z.strictObject({ kind: z.enum(['test', 'file', 'command', 'screenshot', 'url']), ref: text, note: z.string().optional() })),
   findings: z.array(FindingSchema), blockers: z.array(text), failedApproaches: z.array(text), proposedNext: ActionSchema.nullable(), changedFiles: z.array(text),
   testsRun: z.strictObject({ command: text, passed: z.boolean(), summary: z.string() }).optional(), question: text.optional(),
+  options: z.array(z.strictObject({ label: text.max(120).describe('The answer as the user would say it, for example "Yes, add the Overview section".'), detail: z.string().max(300).optional() }))
+    .min(2).max(4).optional().describe('Two to four likely answers to question, shown to the user as buttons. The user can still type another answer.'),
 });
 export type Handoff = z.infer<typeof HandoffSchema>;
 export const VerificationSchema = z.strictObject({
@@ -214,6 +216,8 @@ export const ConversationCreatedSchema = z.strictObject({ schema: z.literal('con
 export const WorkMessageSchema = z.strictObject({
   schema: z.literal('work-message-v1'), clientMessageId: IdSchema, text, workId: IdSchema,
   initialAllowance: z.number().int().positive(), allowanceGranted: count.default(0),
+  /** Set when the message is one of the options offered for a handoff's question. */
+  answer: z.strictObject({ stretch: z.number().int().positive(), option: z.number().int().min(0).max(3), label: text }).optional(),
 });
 export const AllowanceEventSchema = z.strictObject({ schema: z.literal('allowance-event-v1'), workId: IdSchema, messageEventId: text.optional(), extra: z.number().int().positive(), via: z.enum(['reply', 'button']) });
 export const GuardKindSchema = z.enum(['steps', 'no-progress', 'test-failures', 'cost']);

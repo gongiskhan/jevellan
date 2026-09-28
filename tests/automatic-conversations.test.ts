@@ -116,6 +116,30 @@ test('Ask you after an answer writes a new question instead of re-posting the an
   expect(result.pause?.reason).toBe('Shall I add a short project summary to packaging/README.md?');
 });
 
+test('offered answers show as options, a picked one reaches Jev as the chosen answer, and stale picks are refused', async () => {
+  const options = [{ label: 'Yes, add an Overview section to README.md' }, { label: 'No, edit the install notes instead', detail: 'Only the Install heading changes.' }];
+  actions = ['ask-you']; enqueue(undefined, { question: 'Shall I add an Overview section to README.md?', options }); await create('Change the README.');
+  const asked = await finished(); expect(asked.openQuestion).toEqual({ stretch: 1, text: 'Shall I add an Overview section to README.md?', options });
+  const pick = (option: number, text: string, clientMessageId = `pick_${option}`) => request('/api/conversations/automatic/messages', { schema: 'conversation-message-v1', clientMessageId, text, kind: 'message', answer: { stretch: 1, option } });
+  expect((await pick(0, 'Something else')).status).toBe(400);
+  actions = ['implement', 'done']; enqueue('2');
+  expect((await pick(0, options[0]!.label)).status).toBe(200);
+  const result = await finished(); expect(result.conversation.state, result.pause?.reason).toBe('done'); expect(result.openQuestion).toBeUndefined();
+  expect(result.messages.at(-1)!.answer).toEqual({ stretch: 1, option: 0, label: options[0]!.label });
+  const answered = calls.filter((call) => call.questions.next_action).at(1)!.state as { conversation: Record<string, unknown> };
+  expect(answered.conversation).toMatchObject({ answeredQuestion: 'Shall I add an Overview section to README.md?', offeredAnswers: options.map((option) => option.label), chosenAnswer: options[0]!.label });
+  expect((await pick(1, options[1]!.label, 'late')).status).toBe(409);
+});
+
+test('options without a question are refused at handoff', async () => {
+  actions = ['reply']; fake.enqueue(async ({ input }) => {
+    const response = await fetch(`${input.launch.env.JEVELLAN_DAEMON_URL}/api/bridge`, { method: 'POST', headers: { Authorization: `Bearer ${input.launch.env.JEVELLAN_STRETCH_TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ schema: 'bridge-request-v1', operation: 'call', name: 'jevellan_handoff', arguments: {
+      schema: 'handoff-v2', stretch: input.stretch, action: input.action, status: 'done', summary: 'Options only.', evidence: [], findings: [], blockers: [], failedApproaches: [], proposedNext: null, changedFiles: [], options: [{ label: 'A' }, { label: 'B' }] } }) });
+    expect(await response.text()).toContain('Answer options need a question'); await handoff(input); return { status: 'completed' };
+  });
+  await create('Explain it.'); await finished();
+});
+
 test('Ask you uses a read-only question stretch, then waits without scheduling another action', async () => {
   actions = ['ask-you']; enqueue(undefined, { question: 'Which behavior should change?' }); await create('Change something.'); const result = await finished();
   expect(result.conversation.state, result.pause?.reason).toBe('waiting-for-you'); expect(result.pause?.reason).toBe('Which behavior should change?');

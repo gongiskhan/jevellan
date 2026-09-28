@@ -7,7 +7,7 @@ import {
 import { ConversationLedger } from './ledger.js';
 import { composerDecisionRecords, composerOverrides, replayComposerChoice } from './choices.js';
 
-export type WorkMessage = { id: number; type: 'user-message' | 'note'; clientMessageId: string; text: string; workId: string };
+export type WorkMessage = { id: number; type: 'user-message' | 'note'; clientMessageId: string; text: string; workId: string; answer?: { stretch: number; option: number; label: string } };
 export type ConversationView = {
   conversation: Conversation; summary: Summary; closedWorks: Work[]; stretches: Stretch[];
   handoffs: Handoff[]; messages: WorkMessage[]; pause?: Extract<WorkControl, { kind: 'pause' }>;
@@ -150,7 +150,7 @@ export function replayWork(ledger: ConversationLedger): ConversationView {
         conversation.work.allowance.stretches += message.allowanceGranted;
         conversation.work.allowance.grants.push({ at: event.t, extra: message.allowanceGranted, via: 'reply' });
       }
-      view.messages.push({ id: event.id, type: event.type, clientMessageId: message.clientMessageId, text: message.text, workId: message.workId });
+      view.messages.push({ id: event.id, type: event.type, clientMessageId: message.clientMessageId, text: message.text, workId: message.workId, ...(message.answer ? { answer: message.answer } : {}) });
       conversation.generation++;
       if (event.type === 'user-message') { delete view.pause; if (conversation.state !== 'running') conversation.state = 'idle'; }
     } else if (event.type === 'allowance') {
@@ -297,7 +297,7 @@ export class ConversationWork {
     if (view.conversation.work) this.ledger.writeProjection(`work/${view.conversation.work.id}.json`, WorkSchema, view.conversation.work);
     return view;
   }
-  message(text: string, clientMessageId: string, type: 'user-message' | 'note' = 'user-message', allowance = this.allowance): { eventId: number; repeated: boolean; correction: boolean; view: ConversationView } {
+  message(text: string, clientMessageId: string, type: 'user-message' | 'note' = 'user-message', allowance = this.allowance, answer?: { stretch: number; option: number; label: string }): { eventId: number; repeated: boolean; correction: boolean; view: ConversationView } {
     text = this.ledger.redact(text);
     const view = this.load(); const existing = view.messages.find((entry) => entry.clientMessageId === clientMessageId);
     if (existing) {
@@ -307,7 +307,7 @@ export class ConversationWork {
     if (view.finishes.some((entry) => entry.status !== 'completed')) throw new Error('Finish the pending outside outcome before adding another message.');
     if (type === 'note' && view.conversation.state !== 'running') throw new Error('Notes require a running stretch.');
     if (!Number.isSafeInteger(allowance) || allowance < 1) throw new Error('Invalid work allowance.');
-    const data = WorkMessageSchema.parse({ schema: 'work-message-v1', text, clientMessageId, workId: view.conversation.work?.id ?? `work_${randomUUID()}`, initialAllowance: allowance, allowanceGranted: type === 'user-message' && view.pause?.guard ? allowance : 0 });
+    const data = WorkMessageSchema.parse({ schema: 'work-message-v1', text, clientMessageId, workId: view.conversation.work?.id ?? `work_${randomUUID()}`, initialAllowance: allowance, allowanceGranted: type === 'user-message' && view.pause?.guard ? allowance : 0, ...(answer ? { answer } : {}) });
     const event = this.ledger.append({ type, data }); this.#replyReceipts();
     return { eventId: event.id, repeated: false, correction: type === 'user-message' && view.conversation.state === 'running', view: this.#materialise() };
   }

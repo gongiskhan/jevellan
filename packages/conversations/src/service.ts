@@ -56,8 +56,9 @@ const MANUAL_NOTICE = 'Pick the next step, model and effort.';
 // Ask you runs as a read-only reply that writes one question. An answer the user already gave, including one that
 // leaves the choice to the agent, turns the next question into a concrete proposal to confirm instead of a repeat.
 const ASK_YOU_APPEND = 'Write the one question needed to unblock this work, and include it in the handoff question field. '
-  + 'If the user already answered an earlier question, or left the choice to you, do not ask it again: make the choice yourself, '
-  + 'state exactly what you will change (files and content), and ask only for confirmation.';
+  + 'Add two to four likely answers in the handoff options field, each phrased as the user would say it; the user can still type another answer. '
+  + 'Prefer a concrete proposal: state exactly what you will change (files and content) and offer it as the first option, with the main alternatives after it. '
+  + 'If the user already answered an earlier question, or left the choice to you, do not ask it again: make the choice yourself and ask only for confirmation.';
 const conflict = (message: string) => Object.assign(new Error(message), { status: 409 });
 
 /** The sole scheduling authority on an owner device. Reading history never schedules work. */
@@ -551,6 +552,8 @@ export class ConversationService {
     return ConversationPublicSchema.parse({ schema: 'conversation-view-v1', ...view, progress: this.#operations.get(id)?.progress,
       stretches: view.stretches.map((step) => { const result = { ...step }; delete result.native; return result; }),
       ...(this.#decisionWait(work) ? { decisionWait: this.#decisionWait(work) } : {}),
+      ...(() => { const open = view.conversation.state === 'waiting-for-you' && !this.#operations.has(id) ? this.#lastQuestion(work) : undefined;
+        return open && !open.answered ? { openQuestion: { stretch: open.stretch, text: open.text, options: open.options } } : {}; })(),
       ...(this.#externalWait(work) ? { externalWait: this.#externalWait(work) } : {}),
       settlements: this.#settlements(work), overrides: overrides(work), composerOverrides: composerOverrides(work), redos: redoOperations(work), checkpointBlocks: checkpointBlocks(work), decisions: this.decisions(id), busy: this.#operations.has(id) || this.#correcting.has(id), allowed });
   }
@@ -575,7 +578,9 @@ export class ConversationService {
       if (this.#operations.has(id) || claim?.held && claim.conversationId === id) throw conflict('Settle this conversation’s kept changes before starting another request.');
     }
     this.#notFinishing(work);
-    const result = work.message(input.text, input.clientMessageId, input.kind === 'note' ? 'note' : 'user-message', settings.guards.maxStretchesPerWork);
+    const repeated = before.messages.some((message) => message.clientMessageId === input.clientMessageId);
+    const answer = input.answer && !repeated ? this.#chosenOption(work, input.answer, input.text) : undefined;
+    const result = work.message(input.text, input.clientMessageId, input.kind === 'note' ? 'note' : 'user-message', settings.guards.maxStretchesPerWork, answer);
     if (!result.repeated && result.correction) { this.#notice(work, 'The user corrected this step.', 'steer'); await this.#operations.get(id)?.execution?.steer(); }
     if (!result.repeated) this.#operations.get(id)?.decisionAbort?.abort();
     if (!result.repeated && !this.#operations.has(id) && work.load().conversation.state !== 'running') return this.#schedule(work, 'user-message');
@@ -698,14 +703,22 @@ export class ConversationService {
     else return this.#operate(work, (operation) => this.#automatic(work, operation, trigger));
     this.#index(work); return (await this.view(work.ledger.id));
   }
+  /** Checks that a picked option belongs to the open question and that the message says what the option says. */
+  #chosenOption(work: ConversationWork, answer: { stretch: number; option: number }, text: string) {
+    const open = this.#lastQuestion(work);
+    const option = open && !open.answered && open.stretch === answer.stretch ? open.options[answer.option] : undefined;
+    if (!option) throw conflict('That question was already answered or changed. Type your answer instead.');
+    if (text.trim() !== option.label) throw Object.assign(new Error('The message must be the chosen option.'), { status: 400 });
+    return { stretch: answer.stretch, option: answer.option, label: option.label };
+  }
   /** The last handoff's question for the user, and whether a user message arrived after it. */
-  #lastQuestion(work: ConversationWork): { text: string; answered: boolean } | undefined {
+  #lastQuestion(work: ConversationWork): { stretch: number; text: string; options: { label: string; detail?: string | undefined }[]; answered: boolean } | undefined {
     const view = work.load(); const target = view.conversation.work; if (!target) return undefined;
     const active = new Set(view.stretches.filter((step) => step.workId === target.id && step.status !== 'undone').map((step) => step.n));
     const asked = view.handoffs.filter((handoff) => active.has(handoff.stretch)).at(-1);
     const text = asked && (asked.question ?? (asked.blockers.join('\n') || undefined)); if (!asked || !text) return undefined;
     const event = work.ledger.events().findLast((entry) => entry.type === 'handoff' && entry.stretch === asked.stretch);
-    return { text, answered: !!event && Number(this.#latestMessage(work).id) > Number(event.id) };
+    return { stretch: asked.stretch, text, options: asked.options ?? [], answered: !!event && Number(this.#latestMessage(work).id) > Number(event.id) };
   }
   #latestMessage(work: ConversationWork) {
     const view = work.load(); const target = view.conversation.work!;
@@ -723,9 +736,11 @@ export class ConversationService {
     const facts = { stretchesThisWork: target.counters.stretches, reviewsThisWork: target.counters.reviews, codeChangedThisWork: paths.some((path) => !path.startsWith(memoryDir)), changedFiles: paths.length,
       ...changes, lastVerification: receipt ? receipt.passed && receipt.headStable && (receipt.treeClean || receipt.worktreeBefore !== undefined && receipt.worktreeBefore === receipt.worktreeAfter) ? 'passed' as const : 'failed' as const : 'none' as const,
       publicationConflict, projectHasTestCommand: !!workspace.project.testCommand };
-    const answeredQuestion = this.#lastQuestion(work)?.answered ? this.#lastQuestion(work)!.text : undefined;
+    const asked = this.#lastQuestion(work); const answered = asked?.answered ? asked : undefined;
+    const answeredQuestion = answered?.text; const offeredAnswers = answered?.options.map((option) => option.label);
+    const chosenAnswer = answered && latest.answer?.stretch === answered.stretch ? latest.answer.label : undefined;
     return { ...buildDecisionState({ settings, projectId: workspace.project.id, corrections: await this.corrections(),
-      request: target.request, latestUserMessage: latest.text, answeredQuestion, summary: view.summary, handoffs: view.handoffs.filter((handoff) => active.has(handoff.stretch)), facts, redactor: this.options.redactor,
+      request: target.request, latestUserMessage: latest.text, answeredQuestion, offeredAnswers, chosenAnswer, summary: view.summary, handoffs: view.handoffs.filter((handoff) => active.has(handoff.stretch)), facts, redactor: this.options.redactor,
       ...(current && view.conversation.current ? { current: { model: current, effort: view.conversation.current.effort } } : {}) }), latestMessageEventId: latest.id, facts };
   }
   async #choose(work: ConversationWork, workspace: GitWorkspace, operation: Operation, trigger: DecisionRecord['trigger'], forcedAction?: 'integrate'): Promise<PreparedDecision | undefined> {

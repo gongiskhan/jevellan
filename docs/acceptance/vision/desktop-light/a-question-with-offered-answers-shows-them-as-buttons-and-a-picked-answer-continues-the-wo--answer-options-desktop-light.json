@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "Disabled for this run.",
+  "test": "a question with offered answers shows them as buttons, and a picked answer continues the work",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/screenshots/answer-options-desktop-light.png",
+  "expected": "the Jevellan web app \"answer options\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"a question with offered answers shows them as buttons, and a picked answer continues the work\"; the other steps are judged in their own screenshots)"
+}

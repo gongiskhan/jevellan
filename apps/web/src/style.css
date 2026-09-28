@@ -1065,6 +1065,11 @@ html:has(.conversation-page) { scroll-padding-top: calc(var(--header-height) + 1
   margin: 8px 0;
 }
 .manual-picker h2 { font-family: var(--font-body); font-size: 14px; font-weight: 650; letter-spacing: 0; margin-bottom: 8px; }
+.answer-card { display: grid; gap: 10px; margin: 4px 0 8px; padding: 14px 16px; border: 1px solid var(--jev-edge); border-radius: var(--radius); background: var(--jev-soft); }
+.answer-card .answer-question { margin: 0; font-weight: 600; color: var(--ink); }
+.answer-card .small-text { margin: 0; }
+.answer-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.answer-options button { max-width: 100%; white-space: normal; text-align: left; justify-content: flex-start; line-height: 1.35; }
 .manual-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0 10px; }
 .manual-fields label { margin-bottom: 8px; }
 .manual-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 10px 16px; }

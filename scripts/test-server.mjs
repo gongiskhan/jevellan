@@ -106,11 +106,14 @@ const decisionFetch = async (_url, init) => {
   const improver = improverAnswers(body, state);
   if (improver) return Response.json({ model: 'jev-browser-simulated', usage: { input_tokens: 25, output_tokens: 15 }, answers: improver });
   const composer = state.conversation.request === 'Exercise composer choices: explain the value.';
-  if (!composer && state.conversation.request !== 'Exercise automatic decisions: change the value to two.') return new Response(null, { status: 401 });
+  // Answer options: ask first, act on the picked answer, then close.
+  const answering = state.conversation.request === 'Exercise answer options: change the value.';
+  if (!composer && !answering && state.conversation.request !== 'Exercise automatic decisions: change the value to two.') return new Response(null, { status: 401 });
   return Response.json({ model: 'jev-browser-simulated', usage: { input_tokens: 25, output_tokens: 15 }, answers: Object.fromEntries(Object.entries(body.questions).map(([id, question]) => {
     if (question.type === 'noul') return [id, { type: 'noul', noul: id === 'keep_current' ? 0.9 : 0 }];
     if (question.type === 'score') return [id, { type: 'score', score: 3, probabilities: { '0': 0, '1': 0, '2': 0, '3': 1 }, legend: { '0': 'not useful', '1': 'marginally useful', '2': 'useful', '3': 'essential' }, confidence: 1 }];
-    const choice = id === 'next_action' ? composer ? state.facts.stretchesThisWork < 2 ? 'reply' : 'done' : state.facts.stretchesThisWork ? 'done' : 'implement' : id === 'effort' ? 'medium' : Object.keys(question.criteria)[0];
+    const choice = id === 'next_action' ? answering ? state.facts.codeChangedThisWork ? 'done' : state.conversation.chosenAnswer ? 'implement' : 'ask-you'
+      : composer ? state.facts.stretchesThisWork < 2 ? 'reply' : 'done' : state.facts.stretchesThisWork ? 'done' : 'implement' : id === 'effort' ? 'medium' : Object.keys(question.criteria)[0];
     if (!Object.hasOwn(question.criteria, choice)) throw new Error('The browser fixture cannot answer this question.');
     return [id, { type: 'choice', choice, probabilities: Object.fromEntries(Object.keys(question.criteria).map((option) => [option, option === choice ? 1 : 0])), confidence: 1 }];
   })) });
@@ -169,6 +172,8 @@ const application = new Application({ homes: new Homes(join(root, 'user', '.jeve
           ...(evidenceFixture ? { evidence: [{ kind: 'file', ref: 'docs/Guide with spaces.md' }, { kind: 'screenshot', ref: 'screen.png' }, { kind: 'command', ref: 'npm test', note: 'Command text is not executed by the viewer.' }], findings: [{ claim: 'The amount is declared on line two.', pointer: 'src/example.ts:2' }] } : {}),
           ...(input.action === 'plan' ? { result: { type: 'plan', content: '# The full fixture plan\n1. Change value.txt to two.\n2. Run the project test against the checkpoint.\n3. Publish the verified change.' } } : {}),
           ...(input.action === 'reply' && input.brief.includes('merge-draft') ? { result: { type: 'merge-draft', content: '# Shared project instructions\nPreserve the tests.\nRun the formatter.\n' } } : {}),
+          ...(input.action === 'reply' && input.brief.includes('Exercise answer options') ? { summary: 'Asked which value to use.', question: 'Shall I change the value in value.txt to two?',
+            options: [{ label: 'Yes, change the value to two' }, { label: 'No, keep the value as it is', detail: 'Nothing changes.' }] } : {}),
         } }) });
         if (!response.ok) throw new Error('Fixture handoff failed.');
         emit({ type: 'usage', inputTokens: 200, outputTokens: 100, costUsd: 0.01 }); return { status: 'completed' };

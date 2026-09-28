@@ -475,6 +475,20 @@ export function ConversationPage({ id, ...props }: PageProps & { id: string }) {
       setView(value);
       setMessage('');
     });
+  // Picking an offered answer sends it as the message and records which option it was.
+  const answer = (option: number) =>
+    task.run(async () => {
+      const open = view?.openQuestion; const label = open?.options[option]?.label; if (!open || !label) return;
+      setView(
+        await api(`/api/conversations/${id}/messages`, ConversationPublicSchema, 'POST', {
+          schema: 'conversation-message-v1',
+          clientMessageId: `answer_${clientId()}`,
+          text: label,
+          kind: 'message',
+          answer: { stretch: open.stretch, option },
+        }),
+      );
+    });
   const read = (
     ref: string,
     title: string,
@@ -662,8 +676,9 @@ export function ConversationPage({ id, ...props }: PageProps & { id: string }) {
           and while work runs again it no longer applies. */}
       {view.pause &&
         !(view.pause.reason.endsWith('Pick the next step:') && (pickerShown || running)) &&
-        // A question already posted in the timeline is not repeated as the pause notice.
-        view.pause.reason !== lastNotice && (
+        // A question already posted in the timeline, or shown with its answers below, is not repeated.
+        view.pause.reason !== lastNotice &&
+        view.pause.reason !== view.openQuestion?.text && (
         <p className="notice">{view.pause.reason.replace(/\s*Pick the next step:$/, '')}</p>
       )}
       {!running && view.externalWait && !checkpointBlock && !finishing && (
@@ -783,6 +798,26 @@ export function ConversationPage({ id, ...props }: PageProps & { id: string }) {
             </button>
           </div>
         )}
+      {view.openQuestion && view.openQuestion.options.length > 0 && (
+        <section className="answer-card" aria-label="Answer the question">
+          <p className="answer-question">{view.openQuestion.text}</p>
+          <div className="answer-options">
+            {view.openQuestion.options.map((option, index) => (
+              <button
+                key={option.label}
+                type="button"
+                className={index === 0 ? '' : 'secondary'}
+                disabled={task.busy}
+                title={option.detail}
+                onClick={() => void answer(index)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <p className="muted small-text">Or type a different answer below.</p>
+        </section>
+      )}
       {pickerShown && (
         <ManualPicker
           view={view}
@@ -1683,7 +1718,7 @@ function StepBlock({
               {blocker}
             </p>
           ))}
-          {handoff.question && <p className="notice">{handoff.question}</p>}
+          {handoff.question && view.openQuestion?.stretch !== step.n && <p className="notice">{handoff.question}</p>}
         </div>
       )}
       {findings.length > 0 && (

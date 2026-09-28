@@ -11,7 +11,7 @@ export const DecisionFactsSchema = z.strictObject({
 export const DecisionStateSchema = z.strictObject({
   schema: z.literal('decision-state-v1'),
   rules: z.strictObject({ routingProfile: text, effortGuide: z.record(EffortSchema, text), recentCorrections: z.array(text).max(8) }),
-  conversation: z.strictObject({ request: text, latestUserMessage: text, answeredQuestion: text.max(600).optional(), summary: z.strictObject({ state: text, nextWork: text }),
+  conversation: z.strictObject({ request: text, latestUserMessage: text, answeredQuestion: text.max(600).optional(), offeredAnswers: z.array(text.max(120)).max(4).optional(), chosenAnswer: text.max(120).optional(), summary: z.strictObject({ state: text, nextWork: text }),
     recentHandoffs: z.array(z.strictObject({ action: ActionSchema, status: HandoffStatusSchema, summary: text.max(400), proposedNext: ActionSchema.nullable(), testsRun: z.strictObject({ passed: z.boolean() }).optional(), blockers: z.array(text) })).max(3) }),
   facts: DecisionFactsSchema,
   current: z.strictObject({ modelId: IdSchema, label: text, description: text, effort: EffortSchema }).optional(),
@@ -38,6 +38,8 @@ export function buildDecisionState(input: {
   request: string; latestUserMessage: string; summary: { state: string; nextWork: string };
   /** The question the latest user message answers, when it arrived after the handoff that asked it. */
   answeredQuestion?: string | undefined;
+  /** The options offered with that question, and the one the user picked when they picked one. */
+  offeredAnswers?: string[] | undefined; chosenAnswer?: string | undefined;
   handoffs: Pick<Handoff, 'stretch' | 'action' | 'status' | 'summary' | 'proposedNext' | 'testsRun' | 'blockers'>[];
   facts: DecisionFacts; current?: { model: ModelOption; effort: z.infer<typeof EffortSchema> };
   redactor: Pick<SecretRedactor, 'document'>; tokenCap?: number;
@@ -49,7 +51,7 @@ export function buildDecisionState(input: {
   const packet = DecisionStateSchema.parse(input.redactor.document({
     schema: 'decision-state-v1', rules: { routingProfile: input.settings.routingProfile, effortGuide: input.settings.effortGuide, recentCorrections: corrections.sentences },
     // An answered question is paired with the answer, and the blockers that raised it are no longer open work.
-    conversation: { request: input.request, latestUserMessage: input.latestUserMessage, ...(answered ? { answeredQuestion: answered.slice(0, 600) } : {}),
+    conversation: { request: input.request, latestUserMessage: input.latestUserMessage, ...(answered ? { answeredQuestion: answered.slice(0, 600), ...(input.offeredAnswers?.length ? { offeredAnswers: input.offeredAnswers.map((label) => label.slice(0, 120)) } : {}), ...(input.chosenAnswer ? { chosenAnswer: input.chosenAnswer.slice(0, 120) } : {}) } : {}),
       summary: { state: input.summary.state, nextWork: answered ? '' : input.summary.nextWork },
       recentHandoffs: handoffs.map((handoff, index) => ({ action: handoff.action, status: handoff.status, summary: handoff.summary.slice(0, 400), proposedNext: handoff.proposedNext,
         blockers: answered && index === handoffs.length - 1 ? [] : handoff.blockers, ...(handoff.testsRun ? { testsRun: { passed: handoff.testsRun.passed } } : {}) })) },
