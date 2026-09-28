@@ -2,6 +2,8 @@ import { afterEach, expect, test } from 'vitest';
 import { mkdtempSync, mkdirSync, writeFileSync, utimesSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { parseCursorTranscript, cursorSessionId } from '../packages/mesh/dist/cursor-transcript.js';
 import { cursorList, cursorTranscript } from '../packages/mesh/dist/cursor-reader.js';
 import { queueCursorMessage, saveCursorHookState } from '../packages/mesh/dist/cursor-control.js';
@@ -67,4 +69,32 @@ test('queue retries preserve one message and refuse conflicting text or unsuppor
   const first = queueCursorMessage(options, id, input);
   expect(queueCursorMessage(options, id, input)).toEqual(first);
   expect(() => queueCursorMessage(options, id, { ...input, text: 'Different' })).toThrow('different text');
+});
+test('bundled observer exits successfully with only its requested session response', () => {
+  const { options, file } = fixture();
+  file('desktop-fixture', jsonl(message('user', 'Recent request'), { type: 'turn_ended' }));
+  const helper = new URL('../packages/mesh/dist/standalone/cursor-stdio.mjs', import.meta.url);
+  const result = spawnSync(process.execPath, [fileURLToPath(helper)], {
+    input: JSON.stringify({ ...options, schema: 'cursor-request-v1', operation: 'list' }), encoding: 'utf8', timeout: 10_000,
+  });
+  expect(result.status).toBe(0);
+  expect(JSON.parse(result.stdout)).toMatchObject({ schema: 'cursor-list-v1', sessions: [{ title: 'Recent request' }], unavailable: [] });
+});
+test('standalone installation and repeated installation preserve existing command and prompt hooks', () => {
+  const { options } = fixture();
+  mkdirSync(join(options.userHome, '.cursor'), { recursive: true });
+  const path = join(options.userHome, '.cursor', 'hooks.json');
+  const existing = [{ command: 'existing-hook' }, { type: 'prompt', prompt: 'Existing user instruction' }];
+  writeFileSync(path, JSON.stringify({ version: 1, hooks: { stop: existing } }));
+  const installer = fileURLToPath(new URL('../packages/mesh/dist/standalone/cursor-install.mjs', import.meta.url));
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const result = spawnSync(process.execPath, [installer, '--standalone'], {
+      env: { ...process.env, JEVELLAN_HOME: options.home, JEVELLAN_CURSOR_USER_HOME: options.userHome }, encoding: 'utf8', timeout: 10_000,
+    });
+    expect(result.status).toBe(0);
+    const hooks = JSON.parse(readFileSync(path, 'utf8')).hooks;
+    expect(hooks.stop).toHaveLength(3);
+    expect(hooks.stop.slice(0, 2)).toEqual(existing);
+    expect(Object.values(hooks).flat()).toHaveLength(7);
+  }
 });

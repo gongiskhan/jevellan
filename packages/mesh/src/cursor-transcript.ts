@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
-import { CursorTurnSchema, type CursorTurn } from '@jevellan/core';
+import { CursorTurnSchema, type CursorTurn } from '@jevellan/core/cursor';
 
 const NativeRecord = z.object({
   role: z.string().optional(), type: z.string().optional(),

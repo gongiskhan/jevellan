@@ -7,11 +7,22 @@ import { z } from 'zod';
 import {
   CursorConnectionsSchema, CursorListSchema, CursorTranscriptSchema, CursorMessageSchema, CursorHookSetupSchema,
   CursorMessageInputSchema, CursorHookInstallationSchema, readDocument, writeDocument, type CursorConnection, type Homes,
-} from '@jevellan/core';
+} from '@jevellan/core/cursor';
 import type { CursorRequest } from './cursor-stdio.js';
 
 const quote = (value: string) => `'${value.replace(/'/g, `'"'"'`)}'`;
 const ErrorSchema = z.object({ schema: z.literal('cursor-error-v1'), message: z.string() });
+export function cursorSshArguments(connection: CursorConnection): string[] {
+  const options = ['-F', '/dev/null', '-T', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=yes', '-o', 'ConnectTimeout=8'];
+  const command = `${quote(connection.nodePath)} ${quote(connection.helperPath)}`;
+  const target = [...options, '-p', String(connection.port),
+    ...(connection.identityFile ? ['-i', connection.identityFile, '-o', 'IdentitiesOnly=yes'] : []), `${connection.user}@127.0.0.1`, command];
+  // The second SSH client runs on the existing gateway and uses its existing
+  // CSG identity. No identity copying, forwarding options or listeners.
+  return connection.gateway
+    ? [...options, `${connection.gateway.user}@${connection.gateway.host}`, ['ssh', ...target].map(quote).join(' ')]
+    : target;
+}
 export class CursorSessions {
   #cache = new Map<string, z.infer<typeof CursorListSchema>>();
   #pending = new Map<string, Promise<z.infer<typeof CursorListSchema>>>();
@@ -35,9 +46,7 @@ export class CursorSessions {
         worker.once('error', () => { clearTimeout(timer); reject(new Error('Cursor could not be read on this device.')); });
         worker.once('exit', () => { clearTimeout(timer); reject(new Error('Cursor reader stopped.')); });
       } else {
-        const command = `${quote(connection.nodePath)} ${quote(connection.helperPath)}`;
-        const child = spawn('ssh', ['-F', '/dev/null', '-T', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=yes', '-o', 'ConnectTimeout=8', '-p', String(connection.port),
-          ...(connection.identityFile ? ['-i', connection.identityFile, '-o', 'IdentitiesOnly=yes'] : []), `${connection.user}@127.0.0.1`, command], { stdio: ['pipe', 'pipe', 'ignore'] });
+        const child = spawn('ssh', cursorSshArguments(connection), { stdio: ['pipe', 'pipe', 'ignore'] });
         const chunks: Buffer[] = []; let size = 0;
         const timer = setTimeout(() => { child.kill(); reject(new Error(`${connection.name}: the existing dev tunnel did not respond.`)); }, 15_000);
         child.stdout.on('data', (chunk: Buffer) => { size += chunk.length; if (size > 32 * 1024 * 1024) { child.kill(); reject(new Error('Cursor transcript exceeds the transfer limit.')); } else chunks.push(chunk); });

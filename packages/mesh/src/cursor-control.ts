@@ -2,7 +2,7 @@ import { mkdirSync, openSync, closeSync, unlinkSync, writeFileSync, readFileSync
 import { join, dirname } from 'node:path';
 import {
   CursorHookStateSchema, CursorMessageInputSchema, CursorMessageSchema, writeDocument, readDocument,
-} from '@jevellan/core';
+} from '@jevellan/core/cursor';
 import { cursorHookState, cursorMessages, cursorSource, type CursorReaderOptions } from './cursor-reader.js';
 
 export function cursorLock<T>(home: string, id: string, run: () => T): T {

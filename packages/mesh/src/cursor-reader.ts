@@ -5,7 +5,7 @@ import { z } from 'zod';
 import {
   CursorHookStateSchema, CursorMessageSchema, CursorSessionSchema, CursorListSchema, CursorTranscriptSchema,
   readDocument, type CursorSession, type CursorMessage,
-} from '@jevellan/core';
+} from '@jevellan/core/cursor';
 import { cursorSessionId, parseCursorTranscript } from './cursor-transcript.js';
 
 export type CursorReaderOptions = { home: string; userHome: string; deviceId: string; deviceName: string; projectPaths: string[] };

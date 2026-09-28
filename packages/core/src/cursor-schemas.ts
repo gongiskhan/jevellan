@@ -49,6 +49,10 @@ export const CursorConnectionSchema = z.strictObject({
   helperPath: z.string().startsWith('/').max(4096),
   nodePath: z.string().startsWith('/').max(4096),
   home: z.string().startsWith('/').max(4096),
+  gateway: z.strictObject({
+    host: z.string().regex(/^(?!-)[A-Za-z0-9._-]{1,253}$/),
+    user: z.string().regex(/^[a-z_][a-z0-9_-]{0,31}$/i),
+  }).optional(),
 });
 export const CursorConnectionsSchema = z.strictObject({
   schema: z.literal('cursor-connections-v1'), connections: z.array(CursorConnectionSchema).max(20),

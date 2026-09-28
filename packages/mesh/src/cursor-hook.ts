@@ -2,7 +2,7 @@
 // database write: Cursor itself receives hook responses over this process's stdout.
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { CursorHookPayloadSchema, CursorMessageSchema, Homes, writeDocument } from '@jevellan/core';
+import { CursorHookPayloadSchema, CursorMessageSchema, Homes, writeDocument } from '@jevellan/core/cursor';
 import { cursorSessionId } from './cursor-transcript.js';
 import { cursorHookState, cursorMessages } from './cursor-reader.js';
 import { cursorLock, cursorMessagePath, saveCursorHookState } from './cursor-control.js';

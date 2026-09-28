@@ -1,7 +1,7 @@
 import { homedir } from 'node:os';
 import { parentPort, workerData, isMainThread } from 'node:worker_threads';
 import { z } from 'zod';
-import { CursorMessageInputSchema, CursorSessionIdSchema, Homes, IdSchema } from '@jevellan/core';
+import { CursorMessageInputSchema, CursorSessionIdSchema, Homes, IdSchema } from '@jevellan/core/cursor';
 import { cursorList, cursorTranscript } from './cursor-reader.js';
 import { queueCursorMessage, cancelCursorMessage } from './cursor-control.js';
 
