@@ -35,6 +35,11 @@ export const CursorTranscriptSchema = z.strictObject({
   schema: z.literal('cursor-transcript-v1'), session: CursorSessionSchema,
   turns: z.array(CursorTurnSchema), messages: z.array(CursorMessageSchema),
   truncated: z.boolean(), observedAt: TimestampSchema,
+  activity: z.array(CursorTurnSchema).default([]),
+});
+export const CursorActivitySchema = z.strictObject({
+  schema: z.literal('cursor-activity-v1'), generation: z.string(),
+  turns: z.array(CursorTurnSchema).max(40), observedAt: TimestampSchema,
 });
 export const CursorListSchema = z.strictObject({
   schema: z.literal('cursor-list-v1'), sessions: z.array(CursorSessionSchema),
@@ -69,6 +74,8 @@ export const CursorHookPayloadSchema = z.object({
   conversation_id: z.string().min(1).max(200), generation_id: z.string().max(300).optional(),
   hook_event_name: z.string(), workspace_roots: z.array(z.string()).optional(),
   prompt: z.string().optional(), status: z.string().optional(),
+  tool_name: z.string().optional(), tool_use_id: z.string().optional(), tool_input: z.unknown().optional(),
+  tool_output: z.unknown().optional(), error_message: z.string().optional(), text: z.string().optional(),
 });
 export const CursorHookSetupSchema = z.strictObject({
   schema: z.literal('cursor-hook-setup-v1'), configuration: z.string(),

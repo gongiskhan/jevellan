@@ -26,7 +26,7 @@ const Config = z.object({ version: z.literal(1), hooks: z.record(z.string(), z.a
 const config = Config.parse(original ? JSON.parse(original) : { version: 1, hooks: {} });
 const quote = value => `'${value.replace(/'/g, `'"'"'`)}'`;
 const command = `${quote(process.execPath)} ${quote(hookPath)} ${quote(homes.root)}`;
-const events = ['beforeSubmitPrompt', 'postToolUse', 'postToolUseFailure', 'stop', 'sessionEnd'];
+const events = ['beforeSubmitPrompt', 'postToolUse', 'postToolUseFailure', 'afterAgentResponse', 'afterAgentThought', 'stop', 'sessionEnd'];
 const Install = CursorHookInstallationSchema;
 const manifestFile = homes.at('cursor', 'bridge', 'installation.json');
 const previous = existsSync(manifestFile) ? Install.parse(JSON.parse(readFileSync(manifestFile, 'utf8'))) : null;

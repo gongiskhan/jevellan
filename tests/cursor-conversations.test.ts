@@ -7,9 +7,10 @@ import { fileURLToPath } from 'node:url';
 import { parseCursorTranscript, cursorSessionId } from '../packages/mesh/dist/cursor-transcript.js';
 import { cursorList, cursorTranscript } from '../packages/mesh/dist/cursor-reader.js';
 import { queueCursorMessage, saveCursorHookState } from '../packages/mesh/dist/cursor-control.js';
+import { recordCursorActivity } from '../packages/mesh/dist/cursor-activity.js';
 
 // Adapted from the reference lister/structured-transcript regressions. Synthetic
-// input only; this suite is deliberately not run during the current iteration.
+// input only. Run for the reported Cursor display and activity regressions.
 const roots: string[] = [];
 afterEach(() => { for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true }); });
 const jsonl = (...values: unknown[]) => values.map(value => JSON.stringify(value)).join('\n') + '\n';
@@ -42,6 +43,33 @@ test('legacy role headings become separate turns, preserving formatting', () => 
   const result = parseCursorTranscript('user:\nHello\n\nassistant:\n## Answer\n\n- one\n- two', 'text');
   expect(result.turns.map(turn => turn.role)).toEqual(['user', 'assistant']);
   expect(result.turns[1]!.blocks[0]).toEqual({ type: 'text', text: '## Answer\n\n- one\n- two' });
+});
+test('Cursor timestamp and context envelopes do not become conversation titles or messages', () => {
+  const { options, file } = fixture();
+  file('desktop-fixture', jsonl(message('user', '<timestamp>Monday morning</timestamp>\n<user_info>machine context</user_info>\n<user_query>Fix the table\n\n- Keep sorting</user_query>'), message('user', '<timestamp>Later</timestamp>')));
+  const session = cursorList(options).sessions[0]!;
+  expect(session.title).toBe('Fix the table - Keep sorting');
+  expect(cursorTranscript(options, session.id).turns).toHaveLength(1);
+  expect(cursorTranscript(options, session.id).turns[0]!.blocks[0]).toEqual({ type: 'text', text: 'Fix the table\n\n- Keep sorting' });
+});
+test('journal tool calls without saved results are not asserted to be running', () => {
+  const parsed = parseCursorTranscript(jsonl(message('assistant', [{ type: 'tool_use', name: 'Read', input: { path: 'fixture.ts' } }]), message('assistant', 'Finished reading')), 'jsonl');
+  expect(parsed.turns[0]!.blocks[0]).toMatchObject({ type: 'tool', state: 'unknown', input: '{\n  "path": "fixture.ts"\n}' });
+});
+test('hook results and thoughts are visible before the saved journal updates, with generation isolation', () => {
+  const { options, file } = fixture(); const id = cursorSessionId('desktop-fixture');
+  const native = file('desktop-fixture', jsonl(message('user', 'Work'))); const before = readFileSync(native);
+  const payload = { conversation_id: 'desktop-fixture', generation_id: 'turn-a', hook_event_name: 'postToolUse', tool_name: 'Shell', tool_use_id: 'tool-fixture', tool_input: { command: 'pwd' }, tool_output: '{"stdout":"fixture output","exitCode":0}' };
+  recordCursorActivity(options.home, id, 'turn-a', payload);
+  recordCursorActivity(options.home, id, 'turn-a', payload);
+  const live = cursorTranscript(options, id);
+  expect(live.activity).toHaveLength(1);
+  expect(live.activity[0]!.blocks[0]).toMatchObject({ name: 'Shell', output: '{\n  "stdout": "fixture output",\n  "exitCode": 0\n}', state: 'completed' });
+  recordCursorActivity(options.home, id, 'turn-a', { ...payload, hook_event_name: 'afterAgentThought', text: 'Checking the result' });
+  expect(cursorTranscript(options, id).activity[1]!.blocks[0]).toEqual({ type: 'thinking', text: 'Checking the result' });
+  recordCursorActivity(options.home, id, 'turn-b', { ...payload, hook_event_name: 'beforeSubmitPrompt' });
+  expect(cursorTranscript(options, id).activity).toEqual([]);
+  expect(readFileSync(native)).toEqual(before);
 });
 test('only recent desktop sessions are listed and native journals remain unchanged', () => {
   const { options, file } = fixture();
@@ -95,6 +123,6 @@ test('standalone installation and repeated installation preserve existing comman
     const hooks = JSON.parse(readFileSync(path, 'utf8')).hooks;
     expect(hooks.stop).toHaveLength(3);
     expect(hooks.stop.slice(0, 2)).toEqual(existing);
-    expect(Object.values(hooks).flat()).toHaveLength(7);
+    expect(Object.values(hooks).flat()).toHaveLength(9);
   }
 });

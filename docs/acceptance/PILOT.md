@@ -8,6 +8,8 @@ The user requested a usable pilot and deferred the remaining build. This is not 
 
 ## Current pilot
 
+The subsequent [Cursor feedback repair](cursor-feedback-2026-09-28.md) is now active: clean titles, readable tool details, live hook updates and a visible working indicator/Jump to latest control. The user reported failures, authorizing 13 focused regression tests and verification in their open browser. Broader tests remain deferred.
+
 On 2026-09-28 the user requested startup on the Mac mini for Cursor conversation work. Main at `8075c8e` is now running from an independent copy with the existing pilot data home and tailnet address. Its configured CSG reader reaches the existing tunnel through Dev Madrid and observed two recent conversations without unavailable sources. Loopback health, tailnet health and the exact served application returned successfully. These are installation observations; no session, browser or automated behavior tests were run. See [Cursor iteration evidence](cursor-conversations-2026-09-28.md).
 
 ## Earlier pilot history
@@ -26,6 +28,6 @@ The completed pilot and repairs are committed as `3d1c3fb` and pushed to public 
 
 ## Running copy and deferred work
 
-The app runs independently of the checkout from `~/.jevellan-build/pilot-cursor-2026-09-28-8075c8e/app`, with isolated state in `~/.jevellan-build/pilot-2026-09-25/home`. The dedicated Codex home was moved, never copied, into this home. The pilot listens on loopback port 9773 and the existing Tailscale HTTPS route at 9444. This detached process has no persistent OS service, so automatic startup after reboot is not configured.
+The app runs independently of the checkout from `~/.jevellan-build/pilot-cursor-feedback-2026-09-28/app`, with isolated state in `~/.jevellan-build/pilot-2026-09-25/home`. The dedicated Codex home was moved, never copied, into this home. The pilot listens on loopback port 9773 and the existing Tailscale HTTPS route at 9444. This detached process has no persistent OS service, so automatic startup after reboot is not configured.
 
 The current copy includes main through `8075c8e`, including the work published from the other machine and the focused Cursor conversation changes. The earlier deployment exclusions in the [2026-09-26 handoff notes](machine-handoff-2026-09-26.md) describe that historical copy. This activation adds no new main-feature work or acceptance claim. The explicit native-home exception remains limited to the approved Jevellan Cursor hook entries.

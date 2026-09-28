@@ -6,7 +6,8 @@ import {
   CursorHookStateSchema, CursorMessageSchema, CursorSessionSchema, CursorListSchema, CursorTranscriptSchema,
   readDocument, type CursorSession, type CursorMessage,
 } from '@jevellan/core/cursor';
-import { cursorSessionId, parseCursorTranscript } from './cursor-transcript.js';
+import { cursorSessionId, cursorUserText, parseCursorTranscript } from './cursor-transcript.js';
+import { cursorActivity } from './cursor-activity.js';
 
 export type CursorReaderOptions = { home: string; userHome: string; deviceId: string; deviceName: string; projectPaths: string[] };
 type Source = { nativeId: string; file?: string; database?: string; session: CursorSession };
@@ -67,7 +68,7 @@ function discover(options: CursorReaderOptions): { sources: Source[]; unavailabl
   const base = (nativeId: string, title: string, cwd: string | null, at: number, state: CursorSession['state']): Source => ({
     nativeId,
     session: CursorSessionSchema.parse({ schema: 'cursor-session-v1', id: cursorSessionId(nativeId),
-      ownerDeviceId: options.deviceId, deviceName: options.deviceName, title: title || 'Cursor conversation',
+      ownerDeviceId: options.deviceId, deviceName: options.deviceName, title: cursorUserText(title).replace(/\s+/g, ' ').slice(0, 120) || 'Cursor conversation',
       cwd, project: cwd ? basename(cwd) : 'Cursor', lastActivityAt: new Date(at).toISOString(), state,
       connected: true, canSteer: false, canSend: false }),
   });
@@ -162,5 +163,6 @@ export function cursorTranscript(options: CursorReaderOptions, id: string) {
     } finally { database.close(); }
   }
   return CursorTranscriptSchema.parse({ schema: 'cursor-transcript-v1', session: source.session, turns,
+    activity: cursorActivity(options.home, id)?.turns ?? [],
     messages: cursorMessages(options.home, id), truncated, observedAt: new Date().toISOString() });
 }

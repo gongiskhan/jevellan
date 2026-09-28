@@ -19,4 +19,6 @@ Evidence:
 
 The gateway is an optional, versioned connection field exposed in Settings. It allows the local application to execute the second SSH client on the machine already hosting the dev-tunnel endpoint, using the identity already there. Remote paths are quoted at both SSH boundaries; no private key or SSH agent is forwarded. The standalone installer now travels with both helpers and their licenses, preserves non-command hooks, and refuses managed symbolic-link hook configurations.
 
+The user subsequently reported live feedback and display failures. The [feedback repair](cursor-feedback-2026-09-28.md) supersedes the initial no-test status for its 13 focused regressions, records actual browser verification and updates the running copy. Broad tests and message-delivery acceptance remain unclaimed.
+
 One end-of-iteration crucial-issues inspection covered wrong-session delivery, duplicate submissions, stale spinners, native writes and transport behavior. The queue is generation-bound; command arguments are quoted; native storage is read-only; delivery does not launch a CLI agent; unavailable transport disables controls. No additional review was needed. This inspection is not runtime evidence.

@@ -119,7 +119,7 @@ export class CursorSessions {
     const helper = target ? join(dirname(target.helperPath), target.helperPath.endsWith('.mjs') ? 'cursor-hook.mjs' : 'cursor-hook.js') : installed?.hookPath ?? fileURLToPath(new URL('./cursor-hook.js', import.meta.url));
     const command = `${quote(target?.nodePath ?? installed?.executable ?? process.execPath)} ${quote(helper)} ${quote(target?.home ?? this.homes.root)}`;
     return CursorHookSetupSchema.parse({ schema: 'cursor-hook-setup-v1', configuration: JSON.stringify({ version: 1, hooks: Object.fromEntries(
-      ['beforeSubmitPrompt', 'postToolUse', 'postToolUseFailure', 'stop', 'sessionEnd'].map(name => [name, [{ command, timeout: name === 'stop' ? 25_260 : 10, ...(name === 'stop' ? { loop_limit: null } : {}) }]])
+      ['beforeSubmitPrompt', 'postToolUse', 'postToolUseFailure', 'afterAgentResponse', 'afterAgentThought', 'stop', 'sessionEnd'].map(name => [name, [{ command, timeout: name === 'stop' ? 25_260 : 10, ...(name === 'stop' ? { loop_limit: null } : {}) }]])
     ) }, null, 2) });
   }
 }

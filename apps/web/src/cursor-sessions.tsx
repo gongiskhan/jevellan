@@ -29,9 +29,10 @@ const Turn = memo(function Turn({ turn }: { turn: CursorTurn }) {
       : block.type === 'thinking'
         ? <details className="cursor-thinking" key={index}><summary>Thinking</summary><Markdown>{block.text}</Markdown></details>
         : <details className="cursor-tool" key={block.id}>
-          <summary><span>{block.name}</span><span className="muted small-text">{block.state === 'running' ? 'In progress' : block.state === 'unknown' ? 'No result recorded' : block.state}</span></summary>
-          {block.input && <pre><code>{block.input}</code></pre>}
-          {block.output !== undefined && <><div className="cursor-output-label">Output</div><pre><code>{block.output}</code></pre></>}
+          <summary><span>{block.name}</span><span className="muted small-text">{block.state === 'running' ? 'In progress' : block.state === 'unknown' ? 'Recorded' : block.state}</span></summary>
+          {block.input && <><div className="cursor-output-label">Input</div><pre><code>{block.input}</code></pre></>}
+          {block.output !== undefined && <><div className="cursor-output-label">Output</div><pre><code>{block.output || 'No text output.'}</code></pre></>}
+          {block.output === undefined && <p className="muted small-text">Cursor’s saved transcript does not include this tool’s result.</p>}
         </details>)}
   </article>;
 }, (previous, next) => JSON.stringify(previous.turn) === JSON.stringify(next.turn));
@@ -42,6 +43,7 @@ export function CursorConversationPage({ id, ...props }: PageProps & { id: strin
   const [mode, setMode] = useState<'steer' | 'next'>('next');
   const pending = useRef<{ id: string; text: string; mode: 'steer' | 'next' } | undefined>(undefined);
   const bottom = useRef<HTMLDivElement>(null); const following = useRef(true); const opened = useRef(false);
+  const page = useRef<HTMLDivElement>(null); const [behind, setBehind] = useState(false);
   const task = useTask(props.onError);
   const query = window.location.search; const base = `/api/cursor/${id}`;
   useEffect(() => {
@@ -53,7 +55,7 @@ export function CursorConversationPage({ id, ...props }: PageProps & { id: strin
       } catch (error) { if (!controller.signal.aborted) setError(error instanceof Error ? error.message : 'Reconnecting to Cursor…'); }
       finally { if (!controller.signal.aborted) timer = setTimeout(() => void load(), 1500); }
     };
-    const scroll = () => { following.current = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 180; };
+    const scroll = () => { following.current = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 180; setBehind(!following.current); };
     window.addEventListener('scroll', scroll, { passive: true }); void load();
     return () => { controller.abort(); clearTimeout(timer); window.removeEventListener('scroll', scroll); };
   }, [base, query]);
@@ -61,6 +63,11 @@ export function CursorConversationPage({ id, ...props }: PageProps & { id: strin
     if (!view) return;
     if (!opened.current || following.current) { bottom.current?.scrollIntoView({ block: 'end' }); opened.current = true; }
   }, [view]);
+  useEffect(() => {
+    if (!page.current) return;
+    const observer = new ResizeObserver(() => { if (following.current) bottom.current?.scrollIntoView({ block: 'end' }); });
+    observer.observe(page.current); return () => observer.disconnect();
+  }, [!!view]);
   useEffect(() => { if (view?.session.state !== 'working') setMode('next'); }, [view?.session.state]);
   const session = view?.session;
   const connected = !!session?.connected && !error;
@@ -72,7 +79,8 @@ export function CursorConversationPage({ id, ...props }: PageProps & { id: strin
     pending.current = undefined; setText(''); setMode('next');
   });
   if (!view) return <p className="page-loading" role="status">{error || 'Opening Cursor conversation…'}</p>;
-  return <div className="conversation-page cursor-conversation">
+  const latest = view.activity.at(-1)?.blocks.at(-1);
+  return <div className="conversation-page cursor-conversation" ref={page}>
     <div className="section-heading conversation-heading">
       <h1>{session!.title}</h1>
       <div className="conversation-meta">
@@ -86,7 +94,11 @@ export function CursorConversationPage({ id, ...props }: PageProps & { id: strin
       {view.truncated && <p className="muted small-text">Showing the most recent part of this conversation. Earlier history is available in Cursor.</p>}
       {!view.turns.length && <p className="muted">Cursor hasn’t saved any messages for this session yet.</p>}
       {view.turns.map(turn => <Turn key={turn.id} turn={turn} />)}
-      {connected && session!.state === 'working' && <p className="cursor-working" role="status"><span className="activity-spinner" aria-hidden="true" />Cursor is working</p>}
+      {!!view.activity.length && <section className="cursor-live" aria-label="Recent Cursor activity">
+        <h2>{session!.state === 'working' ? 'Live updates' : 'Recent activity'}</h2>
+        <p className="muted small-text">Tool results and updates captured directly from this Cursor turn.</p>
+        {view.activity.map(turn => <Turn key={turn.id} turn={turn} />)}
+      </section>}
     </div>
     {view.messages.filter(message => message.state !== 'cancelled').length > 0 && <details className="cursor-deliveries" open>
       <summary>Your messages from Jevellan</summary>
@@ -99,6 +111,10 @@ export function CursorConversationPage({ id, ...props }: PageProps & { id: strin
       </div>)}
     </details>}
     <form className="composer card" onSubmit={event => { event.preventDefault(); void submit(); }}>
+      {(behind || connected && session!.state === 'working') && <div className="cursor-live-bar">
+        {connected && session!.state === 'working' && <span role="status"><span className="activity-spinner" aria-hidden="true" />Cursor is working{latest?.type === 'tool' ? ` · Last tool: ${latest.name}` : latest?.type === 'thinking' ? ' · Thinking' : ''}</span>}
+        {behind && <button type="button" className="text-button" onClick={() => { following.current = true; setBehind(false); bottom.current?.scrollIntoView({ block: 'end' }); }}>Jump to latest ↓</button>}
+      </div>}
       <label><span className="sr-only">Message Cursor</span><textarea rows={3} value={text} onChange={event => setText(event.target.value)} placeholder="Message this Cursor conversation…" /></label>
       <div className="composer-bar"><MessageDelivery mode={mode} change={setMode} running={session!.state === 'working'} canSteer={connected && session!.canSteer} canSend={connected && session!.canSend} disabled={task.busy} cursor />
         <button disabled={task.busy || !text.trim() || !connected || !(mode === 'steer' ? session!.canSteer : session!.canSend)}>{task.busy ? 'Sending…' : mode === 'steer' ? 'Steer' : session!.state === 'working' ? 'Queue message' : 'Send'}</button>

@@ -6,6 +6,7 @@ import { CursorHookPayloadSchema, CursorMessageSchema, Homes, writeDocument } fr
 import { cursorSessionId } from './cursor-transcript.js';
 import { cursorHookState, cursorMessages } from './cursor-reader.js';
 import { cursorLock, cursorMessagePath, saveCursorHookState } from './cursor-control.js';
+import { recordCursorActivity } from './cursor-activity.js';
 
 const home = resolve(process.argv[2] ?? join(homedir(), '.jevellan'));
 let replied = false;
@@ -34,6 +35,8 @@ async function main() {
       state: stop ? 'idle' : 'working', at: now(),
       hold: canHold ? { pid: process.pid, generation: generation || old?.generation || '', until } : null,
     });
+    // Observation failures must not interfere with delivery or Cursor's work.
+    try { recordCursorActivity(home, id, state.generation, payload); } catch { /* State and delivery remain available. */ }
     for (const message of cursorMessages(home, id)) if (message.state === 'queued' &&
       (message.generation !== state.generation || (stop && message.mode === 'steer') || name === 'sessionEnd' || (name === 'stop' && !canHold)))
       writeDocument(cursorMessagePath(home, id, message.clientMessageId), CursorMessageSchema, { ...message, state: 'expired' });

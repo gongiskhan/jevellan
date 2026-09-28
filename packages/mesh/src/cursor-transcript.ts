@@ -10,7 +10,12 @@ const object = (value: unknown): Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
 const text = (value: unknown) => typeof value === 'string' ? value : JSON.stringify(value ?? '', null, 2);
 export const cursorSessionId = (nativeId: string) => `cursor_${createHash('sha256').update(nativeId).digest('hex').slice(0, 32)}`;
-export const cursorUserText = (value: string) => value.replace(/^\s*<user_query>\s*([\s\S]*?)\s*<\/user_query>\s*$/, '$1');
+export function cursorUserText(value: string): string {
+  const query = /<user_query>\s*([\s\S]*?)\s*<\/user_query>/.exec(value);
+  if (query) return query[1]!.trim();
+  return value.replace(/<timestamp>[\s\S]*?<\/timestamp>/g, '').replace(/<\/?user_query>/g, '')
+    .replace(/<(user_info|environment_context|system_reminder|available_subagent_types|available_subagent_models|dynamic_tools|agent_transcripts|rules)>[\s\S]*?<\/\1>/g, '').trim();
+}
 
 /** Preserve markdown and message boundaries; fold tool results into their call. */
 export function parseCursorTranscript(raw: string, format: 'jsonl' | 'text', offset = 0): {
@@ -44,13 +49,14 @@ export function parseCursorTranscript(raw: string, format: 'jsonl' | 'text', off
     for (const part of typeof parts === 'string' ? [{ type: 'text', text: parts }] : Array.isArray(parts) ? parts : []) {
       const block = object(part);
       if (block.type === 'text' && typeof block.text === 'string' && block.text) {
-        blocks.push({ type: 'text', text: row.role === 'user' ? cursorUserText(block.text) : block.text });
+        const content = row.role === 'user' ? cursorUserText(block.text) : block.text;
+        if (content) blocks.push({ type: 'text', text: content });
       } else if (block.type === 'thinking' && typeof (block.thinking ?? block.text) === 'string') {
         blocks.push({ type: 'thinking', text: String(block.thinking ?? block.text) });
       } else if (block.type === 'tool_use') {
         const tool: Extract<CursorTurn['blocks'][number], { type: 'tool' }> = {
           type: 'tool', id: typeof block.id === 'string' ? block.id : `${id}:${blocks.length}`,
-          name: typeof block.name === 'string' ? block.name : 'Tool', input: text(block.input), state: 'running',
+          name: typeof block.name === 'string' ? block.name : 'Tool', input: block.input === undefined ? '' : text(block.input), state: 'unknown',
         };
         tools.set(tool.id, tool); blocks.push(tool);
       } else if (block.type === 'tool_result') {
