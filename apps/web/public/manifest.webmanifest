@@ -1,12 +1,43 @@
 {
+  "schema": "web-app-manifest-v1",
   "id": "/",
   "name": "Jevellan",
   "short_name": "Jevellan",
-  "description": "Autonomous development, coordinated.",
+  "description": "Your conversations and devices, together.",
+  "lang": "en",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#07111c",
+  "background_color": "#0d1b2a",
   "theme_color": "#0d1b2a",
-  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+  "categories": [
+    "productivity",
+    "developer tools"
+  ],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
 }

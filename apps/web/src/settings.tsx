@@ -8,6 +8,7 @@ import {
   type Configuration,
 } from '@jevellan/core/client';
 import { api } from './api.js';
+import { PwaInstallCard } from './pwa.js';
 import { JevConnection } from './jev-connection.js';
 import { SectionHeading, dateTime, useTask, type PageProps } from './components.js';
 
@@ -396,6 +397,7 @@ export function AboutPage(props: PageProps) {
   return (
     <>
       <SectionHeading title="About" />
+      <PwaInstallCard />
       <section className="card">
         <h2>Jevellan</h2>
         <p>Autonomous development, coordinated.</p>

@@ -13,7 +13,7 @@ export * from './improver.js';
 export * from './project-improver.js';
 export { closeListeners, detectTailscaleIpv4, listenOnInterfaces } from './network.js';
 
-const contentTypes: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.json': 'application/json', '.webmanifest': 'application/manifest+json' };
+const contentTypes: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2', '.json': 'application/json', '.webmanifest': 'application/manifest+json' };
 
 export function createDaemon(options: { application?: Application; diagnostics?: LocalDiagnostics; allowedOrigins?: readonly string[]; secureCookies?: boolean; proxyOrigin?: string } = {}) {
   const webRoot = join(applicationRoot(), 'apps', 'web', 'dist');
@@ -51,7 +51,7 @@ export function createDaemon(options: { application?: Application; diagnostics?:
         if (!extname(requested) && (error as NodeJS.ErrnoException).code === 'ENOENT') return readFile(resolve(webRoot, 'index.html'));
         throw error;
       });
-      response.writeHead(200, { 'Content-Type': contentTypes[extname(path)] ?? (!extname(requested) ? contentTypes['.html']! : 'application/octet-stream'), 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'same-origin', 'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" });
+      response.writeHead(200, { 'Content-Type': contentTypes[extname(path)] ?? (!extname(requested) ? contentTypes['.html']! : 'application/octet-stream'), 'Cache-Control': requested.startsWith('/assets/') ? 'public, max-age=31536000, immutable' : 'no-cache', ...(requested === '/sw.js' ? { 'Service-Worker-Allowed': '/' } : {}), 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'same-origin', 'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" });
       response.end(data);
     } catch {
       response.writeHead(404).end('Not found');

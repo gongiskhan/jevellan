@@ -94,5 +94,11 @@
     "title": "Public website on GitHub Pages",
     "why": "Published the supplied English and Portuguese static site at https://gongiskhan.github.io/jevellan/ through GitHub Actions on main. Phone, tablet and desktop browser checks pass; live HTML and all 11 assets match the deployed source. Typecheck, lint, four scanner tests, 212 local link/asset checks and pre-push secret scanning pass. See docs/acceptance/website-2026-09-25.md. Follow-up: dedicated mobile showcase with interactive progress, Why and steering views in a phone frame; local responsive/keyboard/form checks pass. Published as 1f7a58a; Pages deployment and the live 390-pixel composer check pass.",
     "status": "complete"
+  },
+  {
+    "id": "installable-web-app",
+    "title": "Installable web app",
+    "why": "PWA manifest, home-screen and maskable icons, install guidance, public-asset service worker, reconnect screen and user-controlled updates implemented and deployed at the existing Mac mini tailnet address. Live health and served-file readiness observations passed. Build, typecheck and lint pass. Tests and physical installation are not run at the user\u2019s request; see docs/acceptance/pwa-2026-09-28.md.",
+    "status": "complete"
   }
 ]

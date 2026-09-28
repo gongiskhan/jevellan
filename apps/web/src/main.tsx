@@ -32,6 +32,7 @@ import { SetupPage } from './setup.js';
 import { ImproverPage, useImprover } from './improver.js';
 import { BrandFlag, Icon, type IconName } from './icons.js';
 import './style.css';
+import { InstallAppButton, PwaStatus, startPwa } from './pwa.js';
 
 type Auth = z.infer<typeof AuthStateSchema>;
 const settingsPages = [
@@ -410,6 +411,7 @@ function App() {
         )}
         <ConversationSidebar data={data} navigate={navigate} onError={onError} selected={path} />
         <div className="sidebar-footer">
+          <InstallAppButton navigate={navigate} />
           <button
             className={`settings-link ${settings ? 'selected' : ''}`}
             onClick={() => navigate('/settings/runtimes')}
@@ -496,10 +498,11 @@ function App() {
   );
 }
 
+startPwa();
 createRoot(document.getElementById('root')!).render(
   <>
     <App />
     <HubWaiting />
+    <PwaStatus />
   </>,
 );
-if ('serviceWorker' in navigator) void navigator.serviceWorker.register('/sw.js').catch(() => undefined);

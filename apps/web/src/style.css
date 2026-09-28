@@ -1591,3 +1591,26 @@ button.memory-result + button.memory-result { margin-top: 4px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* Installed app controls and phone home-indicator spacing. */
+:root { --header-height: calc(52px + env(safe-area-inset-top, 0px)); }
+.app-header { padding-top: env(safe-area-inset-top); }
+.pwa-small-icon { border-radius: 5px; }
+.pwa-install-heading { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+.pwa-install-heading img { border-radius: 14px; flex: none; }
+.pwa-install-heading h2, .pwa-install-heading p { margin: 0; }
+.pwa-instructions { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 12px 16px; }
+.pwa-instructions dt { font-weight: 650; }
+.pwa-instructions dd { margin: 0; color: var(--ink-2); }
+.pwa-notice { position: fixed; z-index: 65; top: calc(var(--header-height) + 12px); right: 16px; width: min(340px, calc(100vw - 28px)); padding: 14px 16px; border: 1px solid var(--jev-edge); border-radius: 14px; background: var(--card); box-shadow: var(--shadow-pop); }
+.pwa-notice strong, .pwa-notice span { display: block; }
+.pwa-notice span { color: var(--ink-2); font-size: 12px; margin-top: 3px; }
+.pwa-notice .actions { justify-content: flex-end; margin: 12px 0 0; }
+@media (max-width: 760px) {
+  body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+  .sidebar { padding-top: max(12px, env(safe-area-inset-top)); padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+  .composer, .composer.card { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+  .page-content:not(:has(> .conversation-page)) { padding-bottom: max(32px, env(safe-area-inset-bottom)); }
+  .pwa-instructions { grid-template-columns: 1fr; gap: 4px; }
+  .pwa-instructions dd { margin-bottom: 12px; }
+}
