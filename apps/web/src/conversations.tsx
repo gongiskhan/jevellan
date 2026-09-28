@@ -24,6 +24,8 @@ import { waitForProjectSetup } from './project-setup.js';
 import { queuedRefresh } from './refresh.js';
 import { changeComposerDraft, ComposerOverride } from './composer-choices.js';
 import { Icon } from './icons.js';
+import { useCursorSessions } from './cursor-sessions.js';
+import { MessageDelivery } from './message-delivery.js';
 import { EvidenceLink, EvidencePanel, type EvidenceTarget } from './evidence.js';
 import { Markdown, Modal, Panel, dateTime, useDismissible, useTask, type PageProps } from './components.js';
 
@@ -64,6 +66,7 @@ export function ConversationSidebar({
   onError,
   selected,
 }: Pick<PageProps, 'data' | 'navigate' | 'onError'> & { selected: string }) {
+  const cursor = useCursorSessions();
   const [conversations, setConversations] = useState<z.infer<typeof ConversationListSchema>['conversations']>(
     [],
   );
@@ -116,12 +119,20 @@ export function ConversationSidebar({
     (label === 'Done' && ['done', 'cancelled'].includes(state));
   const projectName = (id: string) => projects.find((project) => project.id === id)?.name ?? id;
   const terms = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  const matching = conversations.filter((entry) =>
-    terms.every((term) => `${entry.title} ${projectName(entry.projectId)}`.toLowerCase().includes(term)),
-  );
+  const combined = [
+    ...conversations.map(entry => ({ ...entry, route: `/conversations/${entry.id}`, projectLabel: projectName(entry.projectId),
+      deviceLabel: data.devices.devices.find(device => device.id === entry.ownerDeviceId)?.name ?? entry.ownerDeviceId, cursor: false })),
+    ...cursor.sessions.map(entry => ({ id: `${entry.gatewayDeviceId}:${entry.ownerDeviceId}:${entry.id}`, title: entry.title,
+      state: entry.state === 'working' ? 'running' : entry.state === 'idle' ? 'idle' : 'unknown',
+      updatedAt: entry.lastActivityAt, ownerDeviceId: entry.ownerDeviceId,
+      projectLabel: entry.project, deviceLabel: entry.deviceName, cursor: true,
+      route: `/cursor/${entry.id}?deviceId=${encodeURIComponent(entry.ownerDeviceId)}&gateway=${encodeURIComponent(entry.gatewayDeviceId ?? entry.ownerDeviceId)}`,
+    })),
+  ].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  const matching = combined.filter(entry => terms.every(term => `${entry.title} ${entry.projectLabel} ${entry.deviceLabel} ${entry.cursor ? 'Cursor' : ''}`.toLowerCase().includes(term)));
   const visible = matching.filter((entry) => inFilter(filter, entry.state));
   const waiting = conversations.filter((entry) => inFilter('Waiting for you', entry.state)).length;
-  const open = conversations.find((entry) => selected === `/conversations/${entry.id}`);
+  const open = combined.find(entry => selected === entry.route);
   useEffect(() => {
     // The tab shows at a glance when conversations need you, even from another window.
     document.title = `${waiting ? `(${waiting}) ` : ''}${open ? `${open.title} · ` : ''}Jevellan`;
@@ -147,7 +158,7 @@ export function ConversationSidebar({
           </button>
         ))}
       </div>
-      {conversations.length > 6 && (
+      {combined.length > 6 && (
         <label className="conversation-search">
           <span className="sr-only">Search conversations</span>
           <Icon name="search" size={14} />
@@ -160,7 +171,7 @@ export function ConversationSidebar({
         </label>
       )}
       <div className="conversation-list">
-        {!conversations.length ? (
+        {!combined.length ? (
           <p className="empty-conversations">No conversations yet. Start one to put your agents to work.</p>
         ) : !visible.length ? (
           <p className="empty-conversations">
@@ -169,22 +180,21 @@ export function ConversationSidebar({
         ) : (
           visible.map((entry) => (
             <button
-              className={`conversation-row ${selected === `/conversations/${entry.id}` ? 'selected' : ''}`}
+              className={`conversation-row ${selected === entry.route ? 'selected' : ''}`}
               key={entry.id}
-              onClick={() => navigate(`/conversations/${entry.id}`)}
+              onClick={() => navigate(entry.route)}
             >
-              <i className={`state-dot state-${entry.state}`} aria-hidden="true" />
+              <i className={entry.state === 'running' ? 'activity-spinner' : `state-dot state-${entry.state}`} aria-hidden="true" />
               <strong title={entry.title}>{entry.title}</strong>
               <span className="row-time">{shortTime(entry.updatedAt)}</span>
               <span className="row-meta">
-                {stateLabel(entry.state)} · {projectName(entry.projectId)} ·{' '}
-                {data.devices.devices.find((device) => device.id === entry.ownerDeviceId)?.name ??
-                  entry.ownerDeviceId}
+                {entry.cursor ? `Cursor · ${entry.state === 'idle' ? 'Idle' : entry.state === 'unknown' ? 'Unknown' : 'Working'}` : stateLabel(entry.state)} · {entry.projectLabel} · {entry.deviceLabel}
               </span>
             </button>
           ))
         )}
       </div>
+      {cursor.unavailable.length > 0 && <details className="cursor-source-notice"><summary>Some Cursor sessions are unavailable</summary>{cursor.unavailable.map(text => <p key={text}>{text}</p>)}</details>}
     </>
   );
 }
@@ -374,6 +384,7 @@ export function NewConversation(props: PageProps & { embedded?: boolean }) {
 }
 
 export function ConversationPage({ id, ...props }: PageProps & { id: string }) {
+  const [delivery, setDelivery] = useState<'steer' | 'next'>('next');
   const [view, setView] = useState<View>();
   const [events, setEvents] = useState<LedgerEvent[]>([]);
   const [connected, setConnected] = useState(false);
@@ -474,6 +485,7 @@ export function ConversationPage({ id, ...props }: PageProps & { id: string }) {
       messageId.current = `message_${clientId()}`;
       setView(value);
       setMessage('');
+      setDelivery('next');
     });
   // Picking an offered answer sends it as the message and records which option it was.
   const answer = (option: number) =>
@@ -831,7 +843,7 @@ export function ConversationPage({ id, ...props }: PageProps & { id: string }) {
         className="composer card"
         onSubmit={(event) => {
           event.preventDefault();
-          if (!kept && !finishing) void submit('message');
+          if (!kept && !finishing) void submit(running && delivery === 'next' ? 'note' : 'message');
         }}
       >
         <label>
@@ -850,7 +862,7 @@ export function ConversationPage({ id, ...props }: PageProps & { id: string }) {
             }}
             placeholder={
               running
-                ? 'Send a correction, or add a note for the next step.'
+                ? 'Steer this work, or send a message for the next step.'
                 : 'What would you like to do next?'
             }
           />
@@ -887,19 +899,10 @@ export function ConversationPage({ id, ...props }: PageProps & { id: string }) {
               }
             />
           <div className="actions">
+            <MessageDelivery mode={running ? delivery : 'next'} change={setDelivery} running={running} disabled={task.busy} />
             <button disabled={task.busy || kept || !!finishing || !message.trim()}>
-              {running ? 'Send correction' : 'Send'}
+              {running ? delivery === 'steer' ? 'Steer' : 'Send next' : 'Send'}
             </button>
-            {running && (
-              <button
-                type="button"
-                className="secondary"
-                disabled={task.busy || kept || !!finishing || !message.trim()}
-                onClick={() => void submit('note')}
-              >
-                Add note
-              </button>
-            )}
             {!running && !finishing && canSettle && (
               <button
                 type="button"

@@ -15,7 +15,7 @@ import { createRuntime as createClaude } from '@jevellan/runtime-claude';
 import { createRuntime as createCodex, prepareApiKey } from '@jevellan/runtime-codex';
 import type { RuntimeAdapter, RuntimeContext } from '@jevellan/runtime-contract';
 import { materialiseConfiguration, type SharedRigging } from '@jevellan/core';
-import { DevicePresence, ExternalSessionSensor, type SessionSensorOptions } from '@jevellan/mesh';
+import { CursorSessions, DevicePresence, ExternalSessionSensor, type SessionSensorOptions } from '@jevellan/mesh';
 import { SettingsSync } from './settings-sync.js';
 import { LifecycleGate } from '@jevellan/core';
 
@@ -43,6 +43,7 @@ export class Application {
   readonly decisionClient: () => Promise<JevClient>;
   readonly runtimes: ReadonlyMap<string, RuntimeAdapter>;
   readonly sessions: ExternalSessionSensor;
+  readonly cursor: CursorSessions;
   readonly presence: DevicePresence;
   readonly settingsSync: SettingsSync;
   readonly backgroundDrafts: BackgroundDrafts;
@@ -100,6 +101,7 @@ export class Application {
       this.bridges = new StretchBridges(this.redactor);
       this.memory = new BasicMemory(this.homes, 'basic-memory', this.redactor);
       this.sessions = new ExternalSessionSensor({ ...options.nativeSessions, homes: this.homes });
+      this.cursor = new CursorSessions(this.homes, this.device.deviceId, this.device.name);
       this.accounts = new AccountService({ store: this.member ? new MemberAccounts(this.member) : new HubAccounts(this.hub, this.device.deviceId), redactor: this.redactor, homes: this.homes, deviceId: this.device.deviceId, runtimes: this.runtimes,
         configurationChanged: async () => { await this.configuration(); },
         ...(!options.runtimes ? { prepare: async (account) => { if (account.account.runtime === 'codex' && account.account.kind === 'api-key') await prepareApiKey(account, context); } } : {}),

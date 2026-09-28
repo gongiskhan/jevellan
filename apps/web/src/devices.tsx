@@ -4,6 +4,7 @@ import { DeviceSwitchSchema, JoinInvitationSchema, type DeviceView } from '@jeve
 import { api, empty } from './api.js';
 import { Modal, SectionHeading, dateTime, useTask, type PageProps } from './components.js';
 import { Icon } from './icons.js';
+import { CursorConnections } from './cursor-connections.js';
 
 export function deviceAvailable(row: DeviceView, currentDeviceId: string) {
   return !row.revoked && (row.device.id === currentDeviceId || row.status !== 'offline');
@@ -156,6 +157,7 @@ export function DevicesPage(props: PageProps) {
           </section>
         ))}
       </div>
+      <CursorConnections props={props} />
       <section className="card device-auto">
         <label className="toggle">
           <input type="checkbox" disabled />

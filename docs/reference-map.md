@@ -4,6 +4,8 @@ Garrison is read-only at ~/dev/garrison. Reference HEAD: fa5c9277e2bc4e873699c92
 
 ## Sources and destinations
 
+2026-09-28 Cursor iteration also read `fittings/seed/remote-shell-runtime/lib/listers/cursor.mjs`, `packages/talk/src/transcript-formats.mjs`, `cursor-desktop-transcript.mjs`, `cursor/store.mjs`, `cursor/http.mjs`, the SSH transport contract in `lib/transports.mjs`, and the September 11/12/16/18 Cursor validation records. Five-day visibility, read-only composer lookup, structured turns, completion precedence and stable rendering informed `packages/mesh/src/cursor-*` and `apps/web/src/cursor-*`. Regression cases were adapted into `tests/cursor-conversations.test.ts` and deliberately not run. The reference's unfinished desktop steering was not represented as working code: Jevellan's hook queue uses the documented desktop hook contract. PTY, xterm, CLI resume, tunnel creation and new-session creation were excluded. Reference HEAD and its existing dirty files remained unchanged.
+
 Phase 0 inspected the contracts and relevant entry points below. Later phases return to matching implementation and tests when porting each behavior. A listed source does not imply the behavior is already implemented.
 
 | Source | Behavior to port | Destination | Reading state / deliberately dropped |

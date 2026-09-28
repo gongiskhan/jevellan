@@ -1,4 +1,5 @@
 import { handleGitApi } from './git-api.js';
+import { handleCursorApi } from './cursor-api.js';
 import { projectFolders } from './project-folders.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { z } from 'zod';
@@ -51,6 +52,7 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     const path = url.pathname; const method = request.method ?? 'GET'; const token = sessionFromCookie(request.headers.cookie);
     if (!['GET', 'HEAD'].includes(method)) release = app.lifecycle.enter({ kind: 'request' });
     if (await handleOwnerRequest(app, request, response, url)) return;
+    if (path.startsWith('/api/mesh/cursor') && await handleCursorApi(app, request, response, url)) return;
     if (path.startsWith('/api/mesh/login/') && await handleLoginApi(app, request, response, url)) return;
     if (await handleMeshDeviceApi(app, request, response, url)) return;
     if (path === '/switch' && method === 'GET') { await handleMeshUiApi(app, request, response, url, secureCookies); return; }
@@ -77,6 +79,7 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
       const input = ImproverRequestSchema.parse(await body(request)); retryable = true; send(await app.improverRequest(input)); return;
     }
     if (await handleGitApi(app, request, response, url)) return;
+    if (await handleCursorApi(app, request, response, url, token)) return;
     if (path === '/api/project-folders' && method === 'GET') { send(await projectFolders(app.homes.userHome, url.searchParams.get('path') ?? undefined)); return; }
     if (path === '/hub/projects' && method === 'GET') { await app.conversations.ready; send((await app.conversations.projects())); return; }
     if (path === '/hub/projects' && method === 'PUT') { const input = ProjectWriteSchema.parse(await body(request)); retryable = input.clientRequestId !== undefined; send(await app.conversations.saveProject(input)); return; }

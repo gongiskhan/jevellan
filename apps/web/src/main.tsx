@@ -27,6 +27,7 @@ import { DeviceSwitcher, DevicesPage } from './devices.js';
 import { GitPage } from './git-settings.js';
 import { ProjectsPage } from './projects.js';
 import { ConversationPage, ConversationSidebar, NewConversation } from './conversations.js';
+import { CursorConversationPage } from './cursor-sessions.js';
 import { SetupPage } from './setup.js';
 import { ImproverPage, useImprover } from './improver.js';
 import { BrandFlag, Icon, type IconName } from './icons.js';
@@ -480,6 +481,8 @@ function App() {
               {settingsNav}
               <div className="settings-content">{settingsPage}</div>
             </div>
+          ) : path.startsWith('/cursor/') ? (
+            <CursorConversationPage {...props} id={path.split('/')[2]!.split('?')[0]!} key={path} />
           ) : path.startsWith('/conversations/') ? (
             <ConversationPage {...props} id={path.split('/')[2]!.split('?')[0]!} key={path} />
           ) : (

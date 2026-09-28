@@ -15,7 +15,7 @@
   "bundleDependencies": ["@jevellan/cli", "@jevellan/web"],
   "scripts": {
     "prepare": "node scripts/prepare.mjs",
-    "build": "tsc -b && vite build --config apps/web/vite.config.ts",
+    "build": "tsc -b && vite build --config apps/web/vite.config.ts && node scripts/build-cursor-bridge.mjs",
     "typecheck": "tsc -b --pretty false && tsc -p tsconfig.tests.json --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
