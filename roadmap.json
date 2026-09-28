@@ -112,5 +112,11 @@
     "title": "Hide Cursor subagent conversations",
     "why": "Filter explicit native subagent metadata across database, transcript, hook and reconnect-cache sources. Twenty-one focused tests pass. Mini and CSG reader deployed through the existing dev tunnel; live CSG discovery returns 50 main conversations, excludes 125 subagents and retains the reported parent with no unavailable sources. See docs/acceptance/cursor-windows-2026-09-28.md.",
     "status": "complete"
+  },
+  {
+    "id": "conversation-reading-space",
+    "title": "Conversation reading space",
+    "why": "Removed redundant conversation header/footer, moved device and session settings into the sidebar, pinned the latest human message to two lines, widened transcripts and added a one-line growing composer with separate send/steer and queue icons. Deployed on the mini with updated CSG reader; desktop and phone-width inspection plus build/typecheck/lint pass. Automated suites and live delivery not run. See docs/acceptance/conversation-space-2026-09-28.md.",
+    "status": "complete"
   }
 ]

@@ -2,6 +2,10 @@ import type { ReactNode } from 'react';
 
 // Line icons on a 20px grid, matching the website's symbol set.
 const paths = {
+  send: <path d="M10 16V4M4.5 9.5L10 4l5.5 5.5" />,
+  queue: <><path d="M3 4h9M3 8h6M3 12h3" /><circle cx="13" cy="13" r="4.5" /><path d="M13 10.5V13l1.5 1" /></>,
+  message: <path d="M3 3.5h14v10H8l-5 3z" />,
+  gear: <><path d="M8 2h4l.5 2 1.5 1 2-.5 2 3-1.5 1.5v2L18 12.5l-2 3-2-.5-1.5 1-.5 2H8l-.5-2-1.5-1-2 .5-2-3L3.5 11V9L2 7.5l2-3 2 .5 1.5-1z" /><circle cx="10" cy="10" r="3" /></>,
   menu: <path d="M3 5h14M3 10h14M3 15h14" />,
   close: <path d="M5 5l10 10M15 5L5 15" />,
   plus: <path d="M10 4v12M4 10h12" />,

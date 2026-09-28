@@ -166,7 +166,7 @@ export function cursorTranscript(options: CursorReaderOptions, id: string) {
       const rows = database.prepare(`SELECT json_extract(b.value,
         '$.bubbleId', '$.type', '$.text', '$.thinking.text', '$.toolFormerData.name',
         '$.toolFormerData.toolCallId', '$.toolFormerData.status', '$.toolFormerData.params',
-        '$.toolFormerData.rawArgs', '$.toolFormerData.result') AS display
+        '$.toolFormerData.rawArgs', '$.toolFormerData.result', '$.isSimulatedMsg') AS display
         FROM cursorDiskKV c, json_each(c.value, '$.fullConversationHeadersOnly') h
         JOIN cursorDiskKV b ON b.key = ? || json_extract(h.value, '$.bubbleId')
         WHERE c.key = ? AND json_valid(c.value) AND json_valid(b.value)
@@ -175,7 +175,7 @@ export function cursorTranscript(options: CursorReaderOptions, id: string) {
       turns = rows.slice(0, 500).reverse().flatMap(value => {
         // Extract display fields together: repeatedly parsing large native bubbles
         // for each individual field makes long desktop conversations time out.
-        const [id, role, text, thinking, toolName, toolId, toolStatus, params, rawArgs, toolOutput] = z.array(z.unknown()).parse(JSON.parse(String(value.display)));
+        const [id, role, text, thinking, toolName, toolId, toolStatus, params, rawArgs, toolOutput, simulated] = z.array(z.unknown()).parse(JSON.parse(String(value.display)));
         const row = { id, role, text, thinking, toolName, toolId, toolStatus, toolInput: params ?? rawArgs, toolOutput };
         const blocks: z.infer<typeof CursorTranscriptSchema>['turns'][number]['blocks'] = [];
         if (typeof row.thinking === 'string' && row.thinking) blocks.push({ type: 'thinking', text: cursorDisplayValue(row.thinking) });
@@ -186,7 +186,8 @@ export function cursorTranscript(options: CursorReaderOptions, id: string) {
           ...(row.toolOutput !== null ? { output: cursorDisplayValue(row.toolOutput) } : {}),
           state: row.toolStatus === 'completed' ? 'completed' : row.toolStatus === 'error' || row.toolStatus === 'failed' ? 'failed' : row.toolStatus === 'loading' || row.toolStatus === 'running' ? 'running' : 'unknown',
         });
-        return blocks.length ? [{ id: `bubble:${row.id}`, role: row.role === 1 ? 'user' as const : 'assistant' as const, blocks }] : [];
+        return blocks.length ? [{ id: `bubble:${row.id}`, role: row.role === 1 ? 'user' as const : 'assistant' as const, blocks,
+          ...(row.role === 1 && simulated === true ? { automated: true } : {}) }] : [];
       });
     } finally { database.close(); }
   }

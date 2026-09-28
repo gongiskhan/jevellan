@@ -1614,3 +1614,48 @@ button.memory-result + button.memory-result { margin-top: 4px; }
   .pwa-instructions { grid-template-columns: 1fr; gap: 4px; }
   .pwa-instructions dd { margin-bottom: 12px; }
 }
+
+/* Conversation reading space: navigation belongs to the sidebar. */
+.sidebar-device { display: flex; padding-inline: 4px; }
+.sidebar-device .device-switcher { margin-left: 0; max-width: 100%; }
+.sidebar-device .device-switcher > div { left: 0; right: auto; }
+.conversation-list-entry { position: relative; min-width: 0; }
+.conversation-list-entry .conversation-row { width: 100%; }
+.conversation-list-entry:has(.session-settings) .conversation-row { padding-right: 38px; }
+.session-settings, button.session-settings { position: absolute; right: 3px; top: 50%; transform: translateY(-50%); min-width: 32px; min-height: 36px; padding: 6px; color: var(--ink-3); background: transparent; border: 0; }
+.reading-conversation { --header-height: 0px; }
+.reading-conversation .page-content { max-width: none; padding: 0 24px; }
+.reading-conversation .conversation-page { width: 100%; max-width: none; min-height: 100dvh; }
+.reading-conversation .conversation-heading { top: 0; margin: 0; padding: max(10px, env(safe-area-inset-top)) 0 8px; gap: 5px 12px; }
+.reading-conversation .conversation-heading h1 { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+.reading-conversation .conversation-heading h1 .conversation-title,
+.reading-conversation .session-title { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; display: block; }
+.reading-conversation .conversation-heading > .conversation-meta { grid-column: 2; grid-row: 1; justify-content: flex-end; }
+.reading-conversation .conversation-heading:has(> .actions) > .conversation-meta { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; }
+.latest-user-message { grid-column: 1 / -1; display: flex; align-items: flex-start; gap: 8px; min-width: 0; color: var(--ink-2); font-size: 13px; line-height: 1.45; }
+.latest-user-message > .icon { flex: none; margin-top: 3px; color: var(--ink-3); }
+.latest-user-message p { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; }
+html:has(.reading-conversation) { scroll-padding-top: 115px; scroll-padding-bottom: 80px; }
+.reading-conversation .composer { padding: 8px 0 max(8px, env(safe-area-inset-bottom)); margin: auto 0 0; gap: 0; }
+.message-input-row { display: flex; align-items: flex-end; gap: 6px; width: 100%; padding: 4px; border: 1px solid var(--edge-strong); border-radius: 16px; background: var(--card); box-shadow: var(--shadow); }
+.message-input-row:focus-within { border-color: var(--sea); }
+.composer .message-input-row textarea { flex: 1; width: 0; min-width: 0; min-height: 44px; max-height: 33dvh; margin: 0; padding: 11px 10px; line-height: 22px; border: 0; box-shadow: none; background: transparent; resize: none; overflow-y: auto; border-radius: 10px; }
+.message-actions { display: flex; gap: 3px; flex: none; }
+.message-actions button { width: 42px; height: 44px; min-height: 44px; padding: 0; border-radius: 12px; }
+.message-actions .queue-icon { background: transparent; color: var(--ink-2); border: 1px solid transparent; }
+.message-actions .queue-icon:hover { background: var(--bg-3); border-color: var(--edge); }
+.message-actions .queue-icon:disabled { background: transparent; color: var(--ink-3); opacity: .45; }
+.reading-conversation .cursor-transcript { padding-block: 16px; gap: 22px; }
+.reading-conversation .cursor-turn-user { padding: 12px 16px; margin-left: 5%; }
+@media (max-width: 760px) {
+  .reading-conversation .page-content { padding: 0 12px; }
+  .reading-conversation .conversation-heading h1 { font-size: 14px; }
+  .reading-conversation .conversation-heading > .conversation-meta { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; gap: 4px; }
+  .reading-conversation .conversation-heading .chip { font-size: 10px; padding: 1px 5px; }
+  .reading-conversation .conversation-heading .menu-button { display: inline-flex; flex: none; min-height: 32px; width: 32px; padding: 5px; }
+  .latest-user-message { font-size: 12px; }
+  .message-input-row { gap: 2px; }
+  .message-actions { gap: 0; }
+  .message-actions button { width: 40px; }
+  .composer .message-input-row textarea { font-size: 16px; }
+}

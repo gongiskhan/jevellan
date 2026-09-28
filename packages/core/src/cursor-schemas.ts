@@ -19,6 +19,7 @@ export const CursorBlockSchema = z.discriminatedUnion('type', [
 ]);
 export const CursorTurnSchema = z.strictObject({
   id: z.string(), role: z.enum(['user', 'assistant']), blocks: z.array(CursorBlockSchema),
+  automated: z.boolean().optional(),
 });
 export type CursorTurn = z.infer<typeof CursorTurnSchema>;
 export const CursorMessageInputSchema = z.strictObject({

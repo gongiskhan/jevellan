@@ -372,9 +372,11 @@ function App() {
     ) : (
       <RuntimesPage {...props} key={path} />
     );
+  const conversation = path.startsWith('/cursor/') || path.startsWith('/conversations/');
+  const navigation = <button className="menu-button icon-button" aria-label="Open navigation" aria-expanded={sidebar} onClick={() => setSidebar(!sidebar)}><Icon name="menu" /></button>;
   const settingsLabel = settingsPages.find(([id]) => id === currentPage)?.[1] ?? 'Runtimes';
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${conversation ? 'reading-conversation' : ''}`}>
       {sidebar && (
         <div className="sidebar-backdrop" aria-hidden="true" onClick={() => setSidebar(false)} />
       )}
@@ -392,6 +394,7 @@ function App() {
             <Icon name="close" />
           </button>
         </div>
+        <div className="sidebar-device"><DeviceSwitcher props={props} /></div>
         <button className="new-conversation" onClick={() => navigate('/')}>
           <Icon name="plus" />
           New conversation
@@ -451,7 +454,7 @@ function App() {
         </div>
       </aside>
       <div className="workspace">
-        <header className="app-header">
+        {!conversation && <header className="app-header">
           <div>
             <button
               className="menu-button icon-button"
@@ -473,8 +476,7 @@ function App() {
               )}
             </span>
           </div>
-          <DeviceSwitcher props={props} />
-        </header>
+        </header>}
         <main className="page-content">
           {setup ? (
             <SetupPage {...props} path={path} key={path} />
@@ -484,9 +486,9 @@ function App() {
               <div className="settings-content">{settingsPage}</div>
             </div>
           ) : path.startsWith('/cursor/') ? (
-            <CursorConversationPage {...props} id={path.split('/')[2]!.split('?')[0]!} key={path} />
+            <CursorConversationPage {...props} navigation={navigation} id={path.split('/')[2]!.split('?')[0]!} key={path} />
           ) : path.startsWith('/conversations/') ? (
-            <ConversationPage {...props} id={path.split('/')[2]!.split('?')[0]!} key={path} />
+            <ConversationPage {...props} navigation={navigation} id={path.split('/')[2]!.split('?')[0]!} key={path} />
           ) : (
             <NewConversation {...props} />
           )}

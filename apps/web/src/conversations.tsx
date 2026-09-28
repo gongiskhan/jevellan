@@ -1,5 +1,5 @@
 import { clientId } from './client-id.js';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { z } from 'zod';
 import {
   ActionSchema,
@@ -22,10 +22,10 @@ import { api, empty } from './api.js';
 import { ProjectForm } from './projects.js';
 import { waitForProjectSetup } from './project-setup.js';
 import { queuedRefresh } from './refresh.js';
-import { changeComposerDraft, ComposerOverride } from './composer-choices.js';
+import { changeComposerDraft, ComposerOverride, ComposerChoices } from './composer-choices.js';
 import { Icon } from './icons.js';
 import { useCursorSessions } from './cursor-sessions.js';
-import { MessageDelivery } from './message-delivery.js';
+import { MessageDelivery, MessageInput, LatestUserMessage } from './message-delivery.js';
 import { EvidenceLink, EvidencePanel, type EvidenceTarget } from './evidence.js';
 import { Markdown, Modal, Panel, dateTime, useDismissible, useTask, type PageProps } from './components.js';
 
@@ -121,11 +121,11 @@ export function ConversationSidebar({
   const terms = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const combined = [
     ...conversations.map(entry => ({ ...entry, route: `/conversations/${entry.id}`, projectLabel: projectName(entry.projectId),
-      deviceLabel: data.devices.devices.find(device => device.id === entry.ownerDeviceId)?.name ?? entry.ownerDeviceId, cursor: false })),
+      deviceLabel: data.devices.devices.find(device => device.id === entry.ownerDeviceId)?.name ?? entry.ownerDeviceId, cursor: false, needsConnection: false })),
     ...cursor.sessions.map(entry => ({ id: `${entry.gatewayDeviceId}:${entry.ownerDeviceId}:${entry.id}`, title: entry.title,
       state: entry.state === 'working' ? 'running' : entry.state === 'idle' ? 'idle' : 'unknown',
       updatedAt: entry.lastActivityAt, ownerDeviceId: entry.ownerDeviceId,
-      projectLabel: entry.project, deviceLabel: entry.deviceName, cursor: true,
+      projectLabel: entry.project, deviceLabel: entry.deviceName, cursor: true, needsConnection: !entry.canSend,
       route: `/cursor/${entry.id}?deviceId=${encodeURIComponent(entry.ownerDeviceId)}&gateway=${encodeURIComponent(entry.gatewayDeviceId ?? entry.ownerDeviceId)}`,
     })),
   ].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
@@ -179,9 +179,9 @@ export function ConversationSidebar({
           </p>
         ) : (
           visible.map((entry) => (
+            <div className="conversation-list-entry" key={entry.id}>
             <button
               className={`conversation-row ${selected === entry.route ? 'selected' : ''}`}
-              key={entry.id}
               onClick={() => navigate(entry.route)}
             >
               <i className={entry.state === 'running' ? 'activity-spinner' : `state-dot state-${entry.state}`} aria-hidden="true" />
@@ -191,6 +191,12 @@ export function ConversationSidebar({
                 {entry.cursor ? `Cursor · ${entry.state === 'idle' ? 'Idle' : entry.state === 'unknown' ? 'Unknown' : 'Working'}` : stateLabel(entry.state)} · {entry.projectLabel} · {entry.deviceLabel}
               </span>
             </button>
+            {(entry.needsConnection || !entry.cursor && selected === entry.route) && <button type="button" className="session-settings icon-button"
+              aria-label={`Settings for ${entry.title}`} title={entry.cursor ? 'Cursor connection settings' : 'Conversation settings'}
+              onClick={() => { if (entry.cursor) navigate('/settings/devices'); else { navigate(entry.route); window.dispatchEvent(new Event('jevellan-conversation-settings')); } }}>
+              <Icon name="gear" size={16} />
+            </button>}
+            </div>
           ))
         )}
       </div>
@@ -383,8 +389,13 @@ export function NewConversation(props: PageProps & { embedded?: boolean }) {
   );
 }
 
-export function ConversationPage({ id, ...props }: PageProps & { id: string }) {
-  const [delivery, setDelivery] = useState<'steer' | 'next'>('next');
+export function ConversationPage({ id, navigation, ...props }: PageProps & { id: string; navigation?: ReactNode }) {
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  useEffect(() => {
+    const open = () => setSettingsOpen(true);
+    window.addEventListener('jevellan-conversation-settings', open);
+    return () => window.removeEventListener('jevellan-conversation-settings', open);
+  }, []);
   const [view, setView] = useState<View>();
   const [events, setEvents] = useState<LedgerEvent[]>([]);
   const [connected, setConnected] = useState(false);
@@ -485,7 +496,6 @@ export function ConversationPage({ id, ...props }: PageProps & { id: string }) {
       messageId.current = `message_${clientId()}`;
       setView(value);
       setMessage('');
-      setDelivery('next');
     });
   // Picking an offered answer sends it as the message and records which option it was.
   const answer = (option: number) =>
@@ -549,6 +559,7 @@ export function ConversationPage({ id, ...props }: PageProps & { id: string }) {
     <div className="conversation-page" ref={page}>
       <div className="section-heading conversation-heading">
         <h1>
+          {navigation}
           <button
             className="conversation-title"
             title="Rename conversation"
@@ -605,6 +616,7 @@ export function ConversationPage({ id, ...props }: PageProps & { id: string }) {
             </div>
           </details>
         </div>
+        <LatestUserMessage text={view.messages.at(-1)?.text} />
       </div>
       {!connected && (
         <p className="notice" role="status">
@@ -839,36 +851,19 @@ export function ConversationPage({ id, ...props }: PageProps & { id: string }) {
         />
       )}
       {kept && <p className="notice">Settle this work’s changes before starting another request.</p>}
-      <form
-        className="composer card"
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (!kept && !finishing) void submit(running && delivery === 'next' ? 'note' : 'message');
-        }}
-      >
-        <label>
-          <span className="sr-only">Message</span>
-          <textarea
-            ref={input}
-            rows={2}
-            value={message}
-            onChange={(event) => setMessage(event.target.value)}
-            onKeyDown={(event) => {
-              // Enter sends; Shift+Enter starts a new line.
-              if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
-                event.preventDefault();
-                event.currentTarget.form?.requestSubmit();
-              }
-            }}
-            placeholder={
-              running
-                ? 'Steer this work, or send a message for the next step.'
-                : 'What would you like to do next?'
-            }
-          />
-        </label>
-        <div className="composer-bar">
-          <ComposerOverride
+      <form className="composer card" onSubmit={event => {
+        event.preventDefault();
+        if (!task.busy && !kept && !finishing) void submit('message');
+      }}>
+        <div className="message-input-row">
+          <MessageInput inputRef={input} value={message} change={setMessage} label="Message"
+            placeholder={running ? 'Steer this work…' : 'What would you like to do next?'} />
+          <MessageDelivery running={running} disabled={task.busy || kept || !!finishing || !message.trim()}
+            queue={() => void submit('note')} />
+        </div>
+      </form>
+      {settingsOpen && <Panel title="Conversation settings" close={() => setSettingsOpen(false)}>
+          <ComposerChoices
               once={view.conversation.once}
               pins={view.conversation.pins}
               config={props.data.config.configuration['x-jevellan']}
@@ -898,11 +893,6 @@ export function ConversationPage({ id, ...props }: PageProps & { id: string }) {
                 )
               }
             />
-          <div className="actions">
-            <MessageDelivery mode={running ? delivery : 'next'} change={setDelivery} running={running} disabled={task.busy} />
-            <button disabled={task.busy || kept || !!finishing || !message.trim()}>
-              {running ? delivery === 'steer' ? 'Steer' : 'Send next' : 'Send'}
-            </button>
             {!running && !finishing && canSettle && (
               <button
                 type="button"
@@ -913,9 +903,7 @@ export function ConversationPage({ id, ...props }: PageProps & { id: string }) {
                 {view.conversation.work ? 'Close this work' : 'Settle kept changes'}
               </button>
             )}
-          </div>
-        </div>
-      </form>
+      </Panel>}
       {editingConversation && (
         <EditConversation
           kind={editingConversation}
