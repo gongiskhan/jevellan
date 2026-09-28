@@ -2,7 +2,7 @@ import { afterEach, expect, test } from 'vitest';
 import { mkdtempSync, mkdirSync, writeFileSync, utimesSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { parseCursorTranscript, cursorSessionId } from '../packages/mesh/dist/cursor-transcript.js';
 import { cursorList, cursorTranscript } from '../packages/mesh/dist/cursor-reader.js';
@@ -125,4 +125,77 @@ test('standalone installation and repeated installation preserve existing comman
     expect(hooks.stop.slice(0, 2)).toEqual(existing);
     expect(Object.values(hooks).flat()).toHaveLength(9);
   }
+});
+
+test('Windows Cursor paths are explicit host paths, never mistaken for tunnel paths', async () => {
+  const { CursorConnectionSchema, CursorHostPathSchema } = await import('../packages/core/dist/cursor.js');
+  const { cursorDatabasePath } = await import('../packages/mesh/dist/cursor-reader.js');
+  expect(CursorHostPathSchema.parse('C:/Users/fixture/.jevellan')).toBe('C:/Users/fixture/.jevellan');
+  expect(CursorHostPathSchema.safeParse('relative/home').success).toBe(false);
+  expect(cursorDatabasePath('/fixture/user', 'win32')).toBe('/fixture/user/AppData/Roaming/Cursor/User/globalStorage/state.vscdb');
+  expect(CursorConnectionSchema.parse({ id: 'cursor_remote_fixture', name: 'Fixture Windows', port: 2222, user: 'fixture', nodePath: '/mnt/c/reader/node.exe', helperPath: 'C:/Users/fixture/.jevellan/cursor-stdio.mjs', home: 'C:/Users/fixture/.jevellan' }).helperPath).toMatch(/^C:/);
+});
+
+test('desktop checkpoint activity keeps an older conversation discoverable and completed state idle', async () => {
+  const { DatabaseSync } = await import('node:sqlite');
+  const { cursorDatabasePath } = await import('../packages/mesh/dist/cursor-reader.js');
+  const { options } = fixture();
+  const path = cursorDatabasePath(options.userHome); mkdirSync(dirname(path), { recursive: true });
+  const db = new DatabaseSync(path);
+  db.exec('CREATE TABLE cursorDiskKV (key TEXT PRIMARY KEY, value TEXT)');
+  const now = Date.now() - 1000;
+  db.prepare('INSERT INTO cursorDiskKV VALUES (?, ?)').run('composerData:checkpoint-fixture', JSON.stringify({ name: 'Existing desktop work', createdAt: now - 10 * 86_400_000, lastUpdatedAt: now - 6 * 86_400_000, conversationCheckpointLastUpdatedAt: now, status: 'generating' }));
+  expect(cursorList(options).sessions[0]).toMatchObject({ title: 'Existing desktop work', state: 'working', lastActivityAt: new Date(now).toISOString() });
+  db.prepare('UPDATE cursorDiskKV SET value = json_set(value, ?, ?)').run('$.status', 'completed');
+  expect(cursorList(options).sessions[0]).toMatchObject({ state: 'idle' });
+  db.close();
+});
+
+test('lagging journals and desktop stream aborts do not hide newer hook activity', async () => {
+  const { DatabaseSync } = await import('node:sqlite');
+  const { cursorDatabasePath } = await import('../packages/mesh/dist/cursor-reader.js');
+  const { options, file } = fixture(); const nativeId = 'desktop-fixture'; const id = cursorSessionId(nativeId);
+  file(nativeId, jsonl(message('assistant', 'Earlier finish'), { type: 'turn_ended' }), 20_000);
+  const path = cursorDatabasePath(options.userHome); mkdirSync(dirname(path), { recursive: true });
+  const db = new DatabaseSync(path); db.exec('CREATE TABLE cursorDiskKV (key TEXT PRIMARY KEY, value TEXT)');
+  db.prepare('INSERT INTO cursorDiskKV VALUES (?, ?)').run(`composerData:${nativeId}`, JSON.stringify({ name: 'Desktop work', createdAt: Date.now() - 86_400_000, conversationCheckpointLastUpdatedAt: Date.now() - 1000, status: 'aborted' }));
+  saveCursorHookState(options.home, { schema: 'cursor-hook-state-v1', id, nativeId, generation: 'fixture-turn', cwd: null, title: 'Desktop work', state: 'working', at: new Date(Date.now() - 2000).toISOString(), hold: null });
+  expect(cursorList(options).sessions[0]).toMatchObject({ title: 'Desktop work', state: 'working', canSteer: true });
+  db.close();
+});
+
+test('desktop waiting subagents keep the spinner and their saved tool details', async () => {
+  const { DatabaseSync } = await import('node:sqlite');
+  const { cursorDatabasePath } = await import('../packages/mesh/dist/cursor-reader.js');
+  const { options, file } = fixture(); const nativeId = 'desktop-fixture';
+  file(nativeId, jsonl(message('assistant', 'Export without results'), { type: 'turn_ended' }), 100);
+  const path = cursorDatabasePath(options.userHome); mkdirSync(dirname(path), { recursive: true });
+  const db = new DatabaseSync(path); db.exec('CREATE TABLE cursorDiskKV (key TEXT PRIMARY KEY, value TEXT)');
+  const insert = db.prepare('INSERT INTO cursorDiskKV VALUES (?, ?)');
+  insert.run(`composerData:${nativeId}`, JSON.stringify({ name: 'Parent work', createdAt: Date.now() - 1000, status: 'aborted', fullConversationHeadersOnly: [{ bubbleId: 'tool-a' }, { bubbleId: 'tool-b' }] }));
+  insert.run(`bubbleId:${nativeId}:tool-a`, JSON.stringify({ bubbleId: 'tool-a', type: 2, toolFormerData: { name: 'read_file', toolCallId: 'a', status: 'completed', params: { path: 'fixture.ts' }, result: { content: 'file contents' } } }));
+  insert.run(`bubbleId:${nativeId}:tool-b`, JSON.stringify({ bubbleId: 'tool-b', type: 2, toolFormerData: { name: 'task_v2', toolCallId: 'b', status: 'loading', rawArgs: '{"task":"Inspect logs"}' } }));
+  const session = cursorList(options).sessions[0]!; expect(session.state).toBe('working');
+  const transcript = cursorTranscript(options, session.id);
+  expect(transcript.turns[0]!.blocks[0]).toMatchObject({ type: 'tool', name: 'read_file', input: '{\n  "path": "fixture.ts"\n}', output: '{\n  "content": "file contents"\n}', state: 'completed' });
+  expect(transcript.turns[1]!.blocks[0]).toMatchObject({ type: 'tool', name: 'task_v2', input: '{\n  "task": "Inspect logs"\n}', state: 'running' });
+  db.prepare('UPDATE cursorDiskKV SET value=json_set(value, ?, ?) WHERE key=?').run('$.status', 'completed', `composerData:${nativeId}`);
+  expect(cursorList(options).sessions[0]!.state).toBe('idle');
+  db.close();
+});
+
+
+test('the tunnel reader replies to a complete JSON line without waiting for stdin closure', async () => {
+  const { options, file } = fixture(); file('desktop-fixture', jsonl(message('user', 'Recent request')));
+  const helper = fileURLToPath(new URL('../packages/mesh/dist/standalone/cursor-stdio.mjs', import.meta.url));
+  const result = await new Promise<string>((resolve, reject) => {
+    const child = spawn(process.execPath, [helper], { stdio: ['pipe', 'pipe', 'ignore'] });
+    let output = '';
+    const timer = setTimeout(() => { child.kill(); reject(new Error('Reader waited for stdin closure.')); }, 3000);
+    child.stdout.on('data', chunk => { output += String(chunk); });
+    child.once('error', error => { clearTimeout(timer); reject(error); });
+    child.once('exit', code => { clearTimeout(timer); if (code === 0) resolve(output); else reject(new Error(`Reader exited ${code}`)); });
+    child.stdin.write(JSON.stringify({ ...options, schema: 'cursor-request-v1', operation: 'list' }) + '\n');
+  });
+  expect(JSON.parse(result)).toMatchObject({ schema: 'cursor-list-v1', sessions: [{ title: 'Recent request' }] });
 });

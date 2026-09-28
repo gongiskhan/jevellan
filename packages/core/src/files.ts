@@ -12,6 +12,9 @@ export function atomicWrite(path: string, content: string | Uint8Array, mode = 0
   closeSync(fd);
   try { renameSync(temporary, path); }
   catch (error) { unlinkSync(temporary); throw error; }
+  // Windows cannot flush directory handles opened by Node. The file itself was
+  // flushed before the atomic rename; keep directory durability on POSIX.
+  if (process.platform === 'win32') return;
   const directory = openSync(dirname(path), 'r');
   try { fsyncSync(directory); } finally { closeSync(directory); }
 }

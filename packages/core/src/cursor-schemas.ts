@@ -47,13 +47,16 @@ export const CursorListSchema = z.strictObject({
 });
 // Connections use an already established SSH leg of the user's dev tunnel.
 // No tunnel process, port forwarding or remote listener is created here.
+export const CursorHostPathSchema = z.string().max(4096).regex(/^(?:\/|[A-Za-z]:[\\/])/);
 export const CursorConnectionSchema = z.strictObject({
   id: IdSchema, name: z.string().trim().min(1).max(120),
   port: z.number().int().min(1).max(65535), user: z.string().regex(/^[a-z_][a-z0-9_-]{0,31}$/i),
   identityFile: z.string().startsWith('/').max(4096).optional(),
-  helperPath: z.string().startsWith('/').max(4096),
+  helperPath: CursorHostPathSchema,
+  hookCommand: z.string().min(1).max(8192).optional(),
   nodePath: z.string().startsWith('/').max(4096),
-  home: z.string().startsWith('/').max(4096),
+  workingDirectory: z.string().startsWith('/').max(4096).optional(),
+  home: CursorHostPathSchema,
   gateway: z.strictObject({
     host: z.string().regex(/^(?!-)[A-Za-z0-9._-]{1,253}$/),
     user: z.string().regex(/^[a-z_][a-z0-9_-]{0,31}$/i),

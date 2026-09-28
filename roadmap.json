@@ -100,5 +100,11 @@
     "title": "Installable web app",
     "why": "PWA manifest, home-screen and maskable icons, install guidance, public-asset service worker, reconnect screen and user-controlled updates implemented and deployed at the existing Mac mini tailnet address. Live health and served-file readiness observations passed. Build, typecheck and lint pass. Tests and physical installation are not run at the user\u2019s request; see docs/acceptance/pwa-2026-09-28.md.",
     "status": "complete"
+  },
+  {
+    "id": "cursor-windows-discovery",
+    "title": "CSG Windows Cursor discovery",
+    "why": "Repair missing Windows-hosted Cursor conversations over the existing dev tunnel, retain WSL discovery, use checkpoint recency and pending tool state, and render saved database tool details. Eighteen focused regressions and build/typecheck/lint pass; see docs/acceptance/cursor-windows-2026-09-28.md. Live message delivery remains untested.",
+    "status": "complete"
   }
 ]

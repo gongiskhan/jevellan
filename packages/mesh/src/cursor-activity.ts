@@ -8,7 +8,7 @@ const path = (home: string, id: string) => join(home, 'cursor', id, 'activity.js
 export function cursorActivity(home: string, id: string) {
   return existsSync(path(home, id)) ? readDocument(path(home, id), CursorActivitySchema) : null;
 }
-function display(value: unknown): string {
+export function cursorDisplayValue(value: unknown): string {
   if (value === undefined) return '';
   if (typeof value === 'string') { try { value = JSON.parse(value); } catch { /* Plain text output. */ } }
   const text = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
@@ -23,9 +23,9 @@ export function recordCursorActivity(home: string, id: string, generation: strin
   if (event === 'postToolUse' || event === 'postToolUseFailure') {
     const key = createHash('sha256').update(`${generation}:${payload.tool_use_id ?? randomUUID()}`).digest('hex').slice(0, 24);
     turn = { id: `hook:${key}`, role: 'assistant', blocks: [{ type: 'tool', id: key, name: payload.tool_name || 'Tool',
-      input: display(payload.tool_input), output: display(payload.error_message ?? payload.tool_output), state: event === 'postToolUseFailure' ? 'failed' : 'completed' }] };
+      input: cursorDisplayValue(payload.tool_input), output: cursorDisplayValue(payload.error_message ?? payload.tool_output), state: event === 'postToolUseFailure' ? 'failed' : 'completed' }] };
   } else if ((event === 'afterAgentResponse' || event === 'afterAgentThought') && payload.text) {
-    turn = { id: `hook:${randomUUID()}`, role: 'assistant', blocks: [{ type: event === 'afterAgentThought' ? 'thinking' : 'text', text: display(payload.text) }] };
+    turn = { id: `hook:${randomUUID()}`, role: 'assistant', blocks: [{ type: event === 'afterAgentThought' ? 'thinking' : 'text', text: cursorDisplayValue(payload.text) }] };
   }
   if (!turn && event !== 'beforeSubmitPrompt') return;
   if (turn) {

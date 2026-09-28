@@ -25,7 +25,14 @@ const original = existsSync(configFile) ? readFileSync(configFile, 'utf8') : nul
 const Config = z.object({ version: z.literal(1), hooks: z.record(z.string(), z.array(z.object({ command: z.string().optional() }).passthrough())) }).passthrough();
 const config = Config.parse(original ? JSON.parse(original) : { version: 1, hooks: {} });
 const quote = value => `'${value.replace(/'/g, `'"'"'`)}'`;
-const command = `${quote(process.execPath)} ${quote(hookPath)} ${quote(homes.root)}`;
+// Cursor's Windows shell can resolve an older system Node. A tiny bootstrap
+// delegates to this installation's executable without changing PATH or logins.
+const bootstrap = join(release, 'cursor-hook-launcher.cjs');
+if (process.platform === 'win32') atomicWrite(bootstrap,
+  `const { spawnSync } = require('node:child_process');\nconst result = spawnSync(${JSON.stringify(process.execPath)}, ${JSON.stringify([hookPath, homes.root])}, { stdio: 'inherit', windowsHide: true });\nprocess.exitCode = result.status ?? 1;\n`);
+const command = process.platform === 'win32'
+  ? `node ${JSON.stringify(bootstrap.replaceAll('\\', '/'))}`
+  : `${quote(process.execPath)} ${quote(hookPath)} ${quote(homes.root)}`;
 const events = ['beforeSubmitPrompt', 'postToolUse', 'postToolUseFailure', 'afterAgentResponse', 'afterAgentThought', 'stop', 'sessionEnd'];
 const Install = CursorHookInstallationSchema;
 const manifestFile = homes.at('cursor', 'bridge', 'installation.json');

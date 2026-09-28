@@ -7,7 +7,7 @@ import {
   readDocument, type CursorSession, type CursorMessage,
 } from '@jevellan/core/cursor';
 import { cursorSessionId, cursorUserText, parseCursorTranscript } from './cursor-transcript.js';
-import { cursorActivity } from './cursor-activity.js';
+import { cursorActivity, cursorDisplayValue } from './cursor-activity.js';
 
 export type CursorReaderOptions = { home: string; userHome: string; deviceId: string; deviceName: string; projectPaths: string[] };
 type Source = { nativeId: string; file?: string; database?: string; session: CursorSession };
@@ -49,19 +49,19 @@ function withHooks(options: CursorReaderOptions, source: Source): Source {
   const recent = Date.now() - Date.parse(hook.at) < 10 * 60_000;
   const held = holdAlive(hook.hold);
   const session = { ...source.session,
-    state: held ? 'idle' as const : hookNewer && recent ? hook.state : source.session.state,
+    state: held ? 'idle' as const : recent && (hookNewer || source.session.state === 'unknown') ? hook.state : source.session.state,
     lastActivityAt: hookNewer ? hook.at : source.session.lastActivityAt,
     canSend: held || recent && hook.state === 'working',
-    canSteer: !held && recent && hook.state === 'working' && (hookNewer || source.session.state === 'working'),
+    canSteer: !held && recent && hook.state === 'working' && (hookNewer || source.session.state !== 'idle'),
   };
   // A journal completion newer than the hook must stop the spinner and steering.
   if (!hookNewer && source.session.state === 'idle' && !held) { session.canSteer = false; session.canSend = false; }
   return { ...source, session: CursorSessionSchema.parse(session) };
 }
-function databasePath(userHome: string) {
-  return join(userHome, ...(process.platform === 'darwin' ? ['Library', 'Application Support'] : ['.config']), 'Cursor', 'User', 'globalStorage', 'state.vscdb');
+export function cursorDatabasePath(userHome: string, platform: NodeJS.Platform = process.platform) {
+  return join(userHome, ...(platform === 'darwin' ? ['Library', 'Application Support'] : platform === 'win32' ? ['AppData', 'Roaming'] : ['.config']), 'Cursor', 'User', 'globalStorage', 'state.vscdb');
 }
-const MetadataRow = z.object({ id: z.string(), metadata: z.string() });
+const MetadataRow = z.object({ id: z.string(), metadata: z.string(), toolStatus: z.string().nullable().optional() });
 function discover(options: CursorReaderOptions): { sources: Source[]; unavailable: string[] } {
   const sources = new Map<string, Source>(); const unavailable: string[] = [];
   const cutoff = Date.now() - 5 * DAY;
@@ -72,22 +72,26 @@ function discover(options: CursorReaderOptions): { sources: Source[]; unavailabl
       cwd, project: cwd ? basename(cwd) : 'Cursor', lastActivityAt: new Date(at).toISOString(), state,
       connected: true, canSteer: false, canSend: false }),
   });
-  const databaseFile = databasePath(options.userHome);
+  const databaseFile = cursorDatabasePath(options.userHome);
   if (existsSync(databaseFile)) {
     let database: DatabaseSync | undefined;
     try {
       database = new DatabaseSync(databaseFile, { readOnly: true });
       database.exec('PRAGMA query_only=ON; PRAGMA busy_timeout=200;');
-      const rows = database.prepare(`SELECT substr(key, 14) AS id,
-        json_extract(value, '$.name', '$.cwd', '$.lastUpdatedAt', '$.updatedAt', '$.createdAt', '$.status') AS metadata
-        FROM cursorDiskKV WHERE key >= 'composerData:' AND key < 'composerData;' AND json_valid(value) LIMIT 20001`).all();
+      const rows = database.prepare(`SELECT substr(c.key, 14) AS id,
+        json_extract(c.value, '$.name', '$.cwd', '$.lastUpdatedAt', '$.updatedAt', '$.createdAt', '$.status', '$.conversationCheckpointLastUpdatedAt', '$.workspaceIdentifier.uri.fsPath') AS metadata,
+        CASE WHEN json_valid(b.value) THEN json_extract(b.value, '$.toolFormerData.status') END AS toolStatus
+        FROM cursorDiskKV c LEFT JOIN cursorDiskKV b
+          ON b.key = 'bubbleId:' || substr(c.key, 14) || ':' || json_extract(c.value, '$.fullConversationHeadersOnly[#-1].bubbleId')
+        WHERE c.key >= 'composerData:' AND c.key < 'composerData;' AND json_valid(c.value) LIMIT 20001`).all();
       if (rows.length > 20000) throw new Error('Cursor metadata limit reached.');
       for (const value of rows) {
         const row = MetadataRow.parse(value);
-        const [title, cwd, updated, changed, created, status] = z.array(z.unknown()).parse(JSON.parse(row.metadata));
-        const timestamp = [updated, changed, created].map(value => typeof value === 'number' ? value : typeof value === 'string' ? Date.parse(value) : NaN).find(Number.isFinite);
+        const [title, savedCwd, updated, changed, created, status, checkpoint, workspacePath] = z.array(z.unknown()).parse(JSON.parse(row.metadata));
+        const cwd = typeof savedCwd === 'string' && isAbsolute(savedCwd) ? savedCwd : workspacePath;
+        const timestamp = Math.max(...[updated, changed, created, checkpoint].map(value => typeof value === 'number' ? value : typeof value === 'string' ? Date.parse(value) : NaN).filter(value => Number.isFinite(value) && value <= Date.now()));
         if (!timestamp || timestamp < cutoff || timestamp > Date.now()) continue;
-        sources.set(row.id, { ...base(row.id, typeof title === 'string' ? title : '', typeof cwd === 'string' && isAbsolute(cwd) ? cwd : null, timestamp, status === 'completed' ? 'idle' : 'unknown'), database: databaseFile });
+        sources.set(row.id, { ...base(row.id, typeof title === 'string' ? title : '', typeof cwd === 'string' && isAbsolute(cwd) ? cwd : null, timestamp, status === 'completed' ? 'idle' : status === 'generating' || row.toolStatus === 'loading' || row.toolStatus === 'running' ? 'working' : 'unknown'), database: databaseFile });
       }
     } catch { unavailable.push(`${options.deviceName}: Cursor’s saved chat database is unavailable.`); }
     finally { database?.close(); }
@@ -110,6 +114,9 @@ function discover(options: CursorReaderOptions): { sources: Source[]; unavailabl
       try {
         const info = statSync(file); if (!info.isFile() || info.mtimeMs < cutoff || info.mtimeMs > Date.now()) continue;
         const old = sources.get(nativeId);
+        // The desktop database retains tool results that exported journals omit.
+        // Keep that canonical source even when an export receives a newer mtime.
+        if (old?.database) continue;
         const format = file.endsWith('.jsonl') ? 'jsonl' : 'text';
         const head = parseCursorTranscript(readCursorSlice(file, 64 * 1024).raw, format);
         const tail = parseCursorTranscript(readCursorSlice(file, 64 * 1024, true).raw, format);
@@ -146,18 +153,29 @@ export function cursorTranscript(options: CursorReaderOptions, id: string) {
     const database = new DatabaseSync(source.database, { readOnly: true });
     try {
       database.exec('PRAGMA query_only=ON; PRAGMA busy_timeout=200;');
-      const rows = database.prepare(`SELECT json_extract(b.value, '$.bubbleId') AS id,
-        json_extract(b.value, '$.type') AS role, json_extract(b.value, '$.text') AS text,
-        json_extract(b.value, '$.thinking.text') AS thinking
+      const rows = database.prepare(`SELECT json_extract(b.value,
+        '$.bubbleId', '$.type', '$.text', '$.thinking.text', '$.toolFormerData.name',
+        '$.toolFormerData.toolCallId', '$.toolFormerData.status', '$.toolFormerData.params',
+        '$.toolFormerData.rawArgs', '$.toolFormerData.result') AS display
         FROM cursorDiskKV c, json_each(c.value, '$.fullConversationHeadersOnly') h
         JOIN cursorDiskKV b ON b.key = ? || json_extract(h.value, '$.bubbleId')
         WHERE c.key = ? AND json_valid(c.value) AND json_valid(b.value)
         ORDER BY CAST(h.key AS INTEGER) DESC LIMIT 501`).all(`bubbleId:${source.nativeId}:`, `composerData:${source.nativeId}`);
       truncated = rows.length > 500;
-      turns = rows.slice(0, 500).reverse().flatMap(row => {
+      turns = rows.slice(0, 500).reverse().flatMap(value => {
+        // Extract display fields together: repeatedly parsing large native bubbles
+        // for each individual field makes long desktop conversations time out.
+        const [id, role, text, thinking, toolName, toolId, toolStatus, params, rawArgs, toolOutput] = z.array(z.unknown()).parse(JSON.parse(String(value.display)));
+        const row = { id, role, text, thinking, toolName, toolId, toolStatus, toolInput: params ?? rawArgs, toolOutput };
         const blocks: z.infer<typeof CursorTranscriptSchema>['turns'][number]['blocks'] = [];
-        if (typeof row.thinking === 'string' && row.thinking) blocks.push({ type: 'thinking', text: row.thinking });
-        if (typeof row.text === 'string' && row.text) blocks.push({ type: 'text', text: row.text });
+        if (typeof row.thinking === 'string' && row.thinking) blocks.push({ type: 'thinking', text: cursorDisplayValue(row.thinking) });
+        if (typeof row.text === 'string' && row.text) blocks.push({ type: 'text', text: row.role === 1 ? cursorUserText(cursorDisplayValue(row.text)) : cursorDisplayValue(row.text) });
+        if (typeof row.toolName === 'string' && row.toolName) blocks.push({ type: 'tool',
+          id: typeof row.toolId === 'string' ? row.toolId : `bubble:${row.id}`, name: row.toolName,
+          input: cursorDisplayValue(row.toolInput ?? ''),
+          ...(row.toolOutput !== null ? { output: cursorDisplayValue(row.toolOutput) } : {}),
+          state: row.toolStatus === 'completed' ? 'completed' : row.toolStatus === 'error' || row.toolStatus === 'failed' ? 'failed' : row.toolStatus === 'loading' || row.toolStatus === 'running' ? 'running' : 'unknown',
+        });
         return blocks.length ? [{ id: `bubble:${row.id}`, role: row.role === 1 ? 'user' as const : 'assistant' as const, blocks }] : [];
       });
     } finally { database.close(); }

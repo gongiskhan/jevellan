@@ -1,13 +1,13 @@
 import { homedir } from 'node:os';
 import { parentPort, workerData, isMainThread } from 'node:worker_threads';
 import { z } from 'zod';
-import { CursorMessageInputSchema, CursorSessionIdSchema, Homes, IdSchema } from '@jevellan/core/cursor';
+import { CursorMessageInputSchema, CursorSessionIdSchema, CursorHostPathSchema, Homes, IdSchema } from '@jevellan/core/cursor';
 import { cursorList, cursorTranscript } from './cursor-reader.js';
 import { queueCursorMessage, cancelCursorMessage } from './cursor-control.js';
 
 const RequestSchema = z.strictObject({
   schema: z.literal('cursor-request-v1'), operation: z.enum(['list', 'read', 'send', 'cancel']),
-  home: z.string().startsWith('/'), userHome: z.string().startsWith('/').optional(),
+  home: CursorHostPathSchema, userHome: CursorHostPathSchema.optional(),
   deviceId: IdSchema, deviceName: z.string(), projectPaths: z.array(z.string()).default([]),
   id: CursorSessionIdSchema.optional(), message: CursorMessageInputSchema.optional(), messageId: IdSchema.optional(),
 });
@@ -25,7 +25,12 @@ function run(value: unknown) {
 try {
   if (isMainThread) {
     const chunks: Buffer[] = []; let bytes = 0;
-    for await (const chunk of process.stdin) { bytes += chunk.length; if (bytes > 1024 * 1024) throw new Error('Request too large.'); chunks.push(Buffer.from(chunk)); }
+    // Windows processes launched through WSL may keep stdin open after SSH EOF.
+    // Each request is one JSON line; do not wait for that inherited pipe to close.
+    for await (const chunk of process.stdin) {
+      bytes += chunk.length; if (bytes > 1024 * 1024) throw new Error('Request too large.');
+      chunks.push(Buffer.from(chunk)); if (Buffer.from(chunk).includes(10)) break;
+    }
     process.stdout.write(JSON.stringify(run(JSON.parse(Buffer.concat(chunks).toString('utf8')))) + '\n');
   } else parentPort?.postMessage(run(workerData));
 } catch (error) {

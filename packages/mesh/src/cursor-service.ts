@@ -14,7 +14,7 @@ const quote = (value: string) => `'${value.replace(/'/g, `'"'"'`)}'`;
 const ErrorSchema = z.object({ schema: z.literal('cursor-error-v1'), message: z.string() });
 export function cursorSshArguments(connection: CursorConnection): string[] {
   const options = ['-F', '/dev/null', '-T', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=yes', '-o', 'ConnectTimeout=8'];
-  const command = `${quote(connection.nodePath)} ${quote(connection.helperPath)}`;
+  const command = `${connection.workingDirectory ? `cd ${quote(connection.workingDirectory)} && ` : ''}${quote(connection.nodePath)} ${quote(connection.helperPath)}`;
   const target = [...options, '-p', String(connection.port),
     ...(connection.identityFile ? ['-i', connection.identityFile, '-o', 'IdentitiesOnly=yes'] : []), `${connection.user}@127.0.0.1`, command];
   // The second SSH client runs on the existing gateway and uses its existing
@@ -57,7 +57,7 @@ export class CursorSessions {
           catch { reject(new Error(`${connection.name}: check the existing dev tunnel connection and installed helper.`)); }
         });
         child.stdin.on('error', () => undefined);
-        child.stdin.end(JSON.stringify(request));
+        child.stdin.end(JSON.stringify(request) + '\n');
       }
     });
     const error = ErrorSchema.safeParse(value); if (error.success) throw new Error(error.data.message);
@@ -117,7 +117,7 @@ export class CursorSessions {
     const manifest = this.homes.at('cursor', 'bridge', 'installation.json');
     const installed = !target && existsSync(manifest) ? readDocument(manifest, CursorHookInstallationSchema) : null;
     const helper = target ? join(dirname(target.helperPath), target.helperPath.endsWith('.mjs') ? 'cursor-hook.mjs' : 'cursor-hook.js') : installed?.hookPath ?? fileURLToPath(new URL('./cursor-hook.js', import.meta.url));
-    const command = `${quote(target?.nodePath ?? installed?.executable ?? process.execPath)} ${quote(helper)} ${quote(target?.home ?? this.homes.root)}`;
+    const command = target?.hookCommand ?? installed?.command ?? `${quote(target?.nodePath ?? installed?.executable ?? process.execPath)} ${quote(helper)} ${quote(target?.home ?? this.homes.root)}`;
     return CursorHookSetupSchema.parse({ schema: 'cursor-hook-setup-v1', configuration: JSON.stringify({ version: 1, hooks: Object.fromEntries(
       ['beforeSubmitPrompt', 'postToolUse', 'postToolUseFailure', 'afterAgentResponse', 'afterAgentThought', 'stop', 'sessionEnd'].map(name => [name, [{ command, timeout: name === 'stop' ? 25_260 : 10, ...(name === 'stop' ? { loop_limit: null } : {}) }]])
     ) }, null, 2) });
