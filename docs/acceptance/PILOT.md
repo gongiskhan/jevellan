@@ -8,6 +8,10 @@ The user requested a usable pilot and deferred the remaining build. This is not 
 
 ## Current pilot
 
+On 2026-09-28 the user requested startup on the Mac mini for Cursor conversation work. Main at `8075c8e` is now running from an independent copy with the existing pilot data home and tailnet address. Its configured CSG reader reaches the existing tunnel through Dev Madrid and observed two recent conversations without unavailable sources. Loopback health, tailnet health and the exact served application returned successfully. These are installation observations; no session, browser or automated behavior tests were run. See [Cursor iteration evidence](cursor-conversations-2026-09-28.md).
+
+## Earlier pilot history
+
 The repaired pilot was deployed at 19:50 UTC, with the follow-up read-only handoff fix activated at 20:10 UTC and the final stretch-context fix deployed after the live conversation reached Done. Preservation checks passed for all accounts, authentication data, projects and existing conversation ledgers. The user-configured Jev and Claude accounts are available. “Todo app” is registered as a separate project, and the new-conversation screen also exposes Add project and a folder picker.
 
 The pilot includes the Claude sign-in recovery fix, working tool discovery, an indexed activity observer, actual execution-stage feedback, compact composer controls and grouped tool activity. See [the workflow repair report](workflow-repair-2026-09-25.md) and [login evidence](login-recovery-2026-09-25.md).
@@ -22,6 +26,6 @@ The completed pilot and repairs are committed as `3d1c3fb` and pushed to public 
 
 ## Running copy and deferred work
 
-The app runs independently of the checkout from `~/.jevellan-build/pilot-git-fix-2026-09-26/app`, with isolated state in `~/.jevellan-build/pilot-2026-09-25/home`. The dedicated Codex home was moved, never copied, into this home. The pilot listens on loopback port 9773 and the existing Tailscale HTTPS route at 9444. This detached process has no persistent OS service, so automatic startup after reboot is not configured.
+The app runs independently of the checkout from `~/.jevellan-build/pilot-cursor-2026-09-28-8075c8e/app`, with isolated state in `~/.jevellan-build/pilot-2026-09-25/home`. The dedicated Codex home was moved, never copied, into this home. The pilot listens on loopback port 9773 and the existing Tailscale HTTPS route at 9444. This detached process has no persistent OS service, so automatic startup after reboot is not configured.
 
-Unfinished phase-6 source and evidence are included in the 2026-09-26 machine-handoff checkpoint on main, but remain excluded from the deployed pilot. See [handoff notes](machine-handoff-2026-09-26.md). Suggestion UI, memory/context improver jobs, complete J10/J12 journeys, broader final checks and the final crucial-issues review remain deferred. Garrison and native homes remain protected. The original build goal stays paused.
+The current copy includes main through `8075c8e`, including the work published from the other machine and the focused Cursor conversation changes. The earlier deployment exclusions in the [2026-09-26 handoff notes](machine-handoff-2026-09-26.md) describe that historical copy. This activation adds no new main-feature work or acceptance claim. The explicit native-home exception remains limited to the approved Jevellan Cursor hook entries.

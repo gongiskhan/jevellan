@@ -50,7 +50,7 @@
   {
     "id": "shells",
     "title": "Cursor desktop conversations",
-    "why": "Five-day discovery, formatted transcripts, activity indicators and desktop-hook steering/follow-up queues are implemented, with ordinary conversation-list integration and existing-dev-tunnel SSH helpers. The gateway connection now reads CSG through Dev Madrid; two recent idle conversations were observed. Approved hooks are installed on CSG and the local Mac, preserving existing hooks. Standalone packaging is corrected. Build, typecheck and lint pass; all tests remain explicitly not run at the user's request. Activation awaits the user's current application address; live message delivery remains unverified. See docs/acceptance/cursor-conversations-2026-09-28.md. New-session creation is deferred.",
+    "why": "Five-day discovery, formatted transcripts, activity indicators and desktop-hook steering/follow-up queues are implemented, with ordinary conversation-list integration and existing-dev-tunnel SSH helpers. Approved hooks are installed on CSG and the local Mac, preserving existing hooks. Standalone packaging is corrected. Main through 8075c8e is running on the Mac mini at the existing tailnet address with CSG configured through Dev Madrid; installation observation returned two recent CSG conversations. Build, typecheck and lint pass; all tests remain explicitly not run at the user's request. Live message delivery remains unverified. See docs/acceptance/cursor-conversations-2026-09-28.md. New-session creation is deferred.",
     "status": "in-progress"
   },
   {

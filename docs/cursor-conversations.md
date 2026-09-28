@@ -32,7 +32,8 @@ Stored messages, hook state, installation receipts and connection settings are v
 
 - **Live installation:** five Jevellan hook entries installed on CSG, preserving all 12 existing entries. Corrected standalone helpers also replaced the local Mac installation, preserving all 17 existing entries. No Cursor turn was submitted, stopped or steered.
 - **Live observation:** after the user started the existing tunnel, the gateway connection returned two CSG sessions active within the last five days, both idle. Neither had an active Jevellan delivery hook yet. No transcript content or native session identifiers were recorded in evidence.
-- **Build/static checks:** production build, TypeScript checking and lint passed. The existing application has not been redeployed by this work.
+- **Build/static checks:** production build, TypeScript checking and lint passed.
+- **Live activation:** at the user's request, main through `8075c8e` runs on the Mac mini using the existing pilot data and HTTPS address on port 9444. CSG is configured through the existing Dev Madrid gateway. The running app's reader observed two recent CSG conversations without unavailable sources. Loopback/tailnet health and the exact served application were checked as installation readiness.
 - **Not run:** unit, integration, browser, vision and live delivery tests, as the user requested. Adapted regressions are present in `tests/cursor-conversations.test.ts` but were not executed.
-- **Pending:** activation/configuration on the user's current Jevellan application. The old local pilot process was absent; its data was preserved, and the user was asked which application address they now use. The Dev Madrid checkout and services were not changed.
+- **Pending:** a native Cursor turn in each existing conversation to activate its newly installed delivery hooks, followed by user-led messaging and UI iteration. The Dev Madrid checkout and services were not changed.
 - **Not claimed:** phone acceptance, Cursor Enterprise ledger attribution, reliable delivery on the installed CSG Cursor version, or the user's acceptance.
