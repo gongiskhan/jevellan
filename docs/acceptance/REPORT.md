@@ -4,7 +4,7 @@ Last updated: 2026-09-26. On 2026-09-26 the user resumed the build on a second m
 
 ## Current state
 
-- Cursor subagent follow-up (2026-09-28): explicit child metadata now excludes subagents from ordinary conversations, journal/hook rediscovery and reconnect-cache fallback. Build, typecheck, lint and 21 focused regressions pass. The mini is updated; CSG reader deployment and live verification are blocked because its existing tunnel refuses connections. See [evidence](cursor-windows-2026-09-28.md).
+- Cursor subagent follow-up (2026-09-28): explicit child metadata now excludes subagents from ordinary conversations, journal/hook rediscovery and reconnect-cache fallback. Build, typecheck, lint and 21 focused regressions pass. The mini and CSG reader are updated. After the user restored the existing tunnel, live discovery returned 50 main conversations, excluded 125 subagents and retained the reported parent without unavailable sources. See [evidence](cursor-windows-2026-09-28.md).
 
 - CSG Windows discovery repair (2026-09-28): the missing conversation was in the Windows Cursor database while Jevellan read only WSL. A Windows reader now uses the same existing dev tunnel; checkpoint recency, pending subagent activity and saved tool details are supported. The isolated Windows runtime and seven Jevellan hooks preserve the four existing hooks and system Node. All 18 focused regressions, build, typecheck and lint pass. Live browser inspection confirmed the restored working conversation and tool details; the final database transcript transfer completed in 1.84 seconds. Live delivery and phone acceptance remain untested. See [Windows discovery evidence](cursor-windows-2026-09-28.md).
 

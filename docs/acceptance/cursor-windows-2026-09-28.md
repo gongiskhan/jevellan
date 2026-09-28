@@ -39,6 +39,8 @@ The optional, defaulted `excludedSessionIds` list carries hashed IDs through the
 
 - **Simulated:** 21 focused Cursor regressions pass, including header-present/header-absent databases, old-parent references, recent child exports/hooks and cache fallback after metadata loss. Build, typecheck and lint pass.
 - **Live:** the mini uses the isolated `pilot-cursor-parents-2026-09-28/app` release with the existing data home and tailnet route.
-- **Blocked:** CSG's existing tunnel returns connection refused. Its updated reader is packaged locally, but has not been installed there; live CSG filtering and browser confirmation are not claimed. Remote helper configuration and existing hooks are preserved.
+- **Live deployment:** after the user restored the existing tunnel, the updated Windows reader was installed in Jevellan's versioned reader directory. Only the connection's helper path changed. Native hooks, connections and ports are preserved. The live reader returned **50 main conversations**, excluded **125 subagents**, retained the reported parent and reported **no unavailable sources**, in approximately **3 seconds**. The earlier tunnel blocker is resolved.
 - **Not run:** broad suites, message delivery and physical phone acceptance.
 - **Scoped review:** checked parent retention, metadata fallback, read-only native access and cache resurrection. The cache check found and fixed a case where temporary metadata loss could reintroduce a known child from its journal.
+
+- **Live browser confirmation after deployment:** the existing browser reconnected to the current app. The reported parent remains visible, all four checked child titles from the user's screenshot are absent, and the sidebar has no unavailable-source notice. No user message was sent.

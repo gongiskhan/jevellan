@@ -110,7 +110,7 @@
   {
     "id": "cursor-parent-conversations",
     "title": "Hide Cursor subagent conversations",
-    "why": "Filter explicit native subagent metadata across database, transcript, hook and reconnect-cache sources. Twenty-one focused tests pass. Mini deployed; CSG reader update and live confirmation blocked by connection refused from the existing dev tunnel. See docs/acceptance/cursor-windows-2026-09-28.md.",
-    "status": "in-progress"
+    "why": "Filter explicit native subagent metadata across database, transcript, hook and reconnect-cache sources. Twenty-one focused tests pass. Mini and CSG reader deployed through the existing dev tunnel; live CSG discovery returns 50 main conversations, excludes 125 subagents and retains the reported parent with no unavailable sources. See docs/acceptance/cursor-windows-2026-09-28.md.",
+    "status": "complete"
   }
 ]
