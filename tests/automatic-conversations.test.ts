@@ -106,6 +106,16 @@ test('an answer to Ask you reaches Jev paired with its question, with the resolv
   expect(answered!.conversation.recentHandoffs.at(-1)!.blockers).toEqual([]);
 });
 
+test('Ask you after an answer writes a new question instead of re-posting the answered one', async () => {
+  actions = ['ask-you']; enqueue(undefined, { question: 'Which README should change?' }); await create('Change the README.');
+  expect((await finished()).pause?.reason).toBe('Which README should change?'); expect(fake.starts).toHaveLength(1);
+  actions = ['ask-you']; enqueue(undefined, { question: 'Shall I add a short project summary to packaging/README.md?' });
+  expect((await request('/api/conversations/automatic/messages', { schema: 'conversation-message-v1', clientMessageId: 'answer', text: 'anything', kind: 'message' })).status).toBe(200);
+  const result = await finished();
+  expect(fake.starts).toHaveLength(2); expect(fake.starts[1]).toMatchObject({ action: 'reply', permissions: 'read-only' });
+  expect(result.pause?.reason).toBe('Shall I add a short project summary to packaging/README.md?');
+});
+
 test('Ask you uses a read-only question stretch, then waits without scheduling another action', async () => {
   actions = ['ask-you']; enqueue(undefined, { question: 'Which behavior should change?' }); await create('Change something.'); const result = await finished();
   expect(result.conversation.state, result.pause?.reason).toBe('waiting-for-you'); expect(result.pause?.reason).toBe('Which behavior should change?');

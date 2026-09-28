@@ -53,6 +53,11 @@ export type ConversationServiceOptions = {
   accountRuns?: Set<string>;
 };
 const MANUAL_NOTICE = 'Pick the next step, model and effort.';
+// Ask you runs as a read-only reply that writes one question. An answer the user already gave, including one that
+// leaves the choice to the agent, turns the next question into a concrete proposal to confirm instead of a repeat.
+const ASK_YOU_APPEND = 'Write the one question needed to unblock this work, and include it in the handoff question field. '
+  + 'If the user already answered an earlier question, or left the choice to you, do not ask it again: make the choice yourself, '
+  + 'state exactly what you will change (files and content), and ask only for confirmation.';
 const conflict = (message: string) => Object.assign(new Error(message), { status: 409 });
 
 /** The sole scheduling authority on an owner device. Reading history never schedules work. */
@@ -693,6 +698,15 @@ export class ConversationService {
     else return this.#operate(work, (operation) => this.#automatic(work, operation, trigger));
     this.#index(work); return (await this.view(work.ledger.id));
   }
+  /** The last handoff's question for the user, and whether a user message arrived after it. */
+  #lastQuestion(work: ConversationWork): { text: string; answered: boolean } | undefined {
+    const view = work.load(); const target = view.conversation.work; if (!target) return undefined;
+    const active = new Set(view.stretches.filter((step) => step.workId === target.id && step.status !== 'undone').map((step) => step.n));
+    const asked = view.handoffs.filter((handoff) => active.has(handoff.stretch)).at(-1);
+    const text = asked && (asked.question ?? (asked.blockers.join('\n') || undefined)); if (!asked || !text) return undefined;
+    const event = work.ledger.events().findLast((entry) => entry.type === 'handoff' && entry.stretch === asked.stretch);
+    return { text, answered: !!event && Number(this.#latestMessage(work).id) > Number(event.id) };
+  }
   #latestMessage(work: ConversationWork) {
     const view = work.load(); const target = view.conversation.work!;
     const ids = new Set([target.requestEventId, ...target.messageEventIds]);
@@ -709,10 +723,7 @@ export class ConversationService {
     const facts = { stretchesThisWork: target.counters.stretches, reviewsThisWork: target.counters.reviews, codeChangedThisWork: paths.some((path) => !path.startsWith(memoryDir)), changedFiles: paths.length,
       ...changes, lastVerification: receipt ? receipt.passed && receipt.headStable && (receipt.treeClean || receipt.worktreeBefore !== undefined && receipt.worktreeBefore === receipt.worktreeAfter) ? 'passed' as const : 'failed' as const : 'none' as const,
       publicationConflict, projectHasTestCommand: !!workspace.project.testCommand };
-    // The latest message answers the last handoff's question when it arrived after that handoff.
-    const asked = view.handoffs.filter((handoff) => active.has(handoff.stretch)).at(-1);
-    const askedEvent = asked && work.ledger.events().findLast((event) => event.type === 'handoff' && event.stretch === asked.stretch);
-    const answeredQuestion = asked && askedEvent && Number(latest.id) > Number(askedEvent.id) ? asked.question ?? (asked.blockers.join('\n') || undefined) : undefined;
+    const answeredQuestion = this.#lastQuestion(work)?.answered ? this.#lastQuestion(work)!.text : undefined;
     return { ...buildDecisionState({ settings, projectId: workspace.project.id, corrections: await this.corrections(),
       request: target.request, latestUserMessage: latest.text, answeredQuestion, summary: view.summary, handoffs: view.handoffs.filter((handoff) => active.has(handoff.stretch)), facts, redactor: this.options.redactor,
       ...(current && view.conversation.current ? { current: { model: current, effort: view.conversation.current.effort } } : {}) }), latestMessageEventId: latest.id, facts };
@@ -724,7 +735,6 @@ export class ConversationService {
     try {
       const packet = await this.#decisionState(work, workspace, !!forcedAction); this.#current(work, generation, operation);
       const view = work.load(); const latestDecision = this.decisions(work.ledger.id).filter((entry) => entry.workId === workspace.owner.workId).at(-1);
-      const last = this.#lastHandoff(work);
       const allowed = (await this.view(work.ledger.id)).allowed; this.#current(work, generation, operation);
       if (!forcedAction && view.conversation.once.action && !allowed.includes(view.conversation.once.action)) {
         this.#waitDecision(work, { kind: 'choice-unavailable', text: 'The selected next step is no longer allowed. Change Next step in the composer, then try again.' }); return undefined;
@@ -737,7 +747,8 @@ export class ConversationService {
           return modelCandidates({ settings: config, action, runtimes: new Map([...this.options.runtimes].map(([id, adapter]) => [id, adapter.capabilities])), accounts: accounts.map((entry) => entry.account), statuses: accounts.flatMap((entry) => entry.statuses), deviceId: this.options.deviceId });
         }, effortGuide: config.effortGuide, ...(view.conversation.current ? { currentId: view.conversation.current.modelId } : {}), pins: view.conversation.pins,
         keepCurrentThreshold: config.decisions.keepCurrentThreshold, deviceLabel: this.options.deviceLabel ?? this.options.deviceId,
-        questionAvailable: !!(last?.question || last?.blockers.length), assertCurrent: () => this.#current(work, generation, operation), calls, ...(forcedAction ? { forcedAction } : {}) }, signal);
+        // An answered question is not re-posted; Ask you then writes a new one that uses the answer.
+        questionAvailable: this.#lastQuestion(work)?.answered === false, assertCurrent: () => this.#current(work, generation, operation), calls, ...(forcedAction ? { forcedAction } : {}) }, signal);
       this.#current(work, generation, operation);
       if (result.kind === 'waiting') { this.#waitDecision(work, { kind: 'no-eligible-model', text: result.message, reasons: result.reasons, calls }); return undefined; }
       const { remember, action, model, effort, account, notices } = result.selection; const jev = jevMetadata(calls);
@@ -1224,10 +1235,10 @@ export class ConversationService {
       await this.hubWaits.retry(work, operation.abort.signal, 'decision', () => this.#boundaryDecision(work, choice, source, operation.redoId, prepared));
       return await this.#done(work, workspace, choice, operation) === 'retry' && !!this.options.decisionClient && await this.hubWaits.retry(work, operation.abort.signal, 'decision', () => Promise.resolve(this.options.jevAvailable?.())) !== false;
     }
-    const last = this.#lastHandoff(work);
-    if (choice.action === 'ask-you' && (last?.question || last?.blockers.length)) {
+    const open = this.#lastQuestion(work);
+    if (choice.action === 'ask-you' && open && !open.answered) {
       (await this.#boundaryDecision(work, choice, source, operation.redoId, prepared));
-      const question = last.question ?? last.blockers.join('\n'); this.#notice(work, question); work.pause(question); return false;
+      this.#notice(work, open.text); work.pause(open.text); return false;
     }
     await this.#stretch(work, workspace, choice, operation, choice.action === 'ask-you' ? 'reply' : choice.action, source, undefined, prepared);
     if (operation.cancelled || operation.shutdown) return false;
@@ -1324,7 +1335,7 @@ export class ConversationService {
       } });
       const launchEnv = { JEVELLAN_STRETCH_TOKEN: grant.token, JEVELLAN_DAEMON_URL: this.daemonUrl };
       const input: StretchInput = { schema: 'stretch-input-v1', conversationId: work.ledger.id, stretch: n, action, cwd: workspace.path, permissions, memoryWrite, account,
-        model: model.model, effort: effective, systemAppend: actionContract(action) + (choice.action === 'ask-you' ? '\nWrite the one question needed to unblock this work, and include it in the handoff question field.' : ''), brief: brief.text,
+        model: model.model, effort: effective, systemAppend: actionContract(action) + (choice.action === 'ask-you' ? `\n${ASK_YOU_APPEND}` : ''), brief: brief.text,
         timeoutMs: config.guards.stretchTimeoutMin * 60_000, launch: { env: launchEnv, mcpServers: { jevellan: { command: process.execPath, args: [join(applicationRoot(), 'bin', 'jevellan.mjs'), 'mcp-bridge'], env: launchEnv } } } };
       const outside = this.outside.watch(workspace.project, workspace.path, config.guards.externalActivityWindowMin, reason => {
         work.ledger.append({ type: 'git', stretch: n, data: CheckpointBlockSchema.parse({ schema: 'checkpoint-block-v1', workId: workspace.owner.workId, stretch: n, before, reason }) });
