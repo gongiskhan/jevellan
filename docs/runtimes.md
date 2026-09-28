@@ -30,6 +30,25 @@ Project memory adds stable PreCompact, Stop and SessionEnd commands through APM 
 
 The installed Codex [rules language](https://learn.chatgpt.com/docs/agent-configuration/rules) matches literal argument prefixes. The phase 0 probe missed four common reordered forms. The production adapter now supplies the same command guard through a per-launch PreToolUse hook. A CLI shim supplies the [documented hook automation flag](https://learn.chatgpt.com/docs/hooks); the SDK still controls execution, continuation and sandbox permissions. Project configuration is marked untrusted, while account Rigging remains available. A live inert `git -C <project> push` attempt received the hook's denial and did not execute. The executable hook tests include the integration-only rebase exception. Native config and live project probes now confirm project-hook exclusion. Jevellan supplies the root AGENTS.md explicitly on the first Codex turn because the untrusted project layer prevented its native loading. Context is limited to 32 KiB and links must resolve inside the project. Hooks are not a general sandbox: arbitrary programs, native tool paths outside the matcher, and native hook startup failures remain limitations. Direct git-state changes must be checked after each stretch regardless of runtime.
 
+### Codex sandbox on Linux
+
+Codex runs every read-only and workspace-write shell command inside bubblewrap. Ubuntu 24.04 and later set `kernel.apparmor_restrict_unprivileged_userns=1`, which stops bubblewrap from creating the user namespace it needs ("bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted"). The Codex adapter runs `codex sandbox -- true` once at startup. When the sandbox cannot start, Codex declares no read-only or shell capability, model selection stops offering it, and the Codex account in Settings → Runtimes shows the reason. There is deliberately no fallback to running without a sandbox.
+
+To allow it on such a host, add an AppArmor profile that grants user namespaces to bubblewrap only. Codex uses `/usr/bin/bwrap` when it exists and its bundled `codex-resources/bwrap` otherwise, so the profile covers both:
+
+```
+abi <abi/4.0>,
+include <tunables/global>
+
+profile codex-bwrap /{usr/bin/bwrap,home/*/**/codex-resources/bwrap} flags=(unconfined) {
+  userns,
+
+  include if exists <local/codex-bwrap>
+}
+```
+
+Install it as `/etc/apparmor.d/codex-bwrap`, load it with `sudo apparmor_parser -r /etc/apparmor.d/codex-bwrap`, then restart Jevellan. Setting `kernel.apparmor_restrict_unprivileged_userns=0` also works but weakens the host for every program.
+
 ## Subscription authentication
 
 Claude uses a user-supplied long-lived token or API key. Technical compatibility is not provider approval. Jevellan has no approval to offer Claude subscription logins; the README and UI must say so. Codex subscription authentication remains per device because refresh tokens rotate. Never copy a refreshable authentication file.
