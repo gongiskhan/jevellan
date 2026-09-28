@@ -11,10 +11,10 @@
 .cursor-turn .markdown > :first-child { margin-top: 0; }
 .cursor-turn .markdown > :last-child { margin-bottom: 0; }
 .cursor-tool, .cursor-thinking { border: 1px solid var(--edge); border-radius: 10px; margin-block: 8px; padding: 12px 14px; min-width: 0; }
-.cursor-tool summary { display: flex; align-items: center; gap: 12px; font-size: 13px; }
-.cursor-tool summary > span:first-of-type { flex: 1; }
-.cursor-tool summary::before, .cursor-thinking summary::before { content: '›'; margin-right: 8px; }
-.cursor-tool[open] summary::before, .cursor-thinking[open] summary::before { content: '⌄'; }
+.cursor-tool > summary, .cursor-thinking > summary { display: flex; align-items: center; gap: 12px; }
+.cursor-tool > summary { font-size: 13px; }
+.cursor-tool > summary > span:first-of-type { flex: 1; }
+.cursor-tool > summary::before, .cursor-thinking > summary::before { flex: none; margin: 0 1px; }
 .cursor-thinking { color: var(--ink-2); }
 .cursor-output-label, .cursor-working { color: var(--ink-3); font-size: 12px; }
 .cursor-working, .cursor-conversation .chip { display: inline-flex; align-items: center; gap: 8px; }

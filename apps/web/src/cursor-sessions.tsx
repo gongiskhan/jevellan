@@ -27,7 +27,7 @@ const Turn = memo(function Turn({ turn }: { turn: CursorTurn }) {
     {turn.blocks.map((block, index) => block.type === 'text'
       ? <Markdown key={index}>{block.text}</Markdown>
       : block.type === 'thinking'
-        ? <details className="cursor-thinking" key={index}><summary>Thinking</summary><Markdown>{block.text}</Markdown></details>
+        ? <details className="cursor-thinking" key={index} open><summary>Thinking</summary><Markdown>{block.text}</Markdown></details>
         : <details className="cursor-tool" key={block.id}>
           <summary><span>{block.name}</span><span className="muted small-text">{block.state === 'running' ? 'In progress' : block.state === 'unknown' ? 'Recorded' : block.state}</span></summary>
           {block.input && <><div className="cursor-output-label">Input</div><pre><code>{block.input}</code></pre></>}

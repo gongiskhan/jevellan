@@ -4,6 +4,8 @@ Last updated: 2026-09-26. On 2026-09-26 the user resumed the build on a second m
 
 ## Current state
 
+- Cursor disclosure follow-up (2026-09-28): fixed doubled collapse/expand arrows and made thinking blocks expanded by default, with manual toggling retained. Deployed web assets and verified in the live browser; build/typecheck/lint pass. See [evidence](conversation-space-2026-09-28.md#disclosure-follow-up).
+
 - Conversation reading-space update (2026-09-28): removed the redundant header/footer, moved the device switcher and session settings into the sidebar, widened transcripts, pinned the latest human message to two lines and added a growing one-line composer with separate send/steer and queue icons. Mini and CSG reader deployed; live desktop and phone-width checks, build, typecheck and lint passed. No agent message was sent. See [evidence](conversation-space-2026-09-28.md).
 
 - Cursor subagent follow-up (2026-09-28): explicit child metadata now excludes subagents from ordinary conversations, journal/hook rediscovery and reconnect-cache fallback. Build, typecheck, lint and 21 focused regressions pass. The mini and CSG reader are updated. After the user restored the existing tunnel, live discovery returned 50 main conversations, excluded 125 subagents and retained the reported parent without unavailable sources. See [evidence](cursor-windows-2026-09-28.md).

@@ -19,3 +19,11 @@ The user requested more space for reading, compact delivery controls and a pinne
 - **Build checks:** build, TypeScript and lint pass. Automated suites and live steering/queue delivery were **not run** for this UI iteration. Physical phone acceptance is not claimed.
 - **Deployment:** isolated mini release `~/.jevellan-build/pilot-conversation-space-2026-09-28/app`, existing pilot data home and tailnet route. CSG’s read-only helper was updated through the existing dev tunnel; hooks and tunnel configuration were preserved. Health reports OK.
 - **Scoped review:** inspected keyboard submission guards, separate queue semantics, responsive navigation, empty-draft cleanup, source metadata filtering and retained settings access. No crucial issue remains identified in this scope. Secret scanning is required before publication.
+
+## Disclosure follow-up
+
+The Cursor tool/thinking headers added text arrows to the shared border-drawn chevron, causing the doubled, misaligned marker in the user's screenshot. Both now use only the shared rotating chevron, aligned with a flex summary. Thinking blocks mount open by default; tool blocks retain their collapsed default. Native disclosure toggling still permits the reader to collapse thinking.
+
+- **Live:** all 15 thinking blocks in the open conversation initially expanded; tool blocks remained closed. Browser inspection confirmed a single aligned arrow and working manual collapse/expand.
+- **Build checks:** build, typecheck and lint pass. Automated suites were not run for this small UI fix. No agent message was sent.
+- **Deployment:** web assets updated in the existing isolated release, retaining older hashed assets for open clients. The daemon, CSG reader and hooks were not restarted or changed.
