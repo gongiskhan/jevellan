@@ -27,3 +27,11 @@ The Cursor tool/thinking headers added text arrows to the shared border-drawn ch
 - **Live:** all 15 thinking blocks in the open conversation initially expanded; tool blocks remained closed. Browser inspection confirmed a single aligned arrow and working manual collapse/expand.
 - **Build checks:** build, typecheck and lint pass. Automated suites were not run for this small UI fix. No agent message was sent.
 - **Deployment:** web assets updated in the existing isolated release, retaining older hashed assets for open clients. The daemon, CSG reader and hooks were not restarted or changed.
+
+## Transcript density follow-up
+
+Removed the repeated agent-name label from assistant turns. User messages retain their distinct bubble and You label; injected notifications are labelled Automatic update. Reduced transcript/live-activity gaps to 8 pixels and removed the disclosure cards' extra outer margins, so adjacent thinking, tools and text no longer accumulate padding and label space.
+
+Build, typecheck and lint pass. The change is limited to web assets in the existing isolated installation; no daemon restart, native session mutation or message delivery is involved. Automated suites were not run for this visual adjustment.
+
+**Live evidence:** the deployed browser has no assistant-turn labels, measured adjacent turn spacing is 8 pixels, and thinking remains open. Visual inspection confirms the tighter layout. No agent message was sent.

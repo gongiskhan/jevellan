@@ -23,7 +23,7 @@ export function useCursorSessions() {
 }
 const Turn = memo(function Turn({ turn }: { turn: CursorTurn }) {
   return <article className={`cursor-turn cursor-turn-${turn.role}`}>
-    <div className="cursor-turn-label">{turn.automated ? 'Cursor update' : turn.role === 'user' ? 'You' : 'Cursor'}</div>
+    {turn.role === 'user' && <div className="cursor-turn-label">{turn.automated ? 'Automatic update' : 'You'}</div>}
     {turn.blocks.map((block, index) => block.type === 'text'
       ? <Markdown key={index}>{block.text}</Markdown>
       : block.type === 'thinking'

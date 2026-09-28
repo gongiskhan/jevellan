@@ -4,6 +4,8 @@ Last updated: 2026-09-26. On 2026-09-26 the user resumed the build on a second m
 
 ## Current state
 
+- Cursor transcript density (2026-09-28): removed repeated agent-name labels and reduced inter-block spacing to 8 pixels, preserving distinct user messages. Deployed web assets; build/typecheck/lint pass. See [evidence](conversation-space-2026-09-28.md#transcript-density-follow-up).
+
 - Cursor disclosure follow-up (2026-09-28): fixed doubled collapse/expand arrows and made thinking blocks expanded by default, with manual toggling retained. Deployed web assets and verified in the live browser; build/typecheck/lint pass. See [evidence](conversation-space-2026-09-28.md#disclosure-follow-up).
 
 - Conversation reading-space update (2026-09-28): removed the redundant header/footer, moved the device switcher and session settings into the sidebar, widened transcripts, pinned the latest human message to two lines and added a growing one-line composer with separate send/steer and queue icons. Mini and CSG reader deployed; live desktop and phone-width checks, build, typecheck and lint passed. No agent message was sent. See [evidence](conversation-space-2026-09-28.md).
