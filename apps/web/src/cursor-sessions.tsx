@@ -8,7 +8,7 @@ import { MessageDelivery } from './message-delivery.js';
 import './cursor-sessions.css';
 
 export function useCursorSessions() {
-  const [list, setList] = useState<z.infer<typeof CursorListSchema>>({ schema: 'cursor-list-v1', sessions: [], unavailable: [], observedAt: new Date().toISOString() });
+  const [list, setList] = useState<z.infer<typeof CursorListSchema>>({ schema: 'cursor-list-v1', sessions: [], excludedSessionIds: [], unavailable: [], observedAt: new Date().toISOString() });
   useEffect(() => {
     const controller = new AbortController(); let timer: ReturnType<typeof setTimeout>;
     const load = async () => {

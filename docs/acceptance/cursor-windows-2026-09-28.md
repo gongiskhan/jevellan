@@ -30,3 +30,15 @@ A portable Node 22.22.0 Windows runtime was downloaded from nodejs.org, checked 
 - The initial full tool-detail transfer took about 38 seconds and exceeded the application deadline. The final canonical database reader, launched from its native directory with the single-pass display extraction, returned the parent transcript through the real two-hop tunnel in **1.84 seconds**, with 401 turns, 292 tool blocks and about 572 KB transferred. At that observation the conversation had become idle. A preceding read completed in 2.03 seconds.
 - Final deployment uses the existing Mac mini release directory `~/.jevellan-build/pilot-csg-windows-final-2026-09-28/app` and unchanged pilot data home. The read-only Windows helper is independently versioned from the already-installed hooks. The Windows startup list includes recent desktop sessions; the WSL connection is retained separately. Native exported-transcript read failures remain explicitly reported; they do not hide the database sessions.
 - Browser inspection was live in the existing desktop browser. No phone installation/physical device acceptance is claimed. The user’s original screenshots establish the phone symptom, not a post-fix phone pass.
+
+## Subagent-list follow-up
+
+The user reported child tasks appearing as separate conversations. Discovery now uses Cursor's explicit `composerHeaders.isSubagent`, composer `isSubagent`/`subagentInfo`, and parent `subagentComposerIds`. Child classification is collected before the five-day filter, so old parents can still identify recently exported children. The same exclusions apply to database sessions, exported journals and hook-only discovery. Known exclusions survive temporary source loss in the running reader cache. Ordinary parents retain their existing transcript and working indicator.
+
+The optional, defaulted `excludedSessionIds` list carries hashed IDs through the versioned reader response, allowing the gateway to discard previously cached child rows instead of restoring them during partial source failures. Older helpers remain readable. This is structural metadata filtering, with no title-based guesses and no native database changes.
+
+- **Simulated:** 21 focused Cursor regressions pass, including header-present/header-absent databases, old-parent references, recent child exports/hooks and cache fallback after metadata loss. Build, typecheck and lint pass.
+- **Live:** the mini uses the isolated `pilot-cursor-parents-2026-09-28/app` release with the existing data home and tailnet route.
+- **Blocked:** CSG's existing tunnel returns connection refused. Its updated reader is packaged locally, but has not been installed there; live CSG filtering and browser confirmation are not claimed. Remote helper configuration and existing hooks are preserved.
+- **Not run:** broad suites, message delivery and physical phone acceptance.
+- **Scoped review:** checked parent retention, metadata fallback, read-only native access and cache resurrection. The cache check found and fixed a case where temporary metadata loss could reintroduce a known child from its journal.

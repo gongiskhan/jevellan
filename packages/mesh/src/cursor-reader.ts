@@ -62,8 +62,9 @@ export function cursorDatabasePath(userHome: string, platform: NodeJS.Platform =
   return join(userHome, ...(platform === 'darwin' ? ['Library', 'Application Support'] : platform === 'win32' ? ['AppData', 'Roaming'] : ['.config']), 'Cursor', 'User', 'globalStorage', 'state.vscdb');
 }
 const MetadataRow = z.object({ id: z.string(), metadata: z.string(), toolStatus: z.string().nullable().optional() });
-function discover(options: CursorReaderOptions): { sources: Source[]; unavailable: string[] } {
+function discover(options: CursorReaderOptions): { sources: Source[]; unavailable: string[]; excludedSessionIds: string[] } {
   const sources = new Map<string, Source>(); const unavailable: string[] = [];
+  const subagents = new Set<string>();
   const cutoff = Date.now() - 5 * DAY;
   const base = (nativeId: string, title: string, cwd: string | null, at: number, state: CursorSession['state']): Source => ({
     nativeId,
@@ -78,8 +79,15 @@ function discover(options: CursorReaderOptions): { sources: Source[]; unavailabl
     try {
       database = new DatabaseSync(databaseFile, { readOnly: true });
       database.exec('PRAGMA query_only=ON; PRAGMA busy_timeout=200;');
+      // Newer desktop versions index children separately. Read all headers,
+      // including old parents and children whose exported journals are recent.
+      if (database.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='composerHeaders'").get()) {
+        for (const value of database.prepare('SELECT composerId FROM composerHeaders WHERE isSubagent = 1').all()) {
+          subagents.add(z.object({ composerId: z.string() }).parse(value).composerId);
+        }
+      }
       const rows = database.prepare(`SELECT substr(c.key, 14) AS id,
-        json_extract(c.value, '$.name', '$.cwd', '$.lastUpdatedAt', '$.updatedAt', '$.createdAt', '$.status', '$.conversationCheckpointLastUpdatedAt', '$.workspaceIdentifier.uri.fsPath') AS metadata,
+        json_extract(c.value, '$.name', '$.cwd', '$.lastUpdatedAt', '$.updatedAt', '$.createdAt', '$.status', '$.conversationCheckpointLastUpdatedAt', '$.workspaceIdentifier.uri.fsPath', '$.isSubagent', '$.subagentInfo', '$.subagentComposerIds') AS metadata,
         CASE WHEN json_valid(b.value) THEN json_extract(b.value, '$.toolFormerData.status') END AS toolStatus
         FROM cursorDiskKV c LEFT JOIN cursorDiskKV b
           ON b.key = 'bubbleId:' || substr(c.key, 14) || ':' || json_extract(c.value, '$.fullConversationHeadersOnly[#-1].bubbleId')
@@ -87,7 +95,9 @@ function discover(options: CursorReaderOptions): { sources: Source[]; unavailabl
       if (rows.length > 20000) throw new Error('Cursor metadata limit reached.');
       for (const value of rows) {
         const row = MetadataRow.parse(value);
-        const [title, savedCwd, updated, changed, created, status, checkpoint, workspacePath] = z.array(z.unknown()).parse(JSON.parse(row.metadata));
+        const [title, savedCwd, updated, changed, created, status, checkpoint, workspacePath, isSubagent, subagentInfo, childIds] = z.array(z.unknown()).parse(JSON.parse(row.metadata));
+        if (isSubagent === true || isSubagent === 1 || (subagentInfo !== null && typeof subagentInfo === 'object' && !Array.isArray(subagentInfo))) subagents.add(row.id);
+        if (Array.isArray(childIds)) for (const id of childIds) if (typeof id === 'string') subagents.add(id);
         const cwd = typeof savedCwd === 'string' && isAbsolute(savedCwd) ? savedCwd : workspacePath;
         const timestamp = Math.max(...[updated, changed, created, checkpoint].map(value => typeof value === 'number' ? value : typeof value === 'string' ? Date.parse(value) : NaN).filter(value => Number.isFinite(value) && value <= Date.now()));
         if (!timestamp || timestamp < cutoff || timestamp > Date.now()) continue;
@@ -109,7 +119,7 @@ function discover(options: CursorReaderOptions): { sources: Source[]; unavailabl
     for (const entry of entries(root)) {
       if (!entry.isDirectory() && !(entry.isFile() && /\.(jsonl|txt)$/.test(entry.name))) continue;
       const nativeId = entry.isDirectory() ? entry.name : entry.name.replace(/\.(jsonl|txt)$/, '');
-      if (cli.has(nativeId)) continue;
+      if (cli.has(nativeId) || subagents.has(nativeId)) continue;
       const file = entry.isDirectory() ? join(root, nativeId, `${nativeId}.jsonl`) : join(root, entry.name);
       try {
         const info = statSync(file); if (!info.isFile() || info.mtimeMs < cutoff || info.mtimeMs > Date.now()) continue;
@@ -130,13 +140,13 @@ function discover(options: CursorReaderOptions): { sources: Source[]; unavailabl
   }
   for (const entry of entries(join(options.home, 'cursor'))) if (entry.isDirectory() && /^cursor_[a-f0-9]{32}$/.test(entry.name)) {
     const hook = cursorHookState(options.home, entry.name);
-    if (hook && Date.parse(hook.at) >= cutoff && !sources.has(hook.nativeId)) sources.set(hook.nativeId, base(hook.nativeId, hook.title, hook.cwd, Date.parse(hook.at), hook.state));
+    if (hook && !subagents.has(hook.nativeId) && Date.parse(hook.at) >= cutoff && !sources.has(hook.nativeId)) sources.set(hook.nativeId, base(hook.nativeId, hook.title, hook.cwd, Date.parse(hook.at), hook.state));
   }
-  return { sources: [...sources.values()].map(source => withHooks(options, source)).sort((a, b) => b.session.lastActivityAt.localeCompare(a.session.lastActivityAt)), unavailable: [...new Set(unavailable)] };
+  return { sources: [...sources.values()].filter(source => !subagents.has(source.nativeId)).map(source => withHooks(options, source)).sort((a, b) => b.session.lastActivityAt.localeCompare(a.session.lastActivityAt)), unavailable: [...new Set(unavailable)], excludedSessionIds: [...subagents].map(cursorSessionId) };
 }
 export function cursorList(options: CursorReaderOptions) {
-  const { sources, unavailable } = discover(options);
-  return CursorListSchema.parse({ schema: 'cursor-list-v1', sessions: sources.map(row => row.session), unavailable, observedAt: new Date().toISOString() });
+  const { sources, unavailable, excludedSessionIds } = discover(options);
+  return CursorListSchema.parse({ schema: 'cursor-list-v1', sessions: sources.map(row => row.session), unavailable, excludedSessionIds, observedAt: new Date().toISOString() });
 }
 export function cursorSource(options: CursorReaderOptions, id: string) {
   const source = discover(options).sources.find(row => row.session.id === id);

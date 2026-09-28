@@ -84,9 +84,12 @@ export class CursorSessions {
       if (!pending) {
         pending = this.#request(this.#input(target, 'list', projectPaths), this.#target(target)).then(value => {
           const list = CursorListSchema.parse(value);
+          const excluded = new Set([...cached?.excludedSessionIds ?? [], ...list.excludedSessionIds]);
+          list.excludedSessionIds = [...excluded];
+          list.sessions = list.sessions.filter(row => !excluded.has(row.id));
           // An unavailable source must not make known sessions vanish.
           if (list.unavailable.length && cached) {
-            const known = new Set(list.sessions.map(row => row.id));
+            const known = new Set([...list.sessions.map(row => row.id), ...list.excludedSessionIds]);
             list.sessions.push(...cached.sessions.filter(row => !known.has(row.id) && Date.now() - Date.parse(row.lastActivityAt) < 5 * 86_400_000)
               .map(row => ({ ...row, connected: false, state: 'unknown' as const, canSteer: false, canSend: false })));
           }

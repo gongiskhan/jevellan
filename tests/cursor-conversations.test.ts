@@ -1,4 +1,4 @@
-import { afterEach, expect, test } from 'vitest';
+import { afterEach, expect, test, vi } from 'vitest';
 import { mkdtempSync, mkdirSync, writeFileSync, utimesSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
@@ -12,7 +12,7 @@ import { recordCursorActivity } from '../packages/mesh/dist/cursor-activity.js';
 // Adapted from the reference lister/structured-transcript regressions. Synthetic
 // input only. Run for the reported Cursor display and activity regressions.
 const roots: string[] = [];
-afterEach(() => { for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true }); });
+afterEach(() => { vi.restoreAllMocks(); for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true }); });
 const jsonl = (...values: unknown[]) => values.map(value => JSON.stringify(value)).join('\n') + '\n';
 const message = (role: string, content: unknown) => ({ role, message: { content } });
 function fixture() {
@@ -184,6 +184,62 @@ test('desktop waiting subagents keep the spinner and their saved tool details', 
   db.close();
 });
 
+
+test.each([true, false])('subagents stay hidden across database, journal and hook discovery (headers: %s)', async headers => {
+  const { DatabaseSync } = await import('node:sqlite');
+  const { cursorDatabasePath } = await import('../packages/mesh/dist/cursor-reader.js');
+  const { options, file } = fixture();
+  const path = cursorDatabasePath(options.userHome); mkdirSync(dirname(path), { recursive: true });
+  const db = new DatabaseSync(path); db.exec('CREATE TABLE cursorDiskKV (key TEXT PRIMARY KEY, value TEXT)');
+  const insert = db.prepare('INSERT INTO cursorDiskKV VALUES (?, ?)');
+  const recent = Date.now() - 1000;
+  insert.run('composerData:parent-fixture', JSON.stringify({ name: 'Main work', createdAt: recent, status: 'generating', subagentInfo: null }));
+  // Even an old parent can identify a child with a recent export or hook.
+  insert.run('composerData:old-parent-fixture', JSON.stringify({ createdAt: recent - 6 * 86_400_000, subagentComposerIds: ['referenced-child'] }));
+  insert.run('composerData:flag-child', JSON.stringify({ createdAt: recent, isSubagent: true }));
+  insert.run('composerData:info-child', JSON.stringify({ createdAt: recent, subagentInfo: { parentComposerId: 'parent-fixture' } }));
+  const children = ['referenced-child', 'flag-child', 'info-child'];
+  if (headers) {
+    db.exec('CREATE TABLE composerHeaders (composerId TEXT PRIMARY KEY, isSubagent INTEGER)');
+    db.prepare('INSERT INTO composerHeaders VALUES (?, 1)').run('header-child');
+    db.prepare('INSERT INTO composerHeaders VALUES (?, 0)').run('parent-fixture');
+    children.push('header-child');
+  }
+  for (const nativeId of children) {
+    file(nativeId, jsonl(message('user', 'Child work')));
+    saveCursorHookState(options.home, { schema: 'cursor-hook-state-v1', id: cursorSessionId(nativeId), nativeId, generation: 'fixture-turn', cwd: null, title: 'Child work', state: 'working', at: new Date(recent).toISOString(), hold: null });
+  }
+  const list = cursorList(options);
+  expect(list.unavailable).toEqual([]);
+  expect(list.sessions).toMatchObject([{ title: 'Main work', state: 'working' }]);
+  expect(list.excludedSessionIds.sort()).toEqual(children.map(cursorSessionId).sort());
+  expect(() => cursorTranscript(options, cursorSessionId('info-child'))).toThrow('no longer available');
+  db.close();
+});
+
+test('unavailable exports do not restore a cached session once it is identified as a subagent', async () => {
+  const { DatabaseSync } = await import('node:sqlite');
+  const { Homes } = await import('../packages/core/dist/index.js');
+  const { CursorSessions } = await import('../packages/mesh/dist/cursor-service.js');
+  const { cursorDatabasePath } = await import('../packages/mesh/dist/cursor-reader.js');
+  const { options, file } = fixture();
+  file('child-fixture', jsonl(message('user', 'Child work')));
+  const service = new CursorSessions(new Homes(options.home, options.userHome), options.deviceId, options.deviceName);
+  expect((await service.list()).sessions).toHaveLength(1);
+  const path = cursorDatabasePath(options.userHome); mkdirSync(dirname(path), { recursive: true });
+  const db = new DatabaseSync(path);
+  db.exec('CREATE TABLE cursorDiskKV (key TEXT PRIMARY KEY, value TEXT); CREATE TABLE composerHeaders (composerId TEXT PRIMARY KEY, isSubagent INTEGER)');
+  db.prepare('INSERT INTO composerHeaders VALUES (?, 1)').run('child-fixture'); db.close();
+  const unreadable = file('unreadable-fixture', ''); rmSync(unreadable);
+  vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 3000);
+  const list = await service.list();
+  expect(list.unavailable).toHaveLength(1);
+  expect(list.sessions).toEqual([]);
+  // Losing the database must not let its known children reappear as journals.
+  rmSync(path);
+  vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 3000);
+  expect((await service.list()).sessions).toEqual([]);
+});
 
 test('the tunnel reader replies to a complete JSON line without waiting for stdin closure', async () => {
   const { options, file } = fixture(); file('desktop-fixture', jsonl(message('user', 'Recent request')));

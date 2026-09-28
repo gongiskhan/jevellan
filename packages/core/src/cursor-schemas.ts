@@ -43,6 +43,7 @@ export const CursorActivitySchema = z.strictObject({
 });
 export const CursorListSchema = z.strictObject({
   schema: z.literal('cursor-list-v1'), sessions: z.array(CursorSessionSchema),
+  excludedSessionIds: z.array(IdSchema).default([]),
   unavailable: z.array(z.string()), observedAt: TimestampSchema,
 });
 // Connections use an already established SSH leg of the user's dev tunnel.
