@@ -1,3 +1,5 @@
+import { createPortal } from 'react-dom';
+import { useSessionDrag } from './session-drag.js';
 import { clientId } from './client-id.js';
 import { useSessionList } from './session-list.js';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
@@ -73,6 +75,7 @@ export function ConversationSidebar({
   const [actions, setActions] = useState<string>();
   const [renaming, setRenaming] = useState<{ id: string; title: string; cursor: boolean }>();
   const [title, setTitle] = useState('');
+  const [pendingOrder, setPendingOrder] = useState<string[]>();
   const [conversations, setConversations] = useState<z.infer<typeof ConversationListSchema>['conversations']>(
     [],
   );
@@ -136,20 +139,27 @@ export function ConversationSidebar({
     })),
   ].map(entry => ({ ...entry, title: entry.cursor ? presentation.preferences.titles[entry.id] ?? entry.title : entry.title }))
     .sort((a, b) => {
-      const order = presentation.preferences.order;
+      const order = pendingOrder ?? presentation.preferences.order;
       const left = order.indexOf(a.id), right = order.indexOf(b.id);
       return left - right || b.updatedAt.localeCompare(a.updatedAt) || a.id.localeCompare(b.id);
     });
   const matching = combined.filter(entry => terms.every(term => `${entry.title} ${entry.projectLabel} ${entry.deviceLabel} ${entry.runtimeLabel}`.toLowerCase().includes(term)));
-  const visible = matching.filter((entry) => inFilter(filter, entry.state));
-  const move = (id: string, direction: -1 | 1) => void task.run(async () => {
-    const index = visible.findIndex(entry => entry.id === id);
-    const neighbor = visible[index + direction];
-    if (!neighbor) return;
-    const order = combined.map(entry => entry.id);
-    const from = order.indexOf(id), to = order.indexOf(neighbor.id);
-    order.splice(from, 1); order.splice(to, 0, id);
-    await presentation.save({ operation: 'order', order: [...order, ...presentation.preferences.order.filter(key => !order.includes(key))].slice(0, 10000) });
+  const drag = useSessionDrag({ disabled: task.busy || !presentation.ready,
+    start: () => setActions(undefined), drop: (id, target, after) => drop(id, target, after) });
+  const filtered = matching.filter((entry) => inFilter(filter, entry.state));
+  const visible = drag.drag ? [...filtered].sort((a, b) => {
+    const order = drag.drag!.order;
+    const rank = (id: string) => { const index = order.indexOf(id); return index < 0 ? order.length : index; };
+    return rank(a.id) - rank(b.id);
+  }) : filtered;
+  const dragged = combined.find(entry => entry.id === drag.drag?.id);
+  const drop = (id: string, target: string, after: boolean) => void task.run(async () => {
+    if (id === target || !combined.some(entry => entry.id === id) || !combined.some(entry => entry.id === target)) return;
+    const order = combined.map(entry => entry.id).filter(key => key !== id);
+    order.splice(order.indexOf(target) + Number(after), 0, id);
+    setPendingOrder(order);
+    try { await presentation.save({ operation: 'order', order: [...order, ...presentation.preferences.order.filter(key => !order.includes(key))].slice(0, 10000) }); }
+    finally { setPendingOrder(undefined); }
   });
   const waiting = conversations.filter((entry) => inFilter('Waiting for you', entry.state)).length;
   const open = combined.find(entry => selected === entry.route);
@@ -192,7 +202,9 @@ export function ConversationSidebar({
       )}
       {!!presentation.preferences.order.length && <button className="text-button session-sort" disabled={task.busy || !presentation.ready}
         onClick={() => void task.run(() => presentation.save({ operation: 'order', order: [] }))}>Sort by activity</button>}
-      <div className="conversation-list">
+      <span id="session-drag-help" className="sr-only">Drag to reorder. On touch screens, hold first. With a keyboard, use Alt and the up or down arrow.</span>
+      <span className="sr-only" role="status">{dragged ? `Dragging ${dragged.title}. Release to place it; Escape cancels.` : ''}</span>
+      <div className={`conversation-list ${drag.drag ? 'session-drag-active' : ''}`} ref={drag.list}>
         {!combined.length ? (
           <p className="empty-conversations">No conversations yet. Start one to put your agents to work.</p>
         ) : !visible.length ? (
@@ -200,11 +212,13 @@ export function ConversationSidebar({
             {terms.length ? 'No conversations match this search.' : 'No conversations in this view.'}
           </p>
         ) : (
-          visible.map((entry, index) => (
-            <div className="conversation-list-entry" key={entry.id} onKeyDown={event => { if (event.key === 'Escape') setActions(undefined); }}>
+          visible.map((entry) => (
+            <div className={`conversation-list-entry ${drag.drag?.id === entry.id ? 'session-drag-source' : ''} ${drag.drag?.target === entry.id ? drag.drag.after ? 'session-drop-after' : 'session-drop-before' : ''}`} data-session-id={entry.id} key={entry.id} onKeyDown={event => { if (event.key === 'Escape') setActions(undefined); }}>
             <button
               className={`conversation-row ${selected === entry.route ? 'selected' : ''}`}
               onClick={() => navigate(entry.route)}
+              aria-describedby="session-drag-help" aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
+              onDragStart={event => event.preventDefault()}
             >
               <i className={entry.state === 'running' ? 'activity-spinner' : `state-dot state-${entry.state}`} aria-hidden="true" />
               <strong title={entry.title}>{entry.title}</strong>
@@ -217,14 +231,16 @@ export function ConversationSidebar({
               aria-expanded={actions === entry.id} onClick={() => setActions(actions === entry.id ? undefined : entry.id)}><Icon name="more" size={16} /></button>
             {actions === entry.id && <div className="session-row-actions" role="group" aria-label={`Actions for ${entry.title}`}>
               <button className="text-button" disabled={task.busy || !presentation.ready} onClick={() => { setRenaming(entry); setTitle(entry.title); setActions(undefined); }}>Rename</button>
-              <button className="text-button" disabled={task.busy || !presentation.ready || index === 0} onClick={() => move(entry.id, -1)}>↑ Move up</button>
-              <button className="text-button" disabled={task.busy || !presentation.ready || index === visible.length - 1} onClick={() => move(entry.id, 1)}>↓ Move down</button>
               {(entry.needsConnection || !entry.cursor && selected === entry.route) && <button className="text-button" onClick={() => { setActions(undefined); if (entry.cursor) navigate('/settings/devices'); else { navigate(entry.route); window.dispatchEvent(new Event('jevellan-conversation-settings')); } }}><Icon name="gear" size={14} /> Settings</button>}
             </div>}
             </div>
           ))
         )}
       </div>
+      {drag.drag && dragged && createPortal(<div className="session-drag-preview" aria-hidden="true"
+        style={{ width: Math.min(drag.drag.width, window.innerWidth - 24), left: Math.max(12, Math.min(drag.drag.x - drag.drag.width / 2, window.innerWidth - drag.drag.width - 12)), top: Math.max(8, drag.drag.y - 58) }}>
+        <strong>{dragged.title}</strong><span>{dragged.runtimeLabel} · {dragged.projectLabel} · {dragged.deviceLabel}</span>
+      </div>, document.body)}
       {renaming && <Modal title="Rename session" close={() => setRenaming(undefined)}>
         <form onSubmit={event => { event.preventDefault(); void task.run(async () => {
           if (renaming.cursor) await presentation.save({ operation: 'rename', id: renaming.id, title: title.trim() });

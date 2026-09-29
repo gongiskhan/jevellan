@@ -8,7 +8,7 @@ The user requested a usable pilot and deferred the remaining build. This is not 
 
 ## Current pilot
 
-The [session list controls](session-list-controls-2026-09-29.md) add per-row Rename, Move up and Move down, with saved presentation shared by browsers using this installation.
+The [session list controls](session-list-controls-2026-09-29.md) add per-row Rename and drag-and-drop ordering (long press on mobile), with saved presentation shared by browsers using this installation.
 
 The [native conversation update](native-conversations-2026-09-29.md) is active: recent Claude Code and Codex conversations now appear beside Cursor with formatted, read-only transcripts and activity indicators. The mini, CSG readers and existing Dev Madrid SSH reader are updated.
 

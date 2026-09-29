@@ -128,7 +128,7 @@
   {
     "id": "session-list-controls",
     "title": "Rename and reorder sessions",
-    "why": "Per-row actions rename native and ordinary sessions and move them up or down. Native display names and manual list order persist in the serving Jevellan installation, shared by its browsers. Includes activity-sort reset and stale-write protection. Build/typecheck/lint passed; automated and browser interaction tests not run under the user\u2019s preference. See docs/acceptance/session-list-controls-2026-09-29.md.",
+    "why": "Rename and persistent ordering for native and ordinary sessions. Reordering uses desktop drag-and-drop and mobile long press, with preview, insertion marker, edge scrolling and keyboard shortcuts; the initial Move up/down buttons were removed. Saved names/order remain shared by browsers using this installation. Automated and physical-touch tests not run under the user\u2019s preference. See docs/acceptance/session-list-controls-2026-09-29.md.",
     "status": "complete"
   }
 ]

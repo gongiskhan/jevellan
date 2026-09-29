@@ -1664,3 +1664,12 @@ html:has(.reading-conversation) { scroll-padding-top: 115px; scroll-padding-bott
 .session-row-actions { display: flex; flex-wrap: wrap; gap: 2px 8px; padding: 4px 8px 8px 24px; }
 .session-row-actions button { display: inline-flex; align-items: center; gap: 4px; min-height: 36px; font-size: 12px; padding: 4px; }
 .conversation-list-entry:has(.session-row-actions) > .session-settings { top: 28px; }
+.conversation-row { cursor: grab; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.session-drag-active, .session-drag-active .conversation-row { cursor: grabbing; }
+.session-drag-source > .conversation-row { opacity: .35; }
+.session-drop-before::before, .session-drop-after::after { content: ''; position: absolute; left: 8px; right: 8px; height: 3px; border-radius: 2px; background: var(--jev); z-index: 2; pointer-events: none; }
+.session-drop-before::before { top: 0; }
+.session-drop-after::after { bottom: 0; }
+.session-drag-preview { position: fixed; z-index: 10000; pointer-events: none; display: grid; gap: 3px; padding: 12px 16px; border: 1px solid var(--jev); border-radius: var(--radius); background: var(--card); color: var(--ink); box-shadow: var(--shadow-pop); transform: rotate(-1deg); }
+.session-drag-preview strong, .session-drag-preview span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.session-drag-preview span { font-size: 11px; color: var(--ink-3); }
