@@ -1,3 +1,4 @@
+import { useSessionList } from './session-list.js';
 import { memo, useEffect, useRef, useState, type ReactNode } from 'react';
 import { z } from 'zod';
 import { CursorListSchema, CursorTranscriptSchema, CursorMessageSchema, type CursorTurn } from '@jevellan/core/client';
@@ -78,14 +79,17 @@ export function CursorConversationPage({ id, navigation, ...props }: PageProps &
     setView(current => current ? { ...current, messages: [...current.messages.filter(message => message.clientMessageId !== result.clientMessageId), result] } : current);
     pending.current = undefined; setText('');
   });
+  const presentation = useSessionList();
   if (!view) return <p className="page-loading" role="status">{error || 'Opening conversation…'}</p>;
   const runtimeLabel = sessionRuntimeLabel(session!.runtime);
+  const gateway = new URLSearchParams(query).get('gateway') ?? props.data.devices.currentDeviceId;
+  const displayTitle = presentation.preferences.titles[`${gateway}:${session!.ownerDeviceId}:${id}`] ?? session!.title;
   const isCursor = !session!.runtime || session!.runtime === 'cursor';
   const latest = view.activity.at(-1)?.blocks.at(-1);
   const lastUser = view.turns.findLast(turn => turn.role === 'user' && !turn.automated && turn.blocks.some(block => block.type === 'text' && block.text.trim()))?.blocks.flatMap(block => block.type === 'text' ? [block.text] : []).join('\n');
   return <div className="conversation-page cursor-conversation" ref={page}>
     <div className="section-heading conversation-heading">
-      <h1>{navigation}<span className="session-title">{session!.title}</span></h1>
+      <h1>{navigation}<span className="session-title">{displayTitle}</span></h1>
       <div className="conversation-meta">
         <span className="chip">{runtimeLabel}</span><span className="chip">{session!.project}</span><span className="chip">{session!.deviceName}</span>
         {!isCursor && <span className="chip" title="Continue this session in its original application">Read only</span>}

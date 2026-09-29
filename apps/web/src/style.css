@@ -1659,3 +1659,8 @@ html:has(.reading-conversation) { scroll-padding-top: 115px; scroll-padding-bott
   .message-actions button { width: 40px; }
   .composer .message-input-row textarea { font-size: 16px; }
 }
+
+.session-sort { align-self: flex-end; font-size: 12px; padding: 4px 8px; }
+.session-row-actions { display: flex; flex-wrap: wrap; gap: 2px 8px; padding: 4px 8px 8px 24px; }
+.session-row-actions button { display: inline-flex; align-items: center; gap: 4px; min-height: 36px; font-size: 12px; padding: 4px; }
+.conversation-list-entry:has(.session-row-actions) > .session-settings { top: 28px; }

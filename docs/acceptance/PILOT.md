@@ -8,6 +8,8 @@ The user requested a usable pilot and deferred the remaining build. This is not 
 
 ## Current pilot
 
+The [session list controls](session-list-controls-2026-09-29.md) add per-row Rename, Move up and Move down, with saved presentation shared by browsers using this installation.
+
 The [native conversation update](native-conversations-2026-09-29.md) is active: recent Claude Code and Codex conversations now appear beside Cursor with formatted, read-only transcripts and activity indicators. The mini, CSG readers and existing Dev Madrid SSH reader are updated.
 
 The [conversation layout update](conversation-space-2026-09-28.md) is active: wider reading space, pinned latest user message, compact growing input, separate send/steer and queue icons, and sidebar settings/device controls.
@@ -36,6 +38,6 @@ The completed pilot and repairs are committed as `3d1c3fb` and pushed to public 
 
 ## Running copy and deferred work
 
-The app runs independently of the checkout from `~/.jevellan-build/pilot-native-sessions-2026-09-29/app`, with isolated state in `~/.jevellan-build/pilot-2026-09-25/home`. The dedicated Codex home was moved, never copied, into this home. The pilot listens on loopback port 9773 and the existing Tailscale HTTPS route at 9444. This detached process has no persistent OS service, so automatic startup after reboot is not configured.
+The app runs independently of the checkout from `~/.jevellan-build/pilot-session-list-2026-09-29/app`, with isolated state in `~/.jevellan-build/pilot-2026-09-25/home`. The dedicated Codex home was moved, never copied, into this home. The pilot listens on loopback port 9773 and the existing Tailscale HTTPS route at 9444. This detached process has no persistent OS service, so automatic startup after reboot is not configured.
 
 The current copy includes main through `8075c8e`, including the work published from the other machine and the focused Cursor conversation changes. The earlier deployment exclusions in the [2026-09-26 handoff notes](machine-handoff-2026-09-26.md) describe that historical copy. This activation adds no new main-feature work or acceptance claim. The explicit native-home exception remains limited to the approved Jevellan Cursor hook entries.

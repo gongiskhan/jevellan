@@ -1,3 +1,4 @@
+import { handleSessionListApi } from './session-list-api.js';
 import { handleGitApi } from './git-api.js';
 import { handleCursorApi } from './cursor-api.js';
 import { projectFolders } from './project-folders.js';
@@ -79,6 +80,7 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
       const input = ImproverRequestSchema.parse(await body(request)); retryable = true; send(await app.improverRequest(input)); return;
     }
     if (await handleGitApi(app, request, response, url)) return;
+    if (await handleSessionListApi(app, request, response, url)) return;
     if (await handleCursorApi(app, request, response, url, token)) return;
     if (path === '/api/project-folders' && method === 'GET') { send(await projectFolders(app.homes.userHome, url.searchParams.get('path') ?? undefined)); return; }
     if (path === '/hub/projects' && method === 'GET') { await app.conversations.ready; send((await app.conversations.projects())); return; }

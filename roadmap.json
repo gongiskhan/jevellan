@@ -124,5 +124,11 @@
     "title": "Claude Code and Codex conversation readers",
     "why": "Recent native main sessions now appear beside Cursor with formatted Markdown, expanded thinking, paired tool results, pinned latest user text and activity indicators. Read-only in this phase. Deployed on the mini with helpers through existing CSG and Dev Madrid SSH access; live discovery returned 11 Claude Code and 4 Codex sessions with no unavailable sources. Build/typecheck/lint passed. Eight synthetic tests added, not run at the user\u2019s request. See docs/acceptance/native-conversations-2026-09-29.md.",
     "status": "complete"
+  },
+  {
+    "id": "session-list-controls",
+    "title": "Rename and reorder sessions",
+    "why": "Per-row actions rename native and ordinary sessions and move them up or down. Native display names and manual list order persist in the serving Jevellan installation, shared by its browsers. Includes activity-sort reset and stale-write protection. Build/typecheck/lint passed; automated and browser interaction tests not run under the user\u2019s preference. See docs/acceptance/session-list-controls-2026-09-29.md.",
+    "status": "complete"
   }
 ]

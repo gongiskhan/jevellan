@@ -1,4 +1,5 @@
 import { clientId } from './client-id.js';
+import { useSessionList } from './session-list.js';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { z } from 'zod';
 import {
@@ -67,6 +68,11 @@ export function ConversationSidebar({
   selected,
 }: Pick<PageProps, 'data' | 'navigate' | 'onError'> & { selected: string }) {
   const cursor = useCursorSessions();
+  const presentation = useSessionList();
+  const task = useTask(onError);
+  const [actions, setActions] = useState<string>();
+  const [renaming, setRenaming] = useState<{ id: string; title: string; cursor: boolean }>();
+  const [title, setTitle] = useState('');
   const [conversations, setConversations] = useState<z.infer<typeof ConversationListSchema>['conversations']>(
     [],
   );
@@ -122,15 +128,29 @@ export function ConversationSidebar({
   const combined = [
     ...conversations.map(entry => ({ ...entry, route: `/conversations/${entry.id}`, projectLabel: projectName(entry.projectId),
       deviceLabel: data.devices.devices.find(device => device.id === entry.ownerDeviceId)?.name ?? entry.ownerDeviceId, cursor: false, runtimeLabel: '', needsConnection: false })),
-    ...cursor.sessions.map(entry => ({ id: `${entry.gatewayDeviceId}:${entry.ownerDeviceId}:${entry.id}`, title: entry.title,
+    ...cursor.sessions.map(entry => ({ id: `${entry.gatewayDeviceId ?? entry.ownerDeviceId}:${entry.ownerDeviceId}:${entry.id}`, title: entry.title,
       state: entry.state === 'working' ? 'running' : entry.state === 'idle' ? 'idle' : 'unknown',
       updatedAt: entry.lastActivityAt, ownerDeviceId: entry.ownerDeviceId,
       projectLabel: entry.project, deviceLabel: entry.deviceName, cursor: true, runtimeLabel: sessionRuntimeLabel(entry.runtime), needsConnection: (!entry.runtime || entry.runtime === 'cursor') && !entry.canSend,
       route: `/${entry.runtime && entry.runtime !== 'cursor' ? 'sessions' : 'cursor'}/${entry.id}?deviceId=${encodeURIComponent(entry.ownerDeviceId)}&gateway=${encodeURIComponent(entry.gatewayDeviceId ?? entry.ownerDeviceId)}`,
     })),
-  ].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  ].map(entry => ({ ...entry, title: entry.cursor ? presentation.preferences.titles[entry.id] ?? entry.title : entry.title }))
+    .sort((a, b) => {
+      const order = presentation.preferences.order;
+      const left = order.indexOf(a.id), right = order.indexOf(b.id);
+      return left - right || b.updatedAt.localeCompare(a.updatedAt) || a.id.localeCompare(b.id);
+    });
   const matching = combined.filter(entry => terms.every(term => `${entry.title} ${entry.projectLabel} ${entry.deviceLabel} ${entry.runtimeLabel}`.toLowerCase().includes(term)));
   const visible = matching.filter((entry) => inFilter(filter, entry.state));
+  const move = (id: string, direction: -1 | 1) => void task.run(async () => {
+    const index = visible.findIndex(entry => entry.id === id);
+    const neighbor = visible[index + direction];
+    if (!neighbor) return;
+    const order = combined.map(entry => entry.id);
+    const from = order.indexOf(id), to = order.indexOf(neighbor.id);
+    order.splice(from, 1); order.splice(to, 0, id);
+    await presentation.save({ operation: 'order', order: [...order, ...presentation.preferences.order.filter(key => !order.includes(key))].slice(0, 10000) });
+  });
   const waiting = conversations.filter((entry) => inFilter('Waiting for you', entry.state)).length;
   const open = combined.find(entry => selected === entry.route);
   useEffect(() => {
@@ -170,6 +190,8 @@ export function ConversationSidebar({
           />
         </label>
       )}
+      {!!presentation.preferences.order.length && <button className="text-button session-sort" disabled={task.busy || !presentation.ready}
+        onClick={() => void task.run(() => presentation.save({ operation: 'order', order: [] }))}>Sort by activity</button>}
       <div className="conversation-list">
         {!combined.length ? (
           <p className="empty-conversations">No conversations yet. Start one to put your agents to work.</p>
@@ -178,8 +200,8 @@ export function ConversationSidebar({
             {terms.length ? 'No conversations match this search.' : 'No conversations in this view.'}
           </p>
         ) : (
-          visible.map((entry) => (
-            <div className="conversation-list-entry" key={entry.id}>
+          visible.map((entry, index) => (
+            <div className="conversation-list-entry" key={entry.id} onKeyDown={event => { if (event.key === 'Escape') setActions(undefined); }}>
             <button
               className={`conversation-row ${selected === entry.route ? 'selected' : ''}`}
               onClick={() => navigate(entry.route)}
@@ -191,15 +213,33 @@ export function ConversationSidebar({
                 {entry.cursor ? `${entry.runtimeLabel} · ${entry.state === 'idle' ? 'Idle' : entry.state === 'unknown' ? 'Unknown' : 'Working'}` : stateLabel(entry.state)} · {entry.projectLabel} · {entry.deviceLabel}
               </span>
             </button>
-            {(entry.needsConnection || !entry.cursor && selected === entry.route) && <button type="button" className="session-settings icon-button"
-              aria-label={`Settings for ${entry.title}`} title={entry.cursor ? 'Cursor connection settings' : 'Conversation settings'}
-              onClick={() => { if (entry.cursor) navigate('/settings/devices'); else { navigate(entry.route); window.dispatchEvent(new Event('jevellan-conversation-settings')); } }}>
-              <Icon name="gear" size={16} />
-            </button>}
+            <button type="button" className="session-settings icon-button" aria-label={`Actions for ${entry.title}`} title="Session actions"
+              aria-expanded={actions === entry.id} onClick={() => setActions(actions === entry.id ? undefined : entry.id)}><Icon name="more" size={16} /></button>
+            {actions === entry.id && <div className="session-row-actions" role="group" aria-label={`Actions for ${entry.title}`}>
+              <button className="text-button" disabled={task.busy || !presentation.ready} onClick={() => { setRenaming(entry); setTitle(entry.title); setActions(undefined); }}>Rename</button>
+              <button className="text-button" disabled={task.busy || !presentation.ready || index === 0} onClick={() => move(entry.id, -1)}>↑ Move up</button>
+              <button className="text-button" disabled={task.busy || !presentation.ready || index === visible.length - 1} onClick={() => move(entry.id, 1)}>↓ Move down</button>
+              {(entry.needsConnection || !entry.cursor && selected === entry.route) && <button className="text-button" onClick={() => { setActions(undefined); if (entry.cursor) navigate('/settings/devices'); else { navigate(entry.route); window.dispatchEvent(new Event('jevellan-conversation-settings')); } }}><Icon name="gear" size={14} /> Settings</button>}
+            </div>}
             </div>
           ))
         )}
       </div>
+      {renaming && <Modal title="Rename session" close={() => setRenaming(undefined)}>
+        <form onSubmit={event => { event.preventDefault(); void task.run(async () => {
+          if (renaming.cursor) await presentation.save({ operation: 'rename', id: renaming.id, title: title.trim() });
+          else {
+            await api(`/api/conversations/${renaming.id}/rename`, ConversationPublicSchema, 'POST', {
+              schema: 'rename-conversation-v1', clientRequestId: `rename_${clientId()}`, previousTitle: renaming.title, title: title.trim(),
+            });
+            window.dispatchEvent(new Event('jevellan-conversation-updated'));
+          }
+          setRenaming(undefined);
+        }); }}>
+          <label>Name<input autoFocus required maxLength={200} value={title} onChange={event => setTitle(event.target.value)} /></label>
+          <div className="actions"><button disabled={task.busy || !title.trim()}>{task.busy ? 'Saving…' : 'Save name'}</button><button type="button" className="secondary" onClick={() => setRenaming(undefined)}>Cancel</button></div>
+        </form>
+      </Modal>}
       {cursor.unavailable.length > 0 && <details className="cursor-source-notice"><summary>Some native sessions are unavailable</summary>{cursor.unavailable.map(text => <p key={text}>{text}</p>)}</details>}
     </>
   );
