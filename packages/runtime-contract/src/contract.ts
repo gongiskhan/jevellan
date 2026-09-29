@@ -5,6 +5,7 @@ import { AccountSchema, ActionSchema, EffortSchema, IdSchema, NativeProcessSchem
 export const RuntimeErrorSchema = z.strictObject({ kind: z.enum(['rate-limit', 'auth', 'other']), message: z.string(), scope: z.enum(['account', 'model']).optional(), resetsAt: z.iso.datetime().optional() });
 export const RuntimeEventSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal('text'), delta: z.string() }),
+  z.strictObject({ type: z.literal('thinking'), delta: z.string() }),
   z.strictObject({ type: z.literal('tool-start'), id: z.string(), name: z.string(), input: z.unknown() }),
   z.strictObject({ type: z.literal('tool-end'), id: z.string(), ok: z.boolean(), output: z.string().optional() }),
   z.strictObject({ type: z.literal('usage'), inputTokens: z.number().int().nonnegative(), outputTokens: z.number().int().nonnegative(), cacheReadTokens: z.number().int().nonnegative().optional(), cacheWriteTokens: z.number().int().nonnegative().optional(), costUsd: z.number().nonnegative().optional(), costSource: z.enum(['reported', 'estimated']).optional() }),

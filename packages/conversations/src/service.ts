@@ -1361,7 +1361,7 @@ export class ConversationService {
       let streamUsage = accounts.find(entry => entry.account.id === selected.account.id)?.statuses.find(status => status.deviceId === this.options.deviceId)?.usage;
       try {
         const execution = new StretchExecution({ work, input, adapter, enterRepair: () => grant.tools.repair(), onEvent: (event) => {
-          if (event.type === 'text' || event.type === 'tool-start') this.#progress(work, 'running');
+          if (event.type === 'text' || event.type === 'thinking' || event.type === 'tool-start') this.#progress(work, 'running');
           if (event.type === 'rate-limit') {
             streamUsage = { ...streamUsage, fiveHourPct: event.fiveHourPct ?? streamUsage?.fiveHourPct, weeklyPct: event.weeklyPct ?? streamUsage?.weeklyPct,
               fiveHourResetsAt: event.fiveHourResetsAt ?? streamUsage?.fiveHourResetsAt, weeklyResetsAt: event.weeklyResetsAt ?? streamUsage?.weeklyResetsAt, source: 'stream', observedAt: new Date().toISOString() };

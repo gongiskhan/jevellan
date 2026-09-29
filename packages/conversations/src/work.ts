@@ -382,7 +382,7 @@ export class ConversationWork {
     this.ledger.append({ type: 'stretch-end', stretch: n, data: StretchFinishedSchema.parse({ schema: 'stretch-finished-v1', stretch, changed, correction, ...(pause ? { pause } : {}) }) }); return this.#materialise();
   }
   runtimeEvent(type: LedgerEvent['type'], data: unknown, stretch: number): LedgerEvent {
-    if (!['text', 'tool-start', 'tool-end', 'usage', 'finding', 'error'].includes(type)) throw new Error('Not a runtime event.');
+    if (!['text', 'thinking', 'tool-start', 'tool-end', 'usage', 'finding', 'error'].includes(type)) throw new Error('Not a runtime event.');
     if (!this.load().stretches.some((entry) => entry.n === stretch && entry.status === 'running')) throw new Error('Runtime event belongs to no running stretch.');
     return this.ledger.append({ type, data: type === 'finding' ? FindingSchema.parse(data) : data, stretch });
   }

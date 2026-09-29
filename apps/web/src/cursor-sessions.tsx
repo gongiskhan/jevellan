@@ -1,10 +1,11 @@
+import { TranscriptTurn } from './session-transcript.js';
 import { useSessionList } from './session-list.js';
-import { memo, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { z } from 'zod';
-import { CursorListSchema, CursorTranscriptSchema, CursorMessageSchema, type CursorTurn } from '@jevellan/core/client';
+import { CursorListSchema, CursorTranscriptSchema, CursorMessageSchema } from '@jevellan/core/client';
 import { api } from './api.js';
 import { clientId } from './client-id.js';
-import { Markdown, useTask, type PageProps } from './components.js';
+import { useTask, type PageProps } from './components.js';
 import { MessageDelivery, MessageInput, LatestUserMessage } from './message-delivery.js';
 import './cursor-sessions.css';
 
@@ -24,21 +25,6 @@ export function useCursorSessions() {
   }, []);
   return list;
 }
-const Turn = memo(function Turn({ turn }: { turn: CursorTurn }) {
-  return <article className={`cursor-turn cursor-turn-${turn.role}`}>
-    {turn.role === 'user' && <div className="cursor-turn-label">{turn.automated ? 'Automatic update' : 'You'}</div>}
-    {turn.blocks.map((block, index) => block.type === 'text'
-      ? <Markdown key={index}>{block.text}</Markdown>
-      : block.type === 'thinking'
-        ? <details className="cursor-thinking" key={index} open><summary>Thinking</summary><Markdown>{block.text}</Markdown></details>
-        : <details className="cursor-tool" key={block.id}>
-          <summary><span>{block.name}</span><span className="muted small-text">{block.state === 'running' ? 'In progress' : block.state === 'unknown' ? 'Recorded' : block.state}</span></summary>
-          {block.input && <><div className="cursor-output-label">Input</div><pre><code>{block.input}</code></pre></>}
-          {block.output !== undefined && <><div className="cursor-output-label">Output</div><pre><code>{block.output || 'No text output.'}</code></pre></>}
-          {block.output === undefined && <p className="muted small-text">The saved transcript does not include this tool’s result.</p>}
-        </details>)}
-  </article>;
-}, (previous, next) => JSON.stringify(previous.turn) === JSON.stringify(next.turn));
 
 export function CursorConversationPage({ id, navigation, ...props }: PageProps & { id: string; navigation?: ReactNode }) {
   const [view, setView] = useState<z.infer<typeof CursorTranscriptSchema>>();
@@ -102,11 +88,11 @@ export function CursorConversationPage({ id, navigation, ...props }: PageProps &
     <div className="cursor-transcript" aria-label={`${runtimeLabel} conversation`}>
       {view.truncated && <p className="muted small-text">Showing the most recent part of this conversation. Earlier history is available in {runtimeLabel}.</p>}
       {!view.turns.length && <p className="muted">{runtimeLabel} hasn’t saved any messages for this session yet.</p>}
-      {view.turns.map(turn => <Turn key={turn.id} turn={turn} />)}
+      {view.turns.map(turn => <TranscriptTurn key={turn.id} turn={turn} />)}
       {!!view.activity.length && <section className="cursor-live" aria-label="Recent Cursor activity">
         <h2>{session!.state === 'working' ? 'Live updates' : 'Recent activity'}</h2>
         <p className="muted small-text">Tool results and updates captured directly from this Cursor turn.</p>
-        {view.activity.map(turn => <Turn key={turn.id} turn={turn} />)}
+        {view.activity.map(turn => <TranscriptTurn key={turn.id} turn={turn} />)}
       </section>}
     </div>
     {view.messages.filter(message => message.state !== 'cancelled').length > 0 && <details className="cursor-deliveries" open>

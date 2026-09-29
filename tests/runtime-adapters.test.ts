@@ -120,3 +120,13 @@ test('Codex separates consecutive agent messages in the streamed text', async ()
   expect(text).toBe('Checked the README.\n\nWhat would you like changed?\n\nfixture-answer');
   await run.terminate();
 });
+
+// Added for the shared transcript iteration; execution deferred by the user.
+test.each(['claude', 'codex'] as const)('%s records only the SDK’s readable thinking text', async (runtime) => {
+  const { input, adapter } = setup(runtime); input.brief = 'READABLE_THINKING';
+  const run = adapter.startStretch(input); runs.push(run);
+  const events = []; for await (const event of run.events) events.push(event);
+  expect(events.flatMap(event => event.type === 'thinking' ? [event.delta] : []).join('').trim()).toBe('Readable summary');
+  expect(JSON.stringify(events)).not.toContain('opaque-fixture');
+  expect((await run.done).status).toBe('completed');
+});

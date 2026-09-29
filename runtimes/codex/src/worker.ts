@@ -6,6 +6,7 @@ import { realpathSync } from 'node:fs';
 import { projectTrustOverride, projectInstructions } from './configuration.js';
 
 const ItemSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('reasoning'), id: z.string(), text: z.string() }),
   z.object({ type: z.literal('agent_message'), id: z.string(), text: z.string() }),
   z.object({ type: z.literal('command_execution'), id: z.string(), command: z.string(), aggregated_output: z.string(), exit_code: z.number().int().nullish(), status: z.enum(['in_progress', 'completed', 'failed']) }),
   z.object({ type: z.literal('mcp_tool_call'), id: z.string(), server: z.string(), tool: z.string(), arguments: z.unknown(), result: z.unknown().optional(), error: z.object({ message: z.string() }).nullish(), status: z.enum(['in_progress', 'completed', 'failed']) }),
@@ -65,6 +66,11 @@ serveWorker((input, daemonPid, executable) => {
             continue;
           }
           const item = known.data;
+          if (item.type === 'reasoning') {
+            const previous = textById.get(item.id) ?? '';
+            if (item.text.startsWith(previous) && item.text.length > previous.length) emit({ type: 'thinking', delta: `${previous ? '' : '\n\n'}${item.text.slice(previous.length)}` });
+            textById.set(item.id, item.text); continue;
+          }
           if (item.type === 'agent_message') {
             const previous = textById.get(item.id) ?? '';
             if (!item.text.startsWith(previous)) throw new Error('Codex rewrote an already streamed message.');

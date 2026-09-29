@@ -130,5 +130,11 @@
     "title": "Rename and reorder sessions",
     "why": "Rename and persistent ordering for native and ordinary sessions. Reordering uses desktop drag-and-drop and mobile long press, with preview, insertion marker, edge scrolling and keyboard shortcuts; the initial Move up/down buttons were removed. Saved names/order remain shared by browsers using this installation. Automated and physical-touch tests not run under the user\u2019s preference. See docs/acceptance/session-list-controls-2026-09-29.md.",
     "status": "complete"
+  },
+  {
+    "id": "ordinary-conversation-parity",
+    "title": "Shared native and ordinary conversation presentation",
+    "why": "Latest main confirmed, including the other machine\u2019s clean checkout. Ordinary and native sessions share formatted chronological transcripts, readable tool inputs/results, expanded thinking and compact spacing. Ordinary conversations gain SDK thinking capture and composer Jump to latest/live feedback; shared rename, drag/long-press ordering, pinned user text and steer/queue controls are retained. Four synthetic cases added but not run under the user\u2019s instruction. See docs/acceptance/conversation-parity-2026-09-29.md.",
+    "status": "complete"
   }
 ]

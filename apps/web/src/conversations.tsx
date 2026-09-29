@@ -1,3 +1,5 @@
+import { conversationTurns } from './conversation-transcript.js';
+import { TranscriptTurn } from './session-transcript.js';
 import { createPortal } from 'react-dom';
 import { useSessionDrag } from './session-drag.js';
 import { clientId } from './client-id.js';
@@ -468,9 +470,11 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
   }, [events, view]);
   // Follow new activity like a chat: stay pinned to the newest content unless the reader scrolled up.
   const pinned = useRef(!new URLSearchParams(window.location.search).get('stretch'));
+  const [behind, setBehind] = useState(!pinned.current);
   useEffect(() => {
     const scrolled = () => {
       pinned.current = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 160;
+      setBehind(!pinned.current);
     };
     window.addEventListener('scroll', scrolled, { passive: true });
     return () => window.removeEventListener('scroll', scrolled);
@@ -628,7 +632,7 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
           <span className="chip">{project?.name ?? view.conversation.projectId}</span>
           <span className="chip">{device?.name ?? view.conversation.ownerDeviceId}</span>
           <span className={`chip state-${running ? 'running' : view.conversation.state}`}>
-            {running ? 'Working' : stateLabel(view.conversation.state)}
+            {running && <span className="activity-spinner" aria-hidden="true" />}{running ? 'Working' : stateLabel(view.conversation.state)}
           </span>
         </div>
         <div className="actions">
@@ -679,7 +683,6 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
           Reconnecting…
         </p>
       )}
-      {running && <ConversationActivity view={view} events={events} />}
       {view.conversation.outcome && (
         <section className="notice">
           <strong>Finished outside Jevellan</strong>
@@ -715,7 +718,7 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
             return (
               <article className="user-message" key={event.id}>
                 <strong>{event.type === 'note' ? 'Your note' : 'You'}</strong>
-                <p>{String(object(event.data).text ?? '')}</p>
+                <Markdown>{String(object(event.data).text ?? '')}</Markdown>
               </article>
             );
           if (event.type === 'stretch-start') {
@@ -911,6 +914,10 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
         event.preventDefault();
         if (!task.busy && !kept && !finishing) void submit('message');
       }}>
+        {(running || behind) && <div className="cursor-live-bar ordinary-live-bar">
+          {running && <ConversationActivity view={view} events={events} />}
+          {behind && <button type="button" className="text-button" onClick={() => { pinned.current = true; setBehind(false); window.scrollTo({ top: document.documentElement.scrollHeight }); }}>Jump to latest ↓</button>}
+        </div>}
         <div className="message-input-row">
           <MessageInput inputRef={input} value={message} change={setMessage} label="Message"
             placeholder={running ? 'Steer this work…' : 'What would you like to do next?'} />
@@ -1580,10 +1587,7 @@ function StepBlock({
   const handoff = view.handoffs.find((entry) => entry.stretch === step.n);
   const model = props.data.config.configuration['x-jevellan'].menu.find((entry) => entry.id === step.modelId);
   const account = props.data.accounts.find((entry) => entry.account.id === step.accountId);
-  const text = events
-    .filter((entry) => entry.type === 'text')
-    .map((entry) => String(object(entry.data).delta ?? ''))
-    .join('');
+  const transcript = conversationTurns(events, step.status === 'running');
   const seconds = Math.max(
     0,
     Math.round((Date.parse(step.endedAt ?? new Date().toISOString()) - Date.parse(step.startedAt)) / 1000),
@@ -1605,10 +1609,6 @@ function StepBlock({
     (finding, index, all) =>
       all.findIndex((entry) => entry.claim === finding.claim && entry.pointer === finding.pointer) === index,
   );
-  const tools = events.filter((entry) => entry.type === 'tool-start');
-  const failedTools = events.filter(
-    (entry) => entry.type === 'tool-end' && object(entry.data).ok === false,
-  ).length;
   const tokens = step.usage.inputTokens + step.usage.outputTokens;
   return (
     <article
@@ -1688,61 +1688,9 @@ function StepBlock({
             )}
           </div>
         ))}
-      {text &&
-        (step.status === 'running' || step.action === 'reply' || !handoff ? (
-          <Markdown onOpen={(ref) => read(ref, ref)}>{text}</Markdown>
-        ) : (
-          <details className="step-transcript">
-            <summary>Agent response</summary>
-            <Markdown onOpen={(ref) => read(ref, ref)}>{text}</Markdown>
-          </details>
-        ))}
-      {tools.length > 0 && (
-        <details className="tool-activity">
-          <summary>
-            {tools.length} tool call{tools.length === 1 ? '' : 's'}
-            {failedTools > 0 && <span className="failed"> · {failedTools} failed</span>}
-            {step.status === 'running' && latestToolName(tools) && (
-              <span className="running"> · {latestToolName(tools)}</span>
-            )}
-          </summary>
-          {tools.map((event) => {
-            const tool = object(event.data);
-            const end = events.find(
-              (entry) => entry.type === 'tool-end' && object(entry.data).id === tool.id,
-            );
-            const hint = toolHint(tool.input);
-            return (
-              <details className="tool-call" key={event.id}>
-                <summary>
-                  <span className="tool-name">{String(tool.name ?? 'Tool')}</span>
-                  {hint && <span className="tool-hint">{hint}</span>}
-                  <span
-                    className={`tool-state ${end ? (object(end.data).ok ? 'done' : 'failed') : 'running'}`}
-                  >
-                    {end ? (object(end.data).ok ? 'Done' : 'Failed') : 'Running'}
-                  </span>
-                </summary>
-                <pre>{JSON.stringify(tool.input, null, 2)}</pre>
-                {[
-                  ...new Set(
-                    [
-                      object(tool.input).path,
-                      object(tool.input).file_path,
-                      object(tool.input).filePath,
-                    ].filter((value): value is string => typeof value === 'string'),
-                  ),
-                ].map((path) => (
-                  <p className="tool-file" key={path}>
-                    <EvidenceLink value={path} file open={(ref) => read(ref, ref)} />
-                  </p>
-                ))}
-                {end && object(end.data).output !== undefined && <pre>{String(object(end.data).output)}</pre>}
-              </details>
-            );
-          })}
-        </details>
-      )}
+      {!!transcript.length && <div className="step-transcript cursor-transcript" aria-label={`Step ${step.n} transcript`}>
+        {transcript.map(turn => <TranscriptTurn key={turn.id} turn={turn} onOpen={ref => read(ref, ref)} />)}
+      </div>}
       {handoff && (
         <div className="handoff">
           <h3>
@@ -1815,27 +1763,6 @@ const compactNumber = (value: number) =>
     : value < 1_000_000
       ? `${(value / 1000).toFixed(value < 10_000 ? 1 : 0)}k`
       : `${(value / 1_000_000).toFixed(1)}M`;
-const latestToolName = (tools: LedgerEvent[]) => {
-  const name = object(tools.at(-1)?.data).name;
-  return typeof name === 'string' ? name : undefined;
-};
-// A short, readable hint for a tool call: the file it touches or the command it runs.
-const toolHint = (input: unknown) => {
-  const value = object(input);
-  const candidate = [
-    value.file_path,
-    value.filePath,
-    value.path,
-    value.command,
-    value.cmd,
-    value.pattern,
-    value.query,
-    value.url,
-  ].find((entry): entry is string => typeof entry === 'string' && entry.length > 0);
-  if (candidate) return candidate.split('\n')[0]!.slice(0, 160);
-  const list = [value.command, value.args].find((entry): entry is string[] => Array.isArray(entry));
-  return list ? list.join(' ').slice(0, 160) : undefined;
-};
 function ChangeStep({
   step,
   view,

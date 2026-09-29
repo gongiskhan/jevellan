@@ -4,6 +4,10 @@ for await (const chunk of process.stdin) prompt += chunk;
 const send = (event) => process.stdout.write(`${JSON.stringify(event)}\n`);
 send({ type: 'thread.started', thread_id: 'fixture-thread' });
 send({ type: 'turn.started' });
+if (prompt.includes('READABLE_THINKING')) {
+  send({ type: 'item.updated', item: { id: 'reasoning', type: 'reasoning', text: 'Readable ' } });
+  send({ type: 'item.completed', item: { id: 'reasoning', type: 'reasoning', text: 'Readable summary', encrypted_content: 'opaque-fixture' } });
+}
 if (prompt.includes('REPORT_INPUT_COPY_OPTIONS')) {
   const args = process.argv.slice(2);
   const report = { schema: 'fixture-input-copy-options-v1', inputCopy: args.includes('--skip-git-repo-check'), sandbox: args[args.indexOf('--sandbox') + 1],

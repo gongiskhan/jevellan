@@ -200,7 +200,7 @@ export const VerificationSchema = z.strictObject({
 export type Verification = z.infer<typeof VerificationSchema>;
 export const LedgerEventSchema = z.strictObject({
   schema: z.literal('ledger-event-v1'), t: TimestampSchema, id: z.number().int().positive(),
-  type: z.enum(['user-message', 'note', 'stretch-start', 'text', 'tool-start', 'tool-end', 'usage', 'finding', 'handoff', 'stretch-end', 'decision', 'override', 'undo', 'steer', 'allowance', 'verification', 'publication', 'ownership', 'memory-queued', 'notice', 'git', 'error', 'state', 'conversation-control']),
+  type: z.enum(['user-message', 'note', 'stretch-start', 'text', 'thinking', 'tool-start', 'tool-end', 'usage', 'finding', 'handoff', 'stretch-end', 'decision', 'override', 'undo', 'steer', 'allowance', 'verification', 'publication', 'ownership', 'memory-queued', 'notice', 'git', 'error', 'state', 'conversation-control']),
   stretch: z.number().int().positive().optional(), data: z.unknown(),
 });
 export type LedgerEvent = z.infer<typeof LedgerEventSchema>;

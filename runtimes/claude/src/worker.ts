@@ -7,6 +7,7 @@ import { StableMcpSchema } from '@jevellan/core';
 
 const Envelope = z.object({ type: z.string(), session_id: z.string().optional() }).passthrough();
 const TextDelta = z.object({ type: z.literal('content_block_delta'), delta: z.object({ type: z.literal('text_delta'), text: z.string() }) });
+const ThinkingDelta = z.object({ type: z.literal('content_block_delta'), delta: z.object({ type: z.literal('thinking_delta'), thinking: z.string() }) });
 const ContentMessage = z.object({ message: z.object({ content: z.union([z.string(), z.array(z.unknown())]) }) });
 const ToolUse = z.object({ type: z.literal('tool_use'), id: z.string(), name: z.string(), input: z.unknown() });
 const ToolResult = z.object({ type: z.literal('tool_result'), tool_use_id: z.string(), content: z.unknown(), is_error: z.boolean().optional() });
@@ -62,6 +63,8 @@ serveWorker((input, daemonPid, executable) => {
           if (event.type === 'stream_event') {
             const delta = TextDelta.safeParse(event.event);
             if (delta.success) emit({ type: 'text', delta: delta.data.delta.text });
+            const thinking = ThinkingDelta.safeParse(event.event);
+            if (thinking.success) emit({ type: 'thinking', delta: thinking.data.delta.thinking });
           }
           if (event.type === 'assistant' || event.type === 'user') {
             const content = ContentMessage.parse(event).message.content;
