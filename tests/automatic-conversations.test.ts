@@ -83,6 +83,31 @@ test('read-only Reply closes through Jev Done without changing Git or adding ano
   expect(app.conversations.ledger('automatic').events().filter((event) => event.type === 'notice' && (event.data as { kind?: string }).kind === 'closing')).toEqual([]);
 });
 
+test('a repository update gets shell access after the owned fast-forward without creating a checkpoint', async () => {
+  const upstreamPath = join(root, 'upstream'); git(root, 'clone', origin, upstreamPath);
+  writeFileSync(join(upstreamPath, 'upstream.txt'), 'Updated upstream\n'); git(upstreamPath, 'add', '-A'); git(upstreamPath, 'commit', '-m', 'Upstream'); git(upstreamPath, 'push');
+  const upstream = git(upstreamPath, 'rev-parse', 'HEAD');
+  fake.enqueue(async ({ input }) => {
+    expect(input.action).toBe('implement'); expect(input.permissions).toBe('write');
+    expect(git(input.cwd, 'rev-parse', 'HEAD')).toBe(upstream);
+    expect(readFileSync(join(input.cwd, 'upstream.txt'), 'utf8')).toBe('Updated upstream\n');
+    await handoff(input, { summary: 'Confirmed the upstream update.' }); return { status: 'completed' };
+  });
+  await create('git pull'); const result = await finished();
+  expect(result.conversation.state, result.pause?.reason).toBe('done');
+  expect(fake.starts).toHaveLength(1); expect(git(path, 'rev-parse', 'HEAD')).toBe(upstream);
+  expect(git(origin, 'rev-parse', 'main')).toBe(upstream); expect(git(path, 'status', '--porcelain')).toBe('');
+});
+
+test('an unfinished reply can hand execution to implement without asking the user again', async () => {
+  actions = ['reply', 'implement', 'done'];
+  enqueue(undefined, { status: 'partial', summary: 'The requested command needs execution tools.', proposedNext: 'implement' });
+  enqueue(); await create('Run the requested project command.'); const result = await finished();
+  expect(result.conversation.state, result.pause?.reason).toBe('done');
+  expect(fake.starts.map(input => input.permissions)).toEqual(['read-only', 'write']);
+  expect(result.decisions.map(decision => decision.action.chosen)).toEqual(['reply', 'implement', 'done']);
+});
+
 test('failed independent verification reaches the next Jev state and is repaired before publication', async () => {
   actions = ['implement', 'done', 'implement', 'done'];
   enqueue('0', { testsRun: { command: 'agent claim', passed: true, summary: 'Claims a pass.' } }); enqueue('2');

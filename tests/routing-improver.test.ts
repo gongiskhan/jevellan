@@ -45,10 +45,10 @@ function seed(action: 'implement' | 'review' = 'implement') {
   }
 }
 
-test('two correction groups produce two pending suggestions, each checked against all 24 cases, without applying configuration', async () => {
+test('two correction groups produce two pending suggestions, each checked against all 27 cases, without applying configuration', async () => {
   seed(); seed('review'); const job = await improver.run({ kind: 'manual', id: 'run_one' }); await improver.wait(job.id);
   const suggestions = improver.suggestions.visible(); expect(suggestions).toHaveLength(2); expect(drafts).toHaveLength(2);
-  expect(suggestions.every(row => row.suggestion.status === 'pending' && row.suggestion.comparison.cases.length === 24 && row.suggestion.comparison.evidence === 'simulated')).toBe(true);
+  expect(suggestions.every(row => row.suggestion.status === 'pending' && row.suggestion.comparison.cases.length === 27 && row.suggestion.comparison.evidence === 'simulated')).toBe(true);
   expect(questions.filter(value => value === 'consistent_preference')).toHaveLength(2); expect(hub.configuration.history()).toHaveLength(1);
   expect(improver.jobs.list()).toEqual([expect.objectContaining({ status: 'complete', note: '2 routing suggestions ready.' })]);
   expect(improver.log(job.id)?.entries.filter(value => value.stage === 'checked')).toHaveLength(2); expect(active).toBe(0);
@@ -107,7 +107,7 @@ test('a direct preview is checked without generation, survives a lost reply and 
   const request = { schema: 'routing-revision-request-v1' as const, clientRequestId: 'edit', suggestionId: row.suggestion.id, revision: row.revision, kind: 'text' as const, after };
   const started = await improver.revisions.request(request, 'hub'); await improver.revisions.wait(started.id);
   const ready = await improver.revisions.request(request, 'hub');
-  expect(ready).toMatchObject({ status: 'complete', preview: { draft: { after }, comparison: { evidence: 'simulated' } } }); expect(ready.preview!.comparison.cases).toHaveLength(24);
+  expect(ready).toMatchObject({ status: 'complete', preview: { draft: { after }, comparison: { evidence: 'simulated' } } }); expect(ready.preview!.comparison.cases).toHaveLength(27);
   expect(drafts).toHaveLength(1); expect(hub.configuration.current()?.revision).toBe(1);
   await expect(improver.revisions.request({ ...request, after: 'Something else.' }, 'hub')).rejects.toThrow('another change');
   const applied = RoutingSuggestionRowSchema.parse(await improver.request({ schema: 'improver-request-v1', operation: 'act', suggestionId: row.suggestion.id,

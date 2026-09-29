@@ -1,6 +1,6 @@
 # Saved decision cases
 
-`decision-cases-v1.json` contains 24 hand-written engineering fixtures, each with a complete versioned state packet and acceptable actions, models and requested efforts. Several choices may be acceptable. These fixtures are regression checks, not a benchmark or claims about model quality.
+`decision-cases-v1.json` contains 27 hand-written engineering fixtures, each with a complete versioned state packet and acceptable actions, models and requested efforts. Several choices may be acceptable. These fixtures are regression checks, not a benchmark or claims about model quality.
 
 The evaluator uses the ordinary two-call decision engine. It replaces the saved routing profile and effort guide with the configuration under examination, and uses that configuration's menu descriptions, including the current model's description. Expected answers never enter Jev's request.
 

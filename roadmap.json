@@ -136,5 +136,11 @@
     "title": "Shared native and ordinary conversation presentation",
     "why": "Latest main confirmed, including the other machine\u2019s clean checkout. Ordinary and native sessions share formatted chronological transcripts, readable tool inputs/results, expanded thinking and compact spacing. Ordinary conversations gain SDK thinking capture and composer Jump to latest/live feedback; shared rename, drag/long-press ordering, pinned user text and steer/queue controls are retained. Four synthetic cases added but not run under the user\u2019s instruction. See docs/acceptance/conversation-parity-2026-09-29.md.",
     "status": "complete"
+  },
+  {
+    "id": "operational-action-routing",
+    "title": "Operational requests use execution-capable steps",
+    "why": "Clarified action criteria and worker contracts so short command requests are classified as implementation, while explanations remain read-only. Added three saved decision cases and app-level checks for owned Git fast-forward and partial-reply recovery. Focused local regressions, build, typecheck and lint pass; live Jev cases are blocked by the missing dedicated key. See docs/acceptance/action-routing-2026-09-29.md.",
+    "status": "complete"
   }
 ]

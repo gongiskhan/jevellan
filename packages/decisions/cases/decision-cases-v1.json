@@ -1727,6 +1727,204 @@
           "max"
         ]
       }
+    },
+    {
+      "schema": "saved-decision-case-v1",
+      "id": "run_git_pull",
+      "title": "Execute a bare repository update command",
+      "state": {
+        "schema": "decision-state-v1",
+        "rules": {
+          "routingProfile": "The user builds TypeScript and JavaScript web apps and agent platforms.\nPrefer staying on the current model when it fits the next step. Every step starts a fresh session either way, but consecutive steps on the same model reuse its prompt cache, so switching has a cost.\nEffort follows difficulty, not importance: most implementation, planning and reviews are high; routine work is medium; quick answers are low; max is for the hardest design, debugging and UI work, or after a step failed at a lower effort.\nUI, visual work and anything judged by looking goes to Fable.\nLong, well-specified implementation prefers GPT through Codex, especially when Claude quota is tight.\nSmall, clear changes need no plan. Plan when the work spans several parts of the system, changes stored data, or the request is ambiguous.\nTests catch problems better than reviews. Review only when the change is large or risky (stored data, auth, money, deletion, concurrency, migrations). Prefer a reviewer from a different model family than the one that wrote the code.\nAdversarial review is rare: only for risky changes where a wrong result is expensive.\nSonnet almost never.",
+          "effortGuide": {
+            "low": "Quick, obvious work: short answers, one-line fixes, renames.",
+            "medium": "Routine work with a clear path.",
+            "high": "Non-trivial work: most implementation, planning and reviews.",
+            "xhigh": "Hard problems: tricky bugs, changes that cut across the system.",
+            "max": "The hardest work: deep debugging, architecture, UI judged by eye, or a step that already failed at a lower effort."
+          },
+          "recentCorrections": []
+        },
+        "conversation": {
+          "request": "git pull",
+          "latestUserMessage": "git pull",
+          "summary": {
+            "state": "New work; no changes yet.",
+            "nextWork": "Address the request."
+          },
+          "recentHandoffs": []
+        },
+        "facts": {
+          "stretchesThisWork": 0,
+          "reviewsThisWork": 0,
+          "codeChangedThisWork": false,
+          "changedFiles": 0,
+          "changeSize": "small",
+          "riskyAreasTouched": [],
+          "lastVerification": "none",
+          "publicationConflict": false,
+          "projectHasTestCommand": true
+        }
+      },
+      "allowedActions": [
+        "reply",
+        "plan",
+        "implement",
+        "ask-you"
+      ],
+      "availableModels": [
+        "claude-fable",
+        "claude-opus",
+        "codex-gpt",
+        "claude-sonnet"
+      ],
+      "newMessage": true,
+      "questionAvailable": false,
+      "acceptable": {
+        "actions": [
+          "implement"
+        ],
+        "models": [
+          "claude-opus",
+          "codex-gpt"
+        ],
+        "efforts": [
+          "low",
+          "medium"
+        ]
+      }
+    },
+    {
+      "schema": "saved-decision-case-v1",
+      "id": "request_repository_update",
+      "title": "Carry out a politely phrased repository update",
+      "state": {
+        "schema": "decision-state-v1",
+        "rules": {
+          "routingProfile": "The user builds TypeScript and JavaScript web apps and agent platforms.\nPrefer staying on the current model when it fits the next step. Every step starts a fresh session either way, but consecutive steps on the same model reuse its prompt cache, so switching has a cost.\nEffort follows difficulty, not importance: most implementation, planning and reviews are high; routine work is medium; quick answers are low; max is for the hardest design, debugging and UI work, or after a step failed at a lower effort.\nUI, visual work and anything judged by looking goes to Fable.\nLong, well-specified implementation prefers GPT through Codex, especially when Claude quota is tight.\nSmall, clear changes need no plan. Plan when the work spans several parts of the system, changes stored data, or the request is ambiguous.\nTests catch problems better than reviews. Review only when the change is large or risky (stored data, auth, money, deletion, concurrency, migrations). Prefer a reviewer from a different model family than the one that wrote the code.\nAdversarial review is rare: only for risky changes where a wrong result is expensive.\nSonnet almost never.",
+          "effortGuide": {
+            "low": "Quick, obvious work: short answers, one-line fixes, renames.",
+            "medium": "Routine work with a clear path.",
+            "high": "Non-trivial work: most implementation, planning and reviews.",
+            "xhigh": "Hard problems: tricky bugs, changes that cut across the system.",
+            "max": "The hardest work: deep debugging, architecture, UI judged by eye, or a step that already failed at a lower effort."
+          },
+          "recentCorrections": []
+        },
+        "conversation": {
+          "request": "Can you pull the latest changes into this project?",
+          "latestUserMessage": "Can you pull the latest changes into this project?",
+          "summary": {
+            "state": "New work; no changes yet.",
+            "nextWork": "Address the request."
+          },
+          "recentHandoffs": []
+        },
+        "facts": {
+          "stretchesThisWork": 0,
+          "reviewsThisWork": 0,
+          "codeChangedThisWork": false,
+          "changedFiles": 0,
+          "changeSize": "small",
+          "riskyAreasTouched": [],
+          "lastVerification": "none",
+          "publicationConflict": false,
+          "projectHasTestCommand": true
+        }
+      },
+      "allowedActions": [
+        "reply",
+        "plan",
+        "implement",
+        "ask-you"
+      ],
+      "availableModels": [
+        "claude-fable",
+        "claude-opus",
+        "codex-gpt",
+        "claude-sonnet"
+      ],
+      "newMessage": true,
+      "questionAvailable": false,
+      "acceptable": {
+        "actions": [
+          "implement"
+        ],
+        "models": [
+          "claude-opus",
+          "codex-gpt"
+        ],
+        "efforts": [
+          "low",
+          "medium"
+        ]
+      }
+    },
+    {
+      "schema": "saved-decision-case-v1",
+      "id": "explain_git_pull",
+      "title": "Explain an operation without executing it",
+      "state": {
+        "schema": "decision-state-v1",
+        "rules": {
+          "routingProfile": "The user builds TypeScript and JavaScript web apps and agent platforms.\nPrefer staying on the current model when it fits the next step. Every step starts a fresh session either way, but consecutive steps on the same model reuse its prompt cache, so switching has a cost.\nEffort follows difficulty, not importance: most implementation, planning and reviews are high; routine work is medium; quick answers are low; max is for the hardest design, debugging and UI work, or after a step failed at a lower effort.\nUI, visual work and anything judged by looking goes to Fable.\nLong, well-specified implementation prefers GPT through Codex, especially when Claude quota is tight.\nSmall, clear changes need no plan. Plan when the work spans several parts of the system, changes stored data, or the request is ambiguous.\nTests catch problems better than reviews. Review only when the change is large or risky (stored data, auth, money, deletion, concurrency, migrations). Prefer a reviewer from a different model family than the one that wrote the code.\nAdversarial review is rare: only for risky changes where a wrong result is expensive.\nSonnet almost never.",
+          "effortGuide": {
+            "low": "Quick, obvious work: short answers, one-line fixes, renames.",
+            "medium": "Routine work with a clear path.",
+            "high": "Non-trivial work: most implementation, planning and reviews.",
+            "xhigh": "Hard problems: tricky bugs, changes that cut across the system.",
+            "max": "The hardest work: deep debugging, architecture, UI judged by eye, or a step that already failed at a lower effort."
+          },
+          "recentCorrections": []
+        },
+        "conversation": {
+          "request": "What does git pull do? Explain it without running anything.",
+          "latestUserMessage": "What does git pull do? Explain it without running anything.",
+          "summary": {
+            "state": "New work; no changes yet.",
+            "nextWork": "Address the request."
+          },
+          "recentHandoffs": []
+        },
+        "facts": {
+          "stretchesThisWork": 0,
+          "reviewsThisWork": 0,
+          "codeChangedThisWork": false,
+          "changedFiles": 0,
+          "changeSize": "small",
+          "riskyAreasTouched": [],
+          "lastVerification": "none",
+          "publicationConflict": false,
+          "projectHasTestCommand": true
+        }
+      },
+      "allowedActions": [
+        "reply",
+        "plan",
+        "implement",
+        "ask-you"
+      ],
+      "availableModels": [
+        "claude-fable",
+        "claude-opus",
+        "codex-gpt",
+        "claude-sonnet"
+      ],
+      "newMessage": true,
+      "questionAvailable": false,
+      "acceptable": {
+        "actions": [
+          "reply"
+        ],
+        "models": [
+          "claude-opus",
+          "codex-gpt"
+        ],
+        "efforts": [
+          "low",
+          "medium"
+        ]
+      }
     }
   ]
 }

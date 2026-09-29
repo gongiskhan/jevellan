@@ -107,7 +107,7 @@ test('J10: routing suggestions show the badge, apply and undo one field, change 
   await expect(implement).toBeVisible(); await expect(review).toBeVisible();
   // The badge counts every open suggestion: the two seeded groups, plus any a concurrent test's corrections formed.
   await expectBadge(page, 2);
-  await expect(implement).toContainText('Based on 3 corrections (0 with undo)'); await expect(implement).toContainText('Checked against 24 saved cases');
+  await expect(implement).toContainText('Based on 3 corrections (0 with undo)'); await expect(implement).toContainText('Checked against 27 saved cases');
   await expect(implement).toContainText('Simulated judge responses.'); await expect(implement.getByLabel('Suggested change')).toContainText('Preferred for implement steps.');
   await shot(page, 'j10-suggestions', layout(info));
 
@@ -134,7 +134,7 @@ test('J10: routing suggestions show the badge, apply and undo one field, change 
   await dialog.getByLabel('Or say what you want instead').fill('Only for reviews of the improver fixture.');
   await dialog.getByRole('button', { name: 'Revise the suggestion', exact: true }).click();
   const revised = dialog.getByRole('region', { name: 'Revised suggestion' });
-  await expect(revised).toContainText('Only for reviews of the improver fixture.', { timeout: 120_000 }); await expect(revised).toContainText('Checked against 24 saved cases');
+  await expect(revised).toContainText('Only for reviews of the improver fixture.', { timeout: 120_000 }); await expect(revised).toContainText('Checked against 27 saved cases');
   await shot(page, 'j10-change-it', layout(info));
   const opus = description((await configuration(page)).configuration, 'claude-opus');
   await dialog.getByRole('button', { name: 'Apply this', exact: true }).click(); await expect(dialog).toHaveCount(0);

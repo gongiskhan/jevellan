@@ -4,6 +4,8 @@ Last updated: 2026-09-26. On 2026-09-26 the user resumed the build on a second m
 
 ## Current state
 
+- Operational action routing (2026-09-29): clarified the distinction between executing a command and explaining it, with shell/write work using implement. Reply hands unfinished execution back as partial instead of inventing a user blocker or suggesting integrate. Main-policy update requests use the existing owned fast-forward before writing. Focused local regressions pass; dedicated-key live classification is blocked. See [evidence and limits](action-routing-2026-09-29.md).
+
 - Ordinary conversation parity (2026-09-29): confirmed latest published main and that the clean Dev Madrid checkout is already an ancestor. Native and ordinary transcripts now share a renderer; ordinary conversations keep chronological text/tools, visible completed responses, formatted input/output and expanded thinking captured from readable future SDK events. The compact composer gains live activity and Jump to latest. Existing rename, drag/long-press, pinned user message and steer/queue behavior already applied to both. Four synthetic cases added but not run under the user's preference. See [scope and evidence](conversation-parity-2026-09-29.md).
 
 - Session drag-and-drop (2026-09-29): replaced Move up/down buttons with whole-row desktop dragging and mobile long-press activation, a floating preview, insertion marker and edge scrolling. Normal swipes scroll; cancellation leaves ordering unchanged. Existing saved names/order and Rename menu are retained. No automated or physical-touch tests run. See [follow-up](session-list-controls-2026-09-29.md#drag-and-drop-follow-up).

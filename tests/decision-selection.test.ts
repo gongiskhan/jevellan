@@ -1,7 +1,8 @@
 import { expect, test, vi } from 'vitest';
-import { AccountSchema, AccountStatusSchema, seedConfiguration, type Action, type ModelOption } from '../packages/core/dist/index.js';
+import { ACTION_DESCRIPTIONS, AccountSchema, AccountStatusSchema, seedConfiguration, type Action, type ModelOption } from '../packages/core/dist/index.js';
 import { allowedActions } from '../packages/conversations/dist/guards.js';
-import { buildJevRequest, decideNext, JevClient, JevError, manualFallback, modelCandidates, parseJevResponse, prepareAction, prepareModel, resolveAction, resolveModel, type JevQuestions, type ModelCandidate, type ModelPlan } from '../packages/decisions/dist/index.js';
+import { buildJevRequest, decideNext, JevClient, JevError, manualFallback, modelCandidates, parseJevResponse, prepareAction, prepareModel, resolveAction, resolveModel, savedDecisionCases, type JevQuestions, type ModelCandidate, type ModelPlan } from '../packages/decisions/dist/index.js';
+import { actionPermissions } from '../packages/conversations/dist/index.js';
 
 const settings = seedConfiguration()['x-jevellan'];
 const models: ModelOption[] = [
@@ -29,7 +30,7 @@ function response(questions: JevQuestions, values: Record<string, string | numbe
 test('Call A sends only guard-allowed actions and classifies a new remember request independently', () => {
   const allowed = allowedActions({ counters: { reviews: 2 } } as Parameters<typeof allowedActions>[0], { ...settings.guards, reviewCap: 2 }, false, 0);
   const plan = prepareAction({ allowed, newMessage: true });
-  expect(plan.questions.next_action).toMatchObject({ type: 'choice', criteria: { reply: 'Answer the user; no changes needed.', implement: 'Make or fix the change.' } });
+  expect(plan.questions.next_action).toMatchObject({ type: 'choice', criteria: { reply: ACTION_DESCRIPTIONS.reply, implement: ACTION_DESCRIPTIONS.implement } });
   const criteria = plan.questions.next_action!.type === 'choice' ? plan.questions.next_action!.criteria : {};
   expect(Object.keys(criteria)).not.toContain('integrate'); expect(Object.keys(criteria)).not.toContain('done');
   expect(Object.keys(criteria)).not.toContain('review'); expect(Object.keys(criteria)).not.toContain('adversarial-review'); expect(Object.keys(criteria)).not.toContain('test');
@@ -76,6 +77,25 @@ test('model candidates enforce account ownership, runtime capabilities and enabl
   expect(modelCandidates({ ...base, settings: { ...base.settings, menu: models.map((model) => ({ ...model, enabled: false })) } })).toEqual([]);
   expect(modelCandidates({ ...base, deviceId: 'other' }).every((entry) => entry.reason === 'needs-login')).toBe(true);
 });
+
+test('an operational implementation selects shell/write capabilities even with no code changes', async () => {
+  const example = savedDecisionCases().find(value => value.id === 'run_git_pull')!;
+  const decide = vi.fn<JevClient['decide']>(async input => response(input.questions, { next_action: 'implement', remember_request: 0, effort: 'low' }));
+  const result = await decideNext({ decide }, { model: settings.decisions.model, state: JSON.stringify(example.state), allowed: example.allowedActions,
+    newMessage: true, candidates: action => modelCandidates({ ...base, action, runtimes: new Map([['codex', { ...support, shell: false }], ['claude', support]]) }),
+    effortGuide: settings.effortGuide, keepCurrentThreshold: 0.6, deviceLabel: 'Here', questionAvailable: false, assertCurrent: () => undefined }, new AbortController().signal);
+  if (result.kind !== 'selected') throw new Error('Expected selection.');
+  expect(result.selection.action).toMatchObject({ chosen: 'implement', source: 'jev' });
+  expect(result.selection.model?.chosen).toBe('deep');
+  expect(actionPermissions(result.selection.action.chosen)).toBe('write');
+});
+
+test.skipIf(!process.env.JEVELLAN_TEST_JEV_KEY).each(savedDecisionCases().filter(example => ['run_git_pull', 'request_repository_update', 'explain_git_pull'].includes(example.id)))('live operational action regression: $title', async example => {
+  const client = new JevClient({ key: () => process.env.JEVELLAN_TEST_JEV_KEY, timeoutMs: settings.decisions.timeoutMs });
+  const plan = prepareAction({ allowed: example.allowedActions, newMessage: example.newMessage });
+  const result = await client.decide({ schema: 'jev-request-v1', model: settings.decisions.model, state: JSON.stringify(example.state), questions: plan.questions });
+  expect(example.acceptable.actions).toContain(resolveAction(plan, result).action.chosen);
+}, 10_000);
 
 test('one eligible model is chosen in code; effort still has all five meanings and maps up', () => {
   const plan = ready(forModels(candidates().slice(0, 1)));

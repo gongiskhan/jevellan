@@ -63,8 +63,8 @@ test('normal application HTTP runs the judge, private draft and checks; Change i
   const state = ImproverStateSchema.parse(await request()); const row = state.suggestions[0]!;
   expect(state.pending).toBe(1); expect(state.notice?.lines).toEqual(['1 new suggestion from the improver']);
   expect(state.cards).toEqual([expect.objectContaining({ kind: 'routing', id: row.suggestion.id, revision: row.revision, status: 'pending', requests: { action: 'routing-suggestion-action-v1', revision: 'routing-revision-request-v1' },
-    evidence: expect.objectContaining({ kind: 'corrections', total: 3, withUndo: 0 }), check: expect.objectContaining({ total: 24, evidence: 'simulated' }), change: expect.objectContaining({ kind: 'field', after: 'Prefer GPT for specified backend changes.' }) })]);
-  expect(row.suggestion.comparison.cases).toHaveLength(24); expect(row.suggestion.comparison.evidence).toBe('simulated'); expect(questions.filter(id => id === 'consistent_preference')).toHaveLength(1);
+    evidence: expect.objectContaining({ kind: 'corrections', total: 3, withUndo: 0 }), check: expect.objectContaining({ total: 27, evidence: 'simulated' }), change: expect.objectContaining({ kind: 'field', after: 'Prefer GPT for specified backend changes.' }) })]);
+  expect(row.suggestion.comparison.cases).toHaveLength(27); expect(row.suggestion.comparison.evidence).toBe('simulated'); expect(questions.filter(id => id === 'consistent_preference')).toHaveLength(1);
   expect(runtime.starts).toHaveLength(1); expect(app.hub.configuration.current()?.revision).toBe(2); expect(state.jobs[0]).not.toHaveProperty('token');
   runtime.enqueue(({ input }) => { expect(readFileSync(join(input.cwd, 'instruction.txt'), 'utf8')).toBe('Only small backend fixes.'); return draft(input, 'Prefer GPT only for small backend fixes.'); });
   const revise = { schema: 'improver-request-v1', operation: 'revise', input: { schema: 'routing-revision-request-v1', kind: 'instruction', clientRequestId: 'revise', suggestionId: row.suggestion.id, revision: row.revision, instruction: 'Only small backend fixes.' } };

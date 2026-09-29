@@ -21,8 +21,8 @@ function simulated(cases: SavedDecisionCase[], choose?: (example: SavedDecisionC
   } };
 }
 
-test('all 24 engineering fixtures exercise the ordinary decision engine with simulated Jev responses', async () => {
-  const cases = savedDecisionCases(); expect(cases).toHaveLength(24); const configuration = seedConfiguration();
+test('all 27 engineering fixtures exercise the ordinary decision engine with simulated Jev responses', async () => {
+  const cases = savedDecisionCases(); expect(cases).toHaveLength(27); const configuration = seedConfiguration();
   const client = simulated(cases); const signal = new AbortController().signal;
   for (const example of cases) {
     const result = await evaluateDecisionCase(client, example, configuration, signal);

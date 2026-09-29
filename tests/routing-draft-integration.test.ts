@@ -51,7 +51,7 @@ test('a routing job uses the private native draft, scoped handoff and saved-case
     });
     const job = await improver.run({ kind: 'manual', id: 'run' }); await improver.wait(job.id);
     const row = improver.suggestions.visible()[0]!;
-    expect(row.suggestion).toMatchObject({ status: 'pending', comparison: { evidence: 'simulated' } }); expect(row.suggestion.comparison.cases).toHaveLength(24);
+    expect(row.suggestion).toMatchObject({ status: 'pending', comparison: { evidence: 'simulated' } }); expect(row.suggestion.comparison.cases).toHaveLength(27);
     expect(hub.configuration.current()?.revision).toBe(1); expect(runtime.starts).toHaveLength(1); expect(runtime.runs.every(run => !groupAlive(run.native.pgid))).toBe(true);
     const maintenance = gate.tryMaintenance(); expect(maintenance).not.toBeNull(); maintenance!();
     const applied = improver.suggestions.act(row.suggestion.id, { schema: 'routing-suggestion-action-v1', kind: 'apply', clientRequestId: 'apply', revision: row.revision, previewId: null }, 'hub');

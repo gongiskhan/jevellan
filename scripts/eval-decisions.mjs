@@ -4,7 +4,7 @@ import { JevClient, JevError, compareDecisionCases, evaluateDecisionCase, savedD
 
 const args = process.argv.slice(2); const paths = {};
 if (args.includes('--help')) {
-  console.log('Usage: npm run eval:decisions -- [--configuration apm.yml] [--proposed proposed-apm.yml]\nUses only JEVELLAN_TEST_JEV_KEY. Evaluates 24 saved engineering cases with real Jev; no generative runtime is launched.');
+  console.log('Usage: npm run eval:decisions -- [--configuration apm.yml] [--proposed proposed-apm.yml]\nUses only JEVELLAN_TEST_JEV_KEY. Evaluates 27 saved engineering cases with real Jev; no generative runtime is launched.');
 } else {
   try {
     for (let i = 0; i < args.length; i += 2) {
