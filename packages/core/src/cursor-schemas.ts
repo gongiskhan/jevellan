@@ -1,10 +1,11 @@
 import { z } from 'zod';
 import { IdSchema, TimestampSchema } from './schemas.js';
 
-export const CursorSessionIdSchema = z.string().regex(/^cursor_[a-f0-9]{32}$/);
+export const CursorSessionIdSchema = z.string().regex(/^(?:cursor|claude|codex)_[a-f0-9]{32}$/);
 export const CursorMessageModeSchema = z.enum(['steer', 'next']);
 export const CursorSessionSchema = z.strictObject({
   schema: z.literal('cursor-session-v1'), id: CursorSessionIdSchema,
+  runtime: z.enum(['cursor', 'claude', 'codex']).optional(),
   ownerDeviceId: IdSchema, gatewayDeviceId: IdSchema.optional(), deviceName: z.string(), title: z.string(),
   cwd: z.string().nullable(), project: z.string(),
   state: z.enum(['working', 'idle', 'unknown']), lastActivityAt: TimestampSchema,
@@ -52,6 +53,7 @@ export const CursorListSchema = z.strictObject({
 export const CursorHostPathSchema = z.string().max(4096).regex(/^(?:\/|[A-Za-z]:[\\/])/);
 export const CursorConnectionSchema = z.strictObject({
   id: IdSchema, name: z.string().trim().min(1).max(120),
+  host: z.string().regex(/^(?!-)[A-Za-z0-9._-]{1,253}$/).optional(),
   port: z.number().int().min(1).max(65535), user: z.string().regex(/^[a-z_][a-z0-9_-]{0,31}$/i),
   identityFile: z.string().startsWith('/').max(4096).optional(),
   helperPath: CursorHostPathSchema,

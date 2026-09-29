@@ -16,7 +16,7 @@ export function cursorSshArguments(connection: CursorConnection): string[] {
   const options = ['-F', '/dev/null', '-T', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=yes', '-o', 'ConnectTimeout=8'];
   const command = `${connection.workingDirectory ? `cd ${quote(connection.workingDirectory)} && ` : ''}${quote(connection.nodePath)} ${quote(connection.helperPath)}`;
   const target = [...options, '-p', String(connection.port),
-    ...(connection.identityFile ? ['-i', connection.identityFile, '-o', 'IdentitiesOnly=yes'] : []), `${connection.user}@127.0.0.1`, command];
+    ...(connection.identityFile ? ['-i', connection.identityFile, '-o', 'IdentitiesOnly=yes'] : []), `${connection.user}@${connection.host ?? '127.0.0.1'}`, command];
   // The second SSH client runs on the existing gateway and uses its existing
   // CSG identity. No identity copying, forwarding options or listeners.
   return connection.gateway

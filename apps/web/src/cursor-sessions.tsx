@@ -7,13 +7,15 @@ import { Markdown, useTask, type PageProps } from './components.js';
 import { MessageDelivery, MessageInput, LatestUserMessage } from './message-delivery.js';
 import './cursor-sessions.css';
 
+export const sessionRuntimeLabel = (runtime?: string) => runtime === 'claude' ? 'Claude Code' : runtime === 'codex' ? 'Codex' : 'Cursor';
+
 export function useCursorSessions() {
   const [list, setList] = useState<z.infer<typeof CursorListSchema>>({ schema: 'cursor-list-v1', sessions: [], excludedSessionIds: [], unavailable: [], observedAt: new Date().toISOString() });
   useEffect(() => {
     const controller = new AbortController(); let timer: ReturnType<typeof setTimeout>;
     const load = async () => {
       try { setList(await api('/api/cursor', CursorListSchema, 'GET', undefined, { signal: controller.signal })); }
-      catch { if (!controller.signal.aborted) setList(current => ({ ...current, unavailable: ['Cursor sessions are reconnecting.'], sessions: current.sessions.map(row => ({ ...row, connected: false, state: 'unknown', canSteer: false, canSend: false })) })); }
+      catch { if (!controller.signal.aborted) setList(current => ({ ...current, unavailable: ['Native sessions are reconnecting.'], sessions: current.sessions.map(row => ({ ...row, connected: false, state: 'unknown', canSteer: false, canSend: false })) })); }
       finally { if (!controller.signal.aborted) timer = setTimeout(() => void load(), 3000); }
     };
     void load();
@@ -32,7 +34,7 @@ const Turn = memo(function Turn({ turn }: { turn: CursorTurn }) {
           <summary><span>{block.name}</span><span className="muted small-text">{block.state === 'running' ? 'In progress' : block.state === 'unknown' ? 'Recorded' : block.state}</span></summary>
           {block.input && <><div className="cursor-output-label">Input</div><pre><code>{block.input}</code></pre></>}
           {block.output !== undefined && <><div className="cursor-output-label">Output</div><pre><code>{block.output || 'No text output.'}</code></pre></>}
-          {block.output === undefined && <p className="muted small-text">Cursor’s saved transcript does not include this tool’s result.</p>}
+          {block.output === undefined && <p className="muted small-text">The saved transcript does not include this tool’s result.</p>}
         </details>)}
   </article>;
 }, (previous, next) => JSON.stringify(previous.turn) === JSON.stringify(next.turn));
@@ -51,7 +53,7 @@ export function CursorConversationPage({ id, navigation, ...props }: PageProps &
       try {
         const next = await api(base + query, CursorTranscriptSchema, 'GET', undefined, { signal: controller.signal });
         if (!controller.signal.aborted) { setView(next); setError(''); }
-      } catch (error) { if (!controller.signal.aborted) setError(error instanceof Error ? error.message : 'Reconnecting to Cursor…'); }
+      } catch (error) { if (!controller.signal.aborted) setError(error instanceof Error ? error.message : 'Reconnecting to the session…'); }
       finally { if (!controller.signal.aborted) timer = setTimeout(() => void load(), 1500); }
     };
     const scroll = () => { following.current = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 180; setBehind(!following.current); };
@@ -76,23 +78,26 @@ export function CursorConversationPage({ id, navigation, ...props }: PageProps &
     setView(current => current ? { ...current, messages: [...current.messages.filter(message => message.clientMessageId !== result.clientMessageId), result] } : current);
     pending.current = undefined; setText('');
   });
-  if (!view) return <p className="page-loading" role="status">{error || 'Opening Cursor conversation…'}</p>;
+  if (!view) return <p className="page-loading" role="status">{error || 'Opening conversation…'}</p>;
+  const runtimeLabel = sessionRuntimeLabel(session!.runtime);
+  const isCursor = !session!.runtime || session!.runtime === 'cursor';
   const latest = view.activity.at(-1)?.blocks.at(-1);
   const lastUser = view.turns.findLast(turn => turn.role === 'user' && !turn.automated && turn.blocks.some(block => block.type === 'text' && block.text.trim()))?.blocks.flatMap(block => block.type === 'text' ? [block.text] : []).join('\n');
   return <div className="conversation-page cursor-conversation" ref={page}>
     <div className="section-heading conversation-heading">
       <h1>{navigation}<span className="session-title">{session!.title}</span></h1>
       <div className="conversation-meta">
-        <span className="chip">Cursor</span><span className="chip">{session!.project}</span><span className="chip">{session!.deviceName}</span>
+        <span className="chip">{runtimeLabel}</span><span className="chip">{session!.project}</span><span className="chip">{session!.deviceName}</span>
+        {!isCursor && <span className="chip" title="Continue this session in its original application">Read only</span>}
         <span className="chip" role="status">{connected && session!.state === 'working' && <span className="activity-spinner" aria-hidden="true" />}
           {!connected ? 'Reconnecting' : session!.state === 'working' ? 'Working' : session!.state === 'idle' ? 'Idle' : 'Activity unknown'}</span>
       </div>
       <LatestUserMessage text={lastUser} />
     </div>
     {error && <p className="notice" role="status">{error} Your last loaded messages remain below.</p>}
-    <div className="cursor-transcript" aria-label="Cursor conversation">
-      {view.truncated && <p className="muted small-text">Showing the most recent part of this conversation. Earlier history is available in Cursor.</p>}
-      {!view.turns.length && <p className="muted">Cursor hasn’t saved any messages for this session yet.</p>}
+    <div className="cursor-transcript" aria-label={`${runtimeLabel} conversation`}>
+      {view.truncated && <p className="muted small-text">Showing the most recent part of this conversation. Earlier history is available in {runtimeLabel}.</p>}
+      {!view.turns.length && <p className="muted">{runtimeLabel} hasn’t saved any messages for this session yet.</p>}
       {view.turns.map(turn => <Turn key={turn.id} turn={turn} />)}
       {!!view.activity.length && <section className="cursor-live" aria-label="Recent Cursor activity">
         <h2>{session!.state === 'working' ? 'Live updates' : 'Recent activity'}</h2>
@@ -110,7 +115,7 @@ export function CursorConversationPage({ id, navigation, ...props }: PageProps &
         })}>Cancel</button>}
       </div>)}
     </details>}
-    <form className="composer card" onSubmit={event => { event.preventDefault(); void submit(session!.state === 'working' ? 'steer' : 'next'); }}>
+    {isCursor && <form className="composer card" onSubmit={event => { event.preventDefault(); void submit(session!.state === 'working' ? 'steer' : 'next'); }}>
       {(behind || connected && session!.state === 'working') && <div className="cursor-live-bar">
         {connected && session!.state === 'working' && <span role="status"><span className="activity-spinner" aria-hidden="true" />Cursor is working{latest?.type === 'tool' ? ` · Last tool: ${latest.name}` : latest?.type === 'thinking' ? ' · Thinking' : ''}</span>}
         {behind && <button type="button" className="text-button" onClick={() => { following.current = true; setBehind(false); bottom.current?.scrollIntoView({ block: 'end' }); }}>Jump to latest ↓</button>}
@@ -120,7 +125,8 @@ export function CursorConversationPage({ id, navigation, ...props }: PageProps &
         <MessageDelivery running={session!.state === 'working'} canSteer={connected && session!.canSteer} canSend={connected && session!.canSend}
           disabled={task.busy || !text.trim()} queue={() => void submit('next')} cursor />
       </div>
-    </form>
+    </form>}
+    {!isCursor && behind && <div className="native-follow"><button type="button" className="secondary" onClick={() => { following.current = true; setBehind(false); bottom.current?.scrollIntoView({ block: 'end' }); }}>Jump to latest ↓</button></div>}
     <div ref={bottom} />
   </div>;
 }

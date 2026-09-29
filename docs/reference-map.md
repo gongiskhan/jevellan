@@ -152,3 +152,10 @@ Read-only reference: `~/dev/garrison/tests/core-improver.test.ts`, with the asso
 Routing decision durability is now covered by `tests/routing-suggestions.test.ts`: competing Apply requests, atomic rollback, lost-reply recovery after later Undo, field-specific reversal, stale conflicts, timed Undo, checked previews and durable dismissal. Private native cleanup/retry behavior is covered by `tests/background-drafts.test.ts`, using the existing stretch runner and bridge. The two-group pipeline and missing-key behavior are covered by `tests/routing-improver.test.ts` with explicit simulated providers. See [routing results](acceptance/phase6-routing.md). Browser decisions and project patch revert remain unfinished.
 
 The combined `tests/routing-draft-integration.test.ts` connects the routing job, private native fixture process, scoped handoff, all saved cases, lifecycle exclusion and explicit Apply. `tests/runtime-adapters.test.ts` verifies private-input-copy compatibility through Codex SDK launch and continuation without changing its sandbox policy. These remain simulated provider checks.
+
+
+## Native conversation readers · 29 September 2026
+
+Read-only references: Garrison `fittings/seed/remote-shell-runtime/lib/listers/{claude,codex,common}.mjs`, `packages/talk/src/session-transcript.mjs`, `tests/talk-transcript-formats.test.ts` and `tests/shells-listers.test.ts`.
+
+`packages/mesh/src/native-sessions.ts` and `native-transcript.ts` port the recent-journal, saved-title, subagent exclusion, activity lifecycle and formatted transcript behavior into Jevellan's existing versioned display contract. No terminal attachment, runtime import or native-home mutation is ported. `tests/native-conversations.test.ts` contains eight synthetic cases adapted for these behaviors and explicit existing-SSH transport. Tests were not run under the user's iteration preference; live read-only and build evidence is in [the phase report](acceptance/native-conversations-2026-09-29.md).

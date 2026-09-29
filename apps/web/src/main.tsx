@@ -372,7 +372,7 @@ function App() {
     ) : (
       <RuntimesPage {...props} key={path} />
     );
-  const conversation = path.startsWith('/cursor/') || path.startsWith('/conversations/');
+  const conversation = path.startsWith('/cursor/') || path.startsWith('/sessions/') || path.startsWith('/conversations/');
   const navigation = <button className="menu-button icon-button" aria-label="Open navigation" aria-expanded={sidebar} onClick={() => setSidebar(!sidebar)}><Icon name="menu" /></button>;
   const settingsLabel = settingsPages.find(([id]) => id === currentPage)?.[1] ?? 'Runtimes';
   return (
@@ -485,7 +485,7 @@ function App() {
               {settingsNav}
               <div className="settings-content">{settingsPage}</div>
             </div>
-          ) : path.startsWith('/cursor/') ? (
+          ) : path.startsWith('/cursor/') || path.startsWith('/sessions/') ? (
             <CursorConversationPage {...props} navigation={navigation} id={path.split('/')[2]!.split('?')[0]!} key={path} />
           ) : path.startsWith('/conversations/') ? (
             <ConversationPage {...props} navigation={navigation} id={path.split('/')[2]!.split('?')[0]!} key={path} />

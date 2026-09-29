@@ -24,7 +24,7 @@ import { waitForProjectSetup } from './project-setup.js';
 import { queuedRefresh } from './refresh.js';
 import { changeComposerDraft, ComposerOverride, ComposerChoices } from './composer-choices.js';
 import { Icon } from './icons.js';
-import { useCursorSessions } from './cursor-sessions.js';
+import { useCursorSessions, sessionRuntimeLabel } from './cursor-sessions.js';
 import { MessageDelivery, MessageInput, LatestUserMessage } from './message-delivery.js';
 import { EvidenceLink, EvidencePanel, type EvidenceTarget } from './evidence.js';
 import { Markdown, Modal, Panel, dateTime, useDismissible, useTask, type PageProps } from './components.js';
@@ -121,15 +121,15 @@ export function ConversationSidebar({
   const terms = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const combined = [
     ...conversations.map(entry => ({ ...entry, route: `/conversations/${entry.id}`, projectLabel: projectName(entry.projectId),
-      deviceLabel: data.devices.devices.find(device => device.id === entry.ownerDeviceId)?.name ?? entry.ownerDeviceId, cursor: false, needsConnection: false })),
+      deviceLabel: data.devices.devices.find(device => device.id === entry.ownerDeviceId)?.name ?? entry.ownerDeviceId, cursor: false, runtimeLabel: '', needsConnection: false })),
     ...cursor.sessions.map(entry => ({ id: `${entry.gatewayDeviceId}:${entry.ownerDeviceId}:${entry.id}`, title: entry.title,
       state: entry.state === 'working' ? 'running' : entry.state === 'idle' ? 'idle' : 'unknown',
       updatedAt: entry.lastActivityAt, ownerDeviceId: entry.ownerDeviceId,
-      projectLabel: entry.project, deviceLabel: entry.deviceName, cursor: true, needsConnection: !entry.canSend,
-      route: `/cursor/${entry.id}?deviceId=${encodeURIComponent(entry.ownerDeviceId)}&gateway=${encodeURIComponent(entry.gatewayDeviceId ?? entry.ownerDeviceId)}`,
+      projectLabel: entry.project, deviceLabel: entry.deviceName, cursor: true, runtimeLabel: sessionRuntimeLabel(entry.runtime), needsConnection: (!entry.runtime || entry.runtime === 'cursor') && !entry.canSend,
+      route: `/${entry.runtime && entry.runtime !== 'cursor' ? 'sessions' : 'cursor'}/${entry.id}?deviceId=${encodeURIComponent(entry.ownerDeviceId)}&gateway=${encodeURIComponent(entry.gatewayDeviceId ?? entry.ownerDeviceId)}`,
     })),
   ].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-  const matching = combined.filter(entry => terms.every(term => `${entry.title} ${entry.projectLabel} ${entry.deviceLabel} ${entry.cursor ? 'Cursor' : ''}`.toLowerCase().includes(term)));
+  const matching = combined.filter(entry => terms.every(term => `${entry.title} ${entry.projectLabel} ${entry.deviceLabel} ${entry.runtimeLabel}`.toLowerCase().includes(term)));
   const visible = matching.filter((entry) => inFilter(filter, entry.state));
   const waiting = conversations.filter((entry) => inFilter('Waiting for you', entry.state)).length;
   const open = combined.find(entry => selected === entry.route);
@@ -188,7 +188,7 @@ export function ConversationSidebar({
               <strong title={entry.title}>{entry.title}</strong>
               <span className="row-time">{shortTime(entry.updatedAt)}</span>
               <span className="row-meta">
-                {entry.cursor ? `Cursor · ${entry.state === 'idle' ? 'Idle' : entry.state === 'unknown' ? 'Unknown' : 'Working'}` : stateLabel(entry.state)} · {entry.projectLabel} · {entry.deviceLabel}
+                {entry.cursor ? `${entry.runtimeLabel} · ${entry.state === 'idle' ? 'Idle' : entry.state === 'unknown' ? 'Unknown' : 'Working'}` : stateLabel(entry.state)} · {entry.projectLabel} · {entry.deviceLabel}
               </span>
             </button>
             {(entry.needsConnection || !entry.cursor && selected === entry.route) && <button type="button" className="session-settings icon-button"
@@ -200,7 +200,7 @@ export function ConversationSidebar({
           ))
         )}
       </div>
-      {cursor.unavailable.length > 0 && <details className="cursor-source-notice"><summary>Some Cursor sessions are unavailable</summary>{cursor.unavailable.map(text => <p key={text}>{text}</p>)}</details>}
+      {cursor.unavailable.length > 0 && <details className="cursor-source-notice"><summary>Some native sessions are unavailable</summary>{cursor.unavailable.map(text => <p key={text}>{text}</p>)}</details>}
     </>
   );
 }

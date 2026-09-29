@@ -65,7 +65,7 @@ export async function handleCursorApi(app: Application, request: IncomingMessage
       unavailable: [...local.unavailable, ...peers.flatMap(list => list.unavailable)] }));
     return true;
   }
-  const match = /^\/api\/cursor\/(cursor_[a-f0-9]{32})(?:\/messages(?:\/([A-Za-z0-9_-]+))?)?$/.exec(path);
+  const match = /^\/api\/cursor\/((?:cursor|claude|codex)_[a-f0-9]{32})(?:\/messages(?:\/([A-Za-z0-9_-]+))?)?$/.exec(path);
   if (match) {
     if (method === 'GET' && !path.endsWith('/messages')) send(await app.cursor.read(deviceId, match[1]!, projects));
     else if (method === 'POST' && path.endsWith('/messages')) send(await app.cursor.send(deviceId, match[1]!, await requestBody(request)));

@@ -1,9 +1,10 @@
 import { homedir } from 'node:os';
 import { parentPort, workerData, isMainThread } from 'node:worker_threads';
 import { z } from 'zod';
-import { CursorMessageInputSchema, CursorSessionIdSchema, CursorHostPathSchema, Homes, IdSchema } from '@jevellan/core/cursor';
+import { CursorMessageInputSchema, CursorSessionIdSchema, CursorHostPathSchema, CursorListSchema, Homes, IdSchema } from '@jevellan/core/cursor';
 import { cursorList, cursorTranscript } from './cursor-reader.js';
 import { queueCursorMessage, cancelCursorMessage } from './cursor-control.js';
+import { nativeList, nativeTranscript } from './native-sessions.js';
 
 const RequestSchema = z.strictObject({
   schema: z.literal('cursor-request-v1'), operation: z.enum(['list', 'read', 'send', 'cancel']),
@@ -16,8 +17,15 @@ function run(value: unknown) {
   const request = RequestSchema.parse(value);
   const homes = new Homes(request.home, request.userHome ?? homedir());
   const options = { ...request, home: homes.root, userHome: homes.userHome };
-  if (request.operation === 'list') return cursorList(options);
+  if (request.operation === 'list') {
+    const cursor = cursorList(options); const native = nativeList(options);
+    return CursorListSchema.parse({ ...cursor, sessions: [...cursor.sessions, ...native.sessions].sort((a, b) => b.lastActivityAt.localeCompare(a.lastActivityAt)), unavailable: [...cursor.unavailable, ...native.unavailable] });
+  }
   const id = CursorSessionIdSchema.parse(request.id);
+  if (!id.startsWith('cursor_')) {
+    if (request.operation === 'read') return nativeTranscript(options, id);
+    throw new Error('This native session is read-only. Continue it in its original application.');
+  }
   if (request.operation === 'read') return cursorTranscript(options, id);
   if (request.operation === 'send') return queueCursorMessage(options, id, request.message);
   return cancelCursorMessage(options, id, IdSchema.parse(request.messageId));

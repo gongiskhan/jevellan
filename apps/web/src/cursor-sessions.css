@@ -34,3 +34,5 @@
   .cursor-turn-user { margin-left: 3%; padding: 14px 16px; }
   .cursor-conversation .composer-bar { align-items: flex-end; }
 }
+
+.native-follow { position: sticky; bottom: 12px; align-self: center; margin-top: auto; z-index: 10; }

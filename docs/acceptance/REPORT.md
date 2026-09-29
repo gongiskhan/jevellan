@@ -4,6 +4,8 @@ Last updated: 2026-09-26. On 2026-09-26 the user resumed the build on a second m
 
 ## Current state
 
+- Native conversation listing (2026-09-29): Claude Code and Codex now share Cursor's compact formatted transcript view and five-day sidebar discovery, with activity indicators, native subagent exclusion and paired tool results. This phase is read-only for the two new runtimes. Deployed on the mini with readers over existing CSG and Dev Madrid SSH access; live discovery returned 11 Claude and 4 Codex sessions without unavailable sources. Build/typecheck/lint pass; eight synthetic tests were added but not run at the user's request. Design choice: extend the existing versioned session transport additively, retain metadata-only heartbeats and avoid new services or native hooks. See [evidence and limits](native-conversations-2026-09-29.md).
+
 - Cursor transcript density (2026-09-28): removed repeated agent-name labels and reduced inter-block spacing to 8 pixels, preserving distinct user messages. Deployed web assets; build/typecheck/lint pass. See [evidence](conversation-space-2026-09-28.md#transcript-density-follow-up).
 
 - Cursor disclosure follow-up (2026-09-28): fixed doubled collapse/expand arrows and made thinking blocks expanded by default, with manual toggling retained. Deployed web assets and verified in the live browser; build/typecheck/lint pass. See [evidence](conversation-space-2026-09-28.md#disclosure-follow-up).
