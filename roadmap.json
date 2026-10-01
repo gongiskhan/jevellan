@@ -148,5 +148,11 @@
     "title": "Conversation start, end and elapsed times",
     "why": "Ordinary stretches show second-precision start/end times and duration, running stretches update elapsed time live, and messages show recorded timestamps. Local time with full date/timezone on hover. Build/typecheck/lint pass; tests not run per user preference. Deployed web-only without restarting conversations. See docs/acceptance/REPORT.md.",
     "status": "complete"
+  },
+  {
+    "id": "account-availability-display",
+    "title": "Accurate account availability after login and quota limits",
+    "why": "Distinguish authentication from account/runtime enable switches, cooldown, usage ceilings and model limits. Login completion explains disabled state and provides Enable account. Usage observations show check times. Nine focused regressions and build/typecheck/lint pass; corrected badges verified live after web-only deployment. See docs/acceptance/REPORT.md.",
+    "status": "complete"
   }
 ]

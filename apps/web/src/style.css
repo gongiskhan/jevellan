@@ -766,6 +766,8 @@ section.notice > :last-child { margin-bottom: 0; }
 .status i { width: 7px; height: 7px; border-radius: 50%; background: var(--edge-strong); display: inline-block; }
 .status-ready i { background: var(--ok); }
 .status-ready { color: var(--ok); }
+.status-limited { color: var(--warn); }
+.status-limited i { background: var(--warn); }
 .status-needs-login i, .status-expired i, .status-missing i { background: var(--warn); }
 .status-needs-login, .status-expired, .status-missing { color: var(--warn); }
 .status-revoked i { background: var(--danger); }

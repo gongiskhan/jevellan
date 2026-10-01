@@ -18,16 +18,8 @@ import {
   type PageProps,
 } from './components.js';
 import { deviceAvailable } from './devices.js';
+import { accountAvailability } from './account-availability.js';
 
-const statusLabels: Record<string, string> = {
-  ready: 'Ready',
-  'needs-login': 'Needs login',
-  expired: 'Expired',
-  revoked: 'Revoked',
-  checking: 'Checking',
-  unknown: 'Unknown',
-  missing: 'Needs login',
-};
 const paidLabels = {
   always: 'Always',
   'when-subscriptions-run-out': 'Only when this runtime’s subscriptions run out',
@@ -260,6 +252,7 @@ function ReplaceKey({ view, close, props }: { view: AccountView; close(): void; 
   );
 }
 function LoginPanel({ initial, props, close }: { initial: Login; props: PageProps; close(): void }) {
+  const save = useSettingsSave();
   const [login, setLogin] = useState(initial);
   const [code, setCode] = useState('');
   const [requestError, setRequestError] = useState('');
@@ -343,7 +336,18 @@ function LoginPanel({ initial, props, close }: { initial: Login; props: PageProp
         <div className="success" role="status">
           {account?.account.identity?.email
             ? `Signed in as ${account.account.identity.email}`
-            : 'Signed in. This account is Ready.'}
+            : 'Signed in successfully.'}
+          {account && <p>{accountAvailability(account.account, currentStatus(account, login.deviceId), props.data.config.configuration['x-jevellan'].runtimes[account.account.runtime]?.enabled === true).label}.</p>}
+          {account && !account.account.enabled && <>
+            <p>Sign-in saved your credentials. Enable this account to let Jevellan use it.</p>
+            <button disabled={task.busy} onClick={() => void task.run(async signal => {
+              await save(`/hub/accounts/${account.account.id}`, AccountViewSchema, 'PATCH', {
+                schema: 'update-account-v1', revision: account.revision, label: account.account.label, enabled: true,
+                ceilingPct: account.account.ceilingPct, ...(account.account.paidUse ? { paidUse: account.account.paidUse } : {}),
+              }, signal);
+              await props.reload(signal);
+            })}>Enable account</button>
+          </>}
         </div>
       ) : (
         <>
@@ -430,6 +434,11 @@ function LoginPanel({ initial, props, close }: { initial: Login; props: PageProp
   );
 }
 export function RuntimesPage(props: PageProps & { embedded?: boolean }) {
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(timer);
+  }, []);
   const save = useSettingsSave();
   const { data } = props;
   const [adding, setAdding] = useState<string>();
@@ -518,6 +527,7 @@ export function RuntimesPage(props: PageProps & { embedded?: boolean }) {
             .map((view) => {
               const account = view.account;
               const status = currentStatus(view, data.devices.currentDeviceId);
+              const availability = accountAvailability(account, status, runtime.enabled, now);
               return (
                 <article className="account" id={`account-${account.id}`} tabIndex={-1} key={account.id}>
                   <div className="account-heading">
@@ -528,12 +538,14 @@ export function RuntimesPage(props: PageProps & { embedded?: boolean }) {
                         {view.secret && ` · Saved · ••••${view.secret.lastFour}`}
                       </span>
                     </div>
-                    <span className={`status status-${account.enabled ? status?.auth : 'disabled'}`}>
+                    <span className={`status status-${availability.tone}`}>
                       <i />
-                      {account.enabled ? statusLabels[status?.auth ?? 'missing'] : 'Disabled'}
+                      {availability.label}
                     </span>
                   </div>
                   <Usage status={status} />
+                  {status?.usage && <p className="muted small-text">Usage checked {dateTime(status.usage.observedAt)}</p>}
+                  {availability.label === 'Usage ceiling reached' && <p className="notice">Usage reached this account’s {account.ceilingPct}% ceiling. Jevellan will use another eligible account.</p>}
                   {account.paidUse && <p className="muted small-text">{paidLabels[account.paidUse]}</p>}
                   {status?.coolingUntil && Date.parse(status.coolingUntil) > Date.now() && (
                     <p className="notice">Cooling until {dateTime(status.coolingUntil)}</p>
@@ -616,12 +628,13 @@ export function RuntimesPage(props: PageProps & { embedded?: boolean }) {
                           const here = device.id === data.devices.currentDeviceId;
                           const available = deviceAvailable(row, data.devices.currentDeviceId);
                           const state = view.statuses.find((entry) => entry.deviceId === device.id);
+                          const deviceStatus = available ? accountAvailability(account, state, runtime.enabled, now) : { label: 'Offline', tone: 'offline' };
                           return (
                             <div key={device.id}>
                               <span>{device.name}</span>
-                              <span className={`status status-${available ? state?.auth : 'missing'}`}>
+                              <span className={`status status-${deviceStatus.tone}`}>
                                 <i />
-                                {available ? statusLabels[state?.auth ?? 'missing'] : 'Offline'}
+                                {deviceStatus.label}
                               </span>
                               <button
                                 className="text-button"
