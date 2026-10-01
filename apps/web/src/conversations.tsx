@@ -497,6 +497,8 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
   const [projects, setProjects] = useState<Project[]>([]);
   const [settling, setSettling] = useState(false);
   const [editingConversation, setEditingConversation] = useState<'rename' | 'finish'>();
+  const [editingMessage, setEditingMessage] = useState<{ id: number; text: string }>();
+  const messageAction = useRef<{ signature: string; id: string } | undefined>(undefined);
   const [message, setMessage] = useState('');
   const [why, setWhy] = useState<DecisionRecord>();
   const [changes, setChanges] = useState<z.infer<typeof ConversationChangesSchema>>();
@@ -557,6 +559,17 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
       setView(value);
       setMessage('');
     });
+  const resendMessage = async (eventId: number, text: string, signal: AbortSignal) => {
+    if (!text.trim()) return;
+    const signature = JSON.stringify({ eventId, text });
+    if (messageAction.current?.signature !== signature) messageAction.current = { signature, id: `message_${clientId()}` };
+    const value = await api(`/api/conversations/${id}/messages`, ConversationPublicSchema, 'POST', {
+      schema: 'conversation-message-v1', clientMessageId: messageAction.current.id, text, kind: 'message',
+    }, { signal });
+    messageAction.current = undefined;
+    setView(value);
+    setEditingMessage(undefined);
+  };
   // Picking an offered answer sends it as the message and records which option it was.
   const answer = (option: number) =>
     task.run(async () => {
@@ -721,7 +734,41 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
                   <strong>{event.type === 'note' ? 'Your note' : 'You'}</strong>
                   <ConversationTime value={event.t} />
                 </div>
-                <Markdown>{String(object(event.data).text ?? '')}</Markdown>
+                {editingMessage?.id === event.id ? <form className="message-editor" onSubmit={edit => {
+                  edit.preventDefault();
+                  if (!running && !kept && !finishing && !checkpointBlock) void task.run(signal => resendMessage(event.id, editingMessage.text, signal));
+                }}>
+                  <label htmlFor={`edit-message-${event.id}`}>Edit message</label>
+                  <textarea id={`edit-message-${event.id}`} autoFocus value={editingMessage.text} onChange={change => setEditingMessage({ id: event.id, text: change.target.value })} />
+                  <p className="muted small-text">Sends a revised message. Earlier messages and work stay in the history.</p>
+                  <div className="user-message-actions">
+                    <button type="submit" disabled={task.busy || running || kept || !!finishing || !!checkpointBlock || !editingMessage.text.trim()}>Send edited message</button>
+                    <button type="button" className="secondary" disabled={task.busy} onClick={() => setEditingMessage(undefined)}>Cancel</button>
+                  </div>
+                </form> : <>
+                  <Markdown>{String(object(event.data).text ?? '')}</Markdown>
+                  <div className="user-message-actions">
+                    <button type="button" className="secondary" disabled={task.busy || running || kept || !!finishing || !!checkpointBlock || !!view.pause?.guard}
+                      aria-label="Retry message"
+                      title="Retry this request; previous work stays in the history"
+                      onClick={() => void task.run(async signal => {
+                        if (event.id === view.messages.at(-1)?.id && view.decisionWait) {
+                          setView(await api(`/api/conversations/${id}/resume`, ConversationPublicSchema, 'POST', {
+                            schema: 'resume-decision-v1', generation: view.conversation.generation,
+                          }, { signal }));
+                        } else if (event.id === view.messages.at(-1)?.id && view.externalWait) {
+                          setView(await api(`/api/conversations/${id}/retry-external`, ConversationPublicSchema, 'POST', {
+                            schema: 'retry-external-activity-v1', waitId: view.externalWait.id, generation: view.conversation.generation,
+                          }, { signal }));
+                        } else {
+                          await resendMessage(event.id, String(object(event.data).text ?? ''), signal);
+                        }
+                      })}>Retry</button>
+                    <button type="button" className="secondary" disabled={task.busy || running || kept || !!finishing || !!checkpointBlock}
+                      aria-label="Edit message"
+                      onClick={() => setEditingMessage({ id: event.id, text: String(object(event.data).text ?? '') })}>Edit</button>
+                  </div>
+                </>}
               </article>
             );
           if (event.type === 'stretch-start') {

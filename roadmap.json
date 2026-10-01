@@ -154,5 +154,11 @@
     "title": "Accurate account availability after login and quota limits",
     "why": "Distinguish authentication from account/runtime enable switches, cooldown, usage ceilings and model limits. Login completion explains disabled state and provides Enable account. Usage observations show check times. Nine focused regressions and build/typecheck/lint pass; corrected badges verified live after web-only deployment. See docs/acceptance/REPORT.md.",
     "status": "complete"
+  },
+  {
+    "id": "user-message-actions",
+    "title": "Readable user messages with retry and inline editing",
+    "why": "Fixed user-message contrast and added retry plus edit-and-resend with preserved history. Paused latest-request retry does not duplicate the message. Four focused desktop/phone light/dark browser cases and build/typecheck/lint pass. Deployed web-only without restarting conversations. See docs/acceptance/REPORT.md.",
+    "status": "complete"
   }
 ]
