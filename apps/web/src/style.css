@@ -963,6 +963,8 @@ html:has(.conversation-page) { scroll-padding-top: calc(var(--header-height) + 1
   color: var(--bg);
 }
 .user-message strong { display: block; font-family: var(--font-mono); font-size: 10px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.65; margin-bottom: 2px; }
+.message-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-bottom: 4px; }
+.message-heading time { font-size: 11px; opacity: .75; font-variant-numeric: tabular-nums; }
 .user-message p { margin: 0; font-size: 13.5px; white-space: pre-wrap; }
 .user-message.note { background: var(--card); color: var(--ink); border: 1px dashed var(--edge-strong); }
 
@@ -997,6 +999,10 @@ html:has(.conversation-page) { scroll-padding-top: calc(var(--header-height) + 1
 .stretch-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
 .stretch-head h2 { flex: none; }
 .stretch-head .model-chips { flex: 1 1 auto; }
+.stretch-timing { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 3px 16px; color: var(--ink-2); font-size: 11px; line-height: 1.6; font-variant-numeric: tabular-nums; }
+.stretch-timing > span { white-space: nowrap; }
+.stretch-timing time, .stretch-timing b { font-weight: 500; color: var(--ink); }
+.stretch-timing .timing-zone { color: var(--ink-3); }
 .stretch-block.undone { opacity: 0.62; }
 .stretch-block.undone .handoff, .stretch-block.undone h2 { text-decoration: line-through; text-decoration-color: var(--ink-3); }
 .stretch-block .notice { margin: 0; }

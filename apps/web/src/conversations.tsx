@@ -717,7 +717,10 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
           if (event.type === 'user-message' || event.type === 'note')
             return (
               <article className="user-message" key={event.id}>
-                <strong>{event.type === 'note' ? 'Your note' : 'You'}</strong>
+                <div className="message-heading">
+                  <strong>{event.type === 'note' ? 'Your note' : 'You'}</strong>
+                  <ConversationTime value={event.t} />
+                </div>
                 <Markdown>{String(object(event.data).text ?? '')}</Markdown>
               </article>
             );
@@ -1588,10 +1591,6 @@ function StepBlock({
   const model = props.data.config.configuration['x-jevellan'].menu.find((entry) => entry.id === step.modelId);
   const account = props.data.accounts.find((entry) => entry.account.id === step.accountId);
   const transcript = conversationTurns(events, step.status === 'running');
-  const seconds = Math.max(
-    0,
-    Math.round((Date.parse(step.endedAt ?? new Date().toISOString()) - Date.parse(step.startedAt)) / 1000),
-  );
   const editable =
     step.status !== 'undone' &&
     [view.conversation.work?.id, view.closedWorks.at(-1)?.id].includes(step.workId);
@@ -1651,12 +1650,11 @@ function StepBlock({
           <span className="chip">
             {props.data.devices.devices.find((entry) => entry.id === step.deviceId)?.name ?? step.deviceId}
           </span>
-          <span className="chip dim">
-            {duration(seconds)}
-            {tokens > 0 && ` · ${compactNumber(tokens)} tokens`}
+          {(tokens > 0 || step.usage.costUsd !== undefined) && <span className="chip dim">
+            {tokens > 0 && `${compactNumber(tokens)} tokens`}
             {step.usage.costUsd !== undefined &&
-              ` · $${step.usage.costUsd.toFixed(3)}${step.usage.costSource === 'estimated' ? ' est.' : ''}`}
-          </span>
+              `${tokens > 0 ? ' · ' : ''}$${step.usage.costUsd.toFixed(3)}${step.usage.costSource === 'estimated' ? ' est.' : ''}`}
+          </span>}
           {step.status !== 'completed' && (
             <span className={`chip status-${step.status}`}>
               {step.status === 'undone' ? 'Undone' : stepStatusLabel(step.status)}
@@ -1668,6 +1666,7 @@ function StepBlock({
             </span>
           ))}
         </div>
+        <StretchTiming step={step} />
       </div>
       {decision?.notices
         .filter((notice) => notice.kind === 'preferred-needs-login')
@@ -1748,6 +1747,31 @@ function StepBlock({
     </article>
   );
 }
+const conversationTime = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+const fullConversationTime = new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZoneName: 'long' });
+function ConversationTime({ value }: { value: string }) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return <span>Time unavailable</span>;
+  return <time dateTime={value} title={fullConversationTime.format(date)}>{conversationTime.format(date)}</time>;
+}
+function StretchTiming({ step }: { step: Step }) {
+  const running = step.status === 'running' && !step.endedAt;
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    if (!running) return;
+    setNow(Date.now());
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [running, step.startedAt]);
+  const end = step.endedAt ? Date.parse(step.endedAt) : running ? now : undefined;
+  const seconds = end === undefined ? undefined : Math.max(0, Math.floor((end - Date.parse(step.startedAt)) / 1000));
+  return <div className="stretch-timing" aria-label={`Step ${step.n} timing, local time`}>
+    <span>Started <ConversationTime value={step.startedAt} /></span>
+    <span>{step.endedAt ? <>Ended <ConversationTime value={step.endedAt} /></> : running ? 'In progress' : 'End time not recorded'}</span>
+    {seconds !== undefined && Number.isFinite(seconds) && <span>{running ? 'Elapsed' : 'Duration'} <b>{duration(seconds)}</b></span>}
+    <span className="timing-zone" title={Intl.DateTimeFormat().resolvedOptions().timeZone}>Local time</span>
+  </div>;
+}
 const stepStatusLabel = (status: string) =>
   ({ running: 'Running', interrupted: 'Interrupted', failed: 'Failed', 'timed-out': 'Timed out' })[status] ??
   status;
@@ -1756,7 +1780,7 @@ const duration = (seconds: number) =>
     ? `${seconds}s`
     : seconds < 3600
       ? `${Math.floor(seconds / 60)}m ${seconds % 60}s`
-      : `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
+      : `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m ${seconds % 60}s`;
 const compactNumber = (value: number) =>
   value < 1000
     ? String(value)

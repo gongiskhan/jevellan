@@ -142,5 +142,11 @@
     "title": "Operational requests use execution-capable steps",
     "why": "Clarified action criteria and worker contracts so short command requests are classified as implementation, while explanations remain read-only. Added three saved decision cases and app-level checks for owned Git fast-forward and partial-reply recovery. Focused local regressions, build, typecheck and lint pass; live Jev cases are blocked by the missing dedicated key. See docs/acceptance/action-routing-2026-09-29.md.",
     "status": "complete"
+  },
+  {
+    "id": "conversation-timing",
+    "title": "Conversation start, end and elapsed times",
+    "why": "Ordinary stretches show second-precision start/end times and duration, running stretches update elapsed time live, and messages show recorded timestamps. Local time with full date/timezone on hover. Build/typecheck/lint pass; tests not run per user preference. Deployed web-only without restarting conversations. See docs/acceptance/REPORT.md.",
+    "status": "complete"
   }
 ]
