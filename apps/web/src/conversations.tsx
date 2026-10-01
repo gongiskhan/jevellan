@@ -1,3 +1,4 @@
+import { useShellVisibility } from './shell-visibility.js';
 import { ChangesDiff } from './changes-diff.js';
 import { conversationTurns } from './conversation-transcript.js';
 import { TranscriptTurn } from './session-transcript.js';
@@ -73,6 +74,7 @@ export function ConversationSidebar({
   selected,
 }: Pick<PageProps, 'data' | 'navigate' | 'onError'> & { selected: string }) {
   const cursor = useCursorSessions();
+  const shells = useShellVisibility();
   const presentation = useSessionList();
   const task = useTask(onError);
   const [actions, setActions] = useState<string>();
@@ -146,7 +148,8 @@ export function ConversationSidebar({
       const left = order.indexOf(a.id), right = order.indexOf(b.id);
       return left - right || b.updatedAt.localeCompare(a.updatedAt) || a.id.localeCompare(b.id);
     });
-  const matching = combined.filter(entry => terms.every(term => `${entry.title} ${entry.projectLabel} ${entry.deviceLabel} ${entry.runtimeLabel}`.toLowerCase().includes(term)));
+  const shown = combined.filter(entry => shells.visible || !entry.cursor);
+  const matching = shown.filter(entry => terms.every(term => `${entry.title} ${entry.projectLabel} ${entry.deviceLabel} ${entry.runtimeLabel}`.toLowerCase().includes(term)));
   const drag = useSessionDrag({ disabled: task.busy || !presentation.ready,
     start: () => setActions(undefined), drop: (id, target, after) => drop(id, target, after) });
   const filtered = matching.filter((entry) => inFilter(filter, entry.state));
@@ -191,7 +194,11 @@ export function ConversationSidebar({
           </button>
         ))}
       </div>
-      {combined.length > 6 && (
+      <button type="button" className="shell-visibility-switch" role="switch" aria-checked={shells.visible}
+        title="Show Cursor, Claude Code and Codex shell sessions" onClick={() => shells.update(!shells.visible)}>
+        <span>Shell sessions</span><span className="switch-track" aria-hidden="true" />
+      </button>
+      {shown.length > 6 && (
         <label className="conversation-search">
           <span className="sr-only">Search conversations</span>
           <Icon name="search" size={14} />
@@ -208,7 +215,7 @@ export function ConversationSidebar({
       <span id="session-drag-help" className="sr-only">Drag to reorder. On touch screens, hold first. With a keyboard, use Alt and the up or down arrow.</span>
       <span className="sr-only" role="status">{dragged ? `Dragging ${dragged.title}. Release to place it; Escape cancels.` : ''}</span>
       <div className={`conversation-list ${drag.drag ? 'session-drag-active' : ''}`} ref={drag.list}>
-        {!combined.length ? (
+        {!shown.length ? (
           <p className="empty-conversations">No conversations yet. Start one to put your agents to work.</p>
         ) : !visible.length ? (
           <p className="empty-conversations">
@@ -259,7 +266,7 @@ export function ConversationSidebar({
           <div className="actions"><button disabled={task.busy || !title.trim()}>{task.busy ? 'Saving…' : 'Save name'}</button><button type="button" className="secondary" onClick={() => setRenaming(undefined)}>Cancel</button></div>
         </form>
       </Modal>}
-      {cursor.unavailable.length > 0 && <details className="cursor-source-notice"><summary>Some native sessions are unavailable</summary>{cursor.unavailable.map(text => <p key={text}>{text}</p>)}</details>}
+      {shells.visible && cursor.unavailable.length > 0 && <details className="cursor-source-notice"><summary>Some native sessions are unavailable</summary>{cursor.unavailable.map(text => <p key={text}>{text}</p>)}</details>}
     </>
   );
 }

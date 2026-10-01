@@ -166,5 +166,11 @@
     "title": "Adjustable, readable Changes panel",
     "why": "Draggable and keyboard-adjustable details width with remembered preference; visible fixed header; collapsible file diffs, line numbers, change totals, theme-aware colors and optional wrapping. Live desktop inspection and build/typecheck/lint passed. Deployed web-only without interrupting conversations. Automated and phone checks not run; see docs/acceptance/REPORT.md.",
     "status": "complete"
+  },
+  {
+    "id": "shell-session-visibility",
+    "title": "Show or hide shell sessions",
+    "why": "Sidebar switch controls native Cursor, Claude Code and Codex session visibility, filter counts and source notices. Defaults on and remembers the choice per browser. Build/typecheck/lint pass; tests not run under the user preference. Deployed web-only; see docs/acceptance/REPORT.md.",
+    "status": "complete"
   }
 ]
