@@ -160,5 +160,11 @@
     "title": "Readable user messages with retry and inline editing",
     "why": "Fixed user-message contrast and added retry plus edit-and-resend with preserved history. Paused latest-request retry does not duplicate the message. Four focused desktop/phone light/dark browser cases and build/typecheck/lint pass. Deployed web-only without restarting conversations. See docs/acceptance/REPORT.md.",
     "status": "complete"
+  },
+  {
+    "id": "adjustable-changes-panel",
+    "title": "Adjustable, readable Changes panel",
+    "why": "Draggable and keyboard-adjustable details width with remembered preference; visible fixed header; collapsible file diffs, line numbers, change totals, theme-aware colors and optional wrapping. Live desktop inspection and build/typecheck/lint passed. Deployed web-only without interrupting conversations. Automated and phone checks not run; see docs/acceptance/REPORT.md.",
+    "status": "complete"
   }
 ]

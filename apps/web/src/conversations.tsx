@@ -1,3 +1,4 @@
+import { ChangesDiff } from './changes-diff.js';
 import { conversationTurns } from './conversation-transcript.js';
 import { TranscriptTurn } from './session-transcript.js';
 import { createPortal } from 'react-dom';
@@ -1057,7 +1058,7 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
       )}
       {changes && (
         <Panel title="Changes" eyebrow={`step ${changes.stretch}`} close={() => setChanges(undefined)}>
-          <div className="changed-file-list" aria-label="Changed files">
+          <details className="changed-files"><summary>{changes.files.length} changed files <span className="muted small-text">Browse recorded files</span></summary><div className="changed-file-list" aria-label="Changed files">
             {changes.files.map((file) => (
               <p key={`${file.source}/${file.path}`}>
                 <EvidenceLink
@@ -1071,12 +1072,12 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
                 </span>
               </p>
             ))}
-          </div>
-          <Diff text={changes.diff} />
+          </div></details>
+          <ChangesDiff text={changes.diff} />
           {changes.uncommitted && (
             <>
               <h3>Uncommitted changes</h3>
-              <Diff text={changes.uncommitted} />
+              <ChangesDiff text={changes.uncommitted} label="Working copy diff" />
             </>
           )}
           {changes.recovery && (
@@ -2003,23 +2004,6 @@ function Plan({
     <div className="plan-result">
       <Markdown onOpen={open}>{content || 'Loading the full plan…'}</Markdown>
     </div>
-  );
-}
-function Diff({ text }: { text: string }) {
-  return text ? (
-    <pre className="git-diff">
-      {text.split('\n').map((line, index) => (
-        <span
-          className={line.startsWith('+') ? 'addition' : line.startsWith('-') ? 'removal' : ''}
-          key={index}
-        >
-          {line}
-          {'\n'}
-        </span>
-      ))}
-    </pre>
-  ) : (
-    <p className="muted">No checkpoint changes in this step.</p>
   );
 }
 function WhyMemory({ memory }: Pick<DecisionRecord, 'memory'>) {

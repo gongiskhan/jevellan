@@ -413,7 +413,7 @@ progress::-moz-progress-bar { background: var(--ink-3); border-radius: 3px; }
   grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
   min-height: 100dvh;
 }
-.app-shell:has(#inspector > .panel) { grid-template-columns: var(--sidebar-width) minmax(0, 1fr) var(--inspector-width); }
+.app-shell:has(#inspector > .panel) { grid-template-columns: var(--sidebar-width) minmax(0, 1fr) min(var(--inspector-width), calc(100vw - var(--sidebar-width) - 380px)); }
 
 .sidebar {
   position: sticky;
@@ -678,7 +678,7 @@ button.wordmark:hover { background: none; border: 0; }
 }
 
 /* inspector */
-.inspector { min-width: 0; }
+.inspector { min-width: 0; position: sticky; top: 0; height: 100dvh; }
 .inspector:empty { display: none; }
 .inspector > .panel:not(:last-child) { display: none; }
 .panel {
@@ -695,11 +695,15 @@ button.wordmark:hover { background: none; border: 0; }
   display: flex;
   align-items: center;
   gap: 8px;
-  height: var(--header-height);
-  padding: 0 10px 0 16px;
+  height: calc(52px + env(safe-area-inset-top, 0px));
+  padding: env(safe-area-inset-top, 0px) 10px 0 16px;
   border-bottom: 1px solid var(--edge);
   flex: none;
 }
+.panel-resizer { position: absolute; inset: 0 auto 0 -5px; width: 10px; cursor: col-resize; touch-action: none; z-index: 3; }
+.panel-resizer::after { content: ''; position: absolute; top: 0; bottom: 0; left: 4px; width: 2px; background: transparent; transition: background .15s; }
+.panel-resizer:hover::after, .panel-resizer:focus-visible::after, .panel-resizer:active::after { background: var(--jev); }
+.panel-resizer:focus-visible { outline: none; }
 .panel-title { display: flex; align-items: baseline; gap: 8px; min-width: 0; flex: 1; }
 .panel-heading h2 {
   margin: 0;
@@ -1166,12 +1170,35 @@ html:has(.conversation-page) { scroll-padding-top: calc(var(--header-height) + 1
 .why-jev p { margin: 0 0 3px; }
 
 /* changes / diff / evidence */
-.changed-file-list { display: grid; gap: 2px; margin-bottom: 10px; }
-.changed-file-list p { margin: 0; font-size: 12.5px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; }
-.git-diff { font-size: 11.5px; line-height: 1.5; max-height: none; }
-.git-diff span { display: block; white-space: pre-wrap; overflow-wrap: anywhere; }
-.git-diff .addition { background: rgba(79, 197, 140, 0.16); color: #bff0d6; }
-.git-diff .removal { background: rgba(255, 122, 107, 0.16); color: #ffd0ca; }
+.changed-files { border: 1px solid var(--edge); border-radius: 10px; margin: 0 0 14px; background: var(--bg-2); }
+.changed-files > summary { display: flex; align-items: center; gap: 8px; padding: 10px 12px; font-size: 12px; }
+.changed-files > summary .muted { margin-left: auto; font-weight: 400; }
+.changed-file-list { display: grid; gap: 0; max-height: 30dvh; overflow: auto; padding: 0 12px 8px; }
+.changed-file-list p { margin: 0; padding: 8px 0; border-top: 1px solid var(--edge); display: grid; gap: 3px; font-size: 12px; }
+.changed-file-list .evidence-link { text-align: left; font-size: 12px; text-decoration: none; overflow-wrap: anywhere; }
+.changed-file-list .small-text { font-size: 10px; }
+.diff-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; }
+.diff-toolbar label { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 12px; cursor: pointer; }
+.diff-toolbar input { margin: 0; }
+.diff-file { border: 1px solid var(--edge); border-radius: 10px; background: var(--card); overflow: hidden; margin: 0 0 12px; }
+.diff-file > summary { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--bg-2); }
+.diff-file[open] > summary { border-bottom: 1px solid var(--edge); }
+.diff-file > summary::before, .changed-files > summary::before { flex: none; }
+.diff-file-path { min-width: 0; flex: 1; font-family: var(--font-mono); font-size: 11px; overflow-wrap: anywhere; }
+.diff-stats { display: flex; flex: none; gap: 7px; font-family: var(--font-mono); font-size: 11px; }
+.diff-stats .added { color: var(--ok); }
+.diff-stats .removed { color: var(--danger); }
+.diff-scroll { overflow-x: auto; overscroll-behavior-x: contain; }
+.diff-lines { width: max-content; min-width: 100%; padding: 6px 0; font-family: var(--font-mono); font-size: 11px; line-height: 1.65; }
+.diff-line { display: grid; grid-template-columns: 4ch 4ch minmax(0, 1fr); min-height: 1.65em; }
+.diff-line-number { color: var(--ink-3); text-align: right; padding-right: 6px; user-select: none; opacity: .8; }
+.diff-line code { display: block; border-radius: 0; background: none; color: inherit; font: inherit; padding: 0 12px 0 8px; white-space: pre; overflow-wrap: normal; }
+.diff-line.addition { color: var(--ink); background: color-mix(in srgb, var(--ok) 13%, transparent); }
+.diff-line.removal { color: var(--ink); background: color-mix(in srgb, var(--danger) 13%, transparent); }
+.diff-line.hunk { color: var(--sea); background: var(--bg-3); }
+.diff-line.meta { color: var(--ink-3); }
+.diff-scroll.wrap .diff-lines { width: 100%; }
+.diff-scroll.wrap code { white-space: pre-wrap; overflow-wrap: anywhere; }
 .verification-receipt {
   display: grid;
   gap: 4px;
@@ -1517,6 +1544,7 @@ button.memory-result + button.memory-result { margin-top: 4px; }
 
 /* ---------- responsive ---------- */
 @media (max-width: 1180px) {
+  .inspector { position: static; height: 0; }
   .app-shell:has(#inspector > .panel) { grid-template-columns: var(--sidebar-width) minmax(0, 1fr); }
   .inspector > .panel {
     position: fixed;
@@ -1524,7 +1552,7 @@ button.memory-result + button.memory-result { margin-top: 4px; }
     right: 0;
     bottom: 0;
     z-index: 60;
-    width: min(440px, 92vw);
+    width: min(var(--inspector-width), 92vw);
     height: auto;
     box-shadow: -24px 0 60px -24px rgba(0, 0, 0, 0.5);
     animation: slide-in 0.2s ease;
@@ -1579,6 +1607,7 @@ button.memory-result + button.memory-result { margin-top: 4px; }
   h1 { font-size: 21px; }
   .card { padding: 14px; }
   .inspector > .panel { width: 100vw; border-left: 0; }
+  .panel-resizer { display: none; }
   .conversation-heading h1 { font-size: 17px; }
   .user-message { max-width: 90%; }
   .stretch-block { padding: 10px 11px; }

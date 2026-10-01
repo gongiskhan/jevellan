@@ -1,3 +1,4 @@
+import { applyPanelWidth, readPanelWidth, savePanelWidth } from './panel-size.js';
 import { clientId } from './client-id.js';
 import {
   lazy,
@@ -79,6 +80,16 @@ export function Panel({
   const closeRef = useRef(close);
   closeRef.current = close;
   const [slot] = useState(() => document.getElementById('inspector'));
+  const [width, setWidth] = useState(readPanelWidth);
+  const dragging = useRef(false);
+  const resize = (value: number) => {
+    const sidebar = slot?.closest('.app-shell')?.querySelector('.sidebar')?.getBoundingClientRect().width ?? 0;
+    const maximum = innerWidth > 1180 ? innerWidth - sidebar - 380 : innerWidth * .92;
+    const next = applyPanelWidth(Math.min(maximum, value));
+    setWidth(next);
+    return next;
+  };
+  useEffect(() => { applyPanelWidth(width); }, [width]);
   useEffect(() => {
     const previous = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
     openPanels.push(id);
@@ -97,6 +108,33 @@ export function Panel({
   }, [id]);
   const panel = (
     <section className="panel" role="dialog" aria-labelledby={id}>
+      <div className="panel-resizer" role="separator" tabIndex={0} aria-label="Resize details panel"
+        aria-orientation="vertical" aria-valuemin={320} aria-valuemax={2400} aria-valuenow={width}
+        title="Drag to resize · arrow keys to adjust · double-click to reset"
+        onPointerDown={event => {
+          if (event.button !== 0) return;
+          event.preventDefault();
+          dragging.current = true;
+          event.currentTarget.setPointerCapture(event.pointerId);
+        }}
+        onPointerMove={event => {
+          if (dragging.current) {
+            resize(innerWidth - event.clientX);
+          }
+        }}
+        onPointerUp={event => {
+          dragging.current = false;
+          savePanelWidth(width);
+          event.currentTarget.releasePointerCapture(event.pointerId);
+        }}
+        onLostPointerCapture={() => { dragging.current = false; }}
+        onDoubleClick={() => savePanelWidth(resize(520))}
+        onKeyDown={event => {
+          if (!['ArrowLeft', 'ArrowRight', 'Home'].includes(event.key)) return;
+          event.preventDefault();
+          const next = event.key === 'Home' ? 520 : width + (event.key === 'ArrowLeft' ? 40 : -40);
+          savePanelWidth(resize(next));
+        }} />
       <div className="panel-heading">
         <div className="panel-title">
           {eyebrow && <span className="panel-eyebrow">{eyebrow}</span>}
