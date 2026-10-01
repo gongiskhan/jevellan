@@ -119,16 +119,16 @@ test('failed independent verification reaches the next Jev state and is repaired
   expect(readFileSync(join(path, 'value.txt'), 'utf8')).toBe('2\n'); expect(git(path, 'rev-parse', 'HEAD')).toBe(git(origin, 'rev-parse', 'main'));
 }, 60_000);
 
-test('an answer to Ask you reaches Jev paired with its question, with the resolved blocker no longer open', async () => {
+test('a freeform follow-up reaches Jev with its question and preserves blocker evidence', async () => {
   actions = ['ask-you']; enqueue(undefined, { question: 'What would you like changed?', blockers: ['The requested change is unspecified.'] }); await create('Change something.');
   expect((await finished()).conversation.state).toBe('waiting-for-you');
   actions = ['implement', 'done']; enqueue('2');
   const sent = await request('/api/conversations/automatic/messages', { schema: 'conversation-message-v1', clientMessageId: 'answer', text: 'You choose.', kind: 'message' }); expect(sent.status).toBe(200);
   const result = await finished(); expect(result.conversation.state, result.pause?.reason).toBe('done');
-  const [asking, answered] = calls.filter((call) => call.questions.next_action).map((call) => call.state as { conversation: { answeredQuestion?: string; latestUserMessage: string; summary: { nextWork: string }; recentHandoffs: { blockers: string[] }[] } });
-  expect(asking!.conversation.answeredQuestion).toBeUndefined();
-  expect(answered!.conversation).toMatchObject({ answeredQuestion: 'What would you like changed?', latestUserMessage: 'You choose.', summary: { nextWork: '' } });
-  expect(answered!.conversation.recentHandoffs.at(-1)!.blockers).toEqual([]);
+  const [asking, answered] = calls.filter((call) => call.questions.next_action).map((call) => call.state as { conversation: { questionBeforeLatestMessage?: string; latestUserMessage: string; summary: { nextWork: string }; recentHandoffs: { blockers: string[] }[] } });
+  expect(asking!.conversation.questionBeforeLatestMessage).toBeUndefined();
+  expect(answered!.conversation).toMatchObject({ questionBeforeLatestMessage: 'What would you like changed?', latestUserMessage: 'You choose.' });
+  expect(answered!.conversation.recentHandoffs.at(-1)!.blockers).toEqual(['The requested change is unspecified.']);
 });
 
 test('Ask you after an answer writes a new question instead of re-posting the answered one', async () => {
@@ -152,7 +152,7 @@ test('offered answers show as options, a picked one reaches Jev as the chosen an
   const result = await finished(); expect(result.conversation.state, result.pause?.reason).toBe('done'); expect(result.openQuestion).toBeUndefined();
   expect(result.messages.at(-1)!.answer).toEqual({ stretch: 1, option: 0, label: options[0]!.label });
   const answered = calls.filter((call) => call.questions.next_action).at(1)!.state as { conversation: Record<string, unknown> };
-  expect(answered.conversation).toMatchObject({ answeredQuestion: 'Shall I add an Overview section to README.md?', offeredAnswers: options.map((option) => option.label), chosenAnswer: options[0]!.label });
+  expect(answered.conversation).toMatchObject({ questionBeforeLatestMessage: 'Shall I add an Overview section to README.md?', offeredAnswers: options.map((option) => option.label), chosenAnswer: options[0]!.label });
   expect((await pick(1, options[1]!.label, 'late')).status).toBe(409);
 });
 
@@ -540,3 +540,70 @@ test('a limit on one model cools only that model: the next step runs on another 
   expect(review).toContain(`base commit ${initial.slice(0, 12)}`); expect(review).toContain('- value.txt'); expect(review).toContain('+2');
   expect(fake.starts[2]!.permissions).toBe('read-only'); expect(fake.starts[1]!.brief).not.toContain('# Change under review');
 }, 60_000);
+
+
+test('a summary request after several settled stretches must receive a reply before work can finish', async () => {
+  actions = [...Array<Action>(7).fill('reply'), 'ask-you'];
+  for (let n = 1; n <= 7; n++) fake.enqueue(async ({ input, emit }) => {
+    emit({ type: 'text', delta: `Recorded result ${n}: removed the retired hooks; no process remains.` });
+    await handoff(input, n === 7 ? { status: 'partial', summary: 'The retired hooks are removed; a manual permission check remains.', question: 'Can you check the system permission?', blockers: ['The system permission needs a manual check.'] } : {});
+    return { status: 'completed' };
+  });
+  await create('Check the retired project.'); expect((await finished()).conversation.state).toBe('waiting-for-you');
+  actions = ['reply', 'done'];
+  fake.enqueue(async ({ input, emit }) => {
+    expect(input.action).toBe('reply'); expect(input.permissions).toBe('read-only');
+    expect(input.brief).toContain('# Latest user message — respond to this now\n\ntldr');
+    expect(input.brief).toContain('Recorded result 7: removed the retired hooks; no process remains.');
+    emit({ type: 'text', delta: 'The hooks are removed and nothing is running. One system permission still needs your manual check.' });
+    await handoff(input, { summary: 'Short summary delivered.' }); return { status: 'completed' };
+  });
+  expect((await request('/api/conversations/automatic/messages', { schema: 'conversation-message-v1', clientMessageId: 'summary', text: 'tldr', kind: 'message' })).status).toBe(200);
+  const result = await finished(); expect(result.conversation.state, result.pause?.reason).toBe('done');
+  const summaryDecision = result.decisions.find(entry => entry.latestMessageEventId === result.messages.at(-1)!.id)!;
+  expect(summaryDecision.action.allowed).not.toContain('done'); expect(summaryDecision.action.chosen).toBe('reply');
+  const state = calls.filter(call => call.questions.next_action).at(-2)!.state as { conversation: { questionBeforeLatestMessage: string; recentConversation: string; recentHandoffs: { blockers: string[] }[] }; facts: { latestMessageNeedsResponse: boolean } };
+  expect(state.facts.latestMessageNeedsResponse).toBe(true);
+  expect(state.conversation.questionBeforeLatestMessage).toBe('Can you check the system permission?');
+  expect(state.conversation.recentHandoffs.at(-1)!.blockers).toEqual(['The system permission needs a manual check.']);
+  expect(fake.starts).toHaveLength(8); expect(git(path, 'rev-parse', 'HEAD')).toBe(initial);
+}, 60_000);
+
+test('a follow-up after completed work receives previous answers without inheriting old constraints', async () => {
+  actions = ['reply', 'done']; fake.enqueue(async ({ input, emit }) => {
+    emit({ type: 'text', delta: 'The audit found no remaining background process. The retired hook was already removed.' });
+    await handoff(input, { findings: [{ claim: 'constraint: audit only, no changes', pointer: 'value.txt:1' }] }); return { status: 'completed' };
+  });
+  await create('Audit the retired project.'); const first = await finished(); expect(first.conversation.state).toBe('done');
+  actions = ['reply', 'done']; fake.enqueue(async ({ input, emit }) => {
+    expect(input.brief).toContain('Audit the retired project.');
+    expect(input.brief).toContain('The audit found no remaining background process.');
+    expect(input.brief).toContain('# Latest user message — respond to this now\n\nWhat does that mean?');
+    emit({ type: 'text', delta: 'It means the retired project has no running background process.' });
+    await handoff(input); return { status: 'completed' };
+  });
+  expect((await request('/api/conversations/automatic/messages', { schema: 'conversation-message-v1', clientMessageId: 'followup', text: 'What does that mean?', kind: 'message' })).status).toBe(200);
+  const result = await finished(); expect(result.conversation.state, result.pause?.reason).toBe('done');
+  expect(result.closedWorks).toHaveLength(2); expect(result.closedWorks[1]!.constraints).toEqual([]);
+  const state = calls.filter(call => call.questions.next_action).at(-2)!.state as { conversation: { request: string; recentConversation: string; recentHandoffs: unknown[] } };
+  expect(state.conversation.request).toBe('What does that mean?'); expect(state.conversation.recentHandoffs).toEqual([]);
+  expect(state.conversation.recentConversation).toContain('The audit found no remaining background process.');
+  expect(git(path, 'rev-parse', 'HEAD')).toBe(initial);
+});
+
+test('a queued message arriving after launch cannot be consumed by the running stretch', async () => {
+  actions = ['reply', 'reply', 'done']; let release!: () => void;
+  fake.enqueue(async ({ input, emit }) => {
+    await new Promise<void>(resolve => { release = resolve; });
+    emit({ type: 'text', delta: 'The earlier answer.' }); await handoff(input); return { status: 'completed' };
+  });
+  fake.enqueue(async ({ input, emit }) => {
+    expect(input.brief).toContain('# Latest user message — respond to this now\n\nSummarize the earlier answer.');
+    emit({ type: 'text', delta: 'The concise summary.' }); await handoff(input); return { status: 'completed' };
+  });
+  await create('Explain the project.'); await vi.waitFor(() => expect(release).toBeTypeOf('function'));
+  expect((await request('/api/conversations/automatic/messages', { schema: 'conversation-message-v1', clientMessageId: 'queue', text: 'Summarize the earlier answer.', kind: 'note' })).status).toBe(200);
+  release(); const result = await finished(); expect(result.conversation.state, result.pause?.reason).toBe('done');
+  expect(fake.starts).toHaveLength(2); expect(result.decisions[1]!.action.allowed).not.toContain('done');
+  expect(result.decisions.at(-1)!.action.allowed).toContain('done');
+});

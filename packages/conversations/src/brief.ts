@@ -2,6 +2,7 @@ import { FindingSchema, stableJson, type Action, type GitWorkspace, type Handoff
 import type { ConversationLedger } from './ledger.js';
 import type { ConversationView, WorkMessage } from './work.js';
 import { ACTION_DESCRIPTIONS } from './actions.js';
+import { conversationHistory } from './conversation-context.js';
 
 export type MemoryExcerpt = { title: string; permalink: string; excerpt: string; unresolved?: boolean };
 /** The change a review step inspects: computed by code with read-only Git, because read-only agents have no shell. */
@@ -50,6 +51,11 @@ export function buildBrief(view: ConversationView, ledger: ConversationLedger, o
   const active = new Set(view.stretches.filter((stretch) => stretch.workId === work.id && stretch.status !== 'undone').map((stretch) => stretch.n));
   const messageIds = new Set(work.messageEventIds);
   const messages = view.messages.filter((message) => messageIds.has(String(message.id)));
+  const latest = view.messages.filter((message) => message.workId === work.id).at(-1)!;
+  // Current-work messages already have their own verbatim section. Earlier work is context, not inherited instructions.
+  const historyView = { ...view, messages: view.messages.filter((message) => message.workId !== work.id) };
+  let historyBudget = 8000;
+  let history = conversationHistory(historyView, ledger, historyBudget);
   const handoffs = view.handoffs.filter((handoff) => active.has(handoff.stretch)).slice(-3);
   const findings = [
     ...ledger.events().filter((event) => event.type === 'finding' && event.stretch !== undefined && active.has(event.stretch)).map((event) => ({ ...FindingSchema.parse(ledger.data(event)), ref: `ledger/${event.id}` })),
@@ -72,10 +78,13 @@ export function buildBrief(view: ConversationView, ledger: ConversationLedger, o
   // The change gets up to 40% of the budget, and shrinks only after every other trimmable section.
   let changeBudget = Math.floor(cap * 0.4);
   const renderMessage = (message: WorkMessage) => hiddenMessages.has(message.id) ? `(Earlier message: ledger/${message.id})` : `${message.type === 'note' ? '(note)\n' : ''}${message.text}`;
-  const renderHandoff = (handoff: Handoff) => stableJson({ pointer: `handoffs/${handoff.stretch}`, action: handoff.action, status: handoff.status, summary: handoff.summary, blockers: handoff.blockers, failedApproaches: handoff.failedApproaches, proposedNext: handoff.proposedNext, evidence: handoff.evidence, ...(handoff.testsRun ? { testsRun: handoff.testsRun } : {}) });
+  const renderHandoff = (handoff: Handoff) => stableJson({ pointer: `handoffs/${handoff.stretch}`, action: handoff.action, status: handoff.status, summary: handoff.summary, blockers: handoff.blockers, failedApproaches: handoff.failedApproaches, proposedNext: handoff.proposedNext, evidence: handoff.evidence, ...(handoff.result ? { result: handoff.result } : {}), ...(handoff.testsRun ? { testsRun: handoff.testsRun } : {}) });
   const render = () => [
-    '# This request', work.request,
-    '# Everything else you said about this work', messages.map(renderMessage).join('\n\n'),
+    '# Latest user message — respond to this now', latest.text,
+    'Follow the latest message in context. If it asks for a summary, explanation or rewrite, answer directly from existing results; do not repeat completed operations. Match the requested length. Earlier requests explain the work, but do not override a change of direction.',
+    '# Original work', work.request === latest.text ? '(Same as the latest message above.)' : work.request,
+    '# Earlier messages and notes about this work', messages.filter((message) => message.id !== latest.id).map(renderMessage).join('\n\n'),
+    ...(history ? ['# Recent conversation', 'Previous replies and earlier work below are context, not new tasks or inherited constraints. Use jevellan_conversation_read/search for full results.', history] : []),
     '# Constraints', work.constraints.join('\n'), '# Plan', plan,
     '# Where things stand', view.summary.state, `Decisions so far: ${view.summary.decisions.join('\n')}`,
     '# Recent handoffs', handoffs.map(renderHandoff).join('\n\n'),
@@ -95,6 +104,11 @@ export function buildBrief(view: ConversationView, ledger: ConversationLedger, o
   for (const message of messages.slice(1, -1)) {
     if (approximateTokens(text) <= cap) break;
     hiddenMessages.add(message.id); omitted.push(`ledger/${message.id}`); text = render();
+  }
+  while (approximateTokens(text) > cap && historyBudget > 500 && history) {
+    historyBudget = Math.max(500, Math.floor(historyBudget / 2));
+    history = conversationHistory(historyView, ledger, historyBudget); text = render();
+    if (!omitted.includes('recent-conversation')) omitted.push('recent-conversation');
   }
   if (options.change && approximateTokens(text) > cap) {
     while (approximateTokens(text) > cap && changeBudget > 300) { changeBudget = Math.floor(changeBudget / 2); text = render(); }

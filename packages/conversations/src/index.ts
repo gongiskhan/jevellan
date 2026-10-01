@@ -3,6 +3,7 @@ export * from './work.js';
 export * from './choices.js';
 export * from './actions.js';
 export * from './brief.js';
+export * from './conversation-context.js';
 export * from './guards.js';
 export * from './verification.js';
 export * from './publication.js';

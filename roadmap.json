@@ -172,5 +172,11 @@
     "title": "Show or hide shell sessions",
     "why": "Sidebar switch controls native Cursor, Claude Code and Codex session visibility, filter counts and source notices. Defaults on and remembers the choice per browser. Build/typecheck/lint pass; tests not run under the user preference. Deployed web-only; see docs/acceptance/REPORT.md.",
     "status": "complete"
+  },
+  {
+    "id": "conversation-continuity",
+    "title": "Contextual follow-ups and readable assistant replies",
+    "why": "Latest-message priority, conversation context across completed work, unanswered-message completion guard, request-sensitive brevity, grouped tool activity and optional recorded step details. Focused regressions and desktop/phone checks; see docs/acceptance/conversation-continuity-2026-10-02.md and REPORT.md.",
+    "status": "complete"
   }
 ]

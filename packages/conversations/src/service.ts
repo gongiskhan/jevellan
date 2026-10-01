@@ -22,6 +22,7 @@ import type { IntegrationRunner } from '@jevellan/core';
 import { buildBrief, changeUnderReview } from './brief.js';
 import { StretchExecution } from './execution.js';
 import { allowedActions, allowedInitialActions, checkGuards } from './guards.js';
+import { conversationHistory, latestMessageNeedsResponse } from './conversation-context.js';
 import { ConversationLedger } from './ledger.js';
 import { MemoryQueue, searchMemoryCandidates } from './memory.js';
 import { publishWorkspace, recoverIntegrationHistory } from './publication.js';
@@ -548,7 +549,8 @@ export class ConversationService {
   async view(id: string) {
     const work = this.#load(id); const view = work.load();
     // Closed history has no next actions and needs no shared configuration.
-    const allowed = view.conversation.work ? allowedActions(view.conversation.work, (await this.options.settings()).guards, !!(await this.#project(view.conversation.projectId)).testCommand, this.decisions(id).filter((decision) => decision.workId === view.conversation.work!.id).length) : [];
+    const decisions = this.decisions(id);
+    const allowed = view.conversation.work ? allowedActions(view.conversation.work, (await this.options.settings()).guards, !!(await this.#project(view.conversation.projectId)).testCommand, decisions.filter((decision) => decision.workId === view.conversation.work!.id).length, latestMessageNeedsResponse(work, decisions)) : [];
     return ConversationPublicSchema.parse({ schema: 'conversation-view-v1', ...view, progress: this.#operations.get(id)?.progress,
       stretches: view.stretches.map((step) => { const result = { ...step }; delete result.native; return result; }),
       ...(this.#decisionWait(work) ? { decisionWait: this.#decisionWait(work) } : {}),
@@ -735,12 +737,12 @@ export class ConversationService {
     const current = settings.menu.find((model) => model.id === view.conversation.current?.modelId);
     const facts = { stretchesThisWork: target.counters.stretches, reviewsThisWork: target.counters.reviews, codeChangedThisWork: paths.some((path) => !path.startsWith(memoryDir)), changedFiles: paths.length,
       ...changes, lastVerification: receipt ? receipt.passed && receipt.headStable && (receipt.treeClean || receipt.worktreeBefore !== undefined && receipt.worktreeBefore === receipt.worktreeAfter) ? 'passed' as const : 'failed' as const : 'none' as const,
-      publicationConflict, projectHasTestCommand: !!workspace.project.testCommand };
+      publicationConflict, projectHasTestCommand: !!workspace.project.testCommand, latestMessageNeedsResponse: latestMessageNeedsResponse(work, this.decisions(work.ledger.id)) };
     const asked = this.#lastQuestion(work); const answered = asked?.answered ? asked : undefined;
-    const answeredQuestion = answered?.text; const offeredAnswers = answered?.options.map((option) => option.label);
+    const questionBeforeLatestMessage = answered?.text; const offeredAnswers = answered?.options.map((option) => option.label);
     const chosenAnswer = answered && latest.answer?.stretch === answered.stretch ? latest.answer.label : undefined;
     return { ...buildDecisionState({ settings, projectId: workspace.project.id, corrections: await this.corrections(),
-      request: target.request, latestUserMessage: latest.text, answeredQuestion, offeredAnswers, chosenAnswer, summary: view.summary, handoffs: view.handoffs.filter((handoff) => active.has(handoff.stretch)), facts, redactor: this.options.redactor,
+      request: target.request, latestUserMessage: latest.text, questionBeforeLatestMessage, offeredAnswers, chosenAnswer, recentConversation: conversationHistory(view, work.ledger), conversationContext: budget => conversationHistory(view, work.ledger, budget), summary: view.summary, handoffs: view.handoffs.filter((handoff) => active.has(handoff.stretch)), facts, redactor: this.options.redactor,
       ...(current && view.conversation.current ? { current: { model: current, effort: view.conversation.current.effort } } : {}) }), latestMessageEventId: latest.id, facts };
   }
   async #choose(work: ConversationWork, workspace: GitWorkspace, operation: Operation, trigger: DecisionRecord['trigger'], forcedAction?: 'integrate'): Promise<PreparedDecision | undefined> {

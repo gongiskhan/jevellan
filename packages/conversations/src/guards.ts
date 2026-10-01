@@ -1,12 +1,12 @@
 import { ActionSchema, type Action, type Guards, type Work } from '@jevellan/core';
 
-export function allowedActions(work: Work, guards: Guards, hasTestCommand: boolean, decisionsThisWork: number): Action[] {
-  return actions(guards, hasTestCommand, work.counters.reviews, decisionsThisWork);
+export function allowedActions(work: Work, guards: Guards, hasTestCommand: boolean, decisionsThisWork: number, responsePending = false): Action[] {
+  return actions(guards, hasTestCommand, work.counters.reviews, decisionsThisWork, responsePending);
 }
 export function allowedInitialActions(guards: Guards, hasTestCommand: boolean): Action[] { return actions(guards, hasTestCommand, 0, 0); }
-function actions(guards: Guards, hasTestCommand: boolean, reviews: number, decisions: number): Action[] {
+function actions(guards: Guards, hasTestCommand: boolean, reviews: number, decisions: number, responsePending = false): Action[] {
   return ActionSchema.options.filter((action) => action !== 'integrate'
-    && !(action === 'done' && decisions === 0)
+    && !(action === 'done' && (decisions === 0 || responsePending))
     && !(action === 'test' && !hasTestCommand)
     && !(['review', 'adversarial-review'].includes(action) && reviews >= guards.reviewCap));
 }

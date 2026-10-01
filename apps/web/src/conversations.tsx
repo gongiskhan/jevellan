@@ -1,6 +1,6 @@
 import { useShellVisibility } from './shell-visibility.js';
 import { ChangesDiff } from './changes-diff.js';
-import { conversationTurns } from './conversation-transcript.js';
+import { conversationActivity, conversationAnswerTurns, conversationFallbackAnswer, conversationTurns, repeatedClosingNotice } from './conversation-transcript.js';
 import { TranscriptTurn } from './session-transcript.js';
 import { createPortal } from 'react-dom';
 import { useSessionDrag } from './session-drag.js';
@@ -804,6 +804,9 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
             );
           }
           const notice = ConversationNoticeSchema.safeParse(event.data);
+          if (notice.success && notice.data.kind === 'closing' && repeatedClosingNotice(notice.data,
+            view.handoffs.map(handoff => handoff.summary),
+            conversationTurns(events.filter(entry => entry.stretch === (event.stretch ?? view.stretches.at(-1)?.n)), false))) return null;
           if (notice.success)
             return (
               <p key={event.id} className={notice.data.kind === 'error' ? 'error' : 'notice'}>
@@ -1646,6 +1649,12 @@ function StepBlock({
   const model = props.data.config.configuration['x-jevellan'].menu.find((entry) => entry.id === step.modelId);
   const account = props.data.accounts.find((entry) => entry.account.id === step.accountId);
   const transcript = conversationTurns(events, step.status === 'running');
+  const activity = conversationActivity(transcript);
+  const fallbackAnswer = handoff ? conversationFallbackAnswer(transcript, handoff.summary) : undefined;
+  const answerResult = handoff?.result?.type === 'answer' ? handoff.result : undefined;
+  const finalTurns = conversationAnswerTurns(transcript);
+  const finalTurnIds = new Set(finalTurns.map(turn => turn.id));
+  const actionable = !!view.conversation.work && view.stretches.findLast(entry => entry.workId === view.conversation.work!.id && entry.status !== 'undone')?.n === step.n;
   const editable =
     step.status !== 'undone' &&
     [view.conversation.work?.id, view.closedWorks.at(-1)?.id].includes(step.workId);
@@ -1670,57 +1679,22 @@ function StepBlock({
       tabIndex={-1}
       className={`stretch-block card ${step.status === 'undone' ? 'undone' : ''} ${step.status === 'running' ? 'running' : ''} ${selected ? 'selected' : ''}`}
     >
-      <div className="stretch-head">
+      <div className="stretch-head assistant-reply-heading">
         <h2>
           Step {step.n} · {actionLabel(step.action)}
         </h2>
-        <div className="model-chips">
-          <button
-            className="chip action"
-            disabled={!editable}
-            onClick={correct}
-            aria-label={`Change action for step ${step.n}`}
-          >
-            {step.action}
-          </button>
-          <button
-            className="chip model"
-            disabled={!editable}
-            onClick={correct}
-            aria-label={`Change model for step ${step.n}`}
-          >
-            {model?.label ?? step.modelId}
-          </button>
-          <button
-            className="chip"
-            disabled={!editable}
-            onClick={correct}
-            aria-label={`Change effort for step ${step.n}`}
-          >
-            {step.effortRequested === step.effortEffective
-              ? step.effortEffective
-              : `${step.effortRequested} → ${step.effortEffective}`}
-          </button>
-          <span className="chip">{account?.account.label ?? step.accountId}</span>
-          <span className="chip">
-            {props.data.devices.devices.find((entry) => entry.id === step.deviceId)?.name ?? step.deviceId}
+        <span className="assistant-model">{model?.label ?? step.modelId}</span>
+        {step.status !== 'completed' && (
+          <span className={`assistant-step-status status-${step.status}`}>
+            {step.status === 'running' && <span className="activity-spinner" aria-hidden="true" />}
+            {step.status === 'undone' ? 'Undone' : stepStatusLabel(step.status)}
           </span>
-          {(tokens > 0 || step.usage.costUsd !== undefined) && <span className="chip dim">
-            {tokens > 0 && `${compactNumber(tokens)} tokens`}
-            {step.usage.costUsd !== undefined &&
-              `${tokens > 0 ? ' · ' : ''}$${step.usage.costUsd.toFixed(3)}${step.usage.costSource === 'estimated' ? ' est.' : ''}`}
-          </span>}
-          {step.status !== 'completed' && (
-            <span className={`chip status-${step.status}`}>
-              {step.status === 'undone' ? 'Undone' : stepStatusLabel(step.status)}
-            </span>
-          )}
-          {corrections.map((entry) => (
-            <span className="chip tag" key={entry.id}>
-              corrected: {entry.changes.map((change) => `${change.field} → ${change.to}`).join(', ')}
-            </span>
-          ))}
-        </div>
+        )}
+        {corrections.map((entry) => (
+          <span className="assistant-correction" key={entry.id}>
+            corrected: {entry.changes.map((change) => `${change.field} → ${change.to}`).join(', ')}
+          </span>
+        ))}
         <StretchTiming step={step} />
       </div>
       {decision?.notices
@@ -1743,42 +1717,15 @@ function StepBlock({
           </div>
         ))}
       {!!transcript.length && <div className="step-transcript cursor-transcript" aria-label={`Step ${step.n} transcript`}>
-        {transcript.map(turn => <TranscriptTurn key={turn.id} turn={turn} onOpen={ref => read(ref, ref)} />)}
+        {activity.map(item => item.kind === 'response'
+          ? answerResult && finalTurnIds.has(item.id) ? null : <TranscriptTurn key={item.id} turn={item.turn} onOpen={ref => read(ref, ref)} />
+          : <ConversationTools key={item.id} turns={item.turns} read={read} />)}
       </div>}
-      {handoff && (
-        <div className="handoff">
-          <h3>
-            Handoff{' '}
-            <span className={`chip status-${handoff.status === 'done' ? 'completed' : handoff.status}`}>
-              {handoff.status}
-            </span>
-          </h3>
-          <Markdown onOpen={(ref) => read(ref, ref)}>{handoff.summary}</Markdown>
-          {handoff.result?.type === 'plan' && (
-            <Plan
-              id={view.conversation.id}
-              pointer={handoff.result.ref}
-              onError={props.onError}
-              open={(ref) => read(ref, ref)}
-            />
-          )}
-          {handoff.blockers.map((blocker, i) => (
-            <p className="notice" key={i}>
-              {blocker}
-            </p>
-          ))}
-          {handoff.question && view.openQuestion?.stretch !== step.n && <p className="notice">{handoff.question}</p>}
-        </div>
-      )}
-      {findings.length > 0 && (
-        <ul className="findings">
-          {findings.map((finding, i) => (
-            <li key={i}>
-              {finding.claim} <EvidenceLink value={finding.pointer} open={(ref) => read(ref, ref)} />
-            </li>
-          ))}
-        </ul>
-      )}
+      {answerResult && <StepResult kind="answer" id={view.conversation.id} pointer={answerResult.ref} fallback={handoff!.summary} onError={props.onError} open={(ref) => read(ref, ref)} />}
+      {fallbackAnswer && !answerResult && <Markdown onOpen={(ref) => read(ref, ref)}>{fallbackAnswer}</Markdown>}
+      {handoff?.result?.type === 'plan' && <StepResult kind="plan" id={view.conversation.id} pointer={handoff.result.ref} onError={props.onError} open={(ref) => read(ref, ref)} />}
+      {actionable && handoff?.blockers.map((blocker, i) => <p className="notice" key={i}>{blocker}</p>)}
+      {actionable && handoff?.question && view.openQuestion?.stretch !== step.n && <p className="notice">{handoff.question}</p>}
       <div className="stretch-links">
         <button className="secondary" onClick={changes}>
           <Icon name="diff" size={14} />
@@ -1793,14 +1740,69 @@ function StepBlock({
           <Icon name="why" size={14} />
           Why
         </button>
+        {editable && <button className="secondary" onClick={correct} aria-label={`Change step ${step.n}`}>Change step</button>}
         {handoff?.result && handoff.result.type !== 'plan' && (
           <button className="secondary" onClick={() => read(handoff.result!.ref, 'Full result')}>
             Read full result
           </button>
         )}
       </div>
+      <details className="step-details">
+        <summary>Step details{findings.length > 0 && <span> · {findings.length} finding{findings.length === 1 ? '' : 's'}</span>}</summary>
+        <div className="model-chips">
+          <button className="chip action" disabled={!editable} onClick={correct} aria-label={`Change action for step ${step.n}`}>{step.action}</button>
+          <button className="chip model" disabled={!editable} onClick={correct} aria-label={`Change model for step ${step.n}`}>{model?.label ?? step.modelId}</button>
+          <button className="chip" disabled={!editable} onClick={correct} aria-label={`Change effort for step ${step.n}`}>
+            {step.effortRequested === step.effortEffective ? step.effortEffective : `${step.effortRequested} → ${step.effortEffective}`}
+          </button>
+          <span className="chip">{account?.account.label ?? step.accountId}</span>
+          <span className="chip">{props.data.devices.devices.find((entry) => entry.id === step.deviceId)?.name ?? step.deviceId}</span>
+          {(tokens > 0 || step.usage.costUsd !== undefined) && <span className="chip dim">
+            {tokens > 0 && `${compactNumber(tokens)} tokens`}
+            {step.usage.costUsd !== undefined && `${tokens > 0 ? ' · ' : ''}$${step.usage.costUsd.toFixed(3)}${step.usage.costSource === 'estimated' ? ' est.' : ''}`}
+          </span>}
+        </div>
+        {handoff && (
+          <div className="handoff">
+            <h3>
+              Recorded summary{' '}
+              <span className={`chip status-${handoff.status === 'done' ? 'completed' : handoff.status}`}>
+                {handoff.status}
+              </span>
+            </h3>
+            <Markdown onOpen={(ref) => read(ref, ref)}>{handoff.summary}</Markdown>
+            {handoff.blockers.length > 0 && <><h3>Recorded blockers</h3><ul>{handoff.blockers.map((blocker, i) => <li key={i}>{blocker}</li>)}</ul></>}
+            {handoff.question && <><h3>Recorded question</h3><p>{handoff.question}</p></>}
+            {handoff.failedApproaches.length > 0 && <><h3>Attempted approaches</h3><ul>{handoff.failedApproaches.map((attempt, i) => <li key={i}>{attempt}</li>)}</ul></>}
+          </div>
+        )}
+        {answerResult && finalTurns.length > 0 && <div className="recorded-response"><h3>Streamed reply</h3>{finalTurns.map(turn => <TranscriptTurn key={turn.id} turn={turn} onOpen={ref => read(ref, ref)} />)}</div>}
+        {findings.length > 0 && (
+          <ul className="findings">
+            {findings.map((finding, i) => (
+              <li key={i}>
+                {finding.claim} <EvidenceLink value={finding.pointer} open={(ref) => read(ref, ref)} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </details>
     </article>
   );
+}
+function ConversationTools({ turns, read }: { turns: ReturnType<typeof conversationTurns>; read(pointer: string, title: string): void }) {
+  const tools = turns.flatMap(turn => turn.blocks).filter(block => block.type === 'tool');
+  const active = tools.filter(tool => tool.state === 'running');
+  const failed = tools.filter(tool => tool.state === 'failed');
+  return <details className="conversation-tools">
+    <summary>
+      {active.length > 0 && <span className="activity-spinner" aria-hidden="true" />}
+      <span>{tools.length} tool{tools.length === 1 ? '' : 's'}</span>
+      {active.length > 0 && <span className="tool-progress">{active.at(-1)!.name} · In progress</span>}
+      {failed.length > 0 && <span className="tool-failure">{failed.length} failed</span>}
+    </summary>
+    <div className="conversation-tool-list">{turns.map(turn => <TranscriptTurn key={turn.id} turn={turn} onOpen={ref => read(ref, ref)} />)}</div>
+  </details>;
 }
 const conversationTime = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
 const fullConversationTime = new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZoneName: 'long' });
@@ -1981,12 +1983,16 @@ function ChangeStep({
     </Modal>
   );
 }
-function Plan({
+function StepResult({
+  kind,
+  fallback,
   id,
   pointer,
   onError,
   open,
 }: {
+  kind: 'plan' | 'answer';
+  fallback?: string;
   id: string;
   pointer: string;
   onError(error: unknown): void;
@@ -2008,8 +2014,8 @@ function Plan({
     };
   }, [id, pointer, onError]);
   return (
-    <div className="plan-result">
-      <Markdown onOpen={open}>{content || 'Loading the full plan…'}</Markdown>
+    <div className={kind === 'plan' ? 'plan-result' : 'answer-result'}>
+      <Markdown onOpen={open}>{content || fallback || `Loading the full ${kind}…`}</Markdown>
     </div>
   );
 }

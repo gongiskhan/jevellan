@@ -19,15 +19,17 @@ test('the state keeps repository and agent text under conversation, and verifica
   expect(packet.rules.effortGuide).toEqual(settings.effortGuide); expect(built.approximateTokens).toBeLessThan(12_000);
 });
 
-test('an answered question is paired with the latest message and its blockers are no longer open work', () => {
+test('a previous question is context and freeform messages do not erase its blockers', () => {
   const asked = { stretch: 1, action: 'reply' as const, status: 'done' as const, summary: 'Asked for the desired README change; no files changed.', proposedNext: null,
     blockers: ['The intended README change needs clarification before implementation.'] };
   const summary = { state: asked.summary, nextWork: asked.blockers[0]! };
-  const answered = DecisionStateSchema.parse(JSON.parse(buildDecisionState({ ...base, request: 'do a change to the readme file', latestUserMessage: 'you choose', summary, handoffs: [asked], answeredQuestion: 'What would you like changed in the README?' }).state));
-  expect(answered.conversation.answeredQuestion).toBe('What would you like changed in the README?'); expect(answered.conversation.latestUserMessage).toBe('you choose');
-  expect(answered.conversation.summary.nextWork).toBe(''); expect(answered.conversation.recentHandoffs[0]!.blockers).toEqual([]);
+  const answered = DecisionStateSchema.parse(JSON.parse(buildDecisionState({ ...base, request: 'do a change to the readme file', latestUserMessage: 'you choose', summary, handoffs: [asked], questionBeforeLatestMessage: 'What would you like changed in the README?' }).state));
+  expect(answered.conversation.questionBeforeLatestMessage).toBe('What would you like changed in the README?'); expect(answered.conversation.latestUserMessage).toBe('you choose');
+  expect(answered.conversation.summary.nextWork).toBe(summary.nextWork); expect(answered.conversation.recentHandoffs[0]!.blockers).toEqual(asked.blockers);
+  const summaryRequest = DecisionStateSchema.parse(JSON.parse(buildDecisionState({ ...base, latestUserMessage: 'tldr', questionBeforeLatestMessage: 'What would you like changed?', summary, handoffs: [asked] }).state));
+  expect(summaryRequest.conversation.recentHandoffs[0]!.blockers).toEqual(asked.blockers);
   const open = DecisionStateSchema.parse(JSON.parse(buildDecisionState({ ...base, summary, handoffs: [asked] }).state));
-  expect(open.conversation.answeredQuestion).toBeUndefined(); expect(open.conversation.recentHandoffs[0]!.blockers).toEqual(asked.blockers);
+  expect(open.conversation.questionBeforeLatestMessage).toBeUndefined(); expect(open.conversation.recentHandoffs[0]!.blockers).toEqual(asked.blockers);
 });
 
 test('state redacts known secrets from all text before serialization', () => {

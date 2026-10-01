@@ -9,11 +9,11 @@ The current question set is **q-v2**, declared in `selection.ts` and recorded wi
 `buildDecisionState` produces a redacted `decision-state-v1` JSON document containing:
 
 - Routing profile, effort guide and up to eight recent correction sentences: five from this project and three from other projects.
-- Original request, latest user message, current state/next-work summary and the last three handoffs. Each handoff summary is limited to 400 characters and includes action, status, proposed next action, test outcome and blockers.
+- Original request, latest user message, bounded recent user/assistant exchanges across work boundaries, previous-question context when applicable, current state/next-work summary and the last three handoffs. Each handoff summary is limited to 400 characters and includes action, status, proposed next action, test outcome and blockers.
 - Recorded facts: stretch/review counts, whether code changed, change size/files, risky areas, latest verification, publication conflict and whether the project has a test command.
 - The current model's identifier, label, description and effort when available.
 
-The packet does not contain the raw transcript. Its conservative size estimate is UTF-8 bytes divided by three, rounded up, with a 12,000-token cap. Old handoffs are removed first and their stretch numbers are recorded as omitted. If the required request and rules still do not fit, the decision falls back to manual selection rather than truncating the user's intent.
+The packet includes at most 8,000 characters of recent conversation excerpts, with immutable source pointers and explicit truncation; it does not contain the full transcript. A new work does not inherit old constraints, blockers or next actions. Freeform messages after a question are context for Jev to interpret, not code-level proof the blocker was resolved. Its conservative size estimate is UTF-8 bytes divided by three, rounded up, with a 12,000-token cap. Old handoffs are removed first and their stretch numbers are recorded as omitted, then conversation excerpts shrink while the latest instruction remains intact. If the required request and rules still do not fit, the decision falls back to manual selection rather than truncating the user's intent.
 
 After-the-fact overrides and applied composer choices contribute correction context. Pending or rejected composer choices do not become evidence of an applied correction.
 
@@ -34,7 +34,7 @@ Noul answers are probabilities of the stated proposition. Choice answers include
 
 Resource filtering considers enabled runtime/model entries, required tools, enforceable read-only behavior, account readiness, device, cooldown, capacity and paid-use rules. Account ranking then chooses among eligible accounts for the selected runtime. No eligible model leaves the work waiting with recorded reasons. An unavailable pinned model is not silently replaced.
 
-A one-step model/effort choice takes precedence over a conversation pin. Otherwise Jev selects them; a single eligible model needs no model-choice question. Requested effort is mapped to the nearest supported effort, with both values and the adjustment notice retained. A publication conflict forces the integration action through a guard. `done` requires no runtime; `ask-you` can use an existing question or obtain one through a reply stretch.
+A one-step model/effort choice takes precedence over a conversation pin. Otherwise Jev selects them; a single eligible model needs no model-choice question. Requested effort is mapped to the nearest supported effort, with both values and the adjustment notice retained. A publication conflict forces the integration action through a guard. `done` requires no runtime and is unavailable until a completed response stretch has consumed the latest message; a routing-only decision or older in-flight response does not count. Failed, interrupted and undone steps leave it pending. Legacy records use launch chronology. Explicit user closure is separate; `ask-you` can use an existing question or obtain one through a reply stretch.
 
 ## Memory selection
 
