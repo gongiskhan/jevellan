@@ -1,4 +1,4 @@
-import { ContextPanelSchema } from '@jevellan/core/client';
+import { ContextPanelSchema, type GitBranchChange } from '@jevellan/core/client';
 import { api } from './api.js';
 
 function pause(signal: AbortSignal): Promise<void> {
@@ -21,7 +21,9 @@ export async function waitForProjectSetup(
   projectId: string,
   signal: AbortSignal,
   waiting: () => void,
+  branchChanged?: (change: GitBranchChange) => void,
 ): Promise<void> {
+  let lastBranchChange: string | undefined;
   for (;;) {
     signal.throwIfAborted();
     const panel = await api(
@@ -31,6 +33,11 @@ export async function waitForProjectSetup(
       undefined,
       { signal, waitForHub: true },
     );
+    const change = panel.operations.findLast(operation => operation.branchChange)?.branchChange;
+    if (change && JSON.stringify(change) !== lastBranchChange) {
+      lastBranchChange = JSON.stringify(change);
+      branchChanged?.(change);
+    }
     if (!panel.busy) {
       const unfinished = panel.operations.find(
         (operation) => !['completed', 'cancelled'].includes(operation.status),

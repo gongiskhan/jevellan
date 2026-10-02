@@ -1,3 +1,4 @@
+import { BranchChangeNotice, branchChangeText } from './branch-change-notice.js';
 import { useShellVisibility } from './shell-visibility.js';
 import { ChangesDiff } from './changes-diff.js';
 import { conversationActivity, conversationAnswerTurns, conversationFallbackAnswer, conversationTurns, repeatedClosingNotice } from './conversation-transcript.js';
@@ -9,6 +10,7 @@ import { useSessionList } from './session-list.js';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { z } from 'zod';
 import {
+  GitBranchChangeSchema, type GitBranchChange,
   ActionSchema,
   ComposerInitialSchema,
   CorrectionsListSchema,
@@ -277,6 +279,7 @@ export function NewConversation(props: PageProps & { embedded?: boolean }) {
   const [message, setMessage] = useState('');
   const task = useTask(props.onError);
   const [waitingForSetup, setWaitingForSetup] = useState(false);
+  const [branchChange, setBranchChange] = useState<{ projectId: string; change: GitBranchChange }>();
   const [addingProject, setAddingProject] = useState(false);
   const [choices, setChoices] = useState(() =>
     ComposerInitialSchema.parse({ schema: 'composer-initial-v1', once: {}, pins: {} }),
@@ -333,7 +336,10 @@ export function NewConversation(props: PageProps & { embedded?: boolean }) {
                 clientMessageId: `message_${clientId()}`,
               };
             try {
-              await waitForProjectSetup(projectId, signal, () => setWaitingForSetup(true));
+              await waitForProjectSetup(projectId, signal, () => setWaitingForSetup(true), change => {
+                setBranchChange({ projectId, change });
+                if (change.status === 'completed') props.message(branchChangeText(change));
+              });
             } finally {
               setWaitingForSetup(false);
             }
@@ -429,6 +435,7 @@ export function NewConversation(props: PageProps & { embedded?: boolean }) {
           {task.busy ? 'Starting…' : 'Start'}
         </button>
       </form>
+      {branchChange?.projectId === projectId && <BranchChangeNotice change={branchChange.change} />}
       {waitingForSetup && <p role="status">Finishing project setup…</p>}
       {addingProject && (
         <ProjectForm
@@ -633,6 +640,7 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
     // A manual pick is offered only when Jevellan cannot decide; otherwise the next message goes to Auto.
     (view.pause?.reason.endsWith('Pick the next step:') || view.pause?.reason === MANUAL_PICK_NOTICE)
   );
+  const branchChange = events.map(event => GitBranchChangeSchema.safeParse(event.data)).findLast(change => change.success)?.data;
   const lastNotice = events
     .map((event) => ConversationNoticeSchema.safeParse(event.data))
     .findLast((notice) => notice.success)?.data?.text;
@@ -699,6 +707,7 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
         </div>
         <LatestUserMessage text={view.messages.at(-1)?.text} />
       </div>
+      {branchChange && <BranchChangeNotice change={branchChange} />}
       {!connected && (
         <p className="notice" role="status">
           Reconnecting…
@@ -803,6 +812,8 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
               />
             );
           }
+          const branchChange = GitBranchChangeSchema.safeParse(event.data);
+          if (branchChange.success) return <BranchChangeNotice key={event.id} change={branchChange.data} />;
           const notice = ConversationNoticeSchema.safeParse(event.data);
           if (notice.success && notice.data.kind === 'closing' && repeatedClosingNotice(notice.data,
             view.handoffs.map(handoff => handoff.summary),

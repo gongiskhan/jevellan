@@ -58,3 +58,9 @@ Runtime permissions differ. Read-only enforcement, command denials and post-stre
 ## Evidence and remaining work
 
 The [acceptance report](acceptance/REPORT.md) distinguishes built, installed, running, tested and accepted states. Tests use disposable homes and checkouts, with live versus simulated providers labelled separately. Successful live Jev classification and live Claude checks require dedicated credentials. The improver is still to be implemented; this document describes the current conversation, mesh and installation architecture without claiming that remaining phase is complete.
+
+### Entering main for foreground work
+
+For a project configured to Work on main, conversation admission and instruction setup may move a clean, owned checkout from a named branch to main. Jevellan records a versioned branch-change intent before the move and a receipt afterwards. The conversation and context UI show a prominent notice naming the previous branch, and new-conversation setup reports the move too. The original branch is retained; switching to an existing main does not merge the feature branch into it.
+
+A missing local main is created from origin/main, even for a single-branch clone. When neither main exists, Jevellan can create main locally and on origin from the current branch’s published history. A create-only remote lease prevents replacing a concurrently created main. Dirty files, unpublished commits, detached HEAD, pending Git operations and divergent local main remain blockers. Background maintenance does not opt in to branch switching, and Leave git to me never mutates Git. Fetching main uses an explicit ref without rewriting the repository’s remote or fetch settings.

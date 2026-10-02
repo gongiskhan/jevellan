@@ -1,3 +1,4 @@
+import { BranchChangeNotice } from './branch-change-notice.js';
 import { clientId } from './client-id.js';
 import { useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
@@ -333,6 +334,7 @@ export function ProjectForm({
             <option value="external">Leave git to me</option>
           </select>
         </label>
+        {project.branchPolicy === 'main' && <p className="notice small-text">Jevellan automatically switches clean checkouts to main and announces the change. If main does not exist, it creates it from published branch history. The original branch is preserved.</p>}
         <label>
           Test command
           <input
@@ -499,6 +501,7 @@ function ContextPanel({ project, close, ...props }: PageProps & { project: Proje
           {panel.context.state === 'left-as-is' && (
             <p className="muted">Both files are being kept as they are.</p>
           )}
+          {operation?.branchChange && <BranchChangeNotice change={operation.branchChange} />}
           {operation && (
             <section className="context-operation" aria-label="Context operation">
               <p role="status">

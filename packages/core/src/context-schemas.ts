@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { GitCheckpointPlanSchema, GitSnapshotSchema, IdSchema, ProjectSchema } from './schemas.js';
+import { GitBranchChangeSchema, GitCheckpointPlanSchema, GitSnapshotSchema, IdSchema, ProjectSchema } from './schemas.js';
 
 export const ContextNameSchema = z.enum(['AGENTS.md', 'CLAUDE.md']);
 export const ContextFileSchema = z.strictObject({
@@ -31,7 +31,7 @@ export const ContextContinueSchema = z.strictObject({
 });
 export const ContextOperationSchema = z.strictObject({
   schema: z.literal('context-operation-v1'), id: IdSchema, projectId: IdSchema, conversationId: IdSchema, workId: IdSchema,
-  createdAt: z.iso.datetime(), beforeGit: GitSnapshotSchema.optional(),
+  createdAt: z.iso.datetime(), branchChange: GitBranchChangeSchema.optional(), beforeGit: GitSnapshotSchema.optional(),
   request: ContextRequestSchema, before: ContextViewSchema, continuations: z.array(ContextContinueSchema).default([]), approved: z.boolean().default(false),
   status: z.enum(['requested', 'drafting', 'draft-ready', 'applying', 'applied', 'completed', 'cancelled', 'blocked']),
   generation: z.number().int().nonnegative(), modelId: IdSchema.optional(), projectRevision: z.number().int().positive().optional(), beforeHead: z.string().regex(/^[a-f0-9]{40,64}$/).optional(),

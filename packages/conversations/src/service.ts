@@ -2,7 +2,7 @@ import { existsSync, readdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import {
-  ActionSchema, AdoptChangesSchema, CheckpointAdoptionSchema, CheckpointBlockSchema, CheckpointReceiptSchema, CheckoutOwnership, ComposerChoiceSchema, ComposerInitialSchema, ConversationChangesSchema, ConversationListSchema, ConversationMessageSchema, ConversationNoticeSchema, ConversationOperationSchema, ConversationProgressSchema, ConversationPublicSchema, CorrectStepSchema,
+  GitBranchChangeSchema, ActionSchema, AdoptChangesSchema, CheckpointAdoptionSchema, CheckpointBlockSchema, CheckpointReceiptSchema, CheckoutOwnership, ComposerChoiceSchema, ComposerInitialSchema, ConversationChangesSchema, ConversationListSchema, ConversationMessageSchema, ConversationNoticeSchema, ConversationOperationSchema, ConversationProgressSchema, ConversationPublicSchema, CorrectStepSchema,
   ContextContinueSchema, ContextOperationSchema, ContextPanelSchema, ContextRequestSchema, ContextReviewSchema, DecisionRecordSchema, DecisionWaitSchema, FinishOutsideOperationSchema, FinishOutsideSchema, GitWorkspace, IdSchema, JevCallSchema, ManualStepSchema, PlanApprovalSchema, ProjectsListSchema, ProjectViewSchema, ProjectWriteSchema, RenameConversationSchema,
   OverrideRecordSchema, PROJECT_MEMORY_ID, PublicationEventSchema, RedoOperationSchema, ResumeDecisionSchema, RetryRedoSchema, SettleWorkSchema, StartComposerChoicesSchema, StartConversationSchema, StretchSchema, UndoAppliedSchema, VerificationSchema, WorkSettlementSchema, mapEffort, newId, resolveProjectPath, stableJson,
   type Action, type CheckpointAdoption, type Configuration, type ContextOperation, type CoordinationStore, type DecisionRecord, type DecisionWait, type GitSnapshot, type Homes, type HubWait, type JevCall, type ManualStep, type Project, type PublicationLease, type PublicationLeaseService, type RedoOperation, type RiggingItem, type SecretRedactor,
@@ -338,7 +338,7 @@ export class ConversationService {
         const before = context.inspect(); const choice = record.request.choice;
         const secondary = choice === 'keep-claude' ? 'AGENTS.md' : 'CLAUDE.md';
         const tracked = project.branchPolicy === 'main' && (choice === 'create' || choice === 'merge' || ['keep-agents', 'keep-claude'].includes(choice) && before.files.some((file) => file.name === secondary && file.tracked));
-        if (tracked && !work.load().conversation.work!.baseCommit) work.baseCommit(await workspace.prepare());
+        if (tracked && !work.load().conversation.work!.baseCommit) work.baseCommit(await this.#prepare(work, workspace, record));
         if (context.inspect().fingerprint !== record.request.fingerprint) throw conflict('Context files changed while preparing the checkout. Cancel and reload.');
         record.beforeGit = await workspace.snapshot(); record.beforeHead = record.beforeGit.head; record.status = 'applying'; this.#saveContextOperation(record);
         const after = choice === 'create' || choice === 'link' ? await context.ensure(choice === 'create') : await context.choose(choice === 'merge'
@@ -1182,11 +1182,19 @@ export class ConversationService {
   #current(work: ConversationWork, generation: number, operation: Operation): void {
     if (this.#closed || operation.cancelled || operation.abort.signal.aborted || work.load().conversation.generation !== generation) throw new StaleDecision();
   }
+  async #prepare(work: ConversationWork, workspace: GitWorkspace, context?: ContextOperation): Promise<string> {
+    return workspace.prepare(async change => {
+      if (change.status === 'planned') await this.#outsideIdle(workspace);
+      const document = GitBranchChangeSchema.parse(change);
+      work.ledger.append({ type: 'git', data: document });
+      if (context) { context.branchChange = document; this.#saveContextOperation(context); }
+    });
+  }
   async #admit(work: ConversationWork, workspace: GitWorkspace): Promise<void> {
     this.#checkpointAllowed(work, workspace.owner.workId);
     await this.#outsideIdle(workspace);
     await this.ownership.acquire(workspace.project, workspace.owner);
-    if (!work.load().conversation.work!.baseCommit) work.baseCommit(await workspace.prepare());
+    if (!work.load().conversation.work!.baseCommit) work.baseCommit(await this.#prepare(work, workspace));
     await this.#recordedHead(work, workspace);
   }
   async #recordedHead(work: ConversationWork, workspace: GitWorkspace): Promise<void> {

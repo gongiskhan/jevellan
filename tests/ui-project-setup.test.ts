@@ -38,3 +38,10 @@ test.each([undefined, 'cancelled'] as const)('projects without unfinished contex
   const fetcher = vi.fn().mockResolvedValue(response(false, status)); vi.stubGlobal('fetch', fetcher); const waiting = vi.fn();
   await waitForProjectSetup('fixture', new AbortController().signal, waiting); expect(waiting).not.toHaveBeenCalled(); expect(fetcher).toHaveBeenCalledOnce();
 });
+
+ test('project setup reports its branch move even when setup has already completed', async () => {
+  const change = { schema: 'git-branch-change-v1', from: 'feature', to: 'main', status: 'completed', created: true, createdRemote: false, before: 'a'.repeat(40), after: 'b'.repeat(40) };
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json(ContextPanelSchema.parse({ schema: 'context-panel-v1', context, revision: 1, busy: false, operations: [{ ...operation('completed'), branchChange: change }] }))));
+  const notify = vi.fn(); await waitForProjectSetup('fixture', new AbortController().signal, vi.fn(), notify);
+  expect(notify).toHaveBeenCalledExactlyOnceWith(change);
+});

@@ -178,5 +178,11 @@
     "title": "Contextual follow-ups and readable assistant replies",
     "why": "Latest-message priority, conversation context across completed work, unanswered-message completion guard, request-sensitive brevity, grouped tool activity and optional recorded step details. Focused regressions and desktop/phone checks; see docs/acceptance/conversation-continuity-2026-10-02.md and REPORT.md.",
     "status": "complete"
+  },
+  {
+    "id": "automatic-main-switch",
+    "title": "Move foreground work to main with a prominent warning",
+    "why": "Switch clean, published checkouts to main and preserve the source branch. Bootstrap absent main from published history with a create-only lease. Durable warnings in conversations and project setup; unsafe checkout states remain blocked. Fourteen focused regressions, typecheck, lint and build pass. Deployed and observed live main switch; see docs/acceptance/automatic-main-2026-10-02.md.",
+    "status": "complete"
   }
 ]

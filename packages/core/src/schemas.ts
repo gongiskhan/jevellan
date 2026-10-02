@@ -243,6 +243,12 @@ export const PublicationLeaseSchema = z.strictObject({
   schema: z.literal('publication-lease-v1'), remote: text, owner: IdSchema, token: IdSchema, held: z.boolean(), expiresAt: TimestampSchema,
 });
 export type PublicationLease = z.infer<typeof PublicationLeaseSchema>;
+export const GitBranchChangeSchema = z.strictObject({
+  schema: z.literal('git-branch-change-v1'), from: z.string().min(1), to: z.literal('main'),
+  status: z.enum(['planned', 'completed']), created: z.boolean(), createdRemote: z.boolean(),
+  before: z.string().regex(/^[a-f0-9]{40,64}$/), after: z.string().regex(/^[a-f0-9]{40,64}$/),
+});
+export type GitBranchChange = z.infer<typeof GitBranchChangeSchema>;
 export const GitSnapshotSchema = z.strictObject({
   schema: z.literal('git-snapshot-v1'), head: z.string().regex(/^[a-f0-9]{40,64}$/), branch: text, clean: z.boolean(),
   refsDigest: text, otherRefsDigest: text, remotesDigest: text, remoteHead: z.string().regex(/^[a-f0-9]{40,64}$/).nullable(),

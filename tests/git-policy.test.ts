@@ -38,6 +38,86 @@ test('unrelated dirty files and unpublished local commits block first writing ad
   git(workspace.path, 'add', '-A'); git(workspace.path, 'commit', '-m', 'User work');
   await expect(workspace.prepare()).rejects.toThrow("don't belong"); expect(git(origin, 'log', '-1', '--format=%s')).toBe('Seed');
 });
+test('main switch preserves a published feature branch and records intent before changing the checkout', async () => {
+  const main = await workspace.head();
+  git(workspace.path, 'switch', '-c', 'feature');
+  writeFileSync(join(workspace.path, 'feature.txt'), 'Keep this on the feature branch.');
+  git(workspace.path, 'add', '-A'); git(workspace.path, 'commit', '-m', 'Feature'); git(workspace.path, 'push', '-u', 'origin', 'feature');
+  const feature = await workspace.head(); const notices: string[] = [];
+  expect(await workspace.prepare(change => {
+    notices.push(change.status);
+    expect(change.from).toBe('feature');
+    expect(git(workspace.path, 'branch', '--show-current')).toBe(change.status === 'planned' ? 'feature' : 'main');
+  })).toBe(main);
+  expect(notices).toEqual(['planned', 'completed']);
+  expect(git(workspace.path, 'rev-parse', 'feature')).toBe(feature);
+  expect(git(origin, 'rev-parse', 'feature')).toBe(feature);
+  expect(await workspace.branch()).toBe('refs/heads/main');
+});
+
+test('main switch finds remote main in a single-branch clone without changing its fetch configuration', async () => {
+  git(workspace.path, 'switch', '-c', 'feature'); git(workspace.path, 'push', '-u', 'origin', 'feature');
+  git(workspace.path, 'branch', '-D', 'main'); git(workspace.path, 'update-ref', '-d', 'refs/remotes/origin/main');
+  git(workspace.path, 'config', 'remote.origin.fetch', '+refs/heads/feature:refs/remotes/origin/feature');
+  const change = vi.fn(); await workspace.prepare(change);
+  expect(await workspace.branch()).toBe('refs/heads/main');
+  expect(change.mock.calls.at(-1)![0]).toMatchObject({ created: true, createdRemote: false, status: 'completed' });
+  expect(git(workspace.path, 'config', 'remote.origin.fetch')).toBe('+refs/heads/feature:refs/remotes/origin/feature');
+  // Publication also refreshes main explicitly rather than following that narrow fetch configuration.
+  const other = join(root, 'other'); git(root, 'clone', origin, other);
+  writeFileSync(join(other, 'new-main.txt'), 'New main'); git(other, 'add', '-A'); git(other, 'commit', '-m', 'New main'); git(other, 'push');
+  await workspace.fetch(); expect(await workspace.upstream()).toBe(git(other, 'rev-parse', 'HEAD'));
+});
+
+test('main switch creates absent main from published source history while retaining the original branch', async () => {
+  git(workspace.path, 'switch', '-c', 'feature'); git(workspace.path, 'push', '-u', 'origin', 'feature');
+  git(origin, 'symbolic-ref', 'HEAD', 'refs/heads/feature'); git(origin, 'update-ref', '-d', 'refs/heads/main');
+  git(workspace.path, 'branch', '-D', 'main');
+  const original = await workspace.head();
+  const other = join(root, 'other'); git(root, 'clone', origin, other);
+  writeFileSync(join(other, 'published.txt'), 'Published work'); git(other, 'add', '-A'); git(other, 'commit', '-m', 'Published'); git(other, 'push');
+  const published = git(other, 'rev-parse', 'HEAD'); const changes = vi.fn();
+  expect(await workspace.prepare(changes)).toBe(published);
+  expect(changes.mock.calls.at(-1)![0]).toMatchObject({ from: 'feature', createdRemote: true, status: 'completed' });
+  expect(git(workspace.path, 'rev-parse', 'feature')).toBe(original);
+  expect(git(origin, 'rev-parse', 'feature')).toBe(published);
+  expect(git(origin, 'rev-parse', 'main')).toBe(published);
+  expect(git(origin, 'symbolic-ref', 'HEAD')).toBe('refs/heads/feature');
+});
+
+test('main switch never overwrites a main branch created concurrently on the remote', async () => {
+  git(workspace.path, 'switch', '-c', 'feature'); git(workspace.path, 'push', '-u', 'origin', 'feature');
+  git(origin, 'symbolic-ref', 'HEAD', 'refs/heads/feature'); git(origin, 'update-ref', '-d', 'refs/heads/main'); git(workspace.path, 'branch', '-D', 'main');
+  const initial = await workspace.head();
+  const other = join(root, 'other'); git(root, 'clone', origin, other);
+  writeFileSync(join(other, 'concurrent.txt'), 'Other work'); git(other, 'add', '-A'); git(other, 'commit', '-m', 'Concurrent main');
+  const concurrent = git(other, 'rev-parse', 'HEAD');
+  await expect(workspace.prepare(change => {
+    if (change.status === 'planned') git(other, 'push', 'origin', 'HEAD:main');
+  })).rejects.toThrow();
+  expect(git(origin, 'rev-parse', 'main')).toBe(concurrent);
+  expect(await workspace.branch()).toBe('refs/heads/feature'); expect(await workspace.head()).toBe(initial);
+});
+
+test.each(['dirty', 'unpublished', 'pending', 'detached'])('main switch refuses %s checkout without moving its branch', async kind => {
+  git(workspace.path, 'switch', '-c', 'feature'); git(workspace.path, 'push', '-u', 'origin', 'feature');
+  if (kind === 'dirty' || kind === 'unpublished') writeFileSync(join(workspace.path, 'keep.txt'), 'User work');
+  if (kind === 'unpublished') { git(workspace.path, 'add', '-A'); git(workspace.path, 'commit', '-m', 'Unpublished'); }
+  if (kind === 'pending') writeFileSync(join(workspace.path, '.git/MERGE_HEAD'), `${await workspace.head()}\n`);
+  if (kind === 'detached') git(workspace.path, 'switch', '--detach');
+  const before = await workspace.branch(); const head = await workspace.head(); const change = vi.fn();
+  await expect(workspace.prepare(change)).rejects.toThrow();
+  expect(await workspace.branch()).toBe(before); expect(await workspace.head()).toBe(head); expect(change).not.toHaveBeenCalled();
+});
+
+test('main switch is opt-in for foreground work and never affects external projects', async () => {
+  git(workspace.path, 'switch', '-c', 'feature');
+  await expect(workspace.prepare()).rejects.toThrow('must be on main');
+  const external = new GitWorkspace({ ...project, branchPolicy: 'external' }, 'device', workspace.ownership, owner);
+  const change = vi.fn(); await external.prepare(change);
+  expect(change).not.toHaveBeenCalled(); expect(await workspace.branch()).toBe('refs/heads/feature');
+});
+
 test('checkpoint preparation preserves a tracked deletion across staging', async () => {
   const before = await workspace.snapshot(); rmSync(join(workspace.path, 'value.txt'));
   const digest = await workspace.workingTreeDigest();

@@ -1768,3 +1768,7 @@ html:has(.reading-conversation) { scroll-padding-top: 115px; scroll-padding-bott
 .user-message .markdown > :last-child { margin-bottom: 0; }
 .user-message .markdown { overflow-wrap: anywhere; }
 .user-message .markdown table { display: block; max-width: 100%; overflow-x: auto; }
+
+.branch-change-notice { border: 2px solid var(--warn); border-left-width: 5px; padding: 12px 14px; }
+.branch-change-notice > strong { color: var(--warn); font-size: 15px; }
+.branch-change-notice p { margin: 5px 0 0; font-size: 12px; }

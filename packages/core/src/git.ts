@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { closeSync, existsSync, lstatSync, openSync, readFileSync, readdirSync, readSync, readlinkSync, realpathSync } from 'node:fs';
 import { isAbsolute, resolve } from 'node:path';
-import { GitCheckpointPlanSchema, GitConflictSchema, GitConflictResolutionSchema, GitSnapshotSchema, GitUndoPlanSchema, GitUndoRecoverySchema, GitUndoResultSchema, IdSchema, type Action, type GitCheckpointPlan, type GitConflict, type GitConflictResolution, type GitSnapshot, type GitUndoPlan, type GitUndoResult, type Project } from './schemas.js';
+import { GitBranchChangeSchema, type GitBranchChange, GitCheckpointPlanSchema, GitConflictSchema, GitConflictResolutionSchema, GitSnapshotSchema, GitUndoPlanSchema, GitUndoRecoverySchema, GitUndoResultSchema, IdSchema, type Action, type GitCheckpointPlan, type GitConflict, type GitConflictResolution, type GitSnapshot, type GitUndoPlan, type GitUndoResult, type Project } from './schemas.js';
 import { inside, resolvedPath, resolveProjectPath, type Homes } from './homes.js';
 import { GitRewriteCapture, GitRewritePlanSchema, GitRewriteReceiptSchema, type GitRewriteReceipt } from './git-rewrite.js';
 import { atomicWrite } from './files.js';
@@ -77,18 +77,64 @@ export class GitWorkspace {
     if (changed) throw new Error('An agent changed git history or remotes directly. Jevellan has not published anything from this work.');
     return after;
   }
-  async prepare(): Promise<string> {
-    if (this.project.branchPolicy === 'external') { await this.ownership.assert(this.project, this.owner); return this.head(); }
-    await this.#write();
+  async prepare(onBranchChange?: (change: GitBranchChange) => void | Promise<void>): Promise<string> {
+    await this.ownership.assert(this.project, this.owner);
+    if (this.project.branchPolicy === 'external') return this.head();
+    const branch = await this.branch();
+    if (branch !== 'refs/heads/main' && !onBranchChange) await this.#main();
+    if (!branch.startsWith('refs/heads/')) throw new Error('The checkout has a detached HEAD. Select a branch before starting work.');
     const blocked = () => new Error(`${this.project.name} on ${this.deviceId} has changes that don't belong to this conversation. Commit, stash or publish them, then press Retry.`);
     if (!await this.clean()) throw blocked();
+    if (await this.#operationInProgress()) throw new Error('Finish or abort the pending Git operation before moving to main.');
     const before = await this.head();
-    await this.#git(['fetch', 'origin']);
-    await this.ownership.assert(this.project, this.owner);
-    if (!await this.clean() || await this.head() !== before) throw blocked();
-    const behind = await this.#git(['merge-base', '--is-ancestor', 'HEAD', 'refs/remotes/origin/main'], [1]);
-    if (behind.code !== 0) throw blocked();
-    await this.#git(['merge', '--ff-only', 'refs/remotes/origin/main']);
+    const unchanged = async () => {
+      await this.ownership.assert(this.project, this.owner);
+      if (!await this.clean() || await this.head() !== before || await this.branch() !== branch || await this.#operationInProgress()) throw blocked();
+    };
+    await this.remote();
+    const remoteMain = await this.remoteHead();
+    const localMain = (await this.#git(['rev-parse', '--verify', '--quiet', 'refs/heads/main'], [1])).stdout.trim();
+    const ancestor = async (a: string, b: string) => (await this.#git(['merge-base', '--is-ancestor', a, b], [1])).code === 0;
+    let upstream: string;
+    if (remoteMain) {
+      // An explicit ref also works for clones configured to fetch only a feature branch.
+      await this.#git(['fetch', 'origin', 'refs/heads/main:refs/remotes/origin/main']);
+      upstream = await this.upstream();
+      if (localMain && !await ancestor(localMain, upstream)) throw blocked();
+    } else {
+      if (localMain || branch === 'refs/heads/main') throw new Error('No published main branch exists. Publish main before starting this work.');
+      upstream = '';
+    }
+    if (branch !== 'refs/heads/main') {
+      // Keep the old branch intact; never carry dirty files or unpublished commits across.
+      if (!upstream || !await ancestor(before, upstream)) {
+        const source = `refs/remotes/origin/${branch.slice('refs/heads/'.length)}`;
+        await this.#git(['fetch', 'origin', `${branch}:${source}`]);
+        const published = (await this.#git(['rev-parse', '--verify', source])).stdout.trim();
+        if (!await ancestor(before, published)) throw blocked();
+        if (!upstream) upstream = published;
+      }
+      await unchanged();
+      const change = GitBranchChangeSchema.parse({ schema: 'git-branch-change-v1', from: this.redactor.text(branch.slice('refs/heads/'.length)), to: 'main',
+        status: 'planned', created: !localMain, createdRemote: !remoteMain, before, after: localMain || upstream });
+      await onBranchChange!(change);
+      await unchanged();
+      if (!remoteMain) {
+        // Create-only lease: a concurrent main can never be overwritten, even after a lost reply.
+        await this.#git(['push', '--porcelain', '--force-with-lease=refs/heads/main:', 'origin', `${upstream}:refs/heads/main`]);
+        await this.#git(['fetch', 'origin', 'refs/heads/main:refs/remotes/origin/main']);
+      }
+      await unchanged();
+      await this.#git(localMain ? ['switch', '--no-overwrite-ignore', 'main'] : ['switch', '--no-overwrite-ignore', '-c', 'main', upstream]);
+      await this.ownership.assert(this.project, this.owner);
+      await this.#main();
+      await onBranchChange!({ ...change, status: 'completed', after: await this.head() });
+    } else {
+      await unchanged();
+    }
+    await this.#write();
+    if (!await this.clean() || !await ancestor(await this.head(), upstream) || await this.#operationInProgress()) throw blocked();
+    await this.#git(['merge', '--ff-only', upstream]);
     return this.head();
   }
   async checkpoint(action: Action | 'memory' | 'context', summary: string, before: GitSnapshot, assertCurrent?: () => void | Promise<void>): Promise<{ head: string; committed: boolean }> {
@@ -349,7 +395,7 @@ export class GitWorkspace {
     if (await this.branch() !== 'refs/heads/main' || await this.#operationInProgress() || !await this.clean() || await this.head() !== base) return false;
     return (await this.#git(['rev-parse', '--verify', savedRef], [128])).stdout.trim() === before;
   }
-  async fetch(): Promise<void> { await this.#write(); await this.#git(['fetch', 'origin']); }
+  async fetch(): Promise<void> { await this.#write(); await this.#git(['fetch', 'origin', 'refs/heads/main:refs/remotes/origin/main']); }
   async upstream(): Promise<string> { return (await this.#git(['rev-parse', 'refs/remotes/origin/main'])).stdout.trim(); }
   async contains(commit: string): Promise<boolean> {
     if (!/^[a-f0-9]{40,64}$/.test(commit)) throw new Error('Expected a commit id.');

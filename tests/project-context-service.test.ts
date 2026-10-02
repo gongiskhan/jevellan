@@ -63,6 +63,20 @@ async function completed(record: ContextOperation) {
   expect((await app.conversations.ownership.current(project))?.held).not.toBe(true);
 }
 
+test('context setup moves a clean feature checkout to main with durable branch warnings', async () => {
+  git(path, 'switch', '-c', 'feature'); git(path, 'push', '-u', 'origin', 'feature');
+  await choose('create');
+  const operation = (await panel()).operations.at(-1)!;
+  await completed(operation);
+  expect(operation.branchChange).toMatchObject({ from: 'feature', to: 'main', status: 'completed' });
+  const view = await app.conversations.view(operation.conversationId);
+  const events = app.conversations.options.contexts.get(operation.id);
+  expect(events?.branchChange?.status).toBe('completed');
+  expect(view.conversation.state).toBe('done');
+  expect(git(path, 'branch', '--show-current')).toBe('main');
+  expect(git(path, 'rev-parse', 'feature')).toBe(initial);
+});
+
 test.each(['project', 'context'] as const)('project save resumes after a lost %s result and daemon restart with one context operation', async boundary => {
   const original = (await app.state.projects.get(project.id))!;
   const input = { schema: 'project-write-v1', clientRequestId: 'project_save_lost', revision: original.revision, project: { ...original.project, name: 'Saved during outage' }, createContext: true };
