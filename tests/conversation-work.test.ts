@@ -36,6 +36,16 @@ test('Garrison continuity regression: plan, approval, implementation, block and 
   expect(view.summary.objective).toBe(request); expect(view.messages.map((message) => message.text)).toEqual([request, 'Go ahead.', 'Keep the existing public signature.']);
   expect(() => store.baseCommit('another-head')).toThrow('cannot be replaced');
 });
+test('a newly returned plan needs fresh approval even when its contents are identical', () => {
+  store.message('Plan this change', 'request');
+  const plan = ledger.putBlob('A complete plan.');
+  start('plan'); finish('plan', 'Ready for review.', { result: { type: 'plan', ref: plan.ref } });
+  store.approvePlan(plan.ref, store.load().conversation.generation);
+  start('plan'); finish('plan', 'Reconsidered plan.', { result: { type: 'plan', ref: plan.ref } });
+  const restored = new ConversationWork(new ConversationLedger(homes, 'conversation')).load();
+  expect(restored.conversation.work?.latestPlanRef).toBe(plan.ref);
+  expect(restored.conversation.work?.approvedPlanRef).toBeUndefined();
+});
 test.each(['done', 'cancelled', 'closed-by-you'] as const)('new request after %s starts fresh without old blockers, constraints or counters', (closedAs) => {
   store.message('Old request', 'old'); start(); finish('plan', 'Old state', { blockers: ['old blocker'], findings: [{ claim: 'constraint: old limit', pointer: 'ledger/2' }] });
   store.close(closedAs); store.message('New request', 'new'); const view = store.load();

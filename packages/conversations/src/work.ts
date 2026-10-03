@@ -52,7 +52,7 @@ function applyCompletion(work: Work, summary: Summary, result: Finished, handoff
   else counters.unknownCostStretches++;
   if (handoff.testsRun) counters.testFailures = handoff.testsRun.passed ? 0 : counters.testFailures + 1;
   if (['implement', 'test'].includes(stretch.action) && !result.correction) counters.noProgress = !result.changed && !handoff.findings.length && !findings.length ? counters.noProgress + 1 : 0;
-  if (handoff.result?.type === 'plan') work.latestPlanRef = handoff.result.ref;
+  if (handoff.result?.type === 'plan') { work.latestPlanRef = handoff.result.ref; delete work.approvedPlanRef; }
   for (const finding of [...findings, ...handoff.findings]) {
     if (finding.claim.startsWith('constraint:') && !work.constraints.includes(finding.claim)) work.constraints.push(finding.claim);
     if (finding.claim.startsWith('decision:') && !summary.decisions.includes(finding.claim)) summary.decisions.push(finding.claim);

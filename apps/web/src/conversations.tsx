@@ -1,3 +1,4 @@
+import { PlanReview, type PlanReviewActions } from './plan-review.js';
 import { BranchChangeNotice, branchChangeText } from './branch-change-notice.js';
 import { useShellVisibility } from './shell-visibility.js';
 import { ChangesDiff } from './changes-diff.js';
@@ -616,6 +617,7 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
   const device = props.data.devices.devices.find((entry) => entry.id === view.conversation.ownerDeviceId);
   const running = view.busy || view.conversation.state === 'running';
   const plan = view.conversation.work?.latestPlanRef;
+  const planStep = plan ? view.stretches.findLast(step => step.workId === view.conversation.work?.id && step.status !== 'undone' && view.handoffs.some(handoff => handoff.stretch === step.n && handoff.result?.type === 'plan' && handoff.result.ref === plan))?.n : undefined;
   const project = projects.find((entry) => entry.id === view.conversation.projectId);
   const settlementTarget = view.conversation.work ?? view.closedWorks.at(-1);
   const latestSettlement = view.settlements.filter((entry) => entry.workId === settlementTarget?.id).at(-1);
@@ -801,6 +803,11 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
                 correct={() => setCorrecting(step)}
                 why={() => setWhy(view.decisions.find((entry) => entry.id === step.decisionId))}
                 selected={!!why && why.id === step.decisionId}
+                planReview={plan && props.data.config.configuration['x-jevellan'].guards.pauseAfterPlan && view.conversation.work?.approvedPlanRef !== plan && planStep === step.n ? {
+                  busy: task.busy || running,
+                  approve: async () => { setView(await api(`/api/conversations/${id}/approve-plan`, ConversationPublicSchema, 'POST', { schema: 'plan-approval-v1', generation: view.conversation.generation, ref: plan })); },
+                  changes: async (text, clientMessageId) => { setView(await api(`/api/conversations/${id}/messages`, ConversationPublicSchema, 'POST', { schema: 'conversation-message-v1', clientMessageId, text, planChange: { ref: plan, generation: view.conversation.generation } })); },
+                } : undefined}
                 changes={() =>
                   void task.run(async () =>
                     setChanges(
@@ -921,38 +928,9 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
           .map((entry) => (
             <RetryRedo key={entry.id} entry={entry} view={view} update={setView} onError={props.onError} />
           ))}
-      {!running &&
-        plan &&
-        props.data.config.configuration['x-jevellan'].guards.pauseAfterPlan &&
-        view.conversation.work?.approvedPlanRef !== plan && (
-          <div className="actions plan-actions">
-            <button
-              disabled={task.busy}
-              onClick={() =>
-                void task.run(async () =>
-                  setView(
-                    await api(`/api/conversations/${id}/approve-plan`, ConversationPublicSchema, 'POST', {
-                      schema: 'plan-approval-v1',
-                      generation: view.conversation.generation,
-                      ref: plan,
-                    }),
-                  ),
-                )
-              }
-            >
-              Go ahead
-            </button>
-            <button
-              className="secondary"
-              onClick={() => {
-                setMessage('Change the plan: ');
-                input.current?.focus();
-              }}
-            >
-              Change the plan
-            </button>
-          </div>
-        )}
+      {!running && plan && props.data.config.configuration['x-jevellan'].guards.pauseAfterPlan && view.conversation.work?.approvedPlanRef !== plan && (
+        <p className="plan-waiting" role="status">Waiting for plan approval. <button className="text-button" onClick={() => document.getElementById(`plan-step-${planStep}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>Review plan ↑</button></p>
+      )}
       {view.openQuestion && view.openQuestion.options.length > 0 && (
         <section className="answer-card" aria-label="Answer the question">
           <p className="answer-question">{view.openQuestion.text}</p>
@@ -1645,6 +1623,7 @@ function StepBlock({
   changes,
   read,
   selected,
+  planReview,
 }: {
   step: Step;
   view: View;
@@ -1655,6 +1634,7 @@ function StepBlock({
   changes(): void;
   read(pointer: string, title: string): void;
   selected: boolean;
+  planReview?: PlanReviewActions | undefined;
 }) {
   const handoff = view.handoffs.find((entry) => entry.stretch === step.n);
   const model = props.data.config.configuration['x-jevellan'].menu.find((entry) => entry.id === step.modelId);
@@ -1734,7 +1714,7 @@ function StepBlock({
       </div>}
       {answerResult && <StepResult kind="answer" id={view.conversation.id} pointer={answerResult.ref} fallback={handoff!.summary} onError={props.onError} open={(ref) => read(ref, ref)} />}
       {fallbackAnswer && !answerResult && <Markdown onOpen={(ref) => read(ref, ref)}>{fallbackAnswer}</Markdown>}
-      {handoff?.result?.type === 'plan' && <StepResult kind="plan" id={view.conversation.id} pointer={handoff.result.ref} onError={props.onError} open={(ref) => read(ref, ref)} />}
+      {handoff?.result?.type === 'plan' && <PlanReview id={view.conversation.id} pointer={handoff.result.ref} step={step.n} actions={planReview} approved={[view.conversation.work, ...view.closedWorks].find(work => work?.id === step.workId)?.approvedPlanRef === handoff.result.ref} onError={props.onError} open={ref => read(ref, ref)} />}
       {actionable && handoff?.blockers.map((blocker, i) => <p className="notice" key={i}>{blocker}</p>)}
       {actionable && handoff?.question && view.openQuestion?.stretch !== step.n && <p className="notice">{handoff.question}</p>}
       <div className="stretch-links">

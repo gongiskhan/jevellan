@@ -21,7 +21,7 @@ export type ModelOption = z.infer<typeof ModelOptionSchema>;
 export const GuardsSchema = z.strictObject({
   maxStretchesPerWork: z.number().int().positive().default(24), stretchTimeoutMin: z.number().positive().default(30),
   reviewCap: count.default(2), noProgressLimit: z.number().int().positive().default(2),
-  testFailureLimit: z.number().int().positive().default(3), pauseAfterPlan: z.boolean().default(false),
+  testFailureLimit: z.number().int().positive().default(3), pauseAfterPlan: z.boolean().default(true),
   workCostCapUsd: z.number().positive().nullable().default(null), externalActivityWindowMin: z.number().positive().default(5),
 });
 export type Guards = z.infer<typeof GuardsSchema>;

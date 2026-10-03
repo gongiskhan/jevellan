@@ -240,14 +240,45 @@ test('cancelling an in-flight Jev request never launches or records its late cla
 });
 
 test('plan approval resumes automatic execution with the full plan in the next brief', async () => {
-  const config = app.hub.configuration.current()!; config.configuration['x-jevellan'].guards.pauseAfterPlan = true;
-  app.hub.configuration.put(config.configuration, config.revision, { deviceId: app.device.deviceId, source: 'ui' });
+  expect(app.hub.configuration.current()!.configuration['x-jevellan'].guards.pauseAfterPlan).toBe(true);
   actions = ['plan', 'implement', 'done'];
   fake.enqueue(async ({ input }) => { await handoff(input, { result: { type: 'plan', content: 'First preserve the default. Then change the value to two. Finally verify the exact commit.' }, proposedNext: 'implement' }); return { status: 'completed' }; });
   enqueue('2'); await create(); const waiting = await finished(); expect(waiting.pause?.reason).toContain('Read the full plan'); expect(fake.starts).toHaveLength(1);
   const approved = await request('/api/conversations/automatic/approve-plan', { schema: 'plan-approval-v1', generation: waiting.conversation.generation, ref: waiting.conversation.work!.latestPlanRef }); expect(approved.status).toBe(200);
   const result = await finished(); expect(result.conversation.state, result.pause?.reason).toBe('done'); expect(fake.starts).toHaveLength(2);
   expect(fake.starts[1]!.brief).toContain('Finally verify the exact commit.');
+});
+
+test('pending plans allow discussion and explicit revisions but never implementation or completion before approval', async () => {
+  actions = ['plan'];
+  enqueue(undefined, { result: { type: 'plan', content: { goal: 'Change the value', steps: ['Preserve the default', 'Set value to two'] } }, proposedNext: 'implement' });
+  await create(); let waiting = await finished();
+  const originalPlan = waiting.conversation.work!.latestPlanRef!;
+  const originalGeneration = waiting.conversation.generation;
+  expect(waiting.allowed).toEqual(['reply', 'plan', 'ask-you']);
+  expect(git(path, 'rev-parse', 'HEAD')).toBe(initial);
+  await expect(app.conversations.manual('automatic', { schema: 'manual-step-v1', generation: originalGeneration, action: 'implement', modelId: 'fixture' })).rejects.toThrow('not allowed');
+  await expect(app.conversations.resumeDecision('automatic', { schema: 'resume-decision-v1', generation: originalGeneration })).rejects.toThrow();
+  actions = ['reply']; enqueue();
+  await app.conversations.message('automatic', { schema: 'conversation-message-v1', clientMessageId: 'discuss', text: 'Explain why this approach works.' });
+  waiting = await finished();
+  expect(fake.starts.map(start => start.action)).toEqual(['plan', 'reply']);
+  expect(waiting.conversation.state).toBe('waiting-for-you');
+  expect(waiting.conversation.work!.approvedPlanRef).toBeUndefined();
+  enqueue(undefined, { result: { type: 'plan', content: '## Goal\nChange the value.\n\n## Steps\n1. Preserve the default.\n2. Update the value.\n3. Add regression coverage.' } });
+  const revision = { schema: 'conversation-message-v1', clientMessageId: 'revision', text: 'Add regression coverage.', planChange: { ref: originalPlan, generation: waiting.conversation.generation } };
+  await app.conversations.message('automatic', revision); waiting = await finished();
+  expect(fake.starts.map(start => start.action)).toEqual(['plan', 'reply', 'plan']);
+  expect(fake.starts[2]!.brief).toContain('Add regression coverage.');
+  expect(waiting.conversation.work!.latestPlanRef).not.toBe(originalPlan);
+  expect(waiting.conversation.work!.approvedPlanRef).toBeUndefined();
+  await app.conversations.message('automatic', revision); await finished();
+  expect(fake.starts).toHaveLength(3); expect((await view()).messages).toHaveLength(3);
+  await expect(app.conversations.approvePlan('automatic', { schema: 'plan-approval-v1', generation: originalGeneration, ref: originalPlan })).rejects.toThrow('stale');
+  actions = ['implement', 'done']; enqueue('2');
+  await app.conversations.approvePlan('automatic', { schema: 'plan-approval-v1', generation: waiting.conversation.generation, ref: waiting.conversation.work!.latestPlanRef });
+  const done = await finished(); expect(done.conversation.state, done.pause?.reason).toBe('done');
+  expect(fake.starts[3]!.brief).toContain('(approved)');
 });
 
 test('actual project memory is scored once and the chosen unresolved note reaches the runtime brief', async () => {

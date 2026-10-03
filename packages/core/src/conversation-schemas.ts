@@ -10,6 +10,7 @@ export const ProjectFoldersSchema = z.strictObject({ schema: z.literal('project-
 export const ProjectVisibilitySchema = z.strictObject({ schema: z.literal('project-visibility-v1'), projectId: IdSchema, deviceId: IdSchema, visibility: z.enum(['PUBLIC', 'PRIVATE', 'INTERNAL', 'UNKNOWN']), checkedAt: z.iso.datetime() });
 export const StartConversationSchema = z.strictObject({ schema: z.literal('start-conversation-v1'), id: IdSchema, projectId: IdSchema, title: z.string().min(1).max(200), message: z.string().min(1).max(100_000), clientMessageId: IdSchema, choices: ComposerInitialSchema.optional() });
 export const ConversationMessageSchema = z.strictObject({ schema: z.literal('conversation-message-v1'), clientMessageId: IdSchema, text: z.string().min(1).max(100_000), kind: z.enum(['message', 'note']).default('message'),
+  planChange: z.strictObject({ ref: z.string().min(1), generation: z.number().int().nonnegative() }).optional(),
   answer: z.strictObject({ stretch: z.number().int().positive(), option: z.number().int().min(0).max(3) }).optional() });
 export const RenameConversationSchema = z.strictObject({ schema: z.literal('rename-conversation-v1'), clientRequestId: IdSchema, previousTitle: z.string().min(1), title: z.string().trim().min(1).max(200) });
 export const ConversationRenamedSchema = z.strictObject({ schema: z.literal('conversation-renamed-v1'), request: RenameConversationSchema });

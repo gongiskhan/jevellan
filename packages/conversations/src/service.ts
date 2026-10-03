@@ -581,6 +581,12 @@ export class ConversationService {
     }
     this.#notFinishing(work);
     const repeated = before.messages.some((message) => message.clientMessageId === input.clientMessageId);
+    if (input.planChange && !repeated) {
+      const current = before.conversation;
+      if (input.kind !== 'message' || input.answer || this.#operations.has(id) || current.state === 'running' || this.#correcting.has(id)) throw conflict('Wait for the current step to finish before requesting plan changes.');
+      if (!current.work || current.generation !== input.planChange.generation || current.work.latestPlanRef !== input.planChange.ref || current.work.approvedPlanRef === input.planChange.ref) throw conflict('This plan changed or was already approved. Reload it before requesting changes.');
+      await this.#saveComposer(work, { schema: 'composer-choice-v1', clientRequestId: `plan_${createHash('sha256').update(input.clientMessageId).digest('hex')}`, generation: current.generation, field: 'action', mode: 'once', value: 'plan' });
+    }
     const answer = input.answer && !repeated ? this.#chosenOption(work, input.answer, input.text) : undefined;
     const result = work.message(input.text, input.clientMessageId, input.kind === 'note' ? 'note' : 'user-message', settings.guards.maxStretchesPerWork, answer);
     if (!result.repeated && result.correction) { this.#notice(work, 'The user corrected this step.', 'steer'); await this.#operations.get(id)?.execution?.steer(); }
@@ -645,8 +651,6 @@ export class ConversationService {
     this.#checkpointAllowed(work, view.conversation.work.id);
     if (view.pause?.guard) throw conflict('This guard stopped the work. Reply with how to continue before choosing another step.');
     if (!(await this.view(id)).allowed.includes(choice.action)) throw new Error('This action is not allowed at this boundary.');
-    const plan = view.conversation.work.latestPlanRef;
-    if ((await this.options.settings()).guards.pauseAfterPlan && plan && view.conversation.work.approvedPlanRef !== plan && choice.action !== 'plan') throw new Error('Approve the current plan or choose Change the plan before continuing.');
     if (work.load().conversation.generation !== choice.generation) throw conflict('This choice is stale. Reload the conversation.');
     return this.#operate(work, async (operation) => {
       try { if (await this.#manual(work, choice, operation)) await this.#automatic(work, operation, 'stretch-end'); }
@@ -1256,6 +1260,8 @@ export class ConversationService {
     const workspace = await this.hubWaits.retry(work, operation.abort.signal, 'launch', () => this.#workspace(work), {
       beforeRetry: () => { this.#current(work, choice.generation, operation); if (prepared) throw new StaleDecision(); },
     }); this.#current(work, choice.generation, operation);
+    const pending = work.load().conversation.work;
+    if ((await this.options.settings()).guards.pauseAfterPlan && pending?.latestPlanRef && pending.approvedPlanRef !== pending.latestPlanRef && !['plan', 'reply', 'ask-you'].includes(choice.action)) throw conflict('Approve the current plan before continuing.');
     if (choice.action === 'done') {
       await this.hubWaits.retry(work, operation.abort.signal, 'decision', () => this.#boundaryDecision(work, choice, source, operation.redoId, prepared));
       return await this.#done(work, workspace, choice, operation) === 'retry' && !!this.options.decisionClient && await this.hubWaits.retry(work, operation.abort.signal, 'decision', () => Promise.resolve(this.options.jevAvailable?.())) !== false;
@@ -1275,7 +1281,8 @@ export class ConversationService {
     if (stop) work.pause(stop.notice, 'waiting-for-you', stop.kind);
     else if (!prepared && this.#lastHandoff(work)?.status === 'blocked') work.pause(this.#lastHandoff(work)!.blockers.join('\n') || this.#lastHandoff(work)!.summary, 'blocked');
     else if (choice.action === 'ask-you') { const answer = view.handoffs.at(-1)!; work.pause(answer.question ?? answer.summary); }
-    else if (settings.guards.pauseAfterPlan && view.conversation.work.latestPlanRef && view.conversation.work.approvedPlanRef !== view.conversation.work.latestPlanRef) work.pause('Read the full plan, then choose Go ahead or Change the plan.');
+    else if (settings.guards.pauseAfterPlan && choice.action === 'plan' && this.#lastHandoff(work)?.result?.type !== 'plan') work.pause('This step did not return a complete plan. Request a complete plan before continuing.');
+    else if (settings.guards.pauseAfterPlan && view.conversation.work.latestPlanRef && view.conversation.work.approvedPlanRef !== view.conversation.work.latestPlanRef) work.pause('Read the full plan, then choose Approve plan or Request changes.');
     else return true;
     return false;
   }

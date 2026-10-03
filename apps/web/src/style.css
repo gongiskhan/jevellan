@@ -1107,7 +1107,27 @@ html:has(.conversation-page) { scroll-padding-top: calc(var(--header-height) + 1
 .handoff { display: grid; gap: 4px; }
 .handoff h3 { margin: 0; display: flex; align-items: center; gap: 6px; }
 .handoff .notice { margin: 4px 0 0; }
-.plan-result { border: 1px solid var(--edge); border-radius: 8px; padding: 12px 14px; background: var(--card-2); margin-top: 4px; max-height: 520px; overflow: auto; }
+/* Plans use the conversation scroll so the full proposal stays easy to read. */
+.plan-review { border: 1px solid var(--edge); border-radius: 14px; background: var(--card); margin: 12px 0; padding: clamp(16px, 2.5vw, 28px); min-width: 0; scroll-margin-top: 150px; }
+.plan-review-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.plan-review .plan-review-header h2 { font-size: 20px; margin: 0; color: var(--ink); }
+.plan-awaiting { color: var(--jev); border-color: var(--jev-edge); background: var(--jev-soft); }
+.plan-intro, .plan-waiting { color: var(--ink-3); font-size: 13px; }
+.plan-content { overflow-wrap: anywhere; line-height: 1.65; }
+.plan-sections > .plan-section { padding: 18px 0; border-bottom: 1px solid var(--edge); }
+.plan-sections > .plan-section:last-child { border-bottom: 0; }
+.plan-section h3 { margin: 0 0 10px; font-size: 17px; font-family: var(--font-body); text-transform: none; letter-spacing: normal; color: var(--ink); }
+.plan-item-title { font-weight: 650; }
+.plan-section h4 { margin: 12px 0 4px; font-size: 14px; }
+.plan-list { padding-left: 24px; margin: 8px 0; }
+.plan-list > li { padding-left: 5px; margin: 8px 0; }
+.plan-list > li::marker { color: var(--jev); font-weight: 700; }
+.plan-list .markdown > :first-child { margin-top: 0; }
+.plan-list .markdown > :last-child { margin-bottom: 0; }
+.plan-review-footer { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--edge); }
+.plan-review-footer textarea { margin: 8px 0 12px; min-height: 90px; max-height: 33dvh; resize: vertical; }
+.plan-review-footer .actions { flex-wrap: wrap; }
+.plan-waiting { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .findings { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
 .findings li { margin: 0; font-size: 12.5px; padding: 6px 10px; border-radius: 7px; background: var(--card-2); border: 1px solid var(--edge); }
 .findings li::before { content: "Finding"; font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--sea); margin-right: 8px; }

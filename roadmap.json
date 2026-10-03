@@ -184,5 +184,11 @@
     "title": "Move foreground work to main with a prominent warning",
     "why": "Switch clean, published checkouts to main and preserve the source branch. Bootstrap absent main from published history with a create-only lease. Durable warnings in conversations and project setup; unsafe checkout states remain blocked. Fourteen focused regressions, typecheck, lint and build pass. Deployed and observed live main switch; see docs/acceptance/automatic-main-2026-10-02.md.",
     "status": "complete"
+  },
+  {
+    "id": "plan-acceptance",
+    "title": "Readable plans with explicit approval and requested revisions",
+    "why": "Pause plans for acceptance by default; block implementation and completion until approved. Format existing structured plans and Markdown, show inline approval and revision controls, preserve feedback and reject stale plans. Focused backend and four browser layouts pass; see docs/acceptance/plan-acceptance-2026-10-03.md.",
+    "status": "complete"
   }
 ]
