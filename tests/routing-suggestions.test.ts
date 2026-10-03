@@ -47,12 +47,12 @@ function edit(update: (settings: ReturnType<typeof seedConfiguration>['x-jevella
 
 test('Apply and timed Undo each change one field and retain unrelated configuration edits', () => {
   const row = enqueue(); const original = row.suggestion.draft.before;
-  edit(settings => { settings.guards.pauseAfterPlan = true; }); const applied = apply(row);
-  expect(hub.configuration.current()).toMatchObject({ revision: 3, changedBy: { source: 'improver' }, configuration: { 'x-jevellan': { routingProfile: row.suggestion.draft.after, guards: { pauseAfterPlan: true } } } });
+  edit(settings => { settings.guards.pauseAfterPlan = false; }); const applied = apply(row);
+  expect(hub.configuration.current()).toMatchObject({ revision: 3, changedBy: { source: 'improver' }, configuration: { 'x-jevellan': { routingProfile: row.suggestion.draft.after, guards: { pauseAfterPlan: false } } } });
   edit(settings => { settings.effortGuide.low = 'Preserve this later unrelated edit.'; }); now += 29_999;
   const undone = store.act('suggestion', { schema: 'routing-suggestion-action-v1', kind: 'undo', clientRequestId: 'undo', revision: applied.revision }, 'hub');
   expect(undone.suggestion.status).toBe('undone'); expect(undone.suggestion.outcomes.map(value => value.kind)).toEqual(['applied', 'undone']);
-  expect(hub.configuration.current()).toMatchObject({ revision: 5, configuration: { 'x-jevellan': { routingProfile: original, guards: { pauseAfterPlan: true }, effortGuide: { low: 'Preserve this later unrelated edit.' } } } });
+  expect(hub.configuration.current()).toMatchObject({ revision: 5, configuration: { 'x-jevellan': { routingProfile: original, guards: { pauseAfterPlan: false }, effortGuide: { low: 'Preserve this later unrelated edit.' } } } });
 });
 
 test('lost Apply replies survive restart and later Undo without replaying a configuration write', () => {

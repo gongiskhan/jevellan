@@ -131,6 +131,9 @@ test('reviewed changes become one local checkpoint, capture deferred memory and 
   expect(git(path, 'ls-tree', '-r', '--name-only', 'HEAD')).toContain('.jevellan/memory/');
   await acceptFiles(review.input); expect(git(path, 'rev-parse', 'HEAD')).toBe(head); expect(fake.starts).toHaveLength(1);
   expect((await request('/api/conversations/conversation/adopt-changes', 'POST', { ...review.input, stretch: 2 })).status).toBe(409);
+  // The failed step never answered the request; a completed reply must answer it before Done is available.
+  expect((await app.conversations.view('conversation')).allowed).not.toContain('done');
+  fake.enqueue(async ({ input }) => { await handoff(input); return { status: 'completed' }; }); await choose('reply'); await app.conversations.wait('conversation'); expect(git(path, 'rev-parse', 'HEAD')).toBe(head);
   await choose('done'); await app.conversations.wait('conversation'); expect((await app.conversations.view('conversation')).conversation.state).toBe('done'); expect(git(origin, 'rev-parse', 'main')).toBe(head);
   const receipts = (await app.conversations.changes('conversation', 1)).verifications; expect(receipts.some((entry) => entry.passed && entry.commit === head)).toBe(true);
 }, 60_000);
@@ -1058,9 +1061,13 @@ test('a crash after the checkpoint commit keeps the receipt and publishes withou
     await choose('implement'); await app.conversations.wait('conversation'); expect(git(path, 'rev-parse', 'HEAD')).toBe(head);
     const reply = await request('/api/conversations/conversation/messages', 'POST', { schema: 'conversation-message-v1', clientMessageId: 'finish', text: 'Finish and publish.' });
     expect(reply.status, await reply.text()).toBeLessThan(300); await app.conversations.wait('conversation');
-    await choose('done'); await app.conversations.wait('conversation');
+    // The no-progress stop and the unanswered message leave Done unavailable as a step; Close work publishes explicitly.
+    expect((await app.conversations.view('conversation')).allowed).not.toContain('done');
+    await settle('publish');
     const finished = await app.conversations.view('conversation');
-    expect(finished.conversation.state, finished.pause?.reason).toBe('done'); expect(git(origin, 'rev-parse', 'main')).toBe(head); expect(fake.starts).toHaveLength(1);
+    expect(finished.closedWorks).toMatchObject([{ closedAs: 'closed-by-you' }]); expect(finished.settlements.at(-1)).toMatchObject({ status: 'completed', choice: 'publish' });
+    expect(git(origin, 'rev-parse', 'main')).toBe(head); expect(fake.starts).toHaveLength(1);
+    expect((await app.conversations.changes('conversation', 2)).verifications.some((entry) => entry.passed && entry.commit === head)).toBe(true);
   } finally { await terminateGroup(native); }
 }, 60_000);
 
@@ -1268,7 +1275,9 @@ test('outside activity on an external-policy project requires acknowledgement an
   expect(blocked.checkpointBlocks).toHaveLength(1); expect(blocked.pause?.reason).toContain('acknowledge'); quietMutationActivity(journal);
   await restartApplication(); const review = await adoptionReview('external_acknowledgement'); expect(review.changes.recovery?.mode).toBe('acknowledge'); expect(review.changes.uncommitted).toContain('+2');
   await acceptFiles(review.input); expect((await app.conversations.view('conversation')).checkpointBlocks).toHaveLength(0); expect(git(path, 'show-ref')).toBe(refs); expect(git(path, 'status', '--porcelain')).toContain('M value.txt');
-  await choose('done'); await app.conversations.wait('conversation'); expect((await app.conversations.view('conversation')).conversation.state).toBe('done'); expect(git(path, 'show-ref')).toBe(refs); expect(fake.starts).toHaveLength(1);
+  // The blocked step never answered the request; a completed reply must answer it before Done is available.
+  fake.enqueue(async ({ input }) => { await handoff(input); return { status: 'completed' }; }); await choose('reply'); await app.conversations.wait('conversation');
+  await choose('done'); await app.conversations.wait('conversation'); expect((await app.conversations.view('conversation')).conversation.state).toBe('done'); expect(git(path, 'show-ref')).toBe(refs); expect(fake.starts.map((step) => step.action)).toEqual(['implement', 'reply']);
 }, 90_000);
 
 test.each(['implement', 'done', 'discard'] as const)('an unrecorded outside commit blocks %s and preserves the complete checkout', async action => {

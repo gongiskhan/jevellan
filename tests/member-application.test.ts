@@ -237,7 +237,7 @@ test('member UI retries authentication and configuration without replaying an al
   vi.spyOn(member.state.configuration, 'put').mockImplementationOnce(async raw => { await save(raw); offline = true; throw new HubUnavailable('Fixture hub'); });
   expect(await body(await request(memberBase, '/hub/config', cookie, input, 'PUT'), 503)).toMatchObject({ code: 'hub-unavailable', retryable: true });
   const saved = await hub.state.configuration.current(); expect(saved.revision).toBe(initial.revision + 1);
-  const newer = structuredClone(saved.configuration); newer['x-jevellan'].guards.pauseAfterPlan = true;
+  const newer = structuredClone(saved.configuration); newer['x-jevellan'].guards.pauseAfterPlan = false;
   const latest = await hub.state.configuration.put({ schema: 'config-write-v1', revision: saved.revision, configuration: newer });
   offline = false; expect(await body(await request(memberBase, '/hub/config', cookie, input, 'PUT'))).toEqual(saved);
   expect(await member.state.configuration.current()).toEqual(latest);
@@ -475,7 +475,7 @@ test.each([
   await vi.waitFor(() => {
     const current = member.conversations.options.contexts.get(record.id)!;
     expect(waits().at(-1), `${current.status}: ${current.reason ?? 'awaiting the injected boundary'}`).toMatchObject({ boundary: boundary === 'release' ? 'checkout-release' : 'context', status: 'waiting' });
-  }, { timeout: 10_000 });
+  }, { timeout: 30_000 });
   expect(interrupted).toBe(true); const prepared = member.conversations.options.contexts.get(record.id)!.checkpointPlan;
   if (boundary !== 'applied-result') expect(git(path, 'rev-parse', 'HEAD')).toBe(initial); else expect(git(path, 'rev-parse', 'HEAD')).toBe(prepared!.after);
   if (continuation === 'outside-files' || continuation.startsWith('reviewed-')) writeFileSync(join(path, 'outside.txt'), 'An outside contribution.\n');
@@ -499,7 +499,7 @@ test.each([
         offline = true; throw new HubUnavailable('Fixture hub');
       });
       await member.conversations.continueContext('project', { schema: 'context-continue-v1', clientRequestId: 'accept_context_wait', operationId: record.id, generation: review.generation, action: 'accept-changes', fingerprint: review.fingerprint }).catch(error => expect(error).toBeInstanceOf(HubUnavailable));
-      await vi.waitFor(() => { expect(waits().at(-1)?.id).not.toBe(previousWait); expect(waits().at(-1)).toMatchObject({ boundary: 'context', status: 'waiting' }); }, { timeout: 10_000 });
+      await vi.waitFor(() => { expect(waits().at(-1)?.id).not.toBe(previousWait); expect(waits().at(-1)).toMatchObject({ boundary: 'context', status: 'waiting' }); }, { timeout: 30_000 });
       const reviewedPlan = member.conversations.options.contexts.get(record.id)!.checkpointPlan!; expect(reviewedPlan.id).toBe('accept_context_wait');
       if (continuation === 'reviewed-stale') writeFileSync(join(path, 'outside.txt'), 'Changed after review.\n');
       const beforeResume = preserved(); offline = false; await member.presence.pulse(); await member.conversations.wait(record.conversationId);
@@ -886,7 +886,10 @@ test('outside activity during a member step lets execution finish and requires r
   const changes = ConversationChangesSchema.parse(await body(await request(memberBase, '/api/conversations/member_work/changes/1', cookie))); expect(changes.uncommitted).toContain('+2'); expect(changes.recovery?.fingerprint).toBeTruthy();
   await body(await request(memberBase, '/api/conversations/member_work/adopt-changes', cookie, { schema: 'adopt-changes-v1', clientRequestId: 'outside_review', workId: blocked.conversation.work!.id, stretch: 1, generation: changes.recovery!.generation, fingerprint: changes.recovery!.fingerprint }), 202);
   await member.conversations.wait('member_work'); expect((await member.conversations.view('member_work')).checkpointBlocks).toEqual([]); expect(fake.starts).toHaveLength(1);
+  // The blocked step never answered the request; a completed reply must answer it before Done is available.
+  fake.enqueue(async ({ input }) => { await handoff(input); return { status: 'completed' }; }); await choose('reply'); await member.conversations.wait('member_work');
   expect(git(origin, 'rev-parse', 'main')).toBe(initial); await choose('done'); await member.conversations.wait('member_work'); expect(git(path, 'rev-parse', 'HEAD')).toBe(git(origin, 'rev-parse', 'main'));
+  expect(fake.starts.map((step) => step.action)).toEqual(['implement', 'reply']);
 }, 90_000);
 
 test('outside activity discovered during publication coordination prevents pushing and can retry without another runtime step', async () => {

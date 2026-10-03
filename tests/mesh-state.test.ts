@@ -63,7 +63,7 @@ test('configuration retry after a lost successful HTTP reply returns its origina
   const input = { schema: 'config-write-v1' as const, revision: original.revision, configuration: original.configuration, clientRequestId: 'save_lost' };
   await expect(left.state.configuration.put(input)).rejects.toBeInstanceOf(HubUnavailable);
   const saved = await right.state.configuration.current(); expect(saved.revision).toBe(original.revision + 1);
-  const changed = structuredClone(saved.configuration); changed['x-jevellan'].guards.pauseAfterPlan = true;
+  const changed = structuredClone(saved.configuration); changed['x-jevellan'].guards.pauseAfterPlan = false;
   const newer = await right.state.configuration.put({ schema: 'config-write-v1', revision: saved.revision, configuration: changed });
   expect(await left.state.configuration.put(input)).toEqual(saved);
   expect(await left.state.configuration.current()).toEqual(newer);

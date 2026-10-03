@@ -73,7 +73,7 @@ test('UI configuration retry recovers a saved revision after post-save hub loss'
   const interrupted = await request('/hub/config', 'PUT', input);
   expect(interrupted.status).toBe(503); expect(await interrupted.json()).toMatchObject({ code: 'hub-unavailable', retryable: true });
   const saved = app.hub.configuration.current()!; expect(saved.revision).toBe(current.revision + 1);
-  const newer = structuredClone(saved.configuration); newer['x-jevellan'].guards.pauseAfterPlan = true;
+  const newer = structuredClone(saved.configuration); newer['x-jevellan'].guards.pauseAfterPlan = false;
   app.hub.configuration.put(newer, saved.revision, { deviceId: 'other', source: 'ui' });
   const recovered = await request('/hub/config', 'PUT', input); expect(recovered.status).toBe(200); expect(await recovered.json()).toEqual(saved);
   expect(app.hub.configuration.current()?.configuration).toEqual(newer);
@@ -152,14 +152,14 @@ test('UI-driven subscription login finishes with a ready per-device status', asy
 });
 
 test('configuration import previews a diff, applies with CAS and records the authenticated device', async () => {
-  const current = ConfigRevisionSchema.parse(await (await request('/hub/config')).json()); const proposed = structuredClone(current.configuration); proposed['x-jevellan'].guards.pauseAfterPlan = true;
+  const current = ConfigRevisionSchema.parse(await (await request('/hub/config')).json()); const proposed = structuredClone(current.configuration); proposed['x-jevellan'].guards.pauseAfterPlan = false;
   const preview = await request('/hub/config/import-preview', 'POST', { schema: 'config-import-v1', yaml: exportConfiguration(proposed) });
   expect(preview.status).toBe(200); const diff = await preview.json() as { revision: number; changedPaths: string[] }; expect(diff.changedPaths).toContain('/x-jevellan/guards/pauseAfterPlan'); expect(app.hub.configuration.current()?.revision).toBe(current.revision);
   const input = { schema: 'config-write-v1', revision: diff.revision, configuration: proposed };
   const saved = await request('/hub/config', 'PUT', input); expect(saved.status).toBe(200); expect(ConfigRevisionSchema.parse(await saved.json()).changedBy.deviceId).toBe(app.device.deviceId);
   const stale = await request('/hub/config', 'PUT', input); expect(stale.status).toBe(409); expect(await stale.text()).toContain('Settings changed elsewhere. Reloaded the latest version.');
-  expect(readFileSync(homes.at('apm.yml'), 'utf8')).toContain('pauseAfterPlan: true');
-  const exported = await request('/hub/config/export'); expect(exported.headers.get('content-disposition')).toContain('apm.yml'); expect(await exported.text()).toContain('pauseAfterPlan: true');
+  expect(readFileSync(homes.at('apm.yml'), 'utf8')).toContain('pauseAfterPlan: false');
+  const exported = await request('/hub/config/export'); expect(exported.headers.get('content-disposition')).toContain('apm.yml'); expect(await exported.text()).toContain('pauseAfterPlan: false');
 });
 
 test('a local skill submitted over HTTP is installed by APM into the account home and parks when disabled', async () => {

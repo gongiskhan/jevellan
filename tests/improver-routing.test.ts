@@ -74,9 +74,9 @@ test.each([
   const original = seedConfiguration(); const before = routingFieldText(original, field); const after = 'A precise revised guideline.';
   const changed = applyRoutingField(original, field, before, after);
   expect(routingFieldText(original, field)).toBe(before); expect(routingFieldText(changed, field)).toBe(after);
-  changed['x-jevellan'].guards.pauseAfterPlan = true;
+  changed['x-jevellan'].guards.pauseAfterPlan = false;
   const undone = applyRoutingField(changed, field, after, before);
-  expect(undone).toEqual({ ...original, 'x-jevellan': { ...original['x-jevellan'], guards: { ...original['x-jevellan'].guards, pauseAfterPlan: true } } });
+  expect(undone).toEqual({ ...original, 'x-jevellan': { ...original['x-jevellan'], guards: { ...original['x-jevellan'].guards, pauseAfterPlan: false } } });
   expect(() => applyRoutingField(changed, field, before, 'Overwrite')).toThrow('Recompute');
   expect(() => applyRoutingField(changed, field, after, '')).toThrow();
 });

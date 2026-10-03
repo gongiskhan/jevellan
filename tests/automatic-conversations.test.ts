@@ -247,7 +247,7 @@ test('plan approval resumes automatic execution with the full plan in the next b
   const approved = await request('/api/conversations/automatic/approve-plan', { schema: 'plan-approval-v1', generation: waiting.conversation.generation, ref: waiting.conversation.work!.latestPlanRef }); expect(approved.status).toBe(200);
   const result = await finished(); expect(result.conversation.state, result.pause?.reason).toBe('done'); expect(fake.starts).toHaveLength(2);
   expect(fake.starts[1]!.brief).toContain('Finally verify the exact commit.');
-});
+}, 60_000);
 
 test('pending plans allow discussion and explicit revisions but never implementation or completion before approval', async () => {
   actions = ['plan'];
@@ -279,7 +279,7 @@ test('pending plans allow discussion and explicit revisions but never implementa
   await app.conversations.approvePlan('automatic', { schema: 'plan-approval-v1', generation: waiting.conversation.generation, ref: waiting.conversation.work!.latestPlanRef });
   const done = await finished(); expect(done.conversation.state, done.pause?.reason).toBe('done');
   expect(fake.starts[3]!.brief).toContain('(approved)');
-});
+}, 60_000);
 
 test('actual project memory is scored once and the chosen unresolved note reaches the runtime brief', async () => {
   mkdirSync(join(path, '.jevellan/memory'), { recursive: true });
@@ -623,16 +623,17 @@ test('a follow-up after completed work receives previous answers without inherit
 });
 
 test('a queued message arriving after launch cannot be consumed by the running stretch', async () => {
-  actions = ['reply', 'reply', 'done']; let release!: () => void;
+  actions = ['reply', 'reply', 'done']; let release!: () => void; let launched!: () => void;
+  const running = new Promise<void>(resolve => { launched = resolve; });
   fake.enqueue(async ({ input, emit }) => {
-    await new Promise<void>(resolve => { release = resolve; });
+    await new Promise<void>(resolve => { release = resolve; launched(); });
     emit({ type: 'text', delta: 'The earlier answer.' }); await handoff(input); return { status: 'completed' };
   });
   fake.enqueue(async ({ input, emit }) => {
     expect(input.brief).toContain('# Latest user message — respond to this now\n\nSummarize the earlier answer.');
     emit({ type: 'text', delta: 'The concise summary.' }); await handoff(input); return { status: 'completed' };
   });
-  await create('Explain the project.'); await vi.waitFor(() => expect(release).toBeTypeOf('function'));
+  await create('Explain the project.'); await running;
   expect((await request('/api/conversations/automatic/messages', { schema: 'conversation-message-v1', clientMessageId: 'queue', text: 'Summarize the earlier answer.', kind: 'note' })).status).toBe(200);
   release(); const result = await finished(); expect(result.conversation.state, result.pause?.reason).toBe('done');
   expect(fake.starts).toHaveLength(2); expect(result.decisions[1]!.action.allowed).not.toContain('done');

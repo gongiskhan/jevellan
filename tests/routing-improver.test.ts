@@ -130,14 +130,14 @@ test('plain-language Change it launches exactly one further read-only draft and 
 
 test('Apply against a changed field automatically drafts and checks a replacement, still requiring a new Apply', async () => {
   const row = await suggestion(); const current = hub.configuration.current()!; current.configuration['x-jevellan'].routingProfile = 'The user changed this field.';
-  current.configuration['x-jevellan'].guards.pauseAfterPlan = true; hub.configuration.put(current.configuration, current.revision, { deviceId: 'hub', source: 'ui' });
+  current.configuration['x-jevellan'].guards.pauseAfterPlan = false; hub.configuration.put(current.configuration, current.revision, { deviceId: 'hub', source: 'ui' });
   const input = { schema: 'improver-request-v1', operation: 'act', suggestionId: row.suggestion.id,
     input: { schema: 'routing-suggestion-action-v1', kind: 'apply', revision: row.revision, previewId: null, clientRequestId: 'stale_apply' } };
   expect(RoutingSuggestionRowSchema.parse(await improver.request(input, 'hub')).suggestion.status).toBe('recompute');
   const request = improver.revisions.recent()[0]!; await improver.revisions.wait(request.id);
   expect(improver.revisions.get(request.id).status).toBe('complete'); const recomputed = improver.suggestions.get(row.suggestion.id)!;
   expect(recomputed.suggestion).toMatchObject({ status: 'pending', draft: { before: 'The user changed this field.' } }); expect(recomputed.revision).toBe(row.revision + 2);
-  expect(hub.configuration.current()?.revision).toBe(2); expect(hub.configuration.current()?.configuration['x-jevellan'].guards.pauseAfterPlan).toBe(true);
+  expect(hub.configuration.current()?.revision).toBe(2); expect(hub.configuration.current()?.configuration['x-jevellan'].guards.pauseAfterPlan).toBe(false);
   expect(RoutingSuggestionRowSchema.parse(await improver.request(input, 'hub')).suggestion.status).toBe('recompute'); expect(drafts).toHaveLength(2);
 });
 

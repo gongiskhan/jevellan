@@ -23,10 +23,10 @@ test('configuration revisions reject stale writers across two database connectio
   const first = hub(); const second = new HubDatabase(homes, 'hub');
   try {
     const initial = first.configuration.put(seedConfiguration(), 0, { deviceId: 'first', source: 'install' });
-    const changed = structuredClone(initial.configuration); changed['x-jevellan'].guards.pauseAfterPlan = true;
+    const changed = structuredClone(initial.configuration); changed['x-jevellan'].guards.pauseAfterPlan = false;
     second.configuration.put(changed, 1, { deviceId: 'second', source: 'ui' });
     expect(() => first.configuration.put(seedConfiguration(), 1, { deviceId: 'first', source: 'ui' })).toThrow('Settings changed elsewhere');
-    expect(first.configuration.current()?.configuration['x-jevellan'].guards.pauseAfterPlan).toBe(true);
+    expect(first.configuration.current()?.configuration['x-jevellan'].guards.pauseAfterPlan).toBe(false);
     expect(first.configuration.history().map((revision) => revision.changedBy.deviceId)).toEqual(['first', 'second']);
     first.configuration.materialise(homes);
     expect(parseConfiguration(readFileSync(homes.at('apm.yml'), 'utf8'))).toEqual(changed);
@@ -45,7 +45,7 @@ test('configuration import round-trips and rejects duplicate keys, unknown secre
 test('configuration request receipts recover the original result after restart and a newer save', () => {
   const first = hub(); const author = { deviceId: 'first', source: 'ui' as const };
   const config = seedConfiguration(); const saved = first.configuration.put(config, 0, author, undefined, 'save_first');
-  const newer = structuredClone(config); newer['x-jevellan'].guards.pauseAfterPlan = true;
+  const newer = structuredClone(config); newer['x-jevellan'].guards.pauseAfterPlan = false;
   first.configuration.put(newer, 1, author, undefined, 'save_second');
   first.close(); database = undefined; const reopened = hub();
   expect(reopened.configuration.put(config, 0, author, undefined, 'save_first')).toEqual(saved);

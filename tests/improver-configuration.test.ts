@@ -33,7 +33,7 @@ function saveLegacy() {
 }
 
 test('version one gains only versioned improver defaults and cannot silently contain new settings', () => {
-  const legacy = legacyConfiguration(); legacy['x-jevellan'].guards.pauseAfterPlan = true;
+  const legacy = legacyConfiguration(); legacy['x-jevellan'].guards.pauseAfterPlan = false;
   legacy['x-jevellan'].menu[0]!.description = 'Keep this model description.';
   const upgraded = ConfigurationSchema.parse(legacy);
   expect(upgraded).toEqual({ ...legacy, 'x-jevellan': { ...legacy['x-jevellan'], schema: 2, improver: defaultImproverSettings() } });
@@ -66,7 +66,7 @@ test('reading legacy history adds defaults without rewriting historical bytes or
 
 test('a lost version-one save reply survives upgrade, restart and newer changes without replaying the write', () => {
   const { configuration, receipt } = saveLegacy(); const newer = hub.configuration.current()!.configuration;
-  newer['x-jevellan'].improver.schedule.time = '04:30'; newer['x-jevellan'].guards.pauseAfterPlan = true;
+  newer['x-jevellan'].improver.schedule.time = '04:30'; newer['x-jevellan'].guards.pauseAfterPlan = false;
   hub.configuration.put(newer, 1, author); hub.close(); hub = new HubDatabase(homes, 'hub');
   const recovered = hub.configuration.put(configuration, 0, author, undefined, receipt.id);
   expect(recovered.revision).toBe(1); expect(recovered.configuration['x-jevellan'].improver.schedule.time).toBe('03:00');
