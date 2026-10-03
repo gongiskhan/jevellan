@@ -797,6 +797,24 @@ test('manual selection cannot bypass a guard; a reply grants one allowance on th
   fake.enqueue(async ({ input }) => { await handoff(input); return { status: 'completed' }; }); await choose('reply'); await app.conversations.wait('conversation'); expect(fake.starts).toHaveLength(2);
 }, 60_000);
 
+test('a reply to a no-progress stop restarts the count, so a reply step can answer it and Done publishes', async () => {
+  const unchanged: FakeStep = async ({ input }) => { await handoff(input); return { status: 'completed' }; };
+  await create(); fake.enqueue(implement); await choose('implement'); await app.conversations.wait('conversation'); const head = git(path, 'rev-parse', 'HEAD');
+  for (let step = 0; step < 2; step++) { fake.enqueue(unchanged); await choose('implement'); await app.conversations.wait('conversation'); }
+  const stopped = await app.conversations.view('conversation');
+  expect(stopped.pause?.guard).toBe('no-progress'); expect(stopped.conversation.work!.counters.noProgress).toBe(2);
+  const reply = await request('/api/conversations/conversation/messages', 'POST', { schema: 'conversation-message-v1', clientMessageId: 'finish', text: 'Nothing else needs to change. Finish and publish.' });
+  expect(reply.status, await reply.text()).toBeLessThan(300); await app.conversations.wait('conversation');
+  const answered = await app.conversations.view('conversation');
+  expect(answered.pause?.guard).toBeUndefined(); expect(answered.allowed).not.toContain('done');
+  fake.enqueue(unchanged); await choose('reply'); await app.conversations.wait('conversation');
+  const replied = await app.conversations.view('conversation'); expect(replied.pause?.guard, replied.pause?.reason).toBeUndefined(); expect(replied.allowed).toContain('done');
+  await choose('done'); await app.conversations.wait('conversation');
+  const finished = await app.conversations.view('conversation');
+  expect(finished.conversation.state, finished.pause?.reason).toBe('done'); expect(finished.closedWorks.at(-1)?.closedAs).toBe('done');
+  expect(fake.starts.map((step) => step.action)).toEqual(['implement', 'implement', 'implement', 'reply']); expect(git(origin, 'rev-parse', 'main')).toBe(head);
+}, 60_000);
+
 test('memory captured by a read-only reply publishes without running a failing code test', async () => {
   const opened = await create('conversation', 'Record the fixture convention in project memory.');
   fake.enqueue(async ({ input }) => {
@@ -1059,14 +1077,16 @@ test('a crash after the checkpoint commit keeps the receipt and publishes withou
     expect(recovered.stretches[0]?.status).toBe('interrupted'); expect(recovered.checkpointBlocks).toEqual([]);
     fake.enqueue(async ({ input }) => { await handoff(input); return { status: 'completed' }; });
     await choose('implement'); await app.conversations.wait('conversation'); expect(git(path, 'rev-parse', 'HEAD')).toBe(head);
+    expect((await app.conversations.view('conversation')).pause?.guard).toBe('no-progress');
     const reply = await request('/api/conversations/conversation/messages', 'POST', { schema: 'conversation-message-v1', clientMessageId: 'finish', text: 'Finish and publish.' });
     expect(reply.status, await reply.text()).toBeLessThan(300); await app.conversations.wait('conversation');
-    // The no-progress stop and the unanswered message leave Done unavailable as a step; Close work publishes explicitly.
+    // The reply restarts the no-progress count; a completed reply step answers it before Done.
     expect((await app.conversations.view('conversation')).allowed).not.toContain('done');
-    await settle('publish');
+    fake.enqueue(async ({ input }) => { await handoff(input); return { status: 'completed' }; }); await choose('reply'); await app.conversations.wait('conversation');
+    await choose('done'); await app.conversations.wait('conversation');
     const finished = await app.conversations.view('conversation');
-    expect(finished.closedWorks).toMatchObject([{ closedAs: 'closed-by-you' }]); expect(finished.settlements.at(-1)).toMatchObject({ status: 'completed', choice: 'publish' });
-    expect(git(origin, 'rev-parse', 'main')).toBe(head); expect(fake.starts).toHaveLength(1);
+    expect(finished.conversation.state, finished.pause?.reason).toBe('done'); expect(finished.closedWorks).toMatchObject([{ closedAs: 'done' }]);
+    expect(git(origin, 'rev-parse', 'main')).toBe(head); expect(fake.starts.map((step) => step.action)).toEqual(['implement', 'reply']);
     expect((await app.conversations.changes('conversation', 2)).verifications.some((entry) => entry.passed && entry.commit === head)).toBe(true);
   } finally { await terminateGroup(native); }
 }, 60_000);

@@ -216,6 +216,8 @@ export const ConversationCreatedSchema = z.strictObject({ schema: z.literal('con
 export const WorkMessageSchema = z.strictObject({
   schema: z.literal('work-message-v1'), clientMessageId: IdSchema, text, workId: IdSchema,
   initialAllowance: z.number().int().positive(), allowanceGranted: count.default(0),
+  /** Set when the message replies to a no-progress stop; that count restarts at this message. */
+  noProgressReset: z.literal(true).optional(),
   /** Set when the message is one of the options offered for a handoff's question. */
   answer: z.strictObject({ stretch: z.number().int().positive(), option: z.number().int().min(0).max(3), label: text }).optional(),
 });

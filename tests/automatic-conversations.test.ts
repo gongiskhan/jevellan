@@ -179,6 +179,15 @@ test('a guard stops at the stretch boundary before another Jev call', async () =
   expect(calls.filter((call) => call.questions.next_action)).toHaveLength(2); expect(actions).toEqual(['done']);
 });
 
+test('after a reply to a no-progress stop, Jev answers it with a reply step and finishes with Done', async () => {
+  actions = ['implement', 'implement', 'implement', 'reply', 'done']; enqueue('2'); enqueue(); enqueue(); await create();
+  const stopped = await finished(); expect(stopped.pause).toMatchObject({ guard: 'no-progress' }); expect(fake.starts).toHaveLength(3); expect(actions).toEqual(['reply', 'done']);
+  enqueue(); const sent = await request('/api/conversations/automatic/messages', { schema: 'conversation-message-v1', clientMessageId: 'finish', text: 'Nothing else needs to change. Finish.', kind: 'message' }); expect(sent.status).toBe(200);
+  const result = await finished();
+  expect(result.conversation.state, result.pause?.reason).toBe('done'); expect(fake.starts.map((step) => step.action)).toEqual(['implement', 'implement', 'implement', 'reply']);
+  expect(result.decisions.map((decision) => decision.action.chosen)).toEqual(['implement', 'implement', 'implement', 'reply', 'done']); expect(git(origin, 'rev-parse', 'main')).toBe(git(path, 'rev-parse', 'HEAD'));
+}, 60_000);
+
 test('a stale in-flight classification is discarded after a new user message', async () => {
   let release!: () => void;
   transport.mockImplementationOnce(async (_url, init) => { const body = JSON.parse(String(init!.body)) as Wire; calls.push({ state: JSON.parse(body.state), questions: body.questions }); return new Promise<Response>((resolve) => { release = () => resolve(answer(body, 'implement')); }); });

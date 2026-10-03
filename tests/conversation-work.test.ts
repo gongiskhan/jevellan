@@ -88,6 +88,20 @@ test('guard reply grants one allowance, including recovery after a lost allowanc
   expect(work.allowance.stretches).toBe(6); expect(work.allowance.grants).toHaveLength(1); expect(work.counters.stretches).toBe(0);
   expect(ledger.events().filter((event) => event.type === 'allowance')).toHaveLength(1);
 });
+test('a reply to a no-progress stop restarts that count durably, including after undo, and other stops leave it unchanged', () => {
+  store.message('Request', 'request'); store.baseCommit('base');
+  const unchanged = () => {
+    const n = start('implement'); ledger.acceptHandoff(HandoffSchema.parse({ schema: 'handoff-v2', stretch: n, action: 'implement', status: 'done', summary: 'Nothing to change', evidence: [], findings: [], blockers: [], failedApproaches: [], proposedNext: null, changedFiles: [] }));
+    store.finish(n, { status: 'completed', usage: { inputTokens: 0, outputTokens: 0, costSource: 'unknown' } }, false);
+  };
+  const noProgress = () => store.load().conversation.work!.counters.noProgress;
+  unchanged(); unchanged(); store.pause('The last 2 steps changed nothing.', 'waiting-for-you', 'no-progress'); expect(noProgress()).toBe(2);
+  store.message('Nothing else needs to change.', 'answer'); expect(noProgress()).toBe(0);
+  unchanged(); expect(noProgress()).toBe(1);
+  store.undo(undo(3)); expect(noProgress()).toBe(0);
+  expect(new ConversationWork(new ConversationLedger(homes, 'conversation')).recover().conversation.work!.counters.noProgress).toBe(0);
+  unchanged(); store.pause('Step limit', 'waiting-for-you', 'steps'); store.message('Continue', 'continue'); expect(noProgress()).toBe(1);
+});
 test('notes and corrections both persist verbatim; only corrections request interruption', () => {
   store.message('Request', 'request'); start();
   expect(store.message('An extra reference.', 'note', 'note').correction).toBe(false);

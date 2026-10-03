@@ -104,6 +104,8 @@ function applyUndo(view: ConversationView, undo: UndoApplied, history: LedgerEve
       const receipt = VerificationSchema.parse(ledger.data(event)); if (receipt.workId === work.id) applyVerification(work, receipt);
     } else if (event.type === 'undo') {
       if (UndoAppliedSchema.parse(ledger.data(event)).workId === work.id) verificationApplies = true;
+    } else if (event.type === 'user-message') {
+      const message = WorkMessageSchema.parse(ledger.data(event)); if (message.workId === work.id && message.noProgressReset) work.counters.noProgress = 0;
     } else if (event.type === 'state') {
       const value = WorkControlSchema.safeParse(ledger.data(event));
       if (value.success && value.data.kind === 'plan-approved' && value.data.ref === work.latestPlanRef) work.approvedPlanRef = value.data.ref;
@@ -150,6 +152,7 @@ export function replayWork(ledger: ConversationLedger): ConversationView {
         conversation.work.allowance.stretches += message.allowanceGranted;
         conversation.work.allowance.grants.push({ at: event.t, extra: message.allowanceGranted, via: 'reply' });
       }
+      if (message.noProgressReset) conversation.work.counters.noProgress = 0;
       view.messages.push({ id: event.id, type: event.type, clientMessageId: message.clientMessageId, text: message.text, workId: message.workId, ...(message.answer ? { answer: message.answer } : {}) });
       conversation.generation++;
       if (event.type === 'user-message') { delete view.pause; if (conversation.state !== 'running') conversation.state = 'idle'; }
@@ -307,7 +310,7 @@ export class ConversationWork {
     if (view.finishes.some((entry) => entry.status !== 'completed')) throw new Error('Finish the pending outside outcome before adding another message.');
     if (type === 'note' && view.conversation.state !== 'running') throw new Error('Notes require a running stretch.');
     if (!Number.isSafeInteger(allowance) || allowance < 1) throw new Error('Invalid work allowance.');
-    const data = WorkMessageSchema.parse({ schema: 'work-message-v1', text, clientMessageId, workId: view.conversation.work?.id ?? `work_${randomUUID()}`, initialAllowance: allowance, allowanceGranted: type === 'user-message' && view.pause?.guard ? allowance : 0, ...(answer ? { answer } : {}) });
+    const data = WorkMessageSchema.parse({ schema: 'work-message-v1', text, clientMessageId, workId: view.conversation.work?.id ?? `work_${randomUUID()}`, initialAllowance: allowance, allowanceGranted: type === 'user-message' && view.pause?.guard ? allowance : 0, ...(type === 'user-message' && view.pause?.guard === 'no-progress' ? { noProgressReset: true } : {}), ...(answer ? { answer } : {}) });
     const event = this.ledger.append({ type, data }); this.#replyReceipts();
     return { eventId: event.id, repeated: false, correction: type === 'user-message' && view.conversation.state === 'running', view: this.#materialise() };
   }
