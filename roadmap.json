@@ -196,5 +196,11 @@
     "title": "Projects: turns, threads, worktrees and pull requests",
     "why": "Owner-created threads run turns in their own git worktrees and branches, verify with the project test command, push with a lease, open and follow pull requests and recover from restarts: PJ1 to PJ1f pass 70 of 70, the full backend passed 1409 tests with 4 missing-key skips and 0 failures, and the existing browser journeys passed 158 of 160 (two load timeouts that pass alone) plus 4 of 4 installation journeys, all simulated (FakeRuntime, simulated provider CLIs, fake GitHub server) with vision checks not run without the dedicated Claude token; see docs/acceptance/PJ1.md.",
     "status": "complete-with-blockers"
+  },
+  {
+    "id": "projects-coordinator",
+    "title": "Projects: the coordinator",
+    "why": "A read-only coordinator per project turns owner messages and batched thread events into thread starts, messages, owner questions and notebook edits, rotates its session at 40 turns and on Fresh, falls back to asking the owner directly when it cannot run, and streams its chat over SSE: PJ2 and PJ2b to PJ2e pass (8 of 8 acceptance cases, 28 of 28 in the five new files), the full backend passed 1437 tests with 4 missing-key skips and 0 failures, and the existing browser journeys passed 164 of 164 including 4 installation journeys, all simulated (FakeRuntime coordinator and thread turns, fake GitHub server) with vision checks not run without the dedicated Claude token; see docs/acceptance/PJ2.md.",
+    "status": "complete-with-blockers"
   }
 ]

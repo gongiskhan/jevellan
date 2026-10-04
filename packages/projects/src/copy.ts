@@ -185,10 +185,16 @@ Placement: ${input.runtime} ${input.modelLabel}, ${input.effort} effort, ${input
 export const coordinatorUnavailableNotice = (reason: string): string => `The coordinator cannot run: ${reason}`;
 export const coordinatorOfflineNotice = (deviceName: string): string => `The coordinator lives on ${deviceName}, which is offline.`;
 export const placedWithoutJev = (reason: string): string => `Placed without Jev: ${reason}`;
-export const coordinatorFailedTwiceNotice = (error: string): string => `The coordinator failed twice: ${error}. Send a message to try again.`;
+/** `{error}` keeps no final period of its own, so the sentence stays well formed. */
+export const coordinatorFailedTwiceNotice = (error: string): string => `The coordinator failed twice: ${error.trim().replace(/\.+$/, '')}. Send a message to try again.`;
 export const noCoordinatorAccount = (deviceName: string): string => `No account can run the coordinator model on ${deviceName}.`;
 export const noCoordinatorModel = (deviceName: string): string => `No enabled model can run the coordinator on ${deviceName}.`;
 export const COORDINATOR_MEMORY_READ_ONLY = 'The coordinator cannot write project memory.';
+/** A coordinator session whose account is no longer eligible continues on another account in a fresh session (D16). */
+export const coordinatorAccountMovedNotice = (accountLabel: string): string => `The coordinator moved to account ${accountLabel}; a fresh session started.`;
+export const coordinatorTurnTimedOut = (timeoutMs: number): string => `The coordinator turn timed out after ${duration(timeoutMs)}.`;
+/** A coordinator turn whose process cleanup was not confirmed counts as a failed turn; its record stays for recovery. */
+export const COORDINATOR_PROCESS_UNCONFIRMED = "Jevellan could not confirm the coordinator's process stopped.";
 
 // Thread state reasons (brief 8.2-8.6, D9, D24, D66, D69)
 export const NO_CHANGES = 'Concluded without changes.';
@@ -198,10 +204,11 @@ export const BRANCH_PUSHED_NO_TOKEN = 'Branch pushed. Add a GitHub token in Sett
 export const NOT_GITHUB = 'The remote is not on GitHub.';
 export const githubRefused = (message: string): string => `GitHub refused the pull request: ${message}`;
 export const worktreeSetupFailed = (line: string): string => `Worktree setup failed: ${line}`.slice(0, 400);
-export function commandTimedOut(timeoutMs: number): string {
+function duration(timeoutMs: number): string {
   const [count, unit] = timeoutMs >= 60_000 ? [Math.round(timeoutMs / 60_000), 'minute'] : [Math.max(1, Math.round(timeoutMs / 1000)), 'second'];
-  return `the command timed out after ${count} ${unit}${count === 1 ? '' : 's'}.`;
+  return `${count} ${unit}${count === 1 ? '' : 's'}`;
 }
+export const commandTimedOut = (timeoutMs: number): string => `the command timed out after ${duration(timeoutMs)}.`;
 export const exitCodeLine = (code: number): string => `exit code ${code}`;
 export const TURN_LIMIT_REACHED = 'This thread reached its turn limit.';
 export const RESTARTED = 'Jevellan restarted during this step.';
@@ -253,6 +260,50 @@ export function toolInputError(path: ReadonlyArray<PropertyKey>, message: string
   const field = path.map(String).join('.');
   return `${field ? `${field}: ` : ''}${message.trim().replace(/\.+$/, '')}. ${CHECK_TOOL_INPUT}`;
 }
+/** `jevellan_thread_read` with `transcript` for a thread on another device (D42). */
+export const transcriptStaysOn = (deviceName: string): string => `The transcript stays on ${deviceName}.`;
+/** The gist of a sentence-shaped message: its first line up to the first sentence end (a conflict's content and `Check the tool input.` stay out). */
+export function firstSentence(text: string): string {
+  const line = firstLine(text);
+  return /^.*?[.!?](?=\s|$)/.exec(line)?.[0] ?? line;
+}
+export type ToolSummaryOutcome = { ok: true; result: unknown } | { ok: false; error: string };
+const field = (value: unknown, key: string): unknown => value !== null && typeof value === 'object' ? (value as Record<string, unknown>)[key] : undefined;
+const rawField = (value: unknown, key: string): string | undefined => { const found = field(value, key); return typeof found === 'string' && found.trim() ? found : undefined; };
+const textField = (value: unknown, key: string): string | undefined => { const found = rawField(value, key); return found === undefined ? undefined : oneLine(found); };
+/**
+ * The coordinator chat's line for one tool call (brief 8.1, 12.2; D200): what the coordinator did, or `Could not {action}:
+ * {error}`. `title` is the title of the thread the call names; `input` is unparsed when the input was refused. At most 400
+ * characters.
+ */
+export function coordinatorToolSummary(tool: string, input: unknown, outcome: ToolSummaryOutcome, title?: string): string {
+  const result = outcome.ok ? outcome.result : undefined;
+  const thread = `"${title ?? UNKNOWN_THREAD}"`;
+  const line = (done: string, attempt: string) => (outcome.ok ? done : `Could not ${attempt}: ${firstSentence(outcome.error)}`).slice(0, 400);
+  switch (tool) {
+    case 'jevellan_threads_list': return line('Listed threads', 'list threads');
+    case 'jevellan_thread_start': {
+      const named = textField(input, 'title');
+      return line(`${field(result, 'state') === 'queued' ? 'Queued' : 'Started'} "${named ?? ''}" · ${textField(result, 'placement') ?? ''}`, named ? `start "${named}"` : 'start a thread');
+    }
+    case 'jevellan_thread_message': return line(`Sent a message to ${thread}${field(result, 'delivery') === 'interrupting' ? ' and interrupted its turn' : ''}`, `send a message to ${thread}`);
+    case 'jevellan_thread_read': return line(`Read ${thread}`, `read ${thread}`);
+    case 'jevellan_thread_stop': return line(`Stopped ${thread}`, `stop ${thread}`);
+    case 'jevellan_ask_user': return line(`Asked you: ${firstLine(rawField(input, 'question') ?? '').slice(0, 120)}`, 'ask you');
+    case 'jevellan_withdraw_question':
+      return line(field(result, 'withdrawn') === false ? 'The owner already answered that question' : `Withdrew a question: ${textField(input, 'reason') ?? ''}`, 'withdraw a question');
+    case 'jevellan_notebook_read': return line('Read the notebook', 'read the notebook');
+    case 'jevellan_notebook_write': return line('Updated the notebook', 'update the notebook');
+    case 'jevellan_pr_status': {
+      const number = field(field(result, 'pr'), 'number');
+      return line(typeof number === 'number' ? `Checked PR #${number}` : `Checked ${thread}: no pull request`, `check the pull request of ${thread}`);
+    }
+    case 'jevellan_mail_send': { const to = textField(input, 'to') ?? ''; return line(`Sent mail to ${to}: ${textField(input, 'subject') ?? ''}`, `send mail to ${to}`); }
+    case 'memory_search': return line('Searched project memory', 'search project memory');
+    case 'memory_read': return line('Read a project memory note', 'read a project memory note');
+    default: return line(`Used ${tool}`, `use ${tool}`);
+  }
+}
 /** One line from the start result (3.1 step 2j); fallback placements say so (D82). */
 export function placementSummary(input: { runtime: string; modelLabel: string; effort: string; isolation: Isolation; deviceName: string; fallback?: string | undefined }): string {
   return `${input.runtime} ${input.modelLabel} · ${input.effort} · ${input.isolation === 'worktree' ? 'Worktree' : 'Main'} · ${input.deviceName}${input.fallback ? ` · placed without Jev: ${input.fallback}` : ''}`;
@@ -286,6 +337,9 @@ export const MERGE_CONFLICTS = 'This pull request has conflicts. Ask the thread 
 export const MERGE_CHECKS_FAILING = 'Checks are failing. Ask the thread to fix them first.';
 export const REMOTE_THREADS_LATER = 'Remote threads arrive in phase 5.';
 export const QUESTION_NOT_FOUND = 'This question was not found.';
+/** The coordinator chat stream's cursor refusals (`Last-Event-ID` or `?after=`), answered 400 before the stream opens. */
+export const EVENT_CURSOR_INVALID = 'Invalid project event cursor.';
+export const EVENT_CURSOR_AHEAD = 'Project event cursor is ahead of its history.';
 export const UNKNOWN_OPTION = 'Choose one of the offered options.';
 /** The settings notice when a main default is shown as worktree on a Leave git project (brief 12.2). */
 export const LEAVE_GIT_SETTING = 'This project is set to Leave git to me.';

@@ -1,7 +1,7 @@
 import type { z } from 'zod';
 import type { AccountService } from '@jevellan/accounts';
 import {
-  ThreadReadResultSchema, ThreadSchema, isTerminal, liveWork, newId, type CoordinatorEvent, type ProjectHub, type ProjectLedgerEvent, type SecretRedactor, type SharedProjects,
+  ThreadReadResultSchema, ThreadSchema, concludedRecently, isTerminal, liveWork, newId, type CoordinatorEvent, type ProjectHub, type ProjectLedgerEvent, type SecretRedactor, type SharedProjects,
   type Thread, type ThreadCommand, type ThreadIndex, type ThreadReport, type ThreadState,
 } from '@jevellan/core';
 import type { PlacementFixed } from '@jevellan/decisions';
@@ -238,12 +238,12 @@ export class ThreadService {
       case 'override-next-turn': throw new Error(`Placement overrides arrive in phase 4 (${thread.id}).`);
     }
   }
-  /** `jevellan_threads_list`: the project's hub indexes, active ones (not concluded) unless `all`. */
+  /** `jevellan_threads_list`: the project's hub indexes that are not concluded; `all` adds those concluded in the last 14 days. */
   async list(projectId: string, include: 'active' | 'all'): Promise<ThreadIndex[]> {
-    const threads: ThreadIndex[] = []; let after: string | undefined;
+    const threads: ThreadIndex[] = []; let after: string | undefined; const now = this.#o.now();
     do {
       const page = await this.#o.hub.threads(projectId, after);
-      threads.push(...page.records.filter((index) => index.projectId === projectId && (include === 'all' || !isTerminal(index.state))));
+      threads.push(...page.records.filter((index) => index.projectId === projectId && (!isTerminal(index.state) || (include === 'all' && concludedRecently(index, now)))));
       after = page.next ?? undefined;
     } while (after !== undefined);
     return threads;

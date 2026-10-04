@@ -6,6 +6,8 @@ import type { RuntimeAdapter } from '@jevellan/runtime-contract';
 import type { Admission } from './admission.js';
 
 export type DeviceRoster = z.infer<typeof DeviceRosterSchema>;
+/** The phase gates (D88): main isolation opens in phase 6, other devices in phase 5. Placement and the settings views read this one value. */
+export const PHASE_GATES: PlacementGates = { mainIsolation: false, remoteDevices: false };
 export type PlacementLabels = { modelLabel: string; deviceName: string; runtimeName: string };
 export type PlacementResult =
   /** `atLimit`: every device that could run the thread is at its running limit, so the start queues (D9, D133). */
@@ -27,7 +29,7 @@ export class Placement {
     roster(): Promise<DeviceRoster>; admission: Pick<Admission, 'counts'>; deviceId: string; deviceName: string; now(): number; gates: PlacementGates };
   constructor(o: { settings(): Promise<Configuration['x-jevellan']>; accounts: Pick<AccountService, 'list'>; runtimes: ReadonlyMap<string, RuntimeAdapter>;
     roster(): Promise<DeviceRoster>; admission: Pick<Admission, 'counts'>; deviceId: string; deviceName: string; now?(): number; gates?: PlacementGates }) {
-    this.#o = { ...o, now: o.now ?? Date.now, gates: o.gates ?? { mainIsolation: false, remoteDevices: false } };
+    this.#o = { ...o, now: o.now ?? Date.now, gates: o.gates ?? PHASE_GATES };
   }
   /** The decisions input for one start; exported for views that explain exclusions. */
   async input(input: PlaceInput): Promise<PlacementInput> {

@@ -1,6 +1,7 @@
 // Shared Projects integration harness (design 5.1.1, D48): a booted daemon on a real git origin with a GitHub-shaped remote
 // redirected by `insteadOf` (D18), the fake GitHub server, FakeRuntime turns that report through the daemon's own bridge, and
 // a signed-in browser session. Everything is simulated except git, HTTP, the ledgers and the process groups.
+import { expect } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
@@ -9,8 +10,8 @@ import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
-  AccountSchema, CoordinatorStateSchema, Homes, ProjectSchema, ThreadLocalSchema, ThreadSchema, readDocument, type CoordinatorState, type DocumentSchema, type ModelOption, type Project,
-  type Thread, type ThreadIndex, type ThreadLocal,
+  AccountSchema, CoordinatorStateSchema, Homes, ProjectSchema, ProjectWorkListViewSchema, ProjectWorkSettingsSchema, ProjectWorkViewSchema, ThreadLocalSchema, ThreadSchema, ThreadViewSchema,
+  defaultProjectWorkSettings, readDocument, type CoordinatorState, type DocumentSchema, type ModelOption, type Project, type Thread, type ThreadIndex, type ThreadLocal,
 } from '../../packages/core/dist/index.js';
 import { FakeRuntime, type FakeTurn, type FakeTurnStep } from '../../packages/runtime-contract/dist/index.js';
 import type { ProjectTimers } from '../../packages/projects/dist/index.js';
@@ -29,6 +30,11 @@ export type ProjectFixtureOptions = {
   testCommand?: string | null;
   /** Default false: the fake runtime cannot enforce read-only turns, so the coordinator is unavailable (D97). */
   coordinator?: boolean;
+  /**
+   * PJ2c: adds runtime `fake2` (read-only turns) with menu entry `coord` after the default entry and one disabled account, and
+   * pins the coordinator to `coord`; threads keep `fake`. An account gap, not a capability gap.
+   */
+  coordinatorAccountless?: boolean;
   menu?: ModelOption[];
   /** Default `{ fake: new FakeRuntime() }`; `fake` must be present. */
   runtimes?: Record<string, FakeRuntime>;
@@ -38,6 +44,8 @@ export type ProjectFixtureOptions = {
 
 export const FIXTURE_MENU: ModelOption[] = [{ id: 'fixture', runtime: 'fake', model: 'scripted-model', label: 'Fixture', description: 'Simulated model.', efforts: ['high'], enabled: true }];
 export const FIXTURE_REMOTE = 'https://github.com/fixture/repo.git';
+/** The coordinator-only menu entry of `coordinatorAccountless`. */
+export const COORDINATOR_ENTRY: ModelOption = { id: 'coord', runtime: 'fake2', model: 'scripted-model', label: 'Coordinator', description: 'Simulated coordinator model.', efforts: ['high'], enabled: true };
 const IDENTITY = ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid'];
 
 /** `git` with the fixture identity; output trimmed, stderr dropped, failures throw. */
@@ -89,9 +97,13 @@ export async function projectFixture(options: ProjectFixtureOptions = {}): Promi
   else if (options.github !== false) { git(checkout, 'remote', 'set-url', 'origin', FIXTURE_REMOTE); git(checkout, 'config', `url.${origin}.insteadOf`, FIXTURE_REMOTE); }
   const token = `fixture-${randomUUID()}`;
   const github = await startGitHubFixture({ token, repositories: { 'fixture/repo': origin } });
-  const runtimes = options.runtimes ?? { fake: new FakeRuntime() };
+  const runtimes: Record<string, FakeRuntime> = { ...(options.runtimes ?? { fake: new FakeRuntime() }) };
   const fake = runtimes.fake; if (!fake) throw new Error('The project fixture needs a fake runtime.');
   if (options.coordinator) fake.capabilities.readOnlyEnforced = true;
+  if (options.coordinatorAccountless) {
+    const coordinator = runtimes.fake2 ??= new FakeRuntime();
+    Object.defineProperty(coordinator, 'id', { value: 'fake2' }); coordinator.capabilities.readOnlyEnforced = true;
+  }
   const boot = () => new Application({ homes, timers: false, repositoryVisibility: async () => 'PUBLIC', runtimes: () => new Map(Object.entries(runtimes)), githubBaseUrl: github.url,
     ...(options.decisionFetch ? { decisionFetch: options.decisionFetch } : {}), projectTimers: { periodic: false, coordinatorStartMs: 0, coordinatorRetryMs: 50, ...options.projectTimers } });
   const listen = async (app: Application) => {
@@ -101,7 +113,7 @@ export async function projectFixture(options: ProjectFixtureOptions = {}): Promi
   let app = boot(); await app.started;
   const config = app.hub.configuration.current()!;
   for (const id of Object.keys(runtimes)) config.configuration['x-jevellan'].runtimes[id] = { enabled: true };
-  config.configuration['x-jevellan'].menu = options.menu ?? FIXTURE_MENU;
+  config.configuration['x-jevellan'].menu = options.menu ?? (options.coordinatorAccountless ? [...FIXTURE_MENU, COORDINATOR_ENTRY] : FIXTURE_MENU);
   app.hub.configuration.put(config.configuration, config.revision, { deviceId: app.device.deviceId, source: 'ui' });
   app.hub.put('accounts', 'acc_fixture', AccountSchema, { schema: 'account-v1', id: 'acc_fixture', runtime: 'fake', label: 'Fixture', kind: 'subscription', enabled: true, ceilingPct: 90, credential: 'per-device' }, 0);
   await app.accounts.check('acc_fixture');
@@ -109,6 +121,11 @@ export async function projectFixture(options: ProjectFixtureOptions = {}): Promi
   const project = ProjectSchema.parse({ schema: 'project-v1', id: 'project', name: 'Shop', paths: { [app.device.deviceId]: checkout }, branchPolicy: options.branchPolicy ?? 'main',
     ...(options.testCommand ? { testCommand: options.testCommand } : {}), memory: { mode: 'repo', dir: '.jevellan/memory' }, context: { state: 'none' } });
   await app.conversations.saveProject({ schema: 'project-write-v1', revision: 0, project });
+  if (options.coordinatorAccountless) {
+    app.hub.put('accounts', 'acc_coordinator', AccountSchema, { schema: 'account-v1', id: 'acc_coordinator', runtime: 'fake2', label: 'Coordinator', kind: 'subscription', enabled: false, ceilingPct: 90,
+      credential: 'per-device' }, 0);
+    await app.projectHub.putSettings(ProjectWorkSettingsSchema.parse({ ...defaultProjectWorkSettings(project.id), coordinator: { modelId: COORDINATOR_ENTRY.id, effort: 'medium' } }), 0);
+  }
   let { server, base } = await listen(app);
   const setup = await fetch(`${base}/api/auth/setup`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ schema: 'passphrase-input-v1', passphrase: 'disposable projects passphrase' }) });
   if (setup.status !== 200) throw new Error(`Session setup failed with ${setup.status}.`);
@@ -191,3 +208,30 @@ export function holdStep(release: Promise<void>, before?: (turn: FakeTurn) => Pr
 }
 /** A promise that never settles (a turn held until it is interrupted). */
 export const never = (): Promise<void> => new Promise<void>(() => undefined);
+
+/**
+ * Native session ids, worktree paths and tokens stay in the owner device's private files: no response the test read, no fresh
+ * list, work or thread view, no hub record of the project (thread indexes, coordinator assignment and status, decisions,
+ * notebook, settings), no project ledger line and none of the `extra` texts (for example bridge tool results a turn read)
+ * contains any of them (brief 5.1, D10, D17). Coordinator turns are runs too, so their native session ids and bridge tokens
+ * are covered.
+ */
+export async function expectNoLeaks(f: ProjectFixture, extra: ReadonlyArray<[string, string]> = []): Promise<void> {
+  const runtimes = Object.values(f.runtimes);
+  const secrets: Array<[string, string]> = [['GitHub token', f.token], ['browser session', f.cookie.slice(f.cookie.indexOf('=') + 1)], ['worktree path', f.homes.at('worktrees')],
+    ...runtimes.flatMap((runtime) => runtime.runs.map((run): [string, string] => ['native session id', run.native.sessionId ?? ''])),
+    ...runtimes.flatMap((runtime) => runtime.turnStarts.map((input): [string, string] => ['bridge token', input.launch.env.JEVELLAN_STRETCH_TOKEN ?? '']))];
+  // Every collected value is real, so an absence below cannot pass vacuously.
+  for (const [kind, value] of secrets) expect(value.length, kind).toBeGreaterThanOrEqual(16);
+  const threadIds = f.app.projectWork.paths.threadIds(f.project.id);
+  await f.json('/api/project-work', ProjectWorkListViewSchema); await f.json(`/api/projects/${f.project.id}/work`, ProjectWorkViewSchema);
+  for (const threadId of threadIds) await f.json(`/api/projects/${f.project.id}/threads/${threadId}`, ThreadViewSchema);
+  const texts: Array<[string, string]> = [...f.responses.map((text): [string, string] => [text.slice(0, text.indexOf(' ', text.indexOf(' ') + 1)), text]),
+    ['hub thread indexes', JSON.stringify((await f.app.projectHub.threads(f.project.id)).records)],
+    ['hub coordinator status', JSON.stringify(await f.app.projectHub.coordinatorStatus(f.project.id))],
+    ['hub coordinator assignment', JSON.stringify(await f.app.projectHub.coordinator(f.project.id))],
+    ['hub decisions', JSON.stringify(await f.app.projectHub.decisions(f.project.id))], ['hub notebook', JSON.stringify(await f.app.projectHub.notebook(f.project.id))],
+    ['hub work settings', JSON.stringify(await f.app.projectHub.settings(f.project.id))], ['coordinator ledger', f.ledgerText()],
+    ...threadIds.map((threadId): [string, string] => [`thread ledger ${threadId}`, f.ledgerText(threadId)]), ...extra];
+  expect(texts.flatMap(([where, text]) => secrets.filter(([, value]) => text.includes(value)).map(([kind]) => `${kind} in ${where}`))).toEqual([]);
+}

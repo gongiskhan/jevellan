@@ -4,11 +4,12 @@ import {
   type ProjectDecision, type ProjectHub, type ProjectLedgerEvent, type ProjectWorkListView, type ProjectWorkSettings, type ProjectWorkView, type PullRequestEntry,
   type SharedProjects, type ThreadIndex, type ThreadReport, type ThreadView,
 } from '@jevellan/core';
+import type { PlacementGates } from '@jevellan/decisions';
 import type { RuntimeAdapter } from '@jevellan/runtime-contract';
-import { BRANCH_PUSHED_NO_TOKEN, LEAVE_GIT_SETTING, NOT_GITHUB, PROJECT_NOT_FOUND, THREAD_NOT_FOUND, attachCommand } from './copy.js';
+import { BRANCH_PUSHED_NO_TOKEN, LEAVE_GIT_SETTING, MAIN_NOT_AVAILABLE, NOT_GITHUB, PROJECT_NOT_FOUND, THREAD_NOT_FOUND, attachCommand } from './copy.js';
 import { coordinatorPlan, type CoordinatorService } from './coordinator.js';
 import type { ProjectLedgers } from './ledger.js';
-import type { DeviceRoster } from './placement.js';
+import { PHASE_GATES, type DeviceRoster } from './placement.js';
 import { threadIndex, type ThreadStore } from './stores.js';
 import { atTurnLimit, isDiscarded } from './thread-runner.js';
 import type { ThreadTranscripts } from './transcript.js';
@@ -41,9 +42,15 @@ export function pullRequestEntries(threads: readonly ThreadIndex[]): PullRequest
     return [];
   });
 }
-/** Settings as threads apply them: a main default on a Leave git project shows as worktree with the notice (3.1 step 2b). */
-export function effectiveSettings(settings: ProjectWorkSettings, project: Pick<Project, 'branchPolicy'>): { settings: ProjectWorkSettings; notice?: string } {
-  return project.branchPolicy !== 'main' && settings.defaultIsolation === 'main' ? { settings: { ...settings, defaultIsolation: 'worktree' }, notice: LEAVE_GIT_SETTING } : { settings };
+/**
+ * Settings as threads apply them (brief 5.1, 3.1 step 2b): a main default shows as worktree with the reason, the Leave git
+ * notice on a project that leaves git to the owner, else the phase text while main isolation is gated (D88).
+ */
+export function effectiveSettings(settings: ProjectWorkSettings, project: Pick<Project, 'branchPolicy'>, gates: Pick<PlacementGates, 'mainIsolation'> = PHASE_GATES): { settings: ProjectWorkSettings; notice?: string } {
+  if (settings.defaultIsolation !== 'main') return { settings };
+  const worktree: ProjectWorkSettings = { ...settings, defaultIsolation: 'worktree' };
+  if (project.branchPolicy !== 'main') return { settings: worktree, notice: LEAVE_GIT_SETTING };
+  return gates.mainIsolation ? { settings } : { settings: worktree, notice: MAIN_NOT_AVAILABLE };
 }
 
 export type ProjectViewsOptions = {

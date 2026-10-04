@@ -12,8 +12,11 @@ import type { DecisionClient } from '@jevellan/decisions';
 import type { BasicMemory } from '@jevellan/memory';
 import type { RuntimeAdapter } from '@jevellan/runtime-contract';
 import { Admission } from './admission.js';
-import { NOTEBOOK_CHANGED, PROJECT_NOT_FOUND, REMOTE_THREADS_LATER, SETTINGS_CHANGED, STOPPED_BY_YOU, THREAD_MEMORY_READ_ONLY, THREAD_NOT_FOUND } from './copy.js';
-import { CoordinatorService } from './coordinator.js';
+import {
+  COORDINATOR_MEMORY_READ_ONLY, NOTEBOOK_CHANGED, PROJECT_NOT_FOUND, REMOTE_THREADS_LATER, SETTINGS_CHANGED, STOPPED_BY_YOU, THREAD_MEMORY_READ_ONLY, THREAD_NOT_FOUND,
+} from './copy.js';
+import { coordinatorToolHandlers } from './bridge-tools.js';
+import { CoordinatorService, type Coordinator, type CoordinatorToolHandlers } from './coordinator.js';
 import { DecisionItems } from './decision-items.js';
 import { ThreadGit } from './git.js';
 import { ThreadIndexPublisher } from './index-publisher.js';
@@ -81,6 +84,7 @@ export class ProjectWork {
   readonly #timers: ProjectTimers;
   readonly #publisher: ThreadIndexPublisher;
   #sweepTimer: ReturnType<typeof setInterval> | undefined;
+  #tools: CoordinatorToolHandlers | undefined;
   #started = false;
   #closing: Promise<void> | undefined;
   constructor(options: ProjectWorkOptions) {
@@ -109,7 +113,11 @@ export class ProjectWork {
     const worktrees = new ThreadWorktree({ git, homes: o.homes, paths: this.paths, redactor: o.redactor, deviceId: o.deviceId, deviceName: o.deviceName });
     const publication = new ThreadPublication({ git, homes: o.homes, redactor: o.redactor, github, deviceName: o.deviceName, testTimeoutMs: timers.testTimeoutMs, now,
       ...(o.leases ? { leases: o.leases } : {}), ...(o.ownership ? { ownership: o.ownership } : {}) });
-    this.coordinators = new CoordinatorService({ store: coordinatorStore, ledgers: this.ledgers, hub: o.hub, deviceId: o.deviceId, redactor: o.redactor });
+    this.coordinators = new CoordinatorService({ deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, store: coordinatorStore, ledgers: this.ledgers, hub: o.hub,
+      project: (projectId) => this.#project(projectId), workSettings: (projectId) => this.admission.settings(projectId), settings: o.settings, accounts: o.accounts,
+      runtimes: o.runtimes, launcher, decisions: this.decisions, tools: () => this.#coordinatorTools(), roster: o.roster,
+      baseBranch: (project) => worktrees.baseBranch(worktrees.repository(project)), enterOperation: o.enterOperation,
+      timers: { startMs: timers.coordinatorStartMs, retryMs: timers.coordinatorRetryMs, turnTimeoutMs: timers.coordinatorTurnTimeoutMs }, now });
     const delivery = new LocalDelivery({ deviceId: o.deviceId, coordinators: this.coordinators, store: this.store,
       command: (projectId, threadId, command) => this.threads.command(projectId, threadId, command) });
     this.threads = new ThreadService({ deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, store: this.store, ledgers: this.ledgers, receipts, hub: o.hub,
@@ -133,12 +141,19 @@ export class ProjectWork {
     const project = (await this.#o.projects.get(projectId))?.project; if (!project) throw refuse(PROJECT_NOT_FOUND, 404);
     return project;
   }
+  /** Coordinator tool handlers (brief 7.1), built on first use because the thread service and the tracker come after the coordinators. Memory is read-only. */
+  #coordinatorTools(): CoordinatorToolHandlers {
+    return this.#tools ??= coordinatorToolHandlers({ deviceId: this.#o.deviceId, deviceName: this.#o.deviceName, threads: this.threads, store: this.store, decisions: this.decisions,
+      pullRequests: this.tracker, hub: this.#o.hub, ledgers: this.ledgers, roster: this.#o.roster, now: () => this.#timers.now(),
+      memory: async (projectId) => this.#o.memory.project(await this.#project(projectId), this.#o.deviceId, () => { throw new Error(COORDINATOR_MEMORY_READ_ONLY); }) });
+  }
   #thread(projectId: string, threadId: string): void {
     if (this.store.get(threadId)?.projectId !== projectId) throw refuse(THREAD_NOT_FOUND, 404);
   }
   /**
-   * Idempotent; after `bindDaemonUrl`. Queued starts and waiting turns may run from now on, and the periodic loops start
-   * when timers are periodic. Nothing that recovery left at rest is resumed (brief 8.6).
+   * Idempotent; after `bindDaemonUrl`. Queued starts and waiting turns may run from now on, coordinators deliver their queued
+   * events in a new turn, and the periodic loops start when timers are periodic. No thread that recovery left at rest is
+   * resumed (brief 8.6).
    */
   start(): void {
     if (this.#started || this.#closing) return;
@@ -146,30 +161,33 @@ export class ProjectWork {
     void this.ready.then(() => {
       if (this.#closing) return;
       this.threads.begin();
+      this.coordinators.begin();
       void this.threads.sweep().catch(() => undefined);
       if (!this.#timers.periodic) return;
       this.tracker.start();
-      this.#sweepTimer = setInterval(() => { void this.threads.sweep().catch(() => undefined); }, this.#timers.queueSweepMs); this.#sweepTimer.unref();
+      this.#sweepTimer = setInterval(() => { void this.threads.sweep().catch(() => undefined); this.coordinators.sweep(); }, this.#timers.queueSweepMs); this.#sweepTimer.unref();
     }, () => undefined);
   }
-  /** One round of the periodic work (tests and the UI refresh): PR poll, index flush, queue and waiting sweeps. */
+  /** One round of the periodic work (tests and the UI refresh): PR poll, index flush, queue and waiting sweeps, coordinator re-checks (D70). */
   async pulse(): Promise<void> {
     await this.ready;
     await this.tracker.poll();
     await this.#publisher.flush().catch(() => undefined);
     await this.threads.sweep();
+    this.coordinators.sweep();
   }
-  /** Resolves when no start, sweep or thread step is in flight (test seam; checks every 20 ms, twice in a row). */
+  /** Resolves when no start, sweep, thread step or coordinator turn is in flight or scheduled (test seam; checks every 20 ms, twice in a row). */
   async idle(projectId?: string): Promise<void> {
     await this.ready;
-    for (let quiet = 0; quiet < 2;) { await delay(20); quiet = this.threads.busy(projectId) ? 0 : quiet + 1; }
+    for (let quiet = 0; quiet < 2;) { await delay(20); quiet = this.threads.busy(projectId) || this.coordinators.busy(projectId) ? 0 : quiet + 1; }
   }
   /** Stops timers, terminates every running turn (shutdown intent) and drains; thread states are never rewritten (D24). */
   close(): Promise<void> {
     return this.#closing ??= (async () => {
       if (this.#sweepTimer) clearInterval(this.#sweepTimer);
       await this.ready.catch(() => undefined);
-      // Runners first: tracker transitions wait on runner chains (2.6.14).
+      // Coordinator turns first (their tools start and message threads), then runners: tracker transitions wait on runner chains (2.6.14).
+      await this.coordinators.close();
       await this.threads.close();
       await this.tracker.close();
       await this.#publisher.close();
@@ -180,6 +198,16 @@ export class ProjectWork {
   list(): Promise<ProjectWorkListView> { return this.views.list(); }
   view(projectId: string): Promise<ProjectWorkView> { return this.views.project(projectId); }
   coordinatorLedger(projectId: string): ProjectLedger { return this.ledgers.coordinator(projectId); }
+  /**
+   * The coordinator chat to stream (brief 11): this device's ledger when the coordinator runs here, or before any assignment
+   * (an empty chat is valid). Another device's chat is reached from phase 5.
+   */
+  async coordinatorEvents(projectId: string): Promise<ProjectLedger> {
+    await this.#project(projectId);
+    const deviceId = await this.coordinators.deviceOf(projectId);
+    if (deviceId !== null && deviceId !== this.#o.deviceId) throw refuse(REMOTE_THREADS_LATER, 409);
+    return this.ledgers.coordinator(projectId);
+  }
   coordinatorDevice(projectId: string): Promise<string | null> { return this.coordinators.deviceOf(projectId); }
   /** The device that owns a thread: this device's thread file first, then the hub index. */
   async threadOwner(projectId: string, threadId: string): Promise<string | null> {
@@ -200,10 +228,18 @@ export class ProjectWork {
     return this.coordinators.get(projectId).enqueue({ schema: 'coordinator-event-v1', kind: 'user-message', id: newId('cev', at), at: new Date(at).toISOString(),
       text: input.text, clientMessageId: input.clientMessageId });
   }
-  /** Interrupts the running coordinator turn; phase 1 has no coordinator turns, so there is nothing to stop yet. */
-  async stopCoordinator(projectId: string): Promise<void> { await this.#project(projectId); }
-  /** The next coordinator turn starts a fresh session (D77). */
-  async freshCoordinator(projectId: string): Promise<void> { await this.#coordinatorHere(projectId); this.coordinators.get(projectId).fresh(); }
+  /** The assigned coordinator when it runs here; null before any assignment. Another device's coordinator is reached from phase 5. */
+  async #assignedHere(projectId: string): Promise<Coordinator | null> {
+    await this.#project(projectId);
+    const deviceId = await this.coordinators.deviceOf(projectId);
+    if (deviceId === null) return null;
+    if (deviceId !== this.#o.deviceId) throw refuse(REMOTE_THREADS_LATER, 409);
+    return this.coordinators.get(projectId);
+  }
+  /** Interrupts the running coordinator turn (brief 8.1); its events count as delivered (D33). Nothing to stop before assignment. */
+  async stopCoordinator(projectId: string): Promise<void> { await (await this.#assignedHere(projectId))?.stop(); }
+  /** The next coordinator turn starts a fresh session (D77). Before assignment there is no session, and Fresh assigns nothing (D206). */
+  async freshCoordinator(projectId: string): Promise<void> { (await this.#assignedHere(projectId))?.fresh(); }
   async settingsView(projectId: string): Promise<z.infer<typeof ProjectWorkSettingsViewSchema>> {
     const project = await this.#project(projectId);
     return this.#settingsView(project, (await this.#o.hub.settings(projectId))?.document ?? null);

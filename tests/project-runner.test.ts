@@ -13,7 +13,7 @@ import { StretchBridges } from '../packages/conversations/dist/index.js';
 import { HubDatabase, HubProjectAccess } from '../packages/mesh/dist/index.js';
 import { FakeRuntime, forThread, groupAlive, processIdentity, type FakeTurnStep } from '../packages/runtime-contract/dist/index.js';
 import {
-  ALLOW_MORE_TURNS, DISCARD_REFUSED, LEAVE_GIT_SETTING, LocalDelivery, NO_CHANGES, OWNER_STOPPED_THREAD, ProjectWork, REMOTE_THREADS_LATER, RESTARTED, RESTART_UNCONFIRMED,
+  ALLOW_MORE_TURNS, DISCARD_REFUSED, LEAVE_GIT_SETTING, LocalDelivery, MAIN_NOT_AVAILABLE, NO_CHANGES, OWNER_STOPPED_THREAD, ProjectWork, REMOTE_THREADS_LATER, RESTARTED, RESTART_UNCONFIRMED,
   START_REQUEST_REUSED, STOP_THE_THREAD, THREAD_ENDED, TURN_FAILED, TURN_LIMIT_REACHED, TURN_TIMED_OUT, TURN_WITHOUT_REPORT, WORKTREE_DISCARDED, atTurnLimit,
   coordinatorPlan, decisionLists, deliveryRoute, derivedId, discardedReason, effectiveSettings, isDiscarded, isTurnLimitItem, isWaitingForSlot, messagesTurn,
   ownerStartedLine, pullRequestEntries, queuedReason, synthesizedReport, turnEndAction, turnLimitQuestion, waitingForSlotReason, withState, workCounts,
@@ -84,7 +84,11 @@ test('views count work, list pull requests and questions, coerce a Leave git def
     { threadId: 'thread_4', title: 'thread_4', branch: 'jv/y-2', reason: 'Branch pushed. Add a GitHub token in Settings → Git to open pull requests.' }]);
   const main = ProjectWorkSettingsSchema.parse({ ...defaultProjectWorkSettings('proj_a'), defaultIsolation: 'main' });
   expect(effectiveSettings(main, { branchPolicy: 'external' })).toEqual({ settings: { ...main, defaultIsolation: 'worktree' }, notice: LEAVE_GIT_SETTING });
-  expect(effectiveSettings(main, { branchPolicy: 'main' })).toEqual({ settings: main });
+  // Main isolation is gated until phase 6 (D88): a main default reads as worktree with the phase text; Leave git still wins above.
+  expect(effectiveSettings(main, { branchPolicy: 'main' })).toEqual({ settings: { ...main, defaultIsolation: 'worktree' }, notice: MAIN_NOT_AVAILABLE });
+  expect(effectiveSettings(main, { branchPolicy: 'external' }, { mainIsolation: true })).toEqual({ settings: { ...main, defaultIsolation: 'worktree' }, notice: LEAVE_GIT_SETTING });
+  expect(effectiveSettings(main, { branchPolicy: 'main' }, { mainIsolation: true })).toEqual({ settings: main });
+  expect(effectiveSettings(defaultProjectWorkSettings('proj_a'), { branchPolicy: 'external' })).toEqual({ settings: defaultProjectWorkSettings('proj_a') });
 
   const config = { ...seedConfiguration()['x-jevellan'], menu: [
     { id: 'writer', runtime: 'fake', model: 'w', label: 'Writer', description: 'd', efforts: ['high' as const], enabled: true },
@@ -222,7 +226,9 @@ test('an owner thread prepares a worktree, runs its turn, opens the pull request
   expect(view).toMatchObject({ canMessage: true, atTurnLimit: false, canDiscard: false, deviceName: 'Mac mini', baseBranch: 'main', attachCommand: `jevellan thread attach ${created.threadId}` });
   expect(JSON.stringify(view)).not.toContain(thread.nativeSessionId!); expect(JSON.stringify(view.thread)).not.toContain(thread.cwd);
   const page = await work.view('proj_a');
-  expect(page).toMatchObject({ coordinator: { state: 'idle', deviceId: 'dev_a', deviceName: 'Mac mini', online: true, session: null, planned: null }, pullRequests: [{ threadId: created.threadId }] });
+  // The fake runtime cannot enforce read-only turns, so the coordinator evaluated its first event as unavailable (D97).
+  expect(page).toMatchObject({ coordinator: { state: 'unavailable', unavailableReason: 'No enabled model can run the coordinator on Mac mini.', deviceId: 'dev_a', deviceName: 'Mac mini',
+    online: true, session: null, planned: null }, pullRequests: [{ threadId: created.threadId }] });
   // Merged on GitHub: done, worktree and local branch gone, the coordinator hears it.
   github.markMerged(1); await work.pulse(); await settle(work);
   expect(work.store.get(created.threadId)).toMatchObject({ state: 'done', pr: { state: 'merged' } });

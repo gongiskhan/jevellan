@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { ThreadReportSchema, type CoordinatorEvent } from '../packages/core/dist/index.js';
+import { COORDINATOR_TOOLS, ThreadReportSchema, type CoordinatorEvent } from '../packages/core/dist/index.js';
 import * as decisions from '../packages/decisions/dist/index.js';
 import * as copy from '../packages/projects/dist/copy.js';
 
@@ -110,6 +110,11 @@ test('verbatim notices, state reasons and turn-limit options', () => {
   expect(copy.coordinatorOfflineNotice('Mac mini')).toBe('The coordinator lives on Mac mini, which is offline.');
   expect(copy.placedWithoutJev('authentication failed')).toBe('Placed without Jev: authentication failed');
   expect(copy.coordinatorFailedTwiceNotice('Rate limited')).toBe('The coordinator failed twice: Rate limited. Send a message to try again.');
+  // An error with its own final period keeps one period (D193).
+  expect(copy.coordinatorFailedTwiceNotice('No scripted turn remains. ')).toBe('The coordinator failed twice: No scripted turn remains. Send a message to try again.');
+  expect(copy.coordinatorTurnTimedOut(1_200_000)).toBe('The coordinator turn timed out after 20 minutes.');
+  expect(copy.coordinatorAccountMovedNotice('Work')).toBe('The coordinator moved to account Work; a fresh session started.');
+  expect(copy.commandTimedOut(1_800_000)).toBe('the command timed out after 30 minutes.'); expect(copy.commandTimedOut(1000)).toBe('the command timed out after 1 second.');
   expect([copy.NO_CHANGES, copy.TESTS_FAILED_THREE_TIMES, copy.NO_REMOTE, copy.BRANCH_PUSHED_NO_TOKEN, copy.NOT_GITHUB, copy.TURN_LIMIT_REACHED, copy.RESTARTED, copy.TURN_WITHOUT_REPORT]).toEqual([
     'Concluded without changes.', 'Tests failed three times.', 'This project has no remote; the branch stays local.',
     'Branch pushed. Add a GitHub token in Settings → Git to open pull requests.', 'The remote is not on GitHub.', 'This thread reached its turn limit.',
@@ -132,9 +137,15 @@ test('verbatim notices, state reasons and turn-limit options', () => {
 test('Projects copy outside the brief texts never uses conversation vocabulary or em dashes', () => {
   const samples = (Object.values(copy) as unknown[]).filter((value): value is string => typeof value === 'string');
   samples.push(copy.worktreeSetupFailed('x'), copy.contextLinkSkipped('CLAUDE.md'), copy.contextUnreadable('broken'), copy.turnLimitQuestion('Fix login', 30),
-    copy.accountMovedNotice('Work'), copy.cannotRunHere('Codex'), copy.noTurnAccount('GPT-5', 'Mac mini', 'Codex needs login'), copy.notebookConflict(3, 'Plan'),
+    copy.accountMovedNotice('Work'), copy.coordinatorAccountMovedNotice('Work'), copy.coordinatorTurnTimedOut(1_200_000), copy.cannotRunHere('Codex'), copy.noTurnAccount('GPT-5', 'Mac mini', 'Codex needs login'), copy.notebookConflict(3, 'Plan'),
     copy.githubRefused('Validation Failed'), copy.noCoordinatorModel('Mac mini'), copy.threadSystemAppend({ projectName: 'Shop', cwd: '/w', isolation: 'main', baseBranch: 'main', deviceName: 'Mac mini' }),
-    copy.pullRequestBody({ summary: 'S', testCommand: null, title: 'T', runtime: 'R', modelLabel: 'M', effort: 'E', deviceName: 'D' }));
+    copy.pullRequestBody({ summary: 'S', testCommand: null, title: 'T', runtime: 'R', modelLabel: 'M', effort: 'E', deviceName: 'D' }), copy.transcriptStaysOn('Mac mini'));
+  // Every coordinator chat line, done and refused.
+  for (const tool of COORDINATOR_TOOLS) {
+    const input = { title: 'Fix login', question: 'Which database?', reason: 'Solved.', to: 'all', subject: 'Heads up' };
+    samples.push(copy.coordinatorToolSummary(tool, input, { ok: true, result: { state: 'running', placement: 'Codex gpt-x · high · Worktree · Mac mini', delivery: 'interrupting', withdrawn: true, pr: { number: 4 } } }, 'Fix login'),
+      copy.coordinatorToolSummary(tool, input, { ok: false, error: 'This thread was not found.' }, 'Fix login'));
+  }
   for (const text of samples) {
     expect(text).not.toMatch(/conversation|stretch|handoff/i);
     expect(text).not.toContain(String.fromCharCode(0x2014));

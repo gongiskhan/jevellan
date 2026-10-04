@@ -15,6 +15,12 @@ export function liveWork(state: ThreadState): boolean { return (liveWorkStates a
 export function isTerminal(state: ThreadState): boolean { return (concludedStates as readonly ThreadState[]).includes(state); }
 /** The UI Running section: every thread that is neither concluded nor in review (display only, not the limit count). */
 export function runningSection(state: ThreadState): boolean { return !isTerminal(state) && state !== 'in-review'; }
+/** Concluded threads stay listed for 14 days after they end (brief 7.1 `include: 'all'`, 12.2 Concluded). */
+export const CONCLUDED_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
+/** A concluded thread that ended (by `endedAt`, else its last update) within the last 14 days. */
+export function concludedRecently(thread: { state: ThreadState; endedAt?: string | undefined; updatedAt: string }, now: number): boolean {
+  return isTerminal(thread.state) && now - Date.parse(thread.endedAt ?? thread.updatedAt) <= CONCLUDED_WINDOW_MS;
+}
 
 /** ASCII branch slug: lowercase, non-alphanumerics collapsed to '-', trimmed, at most 40 characters, 'thread' when empty (D25). */
 export function slugify(title: string): string {

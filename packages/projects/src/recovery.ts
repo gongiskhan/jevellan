@@ -71,10 +71,12 @@ export async function recoverProjects(o: RecoveryOptions): Promise<RecoveryRepor
       store.updateLocal(projectId, (local) => { const cleared = { ...local }; delete cleared.process; return cleared; });
     }
     if (state.state === 'running') {
-      // The dropped turn's events were not delivered: they stay queued and a new turn starts normally (brief 8.6).
+      // The dropped turn's events were not delivered: they stay queued, and `start()` runs a new turn normally (brief 8.6).
+      // Its number is the last one the coordinator handed out, also when a crash came before its turn-start record.
       const ledger = o.ledgers.coordinator(projectId);
       const started = ledger.events().filter((event) => event.type === 'coordinator-turn-start').at(-1);
-      const turn = started ? ledger.payload(started as ProjectLedgerEvent & { type: 'coordinator-turn-start' }).turn : (state.session?.turns ?? 0) + 1;
+      const turn = store.local(projectId).deliveredTurn
+        || (started ? ledger.payload(started as ProjectLedgerEvent & { type: 'coordinator-turn-start' }).turn : (state.session?.turns ?? 0) + 1);
       ledger.append({ type: 'coordinator-turn-end', turn, data: { schema: 'coordinator-turn-end-v1', turn, status: 'dropped' } });
       store.update(projectId, (current) => ({ ...current, state: 'idle' }));
       report.coordinators.push(projectId);

@@ -107,7 +107,7 @@ test('Projects routes need the session, answer versioned documents, run a thread
   expect(await call('/api/projects/project/context', 'GET', undefined, 200)).toMatchObject({ projectId: 'project' });
   ContextPanelSchema.parse(await call('/api/projects/project/context/operations', 'GET', undefined, 200));
   expect(await call('/api/projects/project/memory', 'GET', undefined, 400)).toEqual(refused('request-failed', 'Enter a memory search.'));
-  expect(await call('/api/projects/project/notebook', 'GET', undefined, 404)).toEqual(refused('not-found', 'Not found.'));
+  expect(await call('/api/projects/project/notebook', 'GET', undefined, 200)).toEqual({ schema: 'project-notebook-view-v1', notebook: null, revision: 0 });
 
   const before = { head: git(checkout, 'rev-parse', 'HEAD'), status: git(checkout, 'status', '--porcelain=v1') };
   expect(ProjectWorkListViewSchema.parse(await call('/api/project-work', 'GET', undefined, 200)).projects)
@@ -140,7 +140,8 @@ test('Projects routes need the session, answer versioned documents, run a thread
     const text = await (await request(route)).text();
     expect(text).not.toContain(thread.nativeSessionId!); expect(text).not.toContain(thread.cwd);
   }
-  expect(ProjectWorkListViewSchema.parse(await call('/api/project-work', 'GET', undefined, 200)).projects[0]).toMatchObject({ inReview: 1, coordinator: { deviceId: app.device.deviceId, state: 'idle' } });
+  // The fake runtime cannot enforce read-only turns, so the coordinator is unavailable after its first event (D97).
+  expect(ProjectWorkListViewSchema.parse(await call('/api/project-work', 'GET', undefined, 200)).projects[0]).toMatchObject({ inReview: 1, coordinator: { deviceId: app.device.deviceId, state: 'unavailable' } });
 
   // Pull request routes: refresh answers the thread view, merge squashes and concludes, then the thread refuses more work.
   github.setChecks(1, 'passing');

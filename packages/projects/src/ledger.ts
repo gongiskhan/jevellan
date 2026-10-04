@@ -10,11 +10,15 @@ export function projectLedgerData<T extends ProjectLedgerEventType>(type: T, raw
   if (type === 'coordinator-tool') BridgeToolNameSchema.parse((data as ProjectLedgerData<'coordinator-tool'>).tool);
   return data;
 }
-/** Browser and agent views of ledger data. Native session identities stay in the owner-local files (brief 5.3, 5.5). */
+const PRIVATE_KEYS = new Set(['nativeSessionId', 'cwd', 'sessionId']);
+/**
+ * Browser and agent views of ledger data. Native session identities and working directories stay in the owner-local files
+ * (brief 5.3, 5.5); no ledger payload carries them, so this is defense for every frame, view and read (design 2.1.3).
+ */
 export function publicProjectData(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(publicProjectData);
   if (!value || typeof value !== 'object') return value;
-  return Object.fromEntries(Object.entries(value).filter(([key]) => key !== 'nativeSessionId').map(([key, child]) => [key, publicProjectData(child)]));
+  return Object.fromEntries(Object.entries(value).filter(([key]) => !PRIVATE_KEYS.has(key)).map(([key, child]) => [key, publicProjectData(child)]));
 }
 
 /**

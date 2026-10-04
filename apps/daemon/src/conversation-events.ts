@@ -13,11 +13,21 @@ export function publicConversationData(value: unknown): unknown {
   return value;
 }
 
-export function streamConversation(ledger: ConversationLedger, request: IncomingMessage, response: ServerResponse, url: URL, authenticated: () => boolean | Promise<boolean>): void {
+/** A ledger an event stream follows: replay after a cursor, then a wake-up after every durable append. */
+export type StreamedLedger<E extends { id: number }> = { events(afterId?: number, limit?: number): E[]; subscribe(listener: () => void): () => void };
+/** The SSE event name, the browser document for one event, and the two cursor refusals (answered 400 before any header). */
+export type LedgerStreamFrame<E> = { name: string; payload(event: E): unknown; invalidCursor: string; aheadCursor: string };
+
+/**
+ * Server-sent events over an append-only ledger: `Last-Event-ID`, else `?after=`, else 0 as the cursor; one frame per event
+ * (`id: N`, `event: <name>`, `data: <payload>`); 64-event batches with backpressure; authentication checked again on every
+ * flush; a keepalive comment every 15 s.
+ */
+export function streamLedger<E extends { id: number }>(ledger: StreamedLedger<E>, request: IncomingMessage, response: ServerResponse, url: URL, authenticated: () => boolean | Promise<boolean>, frame: LedgerStreamFrame<E>): void {
   const supplied = request.headers['last-event-id'] ?? url.searchParams.get('after') ?? '0';
-  if (typeof supplied !== 'string' || !/^\d+$/.test(supplied) || !Number.isSafeInteger(Number(supplied))) throw new Error('Invalid conversation event cursor.');
+  if (typeof supplied !== 'string' || !/^\d+$/.test(supplied) || !Number.isSafeInteger(Number(supplied))) throw new Error(frame.invalidCursor);
   let cursor = Number(supplied);
-  if (cursor > (ledger.events().at(-1)?.id ?? 0)) throw new Error('Conversation event cursor is ahead of its history.');
+  if (cursor > (ledger.events().at(-1)?.id ?? 0)) throw new Error(frame.aheadCursor);
   let stopped = false; let pending = false; let paused = false; let flushing = false; let queued = false; let keepalive = false;
   let unsubscribe = () => {};
   const close = () => { if (stopped) return; stopped = true; unsubscribe(); clearInterval(heartbeat); response.off('drain', drained); };
@@ -27,9 +37,9 @@ export function streamConversation(ledger: ConversationLedger, request: Incoming
     pending = true; setImmediate(() => { pending = false; void flush(); });
   };
   const drained = () => { paused = false; schedule(); };
-  const write = (event: LedgerEvent) => {
-    const payload = ConversationEventSchema.parse(ledger.redact({ schema: 'conversation-event-v1', event: { ...event, data: publicConversationData(ledger.data(event)) } }));
-    const accepted = response.write(`id: ${event.id}\nevent: conversation\ndata: ${JSON.stringify(payload)}\n\n`);
+  const write = (event: E) => {
+    const payload = frame.payload(event);
+    const accepted = response.write(`id: ${event.id}\nevent: ${frame.name}\ndata: ${JSON.stringify(payload)}\n\n`);
     cursor = event.id; return accepted;
   };
   const flush = async () => {
@@ -54,4 +64,9 @@ export function streamConversation(ledger: ConversationLedger, request: Incoming
     keepalive = true; schedule();
   }, 15_000); heartbeat.unref();
   schedule();
+}
+
+export function streamConversation(ledger: ConversationLedger, request: IncomingMessage, response: ServerResponse, url: URL, authenticated: () => boolean | Promise<boolean>): void {
+  streamLedger(ledger, request, response, url, authenticated, { name: 'conversation', invalidCursor: 'Invalid conversation event cursor.', aheadCursor: 'Conversation event cursor is ahead of its history.',
+    payload: (event: LedgerEvent) => ConversationEventSchema.parse(ledger.redact({ schema: 'conversation-event-v1', event: { ...event, data: publicConversationData(ledger.data(event)) } })) });
 }

@@ -6,13 +6,13 @@ import { createHash, randomUUID } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  AccountSchema, DeviceSchema, MergeResultViewSchema, ProjectWorkListViewSchema, ProjectWorkSettingsSchema, ProjectWorkViewSchema, ThreadCreatedViewSchema, ThreadViewSchema, defaultProjectWorkSettings,
+  AccountSchema, DeviceSchema, MergeResultViewSchema, ProjectWorkSettingsSchema, ProjectWorkViewSchema, ThreadCreatedViewSchema, ThreadViewSchema, defaultProjectWorkSettings,
   type CoordinatorEvent,
   type ProjectWorkSettings, type ProjectLedgerData, type ProjectLedgerEvent, type ProjectLedgerEventType,
 } from '../packages/core/dist/index.js';
 import { forThread, groupAlive, processIdentity, type FakeTurnStep } from '../packages/runtime-contract/dist/index.js';
 import { eventLine } from '../packages/projects/dist/index.js';
-import { commitStep, holdStep, never, projectFixture, reportStep, type ProjectFixture, type ProjectFixtureOptions } from './helpers/project-fixture.js';
+import { commitStep, expectNoLeaks, holdStep, never, projectFixture, reportStep, type ProjectFixture, type ProjectFixtureOptions } from './helpers/project-fixture.js';
 
 let fixture: ProjectFixture | undefined;
 afterEach(async () => {
@@ -38,25 +38,6 @@ function advanceOrigin(f: ProjectFixture): string {
   const second = join(f.root, 'second'); f.git(f.root, 'clone', f.origin, second);
   writeFileSync(join(second, 'upstream.txt'), 'upstream\n'); f.git(second, 'add', '-A'); f.git(second, 'commit', '-m', 'Upstream'); f.git(second, 'push', 'origin', 'main');
   return f.git(second, 'rev-parse', 'HEAD');
-}
-/**
- * Native session ids, worktree paths and tokens stay in the owner device's private files: no response the test read, no fresh
- * list, work or thread view, no hub thread index and no project ledger line contains any of them (brief 5.1, D10, D17).
- */
-async function expectNoLeaks(f: ProjectFixture): Promise<void> {
-  const runtimes = Object.values(f.runtimes);
-  const secrets: Array<[string, string]> = [['GitHub token', f.token], ['browser session', f.cookie.slice(f.cookie.indexOf('=') + 1)], ['worktree path', f.homes.at('worktrees')],
-    ...runtimes.flatMap((runtime) => runtime.runs.map((run): [string, string] => ['native session id', run.native.sessionId ?? ''])),
-    ...runtimes.flatMap((runtime) => runtime.turnStarts.map((input): [string, string] => ['bridge token', input.launch.env.JEVELLAN_STRETCH_TOKEN ?? '']))];
-  // Every collected value is real, so an absence below cannot pass vacuously.
-  for (const [kind, value] of secrets) expect(value.length, kind).toBeGreaterThanOrEqual(16);
-  const threadIds = f.app.projectWork.paths.threadIds(f.project.id);
-  await f.json('/api/project-work', ProjectWorkListViewSchema); await f.json(`/api/projects/${f.project.id}/work`, ProjectWorkViewSchema);
-  for (const threadId of threadIds) await f.json(`/api/projects/${f.project.id}/threads/${threadId}`, ThreadViewSchema);
-  const texts: Array<[string, string]> = [...f.responses.map((text): [string, string] => [text.slice(0, text.indexOf(' ', text.indexOf(' ') + 1)), text]),
-    ['hub thread indexes', JSON.stringify((await f.app.projectHub.threads(f.project.id)).records)], ['coordinator ledger', f.ledgerText()],
-    ...threadIds.map((threadId): [string, string] => [`thread ledger ${threadId}`, f.ledgerText(threadId)])];
-  expect(texts.flatMap(([where, text]) => secrets.filter(([, value]) => text.includes(value)).map(([kind]) => `${kind} in ${where}`))).toEqual([]);
 }
 const fails = (run: () => unknown) => { try { run(); return false; } catch { return true; } };
 const kill = (pid: number) => { try { process.kill(-pid, 'SIGKILL'); } catch { /* already gone */ } };

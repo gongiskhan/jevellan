@@ -43,10 +43,11 @@ export class DecisionItems {
     if (!decision || decision.projectId !== projectId) throw refuse(QUESTION_NOT_FOUND, 404);
     return decision;
   }
-  async #create(projectId: string, input: { question: string; options: Option[]; threadId?: string | undefined }, from: ProjectDecision['from']): Promise<string> {
-    const id = newId('pdec', this.#o.now());
+  async #create(projectId: string, input: { question: string; options: Option[]; threadId?: string | undefined }, from: ProjectDecision['from'],
+    fixed?: { id: string; at: string }): Promise<string> {
+    const id = fixed?.id ?? newId('pdec', this.#o.now());
     await this.#o.hub.createDecision(ProjectDecisionSchema.parse({ schema: 'project-decision-v1', revision: 0, id, projectId, from, question: input.question,
-      options: input.options, createdAt: this.#at(), ...(input.threadId === undefined ? {} : { threadId: input.threadId }) }));
+      options: input.options, createdAt: fixed?.at ?? this.#at(), ...(input.threadId === undefined ? {} : { threadId: input.threadId }) }));
     return id;
   }
   /** `jevellan_ask_user` (phase 2): a coordinator question, optionally about one thread. */
@@ -57,8 +58,23 @@ export class DecisionItems {
    * The thread fallback (decision 7): a needs-decision report becomes the owner's question directly when the coordinator
    * cannot take it. Used by the coordinator's fallback (phase 2) and by an owner device whose coordinator is offline (phase 5).
    */
-  fromReport(projectId: string, threadId: string, report: Pick<ThreadReport, 'question' | 'options' | 'summary'>): Promise<string> {
-    return this.#create(projectId, { question: report.question ?? report.summary, options: report.options ?? [], threadId }, 'thread');
+  fromReport(projectId: string, threadId: string, report: Pick<ThreadReport, 'question' | 'options' | 'summary'>, fixed?: { id: string; at: string }): Promise<string> {
+    return this.#create(projectId, { question: report.question ?? report.summary, options: report.options ?? [], threadId }, 'thread', fixed);
+  }
+  /**
+   * The coordinator's fallback (decision 7, D32): each queued needs-decision report becomes the owner's question under an id
+   * derived from its event, created at the event's time, so a repeated fallback (a crash before the coordinator recorded it,
+   * a retry after a hub error) creates nothing new, even after the owner answered. Returns the event ids now covered.
+   */
+  async fallbackFromReports(projectId: string, events: readonly CoordinatorEvent[]): Promise<string[]> {
+    const covered: string[] = [];
+    for (const event of events) {
+      if (event.kind !== 'thread-report' || event.report.status !== 'needs-decision') continue;
+      const id = derivedId('pdec', 'fallback', event.id);
+      if (!(await this.#o.hub.decision(id))) await this.fromReport(projectId, event.threadId, event.report, { id, at: event.at });
+      covered.push(event.id);
+    }
+    return covered;
   }
   /** Withdraws an open question; false when it was already answered. */
   async withdraw(projectId: string, decisionId: string): Promise<boolean> {
