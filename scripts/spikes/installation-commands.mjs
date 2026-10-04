@@ -29,7 +29,7 @@ const root = realpathSync(mkdtempSync(join(tmpdir(), 'jevellan-install-commands-
 const driver = join(root, 'installation-runtime.mjs');
 if (conversationCheck) cpSync(resolve('scripts/spikes/installation-runtime.mjs'), driver);
 console.log(`Installation command check: ${root}`);
-const packed = z.array(z.object({ filename: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._-]*\.tgz$/) })).length(1).parse(JSON.parse(execFileSync('npm', ['pack', '--ignore-scripts', '--json', '--pack-destination', root], { cwd: resolve('.'), encoding: 'utf8', maxBuffer: 32 * 1024 * 1024, env: { PATH: process.env.PATH, HOME: user, npm_config_cache: join(root, 'npm-cache') } })))[0];
+const packed = z.array(z.object({ filename: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._-]*\.tgz$/) })).length(1).parse(JSON.parse(execFileSync('npm', ['pack', '--ignore-scripts', '--foreground-scripts=false', '--json', '--pack-destination', root], { cwd: resolve('.'), encoding: 'utf8', maxBuffer: 32 * 1024 * 1024, env: { PATH: process.env.PATH, HOME: user, npm_config_cache: join(root, 'npm-cache') } })))[0];
 const archive = join(root, packed.filename); await x({ file: archive, cwd: distribution, strict: true });
 const source = join(distribution, 'package'), load = path => import(pathToFileURL(join(source, path)).href);
 const { DeviceConfigSchema, DeviceRosterSchema, Homes, JoinInvitationSchema, LifecycleGate, stableJson } = await load('packages/core/dist/index.js');

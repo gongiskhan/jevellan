@@ -36,7 +36,8 @@ export async function prepareDistribution(files: InstallationFiles, options: { f
       await execute(process.execPath, ['scripts/prepare-runtime.mjs'], source);
       await execute('npm', ['run', 'build'], source);
     } else options.progress?.('Downloading the Jevellan distribution from GitHub.');
-    const output = await execute('npm', ['pack', ...(source === 'github' ? ['git+https://github.com/gongiskhan/jevellan.git'] : ['--ignore-scripts']), '--json', '--pack-destination', entry.path], source === 'github' ? entry.path : source);
+    // npm pack still runs `prepare` (pacote ignores --ignore-scripts for it) and in the foreground by default: background keeps its output out of the JSON.
+    const output = await execute('npm', ['pack', ...(source === 'github' ? ['git+https://github.com/gongiskhan/jevellan.git'] : ['--ignore-scripts']), '--foreground-scripts=false', '--json', '--pack-destination', entry.path], source === 'github' ? entry.path : source);
     const packed = PackResult.parse({ schema: 'npm-pack-result-v1', packages: JSON.parse(output) }); archive = join(entry.path, packed.packages[0]!.filename);
   }
   options.signal?.throwIfAborted(); await x({ file: archive, cwd: entry.path, strict: true }); options.signal?.throwIfAborted();

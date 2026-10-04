@@ -43,6 +43,18 @@ test('a local checkout is built and packed with isolated caches before copying t
   const app = f.files.copyApplication(prepared.path); prepared.cleanup(); expect(app.path).not.toBe(f.source);
 });
 
+test('a local checkout packs with real npm although npm runs its prepare script, which prints to stdout', { timeout: 120_000 }, async () => {
+  const f = fixture();
+  // npm pack runs `prepare` even with --ignore-scripts, in the foreground by default; its output must not reach the --json result.
+  writeFileSync(join(f.source, 'package.json'), JSON.stringify({ name: 'jevellan', version: '0.1.0', type: 'module', files: ['bin', 'packages', 'apps'],
+    scripts: { build: 'node -e ""', prepare: 'node -e "console.log(\'vite v8.3.0 building client environment for production...\')"' } }));
+  mkdirSync(join(f.source, 'node_modules/typescript'), { recursive: true }); mkdirSync(join(f.source, 'scripts')); writeFileSync(join(f.source, 'scripts/prepare-runtime.mjs'), '');
+  const prepared = await prepareDistribution(f.files, { from: f.source });
+  expect(JSON.parse(readFileSync(join(prepared.path, 'package.json'), 'utf8'))).toMatchObject({ name: 'jevellan', version: '0.1.0' });
+  expect(readFileSync(join(prepared.path, 'bin/jevellan.mjs'), 'utf8')).toContain('0.1.0');
+  prepared.cleanup(); expect(f.files.load().distributions).toEqual([]);
+});
+
 test('an interrupted checkout build keeps its recorded staging directory without claiming a ready application', async () => {
   const f = fixture();
   await expect(prepareDistribution(f.files, { from: f.source, run: async () => ({ code: 1, stdout: '', stderr: 'Simulated unavailable package download', timedOut: false }) })).rejects.toThrow('unavailable package download');
