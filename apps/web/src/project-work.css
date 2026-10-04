@@ -1,0 +1,489 @@
+/* Projects: the sidebar section, the project and thread pages and their parts. Imported by main.tsx after style.css,
+   so equal-specificity rules here win. Every class is pw- prefixed; colors come from the style.css tokens only, so
+   light and dark (both theme paths) follow automatically. */
+
+/* ---------- thread state dots (D54) ---------- */
+.pw-dot { display: inline-block; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); }
+/* Work in flight pulses magenta; under reduced motion the static ring still tells it from waiting. */
+.pw-dot.pw-running, .pw-dot.pw-preparing, .pw-dot.pw-publishing { background: var(--jev); box-shadow: 0 0 0 3px var(--jev-soft); animation: pulse 1.6s ease-in-out infinite; }
+.pw-dot.pw-waiting-for-you { background: var(--jev); }
+.pw-dot.pw-in-review { background: var(--sea); }
+.pw-dot.pw-idle, .pw-dot.pw-queued, .pw-dot.pw-attached { background: transparent; box-shadow: inset 0 0 0 1.5px var(--ink-3); }
+.pw-dot.pw-done { background: var(--ok); }
+.pw-dot.pw-stopped { background: var(--ink-3); }
+.pw-dot.pw-failed { background: var(--danger); }
+
+/* ---------- sidebar Projects section (12.1, D55, D96) ---------- */
+.pw-sidebar { display: grid; gap: 2px; flex: none; min-height: 0; padding-bottom: 8px; border-bottom: 1px solid var(--edge); }
+.pw-sidebar-toggle, button.pw-sidebar-toggle {
+  justify-content: flex-start;
+  gap: 0;
+  width: 100%;
+  min-height: 28px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+.pw-sidebar-toggle:hover, button.pw-sidebar-toggle:hover { background: var(--bg-3); border: 0; color: var(--ink); }
+/* The app's disclosure chevron (details > summary), sized so the label lines up with the row names below. */
+.pw-sidebar-toggle::before {
+  content: "";
+  flex: none;
+  width: 6px;
+  height: 6px;
+  margin: 0 11px 2px 2px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 0.15s ease;
+  opacity: 0.7;
+}
+.pw-sidebar-toggle[aria-expanded="false"]::before { transform: rotate(-45deg); margin-bottom: 0; }
+.pw-sidebar-toggle .suggestion-count { font-family: var(--font-body); letter-spacing: 0; text-transform: none; }
+.pw-sidebar-list {
+  display: grid;
+  align-content: start;
+  grid-auto-rows: max-content;
+  gap: 2px;
+  /* A whole number of rows (34 px each, 2 px apart), so no row is cut at the list's edges; scrolling snaps to rows. */
+  max-height: calc(round(down, 30dvh + 2px, 36px) - 2px);
+  overflow-y: auto;
+  margin: 0 -4px;
+  padding: 0 4px;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: thin;
+}
+.pw-sidebar-list[hidden] { display: none; }
+.pw-sidebar-row, button.pw-sidebar-row {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  column-gap: 9px;
+  align-items: center;
+  justify-content: stretch;
+  width: 100%;
+  height: 34px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  font-weight: 400;
+  text-align: left;
+  scroll-snap-align: start;
+}
+.pw-sidebar-row:hover, button.pw-sidebar-row:hover { background: var(--bg-3); border: 0; }
+.pw-sidebar-row.selected, button.pw-sidebar-row.selected { background: var(--bg-3); box-shadow: inset 2px 0 0 var(--jev); }
+/* The list scrolls, so the focus ring sits inside the row instead of being clipped. */
+.pw-sidebar-row:focus-visible { outline-offset: -2px; }
+.pw-sidebar-row .pw-dot { justify-self: center; }
+.pw-sidebar-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 550; }
+.pw-sidebar-counts { display: flex; align-items: center; gap: 6px; }
+.pw-sidebar-counts:empty { display: none; }
+.pw-sidebar-running { font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-3); white-space: nowrap; }
+.pw-sidebar-counts .suggestion-count { margin-left: 0; }
+.pw-sidebar-empty { margin: 0; padding: 4px 8px 4px 27px; color: var(--ink-3); font-size: 12.5px; }
+.pw-sidebar-empty .text-button { font-size: 12.5px; }
+
+/* ---------- page primitives (12.2, D53) ----------
+   The project page is a size container: two columns from 840 px of page width (1180 px viewport without a panel),
+   tabs below. --pw-sticky-top is the sticky page heading's height, set by the page. */
+.pw-page { container: pw-page / inline-size; }
+.pw-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 24px; align-items: start; flex: 1; }
+.pw-chat { display: flex; flex-direction: column; min-width: 0; min-height: 100%; }
+.pw-side { display: grid; align-content: start; gap: 18px; min-width: 0; padding-block: 12px 24px; }
+.pw-tabs {
+  position: sticky;
+  top: var(--pw-sticky-top, 0px);
+  z-index: 11;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--edge);
+  background: var(--bg);
+  scrollbar-width: none;
+}
+.pw-tabs::-webkit-scrollbar { display: none; }
+.pw-tab, button.pw-tab {
+  flex: none;
+  gap: 6px;
+  min-height: 30px;
+  padding: 4px 12px;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-2);
+  font-size: 12.5px;
+  font-weight: 550;
+}
+.pw-tab:hover, button.pw-tab:hover { background: var(--bg-3); border-color: var(--edge-strong); color: var(--ink); }
+.pw-tab[aria-selected="true"], button.pw-tab[aria-selected="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.pw-tab .suggestion-count { margin-left: 0; }
+/* The tab bar scrolls sideways on narrow pages, so the focus ring sits inside the pill. */
+.pw-tab:focus-visible { outline-offset: -2px; }
+.pw-section { display: grid; gap: 6px; min-width: 0; }
+.pw-section-heading { display: flex; align-items: center; gap: 8px; margin: 0; }
+.pw-section-heading h3 { margin: 0; }
+.pw-count { font-family: var(--font-mono); font-size: 10.5px; font-weight: 600; color: var(--ink-3); }
+.pw-empty { margin: 0; padding: 4px 0; color: var(--ink-3); font-size: 13px; }
+
+@container pw-page (width >= 840px) {
+  .pw-layout { grid-template-columns: minmax(0, 1fr) 400px; }
+  .pw-tabs { display: none; }
+  .pw-side {
+    position: sticky;
+    top: var(--pw-sticky-top, 0px);
+    max-height: calc(100dvh - var(--pw-sticky-top, 0px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+}
+/* Below 840 px one tab shows: Chat, or the side sections marked with that tab (Threads holds Running and Concluded). */
+@container pw-page (width < 840px) {
+  .pw-layout:not([data-tab="chat"]) > .pw-chat,
+  .pw-layout[data-tab="chat"] > .pw-side,
+  .pw-layout[data-tab="waiting"] .pw-side > :not([data-tab="waiting"]),
+  .pw-layout[data-tab="threads"] .pw-side > :not([data-tab="threads"]),
+  .pw-layout[data-tab="pull-requests"] .pw-side > :not([data-tab="pull-requests"]) { display: none; }
+}
+
+/* ---------- project page (12.2) ---------- */
+/* Header: the project name, New thread, Notebook and the menu; the coordinator chip and its session underneath. */
+.pw-heading > .actions .pw-head-button { min-height: 32px; padding: 4px 12px; gap: 6px; font-size: 12.5px; }
+.pw-heading > .actions .pw-head-button[aria-pressed="true"] { background: var(--bg-3); border-color: var(--ink-3); }
+.pw-coordinator { min-width: 0; flex-wrap: nowrap; gap: 8px; }
+.pw-chip { flex: none; gap: 6px; }
+.pw-chip .activity-spinner { width: 10px; height: 10px; border-width: 1.5px; }
+.pw-chip-running { color: var(--jev); border-color: var(--jev-edge); }
+.pw-chip-unavailable { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 50%, transparent); }
+.pw-chip-offline { color: var(--ink-3); background: transparent; }
+.pw-session { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
+.pw-page > .notice { margin: 10px 0 0; }
+
+/* Chat: owner messages right-aligned, replies as Markdown, muted one-liners and event cards. */
+.pw-timeline { flex: none; }
+.pw-chat-empty { max-width: 460px; margin: auto; padding: 40px 16px; color: var(--ink-3); font-size: 14px; line-height: 1.6; text-align: center; }
+.pw-owner .markdown { font-size: 13.5px; }
+.pw-pending { margin: 4px 0 0; font-size: 11px; color: var(--ink-3); }
+.user-message.pw-owner > .pw-pending { margin: 4px 0 0; color: var(--ink-3); font-size: 11px; text-align: right; }
+.pw-reply { min-width: 0; padding: 2px 4px; overflow-wrap: anywhere; }
+.pw-reply .markdown pre { max-height: 360px; }
+.pw-tool, a.pw-tool {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 1px 4px;
+  color: var(--ink-3);
+  font-size: 12.5px;
+  line-height: 1.45;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.pw-tool > .icon { margin-top: 2px; }
+a.pw-tool:hover { color: var(--ink-2); }
+a.pw-tool:hover > span { text-decoration: underline; text-underline-offset: 2px; }
+.pw-tool.failed { color: var(--ink-2); }
+.pw-tool.failed > .icon { color: var(--danger); }
+.pw-event { display: grid; gap: 3px; min-width: 0; padding: 9px 12px; border: 1px solid var(--edge); border-radius: var(--radius); background: var(--card); }
+.pw-event.pending { border-style: dashed; border-color: var(--edge-strong); background: transparent; }
+.pw-event-text { margin: 0; color: var(--ink); font-size: 13px; font-weight: 550; line-height: 1.45; }
+.pw-event-detail {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 12.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.pw-event-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin: 3px 0 0; font-size: 12px; }
+.pw-event-foot .text-button { font-size: 12px; }
+.pw-event-foot a.text-button, .pw-pr-actions a.text-button { text-decoration: none; }
+.pw-event-foot a.text-button:hover, .pw-pr-actions a.text-button:hover { text-decoration: underline; }
+.pw-event-foot .pw-pending { margin: 0; }
+/* The live bar (working line, Interrupt, Jump to latest) sits on the page colour: the shared composer fades over its top
+   fifth, and Jump to latest only shows while the chat is scrolled up, so text ran through it. The fade keeps to the padding. */
+.composer.pw-composer { background: linear-gradient(to top, var(--bg) calc(100% - 8px), transparent); }
+.pw-stop-icon, .message-actions button.pw-stop-icon { background: var(--card); color: var(--ink); border: 1px solid var(--edge-strong); }
+.pw-stop-icon:hover, .message-actions button.pw-stop-icon:hover { background: var(--danger-soft); border-color: color-mix(in srgb, var(--danger) 55%, transparent); color: var(--danger); }
+.pw-jump { display: inline-flex; align-items: center; gap: 3px; }
+
+/* Side sections: headings, rows and empty lines share a 10 px inset; cards keep their own padding. */
+.pw-section-heading, .pw-section > .pw-empty, .pw-sent { padding-inline: 10px; }
+.pw-sent { display: flex; align-items: center; gap: 6px; margin: 0; color: var(--ok); font-size: 12.5px; font-weight: 550; }
+.pw-list { display: grid; gap: 1px; }
+.pw-thread-row, a.pw-thread-row {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  column-gap: 9px;
+  row-gap: 2px;
+  align-items: center;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.pw-thread-row:hover { background: var(--bg-3); }
+.pw-thread-row:focus-visible { outline-offset: -2px; }
+.pw-thread-row .pw-dot { justify-self: center; }
+/* Positioned, so the screen-reader state after a long title is clipped with it instead of widening the page (phones) or
+   the side column, which then scrolled sideways. */
+.pw-row-title { position: relative; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 600; }
+.pw-row-end { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-3); white-space: nowrap; }
+.pw-row-meta, .pw-row-summary { grid-column: 2 / -1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pw-row-meta { font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-3); }
+.pw-row-summary { font-size: 12.5px; color: var(--ink-2); }
+.pw-outcome { font-weight: 600; }
+.pw-tone-ok { color: var(--ok); }
+.pw-tone-danger { color: var(--danger); }
+.pw-tone-warn { color: var(--warn); }
+.pw-tone-muted { color: var(--ink-3); }
+.pw-tone-jev { color: var(--jev); }
+.chip.pw-tone-ok { border-color: color-mix(in srgb, var(--ok) 50%, transparent); }
+.chip.pw-tone-danger { border-color: color-mix(in srgb, var(--danger) 50%, transparent); }
+.chip.pw-tone-warn { border-color: color-mix(in srgb, var(--warn) 50%, transparent); }
+.chip.pw-tone-jev { border-color: var(--jev-edge); }
+
+/* Decision cards: the existing magenta answer card with the source line, the options stacked with their details. */
+.answer-card.pw-decision { gap: 10px; margin: 0; padding: 12px; }
+.pw-source { margin: 0; font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-2); }
+.pw-question .markdown { font-size: 13.5px; }
+.pw-question .markdown > p:first-child { font-weight: 600; }
+.pw-options { display: grid; gap: 6px; }
+.pw-option, button.pw-option {
+  display: grid;
+  justify-items: start;
+  gap: 1px;
+  width: 100%;
+  min-height: 36px;
+  padding: 7px 12px;
+  border-radius: 10px;
+  text-align: left;
+  white-space: normal;
+}
+.pw-option:hover, button.pw-option:hover { border-color: var(--jev); background: var(--card); }
+.pw-option small { color: var(--ink-3); font-size: 12px; font-weight: 400; line-height: 1.4; }
+.pw-option:disabled small { color: inherit; }
+.pw-answer { display: flex; align-items: flex-end; gap: 6px; margin: 0; }
+.pw-answer textarea {
+  flex: 1;
+  width: 0;
+  min-width: 0;
+  min-height: 44px;
+  max-height: 33dvh;
+  padding: 11px 12px;
+  border-color: var(--jev-edge);
+  border-radius: 12px;
+  line-height: 20px;
+  resize: none;
+  overflow-y: auto;
+}
+.pw-answer button { flex: none; min-height: 44px; padding: 0 16px; border-radius: 12px; }
+.pw-decision .error { margin: 0; }
+.pw-answered > summary { display: flex; align-items: center; gap: 6px; width: fit-content; padding: 4px 10px; border-radius: 7px; color: var(--ink-2); font-size: 12.5px; font-weight: 600; }
+.pw-answered > summary::before { margin: 0 4px 2px 0; }
+.pw-answered > summary:hover { color: var(--ink); }
+/* The side column scrolls in two-column mode, so full-width controls draw their focus ring inside. */
+.pw-answered > summary:focus-visible { outline-offset: -2px; }
+.pw-answered ul { display: grid; margin: 4px 0 0; padding: 0; list-style: none; }
+.pw-answered li { display: grid; gap: 3px; margin: 0; padding: 9px 10px; border-top: 1px solid var(--edge); }
+.pw-answered .pw-source { color: var(--ink-3); }
+.pw-answered-question {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 12.5px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+.pw-answered-answer { display: flex; align-items: flex-start; gap: 6px; margin: 0; color: var(--ink); font-size: 12.5px; line-height: 1.45; overflow-wrap: anywhere; }
+.pw-answered-answer > .icon { margin-top: 2px; color: var(--ok); }
+
+/* Pull requests: a card per pull request or pushed branch. */
+.pw-pr { display: grid; gap: 8px; min-width: 0; padding: 10px 12px; border: 1px solid var(--edge); border-radius: var(--radius); background: var(--card); }
+.pw-pr-title, a.pw-pr-title { justify-self: start; color: var(--ink); font-size: 13px; font-weight: 600; line-height: 1.4; text-decoration: none; overflow-wrap: anywhere; }
+a.pw-pr-title:hover { color: var(--jev-ink); text-decoration: underline; }
+.pw-badges { display: flex; flex-wrap: wrap; gap: 4px; }
+.pw-pr-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px 8px; }
+.pw-pr-actions .pw-open-thread { margin-right: auto; font-size: 12.5px; }
+.pw-merge { display: inline-flex; }
+.pw-branch { justify-self: start; max-width: 100%; font-size: 11.5px; }
+.pw-pr-reason { margin: 0; color: var(--ink-3); font-size: 12.5px; line-height: 1.45; }
+
+/* Dialogs and the Notebook panel. */
+.pw-field > label { margin-bottom: 4px; }
+.pw-field-note { margin: 0 0 12px; color: var(--ink-3); font-size: 12px; line-height: 1.45; }
+/* The settings fields sit in one borderless fieldset, disabled until the dialog has read the current settings. */
+.pw-fields { min-width: 0; margin: 0; padding: 0; border: 0; }
+.pw-isolation label { margin: 0; }
+.pw-isolation label + label { margin-top: 10px; }
+.pw-isolation label.pw-disabled { color: var(--ink-3); }
+.pw-isolation .pw-radio-note { margin: 2px 0 0 24px; }
+.pw-placement { margin: 2px 0 4px; }
+.pw-placement > summary { width: fit-content; padding: 2px 0; color: var(--ink-2); font-size: 13px; font-weight: 600; }
+.pw-placement[open] > summary { margin-bottom: 12px; }
+.pw-placement-fields, .pw-settings .form-grid { align-items: start; }
+.pw-limits { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.pw-settings .error .text-button, .pw-notebook-edit .error .text-button { margin-left: 8px; }
+.pw-confirm-body { margin: 0; }
+.pw-notebook-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 14px; }
+.pw-notebook-meta { min-width: 0; color: var(--ink-3); font-size: 12px; }
+.pw-notebook-edit { display: grid; gap: 10px; }
+.pw-notebook-edit > .form-actions { margin-top: 0; }
+.pw-notebook-text { min-height: max(320px, 55dvh); font-family: var(--font-mono); font-size: 12.5px; line-height: 1.6; }
+/* From 1181 px the inspector is a sticky grid column, and Chrome scrolls the page whenever the caret of a text field in a
+   sticky column moves: each keystroke in the notebook moved the chat up. Beside a Projects page the column is fixed to
+   the viewport instead, which draws it in the same place (its grid track stays reserved). */
+@media (min-width: 1181px) {
+  .app-shell:has(.pw-page) > .inspector:has(> .panel) {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: min(var(--inspector-width), calc(100vw - var(--sidebar-width) - 380px));
+  }
+}
+
+/* Narrow pages show the header buttons as icons; their names stay for assistive technology. */
+@container pw-page (width < 560px) {
+  .pw-heading > .actions .pw-head-button { width: 32px; padding: 0; }
+  .pw-head-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
+}
+/* The divider belongs to the chat, which always reaches the page bottom; the side column is only as tall as its content. */
+@container pw-page (width >= 840px) {
+  .pw-layout { column-gap: 20px; }
+  .pw-chat { padding-right: 20px; border-right: 1px solid var(--edge); }
+}
+@media (max-width: 760px) {
+  .pw-answer textarea, .pw-notebook-text { font-size: 16px; }
+  .pw-chat-empty { padding: 32px 8px; }
+}
+
+/* ---------- thread transcripts (D56) ---------- */
+.pw-prompt > summary { display: flex; align-items: center; min-width: 0; color: var(--ink-2); font-size: 13px; }
+.pw-prompt > summary > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pw-prompt[open] > summary { margin-bottom: 8px; }
+.pw-prompt > .markdown > :first-child { margin-top: 0; }
+.pw-prompt > .markdown > :last-child { margin-bottom: 0; }
+
+/* ---------- thread page (12.3) ---------- */
+.pw-back, a.pw-back { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; text-decoration: none; }
+.pw-thread-page .conversation-heading > .conversation-meta { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; }
+/* Header: the title and its buttons; the back link, state and pull request chips; the reason and the placement underneath. */
+.pw-thread-meta { min-width: 0; gap: 6px; }
+.pw-thread-meta > .pw-back { margin-right: 6px; }
+.pw-state-chip { flex: none; gap: 6px; }
+.pw-state-chip .pw-dot { width: 7px; height: 7px; }
+.pw-state-chip .pw-dot.pw-running, .pw-state-chip .pw-dot.pw-preparing, .pw-state-chip .pw-dot.pw-publishing { box-shadow: 0 0 0 2px var(--jev-soft); }
+.pw-state-chip.pw-state-running, .pw-state-chip.pw-state-preparing, .pw-state-chip.pw-state-publishing,
+.pw-state-chip.pw-state-waiting-for-you { color: var(--jev); border-color: var(--jev-edge); }
+.pw-state-chip.pw-state-in-review { color: var(--sea); border-color: color-mix(in srgb, var(--sea) 50%, transparent); }
+.pw-state-chip.pw-state-done { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 50%, transparent); }
+.pw-state-chip.pw-state-failed { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 50%, transparent); }
+.pw-state-chip.pw-state-stopped { color: var(--ink-3); }
+a.pw-pr-chip { flex: none; gap: 4px; color: var(--ink); font-weight: 600; text-decoration: none; }
+a.pw-pr-chip:hover { border-color: var(--jev); color: var(--jev-ink); }
+.pw-thread-meta .pw-badge { flex: none; }
+.pw-thread-details { grid-column: 1 / -1; grid-row: 3; display: grid; gap: 2px; min-width: 0; }
+.pw-thread-reason, .pw-placement-line {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.pw-thread-reason { color: var(--ink-2); font-size: 12.5px; line-height: 1.45; }
+/* Three lines keep the device in view on phones, where a long branch name fills the second. */
+.pw-placement-line { -webkit-line-clamp: 3; color: var(--ink-3); font-family: var(--font-mono); font-size: 11px; line-height: 1.5; }
+.pw-transcript-note { margin: 0; color: var(--ink-3); font-size: 13px; }
+.pw-thread-page > .error { margin: 10px 0 0; }
+
+/* Report cards: the reported turn and its status, a left rule in the status color. */
+.pw-report {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  /* Aligned with the tool rows and replies of the transcript, which sit 4 px in. */
+  margin-inline: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--edge);
+  border-left: 3px solid var(--edge-strong);
+  border-radius: var(--radius);
+  background: var(--card);
+  overflow-wrap: anywhere;
+}
+.pw-report-done { border-left-color: var(--ok); }
+.pw-report-needs-decision { border-left-color: var(--jev); }
+.pw-report-blocked { border-left-color: var(--warn); }
+.pw-report-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; min-width: 0; }
+.pw-report-head h3 { margin: 0; }
+.pw-report-head .pw-badge { margin-left: auto; }
+.pw-report-note { color: var(--ink-3); font-size: 11.5px; }
+.pw-report .markdown { font-size: 13.5px; }
+.pw-report .markdown > :first-child { margin-top: 0; }
+.pw-report .markdown > :last-child { margin-bottom: 0; }
+/* The question and its options read as one block; the options are a list, not buttons (answers go to Waiting for you). */
+.pw-report-question { display: grid; gap: 8px; padding: 10px 12px; border: 1px solid var(--jev-edge); border-radius: 8px; background: var(--jev-soft); }
+.pw-report-question .markdown > p:first-child { font-weight: 600; }
+.pw-report-options { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.pw-report-options li { position: relative; display: grid; gap: 1px; padding-left: 15px; font-size: 13px; font-weight: 600; line-height: 1.4; }
+.pw-report-options li::before { content: ""; position: absolute; top: 0.5em; left: 2px; width: 5px; height: 5px; border-radius: 50%; background: var(--jev); }
+.pw-report-options small { color: var(--ink-2); font-size: 12.5px; font-weight: 400; line-height: 1.4; }
+.pw-report-tests { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding-top: 8px; border-top: 1px solid var(--edge); font-size: 12.5px; }
+.pw-report-tests > strong { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; }
+.pw-report-tests code { max-width: 100%; font-size: 11.5px; overflow-wrap: anywhere; }
+.pw-report-tests > p { flex-basis: 100%; margin: 0; color: var(--ink-2); font-family: var(--font-mono); font-size: 11.5px; line-height: 1.6; white-space: pre-wrap; }
+
+/* Messages waiting for the next turn: dashed like a prompt not sent yet, on the prompt side. */
+.pw-queued { display: grid; gap: 6px; margin-left: 5%; }
+.pw-queued > h3 { margin: 4px 0 0; }
+.pw-queued-message { display: grid; gap: 4px; min-width: 0; padding: 10px 14px; border: 1px dashed var(--edge-strong); border-radius: 14px; overflow-wrap: anywhere; }
+.pw-queued-message .pw-source { color: var(--ink-3); }
+.pw-queued-message .markdown { font-size: 13.5px; }
+.pw-queued-message .markdown > :first-child { margin-top: 0; }
+.pw-queued-message .markdown > :last-child { margin-bottom: 0; }
+
+/* Composer: Interrupt current turn and Jump to latest at the end of the live bar; the reason when it takes no message. */
+.pw-live-end { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin-left: auto; }
+.pw-interrupt, label.pw-interrupt { gap: 6px; font-size: 12px; color: var(--ink-2); }
+.pw-interrupt input { width: 14px; height: 14px; }
+.pw-thread-composer > .error { margin: 0 0 8px; }
+.pw-composer-note { margin: 0 0 8px; color: var(--ink-3); font-size: 12.5px; line-height: 1.45; }
+.pw-composer-note.ended { margin: 0; padding: 12px 4px; border-top: 1px solid var(--edge); text-align: center; }
+.pw-fields:disabled .message-input-row { background: var(--bg-2); box-shadow: none; }
+.pw-fields:disabled .message-input-row textarea { color: var(--ink-3); background: transparent; }
+/* Allow 10 more turns keeps its words on narrow pages: it is what the turn limit waits for, and a plus alone does not say
+   it. The buttons then take their own row under the title, so the title keeps the full width. */
+@container pw-page (width < 560px) {
+  .pw-heading > .actions .pw-head-button.pw-keep-label { width: auto; padding: 4px 11px; }
+  .pw-keep-label .pw-head-label { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
+  .pw-thread-heading:has(> .actions .pw-keep-label) > h1 { grid-column: 1 / -1; }
+  .pw-thread-heading:has(> .actions .pw-keep-label) > .actions { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; }
+  .pw-thread-heading:has(> .actions .pw-keep-label) > .conversation-meta { grid-row: 3; }
+  .pw-thread-heading:has(> .actions .pw-keep-label) > .pw-thread-details { grid-row: 4; }
+}
+@media (max-width: 760px) {
+  .pw-report { padding: 11px 12px; }
+  .pw-queued { margin-left: 3%; }
+}
+
+/* ---------- Settings, Git: the GitHub token card (12.4) ---------- */
+.pw-token-summary { margin: 0 0 8px; }
+.pw-token-help { margin: 0; }
+.pw-token-actions { margin: 14px 0 0; }

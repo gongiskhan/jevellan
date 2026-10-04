@@ -88,39 +88,49 @@ export class ProjectViews {
     return base;
   }
   /**
-   * The coordinator chip (D5, D80, D91): `none` before assignment, `offline` when the roster says so, else the state of the
-   * coordinator device (its local file here, the published status elsewhere), with the session or the planned one.
+   * Where the coordinator lives and its state (D5, D80, D91): `none` before assignment, `offline` when the roster says so, else
+   * the state of the coordinator device (its local file here, the published status elsewhere). The list rows need only this
+   * (D246); the chip adds the sessions.
    */
-  async #coordinator(projectId: string, roster: DeviceRoster, work: ProjectWorkSettings): Promise<CoordinatorView> {
-    const [assigned, config, accounts] = await Promise.all([this.#o.hub.coordinator(projectId), this.#o.settings(), this.#o.accounts.list()]);
-    const deviceId = assigned?.document.deviceId ?? null; const here = deviceId === this.#o.deviceId;
+  async #coordinatorState(projectId: string, roster: DeviceRoster) {
+    const deviceId = (await this.#o.hub.coordinator(projectId))?.document.deviceId ?? null; const here = deviceId === this.#o.deviceId;
     const row = deviceId === null ? undefined : roster.devices.find((view) => view.device.id === deviceId);
     const deviceName = here ? this.#o.deviceName : row?.device.name ?? null;
-    const label = (modelId: string) => config.menu.find((entry) => entry.id === modelId)?.label ?? modelId;
-    const plan = coordinatorPlan({ work, settings: config, runtimes: new Map([...this.#o.runtimes].map(([id, adapter]) => [id, adapter.capabilities])),
-      accounts: accounts.map((view) => view.account), statuses: accounts.flatMap((view) => view.statuses), deviceId: deviceId ?? this.#o.deviceId,
-      deviceName: deviceName ?? this.#o.deviceName });
-    const planned = plan.kind === 'ready' ? { runtime: plan.model.runtime, modelLabel: plan.model.label, effort: plan.effort } : null;
-    const base = { deviceId, deviceName, planned, canMoveHere: false };
-    if (deviceId === null) return { ...base, state: 'none', online: false, session: null };
+    if (deviceId === null) return { deviceId, deviceName, state: 'none' as const, online: false };
     // This device is running, so it is never offline to itself (D8); a stale device keeps its state (D80).
-    if (!here && (!row || row.status === 'offline' || row.revoked)) return { ...base, state: 'offline', online: false, session: null };
+    if (!here && (!row || row.status === 'offline' || row.revoked)) return { deviceId, deviceName, state: 'offline' as const, online: false };
     if (here) {
-      const state = this.#o.coordinators.get(projectId).state(); const session = state.session;
-      return { ...base, state: state.state, ...(state.unavailableReason ? { unavailableReason: state.unavailableReason } : {}), online: true,
-        session: session ? { runtime: session.runtime, modelLabel: label(session.modelId), effort: session.effort,
-          accountLabel: accounts.find((view) => view.account.id === session.accountId)?.account.label ?? session.accountId, turns: session.turns } : null };
+      const local = this.#o.coordinators.get(projectId).state();
+      return { deviceId, deviceName, state: local.state, ...(local.unavailableReason ? { unavailableReason: local.unavailableReason } : {}), online: true, local };
     }
     const status = (await this.#o.hub.coordinatorStatus(projectId))?.document;
-    return { ...base, state: status?.state ?? 'idle', ...(status?.unavailableReason ? { unavailableReason: status.unavailableReason } : {}), online: true, session: status?.session ?? null };
+    return { deviceId, deviceName, state: status?.state ?? 'idle', ...(status?.unavailableReason ? { unavailableReason: status.unavailableReason } : {}), online: true,
+      published: status?.session ?? null };
+  }
+  /** The coordinator chip: the coordinator state with the session here or elsewhere, and the planned one. */
+  async #coordinator(projectId: string, roster: DeviceRoster, work: ProjectWorkSettings): Promise<CoordinatorView> {
+    const [where, config, accounts] = await Promise.all([this.#coordinatorState(projectId, roster), this.#o.settings(), this.#o.accounts.list()]);
+    const label = (modelId: string) => config.menu.find((entry) => entry.id === modelId)?.label ?? modelId;
+    const plan = coordinatorPlan({ work, settings: config, runtimes: new Map([...this.#o.runtimes].map(([id, adapter]) => [id, adapter.capabilities])),
+      accounts: accounts.map((view) => view.account), statuses: accounts.flatMap((view) => view.statuses), deviceId: where.deviceId ?? this.#o.deviceId,
+      deviceName: where.deviceName ?? this.#o.deviceName });
+    const planned = plan.kind === 'ready' ? { runtime: plan.model.runtime, modelLabel: plan.model.label, effort: plan.effort } : null;
+    const session = 'local' in where ? where.local.session : undefined;
+    return { deviceId: where.deviceId, deviceName: where.deviceName, planned, canMoveHere: false, state: where.state,
+      ...('unavailableReason' in where && where.unavailableReason ? { unavailableReason: where.unavailableReason } : {}), online: where.online,
+      session: session ? { runtime: session.runtime, modelLabel: label(session.modelId), effort: session.effort,
+        accountLabel: accounts.find((view) => view.account.id === session.accountId)?.account.label ?? session.accountId, turns: session.turns }
+        : 'published' in where ? where.published : null };
   }
   async #work(projectId: string): Promise<ProjectWorkSettings> { return (await this.#o.hub.settings(projectId))?.document ?? defaultProjectWorkSettings(projectId); }
-  /** `GET /api/project-work`: every project with its counts and coordinator state. */
+  /**
+   * `GET /api/project-work`: every project with its counts and coordinator state. Every open page polls it, so it reads only
+   * what the rows show (D246): no work settings, configuration or accounts, which on a member are hub requests per project.
+   */
   async list(): Promise<ProjectWorkListView> {
     const [projects, roster] = await Promise.all([this.#o.projects.list(), this.#o.roster()]);
     const entries = await Promise.all(projects.map(async ({ project }) => {
-      const [threads, decisions, work] = await Promise.all([this.#threads(project.id), this.#o.hub.decisions(project.id), this.#work(project.id)]);
-      const coordinator = await this.#coordinator(project.id, roster, work);
+      const [threads, decisions, coordinator] = await Promise.all([this.#threads(project.id), this.#o.hub.decisions(project.id), this.#coordinatorState(project.id, roster)]);
       return { projectId: project.id, name: project.name, ...workCounts(threads, decisions), coordinator: { deviceId: coordinator.deviceId, state: coordinator.state } };
     }));
     return ProjectWorkListViewSchema.parse({ schema: 'project-work-list-view-v1', projects: entries });
@@ -134,7 +144,7 @@ export class ProjectViews {
     return ProjectWorkViewSchema.parse({ schema: 'project-work-view-v1', project: { id: project.id, name: project.name, branchPolicy: project.branchPolicy, baseBranch },
       settings: shown.settings, ...(shown.notice ? { settingsNotice: shown.notice } : {}), coordinator: await this.#coordinator(projectId, roster, work), threads,
       decisions: decisionLists(decisions), pullRequests: pullRequestEntries(threads), notebookRevision: notebook?.revision ?? 0,
-      lastEventId: this.#o.ledgers.coordinator(projectId).lastId() });
+      lastEventId: this.#o.ledgers.coordinator(projectId).lastId(), gates: PHASE_GATES });
   }
   /** `GET /api/projects/:id/threads/:tid` for a thread this device owns (D81 `canMessage`; overrides arrive in phase 4). */
   async thread(projectId: string, threadId: string): Promise<ThreadView> {

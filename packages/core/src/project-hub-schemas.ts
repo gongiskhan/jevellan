@@ -42,6 +42,16 @@ const collections = {
 } as const satisfies Record<ProjectHubOperation, ProjectHubCollection>;
 /** The one collection route that accepts an operation. */
 export function collectionOf(operation: ProjectHubOperation): ProjectHubCollection { return collections[operation]; }
+// Every operation is classified, so an operation added by a later phase cannot skip the lifecycle gate unnoticed.
+const access = {
+  'settings-get': 'read', 'settings-put': 'write',
+  'coordinator-get': 'read', 'coordinator-assign': 'write', 'coordinator-status-get': 'read', 'coordinator-status-put': 'write',
+  'threads-list': 'read', 'thread-get': 'read', 'thread-publish': 'write',
+  'decisions-list': 'read', 'decision-get': 'read', 'decision-create': 'write', 'decision-withdraw': 'write', 'decision-answer': 'write',
+  'notebook-get': 'read', 'notebook-put': 'write',
+} as const satisfies Record<ProjectHubOperation, 'read' | 'write'>;
+/** Reads change no hub state, so the hub admits them like GET requests, outside the lifecycle gate (D247). */
+export function isProjectHubRead(operation: ProjectHubOperation): boolean { return access[operation] === 'read'; }
 
 /** A hub row as returned to members: the embedded document revision must equal the row revision (D3). */
 function stored<T extends z.ZodType<{ revision: number }>>(document: T) {

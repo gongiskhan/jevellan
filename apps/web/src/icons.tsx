@@ -113,6 +113,33 @@ const paths = {
     </>
   ),
   external: <path d="M8 4H4.5v11.5H16V12M11 3.5h5.5V9M16.5 3.5L9 11" />,
+  stop: <rect x="5.5" y="5.5" width="9" height="9" rx="1.6" fill="currentColor" />,
+  copy: (
+    <>
+      <rect x="7" y="7" width="9.5" height="9.5" rx="1.8" />
+      <path d="M13 7V5.3a1.8 1.8 0 00-1.8-1.8H5.3a1.8 1.8 0 00-1.8 1.8v5.9A1.8 1.8 0 005.3 13H7" />
+    </>
+  ),
+  'pull-request': (
+    <>
+      <circle cx="6" cy="4.5" r="1.8" />
+      <circle cx="6" cy="15.5" r="1.8" />
+      <circle cx="14" cy="15.5" r="1.8" />
+      <path d="M6 6.3v7.4M14 13.7V8.5a2.5 2.5 0 00-2.5-2.5H9M10.8 4.2L9 6l1.8 1.8" />
+    </>
+  ),
+  thread: (
+    <>
+      <circle cx="4.5" cy="4.5" r="1.8" />
+      <path d="M6.3 4.5H12a3 3 0 010 6H8a3 3 0 000 6h7.5" />
+    </>
+  ),
+  trash: (
+    <>
+      <path d="M3.5 5.5h13M8 5.5V3.8c0-.4.4-.8.8-.8h2.4c.4 0 .8.4.8.8v1.7" />
+      <path d="M5 5.5l.8 10.6c.1.8.7 1.4 1.5 1.4h5.4c.8 0 1.4-.6 1.5-1.4L15 5.5M8.3 8.5v5.8M11.7 8.5v5.8" />
+    </>
+  ),
 } as const;
 
 export type IconName = keyof typeof paths;

@@ -34,7 +34,7 @@ export const test = base.extend<{ page: Page }>({
     const layout = String(info.project.metadata.layout ?? info.project.name);
     // A check can take several screenshots, so each is described by its own name as one step of the check.
     const expected = (shot: Shot) => {
-      const name = shot.path.replace(/^.*\//, '').replace(/\.png$/, '').replace(`-${layout}`, '').replace(/^(?:phase\d+|J\d+)-/, '').replaceAll('-', ' ');
+      const name = shot.path.replace(/^.*\//, '').replace(/\.png$/, '').replace(`-${layout}`, '').replace(/^(?:phase\d+|P?J\d+[a-z]?)-/, '').replaceAll('-', ' ');
       return `the Jevellan web app "${name}" screen at ${layout}, rendered completely and legibly (one of several screens captured during "${info.title}"; the other steps are judged in their own screenshots)`;
     };
     const failures: string[] = [];

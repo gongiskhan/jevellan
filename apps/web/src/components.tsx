@@ -61,6 +61,42 @@ export function Modal({ title, children, close }: { title: string; children: Rea
     </dialog>
   );
 }
+/**
+ * A small confirmation (Merge, Stop, Discard, Remove token). The dialog focuses the action, or Cancel when the action is
+ * destructive, so Enter never destroys by accident. `busy` disables the action while its request runs.
+ */
+export function Confirm({ title, children, action, danger = false, busy = false, confirm, close }: {
+  title: string;
+  children: ReactNode;
+  action: string;
+  danger?: boolean;
+  busy?: boolean;
+  confirm(): void;
+  close(): void;
+}) {
+  // showModal() focuses the first element with the autofocus attribute; React's autoFocus prop does not set it.
+  const initial = (element: HTMLButtonElement | null) => element?.setAttribute('autofocus', '');
+  return (
+    <Modal title={title} close={close}>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (!busy) confirm();
+        }}
+      >
+        {children}
+        <div className="form-actions">
+          <button type="button" className="secondary" onClick={close} ref={danger ? initial : undefined}>
+            Cancel
+          </button>
+          <button className={danger ? 'danger' : ''} disabled={busy} ref={danger ? undefined : initial}>
+            {action}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
 // Side panels (Why, Changes, evidence, memory notes) open in the inspector column next to the page
 // instead of covering it. They stay non-modal so the timeline remains usable while they are open.
 const openPanels: string[] = [];

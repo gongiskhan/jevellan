@@ -7,12 +7,14 @@ import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { z } from 'zod';
-import { AccountSchema, BridgeResultSchema, BridgeToolsSchema, Homes, OverrideRecordSchema, ProjectSchema, SecretRedactor, parseConfiguration, readDocument, writeDocument } from '../packages/core/dist/index.js';
-import { joinMember } from '../packages/mesh/dist/index.js';
-import { FakeRuntime } from '../packages/runtime-contract/dist/index.js';
+import { AccountSchema, BridgeResultSchema, BridgeToolsSchema, Homes, OverrideRecordSchema, ProjectSchema, SecretRedactor, newId, parseConfiguration, readDocument, threadBranch, writeDocument } from '../packages/core/dist/index.js';
+import { HubProjectAccess, joinMember } from '../packages/mesh/dist/index.js';
+import { FakeRuntime, nativeFormat, writeFakeNativeSession } from '../packages/runtime-contract/dist/index.js';
+import { eventBlock } from '../packages/projects/dist/index.js';
 import { Application, createDaemon } from '../apps/daemon/dist/index.js';
 import { createRuntime as createClaude } from '../runtimes/claude/dist/index.js';
 import { createRuntime as createCodex } from '../runtimes/codex/dist/index.js';
+import { startGitHubFixture } from '../tests/fixtures/github-server.mjs';
 
 // Browser fixtures exercise actual HTTP/vault/APM code with simulated providers.
 const { Response } = globalThis;
@@ -21,6 +23,105 @@ const port = index === -1 ? 19771 : Number(process.argv[index + 1]);
 if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Invalid test port.');
 const root = realpathSync(mkdtempSync(join(tmpdir(), 'jevellan-browser-')));
 mkdirSync(join(root, 'user'));
+// Projects journeys (PJ3, design 5.5) run on their own servers started with --projects: a GitHub-shaped project redirected
+// to a local bare origin, the fake GitHub and scripted coordinator and thread turns. Git, worktrees, the bridge, the
+// ledgers and pull requests are real; model behavior is simulated. Without the flag nothing below changes the server.
+const projectsMode = process.argv.includes('--projects');
+const PROJECTS_REPOSITORY = 'fixture/projects-app';
+const PROJECTS_REMOTE = `https://github.com/${PROJECTS_REPOSITORY}.git`;
+const projectsOrigin = join(root, 'projects-origin.git');
+const githubToken = `fixture-${randomUUID()}`;
+// The fake GitHub reads the bare origin lazily, so it can start before the repository exists.
+const github = projectsMode ? await startGitHubFixture({ token: githubToken, repositories: { [PROJECTS_REPOSITORY]: projectsOrigin } }) : undefined;
+// A new pull request starts with its checks queued, as CI does on GitHub (the fixture's own default stays `none`).
+const githubFetch = async (url, init) => {
+  const response = await fetch(url, init);
+  const created = /^\/repos\/([^/]+\/[^/]+)\/pulls$/.exec(new URL(String(url)).pathname);
+  if (created && init?.method === 'POST' && response.status === 201) github.setChecks((await response.clone().json()).number, 'pending', decodeURIComponent(created[1]));
+  return response;
+};
+// No `periodic` here: the hub keeps its timers and the member keeps `timers: false`.
+const projectOptions = github ? { githubBaseUrl: github.url, githubFetch, projectTimers: { prPollMs: 2_000, coordinatorStartMs: 100, inboxPollMs: 500, queueSweepMs: 1_000, outboxRetryMs: 500, outboxMaxMs: 2_000 } } : {};
+const projectPause = (ms, signal) => new Promise((resolve) => {
+  const timer = setTimeout(resolve, ms);
+  signal.addEventListener('abort', () => { clearTimeout(timer); resolve(); }, { once: true });
+}).then(() => signal.throwIfAborted());
+// Held steps wait for the control route's release (by marker) or for their turn's abort (a steer, a stop or shutdown).
+const held = new Set();
+function hold(marker, signal) {
+  return new Promise((resolve) => {
+    if (signal.aborted) { resolve('aborted'); return; }
+    const settle = (outcome) => { held.delete(entry); signal.removeEventListener('abort', aborted); resolve(outcome); };
+    const aborted = () => settle('aborted');
+    const entry = { marker, release: () => settle('released') };
+    held.add(entry); signal.addEventListener('abort', aborted, { once: true });
+  });
+}
+/** A bridge call wrapped in tool events, as a runtime reports MCP calls: the turn's final text is the text after the last tool. */
+async function projectTool(turn, name, args) {
+  const id = `fixture_${randomUUID()}`; turn.emit({ type: 'tool-start', id, name, input: args });
+  try { const result = await turn.bridge(name, args); turn.emit({ type: 'tool-end', id, ok: true, output: JSON.stringify(result) }); return result; }
+  catch (error) { turn.emit({ type: 'tool-end', id, ok: false, output: error instanceof Error ? error.message : 'The tool call failed.' }); throw error; }
+}
+const EVENTS_HEADER = eventBlock([]);
+function coordinatorStep(input) {
+  // Only the delivered events count: a fresh session's recap repeats earlier owner messages.
+  const at = input.prompt.lastIndexOf(EVENTS_HEADER); const events = at < 0 ? input.prompt : input.prompt.slice(at);
+  // The greeting turn holds after its first words until the control route releases it (or the turn is stopped), so the
+  // working state is on screen for as long as a journey needs to capture it, however loaded the machine is.
+  if (events.includes('PJ3: add a greeting')) return async (turn) => {
+    turn.say('Starting a thread for the greeting.\n');
+    if (await hold('PJ3: add a greeting', turn.signal) === 'aborted') return { status: 'interrupted' };
+    await projectTool(turn, 'jevellan_thread_start', { title: 'Add a greeting', task: 'PJ3: create greeting.txt' });
+    await projectPause(1_000, turn.signal); turn.say('Started "Add a greeting".'); return { status: 'completed' };
+  };
+  if (events.includes('PJ3 decision')) return async (turn) => {
+    turn.say('One choice is yours.\n'); await projectPause(350, turn.signal);
+    await projectTool(turn, 'jevellan_ask_user', { question: 'Which greeting should the page use?', options: [{ label: 'Hello', detail: 'Short and friendly' }, { label: 'Welcome', detail: 'More formal' }] });
+    await projectPause(350, turn.signal); turn.say('I asked which greeting the page should use.'); return { status: 'completed' };
+  };
+  return async (turn) => { await projectPause(350, turn.signal); turn.say('Noted.'); return { status: 'completed' }; };
+}
+// Native transcript rows a running long turn writes while it waits, so its thread page shows progress before the turn ends.
+const LONG_TOOLS = [['Read', { file_path: 'README.md' }, '# Projects app\n\nA small app for the Projects journeys.'], ['Grep', { pattern: 'greeting', path: '.' }, 'No matches found.'],
+  ['Bash', { command: 'ls' }, 'README.md'], ['Read', { file_path: 'README.md', offset: 3 }, 'A small app for the Projects journeys.']];
+const longThreads = new Set();
+function threadStep(input) {
+  const report = (status, summary, extra = {}) => async (turn) => { await projectPause(350, turn.signal); turn.say(summary); await projectTool(turn, 'jevellan_thread_report', { status, summary, ...extra }); return { status: 'completed' }; };
+  if (input.turn === 1 && input.prompt.includes('PJ3: create greeting.txt')) return async (turn) => {
+    turn.say('Creating greeting.txt.\n'); await projectPause(350, turn.signal);
+    writeFileSync(join(turn.input.cwd, 'greeting.txt'), 'Hello!\n'); git(turn.input.cwd, 'add', 'greeting.txt'); git(turn.input.cwd, 'commit', '-m', 'Add a greeting');
+    return report('done', 'Added greeting.txt with a short greeting and committed it.', { testsRun: { command: 'test -f greeting.txt', passed: true, summary: 'greeting.txt exists.' }, changedFiles: ['greeting.txt'] })(turn);
+  };
+  // A long thread's first turn keeps working until it is released or interrupted; its later turns answer at once.
+  if (input.turn === 1 && input.prompt.includes('PJ3 long')) {
+    longThreads.add(input.owner.id);
+    return async (turn) => {
+      const native = { format: nativeFormat(turn.input.account.account.runtime), home: turn.input.account.home, sessionId: turn.session.id, cwd: turn.input.cwd };
+      let tick = 0;
+      const timer = globalThis.setInterval(() => {
+        if (turn.signal.aborted) return;
+        const [name, toolInput, output] = LONG_TOOLS[tick % LONG_TOOLS.length]; const id = `fixture_${randomUUID()}`;
+        turn.emit({ type: 'tool-start', id, name, input: toolInput }); turn.emit({ type: 'tool-end', id, ok: true, output });
+        if (++tick <= LONG_TOOLS.length) writeFakeNativeSession({ ...native, rows: [{ role: 'assistant', tools: [{ id, name, input: toolInput, output }] }], append: true });
+      }, 350);
+      try { if (await hold('PJ3 long', turn.signal) === 'aborted') return { status: 'interrupted' }; }
+      finally { globalThis.clearInterval(timer); }
+      return report('progress', 'Worked through the long task until it was released.')(turn);
+    };
+  }
+  if (longThreads.has(input.owner.id)) return report('progress', 'Read your message and adjusted the plan.');
+  return report('progress', 'Done for now.');
+}
+/** `startTurn` for one adapter: each turn takes its own script, matched by owner and turn number, from the adapter's turn queue. */
+function scriptedTurns(turns) {
+  // Mirrors the adapter it serves: coordinators need read-only turns (D199); placement reads the adapter's capabilities.
+  turns.capabilities.readOnlyEnforced = true;
+  return (input) => {
+    turns.enqueueTurn(input.owner.kind === 'coordinator' ? coordinatorStep(input) : threadStep(input), (candidate) => candidate.owner.id === input.owner.id && candidate.turn === input.turn);
+    return turns.startTurn(input);
+  };
+}
 async function j11Step(input, emit, runtime) {
   const bridge = async payload => {
     const response = await fetch(`${input.launch.env.JEVELLAN_DAEMON_URL}/api/bridge`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${input.launch.env.JEVELLAN_STRETCH_TOKEN}` }, body: JSON.stringify({ schema: 'bridge-request-v1', ...payload }) });
@@ -118,14 +219,14 @@ const decisionFetch = async (_url, init) => {
     return [id, { type: 'choice', choice, probabilities: Object.fromEntries(Object.keys(question.criteria).map((option) => [option, option === choice ? 1 : 0])), confidence: 1 }];
   })) });
 };
-const application = new Application({ homes: new Homes(join(root, 'user', '.jevellan'), join(root, 'user')), port, decisionFetch, repositoryVisibility: async (path) => path === join(root, 'memory-project') ? 'PUBLIC' : 'UNKNOWN', runtimes: (context) => {
+const application = new Application({ homes: new Homes(join(root, 'user', '.jevellan'), join(root, 'user')), port, decisionFetch, ...projectOptions, repositoryVisibility: async (path) => path === join(root, 'memory-project') ? 'PUBLIC' : 'UNKNOWN', runtimes: (context) => {
   const claude = createClaude(context); const codex = createCodex(context);
   for (const runtime of [claude, codex]) {
     const fake = new FakeRuntime(); fake.capabilities.readOnlyEnforced = true;
     // Improver drafts get their own scripted queue, so they never take a turn meant for a concurrent conversation.
     const drafts = new FakeRuntime(); drafts.capabilities.readOnlyEnforced = true;
-    // Project turns get their own scripted queue too; nothing is scripted yet, so an unscripted turn fails cleanly.
-    const turns = new FakeRuntime(); runtime.startTurn = (input) => turns.startTurn(input);
+    // Project turns get their own scripted queue too; without --projects nothing is scripted, so a turn fails cleanly.
+    const turns = new FakeRuntime(); runtime.startTurn = projectsMode ? scriptedTurns(turns) : (input) => turns.startTurn(input);
     // Simulated providers need no native sandbox; the host's own Codex sandbox check does not apply to them.
     runtime.capabilities = { ...runtime.capabilities, shell: true, readOnlyEnforced: true };
     runtime.probe = async () => ({ auth: 'ready', identity: { email: 'fixture@example.test' } });
@@ -267,6 +368,7 @@ async function close() {
   if (memberServer) await new Promise(resolve => { memberServer.close(resolve); memberServer.closeAllConnections(); });
   await application.close();
   await new Promise((resolve) => { server.close(resolve); server.closeAllConnections(); });
+  await github?.close();
   await rm(root, { recursive: true, force: true });
 }
 process.once('SIGINT', () => { void close(); });
@@ -275,10 +377,10 @@ await new Promise(resolve => server.listen(port, '127.0.0.1', resolve));
 const memberHomes = new Homes(join(root, 'member-home'), join(root, 'user'));
 const FixtureAuthSchema = z.strictObject({ schema: z.literal('fixture-auth-v1'), fixture_login: z.literal(true) });
 await joinMember(memberHomes, { schema: 'member-join-input-v1', hubUrl: `http://127.0.0.1:${port}`, code: application.mesh.invite().code, device: { name: 'Browser member', url: `http://127.0.0.1:${port + 100}`, os: 'linux', version: '0.1.0' } }, { redactor: new SecretRedactor() });
-member = new Application({ homes: memberHomes, port: port + 100, timers: false, decisionFetch, runtimes: context => {
+member = new Application({ homes: memberHomes, port: port + 100, timers: false, decisionFetch, ...projectOptions, runtimes: context => {
   const runtime = createCodex(context);
   const fake = new FakeRuntime(); fake.capabilities.readOnlyEnforced = true;
-  const turns = new FakeRuntime(); runtime.startTurn = input => turns.startTurn(input);
+  const turns = new FakeRuntime(); runtime.startTurn = projectsMode ? scriptedTurns(turns) : input => turns.startTurn(input);
   runtime.capabilities = { ...runtime.capabilities, shell: true, readOnlyEnforced: true }; // Simulated provider: no native sandbox.
   runtime.probe = async resolved => ({ auth: existsSync(join(resolved.home, 'auth.json')) && readDocument(join(resolved.home, 'auth.json'), FixtureAuthSchema).fixture_login ? 'ready' : 'missing', identity: { email: 'remote-fixture@example.test' } });
   runtime.listModels = async () => [{ id: 'gpt-fixture', label: 'GPT fixture', efforts: ['low', 'high'] }];
@@ -326,6 +428,41 @@ await application.conversations.saveProject({ schema: 'project-write-v1', revisi
 // A Git project inside the user's home for the folder picker journey.
 const pickedProject = join(root, 'user', 'picked-project'); mkdirSync(pickedProject); git(pickedProject, 'init', '-b', 'main'); git(pickedProject, 'config', 'user.name', 'Fixture'); git(pickedProject, 'config', 'user.email', 'fixture@example.invalid');
 writeFileSync(join(pickedProject, 'README.md'), '# Picked project\n'); git(pickedProject, 'add', '-A'); git(pickedProject, 'commit', '-m', 'Initial');
+// Projects journeys (design 5.5): saved before the improver settings below, which exclude every project but its sandbox.
+if (projectsMode) {
+  const hubId = application.device.deviceId; const memberId = member.device.deviceId;
+  const clone = (from, path) => { git(root, 'clone', from, path); git(path, 'config', 'user.name', 'Fixture'); git(path, 'config', 'user.email', 'fixture@example.invalid'); return path; };
+  git(root, 'init', '--bare', '-b', 'main', projectsOrigin);
+  const projectsPath = clone(projectsOrigin, join(root, 'projects-app'));
+  writeFileSync(join(projectsPath, 'README.md'), '# Projects app\n\nA small app for the Projects journeys.\n');
+  git(projectsPath, 'add', '-A'); git(projectsPath, 'commit', '-m', 'Seed projects fixture'); git(projectsPath, 'push', '-u', 'origin', 'main');
+  const projectsMember = clone(projectsOrigin, join(root, 'projects-app-member'));
+  // GitHub detection reads the raw remote URL; insteadOf sends every fetch and push to the bare origin (D18).
+  for (const path of [projectsPath, projectsMember]) { git(path, 'remote', 'set-url', 'origin', PROJECTS_REMOTE); git(path, 'config', `url.${projectsOrigin}.insteadOf`, PROJECTS_REMOTE); }
+  const externalOrigin = join(root, 'projects-external-origin.git'); git(root, 'clone', '--bare', projectsOrigin, externalOrigin);
+  const offlineOrigin = join(root, 'projects-offline-origin.git'); git(root, 'clone', '--bare', projectsOrigin, offlineOrigin);
+  const save = (id, name, paths, branchPolicy, extra = {}) => application.conversations.saveProject({ schema: 'project-write-v1', revision: 0, project: ProjectSchema.parse({ schema: 'project-v1', id, name, paths, branchPolicy, ...extra,
+    memory: { mode: 'repo', dir: '.jevellan/memory' }, context: { state: 'none' } }) });
+  await save('projects_fixture', 'Projects fixture', { [hubId]: projectsPath, [memberId]: projectsMember }, 'main', { testCommand: 'test -f greeting.txt' });
+  await save('projects_external', 'Projects external', { [hubId]: clone(externalOrigin, join(root, 'projects-external')) }, 'external');
+  await save('projects_offline', 'Projects offline', { [hubId]: clone(offlineOrigin, join(root, 'projects-offline')) }, 'main');
+  // Enabled accounts let model discovery enable the Fable and GPT menu entries, so threads and the coordinator can run here.
+  for (const [runtime, label] of [['claude', 'Projects Claude'], ['codex', 'Projects Codex']]) {
+    const id = `acc_projects_${runtime}`;
+    application.hub.put('accounts', id, AccountSchema, { schema: 'account-v1', id, runtime, label, kind: 'subscription', enabled: true, ceilingPct: 90, credential: 'per-device' }, 0);
+    application.homes.account(runtime, id); await application.accounts.check(id); await application.accounts.discover(id);
+  }
+  await application.state.github.put(githubToken);
+  await application.projectHub.putNotebook({ schema: 'project-notebook-v1', projectId: 'projects_fixture', revision: 0, content: 'Prefer short greetings.\n', updatedAt: new Date().toISOString(), updatedBy: 'coordinator' }, 0);
+  // A thread the member concluded yesterday, so Concluded is never empty; its transcript stays on the member.
+  const ended = Date.now() - 86_400_000; const seeded = newId('thread', ended - 42 * 60_000); const title = 'Write the welcome copy';
+  await new HubProjectAccess(application.hub, memberId).publishThread({ schema: 'project-thread-index-v1', revision: 0, id: seeded, projectId: 'projects_fixture', title, state: 'done', isolation: 'worktree',
+    ownerDeviceId: memberId, runtime: 'codex', modelLabel: 'GPT', effort: 'high', accountLabel: 'Projects Codex', branch: threadBranch(title, seeded),
+    pr: { number: 7, url: `https://github.com/${PROJECTS_REPOSITORY}/pull/7`, state: 'merged', headSha: '7'.repeat(40), checks: 'passing', mergeable: 'clean', updatedAt: new Date(ended).toISOString() },
+    lastSummary: 'Wrote the welcome copy and checked it on the page.', turns: 3, createdAt: new Date(ended - 42 * 60_000).toISOString(), updatedAt: new Date(ended).toISOString(), endedAt: new Date(ended).toISOString() }, 1);
+  // The offline fixture device holds this project's coordinator, so the page shows the offline notice (9.8).
+  await new HubProjectAccess(application.hub, 'offline_browser_fixture').assignCoordinator('projects_offline', 'offline_browser_fixture', 0);
+}
 // Improver journeys (J10/J12): a dedicated sandbox with a bare origin, and memory care limited to it.
 const improverOrigin = join(root, 'improver-origin.git'); git(root, 'init', '--bare', '-b', 'main', improverOrigin);
 const improverPath = join(root, 'improver-sandbox'); git(root, 'clone', improverOrigin, improverPath); git(improverPath, 'config', 'user.name', 'Fixture'); git(improverPath, 'config', 'user.email', 'fixture@example.invalid');
@@ -352,11 +489,55 @@ const correction = (group, n, action, from, to) => {
     conversationId: 'improver_fixture_conversation', projectId: 'improver_sandbox', workId: `work_${id}`, decisionId: `decision_${id}`, at: new Date().toISOString(), action, context: `A ${action} step in the improver fixture.`, changes: [{ field: 'model', from, to }] }, 0);
 };
 for (const n of [1, 2, 3]) { correction('implement', n, 'implement', 'claude-fable', 'codex-gpt'); correction('review', n, 'review', 'claude-fable', 'claude-opus'); }
+// Projects control (design 5.5 item 9), on the same listener: POST routes; every body is a versioned fixture document (pulse has none).
+const ControlPullSchema = z.strictObject({ schema: z.literal('fixture-pull-change-v1'), checks: z.enum(['none', 'pending', 'passing', 'passing-status', 'failing']).optional(),
+  mergeable: z.enum(['clean', 'dirty', 'unknown', 'unstable']).optional(), merged: z.literal(true).optional(), closed: z.literal(true).optional() });
+const ControlReleaseSchema = z.strictObject({ schema: z.literal('fixture-release-v1'), marker: z.string().min(1).max(200) });
+const ControlNotebookSchema = z.strictObject({ schema: z.literal('fixture-notebook-v1'), content: z.string().max(65536) });
+const ControlTokenSchema = z.strictObject({ schema: z.literal('fixture-github-token-v1'), saved: z.boolean() });
+async function projectControl(request, response) {
+  const send = (status, value) => { response.writeHead(status, { 'Content-Type': 'application/json' }).end(JSON.stringify(value)); };
+  const chunks = []; for await (const chunk of request) chunks.push(chunk);
+  const text = Buffer.concat(chunks).toString('utf8');
+  let body; try { body = text ? JSON.parse(text) : undefined; } catch { send(400, { message: 'The control request needs a JSON document.' }); return; }
+  const parse = (schema) => { const parsed = schema.safeParse(body); if (!parsed.success) send(400, { message: parsed.error.issues.map((issue) => issue.message).join(' ') }); return parsed.success ? parsed.data : undefined; };
+  const pull = /^\/projects\/github\/(\d+)$/.exec(request.url);
+  let input;
+  if (pull && (input = parse(ControlPullSchema))) {
+    // The fake GitHub's own control route applies the change; its pull request view is the answer.
+    const { checks, mergeable, merged, closed } = input;
+    const answer = await fetch(`${github.url}/_control/pulls/${pull[1]}`, { method: 'POST', headers: { Authorization: `Bearer ${githubToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ checks, mergeable, merged, closed, repo: PROJECTS_REPOSITORY }) });
+    send(answer.status, await answer.json());
+  } else if (request.url === '/projects/pulse') {
+    await Promise.all([application.projectWork.pulse(), member.projectWork.pulse()]); send(200, { pulsed: true });
+  } else if (request.url === '/projects/release' && (input = parse(ControlReleaseSchema))) {
+    // A release waits up to ten seconds for its step to start holding; the answer counts the steps it released.
+    const deadline = Date.now() + 10_000; let matching;
+    while (!(matching = [...held].filter((entry) => entry.marker === input.marker)).length && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 50));
+    for (const entry of matching) entry.release();
+    send(200, { released: matching.length });
+  } else if (request.url === '/projects/notebook' && (input = parse(ControlNotebookSchema))) {
+    // A coordinator's notebook write goes through the hub with the current revision, as jevellan_notebook_write does.
+    const current = await application.projectHub.notebook('projects_fixture'); const revision = current?.revision ?? 0;
+    const stored = await application.projectHub.putNotebook({ schema: 'project-notebook-v1', projectId: 'projects_fixture', revision, content: input.content, updatedAt: new Date().toISOString(), updatedBy: 'coordinator' }, revision);
+    send(200, { revision: stored.revision });
+  } else if (request.url === '/projects/github-token' && (input = parse(ControlTokenSchema))) {
+    // Removes or restores the token the fake GitHub accepts, around the token card journey.
+    const state = input.saved ? await application.state.github.put(githubToken) : await application.state.github.remove();
+    send(200, { saved: state.saved });
+  } else if (!response.headersSent) send(404, { message: 'Unknown control route.' });
+}
 // Fixture control for J10's later "seed a third group" step. It listens on this server's own offset only.
 improverControl = createServer((request, response) => {
   if (request.method === 'POST' && request.url === '/improver/third-group') {
     for (const n of [1, 2, 3]) if (!application.hub.get('overrides', `improver_plan_${n}`, OverrideRecordSchema)) correction('plan', n, 'plan', 'claude-fable', 'claude-sonnet');
     response.writeHead(204).end(); return;
+  }
+  // The control listener binds after all seeding, so this is the --projects servers' readiness check.
+  if (projectsMode && request.method === 'GET' && request.url === '/projects/ready') { response.writeHead(204).end(); return; }
+  if (projectsMode && request.method === 'POST' && request.url?.startsWith('/projects/')) {
+    projectControl(request, response).catch((error) => { if (response.headersSent) response.destroy(); else response.writeHead(500, { 'Content-Type': 'application/json' }).end(JSON.stringify({ message: error instanceof Error ? error.message : 'The control request failed.' })); });
+    return;
   }
   response.writeHead(404).end();
 });

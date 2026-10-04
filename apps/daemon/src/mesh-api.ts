@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { AccountHubRequestSchema, ConsumeSwitchSchema, DeviceSwitchInputSchema, EmptySchema, MeshSessionInputSchema, MeshSessionResultSchema, PassphraseInputSchema, PeerSessionInputSchema, ProjectHubCollectionSchema, ProjectHubRequestSchema, collectionOf } from '@jevellan/core';
+import { AccountHubRequestSchema, ConsumeSwitchSchema, DeviceSwitchInputSchema, EmptySchema, MeshSessionInputSchema, MeshSessionResultSchema, PassphraseInputSchema, PeerSessionInputSchema, ProjectHubCollectionSchema, ProjectHubRequestSchema, collectionOf, isProjectHubRead } from '@jevellan/core';
 import { HubAccounts, HubCheckoutStore, HubIndexes, HubPublicationLeases, sessionCookie } from '@jevellan/mesh';
 import type { Application } from './application.js';
 import { json, requestBody } from './http.js';
@@ -7,6 +7,8 @@ import { SharedStateRequestSchema } from '@jevellan/core';
 import { HubProjectStore, HubState } from '@jevellan/mesh';
 import { ImproverDeviceRequestSchema, ImproverRequestSchema, PeerLoginSessionInputSchema } from '@jevellan/core';
 
+/** Project hub collections; `handleApi` leaves them to this route's own lifecycle gate (D247). */
+export const PROJECT_HUB_ROUTE = /^\/hub\/mesh\/projects\/([a-z]+)$/;
 export async function handleMeshDeviceApi(app: Application, request: IncomingMessage, response: ServerResponse, url: URL): Promise<boolean> {
   const path = url.pathname; if (!path.startsWith('/hub/mesh/')) return false;
   if (app.device.role !== 'hub') throw Object.assign(new Error('This endpoint belongs to the hub.'), { status: 404 });
@@ -38,14 +40,18 @@ export async function handleMeshDeviceApi(app: Application, request: IncomingMes
     // Credential replies bypass redaction, which would otherwise replace the token (GitHub tokens also match a pattern).
     if (input.operation === 'jev-credential' || input.operation === 'github-credential') json(response, result); else send(result); return true;
   }
-  const projects = path.match(/^\/hub\/mesh\/projects\/([a-z]+)$/);
+  const projects = path.match(PROJECT_HUB_ROUTE);
   if (projects && method === 'POST') {
     const collection = ProjectHubCollectionSchema.safeParse(projects[1]); if (!collection.success) throw Object.assign(new Error('Not found.'), { status: 404 });
     const input = ProjectHubRequestSchema.parse(await requestBody(request));
     if (collectionOf(input.operation) !== collection.data) throw Object.assign(new Error('This operation belongs to another project collection.'), { status: 400 });
-    app.devices.authenticate(authorization!.slice(7));
-    const result = new HubProjectStore(app.hub, device.id).request(input);
-    app.devices.authenticate(authorization!.slice(7)); send(result); return true;
+    // Reads change nothing and are admitted like GET requests; writes are refused while an installer holds maintenance.
+    const release = isProjectHubRead(input.operation) ? undefined : app.lifecycle.enter({ kind: 'request' });
+    try {
+      app.devices.authenticate(authorization!.slice(7));
+      const result = new HubProjectStore(app.hub, device.id).request(input);
+      app.devices.authenticate(authorization!.slice(7)); send(result); return true;
+    } finally { release?.(); }
   }
   if (path === '/hub/mesh/indexes' && method === 'POST') {
     const input = await requestBody(request); app.devices.authenticate(authorization!.slice(7));

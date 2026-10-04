@@ -6,7 +6,7 @@ import { randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { z } from 'zod';
-import { DeviceSchema, Homes, ProjectDecisionSchema, ProjectSchema, SecretRedactor, ThreadIndexSchema, defaultProjectWorkSettings, type ProjectDecision, type ThreadIndex } from '../packages/core/dist/index.js';
+import { DeviceSchema, Homes, LifecycleGate, ProjectDecisionSchema, ProjectSchema, SecretRedactor, ThreadIndexSchema, defaultProjectWorkSettings, isProjectHubRead, lifecycleActivity, type ProjectDecision, type ProjectHubOperation, type ThreadIndex } from '../packages/core/dist/index.js';
 import { HubProjectAccess, HubProjectStore, HubProtocolError, HubUnavailable, MemberHubClient, MemberProjectStore, joinHub } from '../packages/mesh/dist/index.js';
 import { Application, createDaemon } from '../apps/daemon/dist/index.js';
 
@@ -207,4 +207,24 @@ test('project collections are device routes: browser headers, other collections 
   expect((await device('projects/overrides', left.token, { schema: 'project-hub-request-v1', operation: 'overrides-list', projectId: 'project' })).status).toBe(400);
   const listed = await device('projects/threads', left.token, body); expect(listed.status).toBe(200); expect(await listed.json()).toEqual({ schema: 'project-hub-result-v1', operation: 'threads-list', records: [], next: null });
   await expect(left.client.projects('threads', { schema: 'project-hub-request-v1', operation: 'settings-get', projectId: 'project' })).rejects.toThrow('This operation belongs to another project collection.');
+});
+
+test('project hub reads are admitted outside the lifecycle gate and writes are refused while an installer holds maintenance (D247)', async () => {
+  const left = await member('left'); await app.started;
+  const reads: ProjectHubOperation[] = ['settings-get', 'coordinator-get', 'coordinator-status-get', 'threads-list', 'thread-get', 'decisions-list', 'decision-get', 'notebook-get'];
+  const writes: ProjectHubOperation[] = ['settings-put', 'coordinator-assign', 'coordinator-status-put', 'thread-publish', 'decision-create', 'decision-withdraw', 'decision-answer', 'notebook-put'];
+  expect(reads.filter(isProjectHubRead)).toEqual(reads); expect(writes.filter(isProjectHubRead)).toEqual([]);
+  const installer = new LifecycleGate(app.homes); const release = installer.tryMaintenance();
+  try {
+    expect(release).toBeTypeOf('function');
+    expect(await left.hub.settings('project')).toBeNull(); expect(await left.hub.threads('project')).toEqual({ records: [], next: null });
+    expect(await left.hub.decisions('project')).toEqual([]); expect(await left.hub.notebook('project')).toBeNull();
+    const refused = await device('projects/settings', left.token, { schema: 'project-hub-request-v1', operation: 'settings-put', settings: defaultProjectWorkSettings('project'), expectedRevision: 0 });
+    expect(refused.status).toBe(503); expect(await refused.json()).toMatchObject({ message: expect.stringContaining('being updated') });
+    await expect(left.hub.putNotebook({ schema: 'project-notebook-v1', projectId: 'project', revision: 0, content: 'Held.', updatedAt: at, updatedBy: 'coordinator' }, 0)).rejects.toMatchObject({ status: 503 });
+    expect(lifecycleActivity(app.homes)).toEqual([]);
+  } finally { release?.(); installer.close(); }
+  expect(await left.hub.settings('project')).toBeNull(); expect(await left.hub.notebook('project')).toBeNull();
+  expect(await left.hub.putSettings(defaultProjectWorkSettings('project'), 0)).toMatchObject({ revision: 1 });
+  expect(lifecycleActivity(app.homes)).toEqual([]);
 });

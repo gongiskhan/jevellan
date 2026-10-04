@@ -202,5 +202,11 @@
     "title": "Projects: the coordinator",
     "why": "A read-only coordinator per project turns owner messages and batched thread events into thread starts, messages, owner questions and notebook edits, rotates its session at 40 turns and on Fresh, falls back to asking the owner directly when it cannot run, and streams its chat over SSE: PJ2 and PJ2b to PJ2e pass (8 of 8 acceptance cases, 28 of 28 in the five new files), the full backend passed 1437 tests with 4 missing-key skips and 0 failures, and the existing browser journeys passed 164 of 164 including 4 installation journeys, all simulated (FakeRuntime coordinator and thread turns, fake GitHub server) with vision checks not run without the dedicated Claude token; see docs/acceptance/PJ2.md.",
     "status": "complete-with-blockers"
+  },
+  {
+    "id": "projects-ui",
+    "title": "Projects: the interface",
+    "why": "A Projects area in the web app (a sidebar section; a project page with the streamed coordinator chat, Waiting for you decision cards, thread rows, pull requests with a merge dialog, New thread, the notebook and project settings; a thread page with the transcript, report cards, Interrupt, Stop, Discard and Allow 10 more turns; the GitHub token card): PJ3 passes as 7 browser journeys in four layouts (28 of 28 in both matrix runs, 68 screenshots), the interface unit tests pass 27 of 27 and the full backend passed 1465 tests with 4 missing-key skips and 0 failures, all simulated (FakeRuntime coordinator and thread turns, fake GitHub server), while the vision checks were not run without the dedicated Claude token (a builder review of the screenshots found and fixed problems but does not replace them) and no single four-worker browser matrix run was green on the loaded machine (the heavy skeleton journeys pass alone); see docs/acceptance/PJ3.md.",
+    "status": "complete-with-blockers"
   }
 ]

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { GitCheckSchema, GitSettingsSchema, ProjectsListSchema } from '@jevellan/core/client';
 import { api } from './api.js';
 import { SectionHeading, useTask, type PageProps } from './components.js';
+import { GitHubToken } from './github-token.js';
 
 export function GitPage(props: PageProps) {
   const [settings, setSettings] = useState<z.infer<typeof GitSettingsSchema>>();
@@ -91,6 +92,7 @@ export function GitPage(props: PageProps) {
           </button>
         </form>
       </section>
+      <GitHubToken onError={props.onError} message={props.message} />
       <section className="card">
         <h2>Check a project</h2>
         <p>Test read access using the saved connection method. This check does not fetch, commit or push.</p>

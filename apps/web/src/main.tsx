@@ -28,10 +28,14 @@ import { GitPage } from './git-settings.js';
 import { ProjectsPage } from './projects.js';
 import { ConversationPage, ConversationSidebar, NewConversation } from './conversations.js';
 import { CursorConversationPage } from './cursor-sessions.js';
+import { ProjectWorkPage, ProjectsSidebar } from './project-work.js';
+import { projectRoute } from './project-work-model.js';
+import { ThreadPage } from './thread-page.js';
 import { SetupPage } from './setup.js';
 import { ImproverPage, useImprover } from './improver.js';
 import { BrandFlag, Icon, type IconName } from './icons.js';
 import './style.css';
+import './project-work.css';
 import { InstallAppButton, PwaStatus, startPwa } from './pwa.js';
 
 type Auth = z.infer<typeof AuthStateSchema>;
@@ -372,7 +376,9 @@ function App() {
     ) : (
       <RuntimesPage {...props} key={path} />
     );
-  const conversation = path.startsWith('/cursor/') || path.startsWith('/sessions/') || path.startsWith('/conversations/');
+  // Project and thread pages hide the header like conversation pages and render the navigation button themselves.
+  const project = projectRoute(path);
+  const conversation = path.startsWith('/cursor/') || path.startsWith('/sessions/') || path.startsWith('/conversations/') || !!project;
   const navigation = <button className="menu-button icon-button" aria-label="Open navigation" aria-expanded={sidebar} onClick={() => setSidebar(!sidebar)}><Icon name="menu" /></button>;
   const settingsLabel = settingsPages.find(([id]) => id === currentPage)?.[1] ?? 'Runtimes';
   return (
@@ -399,6 +405,7 @@ function App() {
           <Icon name="plus" />
           New conversation
         </button>
+        <ProjectsSidebar navigate={navigate} onError={onError} selected={path} />
         {improver.notice && (
           <button
             className="improver-notice"
@@ -485,6 +492,10 @@ function App() {
               {settingsNav}
               <div className="settings-content">{settingsPage}</div>
             </div>
+          ) : project?.threadId ? (
+            <ThreadPage {...props} navigation={navigation} projectId={project.projectId} threadId={project.threadId} key={path} />
+          ) : project ? (
+            <ProjectWorkPage {...props} navigation={navigation} id={project.projectId} key={path} />
           ) : path.startsWith('/cursor/') || path.startsWith('/sessions/') ? (
             <CursorConversationPage {...props} navigation={navigation} id={path.split('/')[2]!.split('?')[0]!} key={path} />
           ) : path.startsWith('/conversations/') ? (

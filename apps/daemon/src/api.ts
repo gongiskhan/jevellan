@@ -12,7 +12,7 @@ import { Application } from './application.js';
 import { conversationRoute, handleConversation } from './conversation-api.js';
 import { handleOwnerRequest, proxyConversation } from './owner-proxy.js';
 import { json, requestBody as body } from './http.js';
-import { handleMeshDeviceApi, handleMeshUiApi } from './mesh-api.js';
+import { PROJECT_HUB_ROUTE, handleMeshDeviceApi, handleMeshUiApi } from './mesh-api.js';
 import { handleLoginApi } from './login-api.js';
 import { ImproverRequestSchema } from '@jevellan/core';
 
@@ -52,7 +52,8 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     const secureRequest = requireOrigin(request, options.allowedOrigins ?? [], options.proxyOrigin);
     const secureCookies = options.secureCookies ?? secureRequest;
     const path = url.pathname; const method = request.method ?? 'GET'; const token = sessionFromCookie(request.headers.cookie);
-    if (!['GET', 'HEAD'].includes(method)) release = app.lifecycle.enter({ kind: 'request' });
+    // Project hub requests enter the gate in their route once the operation is known: reads are admitted like GET (D247).
+    if (!['GET', 'HEAD'].includes(method) && !PROJECT_HUB_ROUTE.test(path)) release = app.lifecycle.enter({ kind: 'request' });
     if (await handleOwnerRequest(app, request, response, url)) return;
     if (path.startsWith('/api/mesh/cursor') && await handleCursorApi(app, request, response, url)) return;
     if (path.startsWith('/api/mesh/login/') && await handleLoginApi(app, request, response, url)) return;

@@ -14,6 +14,7 @@ import {
   type Project,
 } from '@jevellan/core/client';
 import { api } from './api.js';
+import { OPEN } from './project-work-copy.js';
 import {
   Markdown,
   Modal,
@@ -105,6 +106,11 @@ export function ProjectsPage(props: PageProps & { embedded?: boolean }) {
               </p>
               {visibility[row.project.id]?.visibility === 'PUBLIC' && <PublicMemoryNotice />}
               <div className="actions">
+                {!props.embedded && (
+                  <button className="secondary small" onClick={() => props.navigate(`/projects/${row.project.id}`)}>
+                    {OPEN}
+                  </button>
+                )}
                 <button className="secondary small" onClick={() => setMemory(row.project)}>
                   Browse memory
                 </button>

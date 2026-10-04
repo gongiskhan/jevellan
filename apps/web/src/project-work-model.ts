@@ -1,0 +1,436 @@
+import {
+  IdSchema,
+  NO_CHANGES,
+  OWNER_STARTED_PREFIX,
+  OWNER_WORKED_PREFIX,
+  ProjectLedgerDataSchemas,
+  concludedRecently,
+  isTerminal,
+  liveWork,
+  runningSection,
+  type CoordinatorEvent,
+  type CoordinatorView,
+  type CursorTurn,
+  type Effort,
+  type Isolation,
+  type ProjectDecision,
+  type ProjectLedgerData,
+  type ProjectLedgerEvent,
+  type ProjectLedgerEventType,
+  type ProjectWorkListView,
+  type ProjectWorkView,
+  type PullRequestEntry,
+  type PullRequestState,
+  type ThreadIndex,
+  type ThreadReport,
+  type ThreadState,
+  type ThreadView,
+} from '@jevellan/core/client';
+import type { IconName } from './icons.js';
+import * as copy from './project-work-copy.js';
+
+// Pure, DOM-free logic of the Projects pages (design 2.11), unit tested in tests/project-work-ui.test.ts.
+
+/** Window event every Projects mutation dispatches so the sidebar refreshes at once (like `jevellan-conversation-updated`). */
+export const PROJECT_WORK_UPDATED = 'jevellan-project-work-updated';
+
+export type ProjectRoute = { projectId: string; threadId?: string };
+/** `/projects/<id>` and `/projects/<id>/threads/<tid>` with valid ids; anything else is not a Projects page. */
+export function projectRoute(path: string): ProjectRoute | null {
+  const parts = path.split(/[?#]/)[0]!.split('/');
+  const valid = (value: string | undefined): value is string => value !== undefined && IdSchema.safeParse(value).success;
+  if (parts[0] !== '' || parts[1] !== 'projects' || !valid(parts[2])) return null;
+  if (parts.length === 5 && parts[3] === 'threads' && valid(parts[4])) return { projectId: parts[2], threadId: parts[4] };
+  return parts.length === 3 ? { projectId: parts[2] } : null;
+}
+
+export type ProjectTab = 'chat' | 'waiting' | 'threads' | 'pull-requests';
+/** The tab below 1180 px: Waiting when a question is open, else Chat. Computed once, after the first view load. */
+export function defaultTab(view: Pick<ProjectWorkView, 'decisions'>): ProjectTab {
+  return view.decisions.open.length ? 'waiting' : 'chat';
+}
+
+/**
+ * Running lists every thread that is neither concluded nor in review (display only, D9), newest first so rows keep
+ * their place while they update; Concluded lists threads that ended within 14 days, most recently ended first (D52).
+ */
+export function threadSections(threads: readonly ThreadIndex[], now: number): { running: ThreadIndex[]; concluded: ThreadIndex[] } {
+  const newest = (a: string, b: string) => Date.parse(b) - Date.parse(a);
+  return {
+    running: threads.filter((thread) => runningSection(thread.state)).sort((a, b) => newest(a.createdAt, b.createdAt) || a.id.localeCompare(b.id)),
+    concluded: threads.filter((thread) => concludedRecently(thread, now))
+      .sort((a, b) => newest(a.endedAt ?? a.updatedAt, b.endedAt ?? b.updatedAt) || a.id.localeCompare(b.id)),
+  };
+}
+
+/**
+ * How often the project page's clock ticks (D243): every second while a Running row is under a minute old, because its
+ * age then reads in seconds (`relativeDuration`), else every 30 s, as minutes are all the rows show after that.
+ */
+export function rowClockMs(threads: readonly Pick<ThreadIndex, 'state' | 'createdAt'>[], now: number): number {
+  return threads.some((thread) => runningSection(thread.state) && now - Date.parse(thread.createdAt) < 60_000) ? 1000 : 30_000;
+}
+
+/** Thread state dot classes (D54); the colors live in project-work.css. */
+export function dotClass(state: ThreadState): string {
+  return `pw-dot pw-${state}`;
+}
+
+/** The sidebar row dot: a working coordinator pulses, open questions show solid magenta, else a muted outline. */
+export function projectDot(entry: Pick<ProjectWorkListView['projects'][number], 'waiting' | 'coordinator'>): string {
+  return dotClass(entry.coordinator.state === 'running' ? 'running' : entry.waiting ? 'waiting-for-you' : 'idle');
+}
+
+/** Sidebar order: by name, so rows never move while their counts change. */
+export function sidebarProjects(view: ProjectWorkListView): ProjectWorkListView['projects'] {
+  return [...view.projects].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) || a.projectId.localeCompare(b.projectId));
+}
+
+/** The coordinator chip (12.2); `none` (not assigned yet) reads Idle. */
+export function coordinatorLabel(state: CoordinatorView['state']): string {
+  return state === 'running' ? copy.COORDINATOR_WORKING_CHIP : state === 'unavailable' ? copy.COORDINATOR_UNAVAILABLE
+    : state === 'offline' ? copy.COORDINATOR_OFFLINE : copy.COORDINATOR_IDLE;
+}
+
+/**
+ * The header chip and its muted session line (12.2, D91): the chat stream can be ahead of the view, so `working` decides
+ * the working state; the session is the current one, else the planned one. `runtime` maps a runtime id to its display name.
+ */
+export function coordinatorChip(view: Pick<ProjectWorkView, 'coordinator'>, events: readonly ProjectLedgerEvent[], runtime: (id: string) => string):
+  { label: string; tone: 'idle' | 'running' | 'unavailable' | 'offline'; session: string | null } {
+  const busy = working(events, view); const state = view.coordinator.state;
+  const shown = view.coordinator.session ?? view.coordinator.planned;
+  return { label: busy ? copy.COORDINATOR_WORKING_CHIP : coordinatorLabel(state),
+    tone: busy ? 'running' : state === 'unavailable' || state === 'offline' ? state : 'idle',
+    session: shown ? copy.coordinatorSession(runtime(shown.runtime), shown.modelLabel, shown.effort) : null };
+}
+
+/** Concluded rows: `Merged #42`, `Published to main`, `No changes`, `Stopped` or `Failed`; null while not concluded. */
+export function outcomeText(thread: Pick<ThreadIndex, 'state' | 'stateReason' | 'isolation' | 'pr'>): string | null {
+  switch (thread.state) {
+    case 'done':
+      if (thread.pr?.state === 'merged') return copy.mergedOutcome(thread.pr.number);
+      // A done worktree thread without a merged pull request concluded without changes (branch-only threads rest idle, D23).
+      return thread.isolation === 'main' && thread.stateReason !== NO_CHANGES ? copy.PUBLISHED_TO_MAIN : copy.NO_CHANGES_OUTCOME;
+    case 'stopped': return copy.STOPPED;
+    case 'failed': return copy.FAILED;
+    default: return null;
+  }
+}
+
+export type BadgeTone = 'ok' | 'danger' | 'warn' | 'muted' | 'jev';
+const CHECKS = {
+  passing: { text: copy.CHECKS_PASSING, tone: 'ok' }, failing: { text: copy.CHECKS_FAILING, tone: 'danger' },
+  pending: { text: copy.CHECKS_RUNNING, tone: 'warn' }, none: { text: copy.NO_CHECKS, tone: 'muted' },
+} as const satisfies Record<PullRequestState['checks'], { text: string; tone: BadgeTone }>;
+export function checksBadge(pr: Pick<PullRequestState, 'checks'>): { text: string; tone: BadgeTone } {
+  return CHECKS[pr.checks];
+}
+/** Why Merge is disabled (its tooltip): conflicts, else failing checks; pending checks still allow a merge (D75). */
+export function mergeBlock(pr: Pick<PullRequestState, 'checks' | 'mergeable'>): string | null {
+  return pr.mergeable === 'conflict' ? copy.MERGE_BLOCKED_CONFLICTS : pr.checks === 'failing' ? copy.MERGE_BLOCKED_CHECKS : null;
+}
+
+/**
+ * The Pull requests section: open pull requests and branch-only threads with their reason (D58). Merged and closed pull
+ * requests belong to Concluded, so they leave this list (D222).
+ */
+export function openPullRequests(entries: readonly PullRequestEntry[]): PullRequestEntry[] {
+  return entries.filter((entry) => entry.pr ? entry.pr.state === 'open' : entry.reason !== undefined);
+}
+
+/** Why Main cannot be chosen here, or null: the Leave git text wins over the phase text (D88, D221). */
+export function mainIsolationBlock(view: Pick<ProjectWorkView, 'project' | 'gates'>): string | null {
+  return view.project.branchPolicy !== 'main' ? copy.LEAVE_GIT_SETTING : view.gates.mainIsolation ? null : copy.MAIN_NOT_AVAILABLE;
+}
+/** Why another device cannot be chosen yet, or null (D88, D221). */
+export function deviceBlock(view: Pick<ProjectWorkView, 'gates'>, deviceId: string, currentDeviceId: string): string | null {
+  return deviceId === currentDeviceId || view.gates.remoteDevices ? null : copy.REMOTE_NOT_AVAILABLE;
+}
+
+export type ThreadForm = { title: string; task: string; isolation: '' | Isolation; modelId: string; effort: '' | Effort; deviceId: string };
+/** `POST /api/projects/:id/threads`: fields left on Automatic are omitted, so placement decides them. */
+export function threadCreateRequest(clientRequestId: string, form: ThreadForm) {
+  return { schema: 'thread-create-request-v1' as const, clientRequestId, title: form.title.trim(), task: form.task.trim(),
+    ...(form.isolation ? { isolation: form.isolation } : {}), ...(form.modelId ? { modelId: form.modelId } : {}),
+    ...(form.effort ? { effort: form.effort } : {}), ...(form.deviceId ? { deviceId: form.deviceId } : {}) };
+}
+
+export type SettingsForm = { defaultIsolation: Isolation; isolationChanged: boolean; modelId: string; effort: Effort; setupCommand: string;
+  maxRunningThreads: number; maxRunningPerDevice: number; threadTurnCap: number };
+/**
+ * `PUT /api/projects/:id/work-settings`. Reads show a stored `main` default as worktree with a notice (D205); unless the
+ * owner picked an isolation, a save keeps the stored `main` instead of silently replacing it (D223).
+ */
+export function settingsRequest(view: Pick<ProjectWorkView, 'settings' | 'settingsNotice'>, form: SettingsForm) {
+  const keptMain = !form.isolationChanged && view.settingsNotice !== undefined;
+  return { schema: 'project-work-settings-request-v1' as const, revision: view.settings.revision, settings: {
+    defaultIsolation: keptMain ? 'main' as const : form.defaultIsolation,
+    coordinator: { modelId: form.modelId || null, effort: form.effort }, setupCommand: form.setupCommand.trim() || null,
+    maxRunningThreads: form.maxRunningThreads, maxRunningPerDevice: form.maxRunningPerDevice, threadTurnCap: form.threadTurnCap } };
+}
+
+/** The decision card's source line: the coordinator's own questions, or the thread a fallback question came from. */
+export function decisionSource(decision: Pick<ProjectDecision, 'from' | 'threadId'>, titles: ThreadTitles): string {
+  const title = decision.from === 'thread' && decision.threadId ? titles(decision.threadId) : undefined;
+  return decision.from === 'thread' ? copy.fromThread(title ?? copy.UNKNOWN_THREAD_NAME) : copy.FROM_COORDINATOR;
+}
+/** After answering: the coordinator's questions go to it; a thread's own question goes back to that thread (D224). */
+export function sentText(decision: Pick<ProjectDecision, 'from' | 'threadId'>, titles: ThreadTitles): string {
+  if (decision.from === 'coordinator') return copy.SENT_TO_COORDINATOR;
+  const title = decision.threadId ? titles(decision.threadId) : undefined;
+  return title ? copy.sentToThread(title) : copy.SENT_TO_THREAD;
+}
+/**
+ * The section's sent line stays until a question arrives that was not open when the answer was sent (`known`), so it
+ * never sits above a question it does not describe; no clock is compared.
+ */
+export function showSent(sent: { known: readonly string[] } | undefined, open: readonly Pick<ProjectDecision, 'id'>[]): boolean {
+  return !!sent && open.every((decision) => sent.known.includes(decision.id));
+}
+
+const TOOL_ICONS: Record<string, IconName> = {
+  jevellan_threads_list: 'thread', jevellan_thread_start: 'plus', jevellan_thread_message: 'message', jevellan_thread_read: 'search',
+  jevellan_thread_stop: 'stop', jevellan_ask_user: 'why', jevellan_withdraw_question: 'close', jevellan_notebook_read: 'file',
+  jevellan_notebook_write: 'file', jevellan_pr_status: 'pull-request', jevellan_mail_send: 'message', memory_search: 'search', memory_read: 'file',
+};
+/** The icon of a chat one-liner, by tool. */
+export function toolIcon(tool: string): IconName {
+  return TOOL_ICONS[tool] ?? 'tune';
+}
+
+const isolationText = (thread: Pick<ThreadIndex, 'isolation' | 'branch'>, branch: boolean) =>
+  thread.isolation === 'main' ? copy.MAIN : branch && thread.branch ? copy.worktreeOn(thread.branch) : copy.WORKTREE;
+/** Thread row meta (12.2). `runtime` is the runtime's display name (D83), `device` the owner device's name. */
+export function threadMeta(thread: ThreadIndex, runtime: string, device: string): string {
+  return copy.threadMetaText({ runtime, modelLabel: thread.modelLabel, effort: thread.effort, isolation: isolationText(thread, false), device });
+}
+/** The thread page placement line (12.3); a worktree thread without a branch yet reads `Worktree`. */
+export function placementLine(thread: ThreadIndex, view: Pick<ThreadView, 'deviceName'>, runtime: string = thread.runtime): string {
+  return copy.placementLineText({ runtime, modelLabel: thread.modelLabel, effort: thread.effort, accountLabel: thread.accountLabel,
+    isolation: isolationText(thread, true), device: view.deviceName });
+}
+
+/** How often the thread page reads its view (D79): 1.5 s while live work runs, else 10 s. */
+export const THREAD_POLL_LIVE_MS = 1500;
+export const THREAD_POLL_REST_MS = 10_000;
+/** How long the page keeps reading every 1.5 s after the owner acted, so the turn the action starts shows at once (D230). */
+export const THREAD_POLL_AFTER_ACTION_MS = 6000;
+export function threadPollDelay(state: ThreadState | undefined, now: number, fastUntil = 0): number {
+  return (state !== undefined && liveWork(state)) || now < fastUntil ? THREAD_POLL_LIVE_MS : THREAD_POLL_REST_MS;
+}
+/**
+ * The thread header buttons (12.3): Stop while the thread is not concluded, Discard when the owner may discard it (the
+ * server decides), Allow 10 more turns at the turn limit of a thread that has not concluded.
+ */
+export function threadActions(view: Pick<ThreadView, 'thread' | 'canDiscard' | 'atTurnLimit'>): { stop: boolean; discard: boolean; allowTurns: boolean } {
+  const ended = isTerminal(view.thread.state);
+  return { stop: !ended, discard: view.canDiscard, allowTurns: view.atTurnLimit && !ended };
+}
+/** Why the thread composer takes no message (D81), or null: attached in a terminal, else concluded. */
+export function composerBlock(view: Pick<ThreadView, 'canMessage' | 'thread' | 'deviceName'>): string | null {
+  if (view.canMessage) return null;
+  return view.thread.state === 'attached' ? copy.attachedNotice(view.deviceName) : copy.THREAD_ENDED;
+}
+/** The composer's live line: the running turn (turns count finished ones), the preparation or the publication. */
+export function threadLiveText(thread: Pick<ThreadIndex, 'state' | 'turns'>): string | null {
+  return thread.state === 'running' ? copy.turnRunning(thread.turns + 1) : thread.state === 'preparing' ? copy.PREPARING
+    : thread.state === 'publishing' ? copy.PUBLISHING : null;
+}
+/** The note above a thread transcript: none yet, unreadable (reports still show) or only its most recent part. */
+export function transcriptNotice(view: Pick<ThreadView, 'transcript' | 'reports' | 'thread'>): string | null {
+  if (!view.transcript) return view.reports.length || view.thread.turns ? copy.TRANSCRIPT_UNAVAILABLE : copy.NO_TRANSCRIPT_YET;
+  if (!view.transcript.turns.length && !view.reports.length) return copy.NO_TRANSCRIPT_YET;
+  return view.transcript.truncated ? copy.TRANSCRIPT_TRUNCATED : null;
+}
+const REPORT_TONES = { progress: 'muted', done: 'ok', 'needs-decision': 'jev', blocked: 'warn' } as const satisfies Record<ThreadReport['status'], BadgeTone>;
+/** A report card's status chip: progress muted, done ok, a decision magenta like Waiting for you, blocked warn. */
+export function reportBadge(status: ThreadReport['status']): { text: string; tone: BadgeTone } {
+  return { text: copy.REPORT_STATUS[status], tone: REPORT_TONES[status] };
+}
+/** The thread header's pull request badges: checks and conflicts while open, else merged or closed. */
+export function pullRequestBadges(pr: Pick<PullRequestState, 'state' | 'checks' | 'mergeable'>): Array<{ text: string; tone: BadgeTone }> {
+  if (pr.state === 'merged') return [{ text: copy.PR_MERGED, tone: 'ok' }];
+  if (pr.state === 'closed') return [{ text: copy.PR_CLOSED, tone: 'muted' }];
+  return [checksBadge(pr), ...(pr.mergeable === 'conflict' ? [{ text: copy.CONFLICTS, tone: 'danger' as const }] : [])];
+}
+
+function payload<T extends ProjectLedgerEventType>(event: ProjectLedgerEvent, type: T): ProjectLedgerData<T> | undefined {
+  if (event.type !== type) return undefined;
+  const parsed = ProjectLedgerDataSchemas[type].safeParse(event.data);
+  return parsed.success ? parsed.data as ProjectLedgerData<T> : undefined;
+}
+
+export type ChatItem =
+  | { kind: 'owner'; id: number; text: string; at: string; delivered: boolean }
+  | { kind: 'reply'; id: number; text: string }
+  | { kind: 'tool'; id: number; tool: string; summary: string; ok: boolean; threadId?: string }
+  | { kind: 'event'; id: number; text: string; detail?: string; threadId?: string; delivered: boolean }
+  | { kind: 'notice'; id: number; text: string; tone: 'info' | 'error' };
+/** Thread titles by id, from the project view; unknown threads read `a thread`. */
+export type ThreadTitles = (threadId: string) => string | undefined;
+
+const firstLine = (text: string) => text.trim().split('\n')[0]!.trim();
+type EventCard = { text: string; detail?: string; threadId?: string };
+const card = (text: string, threadId: string | undefined, detail?: string): EventCard =>
+  ({ text, ...(threadId ? { threadId } : {}), ...(detail?.trim() ? { detail: detail.trim() } : {}) });
+function eventCard(event: Exclude<CoordinatorEvent, { kind: 'user-message' }>, titles: ThreadTitles): EventCard {
+  const name = (threadId: string) => { const title = titles(threadId); return title ? copy.quotedTitle(title) : copy.UNKNOWN_THREAD_NAME; };
+  const text = copy.eventCopy;
+  switch (event.kind) {
+    case 'thread-report': {
+      const status = { progress: text.reportProgress, done: text.reportDone, 'needs-decision': text.reportDecision, blocked: text.reportBlocked }[event.report.status];
+      return card(status(name(event.threadId)), event.threadId, event.report.summary);
+    }
+    case 'thread-published': {
+      const n = name(event.threadId);
+      return card(event.result === 'pr-opened' ? text.prOpened(n, event.prNumber) : event.result === 'pr-updated' ? text.prUpdated(n, event.prNumber)
+        : event.result === 'main-published' ? text.mainPublished(n) : text.noChanges(n), event.threadId);
+    }
+    case 'thread-verification-failed': return card(text.testsFailed(name(event.threadId), event.attempts), event.threadId);
+    case 'thread-interrupted': {
+      const reason = { restart: text.interruptedRestart, timeout: text.interruptedTimeout, failed: text.interruptedFailed, stopped: text.interruptedStopped }[event.reason];
+      return card(reason(name(event.threadId)), event.threadId, event.message);
+    }
+    case 'decision-answer': return card(text.answered(firstLine(event.question)), event.threadId, text.answer(event.answer.optionLabel, event.answer.text));
+    case 'pr-update': {
+      const change = { 'checks-failed': text.checksFailed, 'checks-passed': text.checksPassed, merged: text.prMerged, closed: text.prClosed, conflict: text.prConflict }[event.change];
+      return card(change(name(event.threadId), event.prNumber), event.threadId);
+    }
+    case 'mail': return card(text.mail(name(event.fromThreadId), event.subject), event.fromThreadId);
+    case 'thread-user-message': {
+      // Owner starts and terminal work arrive preformatted (D35); the card says what happened and keeps the task as detail.
+      if (event.text.startsWith(OWNER_WORKED_PREFIX)) return card(text.ownerWorked(name(event.threadId)), event.threadId);
+      if (event.text.startsWith(OWNER_STARTED_PREFIX)) {
+        const marker = `(${event.threadId})] `; const at = event.text.indexOf(marker);
+        return card(text.ownerStarted(name(event.threadId)), event.threadId, at < 0 ? undefined : event.text.slice(at + marker.length));
+      }
+      return card(text.ownerWrote(name(event.threadId)), event.threadId, event.text);
+    }
+    case 'placement-override': return card(text.overridden(name(event.threadId)), event.threadId, event.summary);
+  }
+}
+
+/**
+ * The coordinator chat from its ledger, in ledger order: owner messages, replies, tool one-liners, event cards and notices.
+ * Owner messages and event cards are delivered once a coordinator turn lists their event id (D2a). Records that do not
+ * parse are skipped, so one bad record never blanks the chat.
+ */
+export function chatItems(events: readonly ProjectLedgerEvent[], titles: ThreadTitles = () => undefined): ChatItem[] {
+  const ordered = [...events].sort((a, b) => a.id - b.id);
+  const delivered = new Set(ordered.flatMap((event) => payload(event, 'coordinator-turn-start')?.eventIds ?? []));
+  return ordered.flatMap((event): ChatItem[] => {
+    const id = event.id;
+    switch (event.type) {
+      case 'coordinator-text': { const data = payload(event, 'coordinator-text'); return data ? [{ kind: 'reply', id, text: data.text }] : []; }
+      case 'coordinator-tool': {
+        const data = payload(event, 'coordinator-tool');
+        return data ? [{ kind: 'tool', id, tool: data.tool, summary: data.summary, ok: data.ok, ...(data.threadId ? { threadId: data.threadId } : {}) }] : [];
+      }
+      case 'notice': { const data = payload(event, 'notice'); return data ? [{ kind: 'notice', id, text: data.text, tone: data.kind }] : []; }
+      case 'coordinator-event': {
+        const data = payload(event, 'coordinator-event');
+        if (!data) return [];
+        if (data.kind === 'user-message') return [{ kind: 'owner', id, text: data.text, at: data.at, delivered: delivered.has(data.id) }];
+        return [{ kind: 'event', id, ...eventCard(data, titles), delivered: delivered.has(data.id) }];
+      }
+      default: return [];
+    }
+  });
+}
+
+/**
+ * The `Coordinator is working…` line: the view says running, or (while the view is idle or not assigned yet) the latest
+ * coordinator turn started without ending. An unavailable or offline coordinator never shows it.
+ */
+export function working(events: readonly ProjectLedgerEvent[], view: Pick<ProjectWorkView, 'coordinator'>): boolean {
+  const state = view.coordinator.state;
+  if (state === 'running') return true;
+  if (state === 'unavailable' || state === 'offline') return false;
+  let open: number | undefined;
+  for (const event of [...events].sort((a, b) => a.id - b.id)) {
+    const started = payload(event, 'coordinator-turn-start'); if (started) open = started.turn;
+    const ended = payload(event, 'coordinator-turn-end'); if (ended && ended.turn === open) open = undefined;
+  }
+  return open !== undefined;
+}
+
+export type TranscriptItem = { kind: 'turn'; turn: CursorTurn } | { kind: 'report'; report: ThreadReport };
+const REPORT_TOOL = 'jevellan_thread_report';
+const isPrompt = (turn: CursorTurn) => turn.role === 'user' && !turn.automated;
+/** The summary a `jevellan_thread_report` call carries, if the block is one. */
+function reportSummary(block: CursorTurn['blocks'][number]): string | undefined {
+  if (block.type !== 'tool' || block.name.split('__').at(-1) !== REPORT_TOOL) return undefined;
+  try {
+    const input: unknown = JSON.parse(block.input);
+    const summary = input && typeof input === 'object' ? (input as Record<string, unknown>).summary : undefined;
+    return typeof summary === 'string' ? summary : undefined;
+  } catch { return undefined; }
+}
+function reportedSummaries(segment: readonly CursorTurn[]): string[] {
+  return segment.flatMap((turn) => turn.blocks.flatMap((block) => { const summary = reportSummary(block); return summary === undefined ? [] : [summary]; }));
+}
+/**
+ * Report cards placed after the turn they report (D56). The transcript splits into one segment per Jevellan turn prompt
+ * (a non-automated user turn); segments take turn numbers from the end. The anchor is the latest segment whose
+ * `jevellan_thread_report` call carries the summary of a recorded report; without one, the last segment is turn `latest`
+ * (the caller passes `turns + 1` while a turn runs), else the last report's turn. Reports older than the transcript come
+ * first, reports newer than it last; with no transcript they are simply in order.
+ */
+export function alignReports(turns: readonly CursorTurn[], reports: readonly ThreadReport[], latest?: number): TranscriptItem[] {
+  const prefix: CursorTurn[] = []; const segments: CursorTurn[][] = [];
+  for (const turn of turns) {
+    if (isPrompt(turn)) segments.push([turn]);
+    else (segments.at(-1) ?? prefix).push(turn);
+  }
+  const ordered = [...reports].sort((a, b) => a.turn - b.turn);
+  const recorded = ordered.filter((report) => !report.synthesized).reverse();
+  let first: number | undefined;
+  for (let index = segments.length - 1; index >= 0 && first === undefined; index--) {
+    const summaries = reportedSummaries(segments[index]!);
+    const report = summaries.length ? recorded.find((candidate) => summaries.includes(candidate.summary)) : undefined;
+    if (report) first = report.turn - index;
+  }
+  first ??= (latest ?? ordered.at(-1)?.turn ?? segments.length) - segments.length + 1;
+  const items: TranscriptItem[] = []; let next = 0;
+  const reportsUpTo = (turn: number) => { while (next < ordered.length && ordered[next]!.turn <= turn) items.push({ kind: 'report', report: ordered[next++]! }); };
+  reportsUpTo(first - 2);
+  for (const turn of prefix) items.push({ kind: 'turn', turn });
+  reportsUpTo(first - 1);
+  segments.forEach((segment, index) => { for (const turn of segment) items.push({ kind: 'turn', turn }); reportsUpTo(first + index); });
+  reportsUpTo(Infinity);
+  return items;
+}
+/**
+ * The transcript as the thread page shows it (D245): a completed `jevellan_thread_report` call whose summary is a recorded
+ * report is left out, because that report's card follows the turn (the raw call read as an internal tool name above every
+ * card). A running, failed or refused call stays (a refusal can read as completed: Codex results carry no error flag). A
+ * turn left without blocks is dropped. Run it after `alignReports`, which anchors on those calls.
+ */
+export function withoutReportCalls(items: readonly TranscriptItem[], reports: readonly ThreadReport[]): TranscriptItem[] {
+  const recorded = new Set(reports.filter((report) => !report.synthesized).map((report) => report.summary));
+  const shown = (block: CursorTurn['blocks'][number]) => {
+    const summary = block.type === 'tool' && block.state === 'completed' ? reportSummary(block) : undefined;
+    return summary === undefined || !recorded.has(summary);
+  };
+  return items.flatMap((item): TranscriptItem[] => {
+    if (item.kind !== 'turn') return [item];
+    const blocks = item.turn.blocks.filter(shown);
+    if (blocks.length === item.turn.blocks.length) return [item];
+    return blocks.length ? [{ kind: 'turn', turn: { ...item.turn, blocks } }] : [];
+  });
+}
+
+/**
+ * Questions the coordinator withdrew (D84, D200): successful `jevellan_withdraw_question` calls that carry the reason.
+ * Events at or below `after` (the view's `lastEventId` when the page opened) and ids already in `seen` are history, so a
+ * replayed stream never toasts again; the caller adds the returned ledger ids to `seen`.
+ */
+export function withdrawals(events: readonly ProjectLedgerEvent[], seen: ReadonlySet<number>, after = 0): Array<{ id: number; decisionId: string; reason: string }> {
+  return events.flatMap((event) => {
+    if (event.id <= after || seen.has(event.id)) return [];
+    const data = payload(event, 'coordinator-tool');
+    return data?.tool === 'jevellan_withdraw_question' && data.ok && data.decisionId && data.reason
+      ? [{ id: event.id, decisionId: data.decisionId, reason: data.reason }] : [];
+  });
+}

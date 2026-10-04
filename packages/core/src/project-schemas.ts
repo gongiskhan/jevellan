@@ -295,7 +295,9 @@ export const ProjectWorkViewSchema = z.strictObject({ schema: z.literal('project
   settings: ProjectWorkSettingsSchema, settingsNotice: z.string().optional(),
   coordinator: CoordinatorViewSchema, threads: z.array(ThreadIndexSchema),
   decisions: z.strictObject({ open: z.array(ProjectDecisionSchema), answered: z.array(ProjectDecisionSchema).max(10) }),
-  pullRequests: z.array(PullRequestEntrySchema), notebookRevision: count, lastEventId: count });
+  pullRequests: z.array(PullRequestEntrySchema), notebookRevision: count, lastEventId: count,
+  // The placement phase gates (D88) this device applies, so the interface disables what placement would refuse (D221).
+  gates: z.strictObject({ mainIsolation: z.boolean(), remoteDevices: z.boolean() }) });
 export type ProjectWorkView = z.infer<typeof ProjectWorkViewSchema>;
 export const ThreadViewSchema = z.strictObject({ schema: z.literal('project-thread-view-v1'),
   thread: ThreadIndexSchema, placement: PlacementRecordSchema, reports: z.array(ThreadReportSchema),

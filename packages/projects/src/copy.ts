@@ -1,4 +1,4 @@
-import type { CoordinatorEvent, Isolation, ThreadReport, ThreadState } from '@jevellan/core';
+import { OWNER_STARTED_PREFIX, OWNER_WORKED_PREFIX, type CoordinatorEvent, type Isolation, type ThreadReport, type ThreadState } from '@jevellan/core';
 import { firstLine, tail } from './git.js';
 
 // Every brief-verbatim Projects string (brief 9) and the server copy of phase 1. Pure functions only.
@@ -7,7 +7,7 @@ export {
   ACCOUNT_REASON_TEXT, LEAVE_GIT_MAIN, MAIN_NOT_AVAILABLE, NOT_CHOSEN_REASON, NO_PLACEMENT, NO_THREAD_MODEL, PLACEMENT_NOT_ENABLED,
   REMOTE_GATE_REASON, REMOTE_NOT_AVAILABLE, UNKNOWN_PLACEMENT_DEVICE, UNKNOWN_PLACEMENT_MODEL,
 } from '@jevellan/decisions';
-export { ASK_USER_OPTIONS, NEEDS_DECISION_QUESTION } from '@jevellan/core';
+export { ASK_USER_OPTIONS, NEEDS_DECISION_QUESTION, NO_CHANGES } from '@jevellan/core';
 
 const oneLine = (text: string) => text.replace(/\s+/g, ' ').trim();
 const pad = (value: number) => String(value).padStart(2, '0');
@@ -77,7 +77,7 @@ export const eventBlock = (lines: readonly string[]): string => `Events since yo
 export const UNKNOWN_THREAD = '(unknown thread)';
 export const SYNTHESIZED_SUFFIX = ' (Jevellan wrote this report because the thread did not.)';
 export const ASKED_DIRECTLY_SUFFIX = ' (Jevellan asked the owner directly.)';
-const PREFORMATTED = ['[owner started thread "', '[owner worked on thread "'];
+const PREFORMATTED = [OWNER_STARTED_PREFIX, OWNER_WORKED_PREFIX];
 export type EventLineContext = {
   /** Thread title from the hub index; missing titles read `(unknown thread)`. */
   title(threadId: string): string | undefined;
@@ -157,8 +157,8 @@ export function threadPrompt(thread: { title: string; task: string }, body: stri
 }
 
 // 9.5 Owner-created thread (rendered verbatim in event blocks, D35); phase 7 detach
-export const ownerStartedLine = (title: string, id: string, task: string): string => `[owner started thread "${title}" (${id})] ${task.slice(0, 400)}`;
-export const ownerWorkedLine = (title: string): string => `[owner worked on thread "${title}" in a terminal]`;
+export const ownerStartedLine = (title: string, id: string, task: string): string => `${OWNER_STARTED_PREFIX}${title}" (${id})] ${task.slice(0, 400)}`;
+export const ownerWorkedLine = (title: string): string => `${OWNER_WORKED_PREFIX}${title}" in a terminal]`;
 
 // 9.6 Jevellan-generated thread messages
 export const VERIFICATION_ATTEMPTS = 3;
@@ -197,7 +197,6 @@ export const coordinatorTurnTimedOut = (timeoutMs: number): string => `The coord
 export const COORDINATOR_PROCESS_UNCONFIRMED = "Jevellan could not confirm the coordinator's process stopped.";
 
 // Thread state reasons (brief 8.2-8.6, D9, D24, D66, D69)
-export const NO_CHANGES = 'Concluded without changes.';
 export const TESTS_FAILED_THREE_TIMES = 'Tests failed three times.';
 export const NO_REMOTE = 'This project has no remote; the branch stays local.';
 export const BRANCH_PUSHED_NO_TOKEN = 'Branch pushed. Add a GitHub token in Settings → Git to open pull requests.';
