@@ -5,6 +5,7 @@ import { listClaudeModels, probeClaude } from './control.js';
 
 export function createRuntime(context: RuntimeContext): RuntimeAdapter {
   const delivery = new RiggingDelivery(context.homes, undefined, context.redactor);
+  const worker = fileURLToPath(new URL('./worker.js', import.meta.url));
   const checked = (value: ResolvedAccount) => {
     const account = ResolvedAccountSchema.parse(value);
     if (account.account.runtime !== 'claude' || account.home !== context.homes.account('claude', account.account.id)) throw new Error('Claude requires an account home owned by Jevellan.');
@@ -12,11 +13,12 @@ export function createRuntime(context: RuntimeContext): RuntimeAdapter {
   };
   return {
     id: 'claude', displayName: 'Claude Code', accountKinds: ['subscription', 'api-key'], riggingKinds: supportedRigging('claude'),
-    capabilities: { edit: true, shell: true, mcp: true, images: true, interrupt: true, usage: true, continueSession: true, perLaunchConfig: true, readOnlyEnforced: true },
+    capabilities: { edit: true, shell: true, mcp: true, images: true, interrupt: true, usage: true, continueSession: true, perLaunchConfig: true, readOnlyEnforced: true, turns: true },
     listModels: (account) => listClaudeModels(checked(account), context.executable),
     beginLogin: (account, home) => beginTerminalLogin('claude', account, home, context),
     probe: (account) => probeClaude(checked(account)),
     materialiseRigging: (home, items) => delivery.materialise('claude', home, items),
-    startStretch: (input) => new WorkerRun('claude', fileURLToPath(new URL('./worker.js', import.meta.url)), input, context),
+    startStretch: (input) => new WorkerRun('claude', worker, input, context),
+    startTurn: (input) => WorkerRun.turn('claude', worker, input, context),
   };
 }

@@ -278,7 +278,7 @@ export const MemoryConflictMergeSchema = z.strictObject({ schema: z.literal('mem
   upstream: GitObjectSchema, commit: GitObjectSchema, files: z.array(z.strictObject({ path: RelativePathSchema, upstream: GitObjectSchema.nullable(), local: GitObjectSchema.nullable() })).min(1) });
 export const ExclusionReasonSchema = z.enum(['needs-login', 'expired', 'usage-ceiling', 'cooling', 'disabled', 'no-account', 'paid-not-allowed', 'unsupported']);
 export type ExclusionReason = z.infer<typeof ExclusionReasonSchema>;
-export const JevCallSchema = z.strictObject({ schema: z.literal('jev-call-v1'), kind: z.enum(['action', 'model', 'memory']), requestedModel: text, returnedModel: text,
+export const JevCallSchema = z.strictObject({ schema: z.literal('jev-call-v1'), kind: z.enum(['action', 'model', 'memory', 'placement']), requestedModel: text, returnedModel: text,
   usage: z.strictObject({ input_tokens: count, output_tokens: count }), latencyMs: z.number().nonnegative() });
 export type JevCall = z.infer<typeof JevCallSchema>;
 export const DecisionRecordSchema = z.strictObject({

@@ -19,6 +19,8 @@ export const DecisionStateSchema = z.strictObject({
 });
 export type DecisionFacts = z.infer<typeof DecisionFactsSchema>;
 export type DecisionState = z.infer<typeof DecisionStateSchema>;
+/** The token estimate every Jev state packet is capped with (12,000). */
+export const approximateTokens = (state: string): number => Math.ceil(Buffer.byteLength(state) / 3);
 
 export function recentCorrections(records: CorrectionRecord[], projectId: string, menu: ModelOption[]): { ids: string[]; sentences: string[] } {
   const sorted = records.map((record) => CorrectionRecordSchema.parse(record)).filter((record) => record.schema === 'override-v1' || record.status === 'applied').sort((a, b) => Date.parse(b.at) - Date.parse(a.at) || b.id.localeCompare(a.id));
@@ -63,12 +65,11 @@ export function buildDecisionState(input: {
     facts: input.facts,
     ...(input.current ? { current: { modelId: input.current.model.id, label: input.current.model.label, description: input.current.model.description, effort: input.current.effort } } : {}),
   }));
-  const tokens = (state: string) => Math.ceil(Buffer.byteLength(state) / 3);
   const omittedHandoffs: number[] = []; let state = JSON.stringify(packet);
-  while (tokens(state) > cap && packet.conversation.recentHandoffs.length) {
+  while (approximateTokens(state) > cap && packet.conversation.recentHandoffs.length) {
     packet.conversation.recentHandoffs.shift(); omittedHandoffs.push(handoffs[omittedHandoffs.length]!.stretch); state = JSON.stringify(packet);
   }
-  while (tokens(state) > cap && (packet.conversation.recentConversation?.length ?? 0) > 1200) {
+  while (approximateTokens(state) > cap && (packet.conversation.recentConversation?.length ?? 0) > 1200) {
     const history = packet.conversation.recentConversation!;
     const budget = Math.max(1200, Math.floor(history.length * 0.7));
     packet.conversation.recentConversation = input.redactor.document(input.conversationContext
@@ -78,6 +79,6 @@ export function buildDecisionState(input: {
   }
   // This packet has no findings or middle messages. Preserve its request and rules;
   // a still-oversized packet must use the manual fallback instead of losing intent.
-  if (tokens(state) > cap) throw new JevError('state-too-large');
-  return { state, correctionsShown: corrections.ids, approximateTokens: tokens(state), omittedHandoffs };
+  if (approximateTokens(state) > cap) throw new JevError('state-too-large');
+  return { state, correctionsShown: corrections.ids, approximateTokens: approximateTokens(state), omittedHandoffs };
 }

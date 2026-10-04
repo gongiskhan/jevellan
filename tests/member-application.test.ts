@@ -34,7 +34,7 @@ function request(base: string, route: string, session?: string, body?: unknown, 
 async function body(response: Response, status = 200): Promise<unknown> { const value: unknown = await response.json(); expect(response.status, JSON.stringify(value)).toBe(status); return value; }
 function newMember() {
   const runtime: RuntimeAdapter = { id: 'claude', displayName: 'Simulated Claude provider', accountKinds: fake.accountKinds, riggingKinds: [], capabilities: fake.capabilities,
-    probe: () => fake.probe(), listModels: () => fake.listModels(), beginLogin: () => fake.beginLogin(), materialiseRigging: () => fake.materialiseRigging(), startStretch: input => fake.startStretch(input) };
+    probe: () => fake.probe(), listModels: () => fake.listModels(), beginLogin: () => fake.beginLogin(), materialiseRigging: () => fake.materialiseRigging(), startStretch: input => fake.startStretch(input), startTurn: input => fake.startTurn(input) };
   const app = new Application({ homes, timers: false, repositoryVisibility: async () => 'PUBLIC', runtimes: () => new Map([['claude', runtime]]), hubFetch: async (...args) => { if (offline) throw new Error('Simulated hub outage'); return fetch(...args); } });
   app.conversations.daemonUrl = memberBase; memberOptions.application = app; return app;
 }

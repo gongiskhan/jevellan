@@ -3,7 +3,8 @@ import { z } from 'zod';
 import { IdSchema, stableJson, type DocumentSchema } from '@jevellan/core';
 import type { HubDatabase } from './database.js';
 
-const OperationSchema = z.enum(['account-add', 'account-update', 'rigging-add', 'rigging-update', 'project-put', 'jev-put']);
+const OperationSchema = z.enum(['account-add', 'account-update', 'rigging-add', 'rigging-update', 'project-put', 'jev-put',
+  'github-put', 'github-remove', 'project-work-settings-put', 'notebook-put', 'decision-answer']);
 const ReceiptSchema = z.strictObject({
   schema: z.literal('settings-mutation-v1'), deviceId: IdSchema, requestId: IdSchema,
   operation: OperationSchema, fingerprint: z.string().regex(/^[a-f0-9]{64}$/), result: z.json(),

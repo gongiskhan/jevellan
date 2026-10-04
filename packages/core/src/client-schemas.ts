@@ -68,7 +68,7 @@ export const LoginCodeSchema = z.strictObject({ schema: z.literal('login-code-v1
 export const SecretInputSchema = z.strictObject({ schema: z.literal('save-secret-v1'), clientRequestId: IdSchema.optional(), value: z.string().min(1).max(65_536) });
 export const AccountListSchema = z.strictObject({ schema: z.literal('accounts-list-v1'), accounts: z.array(AccountViewSchema) });
 export const RiggingListSchema = z.strictObject({ schema: z.literal('rigging-list-v1'), items: z.array(RiggingViewSchema), application: RiggingApplicationSchema.nullable() });
-export const CapabilitiesSchema = z.strictObject({ edit: z.boolean(), shell: z.boolean(), mcp: z.boolean(), images: z.boolean(), interrupt: z.boolean(), usage: z.boolean(), continueSession: z.boolean(), perLaunchConfig: z.boolean(), readOnlyEnforced: z.boolean() });
+export const CapabilitiesSchema = z.strictObject({ edit: z.boolean(), shell: z.boolean(), mcp: z.boolean(), images: z.boolean(), interrupt: z.boolean(), usage: z.boolean(), continueSession: z.boolean(), perLaunchConfig: z.boolean(), readOnlyEnforced: z.boolean(), turns: z.boolean() });
 export const RuntimeListSchema = z.strictObject({ schema: z.literal('runtimes-list-v1'), runtimes: z.array(z.strictObject({ id: IdSchema, displayName: z.string(), enabled: z.boolean(), accountKinds: z.array(z.enum(['subscription', 'api-key'])), riggingKinds: z.array(z.enum(['skill', 'mcp', 'hook', 'rule', 'setting', 'command'])), capabilities: CapabilitiesSchema })), offered: z.array(OfferedModelsSchema) });
 
 
@@ -76,6 +76,11 @@ export const ConfigHistorySchema = z.strictObject({ schema: z.literal('config-hi
 export const ConfigPreviewSchema = z.strictObject({ schema: z.literal('config-preview-v1'), revision: z.number().int().positive(), configuration: ConfigurationSchema, before: z.string(), after: z.string(), changedPaths: z.array(z.string()) });
 export const DevicesListSchema = z.strictObject({ schema: z.literal('devices-list-v1'), currentDeviceId: IdSchema, devices: z.array(DeviceSchema) });
 export const SecretStateSchema = z.union([SecretSummarySchema, z.strictObject({ schema: z.literal('secret-state-v1'), id: IdSchema, saved: z.literal(false) })]);
+export const GitHubTokenStateSchema = z.union([
+  z.strictObject({ schema: z.literal('github-token-summary-v1'), id: z.literal('github'), saved: z.literal(true), lastFour: z.string().max(4), updatedAt: TimestampSchema }),
+  z.strictObject({ schema: z.literal('secret-state-v1'), id: IdSchema, saved: z.literal(false) }),
+]);
+export type GitHubTokenState = z.infer<typeof GitHubTokenStateSchema>;
 export const JevConnectionSchema = z.strictObject({ schema: z.literal('jev-connection-v2'), checkedAt: z.iso.datetime(), latencyMs: z.number().int().nonnegative(), configuredModel: z.string().min(1),
   status: z.enum(['connected', 'unavailable']), availableModels: z.array(z.string()), reason: z.string().optional() });
 export const RiggingSaveSchema = z.strictObject({ schema: z.literal('rigging-save-v1'), item: RiggingViewSchema, application: RiggingApplicationSchema });

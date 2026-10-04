@@ -35,6 +35,9 @@
       "path": "packages/conversations"
     },
     {
+      "path": "packages/projects"
+    },
+    {
       "path": "runtimes/claude"
     },
     {

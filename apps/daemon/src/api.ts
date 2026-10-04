@@ -1,10 +1,11 @@
 import { handleSessionListApi } from './session-list-api.js';
 import { handleGitApi } from './git-api.js';
+import { handleProjectWorkApi } from './project-work-api.js';
 import { handleCursorApi } from './cursor-api.js';
 import { projectFolders } from './project-folders.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { z } from 'zod';
-import { CorrectionsListSchema, CorrectionsReadSchema, ErrorDocumentSchema, IdSchema, ProjectWriteSchema, SecretSummarySchema, EmptySchema, ConfigWriteSchema, ImportSchema, SecretInputSchema, AccountListSchema, RiggingListSchema, RuntimeListSchema, exportConfiguration, parseConfiguration, stableJson } from '@jevellan/core';
+import { CorrectionsListSchema, CorrectionsReadSchema, ErrorDocumentSchema, GitHubTokenStateSchema, IdSchema, ProjectWriteSchema, SecretSummarySchema, EmptySchema, ConfigWriteSchema, ImportSchema, SecretInputSchema, AccountListSchema, RiggingListSchema, RuntimeListSchema, exportConfiguration, parseConfiguration, stableJson } from '@jevellan/core';
 import { HubUnavailable, clearSessionCookie, sessionCookie, sessionFromCookie } from '@jevellan/mesh';
 import { AddAccountSchema, AddRiggingSchema, ReplaceCredentialSchema, UpdateAccountSchema, UpdateRiggingSchema } from '@jevellan/core';
 import { Application } from './application.js';
@@ -80,6 +81,7 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
       const input = ImproverRequestSchema.parse(await body(request)); retryable = true; send(await app.improverRequest(input)); return;
     }
     if (await handleGitApi(app, request, response, url)) return;
+    if (await handleProjectWorkApi(app, request, response, url, token!, () => { retryable = true; })) return;
     if (await handleSessionListApi(app, request, response, url)) return;
     if (await handleCursorApi(app, request, response, url, token)) return;
     if (path === '/api/project-folders' && method === 'GET') { send(await projectFolders(app.homes.userHome, url.searchParams.get('path') ?? undefined)); return; }
@@ -197,6 +199,12 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     if (path === '/hub/secrets/jev' && method === 'GET') {
       send(await app.state.jev.summary());
       return;
+    }
+    if (path === '/hub/secrets/github') {
+      // Summary only, never the token (D57). Removing twice leaves the same state, so a removal may wait for the hub.
+      if (method === 'GET') { send(GitHubTokenStateSchema.parse(await app.state.github.summary())); return; }
+      if (method === 'PUT') { const input = SecretInputSchema.parse(await body(request)); retryable = input.clientRequestId !== undefined; send(GitHubTokenStateSchema.parse(await app.state.github.put(input.value, input.clientRequestId))); return; }
+      if (method === 'DELETE') { EmptySchema.parse(await body(request)); retryable = true; send(GitHubTokenStateSchema.parse(await app.state.github.remove())); return; }
     }
     if (path === '/hub/devices' && method === 'GET') { send({ schema: 'devices-list-v1', currentDeviceId: app.device.deviceId, devices: (await app.roster()).devices.map((row) => row.device) }); return; }
     throw failure('Not found.', 404);

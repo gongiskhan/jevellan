@@ -16,7 +16,7 @@ beforeEach(() => {
   homes = new Homes(join(root, 'user', '.jevellan'), join(root, 'user')); hub = new HubDatabase(homes, 'hub');
   hub.configuration.put(seedConfiguration(), 0, { deviceId: 'here', source: 'install' });
   const fake = new FakeRuntime();
-  claude = { id: 'claude', displayName: 'Claude Code', accountKinds: fake.accountKinds, riggingKinds: [], capabilities: fake.capabilities, listModels: vi.fn<RuntimeAdapter['listModels']>(async () => [{ id: 'claude-fable-5-1', label: 'Fable', efforts: ['low', 'high'] }]), beginLogin: vi.fn(fake.beginLogin.bind(fake)), probe: vi.fn<RuntimeAdapter['probe']>(async () => ({ auth: 'ready' })), materialiseRigging: fake.materialiseRigging.bind(fake), startStretch: fake.startStretch.bind(fake) };
+  claude = { id: 'claude', displayName: 'Claude Code', accountKinds: fake.accountKinds, riggingKinds: [], capabilities: fake.capabilities, listModels: vi.fn<RuntimeAdapter['listModels']>(async () => [{ id: 'claude-fable-5-1', label: 'Fable', efforts: ['low', 'high'] }]), beginLogin: vi.fn(fake.beginLogin.bind(fake)), probe: vi.fn<RuntimeAdapter['probe']>(async () => ({ auth: 'ready' })), materialiseRigging: fake.materialiseRigging.bind(fake), startStretch: fake.startStretch.bind(fake), startTurn: fake.startTurn.bind(fake) };
   codex = { ...claude, id: 'codex' };
   service = new AccountService({ store: new HubAccounts(hub, 'here'), redactor: hub.redactor, homes, deviceId: 'here', runtimes: new Map([['claude', claude], ['codex', codex]]), timers: false });
 });

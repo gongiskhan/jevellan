@@ -35,7 +35,7 @@ beforeEach(async () => {
   runtime = { id: 'claude', displayName: 'Fixture Claude', accountKinds: fake.accountKinds, riggingKinds: [], capabilities: fake.capabilities,
     probe: vi.fn<RuntimeAdapter['probe']>(async () => ({ auth: 'ready', identity: { email: 'member@example.invalid' } })),
     listModels: vi.fn<RuntimeAdapter['listModels']>(async () => [{ id: 'claude-fable-5-1', label: 'Fable', efforts: ['low', 'high'] }]),
-    beginLogin: vi.fn(fake.beginLogin.bind(fake)), materialiseRigging: fake.materialiseRigging.bind(fake), startStretch: fake.startStretch.bind(fake) };
+    beginLogin: vi.fn(fake.beginLogin.bind(fake)), materialiseRigging: fake.materialiseRigging.bind(fake), startStretch: fake.startStretch.bind(fake), startTurn: fake.startTurn.bind(fake) };
   service = accountService();
 });
 afterEach(async () => {

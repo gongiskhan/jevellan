@@ -18,3 +18,7 @@ export * from './rigging-bundle-schemas.js';
 export * from './git-settings-schemas.js';
 export * from './cursor-schemas.js';
 export * from './session-list-schemas.js';
+export * from './project-schemas.js';
+export * from './project-hub-schemas.js';
+export * from './project-hub.js';
+export * from './project-rules.js';

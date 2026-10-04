@@ -32,9 +32,10 @@ export function createRuntime(context: RuntimeContext): RuntimeAdapter {
   };
   // Without a working sandbox Codex can't enforce read-only or contain shell commands, so it declares neither.
   const sandbox = codexSandboxCheck(context.executable, context.homes.ensure('runtime-checks', 'codex'));
+  const worker = fileURLToPath(new URL('./worker.js', import.meta.url));
   return {
     id: 'codex', displayName: 'Codex', accountKinds: ['subscription', 'api-key'], riggingKinds: supportedRigging('codex'),
-    capabilities: { edit: true, shell: sandbox.available, mcp: true, images: true, interrupt: true, usage: true, continueSession: true, perLaunchConfig: true, readOnlyEnforced: sandbox.available },
+    capabilities: { edit: true, shell: sandbox.available, mcp: true, images: true, interrupt: true, usage: true, continueSession: true, perLaunchConfig: true, readOnlyEnforced: sandbox.available, turns: true },
     listModels: (account) => listCodexModels(checked(account), context.executable),
     beginLogin: (account, home) => beginTerminalLogin('codex', account, home, context),
     probe: async (account) => {
@@ -44,6 +45,7 @@ export function createRuntime(context: RuntimeContext): RuntimeAdapter {
       return { ...result, error: sandbox.reason };
     },
     materialiseRigging: (home, items) => delivery.materialise('codex', home, items),
-    startStretch: (input) => new WorkerRun('codex', fileURLToPath(new URL('./worker.js', import.meta.url)), input, context),
+    startStretch: (input) => new WorkerRun('codex', worker, input, context),
+    startTurn: (input) => WorkerRun.turn('codex', worker, input, context),
   };
 }

@@ -1,5 +1,5 @@
 import { createInterface } from 'node:readline';
-import { WorkerCommandSchema, WorkerMessageSchema, type RuntimeEvent, type RunResult, type StretchInput, type WorkerMessage } from './contract.js';
+import { WorkerCommandSchema, WorkerMessageSchema, type RuntimeEvent, type RunResult, type StretchInput, type TurnInput, type WorkerMessage } from './contract.js';
 
 export type WorkerSession = {
   run(message: string, timeoutMs: number, emit: (event: RuntimeEvent) => void, session: (id: string) => void): Promise<RunResult>;
@@ -15,11 +15,13 @@ export function classifyRuntimeError(error: unknown, structuredKind?: 'rate-limi
   return { kind, message: message.slice(0, 2000), ...(kind === 'rate-limit' && MODEL_LIMIT.test(message) ? { scope: 'model' as const } : {}) };
 }
 
-export function serveWorker(factory: (input: StretchInput, daemonPid: number, executable?: string) => WorkerSession): void {
+// A turn worker runs exactly one prompt as given; prompt assembly (system append, project instructions) is the runtime's.
+export function serveWorker(factory: (input: StretchInput, daemonPid: number, executable?: string) => WorkerSession, turns?: (input: TurnInput, daemonPid: number, executable?: string) => WorkerSession): void {
   let session: WorkerSession | undefined;
-  let active = false;
+  let active = false; let turn = false;
   const send = (message: WorkerMessage) => process.stdout.write(`${JSON.stringify(WorkerMessageSchema.parse(message))}\n`);
   const emit = (event: RuntimeEvent) => { send({ schema: 'runtime-message-v1', type: 'event', event }); };
+  const fail = (error: NonNullable<RunResult['error']>) => { send({ schema: 'runtime-message-v1', type: 'result', result: { status: 'failed', error } }); };
   const run = async (message: string, timeoutMs: number) => {
     active = true;
     let result: RunResult;
@@ -34,16 +36,23 @@ export function serveWorker(factory: (input: StretchInput, daemonPid: number, ex
       if (line.length > 4 * 1024 * 1024) throw new Error('Runtime command exceeds limit.');
       const command = WorkerCommandSchema.parse(JSON.parse(line));
       if (command.type === 'start') {
-        if (session || active) throw new Error('Runtime has already started.');
+        if (session || active || turn) throw new Error('Runtime has already started.');
         session = factory(command.input, command.daemonPid, command.executable);
         void run(`${command.input.systemAppend}\n\n${command.input.brief}`, command.input.timeoutMs);
+      } else if (command.type === 'start-turn') {
+        if (session || active || turn) throw new Error('Runtime has already started.');
+        turn = true;
+        if (!turns) { fail({ kind: 'other', message: 'This runtime does not run turns.' }); return; }
+        try { session = turns(command.input, command.daemonPid, command.executable); }
+        catch (error) { fail(classifyRuntimeError(error)); return; }
+        void run(command.input.prompt, command.input.timeoutMs);
       } else if (command.type === 'continue') {
-        if (!session || active) throw new Error('Runtime is not ready to continue.');
+        if (!session || active || turn) throw new Error('Runtime is not ready to continue.');
         void run(command.message, command.timeoutMs);
       } else if (session && active) {
         void session.interrupt().catch(() => { emit({ type: 'error', kind: 'other', message: 'Runtime interruption failed.' }); });
       }
-    } catch { send({ schema: 'runtime-message-v1', type: 'result', result: { status: 'failed', error: { kind: 'other', message: 'Invalid runtime command or state.' } } }); }
+    } catch { fail({ kind: 'other', message: 'Invalid runtime command or state.' }); }
   });
   lines.on('close', () => { if (active) void session?.interrupt(); });
 }

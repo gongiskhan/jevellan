@@ -9,8 +9,8 @@ import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { Homes, MemoryNoteSchema, MemoryProposalSchema, StretchSchema, projectMemoryHooks, type Action, type BridgeTool, type IntegrationRunner } from '../packages/core/dist/index.js';
-import { ConversationLedger, ConversationWork, type ProjectMemory } from '../packages/conversations/dist/index.js';
+import { Homes, MemoryNoteSchema, MemoryProposalSchema, StretchSchema, bridgeTools, projectMemoryHooks, projectToolNames, type Action, type BridgeTool, type IntegrationRunner } from '../packages/core/dist/index.js';
+import { ConversationLedger, ConversationWork, type BridgeScopeTools, type ProjectMemory } from '../packages/conversations/dist/index.js';
 import { Application, createDaemon } from '../apps/daemon/dist/index.js';
 
 let root: string; let homes: Homes; let app: Application; let server: Server; let base: string;
@@ -102,6 +102,32 @@ test('scope fixes the conversation, stretch and project, and expiry invalidates 
   await a.close(); await expect(call(a.token, 'memory_search', { query: 'memory' })).rejects.toMatchObject({ status: 401 });
   await expect(call('invalid', 'memory_search', { query: 'memory' })).rejects.toMatchObject({ status: 401 });
   expect(b.tools.list().tools.length).toBeGreaterThan(0);
+});
+
+test('other scopes share the registry, token rules and route, and stretch tokens cannot reach project tools', async () => {
+  const stretch = scoped('stretch_scope');
+  expect(stretch.tools.list().tools.map((tool) => tool.name)).not.toContain('jevellan_thread_report');
+  await expect(call(stretch.token, 'jevellan_thread_report', { status: 'done', summary: 'Done.' })).rejects.toMatchObject({ status: 403, message: 'This step cannot use that tool.' });
+  const calls: Array<[BridgeTool, unknown]> = []; let closed = 0;
+  const tools: BridgeScopeTools = {
+    list: () => bridgeTools(projectToolNames({ kind: 'thread', isolation: 'worktree' })),
+    call: async (name, args) => { calls.push([name, args]); return { schema: 'bridge-result-v1', result: { schema: 'thread-report-result-v1', turn: 1, status: 'done', accepted: true, repeated: false } }; },
+    capture: async () => ({ schema: 'bridge-result-v1', result: { queued: false, reason: 'disabled' } }),
+    close: async () => { closed++; },
+  };
+  const grant = app.bridges.issueTools(tools); expect(grant.tools).toBe(tools);
+  expect(grant.token).toMatch(/^[A-Za-z0-9_-]{43}$/); expect(app.bridges.redactor.text(`token ${grant.token}`)).not.toContain(grant.token);
+  const post = (body: unknown) => fetch(`${base}/api/bridge`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${grant.token}` }, body: JSON.stringify(body) });
+  const listed = await post({ schema: 'bridge-request-v1', operation: 'list' });
+  expect(listed.status).toBe(200); expect((await listed.json() as { tools: Array<{ name: string }> }).tools.map((tool) => tool.name)).toEqual(['jevellan_thread_report', 'memory_search', 'memory_read']);
+  const reported = await post({ schema: 'bridge-request-v1', operation: 'call', name: 'jevellan_thread_report', arguments: { status: 'done', summary: 'Done.' } });
+  expect(await reported.json()).toMatchObject({ result: { schema: 'thread-report-result-v1', accepted: true } });
+  expect(calls).toEqual([['jevellan_thread_report', { status: 'done', summary: 'Done.' }]]);
+  expect(await (await post({ schema: 'bridge-request-v1', operation: 'memory-capture', event: 'Stop' })).json()).toMatchObject({ result: { queued: false, reason: 'disabled' } });
+  await grant.close(); expect(closed).toBe(1);
+  const expired = await post({ schema: 'bridge-request-v1', operation: 'list' });
+  expect(expired.status).toBe(401); expect(await expired.json()).toMatchObject({ message: 'Invalid or expired stretch token.' });
+  expect(stretch.tools.list().tools.length).toBeGreaterThan(0);
 });
 
 test('scope shutdown drains an already-started write and rejects queued writes before ownership can be released', async () => {

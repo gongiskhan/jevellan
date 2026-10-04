@@ -45,7 +45,8 @@ Device calls use `/hub/mesh/`. Except for joining, they require `Authorization: 
 | POST `/hub/mesh/checkout` | Read or compare-and-swap a checkout claim for the authenticated device. |
 | POST `/hub/mesh/publication` | Acquire, renew, assert or release a publication lease using the hub clock. |
 | POST `/hub/mesh/indexes` | Publish owner-bound indexes and read paginated conversation/correction lists. |
-| POST `/hub/mesh/state` | Read or revise configuration, projects and rigging; fetch the Jev credential separately. |
+| POST `/hub/mesh/state` | Read or revise configuration, projects and rigging; save, remove or summarize the GitHub token; fetch the Jev and GitHub credentials separately. |
+| POST `/hub/mesh/projects/<collection>` | Read or revise project work state (`settings`, `coordinators`, `threads`, `decisions`, `notebooks`) with operation bodies that must belong to the collection; lists are filtered by project and paged at 100. |
 
 Browser-authenticated routes on either role expose the roster at `/hub/devices/roster`, create invitations at `/hub/devices/invitations` and create switch grants at `/api/devices/switch`. The `/switch?token=…` handler exchanges a grant for an HttpOnly, SameSite=Strict cookie and redirects with HTTP 303 to its recorded local route. The exchange forbids caching and referrer forwarding. A member uses the authenticated hub client for its exchange. Hub-only `/hub/mesh/` authority endpoints return 404 on members.
 

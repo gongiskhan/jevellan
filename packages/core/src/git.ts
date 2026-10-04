@@ -11,6 +11,10 @@ import { GitSettings, gitFailureMessage } from './git-settings.js';
 import type { CheckoutOwner, CheckoutOwnership } from './locks.js';
 
 const hash = (value: string) => createHash('sha256').update(value).digest('hex');
+/** Refs that worktree threads create, move and delete while a conversation may run on the same checkout (D14). */
+export const threadRefLine = (line: string): boolean => ['refs/heads/jv/', 'refs/remotes/origin/jv/', 'refs/jevellan/threads/'].some((prefix) => line.startsWith(prefix));
+// Unchanged text (and digests) when no thread ref exists, so recorded snapshots and checkpoint plans still compare.
+const withoutThreadRefs = (refs: string) => refs.split('\n').filter((line) => !threadRefLine(line)).join('\n');
 export class GitWorkspace {
   constructor(readonly project: Project, readonly deviceId: string, readonly ownership: CheckoutOwnership, readonly owner: CheckoutOwner, readonly redactor = new SecretRedactor()) {}
   get path(): string { return resolveProjectPath(this.project, this.deviceId); }
@@ -68,7 +72,8 @@ export class GitWorkspace {
       this.head(), this.branch(), this.clean(), this.#git(['for-each-ref', '--format=%(refname) %(objectname)', 'refs/heads', 'refs/tags', 'refs/remotes']),
       this.#git(['config', '--local', '--get-regexp', '^remote[.]'], [1]), this.remoteHead(),
     ]);
-    return GitSnapshotSchema.parse({ schema: 'git-snapshot-v1', head, branch: this.redactor.text(branch), clean, refsDigest: hash(refs.stdout), otherRefsDigest: hash(refs.stdout.split('\n').filter((line) => !line.startsWith('refs/heads/main ')).join('\n')), remotesDigest: hash(remotes.stdout), remoteHead });
+    const refList = withoutThreadRefs(refs.stdout);
+    return GitSnapshotSchema.parse({ schema: 'git-snapshot-v1', head, branch: this.redactor.text(branch), clean, refsDigest: hash(refList), otherRefsDigest: hash(refList.split('\n').filter((line) => !line.startsWith('refs/heads/main ')).join('\n')), remotesDigest: hash(remotes.stdout), remoteHead });
   }
   async checkAfterStretch(before: GitSnapshot, action: Action): Promise<GitSnapshot> {
     const after = await this.snapshot();
@@ -527,7 +532,7 @@ export class GitWorkspace {
       this.#git(['rev-parse', '--verify', 'ORIG_HEAD'], [128]),
     ]);
     const digest = createHash('sha256');
-    for (const value of [head, branch, files, refs.stdout, index.stdout, remotes.stdout, original.stdout]) digest.update(`${Buffer.byteLength(value)}\0${value}`);
+    for (const value of [head, branch, files, withoutThreadRefs(refs.stdout), index.stdout, remotes.stdout, original.stdout]) digest.update(`${Buffer.byteLength(value)}\0${value}`);
     const visit = (folder: string, prefix: string) => {
       for (const name of readdirSync(folder).sort()) {
         const path = resolve(folder, name); const entry = lstatSync(path); const relative = `${prefix}/${name}`;

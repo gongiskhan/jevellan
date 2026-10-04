@@ -36,6 +36,15 @@ export class HubDatabase {
   list<T>(namespace: string, schema: DocumentSchema<T>): Array<{ revision: number; document: T }> {
     return this.db.prepare('SELECT revision,document FROM documents WHERE namespace=? ORDER BY id').all(IdSchema.parse(namespace)).map((row) => ({ revision: Number(row.revision), document: schema.parse(JSON.parse(String(row.document))) }));
   }
+  /** Documents of a namespace whose top-level string `field` equals `value`, ordered by id, after an exclusive id cursor. */
+  listByField<T>(namespace: string, field: string, value: string, schema: DocumentSchema<T>, options: { limit?: number; after?: string } = {}): Array<{ revision: number; document: T }> {
+    if (!/^[A-Za-z][A-Za-z0-9]*$/.test(field)) throw new Error('Invalid document field.');
+    if (options.limit !== undefined && (!Number.isSafeInteger(options.limit) || options.limit < 1)) throw new Error('Invalid document limit.');
+    const after = options.after === undefined ? null : IdSchema.parse(options.after);
+    return this.db.prepare("SELECT revision,document FROM documents WHERE namespace=? AND json_extract(document, '$.' || ?)=? AND (? IS NULL OR id>?) ORDER BY id LIMIT ?")
+      .all(IdSchema.parse(namespace), field, value, after, after, options.limit ?? -1)
+      .map((row) => ({ revision: Number(row.revision), document: schema.parse(JSON.parse(String(row.document))) }));
+  }
   put<T>(namespace: string, id: string, schema: DocumentSchema<T>, document: unknown, expectedRevision: number): { revision: number; document: T } {
     const validated = schema.parse(document);
     return this.transaction(() => {

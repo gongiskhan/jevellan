@@ -5,13 +5,17 @@ import { isAbsolute } from 'node:path';
 import { minimalEnvironment, SecretRedactor } from '@jevellan/core';
 import { AsyncQueue } from './queue.js';
 import { groupAlive, terminateGroup, terminateDescendants, rememberProcessTree, identifySpawnedGroup, type NativeProcess } from './process-group.js';
-import { StretchInputSchema, WorkerCommandSchema, WorkerMessageSchema, type RuntimeContext, type RuntimeEvent, type RunResult, type StretchInput, type StretchRun, type WorkerCommand } from './contract.js';
+import { StretchInputSchema, TurnInputSchema, WorkerCommandSchema, WorkerMessageSchema, type RuntimeContext, type RuntimeEvent, type RunResult, type StretchInput, type StretchRun, type TurnInput, type WorkerCommand } from './contract.js';
 
-export function launchEnvironment(runtime: 'claude' | 'codex', input: StretchInput): Record<string, string> {
+// Git identity keys reach thread turns only (stretches never set them): agents commit with the owner's identity, not the account home's.
+const LAUNCH_KEYS = ['JEVELLAN_STRETCH_TOKEN', 'JEVELLAN_DAEMON_URL', 'GIT_AUTHOR_NAME', 'GIT_AUTHOR_EMAIL', 'GIT_COMMITTER_NAME', 'GIT_COMMITTER_EMAIL'];
+const TURN = Symbol('turn');
+
+export function launchEnvironment(runtime: 'claude' | 'codex', input: Pick<StretchInput, 'account' | 'launch'>): Record<string, string> {
   const auth: Record<string, string> = {};
   if (runtime === 'claude') for (const key of ['CLAUDE_CODE_OAUTH_TOKEN', 'ANTHROPIC_API_KEY']) if (input.account.env[key]) auth[key] = input.account.env[key]!;
   const launch: Record<string, string> = {};
-  for (const key of ['JEVELLAN_STRETCH_TOKEN', 'JEVELLAN_DAEMON_URL']) if (input.launch.env[key]) launch[key] = input.launch.env[key]!;
+  for (const key of LAUNCH_KEYS) if (input.launch.env[key]) launch[key] = input.launch.env[key]!;
   return minimalEnvironment(runtime, input.account.home, auth, launch, { ...process.env, ...input.launch.env });
 }
 
@@ -26,21 +30,29 @@ export class WorkerRun implements StretchRun {
   #child: ChildProcessWithoutNullStreams;
   readonly native: NativeProcess;
   readonly #redactor: SecretRedactor;
-  constructor(runtime: 'claude' | 'codex', worker: string, raw: StretchInput, context: RuntimeContext) {
-    const input = StretchInputSchema.parse(raw);
+  readonly #turn: boolean;
+  /** A turn: same environment, process-group and redaction rules as a stretch, one prompt, no continuation. */
+  static turn(runtime: 'claude' | 'codex', worker: string, raw: TurnInput, context: RuntimeContext): WorkerRun { return new WorkerRun(runtime, worker, raw, context, TURN); }
+  constructor(runtime: 'claude' | 'codex', worker: string, raw: StretchInput, context: RuntimeContext);
+  constructor(runtime: 'claude' | 'codex', worker: string, raw: TurnInput, context: RuntimeContext, kind: typeof TURN);
+  constructor(runtime: 'claude' | 'codex', worker: string, raw: StretchInput | TurnInput, context: RuntimeContext, kind?: typeof TURN) {
+    const input = kind === TURN ? TurnInputSchema.parse(raw) : StretchInputSchema.parse(raw);
+    this.#turn = input.schema === 'turn-input-v1';
     if (input.account.account.runtime !== runtime) throw new Error('Account belongs to another runtime.');
     if (realpathSync(input.account.home) !== context.homes.account(runtime, input.account.account.id)) throw new Error('Runtime account home is not owned by Jevellan.');
     if (!isAbsolute(input.cwd)) throw new Error('Runtime requires an absolute project path.');
     realpathSync(input.cwd);
-    if (input.action === 'done' || input.action === 'ask-you') throw new Error('This action does not launch a runtime stretch.');
-    if (['reply', 'plan', 'review', 'adversarial-review'].includes(input.action) && input.permissions !== 'read-only') throw new Error('This action requires read-only permissions.');
+    if (input.schema === 'stretch-input-v1') {
+      if (input.action === 'done' || input.action === 'ask-you') throw new Error('This action does not launch a runtime stretch.');
+      if (['reply', 'plan', 'review', 'adversarial-review'].includes(input.action) && input.permissions !== 'read-only') throw new Error('This action requires read-only permissions.');
+    }
     const env = launchEnvironment(runtime, input);
     this.#redactor = context.redactor ?? new SecretRedactor();
     for (const [key, value] of Object.entries(env)) if (/TOKEN|KEY/.test(key)) this.#redactor.add(value);
     for (const server of Object.values(input.launch.mcpServers)) {
       for (const [key, value] of Object.entries(server.env)) if (env[key] !== value) throw new Error('Per-launch MCP environment must use the scoped inherited environment.');
     }
-    const cleanInput = { ...input, account: { ...input.account, env: {} }, launch: { env: {}, mcpServers: Object.fromEntries(Object.entries(input.launch.mcpServers).map(([name, server]) => [name, { ...server, env: {} }])) } };
+    const clean = { account: { ...input.account, env: {} }, launch: { env: {}, mcpServers: Object.fromEntries(Object.entries(input.launch.mcpServers).map(([name, server]) => [name, { ...server, env: {} }])) } };
     this.#begin(input.timeoutMs);
     this.#child = spawn(process.execPath, [worker], { cwd: input.cwd, env, detached: true, stdio: ['pipe', 'pipe', 'pipe'] });
     this.#child.on('error', () => this.#finish({ status: 'failed', error: { kind: 'other', message: 'Runtime worker failed to start.' } }));
@@ -66,7 +78,8 @@ export class WorkerRun implements StretchRun {
       lines.close();
       if (!this.#settled) this.#finish({ status: this.#terminated ? 'interrupted' : 'failed', ...(this.#terminated ? {} : { error: { kind: 'other' as const, message: 'Runtime worker exited before finishing.' } }) });
     });
-    this.#send({ schema: 'runtime-command-v1', type: 'start', input: cleanInput, daemonPid: context.daemonPid ?? process.pid, ...(context.executable ? { executable: context.executable } : {}) });
+    const owner = { daemonPid: context.daemonPid ?? process.pid, ...(context.executable ? { executable: context.executable } : {}) };
+    this.#send(input.schema === 'turn-input-v1' ? { schema: 'runtime-command-v1', type: 'start-turn', input: { ...input, ...clean }, ...owner } : { schema: 'runtime-command-v1', type: 'start', input: { ...input, ...clean }, ...owner });
   }
   get events(): AsyncIterable<RuntimeEvent> { return this.#queue; }
   get done(): Promise<RunResult> { return this.#done; }
@@ -105,6 +118,7 @@ export class WorkerRun implements StretchRun {
     } finally { clearTimeout(timer); }
   }
   async continue(message: string, timeoutMs: number): Promise<void> {
+    if (this.#turn) throw new Error('Turns do not continue; start a new turn.');
     if (!this.#settled || this.#terminated || this.#interruption || !groupAlive(this.native.pgid)) throw new Error('Runtime session is not available for continuation.');
     this.#begin(timeoutMs);
     this.#send({ schema: 'runtime-command-v1', type: 'continue', message, timeoutMs });

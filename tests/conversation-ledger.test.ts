@@ -3,8 +3,9 @@ import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readd
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { z } from 'zod';
 import { HandoffSchema, Homes, SecretRedactor, StretchSchema } from '../packages/core/dist/index.js';
-import { BLOB_SPILL_BYTES, ConversationLedger } from '../packages/conversations/dist/index.js';
+import { BLOB_SPILL_BYTES, ConversationLedger, JsonlLedger, type LedgerSpec } from '../packages/conversations/dist/index.js';
 
 let root: string; let homes: Homes;
 beforeEach(() => { root = mkdtempSync(join(tmpdir(), 'jevellan-ledger-')); mkdirSync(join(root, 'user')); homes = new Homes(join(root, 'data'), join(root, 'user')); });
@@ -113,4 +114,65 @@ test('owner startup can recover a dead writer but never steals a live append loc
   writeFileSync(lock, JSON.stringify({ schema: 'ledger-lock-v1', pid }));
   ledger.recoverAbandonedWrite(); expect(existsSync(lock)).toBe(false);
   expect(ledger.append({ type: 'text', data: 'second' }).id).toBe(2);
+});
+
+const TestEventSchema = z.strictObject({ schema: z.literal('test-ledger-event-v1'), t: z.iso.datetime(), id: z.number().int().positive(), type: z.enum(['opened', 'noted']), turn: z.number().int().positive().optional(), data: z.unknown() });
+type TestEvent = z.infer<typeof TestEventSchema>;
+const testLedger: LedgerSpec<TestEvent> = { schema: TestEventSchema, literal: 'test-ledger-event-v1', label: 'Project', folders: ['', 'ledger', 'blobs'] };
+const at = '2026-10-03T10:00:00.000Z';
+
+test('a generic ledger keeps the segment, blob and lock format under its own envelope, folders and error prefix', async () => {
+  const dir = homes.at('projects', 'project'); const ledger = new JsonlLedger(dir, testLedger, { now: () => at, rollBytes: 400 });
+  expect(ledger.events()).toEqual([]); expect(ledger.lastId()).toBe(0); expect(existsSync(dir)).toBe(false);
+  const seen: TestEvent[] = []; ledger.subscribe((event) => seen.push(event));
+  const opened = ledger.append({ type: 'opened', turn: 1, data: { text: 'first' } });
+  expect(opened).toEqual({ type: 'opened', turn: 1, data: { text: 'first' }, schema: 'test-ledger-event-v1', id: 1, t: at });
+  expect(readFileSync(ledger.segments()[0]!, 'utf8')).toBe(`${JSON.stringify(opened)}\n`);
+  const content = { text: 'é'.repeat(BLOB_SPILL_BYTES) + ' spilled-needle' };
+  const spilled = ledger.append({ type: 'noted', data: content });
+  expect(spilled.data).toMatchObject({ schema: 'blob-ref-v1' }); expect(ledger.data(spilled)).toEqual(content);
+  expect(ledger.read('ledger/2')).toMatchObject({ id: 2, data: content }); expect(ledger.search('spilled-needle')[0]?.pointer).toBe('ledger/2');
+  expect(JSON.parse(readFileSync(join(dir, (spilled.data as { ref: string }).ref), 'utf8'))).toMatchObject({ schema: 'conversation-blob-v1' });
+  for (let i = 0; i < 5; i++) ledger.append({ type: 'noted', data: { text: `item ${i}` } });
+  expect(ledger.segments().length).toBeGreaterThan(1); expect(ledger.lastId()).toBe(7);
+  expect(new JsonlLedger(dir, testLedger).events(6).map((event) => event.id)).toEqual([7]);
+  expect(readdirSync(dir).sort()).toEqual(['blobs', 'ledger']);
+  await new Promise<void>((resolve) => setImmediate(resolve)); expect(seen.map((event) => event.id)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+  expect(() => ledger.append({ type: 'opened', data: { text: 'later' }, stretch: 1 } as never)).toThrow();
+  expect(() => ledger.append({ type: 'unknown', data: {} } as never)).toThrow(); expect(ledger.lastId()).toBe(7);
+  expect(() => ledger.read('handoffs/1')).toThrow('Project pointer does not exist.');
+  expect(() => ledger.read('ledger/8')).toThrow('Project pointer does not exist.');
+  expect(() => ledger.readBlob('blobs/short')).toThrow('Invalid project blob reference.');
+  const lock = join(dir, '.append-lock'); writeFileSync(lock, JSON.stringify({ schema: 'ledger-lock-v1', pid: process.pid }));
+  expect(() => ledger.append({ type: 'noted', data: 'locked' })).toThrow('Project ledger is locked by another writer; recover it at owner startup.');
+  expect(() => ledger.recoverAbandonedWrite()).toThrow('Project ledger writer is still alive.'); unlinkSync(lock);
+  appendFileSync(ledger.segments().at(-1)!, '{bad json}\n');
+  expect(() => ledger.events()).toThrow('Project ledger contains an invalid record.'); expect(() => ledger.lastId()).toThrow('Project ledger contains an invalid record.');
+  expect(() => ledger.append({ type: 'noted', data: 'after corruption' })).toThrow('Project ledger contains an invalid record.');
+  unlinkSync(ledger.segments()[0]!); expect(() => ledger.events()).toThrow('Project ledger segment is missing.');
+});
+test('a generic ledger refuses relative and aliased directories', () => {
+  expect(() => new JsonlLedger('relative/ledger', testLedger)).toThrow('Project directories cannot alias another location.');
+  const real = homes.ensure('projects', 'real'); symlinkSync(real, join(homes.root, 'projects', 'alias'));
+  expect(() => new JsonlLedger(join(homes.root, 'projects', 'alias'), testLedger)).toThrow('Project directories cannot alias another location.');
+  const ledger = new JsonlLedger(real, testLedger); ledger.append({ type: 'opened', data: 'ok' });
+  symlinkSync(join(root, 'user'), join(real, 'blobs', 'b'.repeat(64)));
+  expect(() => ledger.read(`blobs/${'b'.repeat(64)}`)).toThrow('Project files cannot alias another location.');
+});
+test('conversation ledgers are generic ledgers with their exact error texts and folders', () => {
+  const ledger = new ConversationLedger(homes, 'conversation'); expect(ledger).toBeInstanceOf(JsonlLedger);
+  expect(ledger.dir).toBe(join(homes.root, 'conversations', 'conversation')); expect(ledger.id).toBe('conversation'); expect(ledger.lastId()).toBe(0);
+  ledger.append({ type: 'text', stretch: 1, data: 'first' }); expect(ledger.lastId()).toBe(1);
+  expect(readdirSync(ledger.dir).sort()).toEqual(['blobs', 'handoffs', 'ledger']);
+  expect(() => ledger.read('handoffs/1')).toThrow(/^Conversation pointer does not exist\.$/);
+  expect(() => ledger.read('ledger/2')).toThrow(/^Conversation pointer does not exist\.$/);
+  expect(() => ledger.readBlob('blobs/short')).toThrow(/^Invalid conversation blob reference\.$/);
+  expect(() => ledger.writeProjection('thread.json', HandoffSchema, {})).toThrow(/^Invalid conversation projection path\.$/);
+  writeFileSync(join(ledger.dir, '.append-lock'), JSON.stringify({ schema: 'ledger-lock-v1', pid: process.pid }));
+  expect(() => ledger.append({ type: 'text', data: 'locked' })).toThrow(/^Conversation ledger is locked by another writer; recover it at owner startup\.$/);
+  expect(() => ledger.recoverAbandonedWrite()).toThrow(/^Conversation ledger writer is still alive\.$/); unlinkSync(join(ledger.dir, '.append-lock'));
+  appendFileSync(ledger.segments()[0]!, '{"schema":"ledger-event-v1","t":"2026-10-03T10:00:00.000Z","id":3,"type":"text","data":"gap"}\n');
+  expect(() => ledger.events()).toThrow(/^Conversation ledger event sequence is broken\.$/);
+  expect(() => new ConversationLedger(homes, 'rolled', { rollBytes: 0 })).toThrow(/^Invalid ledger roll size\.$/);
+  expect(() => ledger.events(-1)).toThrow(/^Invalid ledger range\.$/);
 });

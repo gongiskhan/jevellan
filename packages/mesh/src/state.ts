@@ -1,6 +1,6 @@
 import {
-  CheckoutClaimSchema, ConfigWriteSchema, ConversationIndexSchema, CredentialInputSchema, IdSchema, ProjectSchema, ProjectViewSchema, RiggingEntrySchema, RiggingStore, SecretSummarySchema, SharedStateRequestSchema, SharedStateResultSchema,
-  type Project, type SharedConfiguration, type SharedJev, type SharedProjects, type SharedRigging,
+  CheckoutClaimSchema, ConfigWriteSchema, ConversationIndexSchema, CredentialInputSchema, GitHubTokenStateSchema, IdSchema, ProjectSchema, ProjectViewSchema, RiggingEntrySchema, RiggingStore, SecretSummarySchema, SharedStateRequestSchema, SharedStateResultSchema, ThreadIndexSchema, isTerminal, stableJson,
+  type GitHubTokenState, type Project, type SharedConfiguration, type SharedGitHub, type SharedJev, type SharedProjects, type SharedRigging,
 } from '@jevellan/core';
 import type { HubDatabase } from './database.js';
 import { HubProtocolError, type MemberHubClient } from './client.js';
@@ -11,6 +11,7 @@ export class HubState {
   readonly configuration: SharedConfiguration;
   readonly projects: SharedProjects;
   readonly jev: SharedJev;
+  readonly github: SharedGitHub;
   readonly rigging: RiggingStore;
   constructor(readonly hub: HubDatabase, readonly deviceId: string, runtimes: readonly string[]) {
     IdSchema.parse(deviceId); this.rigging = new HubRigging(hub, deviceId, runtimes);
@@ -29,6 +30,8 @@ export class HubState {
         return settingsMutation(hub, deviceId, 'project-put', { project, revision }, clientRequestId, ProjectViewSchema, () => {
           const previous = hub.get('projects', project.id, ProjectSchema)?.document;
           if (previous && hub.list('checkout-ownership', CheckoutClaimSchema).some(({ document: claim }) => claim.held && (previous.paths[claim.deviceId] === claim.path || hub.get('conversations', claim.conversationId, ConversationIndexSchema)?.document.projectId === project.id))) throw Object.assign(new Error('This project is in use. Finish its open work before changing its settings.'), { status: 409 });
+          // D92: worktree threads hold no checkout claim, so paths and Git policy stay fixed while any thread is open.
+          if (previous && (stableJson(previous.paths) !== stableJson(project.paths) || previous.branchPolicy !== project.branchPolicy) && hub.listByField('project-threads', 'projectId', project.id, ThreadIndexSchema).some(({ document: thread }) => !isTerminal(thread.state))) throw Object.assign(new Error('This project has open threads. Stop or finish them before changing its path or Git policy.'), { status: 409 });
           return projectView(hub.put('projects', project.id, ProjectSchema, project, revision));
         });
       },
@@ -46,6 +49,17 @@ export class HubState {
       },
       credential: () => { if (!hub.db.prepare('SELECT id FROM secrets WHERE id=?').get('jev')) return undefined; return hub.vault.forLaunch('jev'); },
     };
+    const github = (): GitHubTokenState => hub.db.prepare('SELECT id FROM secrets WHERE id=?').get('github') ? { schema: 'github-token-summary-v1', id: 'github', saved: true, ...hub.vault.details('github') } : { schema: 'secret-state-v1', id: 'github', saved: false };
+    this.github = {
+      summary: github,
+      put: (raw, clientRequestId) => {
+        const value = CredentialInputSchema.parse(raw);
+        settingsMutation(hub, deviceId, 'github-put', { value }, clientRequestId, GitHubTokenStateSchema, () => { hub.vault.put('github', value); return github(); });
+        return github();
+      },
+      remove: (clientRequestId) => { settingsMutation(hub, deviceId, 'github-remove', {}, clientRequestId, GitHubTokenStateSchema, () => { hub.vault.remove('github'); return github(); }); return github(); },
+      credential: () => { if (!hub.db.prepare('SELECT id FROM secrets WHERE id=?').get('github')) return undefined; return hub.vault.forLaunch('github'); },
+    };
   }
   async request(raw: unknown) {
     const request = SharedStateRequestSchema.parse(raw); let result: unknown;
@@ -60,6 +74,10 @@ export class HubState {
       case 'jev-summary': result = { schema: 'shared-jev-summary-v1', summary: await this.jev.summary() }; break;
       case 'jev-put': result = { schema: 'shared-jev-summary-v1', summary: await this.jev.put(request.value, request.clientRequestId) }; break;
       case 'jev-credential': result = { schema: 'shared-jev-credential-v1', value: await this.jev.credential() ?? null }; break;
+      case 'github-summary': result = { schema: 'shared-github-summary-v1', summary: await this.github.summary() }; break;
+      case 'github-put': result = { schema: 'shared-github-summary-v1', summary: await this.github.put(request.value, request.clientRequestId) }; break;
+      case 'github-remove': result = { schema: 'shared-github-summary-v1', summary: await this.github.remove(request.clientRequestId) }; break;
+      case 'github-credential': result = { schema: 'shared-github-credential-v1', value: await this.github.credential() ?? null }; break;
       case 'rigging': result = { schema: 'shared-rigging-v1', items: this.rigging.list() }; break;
       case 'rigging-get': result = { schema: 'shared-rigging-view-v1', item: this.rigging.get(request.id) }; break;
       case 'rigging-add': result = { schema: 'shared-rigging-view-v1', item: this.rigging.add(request.input) }; break;
@@ -76,6 +94,7 @@ export class MemberState {
   readonly configuration: SharedConfiguration;
   readonly projects: SharedProjects;
   readonly jev: SharedJev;
+  readonly github: SharedGitHub;
   readonly rigging: SharedRigging;
   constructor(readonly client: MemberHubClient, readonly runtimes: readonly string[]) {
     const request = async <S extends ReturnType<typeof SharedStateResultSchema.parse>['schema']>(operation: string, schema: S, fields = {}) => {
@@ -100,6 +119,14 @@ export class MemberState {
       summary: async () => { const summary = (await request('jev-summary', 'shared-jev-summary-v1')).summary; if (summary.id !== 'jev') throw new HubProtocolError(); return summary; },
       put: async (value, clientRequestId) => { const summary = (await request('jev-put', 'shared-jev-summary-v1', { value, clientRequestId })).summary; if (!summary.saved || summary.id !== 'jev') throw new HubProtocolError(); return summary; },
       credential: async () => (await request('jev-credential', 'shared-jev-credential-v1')).value ?? undefined,
+    };
+    // Saves and removals return the current state, which a later write from another device may already have changed.
+    const github = async (operation: string, fields = {}) => { const summary = (await request(operation, 'shared-github-summary-v1', fields)).summary; if (summary.id !== 'github') throw new HubProtocolError(); return summary; };
+    this.github = {
+      summary: () => github('github-summary'),
+      put: (value, clientRequestId) => github('github-put', { value, clientRequestId }),
+      remove: (clientRequestId) => github('github-remove', { clientRequestId }),
+      credential: async () => (await request('github-credential', 'shared-github-credential-v1')).value ?? undefined,
     };
     this.rigging = {
       get: async id => { const item = (await request('rigging-get', 'shared-rigging-view-v1', { ...rigging, id })).item; if (item.item.id !== id) throw new HubProtocolError(); return item; },

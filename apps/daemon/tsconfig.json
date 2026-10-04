@@ -24,6 +24,9 @@
       "path": "../../packages/mesh"
     },
     {
+      "path": "../../packages/projects"
+    },
+    {
       "path": "../../runtimes/claude"
     },
     {

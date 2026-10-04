@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { RuntimeEventSchema, type RuntimeAdapter, type RuntimeContext, type RuntimeEvent, type StretchInput, type StretchRun } from './contract.js';
+import { RuntimeEventSchema, type RuntimeAdapter, type RuntimeContext, type RuntimeEvent, type StretchInput, type StretchRun, type TurnInput } from './contract.js';
 import { groupAlive } from './process-group.js';
 
 export const contractChecks = ['interrupt', 'events-and-usage', 'continue-session', 'concurrent-isolation', 'read-only', 'safety', 'terminate-group'] as const;
@@ -75,4 +75,21 @@ export async function checkEventsAndContinuation(adapter: RuntimeAdapter, input:
     assert.equal((await run.done).status, 'completed'); assert.equal(run.native.sessionId, session);
     assert(next.flatMap((event) => event.type === 'text' ? [event.delta] : []).join('').includes(continuation.expectedText), 'Continuation did not preserve context.');
   } finally { await run.terminate(); assert(!groupAlive(run.native.pgid), 'Runtime process group remains alive.'); }
+}
+
+/** A later turn resumes the first turn's native session in a new worker; neither turn continues in place. Not a contractChecks entry (D13). */
+export async function checkTurnResume(adapter: RuntimeAdapter, first: TurnInput, expect: { resumedText: string }): Promise<void> {
+  assert(adapter.capabilities.turns, 'The adapter does not declare turns.');
+  const runTurn = async (input: TurnInput) => {
+    const run = adapter.startTurn(input);
+    try {
+      const events = await collectEvents(run); const done = await run.done; assert.equal(done.status, 'completed', done.error?.message);
+      await assert.rejects(run.continue('Continue.', 5_000), /Turns do not continue/);
+      return { sessionId: run.native.sessionId, text: events.flatMap((event) => event.type === 'text' ? [event.delta] : []).join('') };
+    } finally { await run.terminate(); assert(!groupAlive(run.native.pgid), 'Runtime process group remains alive.'); }
+  };
+  const opened = await runTurn(first); assert(opened.sessionId, 'Missing native session identity.');
+  const resumed = await runTurn({ ...first, turn: first.turn + 1, resume: { sessionId: opened.sessionId } });
+  assert.equal(resumed.sessionId, opened.sessionId, 'The resumed turn changed its native session.');
+  assert(resumed.text.includes(expect.resumedText), 'The resumed turn did not continue its native session.');
 }

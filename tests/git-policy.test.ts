@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { CheckoutOwnership, GitRewriteCapture, GitWorkspace, Homes, ProjectSchema, PublicationLeases, SecretRedactor, runOwnedCommand, type IntegrationRunner, type Project } from '../packages/core/dist/index.js';
+import { CheckoutOwnership, GitRewriteCapture, GitWorkspace, Homes, PlacementRecordSchema, ProjectSchema, PublicationLeases, SecretRedactor, ThreadSchema, runOwnedCommand, type IntegrationRunner, type Project } from '../packages/core/dist/index.js';
 import { HubDatabase } from '../packages/mesh/dist/index.js';
 import { ConversationLedger, publishWorkspace, verificationCounts, verifyWorkspace } from '../packages/conversations/dist/index.js';
+import { ProjectPaths, ThreadGit, ThreadWorktree } from '../packages/projects/dist/index.js';
 
 let root: string; let homes: Homes; let db: HubDatabase; let project: Project; let workspace: GitWorkspace; let ledger: ConversationLedger; let origin: string;
 const owner = { conversationId: 'conversation', conversationTitle: 'Fixture', workId: 'work' };
@@ -163,6 +164,50 @@ test('post-stretch check detects agent commits, tags and remote changes before a
   await expect(workspace.checkAfterStretch(newBefore, 'implement')).rejects.toThrow('changed git history');
   expect(git(origin, 'rev-parse', 'main')).toBe(before.head);
 });
+test("a worktree thread's branch, base fetch and push do not disturb a running conversation step", async () => {
+  // Origin moves ahead before the step starts: a push to origin main during the step is outside activity (remoteHead).
+  const second = join(root, 'second'); git(root, 'clone', origin, second); writeFileSync(join(second, 'upstream.txt'), 'Upstream\n'); git(second, 'add', '-A'); git(second, 'commit', '-m', 'Upstream'); git(second, 'push');
+  const upstream = git(second, 'rev-parse', 'HEAD'); const checkout = workspace.path; const tracking = git(checkout, 'rev-parse', 'refs/remotes/origin/main');
+  expect(tracking).not.toBe(upstream);
+  const fetchHead = () => existsSync(join(checkout, '.git', 'FETCH_HEAD')) ? readFileSync(join(checkout, '.git', 'FETCH_HEAD'), 'utf8') : null; const fetchHeadBefore = fetchHead();
+  git(origin, 'tag', 'v2', upstream); // a followed tag would change the step's refs digest (D143)
+  const before = await workspace.snapshot(); const fingerprint = await workspace.rebaseFingerprint();
+  const redactor = new SecretRedactor(); const worktrees = new ThreadWorktree({ git: new ThreadGit({ homes, redactor }), homes, paths: new ProjectPaths(homes), redactor, deviceId: 'device', deviceName: 'Fixture device' });
+  const placement = PlacementRecordSchema.parse({ schema: 'placement-v1', questionSet: 'p-v1', source: 'fixed', fixed: [], isolation: 'worktree', runtime: 'fake', modelId: 'fake', model: 'fake',
+    effortRequested: 'medium', effortEffective: 'medium', deviceId: 'device', accountId: 'account', eligibleModels: [], excludedModels: [], eligibleDevices: [], excludedDevices: [], jevCalls: [], decidedAt: new Date().toISOString() });
+  const thread = ThreadSchema.parse({ schema: 'project-thread-v1', id: 't1', projectId: project.id, title: 'X', task: 'Work.', createdAt: new Date().toISOString(), createdBy: 'owner', state: 'preparing',
+    isolation: 'worktree', placement, ownerDeviceId: 'device', coordinatorDeviceId: 'device', cwd: '', baseBranch: '', baseCommit: '', turns: 0, turnAllowance: 30, queuedMessages: [], verificationAttempts: 0 });
+  const created = await worktrees.create(project, thread); const worktree = created.cwd;
+  expect(created).toMatchObject({ branch: 'jv/x-t1', baseBranch: 'main', baseCommit: upstream }); expect(worktree).toBe(homes.at('worktrees', project.id, 't1'));
+  writeFileSync(join(worktree, 'thread.txt'), 'Thread work\n'); git(worktree, 'add', '-A'); git(worktree, 'commit', '-m', 'Thread work');
+  git(worktree, 'push', 'origin', 'HEAD:refs/heads/jv/x-t1');
+  expect(git(checkout, 'for-each-ref', '--format=%(refname)', 'refs/remotes/origin/jv')).toBe('refs/remotes/origin/jv/x-t1');
+  await expect(workspace.checkAfterStretch(before, 'implement')).resolves.toMatchObject({ head: before.head });
+  await expect(workspace.checkAfterStretch(before, 'integrate')).resolves.toMatchObject({ head: before.head });
+  expect(await workspace.rebaseFingerprint()).toBe(fingerprint);
+  expect(git(checkout, 'rev-parse', 'refs/remotes/origin/main')).toBe(tracking); expect(fetchHead()).toBe(fetchHeadBefore);
+  expect(git(checkout, 'rev-parse', 'refs/jevellan/threads/t1/base')).toBe(upstream); expect(git(checkout, 'status', '--porcelain=v1')).toBe('');
+  // Cleanup after a merge is also invisible to the running step.
+  await worktrees.remove(project, { ...thread, cwd: worktree, branch: created.branch, baseBranch: created.baseBranch, baseCommit: created.baseCommit });
+  expect(existsSync(worktree)).toBe(false); expect(git(checkout, 'for-each-ref', '--format=%(refname)', 'refs/heads/jv', 'refs/jevellan/threads')).toBe('');
+  expect(git(origin, 'rev-parse', 'refs/heads/jv/x-t1')).toMatch(/^[0-9a-f]{40}$/);
+  await expect(workspace.checkAfterStretch(before, 'implement')).resolves.toMatchObject({ head: before.head }); expect(await workspace.rebaseFingerprint()).toBe(fingerprint);
+  // Only the thread prefixes are ignored.
+  git(checkout, 'branch', 'jvx'); await expect(workspace.checkAfterStretch(before, 'implement')).rejects.toThrow('changed git history'); git(checkout, 'branch', '-D', 'jvx');
+  // Control: without the empty refmap, git also updates origin/main opportunistically, which is why threads pass --refmap=.
+  git(checkout, 'fetch', 'origin', 'refs/heads/main:refs/jevellan/x'); expect(git(checkout, 'rev-parse', 'refs/remotes/origin/main')).toBe(upstream);
+}, 30_000);
+test("thread refs do not change a conversation's rebase fingerprint", async () => {
+  const checkout = workspace.path; const head = await workspace.head(); const fingerprint = await workspace.rebaseFingerprint();
+  const other = git(checkout, 'commit-tree', 'HEAD^{tree}', '-p', 'HEAD', '-m', 'Thread commit');
+  const refs = ['refs/heads/jv/x', 'refs/remotes/origin/jv/x', 'refs/jevellan/threads/t/base'];
+  for (const ref of refs) git(checkout, 'update-ref', ref, head);
+  expect(await workspace.rebaseFingerprint()).toBe(fingerprint);
+  for (const ref of refs) git(checkout, 'update-ref', ref, other);
+  expect(await workspace.rebaseFingerprint()).toBe(fingerprint);
+  git(checkout, 'update-ref', 'refs/jevellan/discard/c/1', head);
+  expect(await workspace.rebaseFingerprint()).not.toBe(fingerprint);
+});
 test('external projects perform no git mutations, and read-only actions cannot checkpoint', async () => {
   const before = await workspace.snapshot();
   await expect(workspace.checkpoint('reply', 'No edits', before)).rejects.toThrow('Read-only');
@@ -207,7 +252,7 @@ test('published undo reverts only the selected work, preserves later upstream wo
   expect(publication).toMatchObject({ status: 'published', commit: result.after }); expect(git(origin, 'rev-parse', 'main')).toBe(result.after);
   const receipt = ledger.events().find((event) => event.type === 'verification')!; expect(ledger.data(receipt)).toMatchObject({ passed: true, treeClean: true, commit: result.after });
   expect(await workspace.applyUndo(plan, () => undefined, () => { throw new Error('Already applied'); })).toEqual(result); expect(await workspace.head()).toBe(result.after);
-});
+}, 60_000);
 
 test('published undo can reverse separate recorded ranges while preserving intervening commits', async () => {
   const base = await workspace.head(); const first = await checkpoint();
@@ -477,7 +522,7 @@ test('a conflict is aborted, saved, delegated to integrate, then verified and pu
   const result = await publishWorkspace(workspace, ledger, homes, new PublicationLeases(db), { nextStretch: () => 2, integrate });
   expect(result.status).toBe('published'); expect(integrate).toHaveBeenCalledOnce(); expect(result.savedRef).toBe('refs/jevellan/pre-integration/conversation/2');
   expect(git(origin, 'show', 'main:message.txt')).toBe('Local\nRemote'); expect(result.verificationId).toBeDefined();
-});
+}, 60_000);
 test('a real rejected push is retried after fresh integration and verification', async () => {
   const second = join(root, 'second'); git(root, 'clone', origin, second); await checkpoint();
   const push = workspace.push.bind(workspace); let raced = false;

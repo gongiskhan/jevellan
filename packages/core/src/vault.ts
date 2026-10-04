@@ -59,6 +59,10 @@ export class SecretVault {
     const envelope = this.#read(id);
     return { schema: 'secret-summary-v1', id, saved: true, lastFour: envelope.lastFour };
   }
+  details(id: string): { lastFour: string; updatedAt: string } {
+    const envelope = this.#read(id);
+    return { lastFour: envelope.lastFour, updatedAt: envelope.updatedAt };
+  }
   forLaunch(id: string): string {
     const envelope = this.#read(id);
     try {

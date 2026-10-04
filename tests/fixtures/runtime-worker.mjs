@@ -18,4 +18,12 @@ serveWorker((input) => {
       return { status: 'completed' };
     },
   };
-});
+}, (input) => ({
+  async interrupt() {},
+  async run(message, _timeout, emit, session) {
+    session(input.resume?.sessionId ?? 'fixture-turn-session');
+    emit({ type: 'text', delta: JSON.stringify({ keys: Object.keys(process.env), inputEnv: input.account.env, launchEnv: input.launch.env, mcp: input.launch.mcpServers, argv: process.argv.slice(2), token: process.env.JEVELLAN_STRETCH_TOKEN ?? '',
+      gitAuthor: process.env.GIT_AUTHOR_NAME ?? null, gitCommitter: process.env.GIT_COMMITTER_EMAIL ?? null, owner: input.owner, resume: input.resume ?? null, prompt: message }) });
+    return { status: 'completed' };
+  },
+}));

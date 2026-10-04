@@ -23,7 +23,7 @@ async function addDevice(name: string, hub?: Device) {
   const device = { base, cookie: '', starts: 0, submissions: 0, cancellations: 0 } as Device;
   const fake = new FakeRuntime();
   const runtime: RuntimeAdapter = { id: 'codex', displayName: 'Fixture Codex', accountKinds: ['subscription'], riggingKinds: [], capabilities: fake.capabilities,
-    listModels: () => fake.listModels(), materialiseRigging: () => fake.materialiseRigging(), startStretch: input => fake.startStretch(input),
+    listModels: () => fake.listModels(), materialiseRigging: () => fake.materialiseRigging(), startStretch: input => fake.startStretch(input), startTurn: input => fake.startTurn(input),
     probe: async resolved => ({ auth: existsSync(join(resolved.home, 'auth.json')) ? 'ready' : 'missing', identity: { email: 'fixture@example.test' } }),
     beginLogin: async (_account, home) => {
       device.starts++; let state: 'pending' | 'done' | 'failed' = 'pending';

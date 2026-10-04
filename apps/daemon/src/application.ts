@@ -1,10 +1,11 @@
 import { existsSync } from 'node:fs';
 import { hostname } from 'node:os';
 import { z } from 'zod';
-import { ConsumeSwitchSchema, DaemonOwnership, DeviceConfigSchema, DeviceOriginSchema, DeviceSchema, DeviceSwitchInputSchema, JevConnectionSchema, RiggingApplicationSchema, Homes, ProjectVisibility, RiggingDisk, SecretRedactor, VERSION, newId, readDocument, seedConfiguration, stableJson, writeDocument, type DeviceConfig, type Project, type VisibilityProbe } from '@jevellan/core';
-import { DeviceRegistry, HubAccounts, HubCheckoutStore, HubDatabase, HubIndexes, HubMesh, HubPublicationLeases, HubState, MemberAccounts, MemberCheckoutStore, MemberHubClient, MemberIndexes, MemberPublicationLeases, MemberState, MemberUiAuth, ProjectImproverHub, UiAuth, memberConnection } from '@jevellan/mesh';
+import { ConsumeSwitchSchema, DaemonOwnership, DeviceConfigSchema, DeviceOriginSchema, DeviceSchema, DeviceSwitchInputSchema, JevConnectionSchema, RiggingApplicationSchema, Homes, ProjectVisibility, RiggingDisk, SecretRedactor, VERSION, newId, readDocument, seedConfiguration, stableJson, writeDocument, type DeviceConfig, type Project, type ProjectHub, type VisibilityProbe } from '@jevellan/core';
+import { DeviceRegistry, HubAccounts, HubCheckoutStore, HubDatabase, HubIndexes, HubMesh, HubProjectAccess, HubPublicationLeases, HubState, MemberAccounts, MemberCheckoutStore, MemberHubClient, MemberIndexes, MemberProjectStore, MemberPublicationLeases, MemberState, MemberUiAuth, ProjectImproverHub, UiAuth, memberConnection } from '@jevellan/mesh';
 import { AccountService } from '@jevellan/accounts';
 import { BackgroundDrafts, ContextOperations, ConversationService, StretchBridges } from '@jevellan/conversations';
+import { ProjectWork, type ProjectTimers } from '@jevellan/projects';
 import { RoutingImprover } from './routing-improver.js';
 import { Improver } from './improver.js';
 import { ProjectImprover, type MemoryPort } from './project-improver.js';
@@ -20,7 +21,9 @@ import { SettingsSync } from './settings-sync.js';
 import { LifecycleGate } from '@jevellan/core';
 
 export type ApplicationOptions = { homes?: Homes; port?: number; url?: string; runtimes?: (context: RuntimeContext) => ReadonlyMap<string, RuntimeAdapter>; timers?: boolean; repositoryVisibility?: VisibilityProbe; decisionFetch?: typeof fetch; hubFetch?: typeof fetch; nativeSessions?: Omit<SessionSensorOptions, 'homes'>;
-  /** Test seam for the improver's memory index; production uses the isolated Basic Memory. */ projectMemory?: (project: Project) => MemoryPort };
+  /** Test seam for the improver's memory index; production uses the isolated Basic Memory. */ projectMemory?: (project: Project) => MemoryPort;
+  /** Projects test seams: the GitHub transport and API base (a fake server in tests), and Projects timers (periodic loops follow `timers`). */
+  githubFetch?: typeof fetch; githubBaseUrl?: string; projectTimers?: Partial<ProjectTimers> };
 
 export class Application {
   #closing: Promise<void> | undefined;
@@ -37,6 +40,8 @@ export class Application {
   readonly accounts: AccountService; readonly auth: UiAuth | MemberUiAuth; readonly rigging: SharedRigging;
   readonly bridges: StretchBridges;
   readonly memory: BasicMemory; readonly conversations: ConversationService;
+  /** Projects on this device (brief 8): threads, their turns and pull requests, beside the conversations. */
+  readonly projectWork: ProjectWork; readonly projectHub: ProjectHub;
   readonly projectVisibility: ProjectVisibility;
   readonly state: HubState | MemberState;
   readonly riggingDisk: RiggingDisk;
@@ -118,6 +123,17 @@ export class Application {
       this.backgroundDrafts = new BackgroundDrafts({ homes: this.homes, deviceId: this.device.deviceId, accounts: this.accounts, runtimes: this.runtimes, bridges: this.bridges,
         redactor: this.redactor, settings: async () => (await this.configuration()).configuration['x-jevellan'], riggingItems: runtime => this.rigging.items(runtime),
         accountRuns, enterOperation: (id, title) => this.lifecycle.enter({ kind: 'settings', id, title }) });
+      // Projects share the account serialization, checkout ownership, leases, bridge registry and memory with conversations.
+      this.projectHub = this.member ? new MemberProjectStore(this.member) : new HubProjectAccess(this.hub, this.device.deviceId);
+      this.projectWork = new ProjectWork({ homes: this.homes, deviceId: this.device.deviceId, deviceName: this.device.name, redactor: this.redactor,
+        projects: this.state.projects, hub: this.projectHub,
+        github: { credential: async () => this.state.github.credential(), ...(options.githubFetch ? { fetch: options.githubFetch } : {}), ...(options.githubBaseUrl ? { baseUrl: options.githubBaseUrl } : {}) },
+        accounts: this.accounts, runtimes: this.runtimes, accountRuns, ownership: this.conversations.ownership, leases: this.conversations.leases,
+        outside: { assertIdle: async (project, path) => this.conversations.outside.assertIdle(project, path, (await this.configuration()).configuration['x-jevellan'].guards.externalActivityWindowMin) },
+        bridges: this.bridges, memory: this.memory, settings: async () => (await this.configuration()).configuration['x-jevellan'], riggingItems: async (runtime) => this.rigging.items(runtime),
+        decisionClient: this.decisionClient, roster: () => this.roster(),
+        enterOperation: (id, title) => this.lifecycle.enter({ kind: 'conversation', id, title }),
+        timers: { periodic: options.timers !== false, ...options.projectTimers } });
       const improverReady = Promise.all([this.conversations.ready, this.backgroundDrafts.ready]).then(() => undefined);
       const hub = this.#hub; const mesh = this.#mesh;
       this.improver = hub && mesh ? new Improver({ hub, deviceId: this.device.deviceId, ready: improverReady,
@@ -147,12 +163,15 @@ export class Application {
         ...(options.timers === undefined ? {} : { timers: options.timers }) });
       this.settingsSync = new SettingsSync({ homes: this.homes, redactor: this.redactor, ready: this.conversations.ready, apply: () => this.applyRigging(), ...(options.timers === undefined ? {} : { timers: options.timers }) });
       const releaseStartup = startup; startup = undefined;
-      this.started = improverReady.then(releaseStartup, releaseStartup).catch(() => undefined);
+      // Startup ends after conversation recovery and Projects recovery (brief 8.6); the improvers still wait only for theirs.
+      this.started = Promise.all([improverReady, this.projectWork.ready]).then(releaseStartup, releaseStartup).catch(() => undefined);
     } catch (error) { this.#hub?.close(); throw error; }
     } catch (error) { startup?.(); lifecycle?.close(); this.#ownership.close(); throw error; }
   }
   bindDaemonUrl(url: string): void {
     this.conversations.daemonUrl = url; this.backgroundDrafts.daemonUrl = url;
+    // Thread turns need the bridge URL; queued work may start from here. Its periodic loops follow `timers` on their own.
+    this.projectWork.daemonUrl = url; this.projectWork.start();
     if (this.#improverTimers) { this.routingImprover?.start(); this.projectImprover.start(); }
   }
   async improverRequest(input: unknown) { return this.member ? this.member.improver(input) : this.routingImprover!.request(input, this.device.deviceId); }
@@ -213,6 +232,8 @@ export class Application {
     try { await this.projectImprover.close(); } catch (error) { failures.push(error); }
     try { await this.routingImprover?.close(); } catch (error) { failures.push(error); }
     try { await this.backgroundDrafts.close(); } catch (error) { failures.push(error); }
+    // Projects close first: they share ownership, leases, accounts, bridges, memory and the hub with conversations.
+    try { await this.projectWork.close(); } catch (error) { failures.push(error); }
     try { await this.conversations.close(); } catch (error) { failures.push(error); }
     const cleanup = await Promise.allSettled([this.accounts.close(), this.bridges.close(), this.memory.close()]);
     for (const result of cleanup) if (result.status === 'rejected') failures.push(result.reason);

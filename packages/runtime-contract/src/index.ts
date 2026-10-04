@@ -6,4 +6,6 @@ export * from './worker-run.js';
 export * from './worker-server.js';
 export * from './login.js';
 export * from './fake.js';
+export * from './fake-native.js';
+export * from './native-format.js';
 export * from './testing.js';

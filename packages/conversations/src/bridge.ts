@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import {
-  BridgeRequestSchema, BridgeResultSchema, BridgeToolSchemas, HandoffToolSchema, MemoryEditSchema, MemoryNoteSchema, MemorySearchSchema, MemoryWriteSchema,
+  BridgeRequestSchema, BridgeResultSchema, BridgeToolSchemas, BridgeToolsSchema, HandoffToolSchema, MemoryEditSchema, MemoryNoteSchema, MemorySearchSchema, MemoryWriteSchema,
   IntegrationStatusSchema, SecretRedactor, bridgeTools, type BridgeTool, type IntegrationRunner, type MemoryNote,
 } from '@jevellan/core';
 import type { z } from 'zod';
@@ -19,7 +19,15 @@ type Scope = { work: ConversationWork; stretch: number; memoryWrite: boolean; me
 const readTools: BridgeTool[] = ['jevellan_finding', 'jevellan_handoff', 'jevellan_conversation_search', 'jevellan_conversation_read', 'memory_search', 'memory_read'];
 const failure = (message: string, status = 403) => Object.assign(new Error(message), { status });
 
-export class StretchTools {
+/** One token's tools. The registry keeps the token rules; each scope decides its list and handlers. */
+export interface BridgeScopeTools {
+  list(): z.infer<typeof BridgeToolsSchema>;
+  call(name: BridgeTool, args: unknown): Promise<z.infer<typeof BridgeResultSchema>>;
+  capture(): Promise<z.infer<typeof BridgeResultSchema>>;
+  close(): Promise<void>;
+}
+
+export class StretchTools implements BridgeScopeTools {
   #active = true;
   #repairing = false;
   #pending: Promise<unknown> = Promise.resolve();
@@ -109,11 +117,13 @@ export class StretchTools {
 
 /** Tokens live only in memory. A restart invalidates every outstanding grant. */
 export class StretchBridges {
-  readonly #scopes = new Map<string, StretchTools>();
+  readonly #scopes = new Map<string, BridgeScopeTools>();
   constructor(readonly redactor: SecretRedactor) {}
   #key(token: string): string { return createHash('sha256').update(token).digest('hex'); }
-  issue(scope: Scope): { token: string; tools: StretchTools; close(): Promise<void> } {
-    const tools = new StretchTools(scope); const token = randomBytes(32).toString('base64url');
+  issue(scope: Scope): { token: string; tools: StretchTools; close(): Promise<void> } { return this.issueTools(new StretchTools(scope)); }
+  /** Same token rules for every scope: 32 random bytes, only the hash kept, redacted everywhere, dropped on close. */
+  issueTools<T extends BridgeScopeTools>(tools: T): { token: string; tools: T; close(): Promise<void> } {
+    const token = randomBytes(32).toString('base64url');
     const key = this.#key(token); this.#scopes.set(key, tools); this.redactor.add(token);
     return { token, tools, close: async () => { this.#scopes.delete(key); await tools.close(); } };
   }

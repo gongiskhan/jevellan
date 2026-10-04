@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { AddRiggingSchema, ConfigWriteSchema, CredentialInputSchema, RiggingEntrySchema, RiggingViewSchema, SecretStateSchema, SecretSummarySchema, UpdateRiggingSchema } from './client-schemas.js';
+import { AddRiggingSchema, ConfigWriteSchema, CredentialInputSchema, GitHubTokenStateSchema, RiggingEntrySchema, RiggingViewSchema, SecretStateSchema, SecretSummarySchema, UpdateRiggingSchema, type GitHubTokenState } from './client-schemas.js';
 import { ProjectViewSchema } from './conversation-schemas.js';
 import { ConfigRevisionSchema, IdSchema, ProjectSchema, RiggingItemSchema, type ConfigRevision, type Project, type RiggingItem } from './schemas.js';
 
@@ -29,15 +29,24 @@ export interface SharedJev {
   put(value: string, clientRequestId?: string): Available<z.infer<typeof SecretSummarySchema>>;
   credential(): Available<string | undefined>;
 }
+/** The GitHub token for pull requests: summaries carry the last four characters and the save time, never the token. */
+export interface SharedGitHub {
+  summary(): Available<GitHubTokenState>;
+  put(value: string, clientRequestId?: string): Available<GitHubTokenState>;
+  remove(clientRequestId?: string): Available<GitHubTokenState>;
+  credential(): Available<string | undefined>;
+}
 const base = { schema: z.literal('shared-state-request-v1') };
 const runtimes = z.array(IdSchema).max(64);
 export const SharedStateRequestSchema = z.discriminatedUnion('operation', [
-  z.strictObject({ ...base, operation: z.enum(['configuration', 'configuration-history', 'projects', 'jev-summary', 'jev-credential']) }),
+  z.strictObject({ ...base, operation: z.enum(['configuration', 'configuration-history', 'projects', 'jev-summary', 'jev-credential', 'github-summary', 'github-credential']) }),
   z.strictObject({ ...base, operation: z.literal('configuration-put'), input: ConfigWriteSchema }),
   z.strictObject({ ...base, operation: z.literal('project'), id: IdSchema }),
   z.strictObject({ ...base, operation: z.literal('project-put'), clientRequestId: IdSchema.optional(), project: ProjectSchema, revision: z.number().int().nonnegative() }),
   z.strictObject({ ...base, operation: z.literal('project-context'), id: IdSchema, context: ProjectSchema.shape.context, revision: z.number().int().positive() }),
   z.strictObject({ ...base, operation: z.literal('jev-put'), clientRequestId: IdSchema.optional(), value: CredentialInputSchema }),
+  z.strictObject({ ...base, operation: z.literal('github-put'), clientRequestId: IdSchema.optional(), value: CredentialInputSchema }),
+  z.strictObject({ ...base, operation: z.literal('github-remove'), clientRequestId: IdSchema.optional() }),
   z.strictObject({ ...base, operation: z.literal('rigging'), runtimes }),
   z.strictObject({ ...base, operation: z.literal('rigging-get'), id: IdSchema, runtimes }),
   z.strictObject({ ...base, operation: z.literal('rigging-add'), input: AddRiggingSchema, runtimes }),
@@ -56,4 +65,6 @@ export const SharedStateResultSchema = z.discriminatedUnion('schema', [
   z.strictObject({ schema: z.literal('shared-rigging-items-v1'), items: z.array(RiggingItemSchema) }),
   z.strictObject({ schema: z.literal('shared-jev-summary-v1'), summary: SecretStateSchema }),
   z.strictObject({ schema: z.literal('shared-jev-credential-v1'), value: CredentialInputSchema.nullable() }),
+  z.strictObject({ schema: z.literal('shared-github-summary-v1'), summary: GitHubTokenStateSchema }),
+  z.strictObject({ schema: z.literal('shared-github-credential-v1'), value: CredentialInputSchema.nullable() }),
 ]);

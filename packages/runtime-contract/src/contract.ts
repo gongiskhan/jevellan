@@ -1,3 +1,4 @@
+import { isAbsolute } from 'node:path';
 import { z } from 'zod';
 import { AccountSchema, ActionSchema, EffortSchema, IdSchema, NativeProcessSchema, type Account, type AccountStatus, type Effort, type Homes, type RiggingItem, type SecretRedactor } from '@jevellan/core';
 
@@ -15,14 +16,27 @@ export const RuntimeEventSchema = z.discriminatedUnion('type', [
 export type RuntimeEvent = z.infer<typeof RuntimeEventSchema>;
 export const ResolvedAccountSchema = z.strictObject({ account: AccountSchema, home: z.string().min(1), env: z.record(z.string(), z.string()) });
 export type ResolvedAccount = z.infer<typeof ResolvedAccountSchema>;
+export const LaunchSchema = z.strictObject({ mcpServers: z.record(z.string(), z.strictObject({ command: z.string().min(1), args: z.array(z.string()), env: z.record(z.string(), z.string()) })), env: z.record(z.string(), z.string()) });
 export const StretchInputSchema = z.strictObject({
   schema: z.literal('stretch-input-v1'), conversationId: IdSchema, stretch: z.number().int().positive(), action: ActionSchema,
   cwd: z.string().min(1), permissions: z.enum(['read-only', 'write']), memoryWrite: z.boolean(), systemAppend: z.string(), brief: z.string(),
   model: z.string().min(1), effort: EffortSchema, account: ResolvedAccountSchema,
-  launch: z.strictObject({ mcpServers: z.record(z.string(), z.strictObject({ command: z.string().min(1), args: z.array(z.string()), env: z.record(z.string(), z.string()) })), env: z.record(z.string(), z.string()) }),
+  launch: LaunchSchema,
   timeoutMs: z.number().int().positive(), inputCopy: z.literal(true).optional(),
 }).refine(value => !value.inputCopy || value.action === 'reply' && value.permissions === 'read-only' && !value.memoryWrite, 'Private input copies only support read-only replies.');
 export type StretchInput = z.infer<typeof StretchInputSchema>;
+// One worker process per turn; a later turn continues the native session through resume. id = projectId for the coordinator.
+export const TurnOwnerSchema = z.strictObject({ kind: z.enum(['coordinator', 'thread']), projectId: IdSchema, id: IdSchema });
+export const TurnInputSchema = z.strictObject({
+  schema: z.literal('turn-input-v1'), owner: TurnOwnerSchema, turn: z.number().int().positive(),
+  cwd: z.string().min(1).refine(isAbsolute, 'A turn needs an absolute working directory.'),
+  permissions: z.enum(['read-only', 'write']), model: z.string().min(1), effort: EffortSchema,
+  account: ResolvedAccountSchema, systemAppend: z.string(), prompt: z.string().min(1),
+  resume: z.strictObject({ sessionId: z.string().min(1).max(256) }).optional(),
+  launch: LaunchSchema, safetyProfile: z.enum(['coordinator', 'thread']), timeoutMs: z.number().int().positive(),
+}).refine((value) => value.safetyProfile === value.owner.kind, 'The safety profile must match the turn owner.')
+  .refine((value) => value.owner.kind === 'coordinator' ? value.permissions === 'read-only' && value.owner.id === value.owner.projectId : value.permissions === 'write', 'Coordinator turns are read-only and thread turns write.');
+export type TurnInput = z.infer<typeof TurnInputSchema>;
 export const RunResultSchema = z.strictObject({ status: z.enum(['completed', 'interrupted', 'failed']), error: RuntimeErrorSchema.optional() });
 export type RunResult = z.infer<typeof RunResultSchema>;
 export const WorkerMessageSchema = z.discriminatedUnion('type', [
@@ -32,6 +46,7 @@ export const WorkerMessageSchema = z.discriminatedUnion('type', [
 ]);
 export const WorkerCommandSchema = z.discriminatedUnion('type', [
   z.strictObject({ schema: z.literal('runtime-command-v1'), type: z.literal('start'), input: StretchInputSchema, daemonPid: z.number().int().positive(), executable: z.string().optional() }),
+  z.strictObject({ schema: z.literal('runtime-command-v1'), type: z.literal('start-turn'), input: TurnInputSchema, daemonPid: z.number().int().positive(), executable: z.string().optional() }),
   z.strictObject({ schema: z.literal('runtime-command-v1'), type: z.literal('continue'), message: z.string(), timeoutMs: z.number().int().positive() }),
   z.strictObject({ schema: z.literal('runtime-command-v1'), type: z.literal('interrupt'), reason: z.enum(['steer', 'timeout', 'cancel']) }),
 ]);
@@ -58,10 +73,12 @@ export interface RuntimeAdapter {
   id: string; displayName: string;
   accountKinds: Array<'subscription' | 'api-key'>;
   riggingKinds: Array<'skill' | 'mcp' | 'hook' | 'rule' | 'setting' | 'command'>;
-  capabilities: { edit: boolean; shell: boolean; mcp: boolean; images: boolean; interrupt: boolean; usage: boolean; continueSession: boolean; perLaunchConfig: boolean; readOnlyEnforced: boolean };
+  capabilities: { edit: boolean; shell: boolean; mcp: boolean; images: boolean; interrupt: boolean; usage: boolean; continueSession: boolean; perLaunchConfig: boolean; readOnlyEnforced: boolean; turns: boolean };
   listModels(account: ResolvedAccount): Promise<Array<{ id: string; label: string; efforts: Effort[] }>>;
   beginLogin(account: Account, home: string): Promise<LoginSession>;
   probe(account: ResolvedAccount): Promise<{ auth: AccountStatus['auth']; usage?: AccountStatus['usage']; identity?: Account['identity']; error?: string }>;
   materialiseRigging(home: string, items: RiggingItem[]): Promise<Array<{ itemId: string; applied: boolean; reason?: string }>>;
   startStretch(input: StretchInput): StretchRun;
+  /** One project turn per run; continue() is refused. */
+  startTurn(input: TurnInput): StretchRun;
 }

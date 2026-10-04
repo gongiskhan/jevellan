@@ -1,6 +1,6 @@
 const BASE = ['PATH', 'HOME', 'USER', 'LANG', 'TERM', 'SHELL', 'TMPDIR'] as const;
 const AUTH: Record<string, readonly string[]> = { claude: ['CLAUDE_CODE_OAUTH_TOKEN', 'ANTHROPIC_API_KEY'], codex: [] };
-const LAUNCH = ['JEVELLAN_STRETCH_TOKEN', 'JEVELLAN_DAEMON_URL'];
+const LAUNCH = ['JEVELLAN_STRETCH_TOKEN', 'JEVELLAN_DAEMON_URL', 'GIT_AUTHOR_NAME', 'GIT_AUTHOR_EMAIL', 'GIT_COMMITTER_NAME', 'GIT_COMMITTER_EMAIL'];
 
 export function minimalEnvironment(runtime: 'claude' | 'codex', home: string, auth: Record<string, string> = {}, launch: Record<string, string> = {}, base: NodeJS.ProcessEnv = process.env): Record<string, string> {
   const result: Record<string, string> = {};

@@ -7,6 +7,7 @@ import { SharedStateRequestSchema, SharedStateResultSchema } from '@jevellan/cor
 import { PeerSessionInputSchema, PeerSessionStateSchema } from '@jevellan/core';
 import { PeerLoginSessionInputSchema, PeerLoginSessionStateSchema } from '@jevellan/core';
 import { ImproverDeviceRequestSchema, ImproverDeviceResultSchema, ImproverRequestSchema, ImproverResultSchema } from '@jevellan/core';
+import { ProjectHubCollectionSchema, ProjectHubRequestSchema, ProjectHubResultSchema, collectionOf, type ProjectHubCollection, type ProjectHubResult } from '@jevellan/core';
 
 import { HubUnavailable } from '@jevellan/core';
 export { HubUnavailable } from '@jevellan/core';
@@ -117,9 +118,17 @@ export class MemberHubClient {
   improverDevice(input: unknown) { return this.#request('improver-device', ImproverDeviceResultSchema, ImproverDeviceRequestSchema.parse(input)); }
   async state(input: unknown) {
     const request = SharedStateRequestSchema.parse(input);
-    if (request.operation === 'jev-put') this.options.redactor.add(request.value);
+    if (request.operation === 'jev-put' || request.operation === 'github-put') this.options.redactor.add(request.value);
     const result = await this.#request('state', SharedStateResultSchema, request);
-    if (result.schema === 'shared-jev-credential-v1' && result.value) this.options.redactor.add(result.value);
+    if ((result.schema === 'shared-jev-credential-v1' || result.schema === 'shared-github-credential-v1') && result.value) this.options.redactor.add(result.value);
+    return result;
+  }
+  /** Project hub state: one route per collection; the reply must answer the requested operation. */
+  async projects(collection: ProjectHubCollection, input: unknown): Promise<ProjectHubResult> {
+    const request = ProjectHubRequestSchema.parse(input);
+    if (collectionOf(request.operation) !== ProjectHubCollectionSchema.parse(collection)) throw new Error('This operation belongs to another project collection.');
+    const result = await this.#request(`projects/${collection}`, ProjectHubResultSchema, request);
+    if (result.operation !== request.operation) throw new HubProtocolError();
     return result;
   }
   async session(token: string | null) {

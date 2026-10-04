@@ -18,6 +18,7 @@
     "@jevellan/decisions": "0.1.0",
     "@jevellan/memory": "0.1.0",
     "@jevellan/mesh": "0.1.0",
+    "@jevellan/projects": "0.1.0",
     "@jevellan/runtime-claude": "0.1.0",
     "@jevellan/runtime-codex": "0.1.0",
     "zod": "4.6.5"

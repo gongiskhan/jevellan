@@ -1,5 +1,9 @@
 import { z } from 'zod';
-import { FindingSchema, HandoffSchema, IdSchema, ResultSchema } from './schemas.js';
+import { EffortSchema, FindingSchema, HandoffSchema, IdSchema, ResultSchema, TimestampSchema } from './schemas.js';
+import {
+  IsolationSchema, NEEDS_DECISION_QUESTION, OptionSchema, PullRequestStateSchema, ThreadReportFieldsSchema, ThreadReportSchema,
+  ThreadReportStatusSchema, ThreadStateSchema, reportHasQuestion,
+} from './project-schemas.js';
 
 const text = z.string().min(1);
 export const MemoryNoteSchema = z.strictObject({ schema: z.literal('memory-note-v1'), title: text, permalink: text, content: z.string(), updatedAt: z.iso.datetime().optional(), unresolved: z.boolean().default(false) });
@@ -18,6 +22,65 @@ export const HandoffToolSchema = HandoffSchema.extend({ result: z.union([ResultS
 export const IntegrationCommandSchema = z.strictObject({ schema: z.literal('integration-command-v1'), command: z.enum(['start', 'continue', 'skip']) });
 export const IntegrationStatusSchema = z.strictObject({ schema: z.literal('integration-status-v1'), status: z.enum(['clean', 'conflict']), conflicts: z.array(text) });
 export type IntegrationRunner = (command: z.infer<typeof IntegrationCommandSchema>['command']) => Promise<z.infer<typeof IntegrationStatusSchema>>;
+
+// Project tools (brief 7, D11). Inputs are bare objects (the model sees their JSON schema); results are versioned
+// documents inside bridge-result-v1. Every tool exists from phase 1; projectToolNames decides what a scope lists.
+const count = z.number().int().nonnegative();
+const reason = text.max(400);
+export const ASK_USER_OPTIONS = 'Give no options or two to four options.';
+export const ThreadsListInputSchema = z.strictObject({ include: z.enum(['active', 'all']).default('active') });
+export const ThreadStartInputSchema = z.strictObject({
+  title: text.max(120), task: text.max(20000), isolation: IsolationSchema.optional(), modelId: IdSchema.optional(),
+  effort: EffortSchema.optional(), deviceId: IdSchema.optional(), note: z.string().max(600).optional(),
+});
+export const ThreadMessageInputSchema = z.strictObject({ threadId: IdSchema, message: text.max(20000), interrupt: z.boolean().default(false) });
+export const ThreadReadInputSchema = z.strictObject({ threadId: IdSchema, detail: z.enum(['summary', 'transcript']).default('summary') });
+export const ThreadStopInputSchema = z.strictObject({ threadId: IdSchema, reason });
+export const AskUserInputSchema = z.strictObject({ question: text.max(2000), options: z.array(OptionSchema).max(4, ASK_USER_OPTIONS).optional(), threadId: IdSchema.optional() })
+  .refine((input) => input.options?.length !== 1, { message: ASK_USER_OPTIONS, path: ['options'] });
+export const WithdrawQuestionInputSchema = z.strictObject({ decisionId: IdSchema, reason });
+export const NotebookReadInputSchema = z.strictObject({});
+export const NotebookWriteInputSchema = z.strictObject({ content: z.string().max(65536), expectedRevision: count });
+export const PrStatusInputSchema = z.strictObject({ threadId: IdSchema });
+export const MailSendInputSchema = z.strictObject({ to: text.max(128), subject: text.max(200), body: z.string().max(8000) });
+export const MailInboxInputSchema = z.strictObject({});
+export const ReservePathsSchema = z.array(text.max(300)).min(1).max(50);
+export const ReserveInputSchema = z.strictObject({ paths: ReservePathsSchema, reason: z.string().max(300).default(''), minutes: z.number().int().min(1).max(120).default(60) });
+export const ReleaseInputSchema = z.strictObject({ id: IdSchema.optional() });
+// The daemon fills schema, turn and synthesized: false.
+export const ThreadReportInputSchema = ThreadReportFieldsSchema.omit({ schema: true, turn: true, synthesized: true })
+  .refine(reportHasQuestion, { message: NEEDS_DECISION_QUESTION, path: ['question'] });
+
+export const ThreadsListResultSchema = z.strictObject({ schema: z.literal('threads-list-result-v1'), threads: z.array(z.strictObject({
+  id: IdSchema, title: text.max(120), state: ThreadStateSchema, isolation: IsolationSchema, device: text, runtime: IdSchema,
+  modelLabel: text, effort: EffortSchema, branch: z.string().optional(), pr: PullRequestStateSchema.pick({ number: true, state: true, checks: true }).optional(),
+  lastSummary: z.string().max(400).optional(), turns: count })) });
+export const ThreadStartResultSchema = z.strictObject({ schema: z.literal('thread-start-result-v1'), threadId: IdSchema, state: ThreadStateSchema,
+  stateReason: z.string().max(400).optional(), placement: text.max(400) });
+export const ThreadMessageResultSchema = z.strictObject({ schema: z.literal('thread-message-result-v1'), threadId: IdSchema, state: ThreadStateSchema,
+  delivery: z.enum(['started', 'queued', 'interrupting']) });
+export const ThreadReadResultSchema = z.strictObject({ schema: z.literal('thread-read-result-v1'), threadId: IdSchema, state: ThreadStateSchema,
+  stateReason: z.string().max(400).optional(), reports: z.array(ThreadReportSchema).max(3), pr: PullRequestStateSchema.optional(),
+  transcript: z.string().max(8000).nullable().optional(), transcriptNote: z.string().max(400).optional() });
+export const ThreadStopResultSchema = z.strictObject({ schema: z.literal('thread-stop-result-v1'), threadId: IdSchema, state: ThreadStateSchema });
+export const AskUserResultSchema = z.strictObject({ schema: z.literal('ask-user-result-v1'), decisionId: IdSchema });
+export const WithdrawQuestionResultSchema = z.strictObject({ schema: z.literal('withdraw-question-result-v1'), decisionId: IdSchema, withdrawn: z.boolean() });
+export const NotebookReadResultSchema = z.strictObject({ schema: z.literal('notebook-read-result-v1'), content: z.string().max(65536), revision: count });
+export const NotebookWriteResultSchema = z.strictObject({ schema: z.literal('notebook-write-result-v1'), revision: count });
+export const PrStatusResultSchema = z.strictObject({ schema: z.literal('pr-status-result-v1'), threadId: IdSchema, pr: PullRequestStateSchema.nullable(),
+  reason: z.string().max(400).optional() });
+export const MailSendResultSchema = z.strictObject({ schema: z.literal('mail-send-result-v1'), mailId: IdSchema });
+export const MailInboxResultSchema = z.strictObject({ schema: z.literal('mail-inbox-result-v1'), mail: z.array(z.strictObject({
+  id: IdSchema, from: text, fromTitle: text, subject: text.max(200), body: z.string().max(8000), at: TimestampSchema })) });
+export const ReserveResultSchema = z.discriminatedUnion('granted', [
+  z.strictObject({ schema: z.literal('reserve-result-v1'), granted: z.literal(true), id: IdSchema }),
+  z.strictObject({ schema: z.literal('reserve-result-v1'), granted: z.literal(false),
+    conflicts: z.array(z.strictObject({ threadTitle: text, paths: ReservePathsSchema, expiresAt: TimestampSchema })).min(1) }),
+]);
+export const ReleaseResultSchema = z.strictObject({ schema: z.literal('release-result-v1'), released: count });
+export const ThreadReportResultSchema = z.strictObject({ schema: z.literal('thread-report-result-v1'), turn: z.number().int().positive(),
+  status: ThreadReportStatusSchema, accepted: z.literal(true), repeated: z.boolean() });
+
 export const BridgeToolSchemas = {
   jevellan_finding: FindingSchema,
   jevellan_handoff: HandoffToolSchema,
@@ -29,6 +92,21 @@ export const BridgeToolSchemas = {
   memory_write: MemoryWriteSchema,
   memory_edit: MemoryEditSchema,
   memory_propose: MemoryProposalInputSchema,
+  jevellan_threads_list: ThreadsListInputSchema,
+  jevellan_thread_start: ThreadStartInputSchema,
+  jevellan_thread_message: ThreadMessageInputSchema,
+  jevellan_thread_read: ThreadReadInputSchema,
+  jevellan_thread_stop: ThreadStopInputSchema,
+  jevellan_ask_user: AskUserInputSchema,
+  jevellan_withdraw_question: WithdrawQuestionInputSchema,
+  jevellan_notebook_read: NotebookReadInputSchema,
+  jevellan_notebook_write: NotebookWriteInputSchema,
+  jevellan_pr_status: PrStatusInputSchema,
+  jevellan_mail_send: MailSendInputSchema,
+  jevellan_mail_inbox: MailInboxInputSchema,
+  jevellan_reserve: ReserveInputSchema,
+  jevellan_release: ReleaseInputSchema,
+  jevellan_thread_report: ThreadReportInputSchema,
 };
 export type BridgeTool = keyof typeof BridgeToolSchemas;
 export const BridgeToolNameSchema = z.enum(Object.keys(BridgeToolSchemas) as [BridgeTool, ...BridgeTool[]]);
@@ -52,6 +130,45 @@ export function bridgeTools(names: BridgeTool[]): z.infer<typeof BridgeToolsSche
     memory_write: 'Write a project memory note under this work’s checkout ownership.',
     memory_edit: 'Edit a project memory note. For replace, provide the exact text in find.',
     memory_propose: 'Queue a proposed memory note. It does not change the checkout; Jevellan applies it later under ownership.',
+    jevellan_threads_list: 'List this project’s threads with their state, isolation, device, model, branch, pull request and last report summary. include: all adds threads that ended in the last 14 days.',
+    jevellan_thread_start: 'Start a thread that carries one task end to end. Write a self-contained title and task. Leave isolation, modelId, effort and deviceId out unless the owner asked for that exact choice; Jevellan places the thread. note is your one-line reason. Returns the thread id, its state and where it runs.',
+    jevellan_thread_message: 'Send a message to a thread. An idle or in-review thread starts a turn now; a running thread receives it as its next turn, or at once with interrupt: true. Threads that are attached, done, stopped or failed refuse messages.',
+    jevellan_thread_read: 'Read a thread’s state, its last three reports and its pull request. detail: transcript adds the end of its assistant text.',
+    jevellan_thread_stop: 'Stop a thread: end any running turn and mark it stopped. Its worktree and branch stay until the owner discards them.',
+    jevellan_ask_user: 'Ask the owner a question. Give no options or two to four short options, and name the thread when the question comes from one. The answer arrives later as an event.',
+    jevellan_withdraw_question: 'Withdraw an unanswered question, for example after a thread solved it.',
+    jevellan_notebook_read: 'Read the project notebook: your durable record of decisions, conventions, owner preferences and the current plan.',
+    jevellan_notebook_write: 'Replace the whole notebook, at most 64 KiB. Pass the revision you read; if it changed meanwhile, the error carries the current content.',
+    jevellan_pr_status: 'Fetch a thread’s pull request state fresh from GitHub.',
+    jevellan_mail_send: 'Send mail to coordinator, to a thread id or to all, to coordinate threads that work directly on main.',
+    jevellan_mail_inbox: 'Read unread mail addressed to this thread or to all, and mark it read.',
+    jevellan_reserve: 'Reserve repository paths (files, or directories ending in /) for up to 120 minutes, 60 by default, before editing them. Other threads see the reservation; a refusal lists the conflicting threads.',
+    jevellan_release: 'Release one reservation by id, or every reservation of this thread when no id is given.',
+    jevellan_thread_report: 'Report this turn’s outcome exactly once, at the end of the turn. needs-decision requires a question; options are two to four short choices. Include the tests you ran and the files you changed.',
   };
   return BridgeToolsSchema.parse({ schema: 'bridge-tools-v1', tools: names.map((name) => ({ name, description: descriptions[name], inputSchema: z.toJSONSchema(BridgeToolSchemas[name], { io: 'input' }) })) });
 }
+
+// Project scopes (D104). The coordinator's read-only Claude allow list and the bridge's scope lists both derive from
+// projectToolNames, never a copy. COORDINATOR_TOOLS and threadTools('main') are the full phase 6 lists.
+export const COORDINATOR_TOOLS = ['jevellan_threads_list', 'jevellan_thread_start', 'jevellan_thread_message', 'jevellan_thread_read', 'jevellan_thread_stop',
+  'jevellan_ask_user', 'jevellan_withdraw_question', 'jevellan_notebook_read', 'jevellan_notebook_write', 'jevellan_pr_status', 'jevellan_mail_send', 'memory_search', 'memory_read'] as const satisfies readonly BridgeTool[];
+const MAIN_THREAD_TOOLS = ['jevellan_mail_send', 'jevellan_mail_inbox', 'jevellan_reserve', 'jevellan_release'] as const satisfies readonly BridgeTool[];
+export type ProjectToolName = typeof COORDINATOR_TOOLS[number] | typeof MAIN_THREAD_TOOLS[number] | 'jevellan_thread_report';
+export function threadTools(isolation: 'worktree' | 'main'): BridgeTool[] {
+  return ['jevellan_thread_report', 'memory_search', 'memory_read', ...(isolation === 'main' ? MAIN_THREAD_TOOLS : [])];
+}
+// Mail and reservations arrive with main isolation (phase 6); until then no scope advertises a tool without a handler.
+const UNAVAILABLE = new Set<BridgeTool>(MAIN_THREAD_TOOLS);
+export function projectToolNames(scope: { kind: 'coordinator' } | { kind: 'thread'; isolation: 'worktree' | 'main' }): BridgeTool[] {
+  return (scope.kind === 'coordinator' ? [...COORDINATOR_TOOLS] : threadTools(scope.isolation)).filter((name) => !UNAVAILABLE.has(name));
+}
+/** The result document each project tool returns inside bridge-result-v1. */
+export const ProjectToolResultSchemas = {
+  jevellan_threads_list: ThreadsListResultSchema, jevellan_thread_start: ThreadStartResultSchema, jevellan_thread_message: ThreadMessageResultSchema,
+  jevellan_thread_read: ThreadReadResultSchema, jevellan_thread_stop: ThreadStopResultSchema, jevellan_ask_user: AskUserResultSchema,
+  jevellan_withdraw_question: WithdrawQuestionResultSchema, jevellan_notebook_read: NotebookReadResultSchema, jevellan_notebook_write: NotebookWriteResultSchema,
+  jevellan_pr_status: PrStatusResultSchema, jevellan_mail_send: MailSendResultSchema, jevellan_mail_inbox: MailInboxResultSchema,
+  jevellan_reserve: ReserveResultSchema, jevellan_release: ReleaseResultSchema, jevellan_thread_report: ThreadReportResultSchema,
+  memory_search: MemorySearchSchema, memory_read: MemoryNoteSchema,
+} as const satisfies Record<ProjectToolName, z.ZodType>;

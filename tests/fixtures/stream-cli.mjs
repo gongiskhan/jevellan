@@ -22,6 +22,7 @@ createInterface({ input: process.stdin }).on('line', (line) => {
       send({ type: 'stream_event', session_id: session, event: { type: 'content_block_delta', delta: { type: 'thinking_delta', thinking: 'Readable summary' } } });
       send({ type: 'stream_event', session_id: session, event: { type: 'content_block_delta', delta: { type: 'signature_delta', signature: 'opaque-fixture' } } });
     }
+    if (JSON.stringify(message).includes('TEXT_BEFORE_TOOL')) send({ type: 'stream_event', session_id: session, event: { type: 'content_block_delta', delta: { type: 'text_delta', text: 'Looking.' } } });
     send({ type: 'assistant', session_id: session, message: { content: [{ type: 'tool_use', id: 'tool', name: 'Read', input: { file_path: 'fixture' } }] } });
     const finish = () => {
       send({ type: 'user', session_id: session, message: { content: [{ type: 'tool_result', tool_use_id: 'tool', content: 'fixture', is_error: false }] } });

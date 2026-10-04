@@ -101,13 +101,16 @@ async function turn(prompt) {
   if (test.mode === 'isolation') {
     toolStart('memory_read', {}); const text = await memory(); toolEnd('memory_read', text); result(text); return;
   }
+  // permissions also echoes what a turn must carry: the resumed session, effort, writable directories and the received prompt.
   if (['read-only', 'permissions'].includes(test.mode) && codex) {
-    result(JSON.stringify({ sandbox: flag('--sandbox'), network: configuration.sandbox_workspace_write?.network_access, approval: configuration.approval_policy, cwd: flag('--cd'), projectTrust: configuration.projects?.[flag('--cd')]?.trust_level })); return;
+    result(JSON.stringify({ sandbox: flag('--sandbox'), network: configuration.sandbox_workspace_write?.network_access, approval: configuration.approval_policy, cwd: flag('--cd'), projectTrust: configuration.projects?.[flag('--cd')]?.trust_level,
+      ...(test.mode === 'permissions' ? { resume: args.includes('resume') ? args[args.indexOf('resume') + 1] : null, effort: configuration.model_reasoning_effort, addDirs: args.flatMap((arg, i) => arg === '--add-dir' ? [args[i + 1]] : []), prompt } : {}) })); return;
   }
   if (['safety', 'read-only', 'permissions'].includes(test.mode)) {
     const replies = [];
     for (const request of test.requests) replies.push(await hook(request.tool, request.input));
-    result(JSON.stringify(test.mode === 'permissions' ? { replies, permissionMode: flag('--permission-mode'), bypassAllowed: args.includes('--allow-dangerously-skip-permissions') } : replies)); return;
+    result(JSON.stringify(test.mode === 'permissions' ? { replies, permissionMode: flag('--permission-mode'), bypassAllowed: args.includes('--allow-dangerously-skip-permissions'),
+      resume: flag('--resume') ?? null, model: flag('--model') ?? null, effort: flag('--effort') ?? null, allowedTools: flag('--allowedTools') ?? null, append: initialize?.appendSystemPrompt ?? null, prompt } : replies)); return;
   }
   toolStart('Read', { path: 'fixture' }); toolEnd('Read', 'fixture');
   result(args.includes('resume') || args.some((arg) => arg.startsWith('--resume=')) ? 'remembered-fixture' : 'fixture-answer');

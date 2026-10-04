@@ -1,10 +1,10 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { AccountHubRequestSchema, ConsumeSwitchSchema, DeviceSwitchInputSchema, EmptySchema, MeshSessionInputSchema, MeshSessionResultSchema, PassphraseInputSchema, PeerSessionInputSchema } from '@jevellan/core';
+import { AccountHubRequestSchema, ConsumeSwitchSchema, DeviceSwitchInputSchema, EmptySchema, MeshSessionInputSchema, MeshSessionResultSchema, PassphraseInputSchema, PeerSessionInputSchema, ProjectHubCollectionSchema, ProjectHubRequestSchema, collectionOf } from '@jevellan/core';
 import { HubAccounts, HubCheckoutStore, HubIndexes, HubPublicationLeases, sessionCookie } from '@jevellan/mesh';
 import type { Application } from './application.js';
 import { json, requestBody } from './http.js';
 import { SharedStateRequestSchema } from '@jevellan/core';
-import { HubState } from '@jevellan/mesh';
+import { HubProjectStore, HubState } from '@jevellan/mesh';
 import { ImproverDeviceRequestSchema, ImproverRequestSchema, PeerLoginSessionInputSchema } from '@jevellan/core';
 
 export async function handleMeshDeviceApi(app: Application, request: IncomingMessage, response: ServerResponse, url: URL): Promise<boolean> {
@@ -35,7 +35,17 @@ export async function handleMeshDeviceApi(app: Application, request: IncomingMes
     const input = SharedStateRequestSchema.parse(await requestBody(request)); app.devices.authenticate(authorization!.slice(7));
     const result = await new HubState(app.hub, device.id, 'runtimes' in input ? input.runtimes : [...app.runtimes.keys()]).request(input);
     app.devices.authenticate(authorization!.slice(7));
-    if (input.operation === 'jev-credential') json(response, result); else send(result); return true;
+    // Credential replies bypass redaction, which would otherwise replace the token (GitHub tokens also match a pattern).
+    if (input.operation === 'jev-credential' || input.operation === 'github-credential') json(response, result); else send(result); return true;
+  }
+  const projects = path.match(/^\/hub\/mesh\/projects\/([a-z]+)$/);
+  if (projects && method === 'POST') {
+    const collection = ProjectHubCollectionSchema.safeParse(projects[1]); if (!collection.success) throw Object.assign(new Error('Not found.'), { status: 404 });
+    const input = ProjectHubRequestSchema.parse(await requestBody(request));
+    if (collectionOf(input.operation) !== collection.data) throw Object.assign(new Error('This operation belongs to another project collection.'), { status: 400 });
+    app.devices.authenticate(authorization!.slice(7));
+    const result = new HubProjectStore(app.hub, device.id).request(input);
+    app.devices.authenticate(authorization!.slice(7)); send(result); return true;
   }
   if (path === '/hub/mesh/indexes' && method === 'POST') {
     const input = await requestBody(request); app.devices.authenticate(authorization!.slice(7));

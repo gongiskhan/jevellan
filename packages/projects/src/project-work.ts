@@ -1,0 +1,260 @@
+import { setTimeout as delay } from 'node:timers/promises';
+import type { z } from 'zod';
+import type { AccountService } from '@jevellan/accounts';
+import {
+  ProjectNotebookSchema, ProjectNotebookViewSchema, ProjectWorkSettingsSchema, ProjectWorkSettingsViewSchema, ThreadCreatedViewSchema, defaultProjectWorkSettings, newId,
+  type CheckoutOwnership, type Configuration, type CoordinatorMessageRequestSchema, type DecisionAnswerRequestSchema, type Homes, type NotebookRequestSchema, type Project,
+  type ProjectHub, type ProjectWorkListView, type ProjectWorkSettings, type ProjectWorkSettingsRequestSchema, type ProjectWorkView, type PublicationLeaseService,
+  type RiggingItem, type SecretRedactor, type SharedProjects, type ThreadCreateRequestSchema, type ThreadMessageRequestSchema, type ThreadStopRequestSchema, type ThreadView,
+} from '@jevellan/core';
+import type { StretchBridges } from '@jevellan/conversations';
+import type { DecisionClient } from '@jevellan/decisions';
+import type { BasicMemory } from '@jevellan/memory';
+import type { RuntimeAdapter } from '@jevellan/runtime-contract';
+import { Admission } from './admission.js';
+import { NOTEBOOK_CHANGED, PROJECT_NOT_FOUND, REMOTE_THREADS_LATER, SETTINGS_CHANGED, STOPPED_BY_YOU, THREAD_MEMORY_READ_ONLY, THREAD_NOT_FOUND } from './copy.js';
+import { CoordinatorService } from './coordinator.js';
+import { DecisionItems } from './decision-items.js';
+import { ThreadGit } from './git.js';
+import { ThreadIndexPublisher } from './index-publisher.js';
+import { TurnLauncher } from './launch.js';
+import { ProjectLedgers, type ProjectLedger } from './ledger.js';
+import { ProjectPaths } from './paths.js';
+import { Placement, type DeviceRoster } from './placement.js';
+import { GitHubAccess, ThreadPublication } from './publication.js';
+import { PullRequestTracker, type MergeResultView } from './pull-requests.js';
+import { recoverProjects } from './recovery.js';
+import { CoordinatorStore, StartReceipts, ThreadStore } from './stores.js';
+import { LocalDelivery, ThreadService } from './threads.js';
+import { ThreadTranscripts } from './transcript.js';
+import { ProjectViews, effectiveSettings } from './views.js';
+import { ThreadWorktree } from './worktree.js';
+
+export type ProjectTimers = {
+  /** PR poll, queue sweep (and from phase 5 the outbox and inbox); false in tests, which call `pulse()`. */
+  periodic: boolean;
+  prPollMs: number; coordinatorStartMs: number; coordinatorRetryMs: number; coordinatorTurnTimeoutMs: number; threadTurnTimeoutMs: number;
+  setupTimeoutMs: number; testTimeoutMs: number; outboxRetryMs: number; outboxMaxMs: number; inboxPollMs: number; indexRetryMs: number;
+  queueSweepMs: number; mainLeaseRetryMs: number;
+  now(): number;
+};
+export const DEFAULT_PROJECT_TIMERS: ProjectTimers = {
+  periodic: true, prPollMs: 60_000, coordinatorStartMs: 250, coordinatorRetryMs: 30_000, coordinatorTurnTimeoutMs: 1_200_000, threadTurnTimeoutMs: 21_600_000,
+  setupTimeoutMs: 900_000, testTimeoutMs: 1_800_000, outboxRetryMs: 10_000, outboxMaxMs: 60_000, inboxPollMs: 3_000, indexRetryMs: 30_000, queueSweepMs: 5_000,
+  mainLeaseRetryMs: 20_000, now: Date.now,
+};
+export type ProjectWorkOptions = {
+  homes: Homes; deviceId: string; deviceName: string; redactor: SecretRedactor;
+  projects: SharedProjects; hub: ProjectHub;
+  github: { credential(): Promise<string | undefined>; fetch?: typeof fetch | undefined; baseUrl?: string | undefined };
+  accounts: Pick<AccountService, 'list' | 'resolve' | 'markUsed' | 'recordUsage' | 'recordError'>;
+  runtimes: ReadonlyMap<string, RuntimeAdapter>; accountRuns: Set<string>;
+  /** Main isolation (phase 6) publishes under these; worktree threads need neither. */
+  ownership?: CheckoutOwnership | undefined; leases?: PublicationLeaseService | undefined;
+  outside?: { assertIdle(project: Project, path: string): Promise<void> } | undefined;
+  bridges: Pick<StretchBridges, 'issueTools'>; memory: Pick<BasicMemory, 'project'>;
+  settings(): Promise<Configuration['x-jevellan']>; riggingItems(runtime: string): Promise<RiggingItem[]>;
+  /** Jev placement (phase 4). */
+  decisionClient?(): Promise<DecisionClient>;
+  roster(): Promise<DeviceRoster>;
+  enterOperation(id: string, title: string): () => void;
+  timers?: Partial<ProjectTimers> | undefined;
+};
+type ThreadCreateRequest = z.infer<typeof ThreadCreateRequestSchema>;
+const refuse = (message: string, status: number) => Object.assign(new Error(message), { status });
+const statusOf = (error: unknown) => (error as { status?: unknown } | undefined)?.status;
+
+/**
+ * Projects on this daemon (brief 8): the facade the daemon routes call. It builds every part in dependency order, runs
+ * startup recovery before anything launches (`ready`, brief 8.6), and owns the periodic loops. Turns launch only after
+ * `start()`, which the application calls once the daemon URL is known. `close()` stops every running turn and leaves
+ * states for recovery (D24).
+ */
+export class ProjectWork {
+  readonly ready: Promise<void>;
+  /** The daemon's own URL for bridge calls; empty until `Application.bindDaemonUrl`. */
+  daemonUrl = '';
+  readonly paths: ProjectPaths; readonly ledgers: ProjectLedgers; readonly store: ThreadStore; readonly coordinators: CoordinatorService;
+  readonly threads: ThreadService; readonly decisions: DecisionItems; readonly tracker: PullRequestTracker; readonly views: ProjectViews;
+  readonly admission: Admission; readonly transcripts: ThreadTranscripts;
+  readonly #o: ProjectWorkOptions;
+  readonly #timers: ProjectTimers;
+  readonly #publisher: ThreadIndexPublisher;
+  #sweepTimer: ReturnType<typeof setInterval> | undefined;
+  #started = false;
+  #closing: Promise<void> | undefined;
+  constructor(options: ProjectWorkOptions) {
+    this.#o = options; const o = options;
+    const timers = this.#timers = { ...DEFAULT_PROJECT_TIMERS, ...o.timers };
+    const now = () => timers.now();
+    this.paths = new ProjectPaths(o.homes);
+    this.ledgers = new ProjectLedgers(this.paths, { redactor: o.redactor, now: () => new Date(now()).toISOString() });
+    this.#publisher = new ThreadIndexPublisher(o.hub, timers.indexRetryMs);
+    this.store = new ThreadStore(this.paths, this.ledgers, this.#publisher);
+    const coordinatorStore = new CoordinatorStore(this.paths); const receipts = new StartReceipts(this.paths, now);
+    const github = new GitHubAccess({ credential: o.github.credential, fetch: o.github.fetch, baseUrl: o.github.baseUrl, redactor: o.redactor });
+    this.transcripts = new ThreadTranscripts({ homes: o.homes, deviceId: o.deviceId, deviceName: o.deviceName });
+    const launcher = new TurnLauncher({ accounts: o.accounts, runtimes: o.runtimes, accountRuns: o.accountRuns, riggingItems: o.riggingItems, bridges: o.bridges, homes: o.homes,
+      deviceId: o.deviceId, deviceName: o.deviceName, daemonUrl: () => this.daemonUrl, redactor: o.redactor });
+    this.admission = new Admission({ hub: o.hub, deviceId: o.deviceId, deviceName: o.deviceName, localLive: (projectId) => this.threads.liveThreads(projectId),
+      nameOf: async (deviceId) => (await o.roster()).devices.find((view) => view.device.id === deviceId)?.device.name });
+    const placement = new Placement({ settings: o.settings, accounts: o.accounts, runtimes: o.runtimes, roster: o.roster, admission: this.admission, deviceId: o.deviceId,
+      deviceName: o.deviceName, now });
+    this.decisions = new DecisionItems({ hub: o.hub, now, toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event), threads: () => ({
+      allowTurns: (projectId, threadId) => this.threads.allowTurns(projectId, threadId),
+      stop: (projectId, threadId, reason) => this.threads.stop(projectId, threadId, reason, true),
+      message: (projectId, threadId, text, messageId) => this.threads.message(projectId, threadId, 'owner', text, false, messageId),
+    }) });
+    const git = new ThreadGit({ homes: o.homes, redactor: o.redactor });
+    const worktrees = new ThreadWorktree({ git, homes: o.homes, paths: this.paths, redactor: o.redactor, deviceId: o.deviceId, deviceName: o.deviceName });
+    const publication = new ThreadPublication({ git, homes: o.homes, redactor: o.redactor, github, deviceName: o.deviceName, testTimeoutMs: timers.testTimeoutMs, now,
+      ...(o.leases ? { leases: o.leases } : {}), ...(o.ownership ? { ownership: o.ownership } : {}) });
+    this.coordinators = new CoordinatorService({ store: coordinatorStore, ledgers: this.ledgers, hub: o.hub, deviceId: o.deviceId, redactor: o.redactor });
+    const delivery = new LocalDelivery({ deviceId: o.deviceId, coordinators: this.coordinators, store: this.store,
+      command: (projectId, threadId, command) => this.threads.command(projectId, threadId, command) });
+    this.threads = new ThreadService({ deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, store: this.store, ledgers: this.ledgers, receipts, hub: o.hub,
+      projects: o.projects, admission: this.admission, placement, accounts: o.accounts, transcripts: this.transcripts, delivery, now,
+      runner: { deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, store: this.store, ledgers: this.ledgers, project: (projectId) => this.#project(projectId),
+        workSettings: (projectId) => this.admission.settings(projectId), worktrees, publication, launcher, accounts: o.accounts, admission: this.admission,
+        decisions: this.decisions, toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event),
+        memory: (project) => o.memory.project(project, o.deviceId, () => { throw new Error(THREAD_MEMORY_READ_ONLY); }),
+        runtimeName: (runtime) => o.runtimes.get(runtime)?.displayName ?? runtime, enterOperation: o.enterOperation,
+        timers: { threadTurnTimeoutMs: timers.threadTurnTimeoutMs, setupTimeoutMs: timers.setupTimeoutMs }, now } });
+    this.tracker = new PullRequestTracker({ threads: this.store, github, git, worktrees, project: (projectId) => this.#project(projectId),
+      toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event),
+      transition: async (threadId, apply) => { const runner = this.threads.runner(threadId); if (runner) await runner.transition(apply); else await apply(); },
+      hub: o.hub, redactor: o.redactor, now, pollMs: timers.prPollMs, periodic: timers.periodic });
+    this.views = new ProjectViews({ deviceId: o.deviceId, deviceName: o.deviceName, hub: o.hub, projects: o.projects, store: this.store, ledgers: this.ledgers,
+      coordinators: this.coordinators, transcripts: this.transcripts, worktrees, accounts: o.accounts, runtimes: o.runtimes, settings: o.settings, roster: o.roster });
+    this.ready = recoverProjects({ paths: this.paths, ledgers: this.ledgers, store: this.store, coordinators: this.coordinators,
+      toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event), redactor: o.redactor, now }).then(() => undefined);
+  }
+  async #project(projectId: string): Promise<Project> {
+    const project = (await this.#o.projects.get(projectId))?.project; if (!project) throw refuse(PROJECT_NOT_FOUND, 404);
+    return project;
+  }
+  #thread(projectId: string, threadId: string): void {
+    if (this.store.get(threadId)?.projectId !== projectId) throw refuse(THREAD_NOT_FOUND, 404);
+  }
+  /**
+   * Idempotent; after `bindDaemonUrl`. Queued starts and waiting turns may run from now on, and the periodic loops start
+   * when timers are periodic. Nothing that recovery left at rest is resumed (brief 8.6).
+   */
+  start(): void {
+    if (this.#started || this.#closing) return;
+    this.#started = true;
+    void this.ready.then(() => {
+      if (this.#closing) return;
+      this.threads.begin();
+      void this.threads.sweep().catch(() => undefined);
+      if (!this.#timers.periodic) return;
+      this.tracker.start();
+      this.#sweepTimer = setInterval(() => { void this.threads.sweep().catch(() => undefined); }, this.#timers.queueSweepMs); this.#sweepTimer.unref();
+    }, () => undefined);
+  }
+  /** One round of the periodic work (tests and the UI refresh): PR poll, index flush, queue and waiting sweeps. */
+  async pulse(): Promise<void> {
+    await this.ready;
+    await this.tracker.poll();
+    await this.#publisher.flush().catch(() => undefined);
+    await this.threads.sweep();
+  }
+  /** Resolves when no start, sweep or thread step is in flight (test seam; checks every 20 ms, twice in a row). */
+  async idle(projectId?: string): Promise<void> {
+    await this.ready;
+    for (let quiet = 0; quiet < 2;) { await delay(20); quiet = this.threads.busy(projectId) ? 0 : quiet + 1; }
+  }
+  /** Stops timers, terminates every running turn (shutdown intent) and drains; thread states are never rewritten (D24). */
+  close(): Promise<void> {
+    return this.#closing ??= (async () => {
+      if (this.#sweepTimer) clearInterval(this.#sweepTimer);
+      await this.ready.catch(() => undefined);
+      // Runners first: tracker transitions wait on runner chains (2.6.14).
+      await this.threads.close();
+      await this.tracker.close();
+      await this.#publisher.close();
+    })();
+  }
+
+  // Browser and API operations. Refusals throw Error(sentence) with a status.
+  list(): Promise<ProjectWorkListView> { return this.views.list(); }
+  view(projectId: string): Promise<ProjectWorkView> { return this.views.project(projectId); }
+  coordinatorLedger(projectId: string): ProjectLedger { return this.ledgers.coordinator(projectId); }
+  coordinatorDevice(projectId: string): Promise<string | null> { return this.coordinators.deviceOf(projectId); }
+  /** The device that owns a thread: this device's thread file first, then the hub index. */
+  async threadOwner(projectId: string, threadId: string): Promise<string | null> {
+    const local = this.store.get(threadId); if (local) return local.projectId === projectId ? local.ownerDeviceId : null;
+    const index = (await this.#o.hub.thread(threadId))?.document;
+    return index && index.projectId === projectId ? index.ownerDeviceId : null;
+  }
+  /** Coordinators run on the device they are assigned to; another device's coordinator is reached from phase 5. */
+  async #coordinatorHere(projectId: string): Promise<string> {
+    await this.#project(projectId);
+    const deviceId = await this.coordinators.ensureAssigned(projectId);
+    if (deviceId !== this.#o.deviceId) throw refuse(REMOTE_THREADS_LATER, 409);
+    return deviceId;
+  }
+  /** An owner message for the coordinator (brief 8.1): queued and flushed before the answer, idempotent by client id. */
+  async postMessage(projectId: string, input: z.infer<typeof CoordinatorMessageRequestSchema>): Promise<{ repeated: boolean }> {
+    await this.#coordinatorHere(projectId); const at = this.#timers.now();
+    return this.coordinators.get(projectId).enqueue({ schema: 'coordinator-event-v1', kind: 'user-message', id: newId('cev', at), at: new Date(at).toISOString(),
+      text: input.text, clientMessageId: input.clientMessageId });
+  }
+  /** Interrupts the running coordinator turn; phase 1 has no coordinator turns, so there is nothing to stop yet. */
+  async stopCoordinator(projectId: string): Promise<void> { await this.#project(projectId); }
+  /** The next coordinator turn starts a fresh session (D77). */
+  async freshCoordinator(projectId: string): Promise<void> { await this.#coordinatorHere(projectId); this.coordinators.get(projectId).fresh(); }
+  async settingsView(projectId: string): Promise<z.infer<typeof ProjectWorkSettingsViewSchema>> {
+    const project = await this.#project(projectId);
+    return this.#settingsView(project, (await this.#o.hub.settings(projectId))?.document ?? null);
+  }
+  #settingsView(project: Project, stored: ProjectWorkSettings | null) {
+    const shown = effectiveSettings(stored ?? defaultProjectWorkSettings(project.id), project);
+    return ProjectWorkSettingsViewSchema.parse({ schema: 'project-work-settings-view-v1', settings: shown.settings, ...(shown.notice ? { notice: shown.notice } : {}) });
+  }
+  /** Settings 5.1 with a revision check; a conflict is the owner's reload sentence. */
+  async putSettings(projectId: string, input: z.infer<typeof ProjectWorkSettingsRequestSchema>, clientRequestId?: string): Promise<z.infer<typeof ProjectWorkSettingsViewSchema>> {
+    const project = await this.#project(projectId);
+    const settings = ProjectWorkSettingsSchema.parse({ ...input.settings, schema: 'project-work-settings-v1', projectId, revision: input.revision });
+    const requestId = input.clientRequestId ?? clientRequestId;
+    try { return this.#settingsView(project, (await this.#o.hub.putSettings(settings, input.revision, ...(requestId === undefined ? [] : [requestId]))).document); }
+    catch (error) { if (statusOf(error) === 409) throw refuse(SETTINGS_CHANGED, 409); throw error; }
+  }
+  async notebookView(projectId: string): Promise<z.infer<typeof ProjectNotebookViewSchema>> {
+    await this.#project(projectId); const stored = await this.#o.hub.notebook(projectId);
+    return ProjectNotebookViewSchema.parse({ schema: 'project-notebook-view-v1', notebook: stored?.document ?? null, revision: stored?.revision ?? 0 });
+  }
+  async putNotebook(projectId: string, input: z.infer<typeof NotebookRequestSchema>): Promise<z.infer<typeof ProjectNotebookViewSchema>> {
+    await this.#project(projectId);
+    const notebook = ProjectNotebookSchema.parse({ schema: 'project-notebook-v1', projectId, revision: input.expectedRevision, content: input.content,
+      updatedAt: new Date(this.#timers.now()).toISOString(), updatedBy: 'owner' });
+    try {
+      const stored = await this.#o.hub.putNotebook(notebook, input.expectedRevision);
+      return ProjectNotebookViewSchema.parse({ schema: 'project-notebook-view-v1', notebook: stored.document, revision: stored.revision });
+    } catch (error) { if (statusOf(error) === 409) throw refuse(NOTEBOOK_CHANGED, 409); throw error; }
+  }
+  /** New thread from the owner (3.1): assigns the coordinator here when none, then the start path with receipts (D78). */
+  async createThread(projectId: string, input: ThreadCreateRequest): Promise<z.infer<typeof ThreadCreatedViewSchema>> {
+    const coordinatorDeviceId = await this.#coordinatorHere(projectId);
+    const started = await this.threads.start({ projectId, title: input.title, task: input.task, createdBy: 'owner', clientRequestId: input.clientRequestId, coordinatorDeviceId,
+      fixed: { ...(input.isolation ? { isolation: input.isolation } : {}), ...(input.modelId ? { modelId: input.modelId } : {}), ...(input.effort ? { effort: input.effort } : {}),
+        ...(input.deviceId ? { deviceId: input.deviceId } : {}) } });
+    return ThreadCreatedViewSchema.parse({ schema: 'thread-created-view-v1', threadId: started.threadId, state: started.state, placement: started.placement });
+  }
+  threadView(projectId: string, threadId: string): Promise<ThreadView> { return this.views.thread(projectId, threadId); }
+  async threadMessage(projectId: string, threadId: string, input: z.infer<typeof ThreadMessageRequestSchema>): Promise<{ repeated: boolean }> {
+    const result = await this.threads.message(projectId, threadId, 'owner', input.text, input.interrupt, input.clientMessageId);
+    return { repeated: result.repeated };
+  }
+  /** Stop from the thread page: `Stopped by you.` unless a reason is given; the coordinator is told (D28). */
+  stopThread(projectId: string, threadId: string, input?: z.infer<typeof ThreadStopRequestSchema>): Promise<void> {
+    return this.threads.stop(projectId, threadId, input?.reason || STOPPED_BY_YOU, true);
+  }
+  discardThread(projectId: string, threadId: string): Promise<void> { return this.threads.discard(projectId, threadId); }
+  allowTurns(projectId: string, threadId: string): Promise<void> { return this.threads.allowTurns(projectId, threadId); }
+  async mergePullRequest(projectId: string, threadId: string): Promise<MergeResultView> { this.#thread(projectId, threadId); return this.tracker.merge(threadId); }
+  async refreshPullRequest(projectId: string, threadId: string): Promise<void> { this.#thread(projectId, threadId); await this.tracker.refresh(threadId); }
+  answerDecision(projectId: string, decisionId: string, input: z.infer<typeof DecisionAnswerRequestSchema>): Promise<{ repeated: boolean }> {
+    return this.decisions.answer(projectId, decisionId, input);
+  }
+}
