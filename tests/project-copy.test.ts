@@ -126,10 +126,23 @@ test('verbatim notices, state reasons and turn-limit options', () => {
   expect(copy.queuedReason(6, null)).toBe('Queued: the project is at its limit of 6 running threads.');
   expect(copy.queuedReason(4, 'Mac mini')).toBe('Queued: Mac mini is at its limit of 4 running threads.');
   expect(copy.waitingForSlotReason(6, null)).toBe('Waiting for a free slot: the project is at its limit of 6 running threads.');
-  expect(copy.placementSummary({ runtime: 'Codex', modelLabel: 'GPT-5', effort: 'high', isolation: 'worktree', deviceName: 'Mac mini', fallback: 'Jev placement is not enabled yet.' }))
-    .toBe('Codex GPT-5 · high · Worktree · Mac mini · placed without Jev: Jev placement is not enabled yet.');
+  expect(copy.placementSummary({ runtime: 'Codex', modelLabel: 'GPT-5', effort: 'high', isolation: 'worktree', deviceName: 'Mac mini', fallback: 'authentication failed' }))
+    .toBe('Codex GPT-5 · high · Worktree · Mac mini · placed without Jev: authentication failed');
+  // Overrides (D50, D252).
+  expect(copy.overrideSummary({ changes: [{ field: 'effort', from: 'max', to: 'low' }] })).toBe('Effort changed from max to low.');
+  expect(copy.overrideSummary({ changes: [{ field: 'model', from: 'deep', to: 'deep-lite' }, { field: 'effort', from: 'max', to: 'low' }], note: '  Cheaper\n now. ' }))
+    .toBe('Model changed from deep to deep-lite. Effort changed from max to low. Note: Cheaper now.');
+  expect(copy.overrideSummary({ changes: [{ field: 'isolation', from: 'worktree', to: 'main' }, { field: 'device', from: 'dev_a', to: 'dev_b' }], restartedAs: 'thread_new' }))
+    .toBe('Isolation changed from worktree to main. Device changed from dev_a to dev_b. Restarted as thread_new.');
+  expect(copy.overrideSummary({ changes: [], restartedAs: 'thread_new', note: 'x'.repeat(400) })).toHaveLength(400);
+  expect([copy.restartedReason('thread_new'), copy.isRestarted('Restarted as thread_new.'), copy.isRestarted('Stopped by you.'), copy.isRestarted(undefined)])
+    .toEqual(['Restarted as thread_new.', true, false, false]);
+  expect([copy.MODEL_SAME_RUNTIME, copy.NEXT_TURN_FIELDS, copy.RESTART_OPEN_PULL_REQUEST, copy.RESTART_PUBLISHED_TO_MAIN, copy.THREAD_ALREADY_RESTARTED]).toEqual([
+    'From the next turn, the model must use the same runtime.', 'From the next turn, only the model and effort can change.', 'This thread has an open pull request.',
+    'This thread already published to main.', 'This thread was already restarted.']);
   // Placement copy is re-exported from decisions, never retyped (D135).
-  for (const name of ['NO_PLACEMENT', 'NO_THREAD_MODEL', 'LEAVE_GIT_MAIN', 'MAIN_NOT_AVAILABLE', 'REMOTE_NOT_AVAILABLE', 'UNKNOWN_PLACEMENT_MODEL', 'UNKNOWN_PLACEMENT_DEVICE', 'PLACEMENT_NOT_ENABLED'] as const) {
+  for (const name of ['NO_PLACEMENT', 'NO_THREAD_MODEL', 'LEAVE_GIT_MAIN', 'MAIN_NOT_AVAILABLE', 'REMOTE_NOT_AVAILABLE', 'UNKNOWN_PLACEMENT_MODEL', 'UNKNOWN_PLACEMENT_DEVICE',
+    'PLACEMENT_INCOMPATIBLE', 'PLACEMENT_INSTRUCTIONS', 'PLACEMENT_ISOLATION_CRITERIA', 'TASK_SHORTENED'] as const) {
     expect(copy[name]).toBe(decisions[name]);
   }
 });
@@ -139,7 +152,9 @@ test('Projects copy outside the brief texts never uses conversation vocabulary o
   samples.push(copy.worktreeSetupFailed('x'), copy.contextLinkSkipped('CLAUDE.md'), copy.contextUnreadable('broken'), copy.turnLimitQuestion('Fix login', 30),
     copy.accountMovedNotice('Work'), copy.coordinatorAccountMovedNotice('Work'), copy.coordinatorTurnTimedOut(1_200_000), copy.cannotRunHere('Codex'), copy.noTurnAccount('GPT-5', 'Mac mini', 'Codex needs login'), copy.notebookConflict(3, 'Plan'),
     copy.githubRefused('Validation Failed'), copy.noCoordinatorModel('Mac mini'), copy.threadSystemAppend({ projectName: 'Shop', cwd: '/w', isolation: 'main', baseBranch: 'main', deviceName: 'Mac mini' }),
-    copy.pullRequestBody({ summary: 'S', testCommand: null, title: 'T', runtime: 'R', modelLabel: 'M', effort: 'E', deviceName: 'D' }), copy.transcriptStaysOn('Mac mini'));
+    copy.pullRequestBody({ summary: 'S', testCommand: null, title: 'T', runtime: 'R', modelLabel: 'M', effort: 'E', deviceName: 'D' }), copy.transcriptStaysOn('Mac mini'),
+    ...Object.values(copy.PLACEMENT_INSTRUCTIONS), ...Object.values(copy.PLACEMENT_ISOLATION_CRITERIA), copy.PLACEMENT_INCOMPATIBLE.message, copy.restartedReason('thread_new'),
+    copy.overrideSummary({ changes: [{ field: 'model', from: 'deep', to: 'swift' }], note: 'Cheaper.', restartedAs: 'thread_new' }));
   // Every coordinator chat line, done and refused.
   for (const tool of COORDINATOR_TOOLS) {
     const input = { title: 'Fix login', question: 'Which database?', reason: 'Solved.', to: 'all', subject: 'Heads up' };

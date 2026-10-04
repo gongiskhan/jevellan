@@ -8,9 +8,10 @@ import type { Admission } from './admission.js';
 import type { ProjectMemoryReader, ProjectToolHandlers } from './bridge-tools.js';
 import { ProjectTools } from './bridge-tools.js';
 import {
-  DISCARD_REFUSED, MAIN_NOT_AVAILABLE, MESSAGE_ID_REUSED, MORE_TURNS, NO_CHANGES, OWNER_STOPPED_THREAD, PROCESS_UNCONFIRMED, TESTS_FAILED_THREE_TIMES, THREAD_ENDED,
-  THREAD_NOT_FOUND, TOOL_NOT_IN_TURN, TURN_FAILED, TURN_LIMIT_REACHED, TURN_TIMED_OUT, TURN_WITHOUT_REPORT, VERIFICATION_ATTEMPTS, WORKTREE_DISCARDED, accountMovedNotice,
-  cleanupFailed, messagesPrompt, taskPrompt, threadPrompt, threadStepFailed, threadSystemAppend, verificationFailurePrompt, worktreeSetupFailed, type ThreadTurnReason,
+  DISCARD_REFUSED, MAIN_NOT_AVAILABLE, MESSAGE_ID_REUSED, MORE_TURNS, NO_CHANGES, OWNER_STOPPED_THREAD, PROCESS_UNCONFIRMED, RESTART_OPEN_PULL_REQUEST, RESTART_PUBLISHED_TO_MAIN,
+  TESTS_FAILED_THREE_TIMES, THREAD_ALREADY_RESTARTED, THREAD_ENDED, THREAD_NOT_FOUND, TOOL_NOT_IN_TURN, TURN_FAILED, TURN_LIMIT_REACHED, TURN_TIMED_OUT, TURN_WITHOUT_REPORT,
+  VERIFICATION_ATTEMPTS, WORKTREE_DISCARDED, accountMovedNotice, cleanupFailed, isRestarted, messagesPrompt, taskPrompt, threadPrompt, threadStepFailed, threadSystemAppend,
+  verificationFailurePrompt, worktreeSetupFailed, type ThreadTurnReason,
 } from './copy.js';
 import type { DecisionItems } from './decision-items.js';
 import { firstLine } from './git.js';
@@ -70,7 +71,14 @@ export function deliveryRoute(state: ThreadState): 'ended' | 'running' | 'later'
 export function discardedReason(reason: string | undefined): string {
   return `${(reason ?? '').slice(0, 400 - WORKTREE_DISCARDED.length)}${WORKTREE_DISCARDED}`.trim();
 }
-export const isDiscarded = (reason: string | undefined): boolean => !!reason?.endsWith(WORKTREE_DISCARDED.trim());
+/** The worktree is gone: discarded, or removed by a restart (D252). */
+export const isDiscarded = (reason: string | undefined): boolean => !!reason?.endsWith(WORKTREE_DISCARDED.trim()) || isRestarted(reason);
+/** Why Restart is not allowed (brief 10): an open pull request, a publication to main, or an earlier restart (D252). */
+export function restartRefusal(thread: Pick<Thread, 'pr' | 'isolation' | 'publishedCommit' | 'stateReason'>): string | undefined {
+  if (thread.pr?.state === 'open') return RESTART_OPEN_PULL_REQUEST;
+  if (thread.isolation === 'main' && thread.publishedCommit) return RESTART_PUBLISHED_TO_MAIN;
+  return isRestarted(thread.stateReason) ? THREAD_ALREADY_RESTARTED : undefined;
+}
 const digest = (text: string) => createHash('sha256').update(text).digest('hex');
 const SEEN_MESSAGES = 200;
 
@@ -469,6 +477,22 @@ export class ThreadRunner {
       // An open turn-limit question no longer applies (D161).
       await this.#c.decisions.withdrawTurnLimit(stopped.projectId, stopped.id).catch(() => undefined);
       if (notify) await this.#tell(stopped.projectId, { kind: 'thread-interrupted', threadId: stopped.id, reason: 'stopped', message: OWNER_STOPPED_THREAD });
+    });
+  }
+  /**
+   * Restart (brief 10, D252): the thread ends with `reason` (`Restarted as {newId}.`): a running one stops without telling the
+   * coordinator (the restart tells it), an ended one keeps its state. Its worktree and local branch are then removed, keeping
+   * that reason (Discard would append to it). Repeating it changes nothing.
+   */
+  async restarted(reason: string): Promise<void> {
+    // A repeat, or a thread discarded before, has no worktree left.
+    const gone = isDiscarded(this.#thread().stateReason);
+    await this.stop(reason, false);
+    await this.#serial(async () => {
+      let thread = this.#thread();
+      if (thread.stateReason !== reason) thread = this.#set((current) => withState(current, current.state, reason));
+      if (gone || thread.isolation !== 'worktree' || !thread.cwd || thread.state === 'done') return;
+      await this.#cleanup(await this.#c.project(thread.projectId), thread);
     });
   }
   /** Discard (brief 8.2): removes the worktree and local branch of a stopped or failed worktree thread. */

@@ -28,6 +28,8 @@ export const NO_CHANGES = 'Concluded without changes.';
 /** Preformatted `thread-user-message` texts (brief 9.5, phase 7 detach; D35) start with these. */
 export const OWNER_STARTED_PREFIX = '[owner started thread "';
 export const OWNER_WORKED_PREFIX = '[owner worked on thread "';
+/** A restarted thread's reason reads `Restarted as {newId}.` (brief 10); the interface links the new thread. */
+export const RESTARTED_PREFIX = 'Restarted as ';
 
 /** ASCII branch slug: lowercase, non-alphanumerics collapsed to '-', trimmed, at most 40 characters, 'thread' when empty (D25). */
 export function slugify(title: string): string {

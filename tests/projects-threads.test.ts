@@ -454,7 +454,7 @@ test('placement phase gates: fixed main and foreign devices are refused with not
   expect((await f.app.roster()).devices.find((view) => view.device.id === f.app.device.deviceId)?.status).toBe('stale');
   f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'Placed here.' }), forThread());
   const created = await start(f, 'Default main', 'Work with the main default.');
-  expect(created).toMatchObject({ state: 'preparing', placement: `Scripted test runtime Fixture · high · Worktree · ${f.deviceName} · placed without Jev: Jev placement is not enabled yet.` });
+  expect(created).toMatchObject({ state: 'preparing', placement: `Scripted test runtime Fixture · high · Worktree · ${f.deviceName} · placed without Jev: no key configured` });
   await f.waitFor(() => f.thread(created.threadId).turns, (turns) => turns === 1);
   expect(f.thread(created.threadId)).toMatchObject({ isolation: 'worktree', ownerDeviceId: f.app.device.deviceId, cwd: f.homes.at('worktrees', 'project', created.threadId) });
 });

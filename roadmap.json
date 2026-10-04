@@ -208,5 +208,11 @@
     "title": "Projects: the interface",
     "why": "A Projects area in the web app (a sidebar section; a project page with the streamed coordinator chat, Waiting for you decision cards, thread rows, pull requests with a merge dialog, New thread, the notebook and project settings; a thread page with the transcript, report cards, Interrupt, Stop, Discard and Allow 10 more turns; the GitHub token card): PJ3 passes as 7 browser journeys in four layouts (28 of 28 in both matrix runs, 68 screenshots), the interface unit tests pass 27 of 27 and the full backend passed 1465 tests with 4 missing-key skips and 0 failures, all simulated (FakeRuntime coordinator and thread turns, fake GitHub server), while the vision checks were not run without the dedicated Claude token (a builder review of the screenshots found and fixed problems but does not replace them) and no single four-worker browser matrix run was green on the loaded machine (the heavy skeleton journeys pass alone); see docs/acceptance/PJ3.md.",
     "status": "complete-with-blockers"
+  },
+  {
+    "id": "projects-placement",
+    "title": "Projects: Jev placement and overrides",
+    "why": "Thread starts ask Jev the p-v1 placement questions (isolation, model, effort and device, each left out when fixed or with one option) with a redacted placement-state-v1 packet, take the most probable answers, map the effort, pick the best-ranked account and fall back deterministically with the recorded reason on any Jev failure, and the thread page adds Why, the Placed without Jev chip and Override (from the next turn or a restart, recorded on the hub, summarized to the coordinator and fed to later placements): PJ4 and PJ4b pass 3 of 3 integration cases with a scripted Jev fetch and 19 of 19 pure placement tests, the PJ4b browser journey passes in four layouts (16 screenshots), the full backend passed 1482 tests with 4 missing-key skips and 0 failures, and the browser matrix passed 196 of 196 with two workers (194 of 196 with four, two load timeouts that pass alone), all simulated (scripted and fixture Jev answers, FakeRuntime turns, fake GitHub server) with live Jev placement and the vision checks not run without the dedicated keys (a builder review of the screenshots found and fixed problems but does not replace them); see docs/acceptance/PJ4.md.",
+    "status": "complete-with-blockers"
   }
 ]

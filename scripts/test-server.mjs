@@ -201,9 +201,26 @@ async function improverDraft(input) {
     schema: 'handoff-v2', stretch: input.stretch, action: input.action, status: 'done', summary: 'A simulated improver draft.', evidence: [], findings: [], blockers: [], failedApproaches: [], proposedNext: null, changedFiles: [], result: { type, content } } }) });
   if (!response.ok) throw new Error('Improver fixture handoff failed.'); return { status: 'completed' };
 }
+// Thread placement (design 5.5 item 8): fixed distributions with the answer on top. A task marked `PJ4b fallback` gets 401, so
+// that thread is placed without Jev. The device is this hub's own key (the member's for PJ5 tasks), found by id or name, never
+// by position: criteria order is not a contract.
+function placementAnswers(body, state) {
+  if (state.thread.task.includes('PJ4b fallback')) return new Response(null, { status: 401 });
+  const answers = Object.fromEntries(Object.entries(body.questions).map(([id, question]) => {
+    const keys = Object.keys(question.criteria);
+    const choice = id === 'isolation' ? 'worktree' : id === 'effort' ? 'high' : id !== 'device' ? keys[0]
+      : state.thread.task.includes('PJ5') ? keys.find((key) => question.criteria[key].startsWith('Browser member:')) : keys.find((key) => key === application.device.deviceId);
+    if (!choice || !keys.includes(choice)) throw new Error('The browser fixture cannot answer this placement question.');
+    const top = { isolation: 0.8, effort: 0.6 }[id] ?? 0.7; const rest = Math.round(((1 - top) / Math.max(1, keys.length - 1)) * 1000) / 1000;
+    return [id, { type: 'choice', choice, probabilities: Object.fromEntries(keys.map((key) => [key, key === choice ? top : rest])), confidence: top }];
+  }));
+  return Response.json({ model: 'jev-browser-simulated', usage: { input_tokens: 40, output_tokens: 20 }, answers });
+}
 const decisionFetch = async (_url, init) => {
   if (init?.method === 'GET') return Response.json({ models: [{ name: 'jev-latest', description: 'Simulated browser fixture.', release_date: '2026-09-22' }] });
   const body = JSON.parse(init.body); const state = JSON.parse(body.state);
+  // Placement packets carry no conversation, so they are answered before anything reads one.
+  if (state.schema === 'placement-state-v1') return placementAnswers(body, state);
   const improver = improverAnswers(body, state);
   if (improver) return Response.json({ model: 'jev-browser-simulated', usage: { input_tokens: 25, output_tokens: 15 }, answers: improver });
   const composer = state.conversation.request === 'Exercise composer choices: explain the value.';
@@ -230,7 +247,10 @@ const application = new Application({ homes: new Homes(join(root, 'user', '.jeve
     // Simulated providers need no native sandbox; the host's own Codex sandbox check does not apply to them.
     runtime.capabilities = { ...runtime.capabilities, shell: true, readOnlyEnforced: true };
     runtime.probe = async () => ({ auth: 'ready', identity: { email: 'fixture@example.test' } });
-    runtime.listModels = async () => [{ id: runtime.id === 'claude' ? 'claude-fable-5-1' : 'gpt-fixture', label: runtime.id === 'claude' ? 'Fable' : 'GPT fixture', efforts: ['low', 'high'] }];
+    // Projects journeys also get Opus, a second Claude entry for the PJ4b next-turn override (same runtime); Fable stays first.
+    runtime.listModels = async () => runtime.id === 'claude'
+      ? [{ id: 'claude-fable-5-1', label: 'Fable', efforts: ['low', 'high'] }, ...(projectsMode ? [{ id: 'claude-opus-5-5', label: 'Opus', efforts: ['low', 'high'] }] : [])]
+      : [{ id: 'gpt-fixture', label: 'GPT fixture', efforts: ['low', 'high'] }];
     runtime.beginLogin = async (account) => {
       let state = 'pending'; let error; let completeAt;
       const complete = async () => { if (account.credential === 'shared') await context.saveSecret(account.id, `fixture-${randomUUID()}`); state = 'done'; };
@@ -453,6 +473,8 @@ if (projectsMode) {
     application.homes.account(runtime, id); await application.accounts.check(id); await application.accounts.discover(id);
   }
   await application.state.github.put(githubToken);
+  // A saved Jev key: every thread placement on this server asks the fake Jev above (PJ4b).
+  application.hub.vault.put('jev', `fixture-${randomUUID()}`);
   await application.projectHub.putNotebook({ schema: 'project-notebook-v1', projectId: 'projects_fixture', revision: 0, content: 'Prefer short greetings.\n', updatedAt: new Date().toISOString(), updatedBy: 'coordinator' }, 0);
   // A thread the member concluded yesterday, so Concluded is never empty; its transcript stays on the member.
   const ended = Date.now() - 86_400_000; const seeded = newId('thread', ended - 42 * 60_000); const title = 'Write the welcome copy';
@@ -462,6 +484,13 @@ if (projectsMode) {
     lastSummary: 'Wrote the welcome copy and checked it on the page.', turns: 3, createdAt: new Date(ended - 42 * 60_000).toISOString(), updatedAt: new Date(ended).toISOString(), endedAt: new Date(ended).toISOString() }, 1);
   // The offline fixture device holds this project's coordinator, so the page shows the offline notice (9.8).
   await new HubProjectAccess(application.hub, 'offline_browser_fixture').assignCoordinator('projects_offline', 'offline_browser_fixture', 0);
+  // PJ4b: a thread Jev placed and one placed without Jev, on their own project so the PJ3 journeys keep their counts. Both report
+  // progress after one turn and rest idle, without a pull request, so either may be overridden or restarted.
+  const placementOrigin = join(root, 'projects-placement-origin.git'); git(root, 'clone', '--bare', projectsOrigin, placementOrigin);
+  await save('projects_placement', 'Projects placement', { [hubId]: clone(placementOrigin, join(root, 'projects-placement')) }, 'main');
+  for (const [key, title, task] of [['placed', 'Tidy the README wording', 'PJ4b placed: tidy the README wording.'], ['fallback', 'Check the README links', 'PJ4b fallback: check the README links.']]) {
+    await application.projectWork.createThread('projects_placement', { schema: 'thread-create-request-v1', clientRequestId: `pj4b_${key}`, title, task });
+  }
 }
 // Improver journeys (J10/J12): a dedicated sandbox with a bare origin, and memory care limited to it.
 const improverOrigin = join(root, 'improver-origin.git'); git(root, 'init', '--bare', '-b', 'main', improverOrigin);

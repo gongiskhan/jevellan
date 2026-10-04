@@ -1,15 +1,20 @@
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
-import { ThreadMessageReceiptSchema, ThreadViewSchema, type QueuedMessage, type ThreadReport, type ThreadView } from '@jevellan/core/client';
+import {
+  ProjectWorkViewSchema, RESTARTED_PREFIX, ThreadMessageReceiptSchema, ThreadOverrideViewSchema, ThreadViewSchema, type PlacementField, type ProjectWorkView,
+  type QueuedMessage, type ThreadReport, type ThreadView,
+} from '@jevellan/core/client';
 import { ApiError, api, empty } from './api.js';
-import { Confirm, Markdown, useTask, type PageProps } from './components.js';
+import { Confirm, Markdown, Modal, Panel, useTask, type PageProps } from './components.js';
+import { deviceAvailable } from './devices.js';
 import { Icon } from './icons.js';
 import { MessageInput } from './message-delivery.js';
 import * as copy from './project-work-copy.js';
 import {
-  THREAD_POLL_AFTER_ACTION_MS, alignReports, composerBlock, dotClass, placementLine, pullRequestBadges, reportBadge, threadActions, threadLiveText,
-  threadPollDelay, transcriptNotice, withoutReportCalls,
+  THREAD_POLL_AFTER_ACTION_MS, alignReports, composerBlock, deviceBlock, dotClass, effortChoices, fallbackChip, mainIsolationBlock, nearestEffort, overrideForm,
+  overrideOffered, overrideReady, overrideRequest, placementLine, pullRequestBadges, reportBadge, restartedThread, threadActions, threadLiveText, threadPollDelay,
+  transcriptNotice, whyFields, withoutReportCalls, type OverrideForm, type OverrideMode,
 } from './project-work-model.js';
-import { RouteLink, Stamp, afterDialogs, failureText, runtimeNames, updated, useClientIds, useLocalError } from './project-work.js';
+import { RouteLink, Stamp, afterDialogs, deviceNames, failureText, runtimeNames, updated, useClientIds, useLocalError } from './project-work.js';
 import { TranscriptTurn } from './session-transcript.js';
 import { shortTime } from './time.js';
 
@@ -25,6 +30,8 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
   const [view, setView] = useState<ThreadView>();
   const [loadError, setLoadError] = useState('');
   const [confirming, setConfirming] = useState<'stop' | 'discard'>();
+  const [why, setWhy] = useState(false);
+  const [overriding, setOverriding] = useState(false);
   const latest = useRef<ThreadView | undefined>(undefined);
   const fastUntil = useRef(0);
   const kick = useRef(() => {});
@@ -40,7 +47,12 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
       reading = true;
       try {
         const next = await api(base, ThreadViewSchema, 'GET', undefined, { signal: controller.signal });
-        if (!controller.signal.aborted) { latest.current = next; setView(next); setLoadError(''); }
+        if (!controller.signal.aborted) {
+          // A state change seen here (a turn ended, publication started) refreshes the sidebar's counts now, not at its next poll.
+          const before = latest.current?.thread.state;
+          latest.current = next; setView(next); setLoadError('');
+          if (before !== undefined && before !== next.thread.state) updated();
+        }
       } catch (failure) {
         if (!controller.signal.aborted) {
           if (failure instanceof ApiError && failure.status === 401) onError(failure);
@@ -113,6 +125,8 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
   const actions = threadActions(view);
   const line = placementLine(thread, view, runtimeName(thread.runtime));
   const notice = transcriptNotice(view);
+  const fallback = fallbackChip(view.placement);
+  const restartedAs = restartedThread(thread.stateReason);
   const allowTurns = () => void allow.run(async (signal) => {
     setActionError('');
     acted(await api(`${base}/allow-turns`, ThreadViewSchema, 'POST', empty, { signal }));
@@ -123,25 +137,31 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
     <div className="conversation-page pw-page pw-thread-page" ref={page}>
       <div className="section-heading conversation-heading pw-heading pw-thread-heading">
         <h1 aria-labelledby={titleId}>{navigation}<span id={titleId} className="session-title" title={thread.title}>{thread.title}</span></h1>
-        {(actions.stop || actions.discard || actions.allowTurns) && (
-          <div className="actions">
-            {actions.stop && (
-              <button type="button" className="secondary pw-head-button" onClick={() => setConfirming('stop')}>
-                <Icon name="stop" size={15} /><span className="pw-head-label">{copy.STOP}</span>
-              </button>
-            )}
-            {actions.discard && (
-              <button type="button" className="secondary pw-head-button" onClick={() => setConfirming('discard')}>
-                <Icon name="trash" size={15} /><span className="pw-head-label">{copy.DISCARD}</span>
-              </button>
-            )}
-            {actions.allowTurns && (
-              <button type="button" className="pw-head-button pw-keep-label" disabled={allow.busy} onClick={allowTurns}>
-                <Icon name="plus" size={15} /><span className="pw-head-label">{copy.ALLOW_MORE_TURNS}</span>
-              </button>
-            )}
-          </div>
-        )}
+        <div className="actions">
+          <button type="button" className="secondary pw-head-button" aria-pressed={why} onClick={() => setWhy(!why)}>
+            <Icon name="why" size={15} /><span className="pw-head-label">{copy.WHY}</span>
+          </button>
+          {overrideOffered(view) && (
+            <button type="button" className="secondary pw-head-button" onClick={() => setOverriding(true)}>
+              <Icon name="tune" size={15} /><span className="pw-head-label">{copy.OVERRIDE}</span>
+            </button>
+          )}
+          {actions.stop && (
+            <button type="button" className="secondary pw-head-button" onClick={() => setConfirming('stop')}>
+              <Icon name="stop" size={15} /><span className="pw-head-label">{copy.STOP}</span>
+            </button>
+          )}
+          {actions.discard && (
+            <button type="button" className="secondary pw-head-button" onClick={() => setConfirming('discard')}>
+              <Icon name="trash" size={15} /><span className="pw-head-label">{copy.DISCARD}</span>
+            </button>
+          )}
+          {actions.allowTurns && (
+            <button type="button" className="pw-head-button pw-keep-label" disabled={allow.busy} onClick={allowTurns}>
+              <Icon name="plus" size={15} /><span className="pw-head-label">{copy.ALLOW_MORE_TURNS}</span>
+            </button>
+          )}
+        </div>
         <div className="conversation-meta pw-thread-meta">
           {back}
           <span className={`chip pw-state-chip pw-state-${thread.state}`}>
@@ -155,9 +175,14 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
               {pullRequestBadges(thread.pr).map((badge) => <span key={badge.text} className={`chip pw-badge pw-tone-${badge.tone}`}>{badge.text}</span>)}
             </>
           )}
+          {fallback && <span className="chip pw-badge pw-tone-warn pw-fallback-chip">{fallback}</span>}
         </div>
         <div className="pw-thread-details">
-          {thread.stateReason && <p className="pw-thread-reason">{thread.stateReason}</p>}
+          {thread.stateReason && (
+            <p className="pw-thread-reason">
+              {restartedAs ? <>{RESTARTED_PREFIX}<RouteLink href={`${project}/threads/${restartedAs}`} navigate={navigate}>{restartedAs}</RouteLink>.</> : thread.stateReason}
+            </p>
+          )}
           <p className="pw-placement-line" title={line}>{line}</p>
         </div>
       </div>
@@ -178,6 +203,10 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
       <ThreadComposer base={base} view={view} behind={behind} jump={jump} onError={onError}
         sent={() => { following.current = true; kick.current(); }} refused={() => kick.current()} />
       <div ref={bottom} />
+      {why && <WhyPanel view={view} data={data} close={() => setWhy(false)} />}
+      {overriding && (
+        <OverrideDialog props={props} view={view} projectId={projectId} close={() => setOverriding(false)} applied={() => { updated(); kick.current(); }} />
+      )}
       {confirming === 'stop' && (
         <ConfirmAction title={copy.STOP_THREAD_TITLE} action={copy.STOP} onError={onError} close={() => setConfirming(undefined)}
           body={thread.isolation === 'worktree' ? `${copy.STOP_THREAD_BODY} ${copy.STOP_KEEPS_WORKTREE}` : copy.STOP_THREAD_BODY}
@@ -322,5 +351,216 @@ function ThreadComposer({ base, view, behind, jump, sent, refused, onError }: {
         </fieldset>
       )}
     </form>
+  );
+}
+
+const FIELD_LABELS = { isolation: copy.ISOLATION, model: copy.MODEL, effort: copy.EFFORT, device: copy.DEVICE } as const satisfies Record<PlacementField, string>;
+/** Model labels as the Projects pages show them: `{runtime display name} {menu label}`, or the id of a model no longer in the menu. */
+const modelNames = (data: PageProps['data']) => {
+  const runtimeName = runtimeNames(data); const menu = data.config.configuration['x-jevellan'].menu;
+  return (modelId: string) => { const entry = menu.find((model) => model.id === modelId); return entry ? `${runtimeName(entry.runtime)} ${entry.label}` : modelId; };
+};
+
+/**
+ * Why (12.3): the placement record in the inspector. The source and the fixed fields, then each field with Jev's probabilities as
+ * small bars (the value the thread holds now marked), the requested and effective effort, eligible and excluded models and
+ * devices with their reasons, the account, the fallback error and the Jev calls (D255).
+ */
+function WhyPanel({ view, data, close }: { view: ThreadView; data: PageProps['data']; close(): void }) {
+  const { placement, thread } = view;
+  const modelName = useMemo(() => modelNames(data), [data]);
+  const deviceName = useMemo(() => deviceNames(data), [data]);
+  const label = (field: PlacementField, value: string) =>
+    field === 'isolation' ? value === 'main' ? copy.MAIN : copy.WORKTREE : field === 'model' ? modelName(value) : field === 'device' ? deviceName(value) : value;
+  const fixed = placement.fixed.map((field) => FIELD_LABELS[field]).join(', ');
+  const account = data.accounts.find((entry) => entry.account.id === placement.accountId)?.account.label ?? thread.accountLabel;
+  const ranks = (field: 'model' | 'device') => field === 'model'
+    ? { chosen: placement.modelId, eligible: placement.eligibleModels, excluded: placement.excludedModels.map((entry) => ({ id: entry.modelId, reason: entry.reason })) }
+    : { chosen: placement.deviceId, eligible: placement.eligibleDevices, excluded: placement.excludedDevices.map((entry) => ({ id: entry.deviceId, reason: entry.reason })) };
+  return (
+    <Panel title={copy.WHY_TITLE} eyebrow={thread.title} close={close}>
+      <div className="pw-why">
+        <section className="why-section">
+          <h3>{copy.WHY_PLACEMENT} <span className="why-source">{copy.PLACEMENT_SOURCES[placement.source]}</span></h3>
+          <p className="why-line">{fixed ? copy.fixedFields(fixed) : copy.FIXED_NONE}</p>
+          {placement.source === 'fallback' && placement.error && <p className="notice pw-why-error">{copy.placedWithoutJev(placement.error.message)}</p>}
+        </section>
+        {whyFields(placement).map(({ field, value, source, bars }) => {
+          const rank = field === 'model' || field === 'device' ? ranks(field) : undefined;
+          // With bars the eligible options are the bars; without them the list names every eligible option and marks the chosen one.
+          const listed = rank ? rank.eligible.filter((id) => !bars.some((bar) => bar.option === id)) : [];
+          const mapped = field === 'effort' && placement.effortRequested !== placement.effortEffective;
+          return (
+            <section className="why-section" key={field}>
+              <h3>{FIELD_LABELS[field]} <span className="why-source">{copy.FIELD_SOURCES[source]}</span></h3>
+              {mapped && <p className="why-line">{placement.effortRequested} → <b>{placement.effortEffective}</b> {copy.NEAREST_EFFORT}</p>}
+              {bars.map((bar) => (
+                <div className={`why-option${bar.chosen ? ' win' : ''}`} key={bar.option}>
+                  <span title={label(field, bar.option)}>{label(field, bar.option)}</span>
+                  <progress aria-label={`${label(field, bar.option)} ${copy.PROBABILITY}`} max={1} value={bar.p} />
+                  <span>{bar.p.toFixed(2)}</span>
+                </div>
+              ))}
+              {!bars.length && !mapped && !listed.includes(value) && <p className="why-line"><b>{label(field, value)}</b></p>}
+              {rank && (listed.length > 0 || rank.excluded.length > 0) && (
+                <ul className="why-rank">
+                  {listed.map((id) => (
+                    <li key={id} className={id === rank.chosen ? 'chosen' : undefined}>{label(field, id)}{id === rank.chosen ? ` · ${copy.CHOSEN}` : ''}</li>
+                  ))}
+                  {/* A field the owner fixed leaves every other option out as not chosen: listed plainly, never as a failure (D257). */}
+                  {rank.excluded.map((entry) => placement.fixed.includes(field)
+                    ? <li key={entry.id}>{label(field, entry.id)}</li>
+                    : <li key={entry.id} className="excluded">{label(field, entry.id)}: {entry.reason}</li>)}
+                </ul>
+              )}
+            </section>
+          );
+        })}
+        <section className="why-section">
+          <h3>{copy.ACCOUNT}</h3>
+          <p className="why-line"><b>{account}</b></p>
+        </section>
+        <section className="why-section why-jev">
+          <h3>{copy.JEV}</h3>
+          {placement.jevCalls.length ? placement.jevCalls.map((call, index) => (
+            <p key={index}>{copy.jevCallLine(call.returnedModel, call.usage.input_tokens + call.usage.output_tokens, call.latencyMs)}</p>
+          )) : <p>{placement.source === 'fallback' ? copy.NO_JEV_ANSWER : copy.NO_JEV_CALL}</p>}
+          <p>{copy.PLACED} <Stamp at={placement.decidedAt} /></p>
+        </section>
+      </div>
+    </Panel>
+  );
+}
+
+/**
+ * Override (12.3, brief 10): From the next turn changes the model (same runtime) and the effort of the thread's next turns;
+ * Restart with these choices stops this thread and starts a new one with the chosen fields fixed, refused with the server's
+ * reason (an open pull request, a thread already published to main or already restarted). The fields open on the thread's
+ * current choices; the project view gives the placement gates for Main and other devices. Refusals stay in the dialog (D255).
+ */
+function OverrideDialog({ props, view, projectId, close, applied }: { props: PageProps; view: ThreadView; projectId: string; close(): void; applied(): void }) {
+  const { data } = props;
+  const { error, setError, fail } = useLocalError(props.onError);
+  const task = useTask(fail);
+  const ids = useClientIds('override');
+  const [form, setForm] = useState<OverrideForm>(() => overrideForm(view));
+  const [work, setWork] = useState<ProjectWorkView>();
+  const nextNote = useId(); const restartNote = useId(); const isolationNote = useId(); const deviceNote = useId();
+  useEffect(() => {
+    const controller = new AbortController();
+    api(`/api/projects/${projectId}/work`, ProjectWorkViewSchema, 'GET', undefined, { signal: controller.signal, waitForHub: true })
+      .then(setWork, (failure: unknown) => { if (!controller.signal.aborted) fail(failure); });
+    return () => controller.abort();
+  }, [projectId, fail]);
+  const current = view.placement; const restart = form.mode === 'restart';
+  const modelName = modelNames(data);
+  const menu = data.config.configuration['x-jevellan'].menu;
+  // The thread's own model stays listed even if it was disabled since, so the field shows what the thread runs.
+  const listed = menu.filter((entry) => entry.enabled || entry.id === current.modelId);
+  const models = restart ? listed : listed.filter((entry) => entry.runtime === current.runtime);
+  const efforts = effortChoices(menu.find((entry) => entry.id === form.modelId)?.efforts, current.effortRequested);
+  const here = data.devices.currentDeviceId;
+  const devices = data.roster.devices.filter((row) => deviceAvailable(row, here) || row.device.id === form.deviceId);
+  const mainBlock = work ? mainIsolationBlock(work) : null;
+  const remoteBlock = work ? devices.map((row) => deviceBlock(work, row.device.id, here)).find((reason) => reason !== null) ?? null : null;
+  const change = (fields: Partial<OverrideForm>) => setForm((previous) => ({ ...previous, ...fields }));
+  // An effort the chosen model neither offers nor the thread requested moves to the model's nearest one.
+  const fitted = (next: OverrideForm): OverrideForm => {
+    const chosen = menu.find((entry) => entry.id === next.modelId);
+    if (!next.effort || !chosen || effortChoices(chosen.efforts, current.effortRequested).some((choice) => choice.effort === next.effort)) return next;
+    return { ...next, effort: nearestEffort(next.effort, chosen.efforts) };
+  };
+  const mode = (next: OverrideMode) => setForm((previous) => {
+    if (next === 'restart') return { ...previous, mode: next };
+    // The next turn keeps the runtime and always has a model and an effort.
+    const sameRuntime = menu.some((entry) => entry.id === previous.modelId && entry.runtime === current.runtime);
+    return fitted({ ...previous, mode: next, modelId: sameRuntime ? previous.modelId : current.modelId, effort: previous.effort || current.effortRequested });
+  });
+  const model = (modelId: string) => setForm((previous) => fitted({ ...previous, modelId }));
+  const ready = overrideReady(view, form) && (!restart || work !== undefined);
+  return (
+    <Modal title={copy.OVERRIDE} close={close}>
+      <form className="pw-override" onSubmit={(event) => {
+        event.preventDefault();
+        if (!ready) return;
+        void task.run(async (signal) => {
+          setError('');
+          const request = overrideRequest(view, form);
+          const result = await api(`/api/projects/${projectId}/threads/${view.thread.id}/override`, ThreadOverrideViewSchema, 'POST',
+            { ...request, clientRequestId: ids.id(request) }, { signal, waitForHub: true });
+          ids.done(); updated();
+          if (result.newThreadId) {
+            afterDialogs(props.message, copy.THREAD_RESTARTED); close();
+            props.navigate(`/projects/${projectId}/threads/${result.newThreadId}`);
+          } else { afterDialogs(props.message, copy.OVERRIDE_APPLIED); close(); applied(); }
+        });
+      }}>
+        <fieldset className="pw-override-modes">
+          <legend className="sr-only">{copy.OVERRIDE_MODES}</legend>
+          <label className={view.canOverride.nextTurn ? undefined : 'pw-disabled'}>
+            <input type="radio" name="pw-override-mode" checked={!restart} disabled={!view.canOverride.nextTurn} aria-describedby={nextNote}
+              onChange={() => mode('next-turn')} />{copy.FROM_NEXT_TURN}
+          </label>
+          <p className="pw-field-note pw-radio-note" id={nextNote}>{view.canOverride.nextTurn ? copy.NEXT_TURN_HELP : copy.THREAD_ENDED}</p>
+          <label className={view.canOverride.restart ? undefined : 'pw-disabled'}>
+            <input type="radio" name="pw-override-mode" checked={restart} disabled={!view.canOverride.restart} aria-describedby={restartNote}
+              onChange={() => mode('restart')} />{copy.RESTART_WITH_CHOICES}
+          </label>
+          <p className={`pw-field-note pw-radio-note${view.canOverride.restart ? '' : ' pw-refused'}`} id={restartNote}>
+            {view.canOverride.restart ? copy.RESTART_HELP : view.canOverride.restartReason}
+          </p>
+        </fieldset>
+        <fieldset className="pw-fields" disabled={restart && !work}>
+          <div className="form-grid pw-override-fields">
+            {restart && (
+              <div className="pw-field">
+                <label>{copy.ISOLATION}
+                  <select value={form.isolation} aria-describedby={mainBlock ? isolationNote : undefined}
+                    onChange={(event) => change({ isolation: event.target.value as OverrideForm['isolation'] })}>
+                    <option value="">{copy.AUTOMATIC}</option>
+                    <option value="worktree">{copy.WORKTREE}</option>
+                    <option value="main" disabled={!!mainBlock}>{copy.MAIN}</option>
+                  </select>
+                </label>
+                {mainBlock && <p className="pw-field-note" id={isolationNote}>{mainBlock}</p>}
+              </div>
+            )}
+            <label>{copy.MODEL}
+              <select value={form.modelId} onChange={(event) => model(event.target.value)}>
+                {restart && <option value="">{copy.AUTOMATIC}</option>}
+                {models.map((entry) => <option key={entry.id} value={entry.id}>{modelName(entry.id)}</option>)}
+              </select>
+            </label>
+            <label>{copy.EFFORT}
+              <select value={form.effort} onChange={(event) => change({ effort: event.target.value as OverrideForm['effort'] })}>
+                {restart && <option value="">{copy.AUTOMATIC}</option>}
+                {efforts.map((choice) => <option key={choice.effort} value={choice.effort}>{choice.runsAs ? copy.effortRunsAs(choice.effort, choice.runsAs) : choice.effort}</option>)}
+              </select>
+            </label>
+            {restart && (
+              <div className="pw-field">
+                <label>{copy.DEVICE}
+                  <select value={form.deviceId} aria-describedby={remoteBlock ? deviceNote : undefined} onChange={(event) => change({ deviceId: event.target.value })}>
+                    <option value="">{copy.AUTOMATIC}</option>
+                    {devices.map((row) => (
+                      <option key={row.device.id} value={row.device.id} disabled={!work || deviceBlock(work, row.device.id, here) !== null}>{row.device.name}</option>
+                    ))}
+                  </select>
+                </label>
+                {remoteBlock && <p className="pw-field-note" id={deviceNote}>{remoteBlock}</p>}
+              </div>
+            )}
+          </div>
+          <label>{copy.OVERRIDE_NOTE}
+            <textarea rows={2} maxLength={400} value={form.note} placeholder={copy.OVERRIDE_NOTE_PLACEHOLDER} onChange={(event) => change({ note: event.target.value })} />
+          </label>
+        </fieldset>
+        {error && <p className="error">{error}</p>}
+        <div className="form-actions">
+          <button type="button" className="secondary" onClick={close}>{copy.CANCEL}</button>
+          <button className={restart ? 'danger' : undefined} disabled={task.busy || !ready}>{task.busy ? copy.APPLYING : copy.APPLY}</button>
+        </div>
+      </form>
+    </Modal>
   );
 }

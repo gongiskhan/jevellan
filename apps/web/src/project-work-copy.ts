@@ -238,6 +238,38 @@ export const PR_MERGED = 'Merged';
 export const PR_CLOSED = 'Closed';
 export const OPEN_PULL_REQUEST = 'Open the pull request on GitHub';
 
+// 12.3 Override modal (D255): what each choice does, the note, and what happens after Apply.
+export const OVERRIDE_MODES = 'When the choices apply';
+export const NEXT_TURN_HELP = 'The model and effort change for the next turn; a running turn finishes as it started.';
+export const RESTART_HELP = 'This thread stops and its worktree is removed. A new thread with the same title and task starts with these choices.';
+export const OVERRIDE_NOTE = 'Note (optional)';
+export const OVERRIDE_NOTE_PLACEHOLDER = 'Why this change? The coordinator and later placements read it.';
+export const APPLYING = 'Applying…';
+/** An effort the chosen model does not offer runs as its nearest offered effort (the server maps it the same way). */
+export const effortRunsAs = (effort: string, runsAs: string): string => `${effort} (runs as ${runsAs})`;
+export const OVERRIDE_APPLIED = 'The next turn uses your choices.';
+export const THREAD_RESTARTED = 'The thread restarted with your choices.';
+
+// 12.3 Why panel: the placement record (brief 5.8) field by field (D255).
+export const WHY_TITLE = 'Why this placement';
+export const WHY_PLACEMENT = 'Placement';
+export const PLACEMENT_SOURCES = { jev: 'Jev', fixed: 'fixed', fallback: 'without Jev' } as const;
+/** How one field was decided: Jev's answer, a fixed field, the only option left, the fallback rule, or a later change by the owner. */
+export const FIELD_SOURCES = { jev: 'Jev', fixed: 'fixed', only: 'only option', fallback: 'fallback rule', changed: 'changed by you' } as const;
+export const fixedFields = (fields: string): string => `Fixed: ${fields}`;
+export const FIXED_NONE = 'Fixed: none';
+export const ACCOUNT = 'Account';
+export const PROBABILITY = 'probability';
+/** After `{requested} → {effective}` when the model does not offer the requested effort. */
+export const NEAREST_EFFORT = '(nearest effort this model supports)';
+export const CHOSEN = 'chosen';
+export const JEV = 'Jev';
+export const jevCallLine = (returnedModel: string, tokens: number, latencyMs: number): string => `Placement · ${returnedModel} · ${tokens} tokens · ${latencyMs} ms`;
+export const NO_JEV_CALL = 'No Jev call was needed for this placement.';
+export const NO_JEV_ANSWER = 'No Jev answer was used for this placement.';
+/** Before the decision time, which reads like the project chat's timestamps (`Oct 4, 20:33:12`). */
+export const PLACED = 'Placed';
+
 // 12.4 Settings, Git
 export const GITHUB_TOKEN = 'GitHub token';
 export const savedUpdated = (date: string): string => `Saved · updated ${date}`;

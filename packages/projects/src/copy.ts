@@ -1,11 +1,11 @@
-import { OWNER_STARTED_PREFIX, OWNER_WORKED_PREFIX, type CoordinatorEvent, type Isolation, type ThreadReport, type ThreadState } from '@jevellan/core';
+import { OWNER_STARTED_PREFIX, OWNER_WORKED_PREFIX, RESTARTED_PREFIX, type CoordinatorEvent, type Isolation, type PlacementOverride, type ThreadReport, type ThreadState } from '@jevellan/core';
 import { firstLine, tail } from './git.js';
 
 // Every brief-verbatim Projects string (brief 9) and the server copy of phase 1. Pure functions only.
 // Placement copy lives in @jevellan/decisions (D135) and is re-exported here, never retyped.
 export {
-  ACCOUNT_REASON_TEXT, LEAVE_GIT_MAIN, MAIN_NOT_AVAILABLE, NOT_CHOSEN_REASON, NO_PLACEMENT, NO_THREAD_MODEL, PLACEMENT_NOT_ENABLED,
-  REMOTE_GATE_REASON, REMOTE_NOT_AVAILABLE, UNKNOWN_PLACEMENT_DEVICE, UNKNOWN_PLACEMENT_MODEL,
+  ACCOUNT_REASON_TEXT, LEAVE_GIT_MAIN, MAIN_NOT_AVAILABLE, NOT_CHOSEN_REASON, NO_PLACEMENT, NO_THREAD_MODEL, PLACEMENT_INCOMPATIBLE, PLACEMENT_INSTRUCTIONS,
+  PLACEMENT_ISOLATION_CRITERIA, REMOTE_GATE_REASON, REMOTE_NOT_AVAILABLE, TASK_SHORTENED, UNKNOWN_PLACEMENT_DEVICE, UNKNOWN_PLACEMENT_MODEL,
 } from '@jevellan/decisions';
 export { ASK_USER_OPTIONS, NEEDS_DECISION_QUESTION, NO_CHANGES } from '@jevellan/core';
 
@@ -303,9 +303,29 @@ export function coordinatorToolSummary(tool: string, input: unknown, outcome: To
     default: return line(`Used ${tool}`, `use ${tool}`);
   }
 }
-/** One line from the start result (3.1 step 2j); fallback placements say so (D82). */
+/** One line from the start result (3.1 step 2j); fallback placements say why (brief 9.8). */
 export function placementSummary(input: { runtime: string; modelLabel: string; effort: string; isolation: Isolation; deviceName: string; fallback?: string | undefined }): string {
   return `${input.runtime} ${input.modelLabel} · ${input.effort} · ${input.isolation === 'worktree' ? 'Worktree' : 'Main'} · ${input.deviceName}${input.fallback ? ` · placed without Jev: ${input.fallback}` : ''}`;
+}
+
+// Placement overrides (brief 10, 12.3; D50, D252)
+export const MODEL_SAME_RUNTIME = 'From the next turn, the model must use the same runtime.';
+export const NEXT_TURN_FIELDS = 'From the next turn, only the model and effort can change.';
+export const RESTART_OPEN_PULL_REQUEST = 'This thread has an open pull request.';
+export const RESTART_PUBLISHED_TO_MAIN = 'This thread already published to main.';
+export const THREAD_ALREADY_RESTARTED = 'This thread was already restarted.';
+/** The old thread's reason after a restart: `Restarted as {newId}.` (brief 10); the prefix is shared with the interface. */
+export const restartedReason = (threadId: string): string => `${RESTARTED_PREFIX}${threadId}.`;
+export const isRestarted = (reason: string | undefined): boolean => !!reason?.startsWith(RESTARTED_PREFIX);
+const OVERRIDE_FIELDS = { isolation: 'Isolation', model: 'Model', effort: 'Effort', device: 'Device' } as const;
+/**
+ * The coordinator's `placement-override` summary (D50): `Model changed from {from} to {to}.` per change, joined with spaces, a restart's
+ * `Restarted as {newId}.` (D252), then ` Note: {note}`; at most 400 characters.
+ */
+export function overrideSummary(input: { changes: PlacementOverride['changes']; note?: string | undefined; restartedAs?: string | undefined }): string {
+  const sentences = [...input.changes.map((change) => `${OVERRIDE_FIELDS[change.field]} changed from ${change.from} to ${change.to}.`), ...(input.restartedAs ? [restartedReason(input.restartedAs)] : [])];
+  const note = oneLine(input.note ?? '');
+  return `${sentences.join(' ')}${note ? ` Note: ${note}` : ''}`.trim().slice(0, 400);
 }
 
 // Turn-limit decision item (brief 8.2; question text D142)

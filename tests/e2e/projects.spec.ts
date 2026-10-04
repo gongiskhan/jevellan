@@ -4,10 +4,11 @@ import { ProjectWorkViewSchema, RuntimeListSchema, ThreadViewSchema, type Thread
 import { expect, test } from './fixtures.js';
 import { openSidebar } from './navigation.js';
 
-// PJ3 (brief 13) on the --projects fixture servers (scripts/test-server.mjs, design 5.5): a GitHub-shaped project with a
-// fake GitHub and scripted coordinator and thread turns; Git, worktrees, the bridge, the ledgers and pull requests are
-// real. The journeys build on one fresh server's state in order (the greeting thread's pull request is merged in the
-// fourth and the token is removed only in the last), so the file runs serially and stops at the first failure.
+// PJ3 and PJ4b (brief 13) on the --projects fixture servers (scripts/test-server.mjs, design 5.5): a GitHub-shaped project
+// with a fake GitHub, a fake Jev and scripted coordinator and thread turns; Git, worktrees, the bridge, the ledgers, placement
+// and pull requests are real. The journeys build on one fresh server's state in order (the greeting thread's pull request is
+// merged in the fourth and the token is removed and restored in the seventh), so the file runs serially and stops at the
+// first failure.
 test.describe.configure({ mode: 'serial', timeout: 600_000 });
 
 const layout = (info: TestInfo) => String(info.project.metadata.layout ?? info.project.name);
@@ -64,6 +65,7 @@ async function placementSummary(page: Page, view: ThreadView) {
 /**
  * Evidence for one step: transient confirmations are read by the journey first, then dismissed so they never cover the
  * screen; the layout must not scroll sideways. Pages are captured whole, dialogs and panels as the viewport shows them.
+ * The file stem starts with the journey that took it (`PJ3`, `PJ4b`), the first word of the test title.
  */
 async function shot(page: Page, name: string, fullPage = true) {
   const toasts = page.locator('.toast:not(.hub-wait)');
@@ -72,10 +74,11 @@ async function shot(page: Page, name: string, fullPage = true) {
   // slides under it would show its hover state (a second "selected" sidebar row). The corner hovers nothing.
   await page.mouse.move(0, 0);
   await expect(toasts).toHaveCount(0);
-  // Neither the page nor the side column (a scroll container beside the chat) may scroll sideways.
+  // Neither the page, the side column (a scroll container beside the chat) nor an open panel's heading may scroll sideways.
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth
-    && [...document.querySelectorAll('.pw-side')].every((side) => side.scrollWidth <= side.clientWidth))).toBe(true);
-  await page.screenshot({ path: `docs/acceptance/screenshots/PJ3-${name}-${layout(test.info())}.png`, fullPage });
+    && [...document.querySelectorAll('.pw-side, .panel-heading')].every((box) => box.scrollWidth <= box.clientWidth))).toBe(true);
+  const journey = test.info().title.split(' ', 1)[0];
+  await page.screenshot({ path: `docs/acceptance/screenshots/${journey}-${name}-${layout(test.info())}.png`, fullPage });
 }
 
 /**
@@ -272,7 +275,7 @@ test('PJ3 a running thread shows its transcript, report card and accepts an inte
   await expect(page.getByRole('button', { name: 'Discard', exact: true })).toHaveCount(0);
   await shot(page, 'thread-running');
 
-  // Back on the project page the thread is a Running row with its meta; the sidebar counts it.
+  // Back on the project page the thread is a Running row with its meta; the sidebar counts it while its turn runs.
   await page.getByRole('link', { name: 'Back to the project', exact: true }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Projects fixture', exact: true })).toBeVisible();
   if (phone(info)) await tap(page, tab(page, 'Threads'));
@@ -296,6 +299,20 @@ test('PJ3 a running thread shows its transcript, report card and accepts an inte
   await expect(page.getByRole('checkbox', { name: 'Interrupt current turn', exact: true })).toHaveCount(0);
   await expect(message).toHaveValue('');
   await shot(page, 'thread-report');
+
+  // Why on a thread whose title is longer than the panel: the title in the eyebrow truncates, while the panel title and Close
+  // stay whole and the heading never scrolls sideways.
+  await tap(page, page.getByRole('button', { name: 'Why', exact: true }));
+  const why = page.getByRole('dialog', { name: 'Why this placement', exact: true });
+  await expect(why.locator('.panel-eyebrow')).toHaveText(LONG_TITLE);
+  expect(await why.locator('.panel-heading').evaluate((heading) => {
+    const box = (selector: string) => heading.querySelector(selector)!.getBoundingClientRect();
+    const title = heading.querySelector('h2')!;
+    return heading.scrollWidth <= heading.clientWidth && title.scrollWidth <= title.clientWidth
+      && box('.panel-eyebrow').right <= box('h2').left && box('h2').right <= box('button').left;
+  })).toBe(true);
+  await tap(page, why.getByRole('button', { name: 'Close panel', exact: true }));
+  await expect(why).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 
@@ -330,6 +347,7 @@ test('PJ3 a pull request merges through the modal and moves to Concluded', async
   await expect(merge).toBeEnabled(); await expect(merge).not.toHaveAttribute('title');
   await shot(page, 'pull-requests');
 
+  const turnsBefore = (await work(page)).coordinator.session?.turns ?? 0;
   await tap(page, merge);
   const dialog = page.getByRole('dialog', { name: 'Squash and merge #1?', exact: true });
   await expect(dialog.locator('.pw-confirm-body')).toHaveText("Add a greeting will be squashed into main. The thread's worktree is removed afterwards.", LONG);
@@ -342,6 +360,15 @@ test('PJ3 a pull request merges through the modal and moves to Concluded', async
   const concluded = region(page, 'Concluded');
   await expect(concluded.getByRole('link', { name: /^Add a greeting/ }).locator('.pw-outcome')).toHaveText('Merged #1', LONG);
   await expect(concluded.locator('.pw-section-heading')).toHaveText('Concluded 2');
+  // The merge reaches the coordinator as an event. The capture waits until it has answered and stays idle (two reads a second
+  // apart), so its working line cannot come or go while the full page is taken (a page that moved mid-capture was cut at the top).
+  let settled = -1;
+  await expect.poll(async () => {
+    const { coordinator } = await work(page);
+    const turns = coordinator.state === 'idle' ? coordinator.session?.turns ?? 0 : -1;
+    const same = turns > turnsBefore && turns === settled; settled = turns; return same;
+  }, { ...LONG, intervals: [1_000] }).toBe(true);
+  await expect(page.locator('.pw-chip')).toHaveText('Idle', LONG);
   await shot(page, 'concluded');
   const merged = await threadView(page, await threadId(page, 'Add a greeting'));
   expect({ state: merged.thread.state, pr: merged.thread.pr?.state }).toEqual({ state: 'done', pr: 'merged' });
@@ -467,5 +494,147 @@ test('PJ3 the GitHub token card saves, replaces and removes the token', async ({
   } finally {
     await control('/projects/github-token', { schema: 'fixture-github-token-v1', saved: true });
   }
+  expect(errors).toEqual([]);
+});
+
+test('PJ4b the Why panel explains placement and overrides apply', async ({ page }, info) => {
+  const errors = await begin(page);
+  // The fixture placed two threads when it started (design 5.5): one through the fake Jev, one whose Jev call was refused (401).
+  // Both reported progress after one turn and rest idle without a pull request.
+  const placementProject = '/api/projects/projects_placement';
+  const view = async (id: string) => ThreadViewSchema.parse(await read(page, `${placementProject}/threads/${id}`));
+  const idle = async () => ProjectWorkViewSchema.parse(await read(page, `${placementProject}/work`)).threads.filter((thread) => thread.state === 'idle');
+  await expect.poll(async () => (await idle()).map((thread) => thread.title).sort(), LONG).toEqual(['Check the README links', 'Tidy the README wording']);
+  const placedId = (await idle()).find((thread) => thread.title === 'Tidy the README wording')!.id;
+  const fallbackId = (await idle()).find((thread) => thread.title === 'Check the README links')!.id;
+  const claude = await runtimeName(page, 'claude'); const codex = await runtimeName(page, 'codex');
+  const openThread = async (title: string) => {
+    if (phone(info)) await tap(page, tab(page, 'Threads'));
+    await region(page, 'Running').getByRole('link', { name: new RegExp(`^${title}`) }).click();
+    await expect(page.getByRole('heading', { level: 1, name: title, exact: true })).toBeVisible();
+  };
+  const button = (name: string) => page.getByRole('button', { name, exact: true });
+  const placementLine = (thread: ThreadView) =>
+    `${claude} · ${thread.thread.modelLabel} · ${thread.thread.effort} effort · ${thread.thread.accountLabel} · Worktree on ${thread.thread.branch} · ${thread.deviceName}`;
+
+  // Idle threads are listed under Running on the project page, but the sidebar never calls them running.
+  await expect(projectRow(await projectsSection(page), 'Projects placement').locator('.pw-sidebar-running')).toHaveCount(0);
+
+  // Why: the placement record field by field, Jev's probabilities as bars with the chosen option marked, and what was left out.
+  await openProject(page, 'Projects placement');
+  await openThread('Tidy the README wording');
+  const placed = await view(placedId);
+  expect(placed.placement).toMatchObject({ source: 'jev', fixed: [], modelId: 'claude-fable', effortRequested: 'high', effortEffective: 'high' });
+  await expect(page.locator('.pw-placement-line')).toHaveText(placementLine(placed));
+  await expect(page.locator('.pw-fallback-chip')).toHaveCount(0);
+  const why = button('Why');
+  await tap(page, why); await expect(why).toHaveAttribute('aria-pressed', 'true');
+  const panel = page.getByRole('dialog', { name: 'Why this placement', exact: true });
+  await expect(panel.locator('.panel-eyebrow')).toHaveText('Tidy the README wording');
+  const section = (name: string) => panel.locator('.why-section').filter({ has: page.locator('h3', { hasText: new RegExp(`^${name}`) }) });
+  await expect(section('Placement').locator('h3')).toHaveText('Placement Jev');
+  await expect(section('Placement').locator('.why-line')).toHaveText('Fixed: none');
+  await expect(section('Isolation').locator('h3')).toHaveText('Isolation only option');
+  await expect(section('Model').locator('h3')).toHaveText('Model Jev');
+  await expect(section('Model').locator('.why-option > span:first-child')).toHaveText([`${claude} Fable`, `${claude} Opus`, `${codex} GPT`]);
+  await expect(section('Model').locator('.why-option > span:last-child')).toHaveText(['0.70', '0.15', '0.15']);
+  await expect(section('Model').locator('.why-option.win > span:first-child')).toHaveText(`${claude} Fable`);
+  const sonnet = placed.placement.excludedModels.find((entry) => entry.modelId === 'claude-sonnet')!;
+  await expect(section('Model').locator('.why-rank li.excluded')).toHaveText([`${claude} Sonnet: ${sonnet.reason}`]);
+  await expect(section('Effort').locator('.why-option > span:first-child')).toHaveText(['high', 'low', 'medium', 'xhigh', 'max']);
+  await expect(section('Effort').locator('.why-option.win > span:last-child')).toHaveText('0.60');
+  await expect(section('Device').locator('h3')).toHaveText('Device only option');
+  await expect(section('Device').locator('.why-rank li.chosen')).toHaveText(`${placed.deviceName} · chosen`);
+  await expect(section('Device').locator('.why-rank li.excluded')).toHaveText([
+    'Browser member: not available until remote threads exist', 'Offline fixture: not available until remote threads exist']);
+  await expect(section('Account').locator('.why-line')).toHaveText(placed.thread.accountLabel);
+  await expect(panel.locator('.why-jev p').first()).toHaveText(/^Placement · jev-browser-simulated · 60 tokens · \d+ ms$/);
+  await shot(page, 'why-panel', false);
+  await tap(page, panel.getByRole('button', { name: 'Close panel', exact: true }));
+  await expect(why).toHaveAttribute('aria-pressed', 'false');
+
+  // A thread placed without Jev says why in its header (9.8), and its Why panel shows the recorded error.
+  await page.getByRole('link', { name: 'Back to the project', exact: true }).click();
+  await openThread('Check the README links');
+  const fallback = await view(fallbackId);
+  expect(fallback.placement).toMatchObject({ source: 'fallback', error: { kind: 'auth', message: 'authentication failed' } });
+  expect(fallback.placement.probabilities).toBeUndefined();
+  await expect(page.locator('.pw-fallback-chip')).toHaveText('Placed without Jev: authentication failed');
+  await shot(page, 'fallback-chip');
+  await tap(page, why);
+  await expect(section('Placement').locator('h3')).toHaveText('Placement without Jev');
+  await expect(section('Placement').locator('.notice')).toHaveText('Placed without Jev: authentication failed');
+  await expect(section('Model').locator('h3')).toHaveText('Model fallback rule');
+  await expect(section('Effort').locator('.why-line')).toHaveText('medium → high (nearest effort this model supports)');
+  await expect(panel.locator('.why-jev p').first()).toHaveText('No Jev answer was used for this placement.');
+  await tap(page, panel.getByRole('button', { name: 'Close panel', exact: true }));
+
+  // From the next turn: the model only among the same runtime's entries, and the effort. The next turn runs with them.
+  await page.getByRole('link', { name: 'Back to the project', exact: true }).click();
+  await openThread('Tidy the README wording');
+  await tap(page, button('Override'));
+  let dialog = page.getByRole('dialog', { name: 'Override', exact: true });
+  await expect(dialog.getByRole('radio', { name: 'From the next turn', exact: true })).toBeChecked();
+  await expect(dialog.getByRole('radio', { name: 'Restart with these choices', exact: true })).toBeEnabled();
+  const model = dialog.getByRole('combobox', { name: 'Model', exact: true }); const effort = dialog.getByRole('combobox', { name: 'Effort', exact: true });
+  await expect(model.locator('option')).toHaveText([`${claude} Fable`, `${claude} Opus`]);
+  await expect(model).toHaveValue('claude-fable'); await expect(effort).toHaveValue('high');
+  const apply = dialog.getByRole('button', { name: 'Apply', exact: true });
+  await expect(apply).toBeDisabled();
+  await model.selectOption({ label: `${claude} Opus` }); await effort.selectOption('low');
+  await expect(effort.locator('option')).toHaveText(['low', 'high']);
+  await dialog.getByRole('textbox', { name: 'Note (optional)', exact: true }).fill('Opus is enough for wording.');
+  await expect(apply).toBeEnabled();
+  await shot(page, 'override-modal', false);
+  await apply.click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole('status').filter({ hasText: 'The next turn uses your choices.' })).toBeVisible();
+  const message = page.getByRole('textbox', { name: 'Message this thread', exact: true });
+  await message.fill('Please go on with the wording.'); await message.press('Enter');
+  await expect(page.getByRole('region', { name: 'Report · turn 2', exact: true })).toBeVisible(LONG);
+  await expect(page.locator('.pw-state-chip')).toHaveText('Idle', LONG);
+  const overridden = await view(placedId);
+  expect(overridden.placement).toMatchObject({ modelId: 'claude-opus', model: 'claude-opus-5-5', effortRequested: 'low', effortEffective: 'low', source: 'jev' });
+  expect(overridden.thread).toMatchObject({ modelLabel: 'Opus', effort: 'low', turns: 2 });
+  await expect(page.locator('.pw-placement-line')).toHaveText(placementLine(overridden));
+  await expect(page.locator('.pw-placement-line')).toContainText(`${claude} · Opus · low effort · `);
+  // Jev's probabilities stay; the panel marks what runs now as the owner's change.
+  await tap(page, why);
+  await expect(section('Model').locator('h3')).toHaveText('Model changed by you');
+  await expect(section('Model').locator('.why-option.win > span:first-child')).toHaveText(`${claude} Opus`);
+  await tap(page, panel.getByRole('button', { name: 'Close panel', exact: true }));
+
+  // Restart with these choices: a new thread with the same title and task, the shown fields fixed; the old one links it.
+  await tap(page, button('Override'));
+  dialog = page.getByRole('dialog', { name: 'Override', exact: true });
+  await dialog.getByRole('radio', { name: 'Restart with these choices', exact: true }).check();
+  const isolation = dialog.getByRole('combobox', { name: 'Isolation', exact: true });
+  await expect(isolation).toHaveValue('worktree'); await expect(isolation).toHaveAccessibleDescription('Main isolation is not available yet.');
+  await expect(dialog.getByRole('combobox', { name: 'Device', exact: true })).toHaveValue(placed.thread.ownerDeviceId);
+  await expect(model.locator('option')).toHaveText(['Automatic', `${claude} Fable`, `${claude} Opus`, `${codex} GPT`]);
+  await expect(model).toHaveValue('claude-opus'); await expect(effort).toHaveValue('low');
+  await model.selectOption({ label: `${claude} Fable` }); await effort.selectOption('high');
+  await dialog.getByRole('button', { name: 'Apply', exact: true }).click();
+  await expect(page).not.toHaveURL(new RegExp(`/threads/${placedId}$`), LONG);
+  await expect(page).toHaveURL(/\/projects\/projects_placement\/threads\/thread_[^/]+$/);
+  const restartedId = new URL(page.url()).pathname.split('/')[4]!;
+  await expect(page.getByRole('heading', { level: 1, name: 'Tidy the README wording', exact: true })).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: 'The thread restarted with your choices.' })).toBeVisible();
+  const restarted = await view(restartedId);
+  expect(restarted.placement).toMatchObject({ source: 'fixed', modelId: 'claude-fable', effortRequested: 'high', isolation: 'worktree' });
+  expect([...restarted.placement.fixed].sort()).toEqual(['device', 'effort', 'isolation', 'model']);
+  await expect(page.locator('.pw-state-chip')).toHaveText('Idle', LONG);
+  await page.goBack();
+  await expect(page).toHaveURL(new RegExp(`/threads/${placedId}$`));
+  const reason = page.locator('.pw-thread-reason');
+  await expect(reason).toHaveText(`Restarted as ${restartedId}.`);
+  await expect(reason.getByRole('link', { name: restartedId, exact: true })).toHaveAttribute('href', `/projects/projects_placement/threads/${restartedId}`);
+  await expect(page.locator('.pw-state-chip')).toHaveText('Stopped');
+  for (const name of ['Override', 'Stop', 'Discard']) await expect(button(name)).toHaveCount(0);
+  await expect(button('Why')).toBeVisible();
+  expect((await view(placedId)).thread.state).toBe('stopped');
+  await shot(page, 'restarted');
+  await reason.getByRole('link', { name: restartedId, exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`/threads/${restartedId}$`));
   expect(errors).toEqual([]);
 });

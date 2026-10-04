@@ -1,9 +1,9 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import {
-  DecisionAnswerSchema, IdSchema, PROJECT_HUB_PAGE, ProjectCoordinatorSchema, ProjectCoordinatorStatusSchema, ProjectDecisionSchema, ProjectHubRequestSchema, ProjectHubResultSchema,
+  DecisionAnswerSchema, IdSchema, PROJECT_HUB_PAGE, PlacementOverrideSchema, ProjectCoordinatorSchema, ProjectCoordinatorStatusSchema, ProjectDecisionSchema, ProjectHubRequestSchema, ProjectHubResultSchema,
   ProjectNotebookSchema, ProjectSchema, ProjectWorkSettingsSchema, ThreadIndexCursorSchema, ThreadIndexSchema, TimestampSchema, checkHubRevision, collectionOf, stableJson, withHubRevision,
-  type DecisionAnswer, type DocumentSchema, type ProjectCoordinator, type ProjectCoordinatorStatus, type ProjectDecision, type ProjectHub, type ProjectHubOperation, type ProjectHubResult,
+  type DecisionAnswer, type DocumentSchema, type PlacementOverride, type ProjectCoordinator, type ProjectCoordinatorStatus, type ProjectDecision, type ProjectHub, type ProjectHubOperation, type ProjectHubResult,
   type ProjectHubResultOf, type ProjectNotebook, type ProjectWorkSettings, type Stored, type ThreadIndex,
 } from '@jevellan/core';
 import type { HubDatabase } from './database.js';
@@ -12,6 +12,7 @@ import { settingsMutation } from './settings-mutation.js';
 
 const SETTINGS = 'project-work-settings'; const COORDINATORS = 'project-coordinators'; const STATUS = 'project-coordinator-status';
 const THREADS = 'project-threads'; const CURSORS = 'project-thread-cursors'; const DECISIONS = 'project-decisions'; const NOTEBOOKS = 'project-notebooks';
+const OVERRIDES = 'project-placement-overrides';
 /** Answered questions stay in the list for 14 days (D52). */
 export const DECISION_LIST_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
 
@@ -144,6 +145,31 @@ export class HubProjectStore {
     return this.hub.transaction(() => { this.#project(notebook.projectId); return this.#put(NOTEBOOKS, notebook.projectId, ProjectNotebookSchema, notebook, expectedRevision); });
   }
 
+  /**
+   * Placement overrides (brief 5.12) are append-only and carry no revision. The thread's owner records them; an id seen before
+   * answers with the stored record when it describes the same change (a retry, whatever its time), else 409 (D252).
+   */
+  addOverride(raw: PlacementOverride): PlacementOverride {
+    const override = PlacementOverrideSchema.parse(raw);
+    return this.hub.transaction(() => {
+      this.#project(override.projectId);
+      const index = this.thread(override.threadId)?.document;
+      if (index && (index.projectId !== override.projectId || index.ownerDeviceId !== this.deviceId)) refuse('Only the thread owner can record its placement overrides.', 403);
+      const existing = this.hub.get(OVERRIDES, override.id, PlacementOverrideSchema)?.document;
+      if (existing) {
+        if (stableJson({ ...existing, at: '' }) !== stableJson({ ...override, at: '' })) refuse('This override id was already used for a different change.');
+        return existing;
+      }
+      return this.hub.put(OVERRIDES, override.id, PlacementOverrideSchema, override, 0).document;
+    });
+  }
+  /** The project's newest overrides by time, newest first; the collection is small (D90 leaves it unpruned). */
+  recentOverrides(projectId: string, limit: number): PlacementOverride[] {
+    const count = z.number().int().min(1).max(PROJECT_HUB_PAGE).parse(limit);
+    return this.hub.listByField(OVERRIDES, 'projectId', IdSchema.parse(projectId), PlacementOverrideSchema).map((row) => row.document)
+      .sort((a, b) => Date.parse(b.at) - Date.parse(a.at) || b.id.localeCompare(a.id)).slice(0, count);
+  }
+
   /** `/hub/mesh/projects/<collection>`: the route has already matched the collection to the operation. */
   request(raw: unknown): ProjectHubResult {
     const request = ProjectHubRequestSchema.parse(raw); const base = { schema: 'project-hub-result-v1', operation: request.operation };
@@ -165,6 +191,8 @@ export class HubProjectStore {
       case 'decision-answer': { const answered = this.answerDecision(request.id, request.answer, request.at, request.clientRequestId); result = { ...base, record: answered.decision, repeated: answered.repeated }; break; }
       case 'notebook-get': result = { ...base, record: this.notebook(request.projectId) }; break;
       case 'notebook-put': result = { ...base, record: this.putNotebook(request.notebook, request.expectedRevision) }; break;
+      case 'override-add': result = { ...base, override: this.addOverride(request.override) }; break;
+      case 'overrides-recent': result = { ...base, records: this.recentOverrides(request.projectId, request.limit) }; break;
     }
     return ProjectHubResultSchema.parse(result);
   }
@@ -193,6 +221,8 @@ export class HubProjectAccess implements ProjectHub {
   async answerDecision(id: string, answer: DecisionAnswer, at: string, clientRequestId: string) { return this.#store.answerDecision(id, answer, at, clientRequestId); }
   async notebook(projectId: string) { return this.#store.notebook(projectId); }
   async putNotebook(notebook: ProjectNotebook, expectedRevision: number) { return this.#store.putNotebook(notebook, expectedRevision); }
+  async addOverride(override: PlacementOverride) { this.#store.addOverride(override); }
+  async recentOverrides(projectId: string, limit: number) { return this.#store.recentOverrides(projectId, limit); }
 }
 
 /** A member's `ProjectHub` over the device-token HTTP API; every reply must match the requested identity and revision. */
@@ -249,5 +279,13 @@ export class MemberProjectStore implements ProjectHub {
   async notebook(projectId: string) { return this.#check((await this.#call('notebook-get', { projectId })).record, (row) => !row || row.document.projectId === projectId); }
   async putNotebook(notebook: ProjectNotebook, expectedRevision: number) {
     return this.#check((await this.#call('notebook-put', { notebook, expectedRevision })).record, (row) => row.document.projectId === notebook.projectId && row.revision === expectedRevision + 1);
+  }
+  async addOverride(override: PlacementOverride) {
+    this.#check((await this.#call('override-add', { override })).override, (stored) => stored.id === override.id && stored.projectId === override.projectId && stored.threadId === override.threadId);
+  }
+  /** Every record belongs to the project, at most `limit`, newest first. */
+  async recentOverrides(projectId: string, limit: number) {
+    return this.#check((await this.#call('overrides-recent', { projectId, limit })).records, (records) => records.length <= limit
+      && records.every((record, index) => record.projectId === projectId && (index === 0 || Date.parse(records[index - 1]!.at) >= Date.parse(record.at))));
   }
 }

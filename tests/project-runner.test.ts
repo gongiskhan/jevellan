@@ -79,7 +79,9 @@ test('views count work, list pull requests and questions, coerce a Leave git def
   expect(lists.open.map((entry) => entry.id)).toEqual(['pdec_limit']); expect(lists.answered.map((entry) => entry.id)).toEqual(answered.slice(2).reverse().map((entry) => entry.id));
   const threads = [index('thread_1', 'running'), index('thread_2', 'waiting-for-you'), index('thread_3', 'in-review', { pr: { number: 4, url: 'https://github.com/o/r/pull/4', state: 'open', headSha: 'a', checks: 'passing', mergeable: 'clean', updatedAt: at }, branch: 'jv/x-1' }),
     index('thread_4', 'idle', { branch: 'jv/y-2', stateReason: 'Branch pushed. Add a GitHub token in Settings → Git to open pull requests.' }), index('thread_5', 'idle', { branch: 'jv/z-3', stateReason: 'Tests failed three times.' }), index('thread_6', 'done')];
-  expect(workCounts(threads, [limit])).toEqual({ waiting: 1, running: 4, inReview: 1 });
+  // The sidebar's running count is live work only: the waiting and idle threads are listed under Running but never counted (D257).
+  expect(workCounts(threads, [limit])).toEqual({ waiting: 1, running: 1, inReview: 1 });
+  expect(workCounts([index('thread_p', 'preparing'), index('thread_u', 'publishing'), index('thread_q', 'queued'), index('thread_a', 'attached')], [])).toEqual({ waiting: 0, running: 2, inReview: 0 });
   expect(pullRequestEntries(threads)).toEqual([{ threadId: 'thread_3', title: 'thread_3', branch: 'jv/x-1', pr: threads[2]!.pr },
     { threadId: 'thread_4', title: 'thread_4', branch: 'jv/y-2', reason: 'Branch pushed. Add a GitHub token in Settings → Git to open pull requests.' }]);
   const main = ProjectWorkSettingsSchema.parse({ ...defaultProjectWorkSettings('proj_a'), defaultIsolation: 'main' });
@@ -200,7 +202,7 @@ test('an owner thread prepares a worktree, runs its turn, opens the pull request
   fake.enqueueTurn(commit({ 'greeting.txt': 'hello\n' }, { status: 'done', summary: 'Added greeting.txt.' }), forThread());
   const created = await create(work, 'Add greeting', 'req_pj1');
   expect(created).toEqual({ schema: 'thread-created-view-v1', threadId: expect.stringMatching(/^thread_/), state: 'preparing',
-    placement: 'Scripted test runtime Fixture · high · Worktree · Mac mini · placed without Jev: Jev placement is not enabled yet.' });
+    placement: 'Scripted test runtime Fixture · high · Worktree · Mac mini · placed without Jev: no key configured' });
   // The same request repeats; the same id with other content is refused (D78).
   expect((await create(work, 'Add greeting', 'req_pj1')).threadId).toBe(created.threadId);
   await expect(create(work, 'Other', 'req_pj1')).rejects.toMatchObject({ message: START_REQUEST_REUSED, status: 409 });

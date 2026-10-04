@@ -1,9 +1,12 @@
 import {
+  EffortSchema,
   IdSchema,
   NO_CHANGES,
   OWNER_STARTED_PREFIX,
   OWNER_WORKED_PREFIX,
+  PlacementFieldSchema,
   ProjectLedgerDataSchemas,
+  RESTARTED_PREFIX,
   concludedRecently,
   isTerminal,
   liveWork,
@@ -13,6 +16,8 @@ import {
   type CursorTurn,
   type Effort,
   type Isolation,
+  type PlacementField,
+  type PlacementRecord,
   type ProjectDecision,
   type ProjectLedgerData,
   type ProjectLedgerEvent,
@@ -253,6 +258,91 @@ export function pullRequestBadges(pr: Pick<PullRequestState, 'state' | 'checks' 
   if (pr.state === 'merged') return [{ text: copy.PR_MERGED, tone: 'ok' }];
   if (pr.state === 'closed') return [{ text: copy.PR_CLOSED, tone: 'muted' }];
   return [checksBadge(pr), ...(pr.mergeable === 'conflict' ? [{ text: copy.CONFLICTS, tone: 'danger' as const }] : [])];
+}
+
+// ---------- placement: the fallback chip, Why and Override (12.3, 9.8; D255) ----------
+/** The 9.8 chip of a thread placed without Jev, with the recorded reason, or null. */
+export function fallbackChip(placement: Pick<PlacementRecord, 'source' | 'error'>): string | null {
+  return placement.source === 'fallback' && placement.error ? copy.placedWithoutJev(placement.error.message) : null;
+}
+/** The new thread's id in a restarted thread's reason (`Restarted as {newId}.`, brief 10), so the page can link it; else null. */
+export function restartedThread(reason: string | undefined): string | null {
+  if (!reason?.startsWith(RESTARTED_PREFIX) || !reason.endsWith('.')) return null;
+  const id = reason.slice(RESTARTED_PREFIX.length, -1);
+  return IdSchema.safeParse(id).success ? id : null;
+}
+/** Override is offered while either choice is: the next turn of a thread that has not ended, or a restart the server allows. */
+export function overrideOffered(view: Pick<ThreadView, 'canOverride'>): boolean {
+  return view.canOverride.nextTurn || view.canOverride.restart;
+}
+
+const EFFORTS = EffortSchema.options;
+/** The effort a model runs for a requested one: its lowest effort at or above it, else its highest (core `mapEffort`, which is not browser-safe). */
+export function nearestEffort(requested: Effort, supported: readonly Effort[]): Effort {
+  const offered = [...new Set(supported)].sort((a, b) => EFFORTS.indexOf(a) - EFFORTS.indexOf(b));
+  return offered.find((effort) => EFFORTS.indexOf(effort) >= EFFORTS.indexOf(requested)) ?? offered.at(-1) ?? requested;
+}
+/**
+ * The Override modal's effort options: the chosen model's efforts plus the thread's requested effort, so a modal left alone
+ * changes no effort; an effort the model does not offer says what it runs as. Without a chosen model (Automatic), every effort.
+ */
+export function effortChoices(supported: readonly Effort[] | undefined, requested: Effort): Array<{ effort: Effort; runsAs?: Effort }> {
+  if (!supported) return EFFORTS.map((effort) => ({ effort }));
+  return EFFORTS.filter((effort) => supported.includes(effort) || effort === requested)
+    .map((effort) => supported.includes(effort) ? { effort } : { effort, runsAs: nearestEffort(effort, supported) });
+}
+
+export type OverrideMode = 'next-turn' | 'restart';
+export type OverrideForm = { mode: OverrideMode; isolation: '' | Isolation; modelId: string; effort: '' | Effort; deviceId: string; note: string };
+/** The modal opens on the thread's current choices (the requested effort), on From the next turn while the thread takes turns. */
+export function overrideForm(view: Pick<ThreadView, 'thread' | 'placement' | 'canOverride'>): OverrideForm {
+  return { mode: view.canOverride.nextTurn ? 'next-turn' : 'restart', isolation: view.thread.isolation, modelId: view.placement.modelId,
+    effort: view.placement.effortRequested, deviceId: view.thread.ownerDeviceId, note: '' };
+}
+/**
+ * `POST .../override` without its client id. From the next turn sends only the model and effort that differ from the thread's (the
+ * server records only changes, effort against the requested one); a restart sends every field not left on Automatic, so the new
+ * thread keeps what the modal shows (D255).
+ */
+export function overrideRequest(view: Pick<ThreadView, 'placement'>, form: OverrideForm) {
+  const note = form.note.trim();
+  const base = { schema: 'thread-override-request-v1' as const, mode: form.mode, ...(note ? { note: note.slice(0, 400) } : {}) };
+  if (form.mode === 'next-turn') {
+    return { ...base, ...(form.modelId && form.modelId !== view.placement.modelId ? { modelId: form.modelId } : {}),
+      ...(form.effort && form.effort !== view.placement.effortRequested ? { effort: form.effort } : {}) };
+  }
+  return { ...base, ...(form.isolation ? { isolation: form.isolation } : {}), ...(form.modelId ? { modelId: form.modelId } : {}),
+    ...(form.effort ? { effort: form.effort } : {}), ...(form.deviceId ? { deviceId: form.deviceId } : {}) };
+}
+/** Apply needs something to do: From the next turn changes the model or the effort; a restart is allowed by the server. */
+export function overrideReady(view: Pick<ThreadView, 'placement' | 'canOverride'>, form: OverrideForm): boolean {
+  if (form.mode === 'restart') return view.canOverride.restart;
+  const request = overrideRequest(view, form);
+  return view.canOverride.nextTurn && ('modelId' in request || 'effort' in request);
+}
+
+/** The p-v1 question Jev answers for each placement field (brief 10). */
+export const PLACEMENT_QUESTIONS = { isolation: 'isolation', model: 'pick_model', effort: 'effort', device: 'device' } as const satisfies Record<PlacementField, string>;
+export type FieldSource = keyof typeof copy.FIELD_SOURCES;
+export type WhyField = { field: PlacementField; value: string; source: FieldSource; bars: Array<{ option: string; p: number; chosen: boolean }> };
+const fieldValue = (placement: PlacementRecord, field: PlacementField): string =>
+  field === 'isolation' ? placement.isolation : field === 'model' ? placement.modelId : field === 'effort' ? placement.effortRequested : placement.deviceId;
+/**
+ * The Why panel, field by field (12.3, D255): Jev's distribution for each question it answered, highest first, with the value the
+ * thread holds now marked. A value that is not Jev's top option was changed by the owner from the next turn (the record keeps
+ * Jev's probabilities, D252). Fields Jev was not asked were fixed, the only option left, or the fallback rule's.
+ */
+export function whyFields(placement: PlacementRecord): WhyField[] {
+  return PlacementFieldSchema.options.map((field) => {
+    const value = fieldValue(placement, field);
+    const answered = placement.probabilities?.[PLACEMENT_QUESTIONS[field]];
+    const bars = Object.entries(answered ?? {}).sort((a, b) => b[1] - a[1]).map(([option, p]) => ({ option, p, chosen: option === value }));
+    const top = Math.max(...bars.map((bar) => bar.p));
+    const source: FieldSource = placement.fixed.includes(field) ? 'fixed'
+      : answered ? (answered[value] ?? -1) < top ? 'changed' : 'jev'
+      : placement.source === 'fallback' ? 'fallback' : 'only';
+    return { field, value, source, bars };
+  });
 }
 
 function payload<T extends ProjectLedgerEventType>(event: ProjectLedgerEvent, type: T): ProjectLedgerData<T> | undefined {

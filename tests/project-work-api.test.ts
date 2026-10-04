@@ -27,7 +27,7 @@ test('the Projects route table is closed: exact paths, ids validated, 405 for kn
   expect(projectWorkRoute('/api/projects/proj_a/work', 'GET')).toEqual({ name: 'view', target: 'any', projectId: 'proj_a' });
   expect(projectWorkRoute('/api/projects/proj_a/threads', 'POST')).toEqual({ name: 'thread-create', target: 'coordinator', projectId: 'proj_a' });
   expect(projectWorkRoute(thread(''), 'GET')).toEqual({ name: 'thread', target: 'owner', projectId: 'proj_a', threadId: 'thread_1' });
-  for (const [suffix, name] of [['/messages', 'thread-message'], ['/stop', 'thread-stop'], ['/discard', 'thread-discard'], ['/allow-turns', 'thread-allow'], ['/pr/merge', 'pr-merge'], ['/pr/refresh', 'pr-refresh']]) {
+  for (const [suffix, name] of [['/messages', 'thread-message'], ['/stop', 'thread-stop'], ['/discard', 'thread-discard'], ['/allow-turns', 'thread-allow'], ['/override', 'thread-override'], ['/pr/merge', 'pr-merge'], ['/pr/refresh', 'pr-refresh']]) {
     expect(projectWorkRoute(thread(suffix!), 'POST')).toEqual({ name, target: 'owner', projectId: 'proj_a', threadId: 'thread_1' });
   }
   // Paths owned by api.ts, and near misses, are not Projects routes.

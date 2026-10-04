@@ -215,7 +215,7 @@ export function Stamp({ at, label }: { at: string; label?: string }) {
 }
 
 export const runtimeNames = (data: PageProps['data']) => (runtime: string) => data.runtimes.find((entry) => entry.id === runtime)?.displayName ?? runtime;
-const deviceNames = (data: PageProps['data']) => (deviceId: string) => data.devices.devices.find((entry) => entry.id === deviceId)?.name ?? deviceId;
+export const deviceNames = (data: PageProps['data']) => (deviceId: string) => data.devices.devices.find((entry) => entry.id === deviceId)?.name ?? deviceId;
 const TABS: readonly ProjectTab[] = ['chat', 'waiting', 'threads', 'pull-requests'];
 
 /**

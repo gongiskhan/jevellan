@@ -1,9 +1,9 @@
 import { z } from 'zod';
-import { DecisionAnswerSchema, ProjectCoordinatorSchema, ProjectCoordinatorStatusSchema, ProjectDecisionSchema, ProjectNotebookSchema, ProjectWorkSettingsSchema, ThreadIndexSchema } from './project-schemas.js';
+import { DecisionAnswerSchema, PlacementOverrideSchema, ProjectCoordinatorSchema, ProjectCoordinatorStatusSchema, ProjectDecisionSchema, ProjectNotebookSchema, ProjectWorkSettingsSchema, ThreadIndexSchema } from './project-schemas.js';
 import { IdSchema, TimestampSchema } from './schemas.js';
 
 // Members reach project hub state through POST /hub/mesh/projects/<collection> with operation-discriminated bodies (D7).
-// Later phases add operations: overrides (4), envelopes (5), mail, reservations and checkouts (6).
+// Later phases add operations: envelopes (5), mail, reservations and checkouts (6).
 export const ProjectHubCollectionSchema = z.enum(['settings', 'coordinators', 'threads', 'decisions', 'notebooks', 'overrides',
   'envelopes', 'mail', 'reservations', 'checkouts']);
 export type ProjectHubCollection = z.infer<typeof ProjectHubCollectionSchema>;
@@ -30,6 +30,8 @@ export const ProjectHubRequestSchema = z.discriminatedUnion('operation', [
   z.strictObject({ ...request, operation: z.literal('decision-answer'), id: IdSchema, answer: DecisionAnswerSchema, at: TimestampSchema, clientRequestId: IdSchema }),
   z.strictObject({ ...request, operation: z.literal('notebook-get'), ...project }),
   z.strictObject({ ...request, operation: z.literal('notebook-put'), notebook: ProjectNotebookSchema, expectedRevision }),
+  z.strictObject({ ...request, operation: z.literal('override-add'), override: PlacementOverrideSchema }),
+  z.strictObject({ ...request, operation: z.literal('overrides-recent'), ...project, limit: z.number().int().min(1).max(PROJECT_HUB_PAGE) }),
 ]);
 export type ProjectHubRequest = z.infer<typeof ProjectHubRequestSchema>;
 export type ProjectHubOperation = ProjectHubRequest['operation'];
@@ -39,6 +41,7 @@ const collections = {
   'threads-list': 'threads', 'thread-get': 'threads', 'thread-publish': 'threads',
   'decisions-list': 'decisions', 'decision-get': 'decisions', 'decision-create': 'decisions', 'decision-withdraw': 'decisions', 'decision-answer': 'decisions',
   'notebook-get': 'notebooks', 'notebook-put': 'notebooks',
+  'override-add': 'overrides', 'overrides-recent': 'overrides',
 } as const satisfies Record<ProjectHubOperation, ProjectHubCollection>;
 /** The one collection route that accepts an operation. */
 export function collectionOf(operation: ProjectHubOperation): ProjectHubCollection { return collections[operation]; }
@@ -49,6 +52,7 @@ const access = {
   'threads-list': 'read', 'thread-get': 'read', 'thread-publish': 'write',
   'decisions-list': 'read', 'decision-get': 'read', 'decision-create': 'write', 'decision-withdraw': 'write', 'decision-answer': 'write',
   'notebook-get': 'read', 'notebook-put': 'write',
+  'override-add': 'write', 'overrides-recent': 'read',
 } as const satisfies Record<ProjectHubOperation, 'read' | 'write'>;
 /** Reads change no hub state, so the hub admits them like GET requests, outside the lifecycle gate (D247). */
 export function isProjectHubRead(operation: ProjectHubOperation): boolean { return access[operation] === 'read'; }
@@ -77,6 +81,9 @@ export const ProjectHubResultSchema = z.discriminatedUnion('operation', [
   z.strictObject({ ...result, operation: z.literal('decision-answer'), record: stored(ProjectDecisionSchema), repeated: z.boolean() }),
   z.strictObject({ ...result, operation: z.literal('notebook-get'), record: stored(ProjectNotebookSchema).nullable() }),
   z.strictObject({ ...result, operation: z.literal('notebook-put'), record: stored(ProjectNotebookSchema) }),
+  // Overrides carry no revision: the collection is append-only (D252).
+  z.strictObject({ ...result, operation: z.literal('override-add'), override: PlacementOverrideSchema }),
+  z.strictObject({ ...result, operation: z.literal('overrides-recent'), records: z.array(PlacementOverrideSchema).max(PROJECT_HUB_PAGE) }),
 ]);
 export type ProjectHubResult = z.infer<typeof ProjectHubResultSchema>;
 export type ProjectHubResultOf<O extends ProjectHubOperation> = Extract<ProjectHubResult, { operation: O }>;

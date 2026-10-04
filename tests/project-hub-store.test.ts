@@ -6,7 +6,7 @@ import { randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { z } from 'zod';
-import { DeviceSchema, Homes, LifecycleGate, ProjectDecisionSchema, ProjectSchema, SecretRedactor, ThreadIndexSchema, defaultProjectWorkSettings, isProjectHubRead, lifecycleActivity, type ProjectDecision, type ProjectHubOperation, type ThreadIndex } from '../packages/core/dist/index.js';
+import { DeviceSchema, Homes, LifecycleGate, PlacementOverrideSchema, ProjectDecisionSchema, ProjectSchema, SecretRedactor, ThreadIndexSchema, defaultProjectWorkSettings, isProjectHubRead, lifecycleActivity, type PlacementOverride, type ProjectDecision, type ProjectHubOperation, type ThreadIndex } from '../packages/core/dist/index.js';
 import { HubProjectAccess, HubProjectStore, HubProtocolError, HubUnavailable, MemberHubClient, MemberProjectStore, joinHub } from '../packages/mesh/dist/index.js';
 import { Application, createDaemon } from '../apps/daemon/dist/index.js';
 
@@ -43,6 +43,9 @@ function index(id: string, fields: Partial<ThreadIndex> = {}): ThreadIndex {
 }
 function question(id: string, fields: Partial<ProjectDecision> = {}): ProjectDecision {
   return ProjectDecisionSchema.parse({ schema: 'project-decision-v1', revision: 0, id, projectId: 'project', from: 'coordinator', question: 'Which database?', options: [{ label: 'SQLite' }, { label: 'Postgres' }], createdAt: at, ...fields });
+}
+function override(id: string, fields: Partial<PlacementOverride> = {}): PlacementOverride {
+  return PlacementOverrideSchema.parse({ schema: 'placement-override-v1', id, projectId: 'project', threadId: 'thread_a', mode: 'next-turn', changes: [{ field: 'effort', from: 'max', to: 'low' }], at, ...fields });
 }
 function device(path: string, token: string | undefined, value: unknown, headers: Record<string, string> = {}) {
   return fetch(`${base}/hub/mesh/${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...headers }, body: JSON.stringify(value) });
@@ -211,8 +214,8 @@ test('project collections are device routes: browser headers, other collections 
 
 test('project hub reads are admitted outside the lifecycle gate and writes are refused while an installer holds maintenance (D247)', async () => {
   const left = await member('left'); await app.started;
-  const reads: ProjectHubOperation[] = ['settings-get', 'coordinator-get', 'coordinator-status-get', 'threads-list', 'thread-get', 'decisions-list', 'decision-get', 'notebook-get'];
-  const writes: ProjectHubOperation[] = ['settings-put', 'coordinator-assign', 'coordinator-status-put', 'thread-publish', 'decision-create', 'decision-withdraw', 'decision-answer', 'notebook-put'];
+  const reads: ProjectHubOperation[] = ['settings-get', 'coordinator-get', 'coordinator-status-get', 'threads-list', 'thread-get', 'decisions-list', 'decision-get', 'notebook-get', 'overrides-recent'];
+  const writes: ProjectHubOperation[] = ['settings-put', 'coordinator-assign', 'coordinator-status-put', 'thread-publish', 'decision-create', 'decision-withdraw', 'decision-answer', 'notebook-put', 'override-add'];
   expect(reads.filter(isProjectHubRead)).toEqual(reads); expect(writes.filter(isProjectHubRead)).toEqual([]);
   const installer = new LifecycleGate(app.homes); const release = installer.tryMaintenance();
   try {
@@ -227,4 +230,26 @@ test('project hub reads are admitted outside the lifecycle gate and writes are r
   expect(await left.hub.settings('project')).toBeNull(); expect(await left.hub.notebook('project')).toBeNull();
   expect(await left.hub.putSettings(defaultProjectWorkSettings('project'), 0)).toMatchObject({ revision: 1 });
   expect(lifecycleActivity(app.homes)).toEqual([]);
+});
+
+test('placement overrides are append-only, recorded by the thread owner, idempotent by id and listed newest first per project (D252)', async () => {
+  const { state, fetcher } = losing(); const left = await member('left', fetcher); const right = await member('right');
+  await left.hub.publishThread(index('thread_a'), 1);
+  const minute = (n: number) => new Date(Date.parse(at) + n * 60_000).toISOString();
+  await left.hub.addOverride(override('povr_1', { at: minute(1) }));
+  // A lost reply is retried with a later time and the same change: the first record stays.
+  state.operation = 'override-add';
+  await expect(left.hub.addOverride(override('povr_2', { mode: 'restart', changes: [{ field: 'model', from: 'deep', to: 'swift' }], note: 'Cheaper.', at: minute(3) }))).rejects.toThrow();
+  await left.hub.addOverride(override('povr_2', { mode: 'restart', changes: [{ field: 'model', from: 'deep', to: 'swift' }], note: 'Cheaper.', at: minute(4) }));
+  await left.hub.addOverride(override('povr_0', { at: minute(2), changes: [{ field: 'model', from: 'deep', to: 'deep-lite' }] }));
+  expect((await right.hub.recentOverrides('project', 8)).map((entry) => [entry.id, entry.at])).toEqual([['povr_2', minute(3)], ['povr_0', minute(2)], ['povr_1', minute(1)]]);
+  expect((await right.hub.recentOverrides('project', 2)).map((entry) => entry.id)).toEqual(['povr_2', 'povr_0']);
+  expect(await right.hub.recentOverrides('other', 8)).toEqual([]);
+  // The same id for another change, another owner's thread and an unknown project are refused.
+  await expect(left.hub.addOverride(override('povr_1', { changes: [{ field: 'effort', from: 'max', to: 'high' }] }))).rejects.toMatchObject({ status: 409, message: 'This override id was already used for a different change.' });
+  await expect(right.hub.addOverride(override('povr_3'))).rejects.toMatchObject({ status: 403, message: 'Only the thread owner can record its placement overrides.' });
+  await expect(left.hub.addOverride(override('povr_4', { projectId: 'missing' }))).rejects.toMatchObject({ status: 404, message: 'Project not found.' });
+  await expect(right.hub.recentOverrides('project', 0)).rejects.toThrow();
+  // The hub's own access reads the same records.
+  expect((await new HubProjectAccess(app.hub, app.device.deviceId).recentOverrides('project', 1)).map((entry) => entry.id)).toEqual(['povr_2']);
 });

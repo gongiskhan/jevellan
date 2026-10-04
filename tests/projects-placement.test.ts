@@ -1,6 +1,8 @@
-import { expect, test } from 'vitest';
-import { AccountSchema, AccountStatusSchema, JevCallSchema, PlacementRecordSchema, ProjectSchema, seedConfiguration, type Account, type AccountStatus, type ModelOption } from '../packages/core/dist/index.js';
-import { approximateTokens, LEAVE_GIT_MAIN, MAIN_NOT_AVAILABLE, NO_PLACEMENT, NO_THREAD_MODEL, PLACEMENT_NOT_ENABLED, PLACEMENT_QUESTION_SET, placementCandidates, placementDevices, placementFallback, placementOptions, REMOTE_NOT_AVAILABLE, UNKNOWN_PLACEMENT_DEVICE, UNKNOWN_PLACEMENT_MODEL, type PlacementCandidates, type PlacementDevice, type PlacementInput, type PlacementRuntime } from '../packages/decisions/dist/index.js';
+import { expect, test, vi } from 'vitest';
+import { AccountSchema, AccountStatusSchema, JevCallSchema, PlacementRecordSchema, ProjectSchema, SecretRedactor, seedConfiguration, type Account, type AccountStatus, type ModelOption } from '../packages/core/dist/index.js';
+import { approximateTokens, buildPlacementState, decidePlacement, JevClient, JevError, LEAVE_GIT_MAIN, MAIN_NOT_AVAILABLE, NO_PLACEMENT, NO_THREAD_MODEL, overrideSentence, parseJevResponse, PLACEMENT_INCOMPATIBLE, PLACEMENT_INSTRUCTIONS,
+  PLACEMENT_ISOLATION_CRITERIA, PLACEMENT_QUESTION_SET, placementCandidates, placementDevices, placementFallback, placementOptions, PlacementStateSchema, preparePlacementA, preparePlacementB, REMOTE_NOT_AVAILABLE,
+  TASK_SHORTENED, UNKNOWN_PLACEMENT_DEVICE, UNKNOWN_PLACEMENT_MODEL, type DecisionClient, type JevQuestions, type PlacementCandidates, type PlacementDevice, type PlacementInput, type PlacementPacketInput, type PlacementRuntime } from '../packages/decisions/dist/index.js';
 
 const now = Date.parse('2026-10-03T10:00:00Z');
 const later = new Date(now + 3_600_000).toISOString();
@@ -33,7 +35,8 @@ function candidates(value: PlacementInput): PlacementCandidates {
 function refusal(value: PlacementInput): string {
   const result = placementCandidates(value); if (!('refused' in result)) throw new Error('Expected a refusal.'); return result.refused;
 }
-const fallback = (value: PlacementInput, fixedOnly = false) => placementFallback(value, candidates(value), PLACEMENT_NOT_ENABLED, [], fixedOnly);
+const NO_KEY = { kind: 'no-key', message: 'no key configured' };
+const fallback = (value: PlacementInput, fixedOnly = false) => placementFallback(value, candidates(value), NO_KEY, [], fixedOnly);
 const ids = (devices: PlacementDevice[]) => devices.map((entry) => entry.id);
 const sorted = (values: string[]) => [...values].sort();
 function expectPartition(value: PlacementInput, options: Pick<PlacementCandidates, 'models' | 'devices' | 'excludedModels' | 'excludedDevices'>) {
@@ -171,9 +174,9 @@ test('the fallback takes the default isolation, the first eligible model and med
   expect(record).toEqual({ schema: 'placement-v1', questionSet: 'p-v1', source: 'fallback', fixed: [], isolation: 'worktree', runtime: 'claude', modelId: 'deep', model: 'deep-version',
     effortRequested: 'medium', effortEffective: 'high', deviceId: 'dev_mini', accountId: 'claude_a', eligibleModels: ['deep'],
     excludedModels: [{ modelId: 'swift', reason: 'Mac mini: Codex needs login; Studio: Codex needs login' }], eligibleDevices: ['dev_mini', 'dev_studio'], excludedDevices: [],
-    error: { kind: 'not-enabled', message: 'Jev placement is not enabled yet.' }, jevCalls: [], decidedAt: '2026-10-03T10:00:00.000Z' });
+    error: { kind: 'no-key', message: 'no key configured' }, jevCalls: [], decidedAt: '2026-10-03T10:00:00.000Z' });
   expect(PlacementRecordSchema.parse(record)).toEqual(record);
-  expect(PLACEMENT_NOT_ENABLED).toEqual({ kind: 'not-enabled', message: 'Jev placement is not enabled yet.' });
+  expect(NO_KEY).toEqual({ kind: 'no-key', message: new JevError('no-key').message });
   expect(fallback(input())).toMatchObject({ modelId: 'swift', runtime: 'codex', effortRequested: 'medium', effortEffective: 'medium', accountId: 'codex_a' });
   expect(fallback(input({ fixed: { effort: 'max' } }))).toMatchObject({ modelId: 'swift', fixed: ['effort'], effortRequested: 'max', effortEffective: 'xhigh' });
   expect(fallback(input({ fixed: { effort: 'low', modelId: 'deep' } }))).toMatchObject({ modelId: 'deep', fixed: ['model', 'effort'], effortRequested: 'low', effortEffective: 'high', eligibleModels: ['deep'],
@@ -212,4 +215,215 @@ test('fixed fields are kept, and a placement without open choices records source
 
 test('approximateTokens is the existing state estimator', () => {
   expect(approximateTokens('abcdef')).toBe(2); expect(approximateTokens('abcd')).toBe(2); expect(approximateTokens('é')).toBe(1); expect(approximateTokens('')).toBe(0);
+});
+
+// Jev placement (phase 4): the response builder of decision-selection.test.ts, with explicit probabilities for near ties.
+type Answer = string | { choice: string; probabilities: Record<string, number> };
+function response(questions: JevQuestions, values: Record<string, Answer> = {}) {
+  const answers = Object.fromEntries(Object.entries(questions).map(([id, question]) => {
+    if (question.type !== 'choice') throw new Error('Unexpected fixture question.');
+    const value = values[id] ?? Object.keys(question.criteria)[0]!;
+    const answer = typeof value === 'string' ? { choice: value, probabilities: Object.fromEntries(Object.keys(question.criteria).map((key) => [key, key === value ? 1 : 0])) } : value;
+    return [id, { type: 'choice', ...answer, confidence: 1 }];
+  }));
+  return parseJevResponse(JSON.stringify({ model: 'fixture-returned', answers, usage: { input_tokens: 20, output_tokens: 10 } }), questions);
+}
+/** A scripted Jev: every call answers with the next answer set or throws the next error. */
+function jev(...script: Array<Record<string, Answer> | Error>) {
+  return vi.fn<DecisionClient['decide']>(async (request) => {
+    const next = script.shift(); if (!next) throw new Error('Unexpected Jev call.');
+    if (next instanceof Error) throw next; return response(request.questions, next);
+  });
+}
+const packet: PlacementPacketInput = { title: 'Add A', task: 'Add the A endpoint with tests.', activeThreads: [], overrides: [] };
+const noSecrets = new SecretRedactor();
+const place = (value: PlacementInput, decide: DecisionClient['decide'], signal = new AbortController().signal, over: Partial<PlacementPacketInput> = {}) =>
+  decidePlacement({ decide }, { ...value, jevModel: 'jev-1.13.0', packet: { ...packet, ...over }, redactor: noSecrets }, signal);
+async function placed(...args: Parameters<typeof place>) {
+  const result = await place(...args); if (result.kind !== 'placed') throw new Error(result.message); return result.record;
+}
+const usage = (weeklyPct: number) => ({ weeklyPct, source: 'probe' as const, observedAt: new Date(now).toISOString() });
+const questionKeys = (value: PlacementInput) => Object.keys(preparePlacementA(value, candidates(value)));
+const placementCall = { schema: 'jev-call-v1', kind: 'placement', requestedModel: 'jev-1.13.0', returnedModel: 'fixture-returned', usage: { input_tokens: 20, output_tokens: 10 }, latencyMs: expect.any(Number) };
+
+test('Call A asks isolation only when both are allowed, the eligible models by description and the effort guide', async () => {
+  const value = input(); const a = preparePlacementA(value, candidates(value));
+  expect(Object.keys(a)).toEqual(['isolation', 'pick_model', 'effort']);
+  expect(a.isolation).toEqual({ type: 'choice', instructions: 'Choose how this new thread works: in its own worktree ending in a pull request, or directly on main.', criteria: {
+    worktree: 'Larger, riskier or multi-file change that should be reviewed as a pull request.', main: 'Small, contained change that is safe to land directly on main without review.' } });
+  expect(a.pick_model).toEqual({ type: 'choice', instructions: 'Choose the model that should carry this thread end to end.', criteria: { swift: 'Fast coding model.', deep: 'Strong for complex changes.' } });
+  expect(a.effort).toEqual({ type: 'choice', instructions: 'Choose the reasoning effort this thread needs.', criteria: settings.effortGuide });
+  expect(a.effort?.type === 'choice' && Object.keys(a.effort.criteria)).toEqual(['low', 'medium', 'high', 'xhigh', 'max']);
+  expect(a.isolation?.type === 'choice' && a.isolation.criteria).toEqual(PLACEMENT_ISOLATION_CRITERIA);
+  expect(questionKeys(input({ project: { ...project, branchPolicy: 'external' } }))).toEqual(['pick_model', 'effort']);
+  expect(questionKeys(input({ gates: closed }))).toEqual(['pick_model', 'effort']);
+  expect(questionKeys(input({ fixed: { isolation: 'worktree' } }))).toEqual(['pick_model', 'effort']);
+  expect(questionKeys(input({ devices: [device('dev_mini', 'Mac mini', { mainBlockedBy: 'Fix login' }), device('dev_studio', 'Studio', { checkoutBranch: 'feature' })] }))).toEqual(['pick_model', 'effort']);
+  expect(questionKeys(input({ fixed: { modelId: 'deep', effort: 'high' } }))).toEqual(['isolation']);
+  expect(questionKeys(input({ statuses: [status('claude_a', 'dev_mini'), status('claude_a', 'dev_studio')] }))).toEqual(['isolation', 'effort']);
+  // Nothing to ask: no Jev call, and the record lists only the explicit fields (D30b).
+  const decide = jev();
+  const record = await placed(input({ gates: closed, settings: { ...settings, menu: [deep] }, fixed: { effort: 'max' } }), decide);
+  expect(decide).not.toHaveBeenCalled();
+  expect(record).toMatchObject({ source: 'fixed', fixed: ['effort'], modelId: 'deep', effortEffective: 'max', deviceId: 'dev_mini', accountId: 'claude_a', jevCalls: [] });
+  expect(record).not.toHaveProperty('probabilities'); expect(record).not.toHaveProperty('error');
+});
+
+test('Call B offers each device that can run the chosen model, with the brief criteria', () => {
+  const value = input({ devices: [device('dev_mini', 'Mac mini', { running: 2, checkoutBranch: 'main' }), studio, device('dev_lab', 'Lab', { running: 3, checkoutBranch: 'feature' }), device('dev_bare', 'Bare', { hasPath: false })],
+    statuses: [...ready(['dev_mini', 'dev_lab']), status('claude_a', 'dev_studio'), status('codex_a', 'dev_studio', { auth: 'needs-login' })] });
+  const result = candidates(value);
+  expect(preparePlacementB(value, result, { isolation: 'worktree', model: swift })).toEqual({ device: { type: 'choice', instructions: 'Choose the device that should run this thread.', criteria: {
+    dev_mini: "Mac mini: 2 threads running here, this is the coordinator's device, project checkout is on main", dev_lab: 'Lab: 3 threads running here, project checkout is on feature' } } });
+  const deepWorktree = preparePlacementB(value, result, { isolation: 'worktree', model: deep }).device;
+  expect(deepWorktree?.type === 'choice' && deepWorktree.criteria).toEqual({ dev_mini: "Mac mini: 2 threads running here, this is the coordinator's device, project checkout is on main",
+    dev_studio: 'Studio: 0 threads running here', dev_lab: 'Lab: 3 threads running here, project checkout is on feature' });
+  const deepMain = preparePlacementB(value, result, { isolation: 'main', model: deep }).device;
+  expect(deepMain?.type === 'choice' && Object.keys(deepMain.criteria)).toEqual(['dev_mini', 'dev_studio']);
+  expect(PLACEMENT_INSTRUCTIONS.device).toBe('Choose the device that should run this thread.');
+  const fixed = input({ ...value, fixed: { deviceId: 'dev_mini' } });
+  expect(preparePlacementB(fixed, candidates(fixed), { isolation: 'worktree', model: deep })).toEqual({});
+  const single = input({ gates: closed });
+  expect(preparePlacementB(single, candidates(single), { isolation: 'worktree', model: deep })).toEqual({});
+  const narrowed = input({ ...value, statuses: [status('claude_a', 'dev_mini'), status('claude_a', 'dev_studio'), status('codex_a', 'dev_lab')] });
+  expect(preparePlacementB(narrowed, candidates(narrowed), { isolation: 'worktree', model: swift })).toEqual({});
+  const busy = input({ devices: [device('dev_mini', 'Mac mini', { mainBlockedBy: 'Fix login' }), studio], statuses: [status('codex_a', 'dev_mini'), status('claude_a', 'dev_mini'), status('claude_a', 'dev_studio')] });
+  expect(() => preparePlacementB(busy, candidates(busy), { isolation: 'main', model: swift })).toThrow('This model is not a placement candidate for this isolation.');
+});
+
+test('Jev answers resolve to the highest probability, the mapped effort and the best-ranked account on the chosen device', async () => {
+  const value = input({ accounts: [...accounts, account('claude_b', 'claude')],
+    statuses: [status('codex_a', 'dev_mini'), status('codex_a', 'dev_studio'), status('claude_a', 'dev_mini'), status('claude_a', 'dev_studio', { usage: usage(80) }), status('claude_b', 'dev_studio', { usage: usage(10) })] });
+  // Jev's choice sits 0.011 below the maximum: the parser accepts it and the maximum wins (D30).
+  const decide = jev({ isolation: { choice: 'worktree', probabilities: { worktree: 0.8, main: 0.2 } }, pick_model: { choice: 'swift', probabilities: { swift: 0.4945, deep: 0.5055 } },
+    effort: { choice: 'max', probabilities: { low: 0, medium: 0.1, high: 0.3, xhigh: 0, max: 0.6 } } }, { device: 'dev_studio' });
+  const record = await placed(value, decide);
+  expect(record).toEqual({ schema: 'placement-v1', questionSet: 'p-v1', source: 'jev', fixed: [], isolation: 'worktree', runtime: 'claude', modelId: 'deep', model: 'deep-version',
+    effortRequested: 'max', effortEffective: 'max', deviceId: 'dev_studio', accountId: 'claude_b',
+    probabilities: { isolation: { worktree: 0.8, main: 0.2 }, pick_model: { swift: 0.4945, deep: 0.5055 }, effort: { low: 0, medium: 0.1, high: 0.3, xhigh: 0, max: 0.6 }, device: { dev_mini: 0, dev_studio: 1 } },
+    eligibleModels: ['swift', 'deep'], excludedModels: [], eligibleDevices: ['dev_mini', 'dev_studio'], excludedDevices: [], jevCalls: [placementCall, placementCall], decidedAt: '2026-10-03T10:00:00.000Z' });
+  expect(PlacementRecordSchema.parse(record)).toEqual(record);
+  const [first, second] = decide.mock.calls.map(([request]) => request);
+  expect(Object.keys(first!.questions)).toEqual(['isolation', 'pick_model', 'effort']); expect(Object.keys(second!.questions)).toEqual(['device']);
+  expect(first!.model).toBe('jev-1.13.0'); expect(second!.state).toBe(first!.state);
+  expect(PlacementStateSchema.parse(JSON.parse(first!.state))).toMatchObject({ schema: 'placement-state-v1', thread: { title: 'Add A', task: 'Add the A endpoint with tests.' } });
+  // Effort maps to the chosen model; an exact tie goes to Jev's choice, else to the first tied option.
+  const local = input({ gates: closed });
+  expect(await placed(local, jev({ pick_model: 'deep', effort: 'low' }))).toMatchObject({ modelId: 'deep', effortRequested: 'low', effortEffective: 'high', probabilities: { pick_model: { swift: 0, deep: 1 } } });
+  expect(await placed(local, jev({ pick_model: { choice: 'deep', probabilities: { swift: 0.5, deep: 0.5 } } }))).toMatchObject({ modelId: 'deep' });
+  expect(await placed(local, jev({ pick_model: 'swift', effort: { choice: 'low', probabilities: { low: 0.33, medium: 0.335, high: 0.335, xhigh: 0, max: 0 } } })))
+    .toMatchObject({ modelId: 'swift', effortRequested: 'medium', effortEffective: 'medium' });
+  expect(await placed(input({ gates: closed, fixed: { modelId: 'swift' } }), jev({ effort: 'max' }))).toMatchObject({ source: 'jev', fixed: ['model'], effortRequested: 'max', effortEffective: 'xhigh', probabilities: { effort: { max: 1 } } });
+});
+
+test('every Jev failure except cancellation places with the fallback and records why', async () => {
+  const kinds = ['no-key', 'auth', 'rate-limited', 'unavailable', 'timeout', 'network', 'invalid-request', 'invalid-response', 'state-too-large'] as const;
+  for (const kind of kinds) {
+    const record = await placed(input(), jev(new JevError(kind)));
+    expect(record).toMatchObject({ source: 'fallback', isolation: 'worktree', modelId: 'swift', effortRequested: 'medium', effortEffective: 'medium', deviceId: 'dev_mini', accountId: 'codex_a',
+      error: { kind, message: new JevError(kind).message }, jevCalls: [] });
+    expect(record).not.toHaveProperty('probabilities');
+  }
+  await expect(place(input(), jev(new JevError('cancelled')))).rejects.toMatchObject({ kind: 'cancelled' });
+  const stopped = new AbortController(); stopped.abort(); const idle = jev();
+  await expect(place(input(), idle, stopped.signal)).rejects.toMatchObject({ kind: 'cancelled' }); expect(idle).not.toHaveBeenCalled();
+  await expect(place(input(), jev(new Error('Unexpected bug.')))).rejects.toThrow('Unexpected bug.');
+  // The hub-backed key source is unreachable: the client raises a plain 503 error before any request.
+  const hubDown = new JevClient({ key: () => { throw Object.assign(new Error('Hub unavailable.'), { status: 503 }); }, timeoutMs: 1000 });
+  expect((await placed(input(), (request, signal) => hubDown.decide(request, signal))).error).toEqual({ kind: 'credential-unavailable', message: 'The credential source is unavailable. Retry when it reconnects.' });
+  const transport = vi.fn<typeof fetch>(async () => new Response('Private provider body is not evidence.', { status: 401 }));
+  const rejected = new JevClient({ key: () => 'jev-test-key', timeoutMs: 1000, fetch: transport });
+  const auth = await placed(input(), (request, signal) => rejected.decide(request, signal));
+  expect(auth).toMatchObject({ source: 'fallback', error: { kind: 'auth', message: 'authentication failed' } }); expect(JSON.stringify(auth)).not.toContain('Private provider body');
+  expect(transport).toHaveBeenCalledTimes(1);
+  // The fallback keeps its own rules: the default isolation (coerced), the coordinator device, else the fewest running by name.
+  expect((await placed(input({ defaultIsolation: 'main' }), jev(new JevError('timeout')))).isolation).toBe('main');
+  expect((await placed(input({ defaultIsolation: 'main', project: { ...project, branchPolicy: 'external' } }), jev(new JevError('timeout')))).isolation).toBe('worktree');
+  const roster = input({ settings: { ...settings, menu: [swift] }, coordinatorDeviceId: 'dev_none', devices: [device('dev_zeta', 'Zeta', { running: 1 }), device('dev_alpha', 'Alpha', { running: 1 })], statuses: ['dev_zeta', 'dev_alpha'].map((id) => status('codex_a', id)) });
+  expect((await placed(roster, jev(new JevError('network')))).deviceId).toBe('dev_alpha');
+});
+
+test('a failed Call B keeps Call A in the record, and main with a model no main checkout can run falls back', async () => {
+  const decide = jev({ isolation: 'main', pick_model: 'deep', effort: 'max' }, new JevError('timeout'));
+  const record = await placed(input(), decide);
+  expect(decide).toHaveBeenCalledTimes(2);
+  expect(record).toMatchObject({ source: 'fallback', isolation: 'worktree', modelId: 'swift', effortRequested: 'medium', deviceId: 'dev_mini', error: { kind: 'timeout', message: 'request timed out' }, jevCalls: [placementCall] });
+  expect(record).not.toHaveProperty('probabilities');
+  // Swift runs only on Studio, whose checkout is on a feature branch: Jev's main + swift pair has no device (D250).
+  const split = input({ devices: [device('dev_mini', 'Mac mini', { checkoutBranch: 'main' }), device('dev_studio', 'Studio', { checkoutBranch: 'feature' })],
+    statuses: [status('codex_a', 'dev_studio'), status('claude_a', 'dev_mini'), status('claude_a', 'dev_studio')] });
+  expect(candidates(split).main!.models.map((entry) => entry.model.id)).toEqual(['deep']);
+  const incompatible = jev({ isolation: 'main', pick_model: 'swift', effort: 'high' });
+  expect(await placed(split, incompatible)).toMatchObject({ source: 'fallback', error: PLACEMENT_INCOMPATIBLE, isolation: 'worktree', modelId: 'swift', deviceId: 'dev_studio', jevCalls: [placementCall] });
+  expect(incompatible).toHaveBeenCalledTimes(1);
+  expect(PLACEMENT_INCOMPATIBLE).toEqual({ kind: 'incompatible-answer', message: 'no device can run the chosen model on main' });
+  expect(await placed(split, jev({ isolation: 'main', pick_model: 'deep', effort: 'high' }))).toMatchObject({ source: 'jev', isolation: 'main', modelId: 'deep', deviceId: 'dev_mini', eligibleDevices: ['dev_mini'],
+    excludedDevices: [{ deviceId: 'dev_studio', reason: 'checkout is on feature, not main' }] });
+});
+
+test('placement refuses without candidates before asking Jev and passes the running-limit flag on', async () => {
+  const decide = jev();
+  expect(await place(input({ statuses: [] }), decide)).toEqual({ kind: 'refused', message: 'No device can run any enabled model: Mac mini: Codex needs login; Mac mini: Claude needs login; Studio: Codex needs login; Studio: Claude needs login.' });
+  expect(await place(input({ settings: { ...settings, menu: [{ ...swift, enabled: false }] } }), decide)).toEqual({ kind: 'refused', message: NO_THREAD_MODEL });
+  expect(decide).not.toHaveBeenCalled();
+  const full = input({ gates: closed, devices: [device('dev_mini', 'Mac mini', { running: 4 })] });
+  expect(await place(full, jev({}))).toMatchObject({ kind: 'placed', atLimit: true, record: { deviceId: 'dev_mini' } });
+  expect(await place(input({ gates: closed }), jev({}))).toMatchObject({ kind: 'placed', atLimit: false });
+});
+
+test('the placement packet is redacted before the task is shortened and carries the newest override sentences', () => {
+  const secret = 'zq9-private-token-77'; const redactor = new SecretRedactor(); redactor.add(secret);
+  const overrides: PlacementPacketInput['overrides'] = [
+    { title: 'Add A', mode: 'next-turn', changes: [{ field: 'effort', from: 'high', to: 'low' }], at: '2026-10-03T09:00:00Z' },
+    { title: 'Add B', mode: 'restart', changes: [{ field: 'model', from: 'deep', to: 'swift' }, { field: 'device', from: 'dev_mini', to: 'dev_studio' }], at: '2026-10-03T09:30:00Z' }];
+  const active = { title: 'Fix login', isolation: 'worktree' as const, device: 'Mac mini', model: 'Deep', effort: 'high' as const, reservedPaths: ['src/login.ts'] };
+  // The secret straddles the cut: shortening first would leave its first characters in the packet.
+  const build = (over: Partial<PlacementPacketInput> = {}, value = input()) => buildPlacementState({ ...value, packet: { ...packet, ...over }, redactor });
+  const { state, approximateTokens: tokens } = build({ title: `Add A ${secret}`, task: `${'x'.repeat(5975)}${secret}${'y'.repeat(100)}`, note: `  Use the ${secret} with Bearer abc123 now.  `, activeThreads: [active], overrides });
+  expect(state).not.toContain(secret.slice(0, 7)); expect(state).not.toContain('abc123');
+  expect(JSON.parse(state)).toEqual({ schema: 'placement-state-v1',
+    rules: { routingProfile: settings.routingProfile, effortGuide: settings.effortGuide,
+      recentOverrides: ["model changed from deep to swift for 'Add B' (restart)", "device changed from dev_mini to dev_studio for 'Add B' (restart)", "effort changed from high to low for 'Add A' (next-turn)"] },
+    project: { name: 'App', defaultIsolation: 'worktree' },
+    thread: { title: 'Add A [redacted]', task: `${'x'.repeat(5975)}[redact${TASK_SHORTENED}`, coordinatorNote: 'Use the [redacted] with Bearer [redacted] now.' }, activeThreads: [active] });
+  expect(TASK_SHORTENED).toBe('\n[Task shortened.]'); expect(JSON.parse(state).thread.task).toHaveLength(6000);
+  expect(tokens).toBe(approximateTokens(state)); expect(tokens).toBeLessThanOrEqual(12_000);
+  expect(overrideSentence({ field: 'effort', from: 'high', to: 'low' }, 'Add A', 'next-turn')).toBe("effort changed from high to low for 'Add A' (next-turn)");
+  const parsed = (over: Partial<PlacementPacketInput> = {}, value = input()) => PlacementStateSchema.parse(JSON.parse(build(over, value).state));
+  expect(parsed({ task: 'y'.repeat(6000), note: ' ' })).toMatchObject({ thread: { task: 'y'.repeat(6000) } }); expect(parsed({ note: ' ' }).thread).not.toHaveProperty('coordinatorNote');
+  expect(parsed({ note: 'n'.repeat(700) }).thread.coordinatorNote).toBe('n'.repeat(600));
+  // The newest 8 overrides, newest first; the newest 50 active threads in their order.
+  const many = Array.from({ length: 10 }, (_, index) => ({ title: `T${index}`, mode: 'next-turn' as const, changes: [{ field: 'effort' as const, from: 'low', to: 'high' }], at: new Date(now + index * 60_000).toISOString() }));
+  expect(parsed({ overrides: [...many].reverse() }).rules.recentOverrides).toEqual(many.slice(2).reverse().map((entry) => `effort changed from low to high for '${entry.title}' (next-turn)`));
+  const threads = Array.from({ length: 52 }, (_, index) => ({ ...active, title: `Thread ${index}` }));
+  expect(parsed({ activeThreads: threads }).activeThreads.map((thread) => thread.title)).toEqual(threads.slice(2).map((thread) => thread.title));
+  // The default isolation is the effective one: main only when main can be offered.
+  expect(parsed({}, input({ defaultIsolation: 'main' })).project.defaultIsolation).toBe('main');
+  expect(parsed({}, input({ defaultIsolation: 'main', gates: closed })).project.defaultIsolation).toBe('worktree');
+  expect(parsed({}, input({ defaultIsolation: 'main', project: { ...project, branchPolicy: 'external' } })).project.defaultIsolation).toBe('worktree');
+});
+
+test('an oversized packet drops reserved paths, then threads, then overrides, oldest first, and falls back when still too large', async () => {
+  const build = (over: Partial<PlacementPacketInput>, value = input()) => {
+    const result = buildPlacementState({ ...value, packet: { ...packet, ...over }, redactor: noSecrets });
+    expect(result.approximateTokens).toBeLessThanOrEqual(12_000); return PlacementStateSchema.parse(JSON.parse(result.state));
+  };
+  const thread = (title: string, reservedPaths: string[] = []) => ({ title, isolation: 'worktree' as const, device: 'Mac mini', model: 'Deep', effort: 'high' as const, reservedPaths });
+  const paths = (prefix: string) => Array.from({ length: 10 }, (_, index) => `${prefix}/${'p'.repeat(1500)}/${index}`);
+  expect(build({ activeThreads: [thread('Old', paths('old')), thread('Mid', paths('mid')), thread('New', paths('new'))] }).activeThreads.map((entry) => [entry.title, entry.reservedPaths.length]))
+    .toEqual([['Old', 0], ['Mid', 10], ['New', 10]]);
+  expect(build({ activeThreads: ['A', 'B', 'C', 'D'].map((name) => thread(`${name}${'t'.repeat(10_000)}`, [`${name}.ts`])) }).activeThreads.map((entry) => [entry.title[0], entry.reservedPaths]))
+    .toEqual([['B', []], ['C', []], ['D', []]]);
+  const overrides = Array.from({ length: 8 }, (_, index) => ({ title: `${index}${'o'.repeat(5000)}`, mode: 'restart' as const, changes: [{ field: 'model' as const, from: 'deep', to: 'swift' }], at: new Date(now + index * 60_000).toISOString() }));
+  const kept = build({ overrides }).rules.recentOverrides;
+  expect(kept.length).toBeGreaterThan(0); expect(kept.length).toBeLessThan(8);
+  expect(kept).toEqual([...overrides].reverse().slice(0, kept.length).map((entry) => overrideSentence(entry.changes[0]!, entry.title, entry.mode)));
+  // Rules and the thread itself are never dropped: the packet is too large and placement falls back without asking Jev.
+  const huge = input({ settings: { ...settings, menu: [swift, deep], routingProfile: 'r'.repeat(40_000) } });
+  expect(() => buildPlacementState({ ...huge, packet, redactor: noSecrets })).toThrow('decision context exceeds the size limit');
+  const decide = jev();
+  expect(await placed(huge, decide)).toMatchObject({ source: 'fallback', error: { kind: 'state-too-large', message: 'decision context exceeds the size limit' }, jevCalls: [] });
+  expect(decide).not.toHaveBeenCalled();
+  // The packet is built only when a question needs it.
+  expect(await placed(input({ ...huge, gates: closed, settings: { ...huge.settings, menu: [deep] }, fixed: { effort: 'high' } }), decide)).toMatchObject({ source: 'fixed' });
 });

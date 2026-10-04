@@ -1,16 +1,17 @@
 import { expect, test } from 'vitest';
 import {
-  COORDINATOR_TOOLS, NO_CHANGES, ProjectDecisionSchema, ProjectWorkListViewSchema, ProjectWorkSettingsRequestSchema, ThreadCreateRequestSchema, ThreadIndexSchema,
-  ThreadReportSchema, defaultProjectWorkSettings,
-  type CursorTurn, type ProjectDecision, type ProjectLedgerEvent, type ProjectWorkView, type PullRequestEntry, type ThreadIndex, type ThreadReport,
+  COORDINATOR_TOOLS, EffortSchema, NO_CHANGES, PlacementRecordSchema, ProjectDecisionSchema, ProjectWorkListViewSchema, ProjectWorkSettingsRequestSchema,
+  ThreadCreateRequestSchema, ThreadIndexSchema, ThreadOverrideRequestSchema, ThreadReportSchema, defaultProjectWorkSettings, mapEffort,
+  type CursorTurn, type Effort, type PlacementRecord, type ProjectDecision, type ProjectLedgerEvent, type ProjectWorkView, type PullRequestEntry, type ThreadIndex,
+  type ThreadReport, type ThreadView,
 } from '../packages/core/dist/index.js';
 import * as server from '../packages/projects/dist/copy.js';
 import * as copy from '../apps/web/src/project-work-copy.js';
 import {
-  alignReports, chatItems, checksBadge, composerBlock, coordinatorChip, coordinatorLabel, decisionSource, defaultTab, deviceBlock, dotClass, mainIsolationBlock,
-  mergeBlock, openPullRequests, outcomeText, placementLine, projectDot, projectRoute, pullRequestBadges, reportBadge, rowClockMs, sentText, settingsRequest, showSent,
-  sidebarProjects, threadActions, threadCreateRequest, threadLiveText, threadMeta, threadPollDelay, threadSections, toolIcon, transcriptNotice, withdrawals,
-  withoutReportCalls, working,
+  alignReports, chatItems, checksBadge, composerBlock, coordinatorChip, coordinatorLabel, decisionSource, defaultTab, deviceBlock, dotClass, effortChoices, fallbackChip,
+  mainIsolationBlock, mergeBlock, nearestEffort, openPullRequests, outcomeText, overrideForm, overrideOffered, overrideReady, overrideRequest, placementLine, projectDot,
+  projectRoute, pullRequestBadges, reportBadge, restartedThread, rowClockMs, sentText, settingsRequest, showSent, sidebarProjects, threadActions, threadCreateRequest,
+  threadLiveText, threadMeta, threadPollDelay, threadSections, toolIcon, transcriptNotice, whyFields, withdrawals, withoutReportCalls, working,
 } from '../apps/web/src/project-work-model.js';
 import { dateOnly, duration, relativeDuration, shortTime, timeStamp } from '../apps/web/src/time.js';
 
@@ -375,6 +376,86 @@ test('thread transcript notes, report badges and the header pull request badges'
   expect(pullRequestBadges(pr({ checks: 'pending' }))).toEqual([{ text: 'Checks running', tone: 'warn' }]);
   expect(pullRequestBadges(pr({ state: 'merged', checks: 'passing' }))).toEqual([{ text: 'Merged', tone: 'ok' }]);
   expect(pullRequestBadges(pr({ state: 'closed', mergeable: 'conflict' }))).toEqual([{ text: 'Closed', tone: 'muted' }]);
+});
+
+const placement = (fields: Partial<PlacementRecord> = {}): PlacementRecord => PlacementRecordSchema.parse({ schema: 'placement-v1', questionSet: 'p-v1', source: 'jev',
+  fixed: [], isolation: 'worktree', runtime: 'claude', modelId: 'fable', model: 'claude-fable-5-1', effortRequested: 'high', effortEffective: 'high', deviceId: 'mac',
+  accountId: 'acc_work', probabilities: { pick_model: { fable: 0.7, opus: 0.2, gpt: 0.1 }, effort: { low: 0.1, medium: 0.1, high: 0.6, xhigh: 0.1, max: 0.1 } },
+  eligibleModels: ['fable', 'opus', 'gpt'], excludedModels: [{ modelId: 'sonnet', reason: 'disabled in Settings' }], eligibleDevices: ['mac'],
+  excludedDevices: [{ deviceId: 'mini', reason: 'offline' }], jevCalls: [], decidedAt: ago(5), ...fields });
+const overrideView = (fields: { placement?: Partial<PlacementRecord>; nextTurn?: boolean; restart?: boolean; restartReason?: string } = {}) => ({
+  thread: thread({ runtime: 'claude', modelLabel: 'Fable', ownerDeviceId: 'mac' }), placement: placement(fields.placement),
+  canOverride: { nextTurn: fields.nextTurn ?? true, restart: fields.restart ?? true, ...(fields.restartReason ? { restartReason: fields.restartReason } : {}) } });
+
+test('the Why panel reads the placement field by field: Jev bars with the current value, fixed, only option, fallback and owner changes (D255)', () => {
+  const fields = whyFields(placement());
+  expect(fields.map((field) => [field.field, field.value, field.source])).toEqual([['isolation', 'worktree', 'only'], ['model', 'fable', 'jev'], ['effort', 'high', 'jev'], ['device', 'mac', 'only']]);
+  expect(fields[1]!.bars).toEqual([{ option: 'fable', p: 0.7, chosen: true }, { option: 'opus', p: 0.2, chosen: false }, { option: 'gpt', p: 0.1, chosen: false }]);
+  expect(fields[2]!.bars.map((bar) => bar.option)).toEqual(['high', 'low', 'medium', 'xhigh', 'max']);
+  // A next-turn override keeps Jev's probabilities (D252): the bars mark what runs now and the field reads as the owner's change.
+  const changed = whyFields(placement({ modelId: 'opus', effortRequested: 'low', effortEffective: 'low' }));
+  expect(changed.slice(1, 3).map((field) => [field.source, field.bars.find((bar) => bar.chosen)?.option])).toEqual([['changed', 'opus'], ['changed', 'low']]);
+  // An exact tie with the top option is still Jev's answer.
+  expect(whyFields(placement({ probabilities: { pick_model: { fable: 0.5, opus: 0.5 } }, modelId: 'opus' }))[1]!.source).toBe('jev');
+  expect(whyFields(placement({ source: 'fixed', fixed: ['model', 'effort'], probabilities: undefined })).map((field) => field.source)).toEqual(['only', 'fixed', 'fixed', 'only']);
+  const fallback = placement({ source: 'fallback', probabilities: undefined, effortRequested: 'medium', error: { kind: 'auth', message: 'authentication failed' } });
+  expect(whyFields(fallback).map((field) => [field.source, field.value, field.bars.length])).toEqual([['fallback', 'worktree', 0], ['fallback', 'fable', 0], ['fallback', 'medium', 0], ['fallback', 'mac', 0]]);
+  expect(whyFields(placement({ fixed: ['device'], probabilities: { device: { mac: 0.9, mini: 0.1 } } }))[3]!.source).toBe('fixed');
+  // The 9.8 chip only for a fallback with its recorded reason.
+  expect(fallbackChip(fallback)).toBe('Placed without Jev: authentication failed');
+  expect(fallbackChip(fallback)).toBe(server.placedWithoutJev('authentication failed'));
+  expect(fallbackChip(placement())).toBeNull();
+  expect(fallbackChip(placement({ source: 'fixed', probabilities: undefined }))).toBeNull();
+});
+
+test("override efforts: the model's own plus the requested one with what it runs as, mapped like the server (D255)", () => {
+  for (const requested of EffortSchema.options) {
+    for (const supported of [['low', 'high'], ['high', 'max'], ['medium'], ['low', 'medium', 'high', 'xhigh', 'max']] as Effort[][]) {
+      expect(nearestEffort(requested, supported), `${requested} ${supported.join()}`).toBe(mapEffort(requested, supported));
+    }
+  }
+  expect(effortChoices(['low', 'high'], 'medium')).toEqual([{ effort: 'low' }, { effort: 'medium', runsAs: 'high' }, { effort: 'high' }]);
+  expect(effortChoices(['low', 'high'], 'high')).toEqual([{ effort: 'low' }, { effort: 'high' }]);
+  expect(effortChoices(['high', 'max'], 'low')).toEqual([{ effort: 'low', runsAs: 'high' }, { effort: 'high' }, { effort: 'max' }]);
+  expect(effortChoices(undefined, 'medium').map((choice) => choice.effort)).toEqual(EffortSchema.options);
+  expect(copy.effortRunsAs('medium', 'high')).toBe('medium (runs as high)');
+});
+
+test('override requests: the next turn sends only what changed, a restart every field not on Automatic, and Apply needs something to do (D255)', () => {
+  const view = overrideView({ placement: { effortRequested: 'medium', effortEffective: 'high' } });
+  const form = overrideForm(view);
+  expect(form).toEqual({ mode: 'next-turn', isolation: 'worktree', modelId: 'fable', effort: 'medium', deviceId: 'mac', note: '' });
+  // Left alone, nothing changes: the requested effort is the default, so the mapped one never reads as a change.
+  expect(overrideRequest(view, form)).toEqual({ schema: 'thread-override-request-v1', mode: 'next-turn' });
+  expect(overrideReady(view, form)).toBe(false);
+  expect(overrideReady(view, { ...form, note: 'Only a note.' })).toBe(false);
+  const next = overrideRequest(view, { ...form, modelId: 'opus', effort: 'low', note: '  Cheaper for this part.  ' });
+  expect(ThreadOverrideRequestSchema.parse({ ...next, clientRequestId: 'override_1' })).toEqual({ schema: 'thread-override-request-v1', clientRequestId: 'override_1',
+    mode: 'next-turn', modelId: 'opus', effort: 'low', note: 'Cheaper for this part.' });
+  expect(overrideRequest(view, { ...form, effort: 'medium', modelId: 'opus' })).toEqual({ schema: 'thread-override-request-v1', mode: 'next-turn', modelId: 'opus' });
+  expect(overrideReady(view, { ...form, effort: 'low' })).toBe(true);
+  // A restart keeps what the modal shows: every field not on Automatic is fixed for the new thread.
+  const restart = { ...form, mode: 'restart' as const };
+  expect(ThreadOverrideRequestSchema.parse({ ...overrideRequest(view, restart), clientRequestId: 'override_2' })).toEqual({ schema: 'thread-override-request-v1',
+    clientRequestId: 'override_2', mode: 'restart', isolation: 'worktree', modelId: 'fable', effort: 'medium', deviceId: 'mac' });
+  expect(overrideRequest(view, { ...restart, isolation: '', modelId: '', effort: '', deviceId: '' })).toEqual({ schema: 'thread-override-request-v1', mode: 'restart' });
+  expect(overrideReady(view, restart)).toBe(true);
+  // The server's refusals decide what is offered; the modal opens on Restart for a thread that takes no more turns.
+  const refused = overrideView({ restart: false, restartReason: server.RESTART_OPEN_PULL_REQUEST });
+  expect(overrideReady(refused, { ...overrideForm(refused), mode: 'restart' })).toBe(false);
+  expect(overrideForm(overrideView({ nextTurn: false })).mode).toBe('restart');
+  expect([overrideOffered(refused), overrideOffered(overrideView({ nextTurn: false })), overrideOffered(overrideView({ nextTurn: false, restart: false }))]).toEqual([true, true, false]);
+  expect(copy.OPEN_PULL_REQUEST_BLOCKS_RESTART).toBe(server.RESTART_OPEN_PULL_REQUEST);
+  void (view satisfies Pick<ThreadView, 'thread' | 'placement' | 'canOverride'>);
+});
+
+test("a restarted thread links the new one from its reason, read with the server's own words (brief 10)", () => {
+  expect(restartedThread(server.restartedReason('thread_new'))).toBe('thread_new');
+  expect(restartedThread('Restarted as thread_new.')).toBe('thread_new');
+  expect(restartedThread('Stopped by you.')).toBeNull();
+  expect(restartedThread(undefined)).toBeNull();
+  expect(restartedThread('Restarted as not an id.')).toBeNull();
+  expect(server.isRestarted(server.restartedReason('thread_new'))).toBe(true);
 });
 
 test('withdrawn questions need a successful call with its reason, once per ledger id and never for history (D84, D200)', () => {

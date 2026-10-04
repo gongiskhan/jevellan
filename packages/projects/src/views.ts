@@ -1,6 +1,6 @@
 import type { AccountService } from '@jevellan/accounts';
 import {
-  ProjectWorkListViewSchema, ProjectWorkViewSchema, ThreadViewSchema, defaultProjectWorkSettings, runningSection, type Configuration, type CoordinatorView, type Project,
+  ProjectWorkListViewSchema, ProjectWorkViewSchema, ThreadViewSchema, defaultProjectWorkSettings, isTerminal, liveWork, type Configuration, type CoordinatorView, type Project,
   type ProjectDecision, type ProjectHub, type ProjectLedgerEvent, type ProjectWorkListView, type ProjectWorkSettings, type ProjectWorkView, type PullRequestEntry,
   type SharedProjects, type ThreadIndex, type ThreadReport, type ThreadView,
 } from '@jevellan/core';
@@ -11,7 +11,7 @@ import { coordinatorPlan, type CoordinatorService } from './coordinator.js';
 import type { ProjectLedgers } from './ledger.js';
 import { PHASE_GATES, type DeviceRoster } from './placement.js';
 import { threadIndex, type ThreadStore } from './stores.js';
-import { atTurnLimit, isDiscarded } from './thread-runner.js';
+import { atTurnLimit, isDiscarded, restartRefusal } from './thread-runner.js';
 import type { ThreadTranscripts } from './transcript.js';
 import type { ThreadWorktree } from './worktree.js';
 
@@ -28,9 +28,12 @@ export function decisionLists(decisions: readonly ProjectDecision[]): { open: Pr
     answered: decisions.filter((decision) => decision.answer).sort((a, b) => (b.answeredAt ?? '').localeCompare(a.answeredAt ?? '')).slice(0, ANSWERED_SHOWN),
   };
 }
-/** Sidebar counts: open questions, the Running section (display only, not the limit count) and threads in review. */
+/**
+ * Sidebar counts: open questions, threads with live work (preparing, running or publishing; an idle or waiting thread is never
+ * called running, D257) and threads in review.
+ */
 export function workCounts(threads: readonly ThreadIndex[], decisions: readonly ProjectDecision[]): { waiting: number; running: number; inReview: number } {
-  return { waiting: decisionLists(decisions).open.length, running: threads.filter((thread) => runningSection(thread.state)).length,
+  return { waiting: decisionLists(decisions).open.length, running: threads.filter((thread) => liveWork(thread.state)).length,
     inReview: threads.filter((thread) => thread.state === 'in-review').length };
 }
 /** Pull requests from the thread indexes, plus branch-only threads with their reason (brief 12.2). */
@@ -146,7 +149,7 @@ export class ProjectViews {
       decisions: decisionLists(decisions), pullRequests: pullRequestEntries(threads), notebookRevision: notebook?.revision ?? 0,
       lastEventId: this.#o.ledgers.coordinator(projectId).lastId(), gates: PHASE_GATES });
   }
-  /** `GET /api/projects/:id/threads/:tid` for a thread this device owns (D81 `canMessage`; overrides arrive in phase 4). */
+  /** `GET /api/projects/:id/threads/:tid` for a thread this device owns (D81 `canMessage`; overrides as the API allows them, D252). */
   async thread(projectId: string, threadId: string): Promise<ThreadView> {
     const thread = this.#o.store.get(threadId);
     if (!thread || thread.projectId !== projectId) throw refuse(THREAD_NOT_FOUND, 404);
@@ -154,11 +157,12 @@ export class ProjectViews {
     const reports = events.filter((event) => event.type === 'thread-report').map((event) => ledger.payload(event as ProjectLedgerEvent & { type: 'thread-report' }) as ThreadReport);
     // The page keeps working when the native session cannot be read; the transcript is just absent.
     const transcript = await this.#o.transcripts.read(thread, project.name).catch(() => null);
+    const restartReason = restartRefusal(thread);
     return ThreadViewSchema.parse({ schema: 'project-thread-view-v1', thread: threadIndex(thread, this.#o.store.labels(threadId), events.at(-1)?.t ?? thread.createdAt),
       placement: thread.placement, reports, transcript, queuedMessages: thread.queuedMessages,
       canMessage: !['attached', 'done', 'stopped', 'failed'].includes(thread.state), turnAllowance: thread.turnAllowance, deviceName: this.#o.deviceName,
       baseBranch: thread.baseBranch, ...(thread.attach ? { attach: thread.attach } : {}), attachCommand: attachCommand(threadId),
-      canOverride: { nextTurn: false, restart: false }, atTurnLimit: atTurnLimit(thread),
+      canOverride: { nextTurn: !isTerminal(thread.state), restart: !restartReason, ...(restartReason ? { restartReason } : {}) }, atTurnLimit: atTurnLimit(thread),
       canDiscard: (thread.state === 'stopped' || thread.state === 'failed') && thread.isolation === 'worktree' && !isDiscarded(thread.stateReason) });
   }
 }

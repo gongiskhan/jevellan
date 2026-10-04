@@ -1,23 +1,28 @@
 import type { z } from 'zod';
 import type { AccountService } from '@jevellan/accounts';
 import {
-  ThreadReadResultSchema, ThreadSchema, concludedRecently, isTerminal, liveWork, newId, type CoordinatorEvent, type ProjectHub, type ProjectLedgerEvent, type SecretRedactor, type SharedProjects,
-  type Thread, type ThreadCommand, type ThreadIndex, type ThreadReport, type ThreadState,
+  EffortSchema, PlacementOverrideSchema, ThreadReadResultSchema, ThreadSchema, concludedRecently, isTerminal, liveWork, mapEffort, newId, stableJson, type Configuration, type CoordinatorEvent,
+  type PlacementOverride, type ProjectHub, type ProjectLedgerEvent, type SecretRedactor, type SharedProjects, type Thread, type ThreadCommand, type ThreadIndex,
+  type ThreadOverrideRequestSchema, type ThreadReport, type ThreadState,
 } from '@jevellan/core';
 import type { PlacementFixed } from '@jevellan/decisions';
 import type { Admission } from './admission.js';
 import {
-  PROJECT_NOT_FOUND, REMOTE_THREADS_LATER, THREAD_ATTACHED, THREAD_ENDED, THREAD_NOT_FOUND, isWaitingForSlot, ownerStartedLine, placementSummary, queuedReason,
+  MODEL_SAME_RUNTIME, NEXT_TURN_FIELDS, PROJECT_NOT_FOUND, REMOTE_THREADS_LATER, THREAD_ATTACHED, THREAD_ENDED, THREAD_NOT_FOUND, UNKNOWN_PLACEMENT_MODEL, isWaitingForSlot,
+  overrideSummary, ownerStartedLine, placementSummary, queuedReason, restartedReason,
 } from './copy.js';
 import type { CoordinatorService } from './coordinator.js';
+import { derivedId } from './decision-items.js';
 import type { ProjectLedgers } from './ledger.js';
 import type { Placement } from './placement.js';
 import type { StartReceipts, ThreadLabels, ThreadStore } from './stores.js';
-import { REST_STATES, ThreadRunner, type ThreadRunnerContext } from './thread-runner.js';
+import { REST_STATES, ThreadRunner, restartRefusal, type ThreadRunnerContext } from './thread-runner.js';
 import { assistantText, type ThreadTranscripts } from './transcript.js';
 
 const refuse = (message: string, status: number) => Object.assign(new Error(message), { status });
 type ThreadReadResult = z.infer<typeof ThreadReadResultSchema>;
+type ThreadOverrideRequest = z.infer<typeof ThreadOverrideRequestSchema>;
+type OverrideChange = PlacementOverride['changes'][number];
 
 /**
  * Every message that crosses the device boundary (2.6.1). Phases 1-4 deliver locally; phase 5 adds the envelope branches
@@ -55,8 +60,10 @@ export type StartResult = { threadId: string; state: ThreadState; stateReason?: 
 export type ThreadServiceOptions = {
   deviceId: string; deviceName: string; redactor: SecretRedactor;
   store: ThreadStore; ledgers: ProjectLedgers; receipts: StartReceipts;
-  hub: Pick<ProjectHub, 'threads'>; projects: Pick<SharedProjects, 'get'>;
-  admission: Pick<Admission, 'admit' | 'counts' | 'settings'>; placement: Pick<Placement, 'place'>; accounts: Pick<AccountService, 'list'>;
+  hub: Pick<ProjectHub, 'threads' | 'addOverride'>; projects: Pick<SharedProjects, 'get'>;
+  admission: Pick<Admission, 'admit' | 'counts' | 'settings'>; placement: Pick<Placement, 'place' | 'refusal'>; accounts: Pick<AccountService, 'list'>;
+  /** The configuration: the menu resolves an overridden model. */
+  settings(): Promise<Configuration['x-jevellan']>;
   transcripts: Pick<ThreadTranscripts, 'read'>;
   delivery: Delivery;
   /** Everything a runner needs except `rested`, which the service provides. */
@@ -164,6 +171,77 @@ export class ThreadService {
       return this.#result(thread, { modelLabel: placed.labels.modelLabel, deviceName: placed.labels.deviceName }, false);
     });
   }
+  #at(at: number): string { return new Date(at).toISOString(); }
+  #note(note: string | undefined): string | undefined { const trimmed = note?.trim(); return trimmed ? this.#o.redactor.text(trimmed).slice(0, 400) : undefined; }
+  /**
+   * From the next turn (brief 10, D50, D252): the model (same runtime only) and the effort of the thread's next turn. Only changed
+   * fields are recorded, `from` being the requested value; the hub record comes first, so a refused write changes nothing, then the
+   * coordinator hears it, then the owner applies it. A retry with the same request id repeats; nothing to change is a no-op.
+   */
+  async overrideNextTurn(projectId: string, threadId: string, input: ThreadOverrideRequest): Promise<void> {
+    const thread = this.#local(projectId, threadId); const placement = thread.placement;
+    if (input.isolation !== undefined || input.deviceId !== undefined) throw refuse(NEXT_TURN_FIELDS, 400);
+    if (isTerminal(thread.state)) throw refuse(THREAD_ENDED, 409);
+    const model = input.modelId === undefined ? undefined : (await this.#o.settings()).menu.find((entry) => entry.id === input.modelId);
+    if (input.modelId !== undefined && !model) throw refuse(UNKNOWN_PLACEMENT_MODEL, 409);
+    if (model && model.runtime !== placement.runtime) throw refuse(MODEL_SAME_RUNTIME, 409);
+    const changes: OverrideChange[] = [...(model && model.id !== placement.modelId ? [{ field: 'model' as const, from: placement.modelId, to: model.id }] : []),
+      ...(input.effort !== undefined && input.effort !== placement.effortRequested ? [{ field: 'effort' as const, from: placement.effortRequested, to: input.effort }] : [])];
+    if (!changes.length) return;
+    if (model && model.id !== placement.modelId) {
+      // The model must be able to run this thread where it is: enabled, its runtime able to run threads, an account on this device.
+      const project = (await this.#o.projects.get(projectId))?.project; if (!project) throw refuse(PROJECT_NOT_FOUND, 404);
+      const refused = await this.#o.placement.refusal({ project, workSettings: await this.#o.admission.settings(projectId), title: thread.title, task: thread.task,
+        fixed: { isolation: thread.isolation, modelId: model.id, deviceId: thread.ownerDeviceId }, coordinatorDeviceId: thread.coordinatorDeviceId, ignoreRunningLimit: true });
+      if (refused) throw refuse(refused, 409);
+    }
+    const at = this.#o.now(); const note = this.#note(input.note);
+    const override = PlacementOverrideSchema.parse({ schema: 'placement-override-v1', id: derivedId('povr', projectId, threadId, input.clientRequestId), projectId, threadId,
+      mode: 'next-turn', changes, ...(note ? { note } : {}), at: this.#at(at) });
+    await this.#o.hub.addOverride(override);
+    await this.#o.delivery.toCoordinator(projectId, { schema: 'coordinator-event-v1', kind: 'placement-override', id: derivedId('cev', override.id), at: this.#at(at), threadId,
+      summary: overrideSummary({ changes, note }) });
+    await this.#o.delivery.toThreadOwner(projectId, threadId, thread.ownerDeviceId, { type: 'override-next-turn', override });
+  }
+  /** The owner applies a next-turn override: the next launch reads the thread's placement, so a running turn keeps its own (D252). */
+  async #applyNextTurn(threadId: string, override: PlacementOverride): Promise<void> {
+    const menu = (await this.#o.settings()).menu; const current = this.#o.store.get(threadId)!;
+    if (isTerminal(current.state)) throw refuse(THREAD_ENDED, 409);
+    const to = (field: OverrideChange['field']) => override.changes.find((change) => change.field === field)?.to;
+    const model = menu.find((entry) => entry.id === (to('model') ?? current.placement.modelId));
+    if (!model) throw refuse(UNKNOWN_PLACEMENT_MODEL, 409);
+    const requested = EffortSchema.parse(to('effort') ?? current.placement.effortRequested);
+    const placement = { ...current.placement, modelId: model.id, model: model.model, effortRequested: requested, effortEffective: mapEffort(requested, model.efforts) };
+    if (stableJson(placement) !== stableJson(current.placement)) this.#o.store.update(threadId, (latest) => ({ ...latest, placement }), { type: 'thread-placement', data: placement });
+    this.#o.store.setLabels(threadId, { modelLabel: model.label });
+  }
+  /**
+   * Restart with these choices (brief 10, D252): a new thread with the same title and task and the given fields fixed is placed
+   * first, through the start path with a request id derived from this one, so a refusal leaves this thread untouched and a retry
+   * finds the same new thread. Then the change is recorded, this thread ends with `Restarted as {newId}.` and its worktree goes,
+   * and the coordinator hears both. `coordinatorDeviceId` is the device that starts threads (D9a).
+   */
+  async restart(projectId: string, threadId: string, input: ThreadOverrideRequest, coordinatorDeviceId: string): Promise<{ newThreadId: string }> {
+    const thread = this.#local(projectId, threadId); const placement = thread.placement;
+    const fixed: PlacementFixed = { ...(input.isolation ? { isolation: input.isolation } : {}), ...(input.modelId ? { modelId: input.modelId } : {}),
+      ...(input.effort ? { effort: input.effort } : {}), ...(input.deviceId ? { deviceId: input.deviceId } : {}) };
+    const clientRequestId = derivedId('treq', 'restart', projectId, threadId, input.clientRequestId);
+    // A retry of an applied restart passes the refusals that the restart itself caused.
+    if (!this.#o.receipts.get(projectId, clientRequestId, { title: thread.title, task: thread.task, ...fixed })) { const refused = restartRefusal(thread); if (refused) throw refuse(refused, 409); }
+    const note = this.#note(input.note);
+    const started = await this.start({ projectId, title: thread.title, task: thread.task, createdBy: 'owner', fixed, note, clientRequestId, coordinatorDeviceId });
+    const changes: OverrideChange[] = [
+      ...(fixed.isolation !== undefined && fixed.isolation !== thread.isolation ? [{ field: 'isolation' as const, from: thread.isolation, to: fixed.isolation }] : []),
+      ...(fixed.modelId !== undefined && fixed.modelId !== placement.modelId ? [{ field: 'model' as const, from: placement.modelId, to: fixed.modelId }] : []),
+      ...(fixed.effort !== undefined && fixed.effort !== placement.effortRequested ? [{ field: 'effort' as const, from: placement.effortRequested, to: fixed.effort }] : []),
+      ...(fixed.deviceId !== undefined && fixed.deviceId !== thread.ownerDeviceId ? [{ field: 'device' as const, from: thread.ownerDeviceId, to: fixed.deviceId }] : [])];
+    const id = derivedId('povr', projectId, threadId, input.clientRequestId); const at = this.#at(this.#o.now());
+    if (changes.length) await this.#o.hub.addOverride(PlacementOverrideSchema.parse({ schema: 'placement-override-v1', id, projectId, threadId, mode: 'restart', changes, ...(note ? { note } : {}), at }));
+    await this.runner(threadId)!.restarted(restartedReason(started.threadId));
+    await this.#o.delivery.toCoordinator(projectId, { schema: 'coordinator-event-v1', kind: 'placement-override', id: derivedId('cev', id), at, threadId,
+      summary: overrideSummary({ changes, note, restartedAs: started.threadId }) });
+    return { newThreadId: started.threadId };
+  }
   /**
    * The coordinator's queue sweep (D9a): `queued` threads in creation order start as slots free; a full device is skipped,
    * a full project ends the sweep.
@@ -235,7 +313,7 @@ export class ThreadService {
       case 'stop': await runner.stop(command.reason, false); return;
       case 'discard': await runner.discard(); return;
       case 'allow-turns': await runner.allowTurns(); return;
-      case 'override-next-turn': throw new Error(`Placement overrides arrive in phase 4 (${thread.id}).`);
+      case 'override-next-turn': await this.#applyNextTurn(thread.id, command.override); return;
     }
   }
   /** `jevellan_threads_list`: the project's hub indexes that are not concluded; `all` adds those concluded in the last 14 days. */

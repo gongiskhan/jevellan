@@ -335,6 +335,12 @@ a.pw-pr-title:hover { color: var(--jev-ink); text-decoration: underline; }
 .pw-isolation label + label { margin-top: 10px; }
 .pw-isolation label.pw-disabled { color: var(--ink-3); }
 .pw-isolation .pw-radio-note { margin: 2px 0 0 24px; }
+/*
+ * The app drops the focus outline on every input, and a native radio cannot draw a round ring: a radio reached with the keyboard
+ * rings its option (the radio and its label) with the app's focus ring instead (D257).
+ */
+.pw-isolation label:has(> input[type="radio"]), .pw-override-modes label:has(> input[type="radio"]) { width: fit-content; max-width: 100%; border-radius: 6px; }
+.pw-isolation label:has(> input[type="radio"]:focus-visible), .pw-override-modes label:has(> input[type="radio"]:focus-visible) { outline: 2px solid var(--focus); outline-offset: 3px; }
 .pw-placement { margin: 2px 0 4px; }
 .pw-placement > summary { width: fit-content; padding: 2px 0; color: var(--ink-2); font-size: 13px; font-weight: 600; }
 .pw-placement[open] > summary { margin-bottom: 12px; }
@@ -482,6 +488,38 @@ a.pw-pr-chip:hover { border-color: var(--jev); color: var(--jev-ink); }
   .pw-report { padding: 11px 12px; }
   .pw-queued { margin-left: 3%; }
 }
+
+/* ---------- placement: the fallback chip, Why and Override (12.3, 9.8; D255) ---------- */
+/* The fallback chip wraps instead of widening the header: the recorded reason can be long. */
+.pw-thread-meta .pw-fallback-chip { flex: 0 1 auto; min-width: 0; max-width: 100%; padding-block: 2px; line-height: 1.35; white-space: normal; overflow-wrap: anywhere; }
+/*
+ * Panels on Projects pages carry free-form eyebrows (the thread title in Why, the project name in Notebook): the eyebrow gives way
+ * with an ellipsis so the panel title and Close always show and the heading never scrolls sideways (D257).
+ */
+.app-shell:has(.pw-page) .panel-eyebrow { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.app-shell:has(.pw-page) .panel-heading h2 { flex: none; max-width: 100%; }
+/* Why: the conversation Why panel's bars and lists, with room for runtime and model names. */
+.pw-why .why-option { grid-template-columns: minmax(72px, 150px) minmax(0, 1fr) 40px; }
+.pw-why .why-rank li { overflow-wrap: anywhere; }
+.pw-why .notice { margin: 0 0 7px; padding: 8px 10px; font-size: 12.5px; }
+/* Override: the two choices, each with what it does or why it is refused, then the fields of the chosen one. */
+.pw-override-modes { margin: 0 0 14px; padding: 0; border: 0; }
+.pw-override-modes label { margin: 0; font-size: 13px; color: var(--ink); }
+.pw-override-modes label.pw-disabled { color: var(--ink-3); }
+.pw-override-modes .pw-radio-note { margin: 3px 0 12px 24px; }
+.pw-override-modes .pw-radio-note:last-child { margin-bottom: 0; }
+.pw-override-fields { align-items: start; padding-top: 14px; border-top: 1px solid var(--edge); }
+.pw-override textarea { min-height: 0; }
+
+/*
+ * Danger buttons: Stop, Discard, Remove token and a restart's Apply (the shared `.danger` has no other use). Dark themes lighten
+ * --danger to salmon, where the shared white text reads at about 2.6:1, so the text takes the on-accent ink (white in light themes),
+ * hover deepens the fill as other buttons do, and a busy (disabled) one looks disabled (D257).
+ */
+button.danger { color: var(--jev-on); }
+button.danger:not(:disabled):hover { background: color-mix(in srgb, var(--danger) 85%, var(--ink)); border-color: color-mix(in srgb, var(--danger) 85%, var(--ink)); }
+/* The shared rule comes after `button:disabled` and so kept a busy danger button looking enabled: disabled reads disabled. */
+button.danger:disabled, button.danger:disabled:hover { background: var(--bg-3); border-color: var(--bg-3); color: var(--ink-3); }
 
 /* ---------- Settings, Git: the GitHub token card (12.4) ---------- */
 .pw-token-summary { margin: 0 0 8px; }

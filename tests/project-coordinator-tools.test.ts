@@ -86,7 +86,7 @@ function remoteIndex(over: Partial<ThreadIndex>): ThreadIndex {
 
 test('thread tools start, list, read, message and stop as brief 7.1 says, refuse ended and attached threads, and leave one chat line per call', { timeout: 120_000 }, async () => {
   const f = fixture = await projectFixture({ coordinator: true });
-  const placement = `Scripted test runtime Fixture · high · Worktree · ${f.deviceName} · placed without Jev: Jev placement is not enabled yet.`;
+  const placement = `Scripted test runtime Fixture · high · Worktree · ${f.deviceName} · placed without Jev: no key configured`;
   // Fix login holds its first turn until it is interrupted; Add docs reports progress at once.
   f.fake.enqueueTurn(holdStep(never()), forThread((input) => input.prompt.startsWith('Task: Fix login')));
   f.fake.enqueueTurn(async (turn) => { turn.say('Fixed the cookie path.'); await turn.bridge('jevellan_thread_report', { status: 'progress', summary: 'Cookie path fixed.' }); return { status: 'completed' }; },

@@ -1,10 +1,10 @@
-import type { DecisionAnswer, ProjectCoordinator, ProjectCoordinatorStatus, ProjectDecision, ProjectNotebook, ProjectWorkSettings, ThreadIndex } from './project-schemas.js';
+import type { DecisionAnswer, PlacementOverride, ProjectCoordinator, ProjectCoordinatorStatus, ProjectDecision, ProjectNotebook, ProjectWorkSettings, ThreadIndex } from './project-schemas.js';
 import type { Stored } from './store.js';
 
 /**
  * Project hub state (design 2.1.5). The hub implements it over its database bound to the authenticated device; members
  * use the hub HTTP API. Writes are compare-and-swap on the row revision, and the embedded revision equals it (D3).
- * Later phases add overrides (4), envelopes (5), mail, reservations and held checkouts (6).
+ * Later phases add envelopes (5), mail, reservations and held checkouts (6).
  */
 export interface ProjectHub {
   // settings: any device; idempotent by clientRequestId
@@ -28,4 +28,8 @@ export interface ProjectHub {
   // notebooks
   notebook(projectId: string): Promise<Stored<ProjectNotebook> | null>;
   putNotebook(notebook: ProjectNotebook, expectedRevision: number): Promise<Stored<ProjectNotebook>>;
+  // placement overrides (phase 4): append-only, idempotent by id; recorded by the thread's owner device
+  addOverride(override: PlacementOverride): Promise<void>;
+  /** The newest `limit` overrides of the project, newest first. */
+  recentOverrides(projectId: string, limit: number): Promise<PlacementOverride[]>;
 }

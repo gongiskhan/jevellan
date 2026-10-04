@@ -263,9 +263,11 @@ test('hub requests map to one collection each and results carry matching revisio
     'decisions-list': { projectId: 'project' }, 'decision-get': { id: 'pdec_1' }, 'decision-create': { decision },
     'decision-withdraw': { id: 'pdec_1', at }, 'decision-answer': { id: 'pdec_1', answer: { optionLabel: 'Keep it' }, at, clientRequestId: 'req_2' },
     'notebook-get': { projectId: 'project' }, 'notebook-put': { notebook, expectedRevision: 1 },
+    'override-add': { override }, 'overrides-recent': { projectId: 'project', limit: 8 },
   };
   const expected = { settings: ['settings-get', 'settings-put'], coordinators: ['coordinator-get', 'coordinator-assign', 'coordinator-status-get', 'coordinator-status-put'],
-    threads: ['threads-list', 'thread-get', 'thread-publish'], decisions: ['decisions-list', 'decision-get', 'decision-create', 'decision-withdraw', 'decision-answer'], notebooks: ['notebook-get', 'notebook-put'] };
+    threads: ['threads-list', 'thread-get', 'thread-publish'], decisions: ['decisions-list', 'decision-get', 'decision-create', 'decision-withdraw', 'decision-answer'], notebooks: ['notebook-get', 'notebook-put'],
+    overrides: ['override-add', 'overrides-recent'] };
   for (const [operation, fields] of Object.entries(requests) as Array<[ProjectHubOperation, Record<string, unknown>]>) {
     const request = { schema: 'project-hub-request-v1', operation, ...fields };
     expect(ProjectHubRequestSchema.parse(request).operation).toBe(operation);
@@ -277,6 +279,10 @@ test('hub requests map to one collection each and results carry matching revisio
   expect(ProjectHubRequestSchema.safeParse({ schema: 'project-hub-request-v1', operation: 'mail-send', projectId: 'project' }).success).toBe(false);
   expect(ProjectHubRequestSchema.safeParse({ schema: 'project-hub-request-v1', operation: 'decision-answer', id: 'pdec_1', answer: {}, at, clientRequestId: 'req_2' }).success).toBe(false);
   expect(ProjectHubRequestSchema.safeParse({ schema: 'project-hub-request-v1', operation: 'settings-put', settings, expectedRevision: -1 }).success).toBe(false);
+  for (const limit of [0, 101, 1.5]) expect(ProjectHubRequestSchema.safeParse({ schema: 'project-hub-request-v1', operation: 'overrides-recent', projectId: 'project', limit }).success).toBe(false);
+  // Overrides carry no revision: the collection is append-only.
+  expect(ProjectHubResultSchema.safeParse({ schema: 'project-hub-result-v1', operation: 'override-add', override }).success).toBe(true);
+  expect(ProjectHubResultSchema.safeParse({ schema: 'project-hub-result-v1', operation: 'overrides-recent', records: Array.from({ length: 101 }, () => override) }).success).toBe(false);
 
   const result = { schema: 'project-hub-result-v1', operation: 'notebook-get' };
   expect(ProjectHubResultSchema.safeParse({ ...result, record: { revision: 2, document: notebook } }).success).toBe(true);

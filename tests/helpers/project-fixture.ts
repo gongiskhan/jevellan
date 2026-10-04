@@ -39,6 +39,8 @@ export type ProjectFixtureOptions = {
   /** Default `{ fake: new FakeRuntime() }`; `fake` must be present. */
   runtimes?: Record<string, FakeRuntime>;
   decisionFetch?: typeof fetch;
+  /** Default false: the hub keeps a `fixture-<uuid>` Jev key, so placements call `decisionFetch` (without one they record `no-key`). */
+  jevKey?: boolean;
   projectTimers?: Partial<ProjectTimers>;
 };
 
@@ -57,6 +59,8 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 export type ProjectFixture = {
   readonly root: string; readonly homes: Homes; readonly fake: FakeRuntime; readonly runtimes: Record<string, FakeRuntime>;
   readonly origin: string; readonly checkout: string; readonly project: Project; readonly github: GitHubFixture; readonly token: string;
+  /** The saved Jev key (`jevKey`); only the Jev transport may see it. */
+  readonly jevKey: string | undefined;
   /** Replaced by `restart()`: always read them from the fixture. */
   readonly app: Application; readonly server: Server; readonly base: string; readonly cookie: string; readonly deviceName: string;
   git(cwd: string, ...args: string[]): string;
@@ -118,6 +122,8 @@ export async function projectFixture(options: ProjectFixtureOptions = {}): Promi
   app.hub.put('accounts', 'acc_fixture', AccountSchema, { schema: 'account-v1', id: 'acc_fixture', runtime: 'fake', label: 'Fixture', kind: 'subscription', enabled: true, ceilingPct: 90, credential: 'per-device' }, 0);
   await app.accounts.check('acc_fixture');
   if (options.githubToken !== false) await app.state.github.put(token);
+  const jevKey = options.jevKey ? `fixture-${randomUUID()}` : undefined;
+  if (jevKey) app.hub.vault.put('jev', jevKey);
   const project = ProjectSchema.parse({ schema: 'project-v1', id: 'project', name: 'Shop', paths: { [app.device.deviceId]: checkout }, branchPolicy: options.branchPolicy ?? 'main',
     ...(options.testCommand ? { testCommand: options.testCommand } : {}), memory: { mode: 'repo', dir: '.jevellan/memory' }, context: { state: 'none' } });
   await app.conversations.saveProject({ schema: 'project-write-v1', revision: 0, project });
@@ -137,7 +143,7 @@ export async function projectFixture(options: ProjectFixtureOptions = {}): Promi
   };
   const responses: string[] = [];
   const fixture: ProjectFixture = {
-    root, homes, fake, runtimes, origin, checkout, project, github, token, cookie, responses,
+    root, homes, fake, runtimes, origin, checkout, project, github, token, jevKey, cookie, responses,
     get app() { return app; }, get server() { return server; }, get base() { return base; }, get deviceName() { return app.device.name; },
     git,
     async request(path, method = 'GET', body) {
@@ -219,6 +225,7 @@ export const never = (): Promise<void> => new Promise<void>(() => undefined);
 export async function expectNoLeaks(f: ProjectFixture, extra: ReadonlyArray<[string, string]> = []): Promise<void> {
   const runtimes = Object.values(f.runtimes);
   const secrets: Array<[string, string]> = [['GitHub token', f.token], ['browser session', f.cookie.slice(f.cookie.indexOf('=') + 1)], ['worktree path', f.homes.at('worktrees')],
+    ...(f.jevKey ? [['Jev key', f.jevKey] as [string, string]] : []),
     ...runtimes.flatMap((runtime) => runtime.runs.map((run): [string, string] => ['native session id', run.native.sessionId ?? ''])),
     ...runtimes.flatMap((runtime) => runtime.turnStarts.map((input): [string, string] => ['bridge token', input.launch.env.JEVELLAN_STRETCH_TOKEN ?? '']))];
   // Every collected value is real, so an absence below cannot pass vacuously.

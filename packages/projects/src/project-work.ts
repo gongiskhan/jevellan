@@ -2,10 +2,11 @@ import { setTimeout as delay } from 'node:timers/promises';
 import type { z } from 'zod';
 import type { AccountService } from '@jevellan/accounts';
 import {
-  ProjectNotebookSchema, ProjectNotebookViewSchema, ProjectWorkSettingsSchema, ProjectWorkSettingsViewSchema, ThreadCreatedViewSchema, defaultProjectWorkSettings, newId,
+  ProjectNotebookSchema, ProjectNotebookViewSchema, ProjectWorkSettingsSchema, ProjectWorkSettingsViewSchema, ThreadCreatedViewSchema, ThreadOverrideViewSchema, defaultProjectWorkSettings, newId,
   type CheckoutOwnership, type Configuration, type CoordinatorMessageRequestSchema, type DecisionAnswerRequestSchema, type Homes, type NotebookRequestSchema, type Project,
   type ProjectHub, type ProjectWorkListView, type ProjectWorkSettings, type ProjectWorkSettingsRequestSchema, type ProjectWorkView, type PublicationLeaseService,
-  type RiggingItem, type SecretRedactor, type SharedProjects, type ThreadCreateRequestSchema, type ThreadMessageRequestSchema, type ThreadStopRequestSchema, type ThreadView,
+  type RiggingItem, type SecretRedactor, type SharedProjects, type ThreadCreateRequestSchema, type ThreadMessageRequestSchema, type ThreadOverrideRequestSchema,
+  type ThreadStopRequestSchema, type ThreadView,
 } from '@jevellan/core';
 import type { StretchBridges } from '@jevellan/conversations';
 import type { DecisionClient } from '@jevellan/decisions';
@@ -27,7 +28,7 @@ import { Placement, type DeviceRoster } from './placement.js';
 import { GitHubAccess, ThreadPublication } from './publication.js';
 import { PullRequestTracker, type MergeResultView } from './pull-requests.js';
 import { recoverProjects } from './recovery.js';
-import { CoordinatorStore, StartReceipts, ThreadStore } from './stores.js';
+import { CoordinatorStore, StartReceipts, ThreadStore, threadIndex } from './stores.js';
 import { LocalDelivery, ThreadService } from './threads.js';
 import { ThreadTranscripts } from './transcript.js';
 import { ProjectViews, effectiveSettings } from './views.js';
@@ -103,7 +104,8 @@ export class ProjectWork {
     this.admission = new Admission({ hub: o.hub, deviceId: o.deviceId, deviceName: o.deviceName, localLive: (projectId) => this.threads.liveThreads(projectId),
       nameOf: async (deviceId) => (await o.roster()).devices.find((view) => view.device.id === deviceId)?.device.name });
     const placement = new Placement({ settings: o.settings, accounts: o.accounts, runtimes: o.runtimes, roster: o.roster, admission: this.admission, deviceId: o.deviceId,
-      deviceName: o.deviceName, now });
+      deviceName: o.deviceName, hub: o.hub, redactor: o.redactor, now, ...(o.decisionClient ? { decisionClient: o.decisionClient } : {}),
+      local: (projectId) => this.store.list(projectId).map((thread) => threadIndex(thread, this.store.labels(thread.id), thread.createdAt)) });
     this.decisions = new DecisionItems({ hub: o.hub, now, toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event), threads: () => ({
       allowTurns: (projectId, threadId) => this.threads.allowTurns(projectId, threadId),
       stop: (projectId, threadId, reason) => this.threads.stop(projectId, threadId, reason, true),
@@ -121,7 +123,7 @@ export class ProjectWork {
     const delivery = new LocalDelivery({ deviceId: o.deviceId, coordinators: this.coordinators, store: this.store,
       command: (projectId, threadId, command) => this.threads.command(projectId, threadId, command) });
     this.threads = new ThreadService({ deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, store: this.store, ledgers: this.ledgers, receipts, hub: o.hub,
-      projects: o.projects, admission: this.admission, placement, accounts: o.accounts, transcripts: this.transcripts, delivery, now,
+      projects: o.projects, admission: this.admission, placement, accounts: o.accounts, transcripts: this.transcripts, delivery, settings: o.settings, now,
       runner: { deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, store: this.store, ledgers: this.ledgers, project: (projectId) => this.#project(projectId),
         workSettings: (projectId) => this.admission.settings(projectId), worktrees, publication, launcher, accounts: o.accounts, admission: this.admission,
         decisions: this.decisions, toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event),
@@ -288,6 +290,16 @@ export class ProjectWork {
   }
   discardThread(projectId: string, threadId: string): Promise<void> { return this.threads.discard(projectId, threadId); }
   allowTurns(projectId: string, threadId: string): Promise<void> { return this.threads.allowTurns(projectId, threadId); }
+  /**
+   * Override from the thread page (brief 10, 12.3): from the next turn on this device, or a restart whose new thread starts on
+   * the coordinator device like any new thread (D9a), assigning the coordinator here when none.
+   */
+  async overrideThread(projectId: string, threadId: string, input: z.infer<typeof ThreadOverrideRequestSchema>): Promise<z.infer<typeof ThreadOverrideViewSchema>> {
+    this.#thread(projectId, threadId);
+    if (input.mode === 'next-turn') { await this.threads.overrideNextTurn(projectId, threadId, input); return ThreadOverrideViewSchema.parse({ schema: 'thread-override-view-v1' }); }
+    const { newThreadId } = await this.threads.restart(projectId, threadId, input, await this.#coordinatorHere(projectId));
+    return ThreadOverrideViewSchema.parse({ schema: 'thread-override-view-v1', newThreadId });
+  }
   async mergePullRequest(projectId: string, threadId: string): Promise<MergeResultView> { this.#thread(projectId, threadId); return this.tracker.merge(threadId); }
   async refreshPullRequest(projectId: string, threadId: string): Promise<void> { this.#thread(projectId, threadId); await this.tracker.refresh(threadId); }
   answerDecision(projectId: string, decisionId: string, input: z.infer<typeof DecisionAnswerRequestSchema>): Promise<{ repeated: boolean }> {

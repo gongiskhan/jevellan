@@ -2284,7 +2284,7 @@ function Why({
             </p>
             {decision.jev.records?.map((call, index) => (
               <p key={index}>
-                {call.kind === 'action' ? 'Next step' : call.kind === 'model' ? 'Model and effort' : 'Memory'}{' '}
+                {call.kind === 'action' ? 'Next step' : call.kind === 'model' ? 'Model and effort' : call.kind === 'memory' ? 'Memory' : 'Placement'}{' '}
                 · {call.returnedModel} · {call.usage.input_tokens + call.usage.output_tokens} tokens ·{' '}
                 {call.latencyMs} ms
               </p>
