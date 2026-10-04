@@ -7,7 +7,7 @@ test('Git settings can be saved, reloaded and checked from Projects', async ({ p
   await expect(page.getByRole('heading', { name: 'Git', exact: true })).toBeVisible();
   await page.getByLabel('Connection method').selectOption('ssh');
   await page.getByRole('button', { name: 'Save Git settings', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('Git settings saved');
+  await expect(page.getByRole('status').filter({ hasText: 'Git settings saved' })).toBeVisible();
   await page.reload(); await expect(page.getByLabel('Connection method')).toHaveValue('ssh');
   await page.getByRole('button', { name: 'Check connection', exact: true }).click();
   await expect(page.locator('.git-check-result')).toContainText('Connected');

@@ -67,7 +67,7 @@ export async function installationBrowser({ origin, project, remote, root, layou
     return {
       page, passphrase, conversationPath, skippedJev, close: () => browser.close(),
       verifyCompleted: async () => {
-        await page.goto(`${origin}${conversationPath}`); await expect(page.locator('.conversation-page > .muted')).toContainText('Done', { timeout: 90_000 });
+        await page.goto(`${origin}${conversationPath}`); await expect(page.getByLabel('Conversation details', { exact: true })).toContainText('Done', { timeout: 90_000 });
         const response = await page.request.get(`${origin}/api${conversationPath}`); expect(response.ok()).toBe(true);
         const conversation = ConversationPublicSchema.parse(await response.json());
         expect(conversation.decisions.map(decision => decision.action.chosen)).toEqual(['implement', 'done']); expect(conversation.stretches).toHaveLength(1);

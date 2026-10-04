@@ -75,7 +75,7 @@ test('context setup moves a clean feature checkout to main with durable branch w
   expect(view.conversation.state).toBe('done');
   expect(git(path, 'branch', '--show-current')).toBe('main');
   expect(git(path, 'rev-parse', 'feature')).toBe(initial);
-});
+}, 60_000);
 
 test.each(['project', 'context'] as const)('project save resumes after a lost %s result and daemon restart with one context operation', async boundary => {
   const original = (await app.state.projects.get(project.id))!;

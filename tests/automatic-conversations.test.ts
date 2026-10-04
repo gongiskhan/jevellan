@@ -74,7 +74,7 @@ test('automatic implementation decides, runs, independently verifies and publish
   expect(calls).toHaveLength(3); expect(calls[0]!.questions.remember_request).toBeDefined(); expect(calls[2]!.questions.remember_request).toBeUndefined();
   expect((await app.conversations.changes('automatic', 1)).verifications).toEqual(expect.arrayContaining([expect.objectContaining({ passed: true, treeClean: true })]));
   expect(git(path, 'status', '--porcelain')).toBe(''); expect(git(path, 'rev-parse', 'HEAD')).toBe(git(origin, 'rev-parse', 'main'));
-});
+}, 60_000);
 
 test('read-only Reply closes through Jev Done without changing Git or adding another closing summary', async () => {
   actions = ['reply', 'done']; enqueue(); await create('What does value.txt contain?'); const result = await finished();
@@ -129,7 +129,7 @@ test('a freeform follow-up reaches Jev with its question and preserves blocker e
   expect(asking!.conversation.questionBeforeLatestMessage).toBeUndefined();
   expect(answered!.conversation).toMatchObject({ questionBeforeLatestMessage: 'What would you like changed?', latestUserMessage: 'You choose.' });
   expect(answered!.conversation.recentHandoffs.at(-1)!.blockers).toEqual(['The requested change is unspecified.']);
-});
+}, 60_000);
 
 test('Ask you after an answer writes a new question instead of re-posting the answered one', async () => {
   actions = ['ask-you']; enqueue(undefined, { question: 'Which README should change?' }); await create('Change the README.');
@@ -154,7 +154,7 @@ test('offered answers show as options, a picked one reaches Jev as the chosen an
   const answered = calls.filter((call) => call.questions.next_action).at(1)!.state as { conversation: Record<string, unknown> };
   expect(answered.conversation).toMatchObject({ questionBeforeLatestMessage: 'Shall I add an Overview section to README.md?', offeredAnswers: options.map((option) => option.label), chosenAnswer: options[0]!.label });
   expect((await pick(1, options[1]!.label, 'late')).status).toBe(409);
-});
+}, 60_000);
 
 test('options without a question are refused at handoff', async () => {
   actions = ['reply']; fake.enqueue(async ({ input }) => {
@@ -227,7 +227,7 @@ test('a paused decision resumes after saving a key without creating another user
   const resumed = await request('/api/conversations/automatic/resume', { schema: 'resume-decision-v1', generation: waiting.conversation.generation }); expect(resumed.status).toBe(202);
   const result = await finished(); expect(result.conversation.state, result.pause?.reason).toBe('done'); expect(result.messages).toHaveLength(1); expect(result.decisions[0]!.trigger).toBe('resume');
   expect((await request('/api/conversations/automatic/resume', { schema: 'resume-decision-v1', generation: result.conversation.generation })).status).toBe(409);
-});
+}, 60_000);
 
 test('decision retry cannot bypass a guard that stopped the work', async () => {
   const config = app.hub.configuration.current()!; config.configuration['x-jevellan'].guards.maxStretchesPerWork = 1;

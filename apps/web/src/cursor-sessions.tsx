@@ -1,6 +1,6 @@
 import { TranscriptTurn } from './session-transcript.js';
 import { useSessionList } from './session-list.js';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { z } from 'zod';
 import { CursorListSchema, CursorTranscriptSchema, CursorMessageSchema } from '@jevellan/core/client';
 import { api } from './api.js';
@@ -27,6 +27,8 @@ export function useCursorSessions() {
 }
 
 export function CursorConversationPage({ id, navigation, ...props }: PageProps & { id: string; navigation?: ReactNode }) {
+  // The heading also holds the phone navigation button, so it is named by its title alone.
+  const titleId = useId();
   const [view, setView] = useState<z.infer<typeof CursorTranscriptSchema>>();
   const [error, setError] = useState(''); const [text, setText] = useState('');
   const pending = useRef<{ id: string; text: string; mode: 'steer' | 'next' } | undefined>(undefined);
@@ -75,7 +77,7 @@ export function CursorConversationPage({ id, navigation, ...props }: PageProps &
   const lastUser = view.turns.findLast(turn => turn.role === 'user' && !turn.automated && turn.blocks.some(block => block.type === 'text' && block.text.trim()))?.blocks.flatMap(block => block.type === 'text' ? [block.text] : []).join('\n');
   return <div className="conversation-page cursor-conversation" ref={page}>
     <div className="section-heading conversation-heading">
-      <h1>{navigation}<span className="session-title">{displayTitle}</span></h1>
+      <h1 aria-labelledby={titleId}>{navigation}<span id={titleId} className="session-title">{displayTitle}</span></h1>
       <div className="conversation-meta">
         <span className="chip">{runtimeLabel}</span><span className="chip">{session!.project}</span><span className="chip">{session!.deviceName}</span>
         {!isCursor && <span className="chip" title="Continue this session in its original application">Read only</span>}

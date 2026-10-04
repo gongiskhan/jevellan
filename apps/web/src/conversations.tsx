@@ -8,7 +8,7 @@ import { createPortal } from 'react-dom';
 import { useSessionDrag } from './session-drag.js';
 import { clientId } from './client-id.js';
 import { useSessionList } from './session-list.js';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { z } from 'zod';
 import {
   GitBranchChangeSchema, type GitBranchChange,
@@ -464,6 +464,8 @@ export function NewConversation(props: PageProps & { embedded?: boolean }) {
 }
 
 export function ConversationPage({ id, navigation, ...props }: PageProps & { id: string; navigation?: ReactNode }) {
+  // The heading also holds the phone navigation button, so it is named by its title alone.
+  const titleId = useId();
   const [settingsOpen, setSettingsOpen] = useState(false);
   useEffect(() => {
     const open = () => setSettingsOpen(true);
@@ -649,9 +651,10 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
   return (
     <div className="conversation-page" ref={page}>
       <div className="section-heading conversation-heading">
-        <h1>
+        <h1 aria-labelledby={titleId}>
           {navigation}
           <button
+            id={titleId}
             className="conversation-title"
             title="Rename conversation"
             onClick={() => setEditingConversation('rename')}

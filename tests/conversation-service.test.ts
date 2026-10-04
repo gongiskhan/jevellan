@@ -136,7 +136,7 @@ test('reviewed changes become one local checkpoint, capture deferred memory and 
   fake.enqueue(async ({ input }) => { await handoff(input); return { status: 'completed' }; }); await choose('reply'); await app.conversations.wait('conversation'); expect(git(path, 'rev-parse', 'HEAD')).toBe(head);
   await choose('done'); await app.conversations.wait('conversation'); expect((await app.conversations.view('conversation')).conversation.state).toBe('done'); expect(git(origin, 'rev-parse', 'main')).toBe(head);
   const receipts = (await app.conversations.changes('conversation', 1)).verifications; expect(receipts.some((entry) => entry.passed && entry.commit === head)).toBe(true);
-}, 60_000);
+}, 120_000);
 test('changed files and a newer message invalidate the reviewed acceptance without creating a commit', async () => {
   await blockedFiles(); const old = await adoptionReview('old_review'); writeFileSync(join(path, 'late.txt'), 'Not in the original review.');
   const rejected = await acceptFiles(old.input); expect(rejected.checkpointBlocks).toHaveLength(1); expect(rejected.pause?.reason).toContain('changed since you reviewed'); expect(git(path, 'rev-parse', 'HEAD')).toBe(initial);

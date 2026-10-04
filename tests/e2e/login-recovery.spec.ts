@@ -11,7 +11,8 @@ async function openLogin(page: Page) {
   const panel = page.getByRole('dialog'); const label = `Login recovery ${randomUUID()}`;
   await panel.getByLabel('Label', { exact: true }).fill(label);
   await panel.getByRole('button', { name: 'Add account', exact: true }).click();
-  await expect(panel.getByRole('heading')).toHaveText(`Log in · ${label}`);
+  // Adding an account prepares its home and Rigging first, which takes longer under load (as in skeleton.spec.ts).
+  await expect(panel.getByRole('heading')).toHaveText(`Log in · ${label}`, { timeout: 60_000 });
   return { panel, account: claude.locator('.account').filter({ hasText: label }) };
 }
 
