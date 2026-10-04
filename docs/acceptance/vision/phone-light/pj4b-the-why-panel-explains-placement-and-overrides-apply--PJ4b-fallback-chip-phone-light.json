@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "test": "PJ4b the Why panel explains placement and overrides apply",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/PJ4b-fallback-chip-phone-light.png",
+  "expected": "the Jevellan web app \"fallback chip\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PJ4b the Why panel explains placement and overrides apply\"; the other steps are judged in their own screenshots)"
+}
