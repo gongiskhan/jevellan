@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "test": "PJ3 a decision is answered from the Waiting tab",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/PJ3-projects-sidebar-phone-dark.png",
+  "expected": "the Jevellan web app \"projects sidebar\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PJ3 a decision is answered from the Waiting tab\"; the other steps are judged in their own screenshots)"
+}

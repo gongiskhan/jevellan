@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "test": "PJ3 the notebook can be edited",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/screenshots/PJ3-notebook-panel-desktop-dark.png",
+  "expected": "the Jevellan web app \"notebook panel\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PJ3 the notebook can be edited\"; the other steps are judged in their own screenshots)"
+}

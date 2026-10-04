@@ -1,7 +1,7 @@
 {
   "schema": "vision-check-v1",
   "label": "not run",
-  "reason": "Disabled for this run.",
+  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
   "test": "context merge is drafted read-only, survives reload, cancels and applies through verified publication",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-context-linked-desktop-dark.png",

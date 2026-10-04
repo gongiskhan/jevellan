@@ -1,7 +1,7 @@
 {
   "schema": "vision-check-v1",
   "label": "not run",
-  "reason": "Disabled for this run.",
+  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
   "test": "Settings account, login, Rigging and configuration flows work without horizontal overflow",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase1-runtimes-phone-dark.png",

@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "test": "PJ3 project page opens from the sidebar and the coordinator chat streams",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/PJ3-chat-reply-phone-dark.png",
+  "expected": "the Jevellan web app \"chat reply\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PJ3 project page opens from the sidebar and the coordinator chat streams\"; the other steps are judged in their own screenshots)"
+}

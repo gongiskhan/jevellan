@@ -1,7 +1,7 @@
 {
   "schema": "vision-check-v1",
   "label": "not run",
-  "reason": "Disabled for this run.",
+  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
   "test": "J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/J8-proxy-desktop-dark.png",

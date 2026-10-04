@@ -1,7 +1,7 @@
 {
   "schema": "vision-check-v1",
   "label": "not run",
-  "reason": "Disabled for this run.",
+  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
   "test": "context changes interrupted by outside activity require a fresh reviewed diff before publication",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase4-context-review-phone-dark.png",

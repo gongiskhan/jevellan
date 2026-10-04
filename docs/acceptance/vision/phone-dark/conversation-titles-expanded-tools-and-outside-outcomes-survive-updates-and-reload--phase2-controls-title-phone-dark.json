@@ -1,7 +1,7 @@
 {
   "schema": "vision-check-v1",
   "label": "not run",
-  "reason": "Disabled for this run.",
+  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
   "test": "conversation titles, expanded tools and outside outcomes survive updates and reload",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-controls-title-phone-dark.png",

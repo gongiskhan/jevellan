@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "test": "PJ3 a running thread shows its transcript, report card and accepts an interrupting message",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/screenshots/PJ3-new-thread-modal-desktop-dark.png",
+  "expected": "the Jevellan web app \"new thread modal\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PJ3 a running thread shows its transcript, report card and accepts an interrupting message\"; the other steps are judged in their own screenshots)"
+}

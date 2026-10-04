@@ -1,7 +1,7 @@
 {
   "schema": "vision-check-v1",
   "label": "not run",
-  "reason": "Disabled for this run.",
+  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
   "test": "project, Jev, local Rigging and device Settings recover their hub boundaries",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase4-project-save-wait-phone-light.png",

@@ -1,7 +1,7 @@
 {
   "schema": "vision-check-v1",
   "label": "not run",
-  "reason": "Disabled for this run.",
+  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
   "test": "Why lists recalled project memory and its selection source after reload",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase2-memory-why-phone-light.png",

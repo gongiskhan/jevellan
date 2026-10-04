@@ -1,7 +1,7 @@
 {
   "schema": "vision-check-v1",
   "label": "not run",
-  "reason": "Disabled for this run.",
+  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
   "test": "Claude sign-in shows pending progress and resumes polling after a connection error",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/login-recovery-phone-light.png",

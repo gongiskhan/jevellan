@@ -1,7 +1,7 @@
 {
   "schema": "vision-check-v1",
   "label": "not run",
-  "reason": "Disabled for this run.",
+  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
   "test": "public project memory shows its notice, note update time and read-only rendered content",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-memory-viewer-phone-dark.png",

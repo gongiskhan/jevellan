@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "test": "PJ3 project settings disable Main for a Leave git to me project",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/PJ3-project-settings-phone-dark.png",
+  "expected": "the Jevellan web app \"project settings\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PJ3 project settings disable Main for a Leave git to me project\"; the other steps are judged in their own screenshots)"
+}

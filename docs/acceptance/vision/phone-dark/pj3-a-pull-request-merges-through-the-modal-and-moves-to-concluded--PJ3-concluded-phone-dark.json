@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "test": "PJ3 a pull request merges through the modal and moves to Concluded",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/PJ3-concluded-phone-dark.png",
+  "expected": "the Jevellan web app \"concluded\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PJ3 a pull request merges through the modal and moves to Concluded\"; the other steps are judged in their own screenshots)"
+}

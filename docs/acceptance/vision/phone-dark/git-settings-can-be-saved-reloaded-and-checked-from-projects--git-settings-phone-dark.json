@@ -1,7 +1,7 @@
 {
   "schema": "vision-check-v1",
   "label": "not run",
-  "reason": "Disabled for this run.",
+  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
   "test": "Git settings can be saved, reloaded and checked from Projects",
   "layout": "phone-dark",
   "screenshot": "test-results/git-settings-phone-dark.png",
