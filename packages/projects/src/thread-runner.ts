@@ -8,10 +8,11 @@ import type { Admission } from './admission.js';
 import type { ProjectMemoryReader, ProjectToolHandlers } from './bridge-tools.js';
 import { ProjectTools } from './bridge-tools.js';
 import {
-  DISCARD_REFUSED, MESSAGE_ID_REUSED, MORE_TURNS, NO_CHANGES, OWNER_STOPPED_THREAD, PROCESS_UNCONFIRMED, RESTART_OPEN_PULL_REQUEST, RESTART_PUBLISHED_TO_MAIN,
-  TESTS_FAILED_THREE_TIMES, THREAD_ALREADY_RESTARTED, THREAD_ENDED, THREAD_NOT_FOUND, TOOL_NOT_IN_TURN, TURN_FAILED, TURN_LIMIT_REACHED, TURN_TIMED_OUT, TURN_WITHOUT_REPORT,
-  VERIFICATION_ATTEMPTS, WAITING_FOR_HUB, WORKTREE_DISCARDED, accountMovedNotice, cleanupFailed, commitsSavedReason, isRestarted, mainCheckoutKept, mainConflictPrompt, messagesPrompt,
-  savedCommitsRef, taskPrompt, threadPrompt, threadStepFailed, threadSystemAppend, verificationFailurePrompt, worktreeSetupFailed, type ThreadTurnReason,
+  DISCARD_REFUSED, MESSAGE_ID_REUSED, MORE_TURNS, NO_CHANGES, NO_SESSION_TO_ATTACH, OWNER_STOPPED_THREAD, PROCESS_UNCONFIRMED, RESTART_OPEN_PULL_REQUEST,
+  RESTART_PUBLISHED_TO_MAIN, TESTS_FAILED_THREE_TIMES, THREAD_ALREADY_RESTARTED, THREAD_ENDED, THREAD_NOT_FOUND, THREAD_WORKING, TOOL_NOT_IN_TURN, TURN_FAILED, TURN_LIMIT_REACHED,
+  TURN_TIMED_OUT, TURN_WITHOUT_REPORT, VERIFICATION_ATTEMPTS, WAITING_FOR_HUB, WORKTREE_DISCARDED, accountMovedNotice, alreadyAttached, cleanupFailed, commitsSavedReason, isRestarted,
+  mainCheckoutKept, mainConflictPrompt, messagesPrompt, ownerWorkedLine, savedCommitsRef, sessionNotAdopted, taskPrompt, threadPrompt, threadStepFailed, threadSystemAppend,
+  verificationFailurePrompt, worktreeSetupFailed, type ThreadTurnReason,
 } from './copy.js';
 import type { DecisionItems } from './decision-items.js';
 import { firstLine } from './git.js';
@@ -628,6 +629,52 @@ export class ThreadRunner {
         await this.#loop(await this.#publish());
       });
     }
+  }
+  /**
+   * Terminal takeover (brief phase 7, D46, D297): a thread at rest with a session, and no step on its chain, becomes `attached`
+   * with `attach.startedAt`. `prepare` (the checkout and the account) runs first; the thread is checked again afterwards and set
+   * without any wait in between, so no turn can start in the meantime, and none starts while it is attached (messages wait). It
+   * never waits on the chain, which could hold a turn for hours.
+   */
+  async attach<T>(prepare: (thread: Thread) => Promise<T>): Promise<{ thread: Thread; prepared: T }> {
+    const prepared = await prepare(this.#attachable());
+    this.#attachable();
+    return { thread: this.#set((current) => ({ ...withState(current, 'attached'), attach: { startedAt: this.#at() } })), prepared };
+  }
+  #attachable(): Thread {
+    const thread = this.#thread();
+    if (isTerminal(thread.state)) throw refuse(THREAD_ENDED, 409);
+    if (thread.state === 'attached') throw refuse(alreadyAttached(thread.id), 409);
+    if (!atRest(thread.state) || this.busy || this.#halted()) throw refuse(THREAD_WORKING, 409);
+    if (!thread.nativeSessionId) throw refuse(NO_SESSION_TO_ATTACH, 409);
+    return thread;
+  }
+  /**
+   * The owner left the terminal (brief phase 7): `find` names the session the terminal left (undefined keeps the stored one; a failed
+   * search keeps it too, with a notice), the thread rests, the coordinator hears the owner-worked line, and messages that waited
+   * start the next turn through admission (2.6.9 step 2). A thread that is no longer attached (detached before, or stopped while
+   * attached) changes nothing.
+   */
+  async detach(find: (thread: Thread) => Promise<string | undefined>): Promise<{ adopted: boolean; state: ThreadState }> {
+    const detached = await this.#serial(async () => {
+      const thread = this.#thread();
+      if (thread.state !== 'attached') return null;
+      let sessionId: string | undefined;
+      try { sessionId = await find(thread); }
+      catch (error) { this.#notice(thread, sessionNotAdopted(this.#message(error)), 'error'); }
+      const adopted = sessionId !== undefined && sessionId !== thread.nativeSessionId;
+      const rested = this.#set((current) => {
+        const next: Thread = { ...withState(current, 'idle'), ...(sessionId === undefined ? {} : { nativeSessionId: sessionId }) }; delete next.attach; return next;
+      });
+      return { thread: rested, adopted };
+    });
+    if (!detached) return { adopted: false, state: this.#thread().state };
+    const { thread } = detached;
+    // The turn below starts outside the chain step above: admission at the turn limit waits on the chain itself.
+    try { await this.#tell(thread.projectId, { kind: 'thread-user-message', threadId: thread.id, text: ownerWorkedLine(thread.title) }); }
+    catch (error) { this.#notice(thread, threadStepFailed(this.#message(error)), 'error'); }
+    if (this.#thread().queuedMessages.length) await this.#fromRest();
+    return { adopted: detached.adopted, state: this.#thread().state };
   }
   /**
    * A merge or close found by the pull request tracker (D95): a running fix turn is stopped (its report discarded), a

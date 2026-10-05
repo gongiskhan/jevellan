@@ -550,6 +550,7 @@ test('interface copy: brief-verbatim texts, shared server texts and no conversat
   expect(copy.mergeTitle(42)).toBe('Squash and merge #42?');
   expect(copy.mergeBody('Fix login', 'main')).toBe("Fix login will be squashed into main. The thread's worktree is removed afterwards.");
   expect(copy.takeOverLine('Mac mini', server.attachCommand('thread_a'))).toBe('Take over in a terminal on Mac mini: jevellan thread attach thread_a');
+  expect(`${copy.takeOverLead('Mac mini')} ${server.attachCommand('thread_a')}`).toBe(copy.takeOverLine('Mac mini', server.attachCommand('thread_a')));
   expect(copy.savedUpdated('Oct 4, 2026')).toBe('Saved · updated Oct 4, 2026');
   expect([copy.NOTEBOOK_CHANGED, copy.LEAVE_GIT_SETTING, copy.ALLOW_MORE_TURNS, copy.MERGE_BLOCKED_CONFLICTS, copy.MERGE_BLOCKED_CHECKS, copy.THREAD_ENDED,
     copy.WORKTREE_DISCARDED]).toEqual([server.NOTEBOOK_CHANGED, server.LEAVE_GIT_SETTING, server.ALLOW_MORE_TURNS, server.MERGE_CONFLICTS,

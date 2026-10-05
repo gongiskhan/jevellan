@@ -1,7 +1,7 @@
 import { stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { z } from 'zod';
-import { NATIVE_SESSION_UNAVAILABLE, listNativeSessions, readNativeTranscript, type NativeRuntime } from '@jevellan/mesh';
+import { NATIVE_SESSION_UNAVAILABLE, listNativeSessions, readNativeTranscript, type NativeJournal, type NativeRuntime } from '@jevellan/mesh';
 import { nativeFormat } from '@jevellan/runtime-contract';
 import type { CursorTranscriptSchema, Homes, Thread } from '@jevellan/core';
 import { tail } from './git.js';
@@ -38,12 +38,18 @@ export class ThreadTranscripts {
     return read;
   }
   forget(threadId: string): void { this.#cache.delete(threadId); }
-  async #read(thread: Thread, projectName: string): Promise<CursorTranscript | null> {
-    const sessionId = thread.nativeSessionId; if (!sessionId) return null;
-    const runtime = this.#format(thread.placement.runtime); const timeout = this.#timeoutMs === undefined ? {} : { timeoutMs: this.#timeoutMs };
-    // The account home is read where it is; it is never created for a read.
+  /** The native sessions in the thread's account home, newest first, listed in the worker (phase 7 detach); none when the home is missing. */
+  sessions(thread: Thread): Promise<NativeJournal[]> { return listNativeSessions({ runtime: this.#format(thread.placement.runtime), root: this.#root(thread) }, this.#timeout()); }
+  #timeout(): { timeoutMs?: number } { return this.#timeoutMs === undefined ? {} : { timeoutMs: this.#timeoutMs }; }
+  /** The account home is read where it is; it is never created for a read. */
+  #root(thread: Thread): string {
     const root = this.#homes.at('homes', thread.placement.runtime, thread.placement.accountId);
     if (root !== join(this.#homes.root, 'homes', thread.placement.runtime, thread.placement.accountId)) throw new Error('Account homes cannot alias another directory.');
+    return root;
+  }
+  async #read(thread: Thread, projectName: string): Promise<CursorTranscript | null> {
+    const sessionId = thread.nativeSessionId; if (!sessionId) return null;
+    const runtime = this.#format(thread.placement.runtime); const timeout = this.#timeout(); const root = this.#root(thread);
     let cached = this.#cache.get(thread.id);
     if (cached && (cached.sessionId !== sessionId || cached.root !== root)) { this.#cache.delete(thread.id); cached = undefined; }
     let file = cached?.file; let info = file ? await stat(file).catch(() => undefined) : undefined;

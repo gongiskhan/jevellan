@@ -195,8 +195,14 @@ export const ALLOW_MORE_TURNS = 'Allow 10 more turns';
 export const THREAD_PLACEHOLDER = 'Message this thread';
 export const INTERRUPT_TURN = 'Interrupt current turn';
 export const attachedNotice = (device: string): string => `Attached in a terminal on ${device}. Messages wait until you exit.`;
+/** The takeover line's words before the command; the page shows the command itself as code, with its copy button. */
+export const takeOverLead = (device: string): string => `Take over in a terminal on ${device}:`;
 /** `command` is the thread view's `attachCommand` (`jevellan thread attach {threadId}`), never retyped here. */
-export const takeOverLine = (device: string, command: string): string => `Take over in a terminal on ${device}: ${command}`;
+export const takeOverLine = (device: string, command: string): string => `${takeOverLead(device)} ${command}`;
+export const COPY_COMMAND = 'Copy command';
+export const COMMAND_COPIED = 'Command copied.';
+/** Neither the clipboard nor the selection copy worked (D304): the command shows whole and selected, with this under it (D305). */
+export const COMMAND_SELECTED = 'The browser blocked copying, so the command is selected for you to copy.';
 export const FROM_NEXT_TURN = 'From the next turn';
 export const RESTART_WITH_CHOICES = 'Restart with these choices';
 export const OPEN_PULL_REQUEST_BLOCKS_RESTART = 'This thread has an open pull request.';

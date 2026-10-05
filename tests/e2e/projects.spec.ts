@@ -5,12 +5,12 @@ import { threadDeviceOffline } from '../../packages/projects/dist/copy.js';
 import { expect, test } from './fixtures.js';
 import { openSidebar } from './navigation.js';
 
-// PJ3, PJ4b and PJ5 (brief 13) on the --projects fixture servers (scripts/test-server.mjs, design 5.5): a GitHub-shaped project
+// PJ3, PJ4b, PJ5 and PJ7 (brief 13) on the --projects fixture servers (scripts/test-server.mjs, design 5.5): a GitHub-shaped project
 // with a fake GitHub, a fake Jev, scripted coordinator and thread turns and a simulated member device (`Browser member`) over
 // local HTTP; Git, worktrees, the bridge, the ledgers, placement, the hub relay and pull requests are real. The journeys build on
 // one fresh server's state in order (the greeting thread's pull request is merged in the fourth, the token is removed and
-// restored in the seventh, and the last one moves the `Projects offline` coordinator for good), so the file runs serially and
-// stops at the first failure.
+// restored in the seventh, and the tenth moves the `Projects offline` coordinator for good; PJ7 starts its own thread and hands it
+// back), so the file runs serially and stops at the first failure.
 test.describe.configure({ mode: 'serial', timeout: 600_000 });
 
 const layout = (info: TestInfo) => String(info.project.metadata.layout ?? info.project.name);
@@ -734,5 +734,89 @@ test('PJ5 an offline coordinator shows the notice and Move coordinator here', as
   await expect(page.locator('.pw-timeline').getByText(`The coordinator moved to ${here}.`, { exact: true })).toBeVisible(LONG);
   await expect(composer(page)).toBeEnabled();
   await shot(page, 'moved');
+  expect(errors).toEqual([]);
+});
+
+test('PJ7 an attached thread disables its composer', async ({ page }) => {
+  const errors = await begin(page);
+  const title = 'Tidy the README wording';
+  // A terminal takes over a thread on its own device, so this one runs here (the hub), where the fixture's control attaches it.
+  const roster = DeviceRosterSchema.parse(await read(page, '/hub/devices/roster'));
+  const here = roster.devices.find((row) => row.device.id === roster.currentDeviceId)!.device.name;
+  await openProject(page, 'Projects fixture');
+  await tap(page, page.getByRole('button', { name: 'New thread', exact: true }));
+  const dialog = page.getByRole('dialog', { name: 'New thread', exact: true });
+  await dialog.getByRole('textbox', { name: 'Title', exact: true }).fill(title);
+  await dialog.getByRole('textbox', { name: 'Task', exact: true }).fill('PJ7: tidy the README wording, then wait for me to look at it in a terminal.');
+  await dialog.locator('summary').filter({ hasText: 'Placement' }).click();
+  await dialog.getByRole('combobox', { name: 'Device', exact: true }).selectOption({ label: here });
+  await dialog.getByRole('button', { name: 'Start thread', exact: true }).click();
+  await expect(page).toHaveURL(/\/projects\/projects_fixture\/threads\/thread_[^/]+$/, LONG);
+  const id = new URL(page.url()).pathname.split('/')[4]!;
+  await expect(page.getByRole('region', { name: 'Report · turn 1', exact: true })).toBeVisible(LONG);
+  await expect(page.locator('.pw-state-chip')).toHaveText('Idle', LONG);
+  expect((await threadView(page, id)).deviceName).toBe(here);
+
+  // Under the composer of a thread that has not concluded: where and how to take it over, with the command to copy.
+  const command = `jevellan thread attach ${id}`;
+  const takeOver = page.locator('.pw-takeover');
+  await expect(takeOver).toHaveText(`Take over in a terminal on ${here}: ${command}`);
+  const message = page.getByRole('textbox', { name: 'Message this thread', exact: true });
+  await expect(message).toBeEnabled();
+  await expect(page.locator('.pw-composer-note')).toHaveCount(0);
+
+  // The terminal takes the thread (the command's own request, sent by the fixture's control): the page's next read shows it attached,
+  // the composer takes no message and says why, and the takeover line stays with its copy button working.
+  await control('/projects/attach', { schema: 'fixture-attach-v1', threadId: id });
+  await expect(page.locator('.pw-state-chip')).toHaveText('Attached', LONG);
+  await expect(page.locator('.pw-composer-note')).toHaveText(`Attached in a terminal on ${here}. Messages wait until you exit.`);
+  await expect(message).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Send', exact: true })).toBeDisabled();
+  await expect(takeOver).toHaveText(`Take over in a terminal on ${here}: ${command}`);
+  const copyButton = takeOver.getByRole('button', { name: 'Copy command', exact: true });
+  await expect(copyButton).toBeEnabled();
+  await shot(page, 'attached');
+  // This page fits the screen: nothing under the composer (the copy button's wider target included) may make it scroll.
+  expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight)).toBe(true);
+
+  // Copying: the Clipboard API on this loopback page; the selection copy that a plain-HTTP Tailnet page falls back to; and, when the
+  // browser refuses both, the command shown whole and selected on the page (D304, D305).
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  const toast = page.locator('.toast.success > span');
+  const dismiss = () => page.locator('.toast.success').getByRole('button', { name: 'Dismiss message', exact: true }).click();
+  await tap(page, copyButton);
+  await expect(toast).toHaveText('Command copied.');
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(command);
+  await dismiss();
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true });
+    document.addEventListener('copy', () => {
+      const field = document.activeElement as HTMLTextAreaElement | null;
+      (window as unknown as { pj7Copied?: string }).pj7Copied = field ? field.value.slice(field.selectionStart, field.selectionEnd) : '';
+    });
+  });
+  await tap(page, copyButton);
+  await expect(toast).toHaveText('Command copied.');
+  expect(await page.evaluate(() => (window as unknown as { pj7Copied?: string }).pj7Copied)).toBe(command);
+  await expect(copyButton).toBeFocused();
+  await dismiss();
+  // Refused both ways: no toast (on phones it would cover the command); the command shows whole and selected, the reason under it.
+  await page.evaluate(() => { document.execCommand = () => false; });
+  await tap(page, copyButton);
+  await expect(page.locator('.pw-takeover-blocked')).toHaveText('The browser blocked copying, so the command is selected for you to copy.');
+  await expect(page.locator('.toast')).toHaveCount(0);
+  expect(await page.evaluate(() => window.getSelection()?.toString())).toBe(command);
+  expect(await takeOver.locator('code').evaluate((code) => code.scrollWidth <= code.clientWidth)).toBe(true);
+  await shot(page, 'copy-blocked', false);
+  // The reason folds away with the selection.
+  await page.evaluate(() => window.getSelection()?.removeAllRanges());
+  await expect(page.locator('.pw-takeover-blocked')).toHaveCount(0);
+
+  // The terminal exits and the thread is back: the composer takes messages again.
+  await control('/projects/detach', { schema: 'fixture-attach-v1', threadId: id });
+  await expect(page.locator('.pw-state-chip')).toHaveText('Idle', LONG);
+  await expect(page.locator('.pw-composer-note')).toHaveCount(0);
+  await expect(message).toBeEnabled();
+  await expect(takeOver).toHaveText(`Take over in a terminal on ${here}: ${command}`);
   expect(errors).toEqual([]);
 });

@@ -148,13 +148,15 @@ export class PullRequestTracker {
   }
   /**
    * Merged -> `done`, closed -> `stopped` with its reason (D69); then the coordinator hears it and the worktree and local
-   * branch go (the remote branch stays). One transition per thread is in flight; it re-checks the stored state when it runs.
+   * branch go (the remote branch stays). One transition per thread is in flight; it re-checks the stored state when it runs,
+   * and waits while the thread is attached in a terminal.
    */
   #conclude(threadId: string, pr: PullRequestState): Promise<void> {
     const pending = this.#transitions.get(threadId); if (pending) return pending;
     const apply = async () => {
       const thread = this.#o.threads.get(threadId);
-      if (!thread?.pr || thread.pr.state !== 'open') return;
+      // The owner works in the worktree from a terminal (phase 7, D297): the thread concludes at the first read after detach.
+      if (!thread?.pr || thread.pr.state !== 'open' || thread.state === 'attached') return;
       const merged = pr.state === 'merged'; const at = this.#at();
       const updated = this.#o.threads.update(threadId, (current) => {
         // A thread that already ended keeps its end; a merge still marks its work done, a close keeps its own reason.

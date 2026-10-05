@@ -17,7 +17,7 @@ import {
 import { joinMember } from '../../packages/mesh/dist/index.js';
 import { FakeRuntime, type FakeTurn, type FakeTurnStep, type RuntimeAdapter } from '../../packages/runtime-contract/dist/index.js';
 import type { ProjectTimers } from '../../packages/projects/dist/index.js';
-import { Application, createDaemon } from '../../apps/daemon/dist/index.js';
+import { Application, createDaemon, startDaemon } from '../../apps/daemon/dist/index.js';
 import { startGitHubFixture, type GitHubFixture } from '../fixtures/github-server.mjs';
 
 export type ProjectFixtureOptions = {
@@ -44,6 +44,11 @@ export type ProjectFixtureOptions = {
   /** Default false: the hub keeps a `fixture-<uuid>` Jev key, so placements call `decisionFetch` (without one they record `no-key`). */
   jevKey?: boolean;
   projectTimers?: Partial<ProjectTimers>;
+  /**
+   * Default false: the daemon boots through `createDaemon`. True boots it through `startDaemon` on loopback only, which writes the
+   * installation control file the local control routes (`/api/local/*`, phase 7) need.
+   */
+  control?: boolean;
 };
 
 export const FIXTURE_MENU: ModelOption[] = [{ id: 'fixture', runtime: 'fake', model: 'scripted-model', label: 'Fixture', description: 'Simulated model.', efforts: ['high'], enabled: true }];
@@ -113,13 +118,25 @@ export async function projectFixture(options: ProjectFixtureOptions = {}): Promi
     const coordinator = runtimes.fake2 ??= new FakeRuntime();
     Object.defineProperty(coordinator, 'id', { value: 'fake2' }); coordinator.capabilities.readOnlyEnforced = true;
   }
-  const boot = () => new Application({ homes, timers: false, repositoryVisibility: async () => 'PUBLIC', runtimes: () => new Map(Object.entries(runtimes)), githubBaseUrl: github.url,
-    ...(options.decisionFetch ? { decisionFetch: options.decisionFetch } : {}), projectTimers: { periodic: false, coordinatorStartMs: 0, coordinatorRetryMs: 50, ...options.projectTimers } });
+  const appOptions = { homes, timers: false, repositoryVisibility: async () => 'PUBLIC' as const, runtimes: () => new Map(Object.entries(runtimes)), githubBaseUrl: github.url,
+    ...(options.decisionFetch ? { decisionFetch: options.decisionFetch } : {}), projectTimers: { periodic: false, coordinatorStartMs: 0, coordinatorRetryMs: 50, ...options.projectTimers } };
+  // With `control`, `startDaemon` listens at once and owns the listener; otherwise the application listens after the setup below.
+  let daemon: Awaited<ReturnType<typeof startDaemon>> | undefined;
+  const boot = async () => {
+    if (!options.control) return new Application(appOptions);
+    daemon = await startDaemon(0, { ...appOptions, tailscaleAddress: async () => null });
+    return daemon.application;
+  };
   const listen = async (app: Application) => {
+    if (daemon) return { server: daemon.servers[0]!, base: daemon.addresses[0]! };
     const server = createDaemon({ application: app }); await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
     return { server, base: `http://127.0.0.1:${(server.address() as AddressInfo).port}` };
   };
-  let app = boot(); await app.started;
+  const shutdown = async () => {
+    if (daemon) { const running = daemon; daemon = undefined; await running.close(); return; }
+    await new Promise<void>((resolve) => { server.close(() => resolve()); server.closeAllConnections(); }); await app.close();
+  };
+  let app = await boot(); await app.started;
   const config = app.hub.configuration.current()!;
   for (const id of Object.keys(runtimes)) config.configuration['x-jevellan'].runtimes[id] = { enabled: true };
   config.configuration['x-jevellan'].menu = options.menu ?? (options.coordinatorAccountless ? [...FIXTURE_MENU, COORDINATOR_ENTRY] : FIXTURE_MENU);
@@ -168,9 +185,9 @@ export async function projectFixture(options: ProjectFixtureOptions = {}): Promi
     coordinatorState: () => readDocument(app.projectWork.paths.coordinator(project.id), CoordinatorStateSchema),
     ledgerText: (threadId) => ledger(threadId === undefined ? app.projectWork.paths.project(project.id) : app.projectWork.paths.thread(project.id, threadId)),
     async restart(between) {
-      await new Promise<void>((resolve) => { server.close(() => resolve()); server.closeAllConnections(); }); await app.close();
+      await shutdown();
       await between?.();
-      app = boot(); await app.started; ({ server, base } = await listen(app));
+      app = await boot(); await app.started; ({ server, base } = await listen(app));
       if (await app.presence.pulse() === null) throw new Error('The restarted device did not report its heartbeat.');
     },
     async waitFor(read, accept = Boolean, timeoutMs = 30_000) {
@@ -183,8 +200,7 @@ export async function projectFixture(options: ProjectFixtureOptions = {}): Promi
     },
     async close() {
       for (const close of fixture.closers.splice(0).reverse()) await close().catch(() => undefined);
-      await new Promise<void>((resolve) => { server.close(() => resolve()); server.closeAllConnections(); });
-      await app.close().catch(() => undefined);
+      await shutdown().catch(() => undefined);
       for (const runtime of Object.values(runtimes)) await runtime.close();
       await github.close();
       rmSync(root, { recursive: true, force: true });

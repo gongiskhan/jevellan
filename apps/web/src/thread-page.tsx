@@ -1,9 +1,10 @@
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   ProjectWorkViewSchema, RESTARTED_PREFIX, SAVED_COMMITS_SENTENCE, ThreadMessageReceiptSchema, ThreadOverrideViewSchema, ThreadViewSchema, type PlacementField, type ProjectWorkView,
   type QueuedMessage, type ThreadIndex, type ThreadReport, type ThreadView,
 } from '@jevellan/core/client';
 import { ApiError, api, empty } from './api.js';
+import { copyText, selectText } from './clipboard.js';
 import { Confirm, Markdown, Modal, Panel, useTask, type PageProps } from './components.js';
 import { Icon } from './icons.js';
 import { MessageInput } from './message-delivery.js';
@@ -226,7 +227,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
           </section>
         )}
       </div>
-      <ThreadComposer base={base} view={view} behind={behind} jump={jump} onError={onError}
+      <ThreadComposer base={base} view={view} behind={behind} jump={jump} onError={onError} message={message}
         sent={() => { following.current = true; kick.current(); }} refused={() => kick.current()} />
       <div ref={bottom} />
       {why && <WhyPanel view={view} data={data} close={() => setWhy(false)} />}
@@ -317,10 +318,11 @@ function QueuedEntry({ queued }: { queued: QueuedMessage }) {
 /**
  * The thread composer (12.3): a growing textarea and the send icon, with Interrupt current turn while a turn runs. Messages
  * are idempotent by client id. An attached thread disables it with the brief's sentence; a concluded thread takes no
- * message, so only the reason shows (D81, D231). Refusals stay here, and the page reads the thread again.
+ * message, so only the reason shows (D81, D231). Refusals stay here, and the page reads the thread again. Under it, the
+ * command that takes the thread over in a terminal (phase 7), for every thread that has not concluded (D304).
  */
-function ThreadComposer({ base, view, behind, jump, sent, refused, onError }: {
-  base: string; view: ThreadView; behind: boolean; jump(): void; sent(): void; refused(): void; onError(error: unknown): void;
+function ThreadComposer({ base, view, behind, jump, sent, refused, onError, message }: {
+  base: string; view: ThreadView; behind: boolean; jump(): void; sent(): void; refused(): void; onError(error: unknown): void; message(text: string): void;
 }) {
   const [text, setText] = useState('');
   const [interrupt, setInterrupt] = useState(false);
@@ -376,7 +378,49 @@ function ThreadComposer({ base, view, behind, jump, sent, refused, onError }: {
           </div>
         </fieldset>
       )}
+      {!ended && <TakeOver device={view.deviceName} command={view.attachCommand} message={message} />}
     </form>
+  );
+}
+
+/**
+ * Take over in a terminal (12.3, phase 7): the thread's device and the command, muted, with a copy button outside the composer's
+ * fieldset, so it still works while the thread is attached. The clipboard falls back to a selection copy on the plain-HTTP
+ * Tailnet URL (D304). When the browser refuses both, the command shows whole and selected with the reason under it, here
+ * rather than in a toast, which on phones would sit over the very command it points to; it folds back once the selection
+ * leaves the command (D305).
+ */
+function TakeOver({ device, command, message }: { device: string; command: string; message(text: string): void }) {
+  const code = useRef<HTMLElement>(null);
+  const [blocked, setBlocked] = useState(false);
+  useLayoutEffect(() => { if (blocked && code.current) selectText(code.current); }, [blocked]);
+  useEffect(() => {
+    if (!blocked) return;
+    const left = () => {
+      const selection = window.getSelection();
+      if (!code.current || !selection || selection.isCollapsed || !selection.containsNode(code.current, true)) setBlocked(false);
+    };
+    document.addEventListener('selectionchange', left);
+    return () => document.removeEventListener('selectionchange', left);
+  }, [blocked]);
+  const copyCommand = async () => {
+    if (await copyText(command)) { setBlocked(false); message(copy.COMMAND_COPIED); return; }
+    if (code.current) selectText(code.current);
+    setBlocked(true);
+  };
+  return (
+    <>
+      <p className={`pw-takeover${blocked ? ' blocked' : ''}`}>
+        {copy.takeOverLead(device)}{' '}
+        <span className="pw-takeover-command">
+          <code ref={code} title={command}>{command}</code>
+          <button type="button" className="icon-button" aria-label={copy.COPY_COMMAND} title={copy.COPY_COMMAND} onClick={() => void copyCommand()}>
+            <Icon name="copy" size={15} />
+          </button>
+        </span>
+      </p>
+      {blocked && <p className="pw-takeover-blocked" role="status">{copy.COMMAND_SELECTED}</p>}
+    </>
   );
 }
 

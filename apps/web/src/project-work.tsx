@@ -714,6 +714,8 @@ function ThreadRow({ projectId, thread, meta, now, navigate }: { projectId: stri
       <span className="pw-row-title">{thread.title}<span className="sr-only">, {state}</span></span>
       <span className="pw-row-end">
         {outcome && <span className={`pw-outcome pw-tone-${tone}`}>{outcome}</span>}
+        {/* Attached shares idle's outline dot (D54) but holds messages until the terminal exits, so the row says it (D305). */}
+        {thread.state === 'attached' && <span className="pw-outcome pw-tone-muted" aria-hidden="true">{state}</span>}
         <Stamp at={thread.createdAt} label={relativeDuration(thread.createdAt, outcome ? thread.endedAt ?? thread.updatedAt : now)} />
       </span>
       <span className="pw-row-meta" title={meta}>{meta}</span>

@@ -13,6 +13,7 @@ import type { DecisionClient } from '@jevellan/decisions';
 import type { BasicMemory } from '@jevellan/memory';
 import type { RuntimeAdapter } from '@jevellan/runtime-contract';
 import { Admission } from './admission.js';
+import { ThreadAttach, type ThreadAttachView, type ThreadDetachView } from './attach.js';
 import {
   COORDINATOR_ELSEWHERE, COORDINATOR_MEMORY_READ_ONLY, NOTEBOOK_CHANGED, PROJECT_NOT_FOUND, SETTINGS_CHANGED, STOPPED_BY_YOU, THREAD_MEMORY_READ_ONLY, THREAD_NOT_FOUND,
   THREAD_STARTS_ELSEWHERE,
@@ -94,6 +95,7 @@ export class ProjectWork {
   readonly #o: ProjectWorkOptions;
   readonly #timers: ProjectTimers;
   readonly #publisher: ThreadIndexPublisher;
+  readonly #attach: ThreadAttach;
   #sweepTimer: ReturnType<typeof setInterval> | undefined;
   #tools: CoordinatorToolHandlers | undefined;
   #started = false;
@@ -163,6 +165,8 @@ export class ProjectWork {
       threadStart: (envelope) => this.#threadStart(envelope),
       threadCommand: (envelope) => this.#threadCommand(envelope),
     } });
+    this.#attach = new ThreadAttach({ deviceId: o.deviceId, deviceName: o.deviceName, store: this.store, coordinators: coordinatorStore, hub: o.hub, roster: o.roster,
+      runner: (threadId) => this.threads.runner(threadId), project: (projectId) => this.#project(projectId), main, accounts: o.accounts, transcripts: this.transcripts });
     this.views = new ProjectViews({ deviceId: o.deviceId, deviceName: o.deviceName, hub: o.hub, projects: o.projects, store: this.store, ledgers: this.ledgers,
       coordinators: this.coordinators, transcripts: this.transcripts, worktrees, accounts: o.accounts, runtimes: o.runtimes, settings: o.settings, roster: o.roster, placement });
     this.ready = recoverProjects({ paths: this.paths, ledgers: this.ledgers, store: this.store, coordinators: this.coordinators,
@@ -396,4 +400,10 @@ export class ProjectWork {
   answerDecision(projectId: string, decisionId: string, input: z.infer<typeof DecisionAnswerRequestSchema>): Promise<{ repeated: boolean }> {
     return this.decisions.answer(projectId, decisionId, input);
   }
+  /**
+   * Terminal takeover (brief phase 7), for the local control routes only: the answer carries the native session id and the account's
+   * credentials, so it never goes through the redactor and never leaves the loopback socket.
+   */
+  async attach(threadId: string): Promise<ThreadAttachView> { await this.ready; return this.#attach.attach(threadId); }
+  async detach(threadId: string): Promise<ThreadDetachView> { await this.ready; return this.#attach.detach(threadId); }
 }

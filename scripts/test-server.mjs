@@ -540,6 +540,7 @@ const ControlPullSchema = z.strictObject({ schema: z.literal('fixture-pull-chang
 const ControlReleaseSchema = z.strictObject({ schema: z.literal('fixture-release-v1'), marker: z.string().min(1).max(200) });
 const ControlNotebookSchema = z.strictObject({ schema: z.literal('fixture-notebook-v1'), content: z.string().max(65536) });
 const ControlTokenSchema = z.strictObject({ schema: z.literal('fixture-github-token-v1'), saved: z.boolean() });
+const ControlAttachSchema = z.strictObject({ schema: z.literal('fixture-attach-v1'), threadId: z.string().min(1).max(200) });
 async function projectControl(request, response) {
   const send = (status, value) => { response.writeHead(status, { 'Content-Type': 'application/json' }).end(JSON.stringify(value)); };
   const chunks = []; for await (const chunk of request) chunks.push(chunk);
@@ -566,6 +567,15 @@ async function projectControl(request, response) {
     const current = await application.projectHub.notebook('projects_fixture'); const revision = current?.revision ?? 0;
     const stored = await application.projectHub.putNotebook({ schema: 'project-notebook-v1', projectId: 'projects_fixture', revision, content: input.content, updatedAt: new Date().toISOString(), updatedBy: 'coordinator' }, revision);
     send(200, { revision: stored.revision });
+  } else if (request.url === '/projects/attach' && (input = parse(ControlAttachSchema))) {
+    // What `jevellan thread attach` asks the daemon (PJ7), without a terminal: the answer names only the state, never the attach view
+    // (its working directory, native session and account environment). A refusal answers with the daemon's own status and sentence.
+    try { await application.projectWork.attach(input.threadId); send(200, { state: 'attached' }); }
+    catch (error) { send(error.status ?? 500, { message: error.message }); }
+  } else if (request.url === '/projects/detach' && (input = parse(ControlAttachSchema))) {
+    // The command's detach after the native CLI exits; nothing was written in the terminal, so the thread keeps its session.
+    try { send(200, { state: (await application.projectWork.detach(input.threadId)).state }); }
+    catch (error) { send(error.status ?? 500, { message: error.message }); }
   } else if (request.url === '/projects/github-token' && (input = parse(ControlTokenSchema))) {
     // Removes or restores the token the fake GitHub accepts, around the token card journey.
     const state = input.saved ? await application.state.github.put(githubToken) : await application.state.github.remove();

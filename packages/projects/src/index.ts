@@ -20,6 +20,7 @@ export * from './thread-runner.js';
 export * from './threads.js';
 export * from './mail.js';
 export * from './main-checkout.js';
+export * from './attach.js';
 export * from './envelopes.js';
 export * from './recovery.js';
 export * from './views.js';

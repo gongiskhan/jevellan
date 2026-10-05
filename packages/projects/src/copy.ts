@@ -426,3 +426,13 @@ export const UNKNOWN_OPTION = 'Choose one of the offered options.';
 export const LEAVE_GIT_SETTING = 'This project is set to Leave git to me.';
 /** Phase 7 terminal takeover command shown under the thread composer (brief 12.3). */
 export const attachCommand = (threadId: string): string => `jevellan thread attach ${threadId}`;
+/** Releases a thread whose attach could not detach (D47). */
+export const detachCommand = (threadId: string): string => `jevellan thread detach ${threadId}`;
+// Terminal takeover refusals (brief phase 7, D46, D297), answered by the local control routes and printed by the command.
+export const THREAD_WORKING = 'The thread is working. Wait for the turn to end or stop it.';
+export const NO_SESSION_TO_ATTACH = 'This thread has no session to attach to.';
+export const threadRunsOn = (deviceName: string): string => `This thread runs on ${deviceName}. Run the command there.`;
+export const alreadyAttached = (threadId: string): string => `This thread is already attached in a terminal. Exit that terminal first, or run ${detachCommand(threadId)}.`;
+export const ATTACH_RUNTIMES_ONLY = 'Only Claude and Codex threads can be taken over in a terminal.';
+/** A thread notice when detach could not search the account home: the thread continues its earlier session. */
+export const sessionNotAdopted = (message: string): string => `The session from the terminal could not be found, so the thread keeps its earlier session. ${message}`.trim().slice(0, 400);

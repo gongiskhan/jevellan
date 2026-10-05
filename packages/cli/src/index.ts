@@ -1,4 +1,4 @@
-import { DEFAULT_PORT, VERSION } from '@jevellan/core';
+import { DEFAULT_PORT, IdSchema, VERSION } from '@jevellan/core';
 import { serveMcpBridge } from './mcp-bridge.js';
 import { serveMemoryHook } from './memory-hook.js';
 import { Installer } from './installation.js';
@@ -7,6 +7,7 @@ import { installerPrerequisites } from './prerequisites.js';
 import { createInterface } from 'node:readline/promises';
 import { doctor, doctorLines } from './doctor.js';
 import { installationArguments } from './installation-arguments.js';
+import { attachThread, detachThread } from './thread-attach.js';
 
 function printInstallation(result: Awaited<ReturnType<Installer['install']>>) {
   if (result.changedPort) console.log(`The default port was occupied. Jevellan uses ${result.port}.`);
@@ -26,12 +27,21 @@ async function offerHttps() {
   finally { terminal.close(); }
 }
 
-export async function main(args: string[], options: { installer?: () => Installer; confirmPurge?: (path: string) => Promise<string>; doctor?: typeof doctor; offerHttps?: () => Promise<boolean> } = {}) {
+export async function main(args: string[], options: { installer?: () => Installer; confirmPurge?: (path: string) => Promise<string>; doctor?: typeof doctor; offerHttps?: () => Promise<boolean>; attach?: typeof attachThread; detach?: typeof detachThread } = {}) {
   if (args[0] === '--version') { console.log(VERSION); return; }
   if (args[0] === 'doctor') {
     if (args.length !== 1) throw new Error('Usage: jevellan doctor');
     const report = await (options.doctor ?? doctor)(); doctorLines(report).forEach(line => console.log(line));
     if (report.checks.some(check => check.status !== 'ok')) process.exitCode = 1;
+    return;
+  }
+  if (args[0] === 'thread') {
+    // Terminal takeover (brief phase 7, D47): every outcome is one printed sentence and an exit code, never a stack trace.
+    const id = IdSchema.safeParse(args[2]);
+    if (args.length !== 3 || (args[1] !== 'attach' && args[1] !== 'detach')) { console.error('Usage: jevellan thread attach threadId, or jevellan thread detach threadId'); process.exitCode = 1; return; }
+    if (!id.success) { console.error('That is not a thread id. Copy the command from the thread page.'); process.exitCode = 1; return; }
+    try { process.exitCode = await (args[1] === 'attach' ? options.attach ?? attachThread : options.detach ?? detachThread)(id.data); }
+    catch (error) { console.error(error instanceof Error && error.message ? error.message : 'The command could not complete.'); process.exitCode = 1; }
     return;
   }
   if (args[0] === 'mcp-bridge') { await serveMcpBridge(); return; }
@@ -69,6 +79,6 @@ export async function main(args: string[], options: { installer?: () => Installe
     console.log(`Jevellan is running at ${daemon.addresses.join(' and ')}`);
     return;
   }
-  console.log('Jevellan — Autonomous development, coordinated.\nCommands: install [--from path] [--join hubUrl code] [--https | --no-https], join hubUrl code [--from path] [--https | --no-https], update [--from path], rollback, uninstall [--purge], doctor, start [--port number], --version');
+  console.log('Jevellan — Autonomous development, coordinated.\nCommands: install [--from path] [--join hubUrl code] [--https | --no-https], join hubUrl code [--from path] [--https | --no-https], update [--from path], rollback, uninstall [--purge], doctor, start [--port number], thread attach threadId, thread detach threadId, --version');
   if (args.length) process.exitCode = 1;
 }

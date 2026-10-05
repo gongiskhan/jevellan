@@ -1,27 +1,15 @@
 import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { DaemonDiagnosticsSchema, DoctorControlSchema, DoctorReportSchema, Homes, doctorControlPath, readDocument, runOwnedCommand, type DiagnosticCheck, type DoctorReport } from '@jevellan/core';
+import { DaemonDiagnosticsSchema, DoctorReportSchema, Homes, readDocument, runOwnedCommand, type DiagnosticCheck, type DoctorReport } from '@jevellan/core';
 import { InstallationManifestSchema, type InstallationManifest } from './installation-files.js';
 import { APM_VERSION, findExecutable, toolEnvironment, validateToolchain, type ToolCommand, type Toolchain } from './toolchain.js';
 import { checkGit, checkNodeVersion } from './prerequisites.js';
+import { localRequest } from './local-request.js';
 
 export async function runningDiagnostics(homes: Homes, fetcher: typeof fetch = fetch) {
-  const control = readDocument(doctorControlPath(homes), DoctorControlSchema);
-  const response = await fetcher(`${control.origin}/api/local/doctor`, {
-    method: 'POST', redirect: 'manual', signal: AbortSignal.timeout(45_000),
-    headers: { Authorization: `Bearer ${control.token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ schema: 'empty-request-v1' }),
-  });
-  if (!response.ok || response.headers.get('content-type')?.split(';')[0] !== 'application/json' || !response.body) { await response.body?.cancel(); throw new Error('The local daemon did not answer its diagnostics check.'); }
-  const reader = response.body.getReader(), chunks: Uint8Array[] = []; let length = 0;
-  try {
-    for (;;) {
-      const next = await reader.read(); if (next.done) break;
-      length += next.value.length; if (length > 64 * 1024) { await reader.cancel(); throw new Error('The diagnostics response was too large.'); }
-      chunks.push(next.value);
-    }
-  } finally { reader.releaseLock(); }
-  return DaemonDiagnosticsSchema.parse(JSON.parse(Buffer.concat(chunks).toString('utf8')));
+  return localRequest(homes, '/api/local/doctor', { schema: 'empty-request-v1' }, DaemonDiagnosticsSchema,
+    { fetcher, unanswered: 'The local daemon did not answer its diagnostics check.', tooLarge: 'The diagnostics response was too large.' });
 }
 
 type Options = { homes?: Homes; run?: ToolCommand; find?: typeof findExecutable; diagnostics?: typeof runningDiagnostics };

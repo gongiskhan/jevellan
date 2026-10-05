@@ -1,12 +1,12 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, resolve, sep } from 'node:path';
-import { applicationRoot, DEFAULT_PORT, EmptySchema, ErrorDocumentSchema, HealthSchema, VERSION } from '@jevellan/core';
+import { applicationRoot, DEFAULT_PORT, HealthSchema, VERSION } from '@jevellan/core';
 import { Application, type ApplicationOptions } from './application.js';
 import { handleApi } from './api.js';
 import { closeListeners, detectTailscaleIpv4, listenOnInterfaces } from './network.js';
-import { diagnoseApplication, LocalDiagnostics } from './diagnostics.js';
-import { json, requestBody } from './http.js';
+import { LocalDiagnostics } from './diagnostics.js';
+import { handleLocalApi } from './local-api.js';
 export * from './application.js';
 export * from './routing-improver.js';
 export * from './improver.js';
@@ -21,14 +21,8 @@ export function createDaemon(options: { application?: Application; diagnostics?:
   const server = createServer(async (request, response) => {
     try {
       const url = new URL(request.url ?? '/', 'http://127.0.0.1');
-      if (url.pathname === '/api/local/doctor') {
-        if (request.method !== 'POST' || !options.application || !options.diagnostics?.authorized(request)) { json(response, ErrorDocumentSchema.parse({ schema: 'error-v1', code: 'unauthenticated', message: 'Local diagnostics require the installation control file.' }), 401); return; }
-        let release: (() => void) | undefined;
-        try { EmptySchema.parse(await requestBody(request)); release = options.application.lifecycle.enter({ kind: 'request' }); json(response, await diagnoseApplication(options.application)); }
-        catch { json(response, ErrorDocumentSchema.parse({ schema: 'error-v1', code: 'request-failed', message: 'Diagnostics are unavailable while Jevellan is changing or stopping.' }), 503); }
-        finally { release?.(); }
-        return;
-      }
+      // Local control (doctor, terminal takeover) is authorized by the installation control file, before any browser rule.
+      if (url.pathname.startsWith('/api/local/')) { await handleLocalApi(options.application, options.diagnostics, request, response, url); return; }
       if (url.pathname === '/api/health' && request.method === 'GET') {
         response.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
         response.end(JSON.stringify(HealthSchema.parse({ schema: 'health-v1', status: 'ok', version: VERSION })));

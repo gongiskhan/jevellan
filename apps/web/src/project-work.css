@@ -496,6 +496,22 @@ a.pw-pr-chip:hover { border-color: var(--jev); color: var(--jev-ink); }
 .pw-composer-note.ended { margin: 0; padding: 12px 4px; border-top: 1px solid var(--edge); text-align: center; }
 .pw-fields:disabled .message-input-row { background: var(--bg-2); box-shadow: none; }
 .pw-fields:disabled .message-input-row textarea { color: var(--ink-3); background: transparent; }
+/*
+ * Take over in a terminal (12.3, phase 7; D304, D305): one muted line under the composer, on the composer's own 8 px rhythm, left
+ * edge and 12.5 px note size. The command and its copy button move to the next line together when they do not fit; a command wider
+ * than a whole line (a phone) ends in an ellipsis rather than taking a third line from the reading space, and the button still
+ * copies all of it; a long press selects all of it. The button draws 28 px without making its line taller; a transparent extension
+ * gives it a target of about 38 x 34 px (above the app's 32 px controls), clear of the input row's text and the command, and 1 px
+ * short of reaching under it, so a page that fits the screen does not scroll (an absolutely placed box below it adds scroll height).
+ */
+.pw-takeover { min-width: 0; margin: 8px 0 0; color: var(--ink-3); font-size: 12.5px; line-height: 1.5; overflow-wrap: anywhere; }
+.pw-takeover-command { display: inline-flex; align-items: center; gap: 2px; max-width: 100%; vertical-align: middle; }
+.pw-takeover code { min-width: 0; overflow: hidden; color: var(--ink-2); font-size: 11.5px; white-space: nowrap; text-overflow: ellipsis; user-select: all; -webkit-user-select: all; }
+.pw-takeover .icon-button { position: relative; flex: none; min-width: 28px; min-height: 28px; margin-block: -6px; }
+.pw-takeover .icon-button::after { content: ""; position: absolute; inset: -5px -8px -2px -3px; }
+/* A refused copy (D305): the selected command shows whole, wrapping on phones, and the reason sits under it. */
+.pw-takeover.blocked code { white-space: normal; text-overflow: clip; overflow-wrap: anywhere; }
+.pw-takeover-blocked { margin: 4px 0 0; color: var(--ink-2); font-size: 12.5px; line-height: 1.45; }
 /* Allow 10 more turns keeps its words on narrow pages: it is what the turn limit waits for, and a plus alone does not say
    it. The buttons then take their own row under the title, so the title keeps the full width. */
 @container pw-page (width < 560px) {
