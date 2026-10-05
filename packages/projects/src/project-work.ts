@@ -14,11 +14,13 @@ import type { BasicMemory } from '@jevellan/memory';
 import type { RuntimeAdapter } from '@jevellan/runtime-contract';
 import { Admission } from './admission.js';
 import {
-  COORDINATOR_MEMORY_READ_ONLY, NOTEBOOK_CHANGED, PROJECT_NOT_FOUND, REMOTE_THREADS_LATER, SETTINGS_CHANGED, STOPPED_BY_YOU, THREAD_MEMORY_READ_ONLY, THREAD_NOT_FOUND,
+  COORDINATOR_ELSEWHERE, COORDINATOR_MEMORY_READ_ONLY, NOTEBOOK_CHANGED, PROJECT_NOT_FOUND, SETTINGS_CHANGED, STOPPED_BY_YOU, THREAD_MEMORY_READ_ONLY, THREAD_NOT_FOUND,
+  THREAD_STARTS_ELSEWHERE,
 } from './copy.js';
 import { coordinatorToolHandlers } from './bridge-tools.js';
 import { CoordinatorService, type Coordinator, type CoordinatorToolHandlers } from './coordinator.js';
 import { DecisionItems } from './decision-items.js';
+import { Inbox, Outbox, type EnvelopeOf } from './envelopes.js';
 import { ThreadGit } from './git.js';
 import { ThreadIndexPublisher } from './index-publisher.js';
 import { TurnLauncher } from './launch.js';
@@ -29,13 +31,13 @@ import { GitHubAccess, ThreadPublication } from './publication.js';
 import { PullRequestTracker, type MergeResultView } from './pull-requests.js';
 import { recoverProjects } from './recovery.js';
 import { CoordinatorStore, StartReceipts, ThreadStore, threadIndex } from './stores.js';
-import { LocalDelivery, ThreadService } from './threads.js';
+import { LocalDelivery, ThreadService, type RemoteStart } from './threads.js';
 import { ThreadTranscripts } from './transcript.js';
 import { ProjectViews, effectiveSettings } from './views.js';
 import { ThreadWorktree } from './worktree.js';
 
 export type ProjectTimers = {
-  /** PR poll, queue sweep (and from phase 5 the outbox and inbox); false in tests, which call `pulse()`. */
+  /** PR poll, queue sweep and inbox poll; false in tests, which call `pulse()`. The outbox retries a failed drain either way. */
   periodic: boolean;
   prPollMs: number; coordinatorStartMs: number; coordinatorRetryMs: number; coordinatorTurnTimeoutMs: number; threadTurnTimeoutMs: number;
   setupTimeoutMs: number; testTimeoutMs: number; outboxRetryMs: number; outboxMaxMs: number; inboxPollMs: number; indexRetryMs: number;
@@ -81,6 +83,8 @@ export class ProjectWork {
   readonly paths: ProjectPaths; readonly ledgers: ProjectLedgers; readonly store: ThreadStore; readonly coordinators: CoordinatorService;
   readonly threads: ThreadService; readonly decisions: DecisionItems; readonly tracker: PullRequestTracker; readonly views: ProjectViews;
   readonly admission: Admission; readonly transcripts: ThreadTranscripts;
+  /** The hub relay (D40): durable sends to other devices, and this device's pending envelopes. */
+  readonly outbox: Outbox; readonly inbox: Inbox;
   readonly #o: ProjectWorkOptions;
   readonly #timers: ProjectTimers;
   readonly #publisher: ThreadIndexPublisher;
@@ -102,13 +106,13 @@ export class ProjectWork {
     const launcher = new TurnLauncher({ accounts: o.accounts, runtimes: o.runtimes, accountRuns: o.accountRuns, riggingItems: o.riggingItems, bridges: o.bridges, homes: o.homes,
       deviceId: o.deviceId, deviceName: o.deviceName, daemonUrl: () => this.daemonUrl, redactor: o.redactor });
     this.admission = new Admission({ hub: o.hub, deviceId: o.deviceId, deviceName: o.deviceName, localLive: (projectId) => this.threads.liveThreads(projectId),
-      nameOf: async (deviceId) => (await o.roster()).devices.find((view) => view.device.id === deviceId)?.device.name });
+      nameOf: async (deviceId) => (await o.roster()).devices.find((view) => view.device.id === deviceId)?.device.name, now });
     const placement = new Placement({ settings: o.settings, accounts: o.accounts, runtimes: o.runtimes, roster: o.roster, admission: this.admission, deviceId: o.deviceId,
       deviceName: o.deviceName, hub: o.hub, redactor: o.redactor, now, ...(o.decisionClient ? { decisionClient: o.decisionClient } : {}),
       local: (projectId) => this.store.list(projectId).map((thread) => threadIndex(thread, this.store.labels(thread.id), thread.createdAt)) });
     this.decisions = new DecisionItems({ hub: o.hub, now, toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event), threads: () => ({
-      allowTurns: (projectId, threadId) => this.threads.allowTurns(projectId, threadId),
-      stop: (projectId, threadId, reason) => this.threads.stop(projectId, threadId, reason, true),
+      allowTurns: (projectId, threadId, commandId) => this.threads.allowTurns(projectId, threadId, commandId),
+      stop: (projectId, threadId, reason, commandId) => this.threads.stop(projectId, threadId, reason, true, commandId),
       message: (projectId, threadId, text, messageId) => this.threads.message(projectId, threadId, 'owner', text, false, messageId),
     }) });
     const git = new ThreadGit({ homes: o.homes, redactor: o.redactor });
@@ -118,9 +122,10 @@ export class ProjectWork {
     this.coordinators = new CoordinatorService({ deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, store: coordinatorStore, ledgers: this.ledgers, hub: o.hub,
       project: (projectId) => this.#project(projectId), workSettings: (projectId) => this.admission.settings(projectId), settings: o.settings, accounts: o.accounts,
       runtimes: o.runtimes, launcher, decisions: this.decisions, tools: () => this.#coordinatorTools(), roster: o.roster,
+      forward: (projectId, events) => { for (const event of events) this.outbox.enqueue(projectId, 'coordinator', { kind: 'coordinator-event', event }); },
       baseBranch: (project) => worktrees.baseBranch(worktrees.repository(project)), enterOperation: o.enterOperation,
       timers: { startMs: timers.coordinatorStartMs, retryMs: timers.coordinatorRetryMs, turnTimeoutMs: timers.coordinatorTurnTimeoutMs }, now });
-    const delivery = new LocalDelivery({ deviceId: o.deviceId, coordinators: this.coordinators, store: this.store,
+    const delivery = new LocalDelivery({ deviceId: o.deviceId, coordinators: this.coordinators, store: this.store, outbox: () => this.outbox, now,
       command: (projectId, threadId, command) => this.threads.command(projectId, threadId, command) });
     this.threads = new ThreadService({ deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, store: this.store, ledgers: this.ledgers, receipts, hub: o.hub,
       projects: o.projects, admission: this.admission, placement, accounts: o.accounts, transcripts: this.transcripts, delivery, settings: o.settings, now,
@@ -134,6 +139,20 @@ export class ProjectWork {
       toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event),
       transition: async (threadId, apply) => { const runner = this.threads.runner(threadId); if (runner) await runner.transition(apply); else await apply(); },
       hub: o.hub, redactor: o.redactor, now, pollMs: timers.prPollMs, periodic: timers.periodic });
+    this.outbox = new Outbox({ paths: this.paths, hub: o.hub, deviceId: o.deviceId, redactor: o.redactor, timers,
+      delivered: (envelope) => { if (envelope.targetDeviceId === o.deviceId) this.relayArrived(); } });
+    this.inbox = new Inbox({ paths: this.paths, hub: o.hub, deviceId: o.deviceId, timers, handlers: {
+      // Thread events from other devices may mean a slot freed there: the queue sweep follows (D264). A project whose coordinator
+      // moved away hands its queue over with this event (3.5.4); before any assignment the event waits here (D6).
+      coordinatorEvent: async (envelope) => {
+        const { projectId } = envelope; await this.#project(projectId);
+        const assigned = await this.coordinators.deviceOf(projectId);
+        if (assigned !== null && assigned !== o.deviceId) { await this.coordinators.handover(projectId, [envelope.body.event]); return; }
+        this.coordinators.get(projectId).enqueue(envelope.body.event); this.threads.freed(projectId);
+      },
+      threadStart: (envelope) => this.#threadStart(envelope),
+      threadCommand: (envelope) => this.#threadCommand(envelope),
+    } });
     this.views = new ProjectViews({ deviceId: o.deviceId, deviceName: o.deviceName, hub: o.hub, projects: o.projects, store: this.store, ledgers: this.ledgers,
       coordinators: this.coordinators, transcripts: this.transcripts, worktrees, accounts: o.accounts, runtimes: o.runtimes, settings: o.settings, roster: o.roster });
     this.ready = recoverProjects({ paths: this.paths, ledgers: this.ledgers, store: this.store, coordinators: this.coordinators,
@@ -153,6 +172,34 @@ export class ProjectWork {
     if (this.store.get(threadId)?.projectId !== projectId) throw refuse(THREAD_NOT_FOUND, 404);
   }
   /**
+   * A thread the coordinator device placed here (3.5.1 step 3): created once (an existing thread.json is a repeat) with this
+   * device's labels, then prepared in the background unless it waits in the queue for the coordinator's dispatch. Its account was
+   * ranked for this device at placement; the launcher ranks again here when it is no longer eligible (D16).
+   */
+  async #threadStart(envelope: EnvelopeOf<'thread-start'>): Promise<void> {
+    const { thread } = envelope.body;
+    if (thread.projectId !== envelope.projectId || thread.ownerDeviceId !== this.#o.deviceId) throw refuse(THREAD_STARTS_ELSEWHERE, 409);
+    await this.#project(envelope.projectId);
+    if (this.store.get(thread.id)) return;
+    const [settings, accounts] = await Promise.all([this.#o.settings(), this.#o.accounts.list()]);
+    this.store.create(thread, { modelLabel: settings.menu.find((entry) => entry.id === thread.placement.modelId)?.label ?? thread.placement.modelId,
+      accountLabel: accounts.find((view) => view.account.id === thread.placement.accountId)?.account.label ?? thread.placement.accountId });
+    if (thread.state === 'preparing') void this.threads.runner(thread.id)?.prepare();
+  }
+  /**
+   * A command from another device for a thread here, applied once per command id (thread-local `seenCommands`, the newest 200).
+   * A dispatch (preparation and first turn) and allow-turns (which waits for the thread's step chain) run in the background, so
+   * the inbox never waits on a turn.
+   */
+  async #threadCommand(envelope: EnvelopeOf<'thread-command'>): Promise<void> {
+    const { threadId, commandId, command } = envelope.body;
+    this.#thread(envelope.projectId, threadId);
+    if (this.store.local(threadId).seenCommands?.includes(commandId)) return;
+    if (command.type === 'dispatch' || command.type === 'allow-turns') void this.threads.command(envelope.projectId, threadId, command).catch(() => undefined);
+    else await this.threads.command(envelope.projectId, threadId, command);
+    this.store.updateLocal(threadId, (local) => ({ ...local, seenCommands: [...(local.seenCommands ?? []).filter((id) => id !== commandId), commandId].slice(-200) }));
+  }
+  /**
    * Idempotent; after `bindDaemonUrl`. Queued starts and waiting turns may run from now on, coordinators deliver their queued
    * events in a new turn, and the periodic loops start when timers are periodic. No thread that recovery left at rest is
    * resumed (brief 8.6).
@@ -165,34 +212,51 @@ export class ProjectWork {
       this.threads.begin();
       this.coordinators.begin();
       void this.threads.sweep().catch(() => undefined);
+      void this.outbox.drain();
+      this.inbox.start();
       if (!this.#timers.periodic) return;
       this.tracker.start();
       this.#sweepTimer = setInterval(() => { void this.threads.sweep().catch(() => undefined); this.coordinators.sweep(); }, this.#timers.queueSweepMs); this.#sweepTimer.unref();
     }, () => undefined);
   }
-  /** One round of the periodic work (tests and the UI refresh): PR poll, index flush, queue and waiting sweeps, coordinator re-checks (D70). */
+  /**
+   * One round of the periodic work (tests and the UI refresh): PR poll, index flush, queue and waiting sweeps, coordinator re-checks
+   * (D70), then the outbox drain and the inbox poll, which never fail (a hub outage leaves both for the next round).
+   */
   async pulse(): Promise<void> {
     await this.ready;
     await this.tracker.poll();
     await this.#publisher.flush().catch(() => undefined);
     await this.threads.sweep();
     this.coordinators.sweep();
+    await this.outbox.drain();
+    await this.inbox.poll();
+  }
+  /** The hub stored an envelope for this device (the hub's relay route, or this device's own outbox): poll the inbox now. */
+  relayArrived(): void {
+    if (!this.#started || this.#closing) return;
+    void this.ready.then(() => { if (!this.#closing) this.inbox.kick(); }, () => undefined);
   }
   /** Resolves when no start, sweep, thread step or coordinator turn is in flight or scheduled (test seam; checks every 20 ms, twice in a row). */
   async idle(projectId?: string): Promise<void> {
     await this.ready;
-    for (let quiet = 0; quiet < 2;) { await delay(20); quiet = this.threads.busy(projectId) || this.coordinators.busy(projectId) ? 0 : quiet + 1; }
+    for (let quiet = 0; quiet < 2;) {
+      await delay(20); quiet = this.threads.busy(projectId) || this.coordinators.busy(projectId) || this.outbox.busy || this.inbox.busy ? 0 : quiet + 1;
+    }
   }
   /** Stops timers, terminates every running turn (shutdown intent) and drains; thread states are never rewritten (D24). */
   close(): Promise<void> {
     return this.#closing ??= (async () => {
       if (this.#sweepTimer) clearInterval(this.#sweepTimer);
       await this.ready.catch(() => undefined);
+      // No new envelope is handled while turns stop; the outbox closes last, its entries stay on disk for the next start.
+      await this.inbox.close();
       // Coordinator turns first (their tools start and message threads), then runners: tracker transitions wait on runner chains (2.6.14).
       await this.coordinators.close();
       await this.threads.close();
       await this.tracker.close();
       await this.#publisher.close();
+      await this.outbox.close();
     })();
   }
 
@@ -202,12 +266,12 @@ export class ProjectWork {
   coordinatorLedger(projectId: string): ProjectLedger { return this.ledgers.coordinator(projectId); }
   /**
    * The coordinator chat to stream (brief 11): this device's ledger when the coordinator runs here, or before any assignment
-   * (an empty chat is valid). Another device's chat is reached from phase 5.
+   * (an empty chat is valid). Another device's chat is proxied there by the route (D266).
    */
   async coordinatorEvents(projectId: string): Promise<ProjectLedger> {
     await this.#project(projectId);
     const deviceId = await this.coordinators.deviceOf(projectId);
-    if (deviceId !== null && deviceId !== this.#o.deviceId) throw refuse(REMOTE_THREADS_LATER, 409);
+    if (deviceId !== null && deviceId !== this.#o.deviceId) throw refuse(COORDINATOR_ELSEWHERE, 409);
     return this.ledgers.coordinator(projectId);
   }
   coordinatorDevice(projectId: string): Promise<string | null> { return this.coordinators.deviceOf(projectId); }
@@ -217,11 +281,11 @@ export class ProjectWork {
     const index = (await this.#o.hub.thread(threadId))?.document;
     return index && index.projectId === projectId ? index.ownerDeviceId : null;
   }
-  /** Coordinators run on the device they are assigned to; another device's coordinator is reached from phase 5. */
+  /** Coordinators run on the device they are assigned to; the routes proxy another device's coordinator there (D266). */
   async #coordinatorHere(projectId: string): Promise<string> {
     await this.#project(projectId);
     const deviceId = await this.coordinators.ensureAssigned(projectId);
-    if (deviceId !== this.#o.deviceId) throw refuse(REMOTE_THREADS_LATER, 409);
+    if (deviceId !== this.#o.deviceId) throw refuse(COORDINATOR_ELSEWHERE, 409);
     return deviceId;
   }
   /** An owner message for the coordinator (brief 8.1): queued and flushed before the answer, idempotent by client id. */
@@ -230,13 +294,25 @@ export class ProjectWork {
     return this.coordinators.get(projectId).enqueue({ schema: 'coordinator-event-v1', kind: 'user-message', id: newId('cev', at), at: new Date(at).toISOString(),
       text: input.text, clientMessageId: input.clientMessageId });
   }
-  /** The assigned coordinator when it runs here; null before any assignment. Another device's coordinator is reached from phase 5. */
+  /** The assigned coordinator when it runs here; null before any assignment. The routes proxy another device's coordinator there. */
   async #assignedHere(projectId: string): Promise<Coordinator | null> {
     await this.#project(projectId);
     const deviceId = await this.coordinators.deviceOf(projectId);
     if (deviceId === null) return null;
-    if (deviceId !== this.#o.deviceId) throw refuse(REMOTE_THREADS_LATER, 409);
+    if (deviceId !== this.#o.deviceId) throw refuse(COORDINATOR_ELSEWHERE, 409);
     return this.coordinators.get(projectId);
+  }
+  /**
+   * Move coordinator here (brief phase 5, 3.5.3): this device takes the project's coordinator over when the device that holds it is
+   * offline or its coordinator runs no turn, else 409. The queued threads on other devices are read at the next sweep, and the
+   * inbox is read at once.
+   */
+  async moveCoordinatorHere(projectId: string): Promise<void> {
+    await this.#project(projectId);
+    await this.coordinators.moveHere(projectId);
+    this.threads.coordinating(projectId);
+    // Events the hub retargeted to this device with the move (D270) arrive now rather than at the next poll.
+    this.relayArrived();
   }
   /** Interrupts the running coordinator turn (brief 8.1); its events count as delivered (D33). Nothing to stop before assignment. */
   async stopCoordinator(projectId: string): Promise<void> { await (await this.#assignedHere(projectId))?.stop(); }
@@ -271,10 +347,13 @@ export class ProjectWork {
       return ProjectNotebookViewSchema.parse({ schema: 'project-notebook-view-v1', notebook: stored.document, revision: stored.revision });
     } catch (error) { if (statusOf(error) === 409) throw refuse(NOTEBOOK_CHANGED, 409); throw error; }
   }
-  /** New thread from the owner (3.1): assigns the coordinator here when none, then the start path with receipts (D78). */
+  /**
+   * New thread from the owner (3.1): assigns the coordinator here when none, then the start path with receipts (D78). A restart's
+   * new thread from another device carries the owner's note for placement (D266).
+   */
   async createThread(projectId: string, input: ThreadCreateRequest): Promise<z.infer<typeof ThreadCreatedViewSchema>> {
     const coordinatorDeviceId = await this.#coordinatorHere(projectId);
-    const started = await this.threads.start({ projectId, title: input.title, task: input.task, createdBy: 'owner', clientRequestId: input.clientRequestId, coordinatorDeviceId,
+    const started = await this.threads.start({ projectId, title: input.title, task: input.task, createdBy: 'owner', clientRequestId: input.clientRequestId, coordinatorDeviceId, note: input.note,
       fixed: { ...(input.isolation ? { isolation: input.isolation } : {}), ...(input.modelId ? { modelId: input.modelId } : {}), ...(input.effort ? { effort: input.effort } : {}),
         ...(input.deviceId ? { deviceId: input.deviceId } : {}) } });
     return ThreadCreatedViewSchema.parse({ schema: 'thread-created-view-v1', threadId: started.threadId, state: started.state, placement: started.placement });
@@ -292,12 +371,14 @@ export class ProjectWork {
   allowTurns(projectId: string, threadId: string): Promise<void> { return this.threads.allowTurns(projectId, threadId); }
   /**
    * Override from the thread page (brief 10, 12.3): from the next turn on this device, or a restart whose new thread starts on
-   * the coordinator device like any new thread (D9a), assigning the coordinator here when none.
+   * the coordinator device like any new thread (D9a), assigning the coordinator here when none; `remote` reaches a coordinator
+   * on another device (D266).
    */
-  async overrideThread(projectId: string, threadId: string, input: z.infer<typeof ThreadOverrideRequestSchema>): Promise<z.infer<typeof ThreadOverrideViewSchema>> {
+  async overrideThread(projectId: string, threadId: string, input: z.infer<typeof ThreadOverrideRequestSchema>, remote?: RemoteStart): Promise<z.infer<typeof ThreadOverrideViewSchema>> {
     this.#thread(projectId, threadId);
     if (input.mode === 'next-turn') { await this.threads.overrideNextTurn(projectId, threadId, input); return ThreadOverrideViewSchema.parse({ schema: 'thread-override-view-v1' }); }
-    const { newThreadId } = await this.threads.restart(projectId, threadId, input, await this.#coordinatorHere(projectId));
+    await this.#project(projectId);
+    const { newThreadId } = await this.threads.restart(projectId, threadId, input, await this.coordinators.ensureAssigned(projectId), remote);
     return ThreadOverrideViewSchema.parse({ schema: 'thread-override-view-v1', newThreadId });
   }
   async mergePullRequest(projectId: string, threadId: string): Promise<MergeResultView> { this.#thread(projectId, threadId); return this.tracker.merge(threadId); }

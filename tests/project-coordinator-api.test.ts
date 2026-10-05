@@ -14,7 +14,7 @@ import { HubProjectAccess, HubUnavailable } from '../packages/mesh/dist/index.js
 import { forCoordinator, type FakeTurn } from '../packages/runtime-contract/dist/index.js';
 import {
   EVENT_CURSOR_AHEAD, EVENT_CURSOR_INVALID, LEAVE_GIT_SETTING, MAIN_NOT_AVAILABLE, MESSAGE_ID_REUSED, NOTEBOOK_CHANGED, PROJECT_NOT_FOUND, QUESTION_NOT_FOUND,
-  REMOTE_THREADS_LATER, SETTINGS_CHANGED, UNKNOWN_OPTION, publicProjectData,
+  SETTINGS_CHANGED, UNKNOWN_OPTION, coordinatorOfflineNotice, publicProjectData,
 } from '../packages/projects/dist/index.js';
 import { projectWorkRoute } from '../apps/daemon/dist/index.js';
 import { streamLedger } from '../apps/daemon/dist/conversation-events.js';
@@ -93,15 +93,17 @@ test('the phase 2 rows of the route table: coordinator, settings, notebook and a
     expect(projectWorkRoute(project('/notebook'), method)).toEqual({ name: 'notebook', target: 'any', projectId: 'proj_a' });
   }
   expect(projectWorkRoute(project('/decisions/pdec_1/answer'), 'POST')).toEqual({ name: 'answer', target: 'any', projectId: 'proj_a', decisionId: 'pdec_1' });
+  // Move coordinator here (phase 5) runs on the device the owner uses.
+  expect(projectWorkRoute(project('/coordinator/move'), 'POST')).toEqual({ name: 'move', target: 'local', projectId: 'proj_a' });
   // Phase 1 rows keep their shape: no stream flag, the second id is the thread.
   expect(projectWorkRoute(project('/threads/thread_1/stop'), 'POST')).toEqual({ name: 'thread-stop', target: 'owner', projectId: 'proj_a', threadId: 'thread_1' });
   for (const [path, method] of [[project('/coordinator/events'), 'POST'], [project('/coordinator/events'), 'HEAD'], [project('/coordinator/messages'), 'GET'],
-    [project('/coordinator/stop'), 'GET'], [project('/coordinator/fresh'), 'PUT'], [project('/work-settings'), 'POST'], [project('/work-settings'), 'DELETE'],
+    [project('/coordinator/stop'), 'GET'], [project('/coordinator/fresh'), 'PUT'], [project('/coordinator/move'), 'GET'], [project('/work-settings'), 'POST'], [project('/work-settings'), 'DELETE'],
     [project('/notebook'), 'POST'], [project('/notebook'), 'PATCH'], [project('/decisions/pdec_1/answer'), 'GET'], [project('/decisions/pdec_1/answer'), 'PUT']]) {
     expect(() => projectWorkRoute(path!, method!), `${method} ${path}`).toThrow(expect.objectContaining({ message: METHOD, status: 405 }));
   }
-  // Move is phase 5; partial paths, extra segments and other decision actions are no Projects route.
-  for (const path of [project('/coordinator'), project('/coordinator/move'), project('/coordinator/events/3'), project('/coordinator/message'), project('/decisions'),
+  // Partial paths, extra segments and other decision actions are no Projects route.
+  for (const path of [project('/coordinator'), project('/coordinator/move/x'), project('/coordinator/events/3'), project('/coordinator/message'), project('/decisions'),
     project('/decisions/pdec_1'), project('/decisions/pdec_1/answer/x'), project('/decisions/pdec_1/withdraw'), project('/notebook/1'), project('/work-settings/x'),
     project('/settings'), project('/coordinator/..%2Fevents'), project('/decisions/a%2Fb/answer')]) {
     expect(projectWorkRoute(path, 'GET'), path).toBeNull(); expect(projectWorkRoute(path, 'POST'), path).toBeNull();
@@ -362,13 +364,15 @@ test('work settings, notebook and answers: revision checks, the main default coe
   expect((await replay.through(last)).map((frame) => frame.event.id)).toEqual(Array.from({ length: last }, (_, n) => n + 1));
 });
 
-test('a coordinator assigned to another device is refused here until phase 5 and shows offline', { timeout: 60_000 }, async () => {
+test('a coordinator assigned to a device that is not in the mesh gets the offline notice instead of a proxy error, and shows offline (D9a)', { timeout: 60_000 }, async () => {
   const f = fixture = await projectFixture();
   const pid = f.project.id; const route = (suffix: string) => `/api/projects/${pid}${suffix}`;
   await new HubProjectAccess(f.app.hub, 'dev_other').assignCoordinator(pid, 'dev_other', 0);
-  expect(await call(f, route('/coordinator/messages'), 'POST', message('msg_remote', 'Hello.'), 409)).toEqual(refused('conflict', REMOTE_THREADS_LATER));
-  expect(await call(f, route('/coordinator/events'), 'GET', undefined, 409)).toEqual(refused('conflict', REMOTE_THREADS_LATER));
-  for (const action of ['stop', 'fresh']) expect(await call(f, route(`/coordinator/${action}`), 'POST', empty, 409)).toEqual(refused('conflict', REMOTE_THREADS_LATER));
+  const offline = refused('conflict', coordinatorOfflineNotice('dev_other'));
+  expect(await call(f, route('/coordinator/messages'), 'POST', message('msg_remote', 'Hello.'), 409)).toEqual(offline);
+  expect(await call(f, route('/coordinator/events'), 'GET', undefined, 409)).toEqual(offline);
+  for (const action of ['stop', 'fresh']) expect(await call(f, route(`/coordinator/${action}`), 'POST', empty, 409)).toEqual(offline);
+  expect(await call(f, route('/threads'), 'POST', { schema: 'thread-create-request-v1', clientRequestId: 'req_remote', title: 'Elsewhere', task: 'Wait.' }, 409)).toEqual(offline);
   expect(existsSync(f.app.projectWork.paths.coordinator(pid))).toBe(false);
   expect(ProjectWorkViewSchema.parse(await call(f, route('/work'), 'GET', undefined, 200)).coordinator)
     .toMatchObject({ state: 'offline', deviceId: 'dev_other', deviceName: null, online: false, session: null });

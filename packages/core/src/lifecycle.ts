@@ -28,6 +28,7 @@ export function lifecycleActivity(homes: Homes): LifecycleActivity[] {
 export class LifecycleGate {
   readonly #db: DatabaseSync;
   readonly #activities = new Map<string, LifecycleActivity>();
+  readonly #idle = new Set<() => void>();
   #exclusive = false;
   #closed = false;
   constructor(readonly homes: Homes) {
@@ -58,8 +59,17 @@ export class LifecycleGate {
     return () => {
       if (released) return; released = true; this.#activities.delete(id);
       try { this.#publish(); }
-      finally { if (!this.#activities.size) this.#db.exec('ROLLBACK'); }
+      finally { if (!this.#activities.size) { this.#db.exec('ROLLBACK'); for (const wake of [...this.#idle]) wake(); } }
     };
+  }
+  /** Resolves true once no admitted work remains, or false after `timeoutMs`: a closing daemon lets work it admitted finish first. */
+  idle(timeoutMs: number): Promise<boolean> {
+    if (!this.#activities.size) return Promise.resolve(true);
+    return new Promise(resolve => {
+      const settle = (value: boolean) => { clearTimeout(timer); this.#idle.delete(wake); resolve(value); };
+      const wake = () => settle(true); const timer = setTimeout(() => settle(false), timeoutMs);
+      this.#idle.add(wake);
+    });
   }
   tryMaintenance(): (() => void) | null {
     this.#assert(); if (this.#activities.size) return null;

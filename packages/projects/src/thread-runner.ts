@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { AccountService } from '@jevellan/accounts';
 import {
-  ThreadReportSchema, isTerminal, liveWork, newId, stableJson, type CoordinatorEvent, type Project, type ProjectWorkSettings, type QueuedMessage, type SecretRedactor, type Thread,
+  HubUnavailable, ThreadReportSchema, isTerminal, liveWork, newId, stableJson, type CoordinatorEvent, type Project, type ProjectWorkSettings, type QueuedMessage, type SecretRedactor, type Thread,
   type ThreadReport, type ThreadState,
 } from '@jevellan/core';
 import type { Admission } from './admission.js';
@@ -10,7 +10,7 @@ import { ProjectTools } from './bridge-tools.js';
 import {
   DISCARD_REFUSED, MAIN_NOT_AVAILABLE, MESSAGE_ID_REUSED, MORE_TURNS, NO_CHANGES, OWNER_STOPPED_THREAD, PROCESS_UNCONFIRMED, RESTART_OPEN_PULL_REQUEST, RESTART_PUBLISHED_TO_MAIN,
   TESTS_FAILED_THREE_TIMES, THREAD_ALREADY_RESTARTED, THREAD_ENDED, THREAD_NOT_FOUND, TOOL_NOT_IN_TURN, TURN_FAILED, TURN_LIMIT_REACHED, TURN_TIMED_OUT, TURN_WITHOUT_REPORT,
-  VERIFICATION_ATTEMPTS, WORKTREE_DISCARDED, accountMovedNotice, cleanupFailed, isRestarted, messagesPrompt, taskPrompt, threadPrompt, threadStepFailed, threadSystemAppend,
+  VERIFICATION_ATTEMPTS, WAITING_FOR_HUB, WORKTREE_DISCARDED, accountMovedNotice, cleanupFailed, isRestarted, messagesPrompt, taskPrompt, threadPrompt, threadStepFailed, threadSystemAppend,
   verificationFailurePrompt, worktreeSetupFailed, type ThreadTurnReason,
 } from './copy.js';
 import type { DecisionItems } from './decision-items.js';
@@ -173,7 +173,16 @@ export class ThreadRunner {
   }
   async #unexpected(error: unknown): Promise<void> {
     try {
-      const thread = this.#thread(); const text = threadStepFailed(this.#message(error));
+      const thread = this.#thread();
+      // The hub is unreachable before a turn with waiting messages starts (D273): no failure. The thread rests with its messages
+      // and the waiting sweep starts them once the hub answers; the notice is written once per wait, not at every sweep.
+      if (error instanceof HubUnavailable && thread.queuedMessages.length && this.#stopping === undefined && (liveWork(thread.state) || atRest(thread.state))) {
+        if (thread.stateReason === WAITING_FOR_HUB && atRest(thread.state)) return;
+        this.#notice(thread, this.#message(error), 'error');
+        this.#set((current) => withState(current, atRest(current.state) ? current.state : 'idle', WAITING_FOR_HUB));
+        return;
+      }
+      const text = threadStepFailed(this.#message(error));
       this.#notice(thread, text, 'error');
       if (!liveWork(thread.state) || this.#stopping !== undefined) return;
       const rested = this.#set((current) => withState(current, 'idle', text));

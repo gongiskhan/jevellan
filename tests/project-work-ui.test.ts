@@ -1,17 +1,17 @@
 import { expect, test } from 'vitest';
 import {
   COORDINATOR_TOOLS, EffortSchema, NO_CHANGES, PlacementRecordSchema, ProjectDecisionSchema, ProjectWorkListViewSchema, ProjectWorkSettingsRequestSchema,
-  ThreadCreateRequestSchema, ThreadIndexSchema, ThreadOverrideRequestSchema, ThreadReportSchema, defaultProjectWorkSettings, mapEffort,
+  ThreadCreateRequestSchema, ThreadIndexSchema, ThreadOverrideRequestSchema, ThreadReportSchema, defaultProjectWorkSettings, idTime, mapEffort, newId,
   type CursorTurn, type Effort, type PlacementRecord, type ProjectDecision, type ProjectLedgerEvent, type ProjectWorkView, type PullRequestEntry, type ThreadIndex,
   type ThreadReport, type ThreadView,
 } from '../packages/core/dist/index.js';
 import * as server from '../packages/projects/dist/copy.js';
 import * as copy from '../apps/web/src/project-work-copy.js';
 import {
-  alignReports, chatItems, checksBadge, composerBlock, coordinatorChip, coordinatorLabel, decisionSource, defaultTab, deviceBlock, dotClass, effortChoices, fallbackChip,
+  alignReports, chatItems, checksBadge, composerBlock, coordinatorChip, coordinatorLabel, decisionSource, defaultTab, deviceBlock, deviceRefusal, dotClass, effortChoices, fallbackChip,
   mainIsolationBlock, mergeBlock, nearestEffort, openPullRequests, outcomeText, overrideForm, overrideOffered, overrideReady, overrideRequest, placementLine, projectDot,
   projectRoute, pullRequestBadges, reportBadge, restartedThread, rowClockMs, sentText, settingsRequest, showSent, sidebarProjects, threadActions, threadCreateRequest,
-  threadLiveText, threadMeta, threadPollDelay, threadSections, toolIcon, transcriptNotice, whyFields, withdrawals, withoutReportCalls, working,
+  threadLiveText, threadMeta, threadPollDelay, threadSections, threadStarting, toolIcon, transcriptNotice, whyFields, withdrawals, withoutReportCalls, working,
 } from '../apps/web/src/project-work-model.js';
 import { dateOnly, duration, relativeDuration, shortTime, timeStamp } from '../apps/web/src/time.js';
 
@@ -338,6 +338,22 @@ test('the thread page polls every 1.5 s while live work runs or just after an ac
   expect(threadPollDelay(undefined, NOW)).toBe(10_000);
   expect(threadPollDelay('idle', NOW, NOW + 1)).toBe(1500);
   expect(threadPollDelay('idle', NOW, NOW)).toBe(10_000);
+});
+
+test('a thread page that finds no thread yet keeps loading while the thread is under two minutes old (D274)', () => {
+  // The creation time newId encodes, read back to the millisecond; other ids carry none.
+  for (const at of [0, NOW, NOW + 123_456_789]) expect(idTime(newId('thread', at))).toBe(at);
+  for (const id of ['thread', 'thread_short', 'project', `thread_${'I'.repeat(26)}`]) expect(idTime(id)).toBeNull();
+  expect(threadStarting(newId('thread', NOW - 119_000), NOW)).toBe(true);
+  expect(threadStarting(newId('thread', NOW + 5_000), NOW)).toBe(true);
+  expect(threadStarting(newId('thread', NOW - 120_000), NOW)).toBe(false);
+  expect(threadStarting('fixture_thread', NOW)).toBe(false);
+});
+
+test('a thread whose device cannot answer before any view: offline or gone is a wait, unreachable an error, others not the device (D276)', () => {
+  expect(deviceRefusal(409)).toBe('notice');
+  expect(deviceRefusal(502)).toBe('error');
+  for (const status of [400, 401, 403, 404, 500, 503]) expect(deviceRefusal(status)).toBeUndefined();
 });
 
 test('thread header buttons: Stop until concluded, Discard as the server allows, Allow 10 more turns only at the limit of a live thread', () => {

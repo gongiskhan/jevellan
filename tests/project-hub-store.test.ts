@@ -253,3 +253,37 @@ test('placement overrides are append-only, recorded by the thread owner, idempot
   // The hub's own access reads the same records.
   expect((await new HubProjectAccess(app.hub, app.device.deviceId).recentOverrides('project', 1)).map((entry) => entry.id)).toEqual(['povr_2']);
 });
+
+test('work summaries give every project its counts and coordinator with the device presence in one read, paged by project id (D267)', async () => {
+  const left = await member('left'); const right = await member('right');
+  app.devices.heartbeat('left', { schema: 'heartbeat-v1', deviceId: 'left', at, version: '0.1.0', runningConversations: [], projects: [], externalSessions: [], load: { cpuPct: 0, memFreeMb: 1024 } });
+  const leftAccess = new HubProjectAccess(app.hub, 'left');
+  for (const [id, state] of [['thread_a', 'running'], ['thread_b', 'idle'], ['thread_c', 'in-review'], ['thread_d', 'preparing']] as const) await leftAccess.publishThread(index(id, { state }), 1);
+  await leftAccess.publishThread(index('thread_o', { projectId: 'other', state: 'publishing' }), 1);
+  const hubAccess = new HubProjectAccess(app.hub, app.device.deviceId);
+  await hubAccess.createDecision(question('pdec_open')); await hubAccess.createDecision(question('pdec_gone')); await hubAccess.withdrawDecision('pdec_gone', at);
+  await hubAccess.createDecision(question('pdec_done')); await hubAccess.answerDecision('pdec_done', { optionLabel: 'SQLite' }, at, 'req_done');
+  // `project`: its coordinator on `left`, which published its state; `other`: on `right`, which never reported a heartbeat.
+  await leftAccess.assignCoordinator('project', 'left', 0);
+  await leftAccess.putCoordinatorStatus({ schema: 'project-coordinator-status-v1', revision: 0, projectId: 'project', deviceId: 'left', state: 'running', failedTurnsInARow: 0, session: null, updatedAt: at });
+  await new HubProjectAccess(app.hub, 'right').assignCoordinator('other', 'right', 0);
+  const expected = [
+    { schema: 'project-work-summary-v1', projectId: 'other', name: 'other', waiting: 0, running: 1, inReview: 0,
+      coordinator: { deviceId: 'right', device: { name: 'right', status: 'offline', revoked: false }, state: null } },
+    { schema: 'project-work-summary-v1', projectId: 'project', name: 'project', waiting: 1, running: 2, inReview: 1,
+      coordinator: { deviceId: 'left', device: { name: 'left', status: 'online', revoked: false }, state: 'running' } },
+  ];
+  expect(await left.hub.workSummaries()).toEqual(expected);
+  expect(await app.projectHub.workSummaries()).toEqual(expected);
+  // A store without the roster knows no device; a status published by a former coordinator is not shown after a move.
+  expect((await hubAccess.workSummaries())[1]!.coordinator).toEqual({ deviceId: 'left', device: null, state: 'running' });
+  await new HubProjectAccess(app.hub, 'right').assignCoordinator('project', 'right', 1);
+  expect((await right.hub.workSummaries())[1]!.coordinator).toEqual({ deviceId: 'right', device: { name: 'right', status: 'offline', revoked: false }, state: null });
+  // Pages of 100 by project id, read whole by both adapters.
+  for (let n = 0; n < 150; n++) app.hub.put('projects', `bulk_${String(n).padStart(3, '0')}`, ProjectSchema, { schema: 'project-v1', id: `bulk_${String(n).padStart(3, '0')}`, name: `Bulk ${n}`, paths: {},
+    branchPolicy: 'main', memory: { mode: 'repo', dir: '.jevellan/memory' }, context: { state: 'none' } }, 0);
+  const first = new HubProjectStore(app.hub, 'left').workSummaries();
+  expect(first.records).toHaveLength(100); expect(first.next).toBe(first.records.at(-1)!.projectId);
+  expect((await left.hub.workSummaries()).map((summary) => summary.projectId)).toEqual([...Array.from({ length: 150 }, (_, n) => `bulk_${String(n).padStart(3, '0')}`), 'other', 'project']);
+  expect(isProjectHubRead('work-summaries')).toBe(true);
+});

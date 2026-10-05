@@ -1,5 +1,5 @@
 import {
-  GitHubError, MergeResultViewSchema, isTerminal, newId, parseGitHubRemote, stableJson,
+  GitHubError, MergeResultViewSchema, isTerminal, newId, parseGitHubPullUrl, parseGitHubRemote, stableJson,
   type CoordinatorEvent, type GitHubRepository, type Project, type ProjectHub, type PullRequestState, type SecretRedactor, type Thread, type ThreadLocal,
 } from '@jevellan/core';
 import type { z } from 'zod';
@@ -90,8 +90,9 @@ export class PullRequestTracker {
     if (!repository) throw new Error(NOT_GITHUB);
     return repository;
   }
-  async #fetch(projectId: string, pr: PullRequestState): Promise<PullRequestState> {
-    const repository = await this.#repository(projectId); const client = await this.#o.github.open();
+  /** `fromUrl`: a thread on another device is read from its pull request's own address, without this device's checkout (3.5.1 step 8). */
+  async #fetch(projectId: string, pr: PullRequestState, fromUrl = false): Promise<PullRequestState> {
+    const repository = (fromUrl ? parseGitHubPullUrl(pr.url) : null) ?? await this.#repository(projectId); const client = await this.#o.github.open();
     const pull = await client.getPull(repository, pr.number);
     const open = !pull.merged && pull.state === 'open';
     return pullRequestState(pull, open ? await client.checks(repository, pull.headSha) : pr.checks, this.#at());
@@ -207,7 +208,7 @@ export class PullRequestTracker {
     if (!index || index.projectId !== projectId) throw refuse(THREAD_NOT_FOUND, 404);
     if (!index.pr) return { pr: null, reason: NO_PULL_REQUEST };
     if (index.pr.state !== 'open') return { pr: index.pr };
-    try { return { pr: await this.#fetch(projectId, index.pr) }; }
+    try { return { pr: await this.#fetch(projectId, index.pr, true) }; }
     catch (error) { return { pr: index.pr, reason: this.#o.redactor.text(error instanceof Error ? error.message : String(error)) }; }
   }
 }

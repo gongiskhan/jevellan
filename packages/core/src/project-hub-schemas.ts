@@ -1,13 +1,27 @@
 import { z } from 'zod';
-import { DecisionAnswerSchema, PlacementOverrideSchema, ProjectCoordinatorSchema, ProjectCoordinatorStatusSchema, ProjectDecisionSchema, ProjectNotebookSchema, ProjectWorkSettingsSchema, ThreadIndexSchema } from './project-schemas.js';
+import { DecisionAnswerSchema, PlacementOverrideSchema, ProjectCoordinatorSchema, ProjectCoordinatorStatusSchema, ProjectDecisionSchema, ProjectEnvelopeSchema, ProjectNotebookSchema, ProjectWorkSettingsSchema, ThreadIndexSchema } from './project-schemas.js';
+import { DevicePresenceSchema } from './mesh-schemas.js';
 import { IdSchema, TimestampSchema } from './schemas.js';
 
 // Members reach project hub state through POST /hub/mesh/projects/<collection> with operation-discriminated bodies (D7).
-// Later phases add operations: envelopes (5), mail, reservations and checkouts (6).
+// Later phases add operations: mail, reservations and checkouts (6).
 export const ProjectHubCollectionSchema = z.enum(['settings', 'coordinators', 'threads', 'decisions', 'notebooks', 'overrides',
-  'envelopes', 'mail', 'reservations', 'checkouts']);
+  'envelopes', 'work', 'mail', 'reservations', 'checkouts']);
 export type ProjectHubCollection = z.infer<typeof ProjectHubCollectionSchema>;
 export const PROJECT_HUB_PAGE = 100;
+/** A pending-envelope page also stops near this many serialized bytes (at least one envelope), under the member's 2 MiB reply cap (D260). */
+export const ENVELOPE_PAGE_BYTES = 1024 * 1024;
+
+const count = z.number().int().nonnegative();
+/**
+ * One project's row of the Projects list as the hub computes it (D267): the sidebar counts and where the coordinator lives, with
+ * that device's presence from the roster and the state it last published (only when the publisher is the assigned device).
+ */
+export const ProjectWorkSummarySchema = z.strictObject({ schema: z.literal('project-work-summary-v1'), projectId: IdSchema, name: z.string().min(1),
+  waiting: count, running: count, inReview: count,
+  coordinator: z.strictObject({ deviceId: IdSchema, device: z.strictObject({ name: z.string().min(1), status: DevicePresenceSchema, revoked: z.boolean() }).nullable(),
+    state: z.enum(['idle', 'running', 'unavailable']).nullable() }).nullable() });
+export type ProjectWorkSummary = z.infer<typeof ProjectWorkSummarySchema>;
 
 const request = { schema: z.literal('project-hub-request-v1') };
 const project = { projectId: IdSchema };
@@ -32,6 +46,12 @@ export const ProjectHubRequestSchema = z.discriminatedUnion('operation', [
   z.strictObject({ ...request, operation: z.literal('notebook-put'), notebook: ProjectNotebookSchema, expectedRevision }),
   z.strictObject({ ...request, operation: z.literal('override-add'), override: PlacementOverrideSchema }),
   z.strictObject({ ...request, operation: z.literal('overrides-recent'), ...project, limit: z.number().int().min(1).max(PROJECT_HUB_PAGE) }),
+  // Relay (phase 5, D40): the source puts, the target reads its pending envelopes and acknowledges each one, which deletes it (D90).
+  z.strictObject({ ...request, operation: z.literal('envelope-put'), envelope: ProjectEnvelopeSchema }),
+  z.strictObject({ ...request, operation: z.literal('envelopes-pending'), targetDeviceId: IdSchema }),
+  z.strictObject({ ...request, operation: z.literal('envelope-ack'), id: IdSchema }),
+  // The Projects list in one request (phase 5, D267): every project's summary, pages of 100 by project id.
+  z.strictObject({ ...request, operation: z.literal('work-summaries'), after: IdSchema.optional() }),
 ]);
 export type ProjectHubRequest = z.infer<typeof ProjectHubRequestSchema>;
 export type ProjectHubOperation = ProjectHubRequest['operation'];
@@ -42,6 +62,8 @@ const collections = {
   'decisions-list': 'decisions', 'decision-get': 'decisions', 'decision-create': 'decisions', 'decision-withdraw': 'decisions', 'decision-answer': 'decisions',
   'notebook-get': 'notebooks', 'notebook-put': 'notebooks',
   'override-add': 'overrides', 'overrides-recent': 'overrides',
+  'envelope-put': 'envelopes', 'envelopes-pending': 'envelopes', 'envelope-ack': 'envelopes',
+  'work-summaries': 'work',
 } as const satisfies Record<ProjectHubOperation, ProjectHubCollection>;
 /** The one collection route that accepts an operation. */
 export function collectionOf(operation: ProjectHubOperation): ProjectHubCollection { return collections[operation]; }
@@ -53,6 +75,8 @@ const access = {
   'decisions-list': 'read', 'decision-get': 'read', 'decision-create': 'write', 'decision-withdraw': 'write', 'decision-answer': 'write',
   'notebook-get': 'read', 'notebook-put': 'write',
   'override-add': 'write', 'overrides-recent': 'read',
+  'envelope-put': 'write', 'envelopes-pending': 'read', 'envelope-ack': 'write',
+  'work-summaries': 'read',
 } as const satisfies Record<ProjectHubOperation, 'read' | 'write'>;
 /** Reads change no hub state, so the hub admits them like GET requests, outside the lifecycle gate (D247). */
 export function isProjectHubRead(operation: ProjectHubOperation): boolean { return access[operation] === 'read'; }
@@ -84,6 +108,11 @@ export const ProjectHubResultSchema = z.discriminatedUnion('operation', [
   // Overrides carry no revision: the collection is append-only (D252).
   z.strictObject({ ...result, operation: z.literal('override-add'), override: PlacementOverrideSchema }),
   z.strictObject({ ...result, operation: z.literal('overrides-recent'), records: z.array(PlacementOverrideSchema).max(PROJECT_HUB_PAGE) }),
+  // `stored: false` answers an identical retry; `more` says another page is waiting; an unknown id acknowledges as `deleted: false`.
+  z.strictObject({ ...result, operation: z.literal('envelope-put'), id: IdSchema, stored: z.boolean() }),
+  z.strictObject({ ...result, operation: z.literal('envelopes-pending'), records: z.array(ProjectEnvelopeSchema).max(PROJECT_HUB_PAGE), more: z.boolean() }),
+  z.strictObject({ ...result, operation: z.literal('envelope-ack'), id: IdSchema, deleted: z.boolean() }),
+  z.strictObject({ ...result, operation: z.literal('work-summaries'), records: z.array(ProjectWorkSummarySchema).max(PROJECT_HUB_PAGE), next: IdSchema.nullable() }),
 ]);
 export type ProjectHubResult = z.infer<typeof ProjectHubResultSchema>;
 export type ProjectHubResultOf<O extends ProjectHubOperation> = Extract<ProjectHubResult, { operation: O }>;

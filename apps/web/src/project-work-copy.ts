@@ -28,6 +28,8 @@ export const PROJECT_MENU = 'Project menu';
 export const PROJECT_SETTINGS = 'Project settings';
 export const FRESH_COORDINATOR = 'Fresh coordinator session';
 export const MOVE_COORDINATOR = 'Move coordinator here';
+/** Move coordinator here while its request runs. */
+export const MOVING_COORDINATOR = 'Moving…';
 /** Shown after Fresh coordinator session, which changes nothing visible until the next turn (D77). */
 export const FRESH_STARTED = 'The next coordinator turn starts a fresh session.';
 export const RECONNECTING = 'Reconnecting…';

@@ -49,8 +49,11 @@ export async function handleMeshDeviceApi(app: Application, request: IncomingMes
     const release = isProjectHubRead(input.operation) ? undefined : app.lifecycle.enter({ kind: 'request' });
     try {
       app.devices.authenticate(authorization!.slice(7));
-      const result = new HubProjectStore(app.hub, device.id).request(input);
-      app.devices.authenticate(authorization!.slice(7)); send(result); return true;
+      const result = new HubProjectStore(app.hub, device.id, undefined, () => app.devices.list()).request(input);
+      app.devices.authenticate(authorization!.slice(7)); send(result);
+      // An envelope for the hub itself is processed now instead of at the next inbox poll (D40); a retry notifies again.
+      if (input.operation === 'envelope-put' && input.envelope.targetDeviceId === app.device.deviceId) app.projectWork.relayArrived();
+      return true;
     } finally { release?.(); }
   }
   if (path === '/hub/mesh/indexes' && method === 'POST') {

@@ -1,4 +1,4 @@
-import type { ThreadState } from './project-schemas.js';
+import type { ProjectDecision, ThreadIndex, ThreadState } from './project-schemas.js';
 import type { Stored } from './store.js';
 
 // Pure rules shared by the hub, the owner device and the browser.
@@ -15,6 +15,14 @@ export function liveWork(state: ThreadState): boolean { return (liveWorkStates a
 export function isTerminal(state: ThreadState): boolean { return (concludedStates as readonly ThreadState[]).includes(state); }
 /** The UI Running section: every thread that is neither concluded nor in review (display only, not the limit count). */
 export function runningSection(state: ThreadState): boolean { return !isTerminal(state) && state !== 'in-review'; }
+/**
+ * Sidebar counts (brief 12.1, D257): open questions, threads with live work (an idle or waiting thread is never called running)
+ * and threads in review. The hub computes them for the members' project list in one request (D267), the views for the hub's.
+ */
+export function workCounts(threads: readonly Pick<ThreadIndex, 'state'>[], decisions: readonly Pick<ProjectDecision, 'answer' | 'withdrawnAt'>[]): { waiting: number; running: number; inReview: number } {
+  return { waiting: decisions.filter((decision) => !decision.answer && !decision.withdrawnAt).length, running: threads.filter((thread) => liveWork(thread.state)).length,
+    inReview: threads.filter((thread) => thread.state === 'in-review').length };
+}
 /** Concluded threads stay listed for 14 days after they end (brief 7.1 `include: 'all'`, 12.2 Concluded). */
 export const CONCLUDED_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
 /** A concluded thread that ended (by `endedAt`, else its last update) within the last 14 days. */
@@ -40,6 +48,20 @@ export function slugify(title: string): string {
 /** Worktree thread branch `jv/<slug>-<last 6 id characters, lowercased>` (D25). */
 export function threadBranch(title: string, threadId: string): string {
   return `jv/${slugify(title)}-${threadId.slice(-6).toLowerCase()}`;
+}
+
+const ID_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+/** The creation time (ms) that `newId` encodes in the 26 characters after the prefix, or null for any other id. */
+export function idTime(id: string): number | null {
+  const encoded = /^[A-Za-z0-9-]+_([0-9A-HJKMNP-TV-Z]{26})$/.exec(id)?.[1]; if (!encoded) return null;
+  let value = 0n; for (const character of encoded) value = (value << 5n) | BigInt(ID_ALPHABET.indexOf(character));
+  return Number(value >> 80n);
+}
+
+/** Relay order (2.6.15): by source device, then project, then the source's sequence, comparing ids by code point. */
+export function compareEnvelopes(a: { sourceDeviceId: string; projectId: string; seq: number }, b: { sourceDeviceId: string; projectId: string; seq: number }): number {
+  const text = (x: string, y: string) => x < y ? -1 : x > y ? 1 : 0;
+  return text(a.sourceDeviceId, b.sourceDeviceId) || text(a.projectId, b.projectId) || a.seq - b.seq;
 }
 
 /** D3: a hub document's embedded revision equals its row revision. Adapters set it just before a compare-and-swap put. */

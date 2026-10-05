@@ -184,7 +184,9 @@ export type ThreadLocal = z.infer<typeof ThreadLocalSchema>;
 // <home>/projects/<pid>/coordinator-local.json
 export const CoordinatorLocalSchema = z.strictObject({ schema: z.literal('coordinator-local-v1'),
   process: TurnProcessSchema.optional(), deliveredTurn: count.default(0),
-  fallbackEventIds: z.array(IdSchema).max(500).default([]) });
+  fallbackEventIds: z.array(IdSchema).max(500).default([]),
+  // phase 5: events this device handed over to a coordinator that moved away (3.5.4, D271), the newest 500; they no longer count as received here
+  forwardedEventIds: z.array(IdSchema).max(500).optional() });
 export type CoordinatorLocal = z.infer<typeof CoordinatorLocalSchema>;
 // hub namespace project-coordinator-status, key projectId; written only by the coordinator device
 export const ProjectCoordinatorStatusSchema = z.strictObject({ schema: z.literal('project-coordinator-status-v1'),
@@ -192,6 +194,8 @@ export const ProjectCoordinatorStatusSchema = z.strictObject({ schema: z.literal
   state: z.enum(['idle', 'running', 'unavailable']), unavailableReason: z.string().max(400).optional(),
   failedTurnsInARow: count,
   session: z.strictObject({ runtime: IdSchema, modelLabel: text, effort: EffortSchema, accountLabel: text, turns: count }).nullable(),
+  // phase 5: the coordinator ledger's last event id when published, so other devices' work views bound the chat history (D268)
+  lastEventId: count.optional(),
   updatedAt: TimestampSchema });
 export type ProjectCoordinatorStatus = z.infer<typeof ProjectCoordinatorStatusSchema>;
 // hub namespace project-thread-cursors, key threadId
@@ -200,14 +204,17 @@ export const ThreadIndexCursorSchema = z.strictObject({ schema: z.literal('proje
 export type ThreadIndexCursor = z.infer<typeof ThreadIndexCursorSchema>;
 // <home>/projects/<pid>/requests/<clientRequestId>.json
 export const ThreadStartReceiptSchema = z.strictObject({ schema: z.literal('thread-start-receipt-v1'),
-  clientRequestId: IdSchema, digest: z.string(), threadId: IdSchema, at: TimestampSchema });
+  clientRequestId: IdSchema, digest: z.string(), threadId: IdSchema, at: TimestampSchema,
+  // phase 5: what the start answered, so a retry still answers once the thread lives on another device (D264)
+  started: z.strictObject({ state: ThreadStateSchema, stateReason: z.string().max(400).optional(), placement: z.string() }).optional() });
 export type ThreadStartReceipt = z.infer<typeof ThreadStartReceiptSchema>;
 
 // Cross-device delivery (used from phase 5).
 export const ThreadCommandSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal('dispatch') }),
   z.strictObject({ type: z.literal('message'), message: QueuedMessageSchema }),
-  z.strictObject({ type: z.literal('stop'), reason: z.string().max(400) }),
+  // `notify`: a stop by the owner tells the coordinator (D28); a coordinator stop does not.
+  z.strictObject({ type: z.literal('stop'), reason: z.string().max(400), notify: z.boolean().optional() }),
   z.strictObject({ type: z.literal('discard') }),
   z.strictObject({ type: z.literal('allow-turns') }),
   z.strictObject({ type: z.literal('override-next-turn'), override: PlacementOverrideSchema }),
@@ -228,6 +235,13 @@ export const OutboxEntrySchema = z.strictObject({ schema: z.literal('project-out
   target: z.union([z.literal('coordinator'), IdSchema]),
   envelope: ProjectEnvelopeSchema.omit({ targetDeviceId: true, revision: true }) });
 export type OutboxEntry = z.infer<typeof OutboxEntrySchema>;
+// <home>/projects/<pid>/outbox/seq.json: the last sequence number used, written before the entry it numbers
+export const OutboxSeqSchema = z.strictObject({ schema: z.literal('project-outbox-seq-v1'), seq: count });
+export type OutboxSeq = z.infer<typeof OutboxSeqSchema>;
+// <home>/projects/inbox-seen.json: envelope ids this device processed, oldest first (2.6.15, D90)
+export const INBOX_SEEN_LIMIT = 2000;
+export const InboxSeenSchema = z.strictObject({ schema: z.literal('project-inbox-seen-v1'), ids: z.array(IdSchema).max(INBOX_SEEN_LIMIT) });
+export type InboxSeen = z.infer<typeof InboxSeenSchema>;
 
 // Project ledger (brief 5.13, D2). data stays unknown in the envelope: payloads over 64 KiB spill to a blob-ref.
 export const ProjectLedgerEventTypeSchema = z.enum(['coordinator-turn-start', 'coordinator-text', 'coordinator-tool',
@@ -313,7 +327,9 @@ export const CoordinatorMessageRequestSchema = z.strictObject({ schema: z.litera
   clientMessageId: IdSchema, text: z.string().min(1).max(20000) });
 export const ThreadCreateRequestSchema = z.strictObject({ schema: z.literal('thread-create-request-v1'), clientRequestId: IdSchema,
   title: z.string().min(1).max(120), task: z.string().min(1).max(20000),
-  isolation: IsolationSchema.optional(), modelId: IdSchema.optional(), effort: EffortSchema.optional(), deviceId: IdSchema.optional() });
+  isolation: IsolationSchema.optional(), modelId: IdSchema.optional(), effort: EffortSchema.optional(), deviceId: IdSchema.optional(),
+  // A restart's owner note for placement, sent by the thread's device to the coordinator device (D266); the New thread form sends none.
+  note: z.string().max(400).optional() });
 export const ThreadMessageRequestSchema = z.strictObject({ schema: z.literal('thread-message-request-v1'),
   clientMessageId: IdSchema, text: z.string().min(1).max(20000), interrupt: z.boolean() });
 export const ThreadStopRequestSchema = z.strictObject({ schema: z.literal('thread-stop-request-v1'), reason: z.string().max(400).optional() });

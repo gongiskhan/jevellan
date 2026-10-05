@@ -40,8 +40,10 @@ const githubFetch = async (url, init) => {
   if (created && init?.method === 'POST' && response.status === 201) github.setChecks((await response.clone().json()).number, 'pending', decodeURIComponent(created[1]));
   return response;
 };
-// No `periodic` here: the hub keeps its timers and the member keeps `timers: false`.
+// The hub's Projects loops follow its own timers. The member keeps `timers: false` for everything else but runs its Projects loops
+// (inbox, outbox, sweeps, pull requests), so a thread placed on it starts without a pulse, as on a real device (design 5.5 item 3).
 const projectOptions = github ? { githubBaseUrl: github.url, githubFetch, projectTimers: { prPollMs: 2_000, coordinatorStartMs: 100, inboxPollMs: 500, queueSweepMs: 1_000, outboxRetryMs: 500, outboxMaxMs: 2_000 } } : {};
+const memberProjectOptions = github ? { ...projectOptions, projectTimers: { ...projectOptions.projectTimers, periodic: true } } : {};
 const projectPause = (ms, signal) => new Promise((resolve) => {
   const timer = setTimeout(resolve, ms);
   signal.addEventListener('abort', () => { clearTimeout(timer); resolve(); }, { once: true });
@@ -110,6 +112,14 @@ function threadStep(input) {
       return report('progress', 'Worked through the long task until it was released.')(turn);
     };
   }
+  // PJ5: a thread placed on the member reads the README there, so the hub's page shows the member's transcript.
+  if (input.turn === 1 && input.prompt.includes('PJ5')) return async (turn) => {
+    const [name, toolInput, output] = LONG_TOOLS[0]; const id = `fixture_${randomUUID()}`;
+    turn.emit({ type: 'tool-start', id, name, input: toolInput }); turn.emit({ type: 'tool-end', id, ok: true, output });
+    writeFakeNativeSession({ format: nativeFormat(turn.input.account.account.runtime), home: turn.input.account.home, sessionId: turn.session.id, cwd: turn.input.cwd,
+      rows: [{ role: 'assistant', tools: [{ id, name, input: toolInput, output }] }], append: true });
+    return report('progress', 'Read the README on this device: a title and one line about the Projects journeys.')(turn);
+  };
   if (longThreads.has(input.owner.id)) return report('progress', 'Read your message and adjusted the plan.');
   return report('progress', 'Done for now.');
 }
@@ -384,10 +394,12 @@ async function close() {
   stopping = true;
   globalThis.clearInterval(memberHeartbeat);
   improverControl?.close();
-  await member?.close();
+  // As startDaemon closes: each listener stops before its application, so no request enters a lifecycle gate that is closing.
+  // The hub keeps listening until the member has closed.
   if (memberServer) await new Promise(resolve => { memberServer.close(resolve); memberServer.closeAllConnections(); });
-  await application.close();
+  await member?.close();
   await new Promise((resolve) => { server.close(resolve); server.closeAllConnections(); });
+  await application.close();
   await github?.close();
   await rm(root, { recursive: true, force: true });
 }
@@ -397,7 +409,7 @@ await new Promise(resolve => server.listen(port, '127.0.0.1', resolve));
 const memberHomes = new Homes(join(root, 'member-home'), join(root, 'user'));
 const FixtureAuthSchema = z.strictObject({ schema: z.literal('fixture-auth-v1'), fixture_login: z.literal(true) });
 await joinMember(memberHomes, { schema: 'member-join-input-v1', hubUrl: `http://127.0.0.1:${port}`, code: application.mesh.invite().code, device: { name: 'Browser member', url: `http://127.0.0.1:${port + 100}`, os: 'linux', version: '0.1.0' } }, { redactor: new SecretRedactor() });
-member = new Application({ homes: memberHomes, port: port + 100, timers: false, decisionFetch, ...projectOptions, runtimes: context => {
+member = new Application({ homes: memberHomes, port: port + 100, timers: false, decisionFetch, ...memberProjectOptions, runtimes: context => {
   const runtime = createCodex(context);
   const fake = new FakeRuntime(); fake.capabilities.readOnlyEnforced = true;
   const turns = new FakeRuntime(); runtime.startTurn = projectsMode ? scriptedTurns(turns) : input => turns.startTurn(input);
@@ -472,6 +484,10 @@ if (projectsMode) {
     application.hub.put('accounts', id, AccountSchema, { schema: 'account-v1', id, runtime, label, kind: 'subscription', enabled: true, ceilingPct: 90, credential: 'per-device' }, 0);
     application.homes.account(runtime, id); await application.accounts.check(id); await application.accounts.discover(id);
   }
+  // The member signs in to the Codex account on its own (a per-device login), so a thread placed there runs with it (PJ5). It has no
+  // Claude account, so Claude threads never qualify for it and the PJ3 and PJ4b placements stay on the hub.
+  writeDocument(join(member.homes.account('codex', 'acc_projects_codex'), 'auth.json'), FixtureAuthSchema, { schema: 'fixture-auth-v1', fixture_login: true });
+  await member.accounts.check('acc_projects_codex');
   await application.state.github.put(githubToken);
   // A saved Jev key: every thread placement on this server asks the fake Jev above (PJ4b).
   application.hub.vault.put('jev', `fixture-${randomUUID()}`);

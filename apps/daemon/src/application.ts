@@ -124,7 +124,7 @@ export class Application {
         redactor: this.redactor, settings: async () => (await this.configuration()).configuration['x-jevellan'], riggingItems: runtime => this.rigging.items(runtime),
         accountRuns, enterOperation: (id, title) => this.lifecycle.enter({ kind: 'settings', id, title }) });
       // Projects share the account serialization, checkout ownership, leases, bridge registry and memory with conversations.
-      this.projectHub = this.member ? new MemberProjectStore(this.member) : new HubProjectAccess(this.hub, this.device.deviceId);
+      this.projectHub = this.member ? new MemberProjectStore(this.member) : new HubProjectAccess(this.hub, this.device.deviceId, undefined, () => this.devices.list());
       this.projectWork = new ProjectWork({ homes: this.homes, deviceId: this.device.deviceId, deviceName: this.device.name, redactor: this.redactor,
         projects: this.state.projects, hub: this.projectHub,
         github: { credential: async () => this.state.github.credential(), ...(options.githubFetch ? { fetch: options.githubFetch } : {}), ...(options.githubBaseUrl ? { baseUrl: options.githubBaseUrl } : {}) },
@@ -191,7 +191,7 @@ export class Application {
   async consumeSwitch(input: unknown) { return this.auth instanceof MemberUiAuth ? this.auth.consumeSwitch(input) : this.mesh.consumeSwitch(this.device.deviceId, ConsumeSwitchSchema.parse(input).token); }
   async streamAuthenticated(token: string | undefined) { return this.auth instanceof MemberUiAuth ? this.auth.verifyStream(token) : !!this.auth.verify(token); }
   async peerAuthenticated(input: unknown, existingStream = false) { return this.auth instanceof MemberUiAuth ? this.auth.verifyPeer(input, existingStream) : !!this.mesh.peerSession(this.device.deviceId, input).session; }
-  async peerLoginAuthenticated(input: unknown) { return this.auth instanceof MemberUiAuth ? this.auth.verifyPeerLogin(input) : !!this.mesh.peerLoginSession(this.device.deviceId, input).session; }
+  async peerLoginAuthenticated(input: unknown, existingStream = false) { return this.auth instanceof MemberUiAuth ? this.auth.verifyPeerLogin(input, existingStream) : !!this.mesh.peerLoginSession(this.device.deviceId, input).session; }
   riggingApplication() { const path = this.homes.at('rigging', 'application.json'); return existsSync(path) ? readDocument(path, RiggingApplicationSchema) : null; }
   async checkJev(signal?: AbortSignal) {
     const configuredModel = (await this.configuration()).configuration['x-jevellan'].decisions.model;
@@ -238,7 +238,8 @@ export class Application {
     const cleanup = await Promise.allSettled([this.accounts.close(), this.bridges.close(), this.memory.close()]);
     for (const result of cleanup) if (result.status === 'rejected') failures.push(result.reason);
     try { this.#hub?.close(); } catch (error) { failures.push(error); }
-    try { this.lifecycle.close(); } catch (error) { failures.push(error); }
+    // Requests admitted before the listeners closed (their clients are gone) finish first; work that stays stuck still fails the close.
+    try { await this.lifecycle.idle(5_000); this.lifecycle.close(); } catch (error) { failures.push(error); }
     try { this.#ownership.close(); } catch (error) { failures.push(error); }
     if (failures.length) throw new AggregateError(failures, 'Application cleanup did not complete.');
   })(); }

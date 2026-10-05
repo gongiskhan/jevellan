@@ -8,6 +8,7 @@ import {
   ProjectLedgerDataSchemas,
   RESTARTED_PREFIX,
   concludedRecently,
+  idTime,
   isTerminal,
   liveWork,
   runningSection,
@@ -221,6 +222,22 @@ export const THREAD_POLL_LIVE_MS = 1500;
 export const THREAD_POLL_REST_MS = 10_000;
 /** How long the page keeps reading every 1.5 s after the owner acted, so the turn the action starts shows at once (D230). */
 export const THREAD_POLL_AFTER_ACTION_MS = 6000;
+/**
+ * A thread page that finds no thread yet keeps loading while the thread is this young (D274): one placed on another device
+ * exists there, and in the hub index, only once that device has read its start from the hub.
+ */
+export const THREAD_START_WAIT_MS = 120_000;
+export function threadStarting(threadId: string, now: number): boolean {
+  const at = idTime(threadId); return at !== null && Math.abs(now - at) < THREAD_START_WAIT_MS;
+}
+/**
+ * A thread view read that the thread's device could not answer before any view showed (D276): 409 when the device is offline
+ * or left the mesh, a wait the page shows as a notice; 502 when it could not be reached, an error. The page then names the
+ * thread from the project's index meanwhile. Other failures are no device's.
+ */
+export function deviceRefusal(status: number): 'notice' | 'error' | undefined {
+  return status === 409 ? 'notice' : status === 502 ? 'error' : undefined;
+}
 export function threadPollDelay(state: ThreadState | undefined, now: number, fastUntil = 0): number {
   return (state !== undefined && liveWork(state)) || now < fastUntil ? THREAD_POLL_LIVE_MS : THREAD_POLL_REST_MS;
 }

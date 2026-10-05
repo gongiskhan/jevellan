@@ -166,7 +166,18 @@
 .pw-chip-unavailable { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 50%, transparent); }
 .pw-chip-offline { color: var(--ink-3); background: transparent; }
 .pw-session { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
-.pw-page > .notice { margin: 10px 0 0; }
+/* Page banners (notices and error lines) keep 10 px above; the tab bar's padding spaces them from what follows. */
+.pw-page > :is(.notice, .error) { margin: 10px 0 0; }
+/* 9.8: the offline coordinator notice with Move coordinator here at its end; on narrow pages the button wraps under the sentence. */
+.notice.pw-offline { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 7px 8px 7px 12px; }
+.pw-offline > p { flex: 1 1 220px; min-width: 0; margin: 0; overflow-wrap: anywhere; }
+.pw-offline > button { min-height: 30px; padding: 4px 12px; font-size: 12.5px; }
+/* The busy label takes the idle label's cell, so the button keeps its width while the move runs. */
+.pw-offline > button.pw-move { display: inline-grid; place-items: center; }
+.pw-move > span { grid-area: 1 / 1; }
+.pw-move > [aria-hidden="true"] { visibility: hidden; }
+/* As a dialog form's first field: the dialog's own padding above, the fields' 12 px rhythm below. */
+.pw-new-thread > .pw-offline:first-child { margin: 0 0 12px; }
 
 /* Chat: owner messages right-aligned, replies as Markdown, muted one-liners and event cards. */
 .pw-timeline { flex: none; }
@@ -374,6 +385,8 @@ a.pw-pr-title:hover { color: var(--jev-ink); text-decoration: underline; }
 @container pw-page (width >= 840px) {
   .pw-layout { column-gap: 20px; }
   .pw-chat { padding-right: 20px; border-right: 1px solid var(--edge); }
+  /* Without the tab bar the columns start right under the page banners, so the last one keeps 10 px below it as above. */
+  .pw-page > :is(.notice, .error):has(+ .pw-tabs) { margin-bottom: 10px; }
 }
 @media (max-width: 760px) {
   .pw-answer textarea, .pw-notebook-text { font-size: 16px; }
@@ -418,7 +431,6 @@ a.pw-pr-chip:hover { border-color: var(--jev); color: var(--jev-ink); }
 /* Three lines keep the device in view on phones, where a long branch name fills the second. */
 .pw-placement-line { -webkit-line-clamp: 3; color: var(--ink-3); font-family: var(--font-mono); font-size: 11px; line-height: 1.5; }
 .pw-transcript-note { margin: 0; color: var(--ink-3); font-size: 13px; }
-.pw-thread-page > .error { margin: 10px 0 0; }
 
 /* Report cards: the reported turn and its status, a left rule in the status color. */
 .pw-report {

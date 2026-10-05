@@ -1,6 +1,7 @@
 import { once } from 'node:events';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { DeviceOriginSchema, PeerSessionInputSchema, UiSessionTokenSchema } from '@jevellan/core';
+import { COORDINATOR_DEVICE_REDIRECT, THREAD_DEVICE_REDIRECT, coordinatorUnreachable, threadDeviceUnreachable } from '@jevellan/projects';
 import type { Application } from './application.js';
 import { conversationRoute, handleConversation, type ConversationRoute } from './conversation-api.js';
 import { requestBody } from './http.js';
@@ -9,6 +10,14 @@ const peerPrefix = '/api/mesh/owner/';
 const failure = (message: string, status: number) => Object.assign(new Error(message), { status });
 export const OWNER_REQUEST_TIMEOUT_MS = 20_000;
 export const OWNER_STREAM_CONNECT_TIMEOUT_MS = 125_000;
+/** What a proxied request is for: the texts a failure shows (the Projects pages never say conversation, D266). */
+export type ProxyPurpose = 'conversation' | 'login' | 'thread' | 'coordinator';
+const proxyCopy: Record<ProxyPurpose, { redirect: string; unreachable(name: string): string }> = {
+  conversation: { redirect: 'The conversation owner returned an unexpected redirect.', unreachable: (name) => `Can't reach the conversation owner (${name}). Its work remains on that device.` },
+  login: { redirect: 'The login device returned an unexpected redirect.', unreachable: (name) => `Can't reach the login device (${name}). The login remains on that device.` },
+  thread: { redirect: THREAD_DEVICE_REDIRECT, unreachable: threadDeviceUnreachable },
+  coordinator: { redirect: COORDINATOR_DEVICE_REDIRECT, unreachable: coordinatorUnreachable },
+};
 
 export async function handleOwnerRequest(app: Application, request: IncomingMessage, response: ServerResponse, url: URL): Promise<boolean> {
   if (!url.pathname.startsWith(peerPrefix)) return false;
@@ -42,8 +51,9 @@ export async function proxyConversation(app: Application, request: IncomingMessa
 export async function forwardOwner(request: IncomingMessage, response: ServerResponse, options: {
   url: URL; ownerName: string; sourceDeviceId: string; token: string; stream: boolean; body?: string;
   fetch?: typeof fetch; timeoutMs?: number;
-  purpose?: 'login';
+  purpose?: ProxyPurpose;
 }): Promise<void> {
+  const copy = proxyCopy[options.purpose ?? 'conversation'];
   const controller = new AbortController();
   const abort = () => controller.abort();
   request.once('aborted', abort); response.once('close', abort);
@@ -56,7 +66,7 @@ export async function forwardOwner(request: IncomingMessage, response: ServerRes
       headers: { Authorization: `Bearer ${UiSessionTokenSchema.parse(options.token)}`, 'X-Jevellan-Source-Device': options.sourceDeviceId, Accept: options.stream ? 'text/event-stream' : 'application/json',
         ...(options.body === undefined ? {} : { 'Content-Type': 'application/json' }), ...(typeof cursor === 'string' ? { 'Last-Event-ID': cursor } : {}) },
       ...(options.body === undefined ? {} : { body: options.body }) });
-    if (upstream.status >= 300 && upstream.status < 400) { await upstream.body?.cancel(); throw failure(options.purpose === 'login' ? 'The login device returned an unexpected redirect.' : 'The conversation owner returned an unexpected redirect.', 502); }
+    if (upstream.status >= 300 && upstream.status < 400) { await upstream.body?.cancel(); throw failure(copy.redirect, 502); }
     const contentType = upstream.headers.get('content-type') ?? 'application/octet-stream';
     const streaming = options.stream && upstream.ok && contentType.split(';')[0]?.trim() === 'text/event-stream';
     const headers = { 'Content-Type': contentType, 'Cache-Control': streaming ? 'no-cache, no-transform' : 'no-store', 'X-Content-Type-Options': 'nosniff', ...(streaming ? { 'X-Accel-Buffering': 'no' } : {}) };
@@ -75,7 +85,7 @@ export async function forwardOwner(request: IncomingMessage, response: ServerRes
     if (response.destroyed) return;
     if (response.headersSent) { response.destroy(); return; }
     if (error && typeof error === 'object' && 'status' in error) throw error;
-    throw failure(options.purpose === 'login' ? `Can't reach the login device (${options.ownerName}). The login remains on that device.` : `Can't reach the conversation owner (${options.ownerName}). Its work remains on that device.`, 502);
+    throw failure(copy.unreachable(options.ownerName), 502);
   } finally {
     clearTimeout(timer); request.off('aborted', abort); response.off('close', abort);
     if (!finished) { controller.abort(); await reader?.cancel().catch(() => {}); }

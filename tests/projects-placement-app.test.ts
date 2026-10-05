@@ -1,15 +1,17 @@
 // Phase 4 acceptance (brief 13 PJ4, PJ4b; design 5.2.13, 5.2.14): Jev places owner threads on a booted daemon through a scripted
 // Jev transport, over two simulated runtimes; overrides change the next launch and restarts replace a thread. Simulated: the Jev
-// answers, runtime turns and GitHub. Live: git, HTTP, the hub, the ledgers and the process groups. Phase 4 places on this device
-// only and never on main (D88), so Call B and the isolation question are covered by the pure tests in projects-placement.
+// answers, runtime turns and GitHub. Live: git, HTTP, the hub, the ledgers and the process groups. Placement never uses main
+// before phase 6 (D88), so the isolation question is covered by the pure tests in projects-placement; Call B asks for the device
+// when a second device qualifies (phase 5).
 import { afterEach, expect, test } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  AccountSchema, ProjectSchema, ThreadCreatedViewSchema, ThreadOverrideViewSchema, ThreadViewSchema, mapEffort, type CoordinatorEvent, type ModelOption, type ProjectLedgerData,
-  type ProjectLedgerEvent,
+  AccountSchema, DeviceSchema, ProjectSchema, SecretRedactor, ThreadCreatedViewSchema, ThreadOverrideViewSchema, ThreadViewSchema, mapEffort, type CoordinatorEvent, type ModelOption,
+  type ProjectLedgerData, type ProjectLedgerEvent,
 } from '../packages/core/dist/index.js';
+import { HubAccounts, joinHub } from '../packages/mesh/dist/index.js';
 import { PlacementStateSchema, type JevQuestions, type PlacementState } from '../packages/decisions/dist/index.js';
 import { FakeRuntime, forThread } from '../packages/runtime-contract/dist/index.js';
 import { PHASE_GATES } from '../packages/projects/dist/index.js';
@@ -32,7 +34,7 @@ type JevCallSeen = { model: string; questions: JevQuestions; packet: PlacementSt
 
 /** The scripted Jev transport: placement packets only; `auth` answers 401 with a provider body that must never be stored. */
 function jev() {
-  const state = { mode: 'answer' as 'answer' | 'auth', calls: [] as JevCallSeen[] };
+  const state = { mode: 'answer' as 'answer' | 'auth', calls: [] as JevCallSeen[], answers: { ...ANSWERS } };
   const fetcher: typeof fetch = async (_url, init) => {
     if ((init?.method ?? 'GET') === 'GET') return Response.json({ models: [{ name: 'jev-latest', description: 'Fixture.', release_date: '2026-01-01' }] });
     const body = JSON.parse(String(init!.body)) as { model: string; state: string; questions: JevQuestions };
@@ -42,7 +44,7 @@ function jev() {
     if (state.mode === 'auth') return new Response('Private provider body is not evidence.', { status: 401 });
     const answers = Object.fromEntries(Object.entries(body.questions).map(([id, question]) => {
       const keys = question.type === 'choice' ? Object.keys(question.criteria) : [];
-      const table = ANSWERS[id] ?? {}; const known = keys.some((key) => (table[key] ?? 0) > 0);
+      const table = state.answers[id] ?? {}; const known = keys.some((key) => (table[key] ?? 0) > 0);
       const probabilities = Object.fromEntries(keys.map((key, n) => [key, known ? table[key] ?? 0 : n === 0 ? 1 : 0]));
       const choice = keys.reduce((best, key) => probabilities[key]! > probabilities[best]! ? key : best, keys[0]!);
       return [id, { type: 'choice', choice, probabilities, confidence: probabilities[choice] }];
@@ -153,6 +155,44 @@ test('PJ4 Jev places threads with recorded probabilities and falls back on failu
   expect(await refused.json()).toEqual({ schema: 'error-v1', code: 'conflict',
     message: `No device can run any enabled model: ${f.deviceName}: Scripted test runtime account disabled; ${f.deviceName}: ${SECOND_RUNTIME} account disabled.` });
   expect(f.app.projectWork.store.list('project')).toHaveLength(threads); expect(transport.state.calls).toHaveLength(3);
+});
+
+test('PJ4 Call B asks for the device when a second device qualifies', { timeout: 120_000 }, async () => {
+  const transport = jev(); const f = await setup([SWIFT, DEEP], transport); const deep = f.runtimes.fake2!;
+  const hubId = f.app.device.deviceId;
+  // A second device: joined (so it is not revoked), online by its heartbeat, set up for the project, with an eligible account
+  // for Deep's runtime that only it reports. It needs no daemon: placement reads the roster and the hub account list.
+  const hubRow = f.app.hub.get('devices', hubId, DeviceSchema)!; f.app.hub.put('devices', hubId, DeviceSchema, { ...hubRow.document, url: f.base }, hubRow.revision);
+  const joined = await joinHub({ hubUrl: f.base, hubName: 'Fixture hub', redactor: new SecretRedactor() }, { schema: 'join-device-v1', requestId: 'join_studio', code: f.app.mesh.invite().code,
+    device: { id: 'dev_studio', name: 'Studio', url: 'http://127.0.0.1:9', os: 'linux', version: '0.1.0' } });
+  expect(joined.membership.device.id).toBe('dev_studio');
+  f.app.devices.heartbeat('dev_studio', { schema: 'heartbeat-v1', deviceId: 'dev_studio', at: new Date().toISOString(), version: '0.1.0', runningConversations: [], projects: [], externalSessions: [],
+    load: { cpuPct: 0, memFreeMb: 1024 } });
+  const stored = (await f.app.state.projects.get('project'))!;
+  await f.app.conversations.saveProject({ schema: 'project-write-v1', revision: stored.revision, project: { ...stored.project, paths: { ...stored.project.paths, dev_studio: '/srv/shop' } } });
+  new HubAccounts(f.app.hub, 'dev_studio').writeStatus({ schema: 'account-status-v2', accountId: 'acc_deep', deviceId: 'dev_studio', auth: 'ready', observedAt: new Date().toISOString() }, null);
+  // Jev keeps the thread on the hub by naming its device key (never a position).
+  transport.state.answers = { ...ANSWERS, device: { [hubId]: 0.75, dev_studio: 0.25 } };
+
+  deep.enqueueTurn(reportStep({ status: 'progress', summary: 'Placed by device.' }), forThread());
+  const created = await start(f, 'Add search', 'Add a search box to the catalog page.');
+  expect(transport.state.calls).toHaveLength(2);
+  const [callA, callB] = transport.state.calls;
+  expect(Object.keys(callA!.questions)).toEqual(PHASE_GATES.mainIsolation ? ['isolation', 'pick_model', 'effort'] : ['pick_model', 'effort']);
+  expect(Object.keys(callB!.questions)).toEqual(['device']);
+  const device = callB!.questions.device;
+  expect(device?.type === 'choice' && Object.keys(device.criteria).sort()).toEqual([hubId, 'dev_studio'].sort());
+  // The hub's heartbeat reports its checkout branch; the second device reported no projects.
+  const branch = f.git(f.checkout, 'rev-parse', '--abbrev-ref', 'HEAD');
+  expect(device?.type === 'choice' && device.criteria).toEqual({ [hubId]: `${f.deviceName}: 0 threads running here, this is the coordinator's device, project checkout is on ${branch}`,
+    dev_studio: 'Studio: 0 threads running here' });
+  const record = f.thread(created.threadId).placement;
+  expect(record).toMatchObject({ source: 'jev', modelId: 'deep', effortRequested: 'max', deviceId: hubId, accountId: 'acc_deep', probabilities: { device: { [hubId]: 0.75, dev_studio: 0.25 } } });
+  expect([...record.eligibleDevices].sort()).toEqual([hubId, 'dev_studio'].sort());
+  expect(record.jevCalls.map((call) => call.kind)).toEqual(['placement', 'placement']);
+  expect(created.placement).toBe(`${SECOND_RUNTIME} Deep · max · Worktree · ${f.deviceName}`);
+  await settle(f, created.threadId, 1);
+  expect(deep.turnStarts[0]).toMatchObject({ model: 'deep-model', effort: 'max', account: { account: { id: 'acc_deep' } } });
 });
 
 test('PJ4b overrides change the next launch and restarts feed the packet', { timeout: 180_000 }, async () => {

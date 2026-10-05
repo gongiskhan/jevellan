@@ -1,14 +1,16 @@
 import type { Locator, Page, TestInfo } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { ProjectWorkViewSchema, RuntimeListSchema, ThreadViewSchema, type ThreadView } from '../../packages/core/dist/client.js';
+import { threadDeviceOffline } from '../../packages/projects/dist/copy.js';
 import { expect, test } from './fixtures.js';
 import { openSidebar } from './navigation.js';
 
-// PJ3 and PJ4b (brief 13) on the --projects fixture servers (scripts/test-server.mjs, design 5.5): a GitHub-shaped project
-// with a fake GitHub, a fake Jev and scripted coordinator and thread turns; Git, worktrees, the bridge, the ledgers, placement
-// and pull requests are real. The journeys build on one fresh server's state in order (the greeting thread's pull request is
-// merged in the fourth and the token is removed and restored in the seventh), so the file runs serially and stops at the
-// first failure.
+// PJ3, PJ4b and PJ5 (brief 13) on the --projects fixture servers (scripts/test-server.mjs, design 5.5): a GitHub-shaped project
+// with a fake GitHub, a fake Jev, scripted coordinator and thread turns and a simulated member device (`Browser member`) over
+// local HTTP; Git, worktrees, the bridge, the ledgers, placement, the hub relay and pull requests are real. The journeys build on
+// one fresh server's state in order (the greeting thread's pull request is merged in the fourth, the token is removed and
+// restored in the seventh, and the last one moves the `Projects offline` coordinator for good), so the file runs serially and
+// stops at the first failure.
 test.describe.configure({ mode: 'serial', timeout: 600_000 });
 
 const layout = (info: TestInfo) => String(info.project.metadata.layout ?? info.project.name);
@@ -546,7 +548,7 @@ test('PJ4b the Why panel explains placement and overrides apply', async ({ page 
   await expect(section('Device').locator('h3')).toHaveText('Device only option');
   await expect(section('Device').locator('.why-rank li.chosen')).toHaveText(`${placed.deviceName} · chosen`);
   await expect(section('Device').locator('.why-rank li.excluded')).toHaveText([
-    'Browser member: not available until remote threads exist', 'Offline fixture: not available until remote threads exist']);
+    'Browser member: not set up for this project', 'Offline fixture: offline']);
   await expect(section('Account').locator('.why-line')).toHaveText(placed.thread.accountLabel);
   await expect(panel.locator('.why-jev p').first()).toHaveText(/^Placement · jev-browser-simulated · 60 tokens · \d+ ms$/);
   await shot(page, 'why-panel', false);
@@ -636,5 +638,84 @@ test('PJ4b the Why panel explains placement and overrides apply', async ({ page 
   await shot(page, 'restarted');
   await reason.getByRole('link', { name: restartedId, exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`/threads/${restartedId}$`));
+  expect(errors).toEqual([]);
+});
+
+test('PJ5 a thread on the member device opens through the hub', async ({ page }) => {
+  const errors = await begin(page);
+  const title = 'Read the README on the member';
+  await openProject(page, 'Projects fixture');
+  await tap(page, page.getByRole('button', { name: 'New thread', exact: true }));
+  const dialog = page.getByRole('dialog', { name: 'New thread', exact: true });
+  await dialog.getByRole('textbox', { name: 'Title', exact: true }).fill(title);
+  // The member's scripted thread reads the README on a task marked `PJ5` and reports.
+  await dialog.getByRole('textbox', { name: 'Task', exact: true }).fill('PJ5: read the README on the member device and say what it holds.');
+  await dialog.locator('summary').filter({ hasText: 'Placement' }).click();
+  await dialog.getByRole('combobox', { name: 'Device', exact: true }).selectOption({ label: 'Browser member' });
+  // The thread exists on the member only once it read the start from the hub; until then its page keeps loading (D274).
+  await page.evaluate(() => {
+    const seen = window as unknown as { pj5NotFound?: boolean }; seen.pj5NotFound = false;
+    new MutationObserver(() => { if (document.body.textContent?.includes('This thread was not found.')) seen.pj5NotFound = true; })
+      .observe(document.body, { childList: true, subtree: true, characterData: true });
+  });
+  await dialog.getByRole('button', { name: 'Start thread', exact: true }).click();
+  await expect(page).toHaveURL(/\/projects\/projects_fixture\/threads\/thread_[^/]+$/, LONG);
+  const id = new URL(page.url()).pathname.split('/')[4]!;
+  const toast = page.locator('.toast.success > span'); await expect(toast).toBeVisible(); const placed = await toast.textContent();
+  await expect(page.getByRole('heading', { level: 1, name: title, exact: true })).toBeVisible(LONG);
+
+  // The hub's page shows the member's thread: its view and transcript come from the member through the proxy.
+  const report = page.getByRole('region', { name: 'Report · turn 1', exact: true });
+  await expect(report).toBeVisible(LONG);
+  await expect(report).toContainText('Read the README on this device: a title and one line about the Projects journeys.');
+  await expect(page.locator('.pw-state-chip')).toHaveText('Idle', LONG);
+  const view = await threadView(page, id);
+  expect(view.deviceName).toBe('Browser member');
+  expect(view.placement).toMatchObject({ fixed: ['device'], deviceId: view.thread.ownerDeviceId });
+  expect(placed).toBe(await placementSummary(page, view));
+  expect(placed).toMatch(/ · Browser member$/);
+  const runtime = await runtimeName(page, view.thread.runtime);
+  await expect(page.locator('.pw-placement-line')).toHaveText(`${runtime} · ${view.thread.modelLabel} · ${view.thread.effort} effort · ${view.thread.accountLabel} · Worktree on ${view.thread.branch} · Browser member`);
+  await expect(page.locator('[aria-label="Thread transcript"] .cursor-tool > summary > span:first-child')).toHaveText(['Read']);
+  await expect(page.getByRole('textbox', { name: 'Message this thread', exact: true })).toBeEnabled();
+  expect(await page.evaluate(() => (window as unknown as { pj5NotFound?: boolean }).pj5NotFound)).toBe(false);
+  await shot(page, 'remote-thread');
+
+  // Opened while its device is offline (the hub's refusal, stubbed: the fixture member never misses ten minutes of heartbeats), the
+  // page still names the thread from the project's index and shows the reason as a notice, then the thread once the device answers (D276).
+  const threadRead = `**/api/projects/projects_fixture/threads/${id}`;
+  await page.route(threadRead, (route) => route.request().method() === 'GET'
+    ? route.fulfill({ status: 409, json: { schema: 'error-v1', code: 'conflict', message: threadDeviceOffline('Browser member') } }) : route.continue());
+  await page.reload();
+  await expect(page.locator('.pw-page > .notice')).toHaveText(threadDeviceOffline('Browser member'));
+  await expect(page.getByRole('heading', { level: 1, name: title, exact: true })).toBeVisible();
+  await expect(page.locator('.pw-state-chip')).toHaveText('Idle');
+  await expect(page.locator('.pw-page > .error')).toHaveCount(0);
+  await page.unroute(threadRead);
+  await expect(report).toBeVisible(LONG);
+  await expect(page.locator('.pw-page > .notice')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test('PJ5 an offline coordinator shows the notice and Move coordinator here', async ({ page }) => {
+  const errors = await begin(page);
+  await openProject(page, 'Projects offline');
+  // The fixture's offline device holds this project's coordinator (9.8): nothing can start until it moves.
+  const notice = page.locator('.notice.pw-offline');
+  await expect(notice.locator('p')).toHaveText('The coordinator lives on Offline fixture, which is offline.');
+  const move = notice.getByRole('button', { name: 'Move coordinator here', exact: true });
+  await expect(move).toBeEnabled();
+  await expect(page.locator('.pw-chip')).toHaveText('Offline');
+  await shot(page, 'offline-notice');
+
+  await tap(page, move);
+  await expect(notice).toHaveCount(0, LONG);
+  const offline = ProjectWorkViewSchema.parse(await read(page, '/api/projects/projects_offline/work'));
+  expect(offline.coordinator).toMatchObject({ state: 'idle', online: true, canMoveHere: false });
+  const here = offline.coordinator.deviceName!;
+  await expect(page.locator('.pw-chip')).toHaveText('Idle');
+  await expect(page.locator('.pw-timeline').getByText(`The coordinator moved to ${here}.`, { exact: true })).toBeVisible(LONG);
+  await expect(composer(page)).toBeEnabled();
+  await shot(page, 'moved');
   expect(errors).toEqual([]);
 });

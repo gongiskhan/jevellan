@@ -222,9 +222,12 @@ const TABS: readonly ProjectTab[] = ['chat', 'waiting', 'threads', 'pull-request
  * The project page (12.2): the coordinator chat with Waiting for you, Running, Pull requests and Concluded beside it from
  * 840 px of page width (D53), or one of them at a time under the tab bar. One work view feeds everything; it is read on
  * open, after every chat event, every 5 s (thread indexes change without chat events) and after every Projects mutation.
+ * The chat streams from the coordinator's device; when a move changes that device the chat starts over from the new
+ * device's history (3.5.3, D272).
  */
 export function ProjectWorkPage(props: PageProps & { id: string; navigation: ReactNode }) {
   const { id, navigation, onError, message, navigate, data } = props;
+  const here = data.devices.currentDeviceId;
   const titleId = useId(); const tabsId = useId(); const chatId = useId(); const sideId = useId();
   const [view, setView] = useState<ProjectWorkView>();
   const [loadError, setLoadError] = useState('');
@@ -244,22 +247,6 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
 
   useEffect(() => {
     let debounce: ReturnType<typeof setTimeout> | undefined;
-    const reads = queuedRefresh(
-      (signal) => api(`/api/projects/${id}/work`, ProjectWorkViewSchema, 'GET', undefined, { signal, waitForHub: true }),
-      (next) => {
-        if (after.current === undefined) { after.current = next.lastEventId; setTab(defaultTab(next)); }
-        setView(next); setLoadError('');
-      },
-      (failure) => {
-        if (failure instanceof ApiError && failure.status === 401) onError(failure);
-        else setLoadError(failureText(failure));
-      },
-    );
-    const read = () => void reads.request();
-    refresh.current = () => { clearTimeout(debounce); debounce = setTimeout(read, 40); };
-    read();
-    const poll = setInterval(read, 5000);
-    window.addEventListener(PROJECT_WORK_UPDATED, read);
     // The chat stream resumes by itself after a dropped connection; a refused one (the coordinator lives elsewhere) is
     // reopened from the last event with a growing delay, and the view's notices explain the coordinator meanwhile.
     let source: EventSource | undefined; let retry: ReturnType<typeof setTimeout> | undefined; let last = 0; let delay = 5000; let stopped = false;
@@ -283,12 +270,40 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
         }
       });
     };
+    // The chat shows one device's ledger: the coordinator's, or this device's before any assignment. When a move changes that
+    // device the chat starts over from the new device's history, whose event ids overlap the old one's, so neither the cursor nor
+    // the shown events carry over (3.5.3, D272). An open stream to the old device never fails by itself, so the view decides.
+    let streaming: string | undefined;
+    const restart = () => {
+      source?.close(); clearTimeout(retry); last = 0; delay = 5000;
+      seen.current = new Set(); setEvents([]);
+      if (!stopped) open();
+    };
+    const reads = queuedRefresh(
+      (signal) => api(`/api/projects/${id}/work`, ProjectWorkViewSchema, 'GET', undefined, { signal, waitForHub: true }),
+      (next) => {
+        const device = next.coordinator.deviceId ?? here; const moved = streaming !== undefined && device !== streaming; streaming = device;
+        if (after.current === undefined) setTab(defaultTab(next));
+        if (after.current === undefined || moved) after.current = next.lastEventId;
+        if (moved) restart();
+        setView(next); setLoadError('');
+      },
+      (failure) => {
+        if (failure instanceof ApiError && failure.status === 401) onError(failure);
+        else setLoadError(failureText(failure));
+      },
+    );
+    const read = () => void reads.request();
+    refresh.current = () => { clearTimeout(debounce); debounce = setTimeout(read, 40); };
+    read();
+    const poll = setInterval(read, 5000);
+    window.addEventListener(PROJECT_WORK_UPDATED, read);
     open();
     return () => {
       stopped = true; reads.stop(); clearTimeout(debounce); clearTimeout(retry); clearInterval(poll);
       window.removeEventListener(PROJECT_WORK_UPDATED, read); source?.close();
     };
-  }, [id, onError]);
+  }, [id, onError, here]);
 
   const loaded = view !== undefined;
   useEffect(() => {
@@ -348,6 +363,14 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   const items = useMemo(() => chatItems(events, titles), [events, titles]);
   const menu = useDismissible();
   const control = useTask(onError);
+  // A refused move (the coordinator started a turn meanwhile) stays on the page, never the app's global 409 reload, until the
+  // coordinator's device changes or the menu offers the move again.
+  const moveFailure = useLocalError(onError);
+  const moving = useTask(moveFailure.fail);
+  const { setError: setMoveError } = moveFailure;
+  const movable = view?.coordinator.canMoveHere; const coordinatorId = view?.coordinator.deviceId;
+  useEffect(() => setMoveError(''), [coordinatorId, setMoveError]);
+  useEffect(() => { if (movable) setMoveError(''); }, [movable, setMoveError]);
   const closeMenu = () => { if (menu.current) menu.current.open = false; };
 
   if (!view) {
@@ -378,6 +401,13 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
     setView(await api(`/api/projects/${id}/coordinator/fresh`, ProjectWorkViewSchema, 'POST', empty, { signal })); updated();
     message(copy.FRESH_STARTED);
   });
+  // Move coordinator here (brief 9.8, 3.5.3): the answer is the view with this device's coordinator; the page's next read sees the
+  // device change and starts the chat over from this device's history.
+  const moveHere = async (signal: AbortSignal) => {
+    try { setView(await api(`/api/projects/${id}/coordinator/move`, ProjectWorkViewSchema, 'POST', empty, { signal, waitForHub: true })); }
+    finally { updated(); }
+  };
+  const move = () => void moving.run(async (signal) => { setMoveError(''); await moveHere(signal); });
   const answeredQuestion = (decision: ProjectDecision) => {
     const remaining = open.filter((entry) => entry.id !== decision.id).map((entry) => entry.id);
     setAnswered((previous) => new Set([...previous, decision.id]));
@@ -410,6 +440,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
             <div>
               <button type="button" onClick={() => { closeMenu(); setDialog('settings'); }}>{copy.PROJECT_SETTINGS}</button>
               <button type="button" disabled={control.busy || offline} onClick={() => { closeMenu(); fresh(); }}>{copy.FRESH_COORDINATOR}</button>
+              {coordinator.canMoveHere && <button type="button" disabled={moving.busy} onClick={() => { closeMenu(); move(); }}>{copy.MOVE_COORDINATOR}</button>}
             </div>
           </details>
         </div>
@@ -422,7 +453,8 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
       </div>
       {loadError && <p className="notice" role="status">{loadError}</p>}
       {coordinator.state === 'unavailable' && coordinator.unavailableReason && <p className="notice">{copy.coordinatorUnavailableNotice(coordinator.unavailableReason)}</p>}
-      {offline && <p className="notice">{copy.coordinatorOfflineNotice(coordinatorDevice)}</p>}
+      {offline && <OfflineNotice device={coordinatorDevice} canMove={coordinator.canMoveHere} moving={moving.busy} move={move} />}
+      {moveFailure.error && <p className="error" role="alert">{moveFailure.error}</p>}
       {stream === 'reconnecting' && <p className="notice" role="status">{copy.RECONNECTING}</p>}
       <div className="pw-tabs" role="tablist" aria-label={copy.PROJECT_SECTIONS} onKeyDown={(event) => {
         const index = TABS.indexOf(current);
@@ -483,13 +515,31 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
           </section>
         </div>
       </div>
-      {dialog === 'new-thread' && <NewThreadDialog props={props} view={view} close={() => setDialog(undefined)} />}
+      {dialog === 'new-thread' && <NewThreadDialog props={props} view={view} move={moveHere} close={() => setDialog(undefined)} />}
       {dialog === 'settings' && <SettingsDialog props={props} view={view} close={() => setDialog(undefined)} />}
       {merging?.pr && (
         <MergeDialog projectId={id} entry={merging} fallbackBase={view.project.baseBranch} onError={onError}
           close={() => setMerging(undefined)} merged={() => { setMerging(undefined); updated(); }} />
       )}
       {notebook && <NotebookPanel projectId={id} projectName={view.project.name} revision={view.notebookRevision} onError={onError} close={() => setNotebook(false)} />}
+    </div>
+  );
+}
+
+/**
+ * The 9.8 notice while the coordinator's device is offline (no heartbeat for 10 minutes, or revoked), with Move coordinator here
+ * when this device may take the coordinator over (D80, D269, D272).
+ */
+function OfflineNotice({ device, canMove, moving, move }: { device: string; canMove: boolean; moving: boolean; move(): void }) {
+  return (
+    <div className="notice pw-offline">
+      <p>{copy.coordinatorOfflineNotice(device)}</p>
+      {/* Both labels share one cell, so the button keeps its width while it moves and the notice never reflows. */}
+      {canMove && (
+        <button type="button" className="secondary pw-move" disabled={moving} onClick={move}>
+          <span aria-hidden={moving}>{copy.MOVE_COORDINATOR}</span><span aria-hidden={!moving}>{copy.MOVING_COORDINATOR}</span>
+        </button>
+      )}
     </div>
   );
 }
@@ -738,12 +788,14 @@ function MergeDialog({ projectId, entry, fallbackBase, close, merged, onError }:
 /**
  * New thread (12.2): title, task and the collapsible placement choices, each Automatic by default. Choices the placement
  * phase gates refuse are disabled with their sentence (D88, D221). While the coordinator device is offline no thread can
- * start, so the dialog says so instead of failing (D9a). A started thread opens its page (D74).
+ * start, so the dialog says so with Move coordinator here instead of failing (D9a); after the move the form starts the thread
+ * on this device's coordinator. A started thread opens its page (D74).
  */
-function NewThreadDialog({ props, view, close }: { props: PageProps; view: ProjectWorkView; close(): void }) {
+function NewThreadDialog({ props, view, move, close }: { props: PageProps; view: ProjectWorkView; move(signal: AbortSignal): Promise<void>; close(): void }) {
   const { data } = props;
   const { error, setError, fail } = useLocalError(props.onError);
   const task = useTask(fail);
+  const moving = useTask(fail);
   const ids = useClientIds('thread_req');
   const [form, setForm] = useState<ThreadForm>({ title: '', task: '', isolation: '', modelId: '', effort: '', deviceId: '' });
   const change = (fields: Partial<ThreadForm>) => setForm((previous) => ({ ...previous, ...fields }));
@@ -771,7 +823,8 @@ function NewThreadDialog({ props, view, close }: { props: PageProps; view: Proje
           props.navigate(`/projects/${view.project.id}/threads/${created.threadId}`);
         });
       }}>
-        {offline && <p className="notice">{copy.coordinatorOfflineNotice(coordinatorDevice)}</p>}
+        {offline && <OfflineNotice device={coordinatorDevice} canMove={view.coordinator.canMoveHere} moving={moving.busy}
+          move={() => void moving.run(async (signal) => { setError(''); await move(signal); })} />}
         <label>{copy.TITLE}<input required maxLength={120} value={form.title} onChange={(event) => change({ title: event.target.value })} /></label>
         <label>{copy.TASK}<textarea required maxLength={20000} rows={6} value={form.task} onChange={(event) => change({ task: event.target.value })} /></label>
         <details className="pw-placement">

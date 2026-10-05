@@ -1,10 +1,11 @@
-import type { DecisionAnswer, PlacementOverride, ProjectCoordinator, ProjectCoordinatorStatus, ProjectDecision, ProjectNotebook, ProjectWorkSettings, ThreadIndex } from './project-schemas.js';
+import type { DecisionAnswer, PlacementOverride, ProjectCoordinator, ProjectCoordinatorStatus, ProjectDecision, ProjectEnvelope, ProjectNotebook, ProjectWorkSettings, ThreadIndex } from './project-schemas.js';
+import type { ProjectWorkSummary } from './project-hub-schemas.js';
 import type { Stored } from './store.js';
 
 /**
  * Project hub state (design 2.1.5). The hub implements it over its database bound to the authenticated device; members
  * use the hub HTTP API. Writes are compare-and-swap on the row revision, and the embedded revision equals it (D3).
- * Later phases add envelopes (5), mail, reservations and held checkouts (6).
+ * Phase 6 adds mail, reservations and held checkouts.
  */
 export interface ProjectHub {
   // settings: any device; idempotent by clientRequestId
@@ -32,4 +33,14 @@ export interface ProjectHub {
   addOverride(override: PlacementOverride): Promise<void>;
   /** The newest `limit` overrides of the project, newest first. */
   recentOverrides(projectId: string, limit: number): Promise<PlacementOverride[]>;
+  // relay envelopes (phase 5, D40): only the source device puts, only the target reads and acknowledges
+  /** Revision 0 creates; an identical retry answers `stored: false`, the same id with other content is refused (409). */
+  putEnvelope(envelope: ProjectEnvelope): Promise<{ stored: boolean }>;
+  /** The caller's pending envelopes in relay order (`compareEnvelopes`), at most 100 and about 1 MiB a page (D260); `more` when others wait. */
+  pendingEnvelopes(targetDeviceId: string): Promise<{ records: ProjectEnvelope[]; more: boolean }>;
+  /** Deletes a delivered envelope (D90); an unknown id is already acknowledged. */
+  ackEnvelope(id: string): Promise<void>;
+  // the Projects list (phase 5, D267): one read for every project, so a member's list costs one hub request per poll
+  /** Every project's counts and coordinator, in project id order. */
+  workSummaries(): Promise<ProjectWorkSummary[]>;
 }

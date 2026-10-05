@@ -11,6 +11,9 @@ export function requestBody(request: IncomingMessage): Promise<unknown> {
   return new Promise((resolve, reject) => {
     let size = 0; const chunks: Buffer[] = []; let settled = false;
     const refuse = (error: Error) => { if (!settled) { settled = true; chunks.length = 0; reject(error); } };
+    // A client that left while the handler awaited other work has already destroyed the request: its body never ends and
+    // its 'aborted' and 'error' events have passed, so waiting would hold the request's lifecycle activity forever.
+    if (request.destroyed) { refuse(failure('The request was interrupted.', 400)); return; }
     request.on('data', (chunk: Buffer) => {
       if (settled) return; size += chunk.length;
       if (size > limit) refuse(failure('This request is too large.', 413)); else chunks.push(chunk);
@@ -22,5 +25,6 @@ export function requestBody(request: IncomingMessage): Promise<unknown> {
     });
     request.on('error', () => refuse(failure('The request was interrupted.', 400)));
     request.on('aborted', () => refuse(failure('The request was interrupted.', 400)));
+    request.on('close', () => refuse(failure('The request was interrupted.', 400)));
   });
 }

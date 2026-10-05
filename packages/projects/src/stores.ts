@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
-import { existsSync } from 'node:fs';
+import { existsSync, rmSync } from 'node:fs';
 import {
   CoordinatorLocalSchema, CoordinatorStateSchema, ThreadIndexSchema, ThreadLocalSchema, ThreadSchema, ThreadStartReceiptSchema, readDocument, stableJson,
-  writeDocument, type CoordinatorLocal, type CoordinatorState, type ProjectLedgerEvent, type Thread, type ThreadIndex, type ThreadLocal,
+  writeDocument, type CoordinatorLocal, type CoordinatorState, type ProjectLedgerEvent, type Thread, type ThreadIndex, type ThreadLocal, type ThreadStartReceipt,
 } from '@jevellan/core';
 import { START_REQUEST_REUSED, THREAD_NOT_FOUND } from './copy.js';
 import type { ProjectLedgers } from './ledger.js';
@@ -183,6 +183,14 @@ export class CoordinatorStore {
     this.#states.set(projectId, state);
     return structuredClone(state);
   }
+  /**
+   * The coordinator moved to another device (3.5.4, D43): coordinator.json goes. The ledger stays as history, and coordinator-local.json
+   * keeps its turn counter, so a ledger the coordinator returns to never repeats a turn number.
+   */
+  drop(projectId: string): void {
+    rmSync(this.paths.coordinator(projectId), { force: true });
+    this.#states.delete(projectId);
+  }
   local(projectId: string): CoordinatorLocal {
     let local = this.#locals.get(projectId);
     if (!local) {
@@ -199,19 +207,21 @@ export class CoordinatorStore {
   }
 }
 
+export type StartedSummary = NonNullable<ThreadStartReceipt['started']>;
 /** Owner-created starts are idempotent by clientRequestId (D78), like ProjectSaves: the digest of the normalized request. */
 export class StartReceipts {
   constructor(readonly paths: ProjectPaths, private readonly now: () => number = Date.now) {}
   #digest(request: unknown): string { return createHash('sha256').update(stableJson(request)).digest('hex'); }
-  get(projectId: string, clientRequestId: string, request: unknown): { threadId: string } | null {
+  get(projectId: string, clientRequestId: string, request: unknown): { threadId: string; started?: StartedSummary } | null {
     const path = this.paths.request(projectId, clientRequestId); if (!existsSync(path)) return null;
     const receipt = readDocument(path, ThreadStartReceiptSchema);
     if (receipt.clientRequestId !== clientRequestId || receipt.digest !== this.#digest(request)) throw refuse(START_REQUEST_REUSED, 409);
-    return { threadId: receipt.threadId };
+    return { threadId: receipt.threadId, ...(receipt.started ? { started: receipt.started } : {}) };
   }
-  put(projectId: string, clientRequestId: string, request: unknown, threadId: string): void {
+  /** `started`: what the start answered, kept for a retry when the thread lives on another device (D264). */
+  put(projectId: string, clientRequestId: string, request: unknown, threadId: string, started?: StartedSummary): void {
     if (this.get(projectId, clientRequestId, request)) return;
     writeDocument(this.paths.request(projectId, clientRequestId), ThreadStartReceiptSchema,
-      { schema: 'thread-start-receipt-v1', clientRequestId, digest: this.#digest(request), threadId, at: new Date(this.now()).toISOString() });
+      { schema: 'thread-start-receipt-v1', clientRequestId, digest: this.#digest(request), threadId, at: new Date(this.now()).toISOString(), ...(started ? { started } : {}) });
   }
 }

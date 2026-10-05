@@ -18,6 +18,12 @@ export function parseGitHubRemote(url: string): GitHubRepository | null {
   if (!match || !name.test(match[1]!) || !name.test(match[2]!)) return null;
   return { owner: match[1]!, repo: match[2]! };
 }
+/** Owner and repository of a pull request page URL (`https://github.com/o/r/pull/42`), as stored in `PullRequestState.url`; null for any other URL. */
+export function parseGitHubPullUrl(url: string): GitHubRepository | null {
+  const match = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/pull\/\d+\/?$/i.exec(url.trim());
+  if (!match || !name.test(match[1]!) || !name.test(match[2]!)) return null;
+  return { owner: match[1]!, repo: match[2]! };
+}
 
 // Responses of API version 2022-11-28 (D38). Loose: unknown fields are dropped, only the fields Jevellan reads are checked.
 // List items omit `merged`, `mergeable` and `mergeable_state`; only single pull requests carry them.

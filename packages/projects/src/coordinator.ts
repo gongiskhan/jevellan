@@ -1,16 +1,17 @@
 import { existsSync } from 'node:fs';
 import type { AccountService } from '@jevellan/accounts';
 import {
-  CoordinatorEventSchema, HubUnavailable, ProjectCoordinatorStatusSchema, isTerminal, mapEffort, resolveProjectPath, type Account, type AccountStatus, type Configuration,
-  type CoordinatorEvent, type CoordinatorState, type Effort, type ModelOption, type Project, type ProjectDecision, type ProjectHub, type ProjectLedgerEvent,
-  type ProjectWorkSettings, type SecretRedactor, type ThreadIndex,
+  CoordinatorEventSchema, CoordinatorStateSchema, HubUnavailable, ProjectCoordinatorStatusSchema, isTerminal, mapEffort, resolveProjectPath, type Account, type AccountStatus,
+  type Configuration, type CoordinatorEvent, type CoordinatorState, type DeviceView, type Effort, type ModelOption, type Project, type ProjectCoordinatorStatus, type ProjectDecision,
+  type ProjectHub, type ProjectLedgerEvent, type ProjectWorkSettings, type SecretRedactor, type ThreadIndex,
 } from '@jevellan/core';
 import { modelCandidates, type RuntimeSupport } from '@jevellan/decisions';
 import type { RuntimeAdapter } from '@jevellan/runtime-contract';
 import { ProjectTools, type ProjectScope, type ProjectToolHandlers } from './bridge-tools.js';
 import {
-  COORDINATOR_PROCESS_UNCONFIRMED, MESSAGE_ID_REUSED, TURN_FAILED, activeThreadLine, coordinatorAccountMovedNotice, coordinatorFailedTwiceNotice, coordinatorSystemAppend, coordinatorTurnTimedOut,
-  coordinatorUnavailableNotice, eventBlock, eventLine, freshContext, noCoordinatorAccount, noCoordinatorModel, openQuestionLine, recentConversation,
+  COORDINATOR_PROCESS_UNCONFIRMED, MESSAGE_ID_REUSED, TURN_FAILED, activeThreadLine, coordinatorAccountMovedNotice, coordinatorFailedTwiceNotice, coordinatorMovedNotice, coordinatorSystemAppend,
+  coordinatorTurnTimedOut, coordinatorUnavailableNotice, coordinatorWorking, eventBlock, eventLine, freshContext, noCoordinatorAccount, noCoordinatorModel, openQuestionLine,
+  recentConversation,
 } from './copy.js';
 import type { DecisionItems } from './decision-items.js';
 import { firstLine } from './git.js';
@@ -56,6 +57,18 @@ export const COORDINATOR_SESSION_TURNS = 40;
 export function keepSession(session: CoordinatorSession, pinned: string | null, current: CoordinatorPlan): boolean {
   return session.turns < COORDINATOR_SESSION_TURNS && (pinned === null || pinned === session.modelId) && current.kind === 'ready' && current.model.id === session.modelId
     && current.model.runtime === session.runtime && current.model.model === session.model && current.effort === session.effort;
+}
+
+/**
+ * Whether the coordinator may move away from `deviceId` (brief phase 5, 3.5.3, D269): that device left the mesh, is revoked or
+ * offline (no heartbeat for 10 minutes), or the status it published says it runs no turn. A device that published nothing yet,
+ * like a status a former coordinator device left, reads as idle, as the chip shows it. The work view's `canMoveHere` and the move
+ * route both use this rule, so the menu item and the refusal never disagree.
+ */
+export function coordinatorMovable(deviceId: string, row: Pick<DeviceView, 'status' | 'revoked'> | undefined,
+  status: Pick<ProjectCoordinatorStatus, 'deviceId' | 'state'> | null | undefined): boolean {
+  if (!row || row.revoked || row.status === 'offline') return true;
+  return status?.deviceId !== deviceId || status.state !== 'running';
 }
 
 /** Everything a coordinator prompt is built from; read before launch, because the launcher builds the prompt synchronously. */
@@ -107,7 +120,7 @@ export type CoordinatorTimers = { startMs: number; retryMs: number; turnTimeoutM
 export type CoordinatorContext = {
   deviceId: string; deviceName: string; redactor: SecretRedactor;
   store: CoordinatorStore; ledgers: ProjectLedgers;
-  hub: Pick<ProjectHub, 'coordinator' | 'assignCoordinator' | 'putCoordinatorStatus' | 'notebook' | 'threads' | 'decisions'>;
+  hub: Pick<ProjectHub, 'coordinator' | 'assignCoordinator' | 'coordinatorStatus' | 'putCoordinatorStatus' | 'notebook' | 'threads' | 'decisions'>;
   project(projectId: string): Promise<Project>;
   /** Work settings (the hub copy, or the last good one during an outage). */
   workSettings(projectId: string): Promise<ProjectWorkSettings>;
@@ -118,6 +131,11 @@ export type CoordinatorContext = {
   decisions: Pick<DecisionItems, 'fallbackFromReports'>;
   /** Bound after construction: the thread service is built later. */
   tools(): CoordinatorToolHandlers;
+  /**
+   * Bound after construction (the outbox is built later): sends events to the project's coordinator device through the hub relay,
+   * durably and under their own ids, which the new coordinator dedupes (3.5.4).
+   */
+  forward(projectId: string, events: readonly CoordinatorEvent[]): void;
   roster(): Promise<DeviceRoster>;
   /** `origin/HEAD` of the project checkout here, else `main` (D93). */
   baseBranch(project: Project): Promise<string>;
@@ -144,6 +162,8 @@ export class Coordinator {
   #seen: { events: Set<string>; messages: Map<string, string> } | undefined;
   #started = false;
   #closed = false;
+  /** This device lost the assignment and handed the queue over (3.5.4): no turn starts here any more. */
+  #moved = false;
   #timer: ReturnType<typeof setTimeout> | undefined;
   #running: Promise<void> | undefined;
   /** An event arrived while a turn was being evaluated or ran. */
@@ -163,13 +183,19 @@ export class Coordinator {
   get #ledger(): ProjectLedger { return this.c.ledgers.coordinator(this.projectId); }
   #at(): string { return new Date(this.c.now()).toISOString(); }
   #track(task: Promise<unknown>): void { this.#tasks.add(task); void task.finally(() => { this.#tasks.delete(task); }); }
-  /** Event ids and owner message ids already received, from the ledger (built once, then kept current). */
+  /**
+   * Event ids and owner message ids already received, from the ledger (built once, then kept current). Events this device handed
+   * over when the coordinator moved away no longer count, so they are taken again if the coordinator returns before they were
+   * delivered elsewhere (D271).
+   */
   #history(): { events: Set<string>; messages: Map<string, string> } {
     if (this.#seen) return this.#seen;
     const seen = { events: new Set<string>(), messages: new Map<string, string>() };
+    const forwarded = new Set(this.c.store.local(this.projectId).forwardedEventIds);
     for (const event of this.#ledger.events()) {
       if (event.type !== 'coordinator-event') continue;
       const data = this.#ledger.payload(event as ProjectLedgerEvent & { type: 'coordinator-event' });
+      if (forwarded.has(data.id)) continue;
       seen.events.add(data.id); if (data.kind === 'user-message') seen.messages.set(data.clientMessageId, data.text);
     }
     return this.#seen = seen;
@@ -188,6 +214,9 @@ export class Coordinator {
       if (prior !== undefined) { if (prior === event.text) return { repeated: true }; throw refuse(MESSAGE_ID_REUSED, 409); }
     }
     this.c.store.update(this.projectId, (state) => ({ ...state, queue: [...state.queue, event] }));
+    if (this.c.store.local(this.projectId).forwardedEventIds?.includes(event.id)) {
+      this.c.store.updateLocal(this.projectId, (local) => ({ ...local, forwardedEventIds: (local.forwardedEventIds ?? []).filter((id) => id !== event.id) }));
+    }
     this.record(event);
     if (event.kind === 'user-message') this.#ownerRetry = true;
     if (this.fallbackActive() && !this.#closed) void this.#fallback([event]);
@@ -211,9 +240,20 @@ export class Coordinator {
   fallbackActive(): boolean { const state = this.state(); return state.state === 'unavailable' || state.failedTurnsInARow >= 2; }
   /** A turn is being evaluated or runs, a start or retry is scheduled, or a fallback or status write is in flight. */
   get busy(): boolean { return !!this.#running || !!this.#timer || this.#tasks.size > 0; }
+  /** The project's coordinator moved to another device and this one handed its queue over (3.5.4). */
+  get moved(): boolean { return this.#moved; }
+  /**
+   * Events wait while no turn will start: after two failed turns only an owner message tries again, so the fence is never reached.
+   * The service reads the assignment for such a coordinator at each sweep, so a move away hands the events over (D271).
+   */
+  get stalled(): boolean {
+    if (!this.#started || this.#closed || this.#moved || this.#ownerRetry || this.#running || this.#timer) return false;
+    const state = this.state();
+    return state.state !== 'unavailable' && state.failedTurnsInARow >= 2 && state.queue.length > 0;
+  }
   /** After startup recovery: queued events run in a new turn (brief 8.6), and the hub gets the recovered state (D5). */
   begin(): void {
-    if (this.#started || this.#closed) return;
+    if (this.#started || this.#closed || this.#moved) return;
     this.#started = true;
     if (existsSync(this.c.store.paths.coordinator(this.projectId))) this.#publish();
     this.kick();
@@ -224,7 +264,7 @@ export class Coordinator {
    * tries again (the notice asks for one).
    */
   kick(): void {
-    if (!this.#started || this.#closed) return;
+    if (!this.#started || this.#closed || this.#moved) return;
     if (this.#running) { this.#again = true; return; }
     if (this.#timer) return;
     const state = this.state();
@@ -233,7 +273,7 @@ export class Coordinator {
   }
   /** The queue sweep (D70): an unavailable coordinator is evaluated again, and a fallback that could not reach the hub retries. */
   sweep(): void {
-    if (!this.#started || this.#closed) return;
+    if (!this.#started || this.#closed || this.#moved) return;
     if (this.fallbackActive()) void this.#fallback(this.state().queue);
     if (this.state().state === 'unavailable') this.kick();
   }
@@ -259,13 +299,51 @@ export class Coordinator {
     await this.#running;
     await Promise.allSettled([...this.#tasks]);
   }
+  /**
+   * This device became the coordinator by a move (3.5.3): the hub gets its status at once, and events already queued here (a
+   * device that coordinated before and kept them) run in a new turn.
+   */
+  arrived(): void {
+    if (!this.#started || this.#closed || this.#moved) return;
+    this.#publish(); this.kick();
+  }
+  /**
+   * This device no longer holds the assignment (3.5.4: at startup, or when a relayed event arrives): no turn starts here any more,
+   * a running turn is stopped (its events count as delivered, as after Stop, D33), and the queue goes to the coordinator device
+   * with `extra` after it.
+   */
+  async handover(extra: readonly CoordinatorEvent[] = []): Promise<void> {
+    this.#moved = true;
+    if (this.#timer) { clearTimeout(this.#timer); this.#timer = undefined; }
+    const running = this.#running;
+    if (running) { this.#stopping = true; await this.#execution?.stop().catch(() => undefined); await running; }
+    this.#drop(extra);
+  }
+  /**
+   * The handover itself (3.5.4, D43): every undelivered event, then `extra`, is sent to the coordinator device under its own id (the
+   * relay resolves that device when it sends), then coordinator.json goes. The ledger stays as history. Repeating it sends only `extra`.
+   */
+  #drop(extra: readonly CoordinatorEvent[] = []): void {
+    this.#moved = true;
+    if (this.#timer) { clearTimeout(this.#timer); this.#timer = undefined; }
+    const queue = existsSync(this.c.store.paths.coordinator(this.projectId)) ? this.state().queue : [];
+    const queued = new Set(queue.map((event) => event.id));
+    const events = [...queue, ...extra.filter((event) => !queued.has(event.id))];
+    if (events.length) {
+      this.c.forward(this.projectId, events);
+      const ids = new Set(events.map((event) => event.id));
+      this.c.store.updateLocal(this.projectId, (local) => ({ ...local, forwardedEventIds: [...(local.forwardedEventIds ?? []).filter((id) => !ids.has(id)), ...ids].slice(-500) }));
+    }
+    this.c.store.drop(this.projectId);
+  }
 
   #schedule(ms: number): void {
+    if (this.#moved) return;
     const timer = setTimeout(() => { if (this.#timer === timer) this.#timer = undefined; this.#run(); }, ms);
     this.#timer = timer;
   }
   #run(): void {
-    if (this.#closed || this.#running) return;
+    if (this.#closed || this.#running || this.#moved) return;
     this.#again = false; this.#stopping = false;
     const running = this.#turn().catch((error: unknown) => {
       // An unexpected failure never leaves the coordinator looking busy; the next event tries again.
@@ -285,13 +363,20 @@ export class Coordinator {
     });
     this.#running = running;
   }
-  async #turn(): Promise<TurnEnd> {
-    const projectId = this.projectId;
-    // The assignment fence (D6): only the assigned device runs turns; a member postpones while the hub is unreachable (D76).
+  /**
+   * The assignment fence (D6, 3.5.4): only the assigned device runs turns, a device that lost the assignment hands its queue over,
+   * and a member postpones while the hub is unreachable (D76). Null when the turn may go on.
+   */
+  async #fence(): Promise<TurnEnd | null> {
     let assigned: string | null;
-    try { assigned = (await this.c.hub.coordinator(projectId))?.document.deviceId ?? null; }
+    try { assigned = (await this.c.hub.coordinator(this.projectId))?.document.deviceId ?? null; }
     catch (error) { if (error instanceof HubUnavailable) return 'postpone'; throw error; }
-    if (assigned !== this.c.deviceId) return 'wait';
+    if (assigned === this.c.deviceId) return null;
+    if (assigned !== null) this.#drop();
+    return 'wait';
+  }
+  async #turn(): Promise<TurnEnd> {
+    const fenced = await this.#fence(); if (fenced) return fenced;
     const events = this.state().queue;
     if (!events.length) return 'wait';
     // Fresh pressed from here on applies to the next turn: this one never writes its session back (D194).
@@ -304,6 +389,8 @@ export class Coordinator {
     }
     if (prepared.kind === 'unavailable') { await this.#unavailable(prepared.reason, events); return 'wait'; }
     if (this.#closed || this.#stopping) return 'wait';
+    // A move accepted while this turn prepared (the published status still said idle) wins: the turn never launches here (3.5.4).
+    const moved = await this.#fence(); if (moved) return moved;
     return this.#launch(events, prepared, generation);
   }
   /** The ledger turn number counts every coordinator turn of the project, across sessions (coordinator-local `deliveredTurn`). */
@@ -484,54 +571,84 @@ export class Coordinator {
       await this.c.hub.putCoordinatorStatus(ProjectCoordinatorStatusSchema.parse({ schema: 'project-coordinator-status-v1', revision: 0, projectId: this.projectId,
         deviceId: this.c.deviceId, state: state.state, ...(state.unavailableReason ? { unavailableReason: state.unavailableReason.slice(0, 400) } : {}),
         failedTurnsInARow: state.failedTurnsInARow, session: session && labels ? { runtime: session.runtime, modelLabel: labels.modelLabel, effort: session.effort,
-          accountLabel: labels.accountLabel, turns: session.turns } : null, updatedAt: this.#at() }));
+          accountLabel: labels.accountLabel, turns: session.turns } : null, lastEventId: this.#ledger.lastId(), updatedAt: this.#at() }));
     }).catch(() => undefined);
     this.#publishing = task; this.#track(task);
   }
 }
 
-/** The coordinators this device holds, and the hub assignment (D6). */
+/** The coordinators this device holds, and the hub assignment (D6) with Move coordinator here and the handover (3.5.3, 3.5.4). */
 export class CoordinatorService {
   readonly #coordinators = new Map<string, Coordinator>();
   readonly #assigning = new Map<string, Promise<string>>();
+  readonly #moving = new Map<string, Promise<string>>();
+  /** Coordinators with state here whose assignment the startup check has not read yet (3.5.4); an outage keeps them for the next sweep. */
+  readonly #unchecked = new Set<string>();
+  #checking: Promise<void> | undefined;
   #started = false;
   #closed = false;
   constructor(private readonly c: CoordinatorContext) {}
   get store(): CoordinatorStore { return this.c.store; }
+  /** The project's coordinator here; one that handed its queue over is replaced, so a coordinator that returns starts clean. */
   get(projectId: string): Coordinator {
     let coordinator = this.#coordinators.get(projectId);
-    if (!coordinator) {
+    if (!coordinator || coordinator.moved) {
       coordinator = new Coordinator(projectId, this.c); this.#coordinators.set(projectId, coordinator);
       if (this.#closed) void coordinator.close(); else if (this.#started) coordinator.begin();
     }
     return coordinator;
   }
-  /** After startup recovery (`ProjectWork.start`): every coordinator with state on this device may run its queue (brief 8.6). */
+  /**
+   * After startup recovery (`ProjectWork.start`): every coordinator with state on this device may run its queue (brief 8.6), and
+   * reads the assignment once whatever its queue holds, so a device the coordinator moved away from hands over (3.5.4).
+   */
   begin(): void {
     if (this.#started || this.#closed) return;
     this.#started = true;
     for (const projectId of this.c.store.paths.projectIds()) if (existsSync(this.c.store.paths.coordinator(projectId))) this.get(projectId);
-    for (const coordinator of this.#coordinators.values()) coordinator.begin();
+    for (const [projectId, coordinator] of this.#coordinators) { this.#unchecked.add(projectId); coordinator.begin(); }
+    this.#check();
   }
-  /** The periodic queue sweep and `pulse` (D70); one unreadable coordinator never stops the others or the timer. */
+  /**
+   * The periodic queue sweep and `pulse` (D70); one unreadable coordinator never stops the others or the timer. A startup check the
+   * hub missed runs again, and a stalled coordinator (two failed turns, events waiting) reads its assignment (D271).
+   */
   sweep(): void {
-    for (const coordinator of this.#coordinators.values()) { try { coordinator.sweep(); } catch { /* Retried by the next sweep. */ } }
+    for (const [projectId, coordinator] of this.#coordinators) {
+      try { coordinator.sweep(); if (coordinator.stalled) this.#unchecked.add(projectId); } catch { /* Retried by the next sweep. */ }
+    }
+    if (this.#unchecked.size) this.#check();
   }
-  /** A coordinator of the project (or any) is evaluating, running, scheduled or writing (the `ProjectWork.idle` test seam). */
+  /** The handover check: one assignment read per coordinator listed; an unreachable hub leaves the rest for the next sweep, so idle sweeps read nothing. */
+  #check(): void {
+    if (this.#checking || this.#closed) return;
+    this.#checking = (async () => {
+      for (const projectId of [...this.#unchecked]) {
+        if (this.#closed) return;
+        const assigned = await this.deviceOf(projectId);
+        this.#unchecked.delete(projectId);
+        if (assigned !== null && assigned !== this.c.deviceId) await this.handover(projectId);
+      }
+    })().catch(() => undefined).finally(() => { this.#checking = undefined; });
+  }
+  /** A coordinator of the project (or any) is evaluating, running, scheduled or writing, or the startup check runs (the `ProjectWork.idle` test seam). */
   busy(projectId?: string): boolean {
-    return [...this.#coordinators].some(([id, coordinator]) => (projectId === undefined || id === projectId) && coordinator.busy);
+    return !!this.#checking || [...this.#coordinators].some(([id, coordinator]) => (projectId === undefined || id === projectId) && coordinator.busy);
   }
   async close(): Promise<void> {
     this.#closed = true;
+    await this.#checking;
     await Promise.allSettled([...this.#coordinators.values()].map((coordinator) => coordinator.close()));
   }
   /** The assigned coordinator device, or null before the first message or thread. */
   async deviceOf(projectId: string): Promise<string | null> { return (await this.c.hub.coordinator(projectId))?.document.deviceId ?? null; }
   /**
    * Assigns this device when no coordinator exists yet (compare-and-swap on revision 0; a lost race reads the winner) and
-   * returns the coordinator device. Concurrent calls for one project share one assignment.
+   * returns the coordinator device. Concurrent calls for one project share one assignment; a running move is waited for.
    */
   ensureAssigned(projectId: string): Promise<string> {
+    const moving = this.#moving.get(projectId);
+    if (moving) return moving.then(() => this.ensureAssigned(projectId), () => this.ensureAssigned(projectId));
     const running = this.#assigning.get(projectId); if (running) return running;
     const task = (async () => {
       const current = await this.deviceOf(projectId); if (current) return current;
@@ -544,5 +661,57 @@ export class CoordinatorService {
     })().finally(() => { this.#assigning.delete(projectId); });
     this.#assigning.set(projectId, task);
     return task;
+  }
+  /**
+   * This device no longer holds the project's coordinator (3.5.4): the coordinator here, if any, stops for good and its queue goes to
+   * the coordinator device, followed by `extra` (an event relayed here before the move). Without state here only `extra` is sent.
+   */
+  async handover(projectId: string, extra: readonly CoordinatorEvent[] = []): Promise<void> {
+    const coordinator = this.#coordinators.get(projectId);
+    if (coordinator && !coordinator.moved) { await coordinator.handover(extra); return; }
+    if (existsSync(this.c.store.paths.coordinator(projectId))) { await this.get(projectId).handover(extra); return; }
+    if (extra.length) this.c.forward(projectId, extra);
+  }
+  /**
+   * Move coordinator here (3.5.3), serialized with the project's first assignment. Allowed by `coordinatorMovable` (else 409 with the
+   * device that works); assigned by compare-and-swap on the observed revision, where a lost race reads the assignment again. This
+   * device then starts with no session and an empty queue, says so in its chat and publishes its status; the first turn is fresh,
+   * from the hub's notebook and indexes (D43). Before any assignment this assigns this device as a first message would (D6). A
+   * repeated move (a lost reply) completes a setup that did not happen and changes nothing else. Returns this device.
+   */
+  moveHere(projectId: string): Promise<string> {
+    const running = this.#moving.get(projectId); if (running) return running;
+    const assigning = this.#assigning.get(projectId);
+    const task = (async () => { await assigning?.catch(() => undefined); return this.#move(projectId); })().finally(() => { this.#moving.delete(projectId); });
+    this.#moving.set(projectId, task);
+    return task;
+  }
+  async #move(projectId: string): Promise<string> {
+    const here = this.c.deviceId;
+    for (let attempt = 1; ; attempt += 1) {
+      const stored = await this.c.hub.coordinator(projectId); const from = stored?.document.deviceId;
+      if (from === here) { this.#arrive(projectId, false); return here; }
+      if (from !== undefined) {
+        const [roster, published] = await Promise.all([this.c.roster(), this.c.hub.coordinatorStatus(projectId)]);
+        const row = roster.devices.find((view) => view.device.id === from);
+        if (!coordinatorMovable(from, row, published?.document)) throw refuse(coordinatorWorking(row?.device.name ?? from), 409);
+      }
+      try { await this.c.hub.assignCoordinator(projectId, here, stored?.revision ?? 0); }
+      catch (error) { if (status(error) === 409 && attempt < 3) continue; throw error; }
+      if (from !== undefined) this.#arrive(projectId, true);
+      return here;
+    }
+  }
+  /**
+   * The new coordinator's start (3.5.3): no session and an empty queue, except events this device received before (it coordinated
+   * earlier and never handed over), the notice in its chat, then the status. A repeat finds the state file and does nothing.
+   */
+  #arrive(projectId: string, moved: boolean): void {
+    const store = this.c.store; const exists = existsSync(store.paths.coordinator(projectId));
+    if (exists && !moved) return;
+    const queue = exists ? store.get(projectId).queue : [];
+    store.update(projectId, () => CoordinatorStateSchema.parse({ schema: 'coordinator-state-v1', projectId, state: 'idle', session: null, queue, failedTurnsInARow: 0 }));
+    this.c.ledgers.coordinator(projectId).append({ type: 'notice', data: { schema: 'project-notice-v1', text: coordinatorMovedNotice(this.c.deviceName), kind: 'info' } });
+    this.get(projectId).arrived();
   }
 }

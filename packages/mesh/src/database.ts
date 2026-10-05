@@ -55,6 +55,10 @@ export class HubDatabase {
       return { revision, document: validated };
     });
   }
+  /** Removes one document; true when it existed. One statement, so it joins an enclosing `transaction`. */
+  delete(namespace: string, id: string): boolean {
+    return Number(this.db.prepare('DELETE FROM documents WHERE namespace=? AND id=?').run(IdSchema.parse(namespace), IdSchema.parse(id)).changes) > 0;
+  }
   /** Group synchronous document and vault writes; nested groups use savepoints. */
   transaction<T>(operation: () => T extends PromiseLike<unknown> ? never : T): T {
     const savepoint = this.#transactionDepth ? `jevellan_${++this.#savepoint}` : null;

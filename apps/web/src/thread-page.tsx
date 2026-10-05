@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   ProjectWorkViewSchema, RESTARTED_PREFIX, ThreadMessageReceiptSchema, ThreadOverrideViewSchema, ThreadViewSchema, type PlacementField, type ProjectWorkView,
-  type QueuedMessage, type ThreadReport, type ThreadView,
+  type QueuedMessage, type ThreadIndex, type ThreadReport, type ThreadView,
 } from '@jevellan/core/client';
 import { ApiError, api, empty } from './api.js';
 import { Confirm, Markdown, Modal, Panel, useTask, type PageProps } from './components.js';
@@ -10,9 +10,9 @@ import { Icon } from './icons.js';
 import { MessageInput } from './message-delivery.js';
 import * as copy from './project-work-copy.js';
 import {
-  THREAD_POLL_AFTER_ACTION_MS, alignReports, composerBlock, deviceBlock, dotClass, effortChoices, fallbackChip, mainIsolationBlock, nearestEffort, overrideForm,
-  overrideOffered, overrideReady, overrideRequest, placementLine, pullRequestBadges, reportBadge, restartedThread, threadActions, threadLiveText, threadPollDelay,
-  transcriptNotice, whyFields, withoutReportCalls, type OverrideForm, type OverrideMode,
+  THREAD_POLL_AFTER_ACTION_MS, THREAD_POLL_LIVE_MS, alignReports, composerBlock, deviceBlock, deviceRefusal, dotClass, effortChoices, fallbackChip, mainIsolationBlock, nearestEffort,
+  overrideForm, overrideOffered, overrideReady, overrideRequest, placementLine, pullRequestBadges, reportBadge, restartedThread, threadActions, threadLiveText,
+  threadPollDelay, threadStarting, transcriptNotice, whyFields, withoutReportCalls, type OverrideForm, type OverrideMode,
 } from './project-work-model.js';
 import { RouteLink, Stamp, afterDialogs, deviceNames, failureText, runtimeNames, updated, useClientIds, useLocalError } from './project-work.js';
 import { TranscriptTurn } from './session-transcript.js';
@@ -29,6 +29,8 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
   const titleId = useId(); const queuedId = useId();
   const [view, setView] = useState<ThreadView>();
   const [loadError, setLoadError] = useState('');
+  // Before any view: the thread's device refused or could not be reached, and the project's index row that names it (D276).
+  const [held, setHeld] = useState<{ tone: 'notice' | 'error'; thread?: ThreadIndex }>();
   const [confirming, setConfirming] = useState<'stop' | 'discard'>();
   const [why, setWhy] = useState(false);
   const [overriding, setOverriding] = useState(false);
@@ -40,11 +42,19 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
 
   useEffect(() => {
     const controller = new AbortController();
-    let timer: ReturnType<typeof setTimeout> | undefined; let reading = false; let again = false;
+    let timer: ReturnType<typeof setTimeout> | undefined; let reading = false; let again = false; let indexed = false;
+    // The hub's index still names a thread whose device cannot answer, so the page shows its title and last state meanwhile.
+    const index = async () => {
+      try {
+        const work = await api(`/api/projects/${projectId}/work`, ProjectWorkViewSchema, 'GET', undefined, { signal: controller.signal });
+        const row = work.threads.find((entry) => entry.id === threadId);
+        if (row && !controller.signal.aborted) setHeld((previous) => previous && { ...previous, thread: row });
+      } catch { /* the reason alone still shows */ }
+    };
     const load = async () => {
       clearTimeout(timer);
       if (reading) { again = true; return; }
-      reading = true;
+      reading = true; let starting = false;
       try {
         const next = await api(base, ThreadViewSchema, 'GET', undefined, { signal: controller.signal });
         if (!controller.signal.aborted) {
@@ -56,20 +66,27 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
       } catch (failure) {
         if (!controller.signal.aborted) {
           if (failure instanceof ApiError && failure.status === 401) onError(failure);
-          else setLoadError(failureText(failure));
+          // A thread started moments ago on another device is not there yet (D274): the page keeps loading and reads again soon.
+          else if (failure instanceof ApiError && failure.status === 404 && !latest.current && threadStarting(threadId, Date.now())) starting = true;
+          else {
+            setLoadError(failureText(failure));
+            const refusal = failure instanceof ApiError && !latest.current ? deviceRefusal(failure.status) : undefined;
+            setHeld((previous) => previous || refusal ? { ...previous, tone: refusal ?? 'error' } : previous);
+            if (refusal && !indexed) { indexed = true; void index(); }
+          }
         }
       } finally {
         reading = false;
         if (!controller.signal.aborted) {
           if (again) { again = false; void load(); }
-          else timer = setTimeout(() => void load(), threadPollDelay(latest.current?.thread.state, Date.now(), fastUntil.current));
+          else timer = setTimeout(() => void load(), starting ? THREAD_POLL_LIVE_MS : threadPollDelay(latest.current?.thread.state, Date.now(), fastUntil.current));
         }
       }
     };
     kick.current = () => { fastUntil.current = Date.now() + THREAD_POLL_AFTER_ACTION_MS; void load(); };
     void load();
     return () => { controller.abort(); clearTimeout(timer); kick.current = () => {}; };
-  }, [base, onError]);
+  }, [base, projectId, threadId, onError]);
   /** Every action answers the thread view; the page shows it, tells the sidebar and keeps reading quickly for a moment. */
   const acted = (next: ThreadView) => { latest.current = next; setView(next); updated(); kick.current(); };
 
@@ -108,13 +125,21 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
 
   const back = <RouteLink className="text-button pw-back" href={project} navigate={navigate}><Icon name="back" size={14} />{copy.BACK_TO_PROJECT}</RouteLink>;
   if (!view) {
+    const known = held?.thread;
     return (
       <div className="conversation-page pw-page pw-thread-page" ref={page}>
         <div className="section-heading conversation-heading pw-heading">
-          <h1 aria-labelledby={titleId}>{navigation}<span id={titleId} className="session-title" /></h1>
-          <div className="conversation-meta pw-thread-meta">{back}</div>
+          <h1 aria-labelledby={titleId}>{navigation}<span id={titleId} className="session-title" title={known?.title}>{known?.title}</span></h1>
+          <div className="conversation-meta pw-thread-meta">
+            {back}
+            {known && (
+              <span className={`chip pw-state-chip pw-state-${known.state}`}>
+                <i className={dotClass(known.state)} aria-hidden="true" />{copy.STATE_LABELS[known.state]}
+              </span>
+            )}
+          </div>
         </div>
-        {loadError ? <p className="error">{loadError}</p> : (
+        {loadError ? <p className={held?.tone ?? 'error'}>{loadError}</p> : (
           <p className="page-loading" role="status"><span className="activity-spinner" aria-hidden="true" />{copy.LOADING_THREAD}</p>
         )}
       </div>

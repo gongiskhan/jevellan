@@ -6,14 +6,15 @@ import { createServer, type Server } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
-  AccountSchema, AccountStatusSchema, DeviceRosterSchema, Homes, PlacementRecordSchema, ProjectSchema, ProjectWorkSettingsSchema, SecretRedactor, ThreadSchema, defaultProjectWorkSettings,
-  seedConfiguration, type CoordinatorEvent, type Project, type ProjectDecision, type ProjectWorkSettings, type Thread, type ThreadIndex,
+  AccountSchema, AccountStatusSchema, DeviceRosterSchema, Homes, HubUnavailable, PlacementRecordSchema, ProjectSchema, ProjectWorkSettingsSchema, SecretRedactor, ThreadSchema,
+  defaultProjectWorkSettings, seedConfiguration, type CoordinatorEvent, type OutboxEntry, type ProjectEnvelope, type Project, type ProjectDecision, type ProjectWorkSettings, type Thread,
+  type ThreadIndex,
 } from '../packages/core/dist/index.js';
 import { StretchBridges } from '../packages/conversations/dist/index.js';
 import { HubDatabase, HubProjectAccess } from '../packages/mesh/dist/index.js';
 import { FakeRuntime, forThread, groupAlive, processIdentity, type FakeTurnStep } from '../packages/runtime-contract/dist/index.js';
 import {
-  ALLOW_MORE_TURNS, DISCARD_REFUSED, LEAVE_GIT_SETTING, LocalDelivery, MAIN_NOT_AVAILABLE, NO_CHANGES, OWNER_STOPPED_THREAD, ProjectWork, REMOTE_THREADS_LATER, RESTARTED, RESTART_UNCONFIRMED,
+  ALLOW_MORE_TURNS, DISCARD_REFUSED, LEAVE_GIT_SETTING, LocalDelivery, MAIN_NOT_AVAILABLE, NO_CHANGES, NO_RELAY, OWNER_STOPPED_THREAD, ProjectWork, RESTARTED, RESTART_UNCONFIRMED,
   START_REQUEST_REUSED, STOP_THE_THREAD, THREAD_ENDED, TURN_FAILED, TURN_LIMIT_REACHED, TURN_TIMED_OUT, TURN_WITHOUT_REPORT, WORKTREE_DISCARDED, atTurnLimit,
   coordinatorPlan, decisionLists, deliveryRoute, derivedId, discardedReason, effectiveSettings, isDiscarded, isTurnLimitItem, isWaitingForSlot, messagesTurn,
   ownerStartedLine, pullRequestEntries, queuedReason, synthesizedReport, turnEndAction, turnLimitQuestion, waitingForSlotReason, withState, workCounts,
@@ -109,14 +110,46 @@ test('views count work, list pull requests and questions, coerce a Leave git def
   expect(derivedId('cev', 'answer', 'pdec_1')).toBe(derivedId('cev', 'answer', 'pdec_1')); expect(derivedId('cev', 'answer', 'pdec_1')).toMatch(/^cev_[0-9a-f]{40}$/);
 });
 
-test('local delivery refuses a thread owned by another device before phase 5', async () => {
-  const created: string[] = [];
-  const delivery = new LocalDelivery({ deviceId: 'dev_a', coordinators: { get: () => { throw new Error('unused'); } }, store: { create: (thread: Thread) => { created.push(thread.id); return thread; } },
-    command: async () => undefined });
-  await expect(delivery.startOnDevice(sample({ ownerDeviceId: 'dev_b' }), { modelLabel: 'Fixture', accountLabel: 'Work' })).rejects.toThrow(REMOTE_THREADS_LATER);
-  await expect(delivery.toThreadOwner('proj_a', 'thread_a', 'dev_b', { type: 'allow-turns' })).rejects.toThrow(REMOTE_THREADS_LATER);
-  await delivery.startOnDevice(sample(), { modelLabel: 'Fixture', accountLabel: 'Work' });
+test('delivery runs local work here and sends other devices\' work through the relay, and needs a relay for them (D265)', async () => {
+  const created: string[] = []; const queued: string[] = []; const applied: string[] = [];
+  const local = { create: (thread: Thread) => { created.push(thread.id); return thread; } };
+  const coordinator = { enqueue: (event: CoordinatorEvent) => { queued.push(event.id); return { repeated: false }; } };
+  const bare = new LocalDelivery({ deviceId: 'dev_a', coordinators: { get: () => coordinator as never, deviceOf: async () => 'dev_b' }, store: local, command: async () => undefined });
+  await expect(bare.startOnDevice(sample({ ownerDeviceId: 'dev_b' }), { modelLabel: 'Fixture', accountLabel: 'Work' })).rejects.toThrow(NO_RELAY);
+  await expect(bare.toThreadOwner('proj_a', 'thread_a', 'dev_b', { type: 'allow-turns' })).rejects.toThrow(NO_RELAY);
+  await bare.startOnDevice(sample(), { modelLabel: 'Fixture', accountLabel: 'Work' });
   expect(created).toEqual(['thread_a']);
+
+  // With the relay: the hub assignment decides where coordinator events go, and starts and commands go to their owner.
+  const sent: Array<{ projectId: string; target: string; body: ProjectEnvelope['body'] }> = []; const waiting: OutboxEntry[] = [];
+  const hub = { assigned: 'dev_b' as string | null, down: false };
+  const delivery = new LocalDelivery({ deviceId: 'dev_a', store: local, now: () => Date.parse(at),
+    coordinators: { get: () => coordinator as never, deviceOf: async () => { if (hub.down) throw new HubUnavailable('Fixture hub'); return hub.assigned; } },
+    command: async (_projectId, threadId, command) => { applied.push(`${threadId} ${command.type}`); },
+    outbox: () => ({ enqueue: (projectId: string, target: string, body: ProjectEnvelope['body']) => { sent.push({ projectId, target, body }); return undefined as never; }, pending: () => waiting }) });
+  const event = (id: string): CoordinatorEvent => ({ schema: 'coordinator-event-v1', kind: 'thread-interrupted', id, at, threadId: 'thread_a', reason: 'stopped', message: 'Stopped.' });
+  await delivery.toCoordinator('proj_a', event('cev_elsewhere'));
+  hub.assigned = 'dev_a'; await delivery.toCoordinator('proj_a', event('cev_here'));
+  hub.assigned = null; await delivery.toCoordinator('proj_a', event('cev_none'));
+  // The hub unreachable: the last assignment read decides; never read means the relay, which resolves it later.
+  hub.assigned = 'dev_a'; await delivery.toCoordinator('proj_a', event('cev_known')); hub.down = true;
+  await delivery.toCoordinator('proj_a', event('cev_down_here')); await delivery.toCoordinator('proj_other', event('cev_down_unknown'));
+  // Coordinator events waiting in the outbox keep the ones after them in order, even for a coordinator here.
+  hub.down = false; waiting.push({ schema: 'project-outbox-entry-v1', target: 'coordinator', envelope: { schema: 'project-envelope-v1', id: 'env_w', projectId: 'proj_a', sourceDeviceId: 'dev_a',
+    seq: 1, createdAt: at, body: { kind: 'coordinator-event', event: event('cev_waiting') } } });
+  await delivery.toCoordinator('proj_a', event('cev_behind'));
+  expect(queued).toEqual(['cev_here', 'cev_none', 'cev_known', 'cev_down_here']);
+  expect(sent.map((entry) => [entry.projectId, entry.target, entry.body.kind === 'coordinator-event' ? entry.body.event.id : ''])).toEqual([
+    ['proj_a', 'coordinator', 'cev_elsewhere'], ['proj_other', 'coordinator', 'cev_down_unknown'], ['proj_a', 'coordinator', 'cev_behind']]);
+  sent.length = 0;
+  await delivery.startOnDevice(sample({ id: 'thread_b', ownerDeviceId: 'dev_b' }), { modelLabel: 'Fixture', accountLabel: 'Work' });
+  await delivery.toThreadOwner('proj_a', 'thread_b', 'dev_b', { type: 'allow-turns' }, 'tcmd_given');
+  await delivery.toThreadOwner('proj_a', 'thread_b', 'dev_b', { type: 'stop', reason: 'Not needed.', notify: true });
+  await delivery.toThreadOwner('proj_a', 'thread_a', 'dev_a', { type: 'dispatch' });
+  expect(sent.map((entry) => [entry.target, entry.body.kind])).toEqual([['dev_b', 'thread-start'], ['dev_b', 'thread-command'], ['dev_b', 'thread-command']]);
+  expect(sent[1]!.body).toEqual({ kind: 'thread-command', threadId: 'thread_b', commandId: 'tcmd_given', command: { type: 'allow-turns' } });
+  expect(sent[2]!.body).toMatchObject({ kind: 'thread-command', threadId: 'thread_b', commandId: expect.stringMatching(/^tcmd_/), command: { type: 'stop', notify: true } });
+  expect(applied).toEqual(['thread_a dispatch']); expect(created).toEqual(['thread_a']);
 });
 
 // In-process Projects on a real git origin, the real hub store, FakeRuntime turns through a bridge server, and fake GitHub.

@@ -1,13 +1,13 @@
 import type { AccountService } from '@jevellan/accounts';
 import {
-  ProjectWorkListViewSchema, ProjectWorkViewSchema, ThreadViewSchema, defaultProjectWorkSettings, isTerminal, liveWork, type Configuration, type CoordinatorView, type Project,
-  type ProjectDecision, type ProjectHub, type ProjectLedgerEvent, type ProjectWorkListView, type ProjectWorkSettings, type ProjectWorkView, type PullRequestEntry,
-  type SharedProjects, type ThreadIndex, type ThreadReport, type ThreadView,
+  ProjectWorkListViewSchema, ProjectWorkViewSchema, ThreadViewSchema, defaultProjectWorkSettings, isTerminal, type Configuration, type CoordinatorState, type CoordinatorView, type Project,
+  type ProjectDecision, type ProjectHub, type ProjectLedgerEvent, type ProjectWorkListView, type ProjectWorkSettings, type ProjectWorkSummary, type ProjectWorkView,
+  type PullRequestEntry, type SharedProjects, type ThreadIndex, type ThreadReport, type ThreadView,
 } from '@jevellan/core';
 import type { PlacementGates } from '@jevellan/decisions';
 import type { RuntimeAdapter } from '@jevellan/runtime-contract';
 import { BRANCH_PUSHED_NO_TOKEN, LEAVE_GIT_SETTING, MAIN_NOT_AVAILABLE, NOT_GITHUB, PROJECT_NOT_FOUND, THREAD_NOT_FOUND, attachCommand } from './copy.js';
-import { coordinatorPlan, type CoordinatorService } from './coordinator.js';
+import { coordinatorMovable, coordinatorPlan, type CoordinatorService } from './coordinator.js';
 import type { ProjectLedgers } from './ledger.js';
 import { PHASE_GATES, type DeviceRoster } from './placement.js';
 import { threadIndex, type ThreadStore } from './stores.js';
@@ -16,6 +16,12 @@ import type { ThreadTranscripts } from './transcript.js';
 import type { ThreadWorktree } from './worktree.js';
 
 const refuse = (message: string, status: number) => Object.assign(new Error(message), { status });
+/**
+ * Where the coordinator lives: its local state here, the session and last event id it published elsewhere, and whether it may move
+ * to this device (`canMoveHere`, 3.5.3).
+ */
+type CoordinatorWhere = { deviceId: string | null; deviceName: string | null; state: CoordinatorView['state']; unavailableReason?: string; online: boolean;
+  movable: boolean; local?: CoordinatorState; published?: CoordinatorView['session']; lastEventId?: number };
 const ANSWERED_SHOWN = 10;
 const BRANCH_ONLY = [BRANCH_PUSHED_NO_TOKEN, NOT_GITHUB];
 
@@ -28,14 +34,8 @@ export function decisionLists(decisions: readonly ProjectDecision[]): { open: Pr
     answered: decisions.filter((decision) => decision.answer).sort((a, b) => (b.answeredAt ?? '').localeCompare(a.answeredAt ?? '')).slice(0, ANSWERED_SHOWN),
   };
 }
-/**
- * Sidebar counts: open questions, threads with live work (preparing, running or publishing; an idle or waiting thread is never
- * called running, D257) and threads in review.
- */
-export function workCounts(threads: readonly ThreadIndex[], decisions: readonly ProjectDecision[]): { waiting: number; running: number; inReview: number } {
-  return { waiting: decisionLists(decisions).open.length, running: threads.filter((thread) => liveWork(thread.state)).length,
-    inReview: threads.filter((thread) => thread.state === 'in-review').length };
-}
+/** Sidebar counts (D257): a core rule, because the hub computes them for the members' list (D267). */
+export { workCounts } from '@jevellan/core';
 /** Pull requests from the thread indexes, plus branch-only threads with their reason (brief 12.2). */
 export function pullRequestEntries(threads: readonly ThreadIndex[]): PullRequestEntry[] {
   return threads.flatMap((thread): PullRequestEntry[] => {
@@ -58,7 +58,7 @@ export function effectiveSettings(settings: ProjectWorkSettings, project: Pick<P
 
 export type ProjectViewsOptions = {
   deviceId: string; deviceName: string;
-  hub: Pick<ProjectHub, 'threads' | 'decisions' | 'settings' | 'coordinator' | 'coordinatorStatus' | 'notebook'>;
+  hub: Pick<ProjectHub, 'threads' | 'decisions' | 'settings' | 'coordinator' | 'coordinatorStatus' | 'notebook' | 'workSummaries'>;
   projects: Pick<SharedProjects, 'get' | 'list'>;
   store: Pick<ThreadStore, 'get' | 'labels'>; ledgers: ProjectLedgers; coordinators: Pick<CoordinatorService, 'get'>;
   transcripts: Pick<ThreadTranscripts, 'read'>; worktrees: Pick<ThreadWorktree, 'repository' | 'baseBranch'>;
@@ -92,62 +92,73 @@ export class ProjectViews {
   }
   /**
    * Where the coordinator lives and its state (D5, D80, D91): `none` before assignment, `offline` when the roster says so, else
-   * the state of the coordinator device (its local file here, the published status elsewhere). The list rows need only this
-   * (D246); the chip adds the sessions.
+   * the state of the coordinator device (its local file here, the status it published elsewhere; a status a former coordinator
+   * device left reads as none yet, so idle). The list rows need only this (D246); the chip adds the sessions. Elsewhere, the
+   * coordinator may move here by the move route's own rule (D269).
    */
-  async #coordinatorState(projectId: string, roster: DeviceRoster) {
+  async #coordinatorState(projectId: string, roster: DeviceRoster): Promise<CoordinatorWhere> {
     const deviceId = (await this.#o.hub.coordinator(projectId))?.document.deviceId ?? null; const here = deviceId === this.#o.deviceId;
     const row = deviceId === null ? undefined : roster.devices.find((view) => view.device.id === deviceId);
     const deviceName = here ? this.#o.deviceName : row?.device.name ?? null;
-    if (deviceId === null) return { deviceId, deviceName, state: 'none' as const, online: false };
+    if (deviceId === null) return { deviceId, deviceName, state: 'none' as const, online: false, movable: false };
     // This device is running, so it is never offline to itself (D8); a stale device keeps its state (D80).
-    if (!here && (!row || row.status === 'offline' || row.revoked)) return { deviceId, deviceName, state: 'offline' as const, online: false };
+    if (!here && (!row || row.status === 'offline' || row.revoked)) return { deviceId, deviceName, state: 'offline' as const, online: false, movable: true };
     if (here) {
       const local = this.#o.coordinators.get(projectId).state();
-      return { deviceId, deviceName, state: local.state, ...(local.unavailableReason ? { unavailableReason: local.unavailableReason } : {}), online: true, local };
+      return { deviceId, deviceName, state: local.state, ...(local.unavailableReason ? { unavailableReason: local.unavailableReason } : {}), online: true, movable: false, local };
     }
-    const status = (await this.#o.hub.coordinatorStatus(projectId))?.document;
+    const published = (await this.#o.hub.coordinatorStatus(projectId))?.document;
+    const status = published?.deviceId === deviceId ? published : undefined;
     return { deviceId, deviceName, state: status?.state ?? 'idle', ...(status?.unavailableReason ? { unavailableReason: status.unavailableReason } : {}), online: true,
-      published: status?.session ?? null };
+      movable: coordinatorMovable(deviceId, row, status), published: status?.session ?? null, lastEventId: status?.lastEventId ?? 0 };
+  }
+  /**
+   * A list row's coordinator from the hub's summary (D267), by the `#coordinatorState` rules: here the local state; elsewhere
+   * offline by the roster's presence (or when the device is unknown), else the state it published (idle before any).
+   */
+  #summaryState(summary: ProjectWorkSummary): { deviceId: string | null; state: ProjectWorkListView['projects'][number]['coordinator']['state'] } {
+    const where = summary.coordinator; if (!where) return { deviceId: null, state: 'none' };
+    if (where.deviceId === this.#o.deviceId) return { deviceId: where.deviceId, state: this.#o.coordinators.get(summary.projectId).state().state };
+    if (!where.device || where.device.status === 'offline' || where.device.revoked) return { deviceId: where.deviceId, state: 'offline' };
+    return { deviceId: where.deviceId, state: where.state ?? 'idle' };
   }
   /** The coordinator chip: the coordinator state with the session here or elsewhere, and the planned one. */
-  async #coordinator(projectId: string, roster: DeviceRoster, work: ProjectWorkSettings): Promise<CoordinatorView> {
-    const [where, config, accounts] = await Promise.all([this.#coordinatorState(projectId, roster), this.#o.settings(), this.#o.accounts.list()]);
+  async #coordinator(where: CoordinatorWhere, work: ProjectWorkSettings): Promise<CoordinatorView> {
+    const [config, accounts] = await Promise.all([this.#o.settings(), this.#o.accounts.list()]);
     const label = (modelId: string) => config.menu.find((entry) => entry.id === modelId)?.label ?? modelId;
     const plan = coordinatorPlan({ work, settings: config, runtimes: new Map([...this.#o.runtimes].map(([id, adapter]) => [id, adapter.capabilities])),
       accounts: accounts.map((view) => view.account), statuses: accounts.flatMap((view) => view.statuses), deviceId: where.deviceId ?? this.#o.deviceId,
       deviceName: where.deviceName ?? this.#o.deviceName });
     const planned = plan.kind === 'ready' ? { runtime: plan.model.runtime, modelLabel: plan.model.label, effort: plan.effort } : null;
-    const session = 'local' in where ? where.local.session : undefined;
-    return { deviceId: where.deviceId, deviceName: where.deviceName, planned, canMoveHere: false, state: where.state,
-      ...('unavailableReason' in where && where.unavailableReason ? { unavailableReason: where.unavailableReason } : {}), online: where.online,
+    const session = where.local?.session;
+    return { deviceId: where.deviceId, deviceName: where.deviceName, planned, canMoveHere: where.movable, state: where.state,
+      ...(where.unavailableReason ? { unavailableReason: where.unavailableReason } : {}), online: where.online,
       session: session ? { runtime: session.runtime, modelLabel: label(session.modelId), effort: session.effort,
         accountLabel: accounts.find((view) => view.account.id === session.accountId)?.account.label ?? session.accountId, turns: session.turns }
-        : 'published' in where ? where.published : null };
+        : where.published ?? null };
   }
   async #work(projectId: string): Promise<ProjectWorkSettings> { return (await this.#o.hub.settings(projectId))?.document ?? defaultProjectWorkSettings(projectId); }
   /**
    * `GET /api/project-work`: every project with its counts and coordinator state. Every open page polls it, so it reads only
-   * what the rows show (D246): no work settings, configuration or accounts, which on a member are hub requests per project.
+   * what the rows show (D246), and all of it in one hub read (D267): on a member, one hub request per poll whatever the number
+   * of projects.
    */
   async list(): Promise<ProjectWorkListView> {
-    const [projects, roster] = await Promise.all([this.#o.projects.list(), this.#o.roster()]);
-    const entries = await Promise.all(projects.map(async ({ project }) => {
-      const [threads, decisions, coordinator] = await Promise.all([this.#threads(project.id), this.#o.hub.decisions(project.id), this.#coordinatorState(project.id, roster)]);
-      return { projectId: project.id, name: project.name, ...workCounts(threads, decisions), coordinator: { deviceId: coordinator.deviceId, state: coordinator.state } };
-    }));
-    return ProjectWorkListViewSchema.parse({ schema: 'project-work-list-view-v1', projects: entries });
+    const summaries = await this.#o.hub.workSummaries();
+    return ProjectWorkListViewSchema.parse({ schema: 'project-work-list-view-v1', projects: summaries.map((summary) => ({ projectId: summary.projectId, name: summary.name,
+      waiting: summary.waiting, running: summary.running, inReview: summary.inReview, coordinator: this.#summaryState(summary) })) });
   }
   /** `GET /api/projects/:id/work`: the project page. */
   async project(projectId: string): Promise<ProjectWorkView> {
     const project = await this.#project(projectId);
     const [threads, decisions, work, notebook, roster, baseBranch] = await Promise.all([this.#threads(projectId), this.#o.hub.decisions(projectId), this.#work(projectId),
       this.#o.hub.notebook(projectId), this.#o.roster(), this.#base(project)]);
-    const shown = effectiveSettings(work, project);
+    const shown = effectiveSettings(work, project); const where = await this.#coordinatorState(projectId, roster);
+    // The chat history bound the page opens with (D268): this device's ledger, or the last event id a coordinator elsewhere published.
+    const lastEventId = where.deviceId === null || where.deviceId === this.#o.deviceId ? this.#o.ledgers.coordinator(projectId).lastId() : where.lastEventId ?? 0;
     return ProjectWorkViewSchema.parse({ schema: 'project-work-view-v1', project: { id: project.id, name: project.name, branchPolicy: project.branchPolicy, baseBranch },
-      settings: shown.settings, ...(shown.notice ? { settingsNotice: shown.notice } : {}), coordinator: await this.#coordinator(projectId, roster, work), threads,
-      decisions: decisionLists(decisions), pullRequests: pullRequestEntries(threads), notebookRevision: notebook?.revision ?? 0,
-      lastEventId: this.#o.ledgers.coordinator(projectId).lastId(), gates: PHASE_GATES });
+      settings: shown.settings, ...(shown.notice ? { settingsNotice: shown.notice } : {}), coordinator: await this.#coordinator(where, work), threads,
+      decisions: decisionLists(decisions), pullRequests: pullRequestEntries(threads), notebookRevision: notebook?.revision ?? 0, lastEventId, gates: PHASE_GATES });
   }
   /** `GET /api/projects/:id/threads/:tid` for a thread this device owns (D81 `canMessage`; overrides as the API allows them, D252). */
   async thread(projectId: string, threadId: string): Promise<ThreadView> {

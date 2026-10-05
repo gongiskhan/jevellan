@@ -433,7 +433,7 @@ test('account pinning: later turns resume on the placed account; an ineligible a
   expect(f.fake.turnStarts[3]).toMatchObject({ prompt: 'Fourth.', resume: { sessionId: thread.nativeSessionId }, account: { account: { id: 'acc_second' } } });
 });
 
-test('placement phase gates: fixed main and foreign devices are refused with nothing created; a main default and a stale heartbeat still place a worktree here (D8, D88)', { timeout: 120_000 }, async () => {
+test('placement refusals: fixed main (phase gate), a device that cannot run threads and an unknown device are refused with nothing created; a main default and a stale heartbeat still place a worktree here (D8, D88)', { timeout: 120_000 }, async () => {
   const f = await setup();
   const refusedWith = async (extra: object, message: string) => {
     const response = await f.request('/api/projects/project/threads', 'POST', createBody('Gated', 'Try a fixed field.', undefined, extra));
@@ -443,7 +443,8 @@ test('placement phase gates: fixed main and foreign devices are refused with not
   const at = new Date().toISOString();
   f.app.hub.put('devices', 'dev_studio', DeviceSchema, { schema: 'device-v1', id: 'dev_studio', name: 'Studio', role: 'member', url: 'http://127.0.0.1:9772', os: 'darwin', version: '0.1.0', joinedAt: at, lastHeartbeatAt: at }, 0);
   await refusedWith({ isolation: 'main' }, 'Main isolation is not available yet.');
-  await refusedWith({ deviceId: 'dev_studio' }, 'Threads run only on this device for now.');
+  // Other devices are candidates from phase 5; this row has no authorization, so it reads as revoked (offline), and no project path.
+  await refusedWith({ deviceId: 'dev_studio' }, 'No device can run any enabled model: Studio: offline.');
   await refusedWith({ deviceId: 'dev_unknown' }, 'Choose a registered device.');
   expect((await f.json('/api/projects/project/work', ProjectWorkViewSchema)).threads).toEqual([]);
   expect(f.fake.turnStarts).toEqual([]);

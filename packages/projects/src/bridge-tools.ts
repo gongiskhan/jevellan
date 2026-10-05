@@ -185,8 +185,8 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
       }
       case 'jevellan_thread_stop': {
         const input = raw as Input<typeof name>;
-        // A stop by the coordinator sends it no event (D28).
-        await o.threads.stop(projectId, input.threadId, input.reason, false);
+        // A stop by the coordinator sends it no event (D28); a thread on another device gets one command per call (D265).
+        await o.threads.stop(projectId, input.threadId, input.reason, false, turnId('tcmd', projectId, turn, input));
         return { schema: 'thread-stop-result-v1', threadId: input.threadId, state: o.store.get(input.threadId)?.state ?? 'stopped' };
       }
       case 'jevellan_ask_user': {

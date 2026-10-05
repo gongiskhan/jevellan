@@ -1,10 +1,12 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import {
-  DecisionAnswerSchema, IdSchema, PROJECT_HUB_PAGE, PlacementOverrideSchema, ProjectCoordinatorSchema, ProjectCoordinatorStatusSchema, ProjectDecisionSchema, ProjectHubRequestSchema, ProjectHubResultSchema,
-  ProjectNotebookSchema, ProjectSchema, ProjectWorkSettingsSchema, ThreadIndexCursorSchema, ThreadIndexSchema, TimestampSchema, checkHubRevision, collectionOf, stableJson, withHubRevision,
-  type DecisionAnswer, type DocumentSchema, type PlacementOverride, type ProjectCoordinator, type ProjectCoordinatorStatus, type ProjectDecision, type ProjectHub, type ProjectHubOperation, type ProjectHubResult,
-  type ProjectHubResultOf, type ProjectNotebook, type ProjectWorkSettings, type Stored, type ThreadIndex,
+  DecisionAnswerSchema, ENVELOPE_PAGE_BYTES, IdSchema, PROJECT_HUB_PAGE, PlacementOverrideSchema, ProjectCoordinatorSchema, ProjectCoordinatorStatusSchema, ProjectDecisionSchema, ProjectEnvelopeSchema,
+  ProjectHubRequestSchema, ProjectHubResultSchema, ProjectNotebookSchema, ProjectSchema, ProjectWorkSettingsSchema, ProjectWorkSummarySchema, ThreadIndexCursorSchema, ThreadIndexSchema,
+  TimestampSchema, checkHubRevision, collectionOf, compareEnvelopes, stableJson, withHubRevision, workCounts,
+  type DecisionAnswer, type DeviceView, type DocumentSchema, type PlacementOverride, type ProjectCoordinator, type ProjectCoordinatorStatus, type ProjectDecision, type ProjectEnvelope,
+  type ProjectHub, type ProjectHubOperation, type ProjectHubResult, type ProjectHubResultOf, type ProjectNotebook, type ProjectWorkSettings, type ProjectWorkSummary, type Stored,
+  type ThreadIndex,
 } from '@jevellan/core';
 import type { HubDatabase } from './database.js';
 import { HubProtocolError, type MemberHubClient } from './client.js';
@@ -12,7 +14,7 @@ import { settingsMutation } from './settings-mutation.js';
 
 const SETTINGS = 'project-work-settings'; const COORDINATORS = 'project-coordinators'; const STATUS = 'project-coordinator-status';
 const THREADS = 'project-threads'; const CURSORS = 'project-thread-cursors'; const DECISIONS = 'project-decisions'; const NOTEBOOKS = 'project-notebooks';
-const OVERRIDES = 'project-placement-overrides';
+const OVERRIDES = 'project-placement-overrides'; const ENVELOPES = 'project-envelopes';
 /** Answered questions stay in the list for 14 days (D52). */
 export const DECISION_LIST_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
 
@@ -28,7 +30,8 @@ type Page<T> = { records: T[]; next: string | null };
  * build one per request. Reads assert the D3 revision rule; read-then-write operations run in one hub transaction.
  */
 export class HubProjectStore {
-  constructor(readonly hub: HubDatabase, readonly deviceId: string, readonly now: () => number = Date.now) { IdSchema.parse(deviceId); }
+  /** `devices`: the roster's device views, for the presence in work summaries (without it every coordinator device reads as unknown). */
+  constructor(readonly hub: HubDatabase, readonly deviceId: string, readonly now: () => number = Date.now, readonly devices?: () => readonly DeviceView[]) { IdSchema.parse(deviceId); }
   #get<T extends { revision: number }>(namespace: string, id: string, schema: DocumentSchema<T>): Stored<T> | null {
     const row = this.hub.get(namespace, IdSchema.parse(id), schema); return row ? checkHubRevision(row) : null;
   }
@@ -58,12 +61,25 @@ export class HubProjectStore {
   }
 
   coordinator(projectId: string): Stored<ProjectCoordinator> | null { return this.#get(COORDINATORS, projectId, ProjectCoordinatorSchema); }
-  /** A device assigns the coordinator only to itself (first message, first thread, Move here); revision 0 creates. */
+  /**
+   * A device assigns the coordinator only to itself (first message, first thread, Move here); revision 0 creates. A move retargets
+   * the project's coordinator events still waiting for the former device to the new one in the same transaction (D270), so events
+   * relayed to a device that is gone are not stranded; the former device forwards whatever it already took (3.5.4).
+   */
   assignCoordinator(projectId: string, deviceId: string, expectedRevision: number): Stored<ProjectCoordinator> {
     IdSchema.parse(projectId); if (IdSchema.parse(deviceId) !== this.deviceId) refuse('A device can only make itself the coordinator.', 403);
     return this.hub.transaction(() => {
       this.#project(projectId);
-      return this.#put(COORDINATORS, projectId, ProjectCoordinatorSchema, { schema: 'project-coordinator-v1', projectId, revision: 0, deviceId, assignedAt: new Date(this.now()).toISOString() }, expectedRevision);
+      const former = this.coordinator(projectId)?.document.deviceId;
+      const stored = this.#put<ProjectCoordinator>(COORDINATORS, projectId, ProjectCoordinatorSchema, { schema: 'project-coordinator-v1', projectId, revision: 0, deviceId,
+        assignedAt: new Date(this.now()).toISOString() }, expectedRevision);
+      if (former !== undefined && former !== deviceId) {
+        for (const row of this.hub.listByField(ENVELOPES, 'targetDeviceId', former, ProjectEnvelopeSchema)) {
+          const { document, revision } = checkHubRevision(row);
+          if (document.projectId === projectId && document.body.kind === 'coordinator-event') this.#put(ENVELOPES, document.id, ProjectEnvelopeSchema, { ...document, targetDeviceId: deviceId }, revision);
+        }
+      }
+      return stored;
     });
   }
   coordinatorStatus(projectId: string): Stored<ProjectCoordinatorStatus> | null { return this.#get(STATUS, projectId, ProjectCoordinatorStatusSchema); }
@@ -170,6 +186,71 @@ export class HubProjectStore {
       .sort((a, b) => Date.parse(b.at) - Date.parse(a.at) || b.id.localeCompare(a.id)).slice(0, count);
   }
 
+  /**
+   * Relay envelopes (D40). The source device puts each envelope once (revision 0); a retry of the same envelope after a lost
+   * reply answers `stored: false`, and the same id with other content is refused, so a sender can never rewrite a message.
+   */
+  putEnvelope(raw: ProjectEnvelope): { stored: boolean } {
+    const envelope = ProjectEnvelopeSchema.parse(raw);
+    if (envelope.sourceDeviceId !== this.deviceId) refuse('Only the source device can send its envelopes.', 403);
+    if (envelope.deliveredAt) refuse('A new envelope cannot already be delivered.', 400);
+    return this.hub.transaction(() => {
+      this.#project(envelope.projectId);
+      const existing = this.#get(ENVELOPES, envelope.id, ProjectEnvelopeSchema);
+      if (existing) {
+        if (stableJson({ ...existing.document, revision: 0 }) !== stableJson({ ...envelope, revision: 0 })) refuse('This envelope id was already used for a different message.');
+        return { stored: false };
+      }
+      this.#put(ENVELOPES, envelope.id, ProjectEnvelopeSchema, envelope, 0);
+      return { stored: true };
+    });
+  }
+  /**
+   * The caller's pending envelopes, filtered in SQL by target (D89) without a limit (acknowledged rows are deleted, D90), sorted
+   * by source, project and sequence, then cut at 100 or about 1 MiB (always one), so no page splits a source's order (D260).
+   */
+  pendingEnvelopes(targetDeviceId: string): { records: ProjectEnvelope[]; more: boolean } {
+    if (IdSchema.parse(targetDeviceId) !== this.deviceId) refuse('Only the target device can read its envelopes.', 403);
+    const pending = this.hub.listByField(ENVELOPES, 'targetDeviceId', targetDeviceId, ProjectEnvelopeSchema).map((row) => checkHubRevision(row).document).sort(compareEnvelopes);
+    const records: ProjectEnvelope[] = []; let bytes = 0;
+    for (const envelope of pending) {
+      const size = Buffer.byteLength(JSON.stringify(envelope));
+      if (records.length === PROJECT_HUB_PAGE || (records.length && bytes + size > ENVELOPE_PAGE_BYTES)) break;
+      records.push(envelope); bytes += size;
+    }
+    return { records, more: records.length < pending.length };
+  }
+  /** Only the target acknowledges; the delivered envelope is deleted in the same transaction (D90). An unknown id was already acknowledged. */
+  ackEnvelope(id: string): { deleted: boolean } {
+    IdSchema.parse(id);
+    return this.hub.transaction(() => {
+      const existing = this.#get(ENVELOPES, id, ProjectEnvelopeSchema); if (!existing) return { deleted: false };
+      if (existing.document.targetDeviceId !== this.deviceId) refuse('Only the target device can acknowledge an envelope.', 403);
+      return { deleted: this.hub.delete(ENVELOPES, id) };
+    });
+  }
+
+  /**
+   * The Projects list in one request (D267): per project, in id order after `after`, the sidebar counts over every thread index
+   * and open question, and the assigned coordinator with its device's presence and the state it published (a status published by
+   * a former coordinator device is not shown).
+   */
+  workSummaries(after?: string): Page<ProjectWorkSummary> {
+    const cursor = after === undefined ? undefined : IdSchema.parse(after);
+    const projects = this.hub.list('projects', ProjectSchema).map((row) => row.document).filter((project) => cursor === undefined || project.id > cursor);
+    const page = projects.slice(0, PROJECT_HUB_PAGE); const devices = new Map((this.devices?.() ?? []).map((view) => [view.device.id, view]));
+    const records = page.map((project): ProjectWorkSummary => {
+      const threads = this.hub.listByField(THREADS, 'projectId', project.id, ThreadIndexSchema).map((row) => checkHubRevision(row).document);
+      const decisions = this.hub.listByField(DECISIONS, 'projectId', project.id, ProjectDecisionSchema).map((row) => checkHubRevision(row).document);
+      const assigned = this.coordinator(project.id)?.document.deviceId; const view = assigned === undefined ? undefined : devices.get(assigned);
+      const status = assigned === undefined ? undefined : this.coordinatorStatus(project.id)?.document;
+      return ProjectWorkSummarySchema.parse({ schema: 'project-work-summary-v1', projectId: project.id, name: project.name, ...workCounts(threads, decisions),
+        coordinator: assigned === undefined ? null : { deviceId: assigned, device: view ? { name: view.device.name, status: view.status, revoked: view.revoked } : null,
+          state: status && status.deviceId === assigned ? status.state : null } });
+    });
+    return { records, next: projects.length > PROJECT_HUB_PAGE ? page.at(-1)!.id : null };
+  }
+
   /** `/hub/mesh/projects/<collection>`: the route has already matched the collection to the operation. */
   request(raw: unknown): ProjectHubResult {
     const request = ProjectHubRequestSchema.parse(raw); const base = { schema: 'project-hub-result-v1', operation: request.operation };
@@ -193,6 +274,10 @@ export class HubProjectStore {
       case 'notebook-put': result = { ...base, record: this.putNotebook(request.notebook, request.expectedRevision) }; break;
       case 'override-add': result = { ...base, override: this.addOverride(request.override) }; break;
       case 'overrides-recent': result = { ...base, records: this.recentOverrides(request.projectId, request.limit) }; break;
+      case 'envelope-put': result = { ...base, id: request.envelope.id, ...this.putEnvelope(request.envelope) }; break;
+      case 'envelopes-pending': result = { ...base, ...this.pendingEnvelopes(request.targetDeviceId) }; break;
+      case 'envelope-ack': result = { ...base, id: request.id, ...this.ackEnvelope(request.id) }; break;
+      case 'work-summaries': result = { ...base, ...this.workSummaries(request.after) }; break;
     }
     return ProjectHubResultSchema.parse(result);
   }
@@ -201,7 +286,7 @@ export class HubProjectStore {
 /** The hub's own `ProjectHub`: the same store and authority rules, bound to the hub device. */
 export class HubProjectAccess implements ProjectHub {
   readonly #store: HubProjectStore;
-  constructor(hub: HubDatabase, deviceId: string, now?: () => number) { this.#store = new HubProjectStore(hub, deviceId, now); }
+  constructor(hub: HubDatabase, deviceId: string, now?: () => number, devices?: () => readonly DeviceView[]) { this.#store = new HubProjectStore(hub, deviceId, now, devices); }
   async settings(projectId: string) { return this.#store.settings(projectId); }
   async putSettings(settings: ProjectWorkSettings, expectedRevision: number, clientRequestId?: string) { return this.#store.putSettings(settings, expectedRevision, clientRequestId); }
   async coordinator(projectId: string) { return this.#store.coordinator(projectId); }
@@ -223,6 +308,13 @@ export class HubProjectAccess implements ProjectHub {
   async putNotebook(notebook: ProjectNotebook, expectedRevision: number) { return this.#store.putNotebook(notebook, expectedRevision); }
   async addOverride(override: PlacementOverride) { this.#store.addOverride(override); }
   async recentOverrides(projectId: string, limit: number) { return this.#store.recentOverrides(projectId, limit); }
+  async putEnvelope(envelope: ProjectEnvelope) { return this.#store.putEnvelope(envelope); }
+  async pendingEnvelopes(targetDeviceId: string) { return this.#store.pendingEnvelopes(targetDeviceId); }
+  async ackEnvelope(id: string) { this.#store.ackEnvelope(id); }
+  async workSummaries() {
+    const records: ProjectWorkSummary[] = []; let after: string | undefined;
+    for (;;) { const page = this.#store.workSummaries(after); records.push(...page.records); if (page.next === null) return records; after = page.next; }
+  }
 }
 
 /** A member's `ProjectHub` over the device-token HTTP API; every reply must match the requested identity and revision. */
@@ -287,5 +379,28 @@ export class MemberProjectStore implements ProjectHub {
   async recentOverrides(projectId: string, limit: number) {
     return this.#check((await this.#call('overrides-recent', { projectId, limit })).records, (records) => records.length <= limit
       && records.every((record, index) => record.projectId === projectId && (index === 0 || Date.parse(records[index - 1]!.at) >= Date.parse(record.at))));
+  }
+  async putEnvelope(envelope: ProjectEnvelope) {
+    const result = this.#check(await this.#call('envelope-put', { envelope }), (value) => value.id === envelope.id);
+    return { stored: result.stored };
+  }
+  /** Every record is for the requested target, unique and in relay order; a page announcing more is never empty. */
+  async pendingEnvelopes(targetDeviceId: string) {
+    const result = this.#check(await this.#call('envelopes-pending', { targetDeviceId }), (value) => (!value.more || value.records.length > 0)
+      && new Set(value.records.map((record) => record.id)).size === value.records.length
+      && value.records.every((record, index) => record.targetDeviceId === targetDeviceId && (index === 0 || compareEnvelopes(value.records[index - 1]!, record) <= 0)));
+    return { records: result.records, more: result.more };
+  }
+  async ackEnvelope(id: string) { this.#check(await this.#call('envelope-ack', { id }), (value) => value.id === id); }
+  /** Project ids ascend across pages, past the cursor, and `next` is the last returned id. */
+  async workSummaries() {
+    const records: ProjectWorkSummary[] = []; let after: string | undefined;
+    for (;;) {
+      const page = await this.#call('work-summaries', after === undefined ? {} : { after });
+      let previous = after;
+      for (const record of page.records) { if (previous !== undefined && record.projectId <= previous) throw new HubProtocolError(); previous = record.projectId; }
+      if (page.next !== null && (!page.records.length || page.next !== previous)) throw new HubProtocolError();
+      records.push(...page.records); if (page.next === null) return records; after = page.next;
+    }
   }
 }

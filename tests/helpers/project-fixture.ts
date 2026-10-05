@@ -10,10 +10,12 @@ import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
-  AccountSchema, CoordinatorStateSchema, Homes, ProjectSchema, ProjectWorkListViewSchema, ProjectWorkSettingsSchema, ProjectWorkViewSchema, ThreadLocalSchema, ThreadSchema, ThreadViewSchema,
-  defaultProjectWorkSettings, readDocument, type CoordinatorState, type DocumentSchema, type ModelOption, type Project, type Thread, type ThreadIndex, type ThreadLocal,
+  AccountSchema, CoordinatorStateSchema, DeviceSchema, Homes, ProjectSchema, ProjectWorkListViewSchema, ProjectWorkSettingsSchema, ProjectWorkViewSchema, SecretRedactor, ThreadLocalSchema,
+  ThreadSchema, ThreadViewSchema, defaultProjectWorkSettings, readDocument, type CoordinatorState, type DocumentSchema, type ModelOption, type Project, type Thread, type ThreadIndex,
+  type ThreadLocal,
 } from '../../packages/core/dist/index.js';
-import { FakeRuntime, type FakeTurn, type FakeTurnStep } from '../../packages/runtime-contract/dist/index.js';
+import { joinMember } from '../../packages/mesh/dist/index.js';
+import { FakeRuntime, type FakeTurn, type FakeTurnStep, type RuntimeAdapter } from '../../packages/runtime-contract/dist/index.js';
 import type { ProjectTimers } from '../../packages/projects/dist/index.js';
 import { Application, createDaemon } from '../../apps/daemon/dist/index.js';
 import { startGitHubFixture, type GitHubFixture } from '../fixtures/github-server.mjs';
@@ -49,6 +51,7 @@ export const FIXTURE_REMOTE = 'https://github.com/fixture/repo.git';
 /** The coordinator-only menu entry of `coordinatorAccountless`. */
 export const COORDINATOR_ENTRY: ModelOption = { id: 'coord', runtime: 'fake2', model: 'scripted-model', label: 'Coordinator', description: 'Simulated coordinator model.', efforts: ['high'], enabled: true };
 const IDENTITY = ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid'];
+const PASSPHRASE = 'disposable projects passphrase';
 
 /** `git` with the fixture identity; output trimmed, stderr dropped, failures throw. */
 export function git(cwd: string, ...args: string[]): string {
@@ -84,6 +87,8 @@ export type ProjectFixture = {
   restart(between?: () => void | Promise<void>): Promise<void>;
   waitFor<T>(read: () => T | Promise<T>, accept?: (value: T) => boolean, timeoutMs?: number): Promise<T>;
   close(): Promise<void>;
+  /** Run first by `close()`, newest first (members). */
+  readonly closers: Array<() => Promise<void>>;
 };
 
 /**
@@ -133,7 +138,7 @@ export async function projectFixture(options: ProjectFixtureOptions = {}): Promi
     await app.projectHub.putSettings(ProjectWorkSettingsSchema.parse({ ...defaultProjectWorkSettings(project.id), coordinator: { modelId: COORDINATOR_ENTRY.id, effort: 'medium' } }), 0);
   }
   let { server, base } = await listen(app);
-  const setup = await fetch(`${base}/api/auth/setup`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ schema: 'passphrase-input-v1', passphrase: 'disposable projects passphrase' }) });
+  const setup = await fetch(`${base}/api/auth/setup`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ schema: 'passphrase-input-v1', passphrase: PASSPHRASE }) });
   if (setup.status !== 200) throw new Error(`Session setup failed with ${setup.status}.`);
   const cookie = setup.headers.get('set-cookie')!.split(';')[0]!;
   if (await app.presence.pulse() === null) throw new Error('The fixture device did not report its heartbeat.');
@@ -177,14 +182,98 @@ export async function projectFixture(options: ProjectFixtureOptions = {}): Promi
       }
     },
     async close() {
+      for (const close of fixture.closers.splice(0).reverse()) await close().catch(() => undefined);
       await new Promise<void>((resolve) => { server.close(() => resolve()); server.closeAllConnections(); });
       await app.close().catch(() => undefined);
       for (const runtime of Object.values(runtimes)) await runtime.close();
       await github.close();
       rmSync(root, { recursive: true, force: true });
     },
+    closers: [],
   };
   return fixture;
+}
+
+export type ProjectMember = {
+  readonly app: Application; readonly base: string; readonly cookie: string; readonly homes: Homes; readonly deviceId: string; readonly name: string;
+  readonly fake: FakeRuntime; readonly checkout: string;
+  /** The member's own account (`acc_member`), eligible on the member only. */
+  readonly accountId: string;
+  /** While true every hub request of the member fails as an outage. */
+  offline: boolean;
+  /** A hub request this accepts reaches the hub, but its reply is lost: the member sees an outage (one lost reply per accepted call). */
+  loseReply: ((call: string) => boolean) | null;
+  /** Every hub request the member made, as `<path> <operation>` (the operation of POST bodies that name one). */
+  readonly hubCalls: string[];
+  /** A browser request on the member with its own session cookie and Origin. */
+  request(path: string, method?: string, body?: unknown): Promise<Response>;
+  json<T>(path: string, schema: DocumentSchema<T>, method?: string, body?: unknown): Promise<T>;
+  /** `thread.json` on the member. */
+  thread(threadId: string): Thread;
+  /** Sends the member's heartbeat, so placement on the hub reads it online. */
+  heartbeat(): Promise<void>;
+};
+
+/**
+ * A simulated member device joined to the fixture's hub over real HTTP (the `member-application` harness, design 5.2.15): its own
+ * home, daemon, FakeRuntime `fake`, account `acc_member` checked on the member only, a clone of the origin with the same GitHub
+ * remote added to the project's paths, a signed-in browser session and a heartbeat. Timers are off: tests call `pulse()` on
+ * each side. The hub's device row gets its listening URL, which members and proxies use.
+ */
+export async function projectMember(f: ProjectFixture, options: { name?: string } = {}): Promise<ProjectMember> {
+  const name = options.name ?? 'Fixture member';
+  const hubRow = f.app.hub.get('devices', f.app.device.deviceId, DeviceSchema)!;
+  if (hubRow.document.url !== f.base) f.app.hub.put('devices', f.app.device.deviceId, DeviceSchema, { ...hubRow.document, url: f.base }, hubRow.revision);
+  const serverOptions: { application?: Application } = {};
+  const server = createDaemon(serverOptions); await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const homes = new Homes(join(f.root, `${slug}-home`), join(f.root, 'user'));
+  await joinMember(homes, { schema: 'member-join-input-v1', hubUrl: f.base, code: f.app.mesh.invite().code, device: { name, url: base, os: 'linux', version: '0.1.0' } }, { redactor: new SecretRedactor() });
+  const fake = new FakeRuntime(); const hubCalls: string[] = [];
+  const member: ProjectMember = {
+    offline: false, loseReply: null, hubCalls, homes, fake, name, base, checkout: join(f.root, `${slug}-project`),
+    get app() { return app; }, get deviceId() { return app.device.deviceId; }, get cookie() { return cookie; }, accountId: 'acc_member',
+    async request(path, method = 'GET', body) {
+      return fetch(`${base}${path}`, { method, headers: { Cookie: cookie, Origin: base, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+    },
+    async json(path, schema, method = 'GET', body) {
+      const response = await member.request(path, method, body); const value: unknown = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(`${method} ${path} on the member answered ${response.status}: ${JSON.stringify(value)}`);
+      return schema.parse(value);
+    },
+    thread: (threadId) => readDocument(app.projectWork.paths.threadFile(f.project.id, threadId), ThreadSchema),
+    async heartbeat() { if (await app.presence.pulse() === null) throw new Error('The member did not report its heartbeat.'); },
+  };
+  const hubFetch: typeof fetch = async (input, init) => {
+    if (member.offline) throw new Error('Simulated hub outage');
+    const body = typeof init?.body === 'string' ? (() => { try { return (JSON.parse(init.body) as { operation?: unknown }).operation; } catch { return undefined; } })() : undefined;
+    const call = `${new URL(String(input instanceof Request ? input.url : input)).pathname}${typeof body === 'string' ? ` ${body}` : ''}`; hubCalls.push(call);
+    const response = await fetch(input, init);
+    if (member.loseReply?.(call)) { await response.body?.cancel(); throw new Error('Simulated lost reply'); }
+    return response;
+  };
+  const app = new Application({ homes, timers: false, repositoryVisibility: async () => 'PUBLIC', runtimes: () => new Map([['fake', fake as RuntimeAdapter]]), githubBaseUrl: f.github.url, hubFetch,
+    projectTimers: { periodic: false, coordinatorStartMs: 0, coordinatorRetryMs: 50 } });
+  serverOptions.application = app; await app.started; app.bindDaemonUrl(base);
+  f.closers.push(async () => {
+    await new Promise<void>((resolve) => { server.close(() => resolve()); server.closeAllConnections(); });
+    await app.close().catch(() => undefined); await fake.close();
+  });
+  const login = await fetch(`${base}/api/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: base }, body: JSON.stringify({ schema: 'passphrase-input-v1', passphrase: PASSPHRASE }) });
+  if (login.status !== 200) throw new Error(`Member login failed with ${login.status}.`);
+  const cookie = login.headers.get('set-cookie')!.split(';')[0]!;
+  // Its own account, eligible on the member only; the hub's account has no status there.
+  f.app.hub.put('accounts', 'acc_member', AccountSchema, { schema: 'account-v1', id: 'acc_member', runtime: 'fake', label: 'Member account', kind: 'subscription', enabled: true, ceilingPct: 90,
+    credential: 'per-device' }, 0);
+  await app.accounts.check('acc_member');
+  git(f.root, 'clone', f.origin, member.checkout); git(member.checkout, 'config', 'user.name', 'Fixture'); git(member.checkout, 'config', 'user.email', 'fixture@example.invalid');
+  git(member.checkout, 'remote', 'set-url', 'origin', FIXTURE_REMOTE); git(member.checkout, 'config', `url.${f.origin}.insteadOf`, FIXTURE_REMOTE);
+  const stored = (await f.app.state.projects.get(f.project.id))!;
+  await f.app.conversations.saveProject({ schema: 'project-write-v1', revision: stored.revision, project: { ...stored.project, paths: { ...stored.project.paths, [app.device.deviceId]: member.checkout } } });
+  await member.heartbeat();
+  return member;
 }
 
 /**

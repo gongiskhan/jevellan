@@ -210,13 +210,20 @@ export class MemberUiAuth {
       throw error;
     }
   }
-  async verifyPeerLogin(raw: unknown): Promise<boolean> {
+  /** `existingStream`: like `verifyPeer`, an already admitted stream (a proxied Projects chat) can finish during a hub outage. */
+  async verifyPeerLogin(raw: unknown, existingStream = false): Promise<boolean> {
     const input = PeerLoginSessionInputSchema.parse(raw);
     const local = verifySharedSession(this.material(), input.token, input.sourceDeviceId); if (!local) return false;
-    const result = await this.hub.peerLoginSession(input);
-    if (!result.session) return false;
-    if (stableJson(result.session) !== stableJson(local)) throw new HubProtocolError();
-    return true;
+    try {
+      const result = await this.hub.peerLoginSession(input);
+      if (!result.session) return false;
+      if (stableJson(result.session) !== stableJson(local)) throw new HubProtocolError();
+      return true;
+    } catch (error) {
+      if (existingStream && error instanceof HubUnavailable) return true;
+      if (existingStream) return false;
+      throw error;
+    }
   }
   async logout(token: string | undefined): Promise<void> { await this.hub.logout(token ?? null); }
   async state(token: string | undefined) { return AuthStateSchema.parse({ schema: 'auth-state-v1', configured: true, authenticated: Boolean(await this.verify(token)), deviceId: this.deviceId }); }

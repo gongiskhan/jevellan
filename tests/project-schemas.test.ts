@@ -7,7 +7,7 @@ import { DatabaseSync } from 'node:sqlite';
 import {
   CoordinatorEventSchema, CoordinatorLocalSchema, CoordinatorMessageReceiptSchema, CoordinatorMessageRequestSchema, ThreadMessageReceiptSchema, CoordinatorStateSchema,
   CoordinatorViewSchema, DecisionAnswerRequestSchema, DecisionAnswerSchema, DecisionAnsweredViewSchema, FileReservationSchema, GitHubTokenStateSchema,
-  Homes, JevCallSchema, MergeResultViewSchema, NotebookRequestSchema, OutboxEntrySchema, PlacementOverrideSchema, PlacementRecordSchema,
+  Homes, InboxSeenSchema, JevCallSchema, MergeResultViewSchema, NotebookRequestSchema, OutboxEntrySchema, OutboxSeqSchema, PlacementOverrideSchema, PlacementRecordSchema,
   ProjectCoordinatorSchema, ProjectCoordinatorStatusSchema, ProjectDecisionSchema, ProjectEnvelopeSchema, ProjectEventFrameSchema,
   ProjectHubCollectionSchema, ProjectHubRequestSchema, ProjectHubResultSchema, ProjectLedgerDataSchemas, ProjectLedgerEventSchema,
   ProjectLedgerEventTypeSchema, ProjectMailSchema, ProjectNotebookSchema, ProjectNotebookViewSchema, ProjectWorkListViewSchema,
@@ -16,7 +16,7 @@ import {
   ThreadCreateRequestSchema, ThreadCreatedViewSchema, ThreadDetachRequestSchema, ThreadDetachViewSchema, ThreadIndexCursorSchema,
   ThreadIndexSchema, ThreadLocalSchema, ThreadMessageRequestSchema, ThreadOverrideRequestSchema, ThreadOverrideViewSchema,
   ThreadReportFieldsSchema, ThreadReportSchema, ThreadSchema, ThreadStartReceiptSchema, ThreadStateSchema, ThreadStopRequestSchema,
-  ThreadViewSchema, checkHubRevision, collectionOf, concludedStates, defaultProjectWorkSettings, isTerminal, liveWork, minimalEnvironment,
+  ThreadViewSchema, checkHubRevision, collectionOf, concludedStates, defaultProjectWorkSettings, isProjectHubRead, isTerminal, liveWork, minimalEnvironment,
   parseProjectLedgerData, pathsOverlap, runningSection, slugify, threadBranch, withHubRevision,
   type ProjectHubOperation, type ProjectHubResultOf, type ProjectWorkSettings, type Stored, type ThreadState,
 } from '../packages/core/dist/index.js';
@@ -73,12 +73,19 @@ const documents: Array<[string, { safeParse(value: unknown): { success: boolean 
   ['override', PlacementOverrideSchema, override],
   ['thread sidecar', ThreadLocalSchema, { schema: 'thread-local-v1', process: { turn: 1, pid: 400, pgid: 400, startIdentity: 'start', startedAt: at }, pushedCommit: 'c'.repeat(40), gitIdentity: { name: 'Owner', email: 'owner@example.com' }, prNotified: { headSha: 'a'.repeat(40), checks: 'failing', conflict: false }, seenCommands: ['cmd_1'], seenMessages: [{ id: 'msg_1', digest: 'b'.repeat(64) }], labels: { modelLabel: 'Codex GPT-5', accountLabel: 'Work' } }],
   ['coordinator sidecar', CoordinatorLocalSchema, { schema: 'coordinator-local-v1', deliveredTurn: 2, fallbackEventIds: ['cev_1'] }],
+  ['coordinator sidecar after a handover', CoordinatorLocalSchema, { schema: 'coordinator-local-v1', deliveredTurn: 2, fallbackEventIds: [], forwardedEventIds: ['cev_2'] }],
   ['coordinator status', ProjectCoordinatorStatusSchema, status],
+  ['coordinator status with its last event id', ProjectCoordinatorStatusSchema, { ...status, lastEventId: 42 }],
   ['thread cursor', ThreadIndexCursorSchema, { schema: 'project-thread-cursor-v1', threadId, deviceId: 'dev_a', eventId: 4, digest: 'f'.repeat(64) }],
   ['start receipt', ThreadStartReceiptSchema, { schema: 'thread-start-receipt-v1', clientRequestId: 'req_1', digest: 'd', threadId, at }],
+  ['remote start receipt', ThreadStartReceiptSchema, { schema: 'thread-start-receipt-v1', clientRequestId: 'req_1', digest: 'd', threadId, at,
+    started: { state: 'queued', stateReason: 'Queued: Studio is at its limit of 2 running threads.', placement: 'Codex Swift · medium · Worktree · Studio' } }],
   ['thread command', ThreadCommandSchema, { type: 'override-next-turn', override }],
+  ['owner stop command', ThreadCommandSchema, { type: 'stop', reason: 'Stopped by you at the turn limit.', notify: true }],
   ['envelope', ProjectEnvelopeSchema, envelope],
   ['outbox entry', OutboxEntrySchema, { schema: 'project-outbox-entry-v1', target: 'coordinator', envelope: { schema: 'project-envelope-v1', id: 'env_2', projectId: 'project', sourceDeviceId: 'dev_a', seq: 2, createdAt: at, body: { kind: 'coordinator-event', event } } }],
+  ['outbox sequence', OutboxSeqSchema, { schema: 'project-outbox-seq-v1', seq: 3 }],
+  ['inbox seen', InboxSeenSchema, { schema: 'project-inbox-seen-v1', ids: ['env_1', 'env_2'] }],
   ['ledger event', ProjectLedgerEventSchema, { schema: 'project-ledger-event-v1', t: at, id: 1, type: 'notice', turn: 1, data: { schema: 'project-notice-v1', text: 'Saved.', kind: 'info' } }],
   ['event frame', ProjectEventFrameSchema, { schema: 'project-event-v1', event: { schema: 'project-ledger-event-v1', t: at, id: 2, type: 'coordinator-text', data: { schema: 'coordinator-text-v1', text: 'Started two threads.' } } }],
   ['list view', ProjectWorkListViewSchema, { schema: 'project-work-list-view-v1', projects: [{ projectId: 'project', name: 'Site', waiting: 1, running: 2, inReview: 0, coordinator: { deviceId: null, state: 'none' } }] }],
@@ -88,6 +95,7 @@ const documents: Array<[string, { safeParse(value: unknown): { success: boolean 
   ['thread view', ThreadViewSchema, { schema: 'project-thread-view-v1', thread: index, placement, reports: [report], transcript: null, queuedMessages: [message], canMessage: true, turnAllowance: 30, deviceName: 'Laptop', baseBranch: 'main', attachCommand: `jevellan thread attach ${threadId}`, canOverride: { nextTurn: true, restart: false, restartReason: 'Stop the thread first.' }, canDiscard: false, atTurnLimit: false }],
   ['coordinator message request', CoordinatorMessageRequestSchema, { schema: 'coordinator-message-request-v1', clientMessageId: 'msg_1', text: 'Go.' }],
   ['thread create request', ThreadCreateRequestSchema, { schema: 'thread-create-request-v1', clientRequestId: 'req_1', title: 'Fix login', task: 'Fix it.', isolation: 'worktree', modelId: 'deep', effort: 'high', deviceId: 'dev_a' }],
+  ['restart create request', ThreadCreateRequestSchema, { schema: 'thread-create-request-v1', clientRequestId: 'req_1', title: 'Fix login', task: 'Fix it.', modelId: 'deep', note: 'Cheaper.' }],
   ['thread message request', ThreadMessageRequestSchema, { schema: 'thread-message-request-v1', clientMessageId: 'msg_2', text: 'Also logout.', interrupt: true }],
   ['thread stop request', ThreadStopRequestSchema, { schema: 'thread-stop-request-v1', reason: 'Not needed.' }],
   ['override request', ThreadOverrideRequestSchema, { schema: 'thread-override-request-v1', clientRequestId: 'req_2', mode: 'restart', modelId: 'fast', note: 'Cheaper.' }],
@@ -124,6 +132,8 @@ test('nested documents are strict too', () => {
   expect(CoordinatorEventSchema.safeParse({ ...event, schema: 'coordinator-event-v2' }).success).toBe(false);
   expect(ProjectEnvelopeSchema.safeParse({ ...envelope, body: { kind: 'thread-command', threadId, commandId: 'cmd_1', command: { type: 'reboot' } } }).success).toBe(false);
   expect(OutboxEntrySchema.safeParse({ schema: 'project-outbox-entry-v1', target: 'dev_b', envelope }).success).toBe(false);
+  expect(InboxSeenSchema.safeParse({ schema: 'project-inbox-seen-v1', ids: Array.from({ length: 2001 }, (_, n) => `env_${n}`) }).success).toBe(false);
+  expect(OutboxSeqSchema.safeParse({ schema: 'project-outbox-seq-v1', seq: -1 }).success).toBe(false);
   expect(PlacementRecordSchema.safeParse({ ...placement, jevCalls: [{ ...jevCall, kind: 'unknown' }] }).success).toBe(false);
   expect(ThreadViewSchema.safeParse({ ...documents.find(([name]) => name === 'thread view')![2], thread: { ...index, nativeSessionId: 'native-1' } }).success).toBe(false);
 });
@@ -134,6 +144,7 @@ test('defaults match the brief and fill optional collections', () => {
   expect(ThreadReportSchema.parse(without(report, 'changedFiles')).changedFiles).toEqual([]);
   expect(ProjectDecisionSchema.parse(without(decision, 'options')).options).toEqual([]);
   expect(CoordinatorLocalSchema.parse({ schema: 'coordinator-local-v1' })).toEqual({ schema: 'coordinator-local-v1', deliveredTurn: 0, fallbackEventIds: [] });
+  expect(CoordinatorLocalSchema.safeParse({ schema: 'coordinator-local-v1', forwardedEventIds: Array.from({ length: 501 }, (_, n) => `cev_${n}`) }).success).toBe(false);
   expect(ThreadLocalSchema.parse({ schema: 'thread-local-v1' })).toEqual({ schema: 'thread-local-v1' });
 });
 
@@ -264,10 +275,12 @@ test('hub requests map to one collection each and results carry matching revisio
     'decision-withdraw': { id: 'pdec_1', at }, 'decision-answer': { id: 'pdec_1', answer: { optionLabel: 'Keep it' }, at, clientRequestId: 'req_2' },
     'notebook-get': { projectId: 'project' }, 'notebook-put': { notebook, expectedRevision: 1 },
     'override-add': { override }, 'overrides-recent': { projectId: 'project', limit: 8 },
+    'envelope-put': { envelope }, 'envelopes-pending': { targetDeviceId: 'dev_b' }, 'envelope-ack': { id: 'env_1' },
+    'work-summaries': { after: 'project' },
   };
   const expected = { settings: ['settings-get', 'settings-put'], coordinators: ['coordinator-get', 'coordinator-assign', 'coordinator-status-get', 'coordinator-status-put'],
     threads: ['threads-list', 'thread-get', 'thread-publish'], decisions: ['decisions-list', 'decision-get', 'decision-create', 'decision-withdraw', 'decision-answer'], notebooks: ['notebook-get', 'notebook-put'],
-    overrides: ['override-add', 'overrides-recent'] };
+    overrides: ['override-add', 'overrides-recent'], envelopes: ['envelope-put', 'envelopes-pending', 'envelope-ack'], work: ['work-summaries'] };
   for (const [operation, fields] of Object.entries(requests) as Array<[ProjectHubOperation, Record<string, unknown>]>) {
     const request = { schema: 'project-hub-request-v1', operation, ...fields };
     expect(ProjectHubRequestSchema.parse(request).operation).toBe(operation);
@@ -275,7 +288,16 @@ test('hub requests map to one collection each and results carry matching revisio
     expect(ProjectHubCollectionSchema.options).toContain(collectionOf(operation));
     expect((expected as Record<string, string[]>)[collectionOf(operation)]).toContain(operation);
   }
-  expect(ProjectHubCollectionSchema.options).toEqual(['settings', 'coordinators', 'threads', 'decisions', 'notebooks', 'overrides', 'envelopes', 'mail', 'reservations', 'checkouts']);
+  expect(ProjectHubCollectionSchema.options).toEqual(['settings', 'coordinators', 'threads', 'decisions', 'notebooks', 'overrides', 'envelopes', 'work', 'mail', 'reservations', 'checkouts']);
+  // The Projects list in one read (D267): pages of at most 100 summaries; a coordinator carries its device's presence or null.
+  expect(isProjectHubRead('work-summaries')).toBe(true);
+  const summary = { schema: 'project-work-summary-v1', projectId: 'project', name: 'Site', waiting: 1, running: 2, inReview: 0,
+    coordinator: { deviceId: 'dev_a', device: { name: 'Mac mini', status: 'online', revoked: false }, state: 'idle' } };
+  const summaries = { schema: 'project-hub-result-v1', operation: 'work-summaries', next: null };
+  expect(ProjectHubResultSchema.safeParse({ ...summaries, records: [summary, { ...summary, projectId: 'other', coordinator: null }, { ...summary, coordinator: { deviceId: 'dev_b', device: null, state: null } }] }).success).toBe(true);
+  expect(ProjectHubResultSchema.safeParse({ ...summaries, records: Array.from({ length: 101 }, () => summary) }).success).toBe(false);
+  expect(ProjectHubResultSchema.safeParse({ ...summaries, records: [{ ...summary, coordinator: { ...summary.coordinator, state: 'offline' } }] }).success).toBe(false);
+  expect(ProjectHubResultSchema.safeParse({ ...summaries, records: [{ ...summary, running: -1 }] }).success).toBe(false);
   expect(ProjectHubRequestSchema.safeParse({ schema: 'project-hub-request-v1', operation: 'mail-send', projectId: 'project' }).success).toBe(false);
   expect(ProjectHubRequestSchema.safeParse({ schema: 'project-hub-request-v1', operation: 'decision-answer', id: 'pdec_1', answer: {}, at, clientRequestId: 'req_2' }).success).toBe(false);
   expect(ProjectHubRequestSchema.safeParse({ schema: 'project-hub-request-v1', operation: 'settings-put', settings, expectedRevision: -1 }).success).toBe(false);
@@ -283,6 +305,14 @@ test('hub requests map to one collection each and results carry matching revisio
   // Overrides carry no revision: the collection is append-only.
   expect(ProjectHubResultSchema.safeParse({ schema: 'project-hub-result-v1', operation: 'override-add', override }).success).toBe(true);
   expect(ProjectHubResultSchema.safeParse({ schema: 'project-hub-result-v1', operation: 'overrides-recent', records: Array.from({ length: 101 }, () => override) }).success).toBe(false);
+  // Envelopes: pages of at most 100 with a `more` flag; puts and acknowledgements name their envelope.
+  const pending = { schema: 'project-hub-result-v1', operation: 'envelopes-pending', more: true };
+  expect(ProjectHubResultSchema.safeParse({ ...pending, records: Array.from({ length: 100 }, () => envelope) }).success).toBe(true);
+  expect(ProjectHubResultSchema.safeParse({ ...pending, records: Array.from({ length: 101 }, () => envelope) }).success).toBe(false);
+  expect(ProjectHubResultSchema.safeParse({ ...pending, more: undefined, records: [] }).success).toBe(false);
+  expect(ProjectHubResultSchema.safeParse({ schema: 'project-hub-result-v1', operation: 'envelope-put', id: 'env_1', stored: false }).success).toBe(true);
+  expect(ProjectHubResultSchema.safeParse({ schema: 'project-hub-result-v1', operation: 'envelope-ack', id: 'env_1', deleted: true }).success).toBe(true);
+  expect(ProjectHubRequestSchema.safeParse({ schema: 'project-hub-request-v1', operation: 'envelope-ack', id: 'env_1', at }).success).toBe(false);
 
   const result = { schema: 'project-hub-result-v1', operation: 'notebook-get' };
   expect(ProjectHubResultSchema.safeParse({ ...result, record: { revision: 2, document: notebook } }).success).toBe(true);

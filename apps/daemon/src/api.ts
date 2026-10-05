@@ -1,6 +1,6 @@
 import { handleSessionListApi } from './session-list-api.js';
 import { handleGitApi } from './git-api.js';
-import { handleProjectWorkApi } from './project-work-api.js';
+import { handleProjectWorkApi, handleProjectWorkPeer } from './project-work-api.js';
 import { handleCursorApi } from './cursor-api.js';
 import { projectFolders } from './project-folders.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
@@ -55,6 +55,7 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     // Project hub requests enter the gate in their route once the operation is known: reads are admitted like GET (D247).
     if (!['GET', 'HEAD'].includes(method) && !PROJECT_HUB_ROUTE.test(path)) release = app.lifecycle.enter({ kind: 'request' });
     if (await handleOwnerRequest(app, request, response, url)) return;
+    if (path.startsWith('/api/mesh/projects/') && await handleProjectWorkPeer(app, request, response, url, () => { retryable = true; })) return;
     if (path.startsWith('/api/mesh/cursor') && await handleCursorApi(app, request, response, url)) return;
     if (path.startsWith('/api/mesh/login/') && await handleLoginApi(app, request, response, url)) return;
     if (await handleMeshDeviceApi(app, request, response, url)) return;

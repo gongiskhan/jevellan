@@ -184,6 +184,9 @@ Placement: ${input.runtime} ${input.modelLabel}, ${input.effort} effort, ${input
 // 9.8 Notices. The offline notice and the fallback chip are rendered by the browser from its own copy module (D141).
 export const coordinatorUnavailableNotice = (reason: string): string => `The coordinator cannot run: ${reason}`;
 export const coordinatorOfflineNotice = (deviceName: string): string => `The coordinator lives on ${deviceName}, which is offline.`;
+/** Move coordinator here (3.5.3): the new coordinator device's chat line, and the refusal while the coordinator runs a turn on a device that is online. */
+export const coordinatorMovedNotice = (deviceName: string): string => `The coordinator moved to ${deviceName}.`;
+export const coordinatorWorking = (deviceName: string): string => `The coordinator is working on ${deviceName}. Try again when it is idle.`;
 export const placedWithoutJev = (reason: string): string => `Placed without Jev: ${reason}`;
 /** `{error}` keeps no final period of its own, so the sentence stays well formed. */
 export const coordinatorFailedTwiceNotice = (error: string): string => `The coordinator failed twice: ${error.trim().replace(/\.+$/, '')}. Send a message to try again.`;
@@ -236,6 +239,8 @@ export function waitingForSlotReason(limit: number, device: string | null): stri
 }
 /** A thread at rest whose next turn waits for admission (D9); the sweep retries exactly these (D157). */
 export const isWaitingForSlot = (reason: string | undefined): boolean => !!reason?.startsWith(WAITING_FOR_SLOT);
+/** A thread at rest whose next turn could not start while the hub was unreachable (D273); the sweep retries these too. */
+export const WAITING_FOR_HUB = "Waiting for the hub. This thread continues when it's back.";
 export const accountMovedNotice = (accountLabel: string): string => `This thread moved to account ${accountLabel}; a fresh session started.`;
 export const cannotRunHere = (runtime: string): string => `${runtime} cannot run this here.`;
 export const noTurnAccount = (modelLabel: string, deviceName: string, reasons: string): string => `No account can run ${modelLabel} on ${deviceName} right now: ${reasons}.`;
@@ -354,7 +359,22 @@ export const NOTEBOOK_CHANGED = 'The coordinator changed the notebook. Reload to
 export const notebookConflict = (revision: number, content: string): string => `The notebook changed (revision ${revision}). Current content:\n${content}`;
 export const MERGE_CONFLICTS = 'This pull request has conflicts. Ask the thread to resolve them first.';
 export const MERGE_CHECKS_FAILING = 'Checks are failing. Ask the thread to fix them first.';
-export const REMOTE_THREADS_LATER = 'Remote threads arrive in phase 5.';
+// Threads and coordinators on other devices (phase 5, D266). Never the conversation wording of the conversation proxy.
+/** A coordinator action that reached a device the coordinator does not run on (the routes proxy before this). */
+export const COORDINATOR_ELSEWHERE = 'The coordinator runs on another device. Reload the project and try again.';
+/** A proxied coordinator request that arrived at a device that is no longer the coordinator. */
+export const COORDINATOR_NOT_HERE = 'The coordinator does not run on this device.';
+export const PROJECT_OPERATION_NOT_FOUND = 'Project operation not found.';
+export const THREAD_DEVICE_GONE = 'The device that runs this thread is no longer in this mesh.';
+export const threadDeviceOffline = (deviceName: string): string => `${deviceName} is offline. This thread waits there until it is back.`;
+export const threadDeviceUnreachable = (deviceName: string): string => `Can't reach ${deviceName}. This thread's work stays on that device.`;
+export const coordinatorUnreachable = (deviceName: string): string => `Can't reach ${deviceName}. The coordinator stays on that device.`;
+export const THREAD_DEVICE_REDIRECT = "The thread's device returned an unexpected redirect.";
+export const COORDINATOR_DEVICE_REDIRECT = "The coordinator's device returned an unexpected redirect.";
+/** A programming error: work for another device without the hub relay (unit tests build delivery without one). */
+export const NO_RELAY = 'Another device is reached through the hub relay, which is not set up here.';
+/** A thread start relayed to a device that is not the thread's owner. */
+export const THREAD_STARTS_ELSEWHERE = 'This thread starts on another device.';
 export const QUESTION_NOT_FOUND = 'This question was not found.';
 /** The coordinator chat stream's cursor refusals (`Last-Event-ID` or `?after=`), answered 400 before the stream opens. */
 export const EVENT_CURSOR_INVALID = 'Invalid project event cursor.';

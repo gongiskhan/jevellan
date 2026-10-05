@@ -1,16 +1,20 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { once } from 'node:events';
 import { mkdirSync, mkdtempSync, realpathSync, rmSync } from 'node:fs';
+import { createServer, type Server } from 'node:http';
+import { connect, type AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, expect, test } from 'vitest';
 import { Homes, LifecycleGate, lifecycleActivity } from '../packages/core/dist/index.js';
 import { startDaemon } from '../apps/daemon/dist/index.js';
+import { requestBody } from '../apps/daemon/dist/http.js';
 
 const roots: string[] = [], gates: LifecycleGate[] = [], releases: (() => void)[] = [], children: ChildProcessWithoutNullStreams[] = [];
-const daemons: Awaited<ReturnType<typeof startDaemon>>[] = [];
+const daemons: Awaited<ReturnType<typeof startDaemon>>[] = []; const servers: Server[] = [];
 afterEach(async () => {
   releases.splice(0).forEach(release => release());
+  await Promise.all(servers.splice(0).map(server => { server.closeAllConnections(); return new Promise<void>(resolve => server.close(() => resolve())); }));
   for (const child of children.splice(0)) if (child.exitCode === null && child.signalCode === null) { const done = once(child, 'close'); child.kill('SIGTERM'); await done; }
   await Promise.all(daemons.splice(0).map(daemon => daemon.close()));
   gates.splice(0).forEach(gate => gate.close()); roots.splice(0).forEach(root => rmSync(root, { recursive: true, force: true }));
@@ -52,4 +56,36 @@ test('the daemon refuses a mutation before it changes state while an installer h
   release();
   const after = await fetch(`${daemon.addresses[0]}/api/auth/setup`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ schema: 'passphrase-input-v1', passphrase: 'disposable fixture phrase' }) });
   expect(after.status).toBe(200);
+});
+
+test('a request whose client leaves before its body is read releases its lifecycle activity', async () => {
+  const { homes, gate } = fixture(); const daemon = gate(), installer = gate();
+  // As in the daemon's request handling: the request enters the gate and awaits other work (a member's session check reaches the
+  // hub) before it reads its body; here the client leaves during that wait, so the request is destroyed before the body read starts.
+  let settle!: (outcome: string) => void; const outcome = new Promise<string>(resolve => { settle = resolve; });
+  const server = createServer((request, response) => { void (async () => {
+    const release = daemon.enter({ kind: 'request' });
+    try {
+      if (!request.destroyed) await new Promise(resolve => request.once('close', resolve));
+      const read = requestBody(request).then(() => 'read', (error: unknown) => error instanceof Error ? error.message : 'failed');
+      settle(await Promise.race([read, new Promise<string>(resolve => setTimeout(() => resolve('still waiting'), 2_000))]));
+      response.destroy();
+    } finally { release(); }
+  })(); }); servers.push(server);
+  await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+  const socket = connect((server.address() as AddressInfo).port, '127.0.0.1');
+  await once(socket, 'connect'); socket.write('POST /api/improver HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Type: application/json\r\nContent-Length: 40\r\n\r\n{"schema":');
+  await new Promise(resolve => setTimeout(resolve, 50)); socket.destroy();
+  expect(await outcome).toBe('The request was interrupted.');
+  expect(lifecycleActivity(homes)).toEqual([]);
+  const maintenance = installer.tryMaintenance()!; releases.push(maintenance); expect(maintenance).toBeTypeOf('function'); maintenance();
+});
+
+test('a closing daemon lets a request it admitted finish before the lifecycle gate closes', async () => {
+  const { homes } = fixture(); const daemon = await startDaemon(0, { homes, timers: false, runtimes: () => new Map(), tailscaleAddress: async () => null });
+  await daemon.application.started;
+  // A handler still awaiting other work when the listeners close (on a member, a session check that reaches the hub).
+  const request = daemon.application.lifecycle.enter({ kind: 'request' }); setTimeout(request, 200);
+  await daemon.close(); expect(lifecycleActivity(homes)).toEqual([]);
+  expect(() => daemon.application.lifecycle.enter({ kind: 'request' })).toThrow('closed');
 });

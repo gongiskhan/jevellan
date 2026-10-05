@@ -14,7 +14,7 @@ import {
 import { HubProjectAccess, HubUnavailable } from '../packages/mesh/dist/index.js';
 import { FakeRuntime, forThread, type FakeTurnStep } from '../packages/runtime-contract/dist/index.js';
 import {
-  DISCARD_REFUSED, MESSAGE_ID_REUSED, NO_PULL_REQUEST, PROJECT_NOT_FOUND, REMOTE_THREADS_LATER, START_REQUEST_REUSED, STOPPED_BY_YOU, THREAD_ENDED, THREAD_NOT_FOUND, isDiscarded,
+  DISCARD_REFUSED, MESSAGE_ID_REUSED, NO_PULL_REQUEST, PROJECT_NOT_FOUND, START_REQUEST_REUSED, STOPPED_BY_YOU, THREAD_DEVICE_GONE, THREAD_ENDED, THREAD_NOT_FOUND, isDiscarded,
 } from '../packages/projects/dist/index.js';
 import { Application, createDaemon, projectWorkRoute } from '../apps/daemon/dist/index.js';
 import { startGitHubFixture, type GitHubFixture } from './fixtures/github-server.mjs';
@@ -175,12 +175,12 @@ test('Projects routes need the session, answer versioned documents, run a thread
   const discarded = ThreadViewSchema.parse(await call(`${route}/discard`, 'POST', empty, 202));
   expect(isDiscarded(discarded.thread.stateReason)).toBe(true); expect(discarded.canDiscard).toBe(false);
 
-  // Unknown threads are not found; a thread owned by another device is refused until phase 5.
+  // Unknown threads are not found; a thread whose owner left the mesh cannot be reached (its requests are proxied to the owner, D266).
   expect(await call('/api/projects/project/threads/thread_missing', 'GET', undefined, 404)).toEqual(refused('not-found', THREAD_NOT_FOUND));
   expect(await call('/api/projects/project/threads/thread_missing/stop', 'POST', { schema: 'thread-stop-request-v1' }, 404)).toEqual(refused('not-found', THREAD_NOT_FOUND));
   const at = new Date().toISOString();
   await new HubProjectAccess(app.hub, 'dev_other').publishThread(ThreadIndexSchema.parse({ schema: 'project-thread-index-v1', revision: 0, id: 'thread_remote', projectId: 'project', title: 'Elsewhere',
     state: 'idle', isolation: 'worktree', ownerDeviceId: 'dev_other', runtime: 'fake', modelLabel: 'Fixture', effort: 'high', accountLabel: 'Fixture', turns: 1, createdAt: at, updatedAt: at }), 1);
-  expect(await call('/api/projects/project/threads/thread_remote', 'GET', undefined, 409)).toEqual(refused('conflict', REMOTE_THREADS_LATER));
+  expect(await call('/api/projects/project/threads/thread_remote', 'GET', undefined, 409)).toEqual(refused('conflict', THREAD_DEVICE_GONE));
   expect(await call('/api/projects/other/threads/thread_remote', 'GET', undefined, 404)).toEqual(refused('not-found', THREAD_NOT_FOUND));
 });

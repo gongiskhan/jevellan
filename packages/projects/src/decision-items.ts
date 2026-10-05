@@ -14,10 +14,13 @@ const open = (decision: ProjectDecision) => !decision.answer && !decision.withdr
 export function isTurnLimitItem(decision: Pick<ProjectDecision, 'from' | 'options'>): boolean {
   return decision.from === 'thread' && decision.options.length === 2 && decision.options[0]!.label === ALLOW_MORE_TURNS && decision.options[1]!.label === STOP_THE_THREAD;
 }
-/** What the owner can do to a local thread when answering its item; phase 5 routes these through the owner device. */
+/**
+ * What the owner can do to a thread when answering its item; a thread on another device gets them as commands, and `commandId`
+ * makes a retried answer apply once there (D265).
+ */
 export type DecisionThreadActions = {
-  allowTurns(projectId: string, threadId: string): Promise<void>;
-  stop(projectId: string, threadId: string, reason: string): Promise<void>;
+  allowTurns(projectId: string, threadId: string, commandId: string): Promise<void>;
+  stop(projectId: string, threadId: string, reason: string, commandId: string): Promise<void>;
   /** An owner message; `messageId` makes a retried answer deliver once. */
   message(projectId: string, threadId: string, text: string, messageId: string): Promise<unknown>;
 };
@@ -113,9 +116,10 @@ export class DecisionItems {
     }
     if (decision.threadId === undefined) return { repeated };
     const threads = this.#o.threads();
-    if (isTurnLimitItem(decision) && given.optionLabel === STOP_THE_THREAD) { await threads.stop(projectId, decision.threadId, STOPPED_AT_TURN_LIMIT); return { repeated }; }
+    const commandId = derivedId('tcmd', 'answer', decisionId);
+    if (isTurnLimitItem(decision) && given.optionLabel === STOP_THE_THREAD) { await threads.stop(projectId, decision.threadId, STOPPED_AT_TURN_LIMIT, commandId); return { repeated }; }
     if (isTurnLimitItem(decision) && given.optionLabel === ALLOW_MORE_TURNS) {
-      await threads.allowTurns(projectId, decision.threadId);
+      await threads.allowTurns(projectId, decision.threadId, commandId);
       if (given.text) await threads.message(projectId, decision.threadId, given.text, derivedId('tmsg', 'answer', decisionId));
       return { repeated };
     }

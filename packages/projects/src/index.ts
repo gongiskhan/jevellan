@@ -18,6 +18,7 @@ export * from './decision-items.js';
 export * from './coordinator.js';
 export * from './thread-runner.js';
 export * from './threads.js';
+export * from './envelopes.js';
 export * from './recovery.js';
 export * from './views.js';
 export * from './project-work.js';

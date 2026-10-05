@@ -89,3 +89,18 @@ test('owner redirects are not followed or relayed to the browser', async () => {
   const base = await relay(upstream); const response = await fetch(`${base}/api/mesh/owner/example`);
   expect(response.status).toBe(502); expect(response.headers.get('location')).toBeNull(); expect(calls).toBe(1);
 });
+
+test('each purpose has its own failure texts: Projects threads and coordinators never say conversation, the others are unchanged (D266)', async () => {
+  const unreachable = await serve(() => {}); const redirecting = await serve((_request, response) => { response.writeHead(302, { Location: '/elsewhere' }); response.end(); });
+  const failures = async (purpose?: 'login' | 'thread' | 'coordinator') => {
+    const options = { timeoutMs: 30, ...(purpose ? { purpose } : {}) };
+    const late = await (await fetch(`${await relay(unreachable, options)}/api/mesh/projects/example`)).json() as { message: string };
+    const moved = await (await fetch(`${await relay(redirecting, options)}/api/mesh/projects/example`)).json() as { message: string };
+    return [late.message, moved.message];
+  };
+  expect(await failures()).toEqual(["Can't reach the conversation owner (Fixture owner). Its work remains on that device.", 'The conversation owner returned an unexpected redirect.']);
+  expect(await failures('login')).toEqual(["Can't reach the login device (Fixture owner). The login remains on that device.", 'The login device returned an unexpected redirect.']);
+  expect(await failures('thread')).toEqual(["Can't reach Fixture owner. This thread's work stays on that device.", "The thread's device returned an unexpected redirect."]);
+  expect(await failures('coordinator')).toEqual(["Can't reach Fixture owner. The coordinator stays on that device.", "The coordinator's device returned an unexpected redirect."]);
+  for (const text of [...await failures('thread'), ...await failures('coordinator')]) expect(text.toLowerCase()).not.toContain('conversation');
+});

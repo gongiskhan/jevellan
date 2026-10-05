@@ -13,8 +13,8 @@ import type { Admission } from './admission.js';
 import { UNKNOWN_THREAD } from './copy.js';
 
 export type DeviceRoster = z.infer<typeof DeviceRosterSchema>;
-/** The phase gates (D88): main isolation opens in phase 6, other devices in phase 5. Placement and the settings views read this one value. */
-export const PHASE_GATES: PlacementGates = { mainIsolation: false, remoteDevices: false };
+/** The phase gates (D88): main isolation opens in phase 6; other devices opened in phase 5. Placement and the settings views read this one value. */
+export const PHASE_GATES: PlacementGates = { mainIsolation: false, remoteDevices: true };
 export type PlacementLabels = { modelLabel: string; deviceName: string; runtimeName: string };
 export type PlacementResult =
   /** `atLimit`: every device that could run the thread is at its running limit, so the start queues (D9, D133). */
@@ -46,8 +46,9 @@ const bestEffort = <T>(read: Promise<T>, fallback: T): Promise<T> => read.catch(
  * Where a new thread runs (brief 10). Gathers the configuration, this daemon's runtime capabilities (applied to every device,
  * D37), accounts, the roster and live work per device (D9), then asks Jev through `@jevellan/decisions` with the redacted
  * `placement-state-v1` packet: active threads, the project's last 8 overrides and the coordinator's note. Any Jev failure places
- * with the deterministic fallback and records why; no question at all records `source: 'fixed'` (D30b).
- * Phase gates (D88): worktree isolation only until phase 6, this device only until phase 5.
+ * with the deterministic fallback and records why; no question at all records `source: 'fixed'` (D30b). Every online device with
+ * the project path and an eligible account is a candidate, and Call B asks for the device when more than one qualifies.
+ * Phase gate (D88): worktree isolation only until phase 6.
  */
 export class Placement {
   readonly #o: PlacementOptions & { now(): number; gates: PlacementGates };
