@@ -1,17 +1,22 @@
 import { expect, test, vi } from 'vitest';
 import {
   AccountSchema, AccountStatusSchema, DeviceRosterSchema, HubUnavailable, PlacementOverrideSchema, ProjectSchema, ProjectWorkSettingsSchema, SecretRedactor, ThreadIndexSchema,
-  defaultProjectWorkSettings, seedConfiguration, type Account, type AccountStatus, type ModelOption, type PlacementOverride, type ProjectWorkSettings, type ThreadIndex, type ThreadState,
+  FileReservationSchema, defaultProjectWorkSettings, seedConfiguration, type Account, type AccountStatus, type FileReservation, type HeldCheckout, type ModelOption, type PlacementOverride,
+  type ProjectWorkSettings, type ThreadIndex, type ThreadState,
 } from '../packages/core/dist/index.js';
 import { PlacementStateSchema, parseJevResponse, type DecisionClient, type JevRequest } from '../packages/decisions/dist/index.js';
 import type { RuntimeAdapter } from '../packages/runtime-contract/dist/index.js';
-import { Admission, Placement, queuedReason, waitingForSlotReason, MAIN_NOT_AVAILABLE, REMOTE_NOT_AVAILABLE, LEAVE_GIT_MAIN } from '../packages/projects/dist/index.js';
+import {
+  Admission, Placement, queuedReason, waitingForSlotReason, MAIN_NOT_AVAILABLE, REMOTE_NOT_AVAILABLE, LEAVE_GIT_MAIN, type PendingMain,
+} from '../packages/projects/dist/index.js';
 
 const at = '2026-10-03T10:00:00.000Z';
 function index(id: string, state: ThreadState, ownerDeviceId = 'dev_studio', projectId = 'proj_app'): ThreadIndex {
   return ThreadIndexSchema.parse({ schema: 'project-thread-index-v1', revision: 1, id, projectId, title: 'Fixture thread', state, isolation: 'worktree', ownerDeviceId,
     runtime: 'codex', modelLabel: 'Swift', effort: 'medium', accountLabel: 'Work', turns: 1, createdAt: at, updatedAt: at });
 }
+const reservation = (id: string, threadId: string, paths: string[], projectId = 'proj_app'): FileReservation => FileReservationSchema.parse({ schema: 'file-reservation-v1', revision: 1, id,
+  projectId, threadId, deviceId: 'dev_studio', paths, reason: '', createdAt: at, expiresAt: '2026-10-03T11:00:00.000Z' });
 const settings = (over: Partial<ProjectWorkSettings> = {}) => ProjectWorkSettingsSchema.parse({ ...defaultProjectWorkSettings('proj_app'), revision: 3, ...over });
 /** Hub stub: pages of 100 by id like the hub, and an outage switch. */
 function hub(indexes: ThreadIndex[], work?: ProjectWorkSettings) {
@@ -131,9 +136,11 @@ const adapter = { id: 'codex', displayName: 'Codex', capabilities: { edit: true,
 const view = (id: string, name: string, presence: 'online' | 'stale' | 'offline') => ({ schema: 'device-view-v1', status: presence, heartbeat: null, revoked: false,
   device: { schema: 'device-v1', id, name, role: id === 'dev_mini' ? 'hub' : 'member', url: `https://${id}.example.invalid`, os: 'darwin', version: '1.0.0', joinedAt: at } });
 type PlacementFixture = { indexes?: ThreadIndex[]; local?: ThreadIndex[]; overrides?: PlacementOverride[]; client?: DecisionClient; studio?: 'online' | 'stale' | 'offline';
-  gates?: { mainIsolation: boolean; remoteDevices: boolean } };
+  gates?: { mainIsolation: boolean; remoteDevices: boolean }; reservations?: FileReservation[]; held?: HeldCheckout[]; pending?: PendingMain[];
+  /** Project checkout branches by device, as the latest heartbeats report them. */
+  branches?: Record<string, string> };
 function placementWith(live: string[] = [], over: PlacementFixture = {}) {
-  const { admission: value, stub } = admission(over.indexes ?? [], { local: live }); const reads = { overrides: 0 };
+  const { admission: value, stub } = admission(over.indexes ?? [], { local: live }); const reads = { overrides: 0, held: 0 };
   const recentOverrides = async (projectId: string, limit: number) => {
     reads.overrides += 1; if (stub.state.down) throw new HubUnavailable('Fixture hub');
     return (over.overrides ?? []).filter((entry) => entry.projectId === projectId).sort((a, b) => b.at.localeCompare(a.at)).slice(0, limit);
@@ -141,9 +148,16 @@ function placementWith(live: string[] = [], over: PlacementFixture = {}) {
   const placement = new Placement({ settings: async () => ({ ...seedConfiguration()['x-jevellan'], menu: [swift], runtimes: { ...seedConfiguration()['x-jevellan'].runtimes, codex: { enabled: true } } }),
     accounts: { list: async () => [{ schema: 'account-view-v1', revision: 1, account, statuses: [status('dev_mini'), status('dev_studio')] }] } as never,
     runtimes: new Map([['codex', adapter]]), roster: async () => DeviceRosterSchema.parse({ schema: 'device-roster-v1', currentDeviceId: 'dev_mini',
-      devices: [view('dev_mini', 'Mac mini', 'stale'), view('dev_studio', 'Studio', over.studio ?? 'online')] }),
-    admission: value, deviceId: 'dev_mini', deviceName: 'Mac mini', now: () => now, hub: { threads: (projectId, after) => stub.threads(projectId, after), recentOverrides },
+      devices: [view('dev_mini', 'Mac mini', 'stale'), view('dev_studio', 'Studio', over.studio ?? 'online')].map((row) => over.branches?.[row.device.id]
+        ? { ...row, heartbeat: { schema: 'heartbeat-v1', deviceId: row.device.id, at, version: '1.0.0', runningConversations: [], externalSessions: [], load: { cpuPct: 1, memFreeMb: 100 },
+          projects: [{ projectId: 'proj_app', path: '/work/app', branch: over.branches[row.device.id], head: 'a'.repeat(40), dirty: false, ahead: 0, behind: 0 }] } }
+        : row) }),
+    admission: value, deviceId: 'dev_mini', deviceName: 'Mac mini', now: () => now,
+    hub: { threads: (projectId, after) => stub.threads(projectId, after), recentOverrides,
+      reservations: async (projectId) => { if (stub.state.down) throw new HubUnavailable('Fixture hub'); return (over.reservations ?? []).filter((entry) => entry.projectId === projectId); },
+      heldCheckouts: async () => { reads.held += 1; if (stub.state.down) throw new HubUnavailable('Fixture hub'); return over.held ?? []; } },
     local: (projectId) => (over.local ?? []).filter((entry) => entry.projectId === projectId), redactor: new SecretRedactor(),
+    ...(over.pending ? { pendingMain: async () => over.pending! } : {}),
     ...(over.client ? { decisionClient: async () => over.client! } : {}), ...(over.gates ? { gates: over.gates } : {}) });
   return { placement, stub, reads };
 }
@@ -152,8 +166,8 @@ const place = (value: Placement, over: { fixed?: object; work?: Partial<ProjectW
   project: over.project ?? project, workSettings: settings(over.work), title: 'Fix login', task: 'The redirect loops.', fixed: over.fixed ?? {}, coordinatorDeviceId: 'dev_mini',
   ignoreRunningLimit: over.ignoreRunningLimit ?? false, ...(over.note ? { note: over.note } : {}) });
 
-test('placement without a Jev client falls back on the coordinator device, records why, places on another device when fixed and keeps the main gate (D88)', async () => {
-  const value = placement();
+test('placement without a Jev client falls back on the coordinator device, records why, places on another device when fixed and keeps a closed main gate (D88)', async () => {
+  const value = placementWith([], { gates: { mainIsolation: false, remoteDevices: true } }).placement;
   const placed = await place(value, { work: { defaultIsolation: 'main' } });
   expect(placed.kind).toBe('placed'); if (placed.kind !== 'placed') return;
   // This device reads stale in the roster and is still placed (D8); a main default places a worktree until phase 6. Both devices
@@ -192,8 +206,9 @@ test('placement asks Jev with the packet: active threads oldest first with this 
   const requests: JevRequest[] = [];
   const client: DecisionClient = { decide: vi.fn(async (request: JevRequest) => {
     requests.push(request);
-    return parseJevResponse(JSON.stringify({ model: 'jev-fixture', usage: { input_tokens: 10, output_tokens: 2 }, answers: { effort: { type: 'choice', choice: 'high',
-      probabilities: { low: 0, medium: 0.1, high: 0.9, xhigh: 0, max: 0 }, confidence: 0.9 } } }), request.questions);
+    return parseJevResponse(JSON.stringify({ model: 'jev-fixture', usage: { input_tokens: 10, output_tokens: 2 }, answers: {
+      isolation: { type: 'choice', choice: 'worktree', probabilities: { worktree: 0.8, main: 0.2 }, confidence: 0.8 },
+      effort: { type: 'choice', choice: 'high', probabilities: { low: 0, medium: 0.1, high: 0.9, xhigh: 0, max: 0 }, confidence: 0.9 } } }), request.questions);
   }) };
   const thread = (id: string, title: string, state: ThreadState, owner: string, createdAt: string, extra: Partial<ThreadIndex> = {}) => ({ ...index(id, state, owner), title, createdAt, ...extra });
   const override = (id: string, threadId: string, mode: 'next-turn' | 'restart', change: PlacementOverride['changes'][number], when: string) => PlacementOverrideSchema.parse({
@@ -205,17 +220,20 @@ test('placement asks Jev with the packet: active threads oldest first with this 
     // This device's copy is newer than its hub index.
     local: [thread('thread_a', 'Auth', 'running', 'dev_mini', '2026-10-03T08:00:00.000Z', { effort: 'high' })],
     overrides: [override('povr_b', 'thread_gone', 'next-turn', { field: 'effort', from: 'max', to: 'low' }, '2026-10-03T09:30:00.000Z'),
-      override('povr_a', 'thread_c', 'restart', { field: 'model', from: 'deep', to: 'swift' }, '2026-10-03T09:45:00.000Z')] });
+      override('povr_a', 'thread_c', 'restart', { field: 'model', from: 'deep', to: 'swift' }, '2026-10-03T09:45:00.000Z')],
+    // Active reservations name each thread's reserved paths once (phase 6).
+    reservations: [reservation('resv_1', 'thread_b', ['src/billing/', 'docs/']), reservation('resv_2', 'thread_b', ['docs/']), reservation('resv_3', 'thread_x', ['other/'], 'proj_other')] });
   const placed = await place(value, { note: '  The owner asked for speed.  ' });
   expect(placed.kind === 'placed' && placed.record).toMatchObject({ source: 'jev', modelId: 'swift', effortRequested: 'high', effortEffective: 'high', deviceId: 'dev_mini',
     probabilities: { effort: { low: 0, medium: 0.1, high: 0.9, xhigh: 0, max: 0 } }, jevCalls: [{ kind: 'placement', returnedModel: 'jev-fixture' }] });
   expect(placed.kind === 'placed' && 'error' in placed.record).toBe(false);
-  // One model, one online device and no main isolation before phase 6: only the effort is asked.
-  expect(requests).toHaveLength(1); expect(Object.keys(requests[0]!.questions)).toEqual(['effort']);
+  // One model and one online device: the isolation (main is allowed on this project) and the effort are asked.
+  expect(requests).toHaveLength(1); expect(Object.keys(requests[0]!.questions)).toEqual(['isolation', 'effort']);
+  expect(placed.kind === 'placed' && placed.record.isolation).toBe('worktree');
   const packet = PlacementStateSchema.parse(JSON.parse(requests[0]!.state));
   expect(packet.thread).toEqual({ title: 'Fix login', task: 'The redirect loops.', coordinatorNote: 'The owner asked for speed.' });
   expect(packet.activeThreads).toEqual([{ title: 'Auth', isolation: 'worktree', device: 'Mac mini', model: 'Swift', effort: 'high', reservedPaths: [] },
-    { title: 'Billing', isolation: 'worktree', device: 'Studio', model: 'Swift', effort: 'medium', reservedPaths: [] }]);
+    { title: 'Billing', isolation: 'worktree', device: 'Studio', model: 'Swift', effort: 'medium', reservedPaths: ['src/billing/', 'docs/'] }]);
   expect(packet.rules.recentOverrides).toEqual(["model changed from deep to swift for 'Old' (restart)", "effort changed from max to low for '(unknown thread)' (next-turn)"]);
   expect(reads.overrides).toBe(1);
   // During a hub outage the packet keeps what this device knows.
@@ -228,7 +246,44 @@ test('placement asks Jev with the packet: active threads oldest first with this 
   const fixed = await place(value, { fixed: { isolation: 'worktree', modelId: 'swift', effort: 'low', deviceId: 'dev_mini' } });
   expect(fixed.kind === 'placed' && fixed.record).toMatchObject({ source: 'fixed', effortRequested: 'low', jevCalls: [] });
   expect(requests).toHaveLength(2); expect(reads.overrides).toBe(2);
-  // A fixed effort with one model and one device asks nothing either (D30b).
-  expect((await place(value, { fixed: { effort: 'low' } }))).toMatchObject({ kind: 'placed', record: { source: 'fixed', fixed: ['effort'] } });
+  // A fixed isolation and effort with one model and one device asks nothing either (D30b).
+  expect((await place(value, { fixed: { isolation: 'worktree', effort: 'low' } }))).toMatchObject({ kind: 'placed', record: { source: 'fixed', fixed: ['isolation', 'effort'] } });
   expect(requests).toHaveLength(2);
+});
+
+test('main isolation is placed only where the checkout is on main and free: claims and main threads from the hub, this device\'s own and its starts in flight (brief 10, D64, D65, D288)', async () => {
+  const main = (id: string, state: ThreadState, owner: string, title: string) => ({ ...index(id, state, owner), isolation: 'main' as const, title });
+  const fixedMain = { fixed: { isolation: 'main' } };
+  // Both checkouts free and on main: the fallback places main on the coordinator's device; Studio was a candidate too.
+  const free = placementWith([], { branches: { dev_mini: 'main', dev_studio: 'main' } });
+  const placed = await place(free.placement, { work: { defaultIsolation: 'main' } });
+  expect(placed.kind === 'placed' && placed.record).toMatchObject({ isolation: 'main', deviceId: 'dev_mini', eligibleDevices: ['dev_mini', 'dev_studio'], excludedDevices: [] });
+  expect(free.reads.held).toBe(1);
+  // A worktree start never reads the held checkouts.
+  await place(free.placement, { fixed: { isolation: 'worktree' } }); expect(free.reads.held).toBe(1);
+  // The hub's held checkouts (a conversation here) and a checkout on another branch leave no device.
+  const busy = placementWith([], { branches: { dev_studio: 'feature' }, held: [{ deviceId: 'dev_mini', ownerId: 'conv_1', title: 'Tidy the docs' }] }).placement;
+  expect(await place(busy, fixedMain)).toEqual({ kind: 'refused',
+    message: 'No device can run any enabled model: Mac mini: main checkout busy: Tidy the docs; Studio: checkout is on feature, not main.' });
+  // Without fixing the isolation, a main default falls back to the worktree where main has no device.
+  const fallback = await place(busy, { work: { defaultIsolation: 'main' } });
+  expect(fallback.kind === 'placed' && [fallback.record.isolation, fallback.record.deviceId]).toEqual(['worktree', 'dev_mini']);
+  // This device's own main thread that has not ended blocks its checkout at once (its hub copy lags), and an ended one does not.
+  const own = placementWith([], { local: [main('thread_own', 'preparing', 'dev_mini', 'Fix login'), main('thread_old', 'done', 'dev_studio', 'Old work')] }).placement;
+  const elsewhere = await place(own, fixedMain);
+  expect(elsewhere.kind === 'placed' && elsewhere.record).toMatchObject({ deviceId: 'dev_studio', excludedDevices: [{ deviceId: 'dev_mini', reason: 'main checkout busy: Fix login' }] });
+  // A main thread just sent to Studio counts there before the hub has its index.
+  const inFlight = placementWith([], { local: [main('thread_own', 'running', 'dev_mini', 'Fix login')], pending: [{ threadId: 'thread_sent', deviceId: 'dev_studio', title: 'Add search' }] }).placement;
+  expect(await place(inFlight, fixedMain)).toEqual({ kind: 'refused',
+    message: 'No device can run any enabled model: Mac mini: main checkout busy: Fix login; Studio: main checkout busy: Add search.' });
+  // A thread's own claim does not count against itself (a next-turn override checks the thread where it is).
+  expect(await own.refusal({ project, workSettings: settings(), title: 'Fix login', task: 'x', fixed: { isolation: 'main', modelId: 'swift', deviceId: 'dev_mini' },
+    coordinatorDeviceId: 'dev_mini', ignoreRunningLimit: true, exclude: 'thread_own' })).toBeUndefined();
+  // During a hub outage only this device's knowledge counts; the claim at preparation still refuses a busy checkout.
+  const outage = placementWith([], { held: [{ deviceId: 'dev_mini', ownerId: 'conv_1', title: 'Tidy the docs' }] }); outage.stub.state.down = true;
+  const offline = await place(outage.placement, fixedMain);
+  expect(offline.kind === 'placed' && offline.record.deviceId).toBe('dev_mini');
+  // A Leave git project never places main, whatever the default.
+  const external = await place(free.placement, { work: { defaultIsolation: 'main' }, project: { ...project, branchPolicy: 'external' } });
+  expect(external.kind === 'placed' && external.record.isolation).toBe('worktree');
 });

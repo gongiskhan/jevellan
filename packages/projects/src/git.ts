@@ -36,6 +36,17 @@ export class ThreadGit {
     if (!(await this.run(cwd, ['remote'])).stdout.split('\n').map((name) => name.trim()).includes('origin')) return null;
     return await this.#value(cwd, ['config', '--get', 'remote.origin.url']) || null;
   }
+  /**
+   * Commits every change in `cwd` (tracked, untracked, not ignored) with `subject` and no trailers, as the machine identity when one
+   * is known (D15, D86). False when there was nothing to commit.
+   */
+  async commitAll(cwd: string, subject: string, identity?: { name: string; email: string }): Promise<boolean> {
+    if (!(await this.run(cwd, ['status', '--porcelain=v1', '-z', '--untracked-files=all'])).stdout) return false;
+    await this.run(cwd, ['add', '-A']);
+    await this.run(cwd, ['commit', '-m', subject],
+      identity ? { env: { GIT_AUTHOR_NAME: identity.name, GIT_AUTHOR_EMAIL: identity.email, GIT_COMMITTER_NAME: identity.name, GIT_COMMITTER_EMAIL: identity.email } } : {});
+    return true;
+  }
   async resolve(cwd: string, ref: string): Promise<string | null> {
     return (await this.run(cwd, ['rev-parse', '--verify', '--quiet', `${ref}^{commit}`], { permitted: [1, 128] })).stdout.trim() || null;
   }

@@ -64,7 +64,7 @@ test.each(['claude', 'codex'] as const)('a resumed coordinator turn stays read-o
   const prompt = directive('permissions', requests);
   const response = await respond(adapter, { ...coordinator, resume: { sessionId: 'stored-coordinator' }, prompt });
   const tools = projectToolNames({ kind: 'coordinator' }).map((name) => `mcp__jevellan__${name}`);
-  expect(tools).not.toContain('mcp__jevellan__jevellan_mail_send');
+  expect(tools).toContain('mcp__jevellan__jevellan_mail_send');
   if (runtime === 'claude') expect(response).toEqual({ replies: [denied(COORDINATOR_READ_ONLY_REASON), {}, denied(COORDINATOR_READ_ONLY_REASON)], permissionMode: 'dontAsk', bypassAllowed: false, resume: 'stored-coordinator', model: 'fixture-model', effort: 'low', allowedTools: tools.join(','), append: 'FIXTURE_APPEND', prompt });
   else expect(response).toEqual({ sandbox: 'read-only', network: false, approval: 'never', cwd: root, projectTrust: 'untrusted', resume: 'stored-coordinator', effort: 'low', addDirs: [], prompt });
 }, 30_000);

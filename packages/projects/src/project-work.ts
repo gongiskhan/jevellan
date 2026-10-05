@@ -25,6 +25,8 @@ import { ThreadGit } from './git.js';
 import { ThreadIndexPublisher } from './index-publisher.js';
 import { TurnLauncher } from './launch.js';
 import { ProjectLedgers, type ProjectLedger } from './ledger.js';
+import { MailService } from './mail.js';
+import { MainCheckout } from './main-checkout.js';
 import { ProjectPaths } from './paths.js';
 import { Placement, type DeviceRoster } from './placement.js';
 import { GitHubAccess, ThreadPublication } from './publication.js';
@@ -85,6 +87,8 @@ export class ProjectWork {
   readonly paths: ProjectPaths; readonly ledgers: ProjectLedgers; readonly store: ThreadStore; readonly coordinators: CoordinatorService;
   readonly threads: ThreadService; readonly decisions: DecisionItems; readonly tracker: PullRequestTracker; readonly views: ProjectViews;
   readonly admission: Admission; readonly transcripts: ThreadTranscripts;
+  /** Mail and reservations between main threads (brief 5.11, 7.2). */
+  readonly mail: MailService;
   /** The hub relay (D40): durable sends to other devices, and this device's pending envelopes. */
   readonly outbox: Outbox; readonly inbox: Inbox;
   readonly #o: ProjectWorkOptions;
@@ -111,7 +115,8 @@ export class ProjectWork {
       nameOf: async (deviceId) => (await o.roster()).devices.find((view) => view.device.id === deviceId)?.device.name, now });
     const placement = new Placement({ settings: o.settings, accounts: o.accounts, runtimes: o.runtimes, roster: o.roster, admission: this.admission, deviceId: o.deviceId,
       deviceName: o.deviceName, hub: o.hub, redactor: o.redactor, now, ...(o.decisionClient ? { decisionClient: o.decisionClient } : {}),
-      local: (projectId) => this.store.list(projectId).map((thread) => threadIndex(thread, this.store.labels(thread.id), thread.createdAt)) });
+      local: (projectId) => this.store.list(projectId).map((thread) => threadIndex(thread, this.store.labels(thread.id), thread.createdAt)),
+      pendingMain: (projectId) => this.threads.pendingMain(projectId) });
     this.decisions = new DecisionItems({ hub: o.hub, now, toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event), threads: () => ({
       allowTurns: (projectId, threadId, commandId) => this.threads.allowTurns(projectId, threadId, commandId),
       stop: (projectId, threadId, reason, commandId) => this.threads.stop(projectId, threadId, reason, true, commandId),
@@ -119,8 +124,9 @@ export class ProjectWork {
     }) });
     const git = new ThreadGit({ homes: o.homes, redactor: o.redactor });
     const worktrees = new ThreadWorktree({ git, homes: o.homes, paths: this.paths, redactor: o.redactor, deviceId: o.deviceId, deviceName: o.deviceName });
-    const publication = new ThreadPublication({ git, homes: o.homes, redactor: o.redactor, github, deviceName: o.deviceName, testTimeoutMs: timers.testTimeoutMs, now,
-      ...(o.leases ? { leases: o.leases } : {}), ...(o.ownership ? { ownership: o.ownership } : {}) });
+    const publication = new ThreadPublication({ git, homes: o.homes, redactor: o.redactor, github, deviceId: o.deviceId, deviceName: o.deviceName, testTimeoutMs: timers.testTimeoutMs,
+      leaseRetryMs: timers.mainLeaseRetryMs, now, ...(o.leases ? { leases: o.leases } : {}), ...(o.ownership ? { ownership: o.ownership } : {}) });
+    const main = new MainCheckout({ git, redactor: o.redactor, deviceId: o.deviceId, deviceName: o.deviceName, ownership: o.ownership, outside: o.outside });
     this.coordinators = new CoordinatorService({ deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, store: coordinatorStore, ledgers: this.ledgers, hub: o.hub,
       project: (projectId) => this.#project(projectId), workSettings: (projectId) => this.admission.settings(projectId), settings: o.settings, accounts: o.accounts,
       runtimes: o.runtimes, launcher, decisions: this.decisions, tools: () => this.#coordinatorTools(), roster: o.roster,
@@ -129,13 +135,14 @@ export class ProjectWork {
       timers: { startMs: timers.coordinatorStartMs, retryMs: timers.coordinatorRetryMs, turnTimeoutMs: timers.coordinatorTurnTimeoutMs }, now });
     const delivery = new LocalDelivery({ deviceId: o.deviceId, coordinators: this.coordinators, store: this.store, outbox: () => this.outbox, now,
       command: (projectId, threadId, command) => this.threads.command(projectId, threadId, command) });
+    this.mail = new MailService({ hub: o.hub, toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event), local: (threadId) => this.store.get(threadId), now });
     this.threads = new ThreadService({ deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, store: this.store, ledgers: this.ledgers, receipts, hub: o.hub,
       projects: o.projects, admission: this.admission, placement, accounts: o.accounts, transcripts: this.transcripts, delivery, settings: o.settings, now,
       roster: o.roster, decisions: this.decisions, fallbackCheckMs: timers.fallbackCheckMs,
       runner: { deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, store: this.store, ledgers: this.ledgers, project: (projectId) => this.#project(projectId),
-        workSettings: (projectId) => this.admission.settings(projectId), worktrees, publication, launcher, accounts: o.accounts, admission: this.admission,
+        workSettings: (projectId) => this.admission.settings(projectId), worktrees, main, publication, launcher, accounts: o.accounts, admission: this.admission,
         decisions: this.decisions, toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event),
-        memory: (project) => o.memory.project(project, o.deviceId, () => { throw new Error(THREAD_MEMORY_READ_ONLY); }),
+        memory: (project) => o.memory.project(project, o.deviceId, () => { throw new Error(THREAD_MEMORY_READ_ONLY); }), mail: this.mail,
         runtimeName: (runtime) => o.runtimes.get(runtime)?.displayName ?? runtime, enterOperation: o.enterOperation,
         timers: { threadTurnTimeoutMs: timers.threadTurnTimeoutMs, setupTimeoutMs: timers.setupTimeoutMs }, now } });
     this.tracker = new PullRequestTracker({ threads: this.store, github, git, worktrees, project: (projectId) => this.#project(projectId),
@@ -168,7 +175,7 @@ export class ProjectWork {
   /** Coordinator tool handlers (brief 7.1), built on first use because the thread service and the tracker come after the coordinators. Memory is read-only. */
   #coordinatorTools(): CoordinatorToolHandlers {
     return this.#tools ??= coordinatorToolHandlers({ deviceId: this.#o.deviceId, deviceName: this.#o.deviceName, threads: this.threads, store: this.store, decisions: this.decisions,
-      pullRequests: this.tracker, hub: this.#o.hub, ledgers: this.ledgers, roster: this.#o.roster, now: () => this.#timers.now(),
+      pullRequests: this.tracker, hub: this.#o.hub, ledgers: this.ledgers, mail: this.mail, roster: this.#o.roster, now: () => this.#timers.now(),
       memory: async (projectId) => this.#o.memory.project(await this.#project(projectId), this.#o.deviceId, () => { throw new Error(COORDINATOR_MEMORY_READ_ONLY); }) });
   }
   #thread(projectId: string, threadId: string): void {

@@ -11,8 +11,8 @@ import {
 import { HubProjectAccess } from '../packages/mesh/dist/index.js';
 import { forCoordinator, forThread, type FakeTurn, type TurnInput } from '../packages/runtime-contract/dist/index.js';
 import {
-  ASK_USER_OPTIONS, MAIN_NOT_AVAILABLE, NO_PULL_REQUEST, QUESTION_NOT_FOUND, THREAD_ATTACHED, THREAD_ENDED, THREAD_NOT_FOUND, TOOL_NOT_IN_TURN,
-  coordinatorToolSummary, firstSentence, notebookConflict, queuedReason, transcriptStaysOn,
+  ASK_USER_OPTIONS, NO_PULL_REQUEST, QUESTION_NOT_FOUND, THREAD_ATTACHED, THREAD_ENDED, THREAD_NOT_FOUND, TOOL_NOT_IN_TURN,
+  UNKNOWN_PLACEMENT_DEVICE, coordinatorToolSummary, firstSentence, notebookConflict, queuedReason, transcriptStaysOn,
 } from '../packages/projects/dist/index.js';
 import { commitStep, expectNoLeaks, holdStep, never, projectFixture, reportStep, type ProjectFixture } from './helpers/project-fixture.js';
 
@@ -104,7 +104,7 @@ test('thread tools start, list, read, message and stop as brief 7.1 says, refuse
   const token = c.turn.input.launch.env.JEVELLAN_STRETCH_TOKEN!;
   // The token lists exactly this scope's tools (D104); other scopes' tools are refused before any handler runs.
   expect(await c.turn.tools()).toEqual(projectToolNames({ kind: 'coordinator' }));
-  for (const name of ['memory_write', 'jevellan_thread_report', 'jevellan_mail_send', 'jevellan_handoff']) expect(await c.refused(name, {})).toEqual({ status: 403, message: TOOL_NOT_IN_TURN });
+  for (const name of ['memory_write', 'jevellan_thread_report', 'jevellan_mail_inbox', 'jevellan_reserve', 'jevellan_handoff']) expect(await c.refused(name, {})).toEqual({ status: 403, message: TOOL_NOT_IN_TURN });
 
   // Start: zod errors are field sentences; a valid start answers after placement, preparation continues in the background.
   expect(await c.refused('jevellan_thread_start', { title: 'Fix login' })).toEqual({ status: 400, message: expect.stringMatching(fieldSentence('task')) });
@@ -225,7 +225,7 @@ test('questions, the notebook with its revision conflict, pull request status, q
   expect(added.state).toBe('preparing');
   const tests = await c.call('jevellan_thread_start', { title: 'Write tests', task: 'Write the cache tests.' });
   expect(tests).toMatchObject({ schema: 'thread-start-result-v1', state: 'queued', stateReason: queuedReason(1, null) });
-  expect(await c.refused('jevellan_thread_start', { title: 'Main work', task: 'Work on main.', isolation: 'main' })).toEqual({ status: 409, message: MAIN_NOT_AVAILABLE });
+  expect(await c.refused('jevellan_thread_start', { title: 'Elsewhere', task: 'Work on another device.', deviceId: 'dev_unknown' })).toEqual({ status: 409, message: UNKNOWN_PLACEMENT_DEVICE });
   cache.resolve();
   const opened = await index(f, added.threadId, (value) => value?.state === 'in-review');
   await state(f, tests.threadId, 'idle');
@@ -276,7 +276,7 @@ test('questions, the notebook with its revision conflict, pull request status, q
   expect(toolLines(f)).toEqual([
     line('jevellan_thread_start', true, /^Started "Add cache" · Scripted test runtime Fixture · high · Worktree · /, { threadId: added.threadId }),
     line('jevellan_thread_start', true, /^Queued "Write tests" · Scripted test runtime Fixture · high · Worktree · /, { threadId: tests.threadId }),
-    line('jevellan_thread_start', false, `Could not start "Main work": ${MAIN_NOT_AVAILABLE}`),
+    line('jevellan_thread_start', false, `Could not start "Elsewhere": ${UNKNOWN_PLACEMENT_DEVICE}`),
     line('jevellan_pr_status', true, 'Checked PR #1', { threadId: added.threadId }),
     line('jevellan_pr_status', true, 'Checked PR #1', { threadId: added.threadId }),
     line('jevellan_pr_status', true, 'Checked "Write tests": no pull request', { threadId: tests.threadId }),

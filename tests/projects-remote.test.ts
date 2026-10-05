@@ -235,7 +235,7 @@ test('the coordinator acts on member threads through commands, reads them with t
   const hubId = f.app.device.deviceId; const pid = 'project'; const work = f.app.projectWork;
   expect(await work.coordinators.ensureAssigned(pid)).toBe(hubId);
   const tools = coordinatorToolHandlers({ deviceId: hubId, deviceName: f.deviceName, threads: work.threads, store: work.store, decisions: work.decisions, pullRequests: work.tracker,
-    hub: f.app.projectHub, ledgers: work.ledgers, roster: () => f.app.roster(), now: Date.now, memory: async () => { throw new Error('No memory in this test.'); } });
+    hub: f.app.projectHub, ledgers: work.ledgers, mail: work.mail, roster: () => f.app.roster(), now: Date.now, memory: async () => { throw new Error('No memory in this test.'); } });
   const tool = <T extends keyof typeof BridgeToolSchemas>(name: T, input: unknown, turn = 1) => tools.call({ kind: 'coordinator', projectId: pid, turn }, name as never,
     BridgeToolSchemas[name].parse(input), new AbortController().signal) as Promise<Record<string, unknown>>;
   const startOnMember = (title: string) => f.json(`/api/projects/${pid}/threads`, ThreadCreatedViewSchema, 'POST', createBody(title, { deviceId: m.deviceId }));

@@ -22,10 +22,10 @@ const pr = { number: 7, url: 'https://github.com/owner/repo/pull/7', state: 'ope
 const report = { schema: 'thread-report-v1', turn: 1, status: 'done', summary: 'Added the page.', changedFiles: ['a.txt'], synthesized: false };
 const issues = (result: { success: boolean; error?: { issues: Array<{ path: PropertyKey[]; message: string }> } }) => result.error?.issues.map((issue) => ({ path: issue.path.join('.'), message: issue.message }));
 
-test('phase 1 scope lists hold back mail and reservations while the full lists keep them', () => {
+test('scope lists: mail and reservations only for main threads, mail for the coordinator', () => {
   expect(projectToolNames({ kind: 'thread', isolation: 'worktree' })).toEqual(['jevellan_thread_report', 'memory_search', 'memory_read']);
-  expect(projectToolNames({ kind: 'thread', isolation: 'main' })).toEqual(['jevellan_thread_report', 'memory_search', 'memory_read']);
-  expect(projectToolNames({ kind: 'coordinator' })).toEqual(COORDINATOR_TOOLS.filter((name) => name !== 'jevellan_mail_send'));
+  expect(projectToolNames({ kind: 'thread', isolation: 'main' })).toEqual(['jevellan_thread_report', 'memory_search', 'memory_read', ...mainTools]);
+  expect(projectToolNames({ kind: 'coordinator' })).toEqual([...COORDINATOR_TOOLS]);
   expect(COORDINATOR_TOOLS).toContain('jevellan_mail_send');
   expect(threadTools('worktree')).toEqual(['jevellan_thread_report', 'memory_search', 'memory_read']);
   expect(threadTools('main')).toEqual(['jevellan_thread_report', 'memory_search', 'memory_read', ...mainTools]);

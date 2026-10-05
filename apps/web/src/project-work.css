@@ -343,7 +343,8 @@ a.pw-pr-title:hover { color: var(--jev-ink); text-decoration: underline; }
 .pw-pr-reason { margin: 0; color: var(--ink-3); font-size: 12.5px; line-height: 1.45; }
 
 /* Dialogs and the Notebook panel. */
-.pw-field > label { margin-bottom: 4px; }
+/* A field's note sits close under it; a field without one keeps the form's usual 12px rhythm (Isolation and Device often have none). */
+.pw-field > label:not(:last-child) { margin-bottom: 4px; }
 .pw-field-note { margin: 0 0 12px; color: var(--ink-3); font-size: 12px; line-height: 1.45; }
 /* The settings fields sit in one borderless fieldset, disabled until the dialog has read the current settings. */
 .pw-fields { min-width: 0; margin: 0; padding: 0; border: 0; }
@@ -432,7 +433,11 @@ a.pw-pr-chip:hover { border-color: var(--jev); color: var(--jev-ink); }
   margin: 0;
   overflow-wrap: anywhere;
 }
-.pw-thread-reason { color: var(--ink-2); font-size: 12.5px; line-height: 1.45; }
+/* Four lines keep a reason's instruction in view on phones (a dirty checkout's reads three there); the full text is its title (D295). */
+.pw-thread-reason { -webkit-line-clamp: 4; color: var(--ink-2); font-size: 12.5px; line-height: 1.45; }
+/* A main thread's saved commits: the ref is never clamped, and one tap selects it whole for copying (D295). */
+.pw-saved-ref { margin: 0; color: var(--ink-2); font-size: 12.5px; line-height: 1.45; overflow-wrap: anywhere; }
+.pw-saved-ref code { color: var(--ink); user-select: all; -webkit-user-select: all; }
 /* Three lines keep the device in view on phones, where a long branch name fills the second. */
 .pw-placement-line { -webkit-line-clamp: 3; color: var(--ink-3); font-family: var(--font-mono); font-size: 11px; line-height: 1.5; }
 .pw-transcript-note { margin: 0; color: var(--ink-3); font-size: 13px; }

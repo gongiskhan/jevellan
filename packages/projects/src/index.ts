@@ -18,6 +18,8 @@ export * from './decision-items.js';
 export * from './coordinator.js';
 export * from './thread-runner.js';
 export * from './threads.js';
+export * from './mail.js';
+export * from './main-checkout.js';
 export * from './envelopes.js';
 export * from './recovery.js';
 export * from './views.js';

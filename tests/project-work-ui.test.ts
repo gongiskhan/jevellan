@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 import {
   COORDINATOR_TOOLS, EffortSchema, NO_CHANGES, PlacementRecordSchema, ProjectDecisionSchema, ProjectWorkListViewSchema, ProjectWorkSettingsRequestSchema,
-  ThreadCreateRequestSchema, ThreadIndexSchema, ThreadOverrideRequestSchema, ThreadReportSchema, defaultProjectWorkSettings, idTime, mapEffort, newId,
+  SAVED_COMMITS_SENTENCE, ThreadCreateRequestSchema, ThreadIndexSchema, ThreadOverrideRequestSchema, ThreadReportSchema, defaultProjectWorkSettings, idTime, mapEffort, newId,
   type CursorTurn, type Effort, type PlacementRecord, type ProjectDecision, type ProjectLedgerEvent, type ProjectWorkView, type PullRequestEntry, type ThreadIndex,
   type ThreadReport, type ThreadView,
 } from '../packages/core/dist/index.js';
@@ -11,7 +11,7 @@ import {
   alignReports, chatItems, checksBadge, composerBlock, coordinatorChip, coordinatorLabel, decisionSource, defaultTab, deviceBlock, deviceChoices, deviceRefusal, dotClass, effortChoices, fallbackChip,
   mainIsolationBlock, mergeBlock, nearestEffort, openPullRequests, outcomeText, overrideForm, overrideOffered, overrideReady, overrideRequest, placementLine, projectDot,
   projectRoute, pullRequestBadges, reportBadge, restartedThread, rowClockMs, sentText, settingsRequest, showSent, sidebarProjects, threadActions, threadCreateRequest,
-  threadLiveText, threadMeta, threadPollDelay, threadSections, threadStarting, toolIcon, transcriptNotice, whyFields, withdrawals, withoutReportCalls, working,
+  threadLiveText, threadMeta, threadPollDelay, threadReason, threadSections, threadStarting, toolIcon, transcriptNotice, whyFields, withdrawals, withoutReportCalls, working,
 } from '../apps/web/src/project-work-model.js';
 import { dateOnly, duration, relativeDuration, shortTime, timeStamp } from '../apps/web/src/time.js';
 
@@ -276,6 +276,9 @@ test('chat items: owner messages, replies, one-liners, event cards and notices i
   expect(chatItems([coordinatorEvent('thread-verification-failed', { threadId: 'thread_a', attempts: 1, tail: '' }, 40),
     coordinatorEvent('pr-update', { threadId: 'thread_a', prNumber: 3, change: 'merged' }, 41), coordinatorEvent('mail', { mailId: 'mail_1', fromThreadId: 'thread_a', subject: 'API moved', body: '' }, 42)])
     .map((item) => item.kind === 'event' && item.text)).toEqual(['Tests failed once in a thread', 'Pull request #3 of a thread was merged', 'Mail from a thread: API moved']);
+  // A mail's body is the card's detail, as a report's summary is.
+  expect(chatItems([coordinatorEvent('mail', { mailId: 'mail_2', fromThreadId: 'thread_a', subject: 'API moved', body: 'Use /v2 now.\nThe old path is gone.' }, 43)])[0])
+    .toEqual({ kind: 'event', id: 43, text: 'Mail from a thread: API moved', detail: 'Use /v2 now.\nThe old path is gone.', threadId: 'thread_a', delivered: false });
 });
 
 test('working: the view decides when running, unavailable or offline; otherwise an unclosed coordinator turn', () => {
@@ -490,6 +493,24 @@ test("a restarted thread links the new one from its reason, read with the server
   expect(restartedThread(undefined)).toBeNull();
   expect(restartedThread('Restarted as not an id.')).toBeNull();
   expect(server.isRestarted(server.restartedReason('thread_new'))).toBe(true);
+});
+
+test("a main thread's saved-commits ref is split off its reason, so a restart still links and the ref shows whole (D295)", () => {
+  const ref = 'refs/jevellan/discard/thread_old/1759656000000';
+  expect(threadReason(server.commitsSavedReason('Stopped by you.', ref))).toEqual({ text: 'Stopped by you.', restartedAs: null, savedRef: ref });
+  expect(threadReason(server.commitsSavedReason(server.restartedReason('thread_new'), ref)))
+    .toEqual({ text: 'Restarted as thread_new.', restartedAs: 'thread_new', savedRef: ref });
+  expect(threadReason(server.restartedReason('thread_new'))).toEqual({ text: 'Restarted as thread_new.', restartedAs: 'thread_new', savedRef: null });
+  expect(threadReason(server.MAIN_LEASE_BUSY)).toEqual({ text: server.MAIN_LEASE_BUSY, restartedAs: null, savedRef: null });
+  // A reason cut to fit 400 characters keeps its ref whole; the server reads back the same ref.
+  const long = threadReason(server.commitsSavedReason('x'.repeat(400), ref));
+  expect(long?.savedRef).toBe(ref); expect(long?.text).toMatch(/^x+$/);
+  expect(server.savedCommitsRef(server.commitsSavedReason('Stopped by you.', ref))).toBe(ref);
+  // The sentence inside other words, or naming no saved ref, stays part of the text.
+  for (const reason of [`Stopped.${SAVED_COMMITS_SENTENCE}${ref}.`, `Stopped. ${SAVED_COMMITS_SENTENCE}refs/heads/main.`, `Stopped. ${SAVED_COMMITS_SENTENCE}${ref}. Later.`]) {
+    expect(threadReason(reason)).toEqual({ text: reason, restartedAs: null, savedRef: null });
+  }
+  expect(threadReason(undefined)).toBeNull(); expect(threadReason('')).toBeNull();
 });
 
 test('withdrawn questions need a successful call with its reason, once per ledger id and never for history (D84, D200)', () => {

@@ -1,4 +1,4 @@
-import { OWNER_STARTED_PREFIX, OWNER_WORKED_PREFIX, RESTARTED_PREFIX, type CoordinatorEvent, type Isolation, type PlacementOverride, type ThreadReport, type ThreadState } from '@jevellan/core';
+import { OWNER_STARTED_PREFIX, OWNER_WORKED_PREFIX, RESTARTED_PREFIX, SAVED_COMMITS_SENTENCE, splitSavedCommits, type CoordinatorEvent, type Isolation, type PlacementOverride, type ThreadReport, type ThreadState } from '@jevellan/core';
 import { firstLine, tail } from './git.js';
 
 // Every brief-verbatim Projects string (brief 9) and the server copy of phase 1. Pure functions only.
@@ -256,6 +256,35 @@ export const PR_NOT_OPEN = 'This pull request is no longer open.';
 export const prStatusUnavailable = (message: string): string => `The pull request status could not be read: ${message}`;
 export const cleanupFailed = (message: string): string => `The worktree could not be removed: ${message}`;
 
+// Main isolation (brief 8.2 step 4 main, 8.4 main; design 3.6; D29, D44, D45, D288-D292)
+/** A test command that leaves changes in the checkout: main publication rebases and pushes only a clean checkout (D290). */
+export const VERIFICATION_TREE_CHANGED = 'The test command left changes in the checkout, so this run does not count.';
+/** A done report while the checkout is still in the middle of a rebase or merge (for example after the main-conflict prompt). */
+export const MAIN_OPERATION_PENDING = 'The checkout is in the middle of a rebase or merge. Finish or abort it, then report done again.';
+export const MAIN_CHANGED_THREE_TIMES = 'Main changed during publication three times. Send a message to try again.';
+/** D45: the publication lease stayed busy after three retries. */
+export const MAIN_LEASE_BUSY = 'Another publication to main is in progress. Send a message to try again.';
+export const MAIN_NO_REMOTE = 'This project has no remote, so main cannot be published.';
+/** A stopped main thread's unpublished commits (D29): the stop reason keeps its own words, the saved ref follows (the sentence is shared with the interface, D295). */
+export function commitsSavedReason(reason: string, ref: string): string {
+  const saved = ` ${SAVED_COMMITS_SENTENCE}${ref}.`;
+  return `${reason.slice(0, 400 - saved.length)}${saved}`.trim();
+}
+/** The ref a stop reason names for saved commits (`commitsSavedReason`), so a later reason keeps it. */
+export const savedCommitsRef = (reason: string | undefined): string | undefined => splitSavedCommits(reason ?? '').ref ?? undefined;
+/** A main thread whose checkout could not be settled keeps its claim (D291): conversations and other main threads stay off it. */
+export const mainCheckoutKept = (message: string): string => `The project checkout stays held by this thread: ${message}`.slice(0, 400);
+/**
+ * Known `GitWorkspace` messages in thread words (D44): the dirty-checkout refusal names the conversation and the device id. Any other
+ * message keeps its text; "conversation" never reaches a thread reason.
+ */
+export function mainCheckoutMessage(message: string, input: { projectName: string; deviceId: string; deviceName: string }): string {
+  if (message === `${input.projectName} on ${input.deviceId} has changes that don't belong to this conversation. Commit, stash or publish them, then press Retry.`) {
+    return `${input.projectName} on ${input.deviceName} has changes that don't belong to this thread. Commit, stash or publish them, then start the thread again.`;
+  }
+  return message.replace(/\bconversations\b/g, 'threads').replace(/\bconversation\b/g, 'thread').slice(0, 400);
+}
+
 // Bridge tool errors (brief 7: a short sentence the model can act on)
 export const CHECK_TOOL_INPUT = 'Check the tool input.';
 /** `<path>: <message>. Check the tool input.`; the message keeps a single final period. */
@@ -263,6 +292,16 @@ export function toolInputError(path: ReadonlyArray<PropertyKey>, message: string
   const field = path.map(String).join('.');
   return `${field ? `${field}: ` : ''}${message.trim().replace(/\.+$/, '')}. ${CHECK_TOOL_INPUT}`;
 }
+// Mail and reservations between main threads (brief 7.1, 7.2; D287)
+/** The sender name of the coordinator's mail in a thread's inbox (`fromTitle`). */
+export const COORDINATOR_MAIL_NAME = 'Coordinator';
+/** The coordinator's mail goes to threads (brief 7.1); a thread's mail can also go to `coordinator` (brief 7.2). */
+export const COORDINATOR_MAIL_TO = 'Send mail to a thread id or to all.';
+export const THREAD_MAIL_TO = 'Send mail to coordinator, to a thread id or to all.';
+export const MAIL_TO_SELF = 'Send mail to another thread.';
+export const MAIL_WORKTREE_THREAD = 'That thread works in its own worktree and reads no mail.';
+export const MAIL_THREAD_ENDED = 'That thread has ended and reads no mail.';
+export const MAIL_NO_RECIPIENTS = 'No other thread works on main right now.';
 /** `jevellan_thread_read` with `transcript` for a thread on another device (D42). */
 export const transcriptStaysOn = (deviceName: string): string => `The transcript stays on ${deviceName}.`;
 /** The gist of a sentence-shaped message: its first line up to the first sentence end (a conflict's content and `Check the tool input.` stay out). */
@@ -301,7 +340,11 @@ export function coordinatorToolSummary(tool: string, input: unknown, outcome: To
       const number = field(field(result, 'pr'), 'number');
       return line(typeof number === 'number' ? `Checked PR #${number}` : `Checked ${thread}: no pull request`, `check the pull request of ${thread}`);
     }
-    case 'jevellan_mail_send': { const to = textField(input, 'to') ?? ''; return line(`Sent mail to ${to}: ${textField(input, 'subject') ?? ''}`, `send mail to ${to}`); }
+    case 'jevellan_mail_send': {
+      // A thread recipient reads as its title when it is known, like the other thread lines; `all` stays as written.
+      const to = textField(input, 'to') ?? ''; const named = to === 'all' || title === undefined ? to : thread;
+      return line(`Sent mail to ${named}: ${textField(input, 'subject') ?? ''}`, `send mail to ${named}`);
+    }
     case 'memory_search': return line('Searched project memory', 'search project memory');
     case 'memory_read': return line('Read a project memory note', 'read a project memory note');
     default: return line(`Used ${tool}`, `use ${tool}`);

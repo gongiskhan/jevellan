@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  ProjectWorkViewSchema, RESTARTED_PREFIX, ThreadMessageReceiptSchema, ThreadOverrideViewSchema, ThreadViewSchema, type PlacementField, type ProjectWorkView,
+  ProjectWorkViewSchema, RESTARTED_PREFIX, SAVED_COMMITS_SENTENCE, ThreadMessageReceiptSchema, ThreadOverrideViewSchema, ThreadViewSchema, type PlacementField, type ProjectWorkView,
   type QueuedMessage, type ThreadIndex, type ThreadReport, type ThreadView,
 } from '@jevellan/core/client';
 import { ApiError, api, empty } from './api.js';
@@ -10,8 +10,8 @@ import { MessageInput } from './message-delivery.js';
 import * as copy from './project-work-copy.js';
 import {
   THREAD_POLL_AFTER_ACTION_MS, THREAD_POLL_LIVE_MS, alignReports, composerBlock, deviceBlock, deviceChoices, deviceRefusal, dotClass, effortChoices, fallbackChip, mainIsolationBlock, nearestEffort,
-  overrideForm, overrideOffered, overrideReady, overrideRequest, placementLine, pullRequestBadges, reportBadge, restartedThread, threadActions, threadLiveText,
-  threadPollDelay, threadStarting, transcriptNotice, whyFields, withoutReportCalls, type OverrideForm, type OverrideMode,
+  overrideForm, overrideOffered, overrideReady, overrideRequest, placementLine, pullRequestBadges, reportBadge, threadActions, threadLiveText,
+  threadPollDelay, threadReason, threadStarting, transcriptNotice, whyFields, withoutReportCalls, type OverrideForm, type OverrideMode,
 } from './project-work-model.js';
 import { RouteLink, Stamp, afterDialogs, deviceNames, failureText, runtimeNames, updated, useClientIds, useLocalError } from './project-work.js';
 import { TranscriptTurn } from './session-transcript.js';
@@ -150,7 +150,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
   const line = placementLine(thread, view, runtimeName(thread.runtime));
   const notice = transcriptNotice(view);
   const fallback = fallbackChip(view.placement);
-  const restartedAs = restartedThread(thread.stateReason);
+  const reason = threadReason(thread.stateReason);
   const allowTurns = () => void allow.run(async (signal) => {
     setActionError('');
     acted(await api(`${base}/allow-turns`, ThreadViewSchema, 'POST', empty, { signal }));
@@ -202,11 +202,13 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
           {fallback && <span className="chip pw-badge pw-tone-warn pw-fallback-chip">{fallback}</span>}
         </div>
         <div className="pw-thread-details">
-          {thread.stateReason && (
-            <p className="pw-thread-reason">
-              {restartedAs ? <>{RESTARTED_PREFIX}<RouteLink href={`${project}/threads/${restartedAs}`} navigate={navigate}>{restartedAs}</RouteLink>.</> : thread.stateReason}
+          {reason?.text && (
+            <p className="pw-thread-reason" title={reason.text}>
+              {reason.restartedAs
+                ? <>{RESTARTED_PREFIX}<RouteLink href={`${project}/threads/${reason.restartedAs}`} navigate={navigate}>{reason.restartedAs}</RouteLink>.</> : reason.text}
             </p>
           )}
+          {reason?.savedRef && <p className="pw-saved-ref">{SAVED_COMMITS_SENTENCE}<code>{reason.savedRef}</code>.</p>}
           <p className="pw-placement-line" title={line}>{line}</p>
         </div>
       </div>
@@ -233,7 +235,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
       )}
       {confirming === 'stop' && (
         <ConfirmAction title={copy.STOP_THREAD_TITLE} action={copy.STOP} onError={onError} close={() => setConfirming(undefined)}
-          body={thread.isolation === 'worktree' ? `${copy.STOP_THREAD_BODY} ${copy.STOP_KEEPS_WORKTREE}` : copy.STOP_THREAD_BODY}
+          body={`${copy.STOP_THREAD_BODY} ${thread.isolation === 'worktree' ? copy.STOP_KEEPS_WORKTREE : copy.STOP_SAVES_MAIN_COMMITS}`}
           run={async (signal) => acted(await api(`${base}/stop`, ThreadViewSchema, 'POST', { schema: 'thread-stop-request-v1' }, { signal }))} />
       )}
       {confirming === 'discard' && (
@@ -531,7 +533,7 @@ function OverrideDialog({ props, view, projectId, close, applied }: { props: Pag
               onChange={() => mode('restart')} />{copy.RESTART_WITH_CHOICES}
           </label>
           <p className={`pw-field-note pw-radio-note${view.canOverride.restart ? '' : ' pw-refused'}`} id={restartNote}>
-            {view.canOverride.restart ? copy.RESTART_HELP : view.canOverride.restartReason}
+            {view.canOverride.restart ? view.thread.isolation === 'main' ? copy.RESTART_HELP_MAIN : copy.RESTART_HELP : view.canOverride.restartReason}
           </p>
         </fieldset>
         <fieldset className="pw-fields" disabled={restart && !work}>

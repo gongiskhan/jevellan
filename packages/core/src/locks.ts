@@ -99,6 +99,8 @@ export class CheckoutOwnership {
 }
 
 export const PUBLICATION_LEASE_MS = 120_000;
+/** The refusal while another owner holds an unexpired lease; members receive the same text from the hub. */
+export const PUBLICATION_BUSY = 'Another work is publishing to this remote.';
 export const PUBLICATION_RENEW_MS = 30_000;
 /** Run on the hub. Member devices call its HTTP endpoints so one clock governs leases. */
 export class PublicationLeases {
@@ -107,7 +109,7 @@ export class PublicationLeases {
     const key = digest(remote); const current = await this.hub.get('publication-leases', key, PublicationLeaseSchema);
     if (current?.document.held && Date.parse(current.document.expiresAt) > this.now()) {
       if (current.document.owner === owner) return current.document;
-      throw new Error('Another work is publishing to this remote.');
+      throw new Error(PUBLICATION_BUSY);
     }
     const lease = PublicationLeaseSchema.parse({ schema: 'publication-lease-v1', remote, owner, token: `lease_${randomUUID()}`, held: true, expiresAt: new Date(this.now() + PUBLICATION_LEASE_MS).toISOString() });
     return (await this.hub.put('publication-leases', key, PublicationLeaseSchema, lease, current?.revision ?? 0)).document;

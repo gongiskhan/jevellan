@@ -13,7 +13,7 @@ import {
 import { HubProjectAccess, HubUnavailable } from '../packages/mesh/dist/index.js';
 import { forCoordinator, type FakeTurn } from '../packages/runtime-contract/dist/index.js';
 import {
-  EVENT_CURSOR_AHEAD, EVENT_CURSOR_INVALID, LEAVE_GIT_SETTING, MAIN_NOT_AVAILABLE, MESSAGE_ID_REUSED, NOTEBOOK_CHANGED, PROJECT_NOT_FOUND, QUESTION_NOT_FOUND,
+  EVENT_CURSOR_AHEAD, EVENT_CURSOR_INVALID, LEAVE_GIT_SETTING, MESSAGE_ID_REUSED, NOTEBOOK_CHANGED, PROJECT_NOT_FOUND, QUESTION_NOT_FOUND,
   SETTINGS_CHANGED, UNKNOWN_OPTION, coordinatorOfflineNotice, publicProjectData,
 } from '../packages/projects/dist/index.js';
 import { projectWorkRoute } from '../apps/daemon/dist/index.js';
@@ -281,12 +281,14 @@ test('work settings, notebook and answers: revision checks, the main default coe
   expect(await call(f, route('/work-settings'), 'PUT', put(0, { maxRunningThreads: 21 }), 400)).toEqual(refused('request-failed', CHECK));
   expect(await call(f, route('/work-settings'), 'PUT', { ...put(1), settings: { ...defaults, setupCommand: 'x'.repeat(501) } }, 400)).toEqual(refused('request-failed', CHECK));
   expect(await call(f, '/api/projects/missing/work-settings', 'GET', undefined, 404)).toEqual(refused('not-found', PROJECT_NOT_FOUND));
-  // A main default is stored, but reads show worktree with the reason: the phase text until main isolation exists (D88).
+  // A main default is stored and read as main now that main isolation exists (D88, phase 6), without a notice.
   expect(await call(f, route('/work-settings'), 'PUT', put(1, { maxRunningThreads: 3, defaultIsolation: 'main' }), 200)).toEqual({ schema: 'project-work-settings-view-v1',
-    settings: { ...defaultProjectWorkSettings(pid), revision: 2, maxRunningThreads: 3, defaultIsolation: 'worktree' }, notice: MAIN_NOT_AVAILABLE });
+    settings: { ...defaultProjectWorkSettings(pid), revision: 2, maxRunningThreads: 3, defaultIsolation: 'main' } });
   expect((await f.app.projectHub.settings(pid))?.document).toMatchObject({ revision: 2, defaultIsolation: 'main' });
-  expect(await call(f, route('/work-settings'), 'GET', undefined, 200)).toMatchObject({ settings: { defaultIsolation: 'worktree' }, notice: MAIN_NOT_AVAILABLE });
-  expect(ProjectWorkViewSchema.parse(await call(f, route('/work'), 'GET', undefined, 200))).toMatchObject({ settings: { defaultIsolation: 'worktree', revision: 2 }, settingsNotice: MAIN_NOT_AVAILABLE });
+  expect(await call(f, route('/work-settings'), 'GET', undefined, 200)).toEqual({ schema: 'project-work-settings-view-v1',
+    settings: { ...defaultProjectWorkSettings(pid), revision: 2, maxRunningThreads: 3, defaultIsolation: 'main' } });
+  const opened = ProjectWorkViewSchema.parse(await call(f, route('/work'), 'GET', undefined, 200));
+  expect(opened).toMatchObject({ settings: { defaultIsolation: 'main', revision: 2 }, gates: { mainIsolation: true } }); expect(opened.settingsNotice).toBeUndefined();
   // On a Leave git project the brief's text wins over the phase text (5.1, D88).
   const stored = await f.app.state.projects.get(pid);
   await f.app.conversations.saveProject({ schema: 'project-write-v1', revision: stored!.revision, project: { ...f.project, branchPolicy: 'external' } });

@@ -10,6 +10,7 @@ import {
 } from './copy.js';
 import { derivedId, type DecisionItems } from './decision-items.js';
 import type { ProjectLedger, ProjectLedgers } from './ledger.js';
+import type { MailService } from './mail.js';
 import type { DeviceRoster } from './placement.js';
 import type { PullRequestTracker } from './pull-requests.js';
 import type { ThreadStore } from './stores.js';
@@ -120,6 +121,8 @@ export type CoordinatorToolsOptions = {
   pullRequests: Pick<PullRequestTracker, 'fresh'>;
   hub: Pick<ProjectHub, 'thread' | 'notebook' | 'putNotebook'>;
   ledgers: Pick<ProjectLedgers, 'coordinator'>;
+  /** Mail to the threads that work on main (brief 7.1). */
+  mail: Pick<MailService, 'coordinatorSend'>;
   roster(): Promise<DeviceRoster>;
   /** Read-only project memory on this device. */
   memory(projectId: string): Promise<ProjectMemoryReader>;
@@ -219,7 +222,8 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
         const read = await o.pullRequests.fresh(projectId, input.threadId);
         return { schema: 'pr-status-result-v1', threadId: input.threadId, pr: read.pr, ...(read.reason ? { reason: read.reason.slice(0, 400) } : {}) };
       }
-      // Mail arrives with main isolation (phase 6); no coordinator list offers it before.
+      case 'jevellan_mail_send': return o.mail.coordinatorSend(projectId, turn, raw as Input<typeof name>);
+      // The thread tools (report, inbox and reservations) are not the coordinator's.
       default: throw failure(TOOL_NOT_IN_TURN, 403);
     }
   }
@@ -227,7 +231,10 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
     call: (scope, name, input) => call(scope.projectId, scope.turn, name, input),
     memory: (scope) => o.memory(scope.projectId),
     line: async (name, input, outcome, scope) => {
-      const threadId = idField(input, 'threadId') ?? (outcome.ok ? idField(outcome.result, 'threadId') : undefined);
+      // Mail names its thread in `to` (`all` and `coordinator` are id-shaped but no thread).
+      const recipient = name === 'jevellan_mail_send' ? idField(input, 'to') : undefined;
+      const threadId = idField(input, 'threadId') ?? (recipient === 'all' || recipient === 'coordinator' ? undefined : recipient)
+        ?? (outcome.ok ? idField(outcome.result, 'threadId') : undefined);
       const thread = threadId === undefined ? undefined : await known(scope.projectId, threadId).catch(() => undefined);
       const decisionId = outcome.ok ? idField(input, 'decisionId') ?? idField(outcome.result, 'decisionId') : undefined;
       // The withdrawn-question toast reads `reason` (D84): only a question this call withdrew carries one.

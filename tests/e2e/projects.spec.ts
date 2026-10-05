@@ -253,9 +253,11 @@ test('PJ3 a running thread shows its transcript, report card and accepts an inte
     await expect(select).toHaveValue(''); await expect(select.locator('option').first()).toHaveText('Automatic');
   }
   const isolation = dialog.getByRole('combobox', { name: 'Isolation', exact: true });
+  // Main isolation exists since phase 6: on this main-policy project Main is offered, with no note under the field.
   await expect(isolation.locator('option')).toHaveText(['Automatic', 'Worktree', 'Main']);
-  await expect(isolation.locator('option[value="main"]')).toHaveJSProperty('disabled', true);
-  await expect(isolation).toHaveAccessibleDescription('Main isolation is not available yet.');
+  await expect(isolation.locator('option[value="main"]')).toHaveJSProperty('disabled', false);
+  await expect(isolation).not.toHaveAttribute('aria-describedby');
+  await expect(dialog.getByText('Main isolation is not available yet.', { exact: true })).toHaveCount(0);
   // Every device of the mesh is offered in roster order (D281); one no thread can run on stays listed, disabled, with placement's reason.
   const roster = DeviceRosterSchema.parse(await read(page, '/hub/devices/roster'));
   const device = dialog.getByRole('combobox', { name: 'Device', exact: true });
@@ -449,11 +451,14 @@ test('PJ3 project settings disable Main for a Leave git to me project', async ({
   await expect(dialog.getByRole('spinbutton', { name: 'Max running threads', exact: true })).toHaveValue('3');
   await dialog.getByRole('button', { name: 'Cancel', exact: true }).click(); await expect(dialog).toHaveCount(0);
 
-  // A project that may use main still cannot choose it before main isolation exists (phase gate, D88).
+  // A project that may use main offers it since phase 6 (D88): the radio is enabled, without a note, and can be chosen (not saved here).
   await openProject(page, 'Projects fixture');
   dialog = await openSettings(page);
-  await expect(dialog.getByRole('radio', { name: 'Main', exact: true })).toBeDisabled();
-  await expect(dialog.getByRole('radio', { name: 'Main', exact: true })).toHaveAccessibleDescription('Main isolation is not available yet.');
+  const offered = dialog.getByRole('radio', { name: 'Main', exact: true });
+  await expect(offered).toBeEnabled(); await expect(offered).not.toHaveAttribute('aria-describedby');
+  await expect(dialog.getByText('Main isolation is not available yet.', { exact: true })).toHaveCount(0);
+  await offered.check(); await expect(offered).toBeChecked();
+  await expect(dialog.getByRole('radio', { name: 'Worktree and pull request', exact: true })).not.toBeChecked();
   await dialog.getByRole('button', { name: 'Cancel', exact: true }).click(); await expect(dialog).toHaveCount(0);
   expect(errors).toEqual([]);
 });
@@ -543,7 +548,11 @@ test('PJ4b the Why panel explains placement and overrides apply', async ({ page 
   const section = (name: string) => panel.locator('.why-section').filter({ has: page.locator('h3', { hasText: new RegExp(`^${name}`) }) });
   await expect(section('Placement').locator('h3')).toHaveText('Placement Jev');
   await expect(section('Placement').locator('.why-line')).toHaveText('Fixed: none');
-  await expect(section('Isolation').locator('h3')).toHaveText('Isolation only option');
+  // Main is allowed on this project since phase 6, so Jev was asked the isolation too and kept the worktree.
+  await expect(section('Isolation').locator('h3')).toHaveText('Isolation Jev');
+  await expect(section('Isolation').locator('.why-option > span:first-child')).toHaveText(['Worktree', 'Main']);
+  await expect(section('Isolation').locator('.why-option > span:last-child')).toHaveText(['0.80', '0.20']);
+  await expect(section('Isolation').locator('.why-option.win > span:first-child')).toHaveText('Worktree');
   await expect(section('Model').locator('h3')).toHaveText('Model Jev');
   await expect(section('Model').locator('.why-option > span:first-child')).toHaveText([`${claude} Fable`, `${claude} Opus`, `${codex} GPT`]);
   await expect(section('Model').locator('.why-option > span:last-child')).toHaveText(['0.70', '0.15', '0.15']);
@@ -618,7 +627,8 @@ test('PJ4b the Why panel explains placement and overrides apply', async ({ page 
   dialog = page.getByRole('dialog', { name: 'Override', exact: true });
   await dialog.getByRole('radio', { name: 'Restart with these choices', exact: true }).check();
   const isolation = dialog.getByRole('combobox', { name: 'Isolation', exact: true });
-  await expect(isolation).toHaveValue('worktree'); await expect(isolation).toHaveAccessibleDescription('Main isolation is not available yet.');
+  await expect(isolation).toHaveValue('worktree'); await expect(isolation).not.toHaveAttribute('aria-describedby');
+  await expect(isolation.locator('option[value="main"]')).toHaveJSProperty('disabled', false);
   await expect(dialog.getByRole('combobox', { name: 'Device', exact: true })).toHaveValue(placed.thread.ownerDeviceId);
   await expect(model.locator('option')).toHaveText(['Automatic', `${claude} Fable`, `${claude} Opus`, `${codex} GPT`]);
   await expect(model).toHaveValue('claude-opus'); await expect(effort).toHaveValue('low');

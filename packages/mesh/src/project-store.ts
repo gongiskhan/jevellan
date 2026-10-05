@@ -1,12 +1,13 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import {
-  DecisionAnswerSchema, ENVELOPE_PAGE_BYTES, IdSchema, PROJECT_HUB_PAGE, PlacementOverrideSchema, ProjectCoordinatorSchema, ProjectCoordinatorStatusSchema, ProjectDecisionSchema, ProjectEnvelopeSchema,
-  ProjectHubRequestSchema, ProjectHubResultSchema, ProjectNotebookSchema, ProjectSchema, ProjectWorkSettingsSchema, ProjectWorkSummarySchema, ThreadIndexCursorSchema, ThreadIndexSchema,
-  TimestampSchema, checkHubRevision, collectionOf, compareEnvelopes, coordinatorMovable, coordinatorWorking, stableJson, withHubRevision, workCounts,
-  type DecisionAnswer, type DeviceView, type DocumentSchema, type PlacementOverride, type ProjectCoordinator, type ProjectCoordinatorStatus, type ProjectDecision, type ProjectEnvelope,
-  type ProjectHub, type ProjectHubOperation, type ProjectHubResult, type ProjectHubResultOf, type ProjectNotebook, type ProjectWorkSettings, type ProjectWorkSummary, type Stored,
-  type ThreadIndex,
+  CheckoutClaimSchema, ConversationIndexSchema, DecisionAnswerSchema, ENVELOPE_PAGE_BYTES, FileReservationSchema, IdSchema, MAIL_PAGE_BYTES, PROJECT_HUB_PAGE, PlacementOverrideSchema, ProjectCoordinatorSchema, ProjectCoordinatorStatusSchema,
+  ProjectDecisionSchema, ProjectEnvelopeSchema, ProjectHubRequestSchema, ProjectHubResultSchema, ProjectMailSchema, ProjectNotebookSchema, ProjectSchema, ProjectWorkSettingsSchema,
+  ProjectWorkSummarySchema, ReservationRequestSchema, ThreadIndexCursorSchema, ThreadIndexSchema, TimestampSchema, checkHubRevision, collectionOf, compareEnvelopes, coordinatorMovable,
+  coordinatorWorking, isTerminal, mailReaches, pathsOverlap, reservationActive, stableJson, withHubRevision, workCounts,
+  type DecisionAnswer, type DeviceView, type DocumentSchema, type FileReservation, type HeldCheckout, type PlacementOverride, type ProjectCoordinator, type ProjectCoordinatorStatus, type ProjectDecision,
+  type ProjectEnvelope, type ProjectHub, type ProjectHubOperation, type ProjectHubResult, type ProjectHubResultOf, type ProjectMail, type ProjectNotebook, type ProjectWorkSettings,
+  type ProjectWorkSummary, type ReservationConflict, type ReservationRequest, type ReserveOutcome, type Stored, type ThreadIndex,
 } from '@jevellan/core';
 import type { HubDatabase } from './database.js';
 import { HubProtocolError, type MemberHubClient } from './client.js';
@@ -14,13 +15,20 @@ import { settingsMutation } from './settings-mutation.js';
 
 const SETTINGS = 'project-work-settings'; const COORDINATORS = 'project-coordinators'; const STATUS = 'project-coordinator-status';
 const THREADS = 'project-threads'; const CURSORS = 'project-thread-cursors'; const DECISIONS = 'project-decisions'; const NOTEBOOKS = 'project-notebooks';
-const OVERRIDES = 'project-placement-overrides'; const ENVELOPES = 'project-envelopes';
+const OVERRIDES = 'project-placement-overrides'; const ENVELOPES = 'project-envelopes'; const MAIL = 'project-mail'; const RESERVATIONS = 'project-reservations';
 /** Answered questions stay in the list for 14 days (D52). */
 export const DECISION_LIST_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
+/** Mail stays at least 14 days, and longer while a recipient that can still read it has not (D90, D286). */
+export const MAIL_RETENTION_MS = 14 * 24 * 60 * 60 * 1000;
+/** Reservations released or expired more than a day ago are deleted when the project's next reservation is made (D90). */
+export const RESERVATION_RETENTION_MS = 24 * 60 * 60 * 1000;
 
 function refuse(message: string, status = 409): never { throw Object.assign(new Error(message), { status }); }
 /** The hub sets the revision (D3), so an index's identity for retries is its content without it. */
 const indexDigest = (index: ThreadIndex) => createHash('sha256').update(stableJson({ ...index, revision: 0 })).digest('hex');
+/** A mail's identity for retries: the hub sets its time, revision and readers (D285). */
+const mailIdentity = (mail: ProjectMail) => stableJson({ ...mail, revision: 0, at: '', readBy: [] });
+const byTime = (a: { at: string; id: string }, b: { at: string; id: string }) => Date.parse(a.at) - Date.parse(b.at) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 const StoredSettingsSchema = z.strictObject({ revision: z.number().int().positive(), document: ProjectWorkSettingsSchema });
 const AnswerReceiptSchema = z.strictObject({ decision: z.strictObject({ revision: z.number().int().positive(), document: ProjectDecisionSchema }), repeated: z.boolean() });
 type Page<T> = { records: T[]; next: string | null };
@@ -39,6 +47,15 @@ export class HubProjectStore {
     return checkHubRevision(this.hub.put(namespace, id, schema, withHubRevision(document, expectedRevision), expectedRevision));
   }
   #project(projectId: string): void { if (!this.hub.get('projects', projectId, ProjectSchema)) refuse('Project not found.', 404); }
+  /** A thread's index, when the hub has it (a first publish may still be on its way, like overrides), must be of the project and the caller's. */
+  #ownThread(projectId: string, threadId: string, message: string): ThreadIndex | undefined {
+    const index = this.thread(threadId)?.document;
+    if (index && (index.projectId !== projectId || index.ownerDeviceId !== this.deviceId)) refuse(message, 403);
+    return index;
+  }
+  #documents<T extends { revision: number }>(namespace: string, schema: DocumentSchema<T>, projectId: string): T[] {
+    return this.hub.listByField(namespace, 'projectId', projectId, schema).map((row) => checkHubRevision(row).document);
+  }
   /** Per-project pages of 100 in id order, filtered in SQL by project (D89); `next` is the last returned id. */
   #page<T extends { id: string; revision: number }>(namespace: string, schema: DocumentSchema<T>, projectId: string, after: string | undefined, keep: (document: T) => boolean): Page<T> {
     const records: T[] = []; let cursor = after;
@@ -258,6 +275,160 @@ export class HubProjectStore {
     return { records, next: projects.length > PROJECT_HUB_PAGE ? page.at(-1)!.id : null };
   }
 
+  /**
+   * Mail between main threads (brief 5.11, 7.2). A thread's owner device sends its mail, the coordinator device the coordinator's; mail
+   * to the coordinator travels as a coordinator event, never here. The hub stamps the time with its clock (the retention and the
+   * reach of mail to all depend on it), and in the same transaction deletes the project's mail older than 14 days that every recipient
+   * read or can no longer read (D90, D286).
+   */
+  sendMail(raw: ProjectMail): Stored<ProjectMail> {
+    const mail = ProjectMailSchema.parse(raw);
+    if (mail.readBy.length) refuse('New mail cannot already be read.', 400);
+    if (mail.to !== 'all' && (mail.to === 'coordinator' || !IdSchema.safeParse(mail.to).success)) refuse('Mail goes to a thread id or to all; the coordinator receives mail as an event.', 400);
+    if (mail.from === 'all' || (mail.from !== 'coordinator' && !IdSchema.safeParse(mail.from).success)) refuse('Mail comes from a thread id or from the coordinator.', 400);
+    return this.hub.transaction(() => {
+      this.#project(mail.projectId);
+      if (mail.from === 'coordinator') { if (this.coordinator(mail.projectId)?.document.deviceId !== this.deviceId) refuse('Only the coordinator device can send the coordinator’s mail.', 403); }
+      else this.#ownThread(mail.projectId, mail.from, 'Only the thread owner can send its mail.');
+      const existing = this.#get(MAIL, mail.id, ProjectMailSchema);
+      if (existing) {
+        if (mailIdentity(existing.document) !== mailIdentity(mail)) refuse('This mail id was already used for a different message.');
+        return existing;
+      }
+      const now = this.now(); this.#pruneMail(mail.projectId, now);
+      return this.#put(MAIL, mail.id, ProjectMailSchema, { ...mail, at: new Date(now).toISOString() }, 0);
+    });
+  }
+  #pruneMail(projectId: string, now: number): void {
+    const old = this.#documents(MAIL, ProjectMailSchema, projectId).filter((mail) => now - Date.parse(mail.at) > MAIL_RETENTION_MS);
+    if (!old.length) return;
+    const threads = this.#documents(THREADS, ThreadIndexSchema, projectId);
+    // A recipient that ended (or whose thread is unknown here) will never read it.
+    for (const mail of old) {
+      if (threads.filter((thread) => mailReaches(mail, thread)).every((thread) => isTerminal(thread.state) || mail.readBy.includes(thread.id))) this.hub.delete(MAIL, mail.id);
+    }
+  }
+  /**
+   * The thread's unread mail, oldest first (by the hub's time), cut at 100 or about 1 MiB (always one). Reading marks nothing, so a
+   * lost reply repeats mail instead of losing it (D285). A thread whose index the hub does not have yet gets only the mail addressed
+   * to it; mail to all reaches it once the hub knows when it was created.
+   */
+  inbox(projectId: string, threadId: string): { records: ProjectMail[]; more: boolean } {
+    IdSchema.parse(projectId); IdSchema.parse(threadId); this.#project(projectId);
+    const reader = this.#ownThread(projectId, threadId, 'Only the thread owner can read its mail.');
+    const unread = this.#documents(MAIL, ProjectMailSchema, projectId)
+      .filter((mail) => !mail.readBy.includes(threadId) && (reader ? mailReaches(mail, reader) : mail.to === threadId && mail.from !== threadId)).sort(byTime);
+    const records: ProjectMail[] = []; let bytes = 0;
+    for (const mail of unread) {
+      const size = Buffer.byteLength(JSON.stringify(mail));
+      if (records.length === PROJECT_HUB_PAGE || (records.length && bytes + size > MAIL_PAGE_BYTES)) break;
+      records.push(mail); bytes += size;
+    }
+    return { records, more: records.length < unread.length };
+  }
+  /** Marks received mail read by the thread; mail already read or deleted is skipped, and mail not addressed to it is refused. */
+  markRead(projectId: string, threadId: string, ids: readonly string[]): { read: number } {
+    IdSchema.parse(projectId); IdSchema.parse(threadId); for (const id of ids) IdSchema.parse(id);
+    return this.hub.transaction(() => {
+      this.#project(projectId); this.#ownThread(projectId, threadId, 'Only the thread owner can read its mail.');
+      let read = 0;
+      for (const id of new Set(ids)) {
+        const current = this.#get(MAIL, id, ProjectMailSchema); if (!current || current.document.readBy.includes(threadId)) continue;
+        const mail = current.document;
+        if (mail.projectId !== projectId || mail.from === threadId || (mail.to !== threadId && mail.to !== 'all')) refuse('This mail is not addressed to that thread.', 403);
+        this.#put(MAIL, id, ProjectMailSchema, { ...mail, readBy: [...mail.readBy, threadId] }, current.revision); read += 1;
+      }
+      return { read };
+    });
+  }
+
+  /**
+   * Advisory path reservations (brief 5.11, 7.2), by the thread's owner device. One transaction deletes the project's reservations
+   * released or expired more than a day ago (D90), finds other threads' active reservations with overlapping paths (`pathsOverlap`,
+   * no globbing) and stores the new one only when there are none, with the hub clock's times. The same id again returns the stored
+   * reservation (a retry after a lost reply), whatever its state since; with other paths it is refused.
+   */
+  reserve(raw: ReservationRequest): ReserveOutcome {
+    const request = ReservationRequestSchema.parse(raw);
+    return this.hub.transaction((): ReserveOutcome => {
+      this.#project(request.projectId); this.#ownThread(request.projectId, request.threadId, 'Only the thread owner can reserve paths for it.');
+      const existing = this.#get(RESERVATIONS, request.id, FileReservationSchema);
+      if (existing) {
+        const document = existing.document;
+        if (document.projectId !== request.projectId || document.threadId !== request.threadId || document.deviceId !== this.deviceId || stableJson(document.paths) !== stableJson(request.paths)
+          || document.reason !== request.reason) refuse('This reservation id was already used for other paths.');
+        return { granted: true, reservation: existing };
+      }
+      const now = this.now(); const kept: FileReservation[] = [];
+      for (const reservation of this.#documents(RESERVATIONS, FileReservationSchema, request.projectId)) {
+        const ended = Math.min(Date.parse(reservation.expiresAt), reservation.releasedAt ? Date.parse(reservation.releasedAt) : Infinity);
+        if (now - ended > RESERVATION_RETENTION_MS) this.hub.delete(RESERVATIONS, reservation.id); else kept.push(reservation);
+      }
+      const conflicts = kept.filter((reservation) => reservation.threadId !== request.threadId && reservationActive(reservation, now))
+        .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt) || (a.id < b.id ? -1 : 1))
+        .flatMap((reservation): ReservationConflict[] => {
+          const paths = reservation.paths.filter((path) => request.paths.some((wanted) => pathsOverlap(path, wanted)));
+          return paths.length ? [{ threadId: reservation.threadId, threadTitle: this.thread(reservation.threadId)?.document.title ?? null, paths, expiresAt: reservation.expiresAt }] : [];
+        }).slice(0, PROJECT_HUB_PAGE);
+      if (conflicts.length) return { granted: false, conflicts };
+      return { granted: true, reservation: this.#put<FileReservation>(RESERVATIONS, request.id, FileReservationSchema, { schema: 'file-reservation-v1', revision: 0, id: request.id,
+        projectId: request.projectId, threadId: request.threadId, deviceId: this.deviceId, paths: request.paths, reason: request.reason, createdAt: new Date(now).toISOString(),
+        expiresAt: new Date(now + request.minutes * 60_000).toISOString() }, 0) };
+    });
+  }
+  /**
+   * Releases one reservation of the thread by id (another thread's or an unknown id is not found), or all of the thread's active
+   * ones; only the device that reserved them releases them. Returns how many were still active (a repeat releases none).
+   */
+  release(projectId: string, threadId: string, id?: string): { released: number } {
+    IdSchema.parse(projectId); IdSchema.parse(threadId);
+    return this.hub.transaction(() => {
+      this.#project(projectId); this.#ownThread(projectId, threadId, 'Only the thread owner can release its reservations.');
+      const now = this.now();
+      let targets: FileReservation[];
+      if (id === undefined) targets = this.#documents(RESERVATIONS, FileReservationSchema, projectId).filter((reservation) => reservation.threadId === threadId);
+      else {
+        const reservation = this.#get(RESERVATIONS, IdSchema.parse(id), FileReservationSchema)?.document;
+        if (reservation?.projectId !== projectId || reservation.threadId !== threadId) refuse('This reservation was not found.', 404);
+        targets = [reservation];
+      }
+      let released = 0;
+      for (const reservation of targets) {
+        if (reservation.deviceId !== this.deviceId) refuse('Only the device that reserved these paths can release them.', 403);
+        if (!reservationActive(reservation, now)) continue;
+        this.#put(RESERVATIONS, reservation.id, FileReservationSchema, { ...reservation, releasedAt: new Date(now).toISOString() }, reservation.revision); released += 1;
+      }
+      return { released };
+    });
+  }
+  /** The project's active reservations by the hub clock, in pages of 100 by id. */
+  reservations(projectId: string, after?: string): Page<FileReservation> {
+    const now = this.now(); return this.#page(RESERVATIONS, FileReservationSchema, projectId, after, (reservation) => reservationActive(reservation, now));
+  }
+
+  /**
+   * Where a new main thread cannot work (brief 10, D65, D288), for any device of the mesh: per device with a path in the project, the
+   * held checkout claim of its checkout (the stored path is the claim's, or the claim belongs to a thread or conversation of this project;
+   * members' paths are never resolved here), else the project's oldest main thread there that has not ended, whose claim may not exist yet.
+   */
+  heldCheckouts(projectId: string): HeldCheckout[] {
+    const project = this.hub.get('projects', IdSchema.parse(projectId), ProjectSchema)?.document;
+    if (!project) refuse('Project not found.', 404);
+    const threads = this.#documents(THREADS, ThreadIndexSchema, projectId);
+    const ours = (ownerId: string) => threads.some((index) => index.id === ownerId) || this.hub.get('conversations', ownerId, ConversationIndexSchema)?.document.projectId === projectId;
+    const held = new Map<string, HeldCheckout>();
+    const hold = (deviceId: string, ownerId: string, title: string) => { if (!held.has(deviceId)) held.set(deviceId, { deviceId, ownerId, title: title.slice(0, 200) }); };
+    for (const deviceId of Object.keys(project.paths).sort()) {
+      for (const { document: claim } of this.hub.listByField('checkout-ownership', 'deviceId', deviceId, CheckoutClaimSchema)) {
+        if (claim.held && (project.paths[deviceId] === claim.path || ours(claim.conversationId))) hold(deviceId, claim.conversationId, claim.conversationTitle);
+      }
+    }
+    for (const index of [...threads].sort((a, b) => a.createdAt.localeCompare(b.createdAt) || (a.id < b.id ? -1 : 1))) {
+      if (index.isolation === 'main' && !isTerminal(index.state) && project.paths[index.ownerDeviceId]) hold(index.ownerDeviceId, index.id, index.title);
+    }
+    return [...held.values()].sort((a, b) => (a.deviceId < b.deviceId ? -1 : a.deviceId > b.deviceId ? 1 : 0)).slice(0, PROJECT_HUB_PAGE);
+  }
+
   /** `/hub/mesh/projects/<collection>`: the route has already matched the collection to the operation. */
   request(raw: unknown): ProjectHubResult {
     const request = ProjectHubRequestSchema.parse(raw); const base = { schema: 'project-hub-result-v1', operation: request.operation };
@@ -285,6 +456,16 @@ export class HubProjectStore {
       case 'envelopes-pending': result = { ...base, ...this.pendingEnvelopes(request.targetDeviceId) }; break;
       case 'envelope-ack': result = { ...base, id: request.id, ...this.ackEnvelope(request.id) }; break;
       case 'work-summaries': result = { ...base, ...this.workSummaries(request.after) }; break;
+      case 'mail-send': result = { ...base, record: this.sendMail(request.mail) }; break;
+      case 'mail-inbox': result = { ...base, ...this.inbox(request.projectId, request.threadId) }; break;
+      case 'mail-read': result = { ...base, ...this.markRead(request.projectId, request.threadId, request.ids) }; break;
+      case 'reserve': {
+        const outcome = this.reserve(request.reservation);
+        result = { ...base, reservation: outcome.granted ? outcome.reservation : null, conflicts: outcome.granted ? [] : outcome.conflicts }; break;
+      }
+      case 'release': result = { ...base, ...this.release(request.projectId, request.threadId, request.id) }; break;
+      case 'reservations-list': result = { ...base, ...this.reservations(request.projectId, request.after) }; break;
+      case 'checkouts-held': result = { ...base, records: this.heldCheckouts(request.projectId) }; break;
     }
     return ProjectHubResultSchema.parse(result);
   }
@@ -322,6 +503,16 @@ export class HubProjectAccess implements ProjectHub {
     const records: ProjectWorkSummary[] = []; let after: string | undefined;
     for (;;) { const page = this.#store.workSummaries(after); records.push(...page.records); if (page.next === null) return records; after = page.next; }
   }
+  async sendMail(mail: ProjectMail) { return this.#store.sendMail(mail); }
+  async inbox(projectId: string, threadId: string) { return this.#store.inbox(projectId, threadId); }
+  async markRead(projectId: string, threadId: string, ids: string[]) { return this.#store.markRead(projectId, threadId, ids).read; }
+  async reserve(request: ReservationRequest) { return this.#store.reserve(request); }
+  async release(projectId: string, threadId: string, id?: string) { return this.#store.release(projectId, threadId, id).released; }
+  async reservations(projectId: string) {
+    const records: FileReservation[] = []; let after: string | undefined;
+    for (;;) { const page = this.#store.reservations(projectId, after); records.push(...page.records); if (page.next === null) return records; after = page.next; }
+  }
+  async heldCheckouts(projectId: string) { return this.#store.heldCheckouts(projectId); }
 }
 
 /** A member's `ProjectHub` over the device-token HTTP API; every reply must match the requested identity and revision. */
@@ -409,5 +600,41 @@ export class MemberProjectStore implements ProjectHub {
       if (page.next !== null && (!page.records.length || page.next !== previous)) throw new HubProtocolError();
       records.push(...page.records); if (page.next === null) return records; after = page.next;
     }
+  }
+  /** The stored mail is the one sent: same id, project, sender, recipient and text (a retry may find it read already). */
+  async sendMail(mail: ProjectMail) { return this.#check((await this.#call('mail-send', { mail })).record, (row) => mailIdentity(row.document) === mailIdentity(mail)); }
+  /** Every record reaches the thread, unread and unique, oldest first; a page announcing more is never empty. */
+  async inbox(projectId: string, threadId: string) {
+    const result = this.#check(await this.#call('mail-inbox', { projectId, threadId }), (value) => (!value.more || value.records.length > 0)
+      && new Set(value.records.map((mail) => mail.id)).size === value.records.length
+      && value.records.every((mail, index) => mail.projectId === projectId && mail.from !== threadId && (mail.to === threadId || mail.to === 'all') && !mail.readBy.includes(threadId)
+        && (index === 0 || byTime(value.records[index - 1]!, mail) <= 0)));
+    return { records: result.records, more: result.more };
+  }
+  async markRead(projectId: string, threadId: string, ids: string[]) {
+    return this.#check((await this.#call('mail-read', { projectId, threadId, ids })).read, (read) => read <= new Set(ids).size);
+  }
+  /** A grant is the requested reservation; a refusal names only other threads' paths that overlap the request. */
+  async reserve(request: ReservationRequest): Promise<ReserveOutcome> {
+    const result = await this.#call('reserve', { reservation: request });
+    if (result.reservation) {
+      const document = this.#check(result.reservation, (row) => result.conflicts.length === 0 && row.document.id === request.id && row.document.projectId === request.projectId
+        && row.document.threadId === request.threadId && stableJson(row.document.paths) === stableJson(request.paths));
+      return { granted: true, reservation: document };
+    }
+    return { granted: false, conflicts: this.#check(result.conflicts, (conflicts) => conflicts.length > 0 && conflicts.every((conflict) => conflict.threadId !== request.threadId
+      && conflict.paths.every((path) => request.paths.some((wanted) => pathsOverlap(path, wanted))))) };
+  }
+  async release(projectId: string, threadId: string, id?: string) { return (await this.#call('release', { projectId, threadId, ...(id === undefined ? {} : { id }) })).released; }
+  async reservations(projectId: string) {
+    const records: FileReservation[] = []; let after: string | undefined;
+    for (;;) {
+      const page = this.#page(await this.#call('reservations-list', { projectId, ...(after === undefined ? {} : { after }) }), projectId, after);
+      records.push(...page.records); if (page.next === null) return records; after = page.next;
+    }
+  }
+  /** One entry per device, in device id order. */
+  async heldCheckouts(projectId: string) {
+    return this.#check((await this.#call('checkouts-held', { projectId })).records, (records) => records.every((record, index) => index === 0 || records[index - 1]!.deviceId < record.deviceId));
   }
 }

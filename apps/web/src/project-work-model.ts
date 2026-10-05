@@ -12,6 +12,7 @@ import {
   isTerminal,
   liveWork,
   runningSection,
+  splitSavedCommits,
   type CoordinatorEvent,
   type CoordinatorView,
   type CursorTurn,
@@ -306,6 +307,15 @@ export function restartedThread(reason: string | undefined): string | null {
   const id = reason.slice(RESTARTED_PREFIX.length, -1);
   return IdSchema.safeParse(id).success ? id : null;
 }
+/**
+ * A thread's reason in parts (D295): the free text the header clamps, the restarted thread it links, and the ref a main thread's
+ * unpublished commits were saved at, which the header shows whole on its own line (the owner needs it to recover them).
+ */
+export function threadReason(reason: string | undefined): { text: string; restartedAs: string | null; savedRef: string | null } | null {
+  if (!reason) return null;
+  const { text, ref } = splitSavedCommits(reason);
+  return { text, restartedAs: restartedThread(text), savedRef: ref };
+}
 /** Override is offered while either choice is: the next turn of a thread that has not ended, or a restart the server allows. */
 export function overrideOffered(view: Pick<ThreadView, 'canOverride'>): boolean {
   return view.canOverride.nextTurn || view.canOverride.restart;
@@ -422,7 +432,7 @@ function eventCard(event: Exclude<CoordinatorEvent, { kind: 'user-message' }>, t
       const change = { 'checks-failed': text.checksFailed, 'checks-passed': text.checksPassed, merged: text.prMerged, closed: text.prClosed, conflict: text.prConflict }[event.change];
       return card(change(name(event.threadId), event.prNumber), event.threadId);
     }
-    case 'mail': return card(text.mail(name(event.fromThreadId), event.subject), event.fromThreadId);
+    case 'mail': return card(text.mail(name(event.fromThreadId), event.subject), event.fromThreadId, event.body);
     case 'thread-user-message': {
       // Owner starts and terminal work arrive preformatted (D35); the card says what happened and keeps the task as detail.
       if (event.text.startsWith(OWNER_WORKED_PREFIX)) return card(text.ownerWorked(name(event.threadId)), event.threadId);

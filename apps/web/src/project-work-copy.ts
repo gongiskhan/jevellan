@@ -209,6 +209,8 @@ export const PROMPT_COLLAPSE_CHARACTERS = 1200;
 export const STOP_THREAD_TITLE = 'Stop this thread?';
 export const STOP_THREAD_BODY = 'The current turn ends and the thread takes no more work.';
 export const STOP_KEEPS_WORKTREE = 'Its worktree and branch stay until you discard them.';
+/** A main thread's stop (D29): its unpublished commits move to a saved ref so the project checkout is a clean main again. */
+export const STOP_SAVES_MAIN_COMMITS = 'Commits it has not published are saved under refs/jevellan/discard, and the project checkout returns to main.';
 /** Discard of a worktree thread that failed before it had a branch. */
 export const DISCARD_NO_BRANCH = 'Remove the worktree?';
 export const DISCARD_BODY = 'Uncommitted work and commits that were not pushed are lost.';
@@ -246,6 +248,8 @@ export const OPEN_PULL_REQUEST = 'Open the pull request on GitHub';
 export const OVERRIDE_MODES = 'When the choices apply';
 export const NEXT_TURN_HELP = 'The model and effort change for the next turn; a running turn finishes as it started.';
 export const RESTART_HELP = 'This thread stops and its worktree is removed. A new thread with the same title and task starts with these choices.';
+/** Restart of a main thread: there is no worktree; its unpublished commits are saved as on Stop (D29). */
+export const RESTART_HELP_MAIN = 'This thread stops, and commits it has not published are saved under refs/jevellan/discard. A new thread with the same title and task starts with these choices.';
 export const OVERRIDE_NOTE = 'Note (optional)';
 export const OVERRIDE_NOTE_PLACEHOLDER = 'Why this change? The coordinator and later placements read it.';
 export const APPLYING = 'Applying…';

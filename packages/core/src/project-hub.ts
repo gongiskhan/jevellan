@@ -1,6 +1,11 @@
-import type { DecisionAnswer, PlacementOverride, ProjectCoordinator, ProjectCoordinatorStatus, ProjectDecision, ProjectEnvelope, ProjectNotebook, ProjectWorkSettings, ThreadIndex } from './project-schemas.js';
-import type { ProjectWorkSummary } from './project-hub-schemas.js';
+import type {
+  DecisionAnswer, FileReservation, PlacementOverride, ProjectCoordinator, ProjectCoordinatorStatus, ProjectDecision, ProjectEnvelope, ProjectMail, ProjectNotebook, ProjectWorkSettings, ThreadIndex,
+} from './project-schemas.js';
+import type { HeldCheckout, ProjectWorkSummary, ReservationConflict, ReservationRequest } from './project-hub-schemas.js';
 import type { Stored } from './store.js';
+
+/** A reservation is granted, or refused with the overlapping reservations of other threads (brief 7.2); reservations are advisory. */
+export type ReserveOutcome = { granted: true; reservation: Stored<FileReservation> } | { granted: false; conflicts: ReservationConflict[] };
 
 /**
  * Project hub state (design 2.1.5). The hub implements it over its database bound to the authenticated device; members
@@ -43,4 +48,20 @@ export interface ProjectHub {
   // the Projects list (phase 5, D267): one read for every project, so a member's list costs one hub request per poll
   /** Every project's counts and coordinator, in project id order. */
   workSummaries(): Promise<ProjectWorkSummary[]>;
+  // mail and reservations between main threads (phase 6, brief 5.11; D285): the sender's or the thread's owner device writes
+  /** Revision 0 creates and the hub stamps the time; an identical retry returns the stored mail, the same id with other content is refused (409). */
+  sendMail(mail: ProjectMail): Promise<Stored<ProjectMail>>;
+  /** One page of the thread's unread mail, oldest first, at most 100 and about 1 MiB (`more` when other mail waits). Reading marks nothing. */
+  inbox(projectId: string, threadId: string): Promise<{ records: ProjectMail[]; more: boolean }>;
+  /** Marks the thread's received mail read; mail already read or gone is skipped. Returns how many were marked. */
+  markRead(projectId: string, threadId: string, ids: string[]): Promise<number>;
+  /** Checks the overlap rule against other threads' active reservations and stores the reservation in one transaction (hub clock). */
+  reserve(request: ReservationRequest): Promise<ReserveOutcome>;
+  /** Releases one reservation of the thread by id, or every active one without; returns how many were active. */
+  release(projectId: string, threadId: string, id?: string): Promise<number>;
+  /** The project's active reservations (every page). */
+  reservations(projectId: string): Promise<FileReservation[]>;
+  // main isolation (phase 6, D288): any device reads it for placement
+  /** Per device, the claim or main thread that keeps new main threads off its project checkout, in device id order. */
+  heldCheckouts(projectId: string): Promise<HeldCheckout[]>;
 }

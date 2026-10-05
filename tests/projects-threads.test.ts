@@ -433,31 +433,35 @@ test('account pinning: later turns resume on the placed account; an ineligible a
   expect(f.fake.turnStarts[3]).toMatchObject({ prompt: 'Fourth.', resume: { sessionId: thread.nativeSessionId }, account: { account: { id: 'acc_second' } } });
 });
 
-test('placement refusals: fixed main (phase gate), a device that cannot run threads and an unknown device are refused with nothing created; a main default and a stale heartbeat still place a worktree here (D8, D88)', { timeout: 120_000 }, async () => {
+test('placement refusals: fixed main on a busy checkout, a device that cannot run threads and an unknown device are refused with nothing created; a main default and a stale heartbeat still place here (D8, D65, D88)', { timeout: 120_000 }, async () => {
   const f = await setup();
   const refusedWith = async (extra: object, message: string) => {
     const response = await f.request('/api/projects/project/threads', 'POST', createBody('Gated', 'Try a fixed field.', undefined, extra));
     expect(response.status).toBe(409);
     expect(await response.json()).toEqual({ schema: 'error-v1', code: 'conflict', message });
   };
+  // A conversation holding the checkout keeps main threads off it (brief 10).
+  const conversation = { conversationId: 'conv_other', conversationTitle: 'Other work', workId: 'work_other' };
+  await f.app.conversations.ownership.acquire(f.project, conversation);
+  await refusedWith({ isolation: 'main' }, `No device can run any enabled model: ${f.deviceName}: main checkout busy: Other work.`);
+  await f.app.conversations.ownership.release(f.project, conversation, { processesGone: true, commits: 'unchanged' });
   const at = new Date().toISOString();
   f.app.hub.put('devices', 'dev_studio', DeviceSchema, { schema: 'device-v1', id: 'dev_studio', name: 'Studio', role: 'member', url: 'http://127.0.0.1:9772', os: 'darwin', version: '0.1.0', joinedAt: at, lastHeartbeatAt: at }, 0);
-  await refusedWith({ isolation: 'main' }, 'Main isolation is not available yet.');
   // Other devices are candidates from phase 5; this row has no authorization, so it reads as revoked (offline), and no project path.
   await refusedWith({ deviceId: 'dev_studio' }, 'No device can run any enabled model: Studio: offline.');
   await refusedWith({ deviceId: 'dev_unknown' }, 'Choose a registered device.');
   expect((await f.json('/api/projects/project/work', ProjectWorkViewSchema)).threads).toEqual([]);
   expect(f.fake.turnStarts).toEqual([]);
-  // A main default is placed as a worktree until main isolation exists; this device's stale heartbeat does not exclude it.
+  // A main default places main on the free checkout; this device's stale heartbeat does not exclude it.
   await settings(f, { defaultIsolation: 'main' });
   const device = f.app.hub.get('devices', f.app.device.deviceId, DeviceSchema)!;
   f.app.hub.put('devices', f.app.device.deviceId, DeviceSchema, { ...device.document, lastHeartbeatAt: new Date(Date.now() - 120_000).toISOString() }, device.revision);
   expect((await f.app.roster()).devices.find((view) => view.device.id === f.app.device.deviceId)?.status).toBe('stale');
   f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'Placed here.' }), forThread());
   const created = await start(f, 'Default main', 'Work with the main default.');
-  expect(created).toMatchObject({ state: 'preparing', placement: `Scripted test runtime Fixture · high · Worktree · ${f.deviceName} · placed without Jev: no key configured` });
+  expect(created).toMatchObject({ state: 'preparing', placement: `Scripted test runtime Fixture · high · Main · ${f.deviceName} · placed without Jev: no key configured` });
   await f.waitFor(() => f.thread(created.threadId).turns, (turns) => turns === 1);
-  expect(f.thread(created.threadId)).toMatchObject({ isolation: 'worktree', ownerDeviceId: f.app.device.deviceId, cwd: f.homes.at('worktrees', 'project', created.threadId) });
+  expect(f.thread(created.threadId)).toMatchObject({ isolation: 'main', ownerDeviceId: f.app.device.deviceId, cwd: f.checkout, baseBranch: 'main' });
 });
 
 test('placement phase gates: a Leave git project refuses fixed main isolation', { timeout: 60_000 }, async () => {

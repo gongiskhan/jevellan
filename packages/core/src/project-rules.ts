@@ -1,5 +1,5 @@
 import type { DeviceView } from './mesh-schemas.js';
-import type { ProjectCoordinatorStatus, ProjectDecision, ThreadIndex, ThreadState } from './project-schemas.js';
+import type { FileReservation, ProjectCoordinatorStatus, ProjectDecision, ProjectMail, ThreadIndex, ThreadState } from './project-schemas.js';
 import type { Stored } from './store.js';
 
 // Pure rules shared by the hub, the owner device and the browser.
@@ -7,6 +7,18 @@ import type { Stored } from './store.js';
 /** Reservation overlap (brief 5.11): equal, or one is a directory prefix ending in '/' that the other starts with. No globbing. */
 export function pathsOverlap(a: string, b: string): boolean {
   return a === b || (a.endsWith('/') && b.startsWith(a)) || (b.endsWith('/') && a.startsWith(b));
+}
+/** A reservation holds its paths until it is released or its time ends, by the hub clock. */
+export function reservationActive(reservation: Pick<FileReservation, 'releasedAt' | 'expiresAt'>, now: number): boolean {
+  return !reservation.releasedAt && Date.parse(reservation.expiresAt) > now;
+}
+/**
+ * Whether mail reaches a thread (brief 5.11, 7.2; D286): it is addressed to the thread, or to all and the thread is a main thread
+ * other than the sender that existed when the mail was sent (by the hub's time on the mail), so a later thread never inherits old broadcasts.
+ */
+export function mailReaches(mail: Pick<ProjectMail, 'from' | 'to' | 'at'>, thread: Pick<ThreadIndex, 'id' | 'isolation' | 'createdAt'>): boolean {
+  if (mail.from === thread.id) return false;
+  return mail.to === thread.id || (mail.to === 'all' && thread.isolation === 'main' && Date.parse(thread.createdAt) <= Date.parse(mail.at));
 }
 
 export const liveWorkStates = ['preparing', 'running', 'publishing'] as const satisfies readonly ThreadState[];
@@ -39,6 +51,15 @@ export const OWNER_STARTED_PREFIX = '[owner started thread "';
 export const OWNER_WORKED_PREFIX = '[owner worked on thread "';
 /** A restarted thread's reason reads `Restarted as {newId}.` (brief 10); the interface links the new thread. */
 export const RESTARTED_PREFIX = 'Restarted as ';
+/** A stopped main thread's reason ends `Its unpublished commits were saved at {ref}.` (D29); the interface shows the ref on its own line (D295). */
+export const SAVED_COMMITS_SENTENCE = 'Its unpublished commits were saved at ';
+/** A reason without its closing saved-commits sentence, and the ref that sentence names (null when the reason has none). */
+export function splitSavedCommits(reason: string): { text: string; ref: string | null } {
+  const at = reason.lastIndexOf(SAVED_COMMITS_SENTENCE);
+  const ref = at < 0 || (at > 0 && reason[at - 1] !== ' ') ? undefined
+    : /^(refs\/jevellan\/discard\/\S+\/\d+)\.$/.exec(reason.slice(at + SAVED_COMMITS_SENTENCE.length))?.[1];
+  return ref ? { text: reason.slice(0, at).trimEnd(), ref } : { text: reason, ref: null };
+}
 
 /** ASCII branch slug: lowercase, non-alphanumerics collapsed to '-', trimmed, at most 40 characters, 'thread' when empty (D25). */
 export function slugify(title: string): string {

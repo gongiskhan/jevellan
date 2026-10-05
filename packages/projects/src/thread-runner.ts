@@ -8,16 +8,18 @@ import type { Admission } from './admission.js';
 import type { ProjectMemoryReader, ProjectToolHandlers } from './bridge-tools.js';
 import { ProjectTools } from './bridge-tools.js';
 import {
-  DISCARD_REFUSED, MAIN_NOT_AVAILABLE, MESSAGE_ID_REUSED, MORE_TURNS, NO_CHANGES, OWNER_STOPPED_THREAD, PROCESS_UNCONFIRMED, RESTART_OPEN_PULL_REQUEST, RESTART_PUBLISHED_TO_MAIN,
+  DISCARD_REFUSED, MESSAGE_ID_REUSED, MORE_TURNS, NO_CHANGES, OWNER_STOPPED_THREAD, PROCESS_UNCONFIRMED, RESTART_OPEN_PULL_REQUEST, RESTART_PUBLISHED_TO_MAIN,
   TESTS_FAILED_THREE_TIMES, THREAD_ALREADY_RESTARTED, THREAD_ENDED, THREAD_NOT_FOUND, TOOL_NOT_IN_TURN, TURN_FAILED, TURN_LIMIT_REACHED, TURN_TIMED_OUT, TURN_WITHOUT_REPORT,
-  VERIFICATION_ATTEMPTS, WAITING_FOR_HUB, WORKTREE_DISCARDED, accountMovedNotice, cleanupFailed, isRestarted, messagesPrompt, taskPrompt, threadPrompt, threadStepFailed, threadSystemAppend,
-  verificationFailurePrompt, worktreeSetupFailed, type ThreadTurnReason,
+  VERIFICATION_ATTEMPTS, WAITING_FOR_HUB, WORKTREE_DISCARDED, accountMovedNotice, cleanupFailed, commitsSavedReason, isRestarted, mainCheckoutKept, mainConflictPrompt, messagesPrompt,
+  savedCommitsRef, taskPrompt, threadPrompt, threadStepFailed, threadSystemAppend, verificationFailurePrompt, worktreeSetupFailed, type ThreadTurnReason,
 } from './copy.js';
 import type { DecisionItems } from './decision-items.js';
 import { firstLine } from './git.js';
 import type { LaunchResult, TurnLauncher } from './launch.js';
 import type { ProjectLedgers } from './ledger.js';
-import type { ThreadPublication } from './publication.js';
+import type { MailService } from './mail.js';
+import type { MainCheckout } from './main-checkout.js';
+import type { PublicationResult, ThreadPublication } from './publication.js';
 import type { ThreadEvent, ThreadStore } from './stores.js';
 import { TurnExecution, type TurnOutcome } from './turn-execution.js';
 import type { ThreadWorktree } from './worktree.js';
@@ -89,7 +91,9 @@ export type ThreadRunnerContext = {
   /** Work settings (the hub copy, or the last good one during an outage). */
   workSettings(projectId: string): Promise<ProjectWorkSettings>;
   worktrees: Pick<ThreadWorktree, 'create' | 'setup' | 'exists' | 'remove' | 'repository'>;
-  publication: Pick<ThreadPublication, 'publishWorktree'>;
+  /** Main isolation (brief 8.2 step 4 main, D29): the claimed project checkout. */
+  main: Pick<MainCheckout, 'prepare' | 'ready' | 'workspace' | 'release' | 'stop'>;
+  publication: Pick<ThreadPublication, 'publishWorktree' | 'publishMain'>;
   launcher: Pick<TurnLauncher, 'launch'>;
   accounts: Pick<AccountService, 'recordUsage' | 'recordError'>;
   admission: Pick<Admission, 'admit'>;
@@ -97,6 +101,8 @@ export type ThreadRunnerContext = {
   toCoordinator(projectId: string, event: CoordinatorEvent): Promise<void>;
   /** Read-only project memory for the thread's tools. */
   memory(project: Project): ProjectMemoryReader;
+  /** Mail and reservations, the main-isolation thread tools (brief 7.2). */
+  mail: Pick<MailService, 'threadTool' | 'releaseThread'>;
   /** The runtime adapter's display name (D83). */
   runtimeName(runtime: string): string;
   enterOperation(id: string, title: string): () => void;
@@ -196,7 +202,16 @@ export class ThreadRunner {
   }
   async #fail(reason: string): Promise<void> {
     const thread = this.#set((current) => ({ ...withState(current, 'failed', reason), endedAt: current.endedAt ?? this.#at() }));
+    await this.#releaseReservations(thread);
     await this.#tell(thread.projectId, { kind: 'thread-interrupted', threadId: thread.id, reason: 'failed', message: reason.slice(0, 1000) });
+  }
+  /**
+   * A main thread that stopped, failed or published gives its reservations back (brief 7.2, design 3.6). They are advisory and
+   * expire by themselves, so a hub that cannot be reached now changes nothing else; worktree threads hold none and ask nothing.
+   */
+  async #releaseReservations(thread: Thread): Promise<void> {
+    if (thread.isolation !== 'main') return;
+    await this.#c.mail.releaseThread(thread.projectId, thread.id).catch(() => undefined);
   }
 
   /** `queued` or `preparing` -> worktree and setup -> the first turn (brief 8.2 steps 4-5). `hold` is released once the thread is live. */
@@ -209,8 +224,9 @@ export class ThreadRunner {
     }, hold);
   }
   /**
-   * The worktree (brief 8.3) and the setup command. Idempotent, so a preparation interrupted by a restart runs again before
-   * the next turn (D67); the worktree fields are stored only once setup passed. False when the thread failed or stopped.
+   * The worktree (brief 8.3) and the setup command, or for main isolation the checkout claim and a clean, fast-forwarded main (8.2
+   * step 4 main; no setup command there). Idempotent, so a preparation interrupted by a restart runs again before the next turn (D67);
+   * the fields are stored only once preparation passed. False when the thread failed or stopped.
    */
   async #prepare(): Promise<boolean> {
     let thread = this.#thread();
@@ -218,6 +234,13 @@ export class ThreadRunner {
     const release = this.#c.enterOperation(this.threadId, thread.title);
     try {
       const project = await this.#c.project(thread.projectId); const signal = this.#abort.signal;
+      if (thread.isolation === 'main') {
+        // A stop that arrives meanwhile settles the claim once this step ends (its own step on the chain).
+        const made = await this.#c.main.prepare(project, thread);
+        if (this.#halted()) return false;
+        this.#set((current) => ({ ...current, cwd: made.cwd, baseBranch: made.baseBranch, baseCommit: made.baseCommit }));
+        return true;
+      }
       const ledger = this.#c.ledgers.thread(thread.projectId, thread.id);
       const made = await this.#c.worktrees.create(project, thread, signal);
       if (made.contextNote) this.#notice(thread, made.contextNote, 'info');
@@ -234,7 +257,8 @@ export class ThreadRunner {
       return true;
     } catch (error) {
       if (this.#halted()) return false;
-      await this.#fail(worktreeSetupFailed(firstLine(this.#message(error)) || TURN_FAILED));
+      // Main preparation failures are already in thread words (D44): the refusal itself is the reason.
+      await this.#fail(thread.isolation === 'main' ? this.#message(error) || TURN_FAILED : worktreeSetupFailed(firstLine(this.#message(error)) || TURN_FAILED));
       return false;
     } finally { release(); }
   }
@@ -248,7 +272,9 @@ export class ThreadRunner {
     // Before every turn, also verification turns and messages that arrive at rest (D73).
     if (atTurnLimit(thread)) { await this.#atLimit(); return null; }
     const project = await this.#c.project(thread.projectId);
-    if (!thread.cwd || !(await this.#c.worktrees.exists(project, thread))) {
+    // A main thread is prepared once (a second preparation refuses its own commits); later turns only claim the checkout again.
+    const ready = thread.isolation === 'main' ? await this.#c.main.ready(project, thread) : !!thread.cwd && await this.#c.worktrees.exists(project, thread);
+    if (!ready) {
       if (!(await this.#prepare())) return null;
       thread = this.#thread();
     }
@@ -333,7 +359,7 @@ export class ThreadRunner {
   #handlers(): ProjectToolHandlers {
     return {
       isCurrent: (scope) => scope.kind === 'thread' && scope.threadId === this.threadId && this.isCurrent(scope.turn),
-      call: async () => { throw refuse(TOOL_NOT_IN_TURN, 403); },
+      call: async (scope, name, input) => { if (scope.kind !== 'thread') throw refuse(TOOL_NOT_IN_TURN, 403); return this.#c.mail.threadTool(scope, name, input); },
       memory: async (scope) => this.#c.memory(await this.#c.project(scope.projectId)),
     };
   }
@@ -376,11 +402,18 @@ export class ThreadRunner {
     let thread = this.#set((current) => withState(current, 'publishing'));
     const release = this.#c.enterOperation(this.threadId, thread.title);
     try {
-      if (thread.isolation !== 'worktree') throw new Error(MAIN_NOT_AVAILABLE);
       const project = await this.#c.project(thread.projectId);
-      const result = await this.#c.publication.publishWorktree({ project, thread, local: this.#c.store.local(thread.id), ledger: this.#c.ledgers.thread(thread.projectId, thread.id),
-        labels: { runtimeName: this.#c.runtimeName(thread.placement.runtime), modelLabel: this.#c.store.labels(thread.id).modelLabel }, signal: this.#abort.signal,
-        onPushed: (commit) => { this.#c.store.updateLocal(thread.id, (local) => ({ ...local, pushedCommit: commit })); } });
+      const local = this.#c.store.local(thread.id); const ledger = this.#c.ledgers.thread(thread.projectId, thread.id); const signal = this.#abort.signal;
+      let result: PublicationResult;
+      if (thread.isolation === 'main') {
+        // Publication can follow a restart without a turn (allow-turns), so the claim is this process's first.
+        if (!(await this.#c.main.ready(project, thread))) throw new Error('The project checkout was never prepared for this thread.');
+        result = await this.#c.publication.publishMain({ project, thread, local, ledger, workspace: this.#c.main.workspace(project, thread), signal });
+      } else {
+        result = await this.#c.publication.publishWorktree({ project, thread, local, ledger,
+          labels: { runtimeName: this.#c.runtimeName(thread.placement.runtime), modelLabel: this.#c.store.labels(thread.id).modelLabel }, signal,
+          onPushed: (commit) => { this.#c.store.updateLocal(thread.id, (current) => ({ ...current, pushedCommit: commit })); } });
+      }
       const outcome = result.outcome;
       // A passed (or skipped) verification resets the counter (brief 8.4 step 3).
       const attempts = (current: Thread) => result.verified && result.verified.status !== 'failed' ? 0 : current.verificationAttempts;
@@ -389,7 +422,8 @@ export class ThreadRunner {
         case 'no-changes': {
           thread = this.#set((current) => ({ ...withState(current, 'done', NO_CHANGES), verificationAttempts: attempts(current), endedAt: current.endedAt ?? this.#at() }),
             { type: 'thread-publication', data: { schema: 'thread-publication-v1', result: 'no-changes' } });
-          await this.#cleanup(project, thread);
+          if (thread.isolation === 'main') { await this.#giveBack(project, thread, 'unchanged'); await this.#releaseReservations(thread); }
+          else await this.#cleanup(project, thread);
           await this.#tell(projectId, { kind: 'thread-published', threadId, result: 'no-changes' });
           return null;
         }
@@ -420,7 +454,20 @@ export class ThreadRunner {
           await this.#tell(projectId, { kind: 'thread-published', threadId, result: outcome.result, prNumber: outcome.pr.number });
           return this.#afterStep();
         }
-        default: throw new Error(MAIN_NOT_AVAILABLE);
+        case 'main-conflict': {
+          // Main was already fetched: the agent rebases onto it itself, in a turn that continues this step (brief 8.4 main, 9.6).
+          this.#set((current) => ({ ...current, verificationAttempts: attempts(current) }),
+            { type: 'thread-publication', data: { schema: 'thread-publication-v1', result: 'conflict', files: outcome.files } });
+          return { reason: 'conflict', body: mainConflictPrompt(outcome.files), messages: [] };
+        }
+        case 'main-published': {
+          thread = this.#set((current) => ({ ...withState(current, 'done'), publishedCommit: outcome.commit, verificationAttempts: attempts(current), endedAt: current.endedAt ?? this.#at() }),
+            { type: 'thread-publication', data: { schema: 'thread-publication-v1', result: 'main-published', commit: outcome.commit } });
+          await this.#giveBack(project, thread, 'published');
+          await this.#releaseReservations(thread);
+          await this.#tell(projectId, { kind: 'thread-published', threadId, result: 'main-published', commit: outcome.commit });
+          return null;
+        }
       }
     } catch (error) {
       if (this.#halted()) return null;
@@ -434,6 +481,25 @@ export class ThreadRunner {
   #afterStep(): NextTurn | null {
     const thread = this.#thread();
     return atRest(thread.state) && thread.queuedMessages.length ? messagesTurn(thread, 'messages') : null;
+  }
+  /** A concluded main thread gives the checkout back; if the hub cannot take it now the claim stays, and the thread says so (D291). */
+  async #giveBack(project: Project, thread: Thread, commits: 'published' | 'unchanged'): Promise<void> {
+    try { await this.#c.main.release(project, thread, commits); }
+    catch (error) { this.#notice(thread, mainCheckoutKept(this.#message(error)), 'error'); }
+  }
+  /**
+   * A stopped main thread (D29): its unpublished commits are saved and the checkout returns to main, then the claim is released. The
+   * stop reason names the saved ref. When the checkout cannot be settled the claim stays and the thread says why (D291).
+   */
+  async #stopMain(thread: Thread, reason: string): Promise<string> {
+    if (thread.state === 'queued') return reason;
+    try {
+      const { saved } = await this.#c.main.stop(await this.#c.project(thread.projectId), thread, this.#c.store.local(thread.id).gitIdentity);
+      return saved ? commitsSavedReason(reason, saved) : reason;
+    } catch (error) {
+      this.#notice(thread, mainCheckoutKept(this.#message(error)), 'error');
+      return reason;
+    }
   }
   async #cleanup(project: Project, thread: Thread): Promise<void> {
     try {
@@ -489,7 +555,8 @@ export class ThreadRunner {
   }
   /**
    * Stop (brief 8.2): preparation and publication are aborted and the running turn's process group terminated; the thread
-   * is `stopped` with `reason`, its worktree and branch kept. `notify` tells the coordinator (a stop from the owner, D28).
+   * is `stopped` with `reason`, its worktree and branch kept, or for main isolation its checkout settled and released (D29).
+   * `notify` tells the coordinator (a stop from the owner, D28).
    */
   async stop(reason: string, notify: boolean): Promise<void> {
     if (isTerminal(this.#thread().state)) return;
@@ -497,17 +564,22 @@ export class ThreadRunner {
     this.#abort.abort();
     await this.#execution?.stop().catch(() => undefined);
     await this.#serial(async () => {
-      if (isTerminal(this.#thread().state)) return;
-      const stopped = this.#set((current) => ({ ...withState(current, 'stopped', this.#stopping ?? reason), endedAt: current.endedAt ?? this.#at() }));
-      // An open turn-limit question no longer applies (D161).
+      const current = this.#thread();
+      if (isTerminal(current.state)) return;
+      // The turn's process is gone here (an unconfirmed one failed the thread instead), so a main checkout can be settled.
+      const ended = current.isolation === 'main' ? await this.#stopMain(current, this.#stopping ?? reason) : this.#stopping ?? reason;
+      const stopped = this.#set((latest) => ({ ...withState(latest, 'stopped', ended), endedAt: latest.endedAt ?? this.#at() }));
+      // An open turn-limit question no longer applies (D161), and other main threads may take the paths now.
       await this.#c.decisions.withdrawTurnLimit(stopped.projectId, stopped.id).catch(() => undefined);
+      await this.#releaseReservations(stopped);
       if (notify) await this.#tell(stopped.projectId, { kind: 'thread-interrupted', threadId: stopped.id, reason: 'stopped', message: OWNER_STOPPED_THREAD });
     });
   }
   /**
    * Restart (brief 10, D252): the thread ends with `reason` (`Restarted as {newId}.`): a running one stops without telling the
    * coordinator (the restart tells it), an ended one keeps its state. Its worktree and local branch are then removed, keeping
-   * that reason (Discard would append to it). Repeating it changes nothing.
+   * that reason (Discard would append to it); a main thread's checkout is settled by the stop, and the saved-commits sentence stays
+   * after the reason (D29). Repeating it changes nothing.
    */
   async restarted(reason: string): Promise<void> {
     // A repeat, or a thread discarded before, has no worktree left.
@@ -515,7 +587,9 @@ export class ThreadRunner {
     await this.stop(reason, false);
     await this.#serial(async () => {
       let thread = this.#thread();
-      if (thread.stateReason !== reason) thread = this.#set((current) => withState(current, current.state, reason));
+      // A main thread's stop named where its unpublished commits went (D29): the restart reason keeps that sentence.
+      const saved = savedCommitsRef(thread.stateReason); const next = saved ? commitsSavedReason(reason, saved) : reason;
+      if (thread.stateReason !== next) thread = this.#set((current) => withState(current, current.state, next));
       if (gone || thread.isolation !== 'worktree' || !thread.cwd || thread.state === 'done') return;
       await this.#cleanup(await this.#c.project(thread.projectId), thread);
     });

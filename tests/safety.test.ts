@@ -96,7 +96,8 @@ test('PJ1f thread profile allows rebase and keeps every other denial', async () 
 test('the coordinator hook is read-only and allows exactly its scope tools', async () => {
   const bridgeTools = claudeBridgeToolNames(projectToolNames({ kind: 'coordinator' }));
   expect(bridgeTools).toContain('mcp__jevellan__jevellan_thread_start');
-  expect(bridgeTools).not.toContain('mcp__jevellan__jevellan_mail_send');
+  expect(bridgeTools).toContain('mcp__jevellan__jevellan_mail_send');
+  expect(bridgeTools).not.toContain('mcp__jevellan__jevellan_reserve');
   const hook = claudePermissionHook({ cwd: context.cwd, daemonPid: context.daemonPid, profile: 'coordinator', permissions: 'read-only', bridgeTools });
   for (const tool of bridgeTools) expect(await hook({ tool_name: tool })).toEqual({});
   for (const tool of ['Read', 'Glob', 'Grep']) expect(await hook({ tool_name: tool })).toEqual({});

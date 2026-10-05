@@ -1,8 +1,8 @@
 // Phase 4 acceptance (brief 13 PJ4, PJ4b; design 5.2.13, 5.2.14): Jev places owner threads on a booted daemon through a scripted
 // Jev transport, over two simulated runtimes; overrides change the next launch and restarts replace a thread. Simulated: the Jev
-// answers, runtime turns and GitHub. Live: git, HTTP, the hub, the ledgers and the process groups. Placement never uses main
-// before phase 6 (D88), so the isolation question is covered by the pure tests in projects-placement; Call B asks for the device
-// when a second device qualifies (phase 5).
+// answers, runtime turns and GitHub. Live: git, HTTP, the hub, the ledgers and the process groups. Since phase 6 Call A asks the
+// isolation first and the scripted Jev keeps worktrees, so main placement is covered by project-main-publication and the pure tests;
+// Call B asks for the device when a second device qualifies (phase 5).
 import { afterEach, expect, test } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
@@ -93,7 +93,7 @@ test('PJ4 Jev places threads with recorded probabilities and falls back on failu
   expect(created.placement).toBe(`${SECOND_RUNTIME} Deep · max · Worktree · ${f.deviceName}`);
   expect(transport.state.calls).toHaveLength(1);
   const [call] = transport.state.calls;
-  // The isolation question waits for main isolation (phase 6, D88); then it comes first.
+  // The isolation question comes first once main isolation exists (phase 6, D88).
   expect(Object.keys(call!.questions)).toEqual(PHASE_GATES.mainIsolation ? ['isolation', 'pick_model', 'effort'] : ['pick_model', 'effort']);
   expect(call!.questions.pick_model).toEqual({ type: 'choice', instructions: 'Choose the model that should carry this thread end to end.', criteria: { swift: SWIFT.description, deep: DEEP.description } });
   expect(call!.questions.effort).toEqual({ type: 'choice', instructions: 'Choose the reasoning effort this thread needs.', criteria: f.app.hub.configuration.current()!.configuration['x-jevellan'].effortGuide });
@@ -287,9 +287,11 @@ test('PJ4b overrides change the next launch and restarts feed the packet', { tim
   const replacement = f.thread(newId);
   expect(replacement).toMatchObject({ title: 'Add search', task: 'Add a search box to the catalog page.', createdBy: 'owner',
     placement: { source: 'jev', fixed: ['model'], modelId: 'swift', runtime: 'fake', accountId: 'acc_fixture' } });
-  // The restart's own placement asked only the effort, with the owner's note and the earlier overrides in its packet.
+  // The restart's own placement asked the isolation (main is allowed since phase 6) and the effort, with the owner's note and the earlier
+  // overrides in its packet; Jev kept the worktree.
   const restartCall = transport.state.calls.at(-1)!;
-  expect(Object.keys(restartCall.questions)).toEqual(['effort']);
+  expect(Object.keys(restartCall.questions)).toEqual(['isolation', 'effort']);
+  expect(replacement.isolation).toBe('worktree');
   expect(restartCall.packet.thread).toEqual({ title: 'Add search', task: 'Add a search box to the catalog page.', coordinatorNote: 'Swift is enough for this.' });
   expect(restartCall.packet.rules.recentOverrides).toEqual(["model changed from deep to deep-lite for 'Add search' (next-turn)", "effort changed from max to low for 'Add search' (next-turn)"]);
   // The change is recorded from the model the thread had (deep-lite after step 2) and the coordinator hears both threads.

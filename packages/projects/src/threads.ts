@@ -7,7 +7,7 @@ import {
   type ThreadCreateRequestSchema, type ThreadCreatedViewSchema, type ThreadIndex, type ThreadOverrideRequestSchema, type ThreadReport, type ThreadState,
 } from '@jevellan/core';
 import type { PlacementFixed } from '@jevellan/decisions';
-import type { Admission } from './admission.js';
+import { DISPATCH_HOLD_MS, type Admission } from './admission.js';
 import {
   COORDINATOR_ELSEWHERE, MODEL_SAME_RUNTIME, NEXT_TURN_FIELDS, NO_RELAY, PROJECT_NOT_FOUND, THREAD_ATTACHED, THREAD_ENDED, THREAD_NOT_FOUND, UNKNOWN_PLACEMENT_MODEL, WAITING_FOR_HUB, isWaitingForSlot,
   overrideSummary, ownerStartedLine, placementSummary, queuedReason, restartedReason,
@@ -16,7 +16,7 @@ import type { CoordinatorService } from './coordinator.js';
 import { derivedId, type DecisionItems } from './decision-items.js';
 import type { Outbox } from './envelopes.js';
 import type { ProjectLedgers } from './ledger.js';
-import type { DeviceRoster, Placement } from './placement.js';
+import type { DeviceRoster, PendingMain, Placement } from './placement.js';
 import type { StartReceipts, StartedSummary, ThreadLabels, ThreadStore } from './stores.js';
 import { REST_STATES, ThreadRunner, restartRefusal, type ThreadRunnerContext } from './thread-runner.js';
 import { assistantText, type ThreadTranscripts } from './transcript.js';
@@ -86,6 +86,11 @@ export type StartRequest = {
   clientRequestId?: string | undefined;
   /** The project's coordinator device; starts run there (D9a). */
   coordinatorDeviceId: string;
+  /**
+   * Internal, a restart of a main thread (D292): that thread's own claim does not count against the main rule, and the new thread's
+   * preparation waits for the caller, which starts it once the old thread has given the checkout back.
+   */
+  exclude?: string | undefined; deferPrepare?: boolean | undefined;
 };
 export type StartResult = { threadId: string; state: ThreadState; stateReason?: string; placement: string; repeated: boolean };
 export type ThreadServiceOptions = {
@@ -126,6 +131,8 @@ export class ThreadService {
   #sweep: Set<string> | undefined;
   /** When each project's waiting questions were last checked against the coordinator device's presence (D280). */
   readonly #checked = new Map<string, number>();
+  /** Main threads started from here on other devices, until the hub has their index or `DISPATCH_HOLD_MS` passed (D288). */
+  readonly #mainStarts = new Map<string, PendingMain & { projectId: string; until: number }>();
   #started = false;
   #closed = false;
   constructor(o: ThreadServiceOptions) { this.#o = o; }
@@ -196,7 +203,7 @@ export class ThreadService {
       const counts = await this.#o.admission.counts(projectId);
       const projectFull = counts.project >= counts.limits.project;
       const placed = await this.#o.placement.place({ project, workSettings: settings, title: request.title, task: request.task, note: request.note, fixed: request.fixed,
-        coordinatorDeviceId: request.coordinatorDeviceId, ignoreRunningLimit: projectFull });
+        coordinatorDeviceId: request.coordinatorDeviceId, ignoreRunningLimit: projectFull, exclude: request.exclude });
       if (placed.kind === 'refused') throw refuse(placed.message, 409);
       const at = this.#o.now(); const threadId = newId('thread', at); const record = placed.record;
       let queued = projectFull ? queuedReason(counts.limits.project, null) : placed.atLimit ? queuedReason(settings.maxRunningPerDevice, placed.labels.deviceName) : undefined;
@@ -215,6 +222,10 @@ export class ThreadService {
         await this.#o.delivery.startOnDevice(thread, { modelLabel: placed.labels.modelLabel, accountLabel });
         // Started elsewhere: the slot stays taken until the owner publishes the thread (3.5.1 step 1, D9).
         if (queued === undefined && thread.ownerDeviceId !== this.#o.deviceId) this.#o.admission.dispatched(projectId, thread.ownerDeviceId, threadId);
+        // And a main thread's checkout counts as held until the hub knows the thread, so the next start cannot pick it (D288).
+        if (thread.isolation === 'main' && thread.ownerDeviceId !== this.#o.deviceId) {
+          this.#mainStarts.set(threadId, { threadId, projectId, deviceId: thread.ownerDeviceId, title: thread.title, until: at + DISPATCH_HOLD_MS });
+        }
       } finally { hold?.(); }
       const result = this.#result(thread, { modelLabel: placed.labels.modelLabel, deviceName: placed.labels.deviceName }, false);
       if (request.clientRequestId !== undefined) this.#o.receipts.put(projectId, request.clientRequestId, normalized, threadId, this.#summaryOf(result));
@@ -223,10 +234,24 @@ export class ThreadService {
           threadId, text: ownerStartedLine(thread.title, threadId, thread.task) });
       }
       // Preparation runs in the background: the start answers within the bridge budget.
-      if (queued === undefined && thread.ownerDeviceId === this.#o.deviceId) void this.runner(threadId)?.prepare();
+      if (queued === undefined && thread.ownerDeviceId === this.#o.deviceId && !request.deferPrepare) void this.runner(threadId)?.prepare();
       if (queued !== undefined && thread.ownerDeviceId !== this.#o.deviceId) this.#remoteQueue.set(projectId, (this.#remoteQueue.get(projectId) ?? new Set()).add(threadId));
       return result;
     });
+  }
+  /**
+   * Main threads this device started on other devices whose hub index has not appeared yet (D288). Once the hub has the index, its
+   * held checkouts cover the thread; during a hub outage an entry stays until it expires.
+   */
+  async pendingMain(projectId: string): Promise<PendingMain[]> {
+    const pending: PendingMain[] = []; const now = this.#o.now();
+    for (const [threadId, entry] of [...this.#mainStarts]) {
+      if (entry.projectId !== projectId) continue;
+      const known = entry.until > now && await this.#o.hub.thread(threadId).then((row) => row !== null, (error: unknown) => { if (error instanceof HubUnavailable) return false; throw error; });
+      if (entry.until <= now || known) { this.#mainStarts.delete(threadId); continue; }
+      pending.push({ threadId, deviceId: entry.deviceId, title: entry.title });
+    }
+    return pending;
   }
   #summaryOf(result: Pick<StartResult, 'state' | 'stateReason' | 'placement'>): StartedSummary {
     return { state: result.state, ...(result.stateReason === undefined ? {} : { stateReason: result.stateReason }), placement: result.placement };
@@ -266,7 +291,8 @@ export class ThreadService {
       // The model must be able to run this thread where it is: enabled, its runtime able to run threads, an account on this device.
       const project = (await this.#o.projects.get(projectId))?.project; if (!project) throw refuse(PROJECT_NOT_FOUND, 404);
       const refused = await this.#o.placement.refusal({ project, workSettings: await this.#o.admission.settings(projectId), title: thread.title, task: thread.task,
-        fixed: { isolation: thread.isolation, modelId: model.id, deviceId: thread.ownerDeviceId }, coordinatorDeviceId: thread.coordinatorDeviceId, ignoreRunningLimit: true });
+        fixed: { isolation: thread.isolation, modelId: model.id, deviceId: thread.ownerDeviceId }, coordinatorDeviceId: thread.coordinatorDeviceId, ignoreRunningLimit: true,
+        exclude: threadId });
       if (refused) throw refuse(refused, 409);
     }
     const at = this.#o.now(); const note = this.#note(input.note);
@@ -304,8 +330,13 @@ export class ThreadService {
     // A retry of an applied restart passes the refusals that the restart itself caused.
     if (!this.#o.receipts.get(projectId, clientRequestId, { title: thread.title, task: thread.task, ...fixed })) { const refused = restartRefusal(thread); if (refused) throw refuse(refused, 409); }
     const note = this.#note(input.note);
+    // A main thread still holds its checkout until it stops below: its own claim does not count, and the new thread prepares after (D292).
+    const settles = thread.isolation === 'main' && !isTerminal(thread.state);
     let started: Pick<StartResult, 'threadId'>;
-    if (coordinatorDeviceId === this.#o.deviceId) started = await this.start({ projectId, title: thread.title, task: thread.task, createdBy: 'owner', fixed, note, clientRequestId, coordinatorDeviceId });
+    if (coordinatorDeviceId === this.#o.deviceId) {
+      started = await this.start({ projectId, title: thread.title, task: thread.task, createdBy: 'owner', fixed, note, clientRequestId, coordinatorDeviceId,
+        ...(settles ? { exclude: threadId, deferPrepare: true } : {}) });
+    }
     else {
       if (!remote) throw refuse(COORDINATOR_ELSEWHERE, 409);
       const created = await remote(projectId, coordinatorDeviceId, { schema: 'thread-create-request-v1', clientRequestId, title: thread.title, task: thread.task, ...fixed, ...(note ? { note } : {}) });
@@ -320,6 +351,8 @@ export class ThreadService {
     const id = derivedId('povr', projectId, threadId, input.clientRequestId); const at = this.#at(this.#o.now());
     if (changes.length) await this.#o.hub.addOverride(PlacementOverrideSchema.parse({ schema: 'placement-override-v1', id, projectId, threadId, mode: 'restart', changes, ...(note ? { note } : {}), at }));
     await this.runner(threadId)!.restarted(restartedReason(started.threadId));
+    // The old thread gave the checkout back: a new thread waiting here prepares now (a repeat finds it past preparing and changes nothing).
+    if (settles && this.#o.store.get(started.threadId)?.state === 'preparing') void this.runner(started.threadId)?.prepare();
     await this.#o.delivery.toCoordinator(projectId, { schema: 'coordinator-event-v1', kind: 'placement-override', id: derivedId('cev', id), at, threadId,
       summary: overrideSummary({ changes, note, restartedAs: started.threadId }) });
     return { newThreadId: started.threadId };

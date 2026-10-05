@@ -140,7 +140,7 @@ export function bridgeTools(names: BridgeTool[]): z.infer<typeof BridgeToolsSche
     jevellan_notebook_read: 'Read the project notebook: your durable record of decisions, conventions, owner preferences and the current plan.',
     jevellan_notebook_write: 'Replace the whole notebook, at most 64 KiB. Pass the revision you read; if it changed meanwhile, the error carries the current content.',
     jevellan_pr_status: 'Fetch a thread’s pull request state fresh from GitHub.',
-    jevellan_mail_send: 'Send mail to coordinator, to a thread id or to all, to coordinate threads that work directly on main.',
+    jevellan_mail_send: 'Send mail to coordinate the threads that work directly on main: to a thread id, to all (every other main thread), or from a thread to coordinator.',
     jevellan_mail_inbox: 'Read unread mail addressed to this thread or to all, and mark it read.',
     jevellan_reserve: 'Reserve repository paths (files, or directories ending in /) for up to 120 minutes, 60 by default, before editing them. Other threads see the reservation; a refusal lists the conflicting threads.',
     jevellan_release: 'Release one reservation by id, or every reservation of this thread when no id is given.',
@@ -150,7 +150,7 @@ export function bridgeTools(names: BridgeTool[]): z.infer<typeof BridgeToolsSche
 }
 
 // Project scopes (D104). The coordinator's read-only Claude allow list and the bridge's scope lists both derive from
-// projectToolNames, never a copy. COORDINATOR_TOOLS and threadTools('main') are the full phase 6 lists.
+// projectToolNames, never a copy.
 export const COORDINATOR_TOOLS = ['jevellan_threads_list', 'jevellan_thread_start', 'jevellan_thread_message', 'jevellan_thread_read', 'jevellan_thread_stop',
   'jevellan_ask_user', 'jevellan_withdraw_question', 'jevellan_notebook_read', 'jevellan_notebook_write', 'jevellan_pr_status', 'jevellan_mail_send', 'memory_search', 'memory_read'] as const satisfies readonly BridgeTool[];
 const MAIN_THREAD_TOOLS = ['jevellan_mail_send', 'jevellan_mail_inbox', 'jevellan_reserve', 'jevellan_release'] as const satisfies readonly BridgeTool[];
@@ -158,10 +158,9 @@ export type ProjectToolName = typeof COORDINATOR_TOOLS[number] | typeof MAIN_THR
 export function threadTools(isolation: 'worktree' | 'main'): BridgeTool[] {
   return ['jevellan_thread_report', 'memory_search', 'memory_read', ...(isolation === 'main' ? MAIN_THREAD_TOOLS : [])];
 }
-// Mail and reservations arrive with main isolation (phase 6); until then no scope advertises a tool without a handler.
-const UNAVAILABLE = new Set<BridgeTool>(MAIN_THREAD_TOOLS);
+/** The tools a scope lists: the coordinator's, or a thread's by isolation (mail and reservations only on main, brief 7.2). A fresh array each call. */
 export function projectToolNames(scope: { kind: 'coordinator' } | { kind: 'thread'; isolation: 'worktree' | 'main' }): BridgeTool[] {
-  return (scope.kind === 'coordinator' ? [...COORDINATOR_TOOLS] : threadTools(scope.isolation)).filter((name) => !UNAVAILABLE.has(name));
+  return scope.kind === 'coordinator' ? [...COORDINATOR_TOOLS] : threadTools(scope.isolation);
 }
 /** The result document each project tool returns inside bridge-result-v1. */
 export const ProjectToolResultSchemas = {

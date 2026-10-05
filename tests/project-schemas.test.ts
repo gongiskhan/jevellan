@@ -277,10 +277,16 @@ test('hub requests map to one collection each and results carry matching revisio
     'override-add': { override }, 'overrides-recent': { projectId: 'project', limit: 8 },
     'envelope-put': { envelope }, 'envelopes-pending': { targetDeviceId: 'dev_b' }, 'envelope-ack': { id: 'env_1' },
     'work-summaries': { after: 'project' },
+    'mail-send': { mail: { schema: 'project-mail-v1', revision: 0, id: 'mail_1', projectId: 'project', from: threadId, to: 'all', subject: 'Heads up', body: 'I am editing src/.', at, readBy: [] } },
+    'mail-inbox': { projectId: 'project', threadId }, 'mail-read': { projectId: 'project', threadId, ids: ['mail_1'] },
+    'reserve': { reservation: { id: 'resv_1', projectId: 'project', threadId, paths: ['src/'], reason: 'Edit the app', minutes: 60 } },
+    'release': { projectId: 'project', threadId, id: 'resv_1' }, 'reservations-list': { projectId: 'project' },
+    'checkouts-held': { projectId: 'project' },
   };
   const expected = { settings: ['settings-get', 'settings-put'], coordinators: ['coordinator-get', 'coordinator-assign', 'coordinator-status-get', 'coordinator-status-put'],
     threads: ['threads-list', 'thread-get', 'thread-publish'], decisions: ['decisions-list', 'decision-get', 'decision-create', 'decision-withdraw', 'decision-answer'], notebooks: ['notebook-get', 'notebook-put'],
-    overrides: ['override-add', 'overrides-recent'], envelopes: ['envelope-put', 'envelopes-pending', 'envelope-ack'], work: ['work-summaries'] };
+    overrides: ['override-add', 'overrides-recent'], envelopes: ['envelope-put', 'envelopes-pending', 'envelope-ack'], work: ['work-summaries'],
+    mail: ['mail-send', 'mail-inbox', 'mail-read'], reservations: ['reserve', 'release', 'reservations-list'], checkouts: ['checkouts-held'] };
   for (const [operation, fields] of Object.entries(requests) as Array<[ProjectHubOperation, Record<string, unknown>]>) {
     const request = { schema: 'project-hub-request-v1', operation, ...fields };
     expect(ProjectHubRequestSchema.parse(request).operation).toBe(operation);
@@ -299,6 +305,33 @@ test('hub requests map to one collection each and results carry matching revisio
   expect(ProjectHubResultSchema.safeParse({ ...summaries, records: [{ ...summary, coordinator: { ...summary.coordinator, state: 'offline' } }] }).success).toBe(false);
   expect(ProjectHubResultSchema.safeParse({ ...summaries, records: [{ ...summary, running: -1 }] }).success).toBe(false);
   expect(ProjectHubRequestSchema.safeParse({ schema: 'project-hub-request-v1', operation: 'mail-send', projectId: 'project' }).success).toBe(false);
+  // Mail and reservations (D285): reading the inbox is a read and marking is a write; at most 100 ids are marked at once; 1 to 120 minutes.
+  expect(['mail-inbox', 'reservations-list'].every((operation) => isProjectHubRead(operation as ProjectHubOperation))).toBe(true);
+  expect(['mail-send', 'mail-read', 'reserve', 'release'].some((operation) => isProjectHubRead(operation as ProjectHubOperation))).toBe(false);
+  expect(ProjectHubRequestSchema.safeParse({ schema: 'project-hub-request-v1', operation: 'mail-read', projectId: 'project', threadId, ids: [] }).success).toBe(false);
+  expect(ProjectHubRequestSchema.safeParse({ schema: 'project-hub-request-v1', operation: 'mail-read', projectId: 'project', threadId, ids: Array.from({ length: 101 }, (_, n) => `mail_${n}`) }).success).toBe(false);
+  const reservation = { id: 'resv_1', projectId: 'project', threadId, paths: ['src/'], reason: '', minutes: 60 };
+  for (const minutes of [0, 121, 1.5]) expect(ProjectHubRequestSchema.safeParse({ schema: 'project-hub-request-v1', operation: 'reserve', reservation: { ...reservation, minutes } }).success).toBe(false);
+  expect(ProjectHubRequestSchema.safeParse({ schema: 'project-hub-request-v1', operation: 'reserve', reservation: { ...reservation, paths: [] } }).success).toBe(false);
+  expect(ProjectHubRequestSchema.safeParse({ schema: 'project-hub-request-v1', operation: 'reserve', reservation: { ...reservation, deviceId: 'dev_a' } }).success).toBe(false);
+  // Held checkouts (D288): a read, one entry per device with the holder's id and a title of at most 200 characters.
+  expect(isProjectHubRead('checkouts-held')).toBe(true);
+  const checkouts = { schema: 'project-hub-result-v1', operation: 'checkouts-held' };
+  const entry = { deviceId: 'dev_a', ownerId: threadId, title: 'Fix login' };
+  expect(ProjectHubResultSchema.safeParse({ ...checkouts, records: [entry, { ...entry, deviceId: 'dev_b', ownerId: 'conv_1' }] }).success).toBe(true);
+  for (const bad of [{ ...entry, title: '' }, { ...entry, title: 'x'.repeat(201) }, { ...entry, kind: 'claim' }, { deviceId: 'dev_a', title: 'Fix login' }]) {
+    expect(ProjectHubResultSchema.safeParse({ ...checkouts, records: [bad] }).success).toBe(false);
+  }
+  expect(ProjectHubRequestSchema.safeParse({ schema: 'project-hub-request-v1', operation: 'checkouts-held' }).success).toBe(false);
+  const held = { schema: 'file-reservation-v1', revision: 1, id: 'resv_1', projectId: 'project', threadId, deviceId: 'dev_a', paths: ['src/'], reason: '', createdAt: at, expiresAt: at };
+  const reserve = { schema: 'project-hub-result-v1', operation: 'reserve' };
+  expect(ProjectHubResultSchema.safeParse({ ...reserve, reservation: { revision: 1, document: held }, conflicts: [] }).success).toBe(true);
+  expect(ProjectHubResultSchema.safeParse({ ...reserve, reservation: null, conflicts: [{ threadId, threadTitle: null, paths: ['src/'], expiresAt: at }] }).success).toBe(true);
+  expect(ProjectHubResultSchema.safeParse({ ...reserve, reservation: { revision: 2, document: held }, conflicts: [] }).success).toBe(false);
+  const inbox = { schema: 'project-hub-result-v1', operation: 'mail-inbox', more: false };
+  const mail = { schema: 'project-mail-v1', revision: 1, id: 'mail_1', projectId: 'project', from: threadId, to: 'all', subject: 'Heads up', body: '', at, readBy: [] };
+  expect(ProjectHubResultSchema.safeParse({ ...inbox, records: Array.from({ length: 100 }, () => mail) }).success).toBe(true);
+  expect(ProjectHubResultSchema.safeParse({ ...inbox, records: Array.from({ length: 101 }, () => mail) }).success).toBe(false);
   expect(ProjectHubRequestSchema.safeParse({ schema: 'project-hub-request-v1', operation: 'decision-answer', id: 'pdec_1', answer: {}, at, clientRequestId: 'req_2' }).success).toBe(false);
   expect(ProjectHubRequestSchema.safeParse({ schema: 'project-hub-request-v1', operation: 'settings-put', settings, expectedRevision: -1 }).success).toBe(false);
   for (const limit of [0, 101, 1.5]) expect(ProjectHubRequestSchema.safeParse({ schema: 'project-hub-request-v1', operation: 'overrides-recent', projectId: 'project', limit }).success).toBe(false);
