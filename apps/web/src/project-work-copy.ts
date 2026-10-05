@@ -159,6 +159,8 @@ export const STARTING = 'Starting…';
 /** Placement phase gates (D88), the same sentences placement refuses with (D221). */
 export const MAIN_NOT_AVAILABLE = 'Main isolation is not available yet.';
 export const REMOTE_NOT_AVAILABLE = 'Threads run only on this device for now.';
+/** A device no thread of the project can run on, as its Device option reads (D281). */
+export const deviceUnavailable = (name: string, reason: string): string => `${name}: ${reason}`;
 
 // 12.2 Notebook panel
 export const EDIT = 'Edit';

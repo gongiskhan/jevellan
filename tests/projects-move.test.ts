@@ -11,7 +11,7 @@ import {
 import { HubProjectAccess } from '../packages/mesh/dist/index.js';
 import { forCoordinator, type FakeRuntime, type FakeTurnStep, type TurnInput } from '../packages/runtime-contract/dist/index.js';
 import {
-  PROJECT_NOT_FOUND, PROJECT_OPERATION_NOT_FOUND, coordinatorMovable, coordinatorMovedNotice, coordinatorWorking, type ProjectWork,
+  PROJECT_NOT_FOUND, PROJECT_OPERATION_NOT_FOUND, coordinatorMovable, coordinatorMovedNotice, coordinatorWorking, noCoordinatorModel, type ProjectWork,
 } from '../packages/projects/dist/index.js';
 import { expectNoLeaks, holdStep, projectFixture, projectMember, type ProjectFixture, type ProjectMember } from './helpers/project-fixture.js';
 
@@ -182,6 +182,9 @@ test('an offline coordinator device: the hub takes the coordinator over, events 
   // over although the member's last status says it works.
   silence(f, m.deviceId);
   expect((await view(f)).coordinator).toMatchObject({ deviceId: m.deviceId, deviceName: m.name, state: 'offline', online: false, canMoveHere: true });
+  // The away coordinator device is not the placing device of the device list (D8 holds only for a device that places): it reads offline.
+  expect((await view(f)).devices?.find((entry) => entry.deviceId === m.deviceId)).toMatchObject({ reason: 'offline' });
+  expect((await view(f)).devices?.find((entry) => entry.deviceId === hubId)).not.toHaveProperty('reason');
   f.fake.enqueueTurn(say('Taking over.'), forCoordinator);
   const moved = await f.request(MOVE, 'POST', empty);
   expect(moved.status).toBe(200);
@@ -225,6 +228,80 @@ test('an offline coordinator device: the hub takes the coordinator over, events 
   expect(existsSync(memberPaths.coordinator(pid))).toBe(false); expect(coordinatorTurns(m.fake)).toHaveLength(1);
   expect(f.app.projectWork.coordinators.get(pid).state().queue).toEqual([]); expect(relayedTo(f, hubId)).toEqual([]);
   turn.release();
+});
+
+test('a move recorded after the old device read its assignment and before it launched: no turn runs there, and the batch reaches the new device (D283)', { timeout: 120_000 }, async () => {
+  const { f, m } = await setup();
+  // The member holds the coordinator (Move before any assignment assigns it, D6).
+  expect((await m.request(MOVE, 'POST', empty)).status).toBe(200);
+  m.fake.enqueueTurn(say('Too late.'), forCoordinator); f.fake.enqueueTurn(say('Taken over.'), forCoordinator);
+  // The hub's Move lands right after the member's last assignment read before its launch: the second of this turn (the first is
+  // the fence at the turn start). The member's status still says nothing, so the hub may take the coordinator.
+  let reads = 0; let moved: Response | undefined;
+  m.afterCall = async (call) => {
+    if (call !== '/hub/mesh/projects/coordinators coordinator-get' || ++reads !== 2) return;
+    moved = await f.request(MOVE, 'POST', empty);
+  };
+  m.app.projectWork.coordinators.get(pid).enqueue(ownerEvent('cev_window', 'Planned in the window.'));
+  await f.waitFor(() => moved, Boolean); m.afterCall = null;
+  expect(moved!.status).toBe(200);
+  await m.app.projectWork.idle(); await m.app.projectWork.pulse(); await m.app.projectWork.idle();
+  // The member announced its turn after the move was recorded: refused, it launched nothing and handed the batch over (3.5.4).
+  expect(coordinatorTurns(m.fake)).toEqual([]);
+  expect(existsSync(m.app.projectWork.paths.coordinator(pid))).toBe(false);
+  await f.app.projectWork.pulse();
+  await f.waitFor(() => coordinatorTurns(f.fake).length, (count) => count === 1); await f.app.projectWork.idle();
+  expect(coordinatorTurns(f.fake)[0]!.prompt).toContain('Planned in the window.');
+  expect(coordinatorTurns(m.fake)).toEqual([]);
+  expect((await f.app.projectHub.coordinatorStatus(pid))?.document).toMatchObject({ deviceId: f.app.device.deviceId, state: 'idle' });
+});
+
+test('a coordinator turn is announced on the hub before it launches, so a move asked meanwhile is refused while that device is online (D283)', { timeout: 120_000 }, async () => {
+  const { f, m } = await setup();
+  expect((await m.request(MOVE, 'POST', empty)).status).toBe(200);
+  const turn = held(); m.fake.enqueueTurn(turn.step, forCoordinator);
+  let refused: Response | undefined; let launched = -1;
+  m.afterCall = async (call, body) => {
+    if (refused || call !== '/hub/mesh/projects/coordinators coordinator-status-put' || (body as { status?: { state?: string } }).status?.state !== 'running') return;
+    launched = coordinatorTurns(m.fake).length;
+    refused = await f.request(MOVE, 'POST', empty);
+  };
+  m.app.projectWork.coordinators.get(pid).enqueue(ownerEvent('cev_claimed', 'Announced first.'));
+  await f.waitFor(() => refused, Boolean); m.afterCall = null;
+  expect(launched).toBe(0);
+  expect(refused!.status).toBe(409); expect(await refused!.json()).toMatchObject({ message: coordinatorWorking(m.name) });
+  await f.waitFor(() => coordinatorTurns(m.fake).length, (count) => count === 1);
+  expect(coordinatorTurns(m.fake)[0]!.prompt).toContain('Announced first.');
+  turn.release(); await m.app.projectWork.idle();
+  expect((await f.app.projectHub.coordinator(pid))?.document.deviceId).toBe(m.deviceId); expect(coordinatorTurns(f.fake)).toEqual([]);
+});
+
+test('Move coordinator here is refused with the reason, shown in the view, when this device cannot run the coordinator (D282)', { timeout: 120_000 }, async () => {
+  const f = fixture = await projectFixture({ coordinator: true });
+  const m = await projectMember(f); const hubId = f.app.device.deviceId;
+  // The hub's coordinator is assigned and idle; the member's runtime cannot enforce read-only turns.
+  f.fake.enqueueTurn(say('Noted.'), forCoordinator);
+  expect((await f.request(MESSAGES, 'POST', message('Hello.'))).status).toBe(202);
+  await f.waitFor(() => coordinatorTurns(f.fake).length, (count) => count === 1); await f.app.projectWork.idle();
+  const revision = (await f.app.projectHub.coordinator(pid))!.revision;
+  const model = noCoordinatorModel(m.name);
+  expect((await view(m)).coordinator).toMatchObject({ deviceId: hubId, state: 'idle', canMoveHere: true, moveRefusal: model });
+  const refused = await m.request(MOVE, 'POST', empty);
+  expect(refused.status).toBe(409); expect(await refused.json()).toEqual({ schema: 'error-v1', code: 'conflict', message: model });
+  expect(await f.app.projectHub.coordinator(pid)).toMatchObject({ revision, document: { deviceId: hubId } });
+  expect(existsSync(m.app.projectWork.paths.coordinator(pid))).toBe(false); expect(notices(f.app.projectWork)).toEqual([]);
+  // A runtime that can: without the project's path on the member, the checkout is the reason.
+  m.fake.capabilities.readOnlyEnforced = true;
+  expect((await view(m)).coordinator).toMatchObject({ canMoveHere: true }); expect((await view(m)).coordinator).not.toHaveProperty('moveRefusal');
+  const stored = (await f.app.state.projects.get(pid))!;
+  await f.app.conversations.saveProject({ schema: 'project-write-v1', revision: stored.revision, project: { ...stored.project, paths: { [hubId]: f.checkout } } });
+  const checkout = `Project Shop isn't checked out on ${m.name} at (no path).`;
+  expect((await view(m)).coordinator).toMatchObject({ canMoveHere: true, moveRefusal: checkout });
+  const unset = await m.request(MOVE, 'POST', empty);
+  expect(unset.status).toBe(409); expect(await unset.json()).toMatchObject({ message: checkout });
+  expect((await f.app.projectHub.coordinator(pid))?.document.deviceId).toBe(hubId);
+  // The coordinator's own device never shows a refusal.
+  expect((await view(f)).coordinator).not.toHaveProperty('moveRefusal');
 });
 
 test('a coordinator that failed twice gives the coordinator up: its waiting message reaches the new device at its next sweep', { timeout: 120_000 }, async () => {

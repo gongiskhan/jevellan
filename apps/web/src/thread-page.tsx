@@ -5,12 +5,11 @@ import {
 } from '@jevellan/core/client';
 import { ApiError, api, empty } from './api.js';
 import { Confirm, Markdown, Modal, Panel, useTask, type PageProps } from './components.js';
-import { deviceAvailable } from './devices.js';
 import { Icon } from './icons.js';
 import { MessageInput } from './message-delivery.js';
 import * as copy from './project-work-copy.js';
 import {
-  THREAD_POLL_AFTER_ACTION_MS, THREAD_POLL_LIVE_MS, alignReports, composerBlock, deviceBlock, deviceRefusal, dotClass, effortChoices, fallbackChip, mainIsolationBlock, nearestEffort,
+  THREAD_POLL_AFTER_ACTION_MS, THREAD_POLL_LIVE_MS, alignReports, composerBlock, deviceBlock, deviceChoices, deviceRefusal, dotClass, effortChoices, fallbackChip, mainIsolationBlock, nearestEffort,
   overrideForm, overrideOffered, overrideReady, overrideRequest, placementLine, pullRequestBadges, reportBadge, restartedThread, threadActions, threadLiveText,
   threadPollDelay, threadStarting, transcriptNotice, whyFields, withoutReportCalls, type OverrideForm, type OverrideMode,
 } from './project-work-model.js';
@@ -485,9 +484,9 @@ function OverrideDialog({ props, view, projectId, close, applied }: { props: Pag
   const models = restart ? listed : listed.filter((entry) => entry.runtime === current.runtime);
   const efforts = effortChoices(menu.find((entry) => entry.id === form.modelId)?.efforts, current.effortRequested);
   const here = data.devices.currentDeviceId;
-  const devices = data.roster.devices.filter((row) => deviceAvailable(row, here) || row.device.id === form.deviceId);
+  const devices = deviceChoices(work, data.roster.devices, here, form.deviceId);
   const mainBlock = work ? mainIsolationBlock(work) : null;
-  const remoteBlock = work ? devices.map((row) => deviceBlock(work, row.device.id, here)).find((reason) => reason !== null) ?? null : null;
+  const remoteBlock = work ? devices.map((choice) => deviceBlock(work, choice.id, here)).find((reason) => reason !== null) ?? null : null;
   const change = (fields: Partial<OverrideForm>) => setForm((previous) => ({ ...previous, ...fields }));
   // An effort the chosen model neither offers nor the thread requested moves to the model's nearest one.
   const fitted = (next: OverrideForm): OverrideForm => {
@@ -567,9 +566,7 @@ function OverrideDialog({ props, view, projectId, close, applied }: { props: Pag
                 <label>{copy.DEVICE}
                   <select value={form.deviceId} aria-describedby={remoteBlock ? deviceNote : undefined} onChange={(event) => change({ deviceId: event.target.value })}>
                     <option value="">{copy.AUTOMATIC}</option>
-                    {devices.map((row) => (
-                      <option key={row.device.id} value={row.device.id} disabled={!work || deviceBlock(work, row.device.id, here) !== null}>{row.device.name}</option>
-                    ))}
+                    {devices.map((choice) => <option key={choice.id} value={choice.id} disabled={choice.disabled}>{choice.label}</option>)}
                   </select>
                 </label>
                 {remoteBlock && <p className="pw-field-note" id={deviceNote}>{remoteBlock}</p>}

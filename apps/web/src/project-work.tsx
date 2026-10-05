@@ -9,12 +9,11 @@ import {
 import { ApiError, api, empty, isCancelled } from './api.js';
 import { clientId } from './client-id.js';
 import { Confirm, Markdown, Modal, Panel, useDismissible, useSettingsSave, useTask, type PageProps } from './components.js';
-import { deviceAvailable } from './devices.js';
 import { Icon } from './icons.js';
 import { MessageInput } from './message-delivery.js';
 import * as copy from './project-work-copy.js';
 import {
-  PROJECT_WORK_UPDATED, chatItems, checksBadge, coordinatorChip, decisionSource, defaultTab, deviceBlock, dotClass, mainIsolationBlock, mergeBlock,
+  PROJECT_WORK_UPDATED, chatItems, checksBadge, coordinatorChip, decisionSource, defaultTab, deviceBlock, deviceChoices, dotClass, mainIsolationBlock, mergeBlock,
   openPullRequests, outcomeText, projectDot, projectRoute, rowClockMs, sentText, settingsRequest, showSent, sidebarProjects, threadCreateRequest, threadMeta,
   threadSections, toolIcon, withdrawals, working, type ChatItem, type ProjectTab, type ThreadForm, type ThreadTitles,
 } from './project-work-model.js';
@@ -362,6 +361,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   }, [threads]);
   const items = useMemo(() => chatItems(events, titles), [events, titles]);
   const menu = useDismissible();
+  const menuMoveNote = useId();
   const control = useTask(onError);
   // A refused move (the coordinator started a turn meanwhile) stays on the page, never the app's global 409 reload, until the
   // coordinator's device changes or the menu offers the move again.
@@ -440,7 +440,11 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
             <div>
               <button type="button" onClick={() => { closeMenu(); setDialog('settings'); }}>{copy.PROJECT_SETTINGS}</button>
               <button type="button" disabled={control.busy || offline} onClick={() => { closeMenu(); fresh(); }}>{copy.FRESH_COORDINATOR}</button>
-              {coordinator.canMoveHere && <button type="button" disabled={moving.busy} onClick={() => { closeMenu(); move(); }}>{copy.MOVE_COORDINATOR}</button>}
+              {coordinator.canMoveHere && (
+                <button type="button" disabled={moving.busy || !!coordinator.moveRefusal} aria-describedby={coordinator.moveRefusal ? menuMoveNote : undefined}
+                  onClick={() => { closeMenu(); move(); }}>{copy.MOVE_COORDINATOR}</button>
+              )}
+              {coordinator.canMoveHere && coordinator.moveRefusal && <p className="pw-menu-note" id={menuMoveNote}>{coordinator.moveRefusal}</p>}
             </div>
           </details>
         </div>
@@ -453,7 +457,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
       </div>
       {loadError && <p className="notice" role="status">{loadError}</p>}
       {coordinator.state === 'unavailable' && coordinator.unavailableReason && <p className="notice">{copy.coordinatorUnavailableNotice(coordinator.unavailableReason)}</p>}
-      {offline && <OfflineNotice device={coordinatorDevice} canMove={coordinator.canMoveHere} moving={moving.busy} move={move} />}
+      {offline && <OfflineNotice device={coordinatorDevice} canMove={coordinator.canMoveHere} refusal={coordinator.moveRefusal} moving={moving.busy} move={move} />}
       {moveFailure.error && <p className="error" role="alert">{moveFailure.error}</p>}
       {stream === 'reconnecting' && <p className="notice" role="status">{copy.RECONNECTING}</p>}
       <div className="pw-tabs" role="tablist" aria-label={copy.PROJECT_SECTIONS} onKeyDown={(event) => {
@@ -528,18 +532,21 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
 
 /**
  * The 9.8 notice while the coordinator's device is offline (no heartbeat for 10 minutes, or revoked), with Move coordinator here
- * when this device may take the coordinator over (D80, D269, D272).
+ * when the move rule lets this device take the coordinator over (D80, D269, D272). When this device cannot run the coordinator the
+ * button stays visible but disabled, with the reason on its own line under it (D282), so phones see why without a tooltip.
  */
-function OfflineNotice({ device, canMove, moving, move }: { device: string; canMove: boolean; moving: boolean; move(): void }) {
+function OfflineNotice({ device, canMove, refusal, moving, move }: { device: string; canMove: boolean; refusal?: string | undefined; moving: boolean; move(): void }) {
+  const note = useId();
   return (
     <div className="notice pw-offline">
       <p>{copy.coordinatorOfflineNotice(device)}</p>
       {/* Both labels share one cell, so the button keeps its width while it moves and the notice never reflows. */}
       {canMove && (
-        <button type="button" className="secondary pw-move" disabled={moving} onClick={move}>
+        <button type="button" className="secondary pw-move" disabled={moving || !!refusal} aria-describedby={refusal ? note : undefined} onClick={move}>
           <span aria-hidden={moving}>{copy.MOVE_COORDINATOR}</span><span aria-hidden={!moving}>{copy.MOVING_COORDINATOR}</span>
         </button>
       )}
+      {canMove && refusal && <p className="pw-move-refusal" id={note}>{refusal}</p>}
     </div>
   );
 }
@@ -804,9 +811,9 @@ function NewThreadDialog({ props, view, move, close }: { props: PageProps; view:
   const models = data.config.configuration['x-jevellan'].menu.filter((entry) => entry.enabled);
   const efforts = models.find((entry) => entry.id === form.modelId)?.efforts ?? EffortSchema.options;
   const here = data.devices.currentDeviceId;
-  const devices = data.roster.devices.filter((row) => deviceAvailable(row, here));
+  const devices = deviceChoices(view, data.roster.devices, here, form.deviceId);
   const mainBlock = mainIsolationBlock(view);
-  const remoteBlock = devices.map((row) => deviceBlock(view, row.device.id, here)).find((reason) => reason !== null) ?? null;
+  const remoteBlock = devices.map((choice) => deviceBlock(view, choice.id, here)).find((reason) => reason !== null) ?? null;
   const offline = view.coordinator.state === 'offline';
   const coordinatorDevice = view.coordinator.deviceName ?? deviceNames(data)(view.coordinator.deviceId ?? '');
   return (
@@ -823,7 +830,7 @@ function NewThreadDialog({ props, view, move, close }: { props: PageProps; view:
           props.navigate(`/projects/${view.project.id}/threads/${created.threadId}`);
         });
       }}>
-        {offline && <OfflineNotice device={coordinatorDevice} canMove={view.coordinator.canMoveHere} moving={moving.busy}
+        {offline && <OfflineNotice device={coordinatorDevice} canMove={view.coordinator.canMoveHere} refusal={view.coordinator.moveRefusal} moving={moving.busy}
           move={() => void moving.run(async (signal) => { setError(''); await move(signal); })} />}
         <label>{copy.TITLE}<input required maxLength={120} value={form.title} onChange={(event) => change({ title: event.target.value })} /></label>
         <label>{copy.TASK}<textarea required maxLength={20000} rows={6} value={form.task} onChange={(event) => change({ task: event.target.value })} /></label>
@@ -860,9 +867,7 @@ function NewThreadDialog({ props, view, move, close }: { props: PageProps; view:
               <label>{copy.DEVICE}
                 <select value={form.deviceId} aria-describedby={remoteBlock ? deviceNote : undefined} onChange={(event) => change({ deviceId: event.target.value })}>
                   <option value="">{copy.AUTOMATIC}</option>
-                  {devices.map((row) => (
-                    <option key={row.device.id} value={row.device.id} disabled={deviceBlock(view, row.device.id, here) !== null}>{row.device.name}</option>
-                  ))}
+                  {devices.map((choice) => <option key={choice.id} value={choice.id} disabled={choice.disabled}>{choice.label}</option>)}
                 </select>
               </label>
               {remoteBlock && <p className="pw-field-note" id={deviceNote}>{remoteBlock}</p>}

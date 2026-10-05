@@ -8,7 +8,7 @@ import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  AccountSchema, DeviceSchema, ProjectSchema, SecretRedactor, ThreadCreatedViewSchema, ThreadOverrideViewSchema, ThreadViewSchema, mapEffort, type CoordinatorEvent, type ModelOption,
+  AccountSchema, DeviceSchema, ProjectSchema, ProjectWorkViewSchema, SecretRedactor, ThreadCreatedViewSchema, ThreadOverrideViewSchema, ThreadViewSchema, mapEffort, type CoordinatorEvent, type ModelOption,
   type ProjectLedgerData, type ProjectLedgerEvent,
 } from '../packages/core/dist/index.js';
 import { HubAccounts, joinHub } from '../packages/mesh/dist/index.js';
@@ -193,6 +193,38 @@ test('PJ4 Call B asks for the device when a second device qualifies', { timeout:
   expect(created.placement).toBe(`${SECOND_RUNTIME} Deep · max · Worktree · ${f.deviceName}`);
   await settle(f, created.threadId, 1);
   expect(deep.turnStarts[0]).toMatchObject({ model: 'deep-model', effort: 'max', account: { account: { id: 'acc_deep' } } });
+});
+
+test('the work view gives every device the reason a thread of the project cannot run there, as placement would (D281)', { timeout: 120_000 }, async () => {
+  const transport = jev(); const f = await setup([SWIFT, DEEP], transport);
+  const hubId = f.app.device.deviceId;
+  const hubRow = f.app.hub.get('devices', hubId, DeviceSchema)!; f.app.hub.put('devices', hubId, DeviceSchema, { ...hubRow.document, url: f.base }, hubRow.revision);
+  const join = async (id: string, name: string) => {
+    await joinHub({ hubUrl: f.base, hubName: 'Fixture hub', redactor: new SecretRedactor() }, { schema: 'join-device-v1', requestId: `join_${id}`, code: f.app.mesh.invite().code,
+      device: { id, name, url: 'http://127.0.0.1:9', os: 'linux', version: '0.1.0' } });
+  };
+  const beat = (id: string) => f.app.devices.heartbeat(id, { schema: 'heartbeat-v1', deviceId: id, at: new Date().toISOString(), version: '0.1.0', runningConversations: [], projects: [],
+    externalSessions: [], load: { cpuPct: 0, memFreeMb: 1024 } });
+  // Studio: online, set up, an eligible Deep account. Bare: online without the project. Cold: online and set up, no account there.
+  // Lab: set up but never reported a heartbeat. Gone: revoked, so not listed.
+  for (const [id, name] of [['dev_studio', 'Studio'], ['dev_bare', 'Bare'], ['dev_cold', 'Cold'], ['dev_lab', 'Lab'], ['dev_gone', 'Gone']] as const) await join(id, name);
+  for (const id of ['dev_studio', 'dev_bare', 'dev_cold', 'dev_gone']) beat(id);
+  f.app.devices.revoke('dev_gone');
+  const stored = (await f.app.state.projects.get('project'))!;
+  await f.app.conversations.saveProject({ schema: 'project-write-v1', revision: stored.revision, project: { ...stored.project,
+    paths: { ...stored.project.paths, dev_studio: '/srv/shop', dev_cold: '/srv/shop', dev_lab: '/srv/shop', dev_gone: '/srv/shop' } } });
+  new HubAccounts(f.app.hub, 'dev_studio').writeStatus({ schema: 'account-status-v2', accountId: 'acc_deep', deviceId: 'dev_studio', auth: 'ready', observedAt: new Date().toISOString() }, null);
+  const view = await f.json('/api/projects/project/work', ProjectWorkViewSchema);
+  const entry = (deviceId: string, name: string, reason?: string) => ({ schema: 'project-device-setup-v1', deviceId, name, ...(reason ? { reason } : {}) });
+  const expected = [entry(hubId, f.deviceName), entry('dev_studio', 'Studio'), entry('dev_bare', 'Bare', 'not set up for this project'),
+    entry('dev_cold', 'Cold', `Scripted test runtime needs login; ${SECOND_RUNTIME} needs login`), entry('dev_lab', 'Lab', 'offline')];
+  // In roster order, without the revoked device.
+  const order = (await f.app.roster()).devices.filter((row) => !row.revoked).map((row) => row.device.id);
+  expect(view.devices).toEqual(order.map((id) => expected.find((item) => item.deviceId === id)));
+  expect(order).toHaveLength(expected.length);
+  // Placement agrees: a thread fixed to a listed device is refused with the same reason.
+  const refused = await f.request('/api/projects/project/threads', 'POST', { ...createBody('Add search', 'Add a search box.'), deviceId: 'dev_bare' });
+  expect(refused.status).toBe(409); expect((await refused.json() as { message: string }).message).toContain('Bare: not set up for this project');
 });
 
 test('PJ4b overrides change the next launch and restarts feed the packet', { timeout: 180_000 }, async () => {

@@ -102,6 +102,11 @@ export type ThreadRunnerContext = {
   enterOperation(id: string, title: string): () => void;
   /** The thread left live work: queued starts and turns waiting for a slot may run now. */
   rested(projectId: string): void;
+  /**
+   * The owner device's decision fallback for the project (decision 7, D280): its waiting needs-decision reports become the owner's
+   * questions now when the coordinator's device is away. Never fails.
+   */
+  askDirectly(projectId: string): Promise<void>;
   timers: { threadTurnTimeoutMs: number; setupTimeoutMs: number };
   now(): number;
 };
@@ -159,9 +164,9 @@ export class ThreadRunner {
     if (liveWork(before.state) && !liveWork(thread.state)) this.#c.rested(thread.projectId);
     return thread;
   }
-  async #tell(projectId: string, body: EventBody): Promise<void> {
+  async #tell(projectId: string, body: EventBody, fixed?: { id: string; at: string }): Promise<void> {
     const at = this.#c.now();
-    await this.#c.toCoordinator(projectId, { schema: 'coordinator-event-v1', id: newId('cev', at), at: new Date(at).toISOString(), ...body } as CoordinatorEvent);
+    await this.#c.toCoordinator(projectId, { schema: 'coordinator-event-v1', id: fixed?.id ?? newId('cev', at), at: fixed?.at ?? new Date(at).toISOString(), ...body } as CoordinatorEvent);
   }
   #notice(thread: Thread, text: string, kind: 'info' | 'error'): void {
     this.#c.ledgers.thread(thread.projectId, thread.id).append({ type: 'notice', data: { schema: 'project-notice-v1', text, kind } });
@@ -343,7 +348,18 @@ export class ThreadRunner {
       case 'idle': await this.#report(this.#set((current) => withState(current, 'idle')), report); return null;
     }
   }
-  async #report(thread: Thread, report: ThreadReport): Promise<void> { await this.#tell(thread.projectId, { kind: 'thread-report', threadId: thread.id, report }); }
+  /**
+   * The report to the coordinator. A needs-decision report keeps its event on the thread first (D280), so that while the coordinator's
+   * device is away this device asks the owner under that event's fallback id, before the report leaves, and at later sweeps.
+   */
+  async #report(thread: Thread, report: ThreadReport): Promise<void> {
+    const now = this.#c.now(); const event = { id: newId('cev', now), at: new Date(now).toISOString() };
+    if (report.status === 'needs-decision') {
+      this.#c.store.updateLocal(thread.id, (local) => ({ ...local, decisionReport: { eventId: event.id, at: event.at, asked: false } }));
+      await this.#c.askDirectly(thread.projectId);
+    }
+    await this.#tell(thread.projectId, { kind: 'thread-report', threadId: thread.id, report }, event);
+  }
   /**
    * The turn limit (brief 8.2, D73): the owner decides with the turn-limit item, created at once and only once; queued
    * messages stay; a report that reached the limit still goes to the coordinator.

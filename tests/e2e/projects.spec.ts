@@ -1,6 +1,6 @@
 import type { Locator, Page, TestInfo } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
-import { ProjectWorkViewSchema, RuntimeListSchema, ThreadViewSchema, type ThreadView } from '../../packages/core/dist/client.js';
+import { DeviceRosterSchema, ProjectWorkViewSchema, RuntimeListSchema, ThreadViewSchema, type ThreadView } from '../../packages/core/dist/client.js';
 import { threadDeviceOffline } from '../../packages/projects/dist/copy.js';
 import { expect, test } from './fixtures.js';
 import { openSidebar } from './navigation.js';
@@ -256,6 +256,13 @@ test('PJ3 a running thread shows its transcript, report card and accepts an inte
   await expect(isolation.locator('option')).toHaveText(['Automatic', 'Worktree', 'Main']);
   await expect(isolation.locator('option[value="main"]')).toHaveJSProperty('disabled', true);
   await expect(isolation).toHaveAccessibleDescription('Main isolation is not available yet.');
+  // Every device of the mesh is offered in roster order (D281); one no thread can run on stays listed, disabled, with placement's reason.
+  const roster = DeviceRosterSchema.parse(await read(page, '/hub/devices/roster'));
+  const device = dialog.getByRole('combobox', { name: 'Device', exact: true });
+  await expect(device.locator('option')).toHaveText(['Automatic', ...roster.devices.filter((row) => !row.revoked)
+    .map((row) => row.device.name === 'Offline fixture' ? 'Offline fixture: offline' : row.device.name)]);
+  await expect(device.locator('option', { hasText: 'Offline fixture: offline' })).toHaveJSProperty('disabled', true);
+  await expect(device.locator('option', { hasText: 'Browser member' })).toHaveJSProperty('disabled', false);
   await shot(page, 'new-thread-modal', false);
   await dialog.getByRole('button', { name: 'Start thread', exact: true }).click();
 

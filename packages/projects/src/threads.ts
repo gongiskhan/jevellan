@@ -2,7 +2,7 @@ import type { z } from 'zod';
 import type { AccountService } from '@jevellan/accounts';
 import { existsSync } from 'node:fs';
 import {
-  EffortSchema, HubUnavailable, PlacementOverrideSchema, ThreadReadResultSchema, ThreadSchema, concludedRecently, isTerminal, liveWork, mapEffort, newId, stableJson, type Configuration,
+  EffortSchema, HubUnavailable, PlacementOverrideSchema, ThreadReadResultSchema, ThreadSchema, concludedRecently, deviceAway, isTerminal, liveWork, mapEffort, newId, stableJson, type Configuration,
   type CoordinatorEvent, type PlacementOverride, type ProjectHub, type ProjectLedgerEvent, type QueuedMessage, type SecretRedactor, type SharedProjects, type Thread, type ThreadCommand,
   type ThreadCreateRequestSchema, type ThreadCreatedViewSchema, type ThreadIndex, type ThreadOverrideRequestSchema, type ThreadReport, type ThreadState,
 } from '@jevellan/core';
@@ -13,10 +13,10 @@ import {
   overrideSummary, ownerStartedLine, placementSummary, queuedReason, restartedReason,
 } from './copy.js';
 import type { CoordinatorService } from './coordinator.js';
-import { derivedId } from './decision-items.js';
+import { derivedId, type DecisionItems } from './decision-items.js';
 import type { Outbox } from './envelopes.js';
 import type { ProjectLedgers } from './ledger.js';
-import type { Placement } from './placement.js';
+import type { DeviceRoster, Placement } from './placement.js';
 import type { StartReceipts, StartedSummary, ThreadLabels, ThreadStore } from './stores.js';
 import { REST_STATES, ThreadRunner, restartRefusal, type ThreadRunnerContext } from './thread-runner.js';
 import { assistantText, type ThreadTranscripts } from './transcript.js';
@@ -97,8 +97,12 @@ export type ThreadServiceOptions = {
   settings(): Promise<Configuration['x-jevellan']>;
   transcripts: Pick<ThreadTranscripts, 'read'>;
   delivery: Delivery;
-  /** Everything a runner needs except `rested`, which the service provides. */
-  runner: Omit<ThreadRunnerContext, 'rested'>;
+  /** Everything a runner needs except `rested` and `askDirectly`, which the service provides. */
+  runner: Omit<ThreadRunnerContext, 'rested' | 'askDirectly'>;
+  /** Decision 7 on the owner device (D280): the roster says whether the coordinator's device is away; the fallback creates the question. */
+  roster(): Promise<DeviceRoster>; decisions: Pick<DecisionItems, 'fallbackFromReports'>;
+  /** The sweeps check a project's waiting questions at most this often (a new needs-decision report checks at once). */
+  fallbackCheckMs: number;
   now(): number;
 };
 const oldestMessage = (thread: Thread) => thread.queuedMessages.reduce((oldest, message) => message.at < oldest ? message.at : oldest, thread.queuedMessages[0]?.at ?? '');
@@ -120,6 +124,8 @@ export class ThreadService {
   readonly #remoteQueue = new Map<string, Set<string>>();
   #starting = 0;
   #sweep: Set<string> | undefined;
+  /** When each project's waiting questions were last checked against the coordinator device's presence (D280). */
+  readonly #checked = new Map<string, number>();
   #started = false;
   #closed = false;
   constructor(o: ThreadServiceOptions) { this.#o = o; }
@@ -127,7 +133,8 @@ export class ThreadService {
   runner(threadId: string): ThreadRunner | undefined {
     let runner = this.#runners.get(threadId);
     if (!runner && this.#o.store.get(threadId)) {
-      runner = new ThreadRunner(threadId, { ...this.#o.runner, rested: (projectId) => this.#rested(projectId) });
+      runner = new ThreadRunner(threadId, { ...this.#o.runner, rested: (projectId) => this.#rested(projectId),
+        askDirectly: (projectId) => this.askDirectly(projectId, true).catch(() => undefined) });
       this.#runners.set(threadId, runner);
     }
     return runner;
@@ -381,13 +388,49 @@ export class ThreadService {
       .sort((a, b) => oldestMessage(a).localeCompare(oldestMessage(b)));
     for (const thread of waiting) { if (this.#closed) return; await this.runner(thread.id)?.resume(); }
   }
-  /** Both sweeps (the periodic timer and `pulse`): the queue of every project with queued threads here or a coordinator here. */
+  /**
+   * The sweeps (the periodic timer and `pulse`): the queue of every project with queued threads here or a coordinator here, threads
+   * waiting for a slot or the hub, and questions waiting on a coordinator whose device is away (D280).
+   */
   async sweep(): Promise<void> {
     const paths = this.#o.store.paths;
     const projects = new Set([...this.#o.store.all().filter((thread) => thread.state === 'queued').map((thread) => thread.projectId),
       ...paths.projectIds().filter((projectId) => existsSync(paths.coordinator(projectId)))]);
     for (const projectId of projects) await this.sweepQueue(projectId);
     await this.sweepWaiting();
+    for (const projectId of new Set(this.#o.store.all().filter((thread) => this.#unasked(thread)).map((thread) => thread.projectId))) {
+      if (this.#closed) return;
+      await this.askDirectly(projectId).catch(() => undefined);
+    }
+  }
+  /** A local thread waits on a needs-decision report whose question this device has not asked the owner itself. */
+  #unasked(thread: Thread): boolean {
+    return thread.state === 'waiting-for-you' && thread.lastReport?.status === 'needs-decision' && this.#o.store.local(thread.id).decisionReport?.asked === false;
+  }
+  /**
+   * Decision 7 on the thread's owner device (D280): while the coordinator's device is away (D80: left the mesh, revoked, or no
+   * heartbeat for 10 minutes) it cannot take a needs-decision report, so this device turns each such report its threads wait on into
+   * the owner's question, under the id the coordinator's own fallback uses for that report (D195): neither side ever asks twice, and
+   * the coordinator that later receives the report reads it as asked (D32). Runs for a new report (`now`) and at the sweeps, at most
+   * every `fallbackCheckMs` per project; a project without such a report reads nothing. Hub errors reach the caller.
+   */
+  async askDirectly(projectId: string, now = false): Promise<void> {
+    const waiting = this.#o.store.list(projectId).filter((thread) => this.#unasked(thread));
+    if (!waiting.length || this.#closed) return;
+    const at = this.#o.now(); const last = this.#checked.get(projectId);
+    if (!now && last !== undefined && at - last < this.#o.fallbackCheckMs) return;
+    this.#checked.set(projectId, at);
+    const assigned = (await this.#o.hub.coordinator(projectId))?.document.deviceId;
+    if (assigned === undefined || assigned === this.#o.deviceId) return;
+    if (!deviceAway((await this.#o.roster()).devices.find((view) => view.device.id === assigned))) return;
+    const events: CoordinatorEvent[] = waiting.flatMap((thread) => {
+      const report = this.#o.store.local(thread.id).decisionReport;
+      return report && thread.lastReport ? [{ schema: 'coordinator-event-v1', kind: 'thread-report', id: report.eventId, at: report.at, threadId: thread.id, report: thread.lastReport }] : [];
+    });
+    const covered = new Set(await this.#o.decisions.fallbackFromReports(projectId, events));
+    for (const thread of waiting) {
+      this.#o.store.updateLocal(thread.id, (local) => local.decisionReport && covered.has(local.decisionReport.eventId) ? { ...local, decisionReport: { ...local.decisionReport, asked: true } } : local);
+    }
   }
   /** Work on another device rested (a relayed coordinator event): sweep the project's queue soon (D264). */
   freed(projectId: string): void { this.#rested(projectId); }

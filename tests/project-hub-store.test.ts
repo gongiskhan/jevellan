@@ -94,6 +94,29 @@ test('settings, coordinators and notebooks are compare-and-swap records whose em
   expect((await left.hub.notebook('project'))?.document.content).toBe('Owner edit.'); expect(await left.hub.notebook('other')).toBeNull();
 });
 
+test('the hub refuses to move a coordinator whose device is online and published a running turn, in the same transaction as the move (D269, D283)', async () => {
+  const left = await member('left'); const right = await member('right'); const quiet = await member('quiet');
+  const beat = (id: string) => app.devices.heartbeat(id, { schema: 'heartbeat-v1', deviceId: id, at: new Date().toISOString(), version: '0.1.0', runningConversations: [], projects: [],
+    externalSessions: [], load: { cpuPct: 0, memFreeMb: 1024 } });
+  beat('left'); beat('right');
+  const status = (projectId: string, deviceId: string, state: 'idle' | 'running') => ({ schema: 'project-coordinator-status-v1' as const, revision: 0, projectId, deviceId, state,
+    failedTurnsInARow: 0, session: null, updatedAt: at });
+  await left.hub.assignCoordinator('project', 'left', 0);
+  // The device announced a turn: the move waits, whatever the mover read before.
+  await left.hub.putCoordinatorStatus(status('project', 'left', 'running'));
+  await expect(right.hub.assignCoordinator('project', 'right', 1)).rejects.toMatchObject({ status: 409 });
+  expect(await left.hub.coordinator('project')).toMatchObject({ revision: 1, document: { deviceId: 'left' } });
+  // Idle again: the move goes through, and the former device can no longer announce a turn.
+  await left.hub.putCoordinatorStatus(status('project', 'left', 'idle'));
+  expect(await right.hub.assignCoordinator('project', 'right', 1)).toMatchObject({ revision: 2, document: { deviceId: 'right' } });
+  await expect(left.hub.putCoordinatorStatus(status('project', 'left', 'running'))).rejects.toMatchObject({ status: 403 });
+  // A device without a heartbeat for 10 minutes gives the coordinator up although it said it runs a turn (D80).
+  await quiet.hub.assignCoordinator('other', 'quiet', 0); await quiet.hub.putCoordinatorStatus(status('other', 'quiet', 'running'));
+  expect(await right.hub.assignCoordinator('other', 'right', 1)).toMatchObject({ document: { deviceId: 'right' } });
+  // A device that published nothing yet reads as idle: the move back goes through.
+  expect(await left.hub.assignCoordinator('project', 'left', 2)).toMatchObject({ document: { deviceId: 'left' } });
+});
+
 test('a lost settings reply is reconciled by its request id without replacing a newer save', async () => {
   const { state, fetcher } = losing(); const left = await member('left', fetcher); const right = await member('right');
   const input = { ...defaultProjectWorkSettings('project'), maxRunningPerDevice: 2 }; state.operation = 'settings-put';

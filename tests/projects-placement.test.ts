@@ -1,7 +1,7 @@
 import { expect, test, vi } from 'vitest';
 import { AccountSchema, AccountStatusSchema, JevCallSchema, PlacementRecordSchema, ProjectSchema, SecretRedactor, seedConfiguration, type Account, type AccountStatus, type ModelOption } from '../packages/core/dist/index.js';
 import { approximateTokens, buildPlacementState, decidePlacement, JevClient, JevError, LEAVE_GIT_MAIN, MAIN_NOT_AVAILABLE, NO_PLACEMENT, NO_THREAD_MODEL, overrideSentence, parseJevResponse, PLACEMENT_INCOMPATIBLE, PLACEMENT_INSTRUCTIONS,
-  PLACEMENT_ISOLATION_CRITERIA, PLACEMENT_QUESTION_SET, placementCandidates, placementDevices, placementFallback, placementOptions, PlacementStateSchema, preparePlacementA, preparePlacementB, REMOTE_NOT_AVAILABLE,
+  PLACEMENT_ISOLATION_CRITERIA, PLACEMENT_QUESTION_SET, placementCandidates, placementDevices, placementDeviceSetup, placementFallback, placementOptions, PlacementStateSchema, preparePlacementA, preparePlacementB, REMOTE_NOT_AVAILABLE,
   TASK_SHORTENED, UNKNOWN_PLACEMENT_DEVICE, UNKNOWN_PLACEMENT_MODEL, type DecisionClient, type JevQuestions, type PlacementCandidates, type PlacementDevice, type PlacementInput, type PlacementPacketInput, type PlacementRuntime } from '../packages/decisions/dist/index.js';
 
 const now = Date.parse('2026-10-03T10:00:00Z');
@@ -72,6 +72,23 @@ test('offline, stale, revoked, unset and full devices are excluded with reasons,
   // Another device's stale row still reads offline; a revoked placing device is never a candidate.
   expect(refusal(input({ devices: [device('dev_mini', 'Mac mini', { revoked: true })] }))).toBe(`${NO_PLACEMENT}: Mac mini: offline.`);
   expect(fallback(input({ devices, statuses })).deviceId).toBe('dev_mini');
+});
+
+test('the device setup gives every device in roster order the reason a thread of the project cannot run there, ignoring limits and fixed fields (D281)', () => {
+  const lab = device('dev_lab', 'Lab', { status: 'offline' }); const stale = device('dev_stale', 'Stale', { status: 'stale' });
+  const gone = device('dev_gone', 'Gone', { revoked: true }); const bare = device('dev_bare', 'Bare', { hasPath: false });
+  const outside = device('dev_out', 'Outside', { allowed: false }); const full = device('dev_full', 'Full', { running: 9 });
+  const value = input({ devices: [mini, studio, lab, stale, gone, bare, outside, full], statuses: ready(['dev_mini', 'dev_full', 'dev_bare']), fixed: { deviceId: 'dev_mini', modelId: 'swift' } });
+  expect(placementDeviceSetup(value)).toEqual([
+    { deviceId: 'dev_mini' }, { deviceId: 'dev_studio', reason: 'Codex needs login; Claude needs login' }, { deviceId: 'dev_lab', reason: 'offline' },
+    { deviceId: 'dev_stale', reason: 'offline' }, { deviceId: 'dev_gone', reason: 'offline' }, { deviceId: 'dev_bare', reason: 'not set up for this project' },
+    { deviceId: 'dev_out', reason: 'not set up for this project' }, { deviceId: 'dev_full' },
+  ]);
+  // One model with an eligible account is enough; the placing device counts as online whatever its row says (D8).
+  expect(placementDeviceSetup(input({ devices: [device('dev_mini', 'Mac mini', { status: 'stale' }), studio], statuses: [status('claude_a', 'dev_studio'), status('codex_a', 'dev_mini')] })))
+    .toEqual([{ deviceId: 'dev_mini' }, { deviceId: 'dev_studio' }]);
+  // Without any model that runs threads no device is to blame (placement refuses with its own sentence).
+  expect(placementDeviceSetup(input({ settings: { ...settings, menu: [{ ...swift, enabled: false }] } }))).toEqual([{ deviceId: 'dev_mini' }, { deviceId: 'dev_studio' }]);
 });
 
 test('main isolation needs the main policy, a free checkout and a checkout on main', () => {

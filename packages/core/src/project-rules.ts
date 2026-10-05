@@ -1,4 +1,5 @@
-import type { ProjectDecision, ThreadIndex, ThreadState } from './project-schemas.js';
+import type { DeviceView } from './mesh-schemas.js';
+import type { ProjectCoordinatorStatus, ProjectDecision, ThreadIndex, ThreadState } from './project-schemas.js';
 import type { Stored } from './store.js';
 
 // Pure rules shared by the hub, the owner device and the browser.
@@ -73,3 +74,24 @@ export function checkHubRevision<T extends { revision: number }>(stored: Stored<
   if (stored.document.revision !== stored.revision) throw new Error('A project record does not match its hub revision.');
   return stored;
 }
+
+/**
+ * The roster no longer counts on a device (D80): it left the mesh, is revoked, or sent no heartbeat for 10 minutes. A stale device
+ * keeps its state. The coordinator moves away from such a device whatever it published, and its project's threads ask the owner
+ * directly while their coordinator lives there (decision 7, D280).
+ */
+export function deviceAway(row: Pick<DeviceView, 'status' | 'revoked'> | undefined): boolean {
+  return !row || row.revoked || row.status === 'offline';
+}
+/**
+ * Whether the coordinator may move away from `deviceId` (brief phase 5, D269): that device is away, or the status it published says it
+ * runs no turn. A device that published nothing yet, like a status a former coordinator device left, reads as idle, as the chip shows
+ * it. The work view's `canMoveHere`, the move route and the hub's assignment (in the same transaction as the move, D283) use this rule.
+ */
+export function coordinatorMovable(deviceId: string, row: Pick<DeviceView, 'status' | 'revoked'> | undefined,
+  status: Pick<ProjectCoordinatorStatus, 'deviceId' | 'state'> | null | undefined): boolean {
+  if (deviceAway(row)) return true;
+  return status?.deviceId !== deviceId || status.state !== 'running';
+}
+/** The refusal of a move while the coordinator runs a turn on a device that is online (3.5.3); the Projects copy module re-exports it. */
+export const coordinatorWorking = (deviceName: string): string => `The coordinator is working on ${deviceName}. Try again when it is idle.`;

@@ -1,9 +1,9 @@
 import { existsSync } from 'node:fs';
 import type { AccountService } from '@jevellan/accounts';
 import {
-  CoordinatorEventSchema, CoordinatorStateSchema, HubUnavailable, ProjectCoordinatorStatusSchema, isTerminal, mapEffort, resolveProjectPath, type Account, type AccountStatus,
-  type Configuration, type CoordinatorEvent, type CoordinatorState, type DeviceView, type Effort, type ModelOption, type Project, type ProjectCoordinatorStatus, type ProjectDecision,
-  type ProjectHub, type ProjectLedgerEvent, type ProjectWorkSettings, type SecretRedactor, type ThreadIndex,
+  CoordinatorEventSchema, CoordinatorStateSchema, HubUnavailable, ProjectCoordinatorStatusSchema, coordinatorMovable, isTerminal, mapEffort, resolveProjectPath, type Account,
+  type AccountStatus, type Configuration, type CoordinatorEvent, type CoordinatorState, type Effort, type ModelOption, type Project, type ProjectDecision, type ProjectHub,
+  type ProjectLedgerEvent, type ProjectWorkSettings, type SecretRedactor, type ThreadIndex,
 } from '@jevellan/core';
 import { modelCandidates, type RuntimeSupport } from '@jevellan/decisions';
 import type { RuntimeAdapter } from '@jevellan/runtime-contract';
@@ -13,7 +13,7 @@ import {
   coordinatorTurnTimedOut, coordinatorUnavailableNotice, coordinatorWorking, eventBlock, eventLine, freshContext, noCoordinatorAccount, noCoordinatorModel, openQuestionLine,
   recentConversation,
 } from './copy.js';
-import type { DecisionItems } from './decision-items.js';
+import { derivedId, type DecisionItems } from './decision-items.js';
 import { firstLine } from './git.js';
 import type { LaunchResult, TurnLauncher } from './launch.js';
 import type { ProjectLedger, ProjectLedgers } from './ledger.js';
@@ -60,16 +60,10 @@ export function keepSession(session: CoordinatorSession, pinned: string | null, 
 }
 
 /**
- * Whether the coordinator may move away from `deviceId` (brief phase 5, 3.5.3, D269): that device left the mesh, is revoked or
- * offline (no heartbeat for 10 minutes), or the status it published says it runs no turn. A device that published nothing yet,
- * like a status a former coordinator device left, reads as idle, as the chip shows it. The work view's `canMoveHere` and the move
- * route both use this rule, so the menu item and the refusal never disagree.
+ * Whether the coordinator may move away from a device (brief phase 5, 3.5.3, D269): a core rule since the hub applies it in the move's
+ * own transaction (D283). The work view's `canMoveHere` and the move route use it too, so the menu item and the refusal never disagree.
  */
-export function coordinatorMovable(deviceId: string, row: Pick<DeviceView, 'status' | 'revoked'> | undefined,
-  status: Pick<ProjectCoordinatorStatus, 'deviceId' | 'state'> | null | undefined): boolean {
-  if (!row || row.revoked || row.status === 'offline') return true;
-  return status?.deviceId !== deviceId || status.state !== 'running';
-}
+export { coordinatorMovable };
 
 /** Everything a coordinator prompt is built from; read before launch, because the launcher builds the prompt synchronously. */
 export type CoordinatorPromptInput = {
@@ -149,6 +143,24 @@ type Prepared = { kind: 'unavailable'; reason: string } | {
   kind: 'ready'; project: Project; cwd: string; model: ModelOption; effort: Effort; accountId: string; session: CoordinatorSession | null; prompt: CoordinatorPromptInput;
 };
 const withoutReason = (state: CoordinatorState): CoordinatorState => { const next = { ...state }; delete next.unavailableReason; return next; };
+type PlanInput = Omit<Parameters<typeof coordinatorPlan>[0], 'work'>;
+type Readiness = { kind: 'unavailable'; reason: string }
+  | { kind: 'ready'; project: Project; cwd: string; plan: Extract<CoordinatorPlan, { kind: 'ready' }>; input: PlanInput; work: ProjectWorkSettings };
+/**
+ * Whether the coordinator can run on this device (brief 8.1; D34, D97): a model whose runtime runs read-only turns with an eligible
+ * account here (the plan), and the project's checkout here. Every turn checks it, and so does Move coordinator here before it
+ * assigns this device (D282), so a move never lands on a device where the coordinator could only read `Unavailable`.
+ */
+async function coordinatorReadiness(c: CoordinatorContext, projectId: string): Promise<Readiness> {
+  const project = await c.project(projectId);
+  const [settings, work, accounts] = await Promise.all([c.settings(), c.workSettings(projectId), c.accounts.list()]);
+  const input: PlanInput = { settings, runtimes: new Map([...c.runtimes].map(([id, adapter]) => [id, adapter.capabilities])), accounts: accounts.map((view) => view.account),
+    statuses: accounts.flatMap((view) => view.statuses), deviceId: c.deviceId, deviceName: c.deviceName, now: c.now() };
+  const plan = coordinatorPlan({ ...input, work });
+  if (plan.kind === 'unavailable') return plan;
+  try { return { kind: 'ready', project, cwd: resolveProjectPath(project, c.deviceId, c.deviceName), plan, input, work }; }
+  catch (error) { return { kind: 'unavailable', reason: messageOf(error) }; }
+}
 
 /**
  * One project's coordinator on its device (brief 8.1). Events are flushed to coordinator.json before they are acknowledged,
@@ -391,7 +403,22 @@ export class Coordinator {
     if (this.#closed || this.#stopping) return 'wait';
     // A move accepted while this turn prepared (the published status still said idle) wins: the turn never launches here (3.5.4).
     const moved = await this.#fence(); if (moved) return moved;
+    const claimed = await this.#claim(); if (claimed) return claimed;
     return this.#launch(events, prepared, generation);
+  }
+  /**
+   * The turn start, announced on the hub before the launch (D283): the status says `running`, which the hub takes only from the
+   * assigned device, and from then on the hub refuses a move while this device is online (the move rule runs in the move's own
+   * transaction). So a move recorded at any point before this write is refused here: this device hands the batch over and launches
+   * nothing, and no move lands between this write and the launch. An unreachable hub postpones (D76); another refusal while the
+   * assignment still names this device tries again after the retry delay.
+   */
+  async #claim(): Promise<TurnEnd | null> {
+    try { await this.#status('running'); return null; }
+    catch (error) {
+      if (error instanceof HubUnavailable) return 'postpone';
+      return await this.#fence() ?? 'postpone';
+    }
   }
   /** The ledger turn number counts every coordinator turn of the project, across sessions (coordinator-local `deliveredTurn`). */
   #nextTurn(): number {
@@ -400,14 +427,9 @@ export class Coordinator {
   /** Session choice and rotation (brief 8.1; D16, D34, D77, D97) and the prompt inputs. */
   async #prepare(events: CoordinatorEvent[]): Promise<Prepared> {
     const projectId = this.projectId; const { deviceId, deviceName } = this.c;
-    const project = await this.c.project(projectId);
-    const [settings, work, accounts] = await Promise.all([this.c.settings(), this.c.workSettings(projectId), this.c.accounts.list()]);
-    const input = { settings, runtimes: new Map([...this.c.runtimes].map(([id, adapter]) => [id, adapter.capabilities])), accounts: accounts.map((view) => view.account),
-      statuses: accounts.flatMap((view) => view.statuses), deviceId, deviceName, now: this.c.now() };
-    const plan = coordinatorPlan({ ...input, work });
-    if (plan.kind === 'unavailable') return plan;
-    let cwd: string;
-    try { cwd = resolveProjectPath(project, deviceId, deviceName); } catch (error) { return { kind: 'unavailable', reason: messageOf(error) }; }
+    const ready = await coordinatorReadiness(this.c, projectId);
+    if (ready.kind === 'unavailable') return ready;
+    const { project, cwd, plan, input, work } = ready;
     const stored = this.state().session;
     const current = stored && coordinatorPlan({ ...input, work: { coordinator: { modelId: stored.modelId, effort: work.coordinator.effort } } });
     const session = stored && current && keepSession(stored, work.coordinator.modelId, current) ? stored : null;
@@ -420,7 +442,19 @@ export class Coordinator {
     const names = new Map((roster?.devices ?? []).map((view) => [view.device.id, view.device.name]));
     return { kind: 'ready', project, cwd, ...chosen, session, prompt: { events, notebook: notebook?.document.content ?? null, threads, decisions, history: this.#conversation(),
       runtimeName: (runtime) => this.c.runtimes.get(runtime)?.displayName ?? runtime, deviceName: (id) => id === deviceId ? deviceName : names.get(id) ?? id, base,
-      askedDirectly: new Set(this.c.store.local(projectId).fallbackEventIds) } };
+      askedDirectly: this.#askedDirectly(events, decisions) } };
+  }
+  /**
+   * Reports the owner was already asked about (D32): those this coordinator's fallback covered, and every needs-decision report whose
+   * fallback question exists on the hub under its derived id (D195), whoever created it: the thread's owner device while this
+   * device was away, or a former coordinator device whose queue moved here (D280). The question is the record that travels.
+   */
+  #askedDirectly(events: readonly CoordinatorEvent[], decisions: readonly ProjectDecision[]): Set<string> {
+    const asked = new Set(this.c.store.local(this.projectId).fallbackEventIds); const stored = new Set(decisions.map((decision) => decision.id));
+    for (const event of events) {
+      if (event.kind === 'thread-report' && event.report.status === 'needs-decision' && stored.has(derivedId('pdec', 'fallback', event.id))) asked.add(event.id);
+    }
+    return asked;
   }
   async #threads(): Promise<ThreadIndex[]> {
     const threads: ThreadIndex[] = []; let after: string | undefined;
@@ -559,9 +593,12 @@ export class Coordinator {
     this.#ledger.append({ type: 'notice', data: { schema: 'project-notice-v1', text, kind } });
   }
   /** The coordinator status on the hub (D5), serialized; a refusal (this device no longer holds the assignment) or an outage is ignored. */
-  #publish(): void {
+  #publish(): void { void this.#status().catch(() => undefined); }
+  /** One status write after the earlier ones; `shown` replaces the local state (the turn-start claim, D283). Rejects with the hub's refusal. */
+  #status(shown?: CoordinatorState['state']): Promise<void> {
     const task = this.#publishing.then(async () => {
-      const state = this.state(); const session = state.session;
+      const current = this.state(); const session = current.session;
+      const state = shown === undefined || shown === current.state ? current : { ...withoutReason(current), state: shown };
       let labels: { modelLabel: string; accountLabel: string } | undefined;
       if (session) {
         const [settings, accounts] = await Promise.all([this.c.settings(), this.c.accounts.list()]);
@@ -572,8 +609,10 @@ export class Coordinator {
         deviceId: this.c.deviceId, state: state.state, ...(state.unavailableReason ? { unavailableReason: state.unavailableReason.slice(0, 400) } : {}),
         failedTurnsInARow: state.failedTurnsInARow, session: session && labels ? { runtime: session.runtime, modelLabel: labels.modelLabel, effort: session.effort,
           accountLabel: labels.accountLabel, turns: session.turns } : null, lastEventId: this.#ledger.lastId(), updatedAt: this.#at() }));
-    }).catch(() => undefined);
-    this.#publishing = task; this.#track(task);
+    });
+    const settled = task.then(() => undefined, () => undefined);
+    this.#publishing = settled; this.#track(settled);
+    return task;
   }
 }
 
@@ -687,7 +726,7 @@ export class CoordinatorService {
     return task;
   }
   async #move(projectId: string): Promise<string> {
-    const here = this.c.deviceId;
+    const here = this.c.deviceId; let checked = false;
     for (let attempt = 1; ; attempt += 1) {
       const stored = await this.c.hub.coordinator(projectId); const from = stored?.document.deviceId;
       if (from === here) { this.#arrive(projectId, false); return here; }
@@ -696,6 +735,8 @@ export class CoordinatorService {
         const row = roster.devices.find((view) => view.device.id === from);
         if (!coordinatorMovable(from, row, published?.document)) throw refuse(coordinatorWorking(row?.device.name ?? from), 409);
       }
+      // Only a device that can run the coordinator takes it (D282), also before any assignment; a repeated move is never refused.
+      if (!checked) { const ready = await coordinatorReadiness(this.c, projectId); if (ready.kind === 'unavailable') throw refuse(ready.reason, 409); checked = true; }
       try { await this.c.hub.assignCoordinator(projectId, here, stored?.revision ?? 0); }
       catch (error) { if (status(error) === 409 && attempt < 3) continue; throw error; }
       if (from !== undefined) this.#arrive(projectId, true);

@@ -1,12 +1,12 @@
 import type { z } from 'zod';
 import type { AccountService } from '@jevellan/accounts';
 import {
-  HubUnavailable, isTerminal, type Configuration, type DeviceRosterSchema, type PlacementRecord, type Project, type ProjectHub, type ProjectWorkSettings, type SecretRedactor,
-  type ThreadIndex,
+  HubUnavailable, ProjectDeviceSetupSchema, isTerminal, type AccountView, type Configuration, type DeviceRosterSchema, type PlacementRecord, type Project, type ProjectDeviceSetup, type ProjectHub,
+  type ProjectWorkSettings, type SecretRedactor, type ThreadIndex,
 } from '@jevellan/core';
 import {
-  JevError, decidePlacement, fixedPlacementFields, placementCandidates, type DecisionClient, type PlacementActiveThread, type PlacementDevice, type PlacementFixed, type PlacementGates,
-  type PlacementInput, type PlacementPacketInput,
+  JevError, decidePlacement, fixedPlacementFields, placementCandidates, placementDeviceSetup, type DecisionClient, type PlacementActiveThread, type PlacementDevice, type PlacementFixed,
+  type PlacementGates, type PlacementInput, type PlacementPacketInput,
 } from '@jevellan/decisions';
 import type { RuntimeAdapter } from '@jevellan/runtime-contract';
 import type { Admission } from './admission.js';
@@ -60,25 +60,42 @@ export class Placement {
     const { project, workSettings } = input;
     const [settings, accounts, roster, counts] = await Promise.all([this.#o.settings(), this.#o.accounts.list(), this.#o.roster(), this.#o.admission.counts(project.id)]);
     input.signal?.throwIfAborted();
-    const devices: PlacementDevice[] = roster.devices.map((view) => ({
-      id: view.device.id, name: view.device.name, status: view.status, revoked: view.revoked,
-      hasPath: !!project.paths[view.device.id], allowed: !project.allowedDevices || project.allowedDevices.includes(view.device.id),
-      running: counts.devices.get(view.device.id) ?? 0, isCoordinator: view.device.id === input.coordinatorDeviceId,
-      checkoutBranch: view.heartbeat?.projects.find((entry) => entry.projectId === project.id)?.branch,
-    }));
-    // The placing device is always a candidate device row, even before its first heartbeat reached the roster (D8).
-    if (!devices.some((device) => device.id === this.#o.deviceId)) {
-      devices.unshift({ id: this.#o.deviceId, name: this.#o.deviceName, status: 'online', revoked: false, hasPath: !!project.paths[this.#o.deviceId],
-        allowed: !project.allowedDevices || project.allowedDevices.includes(this.#o.deviceId), running: counts.devices.get(this.#o.deviceId) ?? 0,
-        isCoordinator: this.#o.deviceId === input.coordinatorDeviceId });
-    }
     return {
-      settings, project, defaultIsolation: workSettings.defaultIsolation,
-      runtimes: new Map([...this.#o.runtimes].map(([id, adapter]) => [id, { ...adapter.capabilities, displayName: adapter.displayName }])),
-      accounts: accounts.map((view) => view.account), statuses: accounts.flatMap((view) => view.statuses), devices,
+      settings, project, defaultIsolation: workSettings.defaultIsolation, runtimes: this.#runtimes(),
+      accounts: accounts.map((view) => view.account), statuses: accounts.flatMap((view) => view.statuses), devices: this.#devices(project, roster, input.coordinatorDeviceId, counts.devices),
       maxRunningPerDevice: workSettings.maxRunningPerDevice, ignoreRunningLimit: input.ignoreRunningLimit,
       deviceId: this.#o.deviceId, coordinatorDeviceId: input.coordinatorDeviceId, gates: this.#o.gates, fixed: input.fixed, now: this.#o.now(),
     };
+  }
+  #runtimes(): PlacementInput['runtimes'] {
+    return new Map([...this.#o.runtimes].map(([id, adapter]) => [id, { ...adapter.capabilities, displayName: adapter.displayName }]));
+  }
+  /** The roster as placement sees it, with running counts per device when given. */
+  #devices(project: Project, roster: DeviceRoster, coordinatorDeviceId: string, counts?: ReadonlyMap<string, number>): PlacementDevice[] {
+    const device = (id: string, name: string) => ({ id, name, hasPath: !!project.paths[id], allowed: !project.allowedDevices || project.allowedDevices.includes(id),
+      running: counts?.get(id) ?? 0, isCoordinator: id === coordinatorDeviceId });
+    const devices: PlacementDevice[] = roster.devices.map((view) => ({ ...device(view.device.id, view.device.name), status: view.status, revoked: view.revoked,
+      checkoutBranch: view.heartbeat?.projects.find((entry) => entry.projectId === project.id)?.branch }));
+    // The placing device is always a candidate device row, even before its first heartbeat reached the roster (D8).
+    if (!devices.some((entry) => entry.id === this.#o.deviceId)) devices.unshift({ ...device(this.#o.deviceId, this.#o.deviceName), status: 'online', revoked: false });
+    return devices;
+  }
+  /**
+   * The work view's device list (D281): every device that is not revoked, in roster order, with the reason no thread of the project can
+   * run there, as `placing` would place threads (the placing device always counts as online, D8). Built from the roster, settings and
+   * accounts the view read anyway, without running counts: a full device only queues a thread.
+   */
+  deviceSetup(project: Project, workSettings: ProjectWorkSettings, roster: DeviceRoster, placing: string,
+    read: { settings: Configuration['x-jevellan']; accounts: AccountView[] }): ProjectDeviceSetup[] {
+    const { settings, accounts } = read;
+    const devices = this.#devices(project, roster, placing);
+    const reasons = new Map(placementDeviceSetup({ settings, project, defaultIsolation: workSettings.defaultIsolation, runtimes: this.#runtimes(), accounts: accounts.map((view) => view.account),
+      statuses: accounts.flatMap((view) => view.statuses), devices, maxRunningPerDevice: workSettings.maxRunningPerDevice, ignoreRunningLimit: true, deviceId: placing,
+      coordinatorDeviceId: placing, gates: this.#o.gates, fixed: {}, now: this.#o.now() }).map((entry) => [entry.deviceId, entry.reason]));
+    return devices.filter((device) => !device.revoked).map((device) => {
+      const reason = reasons.get(device.id);
+      return ProjectDeviceSetupSchema.parse({ schema: 'project-device-setup-v1', deviceId: device.id, name: device.name, ...(reason ? { reason: reason.slice(0, 400) } : {}) });
+    });
   }
   /** The refusal text for these fields, or undefined when a thread could run with them (a next-turn model override checks with it). */
   async refusal(input: PlaceInput): Promise<string | undefined> {

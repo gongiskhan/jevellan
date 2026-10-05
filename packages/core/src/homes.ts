@@ -51,11 +51,22 @@ export class Homes {
   }
 }
 
+const notCheckedOut = (project: Project, deviceName: string, path: string | undefined) => `Project ${project.name} isn't checked out on ${deviceName} at ${path ?? '(no path)'}.`;
+/**
+ * Why the project has no usable path on a device, from the settings alone (no path, a relative one, or a device the project does not
+ * allow), with `resolveProjectPath`'s own sentence; undefined when only the checkout itself is left to check.
+ */
+export function projectPathProblem(project: Project, deviceId: string, deviceName = deviceId): string | undefined {
+  const path = project.paths[deviceId];
+  if (!path || !isAbsolute(path)) return notCheckedOut(project, deviceName, path);
+  if (project.allowedDevices && !project.allowedDevices.includes(deviceId)) return `${project.name} isn't set up on ${deviceName}. Add its path in Settings → Projects, or switch device.`;
+  return undefined;
+}
 export function resolveProjectPath(project: Project, deviceId: string, deviceName = deviceId): string {
   const path = project.paths[deviceId];
-  const failure = () => new Error(`Project ${project.name} isn't checked out on ${deviceName} at ${path ?? '(no path)'}.`);
-  if (!path || !isAbsolute(path)) throw failure();
-  if (project.allowedDevices && !project.allowedDevices.includes(deviceId)) throw new Error(`${project.name} isn't set up on ${deviceName}. Add its path in Settings → Projects, or switch device.`);
+  const failure = () => new Error(notCheckedOut(project, deviceName, path));
+  const problem = projectPathProblem(project, deviceId, deviceName);
+  if (problem !== undefined || path === undefined) throw new Error(problem ?? notCheckedOut(project, deviceName, path));
   try {
     const cwd = realpathSync(path);
     const root = execFileSync('git', ['-C', cwd, 'rev-parse', '--show-toplevel'], { encoding: 'utf8', timeout: 5000, stdio: ['ignore', 'pipe', 'ignore'], env: { PATH: process.env.PATH ?? '/usr/bin:/bin', GIT_OPTIONAL_LOCKS: '0' } }).trim();

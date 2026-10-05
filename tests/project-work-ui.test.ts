@@ -8,7 +8,7 @@ import {
 import * as server from '../packages/projects/dist/copy.js';
 import * as copy from '../apps/web/src/project-work-copy.js';
 import {
-  alignReports, chatItems, checksBadge, composerBlock, coordinatorChip, coordinatorLabel, decisionSource, defaultTab, deviceBlock, deviceRefusal, dotClass, effortChoices, fallbackChip,
+  alignReports, chatItems, checksBadge, composerBlock, coordinatorChip, coordinatorLabel, decisionSource, defaultTab, deviceBlock, deviceChoices, deviceRefusal, dotClass, effortChoices, fallbackChip,
   mainIsolationBlock, mergeBlock, nearestEffort, openPullRequests, outcomeText, overrideForm, overrideOffered, overrideReady, overrideRequest, placementLine, projectDot,
   projectRoute, pullRequestBadges, reportBadge, restartedThread, rowClockMs, sentText, settingsRequest, showSent, sidebarProjects, threadActions, threadCreateRequest,
   threadLiveText, threadMeta, threadPollDelay, threadSections, threadStarting, toolIcon, transcriptNotice, whyFields, withdrawals, withoutReportCalls, working,
@@ -155,6 +155,24 @@ test('placement gates disable Main and other devices with the sentences placemen
   expect(deviceBlock(view('main', false), 'mini', 'mac')).toBe(server.REMOTE_NOT_AVAILABLE);
   expect(deviceBlock(view('main', false, true), 'mini', 'mac')).toBeNull();
   expect([copy.MAIN_NOT_AVAILABLE, copy.REMOTE_NOT_AVAILABLE]).toEqual([server.MAIN_NOT_AVAILABLE, server.REMOTE_NOT_AVAILABLE]);
+});
+
+test('device choices: every device of the work view, disabled with the reason a thread cannot run there, keeping the current choice (D281)', () => {
+  const row = (id: string, name: string, status: 'online' | 'stale' | 'offline' = 'online', revoked = false) => ({ device: { id, name }, status, revoked });
+  const roster = [row('mac', 'Mac'), row('mini', 'Mini'), row('lab', 'Lab', 'offline'), row('old', 'Old', 'online', true)];
+  const setup = (deviceId: string, name: string, reason?: string) => ({ schema: 'project-device-setup-v1' as const, deviceId, name, ...(reason ? { reason } : {}) });
+  const open = { mainIsolation: false, remoteDevices: true };
+  const view = { gates: open, devices: [setup('mac', 'Mac'), setup('mini', 'Mini', 'not set up for this project'), setup('lab', 'Lab', 'offline')] };
+  expect(deviceChoices(view, roster, 'mac')).toEqual([{ id: 'mac', label: 'Mac', disabled: false }, { id: 'mini', label: 'Mini: not set up for this project', disabled: true },
+    { id: 'lab', label: 'Lab: offline', disabled: true }]);
+  expect(copy.deviceUnavailable('Mini', 'offline')).toBe('Mini: offline');
+  // The phase gate still disables other devices; a device chosen before that the view no longer lists stays listed, disabled.
+  expect(deviceChoices({ ...view, gates: { ...open, remoteDevices: false } }, roster, 'mac').map((choice) => choice.disabled)).toEqual([false, true, true]);
+  expect(deviceChoices(view, roster, 'mac', 'old').at(-1)).toEqual({ id: 'old', label: 'Old', disabled: true });
+  expect(deviceChoices(view, roster, 'mac', 'mini')).toHaveLength(3);
+  // A view without the setup (an older device) offers the roster's available devices as before; no view yet disables them all.
+  expect(deviceChoices({ gates: open }, roster, 'mac')).toEqual([{ id: 'mac', label: 'Mac', disabled: false }, { id: 'mini', label: 'Mini', disabled: false }]);
+  expect(deviceChoices(undefined, roster, 'mac').map((choice) => choice.disabled)).toEqual([true, true]);
 });
 
 test('request bodies: Automatic placement fields are omitted and a stored main default survives a save (D205, D223)', () => {

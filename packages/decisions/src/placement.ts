@@ -155,6 +155,23 @@ export function placementCandidates(input: PlacementInput): PlacementCandidates 
   return { ...options(chosen.top), isolations, atLimit: chosen !== limited, ...(chosen.main ? { main: options(chosen.main) } : {}) };
 }
 
+/**
+ * Every device in roster order with the reason no thread of the project can run there (D281): offline (the placing device always counts
+ * as online, D8), not set up for the project, or no eligible account for any model that runs threads (the per-model account gaps). Running
+ * limits only queue a thread and fixed fields are the owner's choice, so neither is a reason. Without any model that runs threads no device
+ * is to blame: placement refuses with its own sentence. New thread and Override use it to disable what placement would refuse.
+ */
+export function placementDeviceSetup(input: PlacementInput): Array<{ deviceId: string; reason?: string }> {
+  const open: PlacementInput = { ...input, fixed: {}, ignoreRunningLimit: true };
+  const evaluation = evaluate(open, false, false); const anyModel = input.settings.menu.some((model) => !modelReason(open, model));
+  return input.devices.map((device) => {
+    const excluded = evaluation.excludedDevices.find((entry) => entry.deviceId === device.id)?.reason;
+    if (excluded && excluded !== REMOTE_GATE_REASON) return { deviceId: device.id, reason: excluded };
+    if (excluded || !anyModel || evaluation.models.some((model) => model.devices.includes(device.id))) return { deviceId: device.id };
+    return { deviceId: device.id, reason: evaluation.gaps.filter((gap) => gap.deviceId === device.id).map((gap) => gap.reason).join('; ') };
+  });
+}
+
 /** The options of one allowed isolation. */
 export function placementOptions(candidates: PlacementCandidates, isolation: Isolation): PlacementOptions {
   if (!candidates.isolations.includes(isolation)) throw new Error('This isolation is not a placement candidate.');

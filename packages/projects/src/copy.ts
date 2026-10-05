@@ -7,7 +7,7 @@ export {
   ACCOUNT_REASON_TEXT, LEAVE_GIT_MAIN, MAIN_NOT_AVAILABLE, NOT_CHOSEN_REASON, NO_PLACEMENT, NO_THREAD_MODEL, PLACEMENT_INCOMPATIBLE, PLACEMENT_INSTRUCTIONS,
   PLACEMENT_ISOLATION_CRITERIA, REMOTE_GATE_REASON, REMOTE_NOT_AVAILABLE, TASK_SHORTENED, UNKNOWN_PLACEMENT_DEVICE, UNKNOWN_PLACEMENT_MODEL,
 } from '@jevellan/decisions';
-export { ASK_USER_OPTIONS, NEEDS_DECISION_QUESTION, NO_CHANGES } from '@jevellan/core';
+export { ASK_USER_OPTIONS, NEEDS_DECISION_QUESTION, NO_CHANGES, coordinatorWorking } from '@jevellan/core';
 
 const oneLine = (text: string) => text.replace(/\s+/g, ' ').trim();
 const pad = (value: number) => String(value).padStart(2, '0');
@@ -186,7 +186,6 @@ export const coordinatorUnavailableNotice = (reason: string): string => `The coo
 export const coordinatorOfflineNotice = (deviceName: string): string => `The coordinator lives on ${deviceName}, which is offline.`;
 /** Move coordinator here (3.5.3): the new coordinator device's chat line, and the refusal while the coordinator runs a turn on a device that is online. */
 export const coordinatorMovedNotice = (deviceName: string): string => `The coordinator moved to ${deviceName}.`;
-export const coordinatorWorking = (deviceName: string): string => `The coordinator is working on ${deviceName}. Try again when it is idle.`;
 export const placedWithoutJev = (reason: string): string => `Placed without Jev: ${reason}`;
 /** `{error}` keeps no final period of its own, so the sentence stays well formed. */
 export const coordinatorFailedTwiceNotice = (error: string): string => `The coordinator failed twice: ${error.trim().replace(/\.+$/, '')}. Send a message to try again.`;

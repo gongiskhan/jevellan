@@ -176,6 +176,11 @@
 .pw-offline > button.pw-move { display: inline-grid; place-items: center; }
 .pw-move > span { grid-area: 1 / 1; }
 .pw-move > [aria-hidden="true"] { visibility: hidden; }
+/* Why this device cannot take the coordinator (D282): its own line under the sentence and the disabled button. */
+.pw-offline > p.pw-move-refusal { flex: 1 0 100%; font-size: 12.5px; opacity: 0.85; }
+/* A disabled button keeps a visible outline on the notice's tint in both themes. */
+.pw-offline > button.secondary:disabled { border-color: var(--edge-strong); }
+.conversation-menu .pw-menu-note { max-width: 240px; margin: -2px 0 4px; padding: 0 15px; color: var(--ink-3); font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; }
 /* As a dialog form's first field: the dialog's own padding above, the fields' 12 px rhythm below. */
 .pw-new-thread > .pw-offline:first-child { margin: 0 0 12px; }
 

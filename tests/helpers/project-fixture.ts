@@ -203,6 +203,11 @@ export type ProjectMember = {
   offline: boolean;
   /** A hub request this accepts reaches the hub, but its reply is lost: the member sees an outage (one lost reply per accepted call). */
   loseReply: ((call: string) => boolean) | null;
+  /**
+   * Awaited after the hub answered a request and before the member reads the answer, with the call and the parsed request body:
+   * a test acts on the hub at exactly that point of the member's work.
+   */
+  afterCall: ((call: string, body: unknown) => Promise<void>) | null;
   /** Every hub request the member made, as `<path> <operation>` (the operation of POST bodies that name one). */
   readonly hubCalls: string[];
   /** A browser request on the member with its own session cookie and Origin. */
@@ -232,7 +237,7 @@ export async function projectMember(f: ProjectFixture, options: { name?: string 
   await joinMember(homes, { schema: 'member-join-input-v1', hubUrl: f.base, code: f.app.mesh.invite().code, device: { name, url: base, os: 'linux', version: '0.1.0' } }, { redactor: new SecretRedactor() });
   const fake = new FakeRuntime(); const hubCalls: string[] = [];
   const member: ProjectMember = {
-    offline: false, loseReply: null, hubCalls, homes, fake, name, base, checkout: join(f.root, `${slug}-project`),
+    offline: false, loseReply: null, afterCall: null, hubCalls, homes, fake, name, base, checkout: join(f.root, `${slug}-project`),
     get app() { return app; }, get deviceId() { return app.device.deviceId; }, get cookie() { return cookie; }, accountId: 'acc_member',
     async request(path, method = 'GET', body) {
       return fetch(`${base}${path}`, { method, headers: { Cookie: cookie, Origin: base, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
@@ -248,10 +253,12 @@ export async function projectMember(f: ProjectFixture, options: { name?: string 
   };
   const hubFetch: typeof fetch = async (input, init) => {
     if (member.offline) throw new Error('Simulated hub outage');
-    const body = typeof init?.body === 'string' ? (() => { try { return (JSON.parse(init.body) as { operation?: unknown }).operation; } catch { return undefined; } })() : undefined;
+    const parsed: unknown = typeof init?.body === 'string' ? (() => { try { return JSON.parse(init.body) as unknown; } catch { return undefined; } })() : undefined;
+    const body = (parsed as { operation?: unknown } | undefined)?.operation;
     const call = `${new URL(String(input instanceof Request ? input.url : input)).pathname}${typeof body === 'string' ? ` ${body}` : ''}`; hubCalls.push(call);
     const response = await fetch(input, init);
     if (member.loseReply?.(call)) { await response.body?.cancel(); throw new Error('Simulated lost reply'); }
+    await member.afterCall?.(call, parsed);
     return response;
   };
   const app = new Application({ homes, timers: false, repositoryVisibility: async () => 'PUBLIC', runtimes: () => new Map([['fake', fake as RuntimeAdapter]]), githubBaseUrl: f.github.url, hubFetch,

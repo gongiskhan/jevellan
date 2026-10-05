@@ -1,6 +1,7 @@
 import type { AccountService } from '@jevellan/accounts';
 import {
-  ProjectWorkListViewSchema, ProjectWorkViewSchema, ThreadViewSchema, defaultProjectWorkSettings, isTerminal, type Configuration, type CoordinatorState, type CoordinatorView, type Project,
+  ProjectWorkListViewSchema, ProjectWorkViewSchema, ThreadViewSchema, defaultProjectWorkSettings, deviceAway, isTerminal, projectPathProblem, type AccountView, type Configuration, type CoordinatorState,
+  type CoordinatorView, type Project,
   type ProjectDecision, type ProjectHub, type ProjectLedgerEvent, type ProjectWorkListView, type ProjectWorkSettings, type ProjectWorkSummary, type ProjectWorkView,
   type PullRequestEntry, type SharedProjects, type ThreadIndex, type ThreadReport, type ThreadView,
 } from '@jevellan/core';
@@ -9,7 +10,7 @@ import type { RuntimeAdapter } from '@jevellan/runtime-contract';
 import { BRANCH_PUSHED_NO_TOKEN, LEAVE_GIT_SETTING, MAIN_NOT_AVAILABLE, NOT_GITHUB, PROJECT_NOT_FOUND, THREAD_NOT_FOUND, attachCommand } from './copy.js';
 import { coordinatorMovable, coordinatorPlan, type CoordinatorService } from './coordinator.js';
 import type { ProjectLedgers } from './ledger.js';
-import { PHASE_GATES, type DeviceRoster } from './placement.js';
+import { PHASE_GATES, type DeviceRoster, type Placement } from './placement.js';
 import { threadIndex, type ThreadStore } from './stores.js';
 import { atTurnLimit, isDiscarded, restartRefusal } from './thread-runner.js';
 import type { ThreadTranscripts } from './transcript.js';
@@ -64,6 +65,8 @@ export type ProjectViewsOptions = {
   transcripts: Pick<ThreadTranscripts, 'read'>; worktrees: Pick<ThreadWorktree, 'repository' | 'baseBranch'>;
   accounts: Pick<AccountService, 'list'>; runtimes: ReadonlyMap<string, RuntimeAdapter>;
   settings(): Promise<Configuration['x-jevellan']>; roster(): Promise<DeviceRoster>;
+  /** The per-device setup of New thread and Override (D281). */
+  placement: Pick<Placement, 'deviceSetup'>;
 };
 
 /** The Projects HTTP views (brief 11, design 2.1.4) for phase 1: the project list, the project page and a local thread. */
@@ -102,7 +105,7 @@ export class ProjectViews {
     const deviceName = here ? this.#o.deviceName : row?.device.name ?? null;
     if (deviceId === null) return { deviceId, deviceName, state: 'none' as const, online: false, movable: false };
     // This device is running, so it is never offline to itself (D8); a stale device keeps its state (D80).
-    if (!here && (!row || row.status === 'offline' || row.revoked)) return { deviceId, deviceName, state: 'offline' as const, online: false, movable: true };
+    if (!here && deviceAway(row)) return { deviceId, deviceName, state: 'offline' as const, online: false, movable: true };
     if (here) {
       const local = this.#o.coordinators.get(projectId).state();
       return { deviceId, deviceName, state: local.state, ...(local.unavailableReason ? { unavailableReason: local.unavailableReason } : {}), online: true, movable: false, local };
@@ -122,16 +125,21 @@ export class ProjectViews {
     if (!where.device || where.device.status === 'offline' || where.device.revoked) return { deviceId: where.deviceId, state: 'offline' };
     return { deviceId: where.deviceId, state: where.state ?? 'idle' };
   }
-  /** The coordinator chip: the coordinator state with the session here or elsewhere, and the planned one. */
-  async #coordinator(where: CoordinatorWhere, work: ProjectWorkSettings): Promise<CoordinatorView> {
-    const [config, accounts] = await Promise.all([this.#o.settings(), this.#o.accounts.list()]);
+  /**
+   * The coordinator chip: the coordinator state with the session here or elsewhere, and the planned one. Where the move rule lets the
+   * coordinator come here, `moveRefusal` says why this device still cannot run it (D282): the plan here, then the project's path in the
+   * settings (the move itself also checks the checkout).
+   */
+  #coordinator(where: CoordinatorWhere, work: ProjectWorkSettings, project: Project, config: Configuration['x-jevellan'], accounts: AccountView[]): CoordinatorView {
     const label = (modelId: string) => config.menu.find((entry) => entry.id === modelId)?.label ?? modelId;
-    const plan = coordinatorPlan({ work, settings: config, runtimes: new Map([...this.#o.runtimes].map(([id, adapter]) => [id, adapter.capabilities])),
-      accounts: accounts.map((view) => view.account), statuses: accounts.flatMap((view) => view.statuses), deviceId: where.deviceId ?? this.#o.deviceId,
-      deviceName: where.deviceName ?? this.#o.deviceName });
-    const planned = plan.kind === 'ready' ? { runtime: plan.model.runtime, modelLabel: plan.model.label, effort: plan.effort } : null;
+    const plan = (deviceId: string, deviceName: string) => coordinatorPlan({ work, settings: config, runtimes: new Map([...this.#o.runtimes].map(([id, adapter]) => [id, adapter.capabilities])),
+      accounts: accounts.map((view) => view.account), statuses: accounts.flatMap((view) => view.statuses), deviceId, deviceName });
+    const there = plan(where.deviceId ?? this.#o.deviceId, where.deviceName ?? this.#o.deviceName);
+    const planned = there.kind === 'ready' ? { runtime: there.model.runtime, modelLabel: there.model.label, effort: there.effort } : null;
+    const here = where.movable ? plan(this.#o.deviceId, this.#o.deviceName) : undefined;
+    const moveRefusal = here && (here.kind === 'unavailable' ? here.reason : projectPathProblem(project, this.#o.deviceId, this.#o.deviceName));
     const session = where.local?.session;
-    return { deviceId: where.deviceId, deviceName: where.deviceName, planned, canMoveHere: where.movable, state: where.state,
+    return { deviceId: where.deviceId, deviceName: where.deviceName, planned, canMoveHere: where.movable, ...(moveRefusal ? { moveRefusal: moveRefusal.slice(0, 400) } : {}), state: where.state,
       ...(where.unavailableReason ? { unavailableReason: where.unavailableReason } : {}), online: where.online,
       session: session ? { runtime: session.runtime, modelLabel: label(session.modelId), effort: session.effort,
         accountLabel: accounts.find((view) => view.account.id === session.accountId)?.account.label ?? session.accountId, turns: session.turns }
@@ -151,14 +159,18 @@ export class ProjectViews {
   /** `GET /api/projects/:id/work`: the project page. */
   async project(projectId: string): Promise<ProjectWorkView> {
     const project = await this.#project(projectId);
-    const [threads, decisions, work, notebook, roster, baseBranch] = await Promise.all([this.#threads(projectId), this.#o.hub.decisions(projectId), this.#work(projectId),
-      this.#o.hub.notebook(projectId), this.#o.roster(), this.#base(project)]);
+    const [threads, decisions, work, notebook, roster, baseBranch, config, accounts] = await Promise.all([this.#threads(projectId), this.#o.hub.decisions(projectId),
+      this.#work(projectId), this.#o.hub.notebook(projectId), this.#o.roster(), this.#base(project), this.#o.settings(), this.#o.accounts.list()]);
     const shown = effectiveSettings(work, project); const where = await this.#coordinatorState(projectId, roster);
     // The chat history bound the page opens with (D268): this device's ledger, or the last event id a coordinator elsewhere published.
     const lastEventId = where.deviceId === null || where.deviceId === this.#o.deviceId ? this.#o.ledgers.coordinator(projectId).lastId() : where.lastEventId ?? 0;
+    // Threads are placed on the coordinator's device; while it is away, the only way on is moving it here, so this device places (D281).
+    const placing = where.deviceId === null || where.state === 'offline' ? this.#o.deviceId : where.deviceId;
+    const coordinator = this.#coordinator(where, work, project, config, accounts);
+    const devices = this.#o.placement.deviceSetup(project, work, roster, placing, { settings: config, accounts });
     return ProjectWorkViewSchema.parse({ schema: 'project-work-view-v1', project: { id: project.id, name: project.name, branchPolicy: project.branchPolicy, baseBranch },
-      settings: shown.settings, ...(shown.notice ? { settingsNotice: shown.notice } : {}), coordinator: await this.#coordinator(where, work), threads,
-      decisions: decisionLists(decisions), pullRequests: pullRequestEntries(threads), notebookRevision: notebook?.revision ?? 0, lastEventId, gates: PHASE_GATES });
+      settings: shown.settings, ...(shown.notice ? { settingsNotice: shown.notice } : {}), coordinator, threads,
+      decisions: decisionLists(decisions), pullRequests: pullRequestEntries(threads), notebookRevision: notebook?.revision ?? 0, lastEventId, gates: PHASE_GATES, devices });
   }
   /** `GET /api/projects/:id/threads/:tid` for a thread this device owns (D81 `canMessage`; overrides as the API allows them, D252). */
   async thread(projectId: string, threadId: string): Promise<ThreadView> {

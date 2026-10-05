@@ -178,6 +178,9 @@ export const ThreadLocalSchema = z.strictObject({ schema: z.literal('thread-loca
   seenCommands: z.array(IdSchema).max(200).optional(),
   // Owner thread messages already taken, by clientMessageId with the digest of their text (D153): retries repeat.
   seenMessages: z.array(z.strictObject({ id: IdSchema, digest: z.string().regex(/^[a-f0-9]{64}$/) })).max(200).optional(),
+  // phase 5: the event of the needs-decision report the thread waits on, and whether this device asked the owner directly because the
+  // coordinator's device was away (decision 7, D280)
+  decisionReport: z.strictObject({ eventId: IdSchema, at: TimestampSchema, asked: z.boolean() }).optional(),
   // Index labels (D138): the menu label at placement and the account label of the latest turn.
   labels: z.strictObject({ modelLabel: text, accountLabel: text }).optional() });
 export type ThreadLocal = z.infer<typeof ThreadLocalSchema>;
@@ -299,11 +302,16 @@ export const CoordinatorViewSchema = z.strictObject({ state: CoordinatorStateNam
   unavailableReason: z.string().optional(), deviceId: IdSchema.nullable(), deviceName: z.string().nullable(), online: z.boolean(),
   session: z.strictObject({ runtime: IdSchema, modelLabel: text, effort: EffortSchema, accountLabel: text, turns: count }).nullable(),
   planned: z.strictObject({ runtime: IdSchema, modelLabel: text, effort: EffortSchema }).nullable(),
-  canMoveHere: z.boolean(), offlineSince: TimestampSchema.optional() });
+  canMoveHere: z.boolean(), offlineSince: TimestampSchema.optional(),
+  // phase 5: why this device cannot take the coordinator although the move rule allows it (no model, account or checkout here, D282)
+  moveRefusal: z.string().max(400).optional() });
 export type CoordinatorView = z.infer<typeof CoordinatorViewSchema>;
 export const PullRequestEntrySchema = z.strictObject({ threadId: IdSchema, title: text, branch: z.string().optional(),
   pr: PullRequestStateSchema.optional(), reason: z.string().optional() });
 export type PullRequestEntry = z.infer<typeof PullRequestEntrySchema>;
+// phase 5: one roster device as a new thread of the project sees it; `reason` says why no thread can run there (D281)
+export const ProjectDeviceSetupSchema = z.strictObject({ schema: z.literal('project-device-setup-v1'), deviceId: IdSchema, name: text, reason: z.string().max(400).optional() });
+export type ProjectDeviceSetup = z.infer<typeof ProjectDeviceSetupSchema>;
 export const ProjectWorkViewSchema = z.strictObject({ schema: z.literal('project-work-view-v1'),
   project: z.strictObject({ id: IdSchema, name: text, branchPolicy: z.enum(['main', 'external']), baseBranch: z.string().nullable() }),
   settings: ProjectWorkSettingsSchema, settingsNotice: z.string().optional(),
@@ -311,7 +319,9 @@ export const ProjectWorkViewSchema = z.strictObject({ schema: z.literal('project
   decisions: z.strictObject({ open: z.array(ProjectDecisionSchema), answered: z.array(ProjectDecisionSchema).max(10) }),
   pullRequests: z.array(PullRequestEntrySchema), notebookRevision: count, lastEventId: count,
   // The placement phase gates (D88) this device applies, so the interface disables what placement would refuse (D221).
-  gates: z.strictObject({ mainIsolation: z.boolean(), remoteDevices: z.boolean() }) });
+  gates: z.strictObject({ mainIsolation: z.boolean(), remoteDevices: z.boolean() }),
+  // phase 5: every roster device that is not revoked, in roster order, so New thread and Override disable what placement refuses (D281)
+  devices: z.array(ProjectDeviceSetupSchema).optional() });
 export type ProjectWorkView = z.infer<typeof ProjectWorkViewSchema>;
 export const ThreadViewSchema = z.strictObject({ schema: z.literal('project-thread-view-v1'),
   thread: ThreadIndexSchema, placement: PlacementRecordSchema, reports: z.array(ThreadReportSchema),

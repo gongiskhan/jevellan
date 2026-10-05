@@ -42,12 +42,14 @@ export type ProjectTimers = {
   prPollMs: number; coordinatorStartMs: number; coordinatorRetryMs: number; coordinatorTurnTimeoutMs: number; threadTurnTimeoutMs: number;
   setupTimeoutMs: number; testTimeoutMs: number; outboxRetryMs: number; outboxMaxMs: number; inboxPollMs: number; indexRetryMs: number;
   queueSweepMs: number; mainLeaseRetryMs: number;
+  /** How often the sweeps check a waiting question against the coordinator device's presence (D280); each new question checks at once. */
+  fallbackCheckMs: number;
   now(): number;
 };
 export const DEFAULT_PROJECT_TIMERS: ProjectTimers = {
   periodic: true, prPollMs: 60_000, coordinatorStartMs: 250, coordinatorRetryMs: 30_000, coordinatorTurnTimeoutMs: 1_200_000, threadTurnTimeoutMs: 21_600_000,
   setupTimeoutMs: 900_000, testTimeoutMs: 1_800_000, outboxRetryMs: 10_000, outboxMaxMs: 60_000, inboxPollMs: 3_000, indexRetryMs: 30_000, queueSweepMs: 5_000,
-  mainLeaseRetryMs: 20_000, now: Date.now,
+  mainLeaseRetryMs: 20_000, fallbackCheckMs: 60_000, now: Date.now,
 };
 export type ProjectWorkOptions = {
   homes: Homes; deviceId: string; deviceName: string; redactor: SecretRedactor;
@@ -129,6 +131,7 @@ export class ProjectWork {
       command: (projectId, threadId, command) => this.threads.command(projectId, threadId, command) });
     this.threads = new ThreadService({ deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, store: this.store, ledgers: this.ledgers, receipts, hub: o.hub,
       projects: o.projects, admission: this.admission, placement, accounts: o.accounts, transcripts: this.transcripts, delivery, settings: o.settings, now,
+      roster: o.roster, decisions: this.decisions, fallbackCheckMs: timers.fallbackCheckMs,
       runner: { deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, store: this.store, ledgers: this.ledgers, project: (projectId) => this.#project(projectId),
         workSettings: (projectId) => this.admission.settings(projectId), worktrees, publication, launcher, accounts: o.accounts, admission: this.admission,
         decisions: this.decisions, toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event),
@@ -154,7 +157,7 @@ export class ProjectWork {
       threadCommand: (envelope) => this.#threadCommand(envelope),
     } });
     this.views = new ProjectViews({ deviceId: o.deviceId, deviceName: o.deviceName, hub: o.hub, projects: o.projects, store: this.store, ledgers: this.ledgers,
-      coordinators: this.coordinators, transcripts: this.transcripts, worktrees, accounts: o.accounts, runtimes: o.runtimes, settings: o.settings, roster: o.roster });
+      coordinators: this.coordinators, transcripts: this.transcripts, worktrees, accounts: o.accounts, runtimes: o.runtimes, settings: o.settings, roster: o.roster, placement });
     this.ready = recoverProjects({ paths: this.paths, ledgers: this.ledgers, store: this.store, coordinators: this.coordinators,
       toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event), redactor: o.redactor, now }).then(() => undefined);
   }

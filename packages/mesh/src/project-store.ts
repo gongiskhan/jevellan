@@ -3,7 +3,7 @@ import { z } from 'zod';
 import {
   DecisionAnswerSchema, ENVELOPE_PAGE_BYTES, IdSchema, PROJECT_HUB_PAGE, PlacementOverrideSchema, ProjectCoordinatorSchema, ProjectCoordinatorStatusSchema, ProjectDecisionSchema, ProjectEnvelopeSchema,
   ProjectHubRequestSchema, ProjectHubResultSchema, ProjectNotebookSchema, ProjectSchema, ProjectWorkSettingsSchema, ProjectWorkSummarySchema, ThreadIndexCursorSchema, ThreadIndexSchema,
-  TimestampSchema, checkHubRevision, collectionOf, compareEnvelopes, stableJson, withHubRevision, workCounts,
+  TimestampSchema, checkHubRevision, collectionOf, compareEnvelopes, coordinatorMovable, coordinatorWorking, stableJson, withHubRevision, workCounts,
   type DecisionAnswer, type DeviceView, type DocumentSchema, type PlacementOverride, type ProjectCoordinator, type ProjectCoordinatorStatus, type ProjectDecision, type ProjectEnvelope,
   type ProjectHub, type ProjectHubOperation, type ProjectHubResult, type ProjectHubResultOf, type ProjectNotebook, type ProjectWorkSettings, type ProjectWorkSummary, type Stored,
   type ThreadIndex,
@@ -62,15 +62,22 @@ export class HubProjectStore {
 
   coordinator(projectId: string): Stored<ProjectCoordinator> | null { return this.#get(COORDINATORS, projectId, ProjectCoordinatorSchema); }
   /**
-   * A device assigns the coordinator only to itself (first message, first thread, Move here); revision 0 creates. A move retargets
-   * the project's coordinator events still waiting for the former device to the new one in the same transaction (D270), so events
-   * relayed to a device that is gone are not stranded; the former device forwards whatever it already took (3.5.4).
+   * A device assigns the coordinator only to itself (first message, first thread, Move here); revision 0 creates. A move is refused
+   * while the move rule says the former device works (D269): checked here, in the transaction that records the move, because the
+   * former device announces each turn on this hub before it launches it (D283), so a move and a turn start are ordered here and the
+   * former device never starts a turn after a move. A move retargets the project's coordinator events still waiting for the former
+   * device to the new one in the same transaction (D270), so events relayed to a device that is gone are not stranded; the former
+   * device forwards whatever it already took (3.5.4).
    */
   assignCoordinator(projectId: string, deviceId: string, expectedRevision: number): Stored<ProjectCoordinator> {
     IdSchema.parse(projectId); if (IdSchema.parse(deviceId) !== this.deviceId) refuse('A device can only make itself the coordinator.', 403);
     return this.hub.transaction(() => {
       this.#project(projectId);
       const former = this.coordinator(projectId)?.document.deviceId;
+      if (former !== undefined && former !== deviceId) {
+        const row = this.devices?.().find((view) => view.device.id === former);
+        if (!coordinatorMovable(former, row, this.coordinatorStatus(projectId)?.document)) refuse(coordinatorWorking(row?.device.name ?? former), 409);
+      }
       const stored = this.#put<ProjectCoordinator>(COORDINATORS, projectId, ProjectCoordinatorSchema, { schema: 'project-coordinator-v1', projectId, revision: 0, deviceId,
         assignedAt: new Date(this.now()).toISOString() }, expectedRevision);
       if (former !== undefined && former !== deviceId) {

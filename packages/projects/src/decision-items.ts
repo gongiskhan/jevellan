@@ -65,16 +65,21 @@ export class DecisionItems {
     return this.#create(projectId, { question: report.question ?? report.summary, options: report.options ?? [], threadId }, 'thread', fixed);
   }
   /**
-   * The coordinator's fallback (decision 7, D32): each queued needs-decision report becomes the owner's question under an id
-   * derived from its event, created at the event's time, so a repeated fallback (a crash before the coordinator recorded it,
-   * a retry after a hub error) creates nothing new, even after the owner answered. Returns the event ids now covered.
+   * The fallback (decision 7, D32): each needs-decision report becomes the owner's question under an id derived from its event,
+   * created at the event's time, so a repeated fallback (a crash before the coordinator recorded it, a retry after a hub error, the
+   * thread's owner device asking while the coordinator's device is away, D280) creates nothing new, even after the owner answered.
+   * Returns the event ids now covered.
    */
   async fallbackFromReports(projectId: string, events: readonly CoordinatorEvent[]): Promise<string[]> {
     const covered: string[] = [];
     for (const event of events) {
       if (event.kind !== 'thread-report' || event.report.status !== 'needs-decision') continue;
       const id = derivedId('pdec', 'fallback', event.id);
-      if (!(await this.#o.hub.decision(id))) await this.fromReport(projectId, event.threadId, event.report, { id, at: event.at });
+      if (!(await this.#o.hub.decision(id))) {
+        // The coordinator and the thread's owner device may both ask for one report (D280): the other's question is this one.
+        try { await this.fromReport(projectId, event.threadId, event.report, { id, at: event.at }); }
+        catch (error) { if ((error as { status?: unknown }).status !== 409 || !(await this.#o.hub.decision(id))) throw error; }
+      }
       covered.push(event.id);
     }
     return covered;
