@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "test": "PJ5 a thread on the member device opens through the hub",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/PJ5-remote-thread-phone-light.png",
+  "expected": "the Jevellan web app \"remote thread\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PJ5 a thread on the member device opens through the hub\"; the other steps are judged in their own screenshots)"
+}
