@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "test": "PJ7 an attached thread disables its composer",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/PJ7-attached-phone-light.png",
+  "expected": "the Jevellan web app \"attached\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PJ7 an attached thread disables its composer\"; the other steps are judged in their own screenshots)"
+}
