@@ -188,6 +188,33 @@ export function Panel({
   );
   return slot ? createPortal(panel, slot) : panel;
 }
+/** Whether the page's end is within `margin` px of the bottom of the window; a reader there follows new content. */
+const nearEnd = (margin: number) => window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - margin;
+/**
+ * A page's scroll listener for following its end like a chat; it returns whether the reader still follows. Only the reader
+ * scrolling up, farther than `margin` px from the end, unpins (and shows Jump to latest): the scrolls a browser makes while the
+ * window or the content resizes never move up, so a reader who follows keeps following when the window shrinks. Scrolling back
+ * near the end follows again.
+ */
+export function followOnScroll(pinned: { current: boolean }, margin: number): () => boolean {
+  let top = window.scrollY;
+  return () => {
+    const up = window.scrollY < top;
+    top = window.scrollY;
+    pinned.current = nearEnd(margin) || (pinned.current && !up);
+    return pinned.current;
+  };
+}
+/**
+ * Re-pins a reader whom the page no longer leaves behind, after a resize of the window or of the content (which never unpins). A
+ * resize can bring the end into view without a scroll (a taller window, shorter content); then Jump to latest goes away, so a
+ * stale live bar never grows the sticky composer over the end of the page.
+ */
+export function repinAtEnd(pinned: { current: boolean }, margin: number, repinned: () => void) {
+  if (pinned.current || !nearEnd(margin)) return;
+  pinned.current = true;
+  repinned();
+}
 /**
  * A strip of tabs that scrolls sideways when it does not fit: it marks the ends that hide tabs (`data-more-start`,
  * `data-more-end`) for an edge fade, and centers the selected tab (`aria-current="page"`) whenever `selected` changes, so the

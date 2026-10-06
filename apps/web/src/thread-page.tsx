@@ -5,7 +5,7 @@ import {
 } from '@jevellan/core/client';
 import { ApiError, api, empty } from './api.js';
 import { copyText, selectText } from './clipboard.js';
-import { Confirm, Markdown, Modal, Panel, useTask, type PageProps } from './components.js';
+import { Confirm, Markdown, Modal, Panel, followOnScroll, repinAtEnd, useTask, type PageProps } from './components.js';
 import { Icon } from './icons.js';
 import { MessageInput } from './message-delivery.js';
 import * as copy from './project-work-copy.js';
@@ -95,12 +95,12 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
   const following = useRef(true); const opened = useRef(false);
   const [behind, setBehind] = useState(false);
   useEffect(() => {
-    const scrolled = () => {
-      following.current = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 180;
-      setBehind(!following.current);
-    };
-    window.addEventListener('scroll', scrolled, { passive: true });
-    return () => window.removeEventListener('scroll', scrolled);
+    const follows = followOnScroll(following, 180);
+    const scrolled = () => setBehind(!follows());
+    // Only scrolling up unpins; a resize re-pins once the end is in view (see followOnScroll and repinAtEnd).
+    const resized = () => repinAtEnd(following, 180, () => setBehind(false));
+    window.addEventListener('scroll', scrolled, { passive: true }); window.addEventListener('resize', resized);
+    return () => { window.removeEventListener('scroll', scrolled); window.removeEventListener('resize', resized); };
   }, []);
   useEffect(() => {
     if (!view) return;
@@ -109,7 +109,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
   const loaded = view !== undefined;
   useEffect(() => {
     const element = page.current; if (!element) return;
-    const observer = new ResizeObserver(() => { if (following.current) bottom.current?.scrollIntoView({ block: 'end' }); });
+    const observer = new ResizeObserver(() => { repinAtEnd(following, 180, () => setBehind(false)); if (following.current) bottom.current?.scrollIntoView({ block: 'end' }); });
     observer.observe(element);
     return () => observer.disconnect();
   }, [loaded]);
@@ -381,7 +381,7 @@ function ThreadComposer({ base, view, behind, jump, sent, refused, onError, mess
                   <input type="checkbox" checked={interrupt} onChange={(event) => setInterrupt(event.target.checked)} />{copy.INTERRUPT_TURN}
                 </label>
               )}
-              {behind && <button type="button" className="text-button pw-jump" onClick={jump}>{copy.JUMP_TO_LATEST}<Icon name="chevron" size={14} /></button>}
+              {behind && <button type="button" className="text-button pw-jump jump-latest" onClick={jump}>{copy.JUMP_TO_LATEST}<Icon name="chevron" size={14} /></button>}
             </span>
           )}
         </div>

@@ -37,7 +37,7 @@ import { Icon } from './icons.js';
 import { useCursorSessions, sessionRuntimeLabel } from './cursor-sessions.js';
 import { MessageDelivery, MessageInput, LatestUserMessage } from './message-delivery.js';
 import { EvidenceLink, EvidencePanel, type EvidenceTarget } from './evidence.js';
-import { Markdown, Modal, Panel, dateTime, useDismissible, useTask, type PageProps } from './components.js';
+import { Markdown, Modal, Panel, dateTime, followOnScroll, repinAtEnd, useDismissible, useTask, type PageProps } from './components.js';
 
 type View = z.infer<typeof ConversationPublicSchema>;
 type Step = View['stretches'][number];
@@ -490,12 +490,16 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
   const pinned = useRef(!new URLSearchParams(window.location.search).get('stretch'));
   const [behind, setBehind] = useState(!pinned.current);
   useEffect(() => {
-    const scrolled = () => {
-      pinned.current = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 160;
-      setBehind(!pinned.current);
-    };
+    const follows = followOnScroll(pinned, 160);
+    const scrolled = () => setBehind(!follows());
+    // Only scrolling up unpins; a resize re-pins once the end is in view (see followOnScroll and repinAtEnd).
+    const resized = () => repinAtEnd(pinned, 160, () => setBehind(false));
     window.addEventListener('scroll', scrolled, { passive: true });
-    return () => window.removeEventListener('scroll', scrolled);
+    window.addEventListener('resize', resized);
+    return () => {
+      window.removeEventListener('scroll', scrolled);
+      window.removeEventListener('resize', resized);
+    };
   }, []);
   const page = useRef<HTMLDivElement>(null);
   const loaded = !!view;
@@ -503,6 +507,7 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
     const element = page.current;
     if (!element) return;
     const follow = () => {
+      repinAtEnd(pinned, 160, () => setBehind(false));
       if (pinned.current) window.scrollTo({ top: document.documentElement.scrollHeight });
     };
     follow();
@@ -969,7 +974,7 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
       }}>
         {(running || behind) && <div className="cursor-live-bar ordinary-live-bar">
           {running && <ConversationActivity view={view} events={events} />}
-          {behind && <button type="button" className="text-button" onClick={() => { pinned.current = true; setBehind(false); window.scrollTo({ top: document.documentElement.scrollHeight }); }}>Jump to latest ↓</button>}
+          {behind && <button type="button" className="text-button jump-latest" onClick={() => { pinned.current = true; setBehind(false); window.scrollTo({ top: document.documentElement.scrollHeight }); }}>Jump to latest ↓</button>}
         </div>}
         <div className="message-input-row">
           <MessageInput inputRef={input} value={message} change={setMessage} label="Message"

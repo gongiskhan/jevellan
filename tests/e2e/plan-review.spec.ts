@@ -57,7 +57,7 @@ test('plans are readable, wait for acceptance, and offer revision with stale-pla
   expect(await plan.locator('.plan-content').evaluate(element => element.scrollHeight <= element.clientHeight + 1)).toBe(true);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.locator('.toast.error button').click();
-  await plan.locator('.plan-review-header').scrollIntoViewIfNeeded(); await page.screenshot({ path: `/private/tmp/jevellan-plan-review-${info.project.name}.png`, fullPage: true });
+  await plan.locator('.plan-review-header').scrollIntoViewIfNeeded(); await page.screenshot({ path: info.outputPath('plan-review.png'), fullPage: true });
   await plan.getByRole('button', { name: 'Request changes', exact: true }).click();
   await plan.getByLabel('What should change?').fill('Add an expired-token test.');
   await plan.getByRole('button', { name: 'Cancel', exact: true }).click(); expect(change).toBeUndefined();

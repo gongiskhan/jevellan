@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { DeviceRosterSchema, ProjectWorkViewSchema, RuntimeListSchema, ThreadViewSchema, type ThreadView } from '../../packages/core/dist/client.js';
 import { threadDeviceOffline } from '../../packages/projects/dist/copy.js';
 import { expect, test } from './fixtures.js';
-import { openSidebar } from './navigation.js';
+import { expectNoStaleJump, openSidebar } from './navigation.js';
 
 // PJ3, PJ4b, PJ5 and PJ7 (brief 13) on the --projects fixture servers (scripts/test-server.mjs, design 5.5): a GitHub-shaped project
 // with a fake GitHub, a fake Jev, scripted coordinator and thread turns and a simulated member device (`Browser member`) over
@@ -446,6 +446,7 @@ test('PJ3 a running thread shows its transcript, report card and accepts an inte
   await expect(message).toHaveValue('');
   await expectAlignedCards(transcript);
   await expectReadableMutedText(page);
+  await expectNoStaleJump(page, transcript);
   await shot(page, 'thread-report');
 
   // Why on a thread whose title is longer than the panel: the title in the eyebrow truncates, while the panel title and Close

@@ -50,3 +50,33 @@ export async function closeConversationSettings(page: Page): Promise<void> {
 export function settlement(page: Page): Locator {
   return page.getByRole('dialog', { name: /^(Close|Discard) this work$/ });
 }
+
+/**
+ * Jump to latest never stays over the end of a conversation page. Scrolled up in a window shorter than the page, the live bar
+ * shows it; a taller window that brings the end into view without a scroll (as a full-page capture's does) must clear it, or the
+ * sticky composer, still grown by the bar, would cover `last`, the content just above it (such as the status line). A reader who
+ * follows the end stays pinned when the window shrinks: only the reader scrolling up unpins.
+ */
+export async function expectNoStaleJump(page: Page, last: Locator): Promise<void> {
+  const viewport = page.viewportSize()!; const composer = page.locator('.composer');
+  const jump = composer.getByRole('button', { name: /^Jump to latest/ });
+  const settled = () => page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  try {
+    // A short window, so the page is long enough to leave the reader behind at its top. A page that followed its end scrolls
+    // back there once it sees the smaller window, so the top is retried until the reader is left behind.
+    await page.setViewportSize({ width: viewport.width, height: Math.min(viewport.height, 400) }); await settled();
+    await expect(async () => { await page.evaluate(() => window.scrollTo(0, 0)); await expect(jump).toBeVisible({ timeout: 1_000 }); }).toPass({ timeout: 15_000 });
+    const bar = (await composer.locator('.cursor-live-bar').boundingBox())!;
+    const full = await page.evaluate(() => document.documentElement.scrollHeight);
+    await page.setViewportSize({ width: viewport.width, height: Math.floor(full - bar.height) }); await settled();
+    await expect(jump).toBeHidden();
+    const [line, footer] = [(await last.boundingBox())!, (await composer.boundingBox())!];
+    expect(line.y + line.height, 'the composer covers the end of the page').toBeLessThanOrEqual(footer.y + 0.5);
+    await page.setViewportSize(viewport); await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    await expect(jump).toBeHidden();
+    await page.setViewportSize({ width: viewport.width, height: viewport.height - 200 }); await settled();
+    await expect(jump).toBeHidden();
+  } finally {
+    await page.setViewportSize(viewport);
+  }
+}

@@ -17,6 +17,19 @@ test('Git settings can be saved, reloaded and checked from Projects', async ({ p
   expect(tabs).toMatchObject({ selected: 'Git', inView: true });
   if (test.info().project.name.startsWith('phone')) expect(tabs.fades).toEqual({ start: true, end: true, mask: true });
   else expect(tabs.fades).toBe('fits');
+  // Each end that hides tabs also shows a chevron button, clear of the selected tab, that scrolls the strip that way; a strip
+  // that fits shows none.
+  const nav = page.getByRole('navigation', { name: 'Settings', exact: true }); const strip = nav.locator('.settings-tabs-strip');
+  const earlier = nav.getByRole('button', { name: 'Earlier settings tabs', exact: true }); const more = nav.getByRole('button', { name: 'More settings tabs', exact: true });
+  if (test.info().project.name.startsWith('phone')) {
+    await expect(earlier).toBeVisible(); await expect(more).toBeVisible();
+    const selected = (await nav.locator('[aria-current="page"]').boundingBox())!;
+    for (const chevron of [earlier, more]) { const box = (await chevron.boundingBox())!; expect(box.x + box.width <= selected.x || box.x >= selected.x + selected.width).toBe(true); }
+    const start = await strip.evaluate(element => element.scrollLeft);
+    await more.click(); await expect.poll(() => strip.evaluate(element => element.scrollLeft)).toBeGreaterThan(start + 50);
+    const moved = await strip.evaluate(element => element.scrollLeft);
+    await earlier.click(); await expect.poll(() => strip.evaluate(element => element.scrollLeft)).toBeLessThan(moved - 50);
+  } else { await expect(earlier).toBeHidden(); await expect(more).toBeHidden(); }
   await page.getByLabel('Connection method').selectOption('ssh');
   await page.getByRole('button', { name: 'Save Git settings', exact: true }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Git settings saved' })).toBeVisible();

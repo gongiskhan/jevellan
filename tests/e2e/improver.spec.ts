@@ -184,6 +184,12 @@ test('J12: memory care applies and tells, shows and undoes its commit, suggests 
 
   await report.getByRole('button', { name: 'View changes', exact: true }).click();
   const changes = report.getByLabel('Memory care changes'); await expect(changes).toContainText('+++ b/.jevellan/memory/archive/old-caching-idea.md'); await expect(changes).toContainText('-status: unresolved');
+  // The expanded diff shows every line: the box grows with the page instead of hiding the rest in an inner scroller.
+  await expect(changes).toContainText('+++ b/.jevellan/memory/deploy.md');
+  expect(await changes.evaluate(element => element.scrollHeight <= element.clientHeight + 1)).toBe(true);
+  const lastLine = changes.locator('span').filter({ hasText: /\S/ }).last(); await lastLine.scrollIntoViewIfNeeded(); await expect(lastLine).toBeInViewport();
+  const [box, line] = await Promise.all([changes.boundingBox(), lastLine.boundingBox()]);
+  expect(line!.y + line!.height).toBeLessThanOrEqual(box!.y + box!.height);
   await shot(page, 'j12-view-changes', layout(info));
   const applied = git(origin, 'rev-parse', 'main');
   await report.getByRole('button', { name: 'Undo', exact: true }).click();
@@ -197,6 +203,7 @@ test('J12: memory care applies and tells, shows and undoes its commit, suggests 
   const suggestion = card(page, 'Suggested memory care for Improver sandbox'); await expect(suggestion).toBeVisible();
   await expect(suggestion).toContainText('This change merged 1 note'); await expect(suggestion).toContainText('Waiting for you');
   expect(git(origin, 'rev-parse', 'main')).toBe(head); expect(git(path, 'rev-parse', 'HEAD')).toBe(head); expect(git(path, 'status', '--porcelain')).toBe('');
+  expect(await suggestion.getByLabel('Suggested change').evaluate(element => element.scrollHeight <= element.clientHeight + 1)).toBe(true);
   await shot(page, 'j12-suggest-only', layout(info));
 
   // A note changes elsewhere; Apply refuses the stale patch and recomputes it from the newer text.

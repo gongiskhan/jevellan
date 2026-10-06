@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test';
 import { expect, test } from './fixtures.js';
-import { closeConversationSettings, openConversationSettings, openDeviceSwitcher, settlement } from './navigation.js';
+import { closeConversationSettings, expectNoStaleJump, openConversationSettings, openDeviceSwitcher, settlement } from './navigation.js';
 import { randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { existsSync, lstatSync, mkdirSync, readFileSync, readlinkSync, utimesSync, writeFileSync } from 'node:fs';
@@ -20,7 +20,9 @@ function centered(locator: Locator) {
 /**
  * Scrolled up until `behind` sits under the top of the composer's live bar, Jump to latest shows in the bar (the page is more than
  * 160 px from its end, so `behind` must be that far up). The bar sits on the page colour (D318): beside its button it reads the
- * same with the conversation hidden behind it, so no transcript text runs through the bar.
+ * same with the conversation hidden behind it, so no transcript text runs through the bar. While Jump to latest shows, the
+ * composer's top padding above the bar is opaque too (a hard edge instead of the fade), so the transcript passes under the
+ * footer and never shows between Jump to latest and the content it would seem to cover.
  */
 async function expectOpaqueLiveBar(page: Page, behind: Locator) {
   const bar = page.locator('.composer .cursor-live-bar'); const jump = bar.getByRole('button', { name: 'Jump to latest ↓', exact: true });
@@ -31,20 +33,26 @@ async function expectOpaqueLiveBar(page: Page, behind: Locator) {
   // A transparent probe fixed over the bar beside the button. Capturing the sticky bar itself would first scroll the page to the
   // bar's place in the document, where nothing is behind it and the bar goes away; a fixed element is captured where it is.
   await bar.evaluate((element) => {
-    // Whole pixels inside the bar: a fractional edge would also capture the top padding, where the composer still fades.
+    // Whole pixels inside the bar beside its button, and inside the composer's top padding above the bar.
     const box = element.getBoundingClientRect(); const left = Math.ceil(element.querySelector('button')!.getBoundingClientRect().right) + 8; const top = Math.ceil(box.top);
-    const probe = document.createElement('div'); probe.id = 'live-bar-probe';
-    Object.assign(probe.style, { position: 'fixed', left: `${left}px`, top: `${top}px`, width: `${Math.floor(box.right) - left}px`, height: `${Math.floor(box.bottom) - top}px`, pointerEvents: 'none' });
-    document.body.append(probe);
+    const composer = element.closest('.composer')!.getBoundingClientRect();
+    const add = (id: string, area: { left: number; top: number; width: number; height: number }) => {
+      const probe = document.createElement('div'); probe.id = id;
+      Object.assign(probe.style, { position: 'fixed', left: `${area.left}px`, top: `${area.top}px`, width: `${area.width}px`, height: `${area.height}px`, pointerEvents: 'none' });
+      document.body.append(probe);
+    };
+    add('live-bar-probe', { left, top, width: Math.floor(box.right) - left, height: Math.floor(box.bottom) - top });
+    add('live-bar-edge-probe', { left: Math.ceil(composer.left), top: Math.ceil(composer.top), width: Math.floor(composer.right) - Math.ceil(composer.left), height: Math.floor(box.top) - Math.ceil(composer.top) });
   });
-  const probe = page.locator('#live-bar-probe'); const capture = () => probe.screenshot({ animations: 'disabled' });
+  const probes = page.locator('#live-bar-probe, #live-bar-edge-probe'); const capture = async () => [await probes.nth(0).screenshot({ animations: 'disabled' }), await probes.nth(1).screenshot({ animations: 'disabled' })];
   // Hides everything on the page but the composer, through style properties (the page's policy refuses a style sheet).
   const hide = (hidden: boolean) => page.locator('.conversation-page').evaluate((element, hidden) => {
     (element as HTMLElement).style.visibility = hidden ? 'hidden' : ''; element.querySelector<HTMLElement>('.composer')!.style.visibility = hidden ? 'visible' : '';
   }, hidden);
   const shown = await capture();
-  await hide(true); const alone = await capture(); await hide(false); await probe.evaluate((element) => element.remove());
-  expect(alone.equals(shown), 'transcript text shows through the live bar').toBe(true);
+  await hide(true); const alone = await capture(); await hide(false); await probes.evaluateAll((elements) => elements.forEach((element) => element.remove()));
+  expect(alone[0]!.equals(shown[0]!), 'transcript text shows through the live bar').toBe(true);
+  expect(alone[1]!.equals(shown[1]!), 'transcript text shows above the live bar while Jump to latest shows').toBe(true);
 }
 
 /**
@@ -135,6 +143,7 @@ test('Projects and a manual planned change render the full plan, stream, Why and
   await expect(page.getByRole('heading', { name: 'Change the value to two and verify it.' })).toBeVisible();
   const picker = page.locator('.manual-picker'); await picker.getByRole('combobox', { name: 'Action', exact: true }).selectOption('plan'); await picker.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'The full fixture plan' })).toBeVisible(); await expect(page.getByRole('button', { name: 'Approve plan', exact: true })).toBeVisible();
+  await expectNoStaleJump(page, page.locator('.plan-waiting'));
   await page.evaluate(() => window.scrollTo(0, 0)); await page.screenshot({ path: `docs/acceptance/screenshots/phase2-plan-${info.project.name}.png`, fullPage: true });
   await page.getByRole('button', { name: 'Approve plan', exact: true }).click(); await picker.getByRole('combobox', { name: 'Action', exact: true }).selectOption('implement'); await picker.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Step 2 · Implement' })).toBeVisible({ timeout: 30_000 }); await expect(picker).toBeVisible({ timeout: 30_000 });
@@ -365,6 +374,16 @@ test('file and evidence links show recorded versions, source lines, Markdown, im
   const picker = page.locator('.manual-picker'); await expect(picker).toBeVisible(); const id = new URL(page.url()).pathname.split('/')[2]!;
   for (const n of [1, 2]) { await picker.getByRole('combobox', { name: 'Action', exact: true }).selectOption('implement'); await picker.getByRole('button', { name: 'Continue', exact: true }).click(); await expect(page.getByRole('heading', { name: `Step ${n} · Implement` })).toBeVisible({ timeout: 30_000 }); await expect(picker).toBeVisible({ timeout: 30_000 }); }
   const first = page.locator('.stretch-block').first(); const panel = page.getByRole('dialog').last();
+  // Moving to a step's controls while Jump to latest shows (scrolled up in a short window) brings them above the composer, never
+  // under its live bar.
+  const size = page.viewportSize()!; await page.setViewportSize({ width: size.width, height: 500 });
+  try {
+    const jump = page.locator('.composer').getByRole('button', { name: 'Jump to latest ↓', exact: true });
+    await expect(async () => { await page.evaluate(() => window.scrollTo(0, 0)); await expect(jump).toBeVisible({ timeout: 1_000 }); }).toPass({ timeout: 15_000 });
+    const stepControl = page.locator('.stretch-block').nth(1).getByRole('button', { name: /^Changes/ }).first(); await stepControl.focus();
+    const [control, footer] = [(await stepControl.boundingBox())!, (await page.locator('.composer').boundingBox())!];
+    expect(control.y + control.height).toBeLessThanOrEqual(footer.y);
+  } finally { await page.setViewportSize(size); }
   await first.locator('.step-details > summary').click(); await first.locator('.findings').getByRole('button', { name: 'src/example.ts:2', exact: true }).click(); await expect(panel).toContainText('Recorded checkpoint'); await expect(panel.locator('.selected-line')).toContainText('export const amount = 2;'); await expect(panel.locator('.line-number')).toHaveCount(4); await expect(panel).toContainText('<b>plain text</b>');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true); await page.screenshot({ path: `docs/acceptance/screenshots/phase2-evidence-source-${info.project.name}.png` });
   await panel.getByRole('button', { name: 'Open working copy', exact: true }).click(); await expect(panel).toContainText('Current working copy · not a saved step'); await expect(panel.locator('.selected-line')).toContainText('export const amount = 3;'); await panel.getByRole('button', { name: 'Close panel', exact: true }).click();
@@ -728,6 +747,12 @@ test('device Settings completes a member login, shows activity, invites and swit
   await expect(memberCard).toContainText('Online'); await expect(memberCard).toContainText('1 running conversations'); await expect(memberCard).toContainText('Codex active in remote-project');
   await expect(page.locator('.device-card').filter({ hasText: 'Offline fixture' }).getByRole('button', { name: 'Open', exact: true })).toBeDisabled();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  // The card after the device list keeps the standard card gap (it once sat flush against the last device card).
+  const gaps = await page.evaluate(() => {
+    const native = document.querySelector('.cursor-connections')!.getBoundingClientRect(); const automatic = document.querySelector('.device-auto')!.getBoundingClientRect();
+    return { list: native.top - Math.max(...[...document.querySelectorAll('.project-list > .device-card')].map(card => card.getBoundingClientRect().bottom)), next: automatic.top - native.bottom };
+  });
+  expect(gaps.list).toBeGreaterThanOrEqual(12); expect(gaps.list).toBeCloseTo(gaps.next, 0);
   await page.screenshot({ path: `docs/acceptance/screenshots/phase4-devices-${info.project.name}.png`, fullPage: true });
   await page.getByRole('button', { name: 'Add a device', exact: true }).click(); await expect(panel.locator('.verification-code strong')).toHaveText(/^[0-9A-HJKMNP-TV-Z]{8}$/); await expect(panel.locator('.join-command')).toContainText('npx github:gongiskhan/jevellan join'); await expect(panel).toContainText('Expires'); expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true); await page.screenshot({ path: `docs/acceptance/screenshots/phase5-join-${info.project.name}.png`, fullPage: false, mask: [panel.locator('.verification-code strong'), panel.locator('.join-command span')], maskColor: '#dce2de' }); await panel.getByRole('button', { name: 'Close panel', exact: true }).click();
   // From 761 to 1024 px the sidebar is 236 px wide: the device pill stays inside it, a long name ending in an ellipsis, and the pill

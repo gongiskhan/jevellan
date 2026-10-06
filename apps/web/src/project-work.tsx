@@ -8,7 +8,7 @@ import {
 } from '@jevellan/core/client';
 import { ApiError, api, empty, isCancelled } from './api.js';
 import { clientId } from './client-id.js';
-import { Confirm, Markdown, Modal, Panel, useDismissible, useSettingsSave, useTask, type PageProps } from './components.js';
+import { Confirm, Markdown, Modal, Panel, followOnScroll, repinAtEnd, useDismissible, useSettingsSave, useTask, type PageProps } from './components.js';
 import { Icon } from './icons.js';
 import { MessageInput } from './message-delivery.js';
 import * as copy from './project-work-copy.js';
@@ -332,16 +332,16 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   const pinned = useRef(true);
   const [behind, setBehind] = useState(false);
   useEffect(() => {
-    const scrolled = () => {
-      pinned.current = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 160;
-      setBehind(!pinned.current);
-    };
-    window.addEventListener('scroll', scrolled, { passive: true });
-    return () => window.removeEventListener('scroll', scrolled);
+    const follows = followOnScroll(pinned, 160);
+    const scrolled = () => setBehind(!follows());
+    // Only scrolling up unpins; a resize re-pins once the end is in view (see followOnScroll and repinAtEnd).
+    const resized = () => repinAtEnd(pinned, 160, () => setBehind(false));
+    window.addEventListener('scroll', scrolled, { passive: true }); window.addEventListener('resize', resized);
+    return () => { window.removeEventListener('scroll', scrolled); window.removeEventListener('resize', resized); };
   }, []);
   useEffect(() => {
     const element = chat.current; if (!element || !chatShown) return;
-    const follow = () => { if (pinned.current) window.scrollTo({ top: document.documentElement.scrollHeight }); };
+    const follow = () => { repinAtEnd(pinned, 160, () => setBehind(false)); if (pinned.current) window.scrollTo({ top: document.documentElement.scrollHeight }); };
     follow();
     const observer = new ResizeObserver(follow); observer.observe(element);
     return () => observer.disconnect();
@@ -616,7 +616,7 @@ function Composer({ projectId, busy, offline, offlineText, behind, jump, stoppin
       {(busy || behind) && (
         <div className="cursor-live-bar ordinary-live-bar">
           {busy && <span role="status"><span className="activity-spinner" aria-hidden="true" />{copy.COORDINATOR_WORKING}</span>}
-          {behind && <button type="button" className="text-button pw-jump" onClick={jump}>{copy.JUMP_TO_LATEST}<Icon name="chevron" size={14} /></button>}
+          {behind && <button type="button" className="text-button pw-jump jump-latest" onClick={jump}>{copy.JUMP_TO_LATEST}<Icon name="chevron" size={14} /></button>}
         </div>
       )}
       <div className="message-input-row">

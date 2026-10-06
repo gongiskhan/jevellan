@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { CursorListSchema, CursorTranscriptSchema, CursorMessageSchema } from '@jevellan/core/client';
 import { api } from './api.js';
 import { clientId } from './client-id.js';
-import { useTask, type PageProps } from './components.js';
+import { followOnScroll, repinAtEnd, useTask, type PageProps } from './components.js';
 import { MessageDelivery, MessageInput, LatestUserMessage } from './message-delivery.js';
 import './cursor-sessions.css';
 
@@ -45,9 +45,11 @@ export function CursorConversationPage({ id, navigation, ...props }: PageProps &
       } catch (error) { if (!controller.signal.aborted) setError(error instanceof Error ? error.message : 'Reconnecting to the session…'); }
       finally { if (!controller.signal.aborted) timer = setTimeout(() => void load(), 1500); }
     };
-    const scroll = () => { following.current = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 180; setBehind(!following.current); };
-    window.addEventListener('scroll', scroll, { passive: true }); void load();
-    return () => { controller.abort(); clearTimeout(timer); window.removeEventListener('scroll', scroll); };
+    const follows = followOnScroll(following, 180); const scroll = () => setBehind(!follows());
+    // Only scrolling up unpins; a resize re-pins once the end is in view (see followOnScroll and repinAtEnd).
+    const resized = () => repinAtEnd(following, 180, () => setBehind(false));
+    window.addEventListener('scroll', scroll, { passive: true }); window.addEventListener('resize', resized); void load();
+    return () => { controller.abort(); clearTimeout(timer); window.removeEventListener('scroll', scroll); window.removeEventListener('resize', resized); };
   }, [base, query]);
   useEffect(() => {
     if (!view) return;
@@ -55,7 +57,7 @@ export function CursorConversationPage({ id, navigation, ...props }: PageProps &
   }, [view]);
   useEffect(() => {
     if (!page.current) return;
-    const observer = new ResizeObserver(() => { if (following.current) bottom.current?.scrollIntoView({ block: 'end' }); });
+    const observer = new ResizeObserver(() => { repinAtEnd(following, 180, () => setBehind(false)); if (following.current) bottom.current?.scrollIntoView({ block: 'end' }); });
     observer.observe(page.current); return () => observer.disconnect();
   }, [!!view]);
   const session = view?.session;
@@ -110,7 +112,7 @@ export function CursorConversationPage({ id, navigation, ...props }: PageProps &
     {isCursor && <form className="composer card" onSubmit={event => { event.preventDefault(); void submit(session!.state === 'working' ? 'steer' : 'next'); }}>
       {(behind || connected && session!.state === 'working') && <div className="cursor-live-bar">
         {connected && session!.state === 'working' && <span role="status"><span className="activity-spinner" aria-hidden="true" />Cursor is working{latest?.type === 'tool' ? ` · Last tool: ${latest.name}` : latest?.type === 'thinking' ? ' · Thinking' : ''}</span>}
-        {behind && <button type="button" className="text-button" onClick={() => { following.current = true; setBehind(false); bottom.current?.scrollIntoView({ block: 'end' }); }}>Jump to latest ↓</button>}
+        {behind && <button type="button" className="text-button jump-latest" onClick={() => { following.current = true; setBehind(false); bottom.current?.scrollIntoView({ block: 'end' }); }}>Jump to latest ↓</button>}
       </div>}
       <div className="message-input-row">
         <MessageInput value={text} change={setText} label="Message Cursor" placeholder="Message this conversation…" />

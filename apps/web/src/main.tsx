@@ -50,14 +50,29 @@ const settingsPages = [
   ['configuration', 'Configuration', 'configuration'],
   ['about', 'About', 'about'],
 ] as const satisfies ReadonlyArray<readonly [string, string, IconName]>;
-/** The settings pages' tabs: a list beside the page, and below 1024 px a strip that scrolls sideways (useTabStrip). */
+/**
+ * The settings pages' tabs: a list beside the page, and below 1024 px a strip that scrolls sideways (useTabStrip). On an end
+ * that hides tabs, a chevron button over the fade scrolls the strip that way; the tabs themselves stay the keyboard path.
+ */
 function SettingsTabs({ current, children }: { current: string; children: ReactNode }) {
   const strip = useTabStrip(current);
+  const scroll = (direction: -1 | 1) => {
+    const element = strip.current;
+    if (!element) return;
+    const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    element.scrollBy({ left: direction * element.clientWidth * 0.6, behavior: smooth ? 'smooth' : 'auto' });
+  };
   return (
     <nav className="settings-tabs" aria-label="Settings">
       <div className="settings-tabs-strip" ref={strip}>
         {children}
       </div>
+      <button type="button" className="strip-scroll strip-scroll-start" tabIndex={-1} aria-label="Earlier settings tabs" onClick={() => scroll(-1)}>
+        <Icon name="chevron" size={14} />
+      </button>
+      <button type="button" className="strip-scroll strip-scroll-end" tabIndex={-1} aria-label="More settings tabs" onClick={() => scroll(1)}>
+        <Icon name="chevron" size={14} />
+      </button>
     </nav>
   );
 }
