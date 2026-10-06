@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Header title is cut off with an ellipsis ('Exercise automatic decisions: change t...'), but the full text appears in the subtitle line and in the user message.",
-      "The 'Local time' label wraps onto its own line below the Started/Ended/Duration row, which looks a little detached.",
-      "There is a large empty area between 'Step details' and the composer."
+      "Header title is truncated with an ellipsis ('Exercise automatic decisions: change t…'). The full text still appears in the subtitle line and the message bubble, so nothing is lost.",
+      "'Step details' disclosure text is fairly low-contrast against the dark background.",
+      "Large empty area between the step content and the composer. This is expected for a short thread."
     ]
   }
 }

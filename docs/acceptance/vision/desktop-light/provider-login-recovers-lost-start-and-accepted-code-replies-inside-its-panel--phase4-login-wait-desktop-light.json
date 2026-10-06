@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Authorization code' label sits almost directly under the 'Open sign-in page' button, with almost no vertical gap between them.",
-      "The 'Stop waiting' button is roughly vertically centered against two lines of banner text, which leaves extra empty space to its right inside the banner."
+      "The 'Authorization code' label sits right under the 'Open sign-in page' button with almost no space between them. They don't overlap, but the spacing looks cramped.",
+      "The disabled 'Continue' button has low contrast against the white modal. It is still readable."
     ]
   }
 }

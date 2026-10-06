@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dialog title shows a raw internal ID ('Login recovery c81fd1b1-790d-40bc-9072-f4a342ffdaf5'). It fits on one line here, but it's long and not useful to users.",
-      "The pending status 'Code sent. Waiting for sign-in to finish…' and the error 'Can't reach Jevellan. Try again when it's connected.' appear together. The flow probably intends this, but the two messages could read as contradictory.",
-      "The page behind the modal is heavily dimmed and blurred, so it can't be read. This is expected for a modal backdrop."
+      "The dialog title shows a raw UUID ('Login recovery 39213a17-51e9-45a0-b13f-da387758d10e'), which makes it long and hard to read.",
+      "The status line 'Code sent. Waiting for sign-in to finish…' appears with the 'Can't reach Jevellan' error. The two messages give mixed signals, but this may be intended for this step.",
+      "The 'Open sign-in page' button is a filled light pill and 'Start again' is an outlined button, so they look inconsistent next to each other."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The composer placeholder is cut off mid-word (\"Tell the coordinator what you nee\") because the stop and send buttons take up space at phone width.",
-      "The status pill text is shortened to \"Working…\" with an ellipsis. It is still readable, and \"Coordinator is working…\" above the composer says the same thing.",
-      "The send button is low-contrast next to the stop button. This is probably intended as a disabled state while the coordinator streams."
+      "The composer placeholder is cut off at \"Tell the coordinator what you nee\" because the stop and send buttons take up the right side of the input.",
+      "The status pill shows \"Working…\" with an ellipsis, which suggests the label is truncated rather than designed to read that way.",
+      "The stop button sits very close to the disabled send arrow, so the two controls look crowded inside the composer."
     ]
   }
 }

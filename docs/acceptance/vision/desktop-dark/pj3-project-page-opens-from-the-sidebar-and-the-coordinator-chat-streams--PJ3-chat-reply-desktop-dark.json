@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut short with ellipses (e.g. 'Context · J11 memory jour…', 'Mesh journey fix…'). The truncation is intentional, but the full names can't be read at this width.",
-      "The header status chip says 'Idle' while the right panel lists 'Add a greeting' under Running, which may confuse users.",
-      "The 'Some native sessions are unavailable' notice in the sidebar footer is small and low-contrast."
+      "Two sidebar shell-session titles ('Context · J11 memory jour…', 'Context · Mesh journey fix…') and their status lines are cut off with an ellipsis. The ellipsis looks intentional, but the full titles can't be read.",
+      "The small grey monospace metadata text is low contrast against the dark background (e.g. 'Claude Code · Fable · high · Worktree · dev-madrid', 'Codex · GPT · high · Worktree · Browser member', 'v0.1.0'). It is still readable.",
+      "The 'Idle' badge in the header doesn't match the right panel, which shows 'Add a greeting' as running."
     ]
   }
 }

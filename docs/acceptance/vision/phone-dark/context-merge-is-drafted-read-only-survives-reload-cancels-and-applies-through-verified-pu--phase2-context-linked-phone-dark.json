@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background project list and tab bar are heavily blurred and partly covered by the modal. This is expected for a modal overlay, but the clipped background cards ('Context fixture', the third card) can't be read.",
-      "'Current instruction files' is collapsed, so this screenshot doesn't show the linked file contents."
+      "The modal sits on a dimmed backdrop, so the project cards behind it are blurred and hard to read. That's expected for a dialog.",
+      "The \"Current instruction files\" row is collapsed, so its contents aren't shown."
     ]
   }
 }

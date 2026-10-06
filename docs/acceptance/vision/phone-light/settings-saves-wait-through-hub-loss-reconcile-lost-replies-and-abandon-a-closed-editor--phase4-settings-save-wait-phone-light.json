@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Saving…' button is greyed out with low contrast, but you can still read it. It's disabled on purpose while the save waits.",
-      "The page behind the dialog shows through at the edges, including the tab bar and the 'Usage checked…' and 'Log in / Check now' rows. The scrim dims it as expected."
+      "The disabled 'Saving…' button has light text on a pale background, so it has low contrast. It is still readable, and the disabled look is intentional.",
+      "The tab strip behind the modal is cut off at the right edge, with a scroll chevron. It is under the overlay and does not affect this step.",
+      "The wait banner's text wraps tightly next to the 'Stop waiting' button, which makes the message column narrow. It is still fully readable."
     ]
   }
 }

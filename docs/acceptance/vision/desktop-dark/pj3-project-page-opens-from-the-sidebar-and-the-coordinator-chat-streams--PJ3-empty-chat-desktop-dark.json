@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This is intentional truncation.",
-      "The central empty-state text and the 'Idle' / 'Claude Code Fable · high' metadata are low-contrast muted gray on the dark background but still readable.",
-      "The two-column layout leaves a large empty area in the chat pane, which is expected for an empty chat."
+      "Thread titles in the sidebar are cut off with an ellipsis ('Context · J11 memory jour…', 'Context · Mesh journey fix…'). The ellipsis looks intentional, but the full titles can't be read.",
+      "The meta lines under sidebar threads are cut off ('dev-ma…', 'de…'), so the device names are hidden.",
+      "The tiny monospace labels ('Codex · GPT · high · Worktree · Browser member', 'Claude Code Fable · high') have fairly low contrast against the dark background.",
+      "The empty-chat prompt in the center is muted gray. It's readable but has lower contrast than the other main text."
     ]
   }
 }

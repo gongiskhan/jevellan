@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background tab strip (Runtimes / Rigging / Decisions / …) runs past the right edge of the screen. It is dimmed behind the modal and is probably a horizontal scroller.",
-      "The edit modal covers most of the Rigging page, so the managed list and the 'Restore locally' entry show only partly through the dimmed overlay. This is expected while the modal is open.",
-      "The 'Saved' status text is a muted grey with fairly low contrast against the dark modal, but it is still readable."
+      "Background page content (Rigging tabs, 'browser package' card, 'Restore locally' button) shows through the dim overlay around the modal. This is expected for a modal, but it makes the screen look busy.",
+      "The breadcrumb and the top tab row are partly cut off at the right edge behind the overlay. They can't be used while the modal is open anyway.",
+      "The large empty space in the Content textarea leaves little room for anything else on a phone screen."
     ]
   }
 }

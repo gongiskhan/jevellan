@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Mesh journey fixture · de…'). This is expected for a narrow sidebar, but the full names can't be read here.",
-      "The Override and Stop buttons in the header still look enabled while the thread is attached. That may be intended, but it doesn't match the disabled composer.",
-      "The placeholder text in the disabled composer has low contrast against the dark background. It's still readable."
+      "Sidebar session titles and subtitles are cut off with ellipses ('Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'). This looks intentional, and the full names are probably available elsewhere.",
+      "Several small labels are low-contrast on the dark background: the monospace metadata line under the header, the 'Some native sessions are unavailable' note, the composer placeholder and the 'v0.1.0' label. They are dim but still readable.",
+      "The 'Stop' button in the header is drawn more faintly than 'Why' and 'Override', so it may look disabled. That may be intended while the thread is attached."
     ]
   }
 }

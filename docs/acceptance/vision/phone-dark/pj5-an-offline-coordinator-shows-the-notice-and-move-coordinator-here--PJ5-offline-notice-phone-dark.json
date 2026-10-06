@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Offline' status pill sits under the title on its own row, which leaves some extra space in the header",
-      "There's a lot of empty space between the tab bar and the empty-state text, and between that text and the composer, so the notice looks a little sparse on a phone screen"
+      "The 'Offline' status badge is small, low-contrast monospace text under the title, so it is less prominent than the amber notice banner.",
+      "The amber notice banner's text sits close to its top edge, and the 'Move coordinator here' button is very close to the banner's bottom border, so the padding looks tight."
     ]
   }
 }

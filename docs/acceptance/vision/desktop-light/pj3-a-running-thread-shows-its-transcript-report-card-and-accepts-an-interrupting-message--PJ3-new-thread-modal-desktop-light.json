@@ -10,7 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Title field holds a long instruction ('Read through the project and list what each file is for, one line per file'), while the Task field holds a different, shorter one. The content looks swapped or mismatched, but the layout renders fine."
+      "The title field has the task description in it ('Read through the project and list what each file is for, one line per file'), but the Task field says something else ('PJ3 long: read the project files, then wait for my message.'). The title may have been pre-filled or left over from earlier, but it doesn't match the task."
     ]
   }
 }

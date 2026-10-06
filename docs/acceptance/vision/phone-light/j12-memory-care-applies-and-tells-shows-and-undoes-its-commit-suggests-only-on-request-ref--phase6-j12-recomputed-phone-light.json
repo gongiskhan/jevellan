@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab strip cuts off the last tab ('Devices') at the right edge. It looks like a horizontally scrollable tab row, so the tab is likely still reachable.",
-      "The diff code blocks wrap long paths and lines mid-token, which makes them dense to read at phone width but still legible.",
-      "The page is very long (about 5958px), and the 'Last runs' list repeats many near-identical 'No working rules to suggest' rows, so it is hard to scan.",
-      "The trial log table's column headers wrap onto several lines in narrow columns."
+      "The top tab strip runs off the right edge on the phone width. It looks like a horizontally scrolling tab bar, so the hidden tabs are still reachable.",
+      "The page is very long (about 5958px) and the diff code blocks wrap heavily on a narrow screen, so it's dense to scan but still readable.",
+      "The image I checked was scaled down about 3x, so very small details like the caption text under the cards were only confirmed as roughly legible."
     ]
   }
 }

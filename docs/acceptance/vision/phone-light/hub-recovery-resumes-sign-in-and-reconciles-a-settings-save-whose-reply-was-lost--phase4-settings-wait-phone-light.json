@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Improver' tab label runs under the right scroll arrow in the tab strip. The strip scrolls and has arrows, so the tab can still be reached.",
-      "The fixed wait banner sits right below the 'Pause after a plan' checkbox and covers whatever form content comes after it in this view. The screenshot doesn't show whether the page leaves enough bottom padding to scroll that content clear of the banner.",
-      "The textarea at the top is cut off by the scroll position, which is expected for this view."
+      "The fixed 'Can't reach the hub' banner covers the lower part of the Guards form. The 'Pause after a plan' row sits just above its top edge, and it isn't clear that the rest of the form can scroll out from under the banner (check for bottom padding).",
+      "The tab strip is cut off at both edges ('…es' and 'Improve…'). This looks like a deliberate horizontal scroller with arrow buttons."
     ]
   }
 }

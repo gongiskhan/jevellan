@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Background 'Conversation settings' panel is dimmed by the modal overlay, as expected, so its title text looks faint/blurred",
-      "Large empty dimmed area below the modal on the phone viewport"
+      "The 'Close this work' settlement dialog sits over a dimmed 'Conversation settings' sheet. The background controls (Next step, Model, Effort) show faintly through the overlay, which is expected for a modal.",
+      "There's a lot of empty dimmed space below the dialog on the phone viewport, so the dialog sits in the upper half and isn't vertically balanced.",
+      "The 'Discard...' button label is truncated with an ellipsis. This looks intentional (it opens a confirmation), but it could be mistaken for cut-off text."
     ]
   }
 }

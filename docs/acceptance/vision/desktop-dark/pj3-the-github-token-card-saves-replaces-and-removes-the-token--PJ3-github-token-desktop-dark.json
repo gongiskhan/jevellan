@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Save Git settings' button has low contrast against the card. It looks disabled, which is probably intended because nothing has changed.",
-      "Some sidebar session titles and subtitles are cut short with ellipses ('Context · J11 memory jour…', 'dev-ma…'). This looks like intended truncation.",
-      "The help text under the connection method dropdown is muted grey with fairly low contrast, but it is still readable."
+      "The 'Save Git settings' button has low contrast against the card. This is probably its disabled state because nothing has changed, but it is hard to see.",
+      "Sidebar session titles and subtitles end in ellipses ('J11 memory journ…', 'Mesh journey fixt…'). This is expected truncation, but the full names can't be read here.",
+      "Sidebar subtitles in small monospace text ('Done · Improver sandbox · dev-ma…') are dim and only just readable."
     ]
   }
 }

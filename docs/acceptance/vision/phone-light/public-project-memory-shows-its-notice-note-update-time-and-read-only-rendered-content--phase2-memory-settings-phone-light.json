@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal body is scrolled, so the 'Path on Offline fixture' label sits right under the header divider with almost no top padding.",
-      "The Memory section starts low in the scrollable modal. Anything after 'Memory folder', such as the note update time or rendered content, is below the fold and you have to scroll to see it.",
-      "A faint part of the page behind the modal shows at the far left edge near the top, outside the dialog."
+      "The modal body is scrolled, so the 'Path on Offline fixture' label sits right under the header divider and content above it is out of view. It can still be scrolled back into view.",
+      "Part of the page behind the modal (a '<' glyph and a rounded edge) shows through at the top-left beside the modal header.",
+      "The Memory folder field sits right above the footer divider, so there may be more settings below that need scrolling to reach."
     ]
   }
 }

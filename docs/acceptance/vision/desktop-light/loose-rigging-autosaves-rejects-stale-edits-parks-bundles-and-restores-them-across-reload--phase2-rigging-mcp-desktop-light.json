@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The file label says config.toml, but the content box shows JSON. That may be confusing, but it doesn't affect layout or legibility.",
-      "The content box is much taller than its six lines of content and leaves a large empty area."
+      "The file label says config.toml, but the content editor shows JSON. This could confuse users, though it may be intentional.",
+      "The Saved status and the Preview link are spaced far apart on the same row, so the Preview link is easy to miss.",
+      "The success message 'Item restored to this account.' sits at the bottom of the modal with a large gap above it. It's readable, but it looks detached from the content."
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Large empty area below the Cancel/Save buttons leaves the bottom third of the screen unused.",
-      "The textarea is very tall compared with its short content, so the conflict banner and actions sit lower than they need to."
+      "The page below the Cancel/Save buttons is mostly empty white space.",
+      "The 'Projects fixture' breadcrumb in the header is small and low-contrast pink, though you can still read it."
     ]
   }
 }

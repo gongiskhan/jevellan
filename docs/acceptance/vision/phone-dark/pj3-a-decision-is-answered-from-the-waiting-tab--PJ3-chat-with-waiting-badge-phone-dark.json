@@ -9,10 +9,6 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": [
-      "The Waiting tab badge (1) is small, and it's hard to tell its magenta color from the tab's dark background",
-      "The 'Asked you: Which greeting the page should use?' line is in low-contrast muted gray",
-      "A lot of empty space between the last message and the composer"
-    ]
+    "cosmetic": []
   }
 }

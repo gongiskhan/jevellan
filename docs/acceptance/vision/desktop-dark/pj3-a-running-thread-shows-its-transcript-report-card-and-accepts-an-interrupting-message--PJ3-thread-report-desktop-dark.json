@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This looks like intentional truncation.",
-      "The header status badge says 'Idle' but the 'Stop' button is still shown. That's a mismatched state, but it doesn't stop the screen from rendering properly.",
-      "The metadata line under the title ('Claude Code · Fable · high effort · …') is small, low-contrast monospace text, but it can still be read."
+      "The status badge says 'Idle' while the Stop button is still shown, even though this step is about a running thread",
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · dev-ma…'), which looks like intentional truncation",
+      "The metadata line under the title is in small, low-contrast monospace text, but it can still be read",
+      "The tool-call rows (Read, Grep, Bash, Read) only show the tool name and 'completed', with no detail until expanded"
     ]
   }
 }

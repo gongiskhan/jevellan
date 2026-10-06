@@ -10,7 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dialog says the redo will use 'Reply, Fable, low', but the blurred form behind it seems to show the Effort field set to 'high'. This may be a mismatch between the selected settings and the confirmation text, or the blur may be hiding the real value. It's worth checking against the step's assertions."
+      "The dialog says the redo uses \"Reply, Fable, low\", but the dimmed form behind it shows Effort set to \"high\". The two may disagree, or the background may just be stale. Either way it doesn't affect how the screen renders.",
+      "The background is heavily dimmed and blurred, so the text behind the modal can't be read. This is expected for a modal backdrop."
     ]
   }
 }

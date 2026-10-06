@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Send' button looks pale and low-contrast. It may just be the disabled state shown before an answer is typed, but it's still harder to read than the other controls.",
-      "The large empty area below the decision card makes the page look sparse. That's expected when there's only one item waiting."
+      "The 'Send' button is shown in a muted, disabled-looking style before any text is entered. That's probably intended, but it has low contrast against the card background.",
+      "A lot of empty space sits below the decision card, which is expected for a single pending item."
     ]
   }
 }

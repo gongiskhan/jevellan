@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Answered 1' section is collapsed, so you can't see the answered decision itself without expanding it",
-      "'Waiting for you 0' shows a count of zero next to the 'Nothing waiting.' text, which says the same thing twice",
-      "Most of the screen below the content is empty"
+      "The 'WAITING FOR YOU 0' header and the 'Answered 1' count are small and low in contrast against the dark background, but you can still read them.",
+      "Most of the screen below the content is empty."
     ]
   }
 }

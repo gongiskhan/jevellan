@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip's fourth tab (moon icon) is cut off at the right edge behind the scroll arrow. The arrow button keeps it reachable, so this is a horizontal-scroll affordance, not a hidden control.",
-      "The metadata lines (e.g. 'Local · Parked · Rigging local fixture · Claude Code') use small monospace text in light gray, so contrast and size are on the low side, but they are still readable.",
-      "In the 'browser-promote' row the 'Park' button sits next to metadata that wraps onto a second line. The layout is a bit cramped but nothing overlaps."
+      "The tab after 'Decisions' is cut off at the right edge, and the round scroll-arrow button sits on top of it. It is still reachable by scrolling the tab strip or tapping the arrow.",
+      "The grey monospace metadata lines (e.g. 'Local · Loose · Rigging local fixture · Claude Code') are small and low-contrast, but still readable.",
+      "The 'Park' button on browser-promote sits beside the wrapped metadata text, while the other rows put their action buttons below the text. The layout is inconsistent but nothing overlaps."
     ]
   }
 }

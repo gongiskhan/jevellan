@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab bar is cut off at both edges (the 'Decisions' and 'Devices' tabs are only partly visible). This looks like a horizontally scrolling tab strip, so they can still be reached.",
-      "In the diff blocks, the long file paths and the header lines that start with 'diff --git' wrap onto several lines, which makes the diff dense to read on a phone.",
-      "The 'Commit' label next to 'Undo' in the memory-care card is low-contrast in the dark theme.",
-      "The Trial log table is cramped. Its column headers wrap onto several lines."
+      "The screenshot was downscaled about 3x (390x5945 shown at 131x2000), so small text such as diff lines, commit hashes and the trial-log table cells could only be checked roughly. The layout looks intact, with no overlap and no hidden controls.",
+      "The trial-log table columns look cramped at phone width.",
+      "Long diff blocks make the page very long. The 'Recently decided' section is far down the page, but it is still reachable."
     ]
   }
 }

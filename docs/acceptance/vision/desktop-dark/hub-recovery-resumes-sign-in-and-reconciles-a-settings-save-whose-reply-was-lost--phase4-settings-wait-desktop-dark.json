@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Can't reach the hub' wait toast sits on top of the left part of the save footer and touches the bottom edge of the Guards card. No controls are hidden, and 'Saving…' and the revision note are still visible.",
-      "The Routing profile textarea cuts its last visible line in half at the bottom edge. The rest is reachable by scrolling, but it looks clipped.",
-      "The top 'max' effort row is partly scrolled out of view under the header.",
-      "In the sidebar, the last conversation item ('Exercise …') is cut off by the 'Some native sessions are unavailable' line, and the conversation titles end in ellipses."
+      "The 'Can't reach the hub' toast sits on the bottom edge of the Guards card and the footer divider. It doesn't cover any control or text.",
+      "The Routing profile textarea cuts its last visible line off mid-line ('Current t...'). The textarea scrolls and can be resized, so the text can still be reached.",
+      "The sidebar conversation list cuts off a fourth item at the bottom edge. The list scrolls.",
+      "The top of the settings panel is scrolled partway, so only the 'max' effort row of the card above shows."
     ]
   }
 }

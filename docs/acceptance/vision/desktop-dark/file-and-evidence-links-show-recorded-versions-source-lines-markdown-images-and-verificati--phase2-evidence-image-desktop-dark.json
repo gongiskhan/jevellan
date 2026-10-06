@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The evidence panel shows only a small thumbnail of screen.png in a mostly empty right column. The image is readable as a preview but is not shown at a larger size.",
-      "In the sidebar conversation list, the fourth item is cut off at the bottom edge above 'Some native sessions are unavailable'. This is normal scroll clipping.",
-      "In the main column, the 'Step details · 1 finding' row of the previous step sits right under the sticky header and is slightly cut off at the top. This is normal scroll position."
+      "The evidence image preview in the right panel is a small thumbnail (~100x65px) with a lot of empty space below it, so the image content is hard to make out at this size.",
+      "The sidebar conversation list cuts off a partial row at its bottom edge (around y≈710, above 'Some native sessions are unavailable'). It reads as scroll overflow but looks like stray marks.",
+      "The scrolled main column shows the top of the previous step's card ('Step details · 1 finding') tight against the sticky header, with no visual separation."
     ]
   }
 }

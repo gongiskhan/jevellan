@@ -9,9 +9,6 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": [
-      "The header chip 'Undo across works' uses a monospace font, but the title and body text don't, so it looks inconsistent.",
-      "The large empty space between the 'Settle this work's changes' notice and the composer makes the layout feel unbalanced."
-    ]
+    "cosmetic": []
   }
 }

@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Background page content shows faintly through the area around the modal, including a partly visible path string near the bottom edge; this is expected for a modal overlay and does not block anything",
-      "The 'Open work' link sits in a different place and color than the Cancel/Apply buttons, so it reads as a separate action from the button row"
+      "Both diffs show the - and + lines in the same colour, so removed and added lines can only be told apart by their prefix",
+      "The background page behind the dialog shows through the scrim and is clipped at the edges (nav tabs, a temp path line near the bottom); it is dimmed and does not overlap the dialog content",
+      "The \"Open work\" link sits close below Cancel/Apply with uneven spacing, but each control is still separate and easy to tap"
     ]
   }
 }

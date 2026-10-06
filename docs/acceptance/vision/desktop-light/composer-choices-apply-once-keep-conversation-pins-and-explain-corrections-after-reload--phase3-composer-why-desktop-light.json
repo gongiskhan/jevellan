@@ -10,11 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Plan' row at the top of the Why panel is partly hidden under the sticky panel header (scroll position), so its label and value are clipped",
-      "The last account line in the Why panel ('Conversation controls fixture: disabled') is cut off at the bottom edge but can be reached by scrolling",
-      "In the sidebar, a partly visible conversation row is clipped above 'Some native sessions are unavailable' at the edge of the scroll area",
-      "Sidebar conversation titles and subtitles are cut short with an ellipsis (e.g. 'Exercise composer choic…', 'Explain the memorybrows…')",
-      "The step 1 card in the middle column is clipped under the sticky conversation header, and the visible list starts at item 2 (scroll position)"
+      "The right 'Why this step' panel is scrolled, so the top stage row ('Plan') is half-hidden under the sticky header and the bottom 'Conversation controls fixture' row is cut off at the viewport edge. Both are normal scroll clipping.",
+      "The middle transcript is scrolled, so the top of the plan card (step 1) is cut off at the top edge.",
+      "In the sidebar list, the conversation row below 'Explain the memorybrows…' shows only a sliver above the 'Some native sessions are unavailable' row (scroll clipping).",
+      "Sidebar conversation titles and metadata are cut off with an ellipsis ('Exercise composer choic…', 'Done · Automatic fixture · dev-m…'), but the full text shows in the main view."
     ]
   }
 }

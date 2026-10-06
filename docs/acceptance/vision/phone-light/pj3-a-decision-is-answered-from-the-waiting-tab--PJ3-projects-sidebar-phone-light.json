@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The subtitle of the third shell session ('Done · Mesh journey fixture · dev-mad…') is cut off with an ellipsis. The full name still shows in the session title and the environment picker.",
-      "Main content behind the sidebar drawer shows through the dimmed backdrop on the right edge. This is expected for a drawer and doesn't block anything."
+      "The third shell session's subtitle is cut off with an ellipsis ('dev-mad…'). The full value 'dev-madrid' is shown in the environment picker and the other rows.",
+      "Main-screen content behind the dimmed overlay shows to the right of the drawer (partial timestamps, 'reeting', 'n'). This is normal for a drawer, but it looks a little busy."
     ]
   }
 }

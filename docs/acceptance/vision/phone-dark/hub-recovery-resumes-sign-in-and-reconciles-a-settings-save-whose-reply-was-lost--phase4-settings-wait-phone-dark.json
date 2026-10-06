@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fixed 'Can't reach the hub' wait banner sits over the bottom of the settings form, right under the 'Pause after a plan' checkbox. Content further down is hidden behind it unless the page has enough bottom padding to scroll it clear. This screenshot can't confirm that.",
-      "The 'Improver' tab label touches the right scroll arrow in the horizontally scrolling tab bar. This is the expected overflow behaviour, but the label looks slightly crowded.",
-      "The textarea above the Guards card is cut off at the top edge because the page is scrolled. It's partial, unreadable text, but this is scroll position, not a layout fault."
+      "The fixed 'Can't reach the hub' banner sits over the bottom of the Guards form. 'Pause after a plan' is still visible just above it, but whatever comes after it is covered at this scroll position. Check that the page has enough bottom padding to scroll everything clear of the banner.",
+      "The scroll arrows clip the tab labels at both ends ('es' on the left, 'Improve' on the right). This is expected for a horizontally scrolling tab bar.",
+      "The textarea at the top is partly hidden under the sticky tab bar, so its text is cut off. This comes from the scroll position, not the layout."
     ]
   }
 }

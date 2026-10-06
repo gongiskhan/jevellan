@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Two closing banners appear together and partly contradict each other: one says 'Work closed. Its changes are kept, and this checkout stays reserved for this conversation.' and the other says 'Work closed and published.'",
-      "In the plan card, the 'Proposed plan' heading and the 'The full fixture plan' subtitle are crowded together with very little space between them.",
-      "The plan step has a 'Changes' button with no file count, while the implement step's button shows '· 1 file', so the two buttons look inconsistent.",
-      "Small grey text such as 'Local time', '1 tool' and 'Step details' has low contrast against the dark background, but it is still readable."
+      "Two closing banners are stacked and say slightly different things: 'Work closed. Its changes are kept, and this checkout stays reserved for this conversation.' and 'Work closed and published.' Reading them together is a bit redundant or confusing.",
+      "In the plan card, the 'Proposed plan' heading and the 'The full fixture plan' subtitle sit very close together with almost no space between them.",
+      "The 'Why' pill uses a pink/magenta color that stands out from the neutral 'Changes' and 'Change step' pills next to it."
     ]
   }
 }

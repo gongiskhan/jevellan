@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Project saved.' toast covers the Open, Browse memory and Context buttons on the last project card ('Undo across works'). The toast is temporary and can be dismissed, and in a full-page capture it shows up over whatever content sits at the bottom.",
-      "The settings tab strip cuts off the last tab after the 'C'. Scroll arrows are shown, so the hidden tabs can still be reached.",
-      "Long project paths wrap mid-word at hyphens (e.g. 'activity-/context-project'). They are still readable."
+      "The 'Project saved.' toast sits over the Open / Browse memory / Context buttons of the last card ('Undo across works'). The toast is temporary and can be dismissed, so those buttons are only hidden briefly.",
+      "The settings tab strip cuts off the tabs at its left and right edges ('…ur' and 'D…'). The strip scrolls sideways and has arrow buttons, so those tabs can still be reached."
     ]
   }
 }

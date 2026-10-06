@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles are truncated with ellipses (e.g. 'Exercise answer options: ...', 'Context · J11 memory jour...'), which is expected truncation.",
-      "The 'Memory care' row shows its 'Apply and tell me' mode as a grayed-out input-style box, while the other rows show plain 'Suggest' text, so the controls look inconsistent.",
-      "The 'Save schedule and jobs' button looks low-contrast or disabled."
+      "Sidebar session titles are cut off with ellipses (e.g. 'Exercise answer options: ...', 'Context · J11 memory jour...'), and so are their subtitles.",
+      "The 'Memory care' mode is shown in a greyed input-style box ('Apply and tell me'), while the other jobs show plain 'Suggest' labels, so the styling doesn't match.",
+      "The 'Save schedule and jobs' button is low-contrast and looks disabled.",
+      "The dismissed card shows the quote '\"Plans stay on Fable.\"' as small, faint text with no label."
     ]
   }
 }

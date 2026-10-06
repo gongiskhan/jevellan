@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The editor shows JSON content while the file is labelled config.toml, which may confuse readers (this is a content issue, not a rendering one).",
-      "The page behind the modal is heavily dimmed, so the Rigging page itself is illegible in this capture. This is expected while the modal is open."
+      "The file label reads 'config.toml', but the editor shows JSON content. It renders fine, but the label and content may not match.",
+      "The 'Item restored to this account.' toast sits inside the modal and leaves extra empty space under the helper text."
     ]
   }
 }

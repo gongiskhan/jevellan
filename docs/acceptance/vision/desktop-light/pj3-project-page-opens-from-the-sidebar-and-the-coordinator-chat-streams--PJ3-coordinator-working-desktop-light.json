@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory jour…', 'dev-…'), but the overflow menus are still reachable",
-      "The 'Working…' status pill text is truncated with an ellipsis",
-      "The chat area is mostly empty whitespace between the user message and the 'Coordinator is working…' indicator"
+      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). Hovering may reveal the full text.",
+      "The chat column has a large empty space between the single user message and the composer."
     ]
   }
 }

@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar session titles are cut off with ellipses (for example 'Exercise answer options: c…' and 'Context · J11 memory journ…'). That looks intended, and the full titles probably show on hover.",
-      "The diff after View changes is long and uses dense monospace text. It is still readable, but there are no file headers or separators to break up the files.",
-      "Most of the 'Last runs' list repeats 'No working rules to suggest.', which crowds out the relevant memory-care entry.",
-      "The 'Run nightly at 03:00 AM' time input looks disabled and low contrast because its checkbox is unchecked."
+      "The memory care diff is shown expanded inline and makes the page very tall. Because the diff has no height limit, it pushes the Schedule and Last runs panels far down.",
+      "Sidebar session titles are cut off with ellipses, for example 'Exercise answer options: c...' and 'Context · Mesh journey fix...'. The full titles aren't visible, but the truncation is intentional.",
+      "Small monospace metadata text, such as the commit hash 'dc21a92277' and the note file paths, has low contrast against the dark background."
     ]
   }
 }

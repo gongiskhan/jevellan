@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Exercise answer options: change the valu...'). The full text still appears in the subtitle line and in the user message bubble.",
-      "The 'Local time' label sits alone on its own line under the start/end/duration row, which looks slightly disconnected."
+      "Header title is truncated with an ellipsis ('Exercise answer options: change the valu…'). The full text is shown just below it, so this is expected header behavior.",
+      "The 'Or type a different answer below.' hint and the 'Started/Ended' timestamp labels use low-contrast gray on the dark background. They are still readable."
     ]
   }
 }

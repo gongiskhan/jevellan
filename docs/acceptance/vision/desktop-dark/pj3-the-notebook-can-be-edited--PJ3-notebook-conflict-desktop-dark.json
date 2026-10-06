@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles are truncated with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…') and subtitles are cut off ('dev-ma…', 'dev-…', 'de…')",
-      "The notebook textarea is much taller than its three lines of content, which leaves a large empty area above the conflict banner"
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Mesh journey fixt…', 'dev-ma…'). This is intentional overflow handling.",
+      "The notebook textarea leaves a large empty area below a short note, so the conflict banner and the Save/Cancel buttons sit far down the panel."
     ]
   }
 }

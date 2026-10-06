@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory jour…', 'dev-ma…'), which is expected for long names",
-      "Large empty area in the main conversation pane below the notice banner"
+      "Sidebar thread titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This is expected truncation.",
+      "The large empty conversation area below the notice makes the screen look sparse."
     ]
   }
 }

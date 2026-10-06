@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory jour…', 'Done · J11 memory journey · dev-…'), but these are deliberate truncations and the full names are still identifiable",
-      "Header metadata line and the 'Placed without Jev: authentication failed' chip use small monospace text that is a little dim against the dark background, but it can still be read",
-      "Large empty area between the report card and the message composer"
+      "Sidebar session titles and subtitles are cut off with ellipses ('Context · J11 memory journ…', 'Context · Mesh journey fixt…', 'dev-ma…'). The full names are probably available elsewhere.",
+      "Most of the main panel below the report card is empty, so the page looks sparse.",
+      "The 'Placed without Jev: authentication failed' chip is small amber monospace text. It is readable but could stand out more."
     ]
   }
 }

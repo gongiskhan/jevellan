@@ -10,8 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Edit the after text' box still shows 'Preferred for review steps.' while the revised change diff shows the plain-words revision 'Only for reviews of the improver fixture.' The two don't match, which could confuse the user about what 'Apply this' will commit.",
-      "There is no visible label or loading state saying which input (edited text or plain-words revision) produced the 'Revised change' diff."
+      "The revised-change diff line ('+ Strong default for planning, implementation and reviews. Only for reviews of the improver fixture.') runs almost to the right edge of the dark code block. A longer revision may wrap or overflow."
     ]
   }
 }

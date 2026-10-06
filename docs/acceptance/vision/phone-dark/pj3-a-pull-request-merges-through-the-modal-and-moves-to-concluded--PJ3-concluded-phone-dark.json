@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The running thread's title 'Read through the project and list what each …' is cut off with an ellipsis on one line, so the full title isn't visible without opening the thread.",
-      "The summary 'Added greeting.txt with a short greeting and committed …' under 'Add a greeting' is cut off with an ellipsis.",
-      "A lot of empty space is left below the Concluded list. This is expected with only 3 threads."
+      "The running thread title 'Read through the project and list what each …' is cut off with an ellipsis, which is expected for long titles.",
+      "The 'Add a greeting' summary 'Added greeting.txt with a short greeting and committed …' is cut off with an ellipsis, which is expected for summary lines.",
+      "The 'Idle' status chip in the header and the 'Running 1' section showing a running thread may look inconsistent at first glance, but this doesn't block use."
     ]
   }
 }

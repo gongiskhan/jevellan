@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The warning banner ends with \"Pick the next step:\" but no step options follow it, so it reads like an unfinished prompt.",
-      "The Account eligibility list runs past the bottom of the screen. This looks like normal scrolling content, but the screenshot doesn't show its end.",
-      "Memory entries show raw filenames like \"Vitest convention for mesh.md\" and \"Existing.md\" in monospace, which looks unpolished."
+      "The account list runs past the bottom of the viewport (it ends at 'Evidence fixture: unsupported'). It looks like normal scrolling content, but this capture doesn't confirm whether more rows follow.",
+      "The chosen memory filenames ('Vitest convention for mesh.md', 'Global test imports for mesh.md', 'Existing.md') use small, light monospace text with low contrast, though it is still readable.",
+      "The warning banner text 'Pick the next step:' ends with a colon but nothing follows it inside the banner."
     ]
   }
 }

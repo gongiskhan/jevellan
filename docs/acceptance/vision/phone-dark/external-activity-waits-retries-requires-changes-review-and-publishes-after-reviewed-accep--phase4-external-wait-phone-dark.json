@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Exercise external activity guards befor...'), but the full text appears in the subtitle line and the message bubble.",
-      "There is a large empty area between the 'Try automatic again' button and the composer."
+      "The header title is cut off with an ellipsis (\"Exercise external activity guards befor...\"). The full text still shows in the subtitle line and the message bubble.",
+      "A large empty gap sits between the \"Try automatic again\" button and the composer at the bottom.",
+      "The amber \"Blocked\" badge is small and low-contrast against the dark header."
     ]
   }
 }

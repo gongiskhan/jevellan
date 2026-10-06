@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Project saved.' toast sits over the Open / Browse memory / Context buttons on the last card ('Undo across works'). This is temporary: the toast can be closed with its × button, so the buttons are still reachable. Extra bottom padding would stop the toast covering the last card.",
-      "The top settings tab strip cuts off its last visible tab (shows only 'C…'). The strip scrolls sideways and has left and right arrow controls, so the hidden tabs can still be reached.",
-      "Long project paths break mid-word across lines (e.g. 'activity-' / 'context-project', 'jevellan-browser-' / 'pSPEPt/user/picked-project'). They are still readable."
+      "The 'Project saved.' toast sits over the bottom card ('Undo across works') and partly hides its Open, Browse memory and Context buttons. The toast is temporary and can be dismissed, so the buttons are still reachable.",
+      "In the settings tab strip, the first and last tabs are cut off at the screen edges ('er', 'B'). The strip scrolls sideways and has visible left and right arrow buttons, so this is expected.",
+      "Long project paths break in the middle of words (e.g. 'activity-/context-project', 'create-/project'). They are still readable."
     ]
   }
 }

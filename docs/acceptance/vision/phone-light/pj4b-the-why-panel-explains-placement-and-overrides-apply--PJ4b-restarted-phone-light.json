@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Large empty area between the last report card and the footer, so the page looks unfinished at phone width.",
-      "Metadata line ('Claude Code · Opus · low effort · Projects Claude · Worktree on jv/tidy-the-readme-wording-1vec2h · dev-madrid') wraps across three lines in small monospace text and is hard to scan.",
-      "Both report cards just say 'Done for now.', so the restarted thread shows little content."
+      "The worktree/metadata line wraps across three lines in small monospace text, which makes it a bit dense to read.",
+      "There's a lot of empty space between the last report card and the 'This thread has ended' footer."
     ]
   }
 }

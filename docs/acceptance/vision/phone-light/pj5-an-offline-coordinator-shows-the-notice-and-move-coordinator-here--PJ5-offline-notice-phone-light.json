@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Large empty area between the tab bar and the centered empty-state text, so the screen looks sparse on phone",
-      "The 'Offline' chip below the title is small and low-contrast"
+      "The 'Offline' status pill sits on its own row under the header, so it reads as cut off from the title",
+      "The 'Offline fixture' device name in the notice looks like test data",
+      "The empty-state text is centered vertically with a lot of blank space above and below it"
     ]
   }
 }

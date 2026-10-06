@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Change the value to two ...', 'Context · J11 memory journ...'). This is expected for narrow list items.",
-      "The project name 'dev-madrid' is cut off in the sidebar session subtitles ('dev-ma...', 'de...').",
-      "The changed-files header reads '1 changed files', which is grammatically wrong (should be '1 changed file').",
-      "There are two stacked closure banners ('Work closed. Its changes are kept...' and 'Work closed and published.'), which look redundant."
+      "The sidebar conversation list cuts off a fourth item partway down, leaving only a sliver of text visible above 'Some native sessions are unavailable'. It looks like the list scrolls, so it's still reachable.",
+      "Long titles and subtitles in the sidebar are shortened with an ellipsis (e.g. 'Change the value to two …', 'Manual conversation fixtu…').",
+      "The 'Waiting for you' filter chip and its count badge '4' sit very close together."
     ]
   }
 }

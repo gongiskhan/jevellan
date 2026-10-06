@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal's dismiss button (×) for the 'Current file reloaded' notice is very small and low-contrast",
-      "The muted grey helper text ('This bundle has 2 files…', 'Local edits save automatically on this account.') is small and has fairly low contrast against the dark modal"
+      "The background page is dimmed and blurred by the modal overlay, which is expected for a modal.",
+      "The 'Saved' status label is low-contrast gray against the dark modal background but still readable."
     ]
   }
 }

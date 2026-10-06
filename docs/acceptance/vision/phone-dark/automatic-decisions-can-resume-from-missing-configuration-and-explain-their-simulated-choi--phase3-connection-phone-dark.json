@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Effort guide single-line inputs cut off their longer descriptions (low, high, xhigh, max) at the field edge. You can still read the full text by scrolling inside each field.",
-      "The Routing profile textarea cuts off its last line at the bottom edge. The field can be scrolled and resized.",
-      "The tab bar runs off the screen to the right ('Improver' and beyond), but scroll arrows are there to reach the other tabs.",
-      "The 'Jev key saved.' toast sits over the bottom of the page under the 'Saving creates a configuration revision.' note. It doesn't cover any controls."
+      "The single-line Effort guide inputs (low, high, xhigh, max) cut their text off at the right edge, e.g. 'Quick, obvious work: short answers, one-line fixes…'. You can still scroll inside each field, but the full guidance isn't visible at a glance.",
+      "The settings tab strip clips the labels at both ends ('…es' on the left, 'Improve…' on the right). The arrow buttons scroll it, so the tabs are still reachable.",
+      "The Routing profile textarea is cut off mid-sentence at the bottom. It scrolls and can be resized, so nothing is lost.",
+      "The 'claude' provider label and the 'Supported efforts: low, high' line in the model card are small, low-contrast grey text on the dark background.",
+      "The 'Jev key saved.' toast is pinned to the bottom of the screen. In this capture it sits below the 'Saving creates a configuration revision.' note without covering it, but it could cover content further up when the page is scrolled."
     ]
   }
 }

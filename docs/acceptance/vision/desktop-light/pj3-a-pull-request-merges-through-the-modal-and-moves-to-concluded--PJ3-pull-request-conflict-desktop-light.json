@@ -7,14 +7,13 @@
   "screenshot": "docs/acceptance/screenshots/PJ3-pull-request-conflict-desktop-light.png",
   "expected": "the Jevellan web app \"pull request conflict\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PJ3 a pull request merges through the modal and moves to Concluded\"; the other steps are judged in their own screenshots)",
   "result": {
-    "ok": false,
-    "blocking": [
-      "The top of the page is cut off. The 'Jevelian' brand name in the top-left is only partly visible, and the 'New thread' and 'Notebook' buttons in the top-right are clipped at the top edge, so their labels can't be fully read. There is also an empty strip at the bottom of the viewport. Together these suggest the whole page has scrolled up by about 30px because the document is taller than the viewport, which pushes the header controls partly out of view."
-    ],
+    "ok": true,
+    "blocking": [],
     "cosmetic": [
-      "The running-task title 'Read through the project and list what each file is…' in the right panel is cut short with an ellipsis.",
-      "Sidebar session titles and subtitles ('Context · J11 memory jour…', 'Mesh journey fix…', 'dev-ma…') are cut short with ellipses.",
-      "The thread shows both 'Checks failing' and 'Checks passing' cards for PR #1, plus a separate conflicts card, so the activity feed is somewhat repetitive."
+      "The 'Merge' button on the PR card is grey and looks disabled next to the 'Conflicts' badge, but it's still visible. If it is meant to be disabled, nothing on screen explains why.",
+      "Long titles end in '…' in the Running list ('Read through the project and list what each file is …') and in the sidebar session rows ('Context · J11 memory jour…', 'Done · Improver sandbox · dev-ma…'). These are intentional cuts and the meaning stays clear.",
+      "The coordinator transcript repeats many 'Noted.' replies, which adds vertical noise.",
+      "The PR card shows the green 'Checks passing' badge right next to the red 'Conflicts' badge, which can be slightly confusing to read."
     ]
   }
 }

@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Primary 'Publish' button uses a light fill while 'Keep them' and 'Discard…' use outlined dark styling. This is probably intentional emphasis, but the contrast between the two styles is strong.",
-      "The background settings panel behind the modal scrim is dimmed and hard to read. This is expected for a modal overlay.",
-      "There is a large empty dark area below the dialog on the phone viewport."
+      "The modal sits roughly in the vertical center and leaves a large empty dimmed area below it on the phone viewport.",
+      "The dimmed 'Conversation settings' panel behind the modal can still be faintly seen, which adds a little visual noise."
     ]
   }
 }

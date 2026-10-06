@@ -10,8 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The confirmation text names the target as 'Reply, Fable, high'. The 'Reply' label looks like it might be a placeholder or an odd name for the agent or mode.",
-      "The dialog covers the background step actions. That's expected for a modal, but it hides the step 1 'Changes' row and the newer-request card."
+      "The background is blurred and dimmed behind the modal, so the conversation content is hard to read. This is expected for a modal overlay."
     ]
   }
 }

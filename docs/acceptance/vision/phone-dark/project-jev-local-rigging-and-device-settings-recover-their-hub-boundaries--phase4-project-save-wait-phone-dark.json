@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The orange Git policy notice is cut off at the bottom edge of the scrollable form area ('history. The original branch is preserved…'). This looks like normal scroll clipping above the fixed footer, not lost content.",
-      "The long path in 'Path on dev-madrid' is clipped inside its input box, which is normal for a single-line field.",
-      "The disabled 'Saving…' button has low contrast against the dark background, but you can still read it."
+      "The git policy notice is cut off at the bottom edge of the scrolling form area, mid-sentence ('The original branch is preserved…'). It looks like normal scroll overflow, but the end of the notice can't be seen without scrolling.",
+      "The 'Path on dev-madrid' field cuts off the long path. This is normal behavior for a single-line input.",
+      "The 'Saving…' button is disabled and low contrast. That is expected while the save is pending, but the label is faint."
     ]
   }
 }

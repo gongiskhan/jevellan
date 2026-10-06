@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal body is scrolled partway down, so the 'Path on Offline fixture' label sits right against the header divider and looks slightly clipped at the top edge.",
-      "The Memory section is at the very bottom of a long scrolling modal, so the 'Memory folder' field sits just above the sticky Cancel/Save footer with little breathing room."
+      "The modal body is scrolled, so the content above 'Path on Offline fixture' is cut off under the header. This is normal scrolling, but a reader can't see that earlier content in this screenshot.",
+      "The 'Memory folder' field sits right at the bottom edge of the scroll area, just above the footer, with little space below it."
     ]
   }
 }

@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis (\"Read through the project an...\"). This looks deliberate, and the full task text appears in the Prompt card.",
-      "The terminal attach command at the bottom is cut off (\"thread_01M484SB308NABG...\"). A copy button sits next to it, so the full command can still be copied.",
-      "The metadata lines (worktree path, host) wrap over several lines with a dangling \"·\" separator, which looks a little ragged."
+      "The header title is cut off with an ellipsis ('Read through the project an...'). The full task text still appears in the Prompt card.",
+      "The 'Take over in a terminal' attach command is cut off ('thread_01M48JYSHQ85FM7...'), but the copy button next to it still gives you the full command.",
+      "The metadata line wraps the long worktree branch name across several lines in an awkward way ('Worktree on / jv/read-through-the-project-and-list-what-e-kdxgat · / dev-madrid').",
+      "The 'Idle' status badge is dim, low-contrast grey on the dark background, though it can still be read."
     ]
   }
 }

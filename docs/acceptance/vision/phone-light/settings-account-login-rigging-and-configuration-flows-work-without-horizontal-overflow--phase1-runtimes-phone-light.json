@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab bar is clipped at the right edge: the last tab's label is cut off behind the scroll chevron button. It is still reachable by scrolling or with the chevron.",
-      "The note 'Codex sign-ins are kept per device for now.' appears in the Claude Code runtime's device list, which looks like copy from the Codex section was reused by mistake.",
-      "The long 'Login recovery <UUID>' account titles wrap onto two lines and make the cards feel crowded, but they are still readable."
+      "The tab strip clips its fourth tab at the right edge. A scroll arrow is shown, so the tab is still reachable.",
+      "Under Claude Code, the device list footer says \"Codex sign-ins are kept per device for now.\" This looks like the wrong copy for that runtime.",
+      "The long \"Login recovery <UUID>\" account names wrap onto two lines. They're still readable but look cluttered.",
+      "The Claude Code section repeats the Rigging device rows (dev-madrid, Browser member, Offline fixture) that also appear under Codex. The page gets long, but nothing overlaps."
     ]
   }
 }

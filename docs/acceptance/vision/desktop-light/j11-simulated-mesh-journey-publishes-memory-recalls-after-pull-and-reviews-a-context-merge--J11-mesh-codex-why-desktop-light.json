@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation list: the fourth item (starting 'J8 ...') is cut off at the bottom of the scroll area, just above 'Some native sessions are unavailable'. The list appears to scroll.",
-      "Right 'Why this step' panel: the account list runs past the bottom of the viewport, and 'Login fixture: unsupported' is partly cut off. The panel appears to scroll.",
-      "Sidebar conversation titles and subtitles are cut short with an ellipsis (e.g. 'Explain how to write a Vit…', 'J11 memory jou…').",
-      "The right panel repeats the 'Jev is unavailable (authentication failed). Pick the next step:' banner but has no controls next to it. The controls are only in the main column card."
+      "Right 'Why this step' panel's account list is cut off at the bottom edge ('Login fixture: unsupported' only partly visible); it looks like a scrollable panel, so the content can still be reached",
+      "Sidebar conversation list cuts off the fourth entry ('J8 ...') above 'Some native sessions are unavailable'; it looks like a scroll overflow",
+      "Conversation titles and subtitles in the sidebar are truncated with ellipses ('Explain how to write a Vit…', 'J11 memory jou…')",
+      "The amber 'Jev is unavailable (authentication failed)' notice appears twice: in the Why panel and in the main step picker"
     ]
   }
 }

@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Effort guide inputs (high, xhigh, max, and almost low) cut off their text at the right edge on this narrow screen. This is normal for single-line inputs, but you can't read the full guidance without focusing the field.",
-      "The Routing profile textarea cuts off its last visible line at the bottom edge. The content scrolls, but it looks clipped.",
-      "The 'Jev key saved.' toast is pinned near the bottom of the page. It sits close to the 'Saving creates a configuration revision.' footer but doesn't cover any controls in this capture.",
-      "The tab strip (Rigging / Decisions / Improver) cuts off at the edges and relies on the arrow buttons to scroll. It's usable, but other tabs aren't visible."
+      "Effort guide inputs (high, xhigh, max, and to a lesser degree low) clip their text at the right edge of the field; you can still read the full text by scrolling inside the field.",
+      "The Routing profile textarea is cut off at the bottom of its visible area; the rest is reachable by scrolling inside the textarea.",
+      "The tab strip cuts off its neighbouring tabs ('…s' and 'Improve…') at the edges; scroll arrows are present.",
+      "The 'Jev key saved.' toast sits near the page footer but doesn't cover any controls."
     ]
   }
 }

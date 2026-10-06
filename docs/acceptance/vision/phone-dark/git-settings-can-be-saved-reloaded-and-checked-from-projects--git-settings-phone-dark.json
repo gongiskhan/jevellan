@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip is scrolled, so the first tab is clipped to \"es\" at the left edge. It can still be reached with the scroll arrow.",
-      "Muted helper text and the disabled \"Save Git settings\" button are low-contrast against the dark card, but still readable.",
-      "The long repository path in the \"Check a project\" result wraps in the middle of a word (\"activity-/context-origin.git\")."
+      "The tab strip clips its edge tabs ('…vices' on the left, 'Configurati…' on the right). Scroll arrows are shown, so this is the expected way the strip scrolls.",
+      "The secondary/helper text (e.g. the connection method description, the 'This choice is saved only…' note and the token description) is fairly low contrast against the dark card background, but it is still readable.",
+      "The 'Save Git settings' button looks muted or disabled with low contrast. This may be on purpose because nothing has changed yet.",
+      "The long remote path wraps in the middle of a word ('activity-' / 'context-origin.git'). It is still fully readable."
     ]
   }
 }

@@ -10,11 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab bar runs to the right edge, so the 'Devices' tab sits flush against it and looks slightly clipped. It can probably still be reached by scrolling the tab bar.",
-      "The commit hash text ('Commit f7d78544be') and the timestamps are dim grey and low-contrast on the dark background.",
-      "Long titles in the 'Last runs' list (e.g. 'AGENTS.md · Checkpoint recovery fixture') wrap onto several lines and press up against the right-aligned date/'Open log' column.",
-      "The diff code blocks wrap long lines, so the -/+ diff lines are harder to scan.",
-      "The page is very long (about 4,661px tall), and the content tied to this step (the pending AGENTS.md card and the memory care applied/undo card) sits at the top, with a lot of unrelated settings and history below it."
+      "The top tab strip cuts off the third tab (shows only \"De…\") at the right edge. It looks like a horizontally scrollable tab bar, so the tab is still reachable.",
+      "The \"Commit b4ebd19d0\" label on the Memory care applied card is low-contrast grey on dark and hard to read at a glance.",
+      "Diff lines in the Routing cards wrap mid-phrase (e.g. \"Preferred for plan steps.\"), which makes them a little harder to scan."
     ]
   }
 }

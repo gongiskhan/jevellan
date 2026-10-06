@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The memory care summary contradicts itself: the header says 'Merged 1 note, archived 0, fixed 1 link, reconciled 1', but the diff shows a note being deleted (test-conventions.md).",
-      "Long sidebar conversation titles are cut off with ellipses (e.g. 'Exercise answer options: c...'). They are still readable and work as intended."
+      "Sidebar session titles are truncated with ellipses (e.g. 'Exercise answer options: c...', 'Context · J11 memory jour...'), which is normal truncation.",
+      "The 'Save schedule and jobs' button looks disabled or low-contrast. This is likely intentional because nothing has changed.",
+      "The 'Schedule and jobs' panel and the 'Last runs' panel have different heights, which leaves empty space below the schedule panel."
     ]
   }
 }

@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Large empty gap between the user message and the progress stage at the bottom of the transcript",
-      "The spinner icon sits on its own line above the 'Jev is choosing the next step' label, and the '0s' timer floats alone at the far right, so the stage block looks a little disconnected",
-      "The magenta '0s' timer is small and low-contrast against the dark background",
-      "The send button's arrow has a dim background, so it looks disabled while the composer is empty"
+      "The 'Working' status chip uses a magenta-on-dark style, which is a little low-contrast but still readable.",
+      "There is a large empty gap between the user message and the progress stage near the bottom.",
+      "The progress spinner icon sits on its own line, apart from the stage title.",
+      "The '0s' timer is small and pushed to the far right edge."
     ]
   }
 }

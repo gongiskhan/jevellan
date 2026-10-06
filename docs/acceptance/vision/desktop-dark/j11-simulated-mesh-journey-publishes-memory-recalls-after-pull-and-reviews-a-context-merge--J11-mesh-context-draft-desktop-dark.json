@@ -10,8 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The diff preview shows a bare '+' line at the end of the AGENTS.md block and bare '-' lines (trailing blank lines). They look like empty diff markers.",
-      "The 'Current instruction files' disclosure sits close to the dialog's bottom edge, with tight padding."
+      "The diff lines are plain monospace text without red/green coloring, so removed and added lines can only be told apart by the leading -/+ characters.",
+      "The 'Open work' link sits below the Cancel/Apply buttons, apart from the other controls, so it's easy to miss.",
+      "Both diffs end with lines that are just '-' or '+' (trailing blank-line changes), which look like stray characters.",
+      "The overlay dims the background a lot, but the sidebar text behind it is still faintly visible. This is expected for a modal."
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Background is heavily blurred and dimmed behind the modal, which is intentional for a modal overlay; the sidebar, thread list and Pull requests panel can't be read, but the modal is the subject of this screen",
-      "Modal body text is plain: 'Add a greeting' isn't set apart (no quotes or emphasis) from the rest of the sentence"
+      "The modal body sentence runs to almost the full dialog width, leaving very little right padding before the border.",
+      "The blurred background makes the page behind the modal unreadable. That's expected for a modal backdrop."
     ]
   }
 }

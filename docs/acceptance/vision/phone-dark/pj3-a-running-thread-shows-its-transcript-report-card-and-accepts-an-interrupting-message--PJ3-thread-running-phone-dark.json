@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis (\"Read through the project an...\"). The full prompt is shown in the Prompt card below, so nothing is lost.",
-      "The terminal attach command is cut off (\"jevellan thread attach thread_01M484SB308NABG...\"). The copy button next to it still copies the full command.",
-      "The status text \"Working on turn 1...\" may be cut off rather than ending in a deliberate ellipsis.",
-      "The metadata line wraps the long worktree path awkwardly across several lines, but it is still readable."
+      "The header title is cut off with an ellipsis ('Read through the project an...'). This looks like intentional truncation, and the full task text is shown in the Prompt card.",
+      "The status text 'Working on turn 1...' looks shortened, which may hide part of the status message.",
+      "The terminal command 'jevellan thread attach thread_01M48JYSHQ85FM7...' is cut off by the copy button. The copy control still works, so the full command can be copied.",
+      "The tool-call rows (Read, Grep, Bash, Read) show only generic names and no details, so the transcript gives little context until a row is expanded.",
+      "There is a large empty gap between the tool list and the composer."
     ]
   }
 }

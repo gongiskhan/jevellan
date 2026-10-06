@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab bar is cut off at the right edge (the 'Devices' tab is partly hidden). It looks like a horizontally scrollable tab strip, so the tab is still reachable.",
-      "Diff blocks and the Trial log table use very small monospace text that is dense at phone width, but it is still legible.",
-      "The page is very long (about 5855px), so the 'Recently decided' and 'Last runs' sections are far below the 'Suggest only' setting in the Schedule section."
+      "The top tab strip runs past the right edge of the screen; the tab after 'Improver' is cut off. It looks like the strip scrolls sideways.",
+      "Long diff lines in the code blocks wrap and look crowded on a phone screen, though they stay readable.",
+      "I could only check the 390x5855 capture at reduced size, so very small text (diff contents, run timestamps) could not be confirmed in detail."
     ]
   }
 }

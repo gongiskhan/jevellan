@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Recorded checkpoint' hash is set in very small, low-contrast monospace text. It is still readable but hard to scan.",
-      "In the sidebar, the last conversation row is partly clipped where the list scrolls, just above the 'Some native sessions are unavailable' line. This is normal scroll overflow, not hidden controls.",
-      "The step 2 action buttons in the main column are partly hidden behind the 'Jump to latest' bar and the composer. This is the expected scroll position and does not affect the evidence panel."
+      "In the sidebar, the conversation list cuts off a partly visible row just above 'Some native sessions are unavailable'. Only fragments of it show, but the list scrolls, so it is still reachable.",
+      "In the middle column, the scrolled 'Step details · 1 finding' line sits tight against the sticky conversation header and is partly covered by it.",
+      "The right evidence panel leaves a lot of empty space below the code excerpt and the 'Open working copy' and 'Open recorded step' links."
     ]
   }
 }

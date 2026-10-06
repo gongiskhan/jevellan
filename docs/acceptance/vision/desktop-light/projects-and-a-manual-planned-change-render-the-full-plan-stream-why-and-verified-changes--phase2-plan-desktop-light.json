@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Change the value to two ...', 'Context · J11 memory journ...'), which is expected for long titles",
-      "The sidebar has a large empty gap between the conversation list and the 'Some native sessions are unavailable' note"
+      "The sidebar list cuts off the last conversation row ('Snapshot refresh fixture'): its subtitle and status dot are hidden behind the 'Some native sessions are unavailable' row. The list appears to scroll, so the row should still be reachable.",
+      "Several sidebar conversation titles and subtitles are shortened with ellipses (for example 'Change the value to two …' and 'Waiting for you · Manual convers…'). This looks like intended truncation.",
+      "The 'Review plan ↑' link and the 'Read the full plan…' banner repeat the guidance that the plan card already gives."
     ]
   }
 }

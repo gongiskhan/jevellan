@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Public memory guide' search result's text sits off-center, with a large empty gap on the left inside the result card.",
-      "The note's update time appears twice: once in the search result card and again above the note title."
+      "The selected search result's title and date are offset to the right inside the button and leave a wide empty gap on the left, so they look slightly off-center.",
+      "The header and bottom cards show through the dimmed backdrop. They stay faintly readable, which is a little distracting but doesn't block anything."
     ]
   }
 }

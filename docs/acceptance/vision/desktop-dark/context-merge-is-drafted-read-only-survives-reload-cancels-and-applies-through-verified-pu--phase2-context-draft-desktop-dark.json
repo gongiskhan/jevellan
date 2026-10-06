@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background page and sidebar are dimmed and blurred behind the modal, which is intended. The dialog itself is fully readable.",
-      "The 'Open work' link sits below the Cancel/Apply row in the bottom-left corner, which looks a little disconnected from the other actions."
+      "The CLAUDE.md diff renders the symlink as a '+ Symlink → AGENTS.md' content line inside a code block, so it reads like file text rather than a link",
+      "The 'Open work' link sits below the Cancel/Apply buttons and is pushed into the bottom-left corner, apart from the other actions",
+      "The 'Current instruction files' disclosure is close to the dialog's bottom edge and has little padding"
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The long unbroken conversation title in the header is cut off with an ellipsis. This looks like intended truncation, and the title still reads clearly.",
-      "The long tool header 'long_tool_header_...' breaks in the middle of a word across lines. It wraps without overlapping anything, but the break looks awkward.",
-      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'A conversation with a lon…', 'Exercise reviewed checkp…'). This is expected for a narrow sidebar."
+      "The long unbroken conversation title in the header is cut off with an ellipsis. This looks like intended overflow handling, and the menu button next to it is still visible.",
+      "The long unbroken tool header text wraps mid-word across lines ('..._lon' / 'g_tool_header...'). It is still readable, and the 'completed' status stays visible.",
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'A conversation with a lon…'). This is expected truncation in the list."
     ]
   }
 }

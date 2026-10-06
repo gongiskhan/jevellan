@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This is expected truncation, and hovering or opening a session shows the full text.",
-      "The 'Send' button in the decision card looks disabled or low-contrast next to the empty 'Answer in your own words' field.",
-      "The muted gray metadata text ('From the coordinator · now', 'Codex · GPT · high · Worktree · Browser member', 'Some native sessions are unavailable') is low-contrast on the dark background but still readable."
+      "The Send button next to the 'Answer in your own words' field has low contrast against the card background, so it reads as disabled.",
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Mesh journey fixture · de…'). This looks like intended truncation.",
+      "The 'Checks running' badge on the pull request card uses small monospace text, which is hard to read."
     ]
   }
 }

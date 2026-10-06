@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Mesh journey fix…', 'dev-ma…'). This appears to be intentional overflow handling.",
-      "Most of the main content area below the last report card is empty, which makes the footer note 'This thread has ended. Start a new thread for new work.' look far away from the content."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'dev-ma…'), but this is standard truncation and the items stay identifiable",
+      "The metadata line under the title ('Claude Code · Opus · low effort · …') is small, low-contrast monospace text",
+      "Much of the space between the last report and the 'thread has ended' footer is empty"
     ]
   }
 }

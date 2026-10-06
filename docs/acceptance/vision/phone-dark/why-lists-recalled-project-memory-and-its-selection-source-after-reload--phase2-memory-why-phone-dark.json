@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Partially scrolled text (looks like 'high') is clipped under the sticky header at the top. This looks like a normal scroll position, not a layout bug.",
-      "The amber notice 'Jev is unavailable (no key configured). Pick the next step:' ends in a colon, but nothing follows it in this panel, so it reads as incomplete here.",
-      "The long login recovery UUID labels wrap onto a second line, which makes them a little hard to scan."
+      "A pink text fragment ('mgn') is partly hidden under the sticky header at the top. It looks like content that was scrolled under the header, not a layout defect.",
+      "The long 'Login recovery <uuid>' account lines wrap onto two lines, which makes that list a little uneven."
     ]
   }
 }

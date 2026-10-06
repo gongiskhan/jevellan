@@ -10,8 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Current instruction files' disclosure toggle uses a monospace font, but the rest of the modal body uses a sans-serif font.",
-      "The modal title 'Context · Context fixture' repeats the word 'Context', which reads a little awkwardly."
+      "The background page is blurred and dimmed behind the modal. This is expected for a dialog overlay."
     ]
   }
 }

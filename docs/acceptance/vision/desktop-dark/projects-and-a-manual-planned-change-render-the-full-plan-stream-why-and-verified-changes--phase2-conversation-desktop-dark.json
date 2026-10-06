@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Change the value to two ...', 'Waiting for you · Browser fixtur...'), as expected for a narrow list. The full title is still shown in the main header.",
-      "Two separate 'Work closed' banners are stacked, which repeats information: 'Work closed. Its changes are kept...' and 'Work closed and published.'",
-      "The status text on the 'Some native sessions are unavailable' disclosure in the sidebar is small and low-contrast."
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Change the value to two …', 'Waiting for you · Browser fixtur…'). This looks intentional, but you can't read the full titles.",
+      "The two status banners say different things: 'Work closed. Its changes are kept, and this checkout stays reserved for this conversation.' versus 'Work closed and published.'",
+      "Step 1's 'Changes' button has no file count, while Step 2's shows '· 1 file'."
     ]
   }
 }

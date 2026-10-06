@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar entry for 'Progress fixture' says 'Waiting for you' (amber dot), but the conversation header badge says 'Working' and a live stage is shown. The two statuses don't match.",
-      "Session subtitles in the sidebar are truncated with an ellipsis (e.g. 'Browser fixtur…', 'de…'). This looks intentional, but the project and host names can't be read in full.",
-      "The large empty transcript area between the user message and the progress line makes the pending state look sparse. This is expected while no reply has arrived yet."
+      "The sidebar shows 'Progress fixture' as 'Waiting for you', but the header badge and progress line say 'Working'. The two status labels don't match.",
+      "Sidebar session subtitles are cut off with an ellipsis (e.g. 'Browser fixtur…', 'de…'). This looks intentional, and the full text isn't needed to identify each session.",
+      "There is a large empty area between the user message and the progress line. That's expected while work is pending, but it leaves the live stage indicator far from the conversation content."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut short with an ellipsis (e.g. 'Context · J11 memory jour…', 'Done · J11 memory journey · dev-…'). The truncation looks intentional and the full text likely appears on hover.",
-      "The Why panel's own header ('Tidy the README wording' plus 'Why this placement') sits right up against the main thread header; the two areas are only separated by a thin border.",
-      "The thread area has a lot of empty space between the report card and the composer. This is expected with a single turn."
+      "Sidebar session titles and subtitles are cut short with an ellipsis (e.g. 'Context · J11 memory jour…', 'Context · Mesh journey fix…', 'Done · Improver sandbox · dev-ma…'). This is deliberate truncation and the titles still read.",
+      "The header label 'Fixed: none' in the PLACEMENT section reads a bit vaguely.",
+      "In the right panel, the 'Jev' labels at the right of each section header are small and low-contrast."
     ]
   }
 }

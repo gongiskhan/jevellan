@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The search result card's title and timestamp sit off-center to the right instead of lining up with the card's left padding, so they don't align with the other modal content.",
-      "The note's update time appears twice: once in the search result card and again above the rendered note."
+      "The 'Public memory guide' result card text is pushed toward the centre-right instead of lining up with the left edge of the other modal content.",
+      "The note title and update time appear twice: once in the selected result card and again in the content header below it."
     ]
   }
 }

@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut short with ellipses (e.g. 'Exercise answer options: c…', 'Context · J11 memory jour…'). This looks like intended truncation.",
-      "The expanded 'View changes' diff runs very long with no visual separation between files, so it is hard to scan.",
-      "Long lines in the AGENTS.md diff and the routing diffs come close to the right edge of the code block.",
-      "The 'Save schedule and jobs' button looks disabled (greyed out). That is probably intended because nothing has changed."
+      "Sidebar session titles are cut off with ellipses (e.g. 'Exercise answer options: c…', 'Context · J11 memory jour…'). This looks like intentional overflow handling.",
+      "The 'Save schedule and jobs' button is low-contrast in its disabled state.",
+      "The expanded commit diff in the Memory care card is long and dense, so the page needs a lot of vertical scrolling. It is still readable."
     ]
   }
 }

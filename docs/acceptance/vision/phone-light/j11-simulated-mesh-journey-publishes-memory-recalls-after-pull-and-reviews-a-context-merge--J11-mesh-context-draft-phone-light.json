@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row behind the dim overlay is clipped at the right edge (the last tab shows only \"C\"), but it sits behind the modal and doesn't block use.",
-      "Background text (a /tmp/... memory-project path and the \"This repository is public\" notice) shows through below the modal. It's dimmed and doesn't overlap the modal's content.",
-      "The diff blocks contain empty \"-\" and \"+\" lines that are just blank-line markers. They add a little visual noise."
+      "The modal covers the page behind it, so the background text ('/tmp/jodkh75/jevellan-browser-...', 'This repository is public...') shows through partly hidden at the bottom edge. This is expected for a modal overlay.",
+      "The tab strip behind the modal is partly hidden and cut off at the right edge ('Git' tab). This is behind the overlay and doesn't affect the dialog."
     ]
   }
 }

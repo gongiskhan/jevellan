@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The disabled 'Main' radio and its label are low-contrast gray. That fits a disabled state, but the label is slightly faint.",
-      "The helper text 'This project is set to Leave git to me.' reads awkwardly, because 'Leave git to me' is a setting name used without quotes or emphasis."
+      "The disabled 'Main' radio and its label are very light grey on white. That's acceptable for a disabled state, but the contrast is low.",
+      "The hint 'This project is set to Leave git to me.' would read better with the setting name in quotes or a different style, e.g. 'Leave git to me'.",
+      "The 'Worktree setup command' field shows a light placeholder ('npm ci'), so it's hard to tell whether it's a real value or just a placeholder."
     ]
   }
 }

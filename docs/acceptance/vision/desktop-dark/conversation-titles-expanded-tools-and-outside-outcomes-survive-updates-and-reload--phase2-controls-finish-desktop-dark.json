@@ -10,7 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Background content behind the modal overlay is heavily dimmed and blurred, which is expected for a modal state"
+      "The background behind the modal is heavily dimmed and blurred. That's expected for a modal overlay, but it makes the page underneath hard to read."
     ]
   }
 }

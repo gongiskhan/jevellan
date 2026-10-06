@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles are truncated with ellipses (e.g. 'Exercise answer options: c...', 'Context · J11 memory jour...'), which looks intentional",
-      "The long diff lines in the 'Prefer GPT for implement steps' card wrap onto a second line inside the code block",
-      "Some 'Last runs' titles wrap to two lines (e.g. 'AGENTS.md · Checkpoint recovery fixture')",
-      "A large empty area sits below the left sidebar navigation, because the page is much taller than the sidebar"
+      "Sidebar session titles are cut off with ellipses (e.g. 'Exercise answer options: c…', 'Context · J11 memory jour…'), which is intended truncation",
+      "The memory care diff block contains several concatenated file diffs without visual separation, making it dense to scan",
+      "The 'Last runs' list is long and repetitive ('No working rules to suggest.'), so the Schedule and jobs card ends with a lot of empty space next to it"
     ]
   }
 }

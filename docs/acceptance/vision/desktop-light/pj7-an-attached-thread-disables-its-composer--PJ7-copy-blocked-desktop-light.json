@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'), but the full text is available elsewhere.",
-      "The highlighted command 'jevellan thread attach thread_01M47TZHKT7MWWYYVNTQ4VQQ4P' uses small monospace text on a magenta selection background, which has fairly low contrast, but it is still readable.",
-      "The disabled composer's placeholder 'Message this thread' and send arrow are faint, which fits a disabled state."
+      "Sidebar session titles and metadata are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'), which is normal truncation and the full text isn't needed here",
+      "The magenta highlight on the selected attach command is fairly bright, though the text is still readable",
+      "The large empty area between the report card and the composer leaves the screen looking sparse"
     ]
   }
 }

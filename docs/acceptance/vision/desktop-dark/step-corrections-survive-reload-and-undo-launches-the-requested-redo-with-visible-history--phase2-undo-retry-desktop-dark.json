@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The error text repeats 'disabled' eight times ('No model can run this step right now: disabled, disabled, …'). It's readable but gives no useful detail, and the same message shows twice: in the red banner and in the Resume correction card.",
-      "Some secondary text is dim on the dark background and hard to read: 'Local time', '1 tool', 'Step details', and the grey 'Undone' label in the step header.",
-      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Change the value to thre…', 'Blocked · Browser fixture · dev-…'). This is intentional truncation, and the full title appears in the main header.",
-      "The struck-through 'Step 1 · Implement' label is low-contrast. The strikethrough is intended to show the step was undone."
+      "The error text 'No model can run this step right now: disabled, disabled, …' repeats 'disabled' eight times without naming the models, so it's hard to act on. The same message also appears twice: in the red banner and in the Resume correction card.",
+      "The low-contrast grey text is hard to read on the dark background: the '1 tool' and 'Step details' rows, 'Local time', 'Undone', and the 'Completed undo changes are kept…' note.",
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Change the value to thre…', 'dev-…'). This looks intentional, but the full titles aren't visible.",
+      "The magenta 'corrected: effort → max' and 'corrected: action → reply, effort → low' labels are small and low in contrast."
     ]
   }
 }

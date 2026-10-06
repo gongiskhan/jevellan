@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles are truncated with ellipses ('Exercise answer options: c...', 'Context · Mesh journey fix...'). This is expected truncation and nothing is lost from the main content.",
-      "The 'Last runs' column is taller than the 'Schedule and jobs' card, which leaves empty space below the Save button.",
-      "Some light-grey helper text on the dark background has low contrast, such as 'This change merged 1 note, archived 0, fixed 1 link.', commit hashes and the 'Suggest' labels. It is still readable."
+      "Session titles and subtitles in the left sidebar are cut off with ellipses (e.g. 'Exercise answer options: c...', 'Context · J11 memory jour...'). This is intended truncation, and the full text is not needed on this screen.",
+      "The memory care card's summary says 'Merged 1 note, archived 0, fixed 1 link, reconciled 1', but the line under the stale-patch notice says only 'merged 1 note, archived 0, fixed 1 link' and leaves out 'reconciled'.",
+      "'archived 0' appears in the summary text, which reads awkwardly.",
+      "The Last runs list is much taller than the Schedule and jobs panel beside it, which leaves a lot of empty space under the schedule panel."
     ]
   }
 }

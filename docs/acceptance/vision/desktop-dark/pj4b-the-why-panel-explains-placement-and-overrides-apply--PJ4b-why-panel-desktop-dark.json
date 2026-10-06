@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Session titles in the left sidebar ('Context · J11 memory jour…', 'Context · Mesh journey fix…') and their subtitles are cut off with ellipses; this looks like intended overflow handling.",
-      "The Why panel's title runs straight from the pink monospace 'Tidy the README wording' into 'Why this placement' with no separator.",
-      "Gray text in the Why panel (bar values like 0.10 and the Jev footer metadata) is low-contrast on the dark background but still readable.",
-      "Large empty area between the report card and the message composer in the middle column."
+      "Session titles in the sidebar ('Context · J11 memory journ…', 'Context · Mesh journey fixt…') and their subtitles are truncated with ellipses. This is intentional overflow handling.",
+      "The faint gray low-score bars and score values (0.10–0.20) in the Why panel have fairly low contrast against the dark background, but they're still readable.",
+      "The panel title 'Tidy the README wording' is in a monospace pink style that looks different from the 'Why this placement' heading next to it."
     ]
   }
 }

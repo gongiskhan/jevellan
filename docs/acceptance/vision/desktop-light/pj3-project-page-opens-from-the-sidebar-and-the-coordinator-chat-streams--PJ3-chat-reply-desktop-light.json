@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and metadata are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'dev-ma…'). The truncation is intentional, and the full text is likely available on hover.",
-      "Most of the chat pane is empty space between the coordinator reply and the composer.",
-      "The header status chip reads 'Idle' while the right panel lists one running thread, which may confuse users. It does not block anything."
+      "Sidebar session titles and metadata lines are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This is intentional overflow handling, and the full text is not needed on this screen.",
+      "The header status pill says 'Idle' while the right panel shows 1 running thread ('Add a greeting'). This may be confusing, but it does not affect layout or legibility.",
+      "The chat column has a large empty area between the reply and the composer. This is expected for a short conversation."
     ]
   }
 }

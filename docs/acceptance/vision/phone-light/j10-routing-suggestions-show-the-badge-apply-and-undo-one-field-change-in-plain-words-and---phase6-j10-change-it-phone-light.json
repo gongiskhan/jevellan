@@ -10,7 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Check this text' and 'Revise the suggestion' buttons are close together. They are easy to tell apart, but each button has only a short label and they look alike."
+      "The 'Edit the after text' field still says 'Preferred for review steps.', but the revised change below says 'Only for reviews of the improver fixture.' It isn't clear which text 'Apply this' will use.",
+      "The modal's top edge sits right next to the background card's diff block, so the two can look like one piece at a glance (the backdrop blur mostly separates them)."
     ]
   }
 }

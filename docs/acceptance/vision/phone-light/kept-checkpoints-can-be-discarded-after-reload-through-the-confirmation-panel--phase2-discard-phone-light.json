@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The title \"Discard this work\" uses sentence case and the primary button \"Discard checkpoints\" uses title case, which is inconsistent and slightly unclear.",
-      "The background is dimmed and blurred, which is expected behind a modal; the page underneath (\"Conversation settings\", \"Settle kept changes\") is still readable but isn't the focus."
+      "The background behind the scrim (Conversation settings panel) is dimmed and hard to read, which is expected for a modal backdrop",
+      "Large empty dimmed area below the dialog; the dialog sits in the upper half of the screen and isn't vertically centered"
     ]
   }
 }

@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Mesh journey fixture · de…'). This is intentional truncation, and the 'Done' status is still readable.",
-      "The header shows an 'Idle' status, yet the 'Stop' button is still shown as active, which is a minor state inconsistency.",
-      "The light grey metadata line under the title ('Codex · GPT · high effort · …') is small and low-contrast but still readable."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Mesh journey fixture · de…'). This is intentional, but it hides the full names.",
+      "The small, low-contrast text is hard to read: the 'Some native sessions are unavailable' footer, the monospace metadata line under the thread title, and the 'completed' status label.",
+      "The 'Progress' tag in the report card is very faint against the dark background.",
+      "The page is mostly empty space between the report card and the message composer."
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Code line 3 (\"export const label = '<b>plain text</b>';\") runs past the right edge of the highlighted line area and almost touches the code box border. It is still fully readable, but the code block seems to overflow horizontally instead of keeping its padding.",
-      "The highlight on line 2 stops at about x=359 while the longer line 3 extends further, so line widths look inconsistent."
+      "Code line 3 (\"export const label = '<b>plain text</b>';\") runs right up to the code box's right border with no padding, and the line-2 highlight stops at about x=359 while the text keeps going. The code is wider than its container and may scroll sideways, but all the text is still visible.",
+      "The 'Recorded checkpoint ·' label ends with a dangling separator, and the hash sits on the next line. It reads like part of the label is missing."
     ]
   }
 }

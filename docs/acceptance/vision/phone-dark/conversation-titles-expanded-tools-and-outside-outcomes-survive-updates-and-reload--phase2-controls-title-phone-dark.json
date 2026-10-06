@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The conversation title in the header is cut off with an ellipsis (\"A conversation with a long title · Unbro...\"). The full title isn't visible on this screen, but the truncation is deliberate and the header still reads cleanly.",
-      "The long tool header (\"Read project · long_tool_header_...\") breaks in the middle of words across six lines. It's readable but takes up a lot of space, and the \"completed\" status sits off to the side, centred against the wrapped block.",
-      "The 'Why' pill uses a pink/magenta outline that doesn't match the neutral style of the 'Changes' and 'Change step' pills next to it."
+      "The conversation title in the header is shortened with an ellipsis ('A conversation with a long title · Unbro…'), so the full title can't be read on this screen. The truncation looks intentional.",
+      "The long tool header breaks in the middle of the token across many lines, which makes it look crowded next to the 'completed' label. It is still fully readable.",
+      "The bottom input bar is close to the screen edge but can still be reached."
     ]
   }
 }

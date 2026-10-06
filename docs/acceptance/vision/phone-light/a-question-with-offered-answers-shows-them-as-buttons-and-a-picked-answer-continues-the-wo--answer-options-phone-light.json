@@ -10,7 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Exercise answer options: change the valu...'). The full text appears in the subtitle line and in the user message, so nothing is lost."
+      "Header title is truncated with an ellipsis ('Exercise answer options: change the valu…'), but the full text shows up again in the subtitle line and in the message bubble.",
+      "The 'Shall I change the value in value.txt to two?' question card has a lot of empty space below it before the composer."
     ]
   }
 }

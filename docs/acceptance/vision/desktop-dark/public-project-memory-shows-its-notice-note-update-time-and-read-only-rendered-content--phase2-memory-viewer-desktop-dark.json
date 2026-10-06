@@ -10,8 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The search result item has the note title and a monospace update time stacked and centered, which doesn't match the left-aligned content below it",
-      "The 'Public memory guide' heading and its update time appear twice, once in the search result row and again above the rendered note, which is redundant"
+      "The selected search result card and the note's own header both show the title and update time, so that information appears twice"
     ]
   }
 }

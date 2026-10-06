@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is truncated with an ellipsis ('Exercise composer choices: explain the...'), but the full text appears just below it.",
-      "'Step 2 · Reply' repeats 'The plan has three steps.' from Step 1, which looks like duplicated fixture text."
+      "The header title is cut off with an ellipsis ('Exercise composer choices: explain the…'), but the full text appears in the subtitle and the user message.",
+      "Step 2 shows Started 13:02:37 and Ended 13:02:39 but says Duration 1s, which doesn't match the 2s gap (probably sub-second rounding)."
     ]
   }
 }

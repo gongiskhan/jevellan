@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Devices' tab is clipped at the right edge of the horizontal tab strip. Scroll arrows are shown, so the tab can still be reached.",
-      "The 'Save schedule and jobs' button has low contrast against the card, probably because it is disabled while nothing has changed.",
-      "The 'Simulated judge responses.' note and the 'Apply and tell me' placeholder are dim muted text, but both can still be read.",
-      "Long lines in the diffs wrap inside the code blocks, which makes them a little harder to scan on a phone."
+      "The tab strip is cut off at the right edge ('Dev…'). It can still be reached with the scroll arrow.",
+      "The 'Save schedule and jobs' button has low contrast and looks disabled.",
+      "Trial log table headers wrap onto several lines ('WHY THEY FINISHED ELSEWHERE') because the columns are narrow.",
+      "The diff blocks have a lot of empty space at the bottom."
     ]
   }
 }

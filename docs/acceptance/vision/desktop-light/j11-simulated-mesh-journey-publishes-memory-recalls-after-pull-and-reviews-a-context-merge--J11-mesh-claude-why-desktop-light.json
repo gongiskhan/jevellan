@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar, a fourth conversation row peeks out half-cut above the 'Some native sessions are unavailable' line. This looks like the list's scroll edge, but it reads as a rendering glitch.",
-      "The account list in the right 'Why this step' panel runs past the bottom of the screen, so the last row ('J8 Codex account: unsupported') is cut in half. The panel looks scrollable, so the rows are still reachable.",
-      "Conversation titles and subtitles in the sidebar are shortened with '…'. This is expected, but the full titles can't be seen at this width."
+      "The account list in the right 'Why this step' panel runs past the bottom of the viewport, so the last entry ('J8 Codex account: unsupported') is cut in half. The panel looks scrollable, so this probably doesn't block anything.",
+      "In the sidebar, a fourth conversation row under 'J8: run on device B…' is clipped and shows only as a faint partial line above 'Some native sessions are unavailable'.",
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Remember that this proje…', 'Waiting for you · J11 memory jou…'). This looks intended, but the full text can't be read."
     ]
   }
 }

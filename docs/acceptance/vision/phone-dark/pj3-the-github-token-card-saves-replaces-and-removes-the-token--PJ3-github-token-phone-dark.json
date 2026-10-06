@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip clips the first tab label to 'es' at the left edge. The scroll arrows are visible, so the tab can still be reached.",
-      "The disabled 'Save Git settings' button has low contrast. This is expected for a disabled control."
+      "The settings tab strip cuts off its first and last tabs ('…vices', 'Configurati…') at the screen edges. Scroll arrows are shown, so this reads as an intentional scrolling tab bar.",
+      "The 'Save Git settings' button has low contrast against the card background. This is probably its disabled state, but it is harder to read than the other buttons.",
+      "The small grey text (the 'This choice is saved only in Jevellan…' note and the token description) is fairly low contrast on the dark background, though still readable."
     ]
   }
 }

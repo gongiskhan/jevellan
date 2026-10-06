@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'WAITING FOR YOU 0' heading still shows the count 0 even though 'Nothing waiting.' is displayed below it, so the information appears twice",
-      "There is a large empty area below the 'Answered 1' disclosure; the answered decision stays collapsed, so the user doesn't see it right after answering"
+      "The 'Sent to the coordinator.' confirmation sits right above 'Nothing waiting.', so the confirmation and the empty-state message compete a little visually.",
+      "The 'Answered 1' section starts collapsed, so you have to expand it to confirm which decision was answered.",
+      "Most of the screen below the content is empty."
     ]
   }
 }

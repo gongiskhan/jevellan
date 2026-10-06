@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Code line 3 ends right at the code panel's right edge with almost no padding. On a slightly narrower screen it may clip or need horizontal scrolling.",
-      "The checkpoint hash is small, low-contrast text on the dark background, so it is hard to read.",
-      "The 'Open recorded step' link is muted and has noticeably less contrast than 'Open working copy'.",
-      "The panel ends shortly after the links, leaving a large empty area below."
+      "Code line 3 (`export const label = '<b>plain text</b>';`) runs right up to the code panel's right border with no padding. It is still fully visible.",
+      "The recorded checkpoint hash sits on its own indented line under the label, which looks a little detached from it.",
+      "There is a lot of empty space below the action links."
     ]
   }
 }

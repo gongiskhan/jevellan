@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dimmed background behind the modal is hard to read, but that's expected for a backdrop.",
-      "The pink focus border on the textarea stands out sharply against the dark theme."
+      "The background is dimmed behind the modal, so parts of the conversation (the header, the message card and the tool output) are only partly visible. This is expected for a modal overlay.",
+      "The background header subtitle is cut off: 'Node across works · dev-sandbox' looks clipped at the left edge behind the dim layer."
     ]
   }
 }

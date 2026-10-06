@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles are cut off with ellipses (e.g. 'Exercise answer options: …', 'Context · J11 memory jour…'). This looks like intentional truncation.",
-      "The 'Recently decided' card has extra empty space below the 'Checked against 27 saved cases' row and no actions, so it looks slightly unbalanced.",
-      "The 'Save schedule and jobs' button and the 'Apply and tell me' field are low contrast and may look disabled.",
-      "The diff and judge note boxes inside the cards have a lot of empty padding at the bottom."
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Exercise answer options: …', 'Context · J11 memory jour…'). This looks like intentional truncation.",
+      "The 'Apply and tell me' value in the Memory care dropdown and the 'Save schedule and jobs' button are low-contrast and look disabled or placeholder-like.",
+      "The diff code blocks have extra empty space at the bottom.",
+      "The 'Last runs' card says '2 routing suggestions ready' but only one suggestion is waiting and the other is undone. This may confuse users, but it's a content issue, not a layout one.",
+      "The pink 'Dismiss' text link sits next to the outlined 'Apply' and 'Change it' buttons and is styled differently from them."
     ]
   }
 }

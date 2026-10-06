@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Header title 'Projects fixture' and the status line ('Idle · Claude Code Fable · high') sit close to the top-right action buttons. They don't overlap them.",
-      "The 'Send' button looks dim and low-contrast next to the input field, so it may read as disabled.",
-      "The tab row fills the whole width with no visible scroll hint. If more tabs exist past 'Pull requests', it isn't clear they're there."
+      "The 'Pull requests' tab is right up against the right edge of the screen, so the tab row may scroll sideways on narrower phones",
+      "The 'Answer in your own words' placeholder is quite large compared with the option text",
+      "The 'Send' button text is low-contrast against its dark background, which may make it look disabled",
+      "The 'Idle' status badge and 'Claude Code Fable · high' subtitle are small and low-contrast"
     ]
   }
 }

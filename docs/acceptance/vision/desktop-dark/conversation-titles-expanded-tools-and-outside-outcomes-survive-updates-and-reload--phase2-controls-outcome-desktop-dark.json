@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fourth conversation in the sidebar list is cut off at the bottom of the scroll area, just above the 'Some native sessions are unavailable' line. The list still scrolls, so it can be reached.",
-      "Long conversation titles and subtitles in the sidebar are shortened with an ellipsis, for example 'Context · Created instruct…' and 'Done · Undo across works · dev-m…'."
+      "In the sidebar, the conversation list is clipped mid-row at the bottom, so a fourth item ('Context · Context fi…') is only partly visible above 'Some native sessions are unavailable'. This looks like a normal scroll overflow, though a fade or full-row cutoff would look cleaner.",
+      "Long conversation titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · Created instruct…', 'Done · Undo across works · dev-m…'). This is expected truncation and doesn't block anything.",
+      "There's a large empty area between the 'Settle this work's changes…' notice and the composer. It's harmless, but it makes the page look sparse."
     ]
   }
 }

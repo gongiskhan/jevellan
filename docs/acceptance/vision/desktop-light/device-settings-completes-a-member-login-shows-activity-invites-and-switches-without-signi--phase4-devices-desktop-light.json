@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar, the fourth conversation row is cut off at the bottom edge of the scrollable list, just above 'Some native sessions are unavailable', so it shows only as a sliver of glyphs. This looks like normal scroll clipping, but a fade or extra spacing would make it clearer.",
-      "Sidebar conversation titles and subtitles are cut short with ellipses (e.g. 'Context · Outside context…', 'Exercise external activity…'). This is intended, and the full text is presumably available on hover or when opened.",
-      "'1 running conversations' on the Browser member card uses the wrong plural; it should be '1 running conversation'.",
-      "The device cards have different heights: dev-madrid is taller than Browser member, which leaves uneven whitespace in the two-column grid."
+      "The sidebar conversation list cuts off a fourth row partway, just above 'Some native sessions are unavailable'. It looks like the normal edge of a scrollable list, but the half-visible text looks untidy.",
+      "Sidebar conversation titles and subtitles are shortened with ellipses (for example 'Context · Outside context…', 'Exercise external activity …'). This is intended truncation, but the full titles can't be read here.",
+      "The device cards have different heights. The 'Browser member' card is shorter than 'dev-madrid', so the 'Offline fixture' card under 'dev-madrid' leaves an uneven blank area in the right column."
     ]
   }
 }

@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background page is dimmed behind the modal overlay, so the Rigging list, sidebar and runtime toggles can't be read in this capture. That's expected while a modal is open.",
-      "The 'Saved' status label is low-contrast gray next to the pink 'Preview' link.",
-      "The Content textarea is mostly empty space under two short lines of text."
+      "The 'Saved' status text in the modal is low-contrast grey on the dark background, but it can still be read.",
+      "The modal's dimmed backdrop covers the Rigging page behind it. That's expected while the modal is open."
     ]
   }
 }

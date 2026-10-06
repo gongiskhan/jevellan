@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Change the value to two ...', 'Waiting for you · Undo across wo...'), which is expected truncation.",
-      "Struck-through step headings ('Step 1 · Implement', 'Step 2 · Implement') and small grey 'Undone'/'Local time' labels are low-contrast but still readable.",
-      "The 'corrected: action → reply' label in pink is very small."
+      "The sidebar conversation list cuts off its last row, 'Short summary', at the bottom edge of the scroll area. This looks like normal scroll overflow.",
+      "Long conversation titles and metadata in the sidebar are shortened with ellipses, which is intended."
     ]
   }
 }

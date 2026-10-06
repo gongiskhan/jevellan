@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Background content behind the modal (title bar, breadcrumb, composer, terminal attach line) is dimmed by the overlay and truncated at the right edge, which is expected for a modal backdrop",
-      "The note textarea has a pink focus ring that is a little bright against the dark theme"
+      "The background thread header and the composer behind the modal's dimmed backdrop are faint and partly hidden. This is expected for a modal overlay.",
+      "The worktree path in the background header (\"Worktree on jv/tidy-the-readme-wording-bb85e…\") wraps onto two lines and its middle is shortened with an ellipsis. It sits behind the modal, so it doesn't block anything.",
+      "The 'Restart with these choices' radio is darker than the selected pink radio, so its outline is a little hard to see. It is still visible and can be tapped."
     ]
   }
 }

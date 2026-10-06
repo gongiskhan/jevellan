@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Working…' status pill ends in an ellipsis. This is most likely an intentional animated or in-progress label, but the full text can't be confirmed.",
-      "Most of the screen below the single pull request card is empty. This is expected with only one PR."
+      "The PR card fills only the top third of the screen, which leaves a large empty dark area below it",
+      "The 'Open thread' link is pink and doesn't match the neutral styling of the other card actions",
+      "The status line 'Claude Code Fable · high' is small, low-contrast monospace text, but it can still be read"
     ]
   }
 }

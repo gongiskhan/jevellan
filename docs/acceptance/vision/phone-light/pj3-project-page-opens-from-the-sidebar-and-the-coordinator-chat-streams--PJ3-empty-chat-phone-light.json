@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The large empty space above and below the centered empty-state text makes the screen look sparse on a tall phone viewport",
-      "The 'Idle' status chip and the 'Claude Code Fable · high' monospace label are small, low-contrast text, but still readable",
-      "The header '...' overflow control is light gray and visually faint compared to the other header buttons"
+      "The tab row ends right after 'Pull requests' with no visible sign that it scrolls, so if there are more tabs, nothing shows they exist.",
+      "The 'Idle' badge and the 'Claude Code Fable · high' subtitle are small, low-contrast monospace text, which makes them harder to read on a phone.",
+      "The send button is light gray on a light background and looks disabled, which is probably intended since the input is empty."
     ]
   }
 }

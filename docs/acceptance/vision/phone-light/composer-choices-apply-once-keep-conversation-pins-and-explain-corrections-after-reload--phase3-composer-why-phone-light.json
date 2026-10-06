@@ -10,11 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Test' row sits right under the header divider, so the list may start partway through. Earlier rows (such as Plan or Implement) might be scrolled out of view or missing from the top of the list.",
-      "The label 'Adversarial Rev...' is cut short with an ellipsis, so the full step name can't be read.",
-      "The last correction entry ('Just override · effort: high → max') is cut off at the bottom edge. It looks like normal scroll overflow, but nothing shows that more content is below.",
-      "Every step bar reads 0.00 with an empty track, so the bars show no information. This could be a data problem rather than a layout one.",
-      "The step labels are small, light grey text, which lowers the contrast."
+      "The list starts at 'Test' right under the header with no top padding, so earlier rows (e.g. Plan/Implement) may be scrolled out of view or clipped under the header.",
+      "The last correction entry ('Just override · effort: high → max') is cut off at the bottom of the screen, with its description line only partly visible. This looks like scrollable sheet content rather than a broken layout.",
+      "All score bars show 0.00 and are empty, so the bar chart tells the reader nothing.",
+      "There is no section heading above the score rows, so it isn't clear what the numbers mean."
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Most of the screen below the 'The coordinator moved to dev-madrid.' notice is empty, which leaves the moved state looking sparse on a phone.",
-      "The 'Idle' badge and the 'Claude Code Fable · high' model label are small, low-contrast monospace text, though still readable."
+      "The notice \"The coordinator moved to dev-madrid.\" doesn't offer a next step, such as a link or a \"Move coordinator here\" button, on this screen.",
+      "The header's model/status line (\"Claude Code Fable · high\") is small, light gray monospace text that's harder to read than the rest of the header."
     ]
   }
 }

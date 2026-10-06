@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The first tab label in the scrollable settings tab bar is clipped to 'es' behind the left scroll arrow. The arrows show the bar scrolls sideways, so this is expected overflow, but the clipped label looks rough.",
-      "The 'Save Git settings' button is a pale disabled style with low contrast. That's probably intended because there are no unsaved changes."
+      "The tab strip cuts off its edge labels ('ices', 'Configurati'). This looks like intended horizontal scrolling, and the < and > arrows can reach the hidden tabs.",
+      "The 'Save Git settings' button appears disabled with low contrast. This is likely intended because nothing has changed, but it is faint against the background.",
+      "The GitHub token card's 'Saved · updated Oct 6, 2026' line uses a small monospace font that differs from the surrounding text."
     ]
   }
 }

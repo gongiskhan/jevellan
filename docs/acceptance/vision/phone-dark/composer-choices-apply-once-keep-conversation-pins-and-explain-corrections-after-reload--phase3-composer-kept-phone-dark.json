@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis (\"Exercise composer choices: explain the...\"). The full text is shown in the subtitle and the user message below it, so nothing is lost.",
-      "The first step's \"1 tool\" toggle is low-contrast gray text on a dark background."
+      "The header title is cut off with an ellipsis ('Exercise composer choices: explain the...'), but the full text appears in the subtitle line and the user message.",
+      "In each step header the start, end and duration timestamps wrap onto a second line ('Local time'), which takes extra vertical space."
     ]
   }
 }

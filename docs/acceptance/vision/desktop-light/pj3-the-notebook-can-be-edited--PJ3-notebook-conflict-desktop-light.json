@@ -10,8 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar, the session titles and subtitles are cut off with ellipses (e.g. \"Context · J11 memory jour…\", \"Done · Mesh journey fixture · de…\"). The truncation looks deliberate and doesn't hide any controls.",
-      "The notebook text area has a lot of empty space below the three lines of content, and the conflict banner, Cancel and Save sit under it with a large blank area below the buttons. The layout is fine but sparse."
+      "Sidebar session titles get cut off with ellipses ('Context · J11 memory jour...', 'Context · Mesh journey fix...'), and so does their metadata line ('dev-…', 'de…'). Each one is still identifiable.",
+      "Light theme is selected, but the theme toggle in the bottom-left highlights the middle (contrast/auto) icon, so it's unclear which mode is active.",
+      "The conflict banner's light red background is low-contrast against the white panel, though its text and the 'Reload' link are still readable.",
+      "A lot of empty space sits below the Cancel/Save buttons in the notebook panel."
     ]
   }
 }

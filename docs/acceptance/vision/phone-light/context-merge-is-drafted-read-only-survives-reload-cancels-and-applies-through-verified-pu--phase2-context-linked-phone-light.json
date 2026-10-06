@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background project list behind the modal is blurred and dimmed. This looks intentional.",
-      "The top tab bar cuts off a tab label at the right edge (\"C...\"). It can still be reached with the scroll arrow."
+      "The background project list behind the modal is blurred, which is expected for a modal overlay.",
+      "The filesystem path in the blurred background wraps onto a second line ('create-project')."
     ]
   }
 }

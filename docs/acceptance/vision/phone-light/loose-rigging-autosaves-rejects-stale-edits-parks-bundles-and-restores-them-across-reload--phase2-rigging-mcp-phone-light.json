@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The file label says config.toml, but the content shown is JSON. The format doesn't match the file name.",
-      "The 'Saved' status and 'Content' label are close together with little spacing between them.",
-      "The modal overlay hides the Rigging page behind it, so the tab bar and the Project memory and Safety rows are dimmed and partly covered. This is expected while a modal is open, but the page behind can't be checked in this shot."
+      "The file label says config.toml, but the content is JSON. This looks like a fixture or data mismatch, not a rendering problem.",
+      "The close (×) button on the 'Item restored to this account.' message is very small, which makes it a small tap target on a phone.",
+      "The tab strip in the dimmed background is cut off at the right edge with a scroll arrow. It's behind the dialog, so it doesn't block anything."
     ]
   }
 }

@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Some titles are shortened with an ellipsis: the running thread title in the right panel ('Read through the project and list what each file is ...') and the sidebar session names ('Context · J11 memory jour...', 'Context · Mesh journey fix...'), along with their subtitles.",
-      "The coordinator's 'Noted.' reply shows up many times in a row, including twice at the bottom of the feed, which adds visual noise.",
-      "Several progress cards ('Checks failing', 'Checks passing', 'has conflicts') sit back-to-back with no coordinator reply between them, which makes the feed look a bit uneven."
+      "The running thread title in the right panel is cut short with an ellipsis ('Read through the project and list what each file is ...'). It looks intentional, but the full title is only readable in the feed.",
+      "Sidebar session names and their metadata lines are cut short with ellipses ('Context · J11 memory jour...', 'dev-...').",
+      "The feed repeats many standalone 'Noted.' replies, which adds visual noise.",
+      "The PR card's chip says 'Checks passing' but has no conflict indicator, even though the feed's latest event says pull request #1 has conflicts. The status may be inconsistent, though it doesn't affect the layout."
     ]
   }
 }

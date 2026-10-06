@@ -10,11 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Show source' toggle sits right on top of the 'Evidence guide' heading with almost no space between them, so it looks like part of the document.",
-      "'Recorded pixel' shows up as an underlined monospace link instead of an image preview. It's unclear whether the screen is meant to show the image inline.",
-      "'Source line' and 'Recorded pixel' are styled as monospace code links, unlike the other links ('Open working copy', 'Show source'), and the styling is inconsistent.",
-      "'Open recorded step' is grey next to the pink 'Open working copy', so it could read as disabled.",
-      "Below the content, most of the screen is empty."
+      "The 'Show source' toggle sits right on top of the 'Evidence guide' heading with almost no space between them, so the control and the content run together.",
+      "'Source line' and 'Recorded pixel' look like monospace link text rather than a rendered source excerpt or an image preview. If the step expects an inline image, it isn't visible here, though the image may be a single pixel.",
+      "The checkpoint hash badge nearly fills the width of the panel, leaving almost no right margin."
     ]
   }
 }

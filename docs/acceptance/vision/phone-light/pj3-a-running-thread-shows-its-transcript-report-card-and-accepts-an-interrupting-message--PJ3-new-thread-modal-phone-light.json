@@ -10,7 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Title text is clipped at the right edge of the single-line input ('...list what each file is'). This is normal for a text input and the field still scrolls, but the full title isn't visible."
+      "The Title value is clipped at the right edge of the field (\"...what each file is\"). Single-line inputs normally scroll text horizontally, so this is expected.",
+      "The dimmed page behind the modal (header, breadcrumb, composer) shows through faintly. This is the normal modal backdrop and doesn't get in the way."
     ]
   }
 }

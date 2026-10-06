@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab strip is cut off at the right edge, so 'Devices' is only partly visible. The scroll arrows still make it reachable.",
-      "In the Trial log table, the 'WHY THEY FINISHED ELSEWHERE' header wraps onto four lines, which makes the header row tall.",
-      "The 'Save schedule and jobs' button has low contrast and looks disabled. That's probably intended while there are no changes."
+      "The 'Devices' tab label is cut off at the right edge of the tab strip. This looks like intentional horizontal scrolling, since scroll arrows are shown on both sides.",
+      "The diff code blocks wrap long lines on the narrow phone screen. They are still readable."
     ]
   }
 }

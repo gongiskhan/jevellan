@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are truncated with ellipses ('Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'), but this is intentional overflow handling and the full text is likely available elsewhere",
-      "The 'Report · Turn 1' card has a 'Progress' badge even though the header shows the thread as 'Idle' and 'Read' as completed, which may confuse readers but does not block use",
-      "The main content area has a lot of empty vertical space between the report card and the message composer"
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This looks like intentional truncation, and the main content is unaffected.",
+      "The thread status badge says 'Idle' while the header still shows an active 'Stop' button, which may confuse users. Both are still visible and reachable.",
+      "The page has a lot of empty space between the report card and the message composer. This is expected for a short thread."
     ]
   }
 }

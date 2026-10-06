@@ -10,8 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Show source' toggle sits right on top of the 'Evidence guide' heading with almost no space between them.",
-      "The checkpoint hash is small, low-contrast monospace text. It's readable but hard to scan."
+      "The 'Show source' link sits right on top of the 'Evidence guide' heading with almost no vertical gap.",
+      "The checkpoint hash wraps onto its own line and is indented differently from the 'Recorded checkpoint ·' label.",
+      "'Open recorded step' is low-contrast grey compared with the pink 'Open working copy' link. It looks disabled, but it is still legible.",
+      "Most of the screen below the content is empty."
     ]
   }
 }

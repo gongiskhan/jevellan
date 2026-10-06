@@ -10,9 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar conversation list, the 4th row ('Context fixture…') is clipped at the bottom of the scroll area, so only the tops of its letters show. You can still reach it by scrolling.",
-      "Conversation titles and subtitles in the sidebar are cut off with an ellipsis ('Explain the memorybrows…', 'Waiting for you · Public memory …', 'dev-m…'). The cut-off is styled on purpose and the full title appears in the main header.",
-      "The right 'Why this step' panel's JEV section sits at the bottom edge and may continue below the fold. It can be scrolled."
+      "The last conversation in the left sidebar list (around y≈712) is clipped mid-line at the bottom of the scroll area, leaving a partly visible text row above the 'Some native sessions are unavailable' row.",
+      "Sidebar conversation titles and subtitles are cut short with ellipses (e.g. 'Explain the memorybrows…', 'Exercise evidence naviga…', 'Waiting for you · Public memory …').",
+      "The right 'Why this step' panel continues past the bottom of the screen ('JEV' section heading is only partly visible). It appears to scroll, so it is not blocking.",
+      "Long account entries in the Why panel ('Login recovery 4c3ac4e9-…: eligible') nearly reach the panel's right edge.",
+      "The yellow 'Jev is unavailable (no key configured)' notice appears twice, once in the Why panel and once in the conversation."
     ]
   }
 }

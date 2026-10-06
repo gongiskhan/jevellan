@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal body is scrolled down, so the top of the review section (above the diff) is out of view. It can be reached by scrolling, so this isn't blocking.",
-      "The dark diff block starts right against the modal header's bottom border, with no top padding showing at this scroll position."
+      "The modal body is scrolled, so the top of the diff block sits right against the header divider and whatever comes above it (the review summary or heading) is out of view. This looks like normal scroll clipping, not a layout fault.",
+      "The error banner ('These files changed since your review. Review changes again.') sits below the 'Continue' and 'Refresh changes' buttons. A user may act on those buttons before seeing the warning, so placing it nearer the actions would help.",
+      "The 'Open work' link uses a pink/magenta accent that doesn't match the dark primary button style, though it is still readable."
     ]
   }
 }

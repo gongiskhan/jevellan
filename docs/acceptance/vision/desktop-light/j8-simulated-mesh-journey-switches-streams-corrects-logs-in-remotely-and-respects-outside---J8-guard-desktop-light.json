@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar conversation list cuts off a fourth item ('Context fixture...') halfway, just above the 'Some native sessions are unavailable' row. It looks like normal scroll overflow, but the partial row looks clipped.",
-      "There are two 'Retry' buttons: one on the user message bubble and a primary 'Retry' under the guard banner. It's unclear which one to use.",
-      "'Retry' and 'Try automatic again' are stacked vertically with uneven widths and lots of empty space, which looks loosely laid out.",
-      "Sidebar conversation titles and subtitles are cut short with ellipses ('J8: implement after the o...', 'Mesh journey fixture ·...'). This is expected truncation but hides context."
+      "The sidebar conversation list cuts off a fourth item partway through a text line just above the 'Some native sessions are unavailable' notice. It looks like a scroll overflow edge with no fade or separator.",
+      "The conversation titles and metadata in the sidebar are truncated with ellipses (e.g. 'J8: implement after the o…', 'Mesh journey fixture ·…'), so the full context isn't visible.",
+      "There are two 'Retry' buttons: one on the user message bubble and a primary one under the error banner. Users may not know which one to press.",
+      "The 'Retry' and 'Try automatic again' buttons are stacked vertically with uneven widths and a large gap between them. They would read better side by side.",
+      "The amber 'Blocked' status badge has fairly low contrast against the light background."
     ]
   }
 }

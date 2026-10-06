@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Change the value to three, then redo thi…'). The full text still appears in the subtitle and in the user message.",
-      "The same red error banner ('No model can run this step right now: disabled, disabled, …') appears twice in a row. Its repeated 'disabled' list tells the user nothing useful.",
-      "The struck-through 'Step 1 · Implement' heading is light grey and harder to read than the other headings. This looks intentional for an undone step.",
-      "The pink 'corrected: …' labels on Step 1 wrap onto two lines and are low contrast against the white background."
+      "The header title is cut off with an ellipsis ('Change the value to three, then redo thi...'). The full text still shows in the subtitle and the user message.",
+      "The same 'No model can run this step right now' error banner appears twice in a row, and each lists 'disabled' many times with no model names, which reads as noise.",
+      "The pink 'corrected:' history labels on Step 1 are low-contrast on the light background, though still readable."
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The join code field is a solid light-grey box with no text, and the end of the npx command is covered by a white block. Both look like the screenshot tool hiding the secret code, not a rendering fault. If they aren't masks, the join code can't be read.",
-      "The light-grey join code box stands out against the dark theme and doesn't match the dark command block below it."
+      "The Join code field and the token at the end of the npx command are both covered by solid light-gray blocks. They look like the screenshot's masking of secret values, not a rendering failure, so the actual code can't be checked in this capture. If they aren't intentional masks, the join code is unreadable and this becomes blocking.",
+      "The Join code field has no visible copy button. If the field isn't selectable, the only way to copy the code is from the command line."
     ]
   }
 }

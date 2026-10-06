@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "There's a large empty gap between the report card and the attached-notice/composer area at the bottom.",
-      "The command selection wraps onto two lines, so the highlight breaks across the line, but the command is still fully readable.",
-      "The disabled send arrow in the composer is very low-contrast. That fits the disabled state, but it's hard to see."
+      "There is a large empty gap between the report card and the attached-composer notice, so the thread content and the composer feel far apart on the phone screen.",
+      "The bright pink selection highlight on the command is much louder than the rest of the dark theme. It is still readable, but it stands out sharply.",
+      "The command text wraps onto two lines inside the highlight, and the copy icon sits off to the right, a little apart from it."
     ]
   }
 }

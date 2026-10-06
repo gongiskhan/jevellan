@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab bar is cut off at the right edge (the 'Devices' tab is partly hidden). It looks like a horizontally scrolling tab strip, so the tab can still be reached.",
-      "In the Trial log table, the narrow column headers wrap onto several lines, which makes them cramped but still readable.",
-      "The diff code blocks are long and dense at phone width. Several lines wrap, which makes them harder to scan, but they are still readable."
+      "The page is very long (about 5945px) because the expanded diff in the memory care card makes it hard to scan on a phone",
+      "The Trial log table columns are cramped at phone width; the header 'WHY THEY FINISHED ELSEWHERE' wraps over several lines"
     ]
   }
 }

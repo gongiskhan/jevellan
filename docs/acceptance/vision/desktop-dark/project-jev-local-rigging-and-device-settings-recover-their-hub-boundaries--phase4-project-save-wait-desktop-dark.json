@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Browse folders on dev-madrid' button sits very close to the 'Git policy' label below it, with almost no vertical space between them.",
-      "The scrollable form is cut off at the 'Test command' label above the footer. This looks like normal scroll overflow, but nothing shows that more fields are below."
+      "The 'Browse folders on dev-madrid' button has almost no space below it before the 'Git policy' label, so the two look crowded.",
+      "The modal body is cut off at the 'Test command' label with no visible scroll cue. The fields below it can still be reached by scrolling."
     ]
   }
 }

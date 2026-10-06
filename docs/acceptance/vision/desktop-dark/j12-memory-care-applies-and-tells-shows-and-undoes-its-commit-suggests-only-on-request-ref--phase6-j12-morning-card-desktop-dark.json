@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Large empty area below the 'Schedule and jobs' card, because the 'Last runs' column next to it is much taller",
-      "Session titles in the sidebar are cut off with ellipses (e.g. 'Exercise answer options: c…'), as designed",
-      "The 'Save schedule and jobs' button text is low-contrast, which looks like a disabled state"
+      "Sidebar session titles are cut off with ellipses (e.g. 'Exercise answer options: c…', 'Context · J11 memory jour…'), which looks like intended overflow handling",
+      "The 'Save schedule and jobs' button text is low-contrast and looks disabled",
+      "The Schedule and jobs panel is much shorter than the Last runs column, leaving a large empty area under it",
+      "In the code diff blocks, long lines wrap onto a second line without indentation (Prefer GPT for implement steps card)"
     ]
   }
 }

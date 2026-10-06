@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut short with an ellipsis ('Change the value to two and publish th...'). This is intended single-line truncation, and the full request text appears in the conversation below.",
-      "The crossed-out 'Step 1 · Implement' and 'Step 2 · Implement' titles, the 'Undone' labels and the 'Local time' captions are muted and low-contrast on the dark background, but still readable.",
-      "The 'corrected: action → reply' label in pink-red is small and has fairly low contrast.",
-      "The 'Step details' and '1 tool' rows are dim gray and somewhat hard to read."
+      "The header title is cut off with an ellipsis ('Change the value to two and publish th…'). This is intentional single-line truncation, and the full request text is shown in the conversation below it.",
+      "The struck-through 'Step 1 · Implement' and 'Step 2 · Implement' headings and their 'Undone' labels are dimmed with low contrast against the dark background. They can still be read.",
+      "The 'Local time' captions and other secondary metadata are small and muted, but they can still be read."
     ]
   }
 }

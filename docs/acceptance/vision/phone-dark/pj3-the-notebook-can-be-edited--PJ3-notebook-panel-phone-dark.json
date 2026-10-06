@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Projects fixture' breadcrumb label uses a saturated pink monospace font on a dark background, so it is a bit low in contrast next to the title.",
-      "Most of the panel below the content is empty dark space, which is expected for a short note."
+      "The 'Projects fixture' breadcrumb is in small pink monospace text on a dark background, which is a bit low-contrast but still readable.",
+      "Most of the panel below the note is empty dark space, as expected for a short note."
     ]
   }
 }

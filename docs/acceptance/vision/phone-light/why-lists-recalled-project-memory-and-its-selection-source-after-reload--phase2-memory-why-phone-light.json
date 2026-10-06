@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "A pink line of text (\"high\") at the top is partly hidden under the sticky header. This looks like normal scroll clipping, not a layout fault.",
-      "The ACCOUNT list is long and pushes the JEV section toward the bottom of the screen. All entries are still readable.",
-      "The two long login recovery IDs wrap onto a second line, which leaves \"eligible\" on a line by itself."
+      "The panel is scrolled, so a line of text at the top (pink 'high'-like text just below the 'step 1 · reply / Why this step' header) is partly hidden under the sticky header. The memory section it overlaps with is still fully visible.",
+      "The 'Jev is unavailable (no key configured). Pick the next step:' notice is followed by empty space, with no step choices shown below it. The choices may simply be scrolled out of view."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "There's a large empty gap between the Turn 1 report card and the attached-state notice at the bottom, so the page looks sparse.",
-      "The selected command's highlight wraps across two lines with uneven edges, which looks a bit ragged but is still readable.",
-      "The disabled composer's dashed border and grey placeholder are fairly low-contrast against the light background."
+      "Large empty gap between the turn-1 report card and the attached-terminal notice above the composer",
+      "The selected command's magenta highlight makes the text harder to read than the surrounding text, though it is still legible",
+      "The disabled composer's placeholder and send arrow are low contrast. That fits the disabled state but is faint"
     ]
   }
 }

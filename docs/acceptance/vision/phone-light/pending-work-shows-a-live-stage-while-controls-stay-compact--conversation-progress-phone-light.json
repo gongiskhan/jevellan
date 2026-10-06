@@ -10,9 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The user message bubble runs to the right edge of the viewport and has almost no right margin.",
-      "There is a large empty gap between the message and the progress stage. That's expected while work is pending, but the stage sits at the very bottom.",
-      "The progress stage's spinner icon is on its own line above the 'Jev is choosing the next step' text, not inline with it."
+      "The 'Working' badge and the progress spinner are pale pink, which is low-contrast on the light background",
+      "The '0s' timer is small and faint pink, so it's hard to see",
+      "The message bubble's right edge sits flush against the viewport edge with no right margin",
+      "The progress spinner sits alone on its own line above the 'Jev is choosing the next step' heading, leaving an awkward gap",
+      "There's a large empty area between the message and the progress stage"
     ]
   }
 }

@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab strip cuts off the fourth tab, which shows only its icon behind the scroll chevron. The chevron shows the strip scrolls, so the tab is still reachable.",
-      "The Claude Code account sub-list says \"Codex sign-ins are kept per device for now.\" This looks like the wrong runtime name copied over from Codex.",
-      "Long \"Login recovery <uuid>\" account names wrap onto two lines. They stay readable but look heavy.",
-      "The Five hours and Week usage bars have very little contrast against the dark card background."
+      "The fourth tab in the top tab strip is cut off behind the scroll-arrow button. It still looks reachable by scrolling.",
+      "The Claude Code device list ends with the note 'Codex sign-ins are kept per device for now.' This looks like copy meant for the Codex section only.",
+      "The long 'Login recovery <uuid>' account names wrap onto two lines, which makes the cards heavier but still readable."
     ]
   }
 }

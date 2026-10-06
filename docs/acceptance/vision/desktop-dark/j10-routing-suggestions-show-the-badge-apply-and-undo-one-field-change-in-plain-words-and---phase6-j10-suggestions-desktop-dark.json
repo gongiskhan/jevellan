@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Session titles in the sidebar are cut off with ellipses ('Exercise answer options: …', 'Context · J11 memory jour…', 'Context · Mesh journey fix…'), and so are their subtitles ('dev-m…', 'dev-ma…').",
-      "The 'Save schedule and jobs' button and the 'Apply and tell me' dropdown have low contrast, so they look disabled, though they are still readable.",
-      "The 'Simulated judge responses.' note after each check summary is muted and low-contrast, but still readable.",
-      "The 'Last runs' card is much shorter than the 'Schedule and jobs' card beside it, leaving empty space below it."
+      "Sidebar session titles are truncated with ellipses (e.g. 'Exercise answer options: …', 'Context · J11 memory jour…', 'Context · Mesh journey fix…'), and so are their subtitles ('dev-m…', 'dev-ma…', 'de…'). This is normal truncation for a narrow sidebar.",
+      "The 'Save schedule and jobs' button text is low contrast. It looks disabled, which probably is on purpose because nothing has changed.",
+      "The 'Memory care' select shows its placeholder 'Apply and tell me' in dim text even though the checkbox is unchecked. It's still readable.",
+      "Below 'Recently decided' there's a lot of empty space. This is just how the layout ends and isn't a rendering problem."
     ]
   }
 }

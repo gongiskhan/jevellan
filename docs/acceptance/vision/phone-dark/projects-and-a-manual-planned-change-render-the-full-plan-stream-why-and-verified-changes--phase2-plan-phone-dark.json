@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Header metadata (Fable model label, start/end/duration timestamps) uses small, low-contrast gray text on the dark background. It's still readable but faint.",
-      "The 'Waiting for you' status chip at the top right sits very close to the header edge, so the row of chips feels crowded."
+      "The top-bar title 'Change the value to two and verify it.' sits close to the overflow '…' button. It still fits without being cut off.",
+      "The 'Waiting for you' chip is low-contrast amber outline text on the dark background. It is still legible.",
+      "The '1 tool' and 'Step details' disclosure labels are small, dim text that is less prominent than the other text."
     ]
   }
 }

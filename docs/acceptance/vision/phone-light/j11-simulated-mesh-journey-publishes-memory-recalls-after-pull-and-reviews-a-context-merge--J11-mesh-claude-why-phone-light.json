@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The warning banner ends with 'Pick the next step:', but no options appear inside it, so it reads as unfinished.",
-      "The chosen memory title wraps oddly in monospace: 'Vitest convention for mesh.md' / 'Existing.md'.",
-      "The account list reaches the bottom edge of the viewport ('Cross-device fixture: unsupported'). More rows may need scrolling to see, with no visible cue that there are more."
+      "The amber notice ends with 'Pick the next step:' but nothing follows it inside the notice. The manual choices appear separately under NEXT STEP, MODEL and EFFORT, so the dangling colon reads as if something is missing.",
+      "The account list reaches the bottom edge of the viewport at 'Cross-device fixture: unsupported'. More items may be below and need scrolling; the visible rows are not clipped.",
+      "The chosen memory title wraps onto two lines ('Vitest convention for mesh.md' / 'Existing.md'), so it is unclear whether this is one memory or two separate entries."
     ]
   }
 }

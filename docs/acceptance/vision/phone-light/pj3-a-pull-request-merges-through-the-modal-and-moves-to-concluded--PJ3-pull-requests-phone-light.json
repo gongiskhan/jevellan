@@ -9,9 +9,6 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": [
-      "The header's '+', document, and '…' buttons sit close together on the right, but each one can still be tapped.",
-      "The 'Idle' badge and the 'Claude Code Fable · high' subtitle are small, low-contrast monospace text. Both are still readable."
-    ]
+    "cosmetic": []
   }
 }

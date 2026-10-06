@@ -9,9 +9,6 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": [
-      "The background page behind the modal is blurred, which is expected for an open dialog.",
-      "The modal sits midway down a tall scrolled capture, and the blurred cards above and below it fill most of the screenshot."
-    ]
+    "cosmetic": []
   }
 }

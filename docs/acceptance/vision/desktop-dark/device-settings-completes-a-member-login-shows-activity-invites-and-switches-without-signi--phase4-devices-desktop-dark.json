@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation list: the fourth row is cut off by the 'Some native sessions are unavailable' notice. It looks like the edge of a scroll area, not a layout overlap.",
-      "Sidebar conversation titles and subtitles are cut off with ellipses ('Context · Outside context…', 'Exercise external activity …', 'Exercise composer choice…'). This is intentional truncation.",
-      "The 'Automatic device choice' card has a disabled checkbox and the note 'Coming later.' Nothing is blocked."
+      "In the sidebar conversation list, a fourth row is cut off halfway at the bottom, just above 'Some native sessions are unavailable'. It looks like a scroll overflow with no fade or clear boundary.",
+      "Conversation titles and subtitles in the sidebar are cut short with an ellipsis (e.g. 'Exercise external activity …')",
+      "The 'Browser member' card is shorter than the 'dev-madrid' card next to it, which leaves an uneven gap above the right column",
+      "The text on the 'Automatic device choice' card ('Coming later.') is low-contrast"
     ]
   }
 }

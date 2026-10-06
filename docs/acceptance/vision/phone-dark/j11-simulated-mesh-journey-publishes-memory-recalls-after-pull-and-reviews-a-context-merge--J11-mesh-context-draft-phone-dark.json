@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The page behind the modal shows faintly through the dark overlay at the top and bottom edges. This is expected for a modal and doesn't stop anything from being read or used.",
-      "The collapsed 'Current instruction files' row sits close to the modal's bottom edge, with little padding below it."
+      "The modal covers the page behind it, but that background content is dimmed on purpose and can't be used while the modal is open, which is expected",
+      "'Open work' sits below the Cancel/Apply buttons, so it's slightly separated from the other actions"
     ]
   }
 }

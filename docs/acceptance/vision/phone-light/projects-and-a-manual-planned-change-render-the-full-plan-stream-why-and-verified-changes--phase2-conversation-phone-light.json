@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Two separate closing banners ('Work closed. Its changes are kept…' and 'Work closed and published.') are stacked one after the other and say overlapping things, which feels redundant.",
-      "The 'Proposed plan' heading and the 'The full fixture plan' subtitle sit very close together with almost no space between them.",
-      "Step 1's Changes chip shows no file count, but Step 2's shows '· 1 file', so the chips are inconsistent."
+      "The header title 'Change the value to two and verify it.' is bold, and it crowds the overflow (…) button on the right. Nothing is clipped.",
+      "The 'Proposed plan' heading and 'The full fixture plan' subtitle are close in size and weight, so the hierarchy between them is weak.",
+      "The two closing banners ('Work closed. Its changes are kept…' and 'Work closed and published.') look the same and sit right next to each other, so they read as duplicates.",
+      "'Step details' disclosure rows have low contrast with the background."
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Coming later' helper text under Device is very small and low-contrast, but you can still read it.",
-      "The page has a lot of empty space below the card."
+      "The 'Coming later' helper text under Device is very small and low-contrast, so it's hard to read on a phone, though you can still make it out.",
+      "The bottom half of the screen below the card is empty."
     ]
   }
 }

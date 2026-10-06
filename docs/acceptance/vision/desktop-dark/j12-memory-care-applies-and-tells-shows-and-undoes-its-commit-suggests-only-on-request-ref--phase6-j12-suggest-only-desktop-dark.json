@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles are cut off with ellipses (e.g. 'Exercise answer options: c…', 'Context · J11 memory jour…'). This looks intentional, but the full titles can't be read.",
-      "The commit and revert hashes in the Undone memory care card ('Commit 1bccab2719 · reverted in 4ebf98bf3e') are small, low-contrast text.",
-      "The 'Checked against 27 saved cases… Simulated judge responses.' footers in the Recently decided cards use dim text on a dark background, so contrast is low.",
-      "The Last runs column is long and stretches well below the Schedule and jobs panel, leaving a large empty area under the left column."
+      "Sidebar session titles are truncated with ellipses (e.g. 'Exercise answer options: c...', 'Context · J11 memory jour...'). This is normal overflow handling.",
+      "The long diff lines in the 'Prefer GPT for implement steps' card wrap onto a second line, which makes them a little harder to read.",
+      "The 'Last runs' column is much taller than the 'Schedule and jobs' card next to it, which leaves a large empty space below the Save button."
     ]
   }
 }

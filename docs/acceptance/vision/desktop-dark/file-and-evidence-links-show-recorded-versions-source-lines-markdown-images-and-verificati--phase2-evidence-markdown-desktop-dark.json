@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar conversation list, the fourth entry is cut off partway through its title at the bottom of the scroll area, just above 'Some native sessions are unavailable'. It is a scroll overflow, and the entry can still be reached by scrolling.",
-      "In the main transcript, the Step 2 '1 tool' row is partly hidden behind the 'Jump to latest' bar at the bottom of the scroll area.",
-      "In the evidence panel, the 'Show source' link sits right above the 'Evidence guide' heading with little space between them. The 'Source line' and 'Recorded pixel' links use a monospace underlined style that doesn't match the other links.",
-      "The Markdown evidence panel uses only the top third of its height and leaves a large empty area below the content."
+      "In the sidebar, a fourth conversation row is cut off halfway above the 'Some native sessions are unavailable' notice. This looks like normal scroll clipping, but the partial row reads like stray text.",
+      "In the main column, the '1 tool' row of Step 2 is partly hidden behind the 'Jump to latest' bar at the bottom of the scroll area. This is expected scroll overflow.",
+      "Long conversation titles and subtitles in the sidebar are cut short with an ellipsis ('Exercise evidence naviga…', 'Context · Created instructi…'). This is intended truncation.",
+      "In the evidence panel, 'Open working copy' is pink and 'Open recorded step' is grey, so it's not obvious that both are clickable."
     ]
   }
 }

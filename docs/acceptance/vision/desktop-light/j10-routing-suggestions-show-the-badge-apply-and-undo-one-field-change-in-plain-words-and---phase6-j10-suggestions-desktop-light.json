@@ -10,10 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles are truncated with ellipses (e.g. 'Exercise answer options: ...', 'Context · J11 memory jour...', 'Context · Mesh journey fix...'), and so are their subtitles ('dev-m...', 'dev-ma...'), which is expected list behavior",
-      "Both diff blocks leave a lot of empty dark space below the last line",
-      "The 'Save schedule and jobs' button and the 'Apply and tell me' field are low-contrast and look disabled",
-      "The Schedule and jobs card is much taller than the Last runs card next to it, which leaves an empty gap under Last runs"
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Exercise answer options: …', 'Context · J11 memory jour…', 'Context · Mesh journey fix…'). This looks like intended truncation.",
+      "The 'Save schedule and jobs' button and the 'Apply and tell me' dropdown are greyed out, so they're harder to read. This is probably the disabled state while nothing has changed or Memory care is off."
     ]
   }
 }

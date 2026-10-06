@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar, the fourth conversation item is cut off at the bottom of the scroll area, just above 'Some native sessions are unavailable'. Only the top of its title shows. It reads as scroll overflow, not a broken layout.",
-      "Sidebar conversation titles and their metadata lines are cut short with ellipses (e.g. 'Exercise automatic decisi…', 'Done · Automatic fixture · dev-m…'). This looks like intended truncation, and the full title of the active conversation appears in the main header.",
-      "The chat area below the step card is a large empty space between the content and the composer. This is expected because the conversation is short."
+      "The fourth sidebar conversation item is cut off at the bottom of the scrollable list, just above 'Some native sessions are unavailable'. It looks like normal scroll overflow, but the clipped text is unreadable until the list is scrolled.",
+      "Sidebar conversation titles and subtitles are cut short with ellipses (e.g. 'Exercise automatic decisi…', 'Explain the memorybrows…'). They stay legible, but the full titles can't be read at this width."
     ]
   }
 }

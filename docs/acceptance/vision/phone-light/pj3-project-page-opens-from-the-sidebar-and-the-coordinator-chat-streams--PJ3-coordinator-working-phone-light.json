@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The input placeholder 'Tell the coordinator what you nee…' is cut off by the stop and send buttons. It's only hint text, so the field still works.",
-      "The 'Working…' status pill is very small, and its pink text on a light background has low contrast.",
-      "The 'Claude Code Fable · high' subtitle is in small, light grey monospace and is hard to read."
+      "Composer placeholder 'Tell the coordinator what you nee…' is truncated by the stop/send buttons on the narrow phone width",
+      "Status pill text 'Working…' is truncated/ellipsized in the header badge"
     ]
   }
 }

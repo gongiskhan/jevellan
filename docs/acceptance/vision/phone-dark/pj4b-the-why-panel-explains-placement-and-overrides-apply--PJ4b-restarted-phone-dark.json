@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Large empty area between the last report card and the 'This thread has ended' footer",
-      "Metadata line wraps across three lines in small monospace text"
+      "The small monospace metadata line (Claude Code · Opus · … · dev-madrid) has low contrast against the dark background, but it is still readable.",
+      "A large empty area sits between the last report card and the 'This thread has ended' footer."
     ]
   }
 }

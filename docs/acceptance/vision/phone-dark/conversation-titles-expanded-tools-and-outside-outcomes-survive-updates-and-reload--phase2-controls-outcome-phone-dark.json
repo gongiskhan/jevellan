@@ -9,10 +9,6 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": [
-      "Large empty gap between the 'Settle this work's changes' notice and the composer at the bottom",
-      "The model label 'Fable' next to 'Step 1 · Implement' is low-contrast and small",
-      "The 'Local time' caption is faint, small text"
-    ]
+    "cosmetic": []
   }
 }

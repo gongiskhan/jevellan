@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The helper text under the Device field is small and low-contrast, but you can still read it",
-      "The large empty area below the form card leaves the lower half of the screen unused"
+      "The helper text under Device ('Coming later: Jevellan will pick a free machine…') is small and low-contrast, but you can still read it",
+      "Most of the lower half of the screen is empty space under the form card"
     ]
   }
 }

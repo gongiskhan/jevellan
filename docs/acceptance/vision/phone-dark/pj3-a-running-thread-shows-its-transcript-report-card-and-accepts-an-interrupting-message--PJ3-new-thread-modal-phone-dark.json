@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Title input is a single line, so the long title runs past the right edge and gets cut off at \"what each file is\". This is normal for a text field and you can still scroll it, but the full title isn't visible.",
-      "The page behind the modal shows through the dimmed backdrop: the header, breadcrumb and coordinator input are faintly visible at the top and bottom. This is expected for a modal overlay and doesn't block anything."
+      "Title input text is truncated at the right edge ('...what each file is'), which is normal for a single-line input that scrolls horizontally",
+      "Background page content (header, breadcrumb, composer) shows faintly behind the modal overlay, as expected for a modal"
     ]
   }
 }

@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Adversarial Rev...' label in the Next step list is cut short with an ellipsis, so the full option name isn't visible.",
-      "The effort line says 'medium → high', but the bar chart gives 'medium' 1.00 and 'high' 0.00. The selected value and the chart don't clearly match.",
-      "The last entry in Corrections used is cut off at the bottom edge. This looks like normal scrollable overflow, not a layout defect.",
-      "The section headers (NEXT STEP, MODEL, EFFORT, MEMORY, CORRECTIONS USED) are small, light gray text with low contrast, but still readable."
+      "The 'Adversarial Rev...' label in the Next step list is cut short with an ellipsis. Its full name can be guessed but isn't shown.",
+      "The second 'Override and undo' entry under Corrections used is cut off by the bottom of the screen at its second line. The panel probably scrolls, but this capture doesn't show the rest of that entry or anything below it.",
+      "The 'Requested medium; using high' note repeats the 'medium → high (nearest effort this model supports)' line just above it.",
+      "The Effort bars show 'medium' at 1.00 while the line above says high is the effort actually used. The bars may show the requested effort rather than the one in effect, which could confuse readers."
     ]
   }
 }

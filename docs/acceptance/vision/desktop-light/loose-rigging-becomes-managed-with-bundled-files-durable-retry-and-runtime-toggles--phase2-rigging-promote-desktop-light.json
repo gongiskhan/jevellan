@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The disabled 'Claude Code · Current account' checkbox is very faint grey. Its state is hard to tell at a glance, though the label is still readable.",
-      "The 'Close' button in the footer duplicates the header X close control."
+      "The 'Claude Code · Current account' checkbox is disabled and so faint that it's hard to tell whether it is checked, but its label is styled like an active option, which makes its state unclear.",
+      "There is a lot of empty space below the checkbox list inside the 'Install for' fieldset compared with the spacing around it."
     ]
   }
 }

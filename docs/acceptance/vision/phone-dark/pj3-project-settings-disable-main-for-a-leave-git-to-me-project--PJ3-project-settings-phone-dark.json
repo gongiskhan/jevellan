@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Main' radio option and its helper text 'This project is set to Leave git to me.' are low-contrast grey on the dark background. That fits a disabled state, but it is harder to read than the rest of the dialog.",
-      "The 'npm ci' placeholder in 'Worktree setup command' is dim and could be mistaken for an entered value."
+      "The disabled 'Main' option and its helper text 'This project is set to Leave git to me.' are low-contrast against the dark background. They're still readable, and the dimming is expected for a disabled option.",
+      "The 'npm ci' placeholder in the Worktree setup command field is faint.",
+      "Above the modal, the page header and breadcrumb ('Projects external', 'Claude Code Fable · high') show faintly through the backdrop. This is expected for a modal overlay and doesn't block anything."
     ]
   }
 }

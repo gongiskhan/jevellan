@@ -9,6 +9,9 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": []
+    "cosmetic": [
+      "Background content behind the modal overlay is heavily dimmed or blurred. That is expected for a modal backdrop.",
+      "There is a small gap between the Optional helper text and the footer divider."
+    ]
   }
 }

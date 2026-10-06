@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Devices' tab label is partly hidden behind the right scroll arrow. The tab row scrolls sideways, so the tab can still be reached.",
-      "Long diff lines wrap in the code blocks, which makes the diffs a little harder to read.",
-      "The 'Save schedule and jobs' button has low contrast, probably because it is disabled with nothing changed. It is still readable.",
-      "'Last runs' says '2 routing suggestions ready' but only 1 is waiting. That fits one having already been decided, but the wording could mislead."
+      "The third tab in the top tab bar is cut off at 'Dev…' by the right scroll arrow. The arrow can still reach it, so this isn't blocking.",
+      "Long diff lines in the code blocks wrap in the middle of paths (for example 'b/menu/claude-opus/description' goes onto its own line), which makes the diff header a little harder to scan.",
+      "'Save schedule and jobs' is a low-contrast button that looks disabled. It is still legible.",
+      "'Last runs' says '2 routing suggestions ready' but only one suggestion is waiting and one was recently decided. This may confuse users, but it isn't a rendering problem.",
+      "There is a large empty dark area below the last card at the bottom of the page."
     ]
   }
 }

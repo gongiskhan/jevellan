@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The heading 'Context · Context fixture' repeats the word 'Context'.",
-      "Inside the CLAUDE.md diff, the line '+ Symlink → AGENTS.md' looks like file content, not a link action, so it can be misread.",
-      "The 'Open work' link sits below the Cancel/Apply buttons and is spaced loosely from them.",
-      "The background page behind the modal is dimmed and partly cut off at the edges. That's expected with a modal open."
+      "The background page shows through the modal edges (top tab bar, path text, and buttons along the bottom). That's expected for a dialog, but the dimmed overlay is light, so the background stays fairly visible.",
+      "In the diff blocks, the empty '-' and '+' lines show as bare markers with nothing after them. It's legible, just a little sparse.",
+      "'Current instruction files' is collapsed at the bottom of the modal. You can still reach it, but its contents aren't visible in this capture."
     ]
   }
 }

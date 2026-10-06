@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The shell session titles and metadata in the left sidebar are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Mesh journey fix…', 'dev-ma…'). This looks like intentional overflow handling and they're still readable.",
-      "The notebook panel's large empty space below the short content makes the right side look sparse."
+      "Sidebar session titles and metadata are cut short with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Mesh journey fix…', 'dev-ma…'). The text is shortened on purpose, but the full names can't be read.",
+      "The notebook panel has a lot of empty space below its short content.",
+      "The notebook panel title mixes a monospace pink 'Projects fixture' label with the bold 'Notebook' heading, so the styling looks inconsistent."
     ]
   }
 }

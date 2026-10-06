@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background thread header text ('Claude Code · Fable · high effort · Projects Claude · Worktree on jv/tidy-the-readme-wording ...') is dimmed by the scrim and partly hidden behind the modal. This is expected for a modal overlay.",
-      "The footer command 'jevellan thread attach thread_01M...' is cut off with an ellipsis at the bottom of the background page, behind the scrim.",
-      "The note textarea has a pink/magenta focus border that clashes a little with the neutral styling of the other fields."
+      "The background page under the modal is dimmed and blurred, which is expected while a modal is open. In that background, the breadcrumb wraps over several lines and the 'jevellan thread attach thread_…' command at the bottom is cut off with an ellipsis. None of this is part of the override modal.",
+      "The 'Note (optional)' textarea has a magenta focus border. It may look like an error state, but it doesn't make anything harder to read."
     ]
   }
 }

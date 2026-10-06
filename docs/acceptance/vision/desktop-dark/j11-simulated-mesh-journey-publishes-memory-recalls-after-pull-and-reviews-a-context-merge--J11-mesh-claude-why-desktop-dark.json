@@ -10,11 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation list: a fourth row is clipped mid-line just above 'Some native sessions are unavailable', so only a sliver of unreadable text shows. It looks like normal scroll overflow without a fade or clean cut-off.",
-      "The right 'Why this step' panel cuts off its Account list at the bottom edge (e.g. 'J8 Codex account: unsupported' is half visible). This looks like a scrollable panel, but nothing shows that more content follows.",
-      "The right panel repeats the banner 'Jev is unavailable (authentication failed). Pick the next step:' with no controls after it. The controls are only in the main column, so the colon leads to nothing in this panel.",
-      "Sidebar conversation titles and subtitles are cut short with ellipses (e.g. 'Remember that this proje…', 'J8: run on device B while I…'). This is expected but hides context.",
-      "The CORRECTIONS USED row shows only 'None', and the long ✗ disabled/unsupported account list makes the panel noisy. This is low priority."
+      "The sidebar conversation list clips a fourth item at about y≈712. Only a sliver of its title shows, just above the 'Some native sessions are unavailable' line. It looks like scroll overflow, but nothing on screen shows that the list can scroll.",
+      "The account list in the right 'Why this step' panel runs past the bottom of the viewport, cutting off the last visible row ('J8 Codex account: unsupported'). The panel appears to scroll, so this is expected overflow.",
+      "Long conversation titles and subtitles in the sidebar are cut off with an ellipsis (for example 'Remember that this proje…' and 'J8: implement after the o…'). This is intended, but the full text can't be read without hovering or opening the conversation.",
+      "The right panel repeats the warning 'Jev is unavailable (authentication failed). Pick the next step:' but has no controls of its own. The controls are in the main column, so the repeated warning is a bit redundant."
     ]
   }
 }

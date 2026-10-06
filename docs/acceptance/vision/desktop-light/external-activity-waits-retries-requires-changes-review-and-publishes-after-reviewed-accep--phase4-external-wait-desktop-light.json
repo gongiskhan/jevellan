@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation list cuts off a fourth item partway through its title row just above the 'Some native sessions are unavailable' disclosure. This is scroll-container clipping, and the list can still be scrolled.",
-      "The 'Retry' and 'Try automatic again' buttons sit on separate rows with uneven spacing. Placing them side by side would look tidier.",
-      "The light-red error banner text is a little low-contrast but still readable."
+      "In the sidebar, the fourth conversation row is partly cut off at the bottom edge, just above the 'Some native sessions are unavailable' line. It looks like a scroll overflow and could use a fade or clearer separation.",
+      "There are two 'Retry' buttons close together: one on the user message and one primary button under the error banner. Users may not know which one to press.",
+      "The 'Retry' and 'Try automatic again' buttons are stacked with different widths and uneven spacing, so the error actions look loosely arranged."
     ]
   }
 }

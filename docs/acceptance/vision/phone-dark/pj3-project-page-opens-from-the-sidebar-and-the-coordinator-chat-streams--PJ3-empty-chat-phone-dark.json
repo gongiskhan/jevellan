@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The status line \"Claude Code Fable · high\" uses small, low-contrast monospace text, but it is still readable.",
-      "The large empty area between the tabs and the centered placeholder text makes the screen feel sparse."
+      "The tab row may not have room for more tabs past \"Pull requests\" at this width. If more tabs exist, they could be hidden off-screen with nothing showing that the row scrolls.",
+      "The \"Idle\" status chip and the model label \"Claude Code Fable · high\" are small, low-contrast monospace text. They're readable but faint."
     ]
   }
 }

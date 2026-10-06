@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'), so the full names can't be read without hovering or widening the sidebar",
-      "Some text is small and low-contrast: the monospace metadata line under the title, the 'completed' labels on the tool rows, and 'Some native sessions are unavailable' are hard to read against the dark background",
-      "There's a large empty gap between the last tool row and the composer at the bottom, so the page looks sparse",
-      "No report card is visible on this screen; only the prompt card and the collapsed tool rows (Read, Grep, Bash, Read) are shown"
+      "Session titles and subtitles in the sidebar are cut short with an ellipsis (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · dev-ma…'). This looks like intentional truncation.",
+      "The main pane has a lot of empty space between the transcript rows and the composer.",
+      "The metadata line under the title uses small, low-contrast monospace text, but it can still be read."
     ]
   }
 }

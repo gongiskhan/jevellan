@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The file-count label reads \"1 changed files\" instead of \"1 changed file\".",
-      "The page ends after the verification card, which leaves a large empty area in the bottom half of the viewport."
+      "Header says \"1 changed files\". It should say \"1 changed file\".",
+      "The commit hash nearly fills the width of the verification card. It is still fully visible.",
+      "There is a lot of empty space below the content. This is expected because the content is short."
     ]
   }
 }

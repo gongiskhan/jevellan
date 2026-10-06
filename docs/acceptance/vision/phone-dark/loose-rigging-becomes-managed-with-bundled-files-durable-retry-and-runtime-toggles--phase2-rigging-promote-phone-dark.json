@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab bar at the top is cut off on the right edge (the fourth tab is clipped next to a scroll arrow). This looks like intended horizontal scrolling, but the partly visible label looks unfinished.",
-      "The checked 'Claude Code · Current account' checkbox is a gray box with low contrast, so it is harder to tell it is checked than the pink 'Codex' checkbox. It is probably meant to look disabled or locked.",
-      "The helper text at the bottom of the dialog ('Instructions stay editable...') is gray on dark blue with fairly low contrast, but it is still readable."
+      "The modal fully covers the page content behind it and the backdrop dims it, so the list items underneath (e.g. 'Make managed', 'Restore locally') are hard to read. This is expected while a modal is open.",
+      "The disabled 'Claude Code · Current account' checkbox and its label are low contrast. They are still readable, but only just.",
+      "The top tab bar ('Runtimes', 'Rigging', 'Decisions') is cut off at the right edge of the screen behind a scroll arrow. That's probably intentional horizontal scrolling."
     ]
   }
 }

@@ -9,9 +9,6 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": [
-      "The background behind the modal overlay is blurred heavily, which is expected for a modal.",
-      "The body text 'Add a greeting will be squashed into main.' reads oddly because the PR title is not in quotes or otherwise set apart from the sentence."
-    ]
+    "cosmetic": []
   }
 }

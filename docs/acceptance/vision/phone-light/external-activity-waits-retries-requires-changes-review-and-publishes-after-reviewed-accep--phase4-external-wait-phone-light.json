@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Exercise external activity guards befor...'), but the full text appears just below it, so nothing is lost.",
-      "There is a large empty gap between the 'Try automatic again' button and the message box at the bottom."
+      "Header title is truncated with an ellipsis ('Exercise external activity guards befor...'), but the full text shows in the subtitle and the message bubble",
+      "The large empty area between the action buttons and the composer makes the screen look sparse"
     ]
   }
 }

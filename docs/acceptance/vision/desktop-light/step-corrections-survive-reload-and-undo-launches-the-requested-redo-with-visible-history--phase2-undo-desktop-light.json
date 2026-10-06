@@ -10,11 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The same red error banner appears twice in a row: 'No model can run this step right now: disabled, disabled, disabled, disabled, disabled, disabled.'",
-      "The error text just repeats 'disabled' six times, which tells the user nothing useful about which models are unavailable.",
-      "Long conversation titles and subtitles in the sidebar are cut off with an ellipsis. This is expected truncation, but the full titles can't be read.",
-      "The correction labels next to Step 1 ('corrected: effort → max', 'corrected: action → reply, effort → low') are small and low-contrast pink, though still readable.",
-      "The 'Some native sessions are unavailable' note in the sidebar is small, low-emphasis text."
+      "The error banner 'No model can run this step right now' appears twice in a row with the same text, and the reason list is just 'disabled' repeated eight times, which tells the user nothing.",
+      "In the sidebar, the last conversation in the list is cut off at the bottom of its scroll area, so only the top of its text shows just above 'Some native sessions are unavailable'.",
+      "Sidebar conversation titles and subtitles are cut short with ellipses (expected in a narrow sidebar, but you can't tell the three 'Change the value to thre…' conversations apart).",
+      "The struck-through 'Step 1 · Implement' label and its pink 'corrected: …' tags are small and low-contrast, but still readable."
     ]
   }
 }

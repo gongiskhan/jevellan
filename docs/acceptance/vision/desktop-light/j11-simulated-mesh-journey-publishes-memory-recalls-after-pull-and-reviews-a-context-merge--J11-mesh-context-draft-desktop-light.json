@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal dialog covers the background projects list, which is expected for a modal",
-      "A sidebar conversation item near 'Some native sessions are unavailable' is clipped behind the scrim, which is expected behind a modal"
+      "The modal's 'Open work' link sits inside the review card under the Cancel/Apply buttons, which makes it look a bit detached from the other actions.",
+      "The diffs show blank removed and added lines as a bare '-' or '+'. That's correct but looks slightly noisy."
     ]
   }
 }

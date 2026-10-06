@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Image was reviewed downscaled to about a third of its size (132x2000 from 390x5897), so the small monospace diff text could not be fully checked for legibility; at that size it appears to wrap without clipping.",
-      "Trial log table columns ('WEEK OF', 'IN JEVELLAN', 'OUTSIDE', 'WHY THEY FINISHED ELSEWHERE') look cramped at phone width, with headers wrapping onto several lines.",
-      "Long diff lines in the suggestion cards wrap mid-path instead of scrolling horizontally, which makes the patches a little harder to scan."
+      "I could only check the image at about one third of its real size because I wasn't allowed to crop it, so small-text problems may not show up at this scale.",
+      "The columns in the Trial log table are tight, and the header text wraps over several lines ('WHY THEY FINISHED ELSEWHERE').",
+      "In the diff blocks, long lines wrap and break mid-word (for example the git diff paths and the AGENTS.md lines). They're still readable."
     ]
   }
 }

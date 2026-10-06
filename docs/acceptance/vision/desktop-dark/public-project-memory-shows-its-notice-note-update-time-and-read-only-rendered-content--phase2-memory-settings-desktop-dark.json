@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Browse folders on dev-madrid' button sits almost directly on the 'Git policy' label below it, with much less vertical space than between other fields.",
-      "The dialog body is scrolled, so the fields above 'Path on Offline fixture' are hidden under the header. They can be reached by scrolling, but the first visible label sits right against the header edge."
+      "The modal body is scrolled, so the 'Path on Offline fixture' label sits right under the dialog header with almost no top padding.",
+      "The 'Browse folders on dev-madrid' button nearly touches the 'Git policy' label below it, leaving uneven vertical spacing compared with the other form groups.",
+      "The memory settings appear as a section inside the 'Edit Public memory fixture' project dialog, not as a separate memory settings screen. The public-repository notice, the 'Keep project memory' select and the 'Memory folder' field are all visible and readable."
     ]
   }
 }

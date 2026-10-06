@@ -10,7 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background is blurred under the modal overlay. This is expected, but the background content can't be read in this capture."
+      "Background content behind the modal is blurred, which is expected for the modal overlay",
+      "The 'Discard checkpoints' primary button and the 'Back' secondary button differ noticeably in visual weight, though both are clear"
     ]
   }
 }

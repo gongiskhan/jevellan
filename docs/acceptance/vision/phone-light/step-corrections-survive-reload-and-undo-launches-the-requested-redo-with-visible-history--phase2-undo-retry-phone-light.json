@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The error message lists 'disabled' eight times instead of naming the models or giving a reason. It is readable, but it doesn't tell the user anything useful.",
-      "The same error text appears twice: once in the red banner and again inside the 'Resume correction · step 1' card.",
-      "The header title is cut short with an ellipsis ('Change the value to three, then redo this…'), though the full text is shown in the subtitle line below it.",
-      "The scrolled user message bubble at the top is partly hidden under the sticky header. This is normal scroll behaviour, and the Retry and Edit buttons are still fully visible."
+      "The user message bubble at the top is partly scrolled under the sticky header, so its first line is clipped. This comes from the scroll position; the full text still shows in the header subtitle.",
+      "The header title is cut off with an ellipsis ('Change the value to three, then redo this…'), which is expected on a narrow phone screen.",
+      "The error message repeats 'disabled' eight times, which is hard to read and gives no useful detail. Listing each model's name with its reason would be clearer.",
+      "The same 'No model can run this step right now' error appears twice: once in the red banner and again inside the Resume correction card."
     ]
   }
 }

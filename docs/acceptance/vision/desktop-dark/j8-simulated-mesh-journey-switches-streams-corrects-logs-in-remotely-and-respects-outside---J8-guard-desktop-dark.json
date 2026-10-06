@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar conversation list, the 4th item (around y≈712) is partly clipped where the scroll area ends just above the 'Some native sessions are unavailable' row. It looks like a half-visible line of text, but scrolling can still reach it.",
-      "There are two 'Retry' buttons: one on the user message bubble and one under the error banner. This makes it unclear which one to use.",
-      "The 'Retry' and 'Try automatic again' buttons are stacked vertically with different styles (filled vs outlined), so they look a little out of line with each other.",
-      "Conversation titles and subtitles in the sidebar are cut short with an ellipsis (for example 'J8: implement after the o…'). This is intentional, but it hides the full name."
+      "In the sidebar conversation list, a fourth row is cut off partway down at the bottom of the scroll area, just above 'Some native sessions are unavailable'. Only the top half of its text shows, so it looks clipped instead of fading out.",
+      "The guard screen's 'Retry' and 'Try automatic again' buttons are stacked on top of each other with different styles (one filled, one outlined) and sizes, so they look inconsistent instead of like a matching pair.",
+      "Long conversation titles and subtitles in the sidebar end in ellipses ('J8: implement after the o…', 'Mesh journey fixture ·…'). This is expected, but the full title can't be seen without opening the conversation.",
+      "The 'Waiting for you' count badge (7) is low-contrast pink text on a dark chip."
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fourth tab in the top tab strip is clipped behind the scroll arrow, so only its icon shows. The strip scrolls sideways and the arrow can reach the tab.",
-      "Metadata lines (e.g. 'Local · Loose · Rigging local fixture · Claude Code') are small, low-contrast monospace text that wraps onto a second line. They are still readable."
+      "Tab bar is cut off at the right edge: the fourth tab shows only a partial icon behind the scroll-right chevron. It can still be reached by scrolling.",
+      "Small monospace metadata lines (e.g. 'Package · Parked · Rigging local fixture · Claude Code') are low-contrast grey on the dark background but still readable."
     ]
   }
 }

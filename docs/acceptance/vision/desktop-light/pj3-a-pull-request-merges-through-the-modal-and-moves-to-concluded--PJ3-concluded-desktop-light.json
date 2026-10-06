@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Long titles are shortened with an ellipsis: the running thread title in the right panel and the sidebar shell-session names and subtitles (e.g. 'Context · J11 memory jour…'). The full text cannot be read in place, but this looks like intended truncation.",
-      "Two 'Noted.' coordinator replies appear back to back above the merged card, which looks repetitive.",
-      "There is a lot of empty space in the left sidebar between the session list and the 'Some native sessions are unavailable' footer."
+      "The running thread title in the right rail ('Read through the project and list what each file is…') is cut off with an ellipsis, but it's still readable.",
+      "Session row titles and metadata in the left sidebar ('Context · J11 memory jour…', 'Context · Mesh journey fix…', 'dev-ma…') are cut off with ellipses.",
+      "The Pull Requests count shows 0 while the conversation shows PR #1 being merged. This is correct for the Concluded state, where 'Add a greeting' shows 'Merged #1'.",
+      "The status at the top says 'Idle' even though the right rail lists 1 running thread. This may be correct (the coordinator is idle), but it could confuse readers."
     ]
   }
 }

@@ -10,10 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar conversation list, a fourth item is cut off halfway at the bottom of the scroll area, just above 'Some native sessions are unavailable'. Only the tops of its letters show, so it looks like stray marks; a fade or tighter clipping would look cleaner.",
-      "Sidebar conversation titles and subtitles are cut off with an ellipsis (e.g. 'J8: run on device B while ...', 'Recovery e2fbada9-5274...'). This is expected truncation, but the meta lines are hard to read at that small monospace size.",
-      "The sidebar entry for the active conversation says 'Ready', but its header badge says 'Waiting for you'. The two status labels don't match.",
-      "The empty space between the next-step panel and the composer is fine, but the 'Try automatic again' button is far from the 'Continue' action. The recovery choices feel slightly disconnected."
+      "The fourth conversation in the sidebar list ('...external activity...') is partly cut off at the bottom edge of the scrollable list, directly above 'Some native sessions are unavailable'. It looks like normal scroll clipping, not an overlap.",
+      "Conversation titles and subtitles in the sidebar are shortened with ellipses (e.g. 'J8: run on device B while ...', 'Recovery 39a800d3-e8c...'), so the full text isn't visible without hovering or opening them."
     ]
   }
 }

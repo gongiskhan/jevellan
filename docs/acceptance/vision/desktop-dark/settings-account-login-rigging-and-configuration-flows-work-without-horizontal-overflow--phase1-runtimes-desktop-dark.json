@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Some conversation titles and subtitles in the sidebar are cut off with an ellipsis (e.g. 'Context · J11 memory journ…', 'Waiting for you · Browser fixtur…'). This looks like deliberate truncation.",
-      "The Claude Code card's device sign-in panel says 'Codex sign-ins are kept per device for now.' That looks like the wrong runtime's text.",
-      "The five-hours and week usage bars all show 'Unknown' and look empty with very low contrast, so they are hard to see against the dark card.",
-      "The 'Log in on Offline fixture' links are muted grey compared with the pink action links. That fits a disabled state, but it is less visible."
+      "The Claude Code card's device list ends with the note 'Codex sign-ins are kept per device for now'. That note seems to belong to Codex, not Claude Code.",
+      "The 'Five hours' and 'Week' usage bars are empty and barely visible against the dark background.",
+      "Long conversation titles and subtitles in the sidebar are cut off with an ellipsis, which looks intentional.",
+      "The 'Log in on Offline fixture' links are greyed out and hard to read, which looks intentional for offline devices."
     ]
   }
 }

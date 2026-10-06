@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and metadata get truncated with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'), but these are list rows where truncation is expected",
-      "Very large empty area between the report card and the composer",
-      "The attached thread's composer appears disabled only through a dashed border and muted placeholder, which is a subtle cue"
+      "The titles and metadata of the sidebar session rows are cut off with ellipses (for example 'Context · J11 memory jour…' and 'Done · Mesh journey fixture · de…'). This looks like intended single-line truncation.",
+      "The disabled composer's placeholder text 'Message this thread' and the greyed-out send button are low contrast, but they are still readable and fit the disabled state.",
+      "The muted monospace metadata line under the header ('Claude Code · Fable · high effort …') is small and light grey, but it is still readable."
     ]
   }
 }

@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Adversarial Rev...' label in the next-step list is cut off with an ellipsis; the full option name doesn't show at phone width.",
-      "The last correction entry is clipped at the bottom of the viewport ('implement in Browser fixture, small change, no risky areas' ends mid-line). This looks like normal scroll overflow, but the screenshot doesn't show the rest of the panel.",
-      "The empty bar tracks for the zero-score rows are very low contrast against the dark background. The 0.00 values are still readable."
+      "The 'Adversarial Rev…' label in the Next Step list is shortened with an ellipsis. It's still recognisable, but the full name isn't shown.",
+      "The second 'Override and undo' entry is cut off at the bottom of the screen ('…no risky areas'). This looks like normal scrolling rather than content that's clipped for good.",
+      "The Effort section says 'medium → high' and the note says high is in use, but the bars show medium at 1.00 and high at 0.00. That may confuse readers, though it's a content issue, not a layout one.",
+      "The 'Jev' source labels and the 'only option' tag are very small, low-contrast grey text on the dark background. They're readable but faint."
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Header 'Projects fixture' title and the action icons (+, document, more) sit close together on the narrow width, but none of them overlap",
-      "The large empty area between the last message and the composer is expected because the conversation is short"
+      "Large empty area between the last message and the composer at the bottom (normal for a short conversation)",
+      "The header model label 'Claude Code Fable · high' is in small monospace type, but it is still readable"
     ]
   }
 }

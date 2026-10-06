@@ -10,11 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Read through the project an…'). This is expected on a narrow phone screen, but the full title can't be read.",
-      "The terminal attach command is cut off ('thread_01M484Q8MEK65CE…'). There's a copy button, but the full ID can't be read on screen.",
-      "The status text 'Working on turn 1…' may be cut off or just uses an ellipsis to show progress; it's hard to tell which.",
-      "There's a large empty area between the transcript tool rows and the composer, which makes the layout look sparse.",
-      "The metadata lines at the top (worktree path, branch) are small, low-contrast monospace text, though still readable."
+      "The header title is cut off with an ellipsis ('Read through the project an…'). It's still readable and the full prompt appears below.",
+      "The 'Working on turn 1…' status text ends in an ellipsis; this may be a loading indicator or the text may be cut off.",
+      "The terminal attach command is cut off ('thread_01M48JAS3BWCPVJ…'), but the copy button next to it gives access to the full command.",
+      "There's a large empty gap between the last tool card and the composer area.",
+      "No report card is visible in this capture. This could be expected while the thread is still running; it's judged in another step."
     ]
   }
 }

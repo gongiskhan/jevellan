@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip clips at both edges: an icon shows at the far left and 'Projects' sits right against the next arrow. It reads as a scrollable strip and the arrows can reach the hidden tabs.",
-      "'1 running conversations' is grammatically wrong; it should say '1 running conversation'.",
-      "On the 'dev-madrid' and 'Offline fixture' cards, the 'Open' button is low-contrast grey. It's still readable and probably means the button is disabled on purpose.",
-      "'Claude Code active in activity-context-project · 11 minutes ago' wraps, leaving 'ago' alone on its own line."
+      "The tab strip clips the labels at both edges: a stray 's' shows on the left and 'Projects' is cut off on the right. It scrolls horizontally with arrow buttons, so the tabs can still be reached.",
+      "The 'Open' buttons on the dev-madrid (this device) and Offline fixture cards are low-contrast and look disabled. That is probably intentional, but they are faint.",
+      "The disabled 'Automatic device choice' checkbox and its 'Coming later.' note are pale grey and low-contrast, though still legible."
     ]
   }
 }

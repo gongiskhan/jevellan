@@ -10,8 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background behind the modal is dimmed heavily, so the page text behind it (the tabs, the PR row, \"Checks pending\") is very low contrast. This is expected for a modal backdrop.",
-      "Most of the screen below the modal is empty dark space. The modal sits in the upper-middle of the viewport rather than being centered or attached to the bottom as a sheet."
+      "The PR card's 'Merge' button in the dimmed background has low contrast and looks pressed or disabled, but that is expected behind an open modal."
     ]
   }
 }

@@ -9,6 +9,9 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": []
+    "cosmetic": [
+      "The dialog says the step will be redone with \"Reply, Fable, low\", but the Effort field behind it shows \"high\". This may be a data mismatch rather than a layout problem.",
+      "The modal backdrop blurs the page behind it heavily. This is expected for a modal, and the dialog itself is fully legible."
+    ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dialog says \"Paste the test authorization code.\" but no code input field is visible. This may be intentional while the dialog waits for sign-in, but the instruction doesn't match what's on screen.",
-      "The long recovery ID in the title wraps onto two lines and makes the header heavy.",
-      "The page behind the dialog is blurred and dimmed. That is expected for a modal, but the dialog's bottom edge sits close to the card content underneath."
+      "The modal title wraps the full raw UUID ('Login recovery 8c839ade-3fad-4fbe-8576-9c414f7dddc8') onto two lines. It is readable but long and noisy for a phone header.",
+      "The prompt 'Paste the test authorization code.' appears without a visible code input field. This is probably intended because the code was already sent and the screen is waiting, but the leftover instruction may confuse users.",
+      "The 'Code sent. Waiting for sign-in to finish…' status and the 'Can't reach Jevellan' error banner show at the same time. That fits this step of the scenario, but it can read as mixed signals."
     ]
   }
 }

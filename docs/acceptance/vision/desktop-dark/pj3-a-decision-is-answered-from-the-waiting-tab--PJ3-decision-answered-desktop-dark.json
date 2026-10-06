@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar shell-session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). The truncation is intentional, but it hides the full names.",
-      "The small monospace metadata text is low-contrast on the dark background but still readable. This covers timestamps, 'Codex · GPT · high · Worktree · Browser member' and the 'Waiting for the coordinator' caption.",
-      "There is a large empty area under the conversation, above the composer."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Mesh journey fix…'). This looks like intentional truncation and does not hide any controls.",
+      "The empty-state labels 'Nothing waiting.' and 'No threads running.' in the right panel are low-contrast grey on the dark background, but they are still readable.",
+      "The answered-decision card's 'Waiting for the coordinator' text is small and dim, but it is still readable."
     ]
   }
 }

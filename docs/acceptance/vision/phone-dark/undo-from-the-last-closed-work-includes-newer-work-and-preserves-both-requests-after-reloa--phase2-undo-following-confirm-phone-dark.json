@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The page title behind the overlay is cut off with an ellipsis (\"Change the value to two and publish th…\"). This is intended truncation and the title is dimmed behind the modal.",
-      "The background content is dimmed and partly hidden by the modal. This is expected for a confirmation dialog."
+      "Header title is cut short with an ellipsis ('Change the value to two and publish th…'). This is deliberate truncation, and the full text appears in the conversation behind it.",
+      "The background behind the modal is dimmed and hard to read, which is expected while a modal is open. The dialog itself is fully visible and legible, and both buttons ('Undo and redo', 'Back') and the close control can be reached.",
+      "The screen shows the confirmation dialog still open, not the state after confirming. If 'undo following confirm' was meant to capture the state after confirming, the screenshot may have been taken too early."
     ]
   }
 }

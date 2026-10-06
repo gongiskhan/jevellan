@@ -10,10 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles are truncated with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…') and their subtitles are cut off, but hovering shows the full text",
-      "Notebook panel's project label 'Projects fixture' is rendered in a pink monospace font that doesn't match the 'Notebook' heading next to it",
-      "The chat feed has many 'Noted.' replies and repeated event cards, which looks noisy, though it is still readable",
-      "Footer note 'Some native sessions are unavailable' is low-contrast small text"
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Mesh journey fixt…'). The ellipses look intentional, and the full text isn't needed for the notebook panel.",
+      "'Some native sessions are unavailable' is a small, low-contrast link that is somewhat hard to read."
     ]
   }
 }

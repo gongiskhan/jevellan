@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fourth tab in the horizontally scrolling tab bar is clipped behind the scroll arrow. It can still be reached by scrolling, so this isn't blocking.",
-      "In the warning banner, the 'Retry' button sits right against the end of the sentence 'needs to finish.' with almost no space between them.",
-      "The Safety hook's gray locked checkboxes are low-contrast against the dark background, but the labels are still readable.",
-      "The page continues below the visible area (the Hooks section is cut off at the bottom of the screenshot). This is normal vertical scrolling, not overflow."
+      "The settings tab strip cuts off the fourth tab after 'Decisions' (only part of its icon shows) behind the scroll-arrow button. This looks like a deliberate horizontally scrolling tab row, and the arrow keeps the tab reachable.",
+      "In the warning banner, the inline 'Retry' button sits tight against the end of the wrapped text 'needs to finish.', so the line spacing looks uneven.",
+      "The metadata lines (e.g. 'Local · Loose · Rigging local fixture · Claude Code') are small, low-contrast grey monospace text. They can still be read.",
+      "The 'Safety' hook's Claude Code and Codex checkboxes are greyed out. This looks like an intentional disabled state for a required built-in hook."
     ]
   }
 }

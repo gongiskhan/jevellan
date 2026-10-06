@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The left 'Edit the after text' box still says 'Preferred for review steps.', but the revised diff below shows 'Only for reviews of the improver fixture.' It is unclear which text 'Apply this' will save.",
-      "The revised diff line is long and only just fits inside its code block at this width, so a slightly longer revision would likely need wrapping or scrolling.",
-      "The background page is dimmed and blurred by design, so the content behind the modal is unreadable. This is expected and does not block anything."
+      "The revised change line comes out as 'Strong default for planning, implementation and reviews. Only for reviews of the improver fixture.' The original sentence stays and the new one is added after it, so the result reads oddly even though it's fully legible.",
+      "Both text areas have a lot of empty space below the text, so the modal is taller than it needs to be.",
+      "The edited after text ('...Preferred for review steps.') and the revised change preview don't match. Two different texts are shown, which could make it unclear which one 'Apply this' will use."
     ]
   }
 }

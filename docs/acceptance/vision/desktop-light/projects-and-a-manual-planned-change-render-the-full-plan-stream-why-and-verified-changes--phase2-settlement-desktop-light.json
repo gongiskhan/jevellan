@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the dimmed background, the 'Proposed plan' heading and its 'The full fixture plan' subtitle sit very close together, possibly overlapping. The modal overlay covers them, so this doesn't affect the settlement screen.",
-      "The 'Discard…' button label ends in an ellipsis. This looks intentional (the action opens a confirmation step), not text being cut off."
+      "The background behind the overlay is dimmed and blurred, so it is hard to read. That is expected while the dialog is open.",
+      "In the dimmed background, the 'Proposed plan' heading and the 'The full fixture plan' subtitle look tightly stacked and may slightly overlap.",
+      "In the dimmed sidebar, the last conversation item looks clipped above the 'Some native sessions are unavailable' notice."
     ]
   }
 }

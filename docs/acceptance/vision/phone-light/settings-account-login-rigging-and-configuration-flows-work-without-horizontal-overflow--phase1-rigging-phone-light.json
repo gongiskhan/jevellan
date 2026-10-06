@@ -10,11 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the tab bar, the scroll-arrow button covers part of the fourth tab, leaving only its moon icon visible. The bar scrolls, so the tab can still be reached.",
-      "The Safety hook's Claude Code and Codex checkboxes are disabled and pale grey, so their labels have low contrast. This looks intentional, and they are still readable.",
-      "The small monospace metadata lines (e.g. 'Local · Loose · Rigging local fixture · Claude Code') wrap across lines and are dense, but still legible.",
-      "The inline 'Retry' button in the warning banner sits tight against the end of the sentence 'needs to finish.'",
-      "The page runs past the bottom of the screen at the Hooks section (Safety). This is normal vertical scrolling, not overflow."
+      "The fourth tab in the top tab strip is cut off behind the scroll-right button. It can still be reached with that button, but the label can't be read.",
+      "In the warning banner, the 'Retry' button sits right against the word 'finish.' with almost no space before it.",
+      "The disabled Claude Code and Codex checkboxes under Safety (Hooks) have very low contrast. This is probably intentional for a disabled state, but they are faint."
     ]
   }
 }

@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The editor shows JSON content, but the file label says config.toml, so the format doesn't match the file type.",
-      "The dimmed page behind the modal is visible at the top and bottom edges. This is expected for a modal overlay."
+      "The file is labeled config.toml, but the editor content is JSON. This looks like a fixture data quirk and doesn't affect the layout.",
+      "The textarea has a lot of empty space below the short content.",
+      "The background behind the modal is dimmed, so the underlying page text (header tabs, Project memory and Safety sections) is low-contrast. This is expected for a modal overlay."
     ]
   }
 }

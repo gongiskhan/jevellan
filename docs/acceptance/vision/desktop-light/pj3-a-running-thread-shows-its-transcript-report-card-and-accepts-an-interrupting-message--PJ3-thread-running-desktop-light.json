@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses ('Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). The truncation looks intentional, but the full names can't be read.",
-      "The four tool-call rows (Read, Grep, Bash, Read) are all collapsed, so the transcript doesn't show its content until a row is expanded.",
-      "There's a lot of empty space between the transcript and the composer.",
-      "The 'Some native sessions are unavailable' note at the bottom of the sidebar is small and low-contrast."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). They are still readable and have enough context to identify each session.",
+      "The tool rows in the transcript (Read, Grep, Bash, Read) are collapsed and show only 'completed', so this capture doesn't show what each step did.",
+      "The 'Working on turn 1…' status text and the take-over hint below the composer use small type, but both are still readable."
     ]
   }
 }

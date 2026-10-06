@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Read through the project an...'). That is expected for a long title in a narrow header, but the full title can't be seen on this screen.",
-      "The terminal attach command at the bottom is cut off ('thread_01M484Q8MEK65CE...'). The copy button next to it still gives the full value.",
-      "The status badge says 'Idle' while the step describes a running thread. This is a state or label question, not a layout problem."
+      "The header title is cut off with an ellipsis ('Read through the project an...'). That is expected for a long title on a phone-width screen.",
+      "The 'jevellan thread attach thread_01M48JAS3BWCPVJ...' command at the bottom is cut off with an ellipsis. The copy button next to it still works, so this doesn't block anything.",
+      "The worktree path in the metadata block wraps over several lines in small monospace text. It is still readable but looks crowded.",
+      "The tool rows (Read, Grep, Bash, Read) are collapsed, so you can't see their details until you tap them. This is expected behavior."
     ]
   }
 }

@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation titles and metadata lines are truncated with ellipses (e.g. 'Exercise composer choic…', 'Done · Automatic fixture · dev-m…'); this is intentional truncation and full titles show elsewhere",
-      "Step 2 (Reply) repeats 'The plan has three steps.' from Step 1, which looks like duplicated fixture text",
-      "The 'Proposed plan' card has a lot of empty space on the right compared with how little content it holds"
+      "Sidebar conversation titles and metadata lines are truncated with ellipses (e.g. 'Exercise composer choic…', 'Done · Automatic fixture · dev-m…'). This is intended truncation, and the full title is shown in the main header.",
+      "There is a lot of empty vertical space between the last step's divider and the composer input at the bottom."
     ]
   }
 }

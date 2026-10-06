@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row behind the modal is clipped at the right edge (a fourth tab is partly cut off). It looks like a horizontally scrolling tab strip, and it's dimmed by the modal overlay.",
-      "The pink 'Source' link has fairly low contrast against the dark modal background.",
-      "The editable instructions ('Edited local instructions' / 'Preserve the complete bundle.') have no visible field border, so it's hard to tell they can be edited."
+      "The tab row behind the modal (Runtimes / Rigging / Decisions …) is cut off at the right edge. It looks like a horizontally scrollable tab strip, and the modal covers it anyway.",
+      "The pink 'Source' link has fairly low contrast against the dark modal background, though it is still readable.",
+      "The modal has no visible text-editing area or park/restore controls in this state. It shows only the saved title, description and a reload notice, which may be intended for this step."
     ]
   }
 }

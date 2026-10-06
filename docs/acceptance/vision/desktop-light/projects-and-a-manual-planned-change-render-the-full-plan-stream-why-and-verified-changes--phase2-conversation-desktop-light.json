@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation titles and subtitles are cut off with an ellipsis (e.g. 'Change the value to two ...', 'Context · J11 memory journ...'). This is normal truncation, and the full title of the active conversation is shown in the header.",
-      "The two closing banners, 'Work closed. Its changes are kept...' and 'Work closed and published.', say much the same thing one after the other.",
-      "The Step 1 'Changes' button has no file count, while Step 2 shows '· 1 file'. That's probably fine for a plan step with no file changes."
+      "Two separate banners say roughly the same thing ('Work closed. Its changes are kept…' and 'Work closed and published.'), which reads as repetitive.",
+      "Step 1's Changes button has no file count, while Step 2's shows '· 1 file'. This is probably correct because the plan step changed no files, but the two buttons look inconsistent.",
+      "Some sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Change the value to two …', 'Done · Manual conversation fixtu…'). This looks like intended truncation, and the full title is visible in the main header."
     ]
   }
 }

@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The muted gray text in the subtitle ('Claude Code Fable · high') and the 'Started \"Add a greeting\"' activity line has fairly low contrast against the dark background, but it can still be read.",
-      "The large empty space between the chat reply and the composer is expected for a short conversation."
+      "The title 'Projects fixture' is shown in the header but no project page content is visible. The screen shows only the coordinator chat, which fits the chat reply step.",
+      "The 'Idle' status pill and the 'Claude Code Fable · high' subtitle are small, low-contrast monospace text. They are still readable.",
+      "There is a lot of empty space between the reply and the composer. This is expected for a short conversation."
     ]
   }
 }

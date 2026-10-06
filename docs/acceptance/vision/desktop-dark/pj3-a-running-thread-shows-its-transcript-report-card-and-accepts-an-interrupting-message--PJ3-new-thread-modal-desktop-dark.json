@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Title and task text are swapped: the Title field holds the long task sentence ('Read through the project and list what each file is for, one line per file') and the Task field holds the short label ('PJ3 long: read the project files, then wait for my message.'). This is probably test data, not a layout problem.",
-      "The Task textarea has a lot of empty space below its single line of text."
+      "The Title field holds a long instruction-style sentence instead of a short title, though it still fits without being cut off.",
+      "Behind the modal, the background content is dimmed and blurred into near illegibility. This is expected for a modal backdrop."
     ]
   }
 }

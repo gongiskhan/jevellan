@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab bar runs past the right edge, so the 'Devices' tab is partly cut off. It looks like a horizontally scrollable tab strip, so the tab can still be reached.",
-      "The screenshot stops at its 6000px height partway through the last 'Recently decided' card ('Prefer GPT for implement steps'). This is the capture's height limit, not a layout fault.",
-      "Long diff lines in the suggestion cards wrap mid-path, which makes the diffs harder to scan but leaves them readable.",
-      "The trial log table has narrow columns, so headers like 'WHY THEY FINISHED ELSEWHERE' wrap over several lines."
+      "The top tab strip is clipped at the edges. The first tab ('Decisions') is partly hidden at the left, so it only looks like a horizontal scroller.",
+      "The 'Trial log' table is cramped at phone width. The column headers wrap onto several lines ('WITH JEVELLAN', 'OUTSIDE', 'MAY THEY FIND SIMILAR').",
+      "Long diff lines in the suggestion cards wrap onto extra lines, which makes the diffs harder to scan.",
+      "The page is very long (about 5,958 px). The 'Schedule and jobs' list and the 'Last runs' list could be collapsed by default."
     ]
   }
 }

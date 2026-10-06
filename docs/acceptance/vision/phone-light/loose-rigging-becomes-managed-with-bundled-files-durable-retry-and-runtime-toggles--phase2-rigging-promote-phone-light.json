@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Claude Code · Current account checkbox is greyed out. That's likely because it's disabled, and it isn't explained on screen.",
-      "The page behind the modal (tab strip, 'browser-promote' and 'browser-package' rows) shows through dimmed under the overlay, which is expected backdrop behavior."
+      "The disabled 'Claude Code · Current account' checkbox and its label are low-contrast, but still readable.",
+      "In the dimmed background, the tab strip cuts off a fourth tab at the right edge. A scroll chevron is shown and the background is inactive while the modal is open."
     ]
   }
 }

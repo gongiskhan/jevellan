@@ -10,7 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The panel has a lot of empty white space under the short note. That's expected for a note this short."
+      "Most of the panel below the content is empty, which is normal for a short note.",
+      "The \"Projects fixture\" breadcrumb is small and pinkish, but it's still readable."
     ]
   }
 }

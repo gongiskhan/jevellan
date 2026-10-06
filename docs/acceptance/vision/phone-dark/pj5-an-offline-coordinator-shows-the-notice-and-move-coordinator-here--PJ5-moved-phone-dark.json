@@ -10,10 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'moved' notice has no button or link to open dev-madrid or move the coordinator back, so the user can't act on it from here (this may be judged in another step's screenshot).",
-      "The header title 'Projects offline' sits next to an 'Idle' status, which reads oddly together on a moved-coordinator screen.",
-      "The chat area below the notice is a large empty space with no placeholder or empty-state text.",
-      "The send button looks disabled and has low contrast against the input field, though it is still visible."
+      "The header still says \"Projects offline\" even though the notice says the coordinator moved to dev-madrid. This may be stale status text.",
+      "Large empty area between the notice and the composer; the chat has no content or empty-state hint."
     ]
   }
 }

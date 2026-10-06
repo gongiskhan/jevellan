@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Exercise automatic decisions: change t...'), but the full text appears in the subtitle line and the message bubble.",
-      "There are about 14 stacked 'Review … fixture' links that crowd the recovery area. They push the composer far below the 'Try automatic again' action and look noisy on a phone.",
-      "The 'Review Login recovery' links show raw UUIDs that wrap across two lines, which is hard to read and looks unpolished.",
-      "The review links are packed in an uneven flow layout: some rows have two links and others have one, so the alignment is ragged."
+      "The header title is cut off with an ellipsis (\"Exercise automatic decisions: change t...\"), but the full text appears in the subtitle and the message bubble, so nothing is lost.",
+      "The \"Review ...\" fixture links take up most of the screen and wrap unevenly. The two \"Review Login recovery\" links, which include long IDs, each wrap onto two lines. Everything is still readable and tappable.",
+      "The \"Review ...\" links are packed closely together, so they make small tap targets on a phone."
     ]
   }
 }

@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Save schedule and jobs' button has low contrast and looks disabled. It is still readable.",
-      "Session titles in the left sidebar are cut short with an ellipsis (for example 'Exercise answer options: ...' and 'Context · J11 memory jour...'). The ellipsis is deliberate, not clipping.",
-      "The 'Memory care' mode field shows 'Apply and tell me' in a dim, placeholder-like style. It looks different from the 'Suggest' labels on the other rows."
+      "Session titles and subtitles in the sidebar are cut off with an ellipsis (e.g. 'Exercise answer options: ...', 'Context · J11 memory jour...'). This looks like intended truncation, and the main content is unaffected.",
+      "The quoted dismissal reason \"Plans stay on Fable.\" on the Dismissed card is small, low-contrast muted text with no label. It is readable but easy to miss.",
+      "The 'Save schedule and jobs' button and the 'Apply and tell me' field are low-contrast, so they look disabled or like placeholders.",
+      "The 'Last runs' card is much shorter than 'Schedule and jobs', which leaves a large empty area beside it."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Path on dev-madrid' input cuts off the long path value at the right edge (/tmp/jv0c5et/jevellan-browser-pSPEPt/settings…). This is normal input overflow, but the full path can't be seen without scrolling inside the field.",
-      "The Git policy notice ('…The original branch is preserved…') is clipped at the bottom of the scrollable modal body, where it meets the sticky footer. The body appears to scroll, but nothing on screen shows there is more content below.",
-      "The disabled 'Saving…' button has low contrast against its pale background, though it is still readable."
+      "The Git policy note is cut off mid-line at the bottom of the scrollable dialog body (\"The original branch is preserved...\"). It looks like a scroll boundary above the sticky footer, not a layout break.",
+      "The 'Path on dev-madrid' input cuts off its long path value. This is normal overflow for a single-line text field.",
+      "The modal's lower part is crowded: the footer buttons and the hub wait banner together take up about a third of the dialog height on this phone viewport, leaving little room for the form."
     ]
   }
 }

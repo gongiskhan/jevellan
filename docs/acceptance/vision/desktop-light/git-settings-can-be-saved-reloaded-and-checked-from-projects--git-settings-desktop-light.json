@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Waiting for you · Browser fixtur…'). This is intentional truncation and the screen is still usable.",
-      "The 'Save Git settings' button looks disabled or low-contrast, but its label can still be read."
+      "The 'Save Git settings' button is low-contrast and looks disabled. That may be on purpose, since nothing has changed yet.",
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…'). This looks like intentional truncation.",
+      "The breadcrumb 'Settings · Git' is small and light gray, but still readable."
     ]
   }
 }

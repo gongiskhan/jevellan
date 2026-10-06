@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal is scrolled, so the intro paragraph above the diff is partly hidden under the sticky dialog header (only its last lines show: \"...context fixture on dev-maund. Review the current changes before accepting a context checkpoint.\")",
-      "The longest diff line (\"+A newer synthetic outside contribution.\") runs right up to the code block's right edge with almost no padding; it is still fully visible",
-      "The red \"These files changed since your review\" notice sits close to the bottom edge of the modal"
+      "The modal body is scrolled, so the top of the intro paragraph ('...context fixture on dev-maund. Review the current changes...') is partly hidden under the sticky header. It can be reached by scrolling.",
+      "The longest diff line ('+A newer synthetic outside contribution.') almost touches the right edge of the code block.",
+      "The error banner at the bottom of the modal is close to the 'Current instruction files' disclosure, so the end of the dialog feels crowded."
     ]
   }
 }

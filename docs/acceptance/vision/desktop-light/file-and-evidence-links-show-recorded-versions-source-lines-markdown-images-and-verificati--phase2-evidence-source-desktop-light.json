@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The middle conversation pane is cut off at the bottom by the 'Jump to latest' bar, so Step 2's 'Changes / Why / Change step' buttons are only half visible. This is ordinary scroll clipping and they can be reached by scrolling.",
-      "In the sidebar, the fourth conversation item is cut off above the 'Some native sessions are unavailable' row. This is also scroll clipping.",
-      "The evidence panel has a lot of empty space below the 'Open working copy' and 'Open recorded step' links.",
-      "The recorded checkpoint hash is shown in small, low-contrast monospace text."
+      "Sidebar conversation list cuts a fourth row off partway, so only its top edge shows above 'Some native sessions are unavailable'. This looks like normal scroll clipping.",
+      "The middle transcript is scrolled so the top 'Step details' card is partly hidden under the conversation header. This is also scroll clipping.",
+      "The evidence panel has a lot of empty space below the code block and its links."
     ]
   }
 }

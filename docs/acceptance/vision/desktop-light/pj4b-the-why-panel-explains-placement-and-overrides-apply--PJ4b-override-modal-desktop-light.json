@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Background content behind the modal overlay is dimmed and blurred, which is expected for a modal, so its small text can't be read",
-      "The Note textarea has a pink/magenta focus border, which is a little strong next to the neutral inputs"
+      "Background content behind the modal overlay is dimmed and slightly blurred, as expected for a modal backdrop",
+      "Note textarea has a pink/magenta focus border, which is consistent with the accent color but slightly heavy"
     ]
   }
 }

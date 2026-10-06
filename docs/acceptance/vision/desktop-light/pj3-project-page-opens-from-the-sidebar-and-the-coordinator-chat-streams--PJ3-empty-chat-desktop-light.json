@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Some sidebar session titles and subtitles are shortened with ellipses (for example 'Context · J11 memory jour…' and 'Done · Mesh journey fixture · de…'). The truncation is deliberate and the text is still readable.",
-      "The 'Some native session…' disclosure link at the bottom of the sidebar uses very small, light grey text with low contrast."
+      "Sidebar session titles are cut off with an ellipsis ('Context · J11 memory jour…', 'Context · Mesh journey fix…'), and so are their metadata lines ('dev-ma…', 'de…'). This is intended truncation, and the full titles can likely be seen on hover or by opening the session.",
+      "The empty-state prompt in the chat area is small, low-contrast gray text. It is still readable.",
+      "The mono metadata labels ('Codex · GPT · high · Worktree · Browser member', the status line under the title) are very small and light gray. They are still readable."
     ]
   }
 }

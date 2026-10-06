@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab strip cuts off the 'Devices' tab at the right edge. It looks like a horizontally scrollable strip, so the tab can still be reached.",
-      "In the diff code blocks, long lines wrap mid-path (for example 'b/menu/claude-sonnet/description'), which makes the diffs a little harder to scan.",
-      "Long titles under 'Last runs' (for example 'AGENTS.md · Outside context fixture') wrap to two lines next to the timestamp and 'Open log', so the list looks uneven."
+      "The top tab strip is clipped at the right edge (third tab reads 'Dec…'). It looks like a horizontally scrollable tab bar, but nothing on screen signals that more tabs are off to the side.",
+      "The page title is 'Settings · Improver', and no element is labelled 'morning card'. The 'Waiting for you (1)' AGENTS.md rule card at the top seems to be the card this step means.",
+      "The page is very long (about 4661px), so the 'Recently decided' cards are far below the fold.",
+      "The diff blocks use small monospace text with tight wrapping. It is readable but dense at phone width."
     ]
   }
 }

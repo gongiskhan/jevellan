@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The take-over command chip at the bottom is cut off with an ellipsis ('jevellan thread attach thread_01M484VN3EDRCCC…'). The copy button next to it still gives you the full command, and the full thread ID also appears in the banner at the top.",
-      "There is a large empty gap between the Turn 1 report card and the attached-composer notice at the bottom.",
-      "In the session details line, 'Worktree on jv/tidy-the-readme-wording-ner8z8 · dev-madrid' wraps awkwardly across lines."
+      "The attach command in the footer is cut off with an ellipsis ('jevellan thread attach thread_01M48JR4SPBCFK1…'). The copy button and the full thread ID in the top banner still make it usable.",
+      "The large empty gap between the report card and the footer notice makes the layout look sparse."
     ]
   }
 }

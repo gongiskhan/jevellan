@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab strip cuts the 'Devices' tab off at the right edge. Scroll arrows are visible, so the other tabs can still be reached.",
-      "In the Trial log table, the 'Week of' date '2026-10-05' breaks across two lines in its narrow column, and the 'Why they finished elsewhere' header wraps onto three lines.",
-      "The diff lines inside the code blocks wrap mid-path (for example, 'b/menu/claude-sonnet/description' moves to a new line), which makes the diffs a little harder to read."
+      "The tab strip cuts the 'Devices' tab off at the right edge. Scroll arrows are present, so it is still reachable.",
+      "In the Trial log table, the 'Week of' value '2026-10-05' wraps onto two lines because the column is narrow.",
+      "The header 'WHY THEY FINISHED ELSEWHERE' wraps onto three lines, which makes the Trial log table header row tall.",
+      "The long diff lines in the suggestion cards wrap in the monospace block, which makes them a bit harder to scan."
     ]
   }
 }

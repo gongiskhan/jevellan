@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The subtitle 'Done · Mesh journey fixture · dev-mad…' is cut off with an ellipsis. This is a deliberate overflow treatment, and the full context is still clear.",
-      "The dimmed main conversation shows through on the right edge behind the drawer overlay, which is expected for a mobile drawer.",
-      "The muted secondary text, like the 'PROJECTS' heading, the session subtitles and 'Some native sessions are unavailable', has fairly low contrast on the dark background but is still readable."
+      "Session subtitle 'Done · Mesh journey fixture · dev-mad…' is cut off with an ellipsis (intentional overflow handling, and the full name still shows in the title)",
+      "The main content behind the drawer overlay is partly visible and clipped, which is expected for a phone sidebar drawer",
+      "The 'Some native sessions are unavailable' row is in low-contrast muted text"
     ]
   }
 }

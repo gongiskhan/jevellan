@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'jevellan thread attach thread_01M484XNNEDWTY0…' command at the bottom is cut off with an ellipsis. The copy button next to it still gives the full command, and the full thread ID is shown in the banner at the top.",
-      "The 'Attached' pill next to 'Back to the project' is small and low-contrast but still readable.",
-      "The disabled composer's placeholder and send button are dim. That matches the disabled state, but they are faint against the dark background."
+      "The take-over command at the bottom ('jevellan thread attach thread_01M48K3G31FBZ2R…') is cut off with an ellipsis. The copy button next to it still gives you the full command.",
+      "The disabled composer ('Message this thread' with a dashed border and a dimmed send arrow) is low contrast against the dark background, though it is still readable.",
+      "The full thread ID in the top banner wraps onto a second line, which looks a little awkward but doesn't hide anything."
     ]
   }
 }

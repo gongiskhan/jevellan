@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Modal body copy 'Add a greeting will be squashed into main' reads awkwardly because the PR title isn't quoted or otherwise set apart from the sentence",
-      "Large empty area below the modal; the dialog sits roughly centred, but the lower half of the screen is just the dimmed backdrop"
+      "The PR title 'Add a greeting' in the modal body is plain text with no quotes or emphasis, so it reads as part of the sentence ('Add a greeting will be squashed into main')",
+      "The background behind the scrim is blurred and hard to read, which is expected under a modal"
     ]
   }
 }

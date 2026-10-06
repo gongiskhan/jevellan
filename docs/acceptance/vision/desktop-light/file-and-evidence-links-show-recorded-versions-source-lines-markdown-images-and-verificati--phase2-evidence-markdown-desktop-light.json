@@ -10,9 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar, the fourth conversation row is half-clipped at the bottom edge of the scrollable list, just above the 'Some native sessions are unavailable' note.",
-      "The main transcript's Step 2 '1 tool' row is cut off behind the 'Jump to latest' bar. This is expected scroll overflow, but it looks slightly crowded.",
-      "The 'Show source' toggle sits tight against the 'Evidence guide' heading, so it reads as part of the heading block."
+      "The evidence panel's Markdown renders completely and legibly: the 'Evidence guide' heading, both bullet items, the 'Source line' and 'Recorded pixel' links, and the 'Open working copy' / 'Open recorded step' actions are all visible.",
+      "In the sidebar, the fourth conversation row is cut off by the scroll area above 'Some native sessions are unavailable'. Its text is only partly visible, but it can be reached by scrolling.",
+      "In the main column, the '1 tool' row under Step 2 is partly hidden behind the 'Jump to latest' bar. This is scroll overflow and can be reached by scrolling.",
+      "The recorded checkpoint hash is very small monospace text on a tinted background. It is still readable but low in prominence.",
+      "'Show source' sits close above the 'Evidence guide' heading, so the spacing there is tight."
     ]
   }
 }

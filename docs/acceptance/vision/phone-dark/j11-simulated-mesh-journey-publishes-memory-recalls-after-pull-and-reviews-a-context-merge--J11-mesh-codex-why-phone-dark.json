@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The account list runs past the bottom of the viewport. More entries probably sit below the fold and need scrolling; the last visible row ('Evidence fixture: unsupported') is fully shown.",
-      "The warning box ends with 'Pick the next step:', but no choices appear inside it, so the prompt looks unfinished.",
-      "The secondary metadata text (labels like 'picked manually', the memory file names, the account rows) is small and low-contrast grey on the dark background, though it's still readable."
+      "The account list runs past the bottom of the screen and the last row ('Evidence fixture: unsupported') is partly clipped. This looks like a normal scrollable panel, not a layout bug.",
+      "Small grey labels like 'picked manually' and the section headings are low-contrast on the dark background, but they are still readable.",
+      "The panel shows the warning 'Jev is unavailable (authentication failed)'. That is app content rather than a rendering problem, but check that it's the state this step is meant to capture."
     ]
   }
 }

@@ -9,9 +9,6 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": [
-      "Background content behind the modal overlay is dimmed heavily, so the header metadata and sidebar are hard to read (this is expected behind a modal)",
-      "The textarea resize handle overlaps the bottom-right corner of the pink focus border of the Note field"
-    ]
+    "cosmetic": []
   }
 }

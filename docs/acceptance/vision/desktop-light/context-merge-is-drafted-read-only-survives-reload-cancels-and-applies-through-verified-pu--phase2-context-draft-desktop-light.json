@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Modal title 'Context · Context fixture' repeats the word 'Context', which reads awkwardly.",
-      "Diff lines that are just '-' or '+' (blank-line changes) look like stray characters.",
-      "The 'Open work' link sits below the Cancel/Apply buttons, apart from the other actions."
+      "The 'Open work' link sits a little awkwardly under the Cancel/Apply buttons, outside the button row's alignment.",
+      "The dimmed background is crowded behind the modal, which is expected while a modal is open."
     ]
   }
 }

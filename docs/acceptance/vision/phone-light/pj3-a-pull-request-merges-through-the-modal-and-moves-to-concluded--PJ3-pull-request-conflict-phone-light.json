@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The disabled 'Merge' button has low contrast (grey text on a light grey-blue background), though it can still be read and the disabled state makes sense for a conflicted pull request.",
-      "The header status line 'Idle Claude Code Fable · high' uses small monospace text that is a little faint.",
-      "Most of the screen below the single pull request card is empty."
+      "The Merge button is greyed out, which looks like a deliberate disabled state because of the conflict, but the screen has no hint telling the user why it can't be clicked.",
+      "Below the single PR card, most of the screen is empty."
     ]
   }
 }

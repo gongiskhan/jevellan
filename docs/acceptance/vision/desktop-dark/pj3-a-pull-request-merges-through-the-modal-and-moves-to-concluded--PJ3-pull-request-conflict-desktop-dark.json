@@ -10,12 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top of the conversation is cut off where it scrolls: the timestamp of the first 'YOU · PJ3: add a greeting' bubble is partly hidden under the header. This is normal scroll clipping.",
-      "The title of the running thread in the right panel is shortened with an ellipsis ('Read through the project and list what each file is ...').",
-      "Sidebar session names and their subtitles are shortened with ellipses ('Context · J11 memory jour...', 'Context · Mesh journey fix...', 'dev-ma...').",
-      "The Merge button in the PR card is low-contrast and looks muted next to the 'Open on GitHub' button. That may be on purpose because of the conflict, but it isn't clearly shown as either disabled or available.",
-      "The PR card shows 'Checks passing' and 'Conflicts' together. The timeline also shows 'Checks failing' and then 'Checks passing'. This looks consistent, though there are several near-duplicate status cards in a row.",
-      "The timeline has many repeated 'Noted.' replies, which adds visual noise."
+      "The title of the running thread in the right panel ('Read through the project and list what each file is ...') is cut off with an ellipsis and has no visible way to expand it.",
+      "Session titles and metadata in the sidebar ('Context · J11 memory journ...', 'Done · Improver sandbox · dev-ma...') are cut off with ellipses.",
+      "The coordinator's 'Noted.' reply repeats many times in the transcript, which adds visual noise.",
+      "The 'Merge' button on the PR card looks muted while the 'Conflicts' badge is showing, so it's unclear whether it can be clicked.",
+      "The transcript shows both 'Checks failing' and 'Checks passing' events for PR #1, one after the other, which may confuse readers (the badge correctly reads 'Checks passing')."
     ]
   }
 }

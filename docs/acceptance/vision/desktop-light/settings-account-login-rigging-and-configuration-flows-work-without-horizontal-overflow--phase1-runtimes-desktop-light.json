@@ -10,8 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Under the Claude Code card, the device list for 'Rigging local fixture' says 'Codex sign-ins are kept per device for now.', which looks like copy carried over from Codex by mistake.",
-      "Long session titles in the sidebar ('Context · J11 memory journ…', 'Context · Mesh journey fixt…') and their subtitles are cut off with ellipses. This looks intentional, but the full titles can't be read."
+      "Under Claude Code, the per-device sign-in footer says \"Codex sign-ins are kept per device for now.\" It looks like copy-paste text and should name Claude Code.",
+      "The \"Login recovery\" account names show full UUIDs, which makes the headings long and hard to read.",
+      "The \"Never automatically\" line under the Browser fixture API-key account has no label to explain what it refers to.",
+      "In the left sidebar, conversation subtitles are cut off with ellipses (e.g. \"Waiting for you · Browser fixtur…\"). This is intended truncation and the text stays readable."
     ]
   }
 }

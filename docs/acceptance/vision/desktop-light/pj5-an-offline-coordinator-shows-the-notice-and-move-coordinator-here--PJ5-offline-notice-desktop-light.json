@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Session titles and metadata lines in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This is normal truncation for a narrow sidebar.",
-      "The 'Some native sessions are unavailable' disclosure text is small and low-contrast, but you can still read it."
+      "Sidebar session titles and metadata lines are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · J11 memory journey · dev-…'). This looks like intentional overflow handling.",
+      "The body text is pale grey on a light background in places, such as the empty-state description and the 'Some native sessions are unavailable' footer. It's still readable, but the contrast is low."
     ]
   }
 }

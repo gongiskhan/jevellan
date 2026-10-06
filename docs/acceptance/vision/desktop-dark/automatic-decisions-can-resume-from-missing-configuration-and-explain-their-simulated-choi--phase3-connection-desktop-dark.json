@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Jev key saved.' toast sits on top of the Decisions subtitle and hides part of it ('Jev chooses each next step from the … give it'). The toast is temporary and has a close button, so the text can still be read once it goes away.",
-      "The Routing profile textarea cuts off its last line, so the text continues below the visible area. The box can be scrolled and resized, so the content can still be reached.",
-      "The last item in the sidebar conversation list ('Context · Improver sandbox') is cut off by the 'Some native sessions are unavailable' footer. The list scrolls, so it can still be reached.",
-      "Not a layout problem, but worth a look: the connection result says 'Saved model: jev-1.13.0. Returned models: jev-latest.' The saved model isn't in the returned list, and the screen doesn't flag this as a warning."
+      "The 'Jev key saved.' toast sits on top of the page subtitle and hides part of the line 'Jev chooses each next step from the … give it.' The toast is temporary and the subtitle is only descriptive, so nothing needed is hidden.",
+      "The Routing profile textarea text is clipped at the bottom edge (the last line is partly visible). The textarea is resizable and scrollable, so the text can still be reached.",
+      "The last conversation in the sidebar ('Context · Improver sandbox') is partly cut off at the bottom of the scrollable list. It can be reached by scrolling.",
+      "The Jev connection result shows 'Saved model: jev-1.13.0' while the test returned only 'jev-latest'. The mismatch is shown clearly and is not a rendering problem."
     ]
   }
 }

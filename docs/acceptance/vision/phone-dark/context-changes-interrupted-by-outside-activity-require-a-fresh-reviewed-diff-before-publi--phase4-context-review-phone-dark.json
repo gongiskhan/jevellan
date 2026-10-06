@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dialog body is scrolled, so the header partly hides the first line of the intro text ('...context fixture on dev-maund. Review the current changes...'). The text can still be reached by scrolling, but the screen's opening context isn't visible in this capture.",
-      "The diff block's long lines (e.g. '+A newer synthetic outside contribution.') come right up to the edge of the code panel with almost no right padding."
+      "The dialog body is scrolled, so the top line of the intro text ('...context fixture on dev-madhu. Review the current changes before accepting a context checkpoint.') is partly clipped under the sticky header. It can be read by scrolling up.",
+      "The diff block is dense monospace on a phone-width screen. It fits without wrapping or clipping, but there is little horizontal room for longer paths.",
+      "The red 'These files changed since your review' banner at the bottom sits close to the 'Current instruction files' disclosure, so the lower part of the dialog looks slightly crowded."
     ]
   }
 }

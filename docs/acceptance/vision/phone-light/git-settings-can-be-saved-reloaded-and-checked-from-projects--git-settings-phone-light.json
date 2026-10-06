@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The left tab label in the horizontal tab bar is cut off (\"es\") under the scroll arrow. The strip scrolls, so the tab can still be reached.",
-      "The disabled \"Save Git settings\" button has low-contrast text, which looks intentional for its disabled state.",
-      "The long repository path wraps in the middle of a word (\"activity-/context-origin.git\")."
+      "The settings tab bar cuts off the first and last tabs ('…ices' and 'Configurati…'). It scrolls sideways and has visible left/right arrow buttons, so those tabs can still be reached.",
+      "The long remote path in the 'Connected' result wraps in the middle of a word ('activity-' / 'context-origin.git'). It is still readable.",
+      "The disabled 'Save Git settings' button is low-contrast, but its label is still legible."
     ]
   }
 }

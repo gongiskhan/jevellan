@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Devices' tab label is clipped by the right scroll arrow in the tab strip. The strip scrolls sideways and has arrow buttons, so the tab can still be reached.",
-      "In the Memory care row, the disabled 'Apply and tell me' select and the greyed 'Save schedule and jobs' button have low contrast, though both can still be read.",
-      "The 'Simulated judge responses.' note in the case-check boxes is small, light-coloured text."
+      "The third tab label in the top tab strip is clipped ('Devi…') by the right scroll arrow. This looks like intentional horizontal scrolling, and the arrow lets you reach that tab.",
+      "The long diff header lines wrap mid-path in the code blocks (e.g. 'diff --git a/menu/codex-gpt/description' then 'b/menu/codex-gpt/description' on the next line). They're still readable but harder to scan.",
+      "In 'Memory care', the 'Apply and tell me' field looks like greyed placeholder text, so its current value is unclear."
     ]
   }
 }

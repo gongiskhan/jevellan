@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Header title is cut off with an ellipsis ('Read the README on the mem…'), though the full task name appears in the prompt card below.",
-      "The terminal attach command is cut off ('jevellan thread attach thread_01M484TMF0ATHSX…'), but the copy button next to it still gives access to the full command.",
-      "There is a large empty gap between the report card and the message composer."
+      "The header title is cut off with an ellipsis (\"Read the README on the mem...\"). The full task text appears in the Prompt card below it.",
+      "The terminal attach command is cut off (\"jevellan thread attach thread_01M48JQ2TFFJKM6...\"). The copy button next to it still gives the full command.",
+      "A lot of empty space sits between the report card and the message composer."
     ]
   }
 }

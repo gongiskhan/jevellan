@@ -10,7 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The page behind the dialog already shows the 'Work closed. Its changes are kept…' notice while the 'Close this work' dialog is still open, so the dimmed background looks like a later state than the dialog it sits behind."
+      "Background content behind the modal is dimmed and hard to read, but that is expected modal-overlay behavior",
+      "The 'Publish' button has a light filled style while 'Keep them' and 'Discard…' are outlined, so the visual weight is uneven (this may be on purpose to mark the primary action)"
     ]
   }
 }

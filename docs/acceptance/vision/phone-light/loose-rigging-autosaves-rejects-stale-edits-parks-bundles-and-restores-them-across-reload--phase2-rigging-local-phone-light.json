@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Behind the scrim, the background tab row is cut off at the right edge (a partial tab next to the scroll chevron). It can still be reached by scrolling.",
-      "Background list items at the bottom (browser-promote, browser-package) show through the dimmed overlay. Expected for a modal, but the dimmed monospace metadata is hard to read.",
-      "The 'Saved' status and the 'Source' toggle are on the same line with no visual grouping, so 'Source' could be mistaken for a status label rather than a control.",
-      "The success banner's close '×' is small. It may be a tight tap target on a phone."
+      "Behind the modal, the page's tab strip is cut off at the right edge after 'Decisions'. A scroll arrow is shown, so this is expected horizontal overflow.",
+      "The 'Source' toggle sits at the far right of the 'Saved' row. It is small and easy to miss as a control.",
+      "The background page text under the scrim is dim and hard to read. This is expected while the modal is open."
     ]
   }
 }

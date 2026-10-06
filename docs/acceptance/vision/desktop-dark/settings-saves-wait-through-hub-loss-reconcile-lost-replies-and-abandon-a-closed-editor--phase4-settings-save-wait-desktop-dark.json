@@ -10,8 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Saving…' button is shown in a low-contrast disabled style. That fits a pending save, but the label is harder to read than the other text.",
-      "In the wait banner, the 'Stop waiting' button sits in a fairly tight space next to the two-line message."
+      "The dimmed background shows through faintly behind the modal. This is the normal scrim effect."
     ]
   }
 }

@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The conversation list in the sidebar cuts off a fourth item halfway through its title text, just above 'Some native sessions are unavailable'. This is normal scroll-container overflow, but the half-visible row looks untidy.",
-      "Conversation titles and subtitles in the sidebar are cut short with ellipses (e.g. 'Exercise automatic decisi…', 'Explain the memorybrows…'). This is intended truncation.",
-      "The device helper text ('Coming later: Jevellan will pick a free machine…') is small and low-contrast, but it can still be read."
+      "The sidebar conversation list cuts off a fourth item at the bottom edge, just above 'Some native sessions are unavailable'. Only the top of its title shows ('Fi…'). This looks like the list's scroll area clipping it, not a layout break.",
+      "Sidebar conversation titles and subtitles are shortened with ellipses (e.g. 'Exercise automatic decisi…', 'Explain the memorybrows…'). This is deliberate truncation, but the full text can't be read without hovering or opening the item."
     ]
   }
 }

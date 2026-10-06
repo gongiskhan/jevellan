@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Large empty area below the Cancel/Save buttons leaves the lower part of the screen unused",
-      "The conflict banner's red border and pink 'Reload' link have fairly low contrast against the dark background, though both are still readable"
+      "The 'Projects fixture' label in the header is small, magenta monospace text with fairly low contrast against the dark background",
+      "A large empty area below the Cancel/Save buttons leaves the layout looking unbalanced on a phone screen"
     ]
   }
 }

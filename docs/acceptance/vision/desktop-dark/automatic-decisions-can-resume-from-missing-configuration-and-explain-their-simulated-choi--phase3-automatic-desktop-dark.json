@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation list: the fourth conversation item is cut off at the bottom edge of the scroll area, just above 'Some native sessions are unavailable'. Only the top of its title shows. It looks like normal scroll clipping, but there's no fade or scroll cue to show more items are below.",
-      "Sidebar conversation titles and metadata are shortened with ellipses ('Exercise automatic decisi…', 'Done · Automatic fixture · dev-m…'). This is intended, but the full text can't be read without hovering or widening the sidebar."
+      "Sidebar conversation list: the fourth row is cut off halfway at the bottom edge of its scroll area, so only the tops of its glyphs show above the 'Some native sessions are unavailable' line. It looks like ordinary scroll overflow with no fade or edge marking it.",
+      "Sidebar conversation titles and metadata are cut short with ellipses (e.g. 'Exercise automatic decisi…', 'Done · Automatic fixture · dev-m…'). This looks intentional, and the full title shows in the main header."
     ]
   }
 }

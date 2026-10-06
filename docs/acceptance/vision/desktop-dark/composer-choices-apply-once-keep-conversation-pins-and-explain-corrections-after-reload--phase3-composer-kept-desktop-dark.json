@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation titles and subtitles are cut off with an ellipsis (e.g. 'Exercise composer choic…', 'Done · Automatic fixture · dev-m…'). This looks like intentional overflow handling.",
-      "The two steps repeat the same tool text ('The plan has three steps.'), which is a bit redundant.",
-      "The 'Local time' label next to the step timestamps is low-contrast, muted text."
+      "Sidebar conversation titles and metadata get truncated with ellipses (e.g. 'Exercise composer choic…', 'Done · Automatic fixture · dev-m…'). This is intentional and the full title shows in the header.",
+      "The 'Waiting for you 6' filter chip is tight inside the sidebar width.",
+      "The 'Proposed plan' heading and 'The full fixture plan' subtitle are stacked with very little space between them.",
+      "Both steps repeat 'The plan has three steps.' This is fixture content, not a rendering problem."
     ]
   }
 }

@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar, the fourth conversation row is cut off at the bottom of the scroll area, so only the tops of its letters show above 'Some native sessions are unavailable'. You can still scroll to it, so it's not blocking.",
-      "Long conversation titles and subtitles in the sidebar are shortened with an ellipsis (e.g. 'Explain the memorybrows…', 'Waiting for you · Public memory …').",
-      "The right-hand 'Why this step' panel continues past the bottom of the screen at the 'JEV' section. It needs a scroll to see the rest, but the memory section is fully visible.",
-      "The 'Jev is unavailable (no key configured). Pick the next step:' notice appears twice: once in the right panel and once in the main conversation."
+      "The fourth conversation row in the sidebar (around y≈712) is cut off horizontally just above the 'Some native sessions are unavailable' line. Only the tops of its letters show. This looks like normal scroll overflow in the list, but the half-visible row looks broken.",
+      "Conversation titles and subtitles in the sidebar are cut short with ellipses ('Explain the memorybrows…', 'Exercise evidence naviga…'). This is expected in a narrow column.",
+      "The right 'Why this step' panel goes past the bottom of the viewport: the 'JEV' section heading is only just visible, so the rest has to be scrolled to.",
+      "The amber 'Jev is unavailable (no key configured). Pick the next step:' notice appears twice, once in the Why panel and once in the main step picker. It's repeated, not broken."
     ]
   }
 }

@@ -10,8 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal sits on a blurred, dimmed background as intended, so the Projects page behind it can't be read. That's expected while a modal is open.",
-      "The modal has a lot of empty space for very little content: one line about the link, a short completion notice with an 'Open work' link, and a collapsed 'Current instruction files' disclosure."
+      "The 'Current instruction files' disclosure label uses a monospace font, while the rest of the dialog uses a sans-serif font"
     ]
   }
 }

@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Retry' button in the warning banner sits right against the end of the message text ('...needs to finish.'), with almost no gap.",
-      "Session titles and metadata in the left sidebar are cut short with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Mesh journey fixt…'). This looks intentional, but the full names can't be read."
+      "The warning banner text 'needs to finish.' runs straight into the 'Retry' button with no gap.",
+      "In the sidebar, long conversation titles and subtitles are cut short with ellipses (e.g. 'Context · J11 memory journ…', 'Browser fixtur…'). This looks intentional and the text is still readable.",
+      "The disabled Claude Code and Codex checkboxes on the Safety hook are very faint, but their labels are still readable."
     ]
   }
 }

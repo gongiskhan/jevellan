@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The summary says '1 changed files' when it should say '1 changed file'.",
-      "The commit hash text is small and touches the right edge of the verification card, but you can still read it in full.",
-      "A large empty area below the content makes the screen look sparse."
+      "The summary row says \"1 changed files\" instead of \"1 changed file\".",
+      "The \"Wrap lines\" label sits very close to the right edge of the screen, with almost no padding compared with the other content.",
+      "The diff header rows (diff/index/---/+++) are in low-contrast gray on the dark background. They are still readable but faint.",
+      "The commit hash in the verification card uses a small font. It fits but is dense."
     ]
   }
 }

@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The page behind the modal is heavily blurred and dimmed, so the Rigging list (rows, Park/Make managed buttons) can't be checked in this capture. That is expected while a modal is open.",
-      "The 'Saved' label and the 'Source' link are on the same row with a large gap between them, so they read as unrelated items.",
-      "The secondary text ('This bundle has 2 files…', 'Local edits save automatically…') is small and low-contrast but still readable."
+      "Background page is dimmed and blurred behind the modal, which is expected for a dialog overlay.",
+      "The modal has a lot of empty space below the status banner. The layout could be tighter."
     ]
   }
 }

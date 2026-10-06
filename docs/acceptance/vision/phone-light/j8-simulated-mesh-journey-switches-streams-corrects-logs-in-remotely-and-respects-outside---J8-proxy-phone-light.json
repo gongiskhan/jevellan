@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title 'J8: run on device B while I steer from de...' is cut off with an ellipsis. This looks like intended single-line truncation, and the full context still shows in the body text.",
-      "The 'Model' dropdown text 'Mesh Codex' sits close to its chevron, but both are still readable."
+      "Header title is truncated with an ellipsis ('J8: run on device B while I steer from de...'), but the full text appears in the first message below it",
+      "Subtitle under the header ('Keep the checkout unchanged; stop for this correction from device A.') wraps onto a second line and sits close to the header chips"
     ]
   }
 }

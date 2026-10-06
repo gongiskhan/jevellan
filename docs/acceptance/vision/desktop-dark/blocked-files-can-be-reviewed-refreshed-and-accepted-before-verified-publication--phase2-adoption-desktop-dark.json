@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fourth conversation row in the sidebar list is cut off horizontally just above the 'Some native sessions are unavailable' link. The list scrolls, so this is overflow clipping, not overlap.",
-      "At the bottom of the right Changes panel, the 'JEVELLAN VERIFICATION' text ('No verification receipt yet') is cut off at the edge of the screen. The panel can be scrolled.",
-      "The conversation title in the header and the sidebar item titles end in ellipses. This looks like intentional truncation."
+      "The right-hand Changes panel cuts off its bottom text at the edge of the viewport. 'No verification receipt yet' under JEVELLAN VERIFICATION is only partly visible, though the panel looks like it can scroll.",
+      "The fourth conversation in the sidebar list is cut off by the 'Some native sessions are unavailable' row. The list area looks like it can scroll.",
+      "The conversation title in the header and the titles in the sidebar list are shortened with an ellipsis."
     ]
   }
 }

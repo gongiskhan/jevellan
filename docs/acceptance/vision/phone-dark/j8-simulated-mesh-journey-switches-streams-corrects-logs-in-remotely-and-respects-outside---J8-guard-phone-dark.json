@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('J8: implement after the outside agent is...'). The full text still appears in the subtitle and in the message bubble.",
-      "There are two 'Retry' buttons, one on the user message and one under the blocked notice. It's not clear which one the user should press.",
-      "The Retry/Edit buttons inside the message bubble look cramped. The bubble also has a lot of empty space on its right side."
+      "The header title is cut off with an ellipsis ('J8: implement after the outside agent is...'), but the full text appears in the subtitle and the message bubble.",
+      "There is a lot of empty space between the action buttons and the composer."
     ]
   }
 }

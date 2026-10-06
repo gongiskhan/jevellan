@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The terminal attach command at the bottom ('jevellan thread attach thread_01M4839JKQJ3XZF…') is cut off with an ellipsis. The copy button next to it is still visible and reachable.",
-      "The metadata lines under the chip ('Claude Code · Fable · high effort · / Projects Claude · / Worktree on …') wrap awkwardly, leaving trailing separator dots at the ends of lines.",
-      "There is a large empty gap between the report card and the message composer."
+      "The attach command in the footer ('jevellan thread attach thread_01M48JWRG343Z5A…') is cut off with an ellipsis, but the copy button next to it is still visible and usable.",
+      "The metadata lines under the chip ('Claude Code · Fable · high effort ·', 'Projects Claude ·', 'Worktree on …') wrap awkwardly and each ends with a dangling separator dot.",
+      "The metadata text is small and low-contrast grey on the dark background, but it can still be read."
     ]
   }
 }

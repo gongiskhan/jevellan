@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fourth sidebar conversation row is cut off and partly covered by the 'Some native sessions are unavailable' notice, so it looks like a scroll fade with a little overlap.",
-      "The bottom of the Why panel is cut off at the viewport edge: the line below 'Automatic account: eligible · selected' is partly hidden. It looks like scrollable content, not a layout bug.",
-      "Sidebar conversation titles and subtitles are truncated with ellipses (e.g. 'Exercise automatic decisi…', 'dev-m…'). This is intended, but it hides the full text.",
-      "The 'Jev' source label on the right of the NEXT STEP and EFFORT sections is short and unclear."
+      "The fourth conversation in the sidebar list is cut off horizontally just above the 'Some native sessions are unavailable' note. It looks like normal scroll overflow.",
+      "The 'Why this step' panel stops partway through the ACCOUNT section, and the line after 'Automatic account: eligible · selected' is only partly visible. The panel looks scrollable, so this is probably expected.",
+      "The italic serif font in the 'Corrections used' rows (e.g. 'action: implement → reply') doesn't match the rest of the UI's typography."
     ]
   }
 }

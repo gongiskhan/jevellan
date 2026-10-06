@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar list titles and subtitles are cut off with ellipses (e.g. 'Change the value to two…', 'Waiting for you · Manual convers…'). The full title still shows in the main header.",
-      "The bottom sidebar item 'Snapshot refresh fixture' has a status dot that looks partly clipped.",
-      "The 'Awaiting approval' badge uses small pink monospace text on a dark background, so it has fairly low contrast."
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Change the value to two …', 'Waiting for you · Manual convers…'). This is normal list truncation, and the full title appears in the main header.",
+      "The status dot for the 'Snapshot refresh fixture' sidebar row looks clipped or half-rendered compared with the other rows.",
+      "The 'Try automatic again' button sits between the approval banner and 'Waiting for plan approval. Review plan', which makes the plan-approval area a little crowded."
     ]
   }
 }
