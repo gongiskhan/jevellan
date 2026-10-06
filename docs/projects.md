@@ -138,7 +138,7 @@ An `in-review` thread's device polls GitHub every 60 seconds, and on demand thro
 
 ### The GitHub token
 
-Settings → Git has a **GitHub token** card. The token is stored in the encrypted hub vault as secret `github`; browsers and `GET`/`PUT /hub/secrets/github` only see a summary (`Saved · updated {date}` or `Not set`), and members fetch it through an authenticated hub operation. It is used only to open, read and merge pull requests for threads. A fine-grained token with Pull requests read and write, Contents read and Checks read on the project repositories is enough. Pushes use git and the device's own Git settings, not this token.
+Settings → Git has a **GitHub token** card. The token is stored in the encrypted hub vault as secret `github`; browsers and `GET`/`PUT /hub/secrets/github` only see a summary (`Saved · updated {date}` or `Not set`), and members fetch it through an authenticated hub operation. It is used only to open, read and merge pull requests for threads. A fine-grained token with Pull requests read and write, Contents read and write (the merge needs it), Checks read and Commit statuses read on the project repositories is enough (REPORT decision 579). Pushes use git and the device's own Git settings, not this token.
 
 `GitHubClient` (`packages/core/src/github.ts`) calls the REST API with `fetch`: bearer authentication, `Accept: application/vnd.github+json`, `X-GitHub-Api-Version: 2022-11-28`, no redirects followed and a 15-second timeout. Owner and repository come from `https://github.com/{owner}/{repo}` and `git@github.com:{owner}/{repo}` remotes. The token is never logged or returned. There is no GitHub SDK dependency and `gh` is not required.
 
