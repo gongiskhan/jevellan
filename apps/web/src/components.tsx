@@ -5,6 +5,7 @@ import {
   Suspense,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   useSyncExternalStore,
@@ -186,6 +187,42 @@ export function Panel({
     </section>
   );
   return slot ? createPortal(panel, slot) : panel;
+}
+/**
+ * A strip of tabs that scrolls sideways when it does not fit: it marks the ends that hide tabs (`data-more-start`,
+ * `data-more-end`) for an edge fade, and centers the selected tab (`aria-current="page"`) whenever `selected` changes, so the
+ * page being shown is always in view. A strip that fits is left alone.
+ */
+export function useTabStrip(selected: string) {
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const strip = ref.current;
+    if (!strip) return;
+    const ends = () => {
+      const hidden = strip.scrollWidth - strip.clientWidth;
+      strip.toggleAttribute('data-more-start', hidden > 1 && strip.scrollLeft > 1);
+      strip.toggleAttribute('data-more-end', hidden > 1 && strip.scrollLeft < hidden - 1);
+    };
+    ends();
+    // The strip's own width and its tabs' widths (fonts, counts) both change what it hides.
+    const observer = new ResizeObserver(ends);
+    observer.observe(strip);
+    for (const tab of strip.children) observer.observe(tab);
+    strip.addEventListener('scroll', ends, { passive: true });
+    return () => {
+      observer.disconnect();
+      strip.removeEventListener('scroll', ends);
+    };
+  }, []);
+  useLayoutEffect(() => {
+    const strip = ref.current;
+    const tab = strip?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (!strip || !tab || strip.scrollWidth <= strip.clientWidth) return;
+    const box = strip.getBoundingClientRect();
+    const at = tab.getBoundingClientRect();
+    strip.scrollLeft += at.left + at.width / 2 - (box.left + box.width / 2);
+  }, [selected]);
+  return ref;
 }
 // Menus and popovers built on <details> close when the pointer goes elsewhere or Escape is pressed.
 export function useDismissible() {

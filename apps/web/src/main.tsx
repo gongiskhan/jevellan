@@ -1,5 +1,5 @@
 import { clientId } from './client-id.js';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import { z } from 'zod';
@@ -19,7 +19,7 @@ import {
   loadSettings,
   type SettingsData,
 } from './api.js';
-import { HubWaiting, useTask, type PageProps } from './components.js';
+import { HubWaiting, useTabStrip, useTask, type PageProps } from './components.js';
 import { RuntimesPage } from './runtimes.js';
 import { RiggingPage } from './rigging.js';
 import { AboutPage, ConfigurationPage, DecisionsPage } from './settings.js';
@@ -50,6 +50,17 @@ const settingsPages = [
   ['configuration', 'Configuration', 'configuration'],
   ['about', 'About', 'about'],
 ] as const satisfies ReadonlyArray<readonly [string, string, IconName]>;
+/** The settings pages' tabs: a list beside the page, and below 1024 px a strip that scrolls sideways (useTabStrip). */
+function SettingsTabs({ current, children }: { current: string; children: ReactNode }) {
+  const strip = useTabStrip(current);
+  return (
+    <nav className="settings-tabs" aria-label="Settings">
+      <div className="settings-tabs-strip" ref={strip}>
+        {children}
+      </div>
+    </nav>
+  );
+}
 function SignIn({
   auth,
   done,
@@ -306,7 +317,7 @@ function App() {
     );
   const props: PageProps = { data, reload, saveConfig, message, onError, navigate };
   const settingsNav = (
-    <nav className="settings-tabs" aria-label="Settings">
+    <SettingsTabs current={currentPage}>
       {settingsPages.map(([id, label, icon]) => (
         <button
           key={id}
@@ -326,7 +337,7 @@ function App() {
           )}
         </button>
       ))}
-    </nav>
+    </SettingsTabs>
   );
   const settingsPage =
     currentPage === 'git' ? (

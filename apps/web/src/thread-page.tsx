@@ -11,7 +11,7 @@ import { MessageInput } from './message-delivery.js';
 import * as copy from './project-work-copy.js';
 import {
   THREAD_POLL_AFTER_ACTION_MS, THREAD_POLL_LIVE_MS, alignReports, composerBlock, deviceBlock, deviceChoices, deviceRefusal, dotClass, effortChoices, fallbackChip, lineParts, mainIsolationBlock, nearestEffort,
-  overrideForm, overrideOffered, overrideReady, overrideRequest, placementLine, pullRequestBadges, reportBadge, threadActions, threadLiveText,
+  overrideForm, overrideOffered, overrideReady, overrideRequest, partWords, placementLine, pullRequestBadges, reportBadge, threadActions, threadLiveText,
   threadPollDelay, threadReason, threadStarting, transcriptNotice, whyFields, withoutEchoedSummaries, withoutReportCalls, type OverrideForm, type OverrideMode,
 } from './project-work-model.js';
 import { RouteLink, Stamp, afterDialogs, deviceNames, failureText, runtimeNames, updated, useClientIds, useLocalError } from './project-work.js';
@@ -256,11 +256,19 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
 }
 
 /**
- * A ` · ` line whose parts wrap whole, so a narrow page breaks it between parts and never inside a branch name that fits a
- * line; a part longer than the line still breaks (`.pw-part`). The text reads exactly as the line.
+ * A ` · ` line whose parts wrap whole (`.pw-part`), so a narrow page breaks it between parts; a part wider than the line
+ * breaks between its words (`.pw-word`), so a branch name that fits a line never breaks inside, and only a word wider than
+ * the line breaks. Each separator never leaves its word's line (`.pw-sep`), and the last two parts move down together
+ * whenever they fit one line (`.pw-tail`), so a short last part such as `6 ms` never stands alone. The text reads as the line.
  */
 function Parts({ line }: { line: string }) {
-  return <>{lineParts(line).map((part, index) => <Fragment key={index}>{index > 0 && ' '}<span className="pw-part">{part}</span></Fragment>)}</>;
+  const word = (text: string) => <span className="pw-word">{text.endsWith(' ·') ? <>{text.slice(0, -2)}<span className="pw-sep"> ·</span></> : text}</span>;
+  const parts = lineParts(line).map((part) => <span className="pw-part">{spaced(partWords(part).map(word))}</span>);
+  return <>{spaced([...parts.slice(0, -2), <span className="pw-tail">{spaced(parts.slice(-2))}</span>])}</>;
+}
+/** Nodes separated by single spaces, where the line may wrap. */
+function spaced(nodes: ReactNode[]) {
+  return nodes.map((node, index) => <Fragment key={index}>{index > 0 && ' '}{node}</Fragment>);
 }
 
 /** Stop and Discard (12.3): a destructive confirmation whose refusal stays in the dialog. */

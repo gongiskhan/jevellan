@@ -9,7 +9,7 @@ import * as server from '../packages/projects/dist/copy.js';
 import * as copy from '../apps/web/src/project-work-copy.js';
 import {
   alignReports, chatItems, checksBadge, composerBlock, coordinatorChip, coordinatorLabel, decisionSource, defaultTab, deviceBlock, deviceChoices, deviceRefusal, dotClass, effortChoices, fallbackChip,
-  lineParts, mainIsolationBlock, mergeBlock, nearestEffort, openPullRequests, outcomeText, overrideForm, overrideOffered, overrideReady, overrideRequest, placementLine, projectDot,
+  lineParts, mainIsolationBlock, mergeBlock, nearestEffort, openPullRequests, outcomeText, overrideForm, overrideOffered, overrideReady, overrideRequest, partWords, placementLine, projectDot,
   projectRoute, pullRequestBadges, reportBadge, restartedThread, rowClockMs, sentText, settingsRequest, showSent, sidebarProjects, threadActions, threadCreateRequest,
   threadLiveText, threadMeta, threadPollDelay, threadReason, threadSections, threadStarting, toolIcon, transcriptNotice, whyFields, withdrawals, withoutEchoedSummaries,
   withoutReportCalls, working,
@@ -226,6 +226,12 @@ test('row meta and the placement line use the runtime display name, the branch a
   expect(lineParts(line).join(' ')).toBe(line);
   expect(lineParts('Placement · model-x · 60 tokens · 7 ms')).toEqual(['Placement ·', 'model-x ·', '60 tokens ·', '7 ms']);
   expect(lineParts('Mac mini')).toEqual(['Mac mini']);
+  // A part wider than the line breaks between its words; its separator stays with the word before it, so it never starts a
+  // line or stands alone, and the words joined by spaces read as the part.
+  expect(partWords('Worktree on jv/fix-login-abc123 ·')).toEqual(['Worktree', 'on', 'jv/fix-login-abc123 ·']);
+  expect(partWords('Codex ·')).toEqual(['Codex ·']);
+  expect(partWords('Mac mini')).toEqual(['Mac', 'mini']);
+  expect(lineParts(line).flatMap(partWords).join(' ')).toBe(line);
 });
 
 test('chat items: owner messages, replies, one-liners, event cards and notices in ledger order, delivered by event id (D2a)', () => {

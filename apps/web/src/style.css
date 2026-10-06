@@ -20,7 +20,8 @@
   --edge-strong: #9fb3c5;
   --ink: #0d1b2a;
   --ink-2: #33475b;
-  --ink-3: #647a90;
+  /* Muted text: at least 4.8:1 on every light surface, --bg-3 included (WCAG AA asks 4.5:1 of small text). */
+  --ink-3: #53677c;
   --sea: #2c6e9b;
   --sea-soft: rgba(44, 110, 155, 0.1);
   --jev: #c01f8b;
@@ -1346,9 +1347,8 @@ html:has(.conversation-page) { scroll-padding-top: calc(var(--header-height) + 1
 .settings-tabs {
   position: sticky;
   top: calc(var(--header-height) + 18px);
-  display: grid;
-  gap: 1px;
 }
+.settings-tabs-strip { display: grid; gap: 1px; }
 .settings-tabs button {
   justify-content: flex-start;
   gap: 10px;
@@ -1626,16 +1626,26 @@ button.memory-result + button.memory-result { margin-top: 4px; }
   .settings-tabs {
     top: var(--header-height);
     z-index: 15;
+    margin: -18px -20px 0;
+    border-bottom: 1px solid var(--edge);
+    background: var(--bg);
+  }
+  .settings-tabs-strip {
     display: flex;
     gap: 4px;
     overflow-x: auto;
-    margin: -18px -20px 0;
     padding: 8px 20px;
-    border-bottom: 1px solid var(--edge);
-    background: var(--bg);
     scrollbar-width: none;
   }
-  .settings-tabs::-webkit-scrollbar { display: none; }
+  .settings-tabs-strip::-webkit-scrollbar { display: none; }
+  /* The strip scrolls sideways when the tabs do not fit; an end that hides tabs fades out, so the cut tab reads as more to
+     scroll to. The strip keeps the selected tab in view (useTabStrip). */
+  .settings-tabs-strip[data-more-start] { --strip-fade-start: 40px; }
+  .settings-tabs-strip[data-more-end] { --strip-fade-end: 40px; }
+  .settings-tabs-strip:is([data-more-start], [data-more-end]) {
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--strip-fade-start, 0px), #000 calc(100% - var(--strip-fade-end, 0px)), transparent);
+    mask-image: linear-gradient(to right, transparent, #000 var(--strip-fade-start, 0px), #000 calc(100% - var(--strip-fade-end, 0px)), transparent);
+  }
   .settings-tabs button { width: auto; flex: none; min-height: 30px; padding: 4px 11px; border-radius: 999px; gap: 6px; }
   .settings-tabs button.selected { box-shadow: none; background: var(--ink); color: var(--bg); }
   .settings-tabs button.selected .icon { color: var(--bg); }
@@ -1662,7 +1672,8 @@ button.memory-result + button.memory-result { margin-top: 4px; }
   .page-content:has(> .conversation-page) { padding-bottom: 0; }
   .conversation-page { min-height: calc(100dvh - var(--header-height) - 14px); }
   .conversation-heading { padding: 10px 0; margin-top: -10px; }
-  .settings-tabs { margin: -14px -14px 0; padding: 8px 14px; }
+  .settings-tabs { margin: -14px -14px 0; }
+  .settings-tabs-strip { padding-inline: 14px; }
   h1 { font-size: 21px; }
   .card { padding: 14px; }
   .inspector > .panel { width: 100vw; border-left: 0; }

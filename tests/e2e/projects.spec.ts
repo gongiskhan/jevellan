@@ -67,6 +67,9 @@ async function placementSummary(page: Page, view: ThreadView) {
 /**
  * A ` · ` line wraps between its parts: every part that is narrower than the line on its own sits on one line (a branch name
  * never breaks while it fits); only a part wider than the whole line may break.
+ * At the page's width and at every line width of a 320 to 430 px phone, a separator stays on the line of the word before it
+ * (never starting a line or standing alone), the last two parts share a line whenever they fit one together (`6 ms` never sits
+ * alone), and a clamped line (the placement line) still shows its last part, the device.
  */
 async function expectWholeParts(line: Locator) {
   expect(await line.locator('.pw-part').evaluateAll((parts) => parts.length > 1 && parts.every((part) => {
@@ -75,6 +78,107 @@ async function expectWholeParts(line: Locator) {
     const lines = Math.round(part.getBoundingClientRect().height / parseFloat(getComputedStyle(part).lineHeight));
     return wanted > part.parentElement!.clientWidth || lines === 1;
   }))).toBe(true);
+  expect(await line.evaluate((element) => {
+    const problems: string[] = [];
+    for (const width of [element.clientWidth, ...Array.from({ length: 12 }, (_, step) => 296 + step * 10)]) {
+      const probe = element.cloneNode(true) as HTMLElement;
+      probe.style.cssText = `position: absolute; visibility: hidden; left: 0; top: 0; width: ${width}px`;
+      element.parentElement!.append(probe);
+      // Every visible character with its row, told apart by the top of its box.
+      const characters: { node: Text; top: number; bottom: number; text: string }[] = [];
+      const walker = document.createTreeWalker(probe, NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode() as Text | null; node; node = walker.nextNode() as Text | null) {
+        for (let index = 0; index < node.length; index++) {
+          const range = document.createRange(); range.setStart(node, index); range.setEnd(node, index + 1);
+          const box = range.getClientRects()[0];
+          if (box && box.width > 0 && node.data[index]!.trim()) characters.push({ node, top: Math.round(box.top), bottom: box.bottom, text: node.data[index]! });
+        }
+      }
+      const rows = new Map<number, string>();
+      for (const character of characters) {
+        const row = [...rows.keys()].find((top) => Math.abs(top - character.top) <= 2) ?? character.top;
+        rows.set(row, (rows.get(row) ?? '') + character.text);
+      }
+      for (const row of rows.values()) if (row.startsWith('·')) problems.push(`${width}px: a row starts with a separator: ${row}`);
+      const parts = [...probe.querySelectorAll<HTMLElement>('.pw-part')];
+      const [before, last] = parts.slice(-2) as [HTMLElement, HTMLElement];
+      const pair = document.createElement('span'); pair.style.cssText = 'position: absolute; visibility: hidden; white-space: nowrap';
+      pair.append(before.cloneNode(true), ' ', last.cloneNode(true)); probe.append(pair);
+      const together = pair.getBoundingClientRect().width <= probe.clientWidth; pair.remove();
+      const inPart = (part: HTMLElement) => characters.filter((character) => part.contains(character.node));
+      if (together && Math.abs(inPart(before).at(-1)!.top - inPart(last)[0]!.top) > 2) problems.push(`${width}px: the last part sits alone: ${last.textContent}`);
+      if (getComputedStyle(element).webkitLineClamp !== 'none' && inPart(last).at(-1)!.bottom > probe.getBoundingClientRect().bottom + 0.5) {
+        problems.push(`${width}px: the clamp hides the last part: ${last.textContent}`);
+      }
+      probe.remove();
+    }
+    return problems;
+  })).toEqual([]);
+}
+
+/**
+ * Muted text stays readable (WCAG AA, 4.5:1): every visible text and placeholder drawn in the shared muted ink, against the
+ * backgrounds under it. Disabled controls are exempt, as in WCAG.
+ */
+async function expectReadableMutedText(page: Page) {
+  expect(await page.evaluate(() => {
+    const rgba = (value: string) => {
+      const numbers = value.match(/[\d.]+/g)!.map(Number);
+      return value.startsWith('color(') ? [numbers[0]! * 255, numbers[1]! * 255, numbers[2]! * 255, numbers[3] ?? 1] : [numbers[0]!, numbers[1]!, numbers[2]!, numbers[3] ?? 1];
+    };
+    const over = (top: number[], under: number[]) => [0, 1, 2].map((index) => top[index]! * top[3]! + under[index]! * (1 - top[3]!));
+    const luminance = (color: number[]) => color.slice(0, 3).map((value) => { const s = value / 255; return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; })
+      .reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index]!, 0);
+    const ratio = (a: number[], b: number[]) => { const [x, y] = [luminance(a), luminance(b)]; return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+    const background = (element: Element) => {
+      const chain: Element[] = []; for (let at: Element | null = element; at; at = at.parentElement) chain.unshift(at);
+      return chain.reduce((under, at) => over(rgba(getComputedStyle(at).backgroundColor), under), [255, 255, 255]);
+    };
+    const probe = document.createElement('span'); probe.style.color = 'var(--ink-3)'; document.body.append(probe);
+    const muted = getComputedStyle(probe).color; probe.remove();
+    const exempt = (element: Element) => !!element.closest(':disabled, [aria-disabled="true"], .pw-disabled');
+    const problems: string[] = []; let checked = 0;
+    const check = (element: Element, color: string, what: string) => {
+      const value = ratio(over(rgba(color), background(element)), background(element)); checked++;
+      if (value < 4.5) problems.push(`${what} (${element.className || element.tagName}): ${value.toFixed(2)}`);
+    };
+    for (const element of document.querySelectorAll('body *')) {
+      const style = getComputedStyle(element); const box = element.getBoundingClientRect();
+      if (style.color !== muted || style.visibility !== 'visible' || !box.width || !box.height || exempt(element)) continue;
+      const text = [...element.childNodes].filter((node) => node.nodeType === Node.TEXT_NODE).map((node) => node.textContent!.trim()).join('');
+      if (text) check(element, style.color, text.slice(0, 40));
+    }
+    for (const field of document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input[placeholder], textarea[placeholder]')) {
+      const color = getComputedStyle(field, '::placeholder').color; const box = field.getBoundingClientRect();
+      if (!field.value && color === muted && box.width && !exempt(field)) check(field, color, `placeholder ${field.placeholder}`);
+    }
+    return checked ? problems : ['no muted text found'];
+  })).toEqual([]);
+}
+
+/**
+ * While the coordinator works, the chat field stays one line and its placeholder ends 28 px or more before Stop; one that does
+ * not fit ends in an ellipsis, or fades out while the field has focus (where Chromium draws no ellipsis), never mid-letter.
+ */
+async function expectPlaceholderClearOfStop(page: Page) {
+  await expect.poll(() => page.locator('.pw-composer').evaluate((form) => {
+    const field = form.querySelector('textarea')!; const style = getComputedStyle(field); const box = field.getBoundingClientRect();
+    const context = document.createElement('canvas').getContext('2d')!;
+    context.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+    const start = box.left + parseFloat(style.paddingLeft); const contentEnd = box.right - parseFloat(style.paddingRight);
+    const fits = start + context.measureText(field.placeholder).width <= contentEnd;
+    const lines = (box.height - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom)) / parseFloat(style.lineHeight);
+    const shortened = document.activeElement === field ? style.maskImage.startsWith('linear-gradient') : getComputedStyle(field, '::placeholder').textOverflow === 'ellipsis';
+    return { oneLine: lines < 1.5, clear: form.querySelector('.pw-stop-icon')!.getBoundingClientRect().left - contentEnd >= 28, endsCleanly: fits || shortened };
+  })).toEqual({ oneLine: true, clear: true, endsCleanly: true });
+}
+
+/** A thread transcript's prompts, tool rows and report cards share their left and right edges. */
+async function expectAlignedCards(transcript: Locator) {
+  const edges = await transcript.locator('.cursor-turn-user, .cursor-tool, .pw-report').evaluateAll((cards) =>
+    cards.map((card) => { const box = card.getBoundingClientRect(); return `${Math.round(box.left)}-${Math.round(box.right)}`; }));
+  expect(edges.length).toBeGreaterThan(2);
+  expect(new Set(edges)).toEqual(new Set([edges[0]]));
 }
 
 /**
@@ -172,6 +276,7 @@ test('PJ3 project page opens from the sidebar and the coordinator chat streams',
     await expect(region(page, 'Pull requests')).toContainText('No open pull requests.');
     await expect(region(page, 'Concluded').getByRole('link', { name: /^Write the welcome copy/ }).locator('.pw-outcome')).toHaveText('Merged #7');
   }
+  await expectReadableMutedText(page);
   await shot(page, 'empty-chat');
 
   // The scripted coordinator holds its turn after its first words until the fixture releases it.
@@ -182,6 +287,18 @@ test('PJ3 project page opens from the sidebar and the coordinator chat streams',
   await expect(page.getByRole('button', { name: 'Stop', exact: true })).toBeVisible();
   await expect(page.locator('.pw-chip')).toHaveText('Working…');
   await expect(composer(page)).toHaveValue('');
+  // The chip keeps its whole text and its padding on every layout: the copy's own ellipsis is the only one.
+  expect(await page.locator('.pw-chip').evaluate((chip) => {
+    const style = getComputedStyle(chip);
+    return { clipped: chip.scrollWidth > chip.clientWidth, size: style.fontSize, padding: [style.paddingLeft, style.paddingRight] };
+  })).toEqual({ clipped: false, size: '11px', padding: ['7px', '7px'] });
+  // The placeholder keeps one line and ends at least 28 px before Stop, in an ellipsis where it does not fit (390 and 320 px phones).
+  await expectPlaceholderClearOfStop(page);
+  if (phone(info)) {
+    const size = page.viewportSize()!;
+    await page.setViewportSize({ width: 320, height: size.height });
+    try { await expectPlaceholderClearOfStop(page); } finally { await page.setViewportSize(size); }
+  }
   await shot(page, 'coordinator-working');
   await expect(working).toBeVisible();
   expect(await control('/projects/release', { schema: 'fixture-release-v1', marker: 'PJ3: add a greeting' })).toEqual({ released: 1 });
@@ -327,6 +444,8 @@ test('PJ3 a running thread shows its transcript, report card and accepts an inte
   await expect(transcript.getByText('Read your message and adjusted the plan.', { exact: true })).toHaveCount(1);
   await expect(page.getByRole('checkbox', { name: 'Interrupt current turn', exact: true })).toHaveCount(0);
   await expect(message).toHaveValue('');
+  await expectAlignedCards(transcript);
+  await expectReadableMutedText(page);
   await shot(page, 'thread-report');
 
   // Why on a thread whose title is longer than the panel: the title in the eyebrow truncates, while the panel title and Close
@@ -585,6 +704,7 @@ test('PJ4b the Why panel explains placement and overrides apply', async ({ page 
     'Browser member: not set up for this project', 'Offline fixture: offline']);
   await expect(section('Account').locator('.why-line')).toHaveText(placed.thread.accountLabel);
   await expect(panel.locator('.why-jev p').first()).toHaveText(/^Placement · jev-browser-simulated · 60 tokens · \d+ ms$/);
+  await expectWholeParts(panel.locator('.why-jev p').first());
   // The panel narrows the page beside it on desktops: the placement line still breaks between its parts, not inside the branch.
   await expectWholeParts(page.locator('.pw-placement-line'));
   await shot(page, 'why-panel', false);
@@ -713,7 +833,9 @@ test('PJ5 a thread on the member device opens through the hub', async ({ page })
   expect(placed).toMatch(/ · Browser member$/);
   const runtime = await runtimeName(page, view.thread.runtime);
   await expect(page.locator('.pw-placement-line')).toHaveText(`${runtime} · ${view.thread.modelLabel} · ${view.thread.effort} effort · ${view.thread.accountLabel} · Worktree on ${view.thread.branch} · Browser member`);
+  await expectWholeParts(page.locator('.pw-placement-line'));
   await expect(page.locator('[aria-label="Thread transcript"] .cursor-tool > summary > span:first-child')).toHaveText(['Read']);
+  await expectAlignedCards(page.locator('[aria-label="Thread transcript"]'));
   await expect(page.getByRole('textbox', { name: 'Message this thread', exact: true })).toBeEnabled();
   expect(await page.evaluate(() => (window as unknown as { pj5NotFound?: boolean }).pj5NotFound)).toBe(false);
   await shot(page, 'remote-thread');

@@ -246,6 +246,16 @@ export function lineParts(line: string): string[] {
   return parts.map((part, index) => index < parts.length - 1 ? `${part} ·` : part);
 }
 
+/**
+ * The words one part of a ` · ` line wraps by: a part wider than the line breaks between its words, and its separator stays
+ * with the word before it (the page keeps the two on one line), so a separator never starts a line or stands alone on one.
+ */
+export function partWords(part: string): string[] {
+  const words = part.split(' ');
+  if (words.length > 1 && words.at(-1) === '·') words.splice(-2, 2, `${words.at(-2)} ·`);
+  return words;
+}
+
 /** How often the thread page reads its view (D79): 1.5 s while live work runs, else 10 s. */
 export const THREAD_POLL_LIVE_MS = 1500;
 export const THREAD_POLL_REST_MS = 10_000;
