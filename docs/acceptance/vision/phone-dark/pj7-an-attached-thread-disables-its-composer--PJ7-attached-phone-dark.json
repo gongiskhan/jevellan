@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The meta line 'Worktree on jv/tidy-the-readme-wording-d6wb6g ·…' is truncated with an ellipsis, so the rest of that line is hidden.",
-      "The take-over command 'jevellan thread attach thread_01M47CJ66H0THH1…' is truncated in its code chip. It is still usable: the copy button sits next to it and the full thread ID is shown in the detach notice at the top.",
-      "There is a large empty gap between the report card and the attached notice and composer at the bottom."
+      "The take-over command at the bottom (\"jevellan thread attach thread_01M47PMKQ26781S…\") is cut off with an ellipsis. The full ID appears in the banner at the top and there is a copy button, so it isn't blocking.",
+      "The disabled composer only shows its state through a dashed border and dimmed send arrow, which is easy to miss. The note \"Messages wait until you exit\" just above it does explain it.",
+      "There is a large empty gap between the report card and the attached-state footer."
     ]
   }
 }

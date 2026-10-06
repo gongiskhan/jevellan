@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Mesh journey fixt…', 'dev-ma…'). The cutoff is intentional, and the full text isn't needed to understand this screen.",
-      "There is a lot of empty space between the 'The coordinator moved to dev-madrid.' notice and the message box. This is expected because the conversation is empty."
+      "Sidebar thread titles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Mesh journey fixt…'), and so are their metadata lines ('dev-ma…', 'dev-…', 'de…'). The visible text still identifies each thread.",
+      "The 'Some native sessions are unavailable' disclosure text is small and low-contrast.",
+      "The 'The coordinator moved to dev-madrid.' notice is shown, but the screen has no confirmation detail beyond it. The header still says 'Idle' and the main pane below the notice is empty."
     ]
   }
 }

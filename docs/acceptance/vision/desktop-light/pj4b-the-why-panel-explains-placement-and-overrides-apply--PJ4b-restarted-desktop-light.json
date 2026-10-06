@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'). This is intended truncation and the full text is likely available elsewhere.",
-      "Some text is small and low-contrast, but still legible: the metadata line under the title, the 'Some native sessions are unavailable' note and 'v0.1.0'.",
-      "There is a large empty area between the last report card and the 'This thread has ended' footer."
+      "Sidebar session titles and their metadata lines are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'). This is intended overflow handling, and the full names aren't needed on this screen.",
+      "Most of the main panel below the conversation cards is empty, so the 'This thread has ended' footer sits far from the content. This doesn't hide anything."
     ]
   }
 }

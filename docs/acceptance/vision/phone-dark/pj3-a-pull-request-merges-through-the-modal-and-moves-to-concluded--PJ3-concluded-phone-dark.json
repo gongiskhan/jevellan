@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The running thread's title is cut off with an ellipsis (\"Read through the project and list what each …\"). This looks like intended single-line clamping.",
-      "The summary of the \"Add a greeting\" thread is cut off with an ellipsis (\"…and committed …\"). This also looks like intended clamping.",
-      "The metadata text (e.g. \"Claude Code · Fable · high · Worktree · dev-madrid\") is small, low-contrast gray on the dark background, but still readable.",
-      "The lower half of the screen is empty below the Concluded list."
+      "The running thread title 'Read through the project and list what each …' is cut off with an ellipsis. It looks like intentional single-line clamping, but the full title can't be read on this screen.",
+      "The summary 'Added greeting.txt with a short greeting and committed …' is cut off with an ellipsis, also likely intentional clamping.",
+      "The large empty area below the thread list leaves the bottom half of the phone viewport unused."
     ]
   }
 }

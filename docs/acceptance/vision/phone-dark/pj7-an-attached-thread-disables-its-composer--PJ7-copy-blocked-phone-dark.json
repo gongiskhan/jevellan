@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The worktree metadata line under the header is cut off with an ellipsis ('Worktree on jv/tidy-the-readme-wording-d6wb6g ·…'). The truncation is intentional, but part of the text can't be read.",
-      "The highlighted attach command wraps across two lines, and its pink highlight ends unevenly on each line.",
-      "There is a large empty gap between the report card and the footer area.",
-      "The composer is disabled, shown with a dashed border and a dimmed placeholder. That is subtle, but the explanatory text above it ('Messages wait until you exit') makes the state clear."
+      "There is a large empty gap between the report card and the attached-thread notice, so the composer and the copy fallback sit at the very bottom of the screen",
+      "The command's pink selection highlight breaks across two lines and doesn't line up with the copy button, so it looks ragged",
+      "The 'Message this thread' placeholder and the disabled send arrow are very low-contrast, which is acceptable for a disabled state but faint"
     ]
   }
 }

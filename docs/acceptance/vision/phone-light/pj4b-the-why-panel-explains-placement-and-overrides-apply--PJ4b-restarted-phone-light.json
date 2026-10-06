@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The thread ID link 'thread_01M47CG546SV7N0S00G3BQH91F' is long and fills nearly the whole line width. It still fits.",
-      "The metadata line wraps across three lines in small monospace text. It is readable but dense.",
-      "There is a large empty area between the last report card and the footer saying the thread has ended."
+      "The thread ID link 'thread_01M47PJDQH04JYC2ZBKX0PGAFN' runs nearly to the right edge of the header. It's still readable.",
+      "The metadata line wraps over three lines and breaks mid-phrase ('Projects Claude ·' / 'Worktree on ...'), so it's a bit harder to scan.",
+      "There's a large empty gap between the last report card and the footer."
     ]
   }
 }

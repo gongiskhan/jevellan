@@ -10,8 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Title field contains task-like text ('Read through the project and list what each file is for, one line per file') while Task field holds a different instruction; likely seeded test data, not a rendering issue",
-      "Placement section expanded with all selects set to 'Automatic', which is legible and reachable"
+      "The Title field is filled with what reads like task text ('Read through the project and list what each file is for, one line per file'), while the Task field holds a different, shorter prompt. This looks like a test-data mismatch, not a rendering problem."
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The chat area under the notice is empty, which leaves a large blank space between the banner and the composer.",
-      "The 'Idle' status badge and the 'Claude Code Fable · high' monospace label are small and low-contrast, but you can still read them."
+      "Large empty area between the notice and the composer; the chat pane has no content, so the screen feels sparse.",
+      "Header status text 'Claude Code Fable · high' is small and low-contrast grey monospace, but still readable."
     ]
   }
 }

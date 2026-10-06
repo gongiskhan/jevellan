@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar thread titles 'Context · J11 memory journ…' and 'Context · Mesh journey fixt…' are cut off with ellipses, and so are their subtitle lines ('dev-ma…', 'dev-…', 'de…'). This is deliberate truncation, so nothing is lost from the layout.",
-      "The tool rows (Read, Grep, Bash, Read) only show 'completed', with no summary of what each one did. The prompt mentions a 'report card', but no separate report card is visible at this step.",
-      "The 'Working on turn 1…' text and its spinner are small and low-contrast.",
-      "The metadata line under the title ('Claude Code · Fable · high effort · …') is small monospace text in light grey, so it is a bit faint."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'). This is deliberate truncation, but the full names can't be read at this width.",
+      "The status text 'Working on turn 1…' and the 'Interrupt current turn' checkbox are small and pale, so they're easy to miss next to the message box.",
+      "The transcript shows only four collapsed tool rows (Read, Grep, Bash, Read), which leaves most of the main area empty."
     ]
   }
 }

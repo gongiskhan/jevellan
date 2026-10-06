@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar thread titles and subtitles are cut off with ellipses ('Context · J11 memory journ…', 'Mesh journey fixt…', 'dev-ma…'). This is intended truncation, but the full names aren't visible.",
-      "The disabled composer's placeholder ('Message this thread') and send arrow have low contrast against the dark background. This is acceptable because the composer is disabled.",
-      "The bright pink highlight on the selected attach command stands out sharply from the rest of the dark theme.",
-      "There is a large empty area between the report card and the composer."
+      "Sidebar thread titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Mesh journey fixt…', 'dev-ma…'). This looks like intentional truncation.",
+      "The disabled composer's placeholder 'Message this thread' and send arrow have low contrast against the dark background. This is probably meant to show the disabled state.",
+      "The selected command uses magenta highlighting with dark monospace text. It's readable but has heavy visual weight compared with the rest of the dark theme.",
+      "'Some native sessions are unavailable' at the bottom of the sidebar is small and low contrast."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The footer meta line 'Placement · jev-browser-simulated · 60 tokens · 6 ms' wraps so '6 ms' sits alone on its own line",
-      "The task title 'Tidy the README wording' and the 'Why this placement' heading are packed tightly into the header next to the close button",
-      "There's a large empty area below the JEV footer section"
+      "The task title 'Tidy the README wording' and the heading 'Why this placement' share one header line in different styles, which reads a little crowded on a narrow phone screen.",
+      "There is a lot of empty space below the JEV footer.",
+      "The 'Fixed: none' row under PLACEMENT has no visual emphasis, so it's easy to miss compared with the other sections."
     ]
   }
 }

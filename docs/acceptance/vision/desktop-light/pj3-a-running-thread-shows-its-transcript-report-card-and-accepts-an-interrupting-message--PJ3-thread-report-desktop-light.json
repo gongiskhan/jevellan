@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · dev-ma…'). The truncation is deliberate and the full titles are not needed on this screen.",
-      "The status badge says 'Idle' while the Stop button is still shown and the step describes a running thread. This is a state mismatch, not a rendering problem.",
-      "Below the transcript there is a large empty area between the report card and the message box."
+      "The status badge reads 'Idle' while the Stop button is still shown and the step is about a running thread. The state may not match, but nothing is hidden or broken.",
+      "Long session titles and subtitles in the sidebar are cut off with an ellipsis (e.g. 'Context · J11 memory journ…', 'dev-ma…'). This is intentional truncation and doesn't block use.",
+      "Much of the main content area is empty space between the report card and the message box."
     ]
   }
 }

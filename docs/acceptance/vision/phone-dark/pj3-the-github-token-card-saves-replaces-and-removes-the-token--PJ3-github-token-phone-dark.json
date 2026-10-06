@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Top tab strip is cut off at the right edge ('Impro…'); it looks like a horizontally scrollable tab bar, so this is likely intended, but there is no visible scroll hint",
-      "The 'Save Git settings' button has very low contrast against the card. It may be intentionally disabled because nothing has changed",
-      "The page ends right after the 'Check a project' card, leaving a large empty area at the bottom"
+      "The top tab strip is cut off at both edges: 'Devices' shows as 'evices' on the left, and a tab icon is clipped on the right. This looks like a horizontally scrollable tab bar, but nothing on screen shows that you can scroll it.",
+      "The 'Save Git settings' button has very low contrast against the card. It is probably disabled because nothing has changed, but it is hard to tell that it is a button."
     ]
   }
 }

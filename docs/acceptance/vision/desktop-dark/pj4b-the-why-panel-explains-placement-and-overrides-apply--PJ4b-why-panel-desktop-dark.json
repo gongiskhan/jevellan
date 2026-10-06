@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Mesh journey fixt…'). This is intentional truncation, but the full names can't be read.",
-      "The Why panel's grey, small monospace text (the 'Jev' and 'only option' labels, the 0.10–0.20 scores, and the JEV footer metadata) has fairly low contrast against the dark background. It is still readable.",
-      "The panel header puts a pink monospace task title ('Tidy the README wording') right next to the white sans-serif 'Why this placement' heading, which looks a little inconsistent."
+      "The sidebar session titles and subtitles are shortened with an ellipsis ('Context · J11 memory journ…', 'Done · Improver sandbox · dev-ma…'). This looks intentional, but the full names can't be read.",
+      "The Why panel header puts the task name in a pink monospace font and the 'Why this placement' title in a sans font, so the two styles look slightly mismatched.",
+      "The 'PLACEMENT' section shows only 'Fixed: none', which says very little.",
+      "The row labels in the score bars ('Main', 'low', 'medium', 'Claude Code Opus') and the 0.10–0.20 values are muted grey on a dark background. They're readable, but the contrast is lower than the highlighted rows."
     ]
   }
 }

@@ -10,7 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Background thread header and report card show behind the modal's dimmed overlay. That is expected for a modal."
+      "The note textarea has a pink/magenta focus border that looks like a validation error state, but it's probably just the focus ring",
+      "Behind the modal, the background thread content and sidebar are dimmed by the overlay. This is expected, but it does make the page behind hard to read"
     ]
   }
 }

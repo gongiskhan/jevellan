@@ -10,11 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top message bubble ('PJ3: add a greeting') is cut off at the top edge of the scroll area, so its 'YOU' timestamp line is only partly visible. This is normal scroll clipping.",
-      "The running thread title 'Read through the project and list what each file is ...' is shortened with an ellipsis in the right panel.",
-      "Session titles and subtitles in the sidebar are shortened with ellipses (e.g. 'Context · J11 memory journ...', 'Context · Mesh journey fixt...').",
-      "The 'Merge' button in the pull request card is low-contrast and looks muted next to 'Open on GitHub'. It may be intentionally disabled because of the conflict.",
-      "Several consecutive 'Noted.' coordinator replies add visual repetition to the conversation."
+      "Long running-thread title in the right panel ('Read through the project and list what each file is…') is cut off with an ellipsis",
+      "Shell session titles and metadata in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'dev-ma…')",
+      "Two 'Waiting for the coordinator' cards (checks passing, conflicts) have dashed borders while the cards above have solid ones; this may be intended for pending state",
+      "The 'Conflicts' badge and the 'Checks passing' badge appear together, but the chat history also shows a 'Checks failing' card; the state is consistent but could be confusing"
     ]
   }
 }

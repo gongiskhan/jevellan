@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Metadata line wraps across three lines and the worktree name breaks oddly mid-line ('Worktree on jv/tidy-the-readme-wording-0m807m ·' / 'dev-madrid'), so it's a bit hard to scan",
-      "Large empty space between the last report card and the 'This thread has ended' footer",
-      "Both reports just say 'Done for now.', so the thread gives little sense of what happened (a content issue, not a rendering one)"
+      "The worktree/branch metadata line wraps across three lines in small monospace text. It is still readable.",
+      "There is a large empty area between the last report card and the footer."
     ]
   }
 }

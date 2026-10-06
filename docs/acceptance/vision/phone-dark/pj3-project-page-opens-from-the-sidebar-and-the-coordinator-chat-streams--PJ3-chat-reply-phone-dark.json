@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The meta line under the reply (\"Started \"Add a greeting\" · Claude Code Fable · high · Worktree · dev-madrid\") is low-contrast gray, but it's still readable",
-      "The 'Pull requests' tab sits close to the right edge, but it isn't clipped",
-      "Large empty area between the reply and the composer"
+      "The composer placeholder is cut off at \"Tell the coordinator what you nee\" because the stop and send buttons leave too little width; it's a placeholder hint, so it doesn't block use.",
+      "The status badge reads \"Working…\" with an ellipsis and is tightly sized against the model label \"Claude Code Fable · high\"; it's still readable.",
+      "Large empty area between the reply and the \"Coordinator is working…\" indicator; this is expected for a short chat."
     ]
   }
 }

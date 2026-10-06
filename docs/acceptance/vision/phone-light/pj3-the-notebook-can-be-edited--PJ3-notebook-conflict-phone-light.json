@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Large empty space below the action buttons and inside the textarea; the layout looks top-heavy on a phone viewport",
-      "The 'Projects fixture' breadcrumb is small, low-contrast magenta monospace text, though still readable"
+      "Large empty area under the textarea content and below the action buttons, so the screen feels sparse at phone size",
+      "The 'Reload' link is styled only as colored bold text inside the conflict banner, so it is less obvious as a tap target than a button would be"
     ]
   }
 }

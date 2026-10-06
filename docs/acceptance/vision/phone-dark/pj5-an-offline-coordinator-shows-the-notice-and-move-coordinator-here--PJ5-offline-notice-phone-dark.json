@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The notice banner's amber border and fill don't stand out much against the dark background",
-      "The 'Offline' badge under the title is small and low-contrast"
+      "The 'Move coordinator here' button sits close to the notice banner's bottom edge, so there's little padding below it.",
+      "The empty chat area has a lot of unused vertical space above and below the centered helper text.",
+      "The 'Offline' status chip uses small monospace text that is a bit dim against the dark background."
     ]
   }
 }

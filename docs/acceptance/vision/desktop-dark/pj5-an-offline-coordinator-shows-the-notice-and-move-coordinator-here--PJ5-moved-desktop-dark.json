@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles get cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'). The full text is still available elsewhere, so this doesn't block anything.",
-      "The 'Some native session are unavailable' disclosure in the sidebar uses small, low-contrast text.",
-      "The main conversation pane is mostly empty space below the notice banner. That's expected for an idle coordinator but looks sparse."
+      "Shell session titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'dev-ma…'); this is intentional truncation and the full text is not needed to understand the screen",
+      "The 'Idle' status pill and the 'Claude Code Fable · high' metadata are small, low-contrast monospace text, though still readable"
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'). They're still readable and this looks like intended truncation.",
-      "The 'Offline' tag under the title is small and low-contrast but still readable."
+      "Two sidebar session titles are cut off with ellipses ('Context · J11 memory journ…', 'Context · Mesh journey fixt…'), and their subtitle lines are truncated too ('dev-…', 'de…')",
+      "The empty-state description is vertically centered in a tall, mostly empty main column, so it leaves a lot of whitespace"
     ]
   }
 }

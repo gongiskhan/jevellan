@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and metadata are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · dev-ma…'). This is intentional truncation and doesn't block anything.",
-      "There's a large empty area between the report card and the message composer.",
-      "The 'Placed without Jev: authentication failed' fallback chip uses small amber monospace text, which has fairly low contrast but is still readable."
+      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · dev-ma…'). This is expected truncation and the text is still readable.",
+      "The large empty area below the report card makes the page look sparse."
     ]
   }
 }

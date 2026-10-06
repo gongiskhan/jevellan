@@ -10,7 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background page shows through the dimmed overlay. That is expected behind a modal, but the background text is hard to read."
+      "The 'From the next turn' and 'Restart with these choices' radio rows have no visible divider or card styling, so the two options look a little undifferentiated",
+      "The background page under the dimmed overlay is hard to read, which is expected for a modal backdrop"
     ]
   }
 }

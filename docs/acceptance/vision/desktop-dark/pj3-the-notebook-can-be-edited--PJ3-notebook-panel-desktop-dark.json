@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles get cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'). This is normal truncation and doesn't hide the notebook panel.",
-      "The notebook panel's header and its 'Edit' button sit on different rows; the 'Edit' button is on the 'Updated by you' line, not the title bar. It's still visible and reachable.",
-      "The notebook panel's large empty area makes the content look sparse, but nothing is missing."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'). This is intended truncation, and the full titles are probably available elsewhere.",
+      "The notebook panel has a lot of empty space below its two lines of content. This is expected for a short notebook."
     ]
   }
 }

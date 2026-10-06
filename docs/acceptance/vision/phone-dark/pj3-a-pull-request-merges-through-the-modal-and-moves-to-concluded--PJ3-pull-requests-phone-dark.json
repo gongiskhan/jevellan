@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Working…' status badge looks squeezed against its border, so the ellipsis may be truncation rather than intended text.",
-      "A lot of empty space under the single PR card; fine for a fixture with only one pull request."
+      "The 'Open thread' link is pink and shows no button affordance, so it looks different from the outlined 'Open on GitHub' and 'Merge' buttons next to it",
+      "Most of the screen below the single PR card is empty, which is expected with only one PR",
+      "The 'Idle' status chip and the 'Claude Code Fable · high' subtitle use small, low-contrast monospace text, but it is still readable"
     ]
   }
 }

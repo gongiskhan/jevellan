@@ -9,9 +9,6 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": [
-      "Large empty area between the reply and the composer. That's expected for a short chat, but the screen looks sparse.",
-      "The secondary status text ('Idle · Claude Code Fable · high', the activity line and the timestamp) is small and low-contrast grey, though still readable."
-    ]
+    "cosmetic": []
   }
 }

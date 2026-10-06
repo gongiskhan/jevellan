@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut short with ellipses (e.g. 'Context · J11 memory journ…', 'dev-ma…'). This looks like deliberate truncation.",
-      "The notebook textarea leaves a lot of empty space above the conflict banner, so the banner, Cancel and Save sit low on the panel.",
-      "The conflict banner's red border is faint against the dark background, though its text and the 'Reload' link are readable."
+      "The sidebar shell-session titles and subtitles are cut off with ellipses (e.g. \"Context · J11 memory journ…\", \"dev-ma…\"). This looks intentional, and the full text isn't needed on this screen.",
+      "The notebook textarea leaves a lot of empty space above the conflict banner, so the Reload/Cancel/Save area sits lower on the page than it needs to.",
+      "The pink \"Reload\" link on the dark red banner has fairly low contrast, but it is still readable."
     ]
   }
 }

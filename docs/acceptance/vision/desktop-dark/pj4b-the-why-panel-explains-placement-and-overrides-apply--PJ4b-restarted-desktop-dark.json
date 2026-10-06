@@ -10,8 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles are truncated with ellipses ('Context · J11 memory journ…', 'Context · Mesh journey fixt…'), and so are their subtitles. That is normal overflow handling.",
-      "There is a large empty area between the last report card and the 'This thread has ended' footer."
+      "Sidebar session titles are cut off with ellipses ('Context · J11 memory journ…', 'Context · Mesh journey fixt…') and their subtitles are cut off too ('dev-ma…', 'dev-…', 'de…')",
+      "The 'Restarted as thread_…' link is pink on a dark background with an underline, which makes it a bit hard to read",
+      "The 'Some native sessions are unavailable' note in the sidebar is small, low-contrast text",
+      "There is a lot of empty space between the last report card and the 'This thread has ended' footer"
     ]
   }
 }

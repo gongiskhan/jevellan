@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The composer placeholder 'Tell the coordinator what you need' runs right up to the stop button, leaving almost no gap.",
-      "The 'Working…' status pill and the 'Claude Code Fable · high' model label use very small text and are hard to read at phone size, though they are still legible.",
-      "The send button looks disabled next to the active stop button. That is probably intended while the coordinator is working, but its contrast is low."
+      "The composer placeholder is clipped at \"Tell the coordinator what you nee\" because the stop and send buttons take up the space; the text is still readable and the input still works.",
+      "The status pill is shortened to \"Working…\" in a narrow box next to the model label, which looks slightly cramped but is still legible.",
+      "There is a lot of empty space between the single user message and the \"Coordinator is working…\" indicator, which is expected before the first streamed reply arrives."
     ]
   }
 }

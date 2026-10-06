@@ -10,7 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Checks passing' badge text in the dimmed background is low-contrast, but it sits behind the modal overlay as intended."
+      "Lots of empty space under the modal; the dialog is centered vertically on a mostly blank phone viewport",
+      "The backdrop blur makes the page header and PR card behind the modal hard to read. That's expected while a modal is open."
     ]
   }
 }

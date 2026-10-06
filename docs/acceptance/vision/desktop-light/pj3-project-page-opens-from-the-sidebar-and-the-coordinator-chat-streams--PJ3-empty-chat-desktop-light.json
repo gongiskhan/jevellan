@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'), but this looks like intended overflow handling",
-      "Empty-state helper text in the chat pane is low-contrast gray"
+      "Sidebar session titles are cut off with an ellipsis ('Context · J11 memory jour…', 'Context · Mesh journey fix…'). Their metadata lines are cut off too ('dev-ma…', 'dev-…', 'de…'). Each cut ends in a deliberate ellipsis.",
+      "The empty chat area is mostly blank space with only the centered hint text. This is expected for an empty chat but looks sparse."
     ]
   }
 }

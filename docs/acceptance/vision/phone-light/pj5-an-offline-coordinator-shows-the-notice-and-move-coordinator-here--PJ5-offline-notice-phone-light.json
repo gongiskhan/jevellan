@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Offline' badge text is very small, but you can still read it.",
-      "The tab row ends at 'Pull requests' with space left over. Nothing looks cut off, but if there are more tabs, you can't tell they exist without scrolling.",
-      "The large empty area above the composer pushes the help text to the middle of the screen."
+      "The 'Move coordinator here' button sits close to the bottom edge of the notice banner, so there's little padding under it.",
+      "Most of the screen between the tabs and the composer is empty, with only the centered intro text."
     ]
   }
 }

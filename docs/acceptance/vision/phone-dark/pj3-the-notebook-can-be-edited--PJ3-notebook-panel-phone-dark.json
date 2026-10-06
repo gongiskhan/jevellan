@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Updated by you · Oct 6, 02:15:27' metadata text is low-contrast gray on the dark background but still readable",
-      "Most of the panel below the short note content is empty space"
+      "Most of the panel below the content is empty dark space",
+      "The 'Projects fixture' breadcrumb text is small and low-contrast pink on dark navy"
     ]
   }
 }

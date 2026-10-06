@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and metadata are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'), but each one still identifies its session.",
-      "Most of the area under the report card is empty, which is expected for a short thread."
+      "Sidebar session titles get ellipsized ('Context · J11 memory journ…', 'Context · Mesh journey fixt…'), and so do their metadata lines ('dev-ma…', 'dev-…', 'de…'). The full text is presumably available elsewhere.",
+      "Most of the main thread area is empty below the report card. That's expected for a short thread.",
+      "Small monospace metadata text (the breadcrumb line and the sidebar session subtitles) is low-contrast light gray, but it's still readable."
     ]
   }
 }

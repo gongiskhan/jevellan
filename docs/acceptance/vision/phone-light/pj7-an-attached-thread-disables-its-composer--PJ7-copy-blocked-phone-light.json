@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The metadata line 'Worktree on jv/tidy-the-readme-wording-8911jn ·…' is cut short with an ellipsis. It looks intentional, but the rest of the line can't be read.",
-      "The highlighted command text is magenta on a magenta-tinted background and wraps over two lines. It's still readable, but the contrast is lower than the surrounding text.",
-      "There is a large empty gap between the report card and the composer area."
+      "There is a large empty gap between the report card and the attached-thread notice, so the composer sits far down the screen.",
+      "The selected attach command wraps onto two lines, and the magenta selection highlight is uneven across the line break.",
+      "The disabled send button's grey background touches the right edge of the dashed composer border."
     ]
   }
 }

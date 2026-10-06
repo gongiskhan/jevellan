@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Working…' status badge is small and its text is tight against the badge border, so it may read as truncated even though the ellipsis is intentional.",
-      "The model label 'Claude Code Fable · high' is low-contrast grey on the dark background, though still readable.",
-      "The input placeholder 'Tell the coordinator what you need' nearly touches the stop button, leaving little padding."
+      "Composer placeholder is cut off at 'Tell the coordinator what you nee' because the stop button takes up space.",
+      "The status badge is shortened to 'Working…'. It still reads clearly as a working state.",
+      "The send button is dimmed and sits right against the stop button. Both are still visible and reachable."
     ]
   }
 }

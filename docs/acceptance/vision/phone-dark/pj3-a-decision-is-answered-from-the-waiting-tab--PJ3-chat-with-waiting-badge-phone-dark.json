@@ -9,6 +9,9 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": []
+    "cosmetic": [
+      "The 'Started \"Add a greeting\" · Claude Code Fable · high · Worktree · dev-madrid' line wraps onto a second line. It is still readable.",
+      "The muted gray text (timestamps, status lines, model label) has fairly low contrast on the dark background, but it is still legible."
+    ]
   }
 }

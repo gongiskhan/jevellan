@@ -10,7 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Title field cuts off the long value at the right edge (\"...what each file is\"). Single-line inputs normally scroll, so the full text is still there."
+      "The Title input text runs past the edge of the field ('...list what each file is'). This is normal scrolling behavior for a single-line input.",
+      "The background page shows through the modal backdrop only faintly, which is expected."
     ]
   }
 }

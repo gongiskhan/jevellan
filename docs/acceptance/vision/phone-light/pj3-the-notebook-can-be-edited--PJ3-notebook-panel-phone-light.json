@@ -10,7 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Most of the panel below the content is empty white space, which is expected for a short note"
+      "The 'Projects fixture' breadcrumb sits close to the 'Notebook' title in the header and is shown in magenta monospace, which looks out of place but is still readable.",
+      "The note content takes up only the top of the panel, so most of the screen below it is empty."
     ]
   }
 }

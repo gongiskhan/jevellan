@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background text behind the dimmed overlay is cut off with ellipses: the worktree path 'jv/tidy-the-readme-wording-0e057...' and the 'jevellan thread attach thread_01M7CU6JU7Y...' command. Both are behind the modal, so they don't affect it.",
-      "The note textarea's focus border (magenta) is a different color from the Model and Effort selects. Minor visual inconsistency."
+      "The modal covers the thread header and composer behind it. The background text is dimmed and partly hidden, which is expected for a modal backdrop.",
+      "The command text at the bottom of the screen ('jevellan thread attach thread_01...') is cut off by the viewport edge behind the modal backdrop. It is not part of the modal."
     ]
   }
 }

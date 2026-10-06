@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Send button's text has low contrast against its dark background, so it looks disabled. That may be intended while the answer field is empty.",
-      "The placeholder text \"Answer in your own words\" is larger than the other text on the card.",
-      "The lower half of the screen is empty below the decision card."
+      "The 'Send' button text has low contrast against its dark background and could pass for a disabled button.",
+      "The tab row runs right up to the screen edge, and the 'Pull requests' tab nearly touches it; there may be more tabs off-screen that you can only reach by scrolling sideways.",
+      "The top-right icons are crowded together, and the overflow '...' button has no visible boundary."
     ]
   }
 }

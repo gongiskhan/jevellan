@@ -10,7 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The title field holds the long task description, 'Read through the project and list what each file is for, one line per file', while the Task field holds the short PJ3 prompt. The two values look swapped, but both are fully visible."
+      "The Title field holds what reads like task text ('Read through the project and list what each file is for, one line per file'), while the Task field has a different instruction. The two may have been swapped or prefilled oddly, but both are fully legible."
     ]
   }
 }

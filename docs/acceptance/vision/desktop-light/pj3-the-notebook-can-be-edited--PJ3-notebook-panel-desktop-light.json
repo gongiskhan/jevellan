@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Mesh journey fixt…'). They can still be identified.",
-      "Notebook panel has a lot of empty white space below its short content.",
-      "Repeated 'Noted.' messages make the chat feed look noisy."
+      "Sidebar session titles are cut off with ellipses ('Context · J11 memory journ…', 'Context · Mesh journey fixt…'), and so are their subtitles ('dev-ma…', 'dev-…', 'de…')",
+      "Lots of empty space in the notebook panel below the short content",
+      "The 'Projects fixture' label in the notebook header is small monospace text in a low-contrast pink"
     ]
   }
 }

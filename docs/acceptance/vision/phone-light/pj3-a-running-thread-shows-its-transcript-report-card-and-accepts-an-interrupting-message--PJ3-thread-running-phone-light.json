@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Read through the project an…'), but the full prompt shows in the Prompt card.",
-      "The terminal attach command is cut off ('jevellan thread attach thread_01M47CDNP68E4P3…'). A copy button sits next to it, so the full ID is still available.",
-      "The 'Worktree on jv/read-through-the-project-and-list-what-e-kgxhwe' line breaks in the middle of the branch name across two lines.",
-      "There is a large empty gap between the tool-call list and the 'Working on turn 1…' status bar."
+      "The header title is cut off with an ellipsis (\"Read through the project an...\"). The full prompt still appears in the Prompt card.",
+      "The terminal attach command is cut off (\"jevellan thread attach thread_01M47PG1QE8W5PM...\"). The copy button next to it still works.",
+      "There is a large empty gap between the tool-call list and the status line \"Working on turn 1...\".",
+      "\"Working on turn 1...\" is shown with an ellipsis, so the turn label may be shortened."
     ]
   }
 }

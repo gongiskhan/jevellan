@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The running thread title in the right panel ('Read through the project and list what each file is…') is cut short with an ellipsis, so the full name isn't visible.",
-      "Shell session titles and metadata in the sidebar ('Context · J11 memory journ…', 'Context · Mesh journey fixt…', 'dev-ma…') are cut short with ellipses.",
-      "The transcript shows many repeated 'Noted.' replies, which adds visual noise."
+      "The sidebar truncates some project/session names and metadata with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · dev-ma…').",
+      "The running thread title in the right panel is truncated ('Read through the project and list what each file is …').",
+      "The transcript has many repeated 'Noted.' lines in a row, which makes it look padded."
     ]
   }
 }

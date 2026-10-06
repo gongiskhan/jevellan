@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The worktree/branch metadata line is cut off with an ellipsis ('Worktree on jv/check-the-readme-links-heqzkd ·…'). It looks like deliberate truncation, but the rest of the line can't be read at phone width.",
-      "The terminal attach command is cut off ('jevellan thread attach thread_01M47CC62N9J3PB…'). The copy button next to it still works, so the full command can be copied.",
-      "A large empty area sits between the report card and the message composer. This is expected with only one turn."
+      "The 'jevellan thread attach thread_01M47PEEW789FAR…' command is cut off with an ellipsis. The copy button next to it still gives you the full command.",
+      "The metadata lines ('Claude Code · Fable · high effort ·', 'Projects Claude ·', 'Worktree on … · dev-madrid') wrap with a '·' left dangling at the end of each line."
     ]
   }
 }

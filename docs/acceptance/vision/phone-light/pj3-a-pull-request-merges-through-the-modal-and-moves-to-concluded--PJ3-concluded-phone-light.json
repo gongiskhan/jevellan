@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The running thread title 'Read through the project and list what each …' is cut off with an ellipsis on one line; this looks intentional, but the full title can't be read here.",
-      "The concluded thread summary 'Added greeting.txt with a short greeting and committed …' is cut off with an ellipsis.",
-      "The 'Idle' status badge and its 'Claude Code Fable · high' metadata are in small, low-contrast monospace text, but still readable.",
-      "There is a large empty area below the list. This is expected with only three threads."
+      "The running thread title 'Read through the project and list what each …' is cut off with an ellipsis. That looks intentional for a single-line title.",
+      "The summary for 'Add a greeting' ('Added greeting.txt with a short greeting and committed …') is cut off with an ellipsis. That also looks intentional.",
+      "Below the thread list, more than half the screen is empty."
     ]
   }
 }

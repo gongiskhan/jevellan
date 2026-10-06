@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses ('Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'). This is intended truncation, and each row can still be reached.",
-      "The thread ID in the header text runs almost to the right edge of the content area, so the line feels cramped.",
-      "The large empty space between the report card and the composer makes the page look sparse."
+      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'), but they're still readable and the controls work.",
+      "The attached-thread hint line runs long and pushes the thread ID close to the right edge. It still fits and wraps fine.",
+      "The composer placeholder 'Message this thread' and the disabled send button are low-contrast. This fits the disabled state but they're faint."
     ]
   }
 }

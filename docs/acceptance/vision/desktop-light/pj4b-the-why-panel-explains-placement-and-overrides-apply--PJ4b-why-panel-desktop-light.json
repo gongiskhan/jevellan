@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and their metadata lines are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · J11 memory journey · dev-…'). This looks like deliberate truncation, but the full names can't be read at this width.",
-      "The Why panel header puts the thread title 'Tidy the README wording' in small pink monospace next to the bold 'Why this placement', so the title reads weaker than the heading.",
-      "The MODEL, EFFORT and ISOLATION bars for non-chosen options use a low-contrast grey on a light grey track. They're readable but faint.",
-      "The middle column has a large empty area between the report card and the message composer."
+      "Sidebar session titles are cut off with ellipses ('Context · J11 memory journ…', 'Context · Mesh journey fixt…') and so are their subtitles ('dev-ma…', 'dev-…', 'de…')",
+      "The column header 'Jev' is repeated on the right of every section in the Why panel, which looks a bit cluttered",
+      "The 'Fixed: none' line under PLACEMENT is terse and doesn't explain much"
     ]
   }
 }

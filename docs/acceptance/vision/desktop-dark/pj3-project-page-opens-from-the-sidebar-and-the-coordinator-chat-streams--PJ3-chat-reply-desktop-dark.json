@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and meta lines are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'dev-ma…'). This is deliberate truncation and still readable.",
-      "The header badge says 'Idle' while the right panel lists 'Add a greeting' as running, which may look inconsistent. It is a state label, not a layout problem.",
-      "The chat pane has a lot of empty space between the single reply line and the composer."
+      "Sidebar shell session titles and subtitles are cut off with an ellipsis (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). Hover or the full view still shows them.",
+      "The header status chip reads 'Idle' while the right panel lists 'Add a greeting' as running for 1s. Readers may find this confusing, but nothing is hidden.",
+      "The chat reply area has a lot of empty space between the short reply and the composer. The layout is still fine."
     ]
   }
 }

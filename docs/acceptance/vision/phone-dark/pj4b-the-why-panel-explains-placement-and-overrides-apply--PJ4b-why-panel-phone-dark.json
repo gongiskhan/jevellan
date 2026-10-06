@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The low-contrast dark gray labels and footer text (Jev, 'only option', placement metadata) are faint but still readable",
-      "There is a large empty area below the footer at the bottom of the panel"
+      "The header title 'Why this placement' sits right next to the pink 'Tidy the README wording' label with little space between them, so the header looks crowded.",
+      "The muted gray secondary text (bar values, footer metadata) has fairly low contrast on the dark background but is still readable.",
+      "There is a lot of empty space below the footer metadata."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'dev-ma…'), but the full text is likely available in other ways",
-      "The status pill reads 'Idle' even though this step is about a running thread. That's a state question rather than a rendering problem",
-      "The large empty area between the report card and the composer makes the layout feel sparse"
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'). This is intended truncation and the text stays readable.",
+      "The metadata line under 'Back to the project' is long and fills almost the full header width in small, low-contrast monospace text.",
+      "There is a large empty gap between the report card and the message box."
     ]
   }
 }

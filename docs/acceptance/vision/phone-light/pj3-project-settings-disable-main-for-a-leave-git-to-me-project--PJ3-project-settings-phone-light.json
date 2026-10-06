@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The disabled 'Main' radio label is low-contrast light grey. It is still readable and the greying is expected for a disabled option.",
-      "The 'npm ci' placeholder in the Worktree setup command field is faint, as placeholder text usually is."
+      "The 'Main' radio option and its hint 'This project is set to Leave git to me.' use low-contrast grey text. This fits a disabled state, but it is lighter than the rest of the dialog.",
+      "The body may scroll above the Cancel/Save footer, since 'Turn limit per thread' sits right against the divider. There's no scroll indicator, so it's unclear whether more fields are below."
     ]
   }
 }

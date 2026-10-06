@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Merge button is greyed out with low contrast (light grey text on a light grey background). This is probably intentional because conflicts disable it, but it is harder to read than the other controls.",
-      "The 'Idle' badge and the 'Claude Code Fable · high' subtitle under the header use very small monospace text. It is readable but cramped.",
-      "The PR card takes up only the top third of the screen, leaving a large empty area below it."
+      "Merge button looks disabled (light grey with muted text) next to the Conflicts badge. This fits a conflict state, but its contrast is low.",
+      "Most of the screen below the single PR card is empty space."
     ]
   }
 }

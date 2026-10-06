@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The take-over command 'jevellan thread attach thread_01M47CJ1VR77EXV…' at the bottom is cut off with an ellipsis. The copy button next to it still works, and the full thread ID appears in the notice at the top.",
-      "The metadata line 'Worktree on jv/tidy-the-readme-wording-8911jn ·…' is cut off with an ellipsis.",
-      "Most of the screen between the report card and the footer is empty."
+      "The takeover command at the bottom ('jevellan thread attach thread_01M47PM7102YPXD…') is cut off with an ellipsis. It's still usable because the copy button is next to it and the full thread ID appears in the banner at the top.",
+      "There's a large empty gap between the Turn 1 report card and the attached-composer notice at the bottom.",
+      "The disabled composer's placeholder 'Message this thread' and its send arrow are low-contrast, though still readable."
     ]
   }
 }

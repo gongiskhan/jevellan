@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'). This is intentional overflow handling.",
-      "The 'Offline' badge and the offline notice banner use low-contrast muted styling. Both are still readable."
+      "Sidebar session titles and subtitles are cut off with ellipses ('Context · J11 memory journ…', 'Context · Mesh journey fixt…', 'dev-ma…'). The text is still readable and this is expected for long titles.",
+      "The offline notice banner uses a dark amber background with light text. It is readable but has fairly low contrast against the dark theme.",
+      "The empty-state prompt in the middle and the status column on the right leave a lot of unused vertical space. The layout looks sparse but nothing is broken."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar thread titles and subtitles are cut off with ellipses ('Context · J11 memory journ…', 'Context · Mesh journey fixt…', 'dev-ma…'). The truncation is intentional, but the full names can't be read without hovering.",
-      "The Prompt card is inset further left than the Read and Report cards below it, so the left edges of the cards in the thread don't line up.",
-      "The command next to 'Take over in a terminal on Browser member' is in small monospace text on a dark field, which is somewhat hard to read but still legible."
+      "Some sidebar session titles and subtitles are cut short with an ellipsis (for example 'Context · J11 memory journ…', 'Context · Mesh journey fixt…', 'dev-ma…'). The cut is intentional, but the full names can't be seen at this width.",
+      "The 'Some native sessions are unavailable' note at the bottom of the sidebar is small, low-contrast text.",
+      "The thread metadata line under the title (Codex · GPT · high effort · …) is in small, low-contrast monospace type, but it can still be read."
     ]
   }
 }

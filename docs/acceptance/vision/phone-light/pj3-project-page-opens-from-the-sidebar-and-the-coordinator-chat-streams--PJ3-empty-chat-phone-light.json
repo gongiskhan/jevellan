@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Idle' status badge and the 'Claude Code Fable · high' monospace subtitle are small and low-contrast. They're still readable.",
-      "The tab row ends at 'Pull requests' with a lot of empty space to its right. There's no sign of more tabs past it.",
-      "The send button's arrow icon is low-contrast on its pale background, though it can still be seen and tapped."
+      "The empty-state helper text is gray and fairly low contrast, but it can still be read",
+      "The tab row stops at 'Pull requests' with room to spare, so no tab looks clipped"
     ]
   }
 }

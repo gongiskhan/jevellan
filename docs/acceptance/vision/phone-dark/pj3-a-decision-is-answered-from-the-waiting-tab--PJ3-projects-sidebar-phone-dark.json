@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The third shell session's subtitle is cut short with an ellipsis ('Done · Mesh journey fixture · dev-mad…'). This looks like intended single-line truncation, but the full workspace name can't be read.",
-      "The main view behind the open drawer is dimmed and partly visible on the right edge, as expected for an overlay drawer.",
-      "The 'Waiting for you' filter chip is not selected. 'All' is active, so the Waiting tab named in the scenario isn't shown as active on this screen."
+      "The subtitle of the third shell session row is cut off with an ellipsis ('dev-mad…'). The session can still be identified from its title.",
+      "The dimmed main conversation shows through on the right side of the sidebar overlay, with fragments like 'reeting' and '5:10:00' visible at the edge. The overlay still covers it and nothing overlaps the sidebar controls.",
+      "The status-filter chips ('All', 'Running', 'Waiting for you', 'Done') are small and tightly packed, but they are readable and all of them are visible."
     ]
   }
 }

@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The title of the running task in the right panel is cut off with an ellipsis ('Read through the project and list what each file is ...'). The full text can still be read in the conversation.",
-      "Sidebar session titles are cut off ('Context · J11 memory journ...', 'Context · Mesh journey fixt...'), and so are their subtitles ('dev-ma...', 'dev-...', 'de...').",
-      "The conversation shows several 'Noted.' replies in a row, which adds visual repetition.",
-      "The conversation shows both 'Checks failing' and 'Checks passing' cards for pull request #1, plus a 'has conflicts' card, while the pull request panel shows 'Checks passing'. The state is consistent but may look confusing next to the Merge button."
+      "The title of the Running item in the right panel is cut off with an ellipsis (\"Read through the project and list what each file is ...\"). This looks like intentional single-line truncation.",
+      "Sidebar session titles and metadata are cut off with ellipses (\"Context · J11 memory journ...\", \"Context · Mesh journey fixt...\", \"Done · Improver sandbox · dev-ma...\"). This also looks like intentional truncation.",
+      "The conversation shows many \"Noted.\" lines in a row (several in pairs), which adds visual noise.",
+      "The \"Some native sessions are unavailable\" note in the sidebar footer is small and low-contrast."
     ]
   }
 }

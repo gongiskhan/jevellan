@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The answered decision is collapsed under 'Answered 1', so you have to expand it to see the answer.",
-      "Most of the screen below the content is empty."
+      "The 'Answered 1' section is collapsed, so the answered decision isn't shown unless the user expands it.",
+      "The success message ('Sent to the coordinator.') and the 'Nothing waiting' empty state sit close together, so the confirmation is easy to miss."
     ]
   }
 }

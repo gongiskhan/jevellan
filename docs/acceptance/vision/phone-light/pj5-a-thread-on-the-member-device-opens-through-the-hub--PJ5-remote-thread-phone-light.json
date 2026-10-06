@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Header title is cut off with an ellipsis ('Read the README on the me…'). The full title still shows in the Prompt card, so nothing is lost.",
-      "The terminal attach command is cut off ('jevellan thread attach thread_01M47CGZPXP9EDH…'), so the thread ID can't be read in full. The copy button next to it still copies the whole command.",
-      "There is a stray '·' on its own line at the end of the 'Worktree on jv/read-the-readme-on-the-member-17gvrz' line in the metadata block.",
-      "There is a large empty gap between the report card and the message composer."
+      "The header title is cut off with an ellipsis ('Read the README on the me…'). The full task title still shows in the Prompt card below.",
+      "The terminal attach command is cut off ('jevellan thread attach thread_01M47PK701S9EDB…'). The copy button next to it still gives you the full command.",
+      "The 'Projects Codex' metadata line wraps awkwardly at narrow width ('Projects Codex ·' / 'Worktree on'), but it's still readable."
     ]
   }
 }

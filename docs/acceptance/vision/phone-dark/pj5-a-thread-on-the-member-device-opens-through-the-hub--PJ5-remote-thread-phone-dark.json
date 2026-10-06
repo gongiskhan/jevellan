@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Read the README on the mem…'). The full task title appears in the prompt card, so nothing is lost.",
-      "The terminal attach command is cut off ('jevellan thread attach thread_01M47CH02HBZ2BX…'). The copy button next to it still gives the full command, but the thread ID can't be read in full on screen.",
-      "In the metadata block, the line break leaves a stray '·' alone on its own line after the worktree branch name.",
-      "The Read tool row is collapsed, so its details are hidden until tapped. The control is visible and reachable."
+      "The header title is cut off with an ellipsis ('Read the README on the mem...'). The full task title still appears in the Prompt card.",
+      "The terminal attach command is cut off with an ellipsis ('thread_01M47PKJV9FZWJD...'). The copy button next to it is still visible and reachable.",
+      "The metadata line wraps over four short lines, which is a little dense at phone width but still readable."
     ]
   }
 }

@@ -9,6 +9,9 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": []
+    "cosmetic": [
+      "The header status text \"Claude Code Fable · high\" uses a small, low-contrast monospace font, but it can still be read.",
+      "The pink \"Open thread\" link text is small but readable."
+    ]
   }
 }

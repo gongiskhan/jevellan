@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'). This is intentional truncation and the full text is available elsewhere.",
-      "The disabled composer's placeholder 'Message this thread' and the dim send arrow are low-contrast on the dark background. That fits a disabled state, but the text is faint.",
-      "The metadata line ('Claude Code · Fable · high effort · …') is small, low-contrast monospace text."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'). This looks like intended overflow handling.",
+      "The note 'This thread is attached in a terminal… run jevellan thread detach thread_01M47…' is long and runs almost the full width of the header. It is still readable.",
+      "The composer placeholder and the disabled send button are low-contrast. This is acceptable for a disabled state but faint."
     ]
   }
 }

@@ -10,10 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Right-panel running thread title is cut off with an ellipsis ('Read through the project and list what each file is ...'), so the full title can't be read there. It is shown in full in the conversation.",
-      "Sidebar session titles are cut off ('Context · J11 memory journ...', 'Context · Mesh journey fixt...'), and so are their metadata lines ('dev-ma...', 'dev-...', 'de...').",
-      "Several 'Noted.' replies appear back to back (e.g. two in a row after the progress card and again after the conflicts card), which looks repetitive.",
-      "Small monospace metadata text in the right panel (e.g. 'Claude Code · Fable · high · Worktree · dev-madrid') and the 'v0.1.0' label have low contrast."
+      "The transcript has many separate \"Noted.\" lines, including back-to-back pairs, which makes it look repetitive",
+      "Long titles end in an ellipsis: the running thread on the right (\"Read through the project and list what each file is…\") and the sidebar shell session names and their details (\"Context · J11 memory journ…\", \"Done · J11 memory journey · dev-…\"). The cut-off looks intentional and the text stays readable"
     ]
   }
 }

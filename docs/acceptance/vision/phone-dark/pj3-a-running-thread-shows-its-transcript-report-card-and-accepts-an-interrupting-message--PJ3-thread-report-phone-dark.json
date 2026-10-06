@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Read through the project an...'). This is on purpose and the full title appears in the first prompt card.",
-      "The terminal attach command is cut off ('jevellan thread attach thread_01M47CDS21EKQM1...'). The copy button next to it still gives you the full command.",
-      "The worktree branch name wraps across three lines in the metadata block. It's still readable."
+      "The header title is cut off with an ellipsis ('Read through the project an...'). This is expected for a long title on a narrow screen.",
+      "The 'jevellan thread attach thread_01M47PGCWXTVGYQ...' command at the bottom is cut off. The full command can still be copied with the copy button.",
+      "The worktree path in the metadata wraps across several lines ('jv/read-through-the-project-and-list-what-e-n5p47v · dev-madrid'). It is still readable but looks crowded."
     ]
   }
 }

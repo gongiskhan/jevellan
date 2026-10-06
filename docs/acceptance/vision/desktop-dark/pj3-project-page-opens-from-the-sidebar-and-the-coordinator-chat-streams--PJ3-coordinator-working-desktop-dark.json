@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Working…' status pill in the header is truncated with an ellipsis, though it is still readable.",
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This is normal truncation, and the full text is likely available on hover.",
-      "The chat area is mostly empty: only the user message is shown, and the reply is still streaming behind the 'Coordinator is working…' indicator. This is expected for this step."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This looks intended.",
+      "The chat column has a lot of empty space between the single user message and the 'Coordinator is working…' indicator at the bottom.",
+      "Small monospace labels like the model line 'Claude Code Fable · high' and the thread metadata 'Codex · GPT · high · Worktree · Browser member' are low-contrast but still readable."
     ]
   }
 }

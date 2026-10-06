@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles are truncated with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…'), and so are their subtitles ('dev-ma…', 'de…'). That is expected overflow handling and hides no controls.",
-      "The 'Some native sessions are unavailable' footer and the 'Idle · Claude Code Fable · high' status text are small and low-contrast, but you can still read them."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'), which is expected for a narrow sidebar",
+      "The 'Some native sessions are unavailable' disclosure text is small and low-contrast",
+      "Small monospace metadata text (e.g. 'Codex · GPT · high · Worktree · Browser member', 'Idle Claude Code Fable · high') has fairly low contrast against the dark background"
     ]
   }
 }

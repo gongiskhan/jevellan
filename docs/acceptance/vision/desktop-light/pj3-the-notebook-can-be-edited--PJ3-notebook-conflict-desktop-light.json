@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with an ellipsis (e.g. 'Context · J11 memory journ…', 'dev-ma…'). This is ordinary truncation and doesn't hide anything this step needs.",
-      "The notebook textarea leaves a lot of empty space below its three lines of content."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Mesh journey fixt…', 'dev-ma…'). This is intentional truncation; the full text isn't shown.",
+      "The notebook textarea leaves a lot of empty space below the short content, so the conflict banner and Cancel/Save buttons sit in the middle of the panel."
     ]
   }
 }

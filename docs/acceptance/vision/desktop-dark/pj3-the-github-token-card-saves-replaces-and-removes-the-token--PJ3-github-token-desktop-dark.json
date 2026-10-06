@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Save Git settings' button in the GitHub connection card is low-contrast, so it looks disabled. This may be intentional because nothing has changed yet.",
-      "In the sidebar, the session titles 'Context · J11 memory journ…' and 'Context · Mesh journey fixt…' and their subtitles are truncated with ellipses. This is expected truncation and doesn't block anything.",
-      "The project select in 'Check a project' shows 'Outside context fixture', which isn't in the sidebar project list. This is a data point, not a layout problem."
+      "The 'Save Git settings' button has low contrast. It is probably styled this way because it is disabled, but it is harder to read than the other buttons.",
+      "Sidebar session titles are cut off with ellipses ('J11 memory journ…', 'Mesh journey fixt…'). This is expected truncation and does not affect the token card."
     ]
   }
 }

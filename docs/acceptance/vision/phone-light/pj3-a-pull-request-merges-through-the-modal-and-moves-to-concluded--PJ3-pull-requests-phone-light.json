@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Most of the screen below the single pull request card is empty",
-      "The 'Pull requests' tab is the last one in the tab row and sits right at the right edge, so it's unclear whether more tabs scroll off-screen",
-      "Small monospace text in the 'Idle · Claude Code Fable · high' status line and the 'PULL REQUESTS 1' heading is low-contrast"
+      "The 'Working…' status pill in the header is truncated with an ellipsis. That looks deliberate, since it's a spinner label.",
+      "The status text 'Claude Code Fable · high' is in small monospace type with low contrast, but it's still readable."
     ]
   }
 }

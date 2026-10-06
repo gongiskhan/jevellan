@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and metadata are truncated with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). The text is still readable and the items still work.",
-      "Header status reads 'Idle' while the right panel shows 'Add a greeting' running, which may look inconsistent.",
-      "Large empty area in the chat column between the reply and the composer."
+      "The sidebar session titles get cut off with an ellipsis ('Context · J11 memory jour…', 'Context · Mesh journey fix…'), and so do their subtitle lines ('dev-ma…', 'dev-…', 'de…'). This looks like intentional truncation, and the rows are still easy to tell apart.",
+      "The header status says 'Idle' while the right panel shows 'Add a greeting' as Running. This is a state-labeling mismatch, not a rendering problem.",
+      "The chat column has a lot of empty space between the reply and the composer. This is expected because the conversation is short."
     ]
   }
 }

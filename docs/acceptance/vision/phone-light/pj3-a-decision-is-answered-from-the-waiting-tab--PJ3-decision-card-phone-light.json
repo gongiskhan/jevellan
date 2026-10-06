@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Send' button text is low-contrast (grey on light grey), so it looks disabled. That is probably intended while the answer field is empty.",
-      "The Waiting tab badge (1) sits close to the tab's right edge.",
-      "The tab row runs nearly to the right edge of the viewport, leaving little margin after 'Pull requests'."
+      "The Send button looks pale and low-contrast next to the answer field. It may be disabled because the field is empty, which is likely intended.",
+      "The large empty area below the decision card is expected for a single item."
     ]
   }
 }

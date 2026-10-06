@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The page behind the modal is dimmed by the overlay, so its text (PR card, tabs, header) is hard to read. This is expected for a modal backdrop.",
-      "The pink \"Open thread\" link behind the overlay has low contrast against the dark background."
+      "The PR title in the modal body ('Add a greeting will be squashed into main') has no quotes or emphasis, so the sentence reads awkwardly",
+      "The overlay dims the page behind the modal so much that it's barely readable, which is normal for a modal backdrop"
     ]
   }
 }

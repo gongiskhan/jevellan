@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The empty-state message sits in the vertical middle with a lot of empty space above and below it, so the screen looks sparse.",
-      "The \"Idle\" status badge and the \"Claude Code Fable · high\" subtitle are small, low-contrast monospace text. They can be read but are faint.",
-      "The send button is greyed out (correct when the input is empty), but its contrast against the input field is low."
+      "Large empty area above and below the centered empty-state text, so the screen looks sparse on a phone",
+      "Send button in the composer is very low contrast against the dark input, which is typical for a disabled state but hard to see",
+      "The 'Idle' status chip and the 'Claude Code Fable · high' model label are small, low-contrast monospace text"
     ]
   }
 }

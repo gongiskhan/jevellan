@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The heading reads 'WAITING FOR YOU 0' and the low-contrast count looks like part of the label",
-      "The status line 'Claude Code Fable · high' is small and low-contrast, but you can still read it",
-      "Most of the screen below the Answered row is empty"
+      "Large empty area below the content: the Answered section is collapsed, so most of the screen is blank",
+      "The 'WAITING FOR YOU 0' heading and the '1' count next to 'Answered' are small and low-contrast, but still readable"
     ]
   }
 }

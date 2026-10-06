@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The metadata line 'Worktree on jv/check-the-readme-links-9v1zj0 ·...' is cut off with an ellipsis, so the rest of the worktree/branch details can't be seen on this narrow screen.",
-      "The terminal attach command 'jevellan thread attach thread_01M47CBQS768WWT…' is cut off at the end of its line. The copy button next to it still gives you the full command.",
-      "There is a lot of empty space between the report card and the message box. It's not a problem, but the screen looks sparse."
+      "The terminal attach command at the bottom is cut off with an ellipsis (jevellan thread attach thread_01M47PDW6KPK0Y0…). The copy button next to it still gets the whole command, so this doesn't block anything.",
+      "The header crams three round icon buttons right next to the title. Nothing overlaps at this width, but it's tight.",
+      "The large empty area between the report card and the composer makes the screen feel unbalanced, though nothing is hidden."
     ]
   }
 }

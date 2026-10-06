@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Shell session titles and metadata in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This looks intentional, and the full text is likely available on hover.",
-      "The 'Waiting for the coordinator' caption in the answered-decision card is small, low-contrast grey text on the dark background. It is still readable.",
-      "Some secondary labels are dim but still readable: the 'Some native sessions are unavailable' note, 'v0.1.0', and the metadata line under 'Write the welcome copy'."
+      "Sidebar shell-session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'dev-ma…'). This is deliberate truncation, so the full text needs a hover or a wider sidebar.",
+      "The 'Waiting for the coordinator' caption on the answered-decision card is small, low-contrast muted text. It is still readable.",
+      "The 'Answered 1' section in the Waiting panel is collapsed, so the answered decision only shows in full in the transcript card."
     ]
   }
 }

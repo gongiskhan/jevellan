@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The disabled 'Merge' button has low contrast against the card background. That fits a disabled state, but the label is faint.",
-      "The 'Working…' status pill is cut short with an ellipsis. It looks intentional and is still readable."
+      "The disabled 'Merge' button has very low contrast against the card background. That's expected for a disabled control when there are conflicts, but it's faint to read.",
+      "The 'Idle' status chip and the 'Claude Code Fable · high' subtitle are small and low-contrast, but still readable."
     ]
   }
 }

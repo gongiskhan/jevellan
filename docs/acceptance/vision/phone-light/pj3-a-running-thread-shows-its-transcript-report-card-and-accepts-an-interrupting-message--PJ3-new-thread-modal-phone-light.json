@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Title input text is clipped at the right edge ('...list what each file is'). This is normal scrolling for a single-line input, and the text can still be reached.",
-      "The background page shows through the modal backdrop ('Projects fixture' header, 'Tell the coordinator what you need' composer). It is dimmed as expected and doesn't block the modal."
+      "The Title field's value runs past the right edge of the input ('...list what each file is'). That's normal scrolling for a single-line input, but the full title can't be read at this width.",
+      "The faint bar under the 'Projects fixture' header behind the dimmed backdrop is barely readable. That's expected while the modal is open."
     ]
   }
 }

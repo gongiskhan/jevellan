@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Session titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This is intentional truncation, but the full names aren't visible.",
-      "The page shows a lot of empty space between the single user message and the composer while the coordinator is working."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · J11 memory journey · dev-…'), but the full text is likely available on hover",
+      "The 'Working…' status pill text is clipped by an ellipsis in the header badge",
+      "The empty chat area is very large because only one message has arrived so far, which is expected while streaming"
     ]
   }
 }

@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar thread titles are cut off with ellipses ('Context · J11 memory journ…', 'Context · Mesh journey fixt…') and so are their subtitles ('dev-ma…', 'dev-…', 'de…'). This looks like intended overflow handling.",
-      "The 'Save Git settings' button is low-contrast. It appears to be a disabled state, which fits since nothing has changed.",
-      "The 'Check a project' dropdown shows 'Outside context fixture', which is not in the sidebar's project list. Possibly fixture data."
+      "The 'Save Git settings' button has low contrast. It is probably disabled on purpose because nothing has changed.",
+      "Sidebar conversation titles and subtitles are cut off with an ellipsis (for example 'Context · J11 memory journ…'). This looks like intended truncation."
     ]
   }
 }

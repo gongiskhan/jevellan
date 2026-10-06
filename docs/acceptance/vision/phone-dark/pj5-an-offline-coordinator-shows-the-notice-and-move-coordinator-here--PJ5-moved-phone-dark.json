@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The send arrow button in the composer has very low contrast against its background, though this may just be its disabled state while the input is empty.",
-      "The 'Idle' badge and the 'Claude Code Fable · high' subtitle are small, dim text, but still readable.",
-      "The chat area is empty apart from the notice, so most of the screen is unused space."
+      "The send arrow button in the composer has low contrast against the dark input, so it looks disabled.",
+      "The 'Idle' badge and the 'Claude Code Fable · high' subtitle are small, dim monospace text that is hard to read at a glance.",
+      "The space below the notice is mostly empty."
     ]
   }
 }

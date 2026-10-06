@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the dimmed background behind the modal, the header metadata line ('Worktree on jc/tidy-the-readme-wording-6b42b1 ...') and the bottom 'jevellan thread attach thread_01MrTK...' command are cut off with ellipses. They sit behind the overlay and don't affect the modal.",
-      "The Note textarea's pink focus ring sits close to the divider above the footer buttons."
+      "The modal fits on the screen. Its title, both radio options with their descriptions, the Model and Effort selects, the Note field, and the Cancel and Apply buttons are all fully visible and readable.",
+      "The 'jevellan thread attach thread_...' command behind the dimmed overlay is cut off with an ellipsis. It sits outside the modal, so it doesn't block this screen.",
+      "The Note textarea has a pink/magenta border, probably the focus style. It could be mistaken for an error state."
     ]
   }
 }

@@ -10,8 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Main' radio option is disabled and its helper text ('This project is set to Leave git to me.') is light grey, so it's lower contrast but still readable.",
-      "The 'Projects external' project in the background sidebar has a pink left accent bar that is only partly visible behind the modal overlay."
+      "The Main radio and its label are light grey, as expected for a disabled option, but the helper text 'This project is set to Leave git to me.' is small and low-contrast."
     ]
   }
 }

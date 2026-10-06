@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and metadata are truncated with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'); the full text can still be found elsewhere.",
-      "Some text is low-contrast and small: the pale gray monospace metadata line under the header and the 'Some native sessions are unavailable' note.",
-      "Most of the main pane is empty space between the report card and the composer."
+      "Sidebar session titles and metadata lines are truncated with ellipses (e.g. 'Context · J11 memory journ…', 'Done · J11 memory journey · dev-…'). This is the intended truncation and the full text is available elsewhere.",
+      "The disabled composer's placeholder 'Message this thread' and send arrow are faint, but they're meant to look disabled because the thread is attached in a terminal.",
+      "Below the composer, the selected command text in magenta reverse highlight is legible but very bright compared with the rest of the light theme."
     ]
   }
 }

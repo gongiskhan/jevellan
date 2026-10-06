@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · dev-ma…'). This is intentional truncation, and the screen's main content is unaffected.",
-      "The 'Placed without Jev: authentication failed' chip uses small yellow monospace text on a dark background. It is readable but has fairly low contrast.",
-      "The two lines of metadata ('Claude Code · Fable · high effort · …') are small, dim monospace text, which is a little hard to read."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'dev-ma…'). This is intentional truncation, and the full titles show elsewhere.",
+      "The main content area is mostly empty below the report card. This is expected for a short thread."
     ]
   }
 }

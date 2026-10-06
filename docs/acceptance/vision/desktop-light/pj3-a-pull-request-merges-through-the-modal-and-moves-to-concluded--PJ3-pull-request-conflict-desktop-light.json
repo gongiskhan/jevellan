@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The running-thread title 'Read through the project and list what each file is…' is cut short with an ellipsis in the right panel. The full text is still readable in the conversation.",
-      "Sidebar shell-session titles and their metadata lines ('Context · J11 memory journ…', 'Done · Improver sandbox · dev-ma…') are cut short with ellipses.",
-      "The Merge button in the pull request card looks greyed out and low-contrast. This seems to be on purpose, because the pull request has conflicts, but the label is a little faint."
+      "Sidebar session titles and their metadata lines are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…').",
+      "The title of the running thread in the right panel is cut off with an ellipsis ('Read through the project and list what each file is …').",
+      "The 'Merge' button is pale grey and has little contrast against the card, so it looks disabled even though the pull request shows 'Checks passing'.",
+      "The 'Waiting for you 0' heading uses monospace text, and the '0' sits close to the label."
     ]
   }
 }

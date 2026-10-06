@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar thread titles and metadata are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Improver sandbox · dev-ma…'). The truncation is intentional, but the full text can't be read.",
-      "The 'Send' button in the decision card is pale and low-contrast. It is probably disabled because the answer box is empty, but it is hard to see.",
-      "The 'Checks running' badge and the small monospace metadata text (e.g. 'Codex · GPT · high · Worktree · Browser member') are small and low-contrast, though still readable."
+      "Sidebar session titles are cut off with ellipses ('Context · J11 memory journ…', 'Context · Mesh journey fixt…'), and so are their metadata lines ('dev-ma…', 'de…')",
+      "The Send button in the decision card has low contrast in its idle state",
+      "The 'Checks running' badge text is small and light"
     ]
   }
 }

@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Read through the project and list what each file is…' title in the Running panel is shortened with an ellipsis, so the full task name isn't visible.",
-      "Some sidebar session titles and meta lines are shortened with ellipses ('Context · J11 memory journ…', 'Context · Mesh journey fixt…', 'Done · Improver sandbox · dev-ma…').",
-      "Several 'Noted.' replies appear back-to-back in the transcript (e.g. after the progress report and after the conflicts card), which adds visual noise."
+      "In the right panel, the running task title 'Read through the project and list what each file is ...' is cut off with an ellipsis; there is no full title on screen except in the transcript cards.",
+      "In the sidebar, the shell session titles and their subtitles are cut off with an ellipsis (for example 'Context · J11 memory journ…' and 'Done · Mesh journey fixture · de…').",
+      "The transcript shows 'Noted.' many times in a row, sometimes back to back, which adds clutter.",
+      "The status labels next to each section heading in the right panel are small and low-contrast, but still readable."
     ]
   }
 }
