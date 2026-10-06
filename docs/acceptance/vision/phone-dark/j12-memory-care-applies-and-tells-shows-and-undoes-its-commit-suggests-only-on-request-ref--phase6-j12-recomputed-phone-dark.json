@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "At this downscaled size (144px wide shown for a 390px capture), the page looks like a light theme: light cards with dark text. That doesn't clearly match the expected phone-dark variant, so check the theme at full resolution.",
-      "The page is very long (5399px), and the 'Last runs' list repeats many near-identical 'No working rules to suggest' entries, which makes the screen tall and hard to scan.",
-      "Long diff lines in the Routing cards (e.g. 'Prefer GPT for implement steps') wrap over several lines inside the code blocks, which makes them dense to read."
+      "The top tab bar runs past the right edge, so the 'Devices' tab is partly cut off. It looks like a horizontally scrollable tab strip, so the tab can still be reached.",
+      "The screenshot stops at its 6000px height partway through the last 'Recently decided' card ('Prefer GPT for implement steps'). This is the capture's height limit, not a layout fault.",
+      "Long diff lines in the suggestion cards wrap mid-path, which makes the diffs harder to scan but leaves them readable.",
+      "The trial log table has narrow columns, so headers like 'WHY THEY FINISHED ELSEWHERE' wrap over several lines."
     ]
   }
 }

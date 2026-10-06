@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dialog title shows the full raw ID (\"Login recovery befd6025-b610-497e-b0be-9520cf8d54f2\"), which makes it long and hard to read; a shorter label would read better.",
-      "\"Code sent. Waiting for sign-in to finish…\" and the \"Can't reach Jevellan\" error appear together, which sends mixed signals about whether polling is still running.",
-      "Below the alert the dialog has a lot of empty space at the bottom compared with the spacing elsewhere."
+      "Dialog title shows a raw UUID ('Login recovery 54389c75-3ab4-4d54-8ac6-26e9e8162a3d'), which makes the header long and hard to scan",
+      "The instruction 'Paste the test authorization code.' still shows, but there is no code input field (it appears to be replaced by the 'Code sent' status), so the copy doesn't match the current state",
+      "Spacing between the 'Open sign-in page' button, the status line and the 'Start again' button is tight compared with the rest of the dialog"
     ]
   }
 }

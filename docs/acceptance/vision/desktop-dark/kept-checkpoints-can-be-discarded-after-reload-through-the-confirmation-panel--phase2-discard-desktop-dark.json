@@ -10,8 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background is heavily dimmed and blurred behind the modal, so sidebar and conversation text can't be read. This is expected for a modal overlay and doesn't affect the discard panel.",
-      "The \"Discard checkpoints\" primary button is a light pill and \"Back\" is an outlined pill. Both are readable, but the destructive action isn't marked with a warning or danger color."
+      "Background text under the modal overlay is clipped at the modal edges (e.g. 'Work closed', 'Settle this wo', 'The value is no'). That's expected because the overlay dims and covers the page."
     ]
   }
 }

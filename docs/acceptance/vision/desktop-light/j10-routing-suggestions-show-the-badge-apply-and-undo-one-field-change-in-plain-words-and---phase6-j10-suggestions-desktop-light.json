@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dark diff blocks have extra empty space under the last diff line.",
-      "Long session titles and subtitles in the sidebar are cut off with an ellipsis (for example \"Context · J11 memory jour…\"). This looks intentional, and the full project names still appear in the Projects list.",
-      "The \"Apply and tell me\" field next to Memory care and the \"Save schedule and jobs\" button are pale grey and look disabled, so they are less visible than other controls.",
-      "The diff lines are long and wrap inside the code block, which makes the -/+ comparison a little harder to scan."
+      "Sidebar session titles are truncated with ellipses (e.g. 'Exercise answer options: ...', 'Context · J11 memory jour...', 'Context · Mesh journey fix...'), and so are their subtitles ('dev-m...', 'dev-ma...'), which is expected list behavior",
+      "Both diff blocks leave a lot of empty dark space below the last line",
+      "The 'Save schedule and jobs' button and the 'Apply and tell me' field are low-contrast and look disabled",
+      "The Schedule and jobs card is much taller than the Last runs card next to it, which leaves an empty gap under Last runs"
     ]
   }
 }

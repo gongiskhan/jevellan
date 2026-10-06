@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Restarted as thread_…' link can't be told apart from the description text except by its underline and color.",
-      "The large empty area between the last report card and the footer makes the page look sparse.",
-      "The metadata line wraps over three lines in a small monospace font, so it's dense to read on a phone."
+      "Large empty area between the last report card and the footer, so the page looks unfinished at phone width.",
+      "Metadata line ('Claude Code · Opus · low effort · Projects Claude · Worktree on jv/tidy-the-readme-wording-1vec2h · dev-madrid') wraps across three lines in small monospace text and is hard to scan.",
+      "Both report cards just say 'Done for now.', so the restarted thread shows little content."
     ]
   }
 }

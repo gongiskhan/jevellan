@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar conversation list cuts off a fourth item partway through its text, just above the 'Some native sessions are unavailable' row. It looks like normal scroll overflow, but the half-visible line looks broken.",
-      "The 'Retry' and 'Try automatic again' actions are stacked vertically with different styles and widths, so they don't read as one group of actions.",
-      "The error banner only says another agent is active. It has no waiting indicator or explanation, so it's hard to tell it's a wait state rather than a hard failure.",
-      "The page title is repeated in the header, the subtitle line and the user message bubble."
+      "Sidebar conversation list cuts off a fourth item partway through its title row just above the 'Some native sessions are unavailable' disclosure. This is scroll-container clipping, and the list can still be scrolled.",
+      "The 'Retry' and 'Try automatic again' buttons sit on separate rows with uneven spacing. Placing them side by side would look tidier.",
+      "The light-red error banner text is a little low-contrast but still readable."
     ]
   }
 }

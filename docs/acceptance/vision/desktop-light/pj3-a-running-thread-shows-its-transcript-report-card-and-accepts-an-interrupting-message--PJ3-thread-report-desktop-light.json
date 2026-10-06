@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar shell-session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). The truncation looks intentional and the main content is not affected.",
-      "The thread status chip says 'Idle' while the Stop button is still shown and the report card says 'Progress'. That is a state mismatch, not a layout problem.",
-      "The large empty area between the report card and the message box is just unused space."
+      "In the sidebar, session titles and their subtitles are cut short with an ellipsis (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This looks like intended truncation, and the main content is unaffected.",
+      "The thread status badge says 'Idle', but the Stop button is still shown and the step is meant to show a running thread. The status and controls may not match.",
+      "There is a large empty area between the last report card and the message box. This is expected for a short transcript, but the page looks sparse."
     ]
   }
 }

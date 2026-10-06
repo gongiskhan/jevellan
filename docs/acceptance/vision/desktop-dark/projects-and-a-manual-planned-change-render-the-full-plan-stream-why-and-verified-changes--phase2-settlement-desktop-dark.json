@@ -10,8 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Background content behind the modal overlay is dimmed and partly hidden by the dialog. That's expected for a modal and doesn't block anything.",
-      "The \"Publish\" button has a filled light style while \"Keep them\" and \"Discard…\" are outlined. This makes the default option clear, but the contrast between the three options is uneven."
+      "The page behind the dialog already shows the 'Work closed. Its changes are kept…' notice while the 'Close this work' dialog is still open, so the dimmed background looks like a later state than the dialog it sits behind."
     ]
   }
 }

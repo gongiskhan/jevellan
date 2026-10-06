@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Optional' hint sits below the textarea, so it reads like a status note instead of a field label",
-      "The modal backdrop dims the background conversation; this is expected, but the 'Jump to latest' link and the code block behind it are hard to make out",
-      "The textarea's pink focus ring stands out sharply against the dark theme"
+      "The dimmed background behind the modal is hard to read, but that's expected for a backdrop.",
+      "The pink focus border on the textarea stands out sharply against the dark theme."
     ]
   }
 }

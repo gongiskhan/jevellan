@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the search result row, the title 'Public memory guide' and its updated time are centered with a large empty space on the left, so the row looks unbalanced.",
-      "The background content behind the modal (the project card text and the tab bar) shows through dimly. The modal itself is still legible."
+      "The search result card's title and timestamp sit off-center to the right instead of lining up with the card's left padding, so they don't align with the other modal content.",
+      "The note's update time appears twice: once in the search result card and again above the rendered note."
     ]
   }
 }

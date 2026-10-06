@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The take-over command at the bottom ('jevellan thread attach thread_01M47V04GWTVN0B…') is cut off with an ellipsis. The copy button next to it still works, and the full thread ID appears in the notice at the top.",
-      "The disabled composer is quite faint (light placeholder text on a dashed outline). That fits its disabled state, but it is low contrast.",
-      "The metadata lines under the attached notice ('Claude Code · Fable · high effort · Projects Claude · Worktree on …') wrap awkwardly across several lines in small monospace text."
+      "The take-over command chip at the bottom is cut off with an ellipsis ('jevellan thread attach thread_01M484VN3EDRCCC…'). The copy button next to it still gives you the full command, and the full thread ID also appears in the banner at the top.",
+      "There is a large empty gap between the Turn 1 report card and the attached-composer notice at the bottom.",
+      "In the session details line, 'Worktree on jv/tidy-the-readme-wording-ner8z8 · dev-madrid' wraps awkwardly across lines."
     ]
   }
 }

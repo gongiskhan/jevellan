@@ -10,7 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Optional' helper text under the textarea is pink on a dark background and has low contrast."
+      "Background content behind the modal overlay is heavily dimmed and blurred, which is expected for a modal state"
     ]
   }
 }

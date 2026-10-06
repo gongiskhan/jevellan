@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Shell session titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Mesh journey fix…'). This looks intended, and the full names are available elsewhere.",
-      "The 'Save schedule and jobs' button is low-contrast against the card background. It may just be shown as disabled.",
-      "Long lines in the GPT diff wrap onto a second line, which makes the diff a little harder to read.",
-      "The 'Apply and tell me' field next to Memory care looks like a greyed-out placeholder, so it's unclear whether it can be used while that checkbox is off."
+      "The 'Save schedule and jobs' button has low contrast and looks disabled. It is still readable.",
+      "Session titles in the left sidebar are cut short with an ellipsis (for example 'Exercise answer options: ...' and 'Context · J11 memory jour...'). The ellipsis is deliberate, not clipping.",
+      "The 'Memory care' mode field shows 'Apply and tell me' in a dim, placeholder-like style. It looks different from the 'Suggest' labels on the other rows."
     ]
   }
 }

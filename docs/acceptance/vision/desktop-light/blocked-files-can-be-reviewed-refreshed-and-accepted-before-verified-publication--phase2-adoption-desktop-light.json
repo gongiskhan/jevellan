@@ -10,11 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The conversation title in the header is shortened with an ellipsis ('Exercise reviewed checkpoint recovery with a simulated read-only viola...'). The full text is still readable in the message bubble below it.",
-      "Sidebar conversation titles are shortened with ellipses ('Exercise reviewed checkp...', 'Change the value to thre...'), and the subtitle lines are shortened too.",
-      "The fourth sidebar conversation item is clipped at the bottom of the list, just above 'Some native sessions are unavailable'. Only the top edge of its text shows. This looks like the edge of a scrollable list.",
-      "The bottom of the right Changes panel is cut off at the viewport edge: the 'JEVELLAN VERIFICATION' text ('No verification receipt yet') is only partly visible. The panel appears to scroll, and the Continue and Refresh changes buttons are fully visible.",
-      "In the 'Review changes' card, the space between the text and the button is a bit tight."
+      "Conversation title in the header is cut off with an ellipsis ('...simulated read-only viola…'); the full title still shows in the message bubble below.",
+      "In the sidebar, a fourth conversation row is partly clipped where the scrollable list ends, just above the 'Some native sessions are unavailable' line.",
+      "Sidebar conversation titles and subtitles are cut off with ellipses (intended for narrow rows).",
+      "At the bottom of the right panel, the 'JEVELLAN VERIFICATION' text ('No verification receipt yet') is cut off at the fold; the panel scrolls, so it can still be reached."
     ]
   }
 }

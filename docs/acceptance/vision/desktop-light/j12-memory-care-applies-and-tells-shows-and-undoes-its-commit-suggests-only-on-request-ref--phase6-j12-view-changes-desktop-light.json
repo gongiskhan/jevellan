@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The expanded 'View changes' diff in the Memory care card is cut off at the bottom edge (the last visible line '---' is partly clipped). It looks like a fixed-height scroll area, but there is no visible scroll cue showing that more of the diff follows.",
-      "In the sidebar, the shell session titles and subtitles ('Context · J11 memory jour…', 'Context · Mesh journey fix…') are truncated with ellipses.",
-      "The 'Last runs' card is much taller than the 'Schedule and jobs' card next to it, which leaves a large empty area under the schedule card."
+      "Sidebar session titles and subtitles are cut short with ellipses (e.g. 'Exercise answer options: c…', 'Context · J11 memory jour…'). This looks like intended truncation.",
+      "The expanded 'View changes' diff runs very long with no visual separation between files, so it is hard to scan.",
+      "Long lines in the AGENTS.md diff and the routing diffs come close to the right edge of the code block.",
+      "The 'Save schedule and jobs' button looks disabled (greyed out). That is probably intended because nothing has changed."
     ]
   }
 }

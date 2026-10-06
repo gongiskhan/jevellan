@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The diff panel in the memory care card ends partway through a line ('--- a/.jevellan/memory/deploy.md'). It is probably a scroll or max-height box, but it's hard to tell at this resolution.",
-      "The 'Undo' button next to 'View changes' is small and sits close to the commit hash chip."
+      "The top tab bar is cut off at the right edge (the 'Devices' tab is partly hidden). It looks like a horizontally scrolling tab strip, so the tab can still be reached.",
+      "In the Trial log table, the narrow column headers wrap onto several lines, which makes them cramped but still readable.",
+      "The diff code blocks are long and dense at phone width. Several lines wrap, which makes them harder to scan, but they are still readable."
     ]
   }
 }

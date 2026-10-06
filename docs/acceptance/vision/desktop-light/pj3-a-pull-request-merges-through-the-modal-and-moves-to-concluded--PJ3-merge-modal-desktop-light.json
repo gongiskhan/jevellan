@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background is blurred under the modal overlay, so you can't read it. That's expected for a modal, but it means the page behind the dialog can't be checked in this screenshot.",
-      "The modal body text \"Add a greeting will be squashed into main\" has no quotes or styling around the thread title \"Add a greeting\", so it reads awkwardly as a sentence."
+      "The background behind the modal overlay is blurred heavily, which is expected for a modal.",
+      "The body text 'Add a greeting will be squashed into main.' reads oddly because the PR title is not in quotes or otherwise set apart from the sentence."
     ]
   }
 }

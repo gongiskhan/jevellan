@@ -10,11 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The right 'Why this step' panel is scrolled, so the 'Plan' row is partly hidden under the sticky header and the 'Conversation controls fixture: disabled' line is cut off at the bottom edge.",
-      "The middle conversation is scrolled, so the step 1 plan list starts partway down (item 1 is out of view under the header).",
-      "In the sidebar, the fourth conversation item is partly cut off above 'Some native sessions are unavailable'. The list scrolls, so it can still be reached.",
-      "Sidebar conversation titles and subtitles are shortened with ellipses ('Exercise composer choic…', 'Explain the memorybrows…'). This looks intended, but the full titles can't be seen.",
-      "The tool count in step 2 ('1 tool') is collapsed. That's fine, just less detail on screen."
+      "The 'Plan' row at the top of the Why panel is partly hidden under the sticky panel header (scroll position), so its label and value are clipped",
+      "The last account line in the Why panel ('Conversation controls fixture: disabled') is cut off at the bottom edge but can be reached by scrolling",
+      "In the sidebar, a partly visible conversation row is clipped above 'Some native sessions are unavailable' at the edge of the scroll area",
+      "Sidebar conversation titles and subtitles are cut short with an ellipsis (e.g. 'Exercise composer choic…', 'Explain the memorybrows…')",
+      "The step 1 card in the middle column is clipped under the sticky conversation header, and the visible list starts at item 2 (scroll position)"
     ]
   }
 }

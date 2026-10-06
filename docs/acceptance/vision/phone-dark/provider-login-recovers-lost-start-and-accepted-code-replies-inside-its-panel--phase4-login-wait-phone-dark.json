@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "There is almost no vertical space between the 'Open sign-in page' button and the 'Authorization code' label, so the label sits right against the button.",
-      "The disabled 'Continue' button has very low contrast against the dark panel. That's expected for a disabled control, but it's hard to see.",
-      "In the hub-unreachable notice, the message wraps in a narrow column beside the 'Stop waiting' button, so the text runs over several short lines and leaves unused space.",
-      "Text from the page behind the modal (the 'Log in on …' links and status rows) still shows faintly through the backdrop around the dialog."
+      "The 'Open sign-in page' button sits almost directly on the 'Authorization code' label below it, with no vertical gap between them.",
+      "The disabled 'Continue' button has very low contrast against the dark panel. This is expected for a disabled control during the wait but makes it hard to read.",
+      "The small secondary text in the hub-wait notice ('Stopping the wait does not undo a request already received.') is quite small, though still legible."
     ]
   }
 }

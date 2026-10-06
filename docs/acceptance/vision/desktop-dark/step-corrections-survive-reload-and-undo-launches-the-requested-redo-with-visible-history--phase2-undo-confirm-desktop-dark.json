@@ -10,8 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dialog says the redo will use effort \"low\", but the dimmed form behind it shows Effort \"high\". This may be intended, but it is worth checking that the confirmation shows the requested settings.",
-      "The modal covers some background content, such as the \"The value is no…\" line and the \"Jev is unso…\" panel header. This is expected behind a modal overlay."
+      "The dialog says the redo will use 'Reply, Fable, low', but the blurred form behind it seems to show the Effort field set to 'high'. This may be a mismatch between the selected settings and the confirmation text, or the blur may be hiding the real value. It's worth checking against the step's assertions."
     ]
   }
 }

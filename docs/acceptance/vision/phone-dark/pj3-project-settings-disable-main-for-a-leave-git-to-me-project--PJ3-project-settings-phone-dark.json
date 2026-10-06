@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The disabled 'Main' radio and its helper text ('This project is set to Leave git to me.') are fairly low-contrast against the dark background, though still readable.",
-      "The 'Worktree setup command' field shows only a placeholder ('npm ci') in dim grey text, so it may be mistaken for a value that's already set."
+      "The 'Main' radio option and its helper text 'This project is set to Leave git to me.' are low-contrast grey on the dark background. That fits a disabled state, but it is harder to read than the rest of the dialog.",
+      "The 'npm ci' placeholder in 'Worktree setup command' is dim and could be mistaken for an entered value."
     ]
   }
 }

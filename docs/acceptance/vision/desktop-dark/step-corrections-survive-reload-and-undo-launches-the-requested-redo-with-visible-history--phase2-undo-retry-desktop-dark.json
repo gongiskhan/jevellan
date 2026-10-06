@@ -10,11 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The error message lists 'disabled' six times ('disabled, disabled, disabled, disabled, disabled, disabled'). It is readable but tells the user little and is repetitive.",
-      "The same 'No model can run this step right now' message shows twice: once in the red banner and again inside the Resume correction card.",
-      "Sidebar conversation titles and subtitles are cut off with ellipses ('Change the value to thre…'). This is expected for a sidebar, and the full title shows in the header.",
-      "The struck-through 'Step 1 · Implement' label and the small low-contrast metadata ('Undone', 'Local time', '1 tool', 'Step details') are faint on the dark background, but still readable.",
-      "The large empty area between the Resume correction card and the composer makes the page look unfinished, but nothing is missing."
+      "The error text repeats 'disabled' eight times ('No model can run this step right now: disabled, disabled, …'). It's readable but gives no useful detail, and the same message shows twice: in the red banner and in the Resume correction card.",
+      "Some secondary text is dim on the dark background and hard to read: 'Local time', '1 tool', 'Step details', and the grey 'Undone' label in the step header.",
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Change the value to thre…', 'Blocked · Browser fixture · dev-…'). This is intentional truncation, and the full title appears in the main header.",
+      "The struck-through 'Step 1 · Implement' label is low-contrast. The strikethrough is intended to show the step was undone."
     ]
   }
 }

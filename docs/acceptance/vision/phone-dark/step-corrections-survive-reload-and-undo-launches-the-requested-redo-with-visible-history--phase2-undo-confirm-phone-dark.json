@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dialog says the redo will run with 'Reply, Fable, low', but the dimmed form behind it shows Effort 'high'. The layout is fine, but this mismatch may be worth checking as a content or state issue.",
-      "The dimmed page behind the dialog is hard to read. This is expected behind a modal overlay."
+      "The dialog says the step will be redone with 'Reply, Fable, low', but the dimmed form behind it shows Effort set to 'high'. This may be a mismatch in the content rather than a rendering problem, so it is worth checking against the step's expectations.",
+      "The header title is cut off with an ellipsis ('Change the value to three, then redo thi...'). This is expected truncation and the full text appears below it."
     ]
   }
 }

@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles are cut off with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…') and so are their subtitles ('dev-ma…', 'dev-…', 'de…'). This is intentional truncation.",
-      "The 'Working…' status pill in the header is cut off with an ellipsis.",
-      "The dark mode toggle at the bottom left shows a contrast or auto icon as the selected option, so it's unclear which theme is active.",
-      "The lower part of the chat column is mostly empty. That's expected for a new conversation."
+      "Sidebar session titles and subtitles are cut off with an ellipsis (e.g. 'Context · J11 memory jour…', 'Mesh journey fixture · de…'). The truncation looks intentional, but the full names are not visible.",
+      "Small monospace text is low contrast on the dark background: the model/effort line under the header, the meta line under 'Write the welcome copy', the 'v0.1.0' label, and the session timestamps.",
+      "The conversation area is mostly empty. It shows only the user message, with no streamed coordinator reply yet, just the 'Coordinator is working…' indicator."
     ]
   }
 }

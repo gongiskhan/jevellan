@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The page title \"Projects fixture\" is close to the header action buttons, but it isn't cut off.",
-      "Most of the screen below the single pull request card is empty."
+      "The header's '+', document, and '…' buttons sit close together on the right, but each one can still be tapped.",
+      "The 'Idle' badge and the 'Claude Code Fable · high' subtitle are small, low-contrast monospace text. Both are still readable."
     ]
   }
 }

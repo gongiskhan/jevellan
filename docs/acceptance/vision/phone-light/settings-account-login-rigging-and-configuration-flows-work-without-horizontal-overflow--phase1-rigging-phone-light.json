@@ -10,9 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The settings tab strip is cut off at the right edge ('Impr…'). It looks like a horizontally scrollable tab row, not page overflow, but nothing on screen shows that more tabs are available.",
-      "In the parking banner, the inline 'Retry' button sits tight against the end of the sentence ('finish.Retry') with almost no space before it.",
-      "Metadata lines (e.g. 'Local · Loose · Rigging local fixture · Claude Code') are in a small monospace font and wrap onto a second line, which looks a bit cramped next to the Park buttons. They are still readable."
+      "In the tab bar, the scroll-arrow button covers part of the fourth tab, leaving only its moon icon visible. The bar scrolls, so the tab can still be reached.",
+      "The Safety hook's Claude Code and Codex checkboxes are disabled and pale grey, so their labels have low contrast. This looks intentional, and they are still readable.",
+      "The small monospace metadata lines (e.g. 'Local · Loose · Rigging local fixture · Claude Code') wrap across lines and are dense, but still legible.",
+      "The inline 'Retry' button in the warning banner sits tight against the end of the sentence 'needs to finish.'",
+      "The page runs past the bottom of the screen at the Hooks section (Safety). This is normal vertical scrolling, not overflow."
     ]
   }
 }

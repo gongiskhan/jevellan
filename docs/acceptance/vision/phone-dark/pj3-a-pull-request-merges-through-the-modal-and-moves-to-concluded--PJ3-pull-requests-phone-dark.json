@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Large empty area below the single PR card (expected with one fixture PR)",
-      "Header subtitle 'Claude Code Fable · high' is small, low-contrast monospace text, but still legible"
+      "The 'Working…' status pill ends in an ellipsis. This is most likely an intentional animated or in-progress label, but the full text can't be confirmed.",
+      "Most of the screen below the single pull request card is empty. This is expected with only one PR."
     ]
   }
 }

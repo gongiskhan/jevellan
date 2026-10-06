@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles get cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · J11 memory journey · dev-…'). This is intended overflow handling.",
-      "The 'Move coordinator here' control isn't visible here. That's consistent with a post-move confirmation screen ('The coordinator moved to dev-madrid.').",
-      "The left column of the main area is mostly empty below the notice."
+      "Sidebar session titles and subtitles get truncated with ellipses (e.g. 'Context · J11 memory jour…', 'dev-ma…'), which is expected for a narrow sidebar",
+      "The 'Moved' notice banner sits at the top of a mostly empty conversation pane, leaving a lot of unused space",
+      "Small monospace labels like 'Idle' and 'Claude Code Fable · high', and the section headers in the right panel, are low-contrast but still readable"
     ]
   }
 }

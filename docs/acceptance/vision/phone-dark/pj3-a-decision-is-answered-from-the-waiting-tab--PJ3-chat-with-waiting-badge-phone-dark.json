@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The chat feed only fills the top part of the screen, so a large empty area sits above the composer. This is expected for a short conversation.",
-      "The model/effort subtitle 'Claude Code Fable · high' under the title is in small, low-contrast gray text. It is still readable."
+      "The Waiting tab badge (1) is small, and it's hard to tell its magenta color from the tab's dark background",
+      "The 'Asked you: Which greeting the page should use?' line is in low-contrast muted gray",
+      "A lot of empty space between the last message and the composer"
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Session titles and subtitles in the sidebar are cut short with ellipses (e.g. 'Context · J11 memory jour…', 'Mesh journey fix…', 'dev-…'). This looks intentional and each row is still identifiable.",
-      "The selected attach command has bright pink highlighting that is much louder than the rest of the dark theme, but it stays readable.",
-      "There is a lot of empty space between the report card and the composer."
+      "Sidebar shell session titles and subtitles are cut short with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…', 'dev-…'), which is expected for a narrow sidebar",
+      "The bright pink highlight on the selected attach command contrasts strongly with the dark theme, though the text is still readable",
+      "The disabled composer placeholder 'Message this thread' is low-contrast, which is acceptable for a disabled state"
     ]
   }
 }

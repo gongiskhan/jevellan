@@ -9,8 +9,6 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": [
-      "The modal says the step will be redone with 'Reply, Fable, low', but the blurred form behind it shows Effort set to 'high'. This may be a mismatch between the confirmation text and the selected settings, or it may reflect earlier state; check that it's intended."
-    ]
+    "cosmetic": []
   }
 }

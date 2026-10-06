@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The device sign-in list inside the Claude Code card says 'Codex sign-ins are kept per device for now.' This looks like copy carried over from the Codex card.",
-      "The 'Log in on Offline fixture' links are muted gray, while the other login links are pink. They're readable and probably dimmed on purpose because the device is offline, but they look less clearly clickable.",
-      "Sidebar session titles and subtitles are shortened with an ellipsis (e.g. 'Context · J11 memory journ…'). This looks intentional."
+      "Some conversation titles and subtitles in the sidebar are cut off with an ellipsis (e.g. 'Context · J11 memory journ…', 'Waiting for you · Browser fixtur…'). This looks like deliberate truncation.",
+      "The Claude Code card's device sign-in panel says 'Codex sign-ins are kept per device for now.' That looks like the wrong runtime's text.",
+      "The five-hours and week usage bars all show 'Unknown' and look empty with very low contrast, so they are hard to see against the dark card.",
+      "The 'Log in on Offline fixture' links are muted grey compared with the pink action links. That fits a disabled state, but it is less visible."
     ]
   }
 }

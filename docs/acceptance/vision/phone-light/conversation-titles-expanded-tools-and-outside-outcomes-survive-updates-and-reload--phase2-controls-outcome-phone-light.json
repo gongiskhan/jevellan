@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title 'Finished in my editor' is fairly long beside the menu and overflow buttons, but it is not truncated.",
-      "The 'Local time' label wraps onto its own line under the Started/Ended/Duration row, which looks slightly detached."
+      "The header chip 'Undo across works' uses a monospace font, but the title and body text don't, so it looks inconsistent.",
+      "The large empty space between the 'Settle this work's changes' notice and the composer makes the layout feel unbalanced."
     ]
   }
 }

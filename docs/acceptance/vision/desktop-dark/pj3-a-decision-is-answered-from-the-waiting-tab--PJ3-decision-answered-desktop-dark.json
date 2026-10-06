@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar shell-session titles and metadata are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Mesh journey fix…'). This is deliberate truncation, but the full names aren't visible.",
-      "The 'You answered' card's dashed border and the faint 'Waiting for the coordinator' caption have low contrast on the dark background.",
-      "The sidebar footer note 'Some native sessions are unavailable' is small, low-contrast text."
+      "Sidebar shell-session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). The truncation is intentional, but it hides the full names.",
+      "The small monospace metadata text is low-contrast on the dark background but still readable. This covers timestamps, 'Codex · GPT · high · Worktree · Browser member' and the 'Waiting for the coordinator' caption.",
+      "There is a large empty area under the conversation, above the composer."
     ]
   }
 }

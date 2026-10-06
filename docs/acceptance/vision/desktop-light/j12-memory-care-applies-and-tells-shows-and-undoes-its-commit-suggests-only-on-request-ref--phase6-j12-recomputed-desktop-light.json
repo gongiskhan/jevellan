@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The first suggestion's diff block is clipped at the bottom: the line '--- a/.jevellan/memory/test-conventions-2.md' is cut in half. It looks like a scrollable container, but there's no visible scroll cue.",
-      "Long session titles and subtitles in the sidebar are cut off with an ellipsis, e.g. 'Context · J11 memory jour...' and 'Mesh journey fix...'.",
-      "The 'Save schedule and jobs' button looks faded or disabled and has low contrast."
+      "The memory care summary contradicts itself: the header says 'Merged 1 note, archived 0, fixed 1 link, reconciled 1', but the diff shows a note being deleted (test-conventions.md).",
+      "Long sidebar conversation titles are cut off with ellipses (e.g. 'Exercise answer options: c...'). They are still readable and work as intended."
     ]
   }
 }

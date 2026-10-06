@@ -10,11 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip is clipped at both edges (\"ing\" on the left and a partial icon on the right). This looks like a horizontally scrolling tab bar, but nothing on screen shows that it scrolls.",
-      "Both diff code blocks have a lot of empty padding below the last line.",
-      "The \"Save schedule and jobs\" button has very low contrast against the card. It may be intentionally disabled, but it's hard to read.",
-      "The \"Simulated judge responses.\" note is dim gray on a dark background, so its contrast is low, though it is still readable.",
-      "The \"Undone\" badge on the Recently decided card is low-contrast compared with the other status badges."
+      "The 'Devices' tab label is partly hidden behind the right scroll arrow. The tab row scrolls sideways, so the tab can still be reached.",
+      "Long diff lines wrap in the code blocks, which makes the diffs a little harder to read.",
+      "The 'Save schedule and jobs' button has low contrast, probably because it is disabled with nothing changed. It is still readable.",
+      "'Last runs' says '2 routing suggestions ready' but only 1 is waiting. That fits one having already been decided, but the wording could mislead."
     ]
   }
 }

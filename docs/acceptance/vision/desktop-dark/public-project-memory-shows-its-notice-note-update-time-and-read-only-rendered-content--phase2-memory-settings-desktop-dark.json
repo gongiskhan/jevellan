@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal body is scrolled, so the 'Path on Offline fixture' label sits right against the header divider with almost no top padding",
-      "The 'Git policy' label sits very close under the 'Browse folders on dev-madrid' button, with less vertical spacing than other field groups"
+      "The 'Browse folders on dev-madrid' button sits almost directly on the 'Git policy' label below it, with much less vertical space than between other fields.",
+      "The dialog body is scrolled, so the fields above 'Path on Offline fixture' are hidden under the header. They can be reached by scrolling, but the first visible label sits right against the header edge."
     ]
   }
 }

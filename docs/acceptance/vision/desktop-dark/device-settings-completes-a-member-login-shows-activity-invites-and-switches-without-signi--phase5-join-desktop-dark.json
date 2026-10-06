@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The join code field and the code at the end of the npx command are covered by solid light-gray blocks. This looks like the screenshot tool hiding the changing code, not a rendering fault, so the code's own legibility can't be checked from this image.",
-      "The light-gray block over the join code field stands out sharply against the dark theme of the dialog."
+      "The join code field is a solid light-grey box with no text, and the end of the npx command is covered by a white block. Both look like the screenshot tool hiding the secret code, not a rendering fault. If they aren't masks, the join code can't be read.",
+      "The light-grey join code box stands out against the dark theme and doesn't match the dark command block below it."
     ]
   }
 }

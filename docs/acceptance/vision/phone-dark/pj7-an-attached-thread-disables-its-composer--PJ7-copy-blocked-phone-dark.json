@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "There is a large empty gap between the report card and the attached-composer notice, which pushes the composer and take-over command to the bottom of the screen.",
-      "The magenta highlight on the selected attach command wraps across two lines with uneven widths, so it looks a little ragged.",
-      "The muted grey metadata lines (Claude Code · Fable · high effort, worktree path) are low-contrast against the dark background but still readable.",
-      "The long thread ID in the attached notice wraps onto its own line, which looks slightly awkward."
+      "There's a large empty gap between the report card and the attached-notice/composer area at the bottom.",
+      "The command selection wraps onto two lines, so the highlight breaks across the line, but the command is still fully readable.",
+      "The disabled send arrow in the composer is very low-contrast. That fits the disabled state, but it's hard to see."
     ]
   }
 }

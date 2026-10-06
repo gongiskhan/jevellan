@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background conversation is dimmed and partly hidden behind the modal, which is normal for a confirmation dialog. The truncated header title ('Change the value to two and publish th…') sits under the overlay and isn't readable, but nothing on this step needs it.",
-      "The 'Jump to latest' link shows faintly through the overlay below the dialog. It is outside the modal and inactive while the dialog is open."
+      "The page title in the blurred background is cut off with an ellipsis (\"Change the value to two and publish th...\"). It sits behind the modal and is expected to be obscured.",
+      "The background content is dimmed and blurred, so the work list and composer behind the dialog can't be read. This is intended for a modal confirm.",
+      "The secondary text (\"This also undoes the newer open work...\") is a lighter gray than the main paragraph. It is still readable but has lower contrast."
     ]
   }
 }

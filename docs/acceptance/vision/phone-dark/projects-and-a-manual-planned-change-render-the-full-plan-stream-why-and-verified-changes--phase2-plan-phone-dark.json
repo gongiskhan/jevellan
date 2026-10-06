@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Waiting for you' status chip in the header is cramped against the right edge, next to the '...' menu.",
-      "The 'Waiting for plan approval. Review plan ↑' banner and the 'Jump to latest ↓' link sit close together above the message box, which makes the bottom area feel a bit busy."
+      "Header metadata (Fable model label, start/end/duration timestamps) uses small, low-contrast gray text on the dark background. It's still readable but faint.",
+      "The 'Waiting for you' status chip at the top right sits very close to the header edge, so the row of chips feels crowded."
     ]
   }
 }

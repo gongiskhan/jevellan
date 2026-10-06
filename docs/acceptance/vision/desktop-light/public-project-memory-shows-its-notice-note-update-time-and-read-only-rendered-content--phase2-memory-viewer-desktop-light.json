@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Public memory guide' search result button centers its title and timestamp, while the rest of the modal is left-aligned.",
-      "The note's update time appears twice: once in the search result card and again in the content header ('Updated Sep 20, 2026, 1:00 PM'), so it's repeated.",
-      "The search result card uses a monospace timestamp, but the content header timestamp uses a proportional font, so the two don't match."
+      "The 'Public memory guide' search-result button centers its title and timestamp, which doesn't match the left-aligned content below it.",
+      "The update time appears twice: once in the result button (monospace) and again under the PUBLIC MEMORY GUIDE heading.",
+      "The modal fills most of the page, so the backdrop behind it is faint, but that's expected for a dialog."
     ]
   }
 }

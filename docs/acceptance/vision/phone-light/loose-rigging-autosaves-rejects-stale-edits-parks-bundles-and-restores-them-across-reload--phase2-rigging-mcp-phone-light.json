@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The item is labeled 'config.toml', but the content box shows JSON, not TOML. This could confuse users, though it doesn't affect layout or legibility.",
-      "The dismiss '×' on the 'Item restored to this account.' notice is small and may be a tight tap target on a phone."
+      "The file label says config.toml, but the content shown is JSON. The format doesn't match the file name.",
+      "The 'Saved' status and 'Content' label are close together with little spacing between them.",
+      "The modal overlay hides the Rigging page behind it, so the tab bar and the Project memory and Safety rows are dimmed and partly covered. This is expected while a modal is open, but the page behind can't be checked in this shot."
     ]
   }
 }

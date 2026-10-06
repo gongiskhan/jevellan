@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar thread titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This is intentional truncation, but the device name is hidden.",
-      "The empty-state text in the center column sits in the middle of a large blank area, which leaves a lot of unused vertical space between the offline banner and the composer.",
-      "The small monospace section labels ('WAITING FOR YOU 0', 'PULL REQUESTS 0') and the version text 'v0.1.0' are low-contrast on the dark background, but still readable."
+      "Sidebar session titles and metadata lines are truncated with ellipses (e.g. 'Context · J11 memory jour…', 'Done · J11 memory journey · dev-…'). This is intended truncation, and the time stamps and overflow menus are still visible.",
+      "Muted grey text on the dark background is low-contrast but readable: the 'Some native sessions are unavailable' line, the 'v0.1.0' label, the session metadata, and the empty-state copy.",
+      "The 'Offline' badge under the project title is small and low-emphasis next to the amber coordinator-offline banner."
     ]
   }
 }

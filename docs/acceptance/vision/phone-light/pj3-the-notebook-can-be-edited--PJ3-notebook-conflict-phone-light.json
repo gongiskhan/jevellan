@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The textarea leaves a lot of empty space below the short notebook content.",
-      "The 'Projects fixture' breadcrumb in the header is small and low-contrast next to the 'Notebook' title.",
-      "The page below the Cancel/Save buttons is unused blank space."
+      "Large empty area below the Cancel/Save buttons leaves the bottom third of the screen unused.",
+      "The textarea is very tall compared with its short content, so the conflict banner and actions sit lower than they need to."
     ]
   }
 }

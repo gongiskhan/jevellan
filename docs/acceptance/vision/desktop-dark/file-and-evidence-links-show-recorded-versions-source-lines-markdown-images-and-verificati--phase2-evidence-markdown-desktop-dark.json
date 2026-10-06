@@ -10,8 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar conversation list, the fourth item is cut off at the bottom edge of the scroll area. It is still reachable by scrolling.",
-      "The 'Jump to latest' button sits very close to the Step 2 '1 tool' row above the composer, but they don't overlap."
+      "In the sidebar conversation list, the fourth entry is cut off partway through its title at the bottom of the scroll area, just above 'Some native sessions are unavailable'. It is a scroll overflow, and the entry can still be reached by scrolling.",
+      "In the main transcript, the Step 2 '1 tool' row is partly hidden behind the 'Jump to latest' bar at the bottom of the scroll area.",
+      "In the evidence panel, the 'Show source' link sits right above the 'Evidence guide' heading with little space between them. The 'Source line' and 'Recorded pixel' links use a monospace underlined style that doesn't match the other links.",
+      "The Markdown evidence panel uses only the top third of its height and leaves a large empty area below the content."
     ]
   }
 }

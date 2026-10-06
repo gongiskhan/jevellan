@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header crowds the task title 'Tidy the README wording' and the 'Why this placement' heading together on one line, with little space between them.",
-      "Most of the space below the JEV footer is empty."
+      "The header crowds the small pink task title 'Tidy the README wording' against the bold 'Why this placement' heading. Both are still readable but have little space between them.",
+      "There is a large empty area below the JEV footer metadata.",
+      "The pink bar and value text are the only cue for the chosen row in each section. Unchosen rows are fainter, which makes their values like 0.10 and 0.15 lower-contrast, though still readable."
     ]
   }
 }

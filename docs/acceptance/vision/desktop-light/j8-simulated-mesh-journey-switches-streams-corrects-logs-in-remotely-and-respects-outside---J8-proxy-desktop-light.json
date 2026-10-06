@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar conversation list, the fourth item is cut off halfway at the bottom of the scroll area, so only the top of its title shows. The list scrolls, so the item can still be reached.",
-      "Conversation titles and subtitles in the sidebar are shortened with ellipses (e.g. 'J8: run on device B while …', 'Recovery a0cbf896-40e7…'). This looks intentional.",
-      "The project name in the header chip ('Mesh journey fixture') is shortened to 'Mesh journey f…' in the sidebar subtitle."
+      "In the sidebar conversation list, a fourth item is cut off halfway at the bottom of the scroll area, just above 'Some native sessions are unavailable'. Only the tops of its letters show, so it looks like stray marks; a fade or tighter clipping would look cleaner.",
+      "Sidebar conversation titles and subtitles are cut off with an ellipsis (e.g. 'J8: run on device B while ...', 'Recovery e2fbada9-5274...'). This is expected truncation, but the meta lines are hard to read at that small monospace size.",
+      "The sidebar entry for the active conversation says 'Ready', but its header badge says 'Waiting for you'. The two status labels don't match.",
+      "The empty space between the next-step panel and the composer is fine, but the 'Try automatic again' button is far from the 'Continue' action. The recovery choices feel slightly disconnected."
     ]
   }
 }

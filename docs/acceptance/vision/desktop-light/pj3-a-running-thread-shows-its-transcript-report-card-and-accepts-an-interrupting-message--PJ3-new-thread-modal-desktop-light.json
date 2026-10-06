@@ -10,8 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Title field holds what looks like task text ('Read through the project and list what each file is for, one line per file'), and the Task field holds a different instruction ('PJ3 long: read the project files, then wait for my message.'). The fields may have been filled the wrong way round, but the modal still displays everything correctly.",
-      "The background is blurred and dimmed behind the modal, which is expected for a modal overlay."
+      "The Title field holds a long instruction ('Read through the project and list what each file is for, one line per file'), while the Task field holds a different, shorter one. The content looks swapped or mismatched, but the layout renders fine."
     ]
   }
 }

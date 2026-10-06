@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The evidence image appears only as a small thumbnail (about 100px wide), so its details are hard to make out at phone width. It could be scaled to the available width or open on tap.",
-      "Below the action links, most of the viewport is empty white space.",
-      "The 'Recorded checkpoint ·' label ends with a separator, but the hash wraps onto the next line, so the separator looks orphaned.",
-      "The checkpoint hash uses very small monospace text on a light chip. It is readable but low-emphasis."
+      "The image preview is a small thumbnail (about 98×65 px) in the top-left corner, so the captured screen's content is hard to make out without opening it.",
+      "Most of the panel below the action links is empty white space; the preview could be larger to fill the phone viewport.",
+      "The checkpoint hash is set in very small monospace type on a pale blue background. It fits on one line but has low contrast and is hard to read at phone size.",
+      "'Open recorded step' is in grey next to the magenta 'Open working copy', so it looks less important and may read as disabled."
     ]
   }
 }

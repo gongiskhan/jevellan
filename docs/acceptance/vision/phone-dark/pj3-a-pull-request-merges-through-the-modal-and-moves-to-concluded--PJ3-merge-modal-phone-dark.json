@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The page behind the modal is dimmed heavily, so its header, tabs and PR card are low-contrast. That's expected while a modal is open.",
-      "The modal body uses the PR title without quotes ('Add a greeting will be squashed into main'), so the sentence reads a little awkwardly."
+      "The background behind the modal is dimmed heavily, so the page text behind it (the tabs, the PR row, \"Checks pending\") is very low contrast. This is expected for a modal backdrop.",
+      "Most of the screen below the modal is empty dark space. The modal sits in the upper-middle of the viewport rather than being centered or attached to the bottom as a sheet."
     ]
   }
 }

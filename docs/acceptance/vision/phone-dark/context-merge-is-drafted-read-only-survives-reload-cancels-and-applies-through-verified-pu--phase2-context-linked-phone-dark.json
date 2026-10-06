@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background tab bar is cut off at both edges of the screen (\"…ver\" and \"Conf…\"). It sits behind the dimmed overlay and looks like a horizontal scroll strip.",
-      "The dialog leaves a lot of empty space, and \"Current instruction files\" is collapsed, so the linked file contents aren't visible without opening it."
+      "The background project list and tab bar are heavily blurred and partly covered by the modal. This is expected for a modal overlay, but the clipped background cards ('Context fixture', the third card) can't be read.",
+      "'Current instruction files' is collapsed, so this screenshot doesn't show the linked file contents."
     ]
   }
 }

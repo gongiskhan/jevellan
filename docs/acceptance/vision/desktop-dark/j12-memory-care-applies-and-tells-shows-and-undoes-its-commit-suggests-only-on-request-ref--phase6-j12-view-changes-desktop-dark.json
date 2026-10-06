@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Memory care diff panel cuts off after the deploy.md hunk header ('---'), apparently because it is a fixed-height scroll area. It is legible, but the rest of the diff is not visible in the capture.",
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Mesh journey fix…').",
-      "The 'Save schedule and jobs' button looks low-contrast or disabled against the dark background.",
-      "The Trial log helper text and the 'Simulated judge responses.' notes are dim, low-contrast grey."
+      "The sidebar session titles are cut off with ellipses (for example 'Exercise answer options: c…' and 'Context · J11 memory journ…'). That looks intended, and the full titles probably show on hover.",
+      "The diff after View changes is long and uses dense monospace text. It is still readable, but there are no file headers or separators to break up the files.",
+      "Most of the 'Last runs' list repeats 'No working rules to suggest.', which crowds out the relevant memory-care entry.",
+      "The 'Run nightly at 03:00 AM' time input looks disabled and low contrast because its checkbox is unchecked."
     ]
   }
 }

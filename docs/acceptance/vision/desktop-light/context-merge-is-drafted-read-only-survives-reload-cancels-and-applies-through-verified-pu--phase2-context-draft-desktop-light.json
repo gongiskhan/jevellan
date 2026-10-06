@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background page and sidebar are dimmed behind the modal overlay. This is expected for a dialog.",
-      "In the sidebar, a conversation list item near the bottom ('Some native sessions are unavailable' area) appears partly clipped behind the overlay. It is not part of the dialog."
+      "Modal title 'Context · Context fixture' repeats the word 'Context', which reads awkwardly.",
+      "Diff lines that are just '-' or '+' (blank-line changes) look like stray characters.",
+      "The 'Open work' link sits below the Cancel/Apply buttons, apart from the other actions."
     ]
   }
 }

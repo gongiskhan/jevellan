@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Current instruction files' disclosure sits right at the bottom edge of the modal and has very little padding below it",
-      "The muted gray hint text 'The draft ran read-only. Apply replaces AGENTS.md…' is low-contrast, but you can still read it",
-      "The 'Open work' link sits apart from the Cancel/Apply action row, so the grouping is a bit unclear"
+      "The background page and sidebar are dimmed and blurred behind the modal, which is intended. The dialog itself is fully readable.",
+      "The 'Open work' link sits below the Cancel/Apply row in the bottom-left corner, which looks a little disconnected from the other actions."
     ]
   }
 }

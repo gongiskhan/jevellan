@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background page behind the modal overlay is blurred, as you'd expect, so the content behind the dialog can't be read. The dialog itself is fully legible.",
-      "The secondary explanatory text in the dialog is a lighter gray, so it has a bit less contrast than the main text, but it's still readable."
+      "The confirmation text names the target as 'Reply, Fable, high'. The 'Reply' label looks like it might be a placeholder or an odd name for the agent or mode.",
+      "The dialog covers the background step actions. That's expected for a modal, but it hides the step 1 'Changes' row and the newer-request card."
     ]
   }
 }

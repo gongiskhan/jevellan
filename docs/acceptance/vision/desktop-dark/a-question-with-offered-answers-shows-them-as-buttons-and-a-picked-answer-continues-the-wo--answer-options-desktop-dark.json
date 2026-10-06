@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Exercise answer options: …', 'Context · J11 memory jour…'). The truncation is deliberate, but the full names can't be read without hovering.",
-      "The 'Or type a different answer below.' hint inside the question card is low-contrast muted text on the purple background.",
-      "The 'Why' button has a pink highlight and the other step action buttons don't, which looks slightly inconsistent."
+      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Exercise answer options: ...', 'Context · J11 memory jour...'), but the full title shows in the main header",
+      "Low-contrast muted text, such as 'Or type a different answer below.' on the purple question card and 'Local time' / 'Some native sessions are unavailable', is dim but still readable",
+      "Large empty gap between the question card and the composer"
     ]
   }
 }

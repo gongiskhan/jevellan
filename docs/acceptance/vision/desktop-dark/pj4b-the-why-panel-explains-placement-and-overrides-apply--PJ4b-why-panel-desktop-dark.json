@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles are truncated with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…'), and so are their subtitles ('dev-ma…', 'de…'). That's expected overflow handling and doesn't hide any controls.",
-      "The 'Fixed: none' line under PLACEMENT in the Why panel is small and low-emphasis next to the other sections, but it is still readable.",
-      "The panel header runs the thread title in pink monospace straight into the bold 'Why this placement', so the two read like one line at a glance."
+      "Session titles in the left sidebar ('Context · J11 memory jour…', 'Context · Mesh journey fix…') and their subtitles are cut off with ellipses; this looks like intended overflow handling.",
+      "The Why panel's title runs straight from the pink monospace 'Tidy the README wording' into 'Why this placement' with no separator.",
+      "Gray text in the Why panel (bar values like 0.10 and the Jev footer metadata) is low-contrast on the dark background but still readable.",
+      "Large empty area between the report card and the message composer in the middle column."
     ]
   }
 }

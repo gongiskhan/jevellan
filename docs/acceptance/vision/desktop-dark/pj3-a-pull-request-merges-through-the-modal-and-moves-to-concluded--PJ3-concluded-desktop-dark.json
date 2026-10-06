@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Several titles are cut short with an ellipsis: the running thread title in the right panel ('Read through the project and list what each file is…') and the sidebar session names and metadata ('Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). Each is truncated on purpose and the rest of the item is still readable.",
-      "The conversation repeats 'Noted.' many times in a row, sometimes back to back, which adds visual noise.",
-      "The secondary text in the sidebar session rows and the right-panel metadata lines (e.g. 'Claude Code · Fable · high · Worktree · dev-madrid') is small and low-contrast, but still readable."
+      "Truncated sidebar session subtitles ('dev-ma…', 'J11 memory jour…', 'Mesh journey fix…') and right-panel running thread title ('Read through the project and list what each file is …') end in ellipses, but the full text is available elsewhere on the page",
+      "Many repeated 'Noted.' coordinator replies make the transcript noisy",
+      "Low-contrast monospace metadata text (e.g., 'Claude Code · Fable · high · Worktree · dev-madrid', version 'v0.1.0') is small and dim but still readable"
     ]
   }
 }

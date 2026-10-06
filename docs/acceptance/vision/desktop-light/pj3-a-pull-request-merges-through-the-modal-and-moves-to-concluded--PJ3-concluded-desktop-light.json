@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The title of the running thread in the right panel ('Read through the project and list what each file is ...') is cut off with an ellipsis. It is still readable and seems intentional.",
-      "Sidebar session titles and their metadata lines ('Context · J11 memory jour...', 'Done · J11 memory journey · dev-...') are cut off with an ellipsis. This seems intentional for the narrow sidebar.",
-      "The transcript repeats 'Noted.' many times in a row, which makes the conversation feel cluttered and repetitive."
+      "Long titles are shortened with an ellipsis: the running thread title in the right panel and the sidebar shell-session names and subtitles (e.g. 'Context · J11 memory jour…'). The full text cannot be read in place, but this looks like intended truncation.",
+      "Two 'Noted.' coordinator replies appear back to back above the merged card, which looks repetitive.",
+      "There is a lot of empty space in the left sidebar between the session list and the 'Some native sessions are unavailable' footer."
     ]
   }
 }

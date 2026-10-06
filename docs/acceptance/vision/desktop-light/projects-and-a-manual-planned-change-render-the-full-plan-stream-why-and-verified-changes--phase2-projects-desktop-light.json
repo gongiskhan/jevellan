@@ -10,11 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Project saved.' toast sits in the header gap between the 'Projects' title and the 'Git settings' button. It doesn't cover any text or controls.",
-      "Sidebar session titles are cut short with an ellipsis ('Context · J11 memory journ…', 'Context · Mesh journey fixt…', and their 'Done · … · dev-ma…' subtitles). The truncation looks intentional.",
-      "The long path '/tmp/.../activity-context-project' wraps onto a second line in the 'Outside context fixture' card, so that card is taller than its neighbour.",
-      "Card heights in each two-column row don't match, which leaves uneven gaps, for example beside 'Public memory fixture' and 'Manual conversation fixture'.",
-      "'Manual conversation fixture' shows as a project card but isn't in the sidebar PROJECTS list. This may be a data difference rather than a rendering problem."
+      "The 'Project saved.' toast sits over the header area next to the 'Projects' title. It covers no controls or text, but it looks crowded.",
+      "Shell session titles and subtitles in the left sidebar are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'). This looks deliberate, but the full text can't be read.",
+      "In the 'Outside context fixture' card, the long path wraps onto a second line ('…activity-context-' / 'project'), so that card is taller than the others and the grid looks uneven.",
+      "'Manual conversation fixture' appears as a project card but is not in the sidebar's PROJECTS list, so the two lists don't match."
     ]
   }
 }

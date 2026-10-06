@@ -10,7 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Title field holds what looks like task text ('Read through the project and list what each file is for, one line per file'), while the Task field holds the 'PJ3 long' prompt. The content may be swapped or prefilled from the wrong source, but it reads fine and nothing is cut off."
+      "Title and task text are swapped: the Title field holds the long task sentence ('Read through the project and list what each file is for, one line per file') and the Task field holds the short label ('PJ3 long: read the project files, then wait for my message.'). This is probably test data, not a layout problem.",
+      "The Task textarea has a lot of empty space below its single line of text."
     ]
   }
 }

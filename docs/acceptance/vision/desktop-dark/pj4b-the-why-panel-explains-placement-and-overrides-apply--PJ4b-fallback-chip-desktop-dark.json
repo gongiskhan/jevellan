@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Session titles and subtitles in the sidebar are truncated with ellipses (e.g. 'Context · J11 memory jour…', 'dev-ma…'), but this is expected for a narrow sidebar.",
-      "Most of the main panel below the report card is empty dark space.",
-      "The muted gray-blue monospace metadata line and the 'Some native sessions are unavailable' text have fairly low contrast on the dark background, though both can still be read."
+      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory jour…', 'Done · J11 memory journey · dev-…'), but these are deliberate truncations and the full names are still identifiable",
+      "Header metadata line and the 'Placed without Jev: authentication failed' chip use small monospace text that is a little dim against the dark background, but it can still be read",
+      "Large empty area between the report card and the message composer"
     ]
   }
 }

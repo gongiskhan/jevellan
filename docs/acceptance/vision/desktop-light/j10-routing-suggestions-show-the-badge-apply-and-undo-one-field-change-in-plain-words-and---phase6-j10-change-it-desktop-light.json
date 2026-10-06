@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Revised change' diff joins the original text with the instruction into one line ('...and reviews. Only for reviews of the improver fixture.'). The line stays readable, but the left 'Edit the after text' box still shows the old 'Preferred for review steps.' text, so the two panes may look out of sync.",
-      "The text under the modal is blurred by design and can't be read, which is expected while a modal is open."
+      "The 'Edit the after text' box still shows 'Preferred for review steps.' while the revised change diff shows the plain-words revision 'Only for reviews of the improver fixture.' The two don't match, which could confuse the user about what 'Apply this' will commit.",
+      "There is no visible label or loading state saying which input (edited text or plain-words revision) produced the 'Revised change' diff."
     ]
   }
 }

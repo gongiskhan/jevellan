@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis (\"J8: run on device B while I steer from de...\"). This is expected single-line truncation on a narrow screen, and the full title is still readable through the context lines below it.",
-      "The banner text \"Keep the checkout unchanged; stop for this correction from device A.\" wraps to a second line, so the start of the second line ends up under the speech-bubble icon instead of lining up with the text above it."
+      "The header title is cut off with an ellipsis ('J8: run on device B while I steer from de...'). This looks like intentional single-line truncation, so the full title isn't visible at this width.",
+      "The 'Waiting for you' status chip is noticeably wider than the other chips on its row, but they still fit on one line."
     ]
   }
 }

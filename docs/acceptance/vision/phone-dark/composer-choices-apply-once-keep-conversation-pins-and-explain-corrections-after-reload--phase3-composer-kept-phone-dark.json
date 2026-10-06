@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut short with an ellipsis ('Exercise composer choices: explain the...'). The full text still appears in the subtitle line and the user message.",
-      "Step 1 says 'Duration 1s', but its start (06:43:05) and end (06:43:07) are 2s apart. This is a data mismatch, not a layout problem.",
-      "The 'Jump to latest' link sits close to the bottom composer, but they don't overlap."
+      "The header title is cut off with an ellipsis (\"Exercise composer choices: explain the...\"). The full text is shown in the subtitle and the user message below it, so nothing is lost.",
+      "The first step's \"1 tool\" toggle is low-contrast gray text on a dark background."
     ]
   }
 }

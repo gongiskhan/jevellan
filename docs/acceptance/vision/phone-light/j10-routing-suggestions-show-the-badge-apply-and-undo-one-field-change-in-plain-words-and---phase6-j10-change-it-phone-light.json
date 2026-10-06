@@ -10,8 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal covers the middle of the page, so the first suggestion's diff is cut off behind it. That's normal for a modal, but the background diff can't be read.",
-      "The two textareas take up a lot of empty vertical space on a phone screen."
+      "The 'Check this text' and 'Revise the suggestion' buttons are close together. They are easy to tell apart, but each button has only a short label and they look alike."
     ]
   }
 }

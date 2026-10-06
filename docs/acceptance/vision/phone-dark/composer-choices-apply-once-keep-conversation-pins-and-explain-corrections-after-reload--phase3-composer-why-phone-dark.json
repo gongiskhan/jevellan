@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Adversarial Rev…' label is cut off with an ellipsis in the score list, so the full step name can't be read here.",
-      "The last correction entry ('Just override · effort: high → max') is cut off at the bottom of the viewport, and its detail line is only partly visible. The panel looks scrollable, but nothing on screen shows that more content is below.",
-      "The score list starts at 'Test' right under the header, so earlier rows seem to be scrolled out of view. It's unclear whether the list begins there or is partly hidden under the header.",
-      "The score bars are all empty and every value is 0.00, so the bar column gives no visual information."
+      "The 'Adversarial Rev...' label in the step list is cut short with an ellipsis. The text is still recognisable, but the full name is never shown.",
+      "The last correction entry ('Just override · effort: high → max') is cut off at the bottom of the viewport, and its description line is only partly visible. It looks like the panel scrolls, but nothing on screen shows that more content is below.",
+      "All step progress bars read 0.00 and look empty. That fits a fresh 'Why this step' view, but the bars carry little information.",
+      "The muted grey description text under each correction (e.g. 'plan in Automatic fixture, small change, no risky areas recorded') is fairly low-contrast against the dark background. It is still readable."
     ]
   }
 }

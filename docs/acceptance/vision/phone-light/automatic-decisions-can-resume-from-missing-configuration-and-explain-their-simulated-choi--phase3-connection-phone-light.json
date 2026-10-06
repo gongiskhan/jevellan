@@ -10,11 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Jev key saved.' toast sits at the bottom edge, just under the 'Saving creates a configuration revision.' footer. It may hide a save button, if one is there. It can be dismissed with ×.",
-      "The high, xhigh and max effort guide fields are single-line inputs, so their text is cut off at the right edge ('planning a', 'cut acros', 'architecture, U'). The full text is only visible by scrolling inside the field.",
-      "The routing profile textarea holds more text than it shows, so its last visible line is cut through the middle. The rest is reachable by scrolling or resizing.",
-      "The settings tab strip is scrolled sideways, so the first tab shows only as 'mes' and the last as a partial icon. This is expected for a scrollable tab bar on a phone.",
-      "The model card shows the provider 'claude' and the ID 'claude-fable-5-1' with no field label, unlike the other fields."
+      "The Effort guide inputs (high, xhigh, max, and almost low) cut off their text at the right edge on this narrow screen. This is normal for single-line inputs, but you can't read the full guidance without focusing the field.",
+      "The Routing profile textarea cuts off its last visible line at the bottom edge. The content scrolls, but it looks clipped.",
+      "The 'Jev key saved.' toast is pinned near the bottom of the page. It sits close to the 'Saving creates a configuration revision.' footer but doesn't cover any controls in this capture.",
+      "The tab strip (Rigging / Decisions / Improver) cuts off at the edges and relies on the arrow buttons to scroll. It's usable, but other tabs aren't visible."
     ]
   }
 }

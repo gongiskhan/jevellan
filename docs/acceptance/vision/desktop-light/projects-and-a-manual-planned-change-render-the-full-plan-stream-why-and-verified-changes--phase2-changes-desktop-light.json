@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Changes panel header says '1 changed files'. It should say '1 changed file'.",
-      "Two work-closed banners appear one after the other ('Work closed. Its changes are kept…' and 'Work closed and published.'). This looks redundant.",
-      "Session titles in the sidebar ('Change the value to two …', 'Context · J11 memory journ…') are cut off with an ellipsis. This is intended, but the full titles can't be read without hovering.",
-      "The secondary text in the sidebar ('Some native sessions are unavailable', version 'v0.1.0') is small and low in contrast."
+      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Change the value to two ...', 'Context · J11 memory journ...'). This is expected for narrow list items.",
+      "The project name 'dev-madrid' is cut off in the sidebar session subtitles ('dev-ma...', 'de...').",
+      "The changed-files header reads '1 changed files', which is grammatically wrong (should be '1 changed file').",
+      "There are two stacked closure banners ('Work closed. Its changes are kept...' and 'Work closed and published.'), which look redundant."
     ]
   }
 }

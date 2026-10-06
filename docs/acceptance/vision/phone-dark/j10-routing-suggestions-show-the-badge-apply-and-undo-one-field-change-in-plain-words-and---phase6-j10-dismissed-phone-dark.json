@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab strip is cut off at both edges (\"ing\" on the left, \"F\" on the right). It looks like a tab bar that scrolls sideways, so the other tabs should still be reachable, but there is no visible hint that it scrolls.",
-      "The 'Save schedule and jobs' button text is low-contrast because the button is disabled.",
-      "The 'Simulated judge responses.' link text is dim against the dark card background."
+      "The top tab strip cuts the 'Devices' tab off at the right edge. Scroll arrows are visible, so the other tabs can still be reached.",
+      "In the Trial log table, the 'Week of' date '2026-10-05' breaks across two lines in its narrow column, and the 'Why they finished elsewhere' header wraps onto three lines.",
+      "The diff lines inside the code blocks wrap mid-path (for example, 'b/menu/claude-sonnet/description' moves to a new line), which makes the diffs a little harder to read."
     ]
   }
 }

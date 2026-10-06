@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Offline fixture' card almost touches the 'Native conversations' card below it. The gap is much smaller than the spacing between the other cards.",
-      "In the sidebar, a fourth conversation item is partly clipped at the bottom of the scrolling list, just above 'Some native sessions are unavailable'. This is expected scroll overflow, but it looks slightly untidy.",
-      "Sidebar conversation titles and subtitles are cut off with an ellipsis (e.g. 'Context · Outside context…', 'Exercise composer choice…'). This is intentional and the text is still readable."
+      "Sidebar conversation list: the fourth row is cut off by the 'Some native sessions are unavailable' notice. It looks like the edge of a scroll area, not a layout overlap.",
+      "Sidebar conversation titles and subtitles are cut off with ellipses ('Context · Outside context…', 'Exercise external activity …', 'Exercise composer choice…'). This is intentional truncation.",
+      "The 'Automatic device choice' card has a disabled checkbox and the note 'Coming later.' Nothing is blocked."
     ]
   }
 }

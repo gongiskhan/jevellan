@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with an ellipsis (e.g. 'Context · J11 memory jour…', 'Mesh journey fix…', 'dev-ma…'). This looks like intentional truncation, but the full names can't be read at this width.",
-      "The top-right header crowds its controls a little: the '…' overflow button sits very close to the panel edge."
+      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory jour…', 'dev-…'), but the overflow menus are still reachable",
+      "The 'Working…' status pill text is truncated with an ellipsis",
+      "The chat area is mostly empty whitespace between the user message and the 'Coordinator is working…' indicator"
     ]
   }
 }

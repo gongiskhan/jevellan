@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Saved' status and 'Preview' link sit above the 'Content' label, so they read as if they belong to the Name field.",
-      "The large textarea has a lot of empty space for two lines of content.",
-      "The 'Saved' text is in low-contrast gray, but it is still readable."
+      "The background page is dimmed behind the modal overlay, so the Rigging list, sidebar and runtime toggles can't be read in this capture. That's expected while a modal is open.",
+      "The 'Saved' status label is low-contrast gray next to the pink 'Preview' link.",
+      "The Content textarea is mostly empty space under two short lines of text."
     ]
   }
 }

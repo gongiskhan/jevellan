@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab strip runs off the right edge ('Impr…' is cut off). It looks like a horizontally scrollable tab bar, so the tab can still be reached, but the edge could use a fade or scroll hint.",
-      "The device list under Claude Code says 'Codex sign-ins are kept per device for now.' That looks like copy reused from the Codex section.",
-      "The Five hours and Week usage bars show only empty tracks with low contrast against the card background."
+      "The top tab strip cuts off the fourth tab, which shows only its icon behind the scroll chevron. The chevron shows the strip scrolls, so the tab is still reachable.",
+      "The Claude Code account sub-list says \"Codex sign-ins are kept per device for now.\" This looks like the wrong runtime name copied over from Codex.",
+      "Long \"Login recovery <uuid>\" account names wrap onto two lines. They stay readable but look heavy.",
+      "The Five hours and Week usage bars have very little contrast against the dark card background."
     ]
   }
 }

@@ -7,14 +7,13 @@
   "screenshot": "docs/acceptance/screenshots/phase6-j12-view-changes-phone-dark.png",
   "expected": "the Jevellan web app \"j12 view changes\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)",
   "result": {
-    "ok": false,
-    "blocking": [
-      "Memory care card (Improver sandbox, Applied): the expanded 'View changes' diff is clipped at the bottom of its box. The last visible line ('+++ b/.jevellan/memory/deploy.md') is cut in half, and the rest of the diff for deploy.md can't be seen. Nothing shows that the box scrolls, so the main content of this step is cut off."
-    ],
+    "ok": true,
+    "blocking": [],
     "cosmetic": [
-      "Several long file paths in the diff blocks (for example 'a/.jevellan/memory/archive/old-caching-idea.md' and 'b/.../claude-sonnet/description') wrap mid-path, which makes them harder to scan.",
-      "The 'Commit b8e4b1cffa' label next to the Undo button is very small and low-contrast.",
-      "In the 'Last runs' list, the gray 'No working rules to suggest.' subtext is low-contrast against the dark background."
+      "The top tab bar is cut off at both edges (the 'Decisions' and 'Devices' tabs are only partly visible). This looks like a horizontally scrolling tab strip, so they can still be reached.",
+      "In the diff blocks, the long file paths and the header lines that start with 'diff --git' wrap onto several lines, which makes the diff dense to read on a phone.",
+      "The 'Commit' label next to 'Undo' in the memory-care card is low-contrast in the dark theme.",
+      "The Trial log table is cramped. Its column headers wrap onto several lines."
     ]
   }
 }

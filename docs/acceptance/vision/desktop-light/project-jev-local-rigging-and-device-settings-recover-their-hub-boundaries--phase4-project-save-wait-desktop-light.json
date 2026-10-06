@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Browse folders on dev-madrid' button sits directly against the 'Git policy' label below it, with almost no vertical spacing.",
-      "The modal body is clipped at the 'Test command' label. This is a normal scroll cutoff, and the field is reachable by scrolling.",
-      "The disabled 'Saving…' button has low contrast. This is expected for a disabled control, and the text is still readable."
+      "The 'Browse folders on dev-madrid' button sits very close to the 'Git policy' label below it, with almost no vertical gap.",
+      "The 'Test command' field is cut off at the bottom of the modal's scrolling area. The field can be reached by scrolling the modal body, but nothing on screen shows that more content is below.",
+      "The 'Stop waiting' button in the hub-wait notice is vertically centered on the two lines of text rather than lined up with the first line, so it looks slightly off."
     ]
   }
 }

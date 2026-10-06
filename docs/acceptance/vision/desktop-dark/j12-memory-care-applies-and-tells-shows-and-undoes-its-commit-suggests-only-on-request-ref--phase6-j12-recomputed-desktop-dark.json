@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The diff in the first memory care card is cut off at the bottom of its scroll box (the test-conventions-2.md hunk is partly hidden), so you have to scroll to see the rest.",
-      "Shell session titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory jour…').",
-      "Text in the sidebar footer ('Some native sessions are unavailable') and the version label is faint and low in contrast."
+      "Sidebar session titles are truncated with ellipses ('Exercise answer options: c...', 'Context · Mesh journey fix...'). This is expected truncation and nothing is lost from the main content.",
+      "The 'Last runs' column is taller than the 'Schedule and jobs' card, which leaves empty space below the Save button.",
+      "Some light-grey helper text on the dark background has low contrast, such as 'This change merged 1 note, archived 0, fixed 1 link.', commit hashes and the 'Suggest' labels. It is still readable."
     ]
   }
 }

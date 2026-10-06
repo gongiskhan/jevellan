@@ -10,11 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Last runs' card says '2 routing suggestions ready', but only 1 suggestion is waiting and 1 is marked Undone. The wording could confuse people.",
-      "The 'Save schedule and jobs' button has low contrast, probably because it's disabled. It's still readable but faint.",
-      "The 'Memory care' dropdown value 'Apply and tell me' is muted and looks like placeholder text.",
-      "Session titles and subtitles in the sidebar are cut off with an ellipsis (e.g. 'Context · J11 memory jour…'). This looks intentional.",
-      "The 'Recently decided' card has extra empty space below the 'Checked against…' line."
+      "Sidebar session titles are cut off with ellipses (e.g. 'Exercise answer options: …', 'Context · J11 memory jour…'). This looks like intentional truncation.",
+      "The 'Recently decided' card has extra empty space below the 'Checked against 27 saved cases' row and no actions, so it looks slightly unbalanced.",
+      "The 'Save schedule and jobs' button and the 'Apply and tell me' field are low contrast and may look disabled.",
+      "The diff and judge note boxes inside the cards have a lot of empty padding at the bottom."
     ]
   }
 }

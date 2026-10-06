@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Summary row says \"1 changed files\" instead of \"1 changed file\"",
-      "Bottom half of the screen is empty, so the content looks top-heavy",
-      "Muted gray labels (\"Recorded diff\", \"AGENT EVIDENCE\", \"JEVELLAN VERIFICATION\", line numbers) are low-contrast against the dark background, but they're still readable"
+      "The summary says '1 changed files' when it should say '1 changed file'.",
+      "The commit hash text is small and touches the right edge of the verification card, but you can still read it in full.",
+      "A large empty area below the content makes the screen look sparse."
     ]
   }
 }

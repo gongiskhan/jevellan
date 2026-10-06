@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal fits a lot of empty space into a compact dialog. The 'Current instruction files' disclosure label is set in a small monospace font that looks a little different from the rest of the dialog text.",
-      "The background behind the modal is heavily blurred and dimmed, which is expected for a modal overlay."
+      "The 'Current instruction files' disclosure toggle uses a monospace font, but the rest of the modal body uses a sans-serif font.",
+      "The modal title 'Context · Context fixture' repeats the word 'Context', which reads a little awkwardly."
     ]
   }
 }

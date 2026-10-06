@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Change the value to two …', 'Context · J11 memory journ…'). Hovering or opening them shows the full text.",
-      "The 'Shell sessions' toggle is pink/magenta, which doesn't match the dark accent used for the primary buttons.",
-      "The plan stage shows the same guidance three times: the 'Awaiting approval' badge, the yellow banner 'Read the full plan, then choose Approve plan or Request changes', and 'Waiting for plan approval. Review plan ↑'."
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Change the value to two ...', 'Context · J11 memory journ...'), which is expected for long titles",
+      "The sidebar has a large empty gap between the conversation list and the 'Some native sessions are unavailable' note"
     ]
   }
 }

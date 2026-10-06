@@ -10,10 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Claude Code section's per-device sign-in note says \"Codex sign-ins are kept per device for now.\" It should probably name Claude Code.",
-      "Sidebar session titles are cut off with ellipses (\"Context · J11 memory journ…\", \"Context · Mesh journey fixt…\"), and so are their subtitles. This is intentional truncation.",
-      "Usage meters for Five hours and Week say \"Unknown\" and the bars are empty, so this fixture has no usage data. This is expected for this fixture, not a rendering problem.",
-      "The account rows look a bit inconsistent. \"Check now\" is placed differently relative to \"Log in\" across accounts, and the \"Disabled\" and \"Offline\" status labels are light grey and lower contrast, though still readable."
+      "Under the Claude Code card, the device list for 'Rigging local fixture' says 'Codex sign-ins are kept per device for now.', which looks like copy carried over from Codex by mistake.",
+      "Long session titles in the sidebar ('Context · J11 memory journ…', 'Context · Mesh journey fixt…') and their subtitles are cut off with ellipses. This looks intentional, but the full titles can't be read."
     ]
   }
 }

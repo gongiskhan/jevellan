@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "'Adversarial Rev...' is cut off with an ellipsis in the Next Step list, so the full label can't be read at this width",
-      "The last Corrections Used entry ('implement in Browser fixture, small change, no risky areas…') is cut by the bottom of the screen. The panel looks scrollable, so this is probably just the screen edge and not lost content",
-      "In the Effort section, the header says 'medium → high' and the notice says high is being used, but the bars show medium at 1.00 and high at 0.00. This could confuse readers",
-      "The 'Jev' labels at the top right of Next Step and Effort are short and unclear"
+      "The 'Adversarial Rev...' label in the Next step list is cut short with an ellipsis, so the full option name isn't visible.",
+      "The effort line says 'medium → high', but the bar chart gives 'medium' 1.00 and 'high' 0.00. The selected value and the chart don't clearly match.",
+      "The last entry in Corrections used is cut off at the bottom edge. This looks like normal scrollable overflow, not a layout defect.",
+      "The section headers (NEXT STEP, MODEL, EFFORT, MEMORY, CORRECTIONS USED) are small, light gray text with low contrast, but still readable."
     ]
   }
 }

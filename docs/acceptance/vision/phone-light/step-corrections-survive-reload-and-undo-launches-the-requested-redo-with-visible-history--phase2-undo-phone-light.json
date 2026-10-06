@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Change the value to three, then redo thi…'). The full text still appears in the subtitle line and in the user message.",
-      "The same error banner ('No model can run this step right now: disabled, disabled, …') appears twice in a row, which looks redundant and repeats 'disabled' many times.",
-      "The pink 'corrected: …' labels on Step 1 are small and low-contrast against the light background, but they can still be read.",
-      "The 'Jump to latest ↓' link sits close to the composer. It does not overlap it and can still be tapped."
+      "The header title is cut off with an ellipsis ('Change the value to three, then redo thi…'). The full text still appears in the subtitle and in the user message.",
+      "The same red error banner ('No model can run this step right now: disabled, disabled, …') appears twice in a row. Its repeated 'disabled' list tells the user nothing useful.",
+      "The struck-through 'Step 1 · Implement' heading is light grey and harder to read than the other headings. This looks intentional for an undone step.",
+      "The pink 'corrected: …' labels on Step 1 wrap onto two lines and are low contrast against the white background."
     ]
   }
 }

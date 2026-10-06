@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Saved' status label and the 'Source' link sit on the same row with no visual grouping, so it's unclear which content each one refers to.",
-      "The dialog doesn't make it obvious whether the instructions text is editable: there's no visible text-field border or affordance around 'Edited local instructions' / 'Preserve the complete bundle.'",
-      "The background page under the overlay is blurred and partly hidden by the dialog. This is expected for a modal, but the list items behind it, such as browser-promote and browser-package, peek out below the dialog."
+      "Behind the scrim, the background tab row is cut off at the right edge (a partial tab next to the scroll chevron). It can still be reached by scrolling.",
+      "Background list items at the bottom (browser-promote, browser-package) show through the dimmed overlay. Expected for a modal, but the dimmed monospace metadata is hard to read.",
+      "The 'Saved' status and the 'Source' toggle are on the same line with no visual grouping, so 'Source' could be mistaken for a status label rather than a control.",
+      "The success banner's close '×' is small. It may be a tight tap target on a phone."
     ]
   }
 }

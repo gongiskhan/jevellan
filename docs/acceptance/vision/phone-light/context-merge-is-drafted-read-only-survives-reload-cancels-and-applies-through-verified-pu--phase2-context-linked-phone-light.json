@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Current instruction files' disclosure label uses a monospace font, which doesn't match the sans-serif text in the rest of the dialog",
-      "The page behind the modal is blurred, which is expected for a modal backdrop"
+      "The background project list behind the modal is blurred and dimmed. This looks intentional.",
+      "The top tab bar cuts off a tab label at the right edge (\"C...\"). It can still be reached with the scroll arrow."
     ]
   }
 }

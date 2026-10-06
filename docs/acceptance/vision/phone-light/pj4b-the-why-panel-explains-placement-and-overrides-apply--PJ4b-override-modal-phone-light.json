@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the dimmed background, the attach command at the bottom ('jevellan thread attach thread_01MVT5PNP...') is cut off with an ellipsis. It sits behind the modal's dark overlay, so it doesn't block this screen.",
-      "In the dimmed background, the breadcrumb wraps onto several lines in a cramped way ('Worktree on jv/tidy-the-readme-wording-d3fdfb · dev-madrid')."
+      "The background thread header text ('Claude Code · Fable · high effort · Projects Claude · Worktree on jv/tidy-the-readme-wording ...') is dimmed by the scrim and partly hidden behind the modal. This is expected for a modal overlay.",
+      "The footer command 'jevellan thread attach thread_01M...' is cut off with an ellipsis at the bottom of the background page, behind the scrim.",
+      "The note textarea has a pink/magenta focus border that clashes a little with the neutral styling of the other fields."
     ]
   }
 }

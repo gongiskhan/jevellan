@@ -10,10 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are truncated with ellipses (e.g. \"Context · J11 memory jour...\", \"dev-ma...\"), but they're still identifiable",
-      "Most of the notebook editor textarea is empty space, so the conflict banner and Save/Cancel buttons sit well below the content",
-      "The conflict banner's red/pink border on dark is low-key, though the text and the Reload link are readable",
-      "The chat column has many repeated \"Noted.\" lines, which makes it look cluttered but doesn't hurt legibility"
+      "Sidebar session titles are truncated with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…') and subtitles are cut off ('dev-ma…', 'dev-…', 'de…')",
+      "The notebook textarea is much taller than its three lines of content, which leaves a large empty area above the conflict banner"
     ]
   }
 }

@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background page shows faintly through the modal overlay. Some background rows (browser-pinchsite, browser-package) are only partly visible around the dialog's edges. This is expected for a modal.",
-      "The pink 'Source' link sits far right on the 'Saved' line and is set apart from the content it belongs to."
+      "The tab row behind the modal is clipped at the right edge (a fourth tab is partly cut off). It looks like a horizontally scrolling tab strip, and it's dimmed by the modal overlay.",
+      "The pink 'Source' link has fairly low contrast against the dark modal background.",
+      "The editable instructions ('Edited local instructions' / 'Preserve the complete bundle.') have no visible field border, so it's hard to tell they can be edited."
     ]
   }
 }

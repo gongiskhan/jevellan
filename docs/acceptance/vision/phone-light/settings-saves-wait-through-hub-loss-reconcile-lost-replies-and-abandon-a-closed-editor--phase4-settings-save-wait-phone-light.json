@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The disabled 'Saving…' button has low contrast against the white footer, but it is still readable and the dimming is expected for a disabled control.",
-      "The hub-loss notice text wraps into a narrow column next to the 'Stop waiting' button, which makes the notice taller than it needs to be.",
-      "Background page content (such as 'Conversation fixture' and the tab bar) shows through the dimmed overlay around the modal. It is readable but adds a little visual noise."
+      "The 'Saving…' button is greyed out with low contrast, but you can still read it. It's disabled on purpose while the save waits.",
+      "The page behind the dialog shows through at the edges, including the tab bar and the 'Usage checked…' and 'Log in / Check now' rows. The scrim dims it as expected."
     ]
   }
 }

@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The settings tab strip is cut off at both edges ('ions' on the left, a partial 'G' on the right). It looks like a horizontally scrollable tab row, so the tabs can still be reached, but nothing on screen shows that it scrolls.",
-      "The 'Native conversations' card sits directly against the bottom of the 'Offline fixture' card, with none of the gap used between the other cards. The borders touch or nearly merge.",
-      "The disabled 'Open' buttons (dev-madrid and Offline fixture) have low-contrast text. They can still be read, but they're faint against the dark background.",
-      "The secondary hint text ('Coming later.', the SSH tunnel note) is small and muted gray, so contrast is low but it's still readable."
+      "The tab strip clips its neighbouring tabs at the edges. The left and right scroll arrows still reach them.",
+      "The 'Open' buttons on 'dev-madrid' (this device) and 'Offline fixture' are dimmed and low-contrast. This fits their disabled state but is faint.",
+      "Grammar: '1 running conversations' should be '1 running conversation'.",
+      "The 'Coming later.' helper text and the small grey SSH explanation have fairly low contrast against the dark background."
     ]
   }
 }

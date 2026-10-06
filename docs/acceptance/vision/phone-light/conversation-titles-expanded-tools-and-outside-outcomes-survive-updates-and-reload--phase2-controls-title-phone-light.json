@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The conversation title in the header is shortened with an ellipsis ('A conversation with a long title · Unbro…'). This looks like deliberate single-line truncation, but the full title can't be read on this screen.",
-      "The long tool header ('Read project · long_tool_header_…') wraps across 7 lines and breaks mid-word. It stays readable but takes up a lot of vertical space in the tool card.",
-      "The 'completed' status label sits beside the wrapped tool header and is vertically centred against all of its lines, so it's slightly detached from the header text.",
-      "The 'Jump to latest' link sits close to the composer input, with little spacing between them."
+      "The conversation title in the header is cut off with an ellipsis ('A conversation with a long title · Unbro...'). This looks like intended single-line truncation for a narrow screen, but the full title can't be read here.",
+      "The long tool header 'Read project · long_tool_header_...' breaks mid-word across many lines. It is still readable but looks ragged.",
+      "The bottom input bar sits close to the bottom edge of the screen, but it is fully visible and can be tapped."
     ]
   }
 }

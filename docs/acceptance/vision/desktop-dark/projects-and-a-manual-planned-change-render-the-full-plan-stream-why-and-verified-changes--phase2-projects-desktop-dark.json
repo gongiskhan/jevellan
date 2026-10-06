@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Project saved.' toast floats in the header between the 'Projects' title and the 'Git settings'/'Add project' buttons. It doesn't cover any controls, but it crowds the header area.",
-      "Session titles in the left sidebar are cut off with ellipses ('Context · J11 memory journ…', 'Context · Mesh journey fixt…'). This is intentional truncation, but the full names can't be read.",
-      "The sidebar's PROJECTS list doesn't include 'Manual conversation fixture', even though it appears as a card in the Projects grid."
+      "The 'Project saved.' toast sits between the Projects heading and the Git settings/Add project buttons. It doesn't cover any of them, but it crowds the header.",
+      "The sidebar cuts long conversation titles and subtitles short with an ellipsis (for example 'Context · J11 memory journ…' and 'Waiting for you · Browser fixtur…'). This looks deliberate, but you can't read the full text without opening the item.",
+      "The 'Manual conversation fixture' project has a card in the grid but doesn't appear in the sidebar PROJECTS list.",
+      "Long project paths wrap onto a second line in some cards ('activity-context-project', 'user/picked-project'), so those cards are taller than the card next to them."
     ]
   }
 }

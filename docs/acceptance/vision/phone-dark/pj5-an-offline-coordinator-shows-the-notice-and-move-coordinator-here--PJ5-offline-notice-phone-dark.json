@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Offline' badge under the title is very small and low-contrast.",
-      "The tab row's right edge sits close to the 'Pull requests' tab. It fits but leaves little margin.",
-      "There is a large empty area between the empty-state text and the composer, so the screen looks sparse."
+      "The 'Offline' status pill sits under the title on its own row, which leaves some extra space in the header",
+      "There's a lot of empty space between the tab bar and the empty-state text, and between that text and the composer, so the notice looks a little sparse on a phone screen"
     ]
   }
 }

@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The close button (×) on the 'Current file reloaded' notice is very small and low-contrast, so it is a small target to hit.",
-      "The 'Saved' status is light gray and small, so it is less noticeable than the pink 'Source' link next to it."
+      "The page behind the modal is heavily blurred and dimmed, so the Rigging list (rows, Park/Make managed buttons) can't be checked in this capture. That is expected while a modal is open.",
+      "The 'Saved' label and the 'Source' link are on the same row with a large gap between them, so they read as unrelated items.",
+      "The secondary text ('This bundle has 2 files…', 'Local edits save automatically…') is small and low-contrast but still readable."
     ]
   }
 }

@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dialog is scrolled partway down, so the top fields are out of view (they can be reached by scrolling). The 'Path on Offline fixture' label sits right under the header with very little space above it.",
-      "This frame shows the memory settings (public notice, how memory is kept, memory folder) but not the note's update time or the read-only rendered content. Those are presumably shown in other screenshots of this run.",
-      "The modal fills nearly the whole phone viewport, so the background page is barely visible at the edges."
+      "The modal body is scrolled partway down, so the 'Path on Offline fixture' label sits right against the header divider and looks slightly clipped at the top edge.",
+      "The Memory section is at the very bottom of a long scrolling modal, so the 'Memory folder' field sits just above the sticky Cancel/Save footer with little breathing room."
     ]
   }
 }

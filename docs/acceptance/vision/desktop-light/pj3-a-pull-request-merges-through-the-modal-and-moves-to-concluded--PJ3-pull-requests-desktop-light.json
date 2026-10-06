@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The running thread title 'Read through the project and list what each file is…' is cut off with an ellipsis in the right panel. The full title is still readable in the conversation feed.",
-      "Sidebar session titles and metadata ('Context · J11 memory jour…', 'Done · Improver sandbox · dev-ma…') are cut off with ellipses.",
-      "Several 'Noted.' replies in a row make the conversation feed look repetitive.",
-      "The PR card shows 'Checks passing' while the latest feed event says PR #1 'has conflicts'. Since the Merge button is shown, the conflict status may be missing from the card."
+      "Some titles are shortened with an ellipsis: the running thread title in the right panel ('Read through the project and list what each file is ...') and the sidebar session names ('Context · J11 memory jour...', 'Context · Mesh journey fix...'), along with their subtitles.",
+      "The coordinator's 'Noted.' reply shows up many times in a row, including twice at the bottom of the feed, which adds visual noise.",
+      "Several progress cards ('Checks failing', 'Checks passing', 'has conflicts') sit back-to-back with no coordinator reply between them, which makes the feed look a bit uneven."
     ]
   }
 }

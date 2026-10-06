@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar, a fourth conversation row is cut off halfway at the bottom of the scroll area, just above the 'Some native sessions are unavailable' notice. It looks like normal scroll overflow, but the clipped text is unreadable.",
-      "Sidebar conversation titles and subtitles are cut short with ellipses (e.g. 'Exercise automatic decisi…', 'Waiting for you · Public memory …'). This looks intentional, but the full text isn't visible.",
-      "The 'Coming later' helper text under the Device field is small and low-contrast, though still readable."
+      "The conversation list in the sidebar cuts off a fourth item halfway through its title text, just above 'Some native sessions are unavailable'. This is normal scroll-container overflow, but the half-visible row looks untidy.",
+      "Conversation titles and subtitles in the sidebar are cut short with ellipses (e.g. 'Exercise automatic decisi…', 'Explain the memorybrows…'). This is intended truncation.",
+      "The device helper text ('Coming later: Jevellan will pick a free machine…') is small and low-contrast, but it can still be read."
     ]
   }
 }

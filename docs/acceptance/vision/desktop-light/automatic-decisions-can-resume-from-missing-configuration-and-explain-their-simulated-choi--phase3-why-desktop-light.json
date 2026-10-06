@@ -10,11 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The right 'Why' panel is cut off at the bottom: the line under ACCOUNT is only partly visible. The panel is probably scrollable, but nothing on screen shows there is more below.",
-      "The fourth conversation in the sidebar list is half cut off above 'Some native sessions are unavailable'. This looks like normal scroll overflow, but it shows as a partly visible line of text.",
-      "Long conversation titles and subtitles in the sidebar end in '…' (e.g. 'Exercise automatic decisi…', 'Explain the memorybrows…'). This is deliberate shortening, but the full titles can't be read in this view.",
-      "The small right-aligned labels next to the NEXT STEP and EFFORT headings say only 'Jev'. That may be a cut-off 'Jevellan', or an intentional short label.",
-      "The EFFORT section says 'medium → high', but the bar chart shows medium at 1.00 and high at 0.00. The chart doesn't show the effort that was actually used. This is about content, not layout."
+      "The Why panel's content runs off the bottom of the window: the line below 'Automatic account: eligible · selected' is cut off mid-row. It looks like a scroll cut, not a layout bug.",
+      "The fourth conversation in the sidebar list is clipped at its top edge just above 'Some native sessions are unavailable'. It looks like a scroll cut.",
+      "Conversation titles and their status lines in the sidebar are shortened with ellipses (e.g. 'Exercise automatic decisi…', 'Waiting for you · Public memory …').",
+      "The 'Started' and 'Ended' metadata under the step header is in very small, low-contrast text, though still readable.",
+      "The Effort section reads 'medium → high' but its bar chart shows medium at 1.00 and high at 0.00. That's a content question, not a rendering problem."
     ]
   }
 }

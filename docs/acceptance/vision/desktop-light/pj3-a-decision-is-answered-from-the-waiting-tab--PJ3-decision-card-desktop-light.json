@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar thread titles and their metadata lines are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Mesh journey fixture · de…'). This looks like intentional truncation.",
-      "The disabled 'Send' button in the decision card has low contrast against its pale background.",
-      "The 'Checks running' badge and the mono-font section labels ('WAITING FOR YOU 1', 'RUNNING 0') are small and light, but still readable."
+      "Sidebar session titles are cut off with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…'), and so are their metadata lines ('dev-ma…', 'de…'). This is normal truncation.",
+      "The 'Send' button in the decision card looks pale or disabled until an answer is typed, so it has low contrast.",
+      "The 'Checks running' badge text is small and low-contrast."
     ]
   }
 }

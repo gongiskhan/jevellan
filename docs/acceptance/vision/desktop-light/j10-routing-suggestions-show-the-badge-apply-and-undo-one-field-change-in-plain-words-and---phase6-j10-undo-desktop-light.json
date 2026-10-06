@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and their meta lines are cut short with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Improver sandbox · dev-ma…'). This is expected truncation and the full text is still reachable.",
-      "'Last runs' says '2 routing suggestions ready', but only 1 is waiting. The other has already been decided and undone, so the summary reads a little out of date.",
-      "The 'Memory care' dropdown ('Apply and tell me') and 'Save schedule and jobs' look greyed out and have low contrast, but they are still readable.",
-      "There is a large empty gap in the sidebar between the session list and 'Some native sessions are unavailable'."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Exercise answer options: …', 'Context · J11 memory jour…'). This is intentional overflow handling, but the full titles can't be read.",
+      "'Last runs' says '2 routing suggestions ready', but only 1 item is waiting. The other is shown as Undone under Recently decided, so the count may confuse users.",
+      "The Undone card in Recently decided has extra empty space at the bottom and no action buttons, so the card looks unfinished.",
+      "The 'Memory care' mode field ('Apply and tell me') and the 'Save schedule and jobs' button look greyed out, so it's hard to tell whether they're disabled or just styled lightly.",
+      "There's a large empty gap in the left sidebar between the session list and the 'Some native sessions are unavailable' footer."
     ]
   }
 }

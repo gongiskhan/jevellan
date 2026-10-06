@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Idle' status pill and the 'Claude Code Fable · high' model label are very small, low-contrast monospace text. They're still readable.",
-      "The send button is rendered as disabled (pale) while the input is empty. That's expected, but it's low contrast.",
-      "The empty-state text sits in a large empty area with no other visual anchor, so the page looks a bit sparse."
+      "The large empty space above and below the centered empty-state text makes the screen look sparse on a tall phone viewport",
+      "The 'Idle' status chip and the 'Claude Code Fable · high' monospace label are small, low-contrast text, but still readable",
+      "The header '...' overflow control is light gray and visually faint compared to the other header buttons"
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Coming later' helper text under Device is small and low-contrast, but you can still read it.",
-      "The pink settings chip (Plan · Composer Fable · high) has small monospace text and doesn't stand out much from the dark background."
+      "The helper text under the Device field is small and low-contrast, but you can still read it",
+      "The large empty area below the form card leaves the lower half of the screen unused"
     ]
   }
 }

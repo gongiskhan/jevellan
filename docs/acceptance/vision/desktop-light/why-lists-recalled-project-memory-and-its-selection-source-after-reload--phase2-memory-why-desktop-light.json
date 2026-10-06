@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the left sidebar, a fourth conversation row is cut off at the bottom edge of the list, just above 'Some native sessions are unavailable', so only the tops of its letters show. The list looks scrollable, so the row can still be reached.",
-      "In the sidebar, long conversation titles and subtitles are truncated with ellipses (for example 'Explain the memorybrows…' and 'Waiting for you · Public memory …').",
-      "The 'Jev is unavailable (no key configured)' notice appears twice: once in the right 'Why this step' panel and once in the main conversation's step picker."
+      "In the sidebar conversation list, the 4th row ('Context fixture…') is clipped at the bottom of the scroll area, so only the tops of its letters show. You can still reach it by scrolling.",
+      "Conversation titles and subtitles in the sidebar are cut off with an ellipsis ('Explain the memorybrows…', 'Waiting for you · Public memory …', 'dev-m…'). The cut-off is styled on purpose and the full title appears in the main header.",
+      "The right 'Why this step' panel's JEV section sits at the bottom edge and may continue below the fold. It can be scrolled."
     ]
   }
 }

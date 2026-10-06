@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab strip is cut off at the right edge ('Impr…'). It looks like a horizontally scrollable tab bar, but nothing on screen shows that more tabs are available.",
-      "The secondary metadata lines (e.g. 'Local · Loose · Rigging local fixture · Claude Code') use small, low-contrast monospace text. It is still readable."
+      "The fourth tab in the top tab strip is clipped behind the scroll arrow, so only its icon shows. The strip scrolls sideways and the arrow can reach the tab.",
+      "Metadata lines (e.g. 'Local · Loose · Rigging local fixture · Claude Code') are small, low-contrast monospace text that wraps onto a second line. They are still readable."
     ]
   }
 }

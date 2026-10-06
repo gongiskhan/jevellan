@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The diff block in the first Memory care card is cut off at its bottom edge, with the line '--- a/.jevellan/memory/test-conventions-2.md' only partly visible. The block looks scrollable, so the content is still reachable.",
-      "Some sidebar shell session titles and subtitles end in an ellipsis ('Context · J11 memory jour...', 'dev-ma...'). This is normal truncation.",
-      "The 'Last runs' column is much taller than the 'Schedule and jobs' card next to it, which leaves a large empty area under the 'Save schedule and jobs' button."
+      "Sidebar session titles are truncated with ellipses (e.g. 'Exercise answer options: c...', 'Context · J11 memory jour...'), which looks intentional",
+      "The long diff lines in the 'Prefer GPT for implement steps' card wrap onto a second line inside the code block",
+      "Some 'Last runs' titles wrap to two lines (e.g. 'AGENTS.md · Checkpoint recovery fixture')",
+      "A large empty area sits below the left sidebar navigation, because the page is much taller than the sidebar"
     ]
   }
 }

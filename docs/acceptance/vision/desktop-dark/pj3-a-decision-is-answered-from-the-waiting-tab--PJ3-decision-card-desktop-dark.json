@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Send' button on the decision card has low contrast and looks disabled next to the bright magenta card border.",
-      "Sidebar session titles and subtitles are cut short with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). They are still readable and the truncation looks deliberate.",
-      "The center conversation column has a large empty area between the last message and the composer."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This is expected truncation, and hovering or opening a session shows the full text.",
+      "The 'Send' button in the decision card looks disabled or low-contrast next to the empty 'Answer in your own words' field.",
+      "The muted gray metadata text ('From the coordinator · now', 'Codex · GPT · high · Worktree · Browser member', 'Some native sessions are unavailable') is low-contrast on the dark background but still readable."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The warning box text 'Jev is unavailable (authentication failed). Pick the next step:' ends in a colon with nothing after it inside the box. It reads like an unfinished prompt, though the manually picked step, model and effort are shown above.",
-      "The chosen memory title 'Vitest convention for mesh.md Existing.md' wraps onto two lines, so it is unclear whether it is one file name or two.",
-      "The account list reaches the bottom of the screenshot ('Cross-device fixture: unsupported'). There may be more entries below that need scrolling, but every visible row is complete and readable."
+      "The warning banner ends with 'Pick the next step:', but no options appear inside it, so it reads as unfinished.",
+      "The chosen memory title wraps oddly in monospace: 'Vitest convention for mesh.md' / 'Existing.md'.",
+      "The account list reaches the bottom edge of the viewport ('Cross-device fixture: unsupported'). More rows may need scrolling to see, with no visible cue that there are more."
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The disabled 'Main' radio and its helper text 'This project is set to Leave git to me.' are light grey and low-contrast, but still readable.",
-      "The dimmed background behind the modal (header, breadcrumb, composer) is blurred, which is expected under a modal scrim."
+      "The disabled 'Main' radio and its label are greyed out and fairly low-contrast against white, but still readable",
+      "The 'npm ci' placeholder in the worktree setup command field is light grey and could be mistaken for an entered value"
     ]
   }
 }

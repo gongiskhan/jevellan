@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The long unbroken conversation title is cut off with an ellipsis in the header. This looks intentional, but the full title can't be seen on this screen.",
-      "The long tool header 'Read project · long_tool_header_…' wraps in the middle of a word ('lon' / 'g_tool_header'). It stays readable.",
-      "The decision panel is scrolled partway under the bottom fade and the 'Jump to latest' overlay. The bottom edge of the 'Continue' button is slightly faded, but the button is still visible and usable.",
-      "Sidebar conversation titles and subtitles are cut off with ellipses ('A conversation with a lon…', 'Exercise reviewed checkp…'). This is expected for list items."
+      "The long unbroken conversation title in the header is cut off with an ellipsis. This looks like intended truncation, and the title still reads clearly.",
+      "The long tool header 'long_tool_header_...' breaks in the middle of a word across lines. It wraps without overlapping anything, but the break looks awkward.",
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'A conversation with a lon…', 'Exercise reviewed checkp…'). This is expected for a narrow sidebar."
     ]
   }
 }

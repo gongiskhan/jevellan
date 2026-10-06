@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Show source' link sits right on top of the 'Evidence guide' heading with almost no space between them.",
-      "The two link styles don't match: 'Source line' and 'Recorded pixel' use an underlined monospace font, while 'Open working copy' and 'Open recorded step' use the sans-serif font.",
-      "The 'Open recorded step' link is grey and fainter than the other links, but it can still be read.",
-      "The 'Recorded checkpoint ·' label ends with a dangling separator and the hash wraps onto the next line."
+      "The 'Show source' toggle sits right on top of the 'Evidence guide' heading with almost no space between them, so it looks like part of the document.",
+      "'Recorded pixel' shows up as an underlined monospace link instead of an image preview. It's unclear whether the screen is meant to show the image inline.",
+      "'Source line' and 'Recorded pixel' are styled as monospace code links, unlike the other links ('Open working copy', 'Show source'), and the styling is inconsistent.",
+      "'Open recorded step' is grey next to the pink 'Open working copy', so it could read as disabled.",
+      "Below the content, most of the screen is empty."
     ]
   }
 }

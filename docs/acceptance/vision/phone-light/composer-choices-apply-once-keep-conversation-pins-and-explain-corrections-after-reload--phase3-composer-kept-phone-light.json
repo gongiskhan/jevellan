@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Header title is cut off with an ellipsis ('Exercise composer choices: explain the...'), but the full text is shown in the subtitle and in the user message",
-      "Step 1 and Step 2 share the same body text ('The plan has three steps.') and 'Working on the requested change' is generic, which makes the steps harder to tell apart",
-      "'Jump to latest' sits close to the composer input, though they don't overlap"
+      "The header title is truncated with an ellipsis ('Exercise composer choices: explain the...'), but the full text appears just below it.",
+      "'Step 2 · Reply' repeats 'The plan has three steps.' from Step 1, which looks like duplicated fixture text."
     ]
   }
 }

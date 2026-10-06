@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Merge button's label is low-contrast against its background. It is probably disabled on purpose because of the conflict, but it is hard to read.",
-      "The 'Working…' status pill ends in an ellipsis; this looks like a deliberate in-progress label rather than clipped text.",
-      "Large empty area below the single PR card (expected with only one item)."
+      "The disabled 'Merge' button has very low contrast against the card background. It is still readable and the dimming fits the conflict state, but it is faint.",
+      "The 'Working…' status pill ends in an ellipsis. It looks like a deliberate loading label, not cut-off text.",
+      "The PR card takes up only the top third of the screen. The large empty area below is fine, but the screen looks sparse."
     ]
   }
 }

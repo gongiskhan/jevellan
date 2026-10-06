@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fourth tab label ('Impr…') is cut off at the right edge of the tab strip. This is probably a horizontal scroller, but nothing on screen shows that more tabs are there.",
-      "The browser-promote metadata wraps onto a second line ('Claude Code') because the Park button takes up the right side. The Park button and the metadata line are not vertically aligned with each other.",
-      "The 'Refresh local items' link sits right next to the checkbox label with little space between them, so it reads as crowded."
+      "The tab strip's fourth tab (moon icon) is cut off at the right edge behind the scroll arrow. The arrow button keeps it reachable, so this is a horizontal-scroll affordance, not a hidden control.",
+      "The metadata lines (e.g. 'Local · Parked · Rigging local fixture · Claude Code') use small monospace text in light gray, so contrast and size are on the low side, but they are still readable.",
+      "In the 'browser-promote' row the 'Park' button sits next to metadata that wraps onto a second line. The layout is a bit cramped but nothing overlaps."
     ]
   }
 }

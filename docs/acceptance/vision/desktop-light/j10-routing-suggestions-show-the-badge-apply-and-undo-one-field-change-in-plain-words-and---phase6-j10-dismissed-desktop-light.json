@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Session titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Improver sandbox · dev-ma…'). This looks intentional, and hovering or opening the session still shows the full text.",
-      "The long diff lines in the 'Prefer GPT for implement steps' code block wrap onto a second line inside the dark panel, which makes the -/+ lines harder to compare at a glance.",
-      "The dismissal reason ('“Plans stay on Fable.”') is small, faint grey text with no label, so it is easy to miss as the dismissed card's explanation.",
-      "Each 'Based on 3 corrections (0 with undo)' disclosure is collapsed, so you can't see the supporting corrections in this capture. This is fine, but there is little to show it can be expanded besides the small chevron."
+      "Sidebar session titles are truncated with ellipses (e.g. 'Exercise answer options: ...', 'Context · J11 memory jour...'), which is expected truncation.",
+      "The 'Memory care' row shows its 'Apply and tell me' mode as a grayed-out input-style box, while the other rows show plain 'Suggest' text, so the controls look inconsistent.",
+      "The 'Save schedule and jobs' button looks low-contrast or disabled."
     ]
   }
 }

@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dialog title shows a raw UUID ('Login recovery e17dda62-57be-42b2-bdb9-7ead758b2a49'), which wraps onto two lines and is hard to read. A friendlier name would read better.",
-      "The text 'Paste the test authorization code.' is still shown, but there's no code input field. The status line says 'Code sent', so the instruction is confusing at this step.",
-      "The status 'Code sent. Waiting for sign-in to finish…' and the error 'Can't reach Jevellan. Try again when it's connected.' are shown together, which sends mixed signals about what is happening.",
-      "There's a lot of empty space below the error box at the bottom of the dialog."
+      "The modal title wraps onto two lines because of the long recovery ID. It's still readable but looks crowded next to the close button.",
+      "The prompt says 'Paste the test authorization code.' but no code input field is visible in this state. This may be intended while sign-in is pending, but it could confuse users.",
+      "The status 'Code sent. Waiting for sign-in to finish…' appears together with the connection error. The two messages give mixed signals about the current state.",
+      "The page behind the overlay shows through the dimmed backdrop. This is expected, but the backdrop could be darker so the modal stands out more."
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The settings tab bar is cut off at both edges: 'Devices' loses its first letter on the left and the last tab shows only an icon on the right. It looks like a horizontally scrolling strip with no visible scroll cue.",
-      "The 'Save Git settings' button is pale and low-contrast. It is probably disabled, but it is hard to tell."
+      "The first tab label in the scrollable settings tab bar is clipped to 'es' behind the left scroll arrow. The arrows show the bar scrolls sideways, so this is expected overflow, but the clipped label looks rough.",
+      "The 'Save Git settings' button is a pale disabled style with low contrast. That's probably intended because there are no unsaved changes."
     ]
   }
 }

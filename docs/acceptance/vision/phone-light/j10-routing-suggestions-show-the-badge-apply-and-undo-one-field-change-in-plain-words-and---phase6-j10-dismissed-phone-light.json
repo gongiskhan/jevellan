@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab strip is clipped at both edges (\"ing\" on the left, a partial tab on the right). It reads as a horizontally scrollable tab bar, but nothing shows that it scrolls.",
-      "Long diff lines in the dark code blocks wrap mid-path (e.g. \"diff --git a/menu/claude-sonnet/description b/menu/...\"), so the diffs are a little harder to scan on a phone.",
-      "The \"Apply and tell me\" field next to Memory care looks greyed out and its text is low contrast, though it is still readable.",
-      "The \"Simulated judge responses.\" link text in the check summary boxes is small and pale."
+      "The top tab strip is cut off at the right edge, so 'Devices' is only partly visible. The scroll arrows still make it reachable.",
+      "In the Trial log table, the 'WHY THEY FINISHED ELSEWHERE' header wraps onto four lines, which makes the header row tall.",
+      "The 'Save schedule and jobs' button has low contrast and looks disabled. That's probably intended while there are no changes."
     ]
   }
 }

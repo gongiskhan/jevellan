@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fourth conversation row in the sidebar list is cut off mid-line by the bottom edge of the scrollable list. Only the tops of its characters show, just above 'Some native sessions are unavailable'. It is reachable by scrolling.",
-      "The ACCOUNT list in the right 'Why this step' panel runs past the bottom of the viewport ('Login fixture: unsupported' is partly clipped). The panel seems to scroll, so this is not blocking.",
-      "Sidebar conversation titles and subtitles are cut short with ellipses ('Explain how to write a Vit…', 'J11 memory jou…'). This is expected, but it hides the full title.",
-      "The 'Jev is unavailable (authentication failed). Pick the next step:' message appears both in the right panel and in the main pane. The duplication is redundant but readable."
+      "Sidebar conversation list: a fourth row is clipped by the list's scroll edge, so only the top of its text shows just above 'Some native sessions are unavailable'. It reads like scroll overflow, not an overlap, but it looks untidy.",
+      "Right 'Why this step' panel: the Account list runs past the bottom of the screen ('Login fixture: unsupported' is cut off partway down). The panel looks scrollable, so this isn't blocking.",
+      "Sidebar conversation titles and subtitles are cut short with ellipses (e.g. 'Explain how to write a Vit…', 'J11 memory jou…'). This is expected, and the full title is shown in the main header.",
+      "The 'Jev is unavailable (authentication failed). Pick the next step:' message appears in both the main area and the right panel, which is redundant.",
+      "The model name is written 'J11 codex' in lowercase in the step output text but 'J11 Codex' everywhere else."
     ]
   }
 }

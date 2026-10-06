@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation list cuts off a partially visible fourth item ('Context · Context fi...') above the 'Some native sessions are unavailable' row. The list is scrollable, so the item can still be reached.",
-      "Sidebar conversation titles and metadata are truncated with ellipses (e.g. 'Context · Created instruct…', 'dev-m…'). This is intended truncation."
+      "Sidebar conversation titles and metadata are cut off with ellipses ('Context · Created instruct…', 'Done · Undo across works · dev-m…'). This is intended truncation, and the full title shows in the header for the selected item.",
+      "Large empty area between the 'Settle this work's changes' banner and the composer at the bottom.",
+      "Low-contrast grey text for the step timing details and the '1 tool' / 'Step details' disclosures, though it is still readable."
     ]
   }
 }

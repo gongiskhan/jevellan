@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the evidence panel, the screen.png preview is a very small thumbnail (about 96x64) with a lot of empty space around it, so it's hard to see what the image contains without opening it.",
-      "In the sidebar, a conversation row under 'Context · Created instructi…' is cut off by the scroll edge, so only partial marks show just above 'Some native sessions are unavailable'.",
-      "In the main column, the scrolled step-details card under the sticky header shows a clipped top edge. This is normal scroll behaviour but looks a little abrupt."
+      "The evidence panel shows only a small thumbnail of screen.png in a mostly empty right column. The image is readable as a preview but is not shown at a larger size.",
+      "In the sidebar conversation list, the fourth item is cut off at the bottom edge above 'Some native sessions are unavailable'. This is normal scroll clipping.",
+      "In the main column, the 'Step details · 1 finding' row of the previous step sits right under the sticky header and is slightly cut off at the top. This is normal scroll position."
     ]
   }
 }

@@ -10,7 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Below the Cancel/Save buttons, roughly the bottom 20% of the screen is empty, so the layout looks slightly unbalanced."
+      "Large empty area below the Cancel/Save buttons leaves the lower part of the screen unused",
+      "The conflict banner's red border and pink 'Reload' link have fairly low contrast against the dark background, though both are still readable"
     ]
   }
 }

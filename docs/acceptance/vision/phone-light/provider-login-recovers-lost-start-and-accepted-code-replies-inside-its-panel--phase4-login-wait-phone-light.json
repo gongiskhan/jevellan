@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Authorization code' label sits very close to the 'Open sign-in page' button above it, so the vertical spacing looks cramped",
-      "The disabled 'Continue' button has low contrast, though its label can still be read"
+      "The 'Open sign-in page' button sits almost directly on top of the 'Authorization code' label, with little or no vertical gap between them",
+      "The 'Can't reach the hub' notice text is squeezed into a narrow column next to the 'Stop waiting' button, so it wraps onto many short lines and leaves empty space on the right",
+      "The disabled 'Continue' button has low contrast, which is expected for a disabled control but makes it faint"
     ]
   }
 }

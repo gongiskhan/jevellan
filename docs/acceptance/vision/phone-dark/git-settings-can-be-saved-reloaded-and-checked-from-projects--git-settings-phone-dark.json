@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The settings tab strip is cut off at both edges: the first tab shows as 'Devices' with its leading text missing, and a partial icon sits at the right edge. This looks like a horizontally scrolling tab bar, but nothing clearly shows that it scrolls.",
-      "The 'Save Git settings' button has very low contrast against the card. It is probably disabled because nothing has changed, but it is hard to see.",
-      "The remote path wraps after the hyphen in 'activity-' and continues as 'context-origin.git' on the next line. It is still readable."
+      "The tab strip is scrolled, so the first tab is clipped to \"es\" at the left edge. It can still be reached with the scroll arrow.",
+      "Muted helper text and the disabled \"Save Git settings\" button are low-contrast against the dark card, but still readable.",
+      "The long repository path in the \"Check a project\" result wraps in the middle of a word (\"activity-/context-origin.git\")."
     ]
   }
 }

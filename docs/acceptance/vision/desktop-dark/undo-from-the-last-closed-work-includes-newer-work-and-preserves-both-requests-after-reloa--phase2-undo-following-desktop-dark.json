@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation titles and subtitles are cut off with an ellipsis (e.g. 'Change the value to two …', 'Exercise reviewed checkp…'). This looks like intentional truncation, but the full titles can't be read.",
-      "Small, low-contrast secondary labels ('Undone', 'corrected: action → reply', 'Local time', the struck-through 'Step 1 · Implement' and 'Step 2 · Implement' headers) are a little hard to read against the dark background.",
-      "The 'Some native sessions are unavailable' note in the sidebar is small and dim."
+      "The last sidebar conversation item ('Short summary') is cut off at the bottom of its scroll area, so its descenders are clipped. It sits at a scroll boundary and can be scrolled into view.",
+      "Sidebar conversation titles and subtitles are cut short with ellipses (e.g. 'Change the value to two …', 'Waiting for you · Undo across wo…'). This is expected for the narrow sidebar, and the full title appears in the main header.",
+      "The struck-through headers for the undone steps ('Step 1 · Implement', 'Step 2 · Implement') and the small grey 'Undone' and 'Local time' labels have low contrast against the dark background, but they are still readable."
     ]
   }
 }

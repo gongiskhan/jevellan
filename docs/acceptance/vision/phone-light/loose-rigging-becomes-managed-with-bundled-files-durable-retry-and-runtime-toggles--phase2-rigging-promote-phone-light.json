@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The disabled, checked 'Claude Code · Current account' checkbox has low contrast and is hard to tell apart from an unchecked box.",
-      "Fine print below the fieldset ('Instructions stay editable...') is small and light gray. It is readable but low in contrast."
+      "The Claude Code · Current account checkbox is greyed out. That's likely because it's disabled, and it isn't explained on screen.",
+      "The page behind the modal (tab strip, 'browser-promote' and 'browser-package' rows) shows through dimmed under the overlay, which is expected backdrop behavior."
     ]
   }
 }

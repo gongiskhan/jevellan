@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The two textareas leave a lot of empty space below short content; they could be shorter.",
-      "The background behind the modal is heavily blurred and dimmed. That is intended for a modal, but the badge and sidebar state can't be read behind it in this step."
+      "The left 'Edit the after text' box still says 'Preferred for review steps.', but the revised diff below shows 'Only for reviews of the improver fixture.' It is unclear which text 'Apply this' will save.",
+      "The revised diff line is long and only just fits inside its code block at this width, so a slightly longer revision would likely need wrapping or scrolling.",
+      "The background page is dimmed and blurred by design, so the content behind the modal is unreadable. This is expected and does not block anything."
     ]
   }
 }

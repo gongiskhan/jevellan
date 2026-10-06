@@ -10,7 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background is blurred behind the modal overlay, which is expected for a modal. Background text such as the dimmed buttons and sidebar can't be read while the dialog is open."
+      "The background is blurred under the modal overlay. This is expected, but the background content can't be read in this capture."
     ]
   }
 }

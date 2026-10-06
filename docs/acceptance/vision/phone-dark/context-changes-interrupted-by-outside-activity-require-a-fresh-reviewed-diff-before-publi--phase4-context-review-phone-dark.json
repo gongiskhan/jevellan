@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dialog body is scrolled, so the first line of the intro paragraph ('…context fixture on dev-maund. Review the current…') is partly hidden under the sticky header. It reads as a scroll position, not a layout defect.",
-      "The longest diff line ('+A newer synthetic outside contribution.') ends right at the right edge of the code block, with almost no padding.",
-      "The 'These files changed since your review' alert sits inside the dialog right under the collapsed 'Current instruction files' section, close to the dialog's bottom edge. It doesn't overlap anything, but the spacing is tight."
+      "The dialog body is scrolled, so the header partly hides the first line of the intro text ('...context fixture on dev-maund. Review the current changes...'). The text can still be reached by scrolling, but the screen's opening context isn't visible in this capture.",
+      "The diff block's long lines (e.g. '+A newer synthetic outside contribution.') come right up to the edge of the code panel with almost no right padding."
     ]
   }
 }

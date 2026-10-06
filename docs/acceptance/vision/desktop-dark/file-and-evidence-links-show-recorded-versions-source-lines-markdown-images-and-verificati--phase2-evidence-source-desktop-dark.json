@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Jump to latest' link sits right under Step 2's action buttons (Changes / Why / Change step), which are cut off at the bottom of the scroll area. They can still be reached by scrolling, but the spot looks crowded.",
-      "In the sidebar, a fourth conversation row is cut off: only fragments of its title show just above the 'Some native sessions are unavailable' link.",
-      "A thin strip of a cut-off element shows just above Step 1 in the main column, near the right edge.",
-      "In the evidence panel, the 'Open working copy' and 'Open recorded step' links sit close together with little space between them."
+      "The 'Recorded checkpoint' hash is set in very small, low-contrast monospace text. It is still readable but hard to scan.",
+      "In the sidebar, the last conversation row is partly clipped where the list scrolls, just above the 'Some native sessions are unavailable' line. This is normal scroll overflow, not hidden controls.",
+      "The step 2 action buttons in the main column are partly hidden behind the 'Jump to latest' bar and the composer. This is the expected scroll position and does not affect the evidence panel."
     ]
   }
 }

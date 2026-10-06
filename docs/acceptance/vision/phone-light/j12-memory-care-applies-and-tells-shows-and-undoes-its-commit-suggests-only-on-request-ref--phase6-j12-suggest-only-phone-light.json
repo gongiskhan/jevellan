@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The page is very long (5312px) because 'Last runs' lists many 'No working rules to suggest' entries, so the routing decisions are far down the page.",
-      "Diff code blocks use a small monospace font. Long lines wrap rather than scroll, which makes them harder to read but still legible."
+      "The top tab bar is cut off at the right edge (the 'Devices' tab is partly hidden). It looks like a horizontally scrollable tab strip, so the tab is still reachable.",
+      "Diff blocks and the Trial log table use very small monospace text that is dense at phone width, but it is still legible.",
+      "The page is very long (about 5855px), so the 'Recently decided' and 'Last runs' sections are far below the 'Suggest only' setting in the Schedule section."
     ]
   }
 }

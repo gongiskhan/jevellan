@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Jev key saved.' toast sits over the page subtitle and hides the middle of 'Jev chooses each next step from the … give it.' It is a temporary notification, so the text shows again once it closes.",
-      "The Routing profile textarea cuts off its last visible line at the bottom edge. The box is scrollable and resizable, so the rest of the text can still be reached.",
-      "Conversation titles and subtitles in the sidebar end in ellipses because they are too long. This looks intentional."
+      "The 'Jev key saved.' toast sits over the page subtitle, so part of 'Jev chooses each next step from the … give it.' is hidden. The toast is temporary and the text is not needed to finish the step.",
+      "The Routing profile textarea cuts off its last visible line at the bottom edge. This is normal scrolling inside the textarea, and the box can be resized.",
+      "Under 'Some native sessions are unavailable', the sidebar has a large empty gap between the conversation list and the footer controls."
     ]
   }
 }

@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the warning banner, the 'Retry' button sits right against the end of the message text ('...needs to finish.') with almost no space between them.",
-      "Long conversation titles and subtitles in the left sidebar are cut short with an ellipsis (e.g. 'Context · J11 memory journ…', 'dev-ma…'). This looks intentional and doesn't hide any controls.",
-      "The Claude Code and Codex checkboxes on the built-in 'Safety' hook are gray instead of pink. They read as locked or disabled, which looks intentional, but they have less contrast than the other checkboxes."
+      "The warning banner has no space between 'needs to finish.' and the 'Retry' button, so the text touches the button.",
+      "The subtitle of the last sidebar conversation ('Done · Improver sandbox · dev-ma…') is cut off at the bottom edge of the scroll list. The list scrolls, so it can still be reached.",
+      "The next settings card is cut off at the bottom of the viewport. The page scrolls, so it can still be reached.",
+      "The left side of the Runtime select field shows the scrollbar track and the field's outline, which looks slightly off."
     ]
   }
 }

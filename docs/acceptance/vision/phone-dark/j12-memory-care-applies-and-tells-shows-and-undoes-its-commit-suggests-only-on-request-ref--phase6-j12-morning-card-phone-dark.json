@@ -10,9 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab bar is cut off on the left: the first tab shows only 'og'. This looks like a horizontally scrolling tab strip, not a layout break.",
-      "The 'Commit b8e4b1cffa' text in the Memory care card is small and low-contrast against the dark card.",
-      "The unchecked project checkboxes and the 'Save schedule and jobs' button are dim and low-contrast in dark mode."
+      "The top tab bar runs to the right edge, so the 'Devices' tab sits flush against it and looks slightly clipped. It can probably still be reached by scrolling the tab bar.",
+      "The commit hash text ('Commit f7d78544be') and the timestamps are dim grey and low-contrast on the dark background.",
+      "Long titles in the 'Last runs' list (e.g. 'AGENTS.md · Checkpoint recovery fixture') wrap onto several lines and press up against the right-aligned date/'Open log' column.",
+      "The diff code blocks wrap long lines, so the -/+ diff lines are harder to scan.",
+      "The page is very long (about 4,661px tall), and the content tied to this step (the pending AGENTS.md card and the memory care applied/undo card) sits at the top, with a lot of unrelated settings and history below it."
     ]
   }
 }

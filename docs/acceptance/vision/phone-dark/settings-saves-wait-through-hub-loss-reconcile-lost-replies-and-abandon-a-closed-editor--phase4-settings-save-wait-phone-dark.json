@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Saving…' button is shown in a disabled, low-contrast style that is hard to read against the dark background. This is expected for a pending save.",
-      "The page behind the modal shows through dimmed and slightly blurred at the top and bottom edges, where the tab bar and 'Conversation fixture' list sit."
+      "The disabled 'Saving…' button has low contrast against the dark modal. It's still readable and the disabled look is intentional.",
+      "Background content shows through the dimmed overlay around the modal (the tab strip at the top, the 'Log in / Check now / Edit / Enable' row at the bottom). It's dimmed as expected and doesn't affect the modal.",
+      "The background tab strip is cut off at the right edge. This is behind the modal and looks like normal horizontal overflow on a phone."
     ]
   }
 }

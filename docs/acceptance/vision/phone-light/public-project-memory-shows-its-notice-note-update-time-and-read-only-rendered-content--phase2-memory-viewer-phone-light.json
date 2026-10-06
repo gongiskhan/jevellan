@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Public memory guide' search result is indented and centred inside its button, which leaves a large empty gap on the left. It doesn't line up with the left-aligned content elsewhere in the dialog.",
-      "The note title and update time are shown twice, once in the search result and again in the note header below it."
+      "The 'Public memory guide' search result's text sits off-center, with a large empty gap on the left inside the result card.",
+      "The note's update time appears twice: once in the search result card and again above the note title."
     ]
   }
 }

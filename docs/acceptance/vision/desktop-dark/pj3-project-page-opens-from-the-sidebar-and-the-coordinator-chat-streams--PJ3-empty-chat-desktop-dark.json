@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles are cut off with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…'), and so are their subtitles ('dev-ma…', 'dev-…', 'de…'). They are still readable and the full text is probably shown on hover.",
-      "Low-contrast muted text: the sidebar session subtitles, the 'Some native sessions are unavailable' note, 'v0.1.0', and the 'Codex · GPT · high · Worktree · Browser member' line in the right panel. All of it is still readable.",
-      "The empty-state message sits in the middle of the chat area, far from the composer at the bottom, which leaves a lot of empty space."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This is intentional truncation.",
+      "The central empty-state text and the 'Idle' / 'Claude Code Fable · high' metadata are low-contrast muted gray on the dark background but still readable.",
+      "The two-column layout leaves a large empty area in the chat pane, which is expected for an empty chat."
     ]
   }
 }

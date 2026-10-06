@@ -10,11 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The right-hand 'Why this step' panel cuts off at the bottom of the screen in the middle of the account list ('J8 Codex account: unsupported' is only partly visible). It looks like a scrollable panel, but there is no scroll indicator.",
-      "In the sidebar, a conversation row is partly clipped just above 'Some native sessions are unavailable'. Its text shows only as fragments.",
-      "Sidebar conversation titles and subtitles are cut short with ellipses (for example 'Remember that this proje…' and 'J8: implement after the o…').",
-      "The warning box in the 'Why this step' panel says 'Pick the next step:' but nothing follows it inside the box, so it reads as incomplete.",
-      "The muted gray text (timestamps, 'Local time', 'Step details') has fairly low contrast against the light background."
+      "In the sidebar, a fourth conversation row peeks out half-cut above the 'Some native sessions are unavailable' line. This looks like the list's scroll edge, but it reads as a rendering glitch.",
+      "The account list in the right 'Why this step' panel runs past the bottom of the screen, so the last row ('J8 Codex account: unsupported') is cut in half. The panel looks scrollable, so the rows are still reachable.",
+      "Conversation titles and subtitles in the sidebar are shortened with '…'. This is expected, but the full titles can't be seen at this width."
     ]
   }
 }

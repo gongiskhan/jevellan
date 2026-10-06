@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Join code field and the code at the end of the npx command are covered by solid blocks (gray in the field, white in the command). These look like screenshot masks for a secret value, but the code itself can't be checked for legibility in this capture.",
-      "There is no visible copy button for the join code or the command, so users have to select the text by hand."
+      "The 'Join code' field is an empty grey bar, and the end of the npx command is covered by a white box. Both look like the capture tool hiding the secret code rather than a rendering bug, but the join code itself can't be read in this screenshot.",
+      "The modal covers the Devices page behind it as intended. The blurred background is unreadable, which is expected for a modal overlay."
     ]
   }
 }

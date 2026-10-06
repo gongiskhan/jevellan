@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar, the fourth conversation item is cut off mid-row at the bottom of the list, just above 'Some native sessions are unavailable'. Only the top half of its title shows. The list probably scrolls, but nothing shows that more items are there.",
-      "The 'Review …' action links wrap onto three ragged lines with uneven spacing next to the 'Try automatic again' button, so the action area looks crowded.",
-      "Conversation titles and subtitles in the sidebar are truncated with ellipses (e.g. 'Exercise automatic decisi…', 'Waiting for you · Automatic fixt…'). This is expected truncation, but it does hide context."
+      "In the sidebar, a fourth conversation item is partly clipped at the bottom edge of the scrollable list, just above the 'Some native sessions are unavailable' row. Only the top of its text shows. It looks like normal scroll overflow.",
+      "Sidebar conversation titles and subtitles are cut short with ellipses (e.g. 'Exercise automatic decisi…', 'Waiting for you · Automatic fixt…'). This truncation is intentional, but the full titles can't be seen without hovering or opening them.",
+      "The row of 'Review …' recovery links is long, with very long UUID-based labels (e.g. 'Review Login recovery 1fc5aa32-…'), so the action area looks dense and hard to scan.",
+      "In the sidebar's bottom-left corner, the version label 'v0.1.0' is small and low-contrast."
     ]
   }
 }

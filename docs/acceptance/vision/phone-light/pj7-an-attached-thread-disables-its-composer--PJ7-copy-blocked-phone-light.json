@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "There is a large empty gap between the report card and the attached-state notice at the bottom, so the page feels unbalanced.",
-      "The take-over command wraps onto two lines inside the selection highlight; it is still readable, but a little cramped next to the copy icon.",
-      "The thread ID in the header notice runs onto a separate line, so the text breaks unevenly."
+      "There's a large empty gap between the Turn 1 report card and the attached-state notice at the bottom, so the page looks sparse.",
+      "The selected command's highlight wraps across two lines with uneven edges, which looks a bit ragged but is still readable.",
+      "The disabled composer's dashed border and grey placeholder are fairly low-contrast against the light background."
     ]
   }
 }

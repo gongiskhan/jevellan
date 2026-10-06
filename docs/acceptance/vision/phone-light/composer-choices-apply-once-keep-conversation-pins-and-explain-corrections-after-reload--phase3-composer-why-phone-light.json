@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Adversarial Rev...' label is shortened with an ellipsis in the narrow label column. The meaning is still clear.",
-      "The list starts at 'Test' right below the sticky header, so rows above it may be scrolled out of view.",
-      "The last correction entry ('Just override · effort: high → max') runs past the bottom of the screen. This looks like normal scrolling, not clipping.",
-      "Font sizes and styles are mixed (monospace small caps, serif italic, sans) and the type hierarchy is a bit uneven, but all of it is readable."
+      "The 'Test' row sits right under the header divider, so the list may start partway through. Earlier rows (such as Plan or Implement) might be scrolled out of view or missing from the top of the list.",
+      "The label 'Adversarial Rev...' is cut short with an ellipsis, so the full step name can't be read.",
+      "The last correction entry ('Just override · effort: high → max') is cut off at the bottom edge. It looks like normal scroll overflow, but nothing shows that more content is below.",
+      "Every step bar reads 0.00 with an empty track, so the bars show no information. This could be a data problem rather than a layout one.",
+      "The step labels are small, light grey text, which lowers the contrast."
     ]
   }
 }

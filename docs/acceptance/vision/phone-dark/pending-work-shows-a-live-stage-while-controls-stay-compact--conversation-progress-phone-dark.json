@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Large empty gap between the user message and the progress stage near the bottom of the screen",
-      "The '0s' elapsed timer is small and sits apart from the stage text on the right edge",
-      "The progress spinner icon sits alone on its own line above the stage title, which looks slightly disconnected"
+      "Large empty gap between the user message and the progress stage at the bottom of the transcript",
+      "The spinner icon sits on its own line above the 'Jev is choosing the next step' label, and the '0s' timer floats alone at the far right, so the stage block looks a little disconnected",
+      "The magenta '0s' timer is small and low-contrast against the dark background",
+      "The send button's arrow has a dim background, so it looks disabled while the composer is empty"
     ]
   }
 }

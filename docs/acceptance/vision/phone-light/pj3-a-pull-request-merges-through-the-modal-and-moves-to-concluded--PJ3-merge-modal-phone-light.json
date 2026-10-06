@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The PR title is dropped into the sentence without quotes or emphasis, so \"Add a greeting will be squashed into main\" reads awkwardly.",
-      "The dimmed background behind the modal has low-contrast text (e.g. the 'Checks passing' badge and the breadcrumb), but that is expected because a modal overlay is open."
+      "Modal body copy 'Add a greeting will be squashed into main' reads awkwardly because the PR title isn't quoted or otherwise set apart from the sentence",
+      "Large empty area below the modal; the dialog sits roughly centred, but the lower half of the screen is just the dimmed backdrop"
     ]
   }
 }

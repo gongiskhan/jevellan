@@ -10,11 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sticky header partly covers the user message's 'You · Oct 6, 06:35:22' line. This looks like the scroll position, not a layout defect.",
-      "The thread title in the header is cut off with an ellipsis. The full text is shown in the line below it.",
-      "The same 'No model can run this step right now' error appears twice: in the red banner and again in the Resume correction card.",
-      "The error text repeats 'disabled' six times without naming the models, which is hard to read as a reason.",
-      "The Step 1 heading 'Step 1 · Implement' is struck through and greyed out, so it has low contrast. This is likely intentional to show the step was undone."
+      "The error message lists 'disabled' eight times instead of naming the models or giving a reason. It is readable, but it doesn't tell the user anything useful.",
+      "The same error text appears twice: once in the red banner and again inside the 'Resume correction · step 1' card.",
+      "The header title is cut short with an ellipsis ('Change the value to three, then redo this…'), though the full text is shown in the subtitle line below it.",
+      "The scrolled user message bubble at the top is partly hidden under the sticky header. This is normal scroll behaviour, and the Retry and Edit buttons are still fully visible."
     ]
   }
 }

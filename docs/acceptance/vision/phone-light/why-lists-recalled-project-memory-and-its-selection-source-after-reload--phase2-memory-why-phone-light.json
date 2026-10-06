@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The notice box text 'Pick the next step:' ends with a colon but nothing follows it, so it reads like a dangling prompt.",
-      "The 'Candidates (1)' disclosure label is rendered in a larger, different font than the surrounding section text."
+      "A pink line of text (\"high\") at the top is partly hidden under the sticky header. This looks like normal scroll clipping, not a layout fault.",
+      "The ACCOUNT list is long and pushes the JEV section toward the bottom of the screen. All entries are still readable.",
+      "The two long login recovery IDs wrap onto a second line, which leaves \"eligible\" on a line by itself."
     ]
   }
 }

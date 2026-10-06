@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation titles and subtitles are truncated with ellipses (e.g. 'Change the value to two ...', 'Manual conversation fixtu...'). The full title still shows in the main header.",
-      "There are two separate closing banners, 'Work closed. Its changes are kept...' and 'Work closed and published.'. They are stacked one after the other and read as redundant.",
-      "The 'Jump to latest' link is showing even though the view looks like it's already scrolled to the bottom.",
-      "Step 1 has a 'Changes' button with no file count, while Step 2 shows 'Changes · 1 file'. The labels are inconsistent."
+      "Sidebar conversation titles and subtitles are cut off with an ellipsis (e.g. 'Change the value to two ...', 'Context · J11 memory journ...'). This is normal truncation, and the full title of the active conversation is shown in the header.",
+      "The two closing banners, 'Work closed. Its changes are kept...' and 'Work closed and published.', say much the same thing one after the other.",
+      "The Step 1 'Changes' button has no file count, while Step 2 shows '· 1 file'. That's probably fine for a plan step with no file changes."
     ]
   }
 }

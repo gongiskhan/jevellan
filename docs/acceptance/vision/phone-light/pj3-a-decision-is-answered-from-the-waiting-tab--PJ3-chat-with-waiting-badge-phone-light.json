@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header subtitle 'Claude Code Fable · high' uses a small monospace font that is noticeably lighter and smaller than the rest of the header text, which makes it a little harder to read.",
-      "A large empty area sits between the last chat message and the composer. This is expected for a short conversation."
+      "Header 'Projects fixture' title and the action icons (+, document, more) sit close together on the narrow width, but none of them overlap",
+      "The large empty area between the last message and the composer is expected because the conversation is short"
     ]
   }
 }

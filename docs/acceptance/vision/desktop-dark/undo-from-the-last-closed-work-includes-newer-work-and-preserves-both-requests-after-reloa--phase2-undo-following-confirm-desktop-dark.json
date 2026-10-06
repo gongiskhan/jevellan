@@ -9,9 +9,6 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": [
-      "The modal sits on a heavily dimmed, blurred backdrop, so the background content is unreadable. That's expected for a modal and doesn't block anything.",
-      "The secondary explanation text (\"This also undoes the newer open work...\") is lower-contrast gray on dark, but it is still readable."
-    ]
+    "cosmetic": []
   }
 }

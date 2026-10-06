@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Open sign-in page' button sits almost flush against the 'Authorization code' label below it, so the vertical spacing is tight.",
-      "The 'Continue' button is a pale low-contrast style, so it looks disabled even though the code field is filled. That may be intended while the app waits for the hub."
+      "The 'Authorization code' label sits almost directly under the 'Open sign-in page' button, with almost no vertical gap between them.",
+      "The 'Stop waiting' button is roughly vertically centered against two lines of banner text, which leaves extra empty space to its right inside the banner."
     ]
   }
 }

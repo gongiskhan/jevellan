@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Updated' timestamp shows up twice, once in the search result row and again as a separate 'Updated Sep 20, 2026, 1:00 PM' line under the 'PUBLIC MEMORY GUIDE' heading.",
-      "The title 'Public memory guide' is repeated three times: in the result row, in the small uppercase heading, and in the rendered note heading.",
-      "The search result row is styled like a large clickable button but doesn't show whether it's the selected item."
+      "The search result item has the note title and a monospace update time stacked and centered, which doesn't match the left-aligned content below it",
+      "The 'Public memory guide' heading and its update time appear twice, once in the search result row and again above the rendered note, which is redundant"
     ]
   }
 }

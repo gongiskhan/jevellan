@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background page behind the modal overlay is clipped at the screen edges (the tab row starting with '…ser' and ending with 'Conf…', and the path text). It is dimmed and not interactive while the modal is open, so it does not affect this screen.",
-      "The diff blocks include bare '-' and '+' lines for blank lines. These add visual noise but are readable.",
-      "The 'Current instruction files' disclosure is collapsed and sits close to the bottom edge of the modal."
+      "The tab row behind the dim overlay is clipped at the right edge (the last tab shows only \"C\"), but it sits behind the modal and doesn't block use.",
+      "Background text (a /tmp/... memory-project path and the \"This repository is public\" notice) shows through below the modal. It's dimmed and doesn't overlap the modal's content.",
+      "The diff blocks contain empty \"-\" and \"+\" lines that are just blank-line markers. They add a little visual noise."
     ]
   }
 }

@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Header title is cut off with an ellipsis ('Read the README on the mem…'), but the full task text appears in the Prompt card.",
-      "The terminal attach command is cut off ('jevellan thread attach thread_01M47V1A50E3HKH…'); the copy button next to it still gives access to the full command.",
-      "The metadata line wraps over three lines and splits the worktree branch name awkwardly ('Worktree on' / 'jv/read-the-readme-on-the-member-pg9vvf')."
+      "Header title is cut off with an ellipsis ('Read the README on the mem…'), but the full task name appears in the Prompt card below.",
+      "The terminal attach command is cut off ('jevellan thread attach thread_01M484WK1RACXPS…'), but a copy button sits right next to it.",
+      "The metadata line ('Codex · GPT · high effort · Projects Codex · Worktree on jv/… · Browser member') wraps over three lines in small monospace text. It is readable but dense.",
+      "There is a large empty gap between the report card and the message composer. This is expected for a short thread."
     ]
   }
 }

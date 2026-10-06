@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar cuts off session titles and subtitles with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…', 'dev-ma…'). This is intended truncation and the main content is unaffected.",
-      "The 'Restarted as thread_…' link is pink, underlined text on a dark background. It is legible but stands out a lot next to the muted metadata line.",
-      "The page title 'Tidy the README wording' sits very close to the top edge of the viewport."
+      "Sidebar session titles and subtitles are cut off with an ellipsis (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This is intentional truncation, and the full titles likely show elsewhere.",
+      "Most of the main pane below the second report is empty, so the layout looks top-heavy.",
+      "The 'Restarted as thread_…' link is pink and the metadata line is small and low-contrast. Both are readable, but the metadata is hard to scan."
     ]
   }
 }

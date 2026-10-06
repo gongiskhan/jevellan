@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Behind the overlay, the 'Conversation settings' panel is dimmed and slightly blurred. This looks intentional for the modal backdrop, but the text behind it can't be read.",
-      "The dialog sits in the upper-middle of the screen, leaving a large empty dimmed area below it on this tall phone viewport."
+      "The title \"Discard this work\" uses sentence case and the primary button \"Discard checkpoints\" uses title case, which is inconsistent and slightly unclear.",
+      "The background is dimmed and blurred, which is expected behind a modal; the page underneath (\"Conversation settings\", \"Settle kept changes\") is still readable but isn't the focus."
     ]
   }
 }

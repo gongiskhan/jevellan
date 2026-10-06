@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The settings tab bar is scrolled horizontally, so the first tab is cut off at the left edge ('evices' instead of 'Devices') and the last tab at the right edge shows only a partial icon. This looks like a deliberately scrollable tab strip and the active Git tab is fully visible.",
-      "The long remote path in the Connected result wraps in the middle of a word ('activity-' / 'context-origin.git'). It is still readable."
+      "The left tab label in the horizontal tab bar is cut off (\"es\") under the scroll arrow. The strip scrolls, so the tab can still be reached.",
+      "The disabled \"Save Git settings\" button has low-contrast text, which looks intentional for its disabled state.",
+      "The long repository path wraps in the middle of a word (\"activity-/context-origin.git\")."
     ]
   }
 }

@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The notice 'Jev is unavailable (no key configured). Pick the next step:' ends with a colon, but no choices follow it inside this panel.",
-      "The Candidates list shows only one item (Guide.md · chosen), so it adds little beyond the 'Chosen memory' line."
+      "Partially scrolled text (looks like 'high') is clipped under the sticky header at the top. This looks like a normal scroll position, not a layout bug.",
+      "The amber notice 'Jev is unavailable (no key configured). Pick the next step:' ends in a colon, but nothing follows it in this panel, so it reads as incomplete here.",
+      "The long login recovery UUID labels wrap onto a second line, which makes them a little hard to scan."
     ]
   }
 }

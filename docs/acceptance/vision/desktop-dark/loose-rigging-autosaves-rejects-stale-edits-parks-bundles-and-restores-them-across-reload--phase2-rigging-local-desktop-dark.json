@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The rendered instructions sit close to the reload notice, so the lower part of the modal feels a little cramped.",
-      "The 'Source' link in pink stands out against the muted 'Saved' label next to it, which makes that row look unbalanced."
+      "The modal's dismiss button (×) for the 'Current file reloaded' notice is very small and low-contrast",
+      "The muted grey helper text ('This bundle has 2 files…', 'Local edits save automatically on this account.') is small and has fairly low contrast against the dark modal"
     ]
   }
 }

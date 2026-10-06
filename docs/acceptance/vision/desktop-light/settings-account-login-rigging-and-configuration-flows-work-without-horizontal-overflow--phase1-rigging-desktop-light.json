@@ -10,10 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the warning banner, the 'Retry' button sits right against the end of 'needs to finish.' with almost no space between them",
-      "Sidebar session titles and metadata are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'dev-ma…'). The truncation is intentional, but the full names can't be read.",
-      "The Safety hook's Claude Code and Codex checkboxes are greyed out and low-contrast. They are likely disabled on purpose for a built-in hook.",
-      "There is a lot of empty space at the bottom of the left sidebar between the session list and 'Install app'"
+      "The 'Retry' button in the warning banner sits right against the end of the message text ('...needs to finish.'), with almost no gap.",
+      "Session titles and metadata in the left sidebar are cut short with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Mesh journey fixt…'). This looks intentional, but the full names can't be read."
     ]
   }
 }

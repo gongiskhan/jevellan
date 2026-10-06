@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and metadata are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This looks like intended truncation.",
-      "The 'Waiting for you' panel shows 'Answered 1' collapsed, so you can't see the answered decision there without expanding it.",
-      "The 'Waiting for the coordinator' status inside the answered card is small and low-contrast grey text."
+      "Thread titles and metadata in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Mesh journey fix…', 'dev-ma…'). This looks like intended truncation, and the full title is likely available on hover or when the thread is opened.",
+      "The 'Waiting for the coordinator' label on the answered decision card is small and light grey, so its contrast is low, but it is still readable.",
+      "The main conversation column leaves a large empty area between the answered card and the composer. This is expected because the transcript is short."
     ]
   }
 }

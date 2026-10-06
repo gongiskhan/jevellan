@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Save Git settings' button has low contrast against the card, which is probably its disabled or no-changes state, but it is harder to see than the other buttons.",
-      "The note 'This choice is saved only in Jevellan on dev-madrid…' is small and muted, but still readable.",
-      "Long thread titles and their status lines in the sidebar are cut short with an ellipsis (e.g. 'Context · J11 memory journ…'), which is the expected truncation."
+      "The 'Save Git settings' button has low contrast against the card. It looks disabled, which may be intended because nothing has changed yet.",
+      "Sidebar thread titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Waiting for you · Browser fixtur…'). This looks like intended truncation.",
+      "The muted helper text ('This choice is saved only in Jevellan on dev-madrid…') is small and low contrast but still readable."
     ]
   }
 }

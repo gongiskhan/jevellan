@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The last conversation in the sidebar list (around y≈712) is cut off at the bottom edge of the scroll area, right above the 'Some native sessions are unavailable' row. This looks like normal scroll overflow, but the half-visible row looks a little untidy.",
-      "Conversation titles and subtitles in the sidebar are shortened with ellipses (for example 'Explain the memorybrows…' and 'Waiting for you · Public memory …'). This is intended truncation.",
-      "The Hooks section continues past the bottom of the screen ('Safety' is the last row visible). The page can be scrolled to reach it."
+      "In the sidebar, the fourth conversation item is cut off at the bottom edge of the scrollable list, just above 'Some native sessions are unavailable'. Its text shows only as partial glyphs. It can still be reached by scrolling.",
+      "Conversation titles and metadata in the sidebar are truncated with ellipses (e.g. 'Explain the memorybrows...', 'Public memory ...', 'dev-m...').",
+      "The Hooks section runs past the bottom of the viewport, so the page has to be scrolled to see the rest of the content."
     ]
   }
 }

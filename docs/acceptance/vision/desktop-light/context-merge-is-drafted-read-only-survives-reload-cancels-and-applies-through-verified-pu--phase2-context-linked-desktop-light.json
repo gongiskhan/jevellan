@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Context change completed.' card leaves a lot of empty space for how little it says.",
-      "The 'Current instruction files' disclosure uses a monospace font that doesn't match the rest of the dialog.",
-      "The background blur makes the sidebar and project cards unreadable, but that's expected behind a modal."
+      "The modal sits on a blurred, dimmed background as intended, so the Projects page behind it can't be read. That's expected while a modal is open.",
+      "The modal has a lot of empty space for very little content: one line about the link, a short completion notice with an 'Open work' link, and a collapsed 'Current instruction files' disclosure."
     ]
   }
 }

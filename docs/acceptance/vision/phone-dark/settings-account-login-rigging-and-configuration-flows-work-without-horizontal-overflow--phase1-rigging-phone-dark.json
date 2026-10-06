@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab bar is clipped at the right edge (the last tab shows only 'Impr…'). It looks like a horizontally scrolling tab strip, so the tab can still be reached.",
-      "In the parking warning banner, the 'Retry' button sits inline with the wrapped text and is slightly out of line with the text baseline, which makes it look a little cramped.",
-      "The grey metadata lines (e.g. 'Local · Loose · Rigging local fixture · Claude Code') use small monospace text with low contrast against the dark background. They are readable but faint."
+      "The fourth tab in the horizontally scrolling tab bar is clipped behind the scroll arrow. It can still be reached by scrolling, so this isn't blocking.",
+      "In the warning banner, the 'Retry' button sits right against the end of the sentence 'needs to finish.' with almost no space between them.",
+      "The Safety hook's gray locked checkboxes are low-contrast against the dark background, but the labels are still readable.",
+      "The page continues below the visible area (the Hooks section is cut off at the bottom of the screenshot). This is normal vertical scrolling, not overflow."
     ]
   }
 }

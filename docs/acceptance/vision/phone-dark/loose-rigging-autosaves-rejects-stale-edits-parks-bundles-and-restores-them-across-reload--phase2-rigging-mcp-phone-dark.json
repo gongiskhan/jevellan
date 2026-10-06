@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The file is labelled config.toml, but the editor shows JSON. This doesn't block anything, but the label and the content format don't match.",
-      "The 'Preview' link in pink is small and set apart from the 'Saved' status text. It's readable, but low emphasis.",
-      "The textarea has a lot of empty space below the short content. It's still fully usable."
+      "The editor shows JSON content, but the file label says config.toml, so the format doesn't match the file type.",
+      "The dimmed page behind the modal is visible at the top and bottom edges. This is expected for a modal overlay."
     ]
   }
 }

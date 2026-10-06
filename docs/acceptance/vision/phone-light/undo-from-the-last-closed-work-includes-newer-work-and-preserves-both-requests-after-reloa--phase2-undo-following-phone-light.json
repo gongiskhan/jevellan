@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis (\"Change the value to two and publish th...\"). It looks like intentional single-line truncation, and the full request is still shown in the conversation.",
-      "The 'Step 1 · Implement' and 'Step 2 · Implement' headings are struck through and light grey, so they have lower contrast, though they can still be read.",
-      "The 'corrected: action → reply' label on Step 1 is small pink text with fairly low contrast."
+      "The header title is cut off with an ellipsis (\"Change the value to two and publish th...\"). This is intentional single-line truncation, and the full request is still visible in the conversation.",
+      "The struck-through, light-gray headings for undone steps 1 and 2 (\"Step 1 · Implement\", \"Step 2 · Implement\") have low contrast but are still readable.",
+      "The small pink \"corrected: action → reply\" label and the gray \"Local time\" text are small and low-contrast but still legible."
     ]
   }
 }

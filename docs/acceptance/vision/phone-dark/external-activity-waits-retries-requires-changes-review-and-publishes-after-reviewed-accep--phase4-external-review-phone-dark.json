@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Grammar: '1 changed files' should be '1 changed file'.",
-      "'No checkpoint changes in this step' sits right under the '1 changed files' summary, which could read as contradictory.",
-      "The line numbers in the diff gutter and the 'Working copy diff' label are low-contrast against the dark background, but still readable.",
-      "There is a lot of empty space below the 'No verification receipt yet.' line."
+      "The diff line-number gutter is very low contrast: the '1' markers on the removed and added lines are hard to see against the red and green row backgrounds.",
+      "The section labels (UNCOMMITTED CHANGES, AGENT EVIDENCE, JEVELLAN VERIFICATION) and the 'Working copy diff' caption use low-contrast gray text on the dark background.",
+      "The '1 changed files' summary has a grammar error and should say '1 changed file'.",
+      "There is a large empty area below the content at the bottom of the viewport."
     ]
   }
 }

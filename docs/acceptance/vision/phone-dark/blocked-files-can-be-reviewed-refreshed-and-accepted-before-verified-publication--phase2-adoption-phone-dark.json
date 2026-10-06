@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the review-note.txt diff, the header line 'diff --git a/review-note.txt b/review-note.txt' runs past the right edge and is clipped. The diff block likely scrolls sideways, and the 'Wrap lines' toggle can show the full line.",
-      "The 'AGENT EVIDENCE' section starts at the bottom of the viewport, and its content is below the fold. This looks like normal page scrolling, not a layout defect."
+      "In the review-note.txt diff, the header line 'diff --git a/review-note.txt b/review-note.txt' runs past the right edge and is cut off. 'Wrap lines' is off, so the diff block scrolls sideways, and the part that matters (file name and the added line) is still readable.",
+      "The 'AGENT EVIDENCE' section starts at the very bottom edge of the viewport, so its content is below the fold. This is normal scrolling and doesn't affect the Continue or Refresh changes buttons.",
+      "In the value.txt diff, the old-side line number '1' sits in a different column from the new-side '1', which looks a little uneven."
     ]
   }
 }

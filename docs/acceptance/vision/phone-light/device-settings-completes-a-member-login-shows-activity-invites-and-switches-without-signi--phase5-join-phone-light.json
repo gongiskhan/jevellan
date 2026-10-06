@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The join code field and the code at the end of the command both show as plain grey boxes. This looks like the screenshot tool masking a changing value, not a rendering fault, but it can't be confirmed from this image.",
-      "The command breaks the URL across two lines in the middle of 'http' ('htt' / 'p://127.0.0.1:24772'), which makes it harder to read and copy.",
-      "The page behind the dialog is dimmed and blurred as expected, but parts of it (device cards, 'Open' buttons) still show around the dialog edges, which looks a little busy."
+      "The URL in the command breaks in the middle of the word ('htt' / 'p://127.0.0.1:24772'), which makes it harder to read and copy by eye; breaking at spaces or scrolling horizontally would read better.",
+      "The join code field and the end of the command show as plain grey blocks. This looks like masking added by the screenshot tool rather than missing content, but I can't confirm that from the image.",
+      "The modal title 'Add a device' is very close to the 'Add a device' button in the background header; this is only visual repetition, and the background is properly dimmed."
     ]
   }
 }

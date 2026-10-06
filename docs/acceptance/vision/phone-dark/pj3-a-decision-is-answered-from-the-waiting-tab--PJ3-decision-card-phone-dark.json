@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Send button has low contrast against the card (dark text on a dark fill). This is probably its disabled state while the input is empty, but it is hard to see.",
-      "The 'Idle' status chip and the 'Claude Code Fable · high' subtitle are small and fairly faint mono text.",
-      "The lower half of the screen is empty below the single decision card."
+      "Header title 'Projects fixture' and the status line ('Idle · Claude Code Fable · high') sit close to the top-right action buttons. They don't overlap them.",
+      "The 'Send' button looks dim and low-contrast next to the input field, so it may read as disabled.",
+      "The tab row fills the whole width with no visible scroll hint. If more tabs exist past 'Pull requests', it isn't clear they're there."
     ]
   }
 }

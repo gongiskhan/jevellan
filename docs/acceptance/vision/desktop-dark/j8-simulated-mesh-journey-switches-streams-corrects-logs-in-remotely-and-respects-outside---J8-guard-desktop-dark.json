@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "At the bottom of the scrollable sidebar conversation list, a fourth item is cut off just above the 'Some native sessions are unavailable' row, and only the top edge of its text shows. This is normal scroll overflow, but it looks unfinished.",
-      "Sidebar conversation titles and subtitles are cut short with ellipses (e.g. 'J8: implement after the o…', 'Blocked · Mesh journey fixture ·…'). The full title is shown in the main pane header.",
-      "There are two different 'Retry' buttons: one on the user message bubble and one under the error banner. Next to 'Try automatic again', it isn't clear which action to take.",
-      "The 'Blocked' status chip uses amber text, while the 'Another agent (Claude Code) is active…' banner uses a red border. The two colours suggest different severity levels for the same state."
+      "In the sidebar conversation list, the 4th item (around y≈712) is partly clipped where the scroll area ends just above the 'Some native sessions are unavailable' row. It looks like a half-visible line of text, but scrolling can still reach it.",
+      "There are two 'Retry' buttons: one on the user message bubble and one under the error banner. This makes it unclear which one to use.",
+      "The 'Retry' and 'Try automatic again' buttons are stacked vertically with different styles (filled vs outlined), so they look a little out of line with each other.",
+      "Conversation titles and subtitles in the sidebar are cut short with an ellipsis (for example 'J8: implement after the o…'). This is intentional, but it hides the full name."
     ]
   }
 }

@@ -10,7 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal body doesn't set the thread name \"Add a greeting\" apart (no quotes or emphasis), so it reads like part of the sentence."
+      "Background is heavily blurred and dimmed behind the modal, which is intentional for a modal overlay; the sidebar, thread list and Pull requests panel can't be read, but the modal is the subject of this screen",
+      "Modal body text is plain: 'Add a greeting' isn't set apart (no quotes or emphasis) from the rest of the sentence"
     ]
   }
 }

@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The same 'No model can run this step right now' error appears twice: once in the red banner and again inside the Resume correction card.",
-      "The error lists 'disabled' six times without naming the models, which is hard to read and doesn't say which models are disabled.",
-      "The header title is cut short with an ellipsis ('Change the value to three, then redo this…'), but the full text appears in the subtitle line.",
-      "The top of the earlier user message bubble ('You · Oct 6, 06:35:21') is partly hidden under the sticky header because of where the page is scrolled. Its Retry and Edit buttons are still visible and usable."
+      "The same 'No model can run this step right now' error appears twice: once in the red banner and again in the 'Resume correction' card.",
+      "The error lists 'disabled' nine times without naming any model, so it doesn't tell the user what is wrong.",
+      "At this scroll position, the top line of the user's message card ('Change the value to three, then redo this step.') is partly hidden under the sticky header. The text can still be read in the header subtitle, and the Retry and Edit buttons are fully visible.",
+      "The struck-through 'Step 1 · Implement' title and the gray 'Undone' label have low contrast against the dark background. Both are still readable.",
+      "The grey 'Completed undo changes are kept…' helper text and the 'Local time' label have low contrast."
     ]
   }
 }

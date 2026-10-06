@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Saved' label is styled differently from the other field labels (lighter weight, larger size), and it sits between the Name and Content fields, so it's unclear which one it belongs to.",
-      "The modal's background is very dark compared with the dimmed page behind it, so the modal's edge is hard to see.",
-      "The large Content textarea has only two lines of content, which leaves a lot of empty space."
+      "The background tab strip (Runtimes / Rigging / Decisions / …) runs past the right edge of the screen. It is dimmed behind the modal and is probably a horizontal scroller.",
+      "The edit modal covers most of the Rigging page, so the managed list and the 'Restore locally' entry show only partly through the dimmed overlay. This is expected while the modal is open.",
+      "The 'Saved' status text is a muted grey with fairly low contrast against the dark modal, but it is still readable."
     ]
   }
 }

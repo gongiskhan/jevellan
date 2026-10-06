@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The evidence image is a small thumbnail (about 96px wide), so its contents are hard to make out unless it is opened.",
-      "The checkpoint hash is in very small monospace text with low contrast against the dark background.",
-      "Most of the screen below the links is empty, so the content looks sparse.",
-      "\"Open recorded step\" is gray while \"Open working copy\" is pink, so it reads as less prominent or possibly disabled."
+      "The image preview is a small thumbnail (about 96px wide) in the top-left. Most of the panel below it is empty, so the image could be shown much larger on a phone screen.",
+      "The checkpoint hash wraps onto its own line under the 'Recorded checkpoint ·' label. It is in small, low-contrast monospace text, but it can still be read.",
+      "'Open recorded step' is in muted gray, much weaker than the pink 'Open working copy', so it reads as less important or possibly disabled."
     ]
   }
 }

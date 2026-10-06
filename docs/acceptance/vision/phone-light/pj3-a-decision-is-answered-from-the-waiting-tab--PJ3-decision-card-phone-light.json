@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Send button is low-contrast, pale grey on light blue. That's probably its disabled state while the input is empty, but it's hard to see.",
-      "The monospace meta text ('Claude Code Fable · high', 'From the coordinator · now') is small and light. It's still readable at phone size.",
-      "The tab row fills the full width, and 'Pull requests' sits close to the right edge. It isn't cut off, but it would clip if the text got any longer."
+      "The 'Send' button looks pale and low-contrast. It may just be the disabled state shown before an answer is typed, but it's still harder to read than the other controls.",
+      "The large empty area below the decision card makes the page look sparse. That's expected when there's only one item waiting."
     ]
   }
 }

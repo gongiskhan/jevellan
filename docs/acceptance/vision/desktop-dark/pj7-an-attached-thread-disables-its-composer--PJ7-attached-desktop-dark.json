@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut short with ellipses (e.g. 'Context · J11 memory jour…', 'dev-ma…'). The truncation is on purpose and the full text is likely shown elsewhere.",
-      "The disabled composer's placeholder and send arrow are very low contrast. The 'Attached in a terminal on dev-madrid. Messages wait until you exit.' note above it explains why, so this doesn't block the screen."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Mesh journey fixture · de…'). This is expected for a narrow sidebar, but the full names can't be read here.",
+      "The Override and Stop buttons in the header still look enabled while the thread is attached. That may be intended, but it doesn't match the disabled composer.",
+      "The placeholder text in the disabled composer has low contrast against the dark background. It's still readable."
     ]
   }
 }

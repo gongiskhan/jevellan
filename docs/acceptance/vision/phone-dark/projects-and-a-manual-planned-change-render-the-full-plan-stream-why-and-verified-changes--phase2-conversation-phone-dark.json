@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Two 'Work closed' banners are stacked and repeat each other ('Work closed. Its changes are kept, and this checkout stays reserved for this conversation.' and 'Work closed and published.'); the first may be stale now that the work is published.",
-      "'Jump to latest ↓' shows even though the conversation looks fully scrolled to the latest content.",
-      "In Step 1, the 'Proposed plan' heading and the 'The full fixture plan' subtitle sit very close together with little spacing between them."
+      "Two closing banners appear together and partly contradict each other: one says 'Work closed. Its changes are kept, and this checkout stays reserved for this conversation.' and the other says 'Work closed and published.'",
+      "In the plan card, the 'Proposed plan' heading and the 'The full fixture plan' subtitle are crowded together with very little space between them.",
+      "The plan step has a 'Changes' button with no file count, while the implement step's button shows '· 1 file', so the two buttons look inconsistent.",
+      "Small grey text such as 'Local time', '1 tool' and 'Step details' has low contrast against the dark background, but it is still readable."
     ]
   }
 }

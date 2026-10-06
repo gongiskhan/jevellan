@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with an ellipsis (e.g. 'Context · J11 memory jour…', 'Mesh journey fixture · de…'). The full text is not shown, but the truncation looks intentional and the items are still identifiable.",
-      "There is a large empty area between the last transcript row ('Read completed') and the 'Working on turn 1…' status line.",
-      "The text in the metadata line under the title is small and low-contrast against the dark background, but it can still be read."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'), so the full names can't be read without hovering or widening the sidebar",
+      "Some text is small and low-contrast: the monospace metadata line under the title, the 'completed' labels on the tool rows, and 'Some native sessions are unavailable' are hard to read against the dark background",
+      "There's a large empty gap between the last tool row and the composer at the bottom, so the page looks sparse",
+      "No report card is visible on this screen; only the prompt card and the collapsed tool rows (Read, Grep, Bash, Read) are shown"
     ]
   }
 }

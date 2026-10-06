@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Exercise automatic decisions: change t…'). The full text still appears in the subtitle line and the message bubble.",
-      "The 'Review … fixture' links make a long, uneven list that wraps raggedly and pushes a lot of content between the notice and the composer. The bright pink links on the dark background look busy.",
-      "The 'Try automatic again' button sits on the same row as the 'Review Automatic account' link, so it doesn't stand out much as the main action."
+      "The header title is cut off with an ellipsis ('Exercise automatic decisions: change t…'), but the full text appears in the subtitle and in the message bubble.",
+      "The long list of 'Review … fixture' links runs together in a tight, uneven layout. Several links sit side by side on one line, which makes them hard to scan and tap on a phone.",
+      "The 'Review Login recovery' links include raw UUIDs that wrap across two lines, which looks noisy.",
+      "The 'Waiting for you' status chip is low contrast against the dark header, though it is still readable."
     ]
   }
 }

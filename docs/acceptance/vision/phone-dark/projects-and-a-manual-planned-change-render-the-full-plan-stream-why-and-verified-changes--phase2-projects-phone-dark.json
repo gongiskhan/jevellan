@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab bar is cut off at the left edge ('rover', probably 'Improver') and the right edge ('Config'). The tab row appears to scroll sideways, so the tabs can still be reached.",
-      "The 'Project saved.' toast sits over the bottom of the last card ('Undo across works') and hides its Open, Browse memory and Context buttons. The toast is temporary and has a close (×) button, so the buttons can still be reached.",
-      "Long project paths wrap in the middle of a word (e.g. 'activity-/context-project', 'improver-/sandbox'). They are still readable."
+      "The 'Project saved.' toast covers the Open, Browse memory and Context buttons on the last project card ('Undo across works'). The toast is temporary and can be dismissed, and in a full-page capture it shows up over whatever content sits at the bottom.",
+      "The settings tab strip cuts off the last tab after the 'C'. Scroll arrows are shown, so the hidden tabs can still be reached.",
+      "Long project paths wrap mid-word at hyphens (e.g. 'activity-/context-project'). They are still readable."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab bar cuts off the last tab ('Impr…') at the right edge. It looks like an intentional horizontally scrolling tab strip, but nothing shows that it scrolls.",
-      "The Claude Code accounts section has the note 'Codex sign-ins are kept per device for now', which looks like it was copied from the Codex section.",
-      "The 'Fable' model badge is small and set apart, so it reads more like a stray label than a model chip."
+      "The tab bar is clipped at the right edge: the last tab's label is cut off behind the scroll chevron button. It is still reachable by scrolling or with the chevron.",
+      "The note 'Codex sign-ins are kept per device for now.' appears in the Claude Code runtime's device list, which looks like copy from the Codex section was reused by mistake.",
+      "The long 'Login recovery <UUID>' account titles wrap onto two lines and make the cards feel crowded, but they are still readable."
     ]
   }
 }

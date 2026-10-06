@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The command breaks the URL in the middle of a word ('htt' / 'p://127.0.0.1:24774') when it wraps on narrow screens. It is still readable, but breaking at a space or using horizontal scroll would look cleaner.",
-      "The join code field and the token at the end of the command are covered by solid light-gray blocks. These look like the screenshot tool's intentional masking of secrets, not a rendering failure. If they are not masks, the code is missing, and that would be a blocking problem."
+      "The join code field and the end of the command are covered by solid light-grey boxes. They look like screenshot masks hiding the dynamic token, not a rendering bug, so I can't check that the code is legible.",
+      "The URL in the command wraps mid-word ('htt' / 'p://127.0.0.1:24774'), which makes it a little harder to read and copy by eye.",
+      "The masked join code box is very bright against the dark dialog, so it stands out from the theme."
     ]
   }
 }

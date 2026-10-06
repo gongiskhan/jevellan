@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The worktree path and the 'jevellan thread attach thread_…' command behind the dimmed overlay are cut off or end in an ellipsis. Both are background content, not part of the modal.",
-      "The 'Model' dropdown reads 'Claude Code Opus', which is a slightly odd label (product name mixed with model name)."
+      "Background content behind the modal (title bar, breadcrumb, composer, terminal attach line) is dimmed by the overlay and truncated at the right edge, which is expected for a modal backdrop",
+      "The note textarea has a pink focus ring that is a little bright against the dark theme"
     ]
   }
 }

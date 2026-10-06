@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Edit Managed browser bundle' modal sits on top of the Rigging page, so the background items and their controls (Park, Make managed, Restore locally, runtime checkboxes) are dimmed and blurred while the dialog is open. That is expected for a modal.",
-      "The textarea takes up most of the dialog but holds only two lines, leaving a lot of empty space."
+      "The 'Saved' status and 'Preview' link sit above the 'Content' label instead of next to the textarea, so the header order reads a little oddly.",
+      "The Content textarea is much taller than its two lines of content, leaving a large empty area in the dialog."
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal covers the middle of the long page behind it. The background is dimmed and blurred, which is expected for a dialog.",
-      "The 'Check this text' and 'Revise the suggestion' buttons are only labelled pills with a thin outline, so they look less important than 'Apply this'."
+      "The background page behind the modal is blurred, which is expected for an open dialog.",
+      "The modal sits midway down a tall scrolled capture, and the blurred cards above and below it fill most of the screenshot."
     ]
   }
 }

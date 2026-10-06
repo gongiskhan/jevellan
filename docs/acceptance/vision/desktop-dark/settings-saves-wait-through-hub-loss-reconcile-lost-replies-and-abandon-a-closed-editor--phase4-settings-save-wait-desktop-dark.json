@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The disabled 'Saving…' button has low-contrast text against the dark dialog. It is still readable.",
-      "The wait banner's secondary line ('Stopping the wait does not undo a request already received.') is set in small text close to the main message. It is still legible."
+      "The 'Saving…' button is shown in a low-contrast disabled style. That fits a pending save, but the label is harder to read than the other text.",
+      "In the wait banner, the 'Stop waiting' button sits in a fairly tight space next to the two-line message."
     ]
   }
 }

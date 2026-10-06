@@ -7,13 +7,14 @@
   "screenshot": "docs/acceptance/screenshots/PJ3-pull-request-conflict-desktop-light.png",
   "expected": "the Jevellan web app \"pull request conflict\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PJ3 a pull request merges through the modal and moves to Concluded\"; the other steps are judged in their own screenshots)",
   "result": {
-    "ok": true,
-    "blocking": [],
+    "ok": false,
+    "blocking": [
+      "The top of the page is cut off. The 'Jevelian' brand name in the top-left is only partly visible, and the 'New thread' and 'Notebook' buttons in the top-right are clipped at the top edge, so their labels can't be fully read. There is also an empty strip at the bottom of the viewport. Together these suggest the whole page has scrolled up by about 30px because the document is taller than the viewport, which pushes the header controls partly out of view."
+    ],
     "cosmetic": [
-      "The topmost user message bubble ('PJ3: add a greeting') is cut off by the chat's scroll edge, so its timestamp is only half visible. This is normal scrolling, not a layout fault.",
-      "The running task title in the right panel ('Read through the project and list what each file is ...') is truncated with an ellipsis.",
-      "Sidebar shell session titles and their metadata lines ('Context · J11 memory jour...', 'dev-ma...') are truncated with ellipses.",
-      "The Merge button on the PR card looks greyed out and has low contrast. That is probably intended because of the conflict, but it is harder to read."
+      "The running-task title 'Read through the project and list what each file is…' in the right panel is cut short with an ellipsis.",
+      "Sidebar session titles and subtitles ('Context · J11 memory jour…', 'Mesh journey fix…', 'dev-ma…') are cut short with ellipses.",
+      "The thread shows both 'Checks failing' and 'Checks passing' cards for PR #1, plus a separate conflicts card, so the activity feed is somewhat repetitive."
     ]
   }
 }

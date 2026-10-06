@@ -10,10 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The terminal attach command 'jevellan thread attach thread_01M47SP9KZAXEBF…' is cut off with an ellipsis, but the copy button next to it can still get the full value",
-      "The metadata line 'Projects Claude ·' wraps awkwardly and leaves a trailing separator",
-      "The 'Placed without Jev: authentication failed' fallback chip is shown in small monospace text that is a little hard to read but still legible",
-      "There is a large empty area between the report card and the composer"
+      "The terminal attach command 'jevellan thread attach thread_01M4838VEA2NM2X…' is cut off with an ellipsis, but the copy button next to it still copies the full command.",
+      "There is a large empty gap between the report card and the message composer."
     ]
   }
 }

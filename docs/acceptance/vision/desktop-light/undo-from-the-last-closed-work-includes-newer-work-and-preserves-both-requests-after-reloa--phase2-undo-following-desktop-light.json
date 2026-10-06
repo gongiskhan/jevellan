@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Conversation titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Change the value to two ...', 'Waiting for you · Undo across wo...'). This is expected list truncation, and the full title is shown in the main header.",
-      "Metadata text like 'Undone', 'Local time' and 'corrected: action → reply' is small and low-contrast but still readable.",
-      "Several labels in the lower-left corner are small and light gray, so they are faint but readable: 'Some native sessions are unavailable' and the 'v0.1.0' version label."
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Change the value to two ...', 'Waiting for you · Undo across wo...'), which is expected truncation.",
+      "Struck-through step headings ('Step 1 · Implement', 'Step 2 · Implement') and small grey 'Undone'/'Local time' labels are low-contrast but still readable.",
+      "The 'corrected: action → reply' label in pink is very small."
     ]
   }
 }

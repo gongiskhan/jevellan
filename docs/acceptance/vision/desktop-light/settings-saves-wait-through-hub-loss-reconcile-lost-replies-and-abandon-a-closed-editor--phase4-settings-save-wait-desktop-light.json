@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The disabled 'Saving…' button has low-contrast light text on a light background, but you can still read it.",
-      "The two lines of the hub-loss notice are close to the 'Stop waiting' button, but they don't overlap it."
+      "The 'Saving…' button is light gray on a light background. That's low contrast, but it's expected for a disabled button and you can still read it.",
+      "The hub-wait notice wraps onto two lines next to the 'Stop waiting' button. Nothing overlaps or gets cut off.",
+      "Background page content behind the modal overlay is blurred and unreadable, as intended."
     ]
   }
 }

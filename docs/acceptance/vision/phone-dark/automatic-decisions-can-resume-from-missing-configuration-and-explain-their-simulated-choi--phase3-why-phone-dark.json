@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Adversarial Rev...' label in the NEXT STEP list is cut off with an ellipsis, but the label is still recognizable.",
-      "The last 'Override and undo' entry under CORRECTIONS USED is cut off at the bottom of the screen. It looks like a scrolling panel continuing past the screen edge, not a layout overlap.",
-      "The dim gray labels and secondary text are low-contrast against the dark background, but still readable."
+      "The 'Adversarial Rev...' label in the next-step list is cut off with an ellipsis; the full option name doesn't show at phone width.",
+      "The last correction entry is clipped at the bottom of the viewport ('implement in Browser fixture, small change, no risky areas' ends mid-line). This looks like normal scroll overflow, but the screenshot doesn't show the rest of the panel.",
+      "The empty bar tracks for the zero-score rows are very low contrast against the dark background. The 0.00 values are still readable."
     ]
   }
 }

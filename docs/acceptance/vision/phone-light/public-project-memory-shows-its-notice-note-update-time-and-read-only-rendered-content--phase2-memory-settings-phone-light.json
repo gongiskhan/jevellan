@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal body is scrolled, so the 'Path on Offline fixture' label sits right under the header divider and more fields may sit below 'Memory folder'. The body scrolls inside the modal, and the footer buttons stay visible and reachable.",
-      "The label 'Path on Offline fixture' sits next to a 'Browse folders on dev-madrid' button. The device names don't match, which may confuse users, but it's a labeling issue, not a rendering one.",
-      "The Git policy note and the public-memory warning use the same beige warning style, so the memory notice doesn't stand out much from the surrounding content."
+      "The modal body is scrolled, so the 'Path on Offline fixture' label sits right under the header divider with almost no top padding.",
+      "The Memory section starts low in the scrollable modal. Anything after 'Memory folder', such as the note update time or rendered content, is below the fold and you have to scroll to see it.",
+      "A faint part of the page behind the modal shows at the far left edge near the top, outside the dialog."
     ]
   }
 }

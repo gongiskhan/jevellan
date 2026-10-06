@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab strip is cut off at both edges (\"ions\" on the left, \"G\" on the right). This looks like a horizontally scrolling tab bar, but nothing on screen shows it can scroll.",
-      "The \"Offline fixture\" card and the \"Native conversations\" card have no space between them, and their borders touch or slightly overlap. The other cards have a normal gap.",
-      "The \"Open\" buttons on the dev-madrid and Offline fixture cards are greyed out. That is probably intended (current device / offline), but nothing on screen explains why."
+      "The tab strip clips at both edges: an icon shows at the far left and 'Projects' sits right against the next arrow. It reads as a scrollable strip and the arrows can reach the hidden tabs.",
+      "'1 running conversations' is grammatically wrong; it should say '1 running conversation'.",
+      "On the 'dev-madrid' and 'Offline fixture' cards, the 'Open' button is low-contrast grey. It's still readable and probably means the button is disabled on purpose.",
+      "'Claude Code active in activity-context-project · 11 minutes ago' wraps, leaving 'ago' alone on its own line."
     ]
   }
 }

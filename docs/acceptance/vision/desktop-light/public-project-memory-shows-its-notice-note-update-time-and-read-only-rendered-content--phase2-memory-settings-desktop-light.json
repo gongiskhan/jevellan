@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal body is scrolled, so the 'Path on Offline fixture' label sits right under the header divider and the fields above it are out of view. The body scrolls normally.",
-      "There is very little space between the 'Browse folders on dev-madrid' button and the 'Git policy' label below it.",
-      "The modal body may continue below 'Memory folder' with no visible scroll indicator."
+      "The 'Path on Offline fixture' label sits right against the modal header's bottom border because the dialog body is scrolled. The fields above it are scrolled out of view, though the dialog can still be scrolled.",
+      "There is almost no vertical space between the 'Browse folders on dev-madrid' button and the 'Git policy' label below it.",
+      "The dimmed page behind the modal is unreadable, which is expected with the overlay open."
     ]
   }
 }

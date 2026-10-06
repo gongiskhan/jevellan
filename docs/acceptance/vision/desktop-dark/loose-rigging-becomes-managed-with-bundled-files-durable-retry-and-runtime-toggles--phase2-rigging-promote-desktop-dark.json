@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Claude Code · Current account' checkbox is greyed out (checked but disabled). It looks very different from the pink Codex checkbox, so its locked state may not be obvious at first glance.",
-      "The background page sits under a heavy dim and blur, which is expected for a modal. Most of its labels can't be read, but none of them are needed while the dialog is open."
+      "The 'Claude Code · Current account' checkbox is a dim gray while the 'Codex' checkbox uses the pink accent. It's unclear whether it's disabled or just checked in a different style.",
+      "The 'Install for' checkboxes and labels are small and packed tightly together inside a large fieldset."
     ]
   }
 }

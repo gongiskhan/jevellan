@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "A fourth conversation item at the bottom of the sidebar list is cut off halfway. This is ordinary clipping at the edge of the scroll area, but the faded row looks like garbled text.",
-      "Two 'Retry' buttons are visible: one on the user message bubble and one under the error banner. Having both may confuse users.",
-      "The 'Retry' and 'Try automatic again' buttons sit on separate lines with a lot of space between them. Putting them on one row would look tidier.",
-      "The red error banner tells you the cause but not what to do next or how long the wait might be."
+      "The sidebar conversation list clips a fourth item partway (its title shows only as fragments above 'Some native sessions are unavailable'). The list scrolls, so this is just overflow, but the half-visible row looks messy.",
+      "Conversation titles and subtitles in the sidebar are cut off with ellipses ('Exercise external activity…', 'External activity fixt…'). This is intentional, and the full title shows in the main header.",
+      "The 'Retry' and 'Try automatic again' buttons are stacked vertically with uneven styling: one is filled, the other outlined."
     ]
   }
 }

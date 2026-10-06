@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles are truncated with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…'), and so are their metadata lines ('dev-ma…', 'dev-…', 'de…')",
-      "Header status chip text ('Idle', 'Claude Code Fable · high') is small and low-contrast",
-      "Empty-state helper text in the center pane is light gray and low-contrast"
+      "Some sidebar session titles and subtitles are shortened with ellipses (for example 'Context · J11 memory jour…' and 'Done · Mesh journey fixture · de…'). The truncation is deliberate and the text is still readable.",
+      "The 'Some native session…' disclosure link at the bottom of the sidebar uses very small, light grey text with low contrast."
     ]
   }
 }

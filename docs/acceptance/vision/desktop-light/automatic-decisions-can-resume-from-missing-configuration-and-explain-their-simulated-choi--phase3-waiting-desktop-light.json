@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fourth conversation in the sidebar list is cut off at the bottom of its scroll area, just above the 'Some native sessions are unavailable' line. Only the top of its title shows. This looks like normal scroll clipping, and the item can be reached by scrolling.",
-      "Sidebar conversation titles and subtitles are shortened with ellipses (e.g. 'Exercise automatic decisi…', 'Waiting for you · Automatic fixt…'). This is intended, but the full text can't be read without hovering or opening the item.",
-      "The 'Review …' action links wrap onto three lines with no clear grouping. This makes the action area look busy, but every link is fully visible and reachable."
+      "The sidebar conversation list cuts off a fourth item partway through, so only the top of its title shows above the 'Some native sessions are unavailable' line. It is probably a scrollable list, but nothing shows that more items are below.",
+      "Conversation titles and subtitles in the sidebar are shortened with ellipses ('Exercise automatic decisi…', 'Waiting for you · Automatic fixt…'). This is expected, but the full context is hidden at this width.",
+      "The 'Review …' links after 'Try automatic again' wrap onto three lines as a dense block of same-colored links, which makes them hard to scan. They are still readable."
     ]
   }
 }

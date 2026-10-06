@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Idle' status pill and the 'Claude Code Fable · high' meta line are small and low-contrast but still readable",
-      "The tab row is close to the right edge with not much padding after 'Pull requests', but nothing is clipped",
-      "The empty-state helper text is fairly low-contrast against the dark background but still readable"
+      "The status line \"Claude Code Fable · high\" uses small, low-contrast monospace text, but it is still readable.",
+      "The large empty area between the tabs and the centered placeholder text makes the screen feel sparse."
     ]
   }
 }

@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'moved' notice doesn't include a 'Move coordinator here' action or any other next step. That may be intended for this step, but the notice reads as a dead end.",
-      "The title 'Projects offline' and the 'Idle' status badge send mixed signals next to the 'moved to dev-madrid' notice.",
-      "Most of the screen is empty space between the notice and the composer."
+      "Most of the screen below the 'The coordinator moved to dev-madrid.' notice is empty, which leaves the moved state looking sparse on a phone.",
+      "The 'Idle' badge and the 'Claude Code Fable · high' model label are small, low-contrast monospace text, though still readable."
     ]
   }
 }

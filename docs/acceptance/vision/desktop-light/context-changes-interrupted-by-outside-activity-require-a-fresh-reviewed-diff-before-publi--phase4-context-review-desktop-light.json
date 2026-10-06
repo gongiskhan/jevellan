@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal body is scrolled, so the top of the review card (heading and any intro above the diff) sits under the modal header. The diff block starts right at the header's bottom edge, which makes the cut look abrupt, though it can be reached by scrolling.",
-      "The dismiss '×' on the error banner is very small and faint, so it is hard to see as a click target."
+      "The modal body is scrolled down, so the top of the review section (above the diff) is out of view. It can be reached by scrolling, so this isn't blocking.",
+      "The dark diff block starts right against the modal header's bottom border, with no top padding showing at this scroll position."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background tab strip is cut off at the right edge ('Mo…' after Decisions). It sits behind the modal overlay and looks like a horizontally scrollable row.",
-      "The underlying page shows through the modal's dimmed backdrop, including the 'browser-package' card and the 'Restore locally' button below the dialog. This is expected for a modal but makes the backdrop look busy.",
-      "Most of the large content textarea is empty space below the two lines of text."
+      "The tab strip is cut off at the right edge ('Decisions' then a partial tab under the scroll chevron). It can still be scrolled, so this is expected horizontal overflow on a phone.",
+      "The 'Edit Managed browser bundle' modal covers most of the Rigging page. Only the 'browser-package' card and its 'Restore locally' button show below it, dimmed. This is normal while a modal is open.",
+      "The textarea is mostly empty space below the two content lines."
     ]
   }
 }

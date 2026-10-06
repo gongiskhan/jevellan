@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal body is scrolled partway down, so the start of the diff block and its section heading sit hidden under the modal header. The content can still be reached by scrolling.",
-      "Text in the background page behind the dimmed overlay is hard to read, which is expected while the modal is open.",
-      "The small × dismiss button on the error banner is low-contrast against the dark red banner."
+      "The modal body is scrolled partway, so the top of the diff block and any review heading above it are hidden under the modal header. This is normal scroll clipping, and the content is still reachable by scrolling.",
+      "The bottom of the 'Open work' link sits close to the 'Current instruction files' disclosure, leaving little space between them.",
+      "The red error banner's dismiss '×' is small and low-contrast against the dark background."
     ]
   }
 }

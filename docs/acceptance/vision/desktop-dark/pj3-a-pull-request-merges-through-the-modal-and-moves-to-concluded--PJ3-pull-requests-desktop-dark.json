@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The title of the running item in the right panel is cut short with an ellipsis ('Read through the project and list what each file is ...'). The full title is readable in the conversation feed.",
-      "Session names and subtitles in the sidebar are cut short with ellipses ('Context · J11 memory jour...', 'Done · Mesh journey fixture · de...').",
-      "The conversation feed shows 'Checks failing', 'Checks passing' and 'has conflicts' events for PR #1 next to each other, while the PR card shows only 'Checks passing'. The card could look like it contradicts the conflicts event.",
-      "Several 'Noted.' replies in a row make the feed look repetitive."
+      "Running task title is truncated with an ellipsis in the right panel ('Read through the project and list what each file is ...')",
+      "Session titles and metadata in the left sidebar are truncated ('Context · J11 memory jour...', 'Done · Improver sandbox · dev-ma...')",
+      "Several consecutive 'Noted.' replies in the transcript look repetitive",
+      "Small monospace metadata text (e.g. 'Claude Code · Fable · high · Worktree') is low contrast on the dark background"
     ]
   }
 }

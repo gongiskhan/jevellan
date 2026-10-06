@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The subtitle of the third shell session row is cut off with an ellipsis ('Done · Mesh journey fixture · dev-mad…'). The full value can be inferred from the rows above it.",
-      "Behind the scrim, the main content to the right of the drawer is partly visible and clipped (timestamps, chips). This is expected for an overlay drawer, but it looks a little busy at this width."
+      "The subtitle of the third shell session ('Done · Mesh journey fixture · dev-mad…') is cut off with an ellipsis. The full name still shows in the session title and the environment picker.",
+      "Main content behind the sidebar drawer shows through the dimmed backdrop on the right edge. This is expected for a drawer and doesn't block anything."
     ]
   }
 }

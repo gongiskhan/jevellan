@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar, the bottom edge of the conversation list cuts through the fourth item, just above 'Some native sessions are unavailable', so only the tops of its letters show. The list scrolls, so the item can still be reached.",
-      "Conversation titles and subtitles in the sidebar are cut short with ellipses (for example 'J8: run on device B while …' and 'Waiting for you · Mesh journey f…'). The truncation is deliberate, but less of each title can be read."
+      "In the sidebar, the fourth conversation row is cut off by the bottom of the scrollable list, so only the tops of its letters show above 'Some native sessions are unavailable'. It can be reached by scrolling.",
+      "Sidebar conversation titles and subtitles are shortened with ellipses ('J8: run on device B while …', 'Recovery ee9a1008-9be3…', 'Context · Outside context …'). The full J8 title appears in the page header.",
+      "The bottom edge of the 'Shell sessions' toggle sits very close to the search box border below it."
     ]
   }
 }

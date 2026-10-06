@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This is expected truncation and the meaning stays clear.",
-      "The meta line under the header ('Claude Code · Fable · high effort · … · dev-madrid') is long and dense in small monospace text, but it still fits on one line and is readable.",
-      "There is a large empty area between the transcript cards and the composer, so the page looks sparse while the thread runs.",
-      "No report card is visible on this screen yet. The transcript only shows four collapsed tool rows (Read, Grep, Bash, Read), which is plausible mid-turn."
+      "Sidebar session titles and subtitles are cut off with ellipses ('Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). The truncation looks intentional, but the full names can't be read.",
+      "The four tool-call rows (Read, Grep, Bash, Read) are all collapsed, so the transcript doesn't show its content until a row is expanded.",
+      "There's a lot of empty space between the transcript and the composer.",
+      "The 'Some native sessions are unavailable' note at the bottom of the sidebar is small and low-contrast."
     ]
   }
 }

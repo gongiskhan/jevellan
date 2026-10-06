@@ -10,11 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The error text repeats 'disabled' six times ('disabled, disabled, disabled, disabled, disabled, disabled'), which reads like a raw list of model states rather than a clear user-facing message.",
-      "The same 'No model can run this step right now' message shows twice: once in the red banner and again in the 'Resume correction · step 1' card.",
-      "Conversation titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Change the value to thre…', 'Context · J11 memory journ…'). This is intentional overflow handling, and the full title is visible in the header.",
-      "The correction tags in the step header ('corrected: effort → max', 'corrected: action → reply, effort → low') are small, low-contrast pink text and somewhat hard to read.",
-      "The 'Step 1 · Implement' title is struck through and greyed out to show it was undone. This is intentional but reduces contrast."
+      "The error text 'No model can run this step right now: disabled, disabled, disabled, disabled, disabled, disabled.' repeats 'disabled' six times and doesn't name the models, so it's hard to act on. It also appears twice: in the red banner and again in the Resume correction card.",
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Change the value to thre…', 'Context · J11 memory journ…'). This is expected truncation in a narrow column; each row stays identifiable.",
+      "The 'Step 1 · Implement' heading is struck through, which makes it a little harder to read. This seems intentional to show the step was undone."
     ]
   }
 }

@@ -9,6 +9,10 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": []
+    "cosmetic": [
+      "The header's '...' overflow button sits right against the right edge with little padding.",
+      "The 'Started \"Add a greeting\"' meta line wraps onto a second line, so 'Worktree · dev-madrid' ends up on its own line.",
+      "Most of the chat area below the reply is empty whitespace, which is expected for a short conversation."
+    ]
   }
 }

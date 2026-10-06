@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Projects fixture' breadcrumb uses small magenta monospace text, which has lower contrast against the dark background than the rest of the text",
-      "Most of the panel below the content is empty, which is expected because the note is short"
+      "The 'Projects fixture' breadcrumb label uses a saturated pink monospace font on a dark background, so it is a bit low in contrast next to the title.",
+      "Most of the panel below the content is empty dark space, which is expected for a short note."
     ]
   }
 }

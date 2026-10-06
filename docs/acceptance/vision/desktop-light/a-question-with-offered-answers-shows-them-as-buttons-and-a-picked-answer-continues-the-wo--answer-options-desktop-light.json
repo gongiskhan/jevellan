@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Exercise answer options: ...', 'Context · J11 memory jour...'). This looks like intentional overflow handling, but the full titles can't be seen without hovering.",
-      "There is a large empty area between the answer-options card and the message box, which makes the page look sparse."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Exercise answer options: ...', 'Context · J11 memory jour...'). The truncation is intended, but the full names can't be read without hovering.",
+      "Large empty space between the question card and the composer at this viewport height."
     ]
   }
 }

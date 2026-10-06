@@ -10,8 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Title input text runs past the field's right edge ('...list what each file is'). This is normal single-line input overflow, and the full value can be reached by scrolling inside the field.",
-      "The dimmed background behind the modal shows partly visible header and composer text ('Projects fixture', 'Tell the coordinator what you need'). This is expected for the overlay and doesn't block anything."
+      "The Title text is clipped at the right edge of the single-line input ('...list what each file is'). This is normal for a text input and the field still scrolls, but the full title isn't visible."
     ]
   }
 }

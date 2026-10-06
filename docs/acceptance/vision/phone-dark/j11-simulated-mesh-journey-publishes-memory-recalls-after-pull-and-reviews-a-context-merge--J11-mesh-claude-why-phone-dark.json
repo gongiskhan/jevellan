@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The chosen memory title wraps oddly onto two lines ('Vitest convention for mesh.md' / 'Existing.md'), so it may read as two separate items.",
-      "The account list runs to the bottom edge of the viewport and probably continues below; the last visible row ('Cross-device fixture: unsupported') is fully legible, so this looks like normal scrolling, not clipping."
+      "The ACCOUNT list runs to the bottom edge of the viewport. The last visible row ('Cross-device fixture: unsupported') sits right at the fold, and more rows likely continue below, reachable by scrolling.",
+      "The chosen memory entry is split over two lines ('Vitest convention for mesh.md' / 'Existing.md'). It's unclear whether this is one title wrapping or two separate items.",
+      "The Jev-unavailable notice says 'Pick the next step:' but no options follow it inside the box. The step choices appear only as the 'picked manually' fields above it."
     ]
   }
 }

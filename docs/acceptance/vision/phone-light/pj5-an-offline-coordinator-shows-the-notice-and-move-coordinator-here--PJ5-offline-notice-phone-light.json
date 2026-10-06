@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header's 'Offline' status badge sits on its own row under the title, so the header uses more vertical space than it needs to",
-      "The empty chat area leaves a big gap between the tab row and the composer"
+      "Large empty area between the tab bar and the centered empty-state text, so the screen looks sparse on phone",
+      "The 'Offline' chip below the title is small and low-contrast"
     ]
   }
 }

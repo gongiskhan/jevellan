@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar cuts off conversation titles and their metadata with an ellipsis (e.g. 'Change the value to two …', 'Context · J11 memory journ…', 'Waiting for you · Manual convers…'). This looks intentional, and the full title is shown in the main header.",
-      "The 'Try automatic again' button sits right next to the plan-approval prompt. Its purpose is unclear while a plan is waiting for approval.",
-      "The 'Awaiting approval' badge is pink while the header's 'Waiting for you' chip is amber, so the same state is shown in two different colours."
+      "Sidebar list titles and subtitles are cut off with ellipses (e.g. 'Change the value to two…', 'Waiting for you · Manual convers…'). The full title still shows in the main header.",
+      "The bottom sidebar item 'Snapshot refresh fixture' has a status dot that looks partly clipped.",
+      "The 'Awaiting approval' badge uses small pink monospace text on a dark background, so it has fairly low contrast."
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal dims and blurs the conversation behind it, so text in the header and transcript is hard to read. This is expected for a modal backdrop.",
-      "The 'Optional' hint sits under the textarea instead of beside the 'What made you finish elsewhere?' label, so the field looks a little detached from it."
+      "The modal dialog does its job, but behind it the title 'Finished in my editor' is clipped along the top edge of the viewport.",
+      "The backdrop blurs everything behind the modal, so that content is unreadable. This is expected behaviour while a modal is open."
     ]
   }
 }

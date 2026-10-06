@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Git policy notice is cut off mid-sentence ('The original branch is preserved…') where the scrollable modal body meets the fixed footer. The rest should be reachable by scrolling, but nothing on screen shows there is more to read.",
-      "The 'Path on dev-madrid' input text runs past the field's right edge ('…/settings'), so the full path can't be seen without scrolling inside the field.",
-      "With the save-wait banner in place, the scrollable form area is quite short on this phone viewport."
+      "The 'Path on dev-madrid' input cuts off the long path value at the right edge (/tmp/jv0c5et/jevellan-browser-pSPEPt/settings…). This is normal input overflow, but the full path can't be seen without scrolling inside the field.",
+      "The Git policy notice ('…The original branch is preserved…') is clipped at the bottom of the scrollable modal body, where it meets the sticky footer. The body appears to scroll, but nothing on screen shows there is more content below.",
+      "The disabled 'Saving…' button has low contrast against its pale background, though it is still readable."
     ]
   }
 }

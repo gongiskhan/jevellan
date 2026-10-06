@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dialog text says the redo will run with effort 'low', but the blurred form behind it shows Effort set to 'high'. This may be a data mismatch worth checking, though it doesn't affect whether the screen renders correctly or is readable.",
-      "The background content behind the scrim, including the header 'Waiting for you' badge and the step metadata, is blurred and unreadable. This is expected for a modal overlay."
+      "The dialog says the step will be redone with 'Reply, Fable, low', but the form behind it shows Effort 'high'. This may be a data mismatch rather than a layout problem, so it's worth checking.",
+      "The page behind the modal is blurred and dimmed, as expected for an open dialog, so its contents can't be read in this screenshot."
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dimmed backdrop makes the 'Conversation settings' panel behind the modal hard to read. This is expected for a modal overlay.",
-      "The lower half of the screen below the modal is empty dimmed space."
+      "Background 'Conversation settings' panel is dimmed by the modal overlay, as expected, so its title text looks faint/blurred",
+      "Large empty dimmed area below the modal on the phone viewport"
     ]
   }
 }

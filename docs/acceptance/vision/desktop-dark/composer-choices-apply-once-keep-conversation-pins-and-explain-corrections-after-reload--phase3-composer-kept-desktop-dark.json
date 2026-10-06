@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Conversation titles in the sidebar are cut off with ellipses (for example 'Exercise composer choic…' and 'Explain the memorybrows…'). This looks deliberate, but the full titles can't be read without hovering or opening the conversation.",
-      "The conversation title is very close to the top edge of the window, with almost no padding above it.",
-      "The 'Proposed plan' heading and the 'The full fixture plan' subtitle are stacked tightly, with little space between them."
+      "Sidebar conversation titles and subtitles are cut off with an ellipsis (e.g. 'Exercise composer choic…', 'Done · Automatic fixture · dev-m…'). This looks like intentional overflow handling.",
+      "The two steps repeat the same tool text ('The plan has three steps.'), which is a bit redundant.",
+      "The 'Local time' label next to the step timestamps is low-contrast, muted text."
     ]
   }
 }

@@ -10,8 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Exercise answer options: change the valu...'), but the full text appears just below it and in the message bubble.",
-      "There is a large empty gap between the question card and the message box at the bottom."
+      "The header title is cut off with an ellipsis ('Exercise answer options: change the valu...'). The full text appears in the subtitle line and in the user message, so nothing is lost."
     ]
   }
 }

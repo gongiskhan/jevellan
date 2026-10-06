@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The evidence image preview in the right panel is a small thumbnail (~100px), so you can't make out its contents without opening it.",
-      "Main column is scrolled: the first step's 'Step details' block is partly tucked under the sticky conversation header, with its top edge clipped.",
-      "In the sidebar conversation list, a fourth entry is partly clipped and faded out above 'Some native sessions are unavailable'. It is a scrollable list, so the entry is still reachable."
+      "The evidence image preview in the right panel is a very small thumbnail (about 100px wide), so the screenshot's content is hard to see without opening it",
+      "In the sidebar conversation list, a fourth item is partly clipped above the 'Some native sessions are unavailable' row (an artifact of the scroll area)",
+      "In the main thread, the 'Step details · 1 finding' row at the top is partly hidden under the sticky header (normal scrolled state)",
+      "The recorded checkpoint hash appears as a small monospace chip with low contrast"
     ]
   }
 }

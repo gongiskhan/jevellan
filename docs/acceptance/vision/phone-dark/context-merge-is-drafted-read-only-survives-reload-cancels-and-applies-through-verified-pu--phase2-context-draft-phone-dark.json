@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background tab row behind the modal overlay is clipped at the left and right edges ('ver', 'Conf'). It is dimmed and not interactive while the modal is open.",
-      "The 'Open work' link uses a pink accent color that contrasts somewhat weakly with the dark card background, but it can still be read.",
-      "The 'Current instruction files' disclosure label is small and low-contrast compared with the rest of the dialog."
+      "Background page content shows faintly through the area around the modal, including a partly visible path string near the bottom edge; this is expected for a modal overlay and does not block anything",
+      "The 'Open work' link sits in a different place and color than the Cancel/Apply buttons, so it reads as a separate action from the button row"
     ]
   }
 }

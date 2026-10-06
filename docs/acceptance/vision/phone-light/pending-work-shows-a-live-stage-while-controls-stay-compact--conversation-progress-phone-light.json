@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The user message bubble sits almost against the right edge of the screen, with less padding than on the left.",
-      "There is a large empty gap between the message and the progress stage near the bottom.",
-      "The \"0s\" timer is small and far to the right, apart from the stage text it belongs to."
+      "The user message bubble runs to the right edge of the viewport and has almost no right margin.",
+      "There is a large empty gap between the message and the progress stage. That's expected while work is pending, but the stage sits at the very bottom.",
+      "The progress stage's spinner icon is on its own line above the 'Jev is choosing the next step' text, not inline with it."
     ]
   }
 }

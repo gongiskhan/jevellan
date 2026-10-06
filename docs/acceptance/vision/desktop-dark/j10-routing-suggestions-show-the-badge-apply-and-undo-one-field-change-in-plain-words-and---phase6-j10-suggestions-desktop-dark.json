@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar cuts off long session titles and subtitles with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This looks intentional, and the full names show elsewhere.",
-      "'Save schedule and jobs' has low contrast and looks disabled, which is probably right because nothing has changed.",
-      "The 'Apply and tell me' select next to the unchecked 'Memory care' row is dimmed and reads a bit like placeholder text.",
-      "Some diff lines wrap onto a second line instead of scrolling sideways. They're still readable."
+      "Session titles in the sidebar are cut off with ellipses ('Exercise answer options: …', 'Context · J11 memory jour…', 'Context · Mesh journey fix…'), and so are their subtitles ('dev-m…', 'dev-ma…').",
+      "The 'Save schedule and jobs' button and the 'Apply and tell me' dropdown have low contrast, so they look disabled, though they are still readable.",
+      "The 'Simulated judge responses.' note after each check summary is muted and low-contrast, but still readable.",
+      "The 'Last runs' card is much shorter than the 'Schedule and jobs' card beside it, leaving empty space below it."
     ]
   }
 }

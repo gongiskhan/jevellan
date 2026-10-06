@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Devices' tab is clipped at the left edge of the tab bar. This is likely a horizontally scrolling tab strip, so it can still be reached.",
-      "The 'Save Git settings' button has very low contrast, probably because it is disabled when nothing has changed. It is still readable.",
-      "A partly visible tab icon is cut off at the right edge of the tab bar."
+      "The tab strip clips the first tab label to 'es' at the left edge. The scroll arrows are visible, so the tab can still be reached.",
+      "The disabled 'Save Git settings' button has low contrast. This is expected for a disabled control."
     ]
   }
 }

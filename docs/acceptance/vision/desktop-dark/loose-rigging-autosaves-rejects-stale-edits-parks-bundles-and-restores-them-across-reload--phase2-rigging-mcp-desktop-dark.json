@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The file is labelled config.toml but the editor shows content in JSON format. Check whether the label or the content format is intended.",
-      "There is a large empty area inside the content textarea below the short JSON content. It is not a problem, just extra space.",
-      "The background page and sidebar behind the dialog are dimmed and blurred, so you can't read them. This is expected for a dialog and does not block anything."
+      "The editor shows JSON content while the file is labelled config.toml, which may confuse readers (this is a content issue, not a rendering one).",
+      "The page behind the modal is heavily dimmed, so the Rigging page itself is illegible in this capture. This is expected while the modal is open."
     ]
   }
 }

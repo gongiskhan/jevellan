@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal title includes the full recovery UUID ('Login recovery d0cd6a21-768e-4538-bbae-b976999f7832'), so it wraps to two lines and feels crowded on a phone-width screen.",
-      "The text 'Paste the test authorization code.' appears, but no code input field is visible in this state. That may be confusing, though it could be intended while the screen says 'Code sent. Waiting for sign-in to finish…'.",
-      "The blurred background shows the same long UUID wrapping in the card behind the modal. This is only visible through the blur and doesn't block anything."
+      "The dialog says \"Paste the test authorization code.\" but no code input field is visible. This may be intentional while the dialog waits for sign-in, but the instruction doesn't match what's on screen.",
+      "The long recovery ID in the title wraps onto two lines and makes the header heavy.",
+      "The page behind the dialog is blurred and dimmed. That is expected for a modal, but the dialog's bottom edge sits close to the card content underneath."
     ]
   }
 }

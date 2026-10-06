@@ -10,10 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header only shows a hamburger menu and a 'Conversations' label. It has no page title, so it looks sparse.",
-      "The settings chip 'Plan · Composer Fable · high' uses small monospace pink-on-pink text, so it has lower contrast than the rest of the form.",
-      "The 'Coming later' helper text under Device is very small and light grey, so it's hard to read.",
-      "There's a lot of empty space below the form card on the phone viewport."
+      "The 'Coming later' helper text under Device is very small and low-contrast, but you can still read it.",
+      "The page has a lot of empty space below the card."
     ]
   }
 }

@@ -9,9 +9,6 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": [
-      "The 'Optional' hint sits below the textarea rather than next to the 'What made you finish elsewhere?' label, so it's easy to miss",
-      "Background content behind the modal overlay is blurred and dimmed, as intended for a modal"
-    ]
+    "cosmetic": []
   }
 }

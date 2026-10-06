@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Behind the overlay, the background header text ('Change the value to two and publish th...') is truncated with an ellipsis. It is dimmed and not interactive while the dialog is open.",
-      "The dialog does not say 'step 1' in its title, only in the body text. The 'Undo and redo' button looks much stronger than 'Back', which may be intentional."
+      "The page title behind the overlay is cut off with an ellipsis (\"Change the value to two and publish th…\"). This is intended truncation and the title is dimmed behind the modal.",
+      "The background content is dimmed and partly hidden by the modal. This is expected for a confirmation dialog."
     ]
   }
 }

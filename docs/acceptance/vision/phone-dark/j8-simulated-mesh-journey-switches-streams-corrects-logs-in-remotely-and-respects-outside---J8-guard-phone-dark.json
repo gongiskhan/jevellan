@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis (\"J8: implement after the outside agent is...\"). The full text still shows in the subtitle line and the message bubble, so nothing is lost.",
-      "Most of the screen below the action buttons is empty, which is normal for a short conversation.",
-      "The two buttons stacked under the error, \"Retry\" and \"Try automatic again\", look different. \"Retry\" is filled and the other is outlined. The difference is readable, but which one to press is less obvious."
+      "The header title is cut off with an ellipsis ('J8: implement after the outside agent is...'). The full text still appears in the subtitle and in the message bubble.",
+      "There are two 'Retry' buttons, one on the user message and one under the blocked notice. It's not clear which one the user should press.",
+      "The Retry/Edit buttons inside the message bubble look cramped. The bubble also has a lot of empty space on its right side."
     ]
   }
 }

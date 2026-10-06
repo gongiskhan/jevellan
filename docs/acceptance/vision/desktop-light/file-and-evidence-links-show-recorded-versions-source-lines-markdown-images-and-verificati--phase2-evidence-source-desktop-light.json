@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Near the bottom of the transcript, the 'Jump to latest' button sits over the Step 2 'Changes / Why / Change step' buttons and partly hides them. Scrolling brings them back into view.",
-      "The last conversation row in the sidebar ('Context · Created i…') is cut off partway by the edge of the scroll area.",
-      "A faint bordered box under the conversation description (around y≈100) is cut off at the top of the transcript scroll area.",
-      "The 'Recorded checkpoint' hash label is small and low-contrast, but you can still read it."
+      "The middle conversation pane is cut off at the bottom by the 'Jump to latest' bar, so Step 2's 'Changes / Why / Change step' buttons are only half visible. This is ordinary scroll clipping and they can be reached by scrolling.",
+      "In the sidebar, the fourth conversation item is cut off above the 'Some native sessions are unavailable' row. This is also scroll clipping.",
+      "The evidence panel has a lot of empty space below the 'Open working copy' and 'Open recorded step' links.",
+      "The recorded checkpoint hash is shown in small, low-contrast monospace text."
     ]
   }
 }

@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The CLAUDE.md diff renders the symlink as '+ Symlink → AGENTS.md' inside a code diff, so it reads like file content rather than a link change.",
-      "The '-' lines with nothing after them (blank-line removals) and the bare trailing '+' line look like visual noise.",
-      "The 'Open work' link sits below the Cancel/Apply buttons, so it's easy to miss."
+      "The modal dialog covers the background projects list, which is expected for a modal",
+      "A sidebar conversation item near 'Some native sessions are unavailable' is clipped behind the scrim, which is expected behind a modal"
     ]
   }
 }

@@ -10,11 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Change the value to three, then redo thi...'). The full prompt still appears in the subtitle and the user message bubble.",
-      "Two identical 'No model can run this step right now' error banners are stacked one after the other.",
-      "The error banner text repeats 'disabled' six times, which says nothing useful about why models are unavailable.",
-      "The pink 'corrected: effort → max' and 'corrected: action → reply, effort → low' labels are small and lower-contrast than the text around them, but still readable.",
-      "'Local time' wraps onto its own line under the Started/Ended/Duration row in both steps."
+      "Header title is cut off with an ellipsis ('Change the value to three, then redo thi...'). The full text is shown in the subtitle and the message bubble, so nothing is lost.",
+      "The same 'No model can run this step right now' error appears twice in a row, and its text just repeats 'disabled' seven times. It's noisy but still readable.",
+      "Step 1's title is struck through and dimmed ('Undone'), so it has lower contrast. That looks intentional, and the text is still legible.",
+      "The pink 'corrected: ...' labels wrap onto a second line under the Step 1 header. Nothing overlaps."
     ]
   }
 }

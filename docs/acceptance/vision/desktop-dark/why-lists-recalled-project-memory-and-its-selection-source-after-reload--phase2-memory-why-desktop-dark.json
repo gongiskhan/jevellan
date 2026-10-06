@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fourth conversation row in the sidebar is cut off horizontally at the bottom edge of the scrollable list, just above 'Some native sessions are unavailable'. Only the tops of its letters show, though scrolling should reveal it.",
-      "Long conversation titles and subtitles in the sidebar are cut short with an ellipsis (e.g. 'Explain the memorybrows…', 'Waiting for you · Public memory …').",
-      "The 'JEV' footer in the Why panel ('This step was picked manually. Oct 6, 2026, 6:41 AM') sits right against the bottom edge of the viewport and may continue below the visible area."
+      "In the sidebar, the fourth conversation row is cut off at the bottom of the scroll area, so only the tops of its letters show above 'Some native sessions are unavailable'. You can still scroll to it, so it's not blocking.",
+      "Long conversation titles and subtitles in the sidebar are shortened with an ellipsis (e.g. 'Explain the memorybrows…', 'Waiting for you · Public memory …').",
+      "The right-hand 'Why this step' panel continues past the bottom of the screen at the 'JEV' section. It needs a scroll to see the rest, but the memory section is fully visible.",
+      "The 'Jev is unavailable (no key configured). Pick the next step:' notice appears twice: once in the right panel and once in the main conversation."
     ]
   }
 }

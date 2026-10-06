@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Jev key saved.' toast sits on top of the page subtitle under 'Decisions' and hides part of it ('Jev chooses each next step from the … give it.'). The toast is temporary, but the subtitle can't be read while it shows.",
-      "The Jev key input is empty with no placeholder. The 'Saved · ••••df4e' line does show the saved state, but the empty field looks like no key is set.",
-      "The Routing profile textarea cuts off a line of text at its bottom edge. The field scrolls, so the text can still be reached."
+      "The 'Jev key saved.' toast sits on top of the Decisions subtitle and hides part of it ('Jev chooses each next step from the … give it'). The toast is temporary and has a close button, so the text can still be read once it goes away.",
+      "The Routing profile textarea cuts off its last line, so the text continues below the visible area. The box can be scrolled and resized, so the content can still be reached.",
+      "The last item in the sidebar conversation list ('Context · Improver sandbox') is cut off by the 'Some native sessions are unavailable' footer. The list scrolls, so it can still be reached.",
+      "Not a layout problem, but worth a look: the connection result says 'Saved model: jev-1.13.0. Returned models: jev-latest.' The saved model isn't in the returned list, and the screen doesn't flag this as a warning."
     ]
   }
 }

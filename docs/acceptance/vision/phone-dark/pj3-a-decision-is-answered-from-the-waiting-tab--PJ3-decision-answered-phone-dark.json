@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'WAITING FOR YOU 0' heading and the 'Idle' and model metadata text are small and low-contrast against the dark background, but they're still readable.",
-      "Below the content, most of the screen is empty space."
+      "The 'Answered 1' section is collapsed, so you can't see the answered decision itself without expanding it",
+      "'Waiting for you 0' shows a count of zero next to the 'Nothing waiting.' text, which says the same thing twice",
+      "Most of the screen below the content is empty"
     ]
   }
 }

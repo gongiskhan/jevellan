@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab strip cuts off its first and last labels at the screen edges (\"ing\" on the left, a partial tab on the right). It looks like a horizontally scrollable strip, but nothing shows that more tabs are there.",
-      "The diff blocks have extra empty space below the last line of code.",
-      "The \"Save schedule and jobs\" button and the \"Apply and tell me\" placeholder are low-contrast and look disabled. This is probably intentional because nothing has changed yet.",
-      "The \"Simulated judge responses.\" note and the Trial log subtitle are in small, dim text that is harder to read."
+      "The 'Devices' tab is clipped at the right edge of the horizontal tab strip. Scroll arrows are shown, so the tab can still be reached.",
+      "The 'Save schedule and jobs' button has low contrast against the card, probably because it is disabled while nothing has changed.",
+      "The 'Simulated judge responses.' note and the 'Apply and tell me' placeholder are dim muted text, but both can still be read.",
+      "Long lines in the diffs wrap inside the code blocks, which makes them a little harder to scan on a phone."
     ]
   }
 }

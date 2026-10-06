@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab strip is cut off at both edges ('ing' on the left, a partial icon on the right). It looks like a horizontally scrollable tab bar, but nothing on screen shows that it scrolls.",
-      "The 'Apply and tell me' field next to Memory care and the 'Save schedule and jobs' button are greyed out and low contrast. They're still readable, and they appear to be disabled until something changes."
+      "The 'Devices' tab label is clipped by the right scroll arrow in the tab strip. The strip scrolls sideways and has arrow buttons, so the tab can still be reached.",
+      "In the Memory care row, the disabled 'Apply and tell me' select and the greyed 'Save schedule and jobs' button have low contrast, though both can still be read.",
+      "The 'Simulated judge responses.' note in the case-check boxes is small, light-coloured text."
     ]
   }
 }

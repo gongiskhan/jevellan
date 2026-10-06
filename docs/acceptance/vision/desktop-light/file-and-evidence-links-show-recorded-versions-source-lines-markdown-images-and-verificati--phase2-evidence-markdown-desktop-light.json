@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fourth conversation in the sidebar list is cut off at the bottom edge, just above 'Some native sessions are unavailable'. This is normal scroll clipping, but the half-visible line looks untidy.",
-      "The 'Jump to latest' button sits close to Step 2's '1 tool' row and the message box but does not overlap them.",
-      "The first entry in the evidence panel heading ('step 1 docs/Guide with spaces.md') uses a small monospace label that is low in contrast but still readable."
+      "In the sidebar, the fourth conversation row is half-clipped at the bottom edge of the scrollable list, just above the 'Some native sessions are unavailable' note.",
+      "The main transcript's Step 2 '1 tool' row is cut off behind the 'Jump to latest' bar. This is expected scroll overflow, but it looks slightly crowded.",
+      "The 'Show source' toggle sits tight against the 'Evidence guide' heading, so it reads as part of the heading block."
     ]
   }
 }

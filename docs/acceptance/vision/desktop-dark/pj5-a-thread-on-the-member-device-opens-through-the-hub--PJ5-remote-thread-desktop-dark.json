@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…', 'dev-…'), so the full names only show on hover or when expanded.",
-      "The thread metadata line ('Codex · GPT · high effort · Projects Codex · Worktree on jv/read-the-readme-on-the-member-1xggak · Browser member') is long, small, low-contrast monospace text that nearly fills the header width. It is still readable.",
-      "Much of the area below the report card is empty because the thread has only one turn."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Mesh journey fixture · de…'). This is intentional truncation, and the 'Done' status is still readable.",
+      "The header shows an 'Idle' status, yet the 'Stop' button is still shown as active, which is a minor state inconsistency.",
+      "The light grey metadata line under the title ('Codex · GPT · high effort · …') is small and low-contrast but still readable."
     ]
   }
 }

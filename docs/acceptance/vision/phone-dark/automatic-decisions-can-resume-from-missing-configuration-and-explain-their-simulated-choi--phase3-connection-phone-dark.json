@@ -10,11 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The settings tab strip is cut off at both edges (\"ames\" on the left and an icon on the right). It looks like a horizontally scrolling strip, but nothing shows that it scrolls.",
-      "The Effort guide descriptions are cut off inside their single-line inputs (low, high, xhigh, max), so you can't read the full guidance without scrolling inside each field.",
-      "The Routing profile text runs past the visible part of the textarea; the last line is half-clipped at the bottom edge.",
-      "The 'claude' provider label in the model card is low-contrast grey on the dark card.",
-      "The 'Jev key saved.' toast sits right under the 'Saving creates a configuration revision.' footer, close to the bottom edge, but it doesn't cover any control."
+      "Effort guide single-line inputs cut off their longer descriptions (low, high, xhigh, max) at the field edge. You can still read the full text by scrolling inside each field.",
+      "The Routing profile textarea cuts off its last line at the bottom edge. The field can be scrolled and resized.",
+      "The tab bar runs off the screen to the right ('Improver' and beyond), but scroll arrows are there to reach the other tabs.",
+      "The 'Jev key saved.' toast sits over the bottom of the page under the 'Saving creates a configuration revision.' note. It doesn't cover any controls."
     ]
   }
 }

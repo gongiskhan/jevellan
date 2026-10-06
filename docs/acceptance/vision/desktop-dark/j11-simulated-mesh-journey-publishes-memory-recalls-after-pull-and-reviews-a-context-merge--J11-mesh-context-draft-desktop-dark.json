@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The diff blocks end with empty lines ('-' and '+' with no text after them), which look like leftover artifacts.",
-      "The truncated sidebar conversation titles ('Context · J11 context jour...') sit behind the dimmed modal backdrop. This is expected."
+      "The diff preview shows a bare '+' line at the end of the AGENTS.md block and bare '-' lines (trailing blank lines). They look like empty diff markers.",
+      "The 'Current instruction files' disclosure sits close to the dialog's bottom edge, with tight padding."
     ]
   }
 }

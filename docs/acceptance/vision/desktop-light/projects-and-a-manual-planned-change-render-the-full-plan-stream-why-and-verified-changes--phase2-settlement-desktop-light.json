@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background content is dimmed by the modal overlay, as expected. Underneath it, the 'Proposed plan' heading sits very close to the 'The full fixture plan' subtitle, and the modal covers part of the subtitle.",
-      "In the background conversation, the top line just under the prompt summary is partly cut off at the scroll edge."
+      "In the dimmed background, the 'Proposed plan' heading and its 'The full fixture plan' subtitle sit very close together, possibly overlapping. The modal overlay covers them, so this doesn't affect the settlement screen.",
+      "The 'Discard…' button label ends in an ellipsis. This looks intentional (the action opens a confirmation step), not text being cut off."
     ]
   }
 }

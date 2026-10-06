@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Grammar: '1 changed files' should be '1 changed file'",
-      "Large empty area below the verification card (expected for minimal content)"
+      "The file-count label reads \"1 changed files\" instead of \"1 changed file\".",
+      "The page ends after the verification card, which leaves a large empty area in the bottom half of the viewport."
     ]
   }
 }

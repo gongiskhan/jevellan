@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab strip is cut off at the left edge (a partial 'ng' label shows before 'Decisions'). It looks like a horizontally scrolling tab bar, so it isn't blocking, but there is no visible sign that it scrolls.",
-      "The 'Last runs' list is long and repeats 'No working rules to suggest.' many times, which pushes the 'Recently decided' cards far down the page.",
-      "The diff code blocks use small monospace text on a dark background. It is readable but dense at phone width."
+      "The top tab strip cuts off the 'Devices' tab at the right edge. It looks like a horizontally scrollable strip, so the tab can still be reached.",
+      "In the diff code blocks, long lines wrap mid-path (for example 'b/menu/claude-sonnet/description'), which makes the diffs a little harder to scan.",
+      "Long titles under 'Last runs' (for example 'AGENTS.md · Outside context fixture') wrap to two lines next to the timestamp and 'Open log', so the list looks uneven."
     ]
   }
 }

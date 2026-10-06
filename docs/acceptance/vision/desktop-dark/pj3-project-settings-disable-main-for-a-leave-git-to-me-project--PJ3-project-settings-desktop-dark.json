@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The disabled 'Main' radio option and its helper text 'This project is set to Leave git to me.' are low-contrast against the dark modal background, but still readable.",
-      "The 'npm ci' placeholder in the Worktree setup command field is faint and could be mistaken for an empty field."
+      "The disabled 'Main' option and its note ('This project is set to Leave git to me.') have low contrast against the dark dialog. They're still readable.",
+      "The note's wording is a bit awkward: it doesn't say Main is unavailable because of the 'Leave git to me' setting."
     ]
   }
 }

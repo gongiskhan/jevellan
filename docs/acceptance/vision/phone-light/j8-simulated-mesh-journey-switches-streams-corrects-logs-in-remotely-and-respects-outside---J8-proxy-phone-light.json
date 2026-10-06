@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Header title is truncated with an ellipsis ('J8: run on device B while I steer from de...'). The full text appears in the body, so this is acceptable on a phone.",
-      "The 'Waiting for you' status chip and the monospace fixture chips are small and low-contrast but still readable.",
-      "There is not much space between the 'Continue' button and the bottom composer, though they don't overlap."
+      "The header title 'J8: run on device B while I steer from de...' is cut off with an ellipsis. This looks like intended single-line truncation, and the full context still shows in the body text.",
+      "The 'Model' dropdown text 'Mesh Codex' sits close to its chevron, but both are still readable."
     ]
   }
 }

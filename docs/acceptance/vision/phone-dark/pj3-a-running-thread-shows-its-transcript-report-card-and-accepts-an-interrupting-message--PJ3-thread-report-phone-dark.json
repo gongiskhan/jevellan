@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Header title is cut off with an ellipsis ('Read through the project an...'), which is expected for a long thread title in a narrow header.",
-      "The terminal attach command 'jevellan thread attach thread_01M47TY2V8FAZXG...' is cut off at the right edge. The copy button next to it still gives the full command.",
-      "The worktree path text in the meta line wraps across several lines ('jv/read-through-the-project-and-list-what-e-bt2as6 · dev-madrid'), which makes the header area dense."
+      "The header title is cut off with an ellipsis (\"Read through the project an...\"). This looks deliberate, and the full task text appears in the Prompt card.",
+      "The terminal attach command at the bottom is cut off (\"thread_01M484SB308NABG...\"). A copy button sits next to it, so the full command can still be copied.",
+      "The metadata lines (worktree path, host) wrap over several lines with a dangling \"·\" separator, which looks a little ragged."
     ]
   }
 }

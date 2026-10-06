@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The error banner 'No model can run this step right now: disabled, disabled, disabled, disabled, disabled, disabled.' appears twice in a row, and the repeated 'disabled' list is hard to read.",
-      "The struck-through 'Step 1 · Implement' title and the 'Undone' label are low-contrast grey on a dark background, so they are hard to read, though still legible.",
-      "The 'Local time' labels and the grey 'Started/Ended' metadata have low contrast.",
-      "Session titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Change the value to thre…', 'Done · Browser fixture · dev-mad…'). This looks intentional, and the full title appears in the header."
+      "The same 'No model can run this step right now' error banner appears twice in a row.",
+      "The banner text says 'disabled' eight times instead of naming which models are unavailable.",
+      "At the bottom of the sidebar conversation list, a fifth item is cut off behind the 'Some native sessions are unavailable' notice. The list looks scrollable, so this is clipping rather than hidden content.",
+      "Some secondary text is dim against the dark background: 'Local time', 'Undone', the struck-through 'Step 1 · Implement' heading and '1 tool'. It is still readable.",
+      "The pink 'corrected: effort → max' and 'corrected: action → reply, effort → low' labels are small and fairly low contrast."
     ]
   }
 }

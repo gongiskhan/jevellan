@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip is cut off at both edges ('ing' on the left, a partial tab on the right). It looks like a horizontally scrolling tab bar, but nothing on screen shows that it scrolls.",
-      "'Last runs' says '2 routing suggestions ready', but only one suggestion is waiting because the other was undone. The count may confuse users, but it doesn't affect the layout.",
-      "The 'Apply and tell me' field next to the unchecked 'Memory care' option looks like placeholder text and is low-contrast.",
-      "The 'Save schedule and jobs' button looks disabled and has low contrast. That's expected when nothing has changed."
+      "The 'Devices' tab label in the top tab bar sits partly under the right scroll arrow. The tab bar scrolls sideways, so the tab can still be reached.",
+      "Long diff lines wrap mid-path in the code blocks (e.g. 'a/menu/claude-opus/description' breaks onto a second line), which makes them a little harder to scan. They are still readable.",
+      "The 'Apply and tell me' field next to Memory care has very light placeholder text and doesn't look clearly like a control, though it can be read."
     ]
   }
 }

@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background page is blurred and dimmed behind the modal. This is normal for a modal, but it means the rest of the Rigging page can't be checked in this capture.",
-      "The file label says config.toml, but the content editor shows JSON. This may be intended as a preview of the MCP entry, but it could confuse users.",
-      "The Content textarea has a lot of empty space below the short JSON content."
+      "The file label says config.toml, but the content box shows JSON. That may be confusing, but it doesn't affect layout or legibility.",
+      "The content box is much taller than its six lines of content and leaves a large empty area."
     ]
   }
 }

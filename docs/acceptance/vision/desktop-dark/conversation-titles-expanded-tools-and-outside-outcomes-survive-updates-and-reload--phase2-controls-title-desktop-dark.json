@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The conversation title in the header is cut off with an ellipsis ('Unbroken_title_titl…'). This looks intentional, but the full title can't be seen on this screen.",
-      "The long tool header name 'long_tool_header_…' breaks in the middle of a word across lines ('lon' / 'g_tool_header'). It is still readable but looks awkward.",
-      "Sidebar conversation titles and subtitles are shortened with ellipses ('A conversation with a lon…', 'Exercise reviewed checkp…'), which is expected for the narrow sidebar.",
-      "'Jump to latest' sits close to the composer and the Jev-unavailable panel, though nothing overlaps."
+      "The long conversation title at the top is cut off with an ellipsis on one line. This looks like intended truncation, but it hides the end of the title.",
+      "The long tool header 'long_tool_header_…' breaks mid-word across three lines and pushes the 'Read project ·' label onto its own line. It is still readable, but it looks awkward.",
+      "Sidebar conversation titles and subtitles are cut off with ellipses (for example, 'A conversation with a lon…'). This is expected sidebar truncation.",
+      "The 'Input' label sits directly under the wrapped tool header with little spacing."
     ]
   }
 }

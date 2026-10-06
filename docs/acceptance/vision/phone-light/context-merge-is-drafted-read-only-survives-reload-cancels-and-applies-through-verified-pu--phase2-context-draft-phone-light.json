@@ -10,7 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Background page content shows through the dimmed overlay below the modal (tabs and path text), but it does not interfere with the dialog."
+      "The heading 'Context · Context fixture' repeats the word 'Context'.",
+      "Inside the CLAUDE.md diff, the line '+ Symlink → AGENTS.md' looks like file content, not a link action, so it can be misread.",
+      "The 'Open work' link sits below the Cancel/Apply buttons and is spaced loosely from them.",
+      "The background page behind the modal is dimmed and partly cut off at the edges. That's expected with a modal open."
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Open sign-in page' button sits almost directly on top of the 'Authorization code' label, so the gap between them is much tighter than elsewhere in the dialog.",
-      "The 'Continue' button has low contrast in its disabled waiting state and is hard to see against the dark dialog background, though it can still be read."
+      "The 'Authorization code' label sits almost directly under the 'Open sign-in page' button with almost no vertical gap. It doesn't overlap, but it looks cramped.",
+      "The disabled 'Continue' button has low contrast against the dark modal background. That fits a disabled state, but it's faint."
     ]
   }
 }

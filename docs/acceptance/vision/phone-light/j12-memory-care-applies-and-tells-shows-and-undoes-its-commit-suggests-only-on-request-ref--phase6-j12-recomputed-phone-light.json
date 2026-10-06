@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Long paths and diff lines in the code blocks wrap onto several lines. They stay readable but are dense at phone width.",
-      "The headings in the 'Last runs' list (e.g. 'AGENTS.md · Checkpoint recovery fixture') wrap to two or three lines next to the timestamp and 'Open log' link. This makes the list long but nothing overlaps.",
-      "The page is very tall (about 5,400px), so the 'Recently decided' section is a long way below the main content."
+      "The top tab strip cuts off the last tab ('Devices') at the right edge. It looks like a horizontally scrollable tab row, so the tab is likely still reachable.",
+      "The diff code blocks wrap long paths and lines mid-token, which makes them dense to read at phone width but still legible.",
+      "The page is very long (about 5958px), and the 'Last runs' list repeats many near-identical 'No working rules to suggest' rows, so it is hard to scan.",
+      "The trial log table's column headers wrap onto several lines in narrow columns."
     ]
   }
 }

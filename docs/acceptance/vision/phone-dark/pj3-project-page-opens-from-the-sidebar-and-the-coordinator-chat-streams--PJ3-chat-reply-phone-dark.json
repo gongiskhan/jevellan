@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Idle' status and the 'Claude Code Fable · high' label in the header use small, low-contrast monospace text, but it's still readable",
-      "The chat area has a lot of empty space below the reply. That's expected for a short conversation"
+      "The muted gray text in the subtitle ('Claude Code Fable · high') and the 'Started \"Add a greeting\"' activity line has fairly low contrast against the dark background, but it can still be read.",
+      "The large empty space between the chat reply and the composer is expected for a short conversation."
     ]
   }
 }

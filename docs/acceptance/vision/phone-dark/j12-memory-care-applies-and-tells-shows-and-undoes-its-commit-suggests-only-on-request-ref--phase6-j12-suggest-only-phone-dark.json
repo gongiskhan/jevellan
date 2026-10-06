@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The full-page capture is very tall (390x5333), so at the scale I viewed it the small monospace diff text and timestamps were only just readable. They appear intact, but I couldn't confirm every character.",
-      "The Improver tab badge in the top nav is small and sits close to the tab label.",
-      "Long diff lines in the recently decided cards wrap within the code block. This is legible but harder to scan."
+      "Image was reviewed downscaled to about a third of its size (132x2000 from 390x5897), so the small monospace diff text could not be fully checked for legibility; at that size it appears to wrap without clipping.",
+      "Trial log table columns ('WEEK OF', 'IN JEVELLAN', 'OUTSIDE', 'WHY THEY FINISHED ELSEWHERE') look cramped at phone width, with headers wrapping onto several lines.",
+      "Long diff lines in the suggestion cards wrap mid-path instead of scrolling horizontally, which makes the patches a little harder to scan."
     ]
   }
 }

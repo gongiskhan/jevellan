@@ -10,7 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Large empty area below the content. It's expected for a short notebook entry but leaves most of the panel blank."
+      "The panel has a lot of empty white space under the short note. That's expected for a note this short."
     ]
   }
 }

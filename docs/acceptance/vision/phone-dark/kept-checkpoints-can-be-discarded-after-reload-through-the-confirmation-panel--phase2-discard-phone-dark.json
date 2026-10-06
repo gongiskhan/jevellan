@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Settle kept changes' button and the conversation settings behind the modal are dimmed and hard to make out. This is expected for a modal backdrop.",
-      "There is a lot of empty space below the dialog, which sits in the upper-middle of the screen."
+      "The background panel ('Conversation settings', with the Next step, Model and Effort selects and the 'Settle kept changes' button) is heavily dimmed behind the modal and very low contrast. This is normal for a modal backdrop, but that content can't be read in this capture.",
+      "The dialog sits slightly above vertical center and leaves a large empty dark area below it. This is acceptable but looks unbalanced on a tall phone viewport."
     ]
   }
 }

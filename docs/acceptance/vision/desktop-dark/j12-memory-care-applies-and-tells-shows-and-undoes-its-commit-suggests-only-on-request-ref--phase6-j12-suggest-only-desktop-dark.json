@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The diff in the first 'Suggested memory care' card stops partway through the second file header ('--- a/.jevellan/memory/test-conventions-2.md'). It looks like a scrollable code block that is capped in height, but nothing in the screenshot shows the rest of the diff is there.",
-      "In the sidebar, the shell session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Mesh journey fix…').",
-      "The 'Run nightly at' time field and the 'Save schedule and jobs' button are low-contrast, which looks like a disabled state, but they are still legible.",
-      "The 'Last runs' column is much taller than the 'Schedule and jobs' card, which leaves a large empty space under the schedule card."
+      "Sidebar session titles are cut off with ellipses (e.g. 'Exercise answer options: c…', 'Context · J11 memory jour…'). This looks intentional, but the full titles can't be read.",
+      "The commit and revert hashes in the Undone memory care card ('Commit 1bccab2719 · reverted in 4ebf98bf3e') are small, low-contrast text.",
+      "The 'Checked against 27 saved cases… Simulated judge responses.' footers in the Recently decided cards use dim text on a dark background, so contrast is low.",
+      "The Last runs column is long and stretches well below the Schedule and jobs panel, leaving a large empty area under the left column."
     ]
   }
 }

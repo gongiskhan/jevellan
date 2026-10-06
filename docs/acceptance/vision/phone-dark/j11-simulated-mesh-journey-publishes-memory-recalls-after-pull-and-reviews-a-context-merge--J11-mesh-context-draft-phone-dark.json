@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The page behind the modal still shows through clearly below it (\"This repository is public. Memory committed here is public too.\"), which pulls the eye away from the dialog a little",
-      "Both diffs show lines that are only \"-\" or \"+\" for blank lines, which adds a little visual noise",
-      "The \"Open work\" link is placed apart from the Cancel/Apply buttons, so its grouping is a bit unclear"
+      "The page behind the modal shows faintly through the dark overlay at the top and bottom edges. This is expected for a modal and doesn't stop anything from being read or used.",
+      "The collapsed 'Current instruction files' row sits close to the modal's bottom edge, with little padding below it."
     ]
   }
 }

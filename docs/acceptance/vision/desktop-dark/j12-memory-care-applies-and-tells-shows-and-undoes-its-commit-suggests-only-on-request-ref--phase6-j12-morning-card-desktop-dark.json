@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles are truncated with ellipses ('Context · J11 memory jour...', 'Context · Mesh journey fix...'). This is expected overflow behaviour.",
-      "The 'Save schedule and jobs' button is low-contrast and looks disabled, which is likely intentional when nothing has changed.",
-      "The Last runs column is much taller than the Schedule and jobs card, so a large empty area sits below the left card.",
-      "The muted secondary text (memory file paths, 'Simulated judge responses.', the dates) has fairly low contrast on the dark background, but it is still legible."
+      "Large empty area below the 'Schedule and jobs' card, because the 'Last runs' column next to it is much taller",
+      "Session titles in the sidebar are cut off with ellipses (e.g. 'Exercise answer options: c…'), as designed",
+      "The 'Save schedule and jobs' button text is low-contrast, which looks like a disabled state"
     ]
   }
 }

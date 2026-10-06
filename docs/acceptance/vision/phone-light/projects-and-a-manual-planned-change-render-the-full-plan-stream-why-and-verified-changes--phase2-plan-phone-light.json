@@ -9,10 +9,6 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": [
-      "The 'Waiting for plan approval' prompt appears three times (the 'Awaiting approval' badge, the orange notice and the 'Review plan ↑' line), which feels redundant on a small screen",
-      "The header chips ('Manual conversation fixture', 'dev-madrid', 'Waiting for you') use very small monospace text, so they're readable but tight",
-      "'Try automatic again' appears while a plan is waiting for approval, which may confuse users about which action comes first"
-    ]
+    "cosmetic": []
   }
 }
