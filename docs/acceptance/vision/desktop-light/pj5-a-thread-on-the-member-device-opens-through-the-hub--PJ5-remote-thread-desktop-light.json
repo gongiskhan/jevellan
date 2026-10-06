@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "PJ5 a thread on the member device opens through the hub",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/PJ5-remote-thread-desktop-light.png",
-  "expected": "the Jevellan web app \"remote thread\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PJ5 a thread on the member device opens through the hub\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"remote thread\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PJ5 a thread on the member device opens through the hub\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Sidebar session titles and metadata are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'), but each one still identifies its session.",
+      "Most of the area under the report card is empty, which is expected for a short thread."
+    ]
+  }
 }

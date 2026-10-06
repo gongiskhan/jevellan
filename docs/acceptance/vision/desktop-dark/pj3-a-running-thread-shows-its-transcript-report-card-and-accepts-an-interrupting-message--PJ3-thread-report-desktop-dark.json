@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "PJ3 a running thread shows its transcript, report card and accepts an interrupting message",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/PJ3-thread-report-desktop-dark.png",
-  "expected": "the Jevellan web app \"thread report\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PJ3 a running thread shows its transcript, report card and accepts an interrupting message\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"thread report\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PJ3 a running thread shows its transcript, report card and accepts an interrupting message\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'dev-ma…'), but the full text is likely available in other ways",
+      "The status pill reads 'Idle' even though this step is about a running thread. That's a state question rather than a rendering problem",
+      "The large empty area between the report card and the composer makes the layout feel sparse"
+    ]
+  }
 }

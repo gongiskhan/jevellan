@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "PJ3 the GitHub token card saves, replaces and removes the token",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/PJ3-github-token-desktop-light.png",
-  "expected": "the Jevellan web app \"github token\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PJ3 the GitHub token card saves, replaces and removes the token\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"github token\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PJ3 the GitHub token card saves, replaces and removes the token\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Sidebar thread titles are cut off with ellipses ('Context · J11 memory journ…', 'Context · Mesh journey fixt…') and so are their subtitles ('dev-ma…', 'dev-…', 'de…'). This looks like intended overflow handling.",
+      "The 'Save Git settings' button is low-contrast. It appears to be a disabled state, which fits since nothing has changed.",
+      "The 'Check a project' dropdown shows 'Outside context fixture', which is not in the sidebar's project list. Possibly fixture data."
+    ]
+  }
 }

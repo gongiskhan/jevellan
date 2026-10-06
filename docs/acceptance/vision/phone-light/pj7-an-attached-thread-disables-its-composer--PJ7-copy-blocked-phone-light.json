@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "PJ7 an attached thread disables its composer",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/PJ7-copy-blocked-phone-light.png",
-  "expected": "the Jevellan web app \"copy blocked\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PJ7 an attached thread disables its composer\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"copy blocked\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PJ7 an attached thread disables its composer\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The metadata line 'Worktree on jv/tidy-the-readme-wording-8911jn ·…' is cut short with an ellipsis. It looks intentional, but the rest of the line can't be read.",
+      "The highlighted command text is magenta on a magenta-tinted background and wraps over two lines. It's still readable, but the contrast is lower than the surrounding text.",
+      "There is a large empty gap between the report card and the composer area."
+    ]
+  }
 }

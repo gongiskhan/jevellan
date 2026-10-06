@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "PJ4b the Why panel explains placement and overrides apply",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/PJ4b-override-modal-phone-light.png",
-  "expected": "the Jevellan web app \"override modal\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PJ4b the Why panel explains placement and overrides apply\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"override modal\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PJ4b the Why panel explains placement and overrides apply\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "In the dimmed background behind the modal, the header metadata line ('Worktree on jc/tidy-the-readme-wording-6b42b1 ...') and the bottom 'jevellan thread attach thread_01MrTK...' command are cut off with ellipses. They sit behind the overlay and don't affect the modal.",
+      "The Note textarea's pink focus ring sits close to the divider above the footer buttons."
+    ]
+  }
 }

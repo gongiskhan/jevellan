@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "PJ5 an offline coordinator shows the notice and Move coordinator here",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/PJ5-moved-desktop-light.png",
-  "expected": "the Jevellan web app \"moved\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PJ5 an offline coordinator shows the notice and Move coordinator here\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"moved\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PJ5 an offline coordinator shows the notice and Move coordinator here\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Mesh journey fixt…', 'dev-ma…'). The cutoff is intentional, and the full text isn't needed to understand this screen.",
+      "There is a lot of empty space between the 'The coordinator moved to dev-madrid.' notice and the message box. This is expected because the conversation is empty."
+    ]
+  }
 }

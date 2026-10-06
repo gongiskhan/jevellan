@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "PJ7 an attached thread disables its composer",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/PJ7-attached-desktop-dark.png",
-  "expected": "the Jevellan web app \"attached\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PJ7 an attached thread disables its composer\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"attached\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PJ7 an attached thread disables its composer\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'). This is intentional truncation and the full text is available elsewhere.",
+      "The disabled composer's placeholder 'Message this thread' and the dim send arrow are low-contrast on the dark background. That fits a disabled state, but the text is faint.",
+      "The metadata line ('Claude Code · Fable · high effort · …') is small, low-contrast monospace text."
+    ]
+  }
 }

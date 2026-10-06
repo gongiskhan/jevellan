@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "PJ3 a running thread shows its transcript, report card and accepts an interrupting message",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/PJ3-thread-report-desktop-light.png",
-  "expected": "the Jevellan web app \"thread report\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PJ3 a running thread shows its transcript, report card and accepts an interrupting message\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"thread report\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PJ3 a running thread shows its transcript, report card and accepts an interrupting message\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · dev-ma…'). The truncation is deliberate and the full titles are not needed on this screen.",
+      "The status badge says 'Idle' while the Stop button is still shown and the step describes a running thread. This is a state mismatch, not a rendering problem.",
+      "Below the transcript there is a large empty area between the report card and the message box."
+    ]
+  }
 }

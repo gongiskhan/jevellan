@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "PJ7 an attached thread disables its composer",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/PJ7-copy-blocked-phone-dark.png",
-  "expected": "the Jevellan web app \"copy blocked\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PJ7 an attached thread disables its composer\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"copy blocked\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PJ7 an attached thread disables its composer\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The worktree metadata line under the header is cut off with an ellipsis ('Worktree on jv/tidy-the-readme-wording-d6wb6g ·…'). The truncation is intentional, but part of the text can't be read.",
+      "The highlighted attach command wraps across two lines, and its pink highlight ends unevenly on each line.",
+      "There is a large empty gap between the report card and the footer area.",
+      "The composer is disabled, shown with a dashed border and a dimmed placeholder. That is subtle, but the explanatory text above it ('Messages wait until you exit') makes the state clear."
+    ]
+  }
 }

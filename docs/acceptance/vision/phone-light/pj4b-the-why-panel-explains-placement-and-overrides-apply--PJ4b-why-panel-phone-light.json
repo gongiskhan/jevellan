@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "PJ4b the Why panel explains placement and overrides apply",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/PJ4b-why-panel-phone-light.png",
-  "expected": "the Jevellan web app \"why panel\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PJ4b the Why panel explains placement and overrides apply\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"why panel\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PJ4b the Why panel explains placement and overrides apply\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The footer meta line 'Placement · jev-browser-simulated · 60 tokens · 6 ms' wraps so '6 ms' sits alone on its own line",
+      "The task title 'Tidy the README wording' and the 'Why this placement' heading are packed tightly into the header next to the close button",
+      "There's a large empty area below the JEV footer section"
+    ]
+  }
 }

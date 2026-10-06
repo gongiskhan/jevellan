@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "PJ3 project page opens from the sidebar and the coordinator chat streams",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/PJ3-chat-reply-phone-light.png",
-  "expected": "the Jevellan web app \"chat reply\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PJ3 project page opens from the sidebar and the coordinator chat streams\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"chat reply\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PJ3 project page opens from the sidebar and the coordinator chat streams\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Large empty area between the reply and the composer. That's expected for a short chat, but the screen looks sparse.",
+      "The secondary status text ('Idle · Claude Code Fable · high', the activity line and the timestamp) is small and low-contrast grey, though still readable."
+    ]
+  }
 }

@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "PJ3 a pull request merges through the modal and moves to Concluded",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/PJ3-pull-request-conflict-phone-light.png",
-  "expected": "the Jevellan web app \"pull request conflict\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PJ3 a pull request merges through the modal and moves to Concluded\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"pull request conflict\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PJ3 a pull request merges through the modal and moves to Concluded\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The Merge button is greyed out with low contrast (light grey text on a light grey background). This is probably intentional because conflicts disable it, but it is harder to read than the other controls.",
+      "The 'Idle' badge and the 'Claude Code Fable · high' subtitle under the header use very small monospace text. It is readable but cramped.",
+      "The PR card takes up only the top third of the screen, leaving a large empty area below it."
+    ]
+  }
 }

@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "PJ7 an attached thread disables its composer",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/PJ7-copy-blocked-desktop-light.png",
-  "expected": "the Jevellan web app \"copy blocked\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PJ7 an attached thread disables its composer\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"copy blocked\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PJ7 an attached thread disables its composer\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Sidebar session titles and metadata are truncated with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'); the full text can still be found elsewhere.",
+      "Some text is low-contrast and small: the pale gray monospace metadata line under the header and the 'Some native sessions are unavailable' note.",
+      "Most of the main pane is empty space between the report card and the composer."
+    ]
+  }
 }

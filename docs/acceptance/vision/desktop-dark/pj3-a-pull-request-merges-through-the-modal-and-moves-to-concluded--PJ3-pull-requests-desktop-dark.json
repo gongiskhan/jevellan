@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "PJ3 a pull request merges through the modal and moves to Concluded",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/PJ3-pull-requests-desktop-dark.png",
-  "expected": "the Jevellan web app \"pull requests\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PJ3 a pull request merges through the modal and moves to Concluded\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"pull requests\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PJ3 a pull request merges through the modal and moves to Concluded\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The title of the running task in the right panel is cut off with an ellipsis ('Read through the project and list what each file is ...'). The full text can still be read in the conversation.",
+      "Sidebar session titles are cut off ('Context · J11 memory journ...', 'Context · Mesh journey fixt...'), and so are their subtitles ('dev-ma...', 'dev-...', 'de...').",
+      "The conversation shows several 'Noted.' replies in a row, which adds visual repetition.",
+      "The conversation shows both 'Checks failing' and 'Checks passing' cards for pull request #1, plus a 'has conflicts' card, while the pull request panel shows 'Checks passing'. The state is consistent but may look confusing next to the Merge button."
+    ]
+  }
 }

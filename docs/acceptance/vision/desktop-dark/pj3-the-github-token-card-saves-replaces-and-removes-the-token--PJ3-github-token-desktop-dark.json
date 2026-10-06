@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "PJ3 the GitHub token card saves, replaces and removes the token",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/PJ3-github-token-desktop-dark.png",
-  "expected": "the Jevellan web app \"github token\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PJ3 the GitHub token card saves, replaces and removes the token\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"github token\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PJ3 the GitHub token card saves, replaces and removes the token\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Save Git settings' button in the GitHub connection card is low-contrast, so it looks disabled. This may be intentional because nothing has changed yet.",
+      "In the sidebar, the session titles 'Context · J11 memory journ…' and 'Context · Mesh journey fixt…' and their subtitles are truncated with ellipses. This is expected truncation and doesn't block anything.",
+      "The project select in 'Check a project' shows 'Outside context fixture', which isn't in the sidebar project list. This is a data point, not a layout problem."
+    ]
+  }
 }

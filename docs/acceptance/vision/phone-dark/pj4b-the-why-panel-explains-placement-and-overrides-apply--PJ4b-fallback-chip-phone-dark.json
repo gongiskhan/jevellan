@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "PJ4b the Why panel explains placement and overrides apply",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/PJ4b-fallback-chip-phone-dark.png",
-  "expected": "the Jevellan web app \"fallback chip\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PJ4b the Why panel explains placement and overrides apply\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"fallback chip\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PJ4b the Why panel explains placement and overrides apply\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The worktree/branch metadata line is cut off with an ellipsis ('Worktree on jv/check-the-readme-links-heqzkd ·…'). It looks like deliberate truncation, but the rest of the line can't be read at phone width.",
+      "The terminal attach command is cut off ('jevellan thread attach thread_01M47CC62N9J3PB…'). The copy button next to it still works, so the full command can be copied.",
+      "A large empty area sits between the report card and the message composer. This is expected with only one turn."
+    ]
+  }
 }

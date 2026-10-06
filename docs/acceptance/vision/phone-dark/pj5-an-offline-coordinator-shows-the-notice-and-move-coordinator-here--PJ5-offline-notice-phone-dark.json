@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "PJ5 an offline coordinator shows the notice and Move coordinator here",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/PJ5-offline-notice-phone-dark.png",
-  "expected": "the Jevellan web app \"offline notice\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PJ5 an offline coordinator shows the notice and Move coordinator here\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"offline notice\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PJ5 an offline coordinator shows the notice and Move coordinator here\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The notice banner's amber border and fill don't stand out much against the dark background",
+      "The 'Offline' badge under the title is small and low-contrast"
+    ]
+  }
 }

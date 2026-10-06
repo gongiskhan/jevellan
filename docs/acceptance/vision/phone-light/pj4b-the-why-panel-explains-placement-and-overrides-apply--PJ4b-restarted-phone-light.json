@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "PJ4b the Why panel explains placement and overrides apply",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/PJ4b-restarted-phone-light.png",
-  "expected": "the Jevellan web app \"restarted\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PJ4b the Why panel explains placement and overrides apply\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"restarted\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PJ4b the Why panel explains placement and overrides apply\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The thread ID link 'thread_01M47CG546SV7N0S00G3BQH91F' is long and fills nearly the whole line width. It still fits.",
+      "The metadata line wraps across three lines in small monospace text. It is readable but dense.",
+      "There is a large empty area between the last report card and the footer saying the thread has ended."
+    ]
+  }
 }
