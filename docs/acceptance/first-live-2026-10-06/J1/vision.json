@@ -1,0 +1,62 @@
+{
+  "schema": "live-vision-v1",
+  "journey": "J1",
+  "checks": [
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J1 live",
+      "layout": "1440x900 light",
+      "screenshot": "J1-live-conversation.png",
+      "expected": "a finished conversation that answered what src/sum.ts does",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "The Step 1 tool activity is split into two separate collapsed groups ('2 tools' and '1 tool'), which looks redundant.",
+          "The 'Why' button has pink/accent styling while the buttons next to it (Changes, Change step, Read full result) are neutral, so it looks inconsistent.",
+          "There is a large empty area between the answer and the composer."
+        ]
+      }
+    },
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J1 live",
+      "layout": "1440x900 light",
+      "screenshot": "J1-live-why.png",
+      "expected": "the Why drawer showing the Jev decision for the answer step with action, model and effort",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "The Effort list puts the zero-probability options in the order max, xhigh, high. That isn't the usual low→max order, so it looks unsorted.",
+          "The Model and Effort sections only say 'Jev' in the header. They don't say these were decided for the step 1 reply, though the drawer title already gives that context.",
+          "The Candidates (0) control can be expanded even though there's nothing in it."
+        ]
+      }
+    },
+    {
+      "schema": "vision-check-v1",
+      "label": "live",
+      "model": "claude-opus-5-5",
+      "test": "J1 live",
+      "layout": "390x844 light",
+      "screenshot": "J1-live-phone.png",
+      "expected": "the same conversation on a phone",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "Only one screenshot was provided, so the phone view can't be compared with the desktop view. It does look like a full phone layout of the conversation 'J1 · Explain sum': the question 'What does src/sum.ts do?', a completed Step 1 reply, and the answer about sum(a, b).",
+          "The tool groups show as two separate collapsed rows ('2 tools' and '1 tool') instead of one combined group.",
+          "'Local time' wraps onto its own line under the Started/Ended/Duration row, so it looks detached.",
+          "The header chips ('Live sandbox', 'Mac.lan', 'Done') use small monospace text, which is readable but tight.",
+          "There is a large empty gap between the last step and the composer at the bottom."
+        ]
+      }
+    }
+  ]
+}

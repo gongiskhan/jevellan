@@ -1,15 +1,35 @@
 # PJ-live - a live coordinator thread to a merged pull request
 
-**Evidence label: blocked.** On 2026-10-05 (goncalos-macbook-pro), `node scripts/spikes/live-journeys.mjs --journey PJ-live` found none of its credentials. It wrote the blocked receipt [PJ-live.json](PJ-live.json) and exited 0. It created no Jevellan home and started no daemon, browser or clone. A blocked journey is not a pass. PJ-live has not run live, nothing below claims a live result, and the owner's acceptance is not claimed.
+**Evidence label: blocked.** On 2026-10-06, Mac.lan pulled clean `main` to `f4dfd92` and ran `node scripts/spikes/live-journeys.mjs --journey PJ-live --output /tmp/pj-live-check` after the live Jev checks and J1 passed. The dedicated Jev key and Claude token are present. The Codex API key and both GitHub variables are missing, so the runner wrote [PJ-live.json](PJ-live.json), exited 0 and started no daemon, browser or clone. PJ-live read or changed no GitHub repository. A blocked journey is not a pass, and the owner's acceptance is not claimed.
 
-| ID | Required | Why the journey is blocked here |
+| ID | Required | Credential check on Mac.lan, 2026-10-06 |
 | --- | --- | --- |
-| ENV-JEV | yes | `JEVELLAN_TEST_JEV_KEY` is not set, so placement cannot ask the real Jev. |
-| ENV-CODEX | yes | `JEVELLAN_TEST_CODEX_KEY` is not set, so no real Codex account can run the coordinator or the thread. |
-| ENV-GITHUB | yes | `JEVELLAN_TEST_GITHUB_TOKEN` and `JEVELLAN_TEST_GITHUB_REPO` are not set, so there is no disposable GitHub repository for the pull request. |
-| ENV-CLAUDE | no | `JEVELLAN_TEST_CLAUDE_TOKEN` is not set. A live run would keep Claude off and run Codex alone; the vision checks need this token too. |
+| ENV-JEV | yes | `JEVELLAN_TEST_JEV_KEY` is present. All four live Jev tests ran and passed. |
+| ENV-CODEX | yes | `JEVELLAN_TEST_CODEX_KEY` is missing; the live Codex coordinator and thread are blocked. |
+| ENV-GITHUB | yes | `JEVELLAN_TEST_GITHUB_TOKEN` and `JEVELLAN_TEST_GITHUB_REPO` are missing; the disposable repository, pull request, checks and merge are blocked. |
+| ENV-CLAUDE | no | `JEVELLAN_TEST_CLAUDE_TOKEN` is present. J1 and its three screenshot judgments passed live. |
 
-The receipt uses the `live-journey-v2` document: the `live-journey-v1` fields of the conversation journeys plus a `blocked` label, `blockedBy` (the required credentials, each with its REPORT blocker ID and a reason), `optionalMissing` (ENV-CLAUDE) and `variables`, which records only `present`, `missing` or `invalid` per variable, never a value. The blocker rows are in [REPORT.md](REPORT.md#blockers-and-historical-attempts).
+The current `live-journey-v2` receipt records presence only, has `blockedBy` ENV-CODEX and ENV-GITHUB, no optional missing credential, `passed: false`, no checks or screenshots, and `daemonStarted: false`. The earlier 2026-10-05 goncalos-macbook-pro receipt had all five variables missing; that remains historical evidence in Git. See [REPORT.md](REPORT.md#projects-definition-of-done-audit).
+
+The regression journey J1 used fresh isolated homes, a new TypeScript sandbox and a local bare origin under `/tmp/jevellan-live-2026-10-06-72on58gb`. All seven checks passed: finished work, a real Jev decision, an answer, unchanged clean Git and origin, read-only launches, the Why drawer and no browser errors. One completed `claude-opus-5-5` reply used low effort. All three screenshot judgments are live and ok, with zero blocking findings and eleven cosmetic notes. [J1 receipt](first-live-2026-10-06/J1/evidence.json), [vision receipt](first-live-2026-10-06/J1/vision.json), [J1 report](J1.md).
+
+PJ-live's coordinator, placement, thread, added file and test, pull request, checks, UI merge, conclusion and screenshots remain **blocked, not run**. The optional Projects browser vision run was not run because the required live sequence did not pass PJ-live. No implementation or assertion was changed.
+
+## Verification on Mac.lan (2026-10-06)
+
+| Check | Evidence label | Result |
+| --- | --- | --- |
+| Setup | Live local tools | Node 22.22.0, Git 2.50.1, APM 0.10.0 and Basic Memory on PATH; `npm ci` (including build), typecheck and lint passed. |
+| Five-file Projects sanity | Simulated | 30 tests in 5 files passed. |
+| Jev decision selection | Live (4); simulated (18) | 22 of 22 tests passed, including all four credential-gated live tests; no skips. |
+| J1 conversation | Live | All seven checks passed; one completed read-only Claude Opus reply at low effort, no Git change. |
+| J1 screenshots | Live | Three judgments passed; zero blocking findings, eleven cosmetic notes. |
+| PJ-live credential preflight | Blocked | ENV-CODEX and ENV-GITHUB; no daemon, browser, clone or GitHub request. All later PJ-live checks remain not run. |
+| Full backend regression | Simulated | 1601 passed, 2 failed, 4 deliberate credential-gated skips; both failures passed unchanged in isolated reruns. The original full run remains failed. |
+| Full browser regression | Simulated; new vision not run | 189 passed, 14 failed, 5 not run out of 208; installation 4 of 4 passed. The affected whole files then passed 119 of 119 with one worker, including all fourteen failures and the five unrun cases; the other 89 cases passed originally. No skip, retry or flake in the rerun. The original matrix remains failed. |
+| Optional Projects browser vision | Not run | Its required live PJ-live prerequisite is blocked. Historical live judgments were preserved. |
+
+The full regression processes deliberately omitted test credentials; the backend's four Jev skips are separate from the four successful live Jev tests. [REPORT.md](REPORT.md#latest-verification) records the original failures, isolated reruns and private evidence paths. No product source, test assertion or timeout changed.
 
 ## What the specification asks
 
@@ -52,7 +72,7 @@ The disposable repository must have `main` as its default branch and a root `pac
 
 **Redaction.** Evidence passes through the hub redactor and replaces every credential with `[redacted]`. Because the secret scanner blocks the exact bytes of every `JEVELLAN_TEST_*` value, the repository name appears as `[repository]`, so pull request URLs read `https://github.com/[repository]/pull/n`. Identifiers shaped like native session ids are omitted. The runner asserts that no credential and no repository name reached the file before it writes it.
 
-## What was verified on this machine
+## Historical verification on goncalos-macbook-pro (2026-10-05)
 
 - **Real, blocked run:** the command above, with no `JEVELLAN_TEST_*` variable set, wrote the receipt and exited 0. Nothing else was created.
 - **Real, receipt cases** (scratch output directories, fixture values that are not credentials): ENV-GITHUB alone blocks when only the token is missing, and the receipt shows the other variables as `present` without their values. A repository given as a URL, `a/b.git`, `a/b/c`, `a/..` or with a space is `invalid` and blocks. An existing `--output` directory is refused (exit 1). `--home` is never created in a blocked run.

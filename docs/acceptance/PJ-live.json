@@ -1,18 +1,11 @@
 {
   "schema": "live-journey-v2",
   "journey": "PJ-live",
-  "at": "2026-10-05T17:12:48.302Z",
+  "at": "2026-10-06T14:53:54.471Z",
   "label": "blocked",
   "source": "credential-preflight",
   "passed": false,
   "blockedBy": [
-    {
-      "id": "ENV-JEV",
-      "variables": [
-        "JEVELLAN_TEST_JEV_KEY"
-      ],
-      "reason": "JEVELLAN_TEST_JEV_KEY is not set, so placement cannot ask the real Jev."
-    },
     {
       "id": "ENV-CODEX",
       "variables": [
@@ -29,21 +22,13 @@
       "reason": "JEVELLAN_TEST_GITHUB_TOKEN and JEVELLAN_TEST_GITHUB_REPO are not set, so there is no disposable GitHub repository for the pull request."
     }
   ],
-  "optionalMissing": [
-    {
-      "id": "ENV-CLAUDE",
-      "variables": [
-        "JEVELLAN_TEST_CLAUDE_TOKEN"
-      ],
-      "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set, so Claude stays off and only Codex runs."
-    }
-  ],
+  "optionalMissing": [],
   "variables": {
-    "JEVELLAN_TEST_JEV_KEY": "missing",
+    "JEVELLAN_TEST_JEV_KEY": "present",
     "JEVELLAN_TEST_CODEX_KEY": "missing",
     "JEVELLAN_TEST_GITHUB_TOKEN": "missing",
     "JEVELLAN_TEST_GITHUB_REPO": "missing",
-    "JEVELLAN_TEST_CLAUDE_TOKEN": "missing"
+    "JEVELLAN_TEST_CLAUDE_TOKEN": "present"
   },
   "daemonStarted": false,
   "checks": {},
