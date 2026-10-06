@@ -9,26 +9,29 @@ import { clearInterval, setInterval } from 'node:timers';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
+import { LiveAuthenticationSchema, LiveAuthenticationGapSchema, LiveAuthenticationVariablesSchema, resolveLiveAuthentication } from './live-projects-auth.mjs';
 
 // PJ-live (BRIEF-projects.md section 13, phase 8), started through live-journeys.mjs --journey PJ-live: the coordinator starts a
 // thread that adds a small file with a test, the pull request opens on a disposable GitHub repository, Jevellan reads its checks
 // and the owner merges it from the Projects page. Everything runs in isolated homes; the owner's native homes, Git configuration,
-// keychain, SSH agent and gh login are never used.
+// keychain and SSH agent are never used. --github-auth gh explicitly uses the owner's authorized gh login before isolation.
 //
 // Credentials, read once here and removed from this process's environment before anything else runs. Receipts record only
 // whether each one is present:
 //   JEVELLAN_TEST_JEV_KEY       required (ENV-JEV): the dedicated Jev key, so placement asks the real Jev.
 //   JEVELLAN_TEST_CODEX_KEY     required (ENV-CODEX): an OpenAI API key of a dedicated test project. It enters Jevellan as a Codex
 //                               API-key account (paid use: always) through POST /hub/accounts, so it lives only in the encrypted
-//                               vault and the account home Codex logs in to. Codex subscription sign-in belongs to a device and
-//                               cannot be given as a value, so the live Codex account is an API key.
+//                               vault and the account home Codex logs in to. --codex-subscription instead opens the product's
+//                               sign-in UI for an isolated subscription account; no API key or native Codex login is used.
 //   JEVELLAN_TEST_GITHUB_TOKEN  required (ENV-GITHUB): a fine-grained token for the disposable repository only, with Contents read
 //                               and write (the push and the merge), Pull requests read and write, Checks read and Commit statuses
 //                               read (Jevellan reads check runs and commit statuses). It is saved as Jevellan's GitHub token and
 //                               held for Git pushes by an in-memory credential cache of the isolated user home, never in a file.
+//                               --github-auth gh resolves the explicitly authorized CLI login in memory instead.
 //   JEVELLAN_TEST_GITHUB_REPO   required (ENV-GITHUB): owner/repository of that disposable repository. Its default branch is main
 //                               and its root package.json is named jevellan-acceptance-sandbox, with an npm test that needs no
-//                               install. Its pull requests are merged into main. Never point it at a repository that matters.
+//                               install. --github-repo owner/repository supplies it explicitly. Its pull requests are merged
+//                               into main. Never point it at a repository that matters.
 //   JEVELLAN_TEST_CLAUDE_TOKEN  optional (ENV-CLAUDE): the dedicated Claude token; without it Claude stays off and only Codex runs.
 //
 // Without a required credential: node scripts/spikes/live-journeys.mjs --journey PJ-live [--output <new directory>]
@@ -40,41 +43,23 @@ import { z } from 'zod';
 //   by live-vision.mjs. A run whose checks do not all pass exits 1.
 const option = (name) => { const index = process.argv.indexOf(name); return index < 0 ? undefined : process.argv[index + 1]; };
 const RECEIPT = fileURLToPath(new URL('../../docs/acceptance/PJ-live.json', import.meta.url));
-const REPOSITORY = /^[A-Za-z0-9-]+\/(?!\.\.?$)[A-Za-z0-9._-]+$/;
 const SANDBOX_NAME = 'jevellan-acceptance-sandbox';
 const PROJECT_ID = 'live_projects';
 const PROJECT_NAME = 'PJ-live sandbox';
 const REQUEST = 'Start one thread for this: add a small file with one exported function that returns a greeting for a name, and a test for that function that npm test runs. Keep the change to those two files. I will review and merge the pull request myself.';
 
-const GROUPS = [
-  { id: 'ENV-JEV', required: true, variables: ['JEVELLAN_TEST_JEV_KEY'], without: 'placement cannot ask the real Jev' },
-  { id: 'ENV-CODEX', required: true, variables: ['JEVELLAN_TEST_CODEX_KEY'], without: 'no real Codex account can run the coordinator or the thread' },
-  { id: 'ENV-GITHUB', required: true, variables: ['JEVELLAN_TEST_GITHUB_TOKEN', 'JEVELLAN_TEST_GITHUB_REPO'], without: 'there is no disposable GitHub repository for the pull request' },
-  { id: 'ENV-CLAUDE', required: false, variables: ['JEVELLAN_TEST_CLAUDE_TOKEN'], without: 'Claude stays off and only Codex runs' },
-];
-const values = Object.fromEntries(GROUPS.flatMap((group) => group.variables).map((name) => [name, process.env[name]?.trim() ?? '']));
+const { authentication, values, variables, blockedBy, optionalMissing } = resolveLiveAuthentication(process.argv.slice(2));
 // No agent, worker or Git process may inherit a test credential; Jevellan receives them only through its own API.
 for (const key of Object.keys(process.env)) if (key.startsWith('JEVELLAN_TEST_')) delete process.env[key];
-const presence = (name) => !values[name] ? 'missing' : name === 'JEVELLAN_TEST_GITHUB_REPO' && (!REPOSITORY.test(values[name]) || values[name].endsWith('.git')) ? 'invalid' : 'present';
-const gap = (group) => {
-  const missing = group.variables.filter((name) => presence(name) === 'missing'); const invalid = group.variables.filter((name) => presence(name) === 'invalid');
-  if (!missing.length && !invalid.length) return null;
-  const parts = [...missing.length ? [`${missing.join(' and ')} ${missing.length > 1 ? 'are' : 'is'} not set`] : [], ...invalid.length ? [`${invalid.join(' and ')} is not in owner/repository form`] : []];
-  return { id: group.id, variables: [...missing, ...invalid], reason: `${parts.join(' and ')}, so ${group.without}.` };
-};
-const blockedBy = GROUPS.filter((group) => group.required).map(gap).filter(Boolean);
-const optionalMissing = GROUPS.filter((group) => !group.required).map(gap).filter(Boolean);
-const variables = Object.fromEntries(Object.keys(values).map((name) => [name, presence(name)]));
-
-// live-journey-v2: the live-journey-v1 document of the conversation journeys plus a blocked label, the credentials that block it
-// and the optional ones that are missing. Only presence is recorded, never a value.
-const TestVariableSchema = z.string().regex(/^JEVELLAN_TEST_[A-Z_]+$/);
-const GapSchema = z.strictObject({ id: z.enum(['ENV-JEV', 'ENV-CODEX', 'ENV-GITHUB', 'ENV-CLAUDE']), variables: z.array(TestVariableSchema).min(1), reason: z.string().min(1).max(300) });
-const head = { schema: z.literal('live-journey-v2'), journey: z.literal('PJ-live'), at: z.iso.datetime() };
-const VariablesSchema = z.record(TestVariableSchema, z.enum(['present', 'missing', 'invalid']));
-const BlockedEvidenceSchema = z.strictObject({ ...head, label: z.literal('blocked'), source: z.literal('credential-preflight'), passed: z.literal(false),
-  blockedBy: z.array(GapSchema).min(1), optionalMissing: z.array(GapSchema), variables: VariablesSchema, daemonStarted: z.literal(false),
-  checks: z.strictObject({}), screenshots: z.tuple([]), observations: z.array(z.string()) });
+// live-journey-v3 records explicit authentication sources and resolved input status, never credential values.
+const GapSchema = LiveAuthenticationGapSchema;
+const head = { schema: z.literal('live-journey-v3'), journey: z.literal('PJ-live'), at: z.iso.datetime(), authentication: LiveAuthenticationSchema };
+const VariablesSchema = LiveAuthenticationVariablesSchema;
+const BlockedEvidenceSchema = z.strictObject({ ...head, label: z.literal('blocked'), source: z.enum(['credential-preflight', 'subscription-login']), passed: z.literal(false),
+  blockedBy: z.array(GapSchema).min(1), optionalMissing: z.array(GapSchema), variables: VariablesSchema, daemonStarted: z.boolean(),
+  checks: z.strictObject({}), screenshots: z.tuple([]), observations: z.array(z.string()) }).superRefine((value, context) => {
+  if (value.daemonStarted !== (value.source === 'subscription-login')) context.addIssue({ code: 'custom', message: 'The blocked source must match whether the daemon started.' });
+});
 const LiveEvidenceSchema = z.object({ ...head, label: z.literal('live'), source: z.literal('live-codex-jev-github'), passed: z.boolean(),
   optionalMissing: z.array(GapSchema), variables: VariablesSchema, checks: z.record(z.string(), z.boolean()),
   screenshots: z.array(z.object({ file: z.string(), expected: z.string() })), launches: z.array(z.unknown()), observations: z.array(z.string()) }).passthrough();
@@ -85,9 +70,9 @@ function writeBlocked() {
   const output = option('--output');
   if (output) { assert(!existsSync(resolve(output)), 'Use a new evidence directory for each attempt'); mkdirSync(resolve(output), { recursive: true, mode: 0o700 }); }
   const receipt = output ? join(resolve(output), 'evidence.json') : RECEIPT;
-  const evidence = BlockedEvidenceSchema.parse({ schema: 'live-journey-v2', journey: 'PJ-live', at: new Date().toISOString(), label: 'blocked', source: 'credential-preflight',
+  const evidence = BlockedEvidenceSchema.parse({ schema: 'live-journey-v3', journey: 'PJ-live', at: new Date().toISOString(), authentication, label: 'blocked', source: 'credential-preflight',
     passed: false, blockedBy, optionalMissing, variables, daemonStarted: false, checks: {}, screenshots: [],
-    observations: ['Credentials were checked for presence only, before anything else ran. No Jevellan home was created, no daemon or browser started, and no repository was cloned or changed. A blocked journey is not a pass.'] });
+    observations: ['Authentication inputs were checked before the journey ran. Explicit gh authentication, when requested and other required inputs are present, was checked through the CLI. No Jevellan home was created, no daemon or browser started, and no repository was cloned or changed. A blocked journey is not a pass.'] });
   const text = JSON.stringify(evidence, null, 2);
   for (const value of Object.values(values)) if (value) assert(!text.includes(value), 'A credential value reached the receipt');
   writeFileSync(receipt, text + '\n', { mode: 0o600 });
@@ -107,10 +92,12 @@ async function runLive() {
   mkdirSync(userHome, { recursive: true, mode: 0o700 });
   const jevKey = values.JEVELLAN_TEST_JEV_KEY; const codexKey = values.JEVELLAN_TEST_CODEX_KEY; const claudeToken = values.JEVELLAN_TEST_CLAUDE_TOKEN;
   const githubToken = values.JEVELLAN_TEST_GITHUB_TOKEN; const repo = values.JEVELLAN_TEST_GITHUB_REPO;
+  const identity = Object.fromEntries(['name', 'email'].map((field) => [field, execFileSync('git', ['config', `user.${field}`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()]));
+  assert(identity.name && identity.email, 'Configure the machine Git identity before a live PJ-live run');
   const secrets = [jevKey, codexKey, githubToken, claudeToken].filter(Boolean);
   // The repository name is a JEVELLAN_TEST_* value too, so the secret scanner blocks its bytes: evidence names it [repository].
   const repository = new RegExp(repo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-  const evidence = { schema: 'live-journey-v2', journey: 'PJ-live', at: new Date().toISOString(), label: 'live', source: 'live-codex-jev-github', passed: false,
+  let evidence = { schema: 'live-journey-v3', journey: 'PJ-live', at: new Date().toISOString(), authentication, label: 'live', source: 'live-codex-jev-github', passed: false,
     variables, optionalMissing, checks: {}, screenshots: [], launches: [], observations: [] };
   let app; let server; let browser; let heartbeat; let cache;
   const redact = (value) => {
@@ -154,12 +141,13 @@ async function runLive() {
     assert.equal(JSON.parse(readFileSync(join(sandbox, 'package.json'), 'utf8')).name, SANDBOX_NAME, 'The repository is not the disposable acceptance sandbox');
     assert.equal(git(sandbox, ['remote', 'get-url', 'origin']), origin); assert.equal(git(sandbox, ['branch', '--show-current']), 'main');
     // Thread commits take their identity from the checkout (the isolated user home has none).
-    git(sandbox, ['config', 'user.name', 'Jevellan acceptance']); git(sandbox, ['config', 'user.email', 'acceptance@jevellan.invalid']);
+    git(sandbox, ['config', 'user.name', identity.name]); git(sandbox, ['config', 'user.email', identity.email]);
 
-    // Jevellan's own Git and gh read HOME and SSH_AUTH_SOCK from this process: point them at the isolated home and no agent.
-    process.env.HOME = userHome; for (const key of ['SSH_AUTH_SOCK', 'GH_TOKEN', 'GITHUB_TOKEN']) delete process.env[key];
+    // Jevellan's own Git and gh use the isolated home; the authorized gh login was resolved before this boundary.
+    process.env.HOME = userHome;
+    for (const key of ['SSH_AUTH_SOCK', 'GH_TOKEN', 'GITHUB_TOKEN', 'GH_AUTH_TOKEN', 'GH_CONFIG_DIR', 'GH_HOST', 'GH_AUTH_PROFILE', 'XDG_CONFIG_HOME']) delete process.env[key];
     const [core, daemon, playwright] = await Promise.all([import('../../packages/core/dist/index.js'), import('../../apps/daemon/dist/index.js'), import('@playwright/test')]);
-    const { AccountListSchema, Homes, MergeResultViewSchema, ProjectWorkSettingsViewSchema, ProjectWorkViewSchema, ThreadViewSchema } = core;
+    const { AccountListSchema, AccountViewSchema, Homes, MergeResultViewSchema, ProjectWorkSettingsViewSchema, ProjectWorkViewSchema, ThreadViewSchema } = core;
     const { chromium, expect } = playwright;
     const url = `http://127.0.0.1:${port}`;
     // Global timers stay off (no improver runs); the Projects loops poll pull requests and sweep queues as in production.
@@ -183,7 +171,7 @@ async function runLive() {
     server = daemon.createDaemon({ application: app }); server.listen(port, '127.0.0.1'); await once(server, 'listening');
     // Placement reads this device's heartbeat; global timers are off, so the journey sends it as the presence timer would.
     await app.presence.pulse(); heartbeat = setInterval(() => { void app.presence.pulse().catch(() => undefined); }, 60_000);
-    browser = await chromium.launch({ channel: 'chrome' });
+    browser = await chromium.launch({ channel: 'chrome', headless: authentication.codex !== 'subscription' });
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, colorScheme: 'light', reducedMotion: 'reduce' });
     await context.addCookies([{ name: 'jevellan_session', value: app.hubAuth.issue(), url, httpOnly: true, sameSite: 'Strict' }]);
     const page = await context.newPage(); page.setDefaultTimeout(90_000); const errors = []; page.on('pageerror', () => errors.push('Browser script error'));
@@ -202,12 +190,26 @@ async function runLive() {
     };
     const empty = { schema: 'empty-request-v1' };
 
-    // Setup through the product API: Jev key, GitHub token and Codex key into the vault; Claude only when its token is present.
+    // Setup through the product API: secrets enter the vault; subscription sign-in stays in the product UI and isolated home.
     await call('PUT', '/hub/secrets/jev', { schema: 'save-secret-v1', value: jevKey });
     assert.equal((await call('PUT', '/hub/secrets/github', { schema: 'save-secret-v1', value: githubToken })).saved, true, 'The GitHub token was not saved');
-    const ready = async (id) => (await call('GET', `/hub/accounts/${id}`)).statuses.some((status) => status.auth === 'ready');
-    const codex = await call('POST', '/hub/accounts', { schema: 'add-account-v1', runtime: 'codex', label: 'Codex test key', kind: 'api-key', paidUse: 'always', secret: codexKey });
-    if (!(await ready(codex.account.id))) await call('POST', `/api/accounts/${codex.account.id}/check`, empty);
+    const ready = async (id) => AccountViewSchema.parse(await call('GET', `/hub/accounts/${id}`)).statuses.some((status) => status.deviceId === app.device.deviceId && status.auth === 'ready');
+    const subscription = authentication.codex === 'subscription';
+    const codex = AccountViewSchema.parse(await call('POST', '/hub/accounts', { schema: 'add-account-v1', runtime: 'codex',
+      ...(subscription ? { label: 'Codex test subscription', kind: 'subscription' } : { label: 'Codex test key', kind: 'api-key', paidUse: 'always', secret: codexKey }) }));
+    if (subscription) {
+      await page.goto(`${url}/settings/runtimes?account=${encodeURIComponent(codex.account.id)}&login=1`);
+      note('Complete Codex subscription sign-in in the open Jevellan Settings window. The journey waits up to 30 minutes for this device to be ready.');
+      try { await until('Codex subscription sign-in on this device', () => ready(codex.account.id), 30 * 60_000); }
+      catch {
+        evidence = { schema: evidence.schema, journey: evidence.journey, at: evidence.at, authentication, label: 'blocked', source: 'subscription-login', passed: false,
+          blockedBy: [{ id: 'AUTH-CODEX', variables: ['codex'], reason: 'Codex subscription sign-in did not reach Ready on this device, so the coordinator and thread cannot run.' }],
+          optionalMissing, variables, daemonStarted: true, checks: {}, screenshots: [], observations: [...evidence.observations,
+            'The isolated daemon, browser and sandbox were prepared, but subscription sign-in did not reach Ready. No Projects work or pull request started. Login instructions and credentials are omitted.'] };
+        console.log('PJ-live is blocked by AUTH-CODEX. No Projects work started.');
+        return;
+      }
+    } else if (!(await ready(codex.account.id))) await call('POST', `/api/accounts/${codex.account.id}/check`, empty);
     assert(await ready(codex.account.id), 'The Codex test account is not ready'); evidence.codexAccountId = codex.account.id;
     if (claudeToken) {
       const claude = await call('POST', '/hub/accounts', { schema: 'add-account-v1', runtime: 'claude', label: 'Claude test subscription', kind: 'subscription', secret: claudeToken });
@@ -347,7 +349,7 @@ async function runLive() {
   } catch (error) { evidence.error = redact(error instanceof Error ? error.stack ?? error.message : 'Journey failed').slice(0, 3000); process.exitCode = 1; console.log(evidence.error); }
   finally {
     if (heartbeat) clearInterval(heartbeat);
-    const document = LiveEvidenceSchema.parse(evidence);
+    const document = (evidence.label === 'blocked' ? BlockedEvidenceSchema : LiveEvidenceSchema).parse(evidence);
     const text = redact(JSON.stringify(app ? app.hub.redactor.document(document) : document, null, 2));
     for (const secret of [...secrets, repo]) assert(!text.toLowerCase().includes(secret.toLowerCase()), 'A credential value reached the evidence');
     writeFileSync(join(output, 'evidence.json'), text + '\n', { mode: 0o600 });
