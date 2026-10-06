@@ -80,3 +80,48 @@ export async function expectNoStaleJump(page: Page, last: Locator): Promise<void
     await page.setViewportSize(viewport);
   }
 }
+
+/**
+ * An element brought into view on a page with a sticky composer lands above the composer and its live bar, never under them.
+ * Scrolled to the top of a short window (so Jump to latest shows), the first of `controls` that sits below the composer is
+ * focused, as a keyboard reader does, and then scrolled to its nearest edge, as a find match or a link does; in a 600 px window,
+ * with a long draft that grows the composer to a third of the window (taller than the old fixed 190 px scroll padding), it is
+ * scrolled to its nearest edge again. Each time it must end above the composer. The page is left following its end, with
+ * nothing focused and an empty composer.
+ */
+export async function expectClearOfComposer(page: Page, controls: Locator): Promise<void> {
+  const viewport = page.viewportSize()!; const composer = page.locator('.composer');
+  const jump = composer.getByRole('button', { name: /^Jump to latest/ }); const field = composer.getByRole('textbox');
+  const settled = () => page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  const check = async (bring: 'focus' | 'nearest', what: string) => {
+    const index = await controls.evaluateAll((elements) => {
+      const top = document.querySelector('.composer')!.getBoundingClientRect().top;
+      return elements.findIndex((element) => element.getBoundingClientRect().bottom > top);
+    });
+    expect(index, `${what}: a control starts below the composer`).toBeGreaterThanOrEqual(0);
+    const control = controls.nth(index);
+    await control.evaluate((element, how) => { if (how === 'focus') (element as HTMLElement).focus(); else element.scrollIntoView({ block: 'nearest' }); }, bring);
+    await settled();
+    const [box, footer] = [(await control.boundingBox())!, (await composer.boundingBox())!];
+    expect(box.y + box.height, `${what}: the control ends above the composer`).toBeLessThanOrEqual(footer.y + 0.5);
+    await control.evaluate((element) => (element as HTMLElement).blur());
+  };
+  try {
+    await page.setViewportSize({ width: viewport.width, height: Math.min(viewport.height, 400) }); await settled();
+    for (const bring of ['focus', 'nearest'] as const) {
+      await expect(async () => { await page.evaluate(() => window.scrollTo(0, 0)); await expect(jump).toBeVisible({ timeout: 1_000 }); }).toPass({ timeout: 15_000 });
+      await check(bring, `${bring} while Jump to latest shows`);
+    }
+    const taller = Math.min(viewport.height, 600);
+    await page.setViewportSize({ width: viewport.width, height: taller }); await settled();
+    await field.fill(Array.from({ length: 16 }, (_, line) => `Draft line ${line + 1}`).join('\n')); await settled();
+    expect((await composer.boundingBox())!.height, 'the draft grows the composer').toBeGreaterThan(taller / 3);
+    await page.evaluate(() => window.scrollTo(0, 0)); await settled();
+    await check('nearest', 'with a grown composer');
+  } finally {
+    await page.setViewportSize(viewport);
+    await field.fill(''); await field.blur();
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  }
+  await expect(jump).toBeHidden();
+}

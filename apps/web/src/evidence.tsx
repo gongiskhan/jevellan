@@ -36,11 +36,24 @@ export function EvidenceLink({
   );
 }
 type FileView = z.infer<typeof ConversationFileSchema>;
+/**
+ * Centers the selected line in the panel boxes that scroll it, and nothing outside them. `scrollIntoView` also scrolls the page:
+ * with the panel beside a conversation, opening a source line moved the transcript up from its end, so Jump to latest came back
+ * and a step's controls sat under the composer.
+ */
+function centerInPanel(line: HTMLElement) {
+  for (let box = line.parentElement; box && box !== document.body; box = box.parentElement) {
+    if (!/auto|scroll/.test(getComputedStyle(box).overflowY) || box.scrollHeight <= box.clientHeight) continue;
+    const at = line.getBoundingClientRect();
+    const port = box.getBoundingClientRect();
+    box.scrollTop += at.top + at.height / 2 - (port.top + box.clientTop + box.clientHeight / 2);
+  }
+}
 function FileContent({ value, open }: { value: FileView; open(ref: string): void }) {
   const highlighted = useRef<HTMLSpanElement>(null);
   const [source, setSource] = useState(Boolean(value.line));
   useEffect(() => {
-    highlighted.current?.scrollIntoView({ block: 'center' });
+    if (highlighted.current) centerInPanel(highlighted.current);
   }, [value]);
   const relativeLink = (ref: string) => {
     if (ref.startsWith('/') || storedPointer(ref)) {

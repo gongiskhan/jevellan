@@ -216,6 +216,21 @@ export function repinAtEnd(pinned: { current: boolean }, margin: number, repinne
   repinned();
 }
 /**
+ * The ref of a page's sticky composer. It keeps the root's `--composer-clearance` at the composer's height, which the page's
+ * bottom scroll padding uses (style.css), so an element scrolled into view or focused (Tab, a find match, a link to a step) lands
+ * above the composer and its live bar. The composer grows with its text and its live bar (working line, Jump to latest).
+ */
+export function composerClearance(composer: HTMLElement | null) {
+  if (!composer) return;
+  const root = document.documentElement;
+  const observer = new ResizeObserver(() => root.style.setProperty('--composer-clearance', `${Math.ceil(composer.getBoundingClientRect().height)}px`));
+  observer.observe(composer);
+  return () => {
+    observer.disconnect();
+    root.style.removeProperty('--composer-clearance');
+  };
+}
+/**
  * A strip of tabs that scrolls sideways when it does not fit: it marks the ends that hide tabs (`data-more-start`,
  * `data-more-end`) for an edge fade, and centers the selected tab (`aria-current="page"`) whenever `selected` changes, so the
  * page being shown is always in view. A strip that fits is left alone.

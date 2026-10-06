@@ -12,6 +12,7 @@ export function deviceAvailable(row: DeviceView, currentDeviceId: string) {
 function DeviceActivity({ row, currentDeviceId }: { row: DeviceView; currentDeviceId: string }) {
   const here = row.device.id === currentDeviceId;
   const online = deviceAvailable(row, currentDeviceId);
+  const running = row.heartbeat?.runningConversations.length ?? 0;
   return (
     <div className="device-activity">
       <span
@@ -30,15 +31,19 @@ function DeviceActivity({ row, currentDeviceId }: { row: DeviceView; currentDevi
                   ? `Offline since ${dateTime(row.device.lastHeartbeatAt)}`
                   : 'Offline'}
       </span>
-      <span>{row.heartbeat?.runningConversations.length ?? 0} running conversations</span>
+      <span>
+        {running} running conversation{running === 1 ? '' : 's'}
+      </span>
       {row.heartbeat?.externalSessions.map((session, index) => (
         <span key={index}>
           {{ claude: 'Claude Code', codex: 'Codex', cursor: 'Cursor', gemini: 'Gemini' }[session.runtime]}{' '}
           active in {session.cwd.split(/[\\/]/).filter(Boolean).at(-1)} ·{' '}
-          {new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' }).format(
-            -Math.max(0, Math.floor((Date.now() - Date.parse(session.lastActivityAt)) / 60_000)),
-            'minute',
-          )}
+          <span className="device-activity-time">
+            {new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' }).format(
+              -Math.max(0, Math.floor((Date.now() - Date.parse(session.lastActivityAt)) / 60_000)),
+              'minute',
+            )}
+          </span>
         </span>
       ))}
     </div>

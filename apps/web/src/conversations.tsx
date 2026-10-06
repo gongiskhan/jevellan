@@ -37,7 +37,7 @@ import { Icon } from './icons.js';
 import { useCursorSessions, sessionRuntimeLabel } from './cursor-sessions.js';
 import { MessageDelivery, MessageInput, LatestUserMessage } from './message-delivery.js';
 import { EvidenceLink, EvidencePanel, type EvidenceTarget } from './evidence.js';
-import { Markdown, Modal, Panel, dateTime, followOnScroll, repinAtEnd, useDismissible, useTask, type PageProps } from './components.js';
+import { Markdown, Modal, Panel, composerClearance, dateTime, followOnScroll, repinAtEnd, useDismissible, useTask, type PageProps } from './components.js';
 
 type View = z.infer<typeof ConversationPublicSchema>;
 type Step = View['stretches'][number];
@@ -968,7 +968,7 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
         />
       )}
       {kept && <p className="notice">Settle this work’s changes before starting another request.</p>}
-      <form className="composer card" onSubmit={event => {
+      <form className="composer card" ref={composerClearance} onSubmit={event => {
         event.preventDefault();
         if (!task.busy && !kept && !finishing) void submit('message');
       }}>

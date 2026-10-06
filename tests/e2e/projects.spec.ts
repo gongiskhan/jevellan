@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { DeviceRosterSchema, ProjectWorkViewSchema, RuntimeListSchema, ThreadViewSchema, type ThreadView } from '../../packages/core/dist/client.js';
 import { threadDeviceOffline } from '../../packages/projects/dist/copy.js';
 import { expect, test } from './fixtures.js';
-import { expectNoStaleJump, openSidebar } from './navigation.js';
+import { expectClearOfComposer, expectNoStaleJump, openSidebar } from './navigation.js';
 
 // PJ3, PJ4b, PJ5 and PJ7 (brief 13) on the --projects fixture servers (scripts/test-server.mjs, design 5.5): a GitHub-shaped project
 // with a fake GitHub, a fake Jev, scripted coordinator and thread turns and a simulated member device (`Browser member`) over
@@ -198,6 +198,22 @@ async function shot(page: Page, name: string, fullPage = true) {
     && [...document.querySelectorAll('.pw-side, .panel-heading')].every((box) => box.scrollWidth <= box.clientWidth))).toBe(true);
   const journey = test.info().title.split(' ', 1)[0];
   await page.screenshot({ path: `docs/acceptance/screenshots/${journey}-${name}-${layout(test.info())}.png`, fullPage });
+}
+
+/**
+ * Waits until the coordinator has taken every event of the chat and stays idle: no chat entry waits for it, and two reads a
+ * second apart find it idle after the same number of turns (more than `after`, when given). The pull request events reach the
+ * coordinator as a turn; a full-page capture taken while that turn ends saw its reply arrive and its working line go.
+ */
+async function coordinatorSettled(page: Page, after = -1) {
+  let last = -1;
+  await expect.poll(async () => {
+    const { coordinator } = await work(page);
+    const waiting = await page.locator('.pw-timeline .pw-pending').count();
+    const turns = coordinator.state === 'idle' && !waiting ? coordinator.session?.turns ?? 0 : -1;
+    const same = turns > after && turns === last; last = turns; return same;
+  }, { ...LONG, intervals: [1_000] }).toBe(true);
+  await expect(page.locator('.pw-chip')).toHaveText('Idle', LONG);
 }
 
 /**
@@ -447,6 +463,7 @@ test('PJ3 a running thread shows its transcript, report card and accepts an inte
   await expectAlignedCards(transcript);
   await expectReadableMutedText(page);
   await expectNoStaleJump(page, transcript);
+  await expectClearOfComposer(page, transcript.locator('summary, button, a[href]'));
   await shot(page, 'thread-report');
 
   // Why on a thread whose title is longer than the panel: the title in the eyebrow truncates, while the panel title and Close
@@ -471,6 +488,8 @@ test('PJ3 a pull request merges through the modal and moves to Concluded', async
   await expect.poll(async () => (await work(page)).pullRequests.find((entry) => entry.title === 'Add a greeting')?.pr?.number, LONG).toBe(1);
   const url = (await work(page)).pullRequests.find((entry) => entry.title === 'Add a greeting')!.pr!.url;
   await openProject(page, 'Projects fixture');
+  // A chat entry's control brought into view lands above the coordinator's composer (see expectClearOfComposer).
+  await expectClearOfComposer(page, page.locator('.pw-timeline').locator('a[href], button, summary'));
   if (phone(info)) await tap(page, tab(page, 'Pull requests'));
   const pulls = region(page, 'Pull requests');
   const pr = pulls.locator('article.pw-pr').filter({ hasText: '#1 Add a greeting' });
@@ -490,10 +509,12 @@ test('PJ3 a pull request merges through the modal and moves to Concluded', async
   await pullChange({ checks: 'passing', mergeable: 'dirty' }); await pulse();
   await expect(badges).toHaveText(['Checks passing', 'Conflicts'], LONG);
   await expect(merge).toBeDisabled(); await expect(merge).toHaveAttribute('title', 'This pull request has conflicts. Ask the thread to resolve them first.');
+  await coordinatorSettled(page);
   await shot(page, 'pull-request-conflict');
   await pullChange({ mergeable: 'clean' }); await pulse();
   await expect(badges).toHaveText(['Checks passing'], LONG);
   await expect(merge).toBeEnabled(); await expect(merge).not.toHaveAttribute('title');
+  await coordinatorSettled(page);
   await shot(page, 'pull-requests');
 
   const turnsBefore = (await work(page)).coordinator.session?.turns ?? 0;
@@ -509,15 +530,8 @@ test('PJ3 a pull request merges through the modal and moves to Concluded', async
   const concluded = region(page, 'Concluded');
   await expect(concluded.getByRole('link', { name: /^Add a greeting/ }).locator('.pw-outcome')).toHaveText('Merged #1', LONG);
   await expect(concluded.locator('.pw-section-heading')).toHaveText('Concluded 2');
-  // The merge reaches the coordinator as an event. The capture waits until it has answered and stays idle (two reads a second
-  // apart), so its working line cannot come or go while the full page is taken (a page that moved mid-capture was cut at the top).
-  let settled = -1;
-  await expect.poll(async () => {
-    const { coordinator } = await work(page);
-    const turns = coordinator.state === 'idle' ? coordinator.session?.turns ?? 0 : -1;
-    const same = turns > turnsBefore && turns === settled; settled = turns; return same;
-  }, { ...LONG, intervals: [1_000] }).toBe(true);
-  await expect(page.locator('.pw-chip')).toHaveText('Idle', LONG);
+  // The merge reaches the coordinator as an event; the capture waits until it has answered.
+  await coordinatorSettled(page, turnsBefore);
   await shot(page, 'concluded');
   const merged = await threadView(page, await threadId(page, 'Add a greeting'));
   expect({ state: merged.thread.state, pr: merged.thread.pr?.state }).toEqual({ state: 'done', pr: 'merged' });

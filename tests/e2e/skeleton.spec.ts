@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test';
 import { expect, test } from './fixtures.js';
-import { closeConversationSettings, expectNoStaleJump, openConversationSettings, openDeviceSwitcher, settlement } from './navigation.js';
+import { closeConversationSettings, expectClearOfComposer, expectNoStaleJump, openConversationSettings, openDeviceSwitcher, settlement } from './navigation.js';
 import { randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { existsSync, lstatSync, mkdirSync, readFileSync, readlinkSync, utimesSync, writeFileSync } from 'node:fs';
@@ -374,17 +374,19 @@ test('file and evidence links show recorded versions, source lines, Markdown, im
   const picker = page.locator('.manual-picker'); await expect(picker).toBeVisible(); const id = new URL(page.url()).pathname.split('/')[2]!;
   for (const n of [1, 2]) { await picker.getByRole('combobox', { name: 'Action', exact: true }).selectOption('implement'); await picker.getByRole('button', { name: 'Continue', exact: true }).click(); await expect(page.getByRole('heading', { name: `Step ${n} · Implement` })).toBeVisible({ timeout: 30_000 }); await expect(picker).toBeVisible({ timeout: 30_000 }); }
   const first = page.locator('.stretch-block').first(); const panel = page.getByRole('dialog').last();
-  // Moving to a step's controls while Jump to latest shows (scrolled up in a short window) brings them above the composer, never
-  // under its live bar.
-  const size = page.viewportSize()!; await page.setViewportSize({ width: size.width, height: 500 });
-  try {
-    const jump = page.locator('.composer').getByRole('button', { name: 'Jump to latest ↓', exact: true });
-    await expect(async () => { await page.evaluate(() => window.scrollTo(0, 0)); await expect(jump).toBeVisible({ timeout: 1_000 }); }).toPass({ timeout: 15_000 });
-    const stepControl = page.locator('.stretch-block').nth(1).getByRole('button', { name: /^Changes/ }).first(); await stepControl.focus();
-    const [control, footer] = [(await stepControl.boundingBox())!, (await page.locator('.composer').boundingBox())!];
-    expect(control.y + control.height).toBeLessThanOrEqual(footer.y);
-  } finally { await page.setViewportSize(size); }
-  await first.locator('.step-details > summary').click(); await first.locator('.findings').getByRole('button', { name: 'src/example.ts:2', exact: true }).click(); await expect(panel).toContainText('Recorded checkpoint'); await expect(panel.locator('.selected-line')).toContainText('export const amount = 2;'); await expect(panel.locator('.line-number')).toHaveCount(4); await expect(panel).toContainText('<b>plain text</b>');
+  // Moving to a step's controls while Jump to latest shows (scrolled up in a short window), or with a long draft in the composer,
+  // brings them above the composer, never under it or its live bar.
+  await expectClearOfComposer(page, page.locator('.stretch-block').nth(1).getByRole('button', { name: /^Changes/ }).first());
+  await first.locator('.step-details > summary').click();
+  // A source line opens in the panel (beside the conversation on desktops), which centers the line in its own scroll box and
+  // never scrolls the conversation up: that left Jump to latest showing and a step's controls under the composer.
+  const finding = first.locator('.findings').getByRole('button', { name: 'src/example.ts:2', exact: true }); await finding.scrollIntoViewIfNeeded();
+  await page.evaluate(() => {
+    const view = window as Window & { scrolledUp?: boolean }; let top = scrollY; view.scrolledUp = false;
+    addEventListener('scroll', () => { if (scrollY < top - 1) view.scrolledUp = true; top = scrollY; }, { passive: true });
+  });
+  await finding.click(); await expect(panel).toContainText('Recorded checkpoint'); await expect(panel.locator('.selected-line')).toBeInViewport();
+  expect(await page.evaluate(() => (window as Window & { scrolledUp?: boolean }).scrolledUp), 'opening a source line scrolled the conversation up').toBe(false); await expect(panel.locator('.selected-line')).toContainText('export const amount = 2;'); await expect(panel.locator('.line-number')).toHaveCount(4); await expect(panel).toContainText('<b>plain text</b>');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true); await page.screenshot({ path: `docs/acceptance/screenshots/phase2-evidence-source-${info.project.name}.png` });
   await panel.getByRole('button', { name: 'Open working copy', exact: true }).click(); await expect(panel).toContainText('Current working copy · not a saved step'); await expect(panel.locator('.selected-line')).toContainText('export const amount = 3;'); await panel.getByRole('button', { name: 'Close panel', exact: true }).click();
   await first.getByRole('button', { name: 'the value', exact: true }).click(); await expect(panel.locator('.selected-line')).toContainText('2'); await panel.getByRole('button', { name: 'Close panel', exact: true }).click();
@@ -744,7 +746,18 @@ test('device Settings completes a member login, shows activity, invites and swit
   const saved = AccountViewSchema.parse(await (await page.request.get(`/hub/accounts/${account.account.id}`)).json()); expect(saved.statuses.filter(status => status.auth === 'ready').map(status => status.deviceId)).toEqual([member!.id]);
   await page.getByRole('navigation', { name: 'Settings', exact: true }).getByRole('button', { name: 'Devices', exact: true }).click();
   const memberCard = page.locator('.device-card').filter({ has: page.getByRole('heading', { name: 'Browser member', exact: true }) });
-  await expect(memberCard).toContainText('Online'); await expect(memberCard).toContainText('1 running conversations'); await expect(memberCard).toContainText('Codex active in remote-project');
+  await expect(memberCard).toContainText('Online'); await expect(memberCard).toContainText('Codex active in remote-project');
+  // Counts agree with their noun, and a relative time (`11 minutes ago`) never breaks across lines.
+  const running = (card: string) => page.locator('.device-card').filter({ hasText: card }).locator('.device-activity > span').filter({ hasText: /running conversation/ });
+  await expect(running('Browser member')).toHaveText('1 running conversation'); await expect(running('Offline fixture')).toHaveText('0 running conversations');
+  expect(await page.locator('.device-card .device-activity-time').evaluateAll((times) => times.length > 0 && times.every((time) => getComputedStyle(time).whiteSpace === 'nowrap' && time.getClientRects().length === 1))).toBe(true);
+  // Automatic device choice is not available yet, and its box and label read as disabled.
+  const automatic = page.locator('.device-auto'); await expect(automatic.getByRole('checkbox', { name: 'Automatic device choice', exact: true })).toBeDisabled();
+  expect(await automatic.evaluate((card) => {
+    const box = card.querySelector('input')!; const label = card.querySelector('label')!; const probe = document.createElement('span'); probe.style.color = 'var(--ink-3)'; card.append(probe);
+    const muted = getComputedStyle(probe).color; probe.remove();
+    return { box: Number(getComputedStyle(box).opacity) <= 0.5, label: getComputedStyle(label).color === muted, cursor: getComputedStyle(label).cursor };
+  })).toEqual({ box: true, label: true, cursor: 'default' });
   await expect(page.locator('.device-card').filter({ hasText: 'Offline fixture' }).getByRole('button', { name: 'Open', exact: true })).toBeDisabled();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   // The card after the device list keeps the standard card gap (it once sat flush against the last device card).

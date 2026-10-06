@@ -8,7 +8,7 @@ import {
 } from '@jevellan/core/client';
 import { ApiError, api, empty, isCancelled } from './api.js';
 import { clientId } from './client-id.js';
-import { Confirm, Markdown, Modal, Panel, followOnScroll, repinAtEnd, useDismissible, useSettingsSave, useTask, type PageProps } from './components.js';
+import { Confirm, Markdown, Modal, Panel, composerClearance, followOnScroll, repinAtEnd, useDismissible, useSettingsSave, useTask, type PageProps } from './components.js';
 import { Icon } from './icons.js';
 import { MessageInput } from './message-delivery.js';
 import * as copy from './project-work-copy.js';
@@ -601,7 +601,7 @@ function Composer({ projectId, busy, offline, offlineText, behind, jump, stoppin
   const send = useTask(onError);
   const ids = useClientIds('message');
   return (
-    <form className="composer card pw-composer" onSubmit={(event) => {
+    <form className="composer card pw-composer" ref={composerClearance} onSubmit={(event) => {
       event.preventDefault();
       if (send.busy || offline || !text.trim()) return;
       const value = text;

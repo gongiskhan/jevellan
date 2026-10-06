@@ -5,7 +5,7 @@ import {
 } from '@jevellan/core/client';
 import { ApiError, api, empty } from './api.js';
 import { copyText, selectText } from './clipboard.js';
-import { Confirm, Markdown, Modal, Panel, followOnScroll, repinAtEnd, useTask, type PageProps } from './components.js';
+import { Confirm, Markdown, Modal, Panel, composerClearance, followOnScroll, repinAtEnd, useTask, type PageProps } from './components.js';
 import { Icon } from './icons.js';
 import { MessageInput } from './message-delivery.js';
 import * as copy from './project-work-copy.js';
@@ -356,7 +356,7 @@ function ThreadComposer({ base, view, behind, jump, sent, refused, onError, mess
   const block = composerBlock(view);
   const ended = !view.canMessage && view.thread.state !== 'attached';
   return (
-    <form className="composer card pw-composer pw-thread-composer" onSubmit={(event) => {
+    <form className="composer card pw-composer pw-thread-composer" ref={composerClearance} onSubmit={(event) => {
       event.preventDefault();
       const value = text;
       if (send.busy || block || !value.trim()) return;

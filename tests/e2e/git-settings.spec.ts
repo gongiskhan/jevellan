@@ -29,6 +29,23 @@ test('Git settings can be saved, reloaded and checked from Projects', async ({ p
     await more.click(); await expect.poll(() => strip.evaluate(element => element.scrollLeft)).toBeGreaterThan(start + 50);
     const moved = await strip.evaluate(element => element.scrollLeft);
     await earlier.click(); await expect.poll(() => strip.evaluate(element => element.scrollLeft)).toBeLessThan(moved - 50);
+    // At every scroll position of the strip, no tab label passes under a chevron: the part of a tab the strip shows never meets a
+    // chevron that is shown. (The chevrons once sat over the strip's ends, and Devices or Improver ran under them.)
+    const covered = await strip.evaluate(async (element) => {
+      const frames = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      const problems: string[] = []; const last = element.scrollWidth - element.clientWidth;
+      for (let left = 0; left <= last + 8; left += 8) {
+        element.scrollLeft = Math.min(left, last); await frames();
+        const box = element.getBoundingClientRect();
+        const chevrons = [...element.parentElement!.querySelectorAll('.strip-scroll')].filter((chevron) => getComputedStyle(chevron).display !== 'none').map((chevron) => chevron.getBoundingClientRect());
+        for (const tab of element.children) {
+          const at = tab.getBoundingClientRect(); const from = Math.max(at.left, box.left); const to = Math.min(at.right, box.right);
+          if (to > from && chevrons.some((chevron) => chevron.left < to && chevron.right > from)) problems.push(`${element.scrollLeft}px: ${tab.textContent}`);
+        }
+      }
+      return problems;
+    });
+    expect(covered).toEqual([]);
   } else { await expect(earlier).toBeHidden(); await expect(more).toBeHidden(); }
   await page.getByLabel('Connection method').selectOption('ssh');
   await page.getByRole('button', { name: 'Save Git settings', exact: true }).click();

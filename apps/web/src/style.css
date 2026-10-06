@@ -130,7 +130,10 @@
 /* ---------- base ---------- */
 *, *::before, *::after { box-sizing: border-box; }
 html { background: var(--bg); -webkit-text-size-adjust: 100%; scroll-padding-top: calc(var(--header-height) + 12px); }
-html:has(.conversation-page .composer) { scroll-padding-bottom: 190px; }
+/* An element scrolled into view or focused on a page with a sticky composer (a conversation, a Cursor session, a project chat,
+   a thread) lands 16 px above the composer and its live bar, never under them: `composerClearance` (components.tsx) keeps
+   --composer-clearance at the composer's height as its text and live bar (working line, Jump to latest) grow and shrink. */
+html:has(.conversation-page .composer) { scroll-padding-bottom: calc(var(--composer-clearance, 174px) + 16px); }
 body {
   margin: 0;
   min-height: 100dvh;
@@ -354,6 +357,9 @@ input[type="checkbox"], input[type="radio"] {
   flex: none;
 }
 input[type="checkbox"]:focus, input[type="radio"]:focus { box-shadow: none; }
+/* A disabled box or radio (and its label) reads disabled: Chromium draws it nearly as an enabled one, so a `Coming later` choice
+   looked available. */
+input[type="checkbox"]:disabled, input[type="radio"]:disabled { opacity: 0.45; cursor: default; }
 input[type="range"] { accent-color: var(--jev); padding: 0; border: 0; background: transparent; }
 .toggle, label.toggle {
   display: inline-flex;
@@ -365,6 +371,7 @@ input[type="range"] { accent-color: var(--jev); padding: 0; border: 0; backgroun
   color: var(--ink-2);
   cursor: pointer;
 }
+.toggle:has(> input:disabled), label.toggle:has(> input:disabled) { color: var(--ink-3); cursor: default; }
 .compact-label { margin: 0; }
 .card > .compact-label { max-width: 320px; margin-bottom: 4px; }
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0 16px; }
@@ -1522,6 +1529,8 @@ dialog:has(.change-columns) { width: min(860px, calc(100vw - 24px)); }
 .device-card .card-heading { align-items: center; }
 .device-card > .secondary { margin-top: 4px; }
 .device-activity { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 14px; font-size: 12px; color: var(--ink-2); margin: 4px 0; }
+/* A relative time (`11 minutes ago`) keeps its words on one line; a narrow card wraps before it, never inside it. */
+.device-activity-time { white-space: nowrap; }
 .device-card { display: grid; gap: 4px; }
 .device-auto { margin-top: 12px; }
 .device-auto p { margin: 4px 0 0 24px; }
@@ -1630,12 +1639,16 @@ button.memory-result + button.memory-result { margin-top: 4px; }
   .settings-tabs {
     top: var(--header-height);
     z-index: 15;
+    display: flex;
+    align-items: center;
     margin: -18px -20px 0;
     border-bottom: 1px solid var(--edge);
     background: var(--bg);
   }
   .settings-tabs-strip {
     display: flex;
+    flex: 1;
+    min-width: 0;
     gap: 4px;
     overflow-x: auto;
     padding: 8px 20px;
@@ -1653,13 +1666,11 @@ button.memory-result + button.memory-result { margin-top: 4px; }
   .settings-tabs button { width: auto; flex: none; min-height: 30px; padding: 4px 11px; border-radius: 999px; gap: 6px; }
   .settings-tabs button.selected { box-shadow: none; background: var(--ink); color: var(--bg); }
   .settings-tabs button.selected .icon { color: var(--bg); }
-  /* The fade alone still read as a cut-off tab, so each end that hides tabs also shows a chevron button over its fade; it
-     scrolls the strip that way. */
+  /* The fade alone still read as a cut-off tab, so each end that hides tabs also shows a chevron button that scrolls the strip
+     that way. The buttons sit beside the strip, outside its scroll box, so a tab label never passes under one. */
   .settings-tabs-strip[data-more-start] ~ .strip-scroll-start, .settings-tabs-strip[data-more-end] ~ .strip-scroll-end { display: inline-flex; }
   .settings-tabs button.strip-scroll {
-    position: absolute;
-    top: 50%;
-    z-index: 1;
+    flex: none;
     width: 30px;
     height: 30px;
     min-height: 30px;
@@ -1668,13 +1679,12 @@ button.memory-result + button.memory-result { margin-top: 4px; }
     background: var(--card);
     color: var(--ink);
     box-shadow: var(--shadow);
-    transform: translateY(-50%);
   }
   .settings-tabs button.strip-scroll:hover { border: 1px solid var(--edge-strong); background: var(--bg-3); color: var(--ink); }
   .settings-tabs button.strip-scroll .icon { color: inherit; }
-  .settings-tabs .strip-scroll-start { left: 6px; }
+  .settings-tabs .strip-scroll-start { order: -1; margin-left: 6px; }
   .settings-tabs .strip-scroll-start .icon { transform: rotate(90deg); }
-  .settings-tabs .strip-scroll-end { right: 6px; }
+  .settings-tabs .strip-scroll-end { margin-right: 6px; }
   .settings-tabs .strip-scroll-end .icon { transform: rotate(-90deg); }
 }
 @media (max-width: 760px) {

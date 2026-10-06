@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { z } from 'zod';
-import { AccountSchema, BridgeResultSchema, BridgeToolsSchema, Homes, OverrideRecordSchema, ProjectSchema, SecretRedactor, newId, parseConfiguration, readDocument, threadBranch, writeDocument } from '../packages/core/dist/index.js';
+import { AccountSchema, BridgeResultSchema, BridgeToolsSchema, Homes, HubUnavailable, OverrideRecordSchema, ProjectSchema, SecretRedactor, newId, parseConfiguration, readDocument, threadBranch, writeDocument } from '../packages/core/dist/index.js';
 import { HubProjectAccess, joinMember } from '../packages/mesh/dist/index.js';
 import { FakeRuntime, nativeFormat, writeFakeNativeSession } from '../packages/runtime-contract/dist/index.js';
 import { eventBlock } from '../packages/projects/dist/index.js';
@@ -514,7 +514,13 @@ if (projectsMode) {
   // The member signs in to the Codex account on its own (a per-device login), so a thread placed there runs with it (PJ5). It has no
   // Claude account, so Claude threads never qualify for it and the PJ3 and PJ4b placements stay on the hub.
   writeDocument(join(member.homes.account('codex', 'acc_projects_codex'), 'auth.json'), FixtureAuthSchema, { schema: 'fixture-auth-v1', fixture_login: true });
-  await member.accounts.check('acc_projects_codex');
+  // The member asks the hub (this process, over local HTTP, with the client's 5 s timeout) for the account. On a loaded machine,
+  // with twelve fixture servers starting at once, that first request can time out; the uncaught HubUnavailable then stopped this
+  // server and with it the whole browser run. The startup check waits for the hub a few times instead.
+  for (let attempt = 1; ; attempt++) {
+    try { await member.accounts.check('acc_projects_codex'); break; }
+    catch (error) { if (!(error instanceof HubUnavailable) || attempt === 5) throw error; await new Promise(resolve => setTimeout(resolve, 2000)); }
+  }
   await application.state.github.put(githubToken);
   // A saved Jev key: every thread placement on this server asks the fake Jev above (PJ4b).
   application.hub.vault.put('jev', `fixture-${randomUUID()}`);
