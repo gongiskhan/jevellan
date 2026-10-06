@@ -98,6 +98,8 @@ async function turn(prompt) {
     toolStart('Read', { descendant: child.pid });
     await new Promise((resolve) => { finishWaiting = resolve; }); return;
   }
+  // settings echoes the flag settings layer a Claude launch carries (the transcript retention, P8 review R-T1).
+  if (test.mode === 'settings') { result(JSON.stringify({ settings: flag('--settings') ?? null })); return; }
   if (test.mode === 'isolation') {
     toolStart('memory_read', {}); const text = await memory(); toolEnd('memory_read', text); result(text); return;
   }
@@ -115,7 +117,15 @@ async function turn(prompt) {
   toolStart('Read', { path: 'fixture' }); toolEnd('Read', 'fixture');
   result(args.includes('resume') || args.some((arg) => arg.startsWith('--resume=')) ? 'remembered-fixture' : 'fixture-answer');
 }
-if (codex) {
+if (!codex && flag('--resume') === 'missing-session') {
+  // The Claude CLI's answer to a resume of a session it no longer has (version 2.1.281, print mode with stream-json): one error result
+  // under the new process's own session id, the same sentence on stderr, exit code 1.
+  const sentence = 'No conversation found with session ID: missing-session';
+  process.stderr.write(`${sentence}\n`);
+  send({ type: 'result', subtype: 'error_during_execution', duration_ms: 0, duration_api_ms: 0, is_error: true, num_turns: 0, stop_reason: null,
+    session_id: '33333333-3333-4333-8333-333333333333', total_cost_usd: 0, modelUsage: {}, permission_denials: [], errors: [sentence] });
+  process.exit(1);
+} else if (codex) {
   let input = ''; for await (const chunk of process.stdin) input += chunk;
   await turn(input);
 } else {

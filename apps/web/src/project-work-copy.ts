@@ -82,6 +82,7 @@ export const eventCopy = {
   interruptedTimeout: (name: string) => sentence(`${name} timed out`),
   interruptedFailed: (name: string) => sentence(`${name} failed`),
   interruptedStopped: (name: string) => sentence(`${name} was stopped`),
+  ownerStopped: (name: string) => `You stopped ${name}`,
   answered: (question: string) => `You answered: ${question}`,
   answer: (optionLabel: string | undefined, text: string | undefined) => optionLabel ? `${optionLabel}${text ? `. ${text}` : ''}` : text ?? '',
   checksFailed: (name: string, n: number) => `Checks failing on pull request #${n} of ${name}`,
@@ -290,7 +291,7 @@ export const savedUpdated = (date: string): string => `Saved · updated ${date}`
 export const NOT_SET = 'Not set';
 export const REPLACE = 'Replace';
 export const REMOVE = 'Remove';
-export const GITHUB_TOKEN_HELP = 'Used only to open, read and merge pull requests for Jevellan threads. A fine-grained token with Pull requests read and write, Contents read and Checks read on your repositories is enough.';
+export const GITHUB_TOKEN_HELP = 'Used only to open, read and merge pull requests for Jevellan threads. A fine-grained token with Pull requests read and write, Contents read and write, Checks read and Commit statuses read on your repositories is enough.';
 /** The card's first save, when no token is set (Replace would have nothing to replace). */
 export const ADD_TOKEN = 'Add token';
 export const ADD_TOKEN_TITLE = 'Add a GitHub token';

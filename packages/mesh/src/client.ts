@@ -8,6 +8,8 @@ import { PeerSessionInputSchema, PeerSessionStateSchema } from '@jevellan/core';
 import { PeerLoginSessionInputSchema, PeerLoginSessionStateSchema } from '@jevellan/core';
 import { ImproverDeviceRequestSchema, ImproverDeviceResultSchema, ImproverRequestSchema, ImproverResultSchema } from '@jevellan/core';
 import { ProjectHubCollectionSchema, ProjectHubRequestSchema, ProjectHubResultSchema, collectionOf, type ProjectHubCollection, type ProjectHubResult } from '@jevellan/core';
+import { ProjectEnvelopeSchema, type ProjectEnvelope, type UnreadableEnvelope } from '@jevellan/core';
+import { z } from 'zod';
 
 import { HubUnavailable } from '@jevellan/core';
 export { HubUnavailable } from '@jevellan/core';
@@ -66,6 +68,17 @@ export async function joinHub(options: TransportOptions, input: unknown) {
 }
 
 export type MemberHubOptions = TransportOptions & { deviceId: string; token(): string };
+/** An `envelopes-pending` page whose records are read one by one. */
+const PendingEnvelopePageSchema = z.strictObject({ schema: z.literal('project-hub-result-v1'), operation: z.literal('envelopes-pending'), records: z.array(z.unknown()).max(1000), more: z.boolean() });
+const KindSchema = z.string().regex(/^[a-z-]{1,40}$/);
+/** What an unreadable envelope record still names: each field when it reads as one, else null. */
+function unreadableEnvelope(raw: unknown): UnreadableEnvelope {
+  const record = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw as Record<string, unknown> : {};
+  const body = record.body && typeof record.body === 'object' ? record.body as Record<string, unknown> : {};
+  const id = (value: unknown) => { const parsed = IdSchema.safeParse(value); return parsed.success ? parsed.data : null; };
+  const kind = KindSchema.safeParse(body.kind);
+  return { id: id(record.id), projectId: id(record.projectId), sourceDeviceId: id(record.sourceDeviceId), kind: kind.success ? kind.data : null };
+}
 export class MemberHubClient {
   readonly #transport: HubTransport;
   readonly deviceId: string;
@@ -130,6 +143,20 @@ export class MemberHubClient {
     const result = await this.#request(`projects/${collection}`, ProjectHubResultSchema, request);
     if (result.operation !== request.operation) throw new HubProtocolError();
     return result;
+  }
+  /**
+   * `envelopes-pending` read record by record (P8 review S-2): the page itself must be well formed, but a record this version cannot read
+   * comes back as unreadable, with what it still names, instead of failing the page and every envelope behind it.
+   */
+  async pendingEnvelopes(targetDeviceId: string): Promise<{ records: ProjectEnvelope[]; more: boolean; unreadable: UnreadableEnvelope[] }> {
+    const request = ProjectHubRequestSchema.parse({ schema: 'project-hub-request-v1', operation: 'envelopes-pending', targetDeviceId });
+    const page = await this.#request(`projects/${collectionOf(request.operation)}`, PendingEnvelopePageSchema, request);
+    const records: ProjectEnvelope[] = []; const unreadable: UnreadableEnvelope[] = [];
+    for (const raw of page.records) {
+      const parsed = ProjectEnvelopeSchema.safeParse(raw);
+      if (parsed.success) records.push(parsed.data); else unreadable.push(unreadableEnvelope(raw));
+    }
+    return { records, more: page.more, unreadable };
   }
   async session(token: string | null) {
     const result = await this.#request('auth/check', MeshSessionStateSchema, MeshSessionInputSchema.parse({ schema: 'mesh-session-input-v1', token }));

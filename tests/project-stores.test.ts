@@ -155,6 +155,17 @@ test('threadIndex keeps owner-local fields out and uses the given labels and tim
   expect(fresh.threads.labels(created.id)).toEqual({ modelLabel: 'swift', accountLabel: 'acc_a' });
 });
 
+test("threadIndex redacts a stored report's summary before it fits it, so token-like words keep the rest of the sentence (P8 review N-1)", () => {
+  // thread.json written before the runner redacted agent reports holds the agent's own words.
+  const said = 'Fixed the Bearer token parsing in the auth middleware and added tests for expired tokens.';
+  const report = { schema: 'thread-report-v1' as const, turn: 1, status: 'progress' as const, summary: said, changedFiles: [], synthesized: false };
+  expect(threadIndex(thread({ state: 'idle', turns: 1, lastReport: report }), labels, at).lastSummary)
+    .toBe('Fixed the Bearer [redacted] parsing in the auth middleware and added tests for expired tokens.');
+  // Long summaries still fit 400 characters at a point no later redaction rewrites.
+  const long = threadIndex(thread({ state: 'idle', turns: 1, lastReport: { ...report, summary: `${'x'.repeat(390)} Bearer abcdefghij more` } }), labels, at).lastSummary!;
+  expect(long.length).toBeLessThanOrEqual(400); expect(long.startsWith('x'.repeat(390))).toBe(true); expect(long).not.toContain('abcdefghij');
+});
+
 test('coordinator store and start receipts persist owner-local documents', () => {
   const coordinators = new CoordinatorStore(paths);
   expect(coordinators.get('proj_a')).toEqual({ schema: 'coordinator-state-v1', projectId: 'proj_a', state: 'idle', session: null, queue: [], failedTurnsInARow: 0 });

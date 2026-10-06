@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import {
-  GitHubClient, GitHubError, PUBLICATION_BUSY, PullRequestStateSchema, gitFailureMessage, mapMergeable, parseGitHubRemote, withPublicationLease,
+  GitHubClient, GitHubError, NOT_ON_MAIN, PUBLICATION_BUSY, PullRequestStateSchema, gitFailureMessage, mapMergeable, parseGitHubRemote, withPublicationLease,
   type CheckoutOwnership, type GitHubPull, type GitWorkspace, type Homes, type Project, type PublicationLeaseService, type PullRequestState, type SecretRedactor, type Thread,
   type ThreadLocal,
 } from '@jevellan/core';
@@ -177,7 +177,9 @@ export class ThreadPublication {
    * under the publication lease of the checkout's remote: fetch main, rebase onto it (memory notes merge as in conversations), and on a
    * conflict list the files and abort, for the main-conflict prompt; after a rebase that brought upstream commits the head is verified
    * again; then the head is pushed to main, at most three times while main keeps moving. A busy lease is tried again three times
-   * `leaseRetryMs` apart (D45). A rebase or merge the agent left unfinished is never committed.
+   * `leaseRetryMs` apart (D45). A rebase or merge the agent left unfinished is never committed, and neither is a checkout that is not on
+   * main (a branch the owner switched to holds the owner's files, P8 review TH-1). A Stop (`signal`) ends the publication at every step
+   * before the push, also without a test command (P8 review TH-2).
    */
   async publishMain(input: MainPublication): Promise<PublicationResult> {
     const { project, thread, local, ledger, workspace: ws, signal } = input;
@@ -188,16 +190,22 @@ export class ThreadPublication {
       await ws.ownership.assert(project, ws.owner);
       const cwd = ws.path;
       if (await this.#pending(cwd)) return result({ kind: 'error', reason: MAIN_OPERATION_PENDING });
+      if (await ws.branch() !== 'refs/heads/main') return result({ kind: 'error', reason: NOT_ON_MAIN });
       if (await this.#git.remoteUrl(cwd) === null) return result({ kind: 'error', reason: MAIN_NO_REMOTE });
+      signal?.throwIfAborted();
       await this.#git.commitAll(cwd, leftoverCommitSubject(thread.title, thread.lastReport?.summary ?? thread.title), local.gitIdentity);
       if (!(await this.#ownCommits(cwd, thread.baseCommit))) return result({ kind: 'no-changes' });
+      signal?.throwIfAborted();
       verified = await this.verify(project, thread, ledger, signal, true);
       if (verified.status === 'failed') return result({ kind: 'verification-failed', verification: verified });
       const key = await ws.publicationKey();
       for (let retry = 0; ; retry += 1) {
         try {
-          return result(await withPublicationLease(leases, key, thread.id, async (assertLease): Promise<PublicationOutcome> => {
+          return result(await withPublicationLease(leases, key, thread.id, async (leased): Promise<PublicationOutcome> => {
+            // A Stop pressed while the lease was awaited or the rebase ran ends the publication before anything reaches main.
+            const assertLease = async () => { signal?.throwIfAborted(); await leased(); };
             for (let attempt = 1; attempt <= MAIN_PUSH_ATTEMPTS; attempt += 1) {
+              signal?.throwIfAborted();
               await ws.fetch(); const upstream = await ws.upstream();
               if (!(await ws.contains(upstream))) {
                 const at = new Date(this.#now()).toISOString();
@@ -208,9 +216,11 @@ export class ThreadPublication {
                   return { kind: 'main-conflict', files };
                 }
                 // The rebase brought upstream commits: the rebased head is what gets pushed, so it is what gets tested.
+                signal?.throwIfAborted();
                 verified = await this.verify(project, thread, ledger, signal, true);
                 if (verified.status === 'failed') return { kind: 'verification-failed', verification: verified };
               }
+              signal?.throwIfAborted();
               const head = await ws.head();
               if (await ws.push(head, assertLease) === 'pushed') return { kind: 'main-published', commit: head };
             }

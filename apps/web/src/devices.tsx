@@ -76,9 +76,9 @@ export function DeviceSwitcher({ props }: { props: PageProps }) {
   }, []);
   return (
     <details className="device-switcher" ref={menu}>
-      <summary>
+      <summary title={current?.device.name}>
         <i className="state-dot" aria-hidden="true" />
-        {current?.device.name}
+        <span className="device-switcher-name">{current?.device.name}</span>
         <Icon name="chevron" size={12} />
       </summary>
       <div>

@@ -2,7 +2,7 @@ import { existsSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   INBOX_SEEN_LIMIT, InboxSeenSchema, OutboxEntrySchema, OutboxSeqSchema, ProjectEnvelopeSchema, compareEnvelopes, readDocument, stableJson, writeDocument,
-  type OutboxEntry, type ProjectEnvelope, type ProjectHub, type SecretRedactor,
+  boundedRedaction, type OutboxEntry, type ProjectEnvelope, type ProjectHub, type SecretRedactor, type UnreadableEnvelope,
 } from '@jevellan/core';
 import { derivedId } from './decision-items.js';
 import type { ProjectPaths } from './paths.js';
@@ -71,8 +71,9 @@ export class Outbox {
    * sequence file is written before the entry, so a crash leaves a gap, never a reused number. A message still waiting is
    * returned as it is; the same message id with other content is refused.
    */
-  enqueue(projectId: string, target: string, raw: EnvelopeBody): OutboxEntry {
-    const body = ProjectEnvelopeSchema.shape.body.parse(this.#o.redactor.document(raw));
+  enqueue(projectId: string, target: string, raw: EnvelopeBody, options: { handover?: string } = {}): OutboxEntry {
+    // Redaction never lengthens a text that was checked against its maximum (P8 review S-1).
+    const body = ProjectEnvelopeSchema.shape.body.parse(boundedRedaction(this.#o.redactor, raw));
     if ((body.kind === 'coordinator-event') !== (target === 'coordinator')) throw new Error('Coordinator events, and only they, go to the coordinator device.');
     if (body.kind === 'thread-start' && (body.thread.projectId !== projectId || body.thread.ownerDeviceId !== target)) throw new Error('A thread starts on its owner device.');
     const entries = this.#entries(projectId); const key = bodyKey(body);
@@ -84,7 +85,9 @@ export class Outbox {
     const seqFile = this.#o.paths.outboxSeq(projectId);
     const seq = Math.max(existsSync(seqFile) ? readDocument(seqFile, OutboxSeqSchema).seq : 0, ...entries.map(({ entry }) => entry.envelope.seq)) + 1;
     writeDocument(seqFile, OutboxSeqSchema, { schema: 'project-outbox-seq-v1', seq });
-    const id = derivedId('env', projectId, this.#o.deviceId, body.kind, key);
+    // A coordinator handover names the assignment it follows, so an event that comes back here after a later move gets an envelope of its
+    // own instead of one the receiver has seen (P8 review RL-1); repeating the same handover repeats its envelope.
+    const id = derivedId('env', projectId, this.#o.deviceId, body.kind, key, ...(options.handover === undefined ? [] : ['handover', options.handover]));
     const entry = OutboxEntrySchema.parse({ schema: 'project-outbox-entry-v1', target, envelope: { schema: 'project-envelope-v1', id, projectId,
       sourceDeviceId: this.#o.deviceId, seq, createdAt: new Date(this.#o.timers.now()).toISOString(), body } });
     writeDocument(join(this.#o.paths.outbox(projectId), `${String(seq).padStart(12, '0')}-${id}.json`), OutboxEntrySchema, entry);
@@ -152,6 +155,8 @@ export type InboxHandlers = {
 export type InboxOptions = {
   paths: ProjectPaths; hub: Pick<ProjectHub, 'pendingEnvelopes' | 'ackEnvelope'>; deviceId: string; handlers: InboxHandlers;
   timers: { periodic: boolean; inboxPollMs: number };
+  /** An envelope this device could not read was acknowledged and is lost (P8 review S-2): the caller says so where the owner looks. */
+  dropped?(envelope: UnreadableEnvelope): void;
 };
 
 /**
@@ -220,6 +225,14 @@ export class Inbox {
     for (;;) {
       const page = await this.#o.hub.pendingEnvelopes(this.#o.deviceId);
       let acknowledged = 0;
+      // A record this device cannot read never will be (P8 review S-2): it is acknowledged and reported once, so it holds nothing back.
+      // One without a readable id cannot be acknowledged and stays on the hub.
+      for (const unreadable of page.unreadable ?? []) {
+        if (this.#closed) return;
+        if (unreadable.id === null) continue;
+        if (!this.#seenIds().set.has(unreadable.id)) { this.#o.dropped?.(unreadable); this.#remember(unreadable.id); }
+        await this.#o.hub.ackEnvelope(unreadable.id); acknowledged += 1;
+      }
       for (const envelope of [...page.records].sort(compareEnvelopes)) {
         if (this.#closed) return;
         const sequence = `${envelope.sourceDeviceId}\0${envelope.projectId}`;

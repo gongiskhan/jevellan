@@ -50,7 +50,8 @@ test('a Claude thread is refused while it works, then resumes in the terminal wi
   const command = jevellan(f, ['thread', 'attach', threadId], { path });
   const run = await cli.started(1);
   expect(cli.records().map((record) => record.kind)).toEqual(['help', 'run']);
-  expect(run.argv).toEqual(['--resume', stored, '--model', 'scripted-model', '--effort', 'high']);
+  // The flag settings keep the account home's transcripts past the CLI's 30-day retention (P8 review R-T1).
+  expect(run.argv).toEqual(['--resume', stored, '--model', 'scripted-model', '--effort', 'high', '--settings', '{"cleanupPeriodDays":36500}']);
   expect(run.cwd).toBe(realpathSync(f.thread(threadId).cwd));
   expect(run.envKeys).toEqual(['CLAUDE_CODE_OAUTH_TOKEN', 'CLAUDE_CONFIG_DIR', 'HOME', 'LANG', 'PATH', 'TERM', 'TMPDIR']);
   expect(run.authDigest).toBe(createHash('sha256').update(secret).digest('hex'));
@@ -171,7 +172,7 @@ test('the command prints the daemon refusals, hands back a thread it cannot resu
   // 3. A `claude` whose help lists no effort flag gets none.
   const command = jevellan(f, ['thread', 'attach', threadId], { path });
   const run = await cli.started(1);
-  expect(run.argv).toEqual(['--resume', stored, '--model', 'scripted-model']);
+  expect(run.argv).toEqual(['--resume', stored, '--model', 'scripted-model', '--settings', '{"cleanupPeriodDays":36500}']);
 
   // 4. Jevellan stops while the owner works: the native CLI's exit cannot detach, so the thread stays attached across the restart,
   // and `jevellan thread detach` hands it back later with the terminal's session.

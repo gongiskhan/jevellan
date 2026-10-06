@@ -17,6 +17,53 @@ function centered(locator: Locator) {
   return { click: async () => { await locator.evaluate((element) => element.scrollIntoView({ block: 'center' })); await locator.click(); } };
 }
 
+/**
+ * Scrolled up until `behind` sits under the top of the composer's live bar, Jump to latest shows in the bar (the page is more than
+ * 160 px from its end, so `behind` must be that far up). The bar sits on the page colour (D318): beside its button it reads the
+ * same with the conversation hidden behind it, so no transcript text runs through the bar.
+ */
+async function expectOpaqueLiveBar(page: Page, behind: Locator) {
+  const bar = page.locator('.composer .cursor-live-bar'); const jump = bar.getByRole('button', { name: 'Jump to latest ↓', exact: true });
+  await page.evaluate(() => window.scrollTo(0, 0)); await expect(jump).toBeVisible();
+  const [target, under] = [(await behind.boundingBox())!, (await bar.boundingBox())!];
+  // `behind` goes under the top of the bar, where the composer's fade used to start.
+  await page.evaluate((delta) => window.scrollBy(0, delta), target.y + target.height / 2 - (under.y + 4)); await expect(jump).toBeVisible();
+  // A transparent probe fixed over the bar beside the button. Capturing the sticky bar itself would first scroll the page to the
+  // bar's place in the document, where nothing is behind it and the bar goes away; a fixed element is captured where it is.
+  await bar.evaluate((element) => {
+    // Whole pixels inside the bar: a fractional edge would also capture the top padding, where the composer still fades.
+    const box = element.getBoundingClientRect(); const left = Math.ceil(element.querySelector('button')!.getBoundingClientRect().right) + 8; const top = Math.ceil(box.top);
+    const probe = document.createElement('div'); probe.id = 'live-bar-probe';
+    Object.assign(probe.style, { position: 'fixed', left: `${left}px`, top: `${top}px`, width: `${Math.floor(box.right) - left}px`, height: `${Math.floor(box.bottom) - top}px`, pointerEvents: 'none' });
+    document.body.append(probe);
+  });
+  const probe = page.locator('#live-bar-probe'); const capture = () => probe.screenshot({ animations: 'disabled' });
+  // Hides everything on the page but the composer, through style properties (the page's policy refuses a style sheet).
+  const hide = (hidden: boolean) => page.locator('.conversation-page').evaluate((element, hidden) => {
+    (element as HTMLElement).style.visibility = hidden ? 'hidden' : ''; element.querySelector<HTMLElement>('.composer')!.style.visibility = hidden ? 'visible' : '';
+  }, hidden);
+  const shown = await capture();
+  await hide(true); const alone = await capture(); await hide(false); await probe.evaluate((element) => element.remove());
+  expect(alone.equals(shown), 'transcript text shows through the live bar').toBe(true);
+}
+
+/**
+ * Server work the heaviest journeys wait for (a manual step, accepting reviewed changes, a verified publication, a context change),
+ * each in a named step so the report records how long it took.
+ */
+const serverWork = (title: string, body: () => Promise<unknown>) => test.step(`server work: ${title}`, async () => { await body(); });
+/**
+ * Budgets for that work and for the journeys that wait on it (D321): the worst duration measured with the journey alone (one
+ * worker, four layouts, 2026-10-05, in seconds) times a load margin, rounded up to 5 s and never below the earlier fixed wait.
+ * Under the four-worker matrix the four layouts run the same heavy journey at the same time, beside the improver and Projects
+ * servers: whole journeys took up to 2.6 times as long as alone, and single waits failed past 3.4 times.
+ */
+const LOAD_MARGIN = 6;
+const budgetMs = (aloneSeconds: number, floorMs: number) => Math.max(floorMs, Math.ceil((aloneSeconds * LOAD_MARGIN) / 5) * 5_000);
+const budget = (aloneSeconds: number, floorMs = 30_000) => ({ timeout: budgetMs(aloneSeconds, floorMs) });
+/** J11's manual steps alone, by their `serverWork` title. */
+const J11_STEPS_ALONE: Record<string, number> = { 'reply with memory': 13.3, review: 9.6, done: 4.8, 'reply on the member': 8.9, 'done on the member': 0.8 };
+
 async function currentProjectPath(page: Page) {
   const roster = DeviceRosterSchema.parse(await (await page.request.get(new URL('/hub/devices/roster', page.url()).href)).json());
   const current = roster.devices.find(row => row.device.id === roster.currentDeviceId)!.device;
@@ -104,7 +151,7 @@ test('Projects and a manual planned change render the full plan, stream, Why and
   await expect(page.locator('.conversation-meta')).toContainText('Done', { timeout: 30_000 }); await closeConversationSettings(page);
   await implementation.getByRole('button', { name: 'Changes', exact: true }).click(); await expect(dialog).toContainText('+2'); await expect(dialog).toContainText('Jevellan verification'); await expect(dialog).toContainText('Passed');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true); await page.screenshot({ path: `docs/acceptance/screenshots/phase2-changes-${info.project.name}.png` });
-  await dialog.getByRole('button', { name: 'Close panel' }).click(); await expect(page.locator('.conversation-row.selected')).toContainText('Done'); await page.evaluate(() => window.scrollTo(0, 0)); await page.screenshot({ path: `docs/acceptance/screenshots/phase2-conversation-${info.project.name}.png`, fullPage: true });
+  await dialog.getByRole('button', { name: 'Close panel' }).click(); await expect(page.locator('.conversation-row.selected')).toContainText('Done'); await expectOpaqueLiveBar(page, implementation.getByText('The value is now 2, ready for Jevellan verification.', { exact: true })); await page.evaluate(() => window.scrollTo(0, 0)); await page.screenshot({ path: `docs/acceptance/screenshots/phase2-conversation-${info.project.name}.png`, fullPage: true });
   const id = new URL(page.url()).pathname.split('/')[2]!; const view = await (await page.request.get(`/api/conversations/${id}`)).json(); expect(view.conversation.state).toBe('done'); expect(view.stretches).toHaveLength(2); expect(errors).toEqual([]);
   expect(view.closedWorks[0].closedAs).toBe('closed-by-you'); expect(view.settlements.map((entry: { choice: string; status: string }) => [entry.choice, entry.status])).toEqual([['keep', 'completed'], ['publish', 'completed']]);
 });
@@ -181,6 +228,7 @@ test('step corrections survive reload and undo launches the requested redo with 
 });
 
 test('blocked files can be reviewed, refreshed and accepted before verified publication', async ({ page }, info) => {
+  test.setTimeout(budgetMs(26.2, 120_000));
   const errors: string[] = []; page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
@@ -188,18 +236,18 @@ test('blocked files can be reviewed, refreshed and accepted before verified publ
   await page.goto('/'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('adoption_fixture');
   await page.getByPlaceholder('What should we build or fix?').fill('Exercise reviewed checkpoint recovery with a simulated read-only violation.'); await page.getByRole('button', { name: 'Start', exact: true }).click();
   const picker = page.locator('.manual-picker'); await picker.getByRole('combobox', { name: 'Action', exact: true }).selectOption('reply'); await picker.getByRole('button', { name: 'Continue', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Changes need your review' })).toBeVisible({ timeout: 30_000 }); await expect(picker).not.toBeVisible();
+  await serverWork('blocked step', () => expect(page.getByRole('heading', { name: 'Changes need your review' })).toBeVisible(budget(3.3))); await expect(picker).not.toBeVisible();
   await page.reload(); await page.getByRole('button', { name: 'Review changes', exact: true }).click();
-  const dialog = page.getByRole('dialog'); await expect(dialog).toContainText('+2', { timeout: 15_000 }); await expect(dialog).toContainText('+Accept this new file after reviewing it.'); await expect(dialog.getByRole('button', { name: 'Continue', exact: true })).toBeEnabled();
+  const dialog = page.getByRole('dialog'); await serverWork('blocked changes', () => expect(dialog).toContainText('+2', budget(3.8, 15_000))); await expect(dialog).toContainText('+Accept this new file after reviewing it.'); await expect(dialog.getByRole('button', { name: 'Continue', exact: true })).toBeEnabled();
   const id = new URL(page.url()).pathname.split('/')[2]!;
   expect((await page.request.post(`/api/conversations/${id}/messages`, { data: { schema: 'conversation-message-v1', clientMessageId: `review_context_${randomUUID()}`, text: 'Keep the reviewed changes.' } })).ok()).toBe(true);
   await expect(dialog.getByRole('button', { name: 'Continue', exact: true })).toBeDisabled(); await dialog.getByRole('button', { name: 'Refresh changes', exact: true }).click(); await expect(dialog.getByRole('button', { name: 'Continue', exact: true })).toBeEnabled();
   await dialog.getByRole('button', { name: 'Continue', exact: true }).scrollIntoViewIfNeeded(); expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: `docs/acceptance/screenshots/phase2-adoption-${info.project.name}.png` });
-  await dialog.getByRole('button', { name: 'Continue', exact: true }).click(); await expect(dialog).not.toBeVisible(); await expect(picker).toBeVisible({ timeout: 30_000 }); await expect(page.getByRole('heading', { name: 'Changes need your review' })).not.toBeVisible();
+  await dialog.getByRole('button', { name: 'Continue', exact: true }).click(); await expect(dialog).not.toBeVisible(); await serverWork('accepted changes', () => expect(picker).toBeVisible(budget(9.4))); await expect(page.getByRole('heading', { name: 'Changes need your review' })).not.toBeVisible();
   // The accepted step ended at a blocked checkpoint, so it does not answer the request and Done is not offered (1f63214); the owner closes the work.
   await (await openConversationSettings(page)).getByRole('button', { name: 'Close this work', exact: true }).click(); await settlement(page).getByRole('button', { name: 'Publish', exact: true }).click();
-  await expect(page.getByText('Work closed and published.', { exact: true })).toBeVisible({ timeout: 30_000 }); await expect(page.locator('.conversation-meta')).toContainText('Done', { timeout: 30_000 }); await closeConversationSettings(page);
+  await serverWork('publication', async () => { await expect(page.getByText('Work closed and published.', { exact: true })).toBeVisible(budget(2.8)); await expect(page.locator('.conversation-meta')).toContainText('Done', budget(2.8)); }); await closeConversationSettings(page);
   await page.getByRole('button', { name: 'Changes', exact: true }).click(); await expect(dialog).toContainText('Passed'); await expect(dialog).toContainText('review-note.txt'); expect(errors).toEqual([]);
 });
 
@@ -241,6 +289,7 @@ test('undo from the last closed work includes newer work and preserves both requ
 });
 
 test('context merge is drafted read-only, survives reload, cancels and applies through verified publication', async ({ page }, info) => {
+  test.setTimeout(budgetMs(33.7, 120_000));
   const errors: string[] = []; page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
@@ -253,14 +302,14 @@ test('context merge is drafted read-only, survives reload, cancels and applies t
   await expect(dialog.getByRole('button', { name: 'Keep CLAUDE.md and link AGENTS.md to it', exact: true })).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Leave both as they are', exact: true })).toBeVisible();
   const read = async () => ContextPanelSchema.parse(await (await page.request.get('/api/projects/context_fixture/context/operations')).json()); const before = await read();
-  await dialog.getByRole('button', { name: 'Merge them into AGENTS.md', exact: true }).click(); await expect(dialog.getByRole('button', { name: 'Apply', exact: true })).toBeVisible({ timeout: 30_000 });
+  await dialog.getByRole('button', { name: 'Merge them into AGENTS.md', exact: true }).click(); await serverWork('context draft', () => expect(dialog.getByRole('button', { name: 'Apply', exact: true })).toBeVisible(budget(3.9)));
   let current = await read(); expect(current.context.fingerprint).toBe(before.context.fingerprint); expect(current.operations.at(-1)).toMatchObject({ status: 'draft-ready', applied: false });
   await dialog.getByRole('button', { name: 'Cancel', exact: true }).click(); await expect(dialog).toContainText('Context change cancelled.'); expect((await read()).context.fingerprint).toBe(before.context.fingerprint);
-  await dialog.getByRole('button', { name: 'Merge them into AGENTS.md', exact: true }).click(); await expect(dialog.getByRole('button', { name: 'Apply', exact: true })).toBeVisible({ timeout: 30_000 });
+  await dialog.getByRole('button', { name: 'Merge them into AGENTS.md', exact: true }).click(); await serverWork('context draft again', () => expect(dialog.getByRole('button', { name: 'Apply', exact: true })).toBeVisible(budget(2.8)));
   await page.reload(); await card.getByRole('button', { name: 'Context', exact: true }).click(); await expect(dialog).toContainText('Shared project instructions'); await expect(dialog).toContainText('Symlink → AGENTS.md');
   await dialog.getByRole('button', { name: 'Apply', exact: true }).scrollIntoViewIfNeeded(); expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: `docs/acceptance/screenshots/phase2-context-draft-${info.project.name}.png` });
-  await dialog.getByRole('button', { name: 'Apply', exact: true }).click(); await expect(dialog).toContainText('Context change completed.', { timeout: 30_000 }); await expect(dialog).toContainText('Linked: CLAUDE.md → AGENTS.md');
+  await dialog.getByRole('button', { name: 'Apply', exact: true }).click(); await serverWork('context apply', () => expect(dialog).toContainText('Context change completed.', budget(11.9))); await expect(dialog).toContainText('Linked: CLAUDE.md → AGENTS.md');
   current = await read(); const record = current.operations.at(-1)!; expect(record).toMatchObject({ status: 'completed', approved: true, applied: true }); expect(record.commit).toBeTruthy(); expect(current.context.files[0].content).toBe(record.draft); expect(current.context.files[1]).toMatchObject({ kind: 'link', target: 'AGENTS.md' });
   const work = ConversationPublicSchema.parse(await (await page.request.get(`/api/conversations/${record.conversationId}`)).json()); expect(work.conversation).toMatchObject({ state: 'done', work: null });
   await page.screenshot({ path: `docs/acceptance/screenshots/phase2-context-linked-${info.project.name}.png` });
@@ -270,7 +319,7 @@ test('context merge is drafted read-only, survives reload, cancels and applies t
   await dialog.getByLabel('Name', { exact: true }).fill('Created instructions fixture'); await (await currentProjectPath(page)).fill(Object.values(empty.paths)[0] as string); await dialog.getByLabel('Test command', { exact: true }).fill('test -f AGENTS.md');
   await expect(dialog.getByLabel('Create AGENTS.md if no instruction file exists')).toBeChecked(); await dialog.getByRole('button', { name: 'Save project', exact: true }).click(); await expect(dialog).not.toBeVisible();
   const createdCard = page.locator('.card').filter({ has: page.getByRole('heading', { name: 'Created instructions fixture', exact: true }) }); await createdCard.getByRole('button', { name: 'Context', exact: true }).click();
-  await expect(dialog).toContainText('Context change completed.', { timeout: 30_000 }); await expect(dialog).toContainText('Linked: CLAUDE.md → AGENTS.md'); await dialog.getByText('Current instruction files', { exact: true }).click();
+  await serverWork('context created', () => expect(dialog).toContainText('Context change completed.', budget(11.4))); await expect(dialog).toContainText('Linked: CLAUDE.md → AGENTS.md'); await dialog.getByText('Current instruction files', { exact: true }).click();
   await expect(dialog).toContainText('Run tests with'); await expect(dialog).toContainText('Project memory lives in .jevellan/memory'); expect(errors).toEqual([]);
 });
 
@@ -681,6 +730,13 @@ test('device Settings completes a member login, shows activity, invites and swit
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: `docs/acceptance/screenshots/phase4-devices-${info.project.name}.png`, fullPage: true });
   await page.getByRole('button', { name: 'Add a device', exact: true }).click(); await expect(panel.locator('.verification-code strong')).toHaveText(/^[0-9A-HJKMNP-TV-Z]{8}$/); await expect(panel.locator('.join-command')).toContainText('npx github:gongiskhan/jevellan join'); await expect(panel).toContainText('Expires'); expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true); await page.screenshot({ path: `docs/acceptance/screenshots/phase5-join-${info.project.name}.png`, fullPage: false, mask: [panel.locator('.verification-code strong'), panel.locator('.join-command span')], maskColor: '#dce2de' }); await panel.getByRole('button', { name: 'Close panel', exact: true }).click();
+  // From 761 to 1024 px the sidebar is 236 px wide: the device pill stays inside it, a long name ending in an ellipsis, and the pill
+  // names the device in full on hover (D319).
+  const viewport = page.viewportSize()!; await page.setViewportSize({ width: 900, height: viewport.height });
+  const roster = DeviceRosterSchema.parse(await (await page.request.get('/hub/devices/roster')).json()); const here = roster.devices.find(row => row.device.id === roster.currentDeviceId)!.device.name;
+  const pill = page.locator('.sidebar .device-switcher summary'); await expect(pill).toHaveAttribute('title', here); await expect(pill).toContainText(here);
+  expect(await pill.evaluate((summary) => { const sidebar = summary.closest('.sidebar')!.getBoundingClientRect(); const box = summary.getBoundingClientRect(); return box.width > 0 && box.left >= sidebar.left && box.right <= sidebar.right - 12; })).toBe(true);
+  await page.setViewportSize(viewport);
   await openDeviceSwitcher(page); await expect(page.locator('.device-switcher button').filter({ hasText: 'Offline fixture' })).toBeDisabled();
   await page.locator('.device-switcher button').filter({ hasText: 'Browser member' }).click(); await page.waitForURL(`${member!.url}/settings/devices`);
   await expect(page.getByRole('heading', { name: 'Devices', exact: true })).toBeVisible(); await expect(page.getByLabel('Passphrase')).not.toBeVisible(); await expect(page.locator('.device-switcher summary')).toContainText('Browser member'); expect(errors).toEqual([]);
@@ -777,7 +833,7 @@ test('J8 simulated mesh journey switches, streams, corrects, logs in remotely an
 
 test('J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge', async ({ page }, info) => {
   // This spans two devices, real Basic Memory processes, publication and a separately verified context merge.
-  test.setTimeout(240_000);
+  test.setTimeout(budgetMs(73.8, 240_000));
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message)); const sourceUrl = info.project.use.baseURL!;
   const git = (cwd: string, ...args: string[]) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
   await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
@@ -811,8 +867,11 @@ test('J11 simulated mesh journey publishes memory, recalls after pull and review
     if (action === 'reply') await picker.getByRole('checkbox', { name: 'This request explicitly asks to remember something.', exact: true }).setChecked(remember);
     const response = page.waitForResponse(response => response.request().method() === 'POST' && new URL(response.url()).pathname === `/api/conversations/${id}/manual`);
     await picker.getByRole('button', { name: 'Continue', exact: true }).click(); expect((await response).status()).toBe(202);
-    if (action === 'done') await expect(page.locator('.conversation-meta')).toContainText('Done', { timeout: 45_000 });
-    else { await expect.poll(async () => (await read(base, id)).stretches[before.stretches.length]?.status, { timeout: 45_000 }).toBe('completed'); await expect(picker).toBeVisible({ timeout: 45_000 }); }
+    const title = `${action}${remember ? ' with memory' : ''}${base === sourceUrl ? '' : ' on the member'}`; const within = budget(J11_STEPS_ALONE[title]!, 45_000);
+    await serverWork(title, async () => {
+      if (action === 'done') await expect(page.locator('.conversation-meta')).toContainText('Done', within);
+      else { await expect.poll(async () => (await read(base, id)).stretches[before.stretches.length]?.status, within).toBe('completed'); await expect(picker).toBeVisible(within); }
+    });
     return read(base, id);
   };
   const remembered = await step(sourceUrl, sourceId, 'reply', claudeModel, true); const workId = remembered.conversation.work!.id;
@@ -827,13 +886,13 @@ test('J11 simulated mesh journey publishes memory, recalls after pull and review
   const saved = MemorySearchSchema.parse(await (await page.request.get('/api/projects/j11_fixture/memory?query=Vitest', { timeout: 40_000 })).json()); expect(saved.notes.some(note => note.title === 'Global test imports for mesh')).toBe(true);
   git(targetPath, 'pull', '--ff-only'); expect(git(targetPath, 'rev-parse', 'HEAD')).toBe(published);
   await switchTo(target.name, target.url); await page.goto(`${target.url}/`); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('j11_fixture'); await page.getByPlaceholder('What should we build or fix?').fill('Explain how to write a Vitest test for this project.'); await page.getByRole('button', { name: 'Start', exact: true }).click();
-  await expect(picker).toBeVisible({ timeout: 30_000 }); const targetId = new URL(page.url()).pathname.split('/')[2]!; const recalled = await step(target.url, targetId, 'reply', 'j11_codex'); expect(recalled.conversation.ownerDeviceId).toBe(target.id); expect(recalled.stretches[0]?.runtime).toBe('codex'); expect(recalled.decisions[0]?.memory?.chosen).toContain(note.permalink);
+  await serverWork('start on the member', () => expect(picker).toBeVisible(budget(1.8))); const targetId = new URL(page.url()).pathname.split('/')[2]!; const recalled = await step(target.url, targetId, 'reply', 'j11_codex'); expect(recalled.conversation.ownerDeviceId).toBe(target.id); expect(recalled.stretches[0]?.runtime).toBe('codex'); expect(recalled.decisions[0]?.memory?.chosen).toContain(note.permalink);
   await expect(page.locator('.stretch-block').first()).toContainText('J11 codex received project memory: Vitest convention for mesh; globals enabled.'); await page.reload(); await why(0, 'codex-why'); await step(target.url, targetId, 'done', 'j11_codex'); expect(git(targetPath, 'rev-parse', 'HEAD')).toBe(published); expect(git(targetPath, 'status', '--porcelain')).toBe('');
   await switchTo(source.name, sourceUrl); await page.goto('/settings/projects'); const contextCard = page.locator('.card').filter({ has: page.getByRole('heading', { name: 'J11 context journey', exact: true }) }); await expect(contextCard).toContainText('Context needs a decision'); await contextCard.getByRole('button', { name: 'Context', exact: true }).click();
   const contextPath = projects.projects.find(row => row.project.id === 'j11_context')!.project.paths[source.id]!; const contextHead = git(contextPath, 'rev-parse', 'HEAD'); const contextBefore = ['AGENTS.md', 'CLAUDE.md'].map(file => readFileSync(join(contextPath, file), 'utf8'));
-  await dialog.getByRole('button', { name: 'Merge them into AGENTS.md', exact: true }).click(); await expect(dialog.getByRole('button', { name: 'Apply', exact: true })).toBeVisible({ timeout: 30_000 }); await expect(dialog).toContainText('Shared project instructions'); await expect(dialog).toContainText('Symlink → AGENTS.md');
+  await dialog.getByRole('button', { name: 'Merge them into AGENTS.md', exact: true }).click(); await serverWork('context draft', () => expect(dialog.getByRole('button', { name: 'Apply', exact: true })).toBeVisible(budget(3.4))); await expect(dialog).toContainText('Shared project instructions'); await expect(dialog).toContainText('Symlink → AGENTS.md');
   expect(git(contextPath, 'rev-parse', 'HEAD')).toBe(contextHead); expect(['AGENTS.md', 'CLAUDE.md'].map(file => readFileSync(join(contextPath, file), 'utf8'))).toEqual(contextBefore); expect(git(contextPath, 'status', '--porcelain')).toBe('');
-  await dialog.getByRole('button', { name: 'Apply', exact: true }).scrollIntoViewIfNeeded(); await page.screenshot({ path: `docs/acceptance/screenshots/J11-mesh-context-draft-${info.project.name}.png` }); await dialog.getByRole('button', { name: 'Apply', exact: true }).click(); await expect(dialog).toContainText('Context change completed.', { timeout: 30_000 });
+  await dialog.getByRole('button', { name: 'Apply', exact: true }).scrollIntoViewIfNeeded(); await page.screenshot({ path: `docs/acceptance/screenshots/J11-mesh-context-draft-${info.project.name}.png` }); await dialog.getByRole('button', { name: 'Apply', exact: true }).click(); await serverWork('context apply', () => expect(dialog).toContainText('Context change completed.', budget(11.4)));
   const context = ContextPanelSchema.parse(await (await page.request.get('/api/projects/j11_context/context/operations')).json()); expect(context.operations.at(-1)).toMatchObject({ status: 'completed', approved: true, applied: true }); expect(readlinkSync(join(contextPath, 'CLAUDE.md'))).toBe('AGENTS.md'); expect(readFileSync(join(contextPath, 'AGENTS.md'), 'utf8')).toContain('Preserve the tests.'); expect(readFileSync(join(contextPath, 'AGENTS.md'), 'utf8')).toContain('Run the formatter.'); expect(git(join(root, 'j11-context-origin.git'), 'rev-parse', 'main')).toBe(git(contextPath, 'rev-parse', 'HEAD')); expect(git(contextPath, 'status', '--porcelain')).toBe(''); expect(errors).toEqual([]);
   writeFileSync(`docs/acceptance/J11-mesh-simulated-${info.project.name}.json`, JSON.stringify(J11EvidenceSchema.parse({ schema: 'j11-mesh-simulated-v1', layout: info.project.name, devices: 'simulated', providers: 'simulated', memory: 'live-basic-memory', selection: 'manual-search-rank', compatibilityLinkExcluded: true, explicitMemoryPublished: true, readOnlyProposalPreservedCheckout: true, proposalAppliedByOwner: true, alreadyOpenIndexRefreshedAfterPull: true, claudeAndCodexReceivedNote: true, whyShowsChosenMemory: true, contextDraftPreservedFiles: true, contextMergePublished: true, chosenNote: note.permalink }), null, 2) + '\n');
 });

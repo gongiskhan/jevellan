@@ -47,10 +47,13 @@ export class MailService {
       default: throw failure(TOOL_NOT_IN_TURN, 403);
     }
   }
-  /** The coordinator's `jevellan_mail_send` (brief 7.1): to a main thread, or to all of them. */
-  async coordinatorSend(projectId: string, turn: number, input: Input<'jevellan_mail_send'>): Promise<unknown> {
+  /**
+   * The coordinator's `jevellan_mail_send` (brief 7.1): to a main thread, or to all of them. `deviceId` is the coordinator's device, whose
+   * own turn numbers the id counts with (P8 review C-3).
+   */
+  async coordinatorSend(projectId: string, turn: number, input: Input<'jevellan_mail_send'>, deviceId?: string): Promise<unknown> {
     if (input.to === 'coordinator') throw failure(COORDINATOR_MAIL_TO, 400);
-    return this.#send(projectId, 'coordinator', turn, input);
+    return this.#send(projectId, 'coordinator', turn, input, deviceId);
   }
   /** Releases every active reservation of a thread (it stopped, failed or published); the caller treats it as best effort. */
   releaseThread(projectId: string, threadId: string): Promise<number> { return this.o.hub.release(projectId, threadId); }
@@ -59,8 +62,8 @@ export class MailService {
     const thread = this.o.local(threadId) ?? (IdSchema.safeParse(threadId).success ? (await this.o.hub.thread(threadId))?.document : undefined);
     return thread?.projectId === projectId ? thread : undefined;
   }
-  async #send(projectId: string, from: string, turn: number, input: Input<'jevellan_mail_send'>): Promise<unknown> {
-    const mailId = derivedId('mail', projectId, from, String(turn), stableJson(input));
+  async #send(projectId: string, from: string, turn: number, input: Input<'jevellan_mail_send'>, deviceId?: string): Promise<unknown> {
+    const mailId = derivedId('mail', projectId, from, ...(deviceId === undefined ? [] : [deviceId]), String(turn), stableJson(input));
     const at = new Date(this.o.now()).toISOString();
     if (input.to === 'coordinator') {
       // The coordinator dedupes its queue by event id, so a repeated call delivers once (D287).

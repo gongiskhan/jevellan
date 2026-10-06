@@ -3,6 +3,7 @@ import {
   IdSchema,
   NO_CHANGES,
   OWNER_STARTED_PREFIX,
+  OWNER_STOPPED_THREAD,
   OWNER_WORKED_PREFIX,
   PlacementFieldSchema,
   ProjectLedgerDataSchemas,
@@ -264,9 +265,10 @@ export function threadPollDelay(state: ThreadState | undefined, now: number, fas
  * The thread header buttons (12.3): Stop while the thread is not concluded, Discard when the owner may discard it (the
  * server decides), Allow 10 more turns at the turn limit of a thread that has not concluded.
  */
-export function threadActions(view: Pick<ThreadView, 'thread' | 'canDiscard' | 'atTurnLimit'>): { stop: boolean; discard: boolean; allowTurns: boolean } {
+/** `stopRefusal`: Stop shows disabled with the server's reason (an attached thread, phase 8). */
+export function threadActions(view: Pick<ThreadView, 'thread' | 'canDiscard' | 'atTurnLimit' | 'stopRefusal'>): { stop: boolean; stopRefusal: string | null; discard: boolean; allowTurns: boolean } {
   const ended = isTerminal(view.thread.state);
-  return { stop: !ended, discard: view.canDiscard, allowTurns: view.atTurnLimit && !ended };
+  return { stop: !ended, stopRefusal: ended ? null : view.stopRefusal ?? null, discard: view.canDiscard, allowTurns: view.atTurnLimit && !ended };
 }
 /** Why the thread composer takes no message (D81), or null: attached in a terminal, else concluded. */
 export function composerBlock(view: Pick<ThreadView, 'canMessage' | 'thread' | 'deviceName'>): string | null {
@@ -424,6 +426,8 @@ function eventCard(event: Exclude<CoordinatorEvent, { kind: 'user-message' }>, t
     }
     case 'thread-verification-failed': return card(text.testsFailed(name(event.threadId), event.attempts), event.threadId);
     case 'thread-interrupted': {
+      // The owner's own stop says so in their voice; its message is written for the coordinator (D316).
+      if (event.reason === 'stopped' && event.message === OWNER_STOPPED_THREAD) return card(text.ownerStopped(name(event.threadId)), event.threadId);
       const reason = { restart: text.interruptedRestart, timeout: text.interruptedTimeout, failed: text.interruptedFailed, stopped: text.interruptedStopped }[event.reason];
       return card(reason(name(event.threadId)), event.threadId, event.message);
     }

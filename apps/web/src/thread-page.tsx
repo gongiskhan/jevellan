@@ -26,7 +26,7 @@ import { shortTime } from './time.js';
  */
 export function ThreadPage(props: PageProps & { projectId: string; threadId: string; navigation: ReactNode }) {
   const { projectId, threadId, navigation, navigate, onError, message, data } = props;
-  const titleId = useId(); const queuedId = useId();
+  const titleId = useId(); const queuedId = useId(); const stopNoteId = useId();
   const [view, setView] = useState<ThreadView>();
   const [loadError, setLoadError] = useState('');
   // Before any view: the thread's device refused or could not be reached, and the project's index row that names it (D276).
@@ -172,7 +172,8 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
             </button>
           )}
           {actions.stop && (
-            <button type="button" className="secondary pw-head-button" onClick={() => setConfirming('stop')}>
+            <button type="button" className="secondary pw-head-button" disabled={!!actions.stopRefusal} title={actions.stopRefusal ?? undefined}
+              aria-describedby={actions.stopRefusal ? stopNoteId : undefined} onClick={() => setConfirming('stop')}>
               <Icon name="stop" size={15} /><span className="pw-head-label">{copy.STOP}</span>
             </button>
           )}
@@ -210,6 +211,9 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
             </p>
           )}
           {reason?.savedRef && <p className="pw-saved-ref">{SAVED_COMMITS_SENTENCE}<code>{reason.savedRef}</code>.</p>}
+          {/* Why Stop and Restart wait while the thread is attached, and why an ended main thread still holds the checkout (phase 8). */}
+          {actions.stopRefusal && <p className="pw-thread-note" id={stopNoteId}>{actions.stopRefusal}</p>}
+          {view.checkoutHeld && <p className="pw-thread-note pw-tone-warn" role="status">{view.checkoutHeld}</p>}
           <p className="pw-placement-line" title={line}>{line}</p>
         </div>
       </div>

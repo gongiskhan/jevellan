@@ -472,7 +472,7 @@ test('PJ3 the GitHub token card saves, replaces and removes the token', async ({
     const card = page.locator('section').filter({ has: page.getByRole('heading', { level: 2, name: 'GitHub token', exact: true }) });
     const summary = card.locator('.pw-token-summary');
     await expect(summary).toHaveText('Not set');
-    await expect(card.getByText('Used only to open, read and merge pull requests for Jevellan threads. A fine-grained token with Pull requests read and write, Contents read and Checks read on your repositories is enough.', { exact: true })).toBeVisible();
+    await expect(card.getByText('Used only to open, read and merge pull requests for Jevellan threads. A fine-grained token with Pull requests read and write, Contents read and write, Checks read and Commit statuses read on your repositories is enough.', { exact: true })).toBeVisible();
     await expect(card.getByRole('button', { name: 'Remove', exact: true })).toHaveCount(0);
     const save = async (button: string, title: string, note?: string) => {
       await card.getByRole('button', { name: button, exact: true }).click();
@@ -764,6 +764,12 @@ test('PJ7 an attached thread disables its composer', async ({ page }) => {
   const message = page.getByRole('textbox', { name: 'Message this thread', exact: true });
   await expect(message).toBeEnabled();
   await expect(page.locator('.pw-composer-note')).toHaveCount(0);
+  // How the composer looks while it takes messages (the send icon is disabled here too, as the field is empty).
+  const look = () => page.locator('.pw-thread-composer').evaluate((form) => {
+    const row = form.querySelector('.message-input-row')!; const field = form.querySelector('textarea')!; const send = form.querySelector('.send-icon')!;
+    return { border: getComputedStyle(row).borderTopStyle, cursor: getComputedStyle(field).cursor, placeholder: getComputedStyle(field, '::placeholder').color, send: getComputedStyle(send).opacity };
+  });
+  const enabled = await look();
 
   // The terminal takes the thread (the command's own request, sent by the fixture's control): the page's next read shows it attached,
   // the composer takes no message and says why, and the takeover line stays with its copy button working.
@@ -772,6 +778,16 @@ test('PJ7 an attached thread disables its composer', async ({ page }) => {
   await expect(page.locator('.pw-composer-note')).toHaveText(`Attached in a terminal on ${here}. Messages wait until you exit.`);
   await expect(message).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Send', exact: true })).toBeDisabled();
+  // It also reads disabled, in both themes: a dashed row, the not-allowed cursor, a fainter placeholder and send icon (D317).
+  const attached = await look();
+  expect(attached).toMatchObject({ border: 'dashed', cursor: 'not-allowed' });
+  for (const key of ['border', 'cursor', 'placeholder', 'send'] as const) expect(attached[key], key).not.toBe(enabled[key]);
+  // Stop waits for the terminal session too: disabled, described by the server's sentence shown under the header.
+  const refusal = `This thread is attached in a terminal: exit that terminal session first, or run jevellan thread detach ${id}.`;
+  const stopButton = page.getByRole('button', { name: 'Stop', exact: true });
+  await expect(stopButton).toBeDisabled();
+  await expect(stopButton).toHaveAccessibleDescription(refusal);
+  await expect(page.locator('.pw-thread-note')).toHaveText(refusal);
   await expect(takeOver).toHaveText(`Take over in a terminal on ${here}: ${command}`);
   const copyButton = takeOver.getByRole('button', { name: 'Copy command', exact: true });
   await expect(copyButton).toBeEnabled();
@@ -817,6 +833,18 @@ test('PJ7 an attached thread disables its composer', async ({ page }) => {
   await expect(page.locator('.pw-state-chip')).toHaveText('Idle', LONG);
   await expect(page.locator('.pw-composer-note')).toHaveCount(0);
   await expect(message).toBeEnabled();
+  expect(await look()).toEqual(enabled);
+  await expect(stopButton).toBeEnabled(); await expect(page.locator('.pw-thread-note')).toHaveCount(0);
   await expect(takeOver).toHaveText(`Take over in a terminal on ${here}: ${command}`);
+
+  // The owner stops it: the project chat says so in the owner's voice, without the coordinator's wording as its detail (D316).
+  await tap(page, stopButton);
+  await page.getByRole('dialog', { name: 'Stop this thread?', exact: true }).getByRole('button', { name: 'Stop', exact: true }).click();
+  await expect(page.locator('.pw-state-chip')).toHaveText('Stopped', LONG);
+  await page.getByRole('link', { name: 'Back to the project', exact: true }).click();
+  const stoppedCard = page.locator('.pw-event').filter({ has: page.locator('.pw-event-text').getByText(`You stopped "${title}"`, { exact: true }) });
+  await expect(stoppedCard).toHaveCount(1, LONG);
+  await expect(stoppedCard.locator('.pw-event-detail')).toHaveCount(0);
+  await expect(page.locator('.pw-event').filter({ hasText: 'The owner stopped this thread.' })).toHaveCount(0);
   expect(errors).toEqual([]);
 });

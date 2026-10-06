@@ -4,6 +4,11 @@ import type {
 import type { HeldCheckout, ProjectWorkSummary, ReservationConflict, ReservationRequest } from './project-hub-schemas.js';
 import type { Stored } from './store.js';
 
+/**
+ * A pending envelope this device could not read (P8 review S-2: another Jevellan version, for example): what its record still names,
+ * each field null when even that is unreadable. The inbox acknowledges it when its id is readable and says what was lost.
+ */
+export type UnreadableEnvelope = { id: string | null; projectId: string | null; sourceDeviceId: string | null; kind: string | null };
 /** A reservation is granted, or refused with the overlapping reservations of other threads (brief 7.2); reservations are advisory. */
 export type ReserveOutcome = { granted: true; reservation: Stored<FileReservation> } | { granted: false; conflicts: ReservationConflict[] };
 
@@ -41,8 +46,11 @@ export interface ProjectHub {
   // relay envelopes (phase 5, D40): only the source device puts, only the target reads and acknowledges
   /** Revision 0 creates; an identical retry answers `stored: false`, the same id with other content is refused (409). */
   putEnvelope(envelope: ProjectEnvelope): Promise<{ stored: boolean }>;
-  /** The caller's pending envelopes in relay order (`compareEnvelopes`), at most 100 and about 1 MiB a page (D260); `more` when others wait. */
-  pendingEnvelopes(targetDeviceId: string): Promise<{ records: ProjectEnvelope[]; more: boolean }>;
+  /**
+   * The caller's pending envelopes in relay order (`compareEnvelopes`), at most 100 and about 1 MiB a page (D260); `more` when others wait.
+   * A member reads the page record by record: records it cannot read come back as `unreadable` instead of failing the page (P8 review S-2).
+   */
+  pendingEnvelopes(targetDeviceId: string): Promise<{ records: ProjectEnvelope[]; more: boolean; unreadable?: UnreadableEnvelope[] }>;
   /** Deletes a delivered envelope (D90); an unknown id is already acknowledged. */
   ackEnvelope(id: string): Promise<void>;
   // the Projects list (phase 5, D267): one read for every project, so a member's list costs one hub request per poll

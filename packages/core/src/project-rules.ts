@@ -49,6 +49,8 @@ export const NO_CHANGES = 'Concluded without changes.';
 /** Preformatted `thread-user-message` texts (brief 9.5, phase 7 detach; D35) start with these. */
 export const OWNER_STARTED_PREFIX = '[owner started thread "';
 export const OWNER_WORKED_PREFIX = '[owner worked on thread "';
+/** The coordinator's `thread-interrupted` message for a thread the owner stopped; the chat shows the owner's own stop in their voice (D316). */
+export const OWNER_STOPPED_THREAD = 'The owner stopped this thread.';
 /** A restarted thread's reason reads `Restarted as {newId}.` (brief 10); the interface links the new thread. */
 export const RESTARTED_PREFIX = 'Restarted as ';
 /** A stopped main thread's reason ends `Its unpublished commits were saved at {ref}.` (D29); the interface shows the ref on its own line (D295). */

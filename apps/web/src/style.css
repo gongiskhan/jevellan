@@ -1718,7 +1718,11 @@ button.memory-result + button.memory-result { margin-top: 4px; }
 
 /* Conversation reading space: navigation belongs to the sidebar. */
 .sidebar-device { display: flex; padding-inline: 4px; }
-.sidebar-device .device-switcher { margin-left: 0; max-width: 100%; }
+.sidebar-device .device-switcher { margin-left: 0; max-width: 100%; min-width: 0; flex: 0 1 auto; }
+/* The 236 px sidebar (761-1024 px) cannot fit a long device name: it ends in an ellipsis, and the pill's title names it (D319). */
+.device-switcher summary { max-width: 100%; min-width: 0; }
+.device-switcher-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.device-switcher summary > .state-dot, .device-switcher summary > .icon { flex: none; }
 .sidebar-device .device-switcher > div { left: 0; right: auto; }
 .conversation-list-entry { position: relative; min-width: 0; }
 .conversation-list-entry .conversation-row { width: 100%; }
@@ -1738,6 +1742,10 @@ button.memory-result + button.memory-result { margin-top: 4px; }
 .latest-user-message p { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; }
 html:has(.reading-conversation) { scroll-padding-top: 115px; scroll-padding-bottom: 80px; }
 .reading-conversation .composer { padding: 8px 0 max(8px, env(safe-area-inset-bottom)); margin: auto 0 0; gap: 0; }
+/* The live bar (working line, Jump to latest; Interrupt on Projects pages) sits on the page colour: the shared fade over the
+   composer's top fifth let text run through it, and Jump to latest only shows while the page is scrolled up (D318). The fade
+   keeps to the top padding. */
+.reading-conversation .composer { background: linear-gradient(to top, var(--bg) calc(100% - 8px), transparent); }
 .message-input-row { display: flex; align-items: flex-end; gap: 6px; width: 100%; padding: 4px; border: 1px solid var(--edge-strong); border-radius: 16px; background: var(--card); box-shadow: var(--shadow); }
 .message-input-row:focus-within { border-color: var(--sea); }
 .composer .message-input-row textarea { flex: 1; width: 0; min-width: 0; min-height: 44px; max-height: 33dvh; margin: 0; padding: 11px 10px; line-height: 22px; border: 0; box-shadow: none; background: transparent; resize: none; overflow-y: auto; border-radius: 10px; }

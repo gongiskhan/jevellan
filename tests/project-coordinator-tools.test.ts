@@ -170,6 +170,8 @@ test('thread tools start, list, read, message and stop as brief 7.1 says, refuse
   expect(await c.refused('jevellan_thread_message', { threadId: login.threadId, message: 'One more thing.' })).toEqual({ status: 409, message: THREAD_ENDED });
   f.app.projectWork.store.update(docs.threadId, (thread) => ({ ...thread, state: 'attached' }));
   expect(await c.refused('jevellan_thread_message', { threadId: docs.threadId, message: 'Add a section.' })).toEqual({ status: 409, message: THREAD_ATTACHED });
+  // The terminal session ends: an attached thread holds its account, which the coordinator's next turn below uses too (phase 8).
+  f.app.projectWork.store.update(docs.threadId, (thread) => ({ ...thread, state: 'idle' }));
   for (const [name, args] of [['jevellan_thread_message', { message: 'Hello.' }], ['jevellan_thread_read', {}], ['jevellan_thread_stop', { reason: 'Not needed.' }],
     ['jevellan_ask_user', { question: 'Which one?' }]] as const) {
     expect(await c.refused(name, { threadId: 'thread_missing', ...args })).toEqual({ status: 404, message: THREAD_NOT_FOUND });

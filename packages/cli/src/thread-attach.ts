@@ -4,7 +4,7 @@ import { constants } from 'node:os';
 import { isAbsolute } from 'node:path';
 import { isatty } from 'node:tty';
 import { z } from 'zod';
-import { Homes, ThreadAttachViewSchema, ThreadDetachViewSchema, minimalEnvironment, runOwnedCommand } from '@jevellan/core';
+import { CLAUDE_FLAG_SETTINGS, Homes, ThreadAttachViewSchema, ThreadDetachViewSchema, minimalEnvironment, runOwnedCommand } from '@jevellan/core';
 import { LocalRequestError, localRequest } from './local-request.js';
 import { findExecutable } from './toolchain.js';
 
@@ -51,8 +51,9 @@ export async function claudeTakesEffort(executable: string, cwd: string, env: Re
 
 /**
  * The native command for an attach answer (brief phase 7): `claude --resume <id> --model <model>` (with `--effort` when the installed
- * CLI takes it) or `codex resume <id> -m <model> -c model_reasoning_effort="<effort>"`, in the thread's folder, with the account home
- * and authentication variables merged into a minimal environment. Secrets stay in the environment, never in the arguments.
+ * CLI takes it, and the flag settings that keep the account home's transcripts past the CLI's retention, P8 review R-T1) or
+ * `codex resume <id> -m <model> -c model_reasoning_effort="<effort>"`, in the thread's folder, with the account home and authentication
+ * variables merged into a minimal environment. Secrets stay in the environment, never in the arguments.
  */
 async function prepare(answer: unknown, base: NodeJS.ProcessEnv): Promise<Launch | string> {
   const parsed = ThreadAttachViewSchema.safeParse(answer); if (!parsed.success) return UNUSABLE;
@@ -64,7 +65,8 @@ async function prepare(answer: unknown, base: NodeJS.ProcessEnv): Promise<Launch
   if (!executable) return `${label} is not installed on this device: the ${view.runtime} command was not found on PATH.`;
   if (!existsSync(view.cwd)) return `The thread's folder no longer exists: ${view.cwd}`;
   const args = view.runtime === 'claude'
-    ? ['--resume', view.nativeSessionId, '--model', view.model, ...(await claudeTakesEffort(executable, view.cwd, minimalEnvironment('claude', home, {}, {}, base)) ? ['--effort', view.effort] : [])]
+    ? ['--resume', view.nativeSessionId, '--model', view.model, ...(await claudeTakesEffort(executable, view.cwd, minimalEnvironment('claude', home, {}, {}, base)) ? ['--effort', view.effort] : []),
+      '--settings', JSON.stringify(CLAUDE_FLAG_SETTINGS)]
     : ['resume', view.nativeSessionId, '-m', view.model, '-c', `model_reasoning_effort="${view.effort}"`];
   return { executable, args, env, cwd: view.cwd, label };
 }

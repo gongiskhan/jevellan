@@ -21,6 +21,8 @@ export function isTurnLimitItem(decision: Pick<ProjectDecision, 'from' | 'option
 export type DecisionThreadActions = {
   allowTurns(projectId: string, threadId: string, commandId: string): Promise<void>;
   stop(projectId: string, threadId: string, reason: string, commandId: string): Promise<void>;
+  /** Why the thread cannot stop now (an attached thread, phase 8), checked before a Stop answer is recorded. */
+  stopRefusal?(projectId: string, threadId: string): Promise<string | undefined>;
   /** An owner message; `messageId` makes a retried answer deliver once. */
   message(projectId: string, threadId: string, text: string, messageId: string): Promise<unknown>;
 };
@@ -53,9 +55,17 @@ export class DecisionItems {
       options: input.options, createdAt: fixed?.at ?? this.#at(), ...(input.threadId === undefined ? {} : { threadId: input.threadId }) }));
     return id;
   }
-  /** `jevellan_ask_user` (phase 2): a coordinator question, optionally about one thread. */
-  ask(projectId: string, input: { question: string; options?: Option[] | undefined; threadId?: string | undefined }, from: ProjectDecision['from']): Promise<string> {
-    return this.#create(projectId, { ...input, options: input.options ?? [] }, from);
+  /**
+   * `jevellan_ask_user` (phase 2): a coordinator question, optionally about one thread. With `id` (derived from the coordinator's turn and
+   * the call, P8 review C-4) a call the transport repeats returns the question it created instead of asking the owner twice.
+   */
+  async ask(projectId: string, input: { question: string; options?: Option[] | undefined; threadId?: string | undefined }, from: ProjectDecision['from'], id?: string): Promise<string> {
+    const asked = { ...input, options: input.options ?? [] };
+    if (id === undefined) return this.#create(projectId, asked, from);
+    const stored = async () => (await this.#o.hub.decision(id))?.document.projectId === projectId;
+    if (await stored()) return id;
+    try { return await this.#create(projectId, asked, from, { id, at: this.#at() }); }
+    catch (error) { if ((error as { status?: unknown }).status === 409 && await stored()) return id; throw error; }
   }
   /**
    * The thread fallback (decision 7): a needs-decision report becomes the owner's question directly when the coordinator
@@ -111,6 +121,11 @@ export class DecisionItems {
     const asked = await this.#decision(projectId, decisionId);
     const answer: DecisionAnswer = DecisionAnswerSchema.parse({ ...(request.optionLabel ? { optionLabel: request.optionLabel } : {}), ...(request.text ? { text: request.text } : {}) });
     if (answer.optionLabel !== undefined && !asked.options.some((option) => option.label === answer.optionLabel)) throw refuse(UNKNOWN_OPTION, 400);
+    // The hub keeps the first answer, so a Stop the thread cannot take now is refused before it is recorded: the question stays open (phase 8).
+    if (asked.threadId !== undefined && isTurnLimitItem(asked) && answer.optionLabel === STOP_THE_THREAD) {
+      const refused = await this.#o.threads().stopRefusal?.(projectId, asked.threadId);
+      if (refused) throw refuse(refused, 409);
+    }
     const { decision: stored, repeated } = await this.#o.hub.answerDecision(decisionId, answer, this.#at(), request.clientRequestId);
     const decision = stored.document; const given = decision.answer ?? answer;
     if (decision.from === 'coordinator') {

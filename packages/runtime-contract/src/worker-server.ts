@@ -9,6 +9,11 @@ export type WorkerSession = {
 // "your weekly limit" is the account's. Generic window words never count as a model name.
 const LIMIT_REACHED = /\b(?:reached|hit|exceeded|used up)\b[^.\n]{0,40}\blimit\b|\blimit (?:reached|exceeded)\b|\busage limit\b/i;
 const MODEL_LIMIT = /\b(?:reached|hit|exceeded|used up)\s+(?:your|the)\s+(?!(?:usage|rate|weekly|daily|monthly|hourly|session|plan|account|5-hour|five-hour|limit)\b)[a-z][\w.-]*(?:\s+[\w.-]+){0,2}?\s+(?:model\s+)?(?:usage\s+)?limit\b|\b(?:switch to|use|try)\s+(?:another|a different)\s+model\b/i;
+/**
+ * A turn that tried to resume a native session the runtime no longer has (P8 review R-T1: the Claude CLI deletes transcripts past its
+ * retention period). One sentence that names no session id; the turn's owner drops the stored session and starts a new one.
+ */
+export const SESSION_NOT_FOUND = 'The session to resume no longer exists.';
 export function classifyRuntimeError(error: unknown, structuredKind?: 'rate-limit'): NonNullable<RunResult['error']> {
   const message = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Runtime failed.';
   const kind = structuredKind ?? (/429|rate.limit|quota.exceeded/i.test(message) || LIMIT_REACHED.test(message) ? 'rate-limit' : /401|authentication|unauthori[sz]ed|needs.login|token.*(?:expired|revoked)|not.logged.in/i.test(message) ? 'auth' : 'other');

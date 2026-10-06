@@ -98,3 +98,27 @@ test('Claude turn text gets a blank line after a tool call while stretch text st
   expect(await text(adapter.startTurn({ ...input, prompt: 'Read the fixture.' }))).toBe('fixture-answer');
   expect(await text(adapter.startStretch({ schema: 'stretch-input-v1', conversationId: 'fixture', stretch: 1, action: 'reply', cwd: root, permissions: 'read-only', memoryWrite: false, systemAppend: '', brief: 'TEXT_BEFORE_TOOL', model: 'fixture-model', effort: 'low', timeoutMs: 10_000, account: input.account, launch: { mcpServers: {}, env: {} } }))).toBe('Looking.fixture-answer');
 }, 30_000);
+
+test('every Claude launch on an account home keeps its transcripts: turns and stretches carry a 100-year retention setting (P8 review R-T1)', async () => {
+  const { adapter, input } = setup('claude');
+  const settings = async (run: ReturnType<RuntimeAdapter['startTurn']>) => {
+    try { const events = await collectEvents(run); expect((await run.done).status).toBe('completed'); return JSON.parse(events.flatMap((event) => event.type === 'text' ? [event.delta] : []).join('')) as { settings: string | null }; }
+    finally { await run.terminate(); }
+  };
+  const prompt = directive('settings', []);
+  const turn = await settings(adapter.startTurn({ ...input, prompt }));
+  expect(JSON.parse(turn.settings ?? '{}')).toEqual({ cleanupPeriodDays: 36500 });
+  const stretch = await settings(adapter.startStretch({ schema: 'stretch-input-v1', conversationId: 'fixture', stretch: 1, action: 'reply', cwd: root, permissions: 'read-only', memoryWrite: false,
+    systemAppend: '', brief: prompt, model: 'fixture-model', effort: 'low', timeoutMs: 10_000, launch: input.launch, account: input.account }));
+  expect(JSON.parse(stretch.settings ?? '{}')).toEqual({ cleanupPeriodDays: 36500 });
+}, 30_000);
+
+test('a Claude resume of a session that no longer exists fails with one sentence that names no session id (P8 review R-T1)', async () => {
+  const { adapter, input } = setup('claude');
+  const run = adapter.startTurn({ ...input, resume: { sessionId: 'missing-session' } });
+  try {
+    await collectEvents(run);
+    const done = await run.done;
+    expect(done).toEqual({ status: 'failed', error: { kind: 'other', message: 'The session to resume no longer exists.' } });
+  } finally { await run.terminate(); }
+}, 30_000);

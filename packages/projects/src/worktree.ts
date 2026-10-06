@@ -78,7 +78,7 @@ export class ThreadWorktree {
     const branch = thread.branch ?? threadBranch(thread.title, thread.id); const ref = threadBaseRef(thread.id);
     await this.#git.run(repo, ['check-ref-format', '--branch', branch]);
     let entry = await this.#entry(repo, path);
-    if (entry && (entry.prunable || !existsSync(path))) { await this.#git.run(repo, ['worktree', 'prune']); entry = undefined; }
+    if (entry && (entry.prunable || !existsSync(path))) { await this.#forget(repo, path); entry = undefined; }
     if (entry && entry.branch !== `refs/heads/${branch}`) throw new Error('The thread worktree is on another branch.');
     let baseCommit = await this.#git.resolve(repo, ref) ?? (thread.baseCommit || null);
     let baseBranch = thread.baseBranch;
@@ -126,14 +126,23 @@ export class ThreadWorktree {
     return !!entry && !entry.prunable && existsSync(path) && entry.branch === `refs/heads/${thread.branch ?? threadBranch(thread.title, thread.id)}`;
   }
   /**
-   * Cleanup on merge, close, discard and done without changes (brief 8.3): `worktree remove --force` (prune when the
-   * folder vanished), `branch -D` for the local `jv/` branch, and the private thread refs. Remote branches stay.
+   * Forgets the registration of this thread's worktree, and only that one (P8 review TH-3): its folder (inside Jevellan's home) goes
+   * first, then `worktree remove --force` drops the entry of a missing folder. A repository-wide `worktree prune` would also drop the
+   * owner's own worktrees whose folders are away for now.
+   */
+  async #forget(repo: string, path: string): Promise<void> {
+    if (present(path)) rmSync(path, { recursive: true, force: true });
+    await this.#git.run(repo, ['worktree', 'remove', '--force', path]);
+  }
+  /**
+   * Cleanup on merge, close, discard and done without changes (brief 8.3): `worktree remove --force` (also when the folder vanished,
+   * for that one entry), `branch -D` for the local `jv/` branch, and the private thread refs. Remote branches stay.
    */
   async remove(project: Project, thread: Thread): Promise<void> {
     const repo = this.repository(project); const path = this.#paths.worktree(thread.projectId, thread.id);
     const entry = await this.#entry(repo, path);
     if (entry && existsSync(path)) await this.#git.run(repo, ['worktree', 'remove', '--force', path]);
-    else if (entry) await this.#git.run(repo, ['worktree', 'prune']);
+    else if (entry) await this.#forget(repo, path);
     if (present(path)) rmSync(path, { recursive: true, force: true });
     const branch = thread.branch ?? threadBranch(thread.title, thread.id);
     if (branch.startsWith('jv/') && await this.#git.resolve(repo, `refs/heads/${branch}`)) await this.#git.run(repo, ['branch', '-D', branch]);

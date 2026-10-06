@@ -5,7 +5,7 @@ import { createServer, type Server } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
-  AccountSchema, AccountStatusSchema, CoordinatorEventSchema, DeviceRosterSchema, Homes, ProjectSchema, ProjectWorkSettingsSchema, SecretRedactor, defaultProjectWorkSettings,
+  AccountSchema, AccountStatusSchema, CoordinatorEventSchema, DeviceRosterSchema, Homes, HubUnavailable, ProjectSchema, ProjectWorkSettingsSchema, SecretRedactor, defaultProjectWorkSettings,
   projectToolNames, seedConfiguration, type Account, type CoordinatorEvent, type ProjectLedgerEvent, type ProjectWorkSettings,
 } from '../packages/core/dist/index.js';
 import { StretchBridges } from '../packages/conversations/dist/index.js';
@@ -20,12 +20,19 @@ const at = '2026-10-03T10:00:00.000Z';
 let root: string; let homes: Homes; let redactor: SecretRedactor; let hub: HubDatabase; let fake: FakeRuntime; let server: Server; let url: string;
 let checkout: string; let project: ReturnType<typeof ProjectSchema.parse>; let works: ProjectWork[]; let bridges: StretchBridges;
 let accounts: Account[]; let ineligible: Set<string>; let readOnly: boolean;
+/** While above zero, each coordinator status write that does not say `running` is lost (a brief hub outage) and counts one down. */
+let lostStatusWrites = 0;
 const run = (cwd: string, ...args: string[]) => execFileSync('git', ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', ...args], { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
 const account = (id: string, label: string) => AccountSchema.parse({ schema: 'account-v1', id, runtime: 'fake', label, kind: 'subscription', enabled: true, credential: 'per-device' });
 
 function app(timers: Record<string, unknown> = {}): ProjectWork {
   fake.capabilities.readOnlyEnforced = readOnly;
-  const work = new ProjectWork({ homes, deviceId: 'dev_a', deviceName: 'Mac mini', redactor, hub: new HubProjectAccess(hub, 'dev_a'),
+  const access = new HubProjectAccess(hub, 'dev_a'); const putStatus = access.putCoordinatorStatus.bind(access);
+  access.putCoordinatorStatus = async (written) => {
+    if (lostStatusWrites > 0 && written.state !== 'running') { lostStatusWrites -= 1; throw new HubUnavailable('coordinator-status'); }
+    return putStatus(written);
+  };
+  const work = new ProjectWork({ homes, deviceId: 'dev_a', deviceName: 'Mac mini', redactor, hub: access,
     projects: { get: async (id: string) => id === project.id ? { schema: 'project-view-v1', revision: 1, project } : null, list: async () => [{ schema: 'project-view-v1', revision: 1, project }] } as never,
     github: { credential: async () => undefined },
     accounts: { list: async () => accounts.map((entry) => ({ schema: 'account-view-v1', revision: 1, account: entry,
@@ -73,7 +80,7 @@ beforeEach(async () => {
   project = ProjectSchema.parse({ schema: 'project-v1', id: 'proj_a', name: 'Shop', paths: { dev_a: checkout }, branchPolicy: 'main', memory: { mode: 'repo', dir: '.jevellan/memory' },
     context: { state: 'none' } });
   hub = new HubDatabase(homes, 'hub'); hub.put('projects', 'proj_a', ProjectSchema, project, 0);
-  accounts = [account('acc_work', 'Work')]; ineligible = new Set(); readOnly = true;
+  accounts = [account('acc_work', 'Work')]; ineligible = new Set(); readOnly = true; lostStatusWrites = 0;
   fake = new FakeRuntime(); bridges = new StretchBridges(redactor);
   server = createServer((request, response) => {
     const chunks: Buffer[] = [];
@@ -329,6 +336,88 @@ test('a restart drops the running turn, keeps its events queued, and the next st
   expect(payloads(again, 'coordinator-turn-start').map((data) => [data.turn, data.eventIds])).toEqual([[1, queued], [2, queued]]);
   expect(again.coordinators.get('proj_a').state()).toMatchObject({ state: 'idle', queue: [] });
   expect(payloads(again, 'coordinator-turn-end').at(-1)).toMatchObject({ turn: 2, status: 'completed' });
+});
+
+test('an owner message after two failed turns still runs after a restart, also when the restart dropped its turn or came before it started (brief 8.6)', { timeout: 60_000 }, async () => {
+  const work = await started();
+  fake.enqueueTurn(fail('Model overloaded.'), forCoordinator); fake.enqueueTurn(fail('Model overloaded.'), forCoordinator);
+  await message(work, 'plan the release'); await work.idle('proj_a');
+  expect(work.coordinators.get('proj_a').state()).toMatchObject({ state: 'idle', failedTurnsInARow: 2 });
+  // The owner's message starts a turn; the daemon stops while it runs, so recovery drops it with its events still queued.
+  const inside = deferred();
+  fake.enqueueTurn(async ({ signal }) => { inside.resolve(); await aborted(signal); return { status: 'completed' }; }, forCoordinator);
+  await message(work, 'try again'); await inside.promise;
+  await work.close();
+  fake.enqueueTurn(say('Planned after the restart.'), forCoordinator);
+  const again = await started(); await again.idle('proj_a');
+  expect(turns()).toHaveLength(4);
+  expect(turns()[3]!.prompt).toContain('try again');
+  expect(again.coordinators.get('proj_a').state()).toMatchObject({ state: 'idle', failedTurnsInARow: 0, queue: [] });
+
+  // Two more failures, then a message whose turn has not started when the daemon stops: the next start runs it.
+  fake.enqueueTurn(fail('Model overloaded.'), forCoordinator); fake.enqueueTurn(fail('Model overloaded.'), forCoordinator);
+  await message(again, 'plan the docs'); await again.idle('proj_a');
+  expect(again.coordinators.get('proj_a').state()).toMatchObject({ failedTurnsInARow: 2 });
+  await again.close();
+  const slow = await started({ coordinatorStartMs: 60_000 });
+  await message(slow, 'once more'); await slow.close();
+  expect(turns()).toHaveLength(6);
+  fake.enqueueTurn(say('Planned the docs.'), forCoordinator);
+  const last = await started(); await last.idle('proj_a');
+  expect(turns()).toHaveLength(7);
+  expect(turns()[6]!.prompt).toContain('once more');
+  expect(last.coordinators.get('proj_a').state()).toMatchObject({ failedTurnsInARow: 0, queue: [] });
+  // Without a new message after two failures nothing runs after a restart.
+  fake.enqueueTurn(fail('Model overloaded.'), forCoordinator); fake.enqueueTurn(fail('Model overloaded.'), forCoordinator);
+  await message(last, 'plan the tests'); await last.idle('proj_a');
+  await last.close();
+  const quiet = await started(); await quiet.idle('proj_a');
+  expect(turns()).toHaveLength(9);
+  expect(quiet.coordinators.get('proj_a').state()).toMatchObject({ failedTurnsInARow: 2 });
+});
+
+test('a coordinator status write the hub missed is written again at the next sweep, so the hub does not keep saying running', { timeout: 60_000 }, async () => {
+  const work = await started();
+  fake.enqueueTurn((turn) => { lostStatusWrites = 1; turn.say('Done.'); return { status: 'completed' }; }, forCoordinator);
+  await message(work, 'hello'); await work.idle('proj_a');
+  expect(work.coordinators.get('proj_a').state().state).toBe('idle');
+  expect((await status())?.state).toBe('running');
+  await work.pulse(); await work.idle('proj_a');
+  expect((await status())?.state).toBe('idle');
+  // Nothing more to write: the next sweeps write nothing.
+  const written = (await new HubProjectAccess(hub, 'dev_a').coordinatorStatus('proj_a'))!.revision;
+  await work.pulse(); await work.idle('proj_a');
+  expect((await new HubProjectAccess(hub, 'dev_a').coordinatorStatus('proj_a'))!.revision).toBe(written);
+});
+
+test('a coordinator session that no longer exists is dropped: the retry starts a fresh session with the fresh context', { timeout: 60_000 }, async () => {
+  const work = await started();
+  fake.enqueueTurn(say('First.'), forCoordinator);
+  await message(work, 'first'); await work.idle('proj_a');
+  fake.enqueueTurn(() => ({ status: 'failed', error: { kind: 'other', message: 'The session to resume no longer exists.' } }), forCoordinator);
+  fake.enqueueTurn(say('Second.'), forCoordinator);
+  await message(work, 'second'); await work.idle('proj_a');
+  const [, missing, fresh] = turns();
+  expect(turns()).toHaveLength(3);
+  expect(missing!.resume).toBeDefined();
+  expect(fresh!.resume).toBeUndefined();
+  expect(fresh!.prompt.startsWith('Project notebook:')).toBe(true); expect(fresh!.prompt).toContain('second');
+  expect(work.coordinators.get('proj_a').state()).toMatchObject({ state: 'idle', failedTurnsInARow: 0, queue: [] });
+});
+
+test('a relayed report that redaction would lengthen is queued and recorded within its maximum (P8 review S-1)', { timeout: 60_000 }, async () => {
+  // No turn starts within the test, so the queue and the ledger record are read as the relay left them.
+  const work = await started({ coordinatorStartMs: 60_000 });
+  const tail = ' The middleware reads the Bearer token now.';
+  const summary = 'Fixed the parser. '.repeat(70).slice(0, 1200 - tail.length) + tail;
+  const coordinator = work.coordinators.get('proj_a');
+  expect(coordinator.enqueue(event({ kind: 'thread-report', id: 'cev_bearer', threadId: 'thread_x', report: { schema: 'thread-report-v1', turn: 1, status: 'progress', summary,
+    changedFiles: [], synthesized: true } }))).toEqual({ repeated: false });
+  const queued = coordinator.state().queue.find((entry) => entry.id === 'cev_bearer');
+  const stored = queued?.kind === 'thread-report' ? queued.report.summary : '';
+  expect(stored.length).toBeLessThanOrEqual(1200); expect(redactor.text(stored)).toBe(stored); expect(stored).toContain('Bearer [redacted]');
+  const recorded = payloads(work, 'coordinator-event').find((data) => data.id === 'cev_bearer') as { report: { summary: string } };
+  expect(recorded.report.summary).toBe(stored);
 });
 
 test('coordinator memory tools read project memory through the bridge and leave chat lines', { timeout: 60_000 }, async () => {

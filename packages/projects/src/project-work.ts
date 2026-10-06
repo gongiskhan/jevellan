@@ -6,7 +6,7 @@ import {
   type CheckoutOwnership, type Configuration, type CoordinatorMessageRequestSchema, type DecisionAnswerRequestSchema, type Homes, type NotebookRequestSchema, type Project,
   type ProjectHub, type ProjectWorkListView, type ProjectWorkSettings, type ProjectWorkSettingsRequestSchema, type ProjectWorkView, type PublicationLeaseService,
   type RiggingItem, type SecretRedactor, type SharedProjects, type ThreadCreateRequestSchema, type ThreadMessageRequestSchema, type ThreadOverrideRequestSchema,
-  type ThreadStopRequestSchema, type ThreadView,
+  type ThreadStopRequestSchema, type ThreadView, type UnreadableEnvelope,
 } from '@jevellan/core';
 import type { StretchBridges } from '@jevellan/conversations';
 import type { DecisionClient } from '@jevellan/decisions';
@@ -16,7 +16,7 @@ import { Admission } from './admission.js';
 import { ThreadAttach, type ThreadAttachView, type ThreadDetachView } from './attach.js';
 import {
   COORDINATOR_ELSEWHERE, COORDINATOR_MEMORY_READ_ONLY, NOTEBOOK_CHANGED, PROJECT_NOT_FOUND, SETTINGS_CHANGED, STOPPED_BY_YOU, THREAD_MEMORY_READ_ONLY, THREAD_NOT_FOUND,
-  THREAD_STARTS_ELSEWHERE,
+  THREAD_STARTS_ELSEWHERE, relayedEnvelopeLost,
 } from './copy.js';
 import { coordinatorToolHandlers } from './bridge-tools.js';
 import { CoordinatorService, type Coordinator, type CoordinatorToolHandlers } from './coordinator.js';
@@ -32,7 +32,7 @@ import { ProjectPaths } from './paths.js';
 import { Placement, type DeviceRoster } from './placement.js';
 import { GitHubAccess, ThreadPublication } from './publication.js';
 import { PullRequestTracker, type MergeResultView } from './pull-requests.js';
-import { recoverProjects } from './recovery.js';
+import { endTurnProcess, recoverProjects } from './recovery.js';
 import { CoordinatorStore, StartReceipts, ThreadStore, threadIndex } from './stores.js';
 import { LocalDelivery, ThreadService, type RemoteStart } from './threads.js';
 import { ThreadTranscripts } from './transcript.js';
@@ -111,8 +111,10 @@ export class ProjectWork {
     const coordinatorStore = new CoordinatorStore(this.paths); const receipts = new StartReceipts(this.paths, now);
     const github = new GitHubAccess({ credential: o.github.credential, fetch: o.github.fetch, baseUrl: o.github.baseUrl, redactor: o.redactor });
     this.transcripts = new ThreadTranscripts({ homes: o.homes, deviceId: o.deviceId, deviceName: o.deviceName });
+    // A thread attached in a terminal holds its account for every turn on this device, read from the threads themselves (phase 8).
+    const held = (): ReadonlySet<string> => new Set(this.store.all().filter((thread) => thread.state === 'attached').map((thread) => thread.placement.accountId));
     const launcher = new TurnLauncher({ accounts: o.accounts, runtimes: o.runtimes, accountRuns: o.accountRuns, riggingItems: o.riggingItems, bridges: o.bridges, homes: o.homes,
-      deviceId: o.deviceId, deviceName: o.deviceName, daemonUrl: () => this.daemonUrl, redactor: o.redactor });
+      deviceId: o.deviceId, deviceName: o.deviceName, daemonUrl: () => this.daemonUrl, redactor: o.redactor, held });
     this.admission = new Admission({ hub: o.hub, deviceId: o.deviceId, deviceName: o.deviceName, localLive: (projectId) => this.threads.liveThreads(projectId),
       nameOf: async (deviceId) => (await o.roster()).devices.find((view) => view.device.id === deviceId)?.device.name, now });
     const placement = new Placement({ settings: o.settings, accounts: o.accounts, runtimes: o.runtimes, roster: o.roster, admission: this.admission, deviceId: o.deviceId,
@@ -122,6 +124,7 @@ export class ProjectWork {
     this.decisions = new DecisionItems({ hub: o.hub, now, toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event), threads: () => ({
       allowTurns: (projectId, threadId, commandId) => this.threads.allowTurns(projectId, threadId, commandId),
       stop: (projectId, threadId, reason, commandId) => this.threads.stop(projectId, threadId, reason, true, commandId),
+      stopRefusal: (projectId, threadId) => this.threads.stopRefusal(projectId, threadId),
       message: (projectId, threadId, text, messageId) => this.threads.message(projectId, threadId, 'owner', text, false, messageId),
     }) });
     const git = new ThreadGit({ homes: o.homes, redactor: o.redactor });
@@ -131,8 +134,10 @@ export class ProjectWork {
     const main = new MainCheckout({ git, redactor: o.redactor, deviceId: o.deviceId, deviceName: o.deviceName, ownership: o.ownership, outside: o.outside });
     this.coordinators = new CoordinatorService({ deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, store: coordinatorStore, ledgers: this.ledgers, hub: o.hub,
       project: (projectId) => this.#project(projectId), workSettings: (projectId) => this.admission.settings(projectId), settings: o.settings, accounts: o.accounts,
-      runtimes: o.runtimes, launcher, decisions: this.decisions, tools: () => this.#coordinatorTools(), roster: o.roster,
-      forward: (projectId, events) => { for (const event of events) this.outbox.enqueue(projectId, 'coordinator', { kind: 'coordinator-event', event }); },
+      runtimes: o.runtimes, launcher, heldAccounts: held, decisions: this.decisions, tools: () => this.#coordinatorTools(), roster: o.roster,
+      forward: (projectId, events, handover) => {
+        for (const event of events) this.outbox.enqueue(projectId, 'coordinator', { kind: 'coordinator-event', event }, handover === undefined ? {} : { handover });
+      },
       baseBranch: (project) => worktrees.baseBranch(worktrees.repository(project)), enterOperation: o.enterOperation,
       timers: { startMs: timers.coordinatorStartMs, retryMs: timers.coordinatorRetryMs, turnTimeoutMs: timers.coordinatorTurnTimeoutMs }, now });
     const delivery = new LocalDelivery({ deviceId: o.deviceId, coordinators: this.coordinators, store: this.store, outbox: () => this.outbox, now,
@@ -143,6 +148,8 @@ export class ProjectWork {
       roster: o.roster, decisions: this.decisions, fallbackCheckMs: timers.fallbackCheckMs,
       runner: { deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, store: this.store, ledgers: this.ledgers, project: (projectId) => this.#project(projectId),
         workSettings: (projectId) => this.admission.settings(projectId), worktrees, main, publication, launcher, accounts: o.accounts, admission: this.admission,
+        endProcess: (process) => endTurnProcess(process),
+        accountWait: (thread) => launcher.accountWait({ runtime: thread.placement.runtime, model: thread.placement.model }),
         decisions: this.decisions, toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event),
         memory: (project) => o.memory.project(project, o.deviceId, () => { throw new Error(THREAD_MEMORY_READ_ONLY); }), mail: this.mail,
         runtimeName: (runtime) => o.runtimes.get(runtime)?.displayName ?? runtime, enterOperation: o.enterOperation,
@@ -158,19 +165,28 @@ export class ProjectWork {
       // moved away hands its queue over with this event (3.5.4); before any assignment the event waits here (D6).
       coordinatorEvent: async (envelope) => {
         const { projectId } = envelope; await this.#project(projectId);
-        const assigned = await this.coordinators.deviceOf(projectId);
-        if (assigned !== null && assigned !== o.deviceId) { await this.coordinators.handover(projectId, [envelope.body.event]); return; }
+        const assigned = await this.coordinators.assignment(projectId);
+        if (assigned !== null && assigned.deviceId !== o.deviceId) { await this.coordinators.handover(projectId, [envelope.body.event], assigned.revision); return; }
         this.coordinators.get(projectId).enqueue(envelope.body.event); this.threads.freed(projectId);
       },
       threadStart: (envelope) => this.#threadStart(envelope),
       threadCommand: (envelope) => this.#threadCommand(envelope),
-    } });
+    }, dropped: (lost) => this.#lostEnvelope(lost) });
     this.#attach = new ThreadAttach({ deviceId: o.deviceId, deviceName: o.deviceName, store: this.store, coordinators: coordinatorStore, hub: o.hub, roster: o.roster,
       runner: (threadId) => this.threads.runner(threadId), project: (projectId) => this.#project(projectId), main, accounts: o.accounts, transcripts: this.transcripts });
     this.views = new ProjectViews({ deviceId: o.deviceId, deviceName: o.deviceName, hub: o.hub, projects: o.projects, store: this.store, ledgers: this.ledgers,
       coordinators: this.coordinators, transcripts: this.transcripts, worktrees, accounts: o.accounts, runtimes: o.runtimes, settings: o.settings, roster: o.roster, placement });
     this.ready = recoverProjects({ paths: this.paths, ledgers: this.ledgers, store: this.store, coordinators: this.coordinators,
       toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event), redactor: o.redactor, now }).then(() => undefined);
+  }
+  /**
+   * A relayed envelope this device could not read was dropped (P8 review S-2): the project's chat here says what was lost. Without a
+   * readable project of this device nothing can name it.
+   */
+  #lostEnvelope(lost: UnreadableEnvelope): void {
+    if (lost.projectId === null || !this.paths.projectIds().includes(lost.projectId)) return;
+    try { this.ledgers.coordinator(lost.projectId).append({ type: 'notice', data: { schema: 'project-notice-v1', text: relayedEnvelopeLost(lost), kind: 'error' } }); }
+    catch { /* The ledger is unwritable; the inbox has dropped the envelope either way. */ }
   }
   async #project(projectId: string): Promise<Project> {
     const project = (await this.#o.projects.get(projectId))?.project; if (!project) throw refuse(PROJECT_NOT_FOUND, 404);
@@ -405,5 +421,16 @@ export class ProjectWork {
    * credentials, so it never goes through the redactor and never leaves the loopback socket.
    */
   async attach(threadId: string): Promise<ThreadAttachView> { await this.ready; return this.#attach.attach(threadId); }
-  async detach(threadId: string): Promise<ThreadDetachView> { await this.ready; return this.#attach.detach(threadId); }
+  /**
+   * Detach also frees the thread's account (phase 8): threads waiting for it and coordinators waiting as `Unavailable` are checked now,
+   * not at the next sweep.
+   */
+  async detach(threadId: string): Promise<ThreadDetachView> {
+    await this.ready;
+    const detached = await this.#attach.detach(threadId);
+    const projectId = this.store.get(threadId)?.projectId;
+    if (projectId) this.threads.freed(projectId);
+    this.coordinators.sweep();
+    return detached;
+  }
 }

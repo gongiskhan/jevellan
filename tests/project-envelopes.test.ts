@@ -305,3 +305,44 @@ test('the facade applies a thread command once per command id and drops envelope
   expect(work.paths.projectIds()).not.toContain('other');
   await work.idle();
 });
+
+test('a member reads a relayed report whose redaction would lengthen it: the hub keeps its reply within the schema (P8 review S-1)', async () => {
+  const mem = await member('mem');
+  const tail = ' The middleware reads the Bearer token now.';
+  const summary = 'Fixed the parser. '.repeat(70).slice(0, 1200 - tail.length) + tail;
+  const report = { schema: 'thread-report-v1' as const, turn: 1, status: 'progress' as const, summary, changedFiles: [], synthesized: true };
+  await new HubProjectAccess(app.hub, 'left').putEnvelope(envelope({ id: 'env_bearer', targetDeviceId: 'mem',
+    body: { kind: 'coordinator-event', event: { schema: 'coordinator-event-v1', kind: 'thread-report', id: 'cev_bearer', at, threadId: 'thread_a', report } } }));
+  const page = await mem.hub.pendingEnvelopes('mem');
+  expect(page.records.map((record) => record.id)).toEqual(['env_bearer']);
+  const relayed = (page.records[0]!.body as { event: { report: { summary: string } } }).event.report.summary;
+  expect(relayed.length).toBeLessThanOrEqual(1200); expect(new SecretRedactor().text(relayed)).toBe(relayed); expect(relayed).toContain('Bearer [redacted]');
+});
+
+test('a member that cannot read one relayed envelope drops it with a record of what was lost and handles the rest of the page (P8 review S-2)', async () => {
+  // A hub that answers one record in a shape this member cannot read (another Jevellan version, for example).
+  const rewriting: typeof fetch = async (...args) => {
+    const response = await fetch(...args);
+    const body = args[1]?.body; const operation = typeof body === 'string' ? (JSON.parse(body) as { operation?: string }).operation : undefined;
+    if (operation !== 'envelopes-pending') return response;
+    const value = await response.json() as { records: Array<Record<string, unknown>> };
+    value.records = value.records.map((record) => record.id === 'env_bad' ? { ...record, body: { ...(record.body as object), extra: true } } : record);
+    return new Response(JSON.stringify(value), { status: response.status, headers: { 'Content-Type': 'application/json' } });
+  };
+  const mem = await member('mem', rewriting);
+  await new HubProjectAccess(app.hub, 'left').putEnvelope(envelope({ id: 'env_bad', targetDeviceId: 'mem', seq: 1, body: command('cmd_bad') }));
+  await new HubProjectAccess(app.hub, 'left').putEnvelope(envelope({ id: 'env_good', targetDeviceId: 'mem', seq: 2, body: command('cmd_good') }));
+  const paths = new ProjectPaths(new Homes(join(root, 'device-mem'), join(root, 'user')));
+  const handled: string[] = []; const lost: unknown[] = [];
+  const handler = async (received: ProjectEnvelope) => { handled.push(received.id); };
+  const inbox = new Inbox({ paths, hub: mem.hub, deviceId: 'mem', handlers: { coordinatorEvent: handler, threadStart: handler, threadCommand: handler },
+    timers: { periodic: false, inboxPollMs: 60_000 }, dropped: (item: unknown) => { lost.push(item); } } as ConstructorParameters<typeof Inbox>[0]);
+  closers.push(() => inbox.close());
+  await inbox.poll();
+  expect(handled).toEqual(['env_good']);
+  expect(lost).toEqual([{ id: 'env_bad', projectId: 'project', sourceDeviceId: 'left', kind: 'thread-command' }]);
+  expect(stored()).toEqual([]);
+  // Nothing comes back at the next poll.
+  await inbox.poll();
+  expect(handled).toEqual(['env_good']); expect(lost).toHaveLength(1);
+});

@@ -279,6 +279,14 @@ test('chat items: owner messages, replies, one-liners, event cards and notices i
   // A mail's body is the card's detail, as a report's summary is.
   expect(chatItems([coordinatorEvent('mail', { mailId: 'mail_2', fromThreadId: 'thread_a', subject: 'API moved', body: 'Use /v2 now.\nThe old path is gone.' }, 43)])[0])
     .toEqual({ kind: 'event', id: 43, text: 'Mail from a thread: API moved', detail: 'Use /v2 now.\nThe old path is gone.', threadId: 'thread_a', delivered: false });
+  // The owner's own stop reads in the owner's voice, with no coordinator-facing detail; the coordinator's event block keeps its text.
+  const stopped = { threadId: 'thread_a', reason: 'stopped' as const, message: server.OWNER_STOPPED_THREAD };
+  expect(chatItems([coordinatorEvent('thread-interrupted', stopped, 44)], titles)[0]).toEqual({ kind: 'event', id: 44, text: 'You stopped "Fix login"', threadId: 'thread_a', delivered: false });
+  expect(server.eventLine({ schema: 'coordinator-event-v1', id: 'cev_44', at: ago(1), kind: 'thread-interrupted', ...stopped }, { title: titles, base: 'main' }))
+    .toBe('[thread "Fix login" (thread_a) interrupted: stopped] The owner stopped this thread.');
+  // Any other stopped message still shows as the detail of the neutral card.
+  expect(chatItems([coordinatorEvent('thread-interrupted', { ...stopped, message: 'Stopped for a reason.' }, 45), coordinatorEvent('thread-interrupted', stopped, 46)])
+    .map((item) => item.kind === 'event' && [item.text, item.detail])).toEqual([['A thread was stopped', 'Stopped for a reason.'], ['You stopped a thread', undefined]]);
 });
 
 test('working: the view decides when running, unavailable or offline; otherwise an unclosed coordinator turn', () => {
@@ -377,14 +385,17 @@ test('a thread whose device cannot answer before any view: offline or gone is a 
   for (const status of [400, 401, 403, 404, 500, 503]) expect(deviceRefusal(status)).toBeUndefined();
 });
 
-test('thread header buttons: Stop until concluded, Discard as the server allows, Allow 10 more turns only at the limit of a live thread', () => {
-  const view = (state: ThreadIndex['state'], fields: { canDiscard?: boolean; atTurnLimit?: boolean } = {}) =>
-    ({ thread: thread({ state }), canDiscard: fields.canDiscard ?? false, atTurnLimit: fields.atTurnLimit ?? false });
-  expect(threadActions(view('running'))).toEqual({ stop: true, discard: false, allowTurns: false });
-  expect(threadActions(view('in-review'))).toEqual({ stop: true, discard: false, allowTurns: false });
-  expect(threadActions(view('waiting-for-you', { atTurnLimit: true }))).toEqual({ stop: true, discard: false, allowTurns: true });
-  expect(threadActions(view('stopped', { canDiscard: true }))).toEqual({ stop: false, discard: true, allowTurns: false });
-  expect(threadActions(view('done', { atTurnLimit: true }))).toEqual({ stop: false, discard: false, allowTurns: false });
+test('thread header buttons: Stop until concluded (disabled with the server reason while attached), Discard as the server allows, Allow 10 more turns only at the limit of a live thread', () => {
+  const view = (state: ThreadIndex['state'], fields: { canDiscard?: boolean; atTurnLimit?: boolean; stopRefusal?: string } = {}) =>
+    ({ thread: thread({ state }), canDiscard: fields.canDiscard ?? false, atTurnLimit: fields.atTurnLimit ?? false, ...(fields.stopRefusal ? { stopRefusal: fields.stopRefusal } : {}) });
+  expect(threadActions(view('running'))).toEqual({ stop: true, stopRefusal: null, discard: false, allowTurns: false });
+  expect(threadActions(view('in-review'))).toEqual({ stop: true, stopRefusal: null, discard: false, allowTurns: false });
+  expect(threadActions(view('waiting-for-you', { atTurnLimit: true }))).toEqual({ stop: true, stopRefusal: null, discard: false, allowTurns: true });
+  expect(threadActions(view('stopped', { canDiscard: true }))).toEqual({ stop: false, stopRefusal: null, discard: true, allowTurns: false });
+  expect(threadActions(view('done', { atTurnLimit: true }))).toEqual({ stop: false, stopRefusal: null, discard: false, allowTurns: false });
+  // An attached thread shows Stop disabled with the server's sentence, never a sentence of the interface's own.
+  const sentence = 'This thread is attached in a terminal: exit that terminal session first, or run jevellan thread detach thread_a.';
+  expect(threadActions(view('attached', { stopRefusal: sentence }))).toEqual({ stop: true, stopRefusal: sentence, discard: false, allowTurns: false });
 });
 
 test('the thread composer: the live line, and why it takes no message when attached or concluded (D81)', () => {
@@ -556,7 +567,7 @@ test('interface copy: brief-verbatim texts, shared server texts and no conversat
     copy.WORKTREE_DISCARDED]).toEqual([server.NOTEBOOK_CHANGED, server.LEAVE_GIT_SETTING, server.ALLOW_MORE_TURNS, server.MERGE_CONFLICTS,
     server.MERGE_CHECKS_FAILING, server.THREAD_ENDED, server.WORKTREE_DISCARDED.trim()]);
   expect(copy.discardQuestion('jv/fix-login-abc123')).toBe('Remove the worktree and local branch jv/fix-login-abc123?');
-  expect(copy.GITHUB_TOKEN_HELP).toBe('Used only to open, read and merge pull requests for Jevellan threads. A fine-grained token with Pull requests read and write, Contents read and Checks read on your repositories is enough.');
+  expect(copy.GITHUB_TOKEN_HELP).toBe('Used only to open, read and merge pull requests for Jevellan threads. A fine-grained token with Pull requests read and write, Contents read and write, Checks read and Commit statuses read on your repositories is enough.');
   expect([copy.NOT_SET, copy.REPLACE, copy.REMOVE, copy.INTERRUPT_TURN, copy.THREAD_PLACEHOLDER]).toEqual(['Not set', 'Replace', 'Remove', 'Interrupt current turn', 'Message this thread']);
   expect([copy.coordinatorUnavailableNotice('x'), copy.coordinatorOfflineNotice('Mac mini'), copy.placedWithoutJev('timeout')])
     .toEqual([server.coordinatorUnavailableNotice('x'), server.coordinatorOfflineNotice('Mac mini'), server.placedWithoutJev('timeout')]);

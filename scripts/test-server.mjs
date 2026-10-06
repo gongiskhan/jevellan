@@ -1,8 +1,9 @@
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, realpathSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { rm } from 'node:fs/promises';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
@@ -11,10 +12,22 @@ import { AccountSchema, BridgeResultSchema, BridgeToolsSchema, Homes, OverrideRe
 import { HubProjectAccess, joinMember } from '../packages/mesh/dist/index.js';
 import { FakeRuntime, nativeFormat, writeFakeNativeSession } from '../packages/runtime-contract/dist/index.js';
 import { eventBlock } from '../packages/projects/dist/index.js';
-import { Application, createDaemon } from '../apps/daemon/dist/index.js';
+import { Application, closeListeners, createDaemon } from '../apps/daemon/dist/index.js';
 import { createRuntime as createClaude } from '../runtimes/claude/dist/index.js';
 import { createRuntime as createCodex } from '../runtimes/codex/dist/index.js';
 import { startGitHubFixture } from '../tests/fixtures/github-server.mjs';
+
+// Playwright stops a fixture server by signalling its whole process group (`gracefulShutdown`), which also reached any git, ps or
+// provider process the server was running at that moment, so a close that waited on one failed (`Application cleanup did not
+// complete`) and left the temporary root behind. This process therefore only launches the server, in a process group of its own,
+// and passes a signal on to the server process alone; the server closes when its launcher goes away, even after a SIGKILL (D320).
+// The server is the process started with the launcher's IPC channel.
+if (!process.send) {
+  const server = spawn(process.execPath, [fileURLToPath(import.meta.url), ...process.argv.slice(2)], { detached: true, stdio: ['ignore', 'inherit', 'inherit', 'ipc'] });
+  for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => { server.kill(signal); });
+  server.once('exit', (code, signal) => process.exit(code ?? (signal ? 1 : 0)));
+  await new Promise(() => {});
+}
 
 // Browser fixtures exercise actual HTTP/vault/APM code with simulated providers.
 const { Response } = globalThis;
@@ -23,6 +36,16 @@ const port = index === -1 ? 19771 : Number(process.argv[index + 1]);
 if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Invalid test port.');
 const root = realpathSync(mkdtempSync(join(tmpdir(), 'jevellan-browser-')));
 mkdirSync(join(root, 'user'));
+// A signal or a lost launcher closes the server, once it is ready: closing an application that is still starting would fail
+// the startup and leave the root. Whatever happens next, the server ends and its root goes, since no group SIGKILL reaches it.
+let ready = false; let closing = false;
+function requestClose() {
+  if (closing) return;
+  closing = true;
+  globalThis.setTimeout(() => { console.error('The fixture server did not close within 30 seconds.'); rmSync(root, { recursive: true, force: true }); process.exit(1); }, 30_000).unref();
+  if (ready) void close();
+}
+process.once('SIGINT', requestClose); process.once('SIGTERM', requestClose); process.once('disconnect', requestClose);
 // Projects journeys (PJ3, design 5.5) run on their own servers started with --projects: a GitHub-shaped project redirected
 // to a local bare origin, the fake GitHub and scripted coordinator and thread turns. Git, worktrees, the bridge, the
 // ledgers and pull requests are real; model behavior is simulated. Without the flag nothing below changes the server.
@@ -388,23 +411,27 @@ writeFileSync(join(application.homes.account('codex', 'acc_rigging_codex'), 'con
 await application.auth.setup({ schema: 'passphrase-input-v1', passphrase: 'jevellan-browser-fixture' });
 const server = createDaemon({ application });
 let member; let memberServer; let memberHeartbeat; let improverControl;
-let stopping = false;
+// Fixture control requests in flight: their routes call both applications, so they finish before either closes.
+const controlWork = new Set();
 async function close() {
-  if (stopping) return;
-  stopping = true;
-  globalThis.clearInterval(memberHeartbeat);
-  improverControl?.close();
-  // As startDaemon closes: each listener stops before its application, so no request enters a lifecycle gate that is closing.
-  // The hub keeps listening until the member has closed.
-  if (memberServer) await new Promise(resolve => { memberServer.close(resolve); memberServer.closeAllConnections(); });
-  await member?.close();
-  await new Promise((resolve) => { server.close(resolve); server.closeAllConnections(); });
-  await application.close();
-  await github?.close();
-  await rm(root, { recursive: true, force: true });
+  let failure;
+  try {
+    globalThis.clearInterval(memberHeartbeat);
+    // As startDaemon closes: every listener stops accepting requests before the application behind it closes, so no request enters
+    // a lifecycle gate that is closing. The fixture control listener goes first; the hub keeps listening until the member has closed.
+    await closeListeners([improverControl].filter(Boolean)); await Promise.allSettled([...controlWork]);
+    await closeListeners([memberServer].filter(Boolean));
+    await member?.close();
+    await closeListeners([server]);
+    await application.close();
+    await github?.close();
+  } catch (error) {
+    failure = error; console.error('The fixture server did not close cleanly:', error);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+  process.exit(failure ? 1 : 0);
 }
-process.once('SIGINT', () => { void close(); });
-process.once('SIGTERM', () => { void close(); });
 await new Promise(resolve => server.listen(port, '127.0.0.1', resolve));
 const memberHomes = new Homes(join(root, 'member-home'), join(root, 'user'));
 const FixtureAuthSchema = z.strictObject({ schema: z.literal('fixture-auth-v1'), fixture_login: z.literal(true) });
@@ -591,9 +618,13 @@ improverControl = createServer((request, response) => {
   // The control listener binds after all seeding, so this is the --projects servers' readiness check.
   if (projectsMode && request.method === 'GET' && request.url === '/projects/ready') { response.writeHead(204).end(); return; }
   if (projectsMode && request.method === 'POST' && request.url?.startsWith('/projects/')) {
-    projectControl(request, response).catch((error) => { if (response.headersSent) response.destroy(); else response.writeHead(500, { 'Content-Type': 'application/json' }).end(JSON.stringify({ message: error instanceof Error ? error.message : 'The control request failed.' })); });
+    const work = projectControl(request, response).catch((error) => { if (response.headersSent) response.destroy(); else response.writeHead(500, { 'Content-Type': 'application/json' }).end(JSON.stringify({ message: error instanceof Error ? error.message : 'The control request failed.' })); })
+      .finally(() => controlWork.delete(work));
+    controlWork.add(work);
     return;
   }
   response.writeHead(404).end();
 });
 await new Promise(resolve => improverControl.listen(port + 200, '127.0.0.1', resolve));
+ready = true;
+if (closing) void close();

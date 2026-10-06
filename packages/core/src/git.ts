@@ -15,6 +15,8 @@ const hash = (value: string) => createHash('sha256').update(value).digest('hex')
 export const threadRefLine = (line: string): boolean => ['refs/heads/jv/', 'refs/remotes/origin/jv/', 'refs/jevellan/threads/'].some((prefix) => line.startsWith(prefix));
 // Unchanged text (and digests) when no thread ref exists, so recorded snapshots and checkpoint plans still compare.
 const withoutThreadRefs = (refs: string) => refs.split('\n').filter((line) => !threadRefLine(line)).join('\n');
+/** The refusal of every git write while the checkout is not on main. */
+export const NOT_ON_MAIN = 'This project must be on main before Jevellan can change git.';
 export class GitWorkspace {
   constructor(readonly project: Project, readonly deviceId: string, readonly ownership: CheckoutOwnership, readonly owner: CheckoutOwner, readonly redactor = new SecretRedactor()) {}
   get path(): string { return resolveProjectPath(this.project, this.deviceId); }
@@ -47,7 +49,7 @@ export class GitWorkspace {
     return digest.digest('hex');
   }
   async branch(): Promise<string> { return (await this.#git(['symbolic-ref', '--quiet', 'HEAD'], [1])).stdout.trim() || '(detached)'; }
-  async #main(): Promise<void> { if (await this.branch() !== 'refs/heads/main') throw new Error('This project must be on main before Jevellan can change git.'); }
+  async #main(): Promise<void> { if (await this.branch() !== 'refs/heads/main') throw new Error(NOT_ON_MAIN); }
   async #write(): Promise<void> {
     if (this.project.branchPolicy !== 'main') throw new Error('This project follows its own git rules. Jevellan will not change git.');
     await this.ownership.assert(this.project, this.owner); await this.#main();

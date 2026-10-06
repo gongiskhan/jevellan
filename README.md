@@ -2,7 +2,7 @@
 
 **Autonomous development, coordinated.**
 
-Jevellan runs coding agents in conversations across your runtimes, accounts and machines. Work proceeds in bounded stretches, with structured handoffs. Jev chooses the next action, model and effort; you can correct a decision afterwards, with or without undoing the work.
+Jevellan runs coding agents in conversations across your runtimes, accounts and machines. Work proceeds in bounded stretches, with structured handoffs. Jev chooses the next action, model and effort; you can correct a decision afterwards, with or without undoing the work. In Projects, one coordinator per project splits your requests into threads, runs them on your devices and accounts, and brings back what needs you; Jevellan verifies their work and opens pull requests for worktree threads, and you merge them.
 
 This repository is under active development. See [the acceptance report](docs/acceptance/REPORT.md) for what is built, tested and still blocked. The complete product is not ready to install yet.
 
@@ -32,7 +32,7 @@ npm start
 
 Browser tests can use an installed Google Chrome with `PLAYWRIGHT_CHANNEL=chrome npm run test:e2e`; otherwise they require the Playwright Chromium browser.
 
-Read [architecture](docs/architecture.md), [decisions](docs/decisions.md), [device mesh](docs/mesh.md) and [project memory](docs/memory.md) for the implementation boundaries and recorded limitations.
+Read [architecture](docs/architecture.md), [projects](docs/projects.md), [decisions](docs/decisions.md), [device mesh](docs/mesh.md) and [project memory](docs/memory.md) for the implementation boundaries and recorded limitations.
 
 ## The fleet
 

@@ -7,7 +7,7 @@ import {
 } from '@jevellan/core';
 import type { PlacementGates } from '@jevellan/decisions';
 import type { RuntimeAdapter } from '@jevellan/runtime-contract';
-import { BRANCH_PUSHED_NO_TOKEN, LEAVE_GIT_SETTING, MAIN_NOT_AVAILABLE, NOT_GITHUB, PROJECT_NOT_FOUND, THREAD_NOT_FOUND, attachCommand } from './copy.js';
+import { BRANCH_PUSHED_NO_TOKEN, LEAVE_GIT_SETTING, MAIN_NOT_AVAILABLE, NOT_GITHUB, PROJECT_NOT_FOUND, THREAD_NOT_FOUND, attachCommand, attachedRefusal, checkoutStillHeld } from './copy.js';
 import { coordinatorMovable, coordinatorPlan, type CoordinatorService } from './coordinator.js';
 import type { ProjectLedgers } from './ledger.js';
 import { PHASE_GATES, type DeviceRoster, type Placement } from './placement.js';
@@ -61,7 +61,7 @@ export type ProjectViewsOptions = {
   deviceId: string; deviceName: string;
   hub: Pick<ProjectHub, 'threads' | 'decisions' | 'settings' | 'coordinator' | 'coordinatorStatus' | 'notebook' | 'workSummaries'>;
   projects: Pick<SharedProjects, 'get' | 'list'>;
-  store: Pick<ThreadStore, 'get' | 'labels'>; ledgers: ProjectLedgers; coordinators: Pick<CoordinatorService, 'get'>;
+  store: Pick<ThreadStore, 'get' | 'labels' | 'local'>; ledgers: ProjectLedgers; coordinators: Pick<CoordinatorService, 'get'>;
   transcripts: Pick<ThreadTranscripts, 'read'>; worktrees: Pick<ThreadWorktree, 'repository' | 'baseBranch'>;
   accounts: Pick<AccountService, 'list'>; runtimes: ReadonlyMap<string, RuntimeAdapter>;
   settings(): Promise<Configuration['x-jevellan']>; roster(): Promise<DeviceRoster>;
@@ -181,11 +181,14 @@ export class ProjectViews {
     // The page keeps working when the native session cannot be read; the transcript is just absent.
     const transcript = await this.#o.transcripts.read(thread, project.name).catch(() => null);
     const restartReason = restartRefusal(thread);
+    // An ended main thread whose claim the sweeps are still settling says why the checkout stays held (phase 8, D291).
+    const kept = isTerminal(thread.state) ? this.#o.store.local(threadId).unsettledCheckout?.message : undefined;
     return ThreadViewSchema.parse({ schema: 'project-thread-view-v1', thread: threadIndex(thread, this.#o.store.labels(threadId), events.at(-1)?.t ?? thread.createdAt),
       placement: thread.placement, reports, transcript, queuedMessages: thread.queuedMessages,
       canMessage: !['attached', 'done', 'stopped', 'failed'].includes(thread.state), turnAllowance: thread.turnAllowance, deviceName: this.#o.deviceName,
       baseBranch: thread.baseBranch, ...(thread.attach ? { attach: thread.attach } : {}), attachCommand: attachCommand(threadId),
       canOverride: { nextTurn: !isTerminal(thread.state), restart: !restartReason, ...(restartReason ? { restartReason } : {}) }, atTurnLimit: atTurnLimit(thread),
-      canDiscard: (thread.state === 'stopped' || thread.state === 'failed') && thread.isolation === 'worktree' && !isDiscarded(thread.stateReason) });
+      canDiscard: (thread.state === 'stopped' || thread.state === 'failed') && thread.isolation === 'worktree' && !isDiscarded(thread.stateReason),
+      ...(thread.state === 'attached' ? { stopRefusal: attachedRefusal(threadId) } : {}), ...(kept ? { checkoutHeld: checkoutStillHeld(kept) } : {}) });
   }
 }

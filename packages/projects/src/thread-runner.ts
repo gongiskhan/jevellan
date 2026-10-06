@@ -1,25 +1,26 @@
 import { createHash } from 'node:crypto';
 import type { AccountService } from '@jevellan/accounts';
 import {
-  HubUnavailable, ThreadReportSchema, isTerminal, liveWork, newId, stableJson, type CoordinatorEvent, type Project, type ProjectWorkSettings, type QueuedMessage, type SecretRedactor, type Thread,
-  type ThreadReport, type ThreadState,
+  HubUnavailable, SecretRedactor, ThreadReportSchema, clipRedacted, isTerminal, liveWork, newId, redactWithin, stableJson, type CoordinatorEvent, type Project, type ProjectWorkSettings,
+  type QueuedMessage, type Thread, type ThreadLocal, type ThreadReport, type ThreadState, type TurnProcess,
 } from '@jevellan/core';
+import { SESSION_NOT_FOUND } from '@jevellan/runtime-contract';
 import type { Admission } from './admission.js';
 import type { ProjectMemoryReader, ProjectToolHandlers } from './bridge-tools.js';
 import { ProjectTools } from './bridge-tools.js';
 import {
-  DISCARD_REFUSED, MESSAGE_ID_REUSED, MORE_TURNS, NO_CHANGES, NO_SESSION_TO_ATTACH, OWNER_STOPPED_THREAD, PROCESS_UNCONFIRMED, RESTART_OPEN_PULL_REQUEST,
-  RESTART_PUBLISHED_TO_MAIN, TESTS_FAILED_THREE_TIMES, THREAD_ALREADY_RESTARTED, THREAD_ENDED, THREAD_NOT_FOUND, THREAD_WORKING, TOOL_NOT_IN_TURN, TURN_FAILED, TURN_LIMIT_REACHED,
-  TURN_TIMED_OUT, TURN_WITHOUT_REPORT, VERIFICATION_ATTEMPTS, WAITING_FOR_HUB, WORKTREE_DISCARDED, accountMovedNotice, alreadyAttached, cleanupFailed, commitsSavedReason, isRestarted,
-  mainCheckoutKept, mainConflictPrompt, messagesPrompt, ownerWorkedLine, savedCommitsRef, sessionNotAdopted, taskPrompt, threadPrompt, threadStepFailed, threadSystemAppend,
-  verificationFailurePrompt, worktreeSetupFailed, type ThreadTurnReason,
+  CHECKOUT_LEFT_AS_IS, DISCARD_REFUSED, MAIN_CHECKOUT_RELEASED, MESSAGE_ID_REUSED, MORE_TURNS, NO_CHANGES, NO_SESSION_TO_ATTACH, OWNER_STOPPED_THREAD, PROCESS_UNCONFIRMED, RESTART_OPEN_PULL_REQUEST,
+  RESTART_PUBLISHED_TO_MAIN, SESSION_REPLACED, TESTS_FAILED_THREE_TIMES, THREAD_ALREADY_RESTARTED, THREAD_ENDED, THREAD_NOT_FOUND, THREAD_WORKING, TOOL_NOT_IN_TURN, TURN_FAILED,
+  TURN_LIMIT_REACHED, TURN_TIMED_OUT, TURN_WITHOUT_REPORT, VERIFICATION_ATTEMPTS, WAITING_FOR_HUB, WAITING_FOR_MAIN, WORKTREE_DISCARDED, accountMovedNotice, alreadyAttached,
+  attachedRefusal, cleanupFailed, commitsSavedReason, isRestarted, mainCheckoutKept, mainConflictPrompt, messagesNotDelivered, messagesPrompt, ownerWorkedLine, savedCommitsRef,
+  sessionNotAdopted, taskPrompt, threadPrompt, threadStepFailed, threadSystemAppend, verificationFailurePrompt, worktreeSetupFailed, type ThreadTurnReason,
 } from './copy.js';
 import type { DecisionItems } from './decision-items.js';
 import { firstLine } from './git.js';
 import type { LaunchResult, TurnLauncher } from './launch.js';
 import type { ProjectLedgers } from './ledger.js';
 import type { MailService } from './mail.js';
-import type { MainCheckout } from './main-checkout.js';
+import type { CheckoutSeen, CheckoutSettlement, ClaimKeptError, MainCheckout, StopRefusal } from './main-checkout.js';
 import type { PublicationResult, ThreadPublication } from './publication.js';
 import type { ThreadEvent, ThreadStore } from './stores.js';
 import { TurnExecution, type TurnOutcome } from './turn-execution.js';
@@ -34,13 +35,19 @@ type EventBody = CoordinatorEvent extends infer E ? E extends CoordinatorEvent ?
 export const REST_STATES: readonly ThreadState[] = ['idle', 'in-review', 'waiting-for-you'];
 const atRest = (state: ThreadState) => REST_STATES.includes(state);
 export const atTurnLimit = (thread: Pick<Thread, 'turns' | 'turnAllowance'>): boolean => thread.turns >= thread.turnAllowance;
-/** A thread state with its reason replaced (removed when none). */
+const PATTERNS = new SecretRedactor();
+/**
+ * A thread state with its reason replaced (removed when none). The reason is redacted and cut where no later redaction rewrites it, so it
+ * keeps within 400 characters on every hop to the hub and the devices (P8 review S-1).
+ */
 export function withState(thread: Thread, state: ThreadState, reason?: string): Thread {
   const next: Thread = { ...thread, state };
-  if (reason) next.stateReason = reason.slice(0, 400); else delete next.stateReason;
+  const kept = reason ? redactWithin(PATTERNS, reason, 400) : '';
+  if (kept) next.stateReason = kept; else delete next.stateReason;
   return next;
 }
-export type NextTurn = { reason: ThreadTurnReason; body: string; messages: string[] };
+/** `pending`: the turn waited for its account before and comes from the thread's local file (phase 8). */
+export type NextTurn = { reason: ThreadTurnReason; body: string; messages: string[]; pending?: boolean };
 /** The queued messages as one turn (D22); the ids leave the queue when the turn starts. */
 export function messagesTurn(thread: Pick<Thread, 'queuedMessages'>, reason: 'messages' | 'steer'): NextTurn {
   return { reason, body: messagesPrompt(thread.queuedMessages), messages: thread.queuedMessages.map((message) => message.id) };
@@ -48,11 +55,12 @@ export function messagesTurn(thread: Pick<Thread, 'queuedMessages'>, reason: 'me
 export type TurnRun = { status: 'completed' | 'failed' | 'timed-out' | 'unavailable'; error?: string | undefined; finalText?: string | undefined };
 /**
  * The report Jevellan writes when the thread did not (brief 8.2): a completed turn is `progress` with the last 1,200 characters
- * of its final message; a failed, timed-out or unlaunchable turn is `blocked` with its error.
+ * of its final message; a failed, timed-out or unlaunchable turn is `blocked` with its error. Both are redacted before they are cut, at
+ * a point no later redaction rewrites, so the report keeps within its maximum wherever it is stored or sent (P8 review S-1).
  */
-export function synthesizedReport(run: TurnRun, turn: number): ThreadReport {
-  const summary = run.status === 'completed' ? (run.finalText ?? '').slice(-1200) || TURN_WITHOUT_REPORT
-    : (run.error?.trim() || (run.status === 'timed-out' ? TURN_TIMED_OUT : TURN_FAILED)).slice(0, 1200);
+export function synthesizedReport(run: TurnRun, turn: number, redactor: SecretRedactor = PATTERNS): ThreadReport {
+  const summary = run.status === 'completed' ? redactWithin(redactor, run.finalText ?? '', 1200, 'end') || TURN_WITHOUT_REPORT
+    : redactWithin(redactor, run.error?.trim() || (run.status === 'timed-out' ? TURN_TIMED_OUT : TURN_FAILED), 1200);
   return ThreadReportSchema.parse({ schema: 'thread-report-v1', turn, status: run.status === 'completed' ? 'progress' : 'blocked', summary, changedFiles: [], synthesized: true });
 }
 export type TurnEndAction = { kind: 'publish' } | { kind: 'limit' } | { kind: 'decision'; reason: string } | { kind: 'continue' } | { kind: 'idle' };
@@ -76,12 +84,19 @@ export function discardedReason(reason: string | undefined): string {
 }
 /** The worktree is gone: discarded, or removed by a restart (D252). */
 export const isDiscarded = (reason: string | undefined): boolean => !!reason?.endsWith(WORKTREE_DISCARDED.trim()) || isRestarted(reason);
-/** Why Restart is not allowed (brief 10): an open pull request, a publication to main, or an earlier restart (D252). */
-export function restartRefusal(thread: Pick<Thread, 'pr' | 'isolation' | 'publishedCommit' | 'stateReason'>): string | undefined {
+/**
+ * Why Restart is not allowed (brief 10): an open pull request, a publication to main, or an earlier restart (D252); for now, the owner's
+ * terminal session on the thread (phase 8).
+ */
+export function restartRefusal(thread: Pick<Thread, 'id' | 'state' | 'pr' | 'isolation' | 'publishedCommit' | 'stateReason'>): string | undefined {
   if (thread.pr?.state === 'open') return RESTART_OPEN_PULL_REQUEST;
   if (thread.isolation === 'main' && thread.publishedCommit) return RESTART_PUBLISHED_TO_MAIN;
-  return isRestarted(thread.stateReason) ? THREAD_ALREADY_RESTARTED : undefined;
+  if (isRestarted(thread.stateReason)) return THREAD_ALREADY_RESTARTED;
+  return thread.state === 'attached' ? attachedRefusal(thread.id) : undefined;
 }
+/** The turns a thread keeps when it waits for its account; message turns keep their messages in the queue instead (phase 8). */
+const KEPT_TURNS: readonly ThreadTurnReason[] = ['task', 'verification', 'conflict'];
+const PENDING_TURN_LIMIT = 40_000;
 const digest = (text: string) => createHash('sha256').update(text).digest('hex');
 const SEEN_MESSAGES = 200;
 
@@ -93,7 +108,14 @@ export type ThreadRunnerContext = {
   workSettings(projectId: string): Promise<ProjectWorkSettings>;
   worktrees: Pick<ThreadWorktree, 'create' | 'setup' | 'exists' | 'remove' | 'repository'>;
   /** Main isolation (brief 8.2 step 4 main, D29): the claimed project checkout. */
-  main: Pick<MainCheckout, 'prepare' | 'ready' | 'workspace' | 'release' | 'stop'>;
+  main: Pick<MainCheckout, 'prepare' | 'ready' | 'onMain' | 'workspace' | 'release' | 'stop' | 'settle'>;
+  /** Ends a turn process recorded earlier whose end was not confirmed; rejects while it still cannot be (recovery's rule). */
+  endProcess(process: TurnProcess): Promise<void>;
+  /**
+   * Why the thread's next turn waits now (phase 8): every eligible account for its model on this device is held by a thread attached in
+   * a terminal. Undefined when an account is free, or when none is eligible at all (the launch then says why).
+   */
+  accountWait(thread: Thread): Promise<string | undefined>;
   publication: Pick<ThreadPublication, 'publishWorktree' | 'publishMain'>;
   launcher: Pick<TurnLauncher, 'launch'>;
   accounts: Pick<AccountService, 'recordUsage' | 'recordError'>;
@@ -198,13 +220,13 @@ export class ThreadRunner {
       this.#notice(thread, text, 'error');
       if (!liveWork(thread.state) || this.#stopping !== undefined) return;
       const rested = this.#set((current) => withState(current, 'idle', text));
-      await this.#tell(rested.projectId, { kind: 'thread-interrupted', threadId: rested.id, reason: 'failed', message: text.slice(0, 1000) });
+      await this.#tell(rested.projectId, { kind: 'thread-interrupted', threadId: rested.id, reason: 'failed', message: clipRedacted(text, 1000) });
     } catch { /* The thread files themselves failed; restart recovery repairs the state. */ }
   }
   async #fail(reason: string): Promise<void> {
     const thread = this.#set((current) => ({ ...withState(current, 'failed', reason), endedAt: current.endedAt ?? this.#at() }));
     await this.#releaseReservations(thread);
-    await this.#tell(thread.projectId, { kind: 'thread-interrupted', threadId: thread.id, reason: 'failed', message: reason.slice(0, 1000) });
+    await this.#tell(thread.projectId, { kind: 'thread-interrupted', threadId: thread.id, reason: 'failed', message: redactWithin(PATTERNS, reason, 1000) });
   }
   /**
    * A main thread that stopped, failed or published gives its reservations back (brief 7.2, design 3.6). They are advisory and
@@ -213,6 +235,29 @@ export class ThreadRunner {
   async #releaseReservations(thread: Thread): Promise<void> {
     if (thread.isolation !== 'main') return;
     await this.#c.mail.releaseThread(thread.projectId, thread.id).catch(() => undefined);
+  }
+  /**
+   * A main thread's claim waits to be settled (phase 8): written before every settlement and kept when it fails, so a failure or a crash
+   * in between leaves the release to the sweeps, which settle ended threads only. `message` is the last failure. What the first refused
+   * stop saw of the checkout is never replaced: every later stop settlement compares the checkout with it (P8 review N-2).
+   */
+  #unsettled(threadId: string, settle: CheckoutSettlement, message?: string, seen?: CheckoutSeen): void {
+    this.#c.store.updateLocal(threadId, (local) => {
+      const first = settle === 'stop' ? local.unsettledCheckout?.seen ?? seen : undefined;
+      const unsettled: NonNullable<ThreadLocal['unsettledCheckout']> = { settle, ...(message ? { message: message.slice(0, 400) } : {}), ...(first ? { seen: first } : {}) };
+      return { ...local, unsettledCheckout: unsettled };
+    });
+  }
+  #settled(threadId: string): void {
+    if (!this.#c.store.local(threadId).unsettledCheckout) return;
+    this.#c.store.updateLocal(threadId, (local) => { const next = { ...local }; delete next.unsettledCheckout; return next; });
+  }
+  /** The claim could not be settled now: the thread says why once per reason, and the sweeps try again. `seen`: a stop's refusal record. */
+  #kept(thread: Thread, settle: CheckoutSettlement, message: string, seen?: CheckoutSeen): void {
+    const current = this.#c.store.local(thread.id).unsettledCheckout;
+    if (current?.message === message && (current.seen || !seen)) return;
+    this.#unsettled(thread.id, settle, message, seen);
+    if (current?.message !== message) this.#notice(thread, mainCheckoutKept(message), 'error');
   }
 
   /** `queued` or `preparing` -> worktree and setup -> the first turn (brief 8.2 steps 4-5). `hold` is released once the thread is live. */
@@ -257,6 +302,9 @@ export class ThreadRunner {
       this.#set((current) => ({ ...current, ...fields }));
       return true;
     } catch (error) {
+      // A claim that could not be given back after a failed preparation is settled by the sweeps (D291, phase 8).
+      const kept = (error as ClaimKeptError).claimKept;
+      if (thread.isolation === 'main' && kept) this.#kept(thread, 'unchanged', this.#c.redactor.text(kept));
       if (this.#halted()) return false;
       // Main preparation failures are already in thread words (D44): the refusal itself is the reason.
       await this.#fail(thread.isolation === 'main' ? this.#message(error) || TURN_FAILED : worktreeSetupFailed(firstLine(this.#message(error)) || TURN_FAILED));
@@ -272,6 +320,9 @@ export class ThreadRunner {
     let thread = this.#thread();
     // Before every turn, also verification turns and messages that arrive at rest (D73).
     if (atTurnLimit(thread)) { await this.#atLimit(); return null; }
+    // A thread attached in a terminal holds its account (phase 8): with no other eligible account the turn waits, before it takes anything.
+    const wait = await this.#c.accountWait(thread);
+    if (wait) { if (!this.#halted()) this.#rest(next, wait); return null; }
     const project = await this.#c.project(thread.projectId);
     // A main thread is prepared once (a second preparation refuses its own commits); later turns only claim the checkout again.
     const ready = thread.isolation === 'main' ? await this.#c.main.ready(project, thread) : !!thread.cwd && await this.#c.worktrees.exists(project, thread);
@@ -280,19 +331,34 @@ export class ThreadRunner {
       thread = this.#thread();
     }
     if (this.#halted()) return null;
+    // The claimed checkout is the owner's too: no turn runs while it is off main (a branch the owner switched to, P8 review TH-1). The
+    // thread rests with its messages, like a turn that waits for its account, and the sweeps start the turn once main is back.
+    if (thread.isolation === 'main' && !(await this.#c.main.onMain(project, thread))) { if (!this.#halted()) this.#rest(next, WAITING_FOR_MAIN); return null; }
     const turn = thread.turns + 1; const ledger = this.#c.ledgers.thread(thread.projectId, thread.id);
     const release = this.#c.enterOperation(this.threadId, thread.title);
     let ran: Ran;
     try {
       this.#steer = false;
       thread = this.#set((current) => ({ ...withState(current, 'running'), queuedMessages: current.queuedMessages.filter((message) => !next.messages.includes(message.id)) }));
+      if (next.pending) this.#c.store.updateLocal(thread.id, (local) => { const taken = { ...local }; delete taken.pendingTurn; return taken; });
       this.#turn = turn;
       ran = await this.#run(project, thread, turn, next);
     } finally { this.#turn = undefined; this.#steer = false; release(); }
     if (ran.status === 'shutdown') return null;
-    if (ran.status === 'unconfirmed') { await this.#fail(PROCESS_UNCONFIRMED); return null; }
+    if (ran.status === 'unconfirmed') {
+      // The process may still work in the checkout: a main thread's claim stays until a sweep confirms the process ended (phase 8).
+      if (thread.isolation === 'main') this.#kept(thread, 'stop', PROCESS_UNCONFIRMED);
+      await this.#fail(PROCESS_UNCONFIRMED); return null;
+    }
     const ended = ran.status === 'unavailable' ? 'failed' : ran.status;
     ledger.append({ type: 'thread-turn-end', turn, data: { schema: 'thread-turn-end-v1', turn, status: ended, ...(ran.error ? { error: ran.error } : {}) } });
+    if (ran.status === 'failed' && ran.error === SESSION_NOT_FOUND && thread.nativeSessionId) {
+      // The runtime no longer has the session it resumed (the CLI's transcript retention, P8 review R-T1); the model never ran. The same
+      // turn runs again at once in a new session, which starts with the task block; it can happen once, since the new turn resumes nothing.
+      this.#set((current) => { const fresh: Thread = { ...current }; delete fresh.nativeSessionId; return fresh; });
+      this.#notice(thread, SESSION_REPLACED, 'info');
+      return { reason: next.reason, body: next.body, messages: [] };
+    }
     if (ran.status === 'stopped') {
       // Stop sets its own state; a merge or close stopped the turn and decides next, else the thread rests.
       if (this.#stopping === undefined && !this.#closed) this.#set((current) => withState(current, 'idle'));
@@ -305,9 +371,28 @@ export class ThreadRunner {
       this.#set((current) => withState(current, 'idle'));
       return null;
     }
-    const report = ran.report ?? synthesizedReport({ status: ran.status, error: ran.error, finalText: ran.finalText }, turn);
+    const report = ran.report ?? synthesizedReport({ status: ran.status, error: ran.error, finalText: ran.finalText }, turn, this.#c.redactor);
     thread = this.#set((current) => ({ ...current, turns: current.turns + 1, lastReport: report }), { type: 'thread-report', data: report, turn });
     return this.#act(thread, report);
+  }
+  /**
+   * The turn waits (phase 8): for its account, or for the claimed checkout to be back on main (P8 review TH-1). The thread rests with the
+   * reason (a live step ends `idle`); messages stay queued, and a task, verification or conflict turn is kept in the local file to run first
+   * once the wait ends. Repeats write nothing.
+   */
+  #rest(next: NextTurn, reason: string): void {
+    if (KEPT_TURNS.includes(next.reason) && !next.pending) {
+      const pending = { reason: next.reason as 'task' | 'verification' | 'conflict', body: next.body.slice(0, PENDING_TURN_LIMIT) };
+      this.#c.store.updateLocal(this.threadId, (local) => ({ ...local, pendingTurn: pending }));
+    }
+    const thread = this.#thread();
+    if (atRest(thread.state) && thread.stateReason === reason) return;
+    this.#set((current) => withState(current, atRest(current.state) ? current.state : 'idle', reason));
+  }
+  /** The turn that waited for its account, if any (phase 8). */
+  #pendingTurn(): NextTurn | undefined {
+    const pending = this.#c.store.local(this.threadId).pendingTurn;
+    return pending && { reason: pending.reason, body: pending.body, messages: [], pending: true };
   }
   /** Launch and drain one turn. The grant is closed and the process gone before this returns. */
   async #run(project: Project, thread: Thread, turn: number, next: NextTurn): Promise<Ran> {
@@ -425,6 +510,7 @@ export class ThreadRunner {
             { type: 'thread-publication', data: { schema: 'thread-publication-v1', result: 'no-changes' } });
           if (thread.isolation === 'main') { await this.#giveBack(project, thread, 'unchanged'); await this.#releaseReservations(thread); }
           else await this.#cleanup(project, thread);
+          this.#undelivered();
           await this.#tell(projectId, { kind: 'thread-published', threadId, result: 'no-changes' });
           return null;
         }
@@ -466,6 +552,7 @@ export class ThreadRunner {
             { type: 'thread-publication', data: { schema: 'thread-publication-v1', result: 'main-published', commit: outcome.commit } });
           await this.#giveBack(project, thread, 'published');
           await this.#releaseReservations(thread);
+          this.#undelivered();
           await this.#tell(projectId, { kind: 'thread-published', threadId, result: 'main-published', commit: outcome.commit });
           return null;
         }
@@ -476,6 +563,15 @@ export class ThreadRunner {
     } finally { release(); }
   }
   /**
+   * Messages that waited during a publication that concluded the thread never reach it (P8 review TH-5): the thread names them in a notice,
+   * and they leave the queue, so nothing shows them as still on their way.
+   */
+  #undelivered(): void {
+    const thread = this.#thread(); if (!thread.queuedMessages.length) return;
+    this.#notice(thread, messagesNotDelivered(thread.queuedMessages.map((message) => message.text)), 'error');
+    this.#set((current) => ({ ...current, queuedMessages: [] }));
+  }
+  /**
    * Messages that arrived during publication are delivered after it (2.6.9 deliver), in a turn that continues the step,
    * like messages queued during a turn (D72, D160).
    */
@@ -483,10 +579,14 @@ export class ThreadRunner {
     const thread = this.#thread();
     return atRest(thread.state) && thread.queuedMessages.length ? messagesTurn(thread, 'messages') : null;
   }
-  /** A concluded main thread gives the checkout back; if the hub cannot take it now the claim stays, and the thread says so (D291). */
+  /**
+   * A concluded main thread gives the checkout back; if the hub cannot take it now the claim stays, the thread says so (D291), and the
+   * sweeps release it later (phase 8).
+   */
   async #giveBack(project: Project, thread: Thread, commits: 'published' | 'unchanged'): Promise<void> {
-    try { await this.#c.main.release(project, thread, commits); }
-    catch (error) { this.#notice(thread, mainCheckoutKept(this.#message(error)), 'error'); }
+    this.#unsettled(thread.id, commits);
+    try { await this.#c.main.release(project, thread, commits); this.#settled(thread.id); }
+    catch (error) { this.#kept(thread, commits, this.#message(error)); }
   }
   /**
    * A stopped main thread (D29): its unpublished commits are saved and the checkout returns to main, then the claim is released. The
@@ -494,13 +594,40 @@ export class ThreadRunner {
    */
   async #stopMain(thread: Thread, reason: string): Promise<string> {
     if (thread.state === 'queued') return reason;
+    this.#unsettled(thread.id, 'stop');
     try {
       const { saved } = await this.#c.main.stop(await this.#c.project(thread.projectId), thread, this.#c.store.local(thread.id).gitIdentity);
+      this.#settled(thread.id);
       return saved ? commitsSavedReason(reason, saved) : reason;
     } catch (error) {
-      this.#notice(thread, mainCheckoutKept(this.#message(error)), 'error');
+      this.#kept(thread, 'stop', this.#message(error), (error as StopRefusal).seen);
       return reason;
     }
+  }
+  /**
+   * The sweeps' settlement of an ended main thread whose claim was kept (D291, phase 8): a recorded process must be confirmed gone first,
+   * then the release or the stop settlement runs again, the latter with what its first refusal saw (P8 review N-2). A stop that saved
+   * commits names the ref in the reason. A failure with a new reason is one notice; the release is one info notice, which says so when the
+   * checkout was given back as the owner left it.
+   */
+  settleCheckout(): Promise<void> {
+    return this.#serial(async () => {
+      if (this.#closed) return;
+      const thread = this.#c.store.get(this.threadId); const unsettled = thread && this.#c.store.local(thread.id).unsettledCheckout;
+      if (!thread || !unsettled || !isTerminal(thread.state)) return;
+      try {
+        const process = this.#c.store.local(thread.id).process;
+        if (process) {
+          try { await this.#c.endProcess(process); } catch { throw new Error(PROCESS_UNCONFIRMED); }
+          this.#c.store.updateLocal(thread.id, (local) => { const cleared = { ...local }; delete cleared.process; return cleared; });
+        }
+        const project = await this.#c.project(thread.projectId);
+        const { saved, leftAsIs } = await this.#c.main.settle(project, thread, unsettled.settle, this.#c.store.local(thread.id).gitIdentity, unsettled.seen);
+        if (saved && !savedCommitsRef(thread.stateReason)) this.#set((current) => withState(current, current.state, commitsSavedReason(current.stateReason ?? '', saved)));
+        this.#settled(thread.id);
+        this.#notice(thread, leftAsIs ? CHECKOUT_LEFT_AS_IS : MAIN_CHECKOUT_RELEASED, 'info');
+      } catch (error) { this.#kept(thread, unsettled.settle, this.#message(error), (error as StopRefusal).seen); }
+    });
   }
   async #cleanup(project: Project, thread: Thread): Promise<void> {
     try {
@@ -538,15 +665,16 @@ export class ThreadRunner {
     const release = await this.#admit();
     if (!release) return 'queued';
     void this.#work(async () => {
-      const thread = this.#thread();
-      if (this.#halted() || !atRest(thread.state) || !thread.queuedMessages.length) return;
-      await this.#loop(messagesTurn(thread, 'messages'));
+      // A turn that waited for its account runs first; messages that came meanwhile follow it in the same step (D72).
+      const thread = this.#thread(); const pending = this.#pendingTurn();
+      if (this.#halted() || !atRest(thread.state) || (!thread.queuedMessages.length && !pending)) return;
+      await this.#loop(pending ?? messagesTurn(thread, 'messages'));
     }, release);
     return 'started';
   }
   async #admit(): Promise<(() => void) | undefined> {
     const thread = this.#thread();
-    if (this.#halted() || !atRest(thread.state) || !thread.queuedMessages.length) return undefined;
+    if (this.#halted() || !atRest(thread.state) || (!thread.queuedMessages.length && !this.#pendingTurn())) return undefined;
     if (atTurnLimit(thread)) { await this.#work(() => this.#atLimit()); return undefined; }
     const admitted = await this.#c.admission.admit(thread.projectId, thread.ownerDeviceId, thread.id);
     if (admitted.ok) return admitted.release;
@@ -560,7 +688,11 @@ export class ThreadRunner {
    * `notify` tells the coordinator (a stop from the owner, D28).
    */
   async stop(reason: string, notify: boolean): Promise<void> {
-    if (isTerminal(this.#thread().state)) return;
+    const thread = this.#thread();
+    if (isTerminal(thread.state)) return;
+    // Nothing is stopped, saved or reset under the owner's terminal (phase 8). Refused before the stop takes effect, so the runner stays as
+    // it was; attach refuses a stopping runner, so the two cannot cross.
+    if (thread.state === 'attached') throw refuse(attachedRefusal(thread.id), 409);
     this.#stopping ??= reason;
     this.#abort.abort();
     await this.#execution?.stop().catch(() => undefined);
@@ -591,14 +723,18 @@ export class ThreadRunner {
       // A main thread's stop named where its unpublished commits went (D29): the restart reason keeps that sentence.
       const saved = savedCommitsRef(thread.stateReason); const next = saved ? commitsSavedReason(reason, saved) : reason;
       if (thread.stateReason !== next) thread = this.#set((current) => withState(current, current.state, next));
-      if (gone || thread.isolation !== 'worktree' || !thread.cwd || thread.state === 'done') return;
-      await this.#cleanup(await this.#c.project(thread.projectId), thread);
+      if (gone || thread.isolation !== 'worktree' || thread.state === 'done') return;
+      // A thread stopped during its setup command has a worktree but no stored fields yet (P8 review TH-4): the worktree's own record decides.
+      const project = await this.#c.project(thread.projectId);
+      if (!thread.cwd && !(await this.#c.worktrees.exists(project, thread))) return;
+      await this.#cleanup(project, thread);
     });
   }
   /** Discard (brief 8.2): removes the worktree and local branch of a stopped or failed worktree thread. */
   discard(): Promise<void> {
     return this.#serial(async () => {
       const thread = this.#thread();
+      if (thread.state === 'attached') throw refuse(attachedRefusal(thread.id), 409);
       if ((thread.state !== 'stopped' && thread.state !== 'failed') || thread.isolation !== 'worktree') throw refuse(DISCARD_REFUSED, 409);
       if (isDiscarded(thread.stateReason)) return;
       await this.#c.worktrees.remove(await this.#c.project(thread.projectId), thread);
@@ -619,7 +755,7 @@ export class ThreadRunner {
       const allowed = this.#set((current) => ({ ...(limited ? withState(current, 'idle') : current), turnAllowance: current.turnAllowance + MORE_TURNS }));
       try { await this.#c.decisions.withdrawTurnLimit(allowed.projectId, allowed.id); }
       catch (error) { this.#notice(allowed, threadStepFailed(this.#message(error)), 'error'); }
-      if (allowed.queuedMessages.length) return 'messages';
+      if (allowed.queuedMessages.length || this.#pendingTurn()) return 'messages';
       return limited && allowed.lastReport?.status === 'done' && !allowed.pr && !allowed.publishedCommit ? 'publish' : null;
     });
     if (next === 'messages') await this.#fromRest();
@@ -673,7 +809,7 @@ export class ThreadRunner {
     // The turn below starts outside the chain step above: admission at the turn limit waits on the chain itself.
     try { await this.#tell(thread.projectId, { kind: 'thread-user-message', threadId: thread.id, text: ownerWorkedLine(thread.title) }); }
     catch (error) { this.#notice(thread, threadStepFailed(this.#message(error)), 'error'); }
-    if (this.#thread().queuedMessages.length) await this.#fromRest();
+    if (this.#thread().queuedMessages.length || this.#pendingTurn()) await this.#fromRest();
     return { adopted: detached.adopted, state: this.#thread().state };
   }
   /**

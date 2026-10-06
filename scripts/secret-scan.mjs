@@ -13,7 +13,7 @@ const patterns = [
 // Exact source text that matches a pattern but is not a credential. Each entry is removed before
 // matching, so any real token elsewhere in the same file is still blocked.
 const allowed = [
-  // scripts/spikes/live-journeys.mjs (J4): a random value in the OAuth token shape, stored to test invalid-token recovery.
+  // scripts/spikes/live-conversation-journeys.mjs (J4): a random value in the OAuth token shape, stored to test invalid-token recovery.
   "`sk-ant-oat01-${randomBytes(40).toString('base64url')}`",
 ];
 const flagged = (text) => patterns.some((pattern) => pattern.test(allowed.reduce((rest, entry) => rest.replaceAll(entry, ''), text)));

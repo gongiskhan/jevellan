@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, rmSync } from 'node:fs';
 import {
-  CoordinatorLocalSchema, CoordinatorStateSchema, ThreadIndexSchema, ThreadLocalSchema, ThreadSchema, ThreadStartReceiptSchema, readDocument, stableJson,
+  CoordinatorLocalSchema, CoordinatorStateSchema, SecretRedactor, ThreadIndexSchema, ThreadLocalSchema, ThreadSchema, ThreadStartReceiptSchema, readDocument, redactWithin, stableJson,
   writeDocument, type CoordinatorLocal, type CoordinatorState, type ProjectLedgerEvent, type Thread, type ThreadIndex, type ThreadLocal, type ThreadStartReceipt,
 } from '@jevellan/core';
 import { START_REQUEST_REUSED, THREAD_NOT_FOUND } from './copy.js';
@@ -12,6 +12,8 @@ import type { IndexUpdate, ThreadIndexPublisher } from './index-publisher.js';
 export type ThreadLabels = { modelLabel: string; accountLabel: string };
 export type ThreadEvent = { type: ProjectLedgerEvent['type']; data: unknown; turn?: number | undefined };
 const refuse = (message: string, status: number) => Object.assign(new Error(message), { status });
+/** The redaction patterns alone: every device's redactor knows them, and the index stays a pure function of the thread. */
+const PATTERNS = new SecretRedactor();
 
 /**
  * The hub copy of a thread (brief 5.6). A pure function of thread.json, its labels and the thread ledger's last event,
@@ -24,7 +26,9 @@ export function threadIndex(thread: Thread, labels: ThreadLabels, updatedAt: str
     ...(thread.stateReason === undefined ? {} : { stateReason: thread.stateReason }), isolation: thread.isolation, ownerDeviceId: thread.ownerDeviceId,
     runtime: thread.placement.runtime, modelLabel: labels.modelLabel, effort: thread.placement.effortEffective, accountLabel: labels.accountLabel,
     ...(thread.branch === undefined ? {} : { branch: thread.branch }), ...(thread.pr ? { pr: thread.pr } : {}),
-    ...(thread.lastReport ? { lastSummary: thread.lastReport.summary.slice(0, 400) } : {}), turns: thread.turns,
+    // Redacted, then cut where no later redaction rewrites it, so the summary keeps within 400 characters on every hop (P8 review S-1)
+    // and a token-like word never cuts the rest of the sentence away (P8 review N-1).
+    ...(thread.lastReport ? { lastSummary: redactWithin(PATTERNS, thread.lastReport.summary, 400) } : {}), turns: thread.turns,
     createdAt: thread.createdAt, updatedAt, ...(thread.endedAt === undefined ? {} : { endedAt: thread.endedAt }),
   });
 }

@@ -43,7 +43,8 @@ test('PJ7 terminal takeover adopts the new session and delivers waiting messages
   // nothing of the command's own environment or a secret reaches its arguments.
   const command = jevellan(f, ['thread', 'attach', threadId], { path });
   const run = await cli.started(1);
-  expect(run.argv).toEqual(['--resume', stored, '--model', 'scripted-model', '--effort', 'high']);
+  // The flag settings keep the account home's transcripts past the CLI's 30-day retention (P8 review R-T1).
+  expect(run.argv).toEqual(['--resume', stored, '--model', 'scripted-model', '--effort', 'high', '--settings', '{"cleanupPeriodDays":36500}']);
   expect(run.cwd).toBe(realpathSync(f.thread(threadId).cwd));
   expect(run.envKeys).toEqual(expect.arrayContaining(['HOME', 'CLAUDE_CONFIG_DIR', 'CLAUDE_CODE_OAUTH_TOKEN', 'PATH']));
   expect(run.envKeys).not.toContain('JEVELLAN_STRETCH_TOKEN'); expect(run.envKeys).not.toContain('OPENAI_API_KEY');

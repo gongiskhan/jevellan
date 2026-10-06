@@ -2,7 +2,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import {
   CoordinatorMessageReceiptSchema, CoordinatorMessageRequestSchema, DecisionAnswerRequestSchema, DecisionAnsweredViewSchema, DeviceOriginSchema, EmptySchema, ErrorDocumentSchema, IdSchema,
   MergeResultViewSchema, NotebookRequestSchema, PeerLoginSessionInputSchema, ProjectEventFrameSchema, ProjectWorkSettingsRequestSchema, ThreadCreateRequestSchema, ThreadCreatedViewSchema,
-  ThreadMessageReceiptSchema, ThreadMessageRequestSchema, ThreadOverrideRequestSchema, ThreadStopRequestSchema, UiSessionTokenSchema, type ProjectLedgerEvent,
+  ThreadMessageReceiptSchema, ThreadMessageRequestSchema, ThreadOverrideRequestSchema, ThreadStopRequestSchema, UiSessionTokenSchema, boundedRedaction, type ProjectLedgerEvent,
 } from '@jevellan/core';
 import {
   COORDINATOR_DEVICE_REDIRECT, COORDINATOR_NOT_HERE, EVENT_CURSOR_AHEAD, EVENT_CURSOR_INVALID, PROJECT_OPERATION_NOT_FOUND, THREAD_DEVICE_GONE, THREAD_NOT_FOUND, coordinatorOfflineNotice,
@@ -163,7 +163,8 @@ export async function handleProjectWorkPeer(app: Application, request: IncomingM
 }
 
 async function run(app: Application, request: IncomingMessage, response: ServerResponse, url: URL, route: ProjectWorkRoute, caller: Caller, retryable: () => void): Promise<boolean> {
-  const send = (value: unknown, status = 200) => json(response, app.redactor.document(value), status);
+  // Redaction never lengthens a text past the maximum its schema checked, so proxies and devices read every view (P8 review S-1).
+  const send = (value: unknown, status = 200) => json(response, boundedRedaction(app.redactor, value), status);
   const work = app.projectWork; await work.ready;
   const projectId = route.projectId ?? ''; const threadId = route.threadId ?? ''; const decisionId = route.decisionId ?? '';
   const write = request.method !== 'GET';

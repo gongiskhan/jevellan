@@ -1,5 +1,5 @@
 import { query, type SDKUserMessage } from '@anthropic-ai/claude-agent-sdk';
-import { EffortSchema, minimalEnvironment, type AccountStatus, type OfferedModel } from '@jevellan/core';
+import { CLAUDE_FLAG_SETTINGS, EffortSchema, minimalEnvironment, type AccountStatus, type OfferedModel } from '@jevellan/core';
 import { AsyncQueue, type ResolvedAccount } from '@jevellan/runtime-contract';
 import { z } from 'zod';
 
@@ -10,7 +10,7 @@ export async function listClaudeModels(account: ResolvedAccount, executable?: st
   const input = new AsyncQueue<SDKUserMessage>(); const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 20_000);
   // An empty open input stream performs the SDK handshake without submitting a model turn.
-  const runtime = query({ prompt: input, options: { cwd: account.home, env: minimalEnvironment('claude', account.home, authEnvironment(account)), abortController: controller, settingSources: ['user'], permissionMode: 'dontAsk', stderr: () => {}, ...(executable ? { pathToClaudeCodeExecutable: executable } : {}) } });
+  const runtime = query({ prompt: input, options: { cwd: account.home, env: minimalEnvironment('claude', account.home, authEnvironment(account)), abortController: controller, settingSources: ['user'], settings: { ...CLAUDE_FLAG_SETTINGS }, permissionMode: 'dontAsk', stderr: () => {}, ...(executable ? { pathToClaudeCodeExecutable: executable } : {}) } });
   try {
     const models = ModelsSchema.parse(await runtime.supportedModels());
     return models.flatMap((model) => model.supportedEffortLevels?.length ? [{ id: model.resolvedModel ?? model.value, label: model.displayName, efforts: model.supportedEffortLevels }] : []);

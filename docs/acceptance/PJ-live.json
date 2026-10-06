@@ -1,0 +1,54 @@
+{
+  "schema": "live-journey-v2",
+  "journey": "PJ-live",
+  "at": "2026-10-05T17:12:48.302Z",
+  "label": "blocked",
+  "source": "credential-preflight",
+  "passed": false,
+  "blockedBy": [
+    {
+      "id": "ENV-JEV",
+      "variables": [
+        "JEVELLAN_TEST_JEV_KEY"
+      ],
+      "reason": "JEVELLAN_TEST_JEV_KEY is not set, so placement cannot ask the real Jev."
+    },
+    {
+      "id": "ENV-CODEX",
+      "variables": [
+        "JEVELLAN_TEST_CODEX_KEY"
+      ],
+      "reason": "JEVELLAN_TEST_CODEX_KEY is not set, so no real Codex account can run the coordinator or the thread."
+    },
+    {
+      "id": "ENV-GITHUB",
+      "variables": [
+        "JEVELLAN_TEST_GITHUB_TOKEN",
+        "JEVELLAN_TEST_GITHUB_REPO"
+      ],
+      "reason": "JEVELLAN_TEST_GITHUB_TOKEN and JEVELLAN_TEST_GITHUB_REPO are not set, so there is no disposable GitHub repository for the pull request."
+    }
+  ],
+  "optionalMissing": [
+    {
+      "id": "ENV-CLAUDE",
+      "variables": [
+        "JEVELLAN_TEST_CLAUDE_TOKEN"
+      ],
+      "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set, so Claude stays off and only Codex runs."
+    }
+  ],
+  "variables": {
+    "JEVELLAN_TEST_JEV_KEY": "missing",
+    "JEVELLAN_TEST_CODEX_KEY": "missing",
+    "JEVELLAN_TEST_GITHUB_TOKEN": "missing",
+    "JEVELLAN_TEST_GITHUB_REPO": "missing",
+    "JEVELLAN_TEST_CLAUDE_TOKEN": "missing"
+  },
+  "daemonStarted": false,
+  "checks": {},
+  "screenshots": [],
+  "observations": [
+    "Credentials were checked for presence only, before anything else ran. No Jevellan home was created, no daemon or browser started, and no repository was cloned or changed. A blocked journey is not a pass."
+  ]
+}

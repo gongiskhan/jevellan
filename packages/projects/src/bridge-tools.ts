@@ -149,7 +149,9 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
     const index = (await o.hub.thread(threadId))?.document;
     return index && index.projectId === projectId ? { title: index.title, index } : undefined;
   };
-  const turnId = (prefix: string, projectId: string, turn: number, input: unknown) => derivedId(prefix, 'coordinator', projectId, String(turn), stableJson(input));
+  // The turn number is this device's (coordinator-local), so the coordinator device is part of every id: after a move the new device counts
+  // from 1 again, and its deliveries never repeat the former device's ids (P8 review C-3).
+  const turnId = (prefix: string, projectId: string, turn: number, input: unknown) => derivedId(prefix, 'coordinator', projectId, o.deviceId, String(turn), stableJson(input));
   async function call(projectId: string, turn: number, name: ProjectToolName, raw: unknown): Promise<unknown> {
     switch (name) {
       case 'jevellan_threads_list': {
@@ -195,7 +197,8 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
       case 'jevellan_ask_user': {
         const input = raw as Input<typeof name>;
         if (input.threadId !== undefined && !(await known(projectId, input.threadId))) throw failure(THREAD_NOT_FOUND, 404);
-        return { schema: 'ask-user-result-v1', decisionId: await o.decisions.ask(projectId, input, 'coordinator') };
+        // One question per call: a transport retry of the call returns the question it created (P8 review C-4, as D201 for starts).
+        return { schema: 'ask-user-result-v1', decisionId: await o.decisions.ask(projectId, input, 'coordinator', turnId('pdec', projectId, turn, input)) };
       }
       case 'jevellan_withdraw_question': {
         const input = raw as Input<typeof name>;
@@ -222,7 +225,7 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
         const read = await o.pullRequests.fresh(projectId, input.threadId);
         return { schema: 'pr-status-result-v1', threadId: input.threadId, pr: read.pr, ...(read.reason ? { reason: read.reason.slice(0, 400) } : {}) };
       }
-      case 'jevellan_mail_send': return o.mail.coordinatorSend(projectId, turn, raw as Input<typeof name>);
+      case 'jevellan_mail_send': return o.mail.coordinatorSend(projectId, turn, raw as Input<typeof name>, o.deviceId);
       // The thread tools (report, inbox and reservations) are not the coordinator's.
       default: throw failure(TOOL_NOT_IN_TURN, 403);
     }

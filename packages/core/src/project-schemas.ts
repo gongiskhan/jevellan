@@ -182,7 +182,15 @@ export const ThreadLocalSchema = z.strictObject({ schema: z.literal('thread-loca
   // coordinator's device was away (decision 7, D280)
   decisionReport: z.strictObject({ eventId: IdSchema, at: TimestampSchema, asked: z.boolean() }).optional(),
   // Index labels (D138): the menu label at placement and the account label of the latest turn.
-  labels: z.strictObject({ modelLabel: text, accountLabel: text }).optional() });
+  labels: z.strictObject({ modelLabel: text, accountLabel: text }).optional(),
+  // phase 8: a main thread that ended while its checkout claim was not settled (D291): every sweep settles it again (a release after a
+  // publication or a conclusion without changes, or the stop settlement) until the claim is released; `message` is the last failure.
+  // `seen` (P8 review N-2): the checkout as the first stop refused because someone else had it (off main, or another agent active) saw
+  // it: local main's tip and, when it was on main, its working tree digest; a later stop settlement changes git only while it still is
+  unsettledCheckout: z.strictObject({ settle: z.enum(['published', 'unchanged', 'stop']), message: z.string().max(400).optional(),
+    seen: z.strictObject({ main: z.string().regex(/^[0-9a-f]{40,64}$/), tree: z.string().regex(/^[0-9a-f]{64}$/).optional() }).optional() }).optional(),
+  // phase 8: a turn that waited because a terminal holds its account; it runs first when the thread takes its next turn
+  pendingTurn: z.strictObject({ reason: z.enum(['task', 'verification', 'conflict']), body: z.string().min(1).max(40_000) }).optional() });
 export type ThreadLocal = z.infer<typeof ThreadLocalSchema>;
 // <home>/projects/<pid>/coordinator-local.json
 export const CoordinatorLocalSchema = z.strictObject({ schema: z.literal('coordinator-local-v1'),
@@ -329,7 +337,9 @@ export const ThreadViewSchema = z.strictObject({ schema: z.literal('project-thre
   canMessage: z.boolean(), turnAllowance: count,
   deviceName: z.string(), baseBranch: z.string(), attach: z.strictObject({ startedAt: TimestampSchema }).optional(),
   attachCommand: z.string(), canOverride: z.strictObject({ nextTurn: z.boolean(), restart: z.boolean(), restartReason: z.string().optional() }),
-  canDiscard: z.boolean(), atTurnLimit: z.boolean() });
+  canDiscard: z.boolean(), atTurnLimit: z.boolean(),
+  // phase 8: why Stop is not offered (an attached thread), and why a concluded main thread still holds the project checkout
+  stopRefusal: z.string().max(400).optional(), checkoutHeld: z.string().max(400).optional() });
 export type ThreadView = z.infer<typeof ThreadViewSchema>;
 
 // HTTP requests. No-argument POSTs send EmptySchema.

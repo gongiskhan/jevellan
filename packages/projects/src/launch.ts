@@ -6,7 +6,7 @@ import { PROJECT_MEMORY_ID, applicationRoot, type AccountStatus, type Effort, ty
 import type { StretchBridges } from '@jevellan/conversations';
 import { TurnInputSchema, type RuntimeAdapter, type StretchRun, type TurnInput } from '@jevellan/runtime-contract';
 import type { ProjectTools } from './bridge-tools.js';
-import { ACCOUNT_BUSY, MEMORY_HOOKS_UNDELIVERED, cannotRunHere, noTurnAccount } from './copy.js';
+import { ACCOUNT_BUSY, MEMORY_HOOKS_UNDELIVERED, accountInTerminal, cannotRunHere, noTurnAccount, waitingForAccountReason } from './copy.js';
 import { ThreadGit } from './git.js';
 
 export type GitIdentity = { name: string; email: string };
@@ -40,7 +40,13 @@ export type TurnLauncherOptions = {
   accounts: Pick<AccountService, 'list' | 'resolve' | 'markUsed'>; runtimes: ReadonlyMap<string, RuntimeAdapter>; accountRuns: Set<string>;
   riggingItems(runtime: string): Promise<RiggingItem[]>; bridges: Pick<StretchBridges, 'issueTools'>; homes: Homes; deviceId: string;
   deviceName: string; daemonUrl(): string; redactor: SecretRedactor;
+  /**
+   * The accounts of threads attached in a terminal on this device (phase 8), read at every launch from the threads' own state, so a
+   * restart keeps them and detach frees them. No turn starts on them, whatever the runtime's serial guard says.
+   */
+  held?(): ReadonlySet<string>;
 };
+type Ranked = ReturnType<typeof rankAccounts>[number];
 
 /**
  * Starts one coordinator or thread turn, shared by both (brief 6.1, 8.1, 8.2). Mirrors the stretch launch: capability gate,
@@ -62,6 +68,21 @@ export class TurnLauncher {
     }
     return identity;
   }
+  #ranking(accounts: Awaited<ReturnType<AccountService['list']>>, request: Pick<LaunchRequest, 'runtime' | 'model'>): Ranked[] {
+    return rankAccounts({ accounts: accounts.map((view) => view.account), statuses: accounts.flatMap((view) => view.statuses), runtime: request.runtime,
+      model: request.model, deviceId: this.#o.deviceId }).filter((entry) => entry.account.runtime === request.runtime);
+  }
+  /**
+   * Why a turn of `runtime` and `model` waits now (phase 8): no eligible account is free because threads attached in a terminal here hold
+   * them. Undefined when one is free, and when none is eligible at all (the launch then answers with its own refusal).
+   */
+  async accountWait(request: Pick<LaunchRequest, 'runtime' | 'model'>): Promise<string | undefined> {
+    const held = this.#o.held?.(); if (!held?.size) return undefined;
+    const ranking = this.#ranking(await this.#o.accounts.list(), request);
+    if (ranking.some((entry) => entry.eligible && !held.has(entry.account.id))) return undefined;
+    const taken = ranking.find((entry) => entry.eligible);
+    return taken && waitingForAccountReason(taken.account.label);
+  }
   async launch(request: LaunchRequest): Promise<LaunchResult> {
     const daemonUrl = this.#o.daemonUrl();
     if (!daemonUrl) throw new Error('Project turns start after the daemon is listening.');
@@ -70,10 +91,14 @@ export class TurnLauncher {
       return { kind: 'unavailable', reason: cannotRunHere(adapter?.displayName ?? request.runtime) };
     }
     const accounts = await this.#o.accounts.list();
-    const ranking = rankAccounts({ accounts: accounts.map((view) => view.account), statuses: accounts.flatMap((view) => view.statuses), runtime: request.runtime,
-      model: request.model, deviceId: this.#o.deviceId }).filter((entry) => entry.account.runtime === request.runtime);
-    const selected = ranking.find((entry) => entry.eligible && entry.account.id === request.pinnedAccountId) ?? ranking.find((entry) => entry.eligible);
+    const ranking = this.#ranking(accounts, request);
+    // An account a terminal holds is passed over like an ineligible one: the pinned account while it is free, else the next in rank (D16).
+    const held = this.#o.held?.() ?? new Set<string>();
+    const free = (entry: Ranked) => entry.eligible && !held.has(entry.account.id);
+    const selected = ranking.find((entry) => free(entry) && entry.account.id === request.pinnedAccountId) ?? ranking.find(free);
     if (!selected) {
+      const taken = ranking.find((entry) => entry.eligible);
+      if (taken) return { kind: 'unavailable', reason: accountInTerminal(taken.account.label) };
       const best = ranking[0]?.reason;
       return { kind: 'unavailable', reason: noTurnAccount(request.modelLabel, this.#o.deviceName, `${adapter.displayName} ${ACCOUNT_REASON_TEXT[best && best !== 'eligible' ? best : 'no-account']}`) };
     }

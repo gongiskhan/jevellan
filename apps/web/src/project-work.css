@@ -229,9 +229,6 @@ a.pw-tool:hover > span { text-decoration: underline; text-underline-offset: 2px;
 .pw-event-foot a.text-button, .pw-pr-actions a.text-button { text-decoration: none; }
 .pw-event-foot a.text-button:hover, .pw-pr-actions a.text-button:hover { text-decoration: underline; }
 .pw-event-foot .pw-pending { margin: 0; }
-/* The live bar (working line, Interrupt, Jump to latest) sits on the page colour: the shared composer fades over its top
-   fifth, and Jump to latest only shows while the chat is scrolled up, so text ran through it. The fade keeps to the padding. */
-.composer.pw-composer { background: linear-gradient(to top, var(--bg) calc(100% - 8px), transparent); }
 .pw-stop-icon, .message-actions button.pw-stop-icon { background: var(--card); color: var(--ink); border: 1px solid var(--edge-strong); }
 .pw-stop-icon:hover, .message-actions button.pw-stop-icon:hover { background: var(--danger-soft); border-color: color-mix(in srgb, var(--danger) 55%, transparent); color: var(--danger); }
 .pw-jump { display: inline-flex; align-items: center; gap: 3px; }
@@ -438,6 +435,9 @@ a.pw-pr-chip:hover { border-color: var(--jev); color: var(--jev-ink); }
 /* A main thread's saved commits: the ref is never clamped, and one tap selects it whole for copying (D295). */
 .pw-saved-ref { margin: 0; color: var(--ink-2); font-size: 12.5px; line-height: 1.45; overflow-wrap: anywhere; }
 .pw-saved-ref code { color: var(--ink); user-select: all; -webkit-user-select: all; }
+/* Why Stop waits for the terminal session, and why an ended main thread still holds the checkout: never clamped, commands wrap. */
+.pw-thread-note { margin: 0; color: var(--ink-2); font-size: 12.5px; line-height: 1.45; overflow-wrap: anywhere; }
+.pw-thread-note.pw-tone-warn { color: var(--warn); }
 /* Three lines keep the device in view on phones, where a long branch name fills the second. */
 .pw-placement-line { -webkit-line-clamp: 3; color: var(--ink-3); font-family: var(--font-mono); font-size: 11px; line-height: 1.5; }
 .pw-transcript-note { margin: 0; color: var(--ink-3); font-size: 13px; }
@@ -494,8 +494,13 @@ a.pw-pr-chip:hover { border-color: var(--jev); color: var(--jev-ink); }
 .pw-thread-composer > .error { margin: 0 0 8px; }
 .pw-composer-note { margin: 0 0 8px; color: var(--ink-3); font-size: 12.5px; line-height: 1.45; }
 .pw-composer-note.ended { margin: 0; padding: 12px 4px; border-top: 1px solid var(--edge); text-align: center; }
-.pw-fields:disabled .message-input-row { background: var(--bg-2); box-shadow: none; }
-.pw-fields:disabled .message-input-row textarea { color: var(--ink-3); background: transparent; }
+/* An attached thread's composer takes no message (D317): it reads disabled in both themes, where the card and --bg-2 are almost
+   one colour, with a flat dashed row, the not-allowed cursor and a fainter placeholder and send icon. Keyed on the disabled
+   fieldset, so an empty but enabled composer (its send icon disabled too) keeps its look. */
+.pw-fields:disabled .message-input-row { background: var(--bg-2); border-style: dashed; box-shadow: none; cursor: not-allowed; }
+.pw-fields:disabled .message-input-row textarea { color: var(--ink-3); background: transparent; cursor: not-allowed; }
+.pw-fields:disabled .message-input-row textarea::placeholder { color: color-mix(in srgb, var(--ink-3) 60%, transparent); }
+.pw-fields:disabled .message-actions button { opacity: 0.45; cursor: not-allowed; }
 /*
  * Take over in a terminal (12.3, phase 7; D304, D305): one muted line under the composer, on the composer's own 8 px rhythm, left
  * edge and 12.5 px note size. The command and its copy button move to the next line together when they do not fit; a command wider

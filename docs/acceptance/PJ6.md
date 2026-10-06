@@ -55,7 +55,7 @@ Results in the phase 6 browser matrix run (four workers, 204 of 204, each test o
 
 ## Screenshots and vision records
 
-PJ6 has no screenshot and no vision record. The phase 6 browser matrix run rewrote the 96 Projects screenshots (`PJ3-*`, `PJ4b-*` and `PJ5-*` in four layouts), which now show Main offered on the main-policy project and the isolation bars in the Why panel. **All 96 of their vision records read `label: "not run"` with the reason `JEVELLAN_TEST_CLAUDE_TOKEN is not set.`**, and the run rewrote them identical to the committed ones.
+PJ6 has no screenshot and no vision record. The phase 6 browser matrix run rewrote the 96 Projects screenshots (`PJ3-*`, `PJ4b-*` and `PJ5-*` in four layouts), which now show Main offered on the main-policy project and the isolation bars in the Why panel. **All 96 of their vision records read `label: "not run"` with the reason `JEVELLAN_TEST_CLAUDE_TOKEN is not set.`**, and the run rewrote them identical to the committed ones. Update for Projects phase 8 (2026-10-06): the single phase 8 matrix run (four workers, 208 of 208 on its first run) rewrote all 104 Projects screenshots, PJ7's included, and their records; every record still reads `not run`, and the automated vision checks for the Projects journeys run on dev-madrid, which holds the dedicated test credential, after the final commit (see [REPORT.md](REPORT.md#projects-definition-of-done-audit)). PJ6 passed again in the final backend run, and the phase 8 fixes for main threads (the retried checkout settlement and the off-main guards) are decisions 553, 561, 562 and 576.
 
 ## Builder visual review (not a vision check)
 

@@ -321,3 +321,34 @@ test('a coordinator that failed twice gives the coordinator up: its waiting mess
   expect(coordinatorTurns(m.fake)[0]!.prompt).toContain('Try the other model.'); expect(coordinatorTurns(m.fake)[0]!.resume).toBeUndefined();
   expect(coordinatorTurns(f.fake)).toHaveLength(2);
 });
+
+test('an event that went from a member to the hub, to the member by a move and back to the hub by a second move still reaches the hub coordinator (P8 review RL-1)', { timeout: 120_000 }, async () => {
+  const { f, m } = await setup();
+  const hubId = f.app.device.deviceId;
+  // The hub coordinator fails twice (no scripted turn), so it keeps what it receives.
+  expect((await f.request(MESSAGES, 'POST', message('Start.'))).status).toBe(202);
+  await f.waitFor(() => f.coordinatorState().failedTurnsInARow, (count) => count === 2); await f.app.projectWork.idle();
+  // A thread event from the member is relayed to the hub coordinator: env(member, E).
+  const event: CoordinatorEvent = { schema: 'coordinator-event-v1', kind: 'thread-user-message', id: 'cev_bounce', at: new Date().toISOString(), threadId: 'thread_bounce', text: 'Bounced twice.' };
+  m.app.projectWork.outbox.enqueue(pid, 'coordinator', { kind: 'coordinator-event', event });
+  await m.app.projectWork.outbox.drain(); await f.app.projectWork.inbox.poll(); await f.app.projectWork.idle();
+  expect(f.coordinatorState().queue.map((queued) => queued.id)).toContain('cev_bounce');
+
+  // Moved to the member, which fails twice as well (no scripted turn there either): the hub hands E over, env(hub, E).
+  expect((await m.request(MOVE, 'POST', empty)).status).toBe(200);
+  await f.app.projectWork.pulse(); await f.app.projectWork.idle();
+  expect(existsSync(f.app.projectWork.paths.coordinator(pid))).toBe(false);
+  await m.app.projectWork.pulse();
+  await f.waitFor(() => readDocument(m.app.projectWork.paths.coordinator(pid), CoordinatorStateSchema).failedTurnsInARow, (count) => count === 2); await m.app.projectWork.idle();
+  expect(readDocument(m.app.projectWork.paths.coordinator(pid), CoordinatorStateSchema).queue.map((queued) => queued.id)).toContain('cev_bounce');
+
+  // Back to the hub: the member hands E over again, env(member, E) once more, which the hub's inbox has seen before.
+  expect(coordinatorTurns(f.fake)).toHaveLength(2);
+  f.fake.enqueueTurn(say('Back.'), forCoordinator); f.fake.enqueueTurn(say('Back again.'), forCoordinator);
+  expect((await f.request(MOVE, 'POST', empty)).status).toBe(200);
+  await m.app.projectWork.pulse(); await m.app.projectWork.idle();
+  expect(existsSync(m.app.projectWork.paths.coordinator(pid))).toBe(false);
+  await f.waitFor(async () => { await f.app.projectWork.pulse(); await f.app.projectWork.idle(); return coordinatorTurns(f.fake).slice(2).map((input) => input.prompt).join('\n'); },
+    (prompts) => prompts.includes('Start.') && prompts.includes('Bounced twice.'));
+  expect(relayedTo(f, hubId)).toEqual([]);
+});

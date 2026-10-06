@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import { liveWork, processStartIdentity, terminateGroup, type CoordinatorEvent, type NativeProcess, type ProjectLedgerEvent, type SecretRedactor, type Thread, type TurnProcess } from '@jevellan/core';
-import { RESTARTED, RESTART_UNCONFIRMED } from './copy.js';
+import { PROCESS_UNCONFIRMED, RESTARTED, RESTART_UNCONFIRMED } from './copy.js';
 import type { CoordinatorService } from './coordinator.js';
 import { derivedId } from './decision-items.js';
 import type { ProjectLedgers } from './ledger.js';
@@ -18,15 +18,18 @@ export type RecoveryOptions = {
 export type RecoveryReport = { restarted: string[]; failed: Array<{ threadId: string; reason: string }>; coordinators: string[] };
 
 /**
- * Ends a recorded turn process like conversation recovery: without a start identity while the pid exists nothing is
- * killed (it may be reused), and a reused identity is refused. Returns the failure, or undefined when the group is gone.
+ * Ends a recorded turn process like conversation recovery: without a start identity while the pid exists nothing is killed (it may be
+ * reused), and a reused identity is refused. Resolves once the group is gone; rejects while that cannot be confirmed. The sweeps use it
+ * again for a main thread whose process was not confirmed gone (phase 8).
  */
+export async function endTurnProcess(process: TurnProcess, terminate: (native: NativeProcess) => Promise<void> = (native) => terminateGroup(native)): Promise<void> {
+  if (!process.startIdentity && processStartIdentity(process.pid)) throw new Error('This turn has no process start identity. Refusing to stop a potentially reused process.');
+  await terminate({ pid: process.pid, pgid: process.pgid, ...(process.startIdentity ? { startIdentity: process.startIdentity } : {}) });
+}
+/** `endTurnProcess` with its failure as text, or undefined when the group is gone. */
 async function stopProcess(process: TurnProcess, terminate: (native: NativeProcess) => Promise<void>, redactor: SecretRedactor): Promise<string | undefined> {
-  try {
-    if (!process.startIdentity && processStartIdentity(process.pid)) throw new Error('This turn has no process start identity. Refusing to stop a potentially reused process.');
-    await terminate({ pid: process.pid, pgid: process.pgid, ...(process.startIdentity ? { startIdentity: process.startIdentity } : {}) });
-    return undefined;
-  } catch (error) { return redactor.text(error instanceof Error ? error.message : 'Process cleanup could not be confirmed.'); }
+  try { await endTurnProcess(process, terminate); return undefined; }
+  catch (error) { return redactor.text(error instanceof Error ? error.message : 'Process cleanup could not be confirmed.'); }
 }
 
 /**
@@ -45,7 +48,12 @@ export async function recoverProjects(o: RecoveryOptions): Promise<RecoveryRepor
   for (const thread of o.store.all()) {
     const process = o.store.local(thread.id).process;
     const failure = process ? await stopProcess(process, terminate, o.redactor) : undefined;
-    if (process) o.store.updateLocal(thread.id, (local) => { const cleared = { ...local }; delete cleared.process; return cleared; });
+    // A main thread keeps the record of a process that may still work in the project checkout, with its claim: the sweeps end the
+    // process and then settle the checkout (phase 8). Other threads drop it, as before.
+    const kept = failure !== undefined && thread.isolation === 'main';
+    if (process && !kept) o.store.updateLocal(thread.id, (local) => { const cleared = { ...local }; delete cleared.process; return cleared; });
+    // What a refused stop saw of the checkout stays with the marker (P8 review N-2).
+    if (kept) o.store.updateLocal(thread.id, (local) => ({ ...local, unsettledCheckout: { settle: 'stop', message: PROCESS_UNCONFIRMED, ...(local.unsettledCheckout?.seen ? { seen: local.unsettledCheckout.seen } : {}) } }));
     if (failure !== undefined) {
       o.ledgers.thread(thread.projectId, thread.id).append({ type: 'notice', data: { schema: 'project-notice-v1', text: failure, kind: 'error' } });
       if (thread.state !== 'failed' && thread.state !== 'done' && thread.state !== 'stopped') {
@@ -87,8 +95,13 @@ export async function recoverProjects(o: RecoveryOptions): Promise<RecoveryRepor
   return report;
 }
 
+/**
+ * The interrupted step's event, the same at every start until the thread rests (P8 review RL-2): its id and time come from the thread
+ * ledger's last event, so a crash after the event left and before the thread rested repeats it exactly, and a relay entry still waiting
+ * for it takes the repeat instead of refusing it.
+ */
 async function interrupted(o: RecoveryOptions, thread: Thread, reason: 'restart' | 'failed', message: string): Promise<void> {
-  const lastEvent = o.ledgers.thread(thread.projectId, thread.id).lastId();
-  await o.toCoordinator(thread.projectId, { schema: 'coordinator-event-v1', kind: 'thread-interrupted', id: derivedId('cev', 'interrupted', reason, thread.id, String(lastEvent)),
-    at: new Date(o.now()).toISOString(), threadId: thread.id, reason, message });
+  const last = o.ledgers.thread(thread.projectId, thread.id).events().at(-1);
+  await o.toCoordinator(thread.projectId, { schema: 'coordinator-event-v1', kind: 'thread-interrupted', id: derivedId('cev', 'interrupted', reason, thread.id, String(last?.id ?? 0)),
+    at: last?.t ?? thread.createdAt, threadId: thread.id, reason, message });
 }

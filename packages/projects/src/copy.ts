@@ -1,4 +1,4 @@
-import { OWNER_STARTED_PREFIX, OWNER_WORKED_PREFIX, RESTARTED_PREFIX, SAVED_COMMITS_SENTENCE, splitSavedCommits, type CoordinatorEvent, type Isolation, type PlacementOverride, type ThreadReport, type ThreadState } from '@jevellan/core';
+import { NOT_ON_MAIN, OWNER_STARTED_PREFIX, OWNER_WORKED_PREFIX, RESTARTED_PREFIX, SAVED_COMMITS_SENTENCE, clipRedacted, splitSavedCommits, type CoordinatorEvent, type Isolation, type PlacementOverride, type ThreadReport, type ThreadState } from '@jevellan/core';
 import { firstLine, tail } from './git.js';
 
 // Every brief-verbatim Projects string (brief 9) and the server copy of phase 1. Pure functions only.
@@ -7,7 +7,7 @@ export {
   ACCOUNT_REASON_TEXT, LEAVE_GIT_MAIN, MAIN_NOT_AVAILABLE, NOT_CHOSEN_REASON, NO_PLACEMENT, NO_THREAD_MODEL, PLACEMENT_INCOMPATIBLE, PLACEMENT_INSTRUCTIONS,
   PLACEMENT_ISOLATION_CRITERIA, REMOTE_GATE_REASON, REMOTE_NOT_AVAILABLE, TASK_SHORTENED, UNKNOWN_PLACEMENT_DEVICE, UNKNOWN_PLACEMENT_MODEL,
 } from '@jevellan/decisions';
-export { ASK_USER_OPTIONS, NEEDS_DECISION_QUESTION, NO_CHANGES, coordinatorWorking } from '@jevellan/core';
+export { ASK_USER_OPTIONS, NEEDS_DECISION_QUESTION, NO_CHANGES, OWNER_STOPPED_THREAD, coordinatorWorking } from '@jevellan/core';
 
 const oneLine = (text: string) => text.replace(/\s+/g, ' ').trim();
 const pad = (value: number) => String(value).padStart(2, '0');
@@ -216,7 +216,6 @@ export const RESTARTED = 'Jevellan restarted during this step.';
 export const RESTART_UNCONFIRMED = "Jevellan restarted and could not confirm this thread's process stopped.";
 export const STOPPED_BY_YOU = 'Stopped by you.';
 export const STOPPED_AT_TURN_LIMIT = 'Stopped by you at the turn limit.';
-export const OWNER_STOPPED_THREAD = 'The owner stopped this thread.';
 export const PR_CLOSED = 'The pull request was closed without merging.';
 export const WORKTREE_DISCARDED = ' Worktree discarded.';
 export const TURN_WITHOUT_REPORT = 'The turn ended without a report.';
@@ -226,7 +225,7 @@ export const TURN_FAILED = 'The turn failed.';
 /** A turn whose process cleanup could not be confirmed while the daemon kept running (D155). */
 export const PROCESS_UNCONFIRMED = "Jevellan could not confirm this thread's process stopped.";
 /** An unexpected failure of a thread step, so no thread is left in a live state (D156). */
-export const threadStepFailed = (message: string): string => `This step failed: ${message}`.slice(0, 400);
+export const threadStepFailed = (message: string): string => clipRedacted(`This step failed: ${message}`, 400);
 export const THREAD_MEMORY_READ_ONLY = 'Threads cannot write project memory.';
 /** D9 running limits: `device` is null for the project limit. */
 export function queuedReason(limit: number, device: string | null): string {
@@ -244,7 +243,34 @@ export const accountMovedNotice = (accountLabel: string): string => `This thread
 export const cannotRunHere = (runtime: string): string => `${runtime} cannot run this here.`;
 export const noTurnAccount = (modelLabel: string, deviceName: string, reasons: string): string => `No account can run ${modelLabel} on ${deviceName} right now: ${reasons}.`;
 export const ACCOUNT_BUSY = 'This account is already running a turn, and its runtime cannot run two at once.';
+/**
+ * A thread attached in a terminal holds its account for turns on its device (phase 8): another thread whose next turn has no other
+ * eligible account rests with this reason, and the sweep starts the turn once the terminal session ends.
+ */
+const WAITING_FOR_ACCOUNT = 'Waiting for account ';
+export const waitingForAccountReason = (accountLabel: string): string =>
+  `${WAITING_FOR_ACCOUNT}${accountLabel}, which is in use in a terminal. This thread continues when the terminal session ends.`.slice(0, 400);
+export const isWaitingForAccount = (reason: string | undefined): boolean => !!reason?.startsWith(WAITING_FOR_ACCOUNT);
+/** The launch refusal when an attach took the account between the turn's check and its launch. */
+export const accountInTerminal = (accountLabel: string): string => `Account ${accountLabel} is in use in a terminal.`;
+/** The coordinator's Unavailable reason while every eligible account of its model is held by an attached thread (phase 8). */
+export const coordinatorWaitsForAccount = (accountLabel: string): string =>
+  `${accountInTerminal(accountLabel)} The coordinator continues when the terminal session ends.`.slice(0, 400);
 export const MEMORY_HOOKS_UNDELIVERED = 'Project memory hooks could not be delivered to this account.';
+/** A resumed turn whose native session the runtime no longer has (P8 review R-T1): the turn runs again at once in a new session. */
+export const SESSION_REPLACED = "The thread's earlier session no longer exists, so it continues in a new session.";
+/**
+ * Messages that waited while a publication ran and that never reached the thread, because the publication concluded it (P8 review TH-5).
+ * Each message is quoted on one line; the sentence keeps within a thread notice.
+ */
+export const messagesNotDelivered = (texts: readonly string[]): string =>
+  clipRedacted(`The thread concluded before these messages reached it: ${texts.map((text) => `"${oneLine(text)}"`).join('; ')}`, 400);
+/** A relayed envelope this device could not read was dropped (P8 review S-2): what it was, from where, and under which id. */
+export function relayedEnvelopeLost(lost: { id: string | null; sourceDeviceId: string | null; kind: string | null }): string {
+  const what = lost.kind === 'coordinator-event' ? 'An event for the coordinator' : lost.kind === 'thread-start' ? 'A thread start' : lost.kind === 'thread-command' ? 'A thread command'
+    : 'A relayed message';
+  return clipRedacted(`${what} from device ${lost.sourceDeviceId ?? '(unknown)'} could not be read here and was dropped (${lost.id ?? 'no id'}). Every device should run the same Jevellan version.`, 400);
+}
 
 // Publication and pull requests (brief 8.4, 8.5)
 /** Leftover commit subject (D86): `<title>: <first line of the summary, cut to 72 characters>`. */
@@ -274,6 +300,23 @@ export function commitsSavedReason(reason: string, ref: string): string {
 export const savedCommitsRef = (reason: string | undefined): string | undefined => splitSavedCommits(reason ?? '').ref ?? undefined;
 /** A main thread whose checkout could not be settled keeps its claim (D291): conversations and other main threads stay off it. */
 export const mainCheckoutKept = (message: string): string => `The project checkout stays held by this thread: ${message}`.slice(0, 400);
+/** The thread page line while every sweep settles the claim again (phase 8 retry of D291). */
+export function checkoutStillHeld(message: string): string {
+  const retry = ' Jevellan tries again until it is released.';
+  return `${mainCheckoutKept(message).slice(0, 400 - retry.length)}${retry}`;
+}
+/** The thread notice once a retried settlement released the claim. */
+export const MAIN_CHECKOUT_RELEASED = 'The project checkout was given back.';
+/**
+ * The thread notice when a retried stop settlement found the checkout changed since the stop was refused (P8 review N-2: the owner came
+ * back to main with work of their own): the claim is released and git is left exactly as the owner left it.
+ */
+export const CHECKOUT_LEFT_AS_IS = "The checkout changed after the Stop, so Jevellan gave it back as it is: nothing was committed, saved or reset, and any of the thread's commits still on main stay there.";
+/**
+ * A main thread's next turn while its claimed checkout is off main (P8 review TH-1: the owner switched it to a branch of their own): no
+ * turn runs on another branch, the thread rests with its messages, and the sweeps start the turn once the checkout is back on main.
+ */
+export const WAITING_FOR_MAIN = `${NOT_ON_MAIN} This thread continues once the checkout is back on main.`;
 /**
  * Known `GitWorkspace` messages in thread words (D44): the dirty-checkout refusal names the conversation and the device id. Any other
  * message keeps its text; "conversation" never reaches a thread reason.
@@ -433,6 +476,9 @@ export const THREAD_WORKING = 'The thread is working. Wait for the turn to end o
 export const NO_SESSION_TO_ATTACH = 'This thread has no session to attach to.';
 export const threadRunsOn = (deviceName: string): string => `This thread runs on ${deviceName}. Run the command there.`;
 export const alreadyAttached = (threadId: string): string => `This thread is already attached in a terminal. Exit that terminal first, or run ${detachCommand(threadId)}.`;
+/** Stop, Restart and Discard of an attached thread, from the owner and the coordinator alike (phase 8): the terminal session ends first. */
+export const attachedRefusal = (threadId: string): string =>
+  `This thread is attached in a terminal: exit that terminal session first, or run ${detachCommand(threadId)}.`;
 export const ATTACH_RUNTIMES_ONLY = 'Only Claude and Codex threads can be taken over in a terminal.';
 /** A thread notice when detach could not search the account home: the thread continues its earlier session. */
 export const sessionNotAdopted = (message: string): string => `The session from the terminal could not be found, so the thread keeps its earlier session. ${message}`.trim().slice(0, 400);

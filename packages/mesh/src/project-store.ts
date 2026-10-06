@@ -584,10 +584,11 @@ export class MemberProjectStore implements ProjectHub {
   }
   /** Every record is for the requested target, unique and in relay order; a page announcing more is never empty. */
   async pendingEnvelopes(targetDeviceId: string) {
-    const result = this.#check(await this.#call('envelopes-pending', { targetDeviceId }), (value) => (!value.more || value.records.length > 0)
+    // Read record by record (P8 review S-2): an unreadable record is reported, never a reason to drop the whole page.
+    const result = this.#check(await this.client.pendingEnvelopes(targetDeviceId), (value) => (!value.more || value.records.length + value.unreadable.length > 0)
       && new Set(value.records.map((record) => record.id)).size === value.records.length
       && value.records.every((record, index) => record.targetDeviceId === targetDeviceId && (index === 0 || compareEnvelopes(value.records[index - 1]!, record) <= 0)));
-    return { records: result.records, more: result.more };
+    return { records: result.records, more: result.more, unreadable: result.unreadable };
   }
   async ackEnvelope(id: string) { this.#check(await this.#call('envelope-ack', { id }), (value) => value.id === id); }
   /** Project ids ascend across pages, past the cursor, and `next` is the last returned id. */

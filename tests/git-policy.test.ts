@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, renameSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { CheckoutOwnership, GitRewriteCapture, GitWorkspace, Homes, PlacementRecordSchema, ProjectSchema, PublicationLeases, SecretRedactor, ThreadSchema, runOwnedCommand, type IntegrationRunner, type Project } from '../packages/core/dist/index.js';
@@ -196,6 +196,29 @@ test("a worktree thread's branch, base fetch and push do not disturb a running c
   git(checkout, 'branch', 'jvx'); await expect(workspace.checkAfterStretch(before, 'implement')).rejects.toThrow('changed git history'); git(checkout, 'branch', '-D', 'jvx');
   // Control: without the empty refmap, git also updates origin/main opportunistically, which is why threads pass --refmap=.
   git(checkout, 'fetch', 'origin', 'refs/heads/main:refs/jevellan/x'); expect(git(checkout, 'rev-parse', 'refs/remotes/origin/main')).toBe(upstream);
+}, 30_000);
+test("a thread worktree whose folder vanished is forgotten alone: the owner's own stale worktree registrations stay (P8 review TH-3)", async () => {
+  const checkout = workspace.path;
+  // The owner's linked worktree whose folder is away for now (an unmounted volume, a moved folder): git lists it as prunable.
+  const ownerTree = join(realpathSync(root), 'owner-tree'); git(checkout, 'worktree', 'add', '-b', 'owner-work', ownerTree); renameSync(ownerTree, `${ownerTree}-away`);
+  const registered = () => git(checkout, 'worktree', 'list', '--porcelain').split('\n').filter((line) => line.startsWith('worktree ')).map((line) => line.slice('worktree '.length));
+  expect(registered()).toContain(ownerTree);
+  const redactor = new SecretRedactor(); const worktrees = new ThreadWorktree({ git: new ThreadGit({ homes, redactor }), homes, paths: new ProjectPaths(homes), redactor, deviceId: 'device', deviceName: 'Fixture device' });
+  const placement = PlacementRecordSchema.parse({ schema: 'placement-v1', questionSet: 'p-v1', source: 'fixed', fixed: [], isolation: 'worktree', runtime: 'fake', modelId: 'fake', model: 'fake',
+    effortRequested: 'medium', effortEffective: 'medium', deviceId: 'device', accountId: 'account', eligibleModels: [], excludedModels: [], eligibleDevices: [], excludedDevices: [], jevCalls: [], decidedAt: new Date().toISOString() });
+  const thread = ThreadSchema.parse({ schema: 'project-thread-v1', id: 't2', projectId: project.id, title: 'Y', task: 'Work.', createdAt: new Date().toISOString(), createdBy: 'owner', state: 'preparing',
+    isolation: 'worktree', placement, ownerDeviceId: 'device', coordinatorDeviceId: 'device', cwd: '', baseBranch: '', baseCommit: '', turns: 0, turnAllowance: 30, queuedMessages: [], verificationAttempts: 0 });
+  // Preparation again after the thread's folder vanished re-adds the thread's worktree and leaves the owner's entry alone.
+  const created = await worktrees.create(project, thread); rmSync(created.cwd, { recursive: true, force: true });
+  const again = await worktrees.create(project, thread);
+  const threadTree = realpathSync(again.cwd);
+  expect(registered()).toEqual(expect.arrayContaining([ownerTree, threadTree]));
+  // Cleanup after the folder vanished again forgets only the thread's registration.
+  rmSync(again.cwd, { recursive: true, force: true });
+  await worktrees.remove(project, { ...thread, cwd: again.cwd, branch: again.branch, baseBranch: again.baseBranch, baseCommit: again.baseCommit });
+  expect(registered()).toContain(ownerTree); expect(registered()).not.toContain(threadTree);
+  expect(git(checkout, 'for-each-ref', '--format=%(refname)', 'refs/heads/jv', 'refs/jevellan/threads')).toBe('');
+  expect(git(checkout, 'rev-parse', '--verify', 'refs/heads/owner-work')).toMatch(/^[0-9a-f]{40}$/);
 }, 30_000);
 test("thread refs do not change a conversation's rebase fingerprint", async () => {
   const checkout = workspace.path; const head = await workspace.head(); const fingerprint = await workspace.rebaseFingerprint();

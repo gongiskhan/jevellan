@@ -3,7 +3,7 @@ import { AccountHubRequestSchema, ConsumeSwitchSchema, DeviceSwitchInputSchema, 
 import { HubAccounts, HubCheckoutStore, HubIndexes, HubPublicationLeases, sessionCookie } from '@jevellan/mesh';
 import type { Application } from './application.js';
 import { json, requestBody } from './http.js';
-import { SharedStateRequestSchema } from '@jevellan/core';
+import { SharedStateRequestSchema, boundedRedaction } from '@jevellan/core';
 import { HubProjectStore, HubState } from '@jevellan/mesh';
 import { ImproverDeviceRequestSchema, ImproverRequestSchema, PeerLoginSessionInputSchema } from '@jevellan/core';
 
@@ -50,7 +50,8 @@ export async function handleMeshDeviceApi(app: Application, request: IncomingMes
     try {
       app.devices.authenticate(authorization!.slice(7));
       const result = new HubProjectStore(app.hub, device.id, undefined, () => app.devices.list()).request(input);
-      app.devices.authenticate(authorization!.slice(7)); send(result);
+      // Redaction never lengthens a text past the maximum its schema checked, so members read every reply (P8 review S-1).
+      app.devices.authenticate(authorization!.slice(7)); json(response, boundedRedaction(app.hub.redactor, result));
       // An envelope for the hub itself is processed now instead of at the next inbox poll (D40); a retry notifies again.
       if (input.operation === 'envelope-put' && input.envelope.targetDeviceId === app.device.deviceId) app.projectWork.relayArrived();
       return true;

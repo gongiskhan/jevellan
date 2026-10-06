@@ -1,9 +1,9 @@
 import { query, type Query, type Options } from '@anthropic-ai/claude-agent-sdk';
-import { claudeBridgeToolNames, claudePermissionHook, claudeReadOnlyBridgeTools, classifyRuntimeError, serveWorker, type RunResult, type RuntimeEvent, type StretchInput, type TurnInput, type WorkerSession } from '@jevellan/runtime-contract';
+import { SESSION_NOT_FOUND, claudeBridgeToolNames, claudePermissionHook, claudeReadOnlyBridgeTools, classifyRuntimeError, serveWorker, type RunResult, type RuntimeEvent, type StretchInput, type TurnInput, type WorkerSession } from '@jevellan/runtime-contract';
 import { z } from 'zod';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { StableMcpSchema, projectToolNames } from '@jevellan/core';
+import { CLAUDE_FLAG_SETTINGS, StableMcpSchema, projectToolNames } from '@jevellan/core';
 
 const Envelope = z.object({ type: z.string(), session_id: z.string().optional() }).passthrough();
 const TextDelta = z.object({ type: z.literal('content_block_delta'), delta: z.object({ type: z.literal('text_delta'), text: z.string() }) });
@@ -26,6 +26,10 @@ function workerEnvironment(input: Pick<StretchInput | TurnInput, 'account' | 'la
   // Never serialize a bridge token into the SDK's --mcp-config argument.
   return { env, mcpServers: { ...stable, ...Object.fromEntries(Object.entries(input.launch.mcpServers).map(([name, server]) => [name, { command: server.command, args: server.args }])) } };
 }
+
+// The CLI's sentence for a resume of a session it no longer has; it names the session id, which never leaves the worker (P8 review R-T1).
+const NO_CONVERSATION = /No conversation found with session ID/i;
+const missingSession = (failure: NonNullable<RunResult['error']>): NonNullable<RunResult['error']> => NO_CONVERSATION.test(failure.message) ? { kind: 'other', message: SESSION_NOT_FOUND } : failure;
 
 // separate: turns put a blank line between text written before and after a tool call, so the last message has a boundary.
 async function execute(control: Control, message: string, timeoutMs: number, launch: Launch, emit: (event: RuntimeEvent) => void, session: (id: string) => void, separate: boolean): Promise<RunResult> {
@@ -69,8 +73,8 @@ async function execute(control: Control, message: string, timeoutMs: number, lau
       }
     }
     if (control.interrupted) return { status: 'interrupted' };
-    return succeeded && !failure ? { status: 'completed' } : { status: 'failed', error: failure ?? { kind: 'other', message: 'Claude ended without a successful result.' } };
-  } catch (error) { return control.interrupted ? { status: 'interrupted' } : { status: 'failed', error: failure ?? classifyRuntimeError(error) }; }
+    return succeeded && !failure ? { status: 'completed' } : { status: 'failed', error: missingSession(failure ?? { kind: 'other', message: 'Claude ended without a successful result.' }) };
+  } catch (error) { return control.interrupted ? { status: 'interrupted' } : { status: 'failed', error: missingSession(failure ?? classifyRuntimeError(error)) }; }
   finally { clearTimeout(timer); control.current?.close(); control.current = undefined; }
 }
 
@@ -89,7 +93,7 @@ const stretchSession = (input: StretchInput, daemonPid: number, executable?: str
       return execute(control, message, timeoutMs, {
         cwd: input.cwd, env, model: input.model, effort: input.effort,
         systemPrompt: { type: 'preset', preset: 'claude_code', append: input.systemAppend },
-        settingSources: ['user', 'project', 'local'], includePartialMessages: true,
+        settingSources: ['user', 'project', 'local'], settings: { ...CLAUDE_FLAG_SETTINGS }, includePartialMessages: true,
         permissionMode: permissions === 'write' ? 'bypassPermissions' : 'dontAsk',
         allowDangerouslySkipPermissions: permissions === 'write',
         // Native Claude builds may omit Glob/Grep in favour of Bash. Read-only
@@ -120,7 +124,7 @@ const turnSession = (input: TurnInput, daemonPid: number, executable?: string): 
     run: (message, timeoutMs, emit, session) => execute(control, message, timeoutMs, {
       cwd: input.cwd, env, model: input.model, effort: input.effort,
       systemPrompt: { type: 'preset', preset: 'claude_code', append: input.systemAppend },
-      settingSources: ['user', 'project', 'local'], includePartialMessages: true,
+      settingSources: ['user', 'project', 'local'], settings: { ...CLAUDE_FLAG_SETTINGS }, includePartialMessages: true,
       permissionMode: input.permissions === 'write' ? 'bypassPermissions' : 'dontAsk',
       allowDangerouslySkipPermissions: input.permissions === 'write',
       ...(input.permissions === 'read-only' ? { tools: ['Read', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'ToolSearch'], allowedTools: bridgeTools ?? [] } : {}),

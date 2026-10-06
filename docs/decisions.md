@@ -1,8 +1,8 @@
 # Decisions
 
-Jev decides what the work means and which action, model and effort fit it. Code enforces available resources, runtime permissions, user choices and work limits. The implementation is in `packages/decisions`; conversation guards are in `packages/conversations/src/guards.ts`.
+Jev decides what the work means and which action, model and effort fit it, and where each new project thread runs. Code enforces available resources, runtime permissions, user choices and work limits. The implementation is in `packages/decisions`; conversation guards are in `packages/conversations/src/guards.ts` and project limits in `packages/projects`.
 
-The current question set is **q-v2**, declared in `selection.ts` and recorded with automatic decisions. The seeded configuration requests `jev-1.13.0`, uses a 4,000 ms request timeout and keeps the current eligible model at a probability of at least 0.6. Settings → Decisions can change the configured model, routing profile, model descriptions and effort guidance; the Configuration editor exposes the timeout and threshold. These are application defaults, not claims about the provider's latest models.
+Two question sets exist. Conversations use **q-v2**, declared in `selection.ts` and recorded with automatic decisions. Project thread placement uses **p-v1**, declared in `placement.ts` and recorded in every placement record; see [Placement (p-v1)](#placement-p-v1). The seeded configuration requests `jev-1.13.0`, uses a 4,000 ms request timeout and keeps the current eligible model at a probability of at least 0.6. Settings → Decisions can change the configured model, routing profile, model descriptions and effort guidance; the Configuration editor exposes the timeout and threshold. These are application defaults, not claims about the provider's latest models.
 
 ## State packet
 
@@ -19,7 +19,7 @@ After-the-fact overrides and applied composer choices contribute correction cont
 
 ## Questions and resolution
 
-Call A determines the action. Call B determines model and effort after resource eligibility is known. Questions with a fixed answer are omitted; a call with no questions is not sent.
+In q-v2, Call A determines the action. Call B determines model and effort after resource eligibility is known. Questions with a fixed answer are omitted; a call with no questions is not sent.
 
 | Question | Type | When asked and how used |
 | --- | --- | --- |
@@ -35,6 +35,30 @@ Noul answers are probabilities of the stated proposition. Choice answers include
 Resource filtering considers enabled runtime/model entries, required tools, enforceable read-only behavior, account readiness, device, cooldown, capacity and paid-use rules. Account ranking then chooses among eligible accounts for the selected runtime. No eligible model leaves the work waiting with recorded reasons. An unavailable pinned model is not silently replaced.
 
 A one-step model/effort choice takes precedence over a conversation pin. Otherwise Jev selects them; a single eligible model needs no model-choice question. Requested effort is mapped to the nearest supported effort, with both values and the adjustment notice retained. A publication conflict forces the integration action through a guard. `done` requires no runtime and is unavailable until a completed response stretch has consumed the latest message; a routing-only decision or older in-flight response does not count. Failed, interrupted and undone steps leave it pending. Legacy records use launch chronology. Explicit user closure is separate; `ask-you` can use an existing question or obtain one through a reply stretch.
+
+## Placement (p-v1)
+
+Every new project thread is placed before it is prepared: isolation, model (and so runtime), effort and device. The coordinator decides what work exists; placement only decides where and how a thread runs. `decidePlacement` in `packages/decisions/src/placement.ts` implements question set **p-v1** with `askJev`, recording each call with `kind: 'placement'`. Placement never waits for the owner.
+
+**Candidates (code, before Jev).** Devices qualify when they are online (the placing device always counts as online), have a path for the project that the project allows, and are below the project's per-device running limit. For main isolation a device also needs the project's Git policy to be Work on main and a free checkout on main, with no held checkout claim and no main thread of the project there that has not ended. Models qualify when they are enabled menu entries whose runtime is enabled, declares turns, MCP, editing and shell, and has an eligible account (`rankAccounts`) on at least one candidate device. Excluded models and devices keep their reasons, for example `offline`, `not set up for this project`, `main checkout busy: {title}` or `Codex needs login`. Fixed fields given by the coordinator or the owner remove the other options. When the running limits leave no candidate, candidates are computed without them and the thread is queued.
+
+**Placement Call A** asks, each question omitted when its field is fixed or only one option remains:
+
+| Question | Options and criteria |
+| --- | --- |
+| `isolation` | `worktree`: "Larger, riskier or multi-file change that should be reviewed as a pull request." `main`: "Small, contained change that is safe to land directly on main without review." Asked only when both are allowed. |
+| `pick_model` | One option per eligible model; the criteria are the menu entries' descriptions. |
+| `effort` | The efforts, with the configured effort guide as criteria. |
+
+**Placement Call B** asks `device`, with one option per candidate device that has an eligible account for the chosen model's runtime (and satisfies the main rule when main was chosen), only when the device is not fixed and more than one qualifies. Each criterion reads `{deviceName}: {running} threads running here`, adding `this is the coordinator's device` and `project checkout is on {branch}` where they apply. A call with no questions is not sent, so a fully fixed start records `source: 'fixed'` without asking Jev.
+
+**State packet.** Both calls carry one redacted `placement-state-v1` document: the routing profile and effort guide, the project name and default isolation, the thread title, its task (cut to 6,000 characters with a `[Task shortened.]` marker), the coordinator's note (at most 600 characters), the newest 50 active threads (title, isolation, device, model, effort and reserved paths) and the sentences of the project's newest 8 placement overrides, in the form `{field} changed from {from} to {to} for '{title}' ({mode})` (at most 32 sentences). The packet is redacted before it is cut and uses the same size estimate and 12,000-token cap as `decision-state-v1`; when it is too large it drops reserved paths, then active threads, then override sentences, oldest first, and a packet still too large falls back.
+
+**Resolution.** Each choice takes the option with the highest probability; an exact tie goes to Jev's own choice when it is among the tied options, else to the first tied option. The effort is mapped with `mapEffort` against the chosen model's supported efforts, keeping both the requested and the effective value. The account is the first eligible `rankAccounts` entry for that runtime, model and device. The `placement-v1` record keeps the source (`jev`, `fixed` or `fallback`), the fixed fields, the probabilities, eligible and excluded models and devices with reasons, the account, any error and the Jev calls.
+
+**Fallback.** Any Jev failure except cancellation (a missing key, authentication, timeout, a malformed or unusable answer, a packet too large, or the key being unreachable while the hub is down) places the thread deterministically: the project's default isolation when allowed (else `worktree`), the first eligible model in menu order, `medium` effort mapped to that model, and the coordinator's device when it can run the model, else the candidate with the fewest running threads, ties by device name. An answer choosing main with a model that no main checkout can run also falls back. The record says `fallback` with the error kind, and the thread page shows `Placed without Jev: {reason}`. When no candidate exists at all, the start is refused with every reason, for example `No device can run any enabled model: Mac mini: Codex needs login.`; the coordinator sees that text.
+
+**Overrides.** The owner corrects a placement from the thread page. *From the next turn* changes the model (same runtime only) and the effort for the next launch. *Restart with these choices* changes any field, allowed when the thread has no open pull request and has not published to main; it stops the thread, removes its worktree and starts a new thread with those fields fixed. Both are stored as `placement-override-v1` on the hub, summarized to the coordinator and fed to later placement packets as the sentences above. They are not yet used to change the configured guidance. See [projects](projects.md#placement).
 
 ## Memory selection
 
@@ -56,6 +80,6 @@ For routing preferences, edit the configuration through Settings. Keep resource 
 
 For a semantic change to the questions, update `prepareAction`/`prepareModel`, their resolvers and the relevant state/memory builder together. Give the question set a new version and extend the versioned record schema while preserving readable historical records. If a stored document shape changes, add its explicit migration. Update the Why presentation only where the recorded evidence changes.
 
-Run the decision-selection, state/memory, transport and automatic-conversation tests, then the affected browser journeys. Tests should cover the intended choices, eligibility, user overrides, malformed responses, cancellation and manual fallback. The saved-case evaluator and routing improver are still pending phase 6; a simulated response is not a substitute for the dedicated-key live evaluation.
+Run the decision-selection, state/memory, transport and automatic-conversation tests, then the affected browser journeys; for placement, also the pure placement tests and the Projects placement integration tests. Tests should cover the intended choices, eligibility, user overrides, malformed responses, cancellation and manual or deterministic fallback. `npm run eval:decisions` evaluates the saved q-v2 cases with real Jev and reports blocked without the dedicated key (`JEVELLAN_TEST_JEV_KEY`); the routing improver compares its proposals against the same saved cases. A simulated response is not a substitute for that live evaluation.
 
 See the [acceptance report](acceptance/REPORT.md) for the current live/simulated distinction and missing-credential blockers.

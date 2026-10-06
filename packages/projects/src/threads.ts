@@ -9,8 +9,8 @@ import {
 import type { PlacementFixed } from '@jevellan/decisions';
 import { DISPATCH_HOLD_MS, type Admission } from './admission.js';
 import {
-  COORDINATOR_ELSEWHERE, MODEL_SAME_RUNTIME, NEXT_TURN_FIELDS, NO_RELAY, PROJECT_NOT_FOUND, THREAD_ATTACHED, THREAD_ENDED, THREAD_NOT_FOUND, UNKNOWN_PLACEMENT_MODEL, WAITING_FOR_HUB, isWaitingForSlot,
-  overrideSummary, ownerStartedLine, placementSummary, queuedReason, restartedReason,
+  COORDINATOR_ELSEWHERE, MODEL_SAME_RUNTIME, NEXT_TURN_FIELDS, NO_RELAY, PROJECT_NOT_FOUND, THREAD_ATTACHED, THREAD_ENDED, THREAD_NOT_FOUND, UNKNOWN_PLACEMENT_MODEL, WAITING_FOR_HUB, WAITING_FOR_MAIN,
+  attachedRefusal, isWaitingForAccount, isWaitingForSlot, overrideSummary, ownerStartedLine, placementSummary, queuedReason, restartedReason,
 } from './copy.js';
 import type { CoordinatorService } from './coordinator.js';
 import { derivedId, type DecisionItems } from './decision-items.js';
@@ -324,6 +324,8 @@ export class ThreadService {
    */
   async restart(projectId: string, threadId: string, input: ThreadOverrideRequest, coordinatorDeviceId: string, remote?: RemoteStart): Promise<{ newThreadId: string }> {
     const thread = this.#local(projectId, threadId); const placement = thread.placement;
+    // Before anything is placed or recorded: no new thread, receipt or override exists for a restart the owner's terminal refused (phase 8).
+    if (thread.state === 'attached') throw refuse(attachedRefusal(threadId), 409);
     const fixed: PlacementFixed = { ...(input.isolation ? { isolation: input.isolation } : {}), ...(input.modelId ? { modelId: input.modelId } : {}),
       ...(input.effort ? { effort: input.effort } : {}), ...(input.deviceId ? { deviceId: input.deviceId } : {}) };
     const clientRequestId = derivedId('treq', 'restart', projectId, threadId, input.clientRequestId);
@@ -416,14 +418,18 @@ export class ThreadService {
   /** Threads at rest whose next turn waits for a slot (D9) or for the hub (D273), oldest queued message first. */
   async sweepWaiting(): Promise<void> {
     if (!this.#started || this.#closed) return;
-    const waiting = this.#o.store.all().filter((thread) => REST_STATES.includes(thread.state) && (isWaitingForSlot(thread.stateReason) || thread.stateReason === WAITING_FOR_HUB)
-      && thread.queuedMessages.length)
+    // Also threads whose turn waits for an account a terminal holds (phase 8), or for their claimed checkout to be back on main (P8 review
+    // TH-1), with its messages or the turn it kept.
+    const waiting = this.#o.store.all().filter((thread) => REST_STATES.includes(thread.state)
+      && (isWaitingForSlot(thread.stateReason) || thread.stateReason === WAITING_FOR_HUB || isWaitingForAccount(thread.stateReason) || thread.stateReason === WAITING_FOR_MAIN)
+      && (thread.queuedMessages.length || this.#o.store.local(thread.id).pendingTurn))
       .sort((a, b) => oldestMessage(a).localeCompare(oldestMessage(b)));
     for (const thread of waiting) { if (this.#closed) return; await this.runner(thread.id)?.resume(); }
   }
   /**
    * The sweeps (the periodic timer and `pulse`): the queue of every project with queued threads here or a coordinator here, threads
-   * waiting for a slot or the hub, and questions waiting on a coordinator whose device is away (D280).
+   * waiting for a slot, the hub or an account, questions waiting on a coordinator whose device is away (D280), and kept main checkout
+   * claims (D291, phase 8).
    */
   async sweep(): Promise<void> {
     const paths = this.#o.store.paths;
@@ -434,6 +440,19 @@ export class ThreadService {
     for (const projectId of new Set(this.#o.store.all().filter((thread) => this.#unasked(thread)).map((thread) => thread.projectId))) {
       if (this.#closed) return;
       await this.askDirectly(projectId).catch(() => undefined);
+    }
+    // Last, so a slow settlement (a process to end, an unreachable hub, the activity scan) never delays dispatch (phase 8).
+    await this.settleCheckouts();
+  }
+  /**
+   * Ended main threads here whose checkout claim was kept (D291) settle it again, at every sweep until it is released (phase 8). Each
+   * runs on its thread's chain; a failure stays on the thread (its notice and the thread page line), never in the sweep.
+   */
+  async settleCheckouts(): Promise<void> {
+    for (const thread of this.#o.store.all()) {
+      if (this.#closed) return;
+      if (!isTerminal(thread.state) || !this.#o.store.local(thread.id).unsettledCheckout) continue;
+      await this.runner(thread.id)?.settleCheckout().catch(() => undefined);
     }
   }
   /** A local thread waits on a needs-decision report whose question this device has not asked the owner itself. */
@@ -520,10 +539,25 @@ export class ThreadService {
   async stop(projectId: string, threadId: string, reason: string, notify: boolean, commandId?: string): Promise<void> {
     if (!this.#o.store.get(threadId)) {
       const index = await this.#remote(projectId, threadId); if (isTerminal(index.state)) return;
+      // Its owner would refuse it as well; an attach after this read makes the owner drop the command with the same refusal (phase 8).
+      if (index.state === 'attached') throw refuse(attachedRefusal(threadId), 409);
       await this.#o.delivery.toThreadOwner(projectId, threadId, index.ownerDeviceId, { type: 'stop', reason, notify }, commandId);
       return;
     }
     this.#local(projectId, threadId); await this.runner(threadId)!.stop(reason, notify);
+  }
+  /**
+   * Why a stop is refused now (phase 8): the thread is attached in a terminal, by its file here or its hub index elsewhere. The turn-limit
+   * question checks it before the answer is recorded, so a refused Stop leaves the question open. Unknown during a hub outage.
+   */
+  async stopRefusal(projectId: string, threadId: string): Promise<string | undefined> {
+    const local = this.#o.store.get(threadId);
+    let state: ThreadState | undefined = local?.projectId === projectId ? local.state : undefined;
+    if (!local) {
+      try { const index = (await this.#o.hub.thread(threadId))?.document; state = index?.projectId === projectId ? index.state : undefined; }
+      catch (error) { if (!(error instanceof HubUnavailable)) throw error; }
+    }
+    return state === 'attached' ? attachedRefusal(threadId) : undefined;
   }
   async discard(projectId: string, threadId: string): Promise<void> { this.#local(projectId, threadId); await this.runner(threadId)!.discard(); }
   /** Allow 10 more turns; a thread on another device gets a command (`commandId` repeats a retried answer, D265). */
