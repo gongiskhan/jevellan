@@ -459,7 +459,7 @@ a.pw-pr-chip:hover { border-color: var(--jev); color: var(--jev-ink); }
 /* Why Stop waits for the terminal session, and why an ended main thread still holds the checkout: never clamped, commands wrap. */
 .pw-thread-note { margin: 0; color: var(--ink-2); font-size: 12.5px; line-height: 1.45; overflow-wrap: anywhere; }
 .pw-thread-note.pw-tone-warn { color: var(--pw-warn); }
-/* Three lines keep the device in view on phones, where a long branch name fills the second. */
+/* Three lines keep the device in view on phones, where the branch part may take two rows inside one of them (.pw-part). */
 .pw-placement-line { -webkit-line-clamp: 3; color: var(--pw-ink-3); font-family: var(--font-mono); font-size: 11px; line-height: 1.5; }
 /* A ` · ` line (the placement line, a Jev call in Why) wraps between its parts, each ending in its separator: a part that fits a
    line, such as `Worktree on` and its branch, moves down whole instead of breaking inside the branch; a part longer than the
