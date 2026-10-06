@@ -8,7 +8,18 @@ The user requested a usable pilot and deferred the remaining build. This is not 
 
 ## Current pilot
 
-On 2026-10-06 the Projects build (commit `49106b7`) became active on the pilot at the same address. It runs as a frozen release in `~/.jevellan-build/pilot-projects-2026-10-06` with the same data home, loopback port and Tailscale route, superseding the copy described under Running copy below; the previous release, the plan-acceptance build of 2026-10-03 in `~/.jevellan-build/pilot-plan-approval-2026-10-03`, is kept for rollback. Accounts, projects, the vault, configuration, settings and every conversation ledger were preserved, and no Projects work was started on the pilot. See the [Projects deployment evidence](deploy-projects-2026-10-06.md). Terminal takeover does not work on this pilot yet: its launcher (`run.mjs`, kept from the earlier pilot releases) builds the daemon with `createDaemon` and no `LocalDiagnostics`, so no installation control file is written and every `/api/local/*` route, including `jevellan doctor` and the attach and detach routes behind `jevellan thread attach`, answers 401. The thread page still shows the takeover line. To enable it, the launcher must pass `new LocalDiagnostics(application, address)` to `createDaemon` and close it on shutdown, as `startDaemon` does (apps/daemon/src/index.ts), and the command must run against the pilot's data home; that is a launcher change plus another switch through the same idle-gate flow, not a code change. Recorded, not done.
+On 2026-10-06 the Projects build became active on the pilot at the same address, superseding the copy described under Running copy below. It runs with the same data home, loopback port and Tailscale route.
+
+- The first activation installed commit `49106b7` in `~/.jevellan-build/pilot-projects-2026-10-06`.
+- A second activation the same day installed commit `6647f91` (the vision fixes) in `~/.jevellan-build/pilot-projects-2-2026-10-06`. Its launcher also enables the installation control file.
+- The first Projects release is kept for rollback. The plan-acceptance build of 2026-10-03 (`~/.jevellan-build/pilot-plan-approval-2026-10-03`) is also still intact.
+- Both times, accounts, projects, the vault, configuration, settings and every conversation ledger were preserved, and no Projects work was started on the pilot. See the [Projects deployment evidence](deploy-projects-2026-10-06.md).
+
+Terminal takeover works on the pilot from 2026-10-06 (second activation). To take a thread over, the owner runs on the mini:
+
+    JEVELLAN_HOME=~/.jevellan-build/pilot-2026-09-25/home ~/.nvm/versions/node/v22.22.0/bin/node ~/.jevellan-build/pilot-projects-2-2026-10-06/app/bin/jevellan.mjs thread attach <threadId>
+
+With `doctor` in place of `thread attach <threadId>`, the same command runs `jevellan doctor` against the pilot. A takeover of a real thread has not run on the pilot yet.
 
 The [ordinary conversation update](conversation-parity-2026-09-29.md) brings chronological formatted transcripts, readable thinking capture and composer live feedback/Jump to latest to normal Jevellan work.
 
