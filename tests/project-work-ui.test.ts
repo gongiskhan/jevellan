@@ -9,9 +9,10 @@ import * as server from '../packages/projects/dist/copy.js';
 import * as copy from '../apps/web/src/project-work-copy.js';
 import {
   alignReports, chatItems, checksBadge, composerBlock, coordinatorChip, coordinatorLabel, decisionSource, defaultTab, deviceBlock, deviceChoices, deviceRefusal, dotClass, effortChoices, fallbackChip,
-  mainIsolationBlock, mergeBlock, nearestEffort, openPullRequests, outcomeText, overrideForm, overrideOffered, overrideReady, overrideRequest, placementLine, projectDot,
+  lineParts, mainIsolationBlock, mergeBlock, nearestEffort, openPullRequests, outcomeText, overrideForm, overrideOffered, overrideReady, overrideRequest, placementLine, projectDot,
   projectRoute, pullRequestBadges, reportBadge, restartedThread, rowClockMs, sentText, settingsRequest, showSent, sidebarProjects, threadActions, threadCreateRequest,
-  threadLiveText, threadMeta, threadPollDelay, threadReason, threadSections, threadStarting, toolIcon, transcriptNotice, whyFields, withdrawals, withoutReportCalls, working,
+  threadLiveText, threadMeta, threadPollDelay, threadReason, threadSections, threadStarting, toolIcon, transcriptNotice, whyFields, withdrawals, withoutEchoedSummaries,
+  withoutReportCalls, working,
 } from '../apps/web/src/project-work-model.js';
 import { dateOnly, duration, relativeDuration, shortTime, timeStamp } from '../apps/web/src/time.js';
 
@@ -219,6 +220,12 @@ test('row meta and the placement line use the runtime display name, the branch a
     .toBe('Codex · gpt-x · high effort · Work · Worktree on jv/fix-login-abc123 · Mac mini');
   expect(placementLine(thread(), { deviceName: 'Mac mini' }, 'Codex')).toBe('Codex · gpt-x · high effort · Work · Worktree · Mac mini');
   expect(placementLine(thread({ isolation: 'main', branch: 'main' }), { deviceName: 'Mac mini' })).toBe('codex · gpt-x · high effort · Work · Main · Mac mini');
+  // The page wraps the line between its parts: each keeps its separator, and the parts joined by spaces read as the line.
+  const line = placementLine(thread({ branch: 'jv/fix-login-abc123' }), { deviceName: 'Mac mini' }, 'Codex');
+  expect(lineParts(line)).toEqual(['Codex ·', 'gpt-x ·', 'high effort ·', 'Work ·', 'Worktree on jv/fix-login-abc123 ·', 'Mac mini']);
+  expect(lineParts(line).join(' ')).toBe(line);
+  expect(lineParts('Placement · model-x · 60 tokens · 7 ms')).toEqual(['Placement ·', 'model-x ·', '60 tokens ·', '7 ms']);
+  expect(lineParts('Mac mini')).toEqual(['Mac mini']);
 });
 
 test('chat items: owner messages, replies, one-liners, event cards and notices in ledger order, delivered by event id (D2a)', () => {
@@ -359,6 +366,45 @@ test('the thread page leaves out completed report calls whose report it shows, a
   expect(shape(rest)).toEqual(['r', 'f', 'refused', 'a2']);
   expect(rest[3]!.kind === 'turn' && rest[3]!.turn).toBe(plain);
   expect(shape(withoutReportCalls([{ kind: 'turn', turn: call('s', 'completed', 'One.') }], [reportOf(1, 'One.', true)]))).toEqual(['s']);
+});
+
+test("the thread page shows a turn's closing words once when its report card right after them repeats them", () => {
+  const r1 = reportOf(1, 'Done for now.'); const r2 = reportOf(2, 'Second pass.');
+  const blocks = (item: ReturnType<typeof alignReports>[number] | undefined) => item?.kind === 'turn' ? item.turn.blocks : undefined;
+  const reportCall = (id: string, summary: string) => ({ type: 'tool' as const, id: `tool_${id}`, name: 'mcp__jevellan__jevellan_thread_report',
+    input: JSON.stringify({ status: 'done', summary }), output: 'ok', state: 'completed' as const });
+  // The fixture's shape: the agent reads, says its summary and reports it; with the report call left out, the summary ends the turn.
+  const said = (id: string, words: string, summary: string): CursorTurn => ({ id, role: 'assistant', blocks: [
+    { type: 'tool', id: `read_${id}`, name: 'Read', input: '{}', output: 'ok', state: 'completed' }, { type: 'text', text: words }, reportCall(id, summary)] });
+  const page = (turns: CursorTurn[], reports: ThreadReport[], latest?: number) =>
+    withoutEchoedSummaries(withoutReportCalls(alignReports(turns, reports, latest), reports));
+  const items = page([text('p1', 'user', 'Task'), said('a1', 'Done for now.', 'Done for now.'), text('p2', 'user', 'More'),
+    said('a2', '\nSecond pass.  ', 'Second pass.')], [r1, r2], 2);
+  expect(shape(items)).toEqual(['p1', 'a1', 'report 1', 'p2', 'a2', 'report 2']);
+  // Equal after trimming: the text goes, the turn keeps its other blocks and the card keeps the words.
+  expect(blocks(items[1])?.map((block) => block.type)).toEqual(['tool']);
+  expect(blocks(items[4])?.map((block) => block.type)).toEqual(['tool']);
+  expect(shape(withoutEchoedSummaries([{ kind: 'turn', turn: text('a1', 'assistant', 'Done for now.') }, { kind: 'report', report: reportOf(1, ' Done for now.\n') }])))
+    .toEqual(['report 1']);
+  // A turn left with nothing else is dropped; the turns before it (several per turn, as after a restart) are untouched objects.
+  const before = text('a0', 'assistant', 'Reading the files.');
+  const only = page([text('p1', 'user', 'Task'), before, text('a1', 'assistant', ' Done for now. '),
+    { id: 'c1', role: 'assistant', blocks: [reportCall('c1', 'Done for now.')] }], [r1], 1);
+  expect(shape(only)).toEqual(['p1', 'a0', 'report 1']);
+  expect(blocks(only[1])).toBe(before.blocks);
+  // Different words, text followed by another block, a prompt that reads like the summary and a card not right after the text stay.
+  const different = text('a1', 'assistant', 'Done for now, more tomorrow.');
+  expect(page([text('p1', 'user', 'Task'), different], [r1], 1)[1]).toEqual({ kind: 'turn', turn: different });
+  const then: CursorTurn = { id: 'a1', role: 'assistant', blocks: [{ type: 'text', text: 'Done for now.' }, { type: 'thinking', text: 'Next?' }] };
+  const thought = page([text('p1', 'user', 'Task'), then], [r1], 1);
+  expect(shape(thought)).toEqual(['p1', 'a1', 'report 1']);
+  expect(blocks(thought[1])).toBe(then.blocks);
+  expect(shape(withoutEchoedSummaries([{ kind: 'turn', turn: text('p1', 'user', 'Done for now.') }, { kind: 'report', report: r1 }]))).toEqual(['p1', 'report 1']);
+  expect(shape(withoutEchoedSummaries([{ kind: 'turn', turn: text('a1', 'assistant', 'Done for now.') }, { kind: 'turn', turn: text('a2', 'assistant', 'Still here.') },
+    { kind: 'report', report: r1 }]))).toEqual(['a1', 'a2', 'report 1']);
+  // A synthesized report that took the closing words repeats them too, so they show once there as well.
+  expect(shape(page([text('p1', 'user', 'Task'), text('a1', 'assistant', 'Stopped at the tests.')], [reportOf(1, 'Stopped at the tests.', true)], 1)))
+    .toEqual(['p1', 'report 1']);
 });
 
 test('the thread page polls every 1.5 s while live work runs or just after an action, else every 10 s (D79, D230)', () => {

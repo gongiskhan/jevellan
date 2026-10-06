@@ -65,6 +65,19 @@ async function placementSummary(page: Page, view: ThreadView) {
 }
 
 /**
+ * A ` · ` line wraps between its parts: every part that is narrower than the line on its own sits on one line (a branch name
+ * never breaks while it fits); only a part wider than the whole line may break.
+ */
+async function expectWholeParts(line: Locator) {
+  expect(await line.locator('.pw-part').evaluateAll((parts) => parts.length > 1 && parts.every((part) => {
+    const probe = part.cloneNode(true) as HTMLElement; probe.style.cssText = 'position: absolute; visibility: hidden; white-space: nowrap; max-width: none';
+    part.parentElement!.append(probe); const wanted = probe.getBoundingClientRect().width; probe.remove();
+    const lines = Math.round(part.getBoundingClientRect().height / parseFloat(getComputedStyle(part).lineHeight));
+    return wanted > part.parentElement!.clientWidth || lines === 1;
+  }))).toBe(true);
+}
+
+/**
  * Evidence for one step: transient confirmations are read by the journey first, then dismissed so they never cover the
  * screen; the layout must not scroll sideways. Pages are captured whole, dialogs and panels as the viewport shows them.
  * The file stem starts with the journey that took it (`PJ3`, `PJ4b`), the first word of the test title.
@@ -201,7 +214,8 @@ test('PJ3 a decision is answered from the Waiting tab', async ({ page }, info) =
     await expect(row.locator('.suggestion-count')).toHaveText('1 waiting', LONG);
     await shot(page, 'projects-sidebar', false);
     await closeDrawer(page, info);
-    await shot(page, 'waiting-tab');
+    // Named for what it shows: the chat still selected, with the badge on the Waiting tab (the vision judge reads the name).
+    await shot(page, 'chat-with-waiting-badge');
     await tap(page, tab(page, 'Waiting'));
     await expect(card).toBeVisible();
   } else {
@@ -278,6 +292,7 @@ test('PJ3 a running thread shows its transcript, report card and accepts an inte
   expect(placed).toBe(await placementSummary(page, view));
   await expect(page.locator('.pw-state-chip')).toHaveText('Running', LONG);
   await expect(page.locator('.pw-placement-line')).toHaveText(`${runtime} · ${view.thread.modelLabel} · ${view.thread.effort} effort · ${view.thread.accountLabel} · Worktree on ${view.thread.branch} · ${view.deviceName}`);
+  await expectWholeParts(page.locator('.pw-placement-line'));
   const transcript = page.locator('[aria-label="Thread transcript"]');
   await expect(transcript.locator('.cursor-tool > summary > span:first-child')).toHaveText(['Read', 'Grep', 'Bash', 'Read'], LONG);
   await expect(page.getByRole('status').filter({ hasText: 'Working on turn 1…' })).toBeVisible();
@@ -307,6 +322,9 @@ test('PJ3 a running thread shows its transcript, report card and accepts an inte
   await expect(report.locator('.pw-badge')).toHaveText('Progress');
   await expect(report).toContainText('Read your message and adjusted the plan.');
   await expect(page.locator('.pw-state-chip')).toHaveText('Idle', LONG);
+  // The turn's closing words are its report's summary: the transcript shows them once, in the card.
+  await expect(transcript.getByText('Please also note the README title.', { exact: true })).toHaveCount(1, LONG);
+  await expect(transcript.getByText('Read your message and adjusted the plan.', { exact: true })).toHaveCount(1);
   await expect(page.getByRole('checkbox', { name: 'Interrupt current turn', exact: true })).toHaveCount(0);
   await expect(message).toHaveValue('');
   await shot(page, 'thread-report');
@@ -567,6 +585,8 @@ test('PJ4b the Why panel explains placement and overrides apply', async ({ page 
     'Browser member: not set up for this project', 'Offline fixture: offline']);
   await expect(section('Account').locator('.why-line')).toHaveText(placed.thread.accountLabel);
   await expect(panel.locator('.why-jev p').first()).toHaveText(/^Placement · jev-browser-simulated · 60 tokens · \d+ ms$/);
+  // The panel narrows the page beside it on desktops: the placement line still breaks between its parts, not inside the branch.
+  await expectWholeParts(page.locator('.pw-placement-line'));
   await shot(page, 'why-panel', false);
   await tap(page, panel.getByRole('button', { name: 'Close panel', exact: true }));
   await expect(why).toHaveAttribute('aria-pressed', 'false');

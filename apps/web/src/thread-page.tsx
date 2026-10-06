@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   ProjectWorkViewSchema, RESTARTED_PREFIX, SAVED_COMMITS_SENTENCE, ThreadMessageReceiptSchema, ThreadOverrideViewSchema, ThreadViewSchema, type PlacementField, type ProjectWorkView,
   type QueuedMessage, type ThreadIndex, type ThreadReport, type ThreadView,
@@ -10,9 +10,9 @@ import { Icon } from './icons.js';
 import { MessageInput } from './message-delivery.js';
 import * as copy from './project-work-copy.js';
 import {
-  THREAD_POLL_AFTER_ACTION_MS, THREAD_POLL_LIVE_MS, alignReports, composerBlock, deviceBlock, deviceChoices, deviceRefusal, dotClass, effortChoices, fallbackChip, mainIsolationBlock, nearestEffort,
+  THREAD_POLL_AFTER_ACTION_MS, THREAD_POLL_LIVE_MS, alignReports, composerBlock, deviceBlock, deviceChoices, deviceRefusal, dotClass, effortChoices, fallbackChip, lineParts, mainIsolationBlock, nearestEffort,
   overrideForm, overrideOffered, overrideReady, overrideRequest, placementLine, pullRequestBadges, reportBadge, threadActions, threadLiveText,
-  threadPollDelay, threadReason, threadStarting, transcriptNotice, whyFields, withoutReportCalls, type OverrideForm, type OverrideMode,
+  threadPollDelay, threadReason, threadStarting, transcriptNotice, whyFields, withoutEchoedSummaries, withoutReportCalls, type OverrideForm, type OverrideMode,
 } from './project-work-model.js';
 import { RouteLink, Stamp, afterDialogs, deviceNames, failureText, runtimeNames, updated, useClientIds, useLocalError } from './project-work.js';
 import { TranscriptTurn } from './session-transcript.js';
@@ -120,7 +120,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
   const allow = useTask((failure) => { fail(failure); kick.current(); });
   const turns = view?.transcript?.turns; const reports = view?.reports;
   const state = view?.thread.state; const finished = view?.thread.turns ?? 0;
-  const items = useMemo(() => withoutReportCalls(alignReports(turns ?? [], reports ?? [], state === 'running' ? finished + 1 : finished), reports ?? []),
+  const items = useMemo(() => withoutEchoedSummaries(withoutReportCalls(alignReports(turns ?? [], reports ?? [], state === 'running' ? finished + 1 : finished), reports ?? [])),
     [turns, reports, state, finished]);
 
   const back = <RouteLink className="text-button pw-back" href={project} navigate={navigate}><Icon name="back" size={14} />{copy.BACK_TO_PROJECT}</RouteLink>;
@@ -214,7 +214,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
           {/* Why Stop and Restart wait while the thread is attached, and why an ended main thread still holds the checkout (phase 8). */}
           {actions.stopRefusal && <p className="pw-thread-note" id={stopNoteId}>{actions.stopRefusal}</p>}
           {view.checkoutHeld && <p className="pw-thread-note pw-tone-warn" role="status">{view.checkoutHeld}</p>}
-          <p className="pw-placement-line" title={line}>{line}</p>
+          <p className="pw-placement-line" title={line}><Parts line={line} /></p>
         </div>
       </div>
       {loadError && <p className="notice" role="status">{loadError}</p>}
@@ -253,6 +253,14 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
       )}
     </div>
   );
+}
+
+/**
+ * A ` · ` line whose parts wrap whole, so a narrow page breaks it between parts and never inside a branch name that fits a
+ * line; a part longer than the line still breaks (`.pw-part`). The text reads exactly as the line.
+ */
+function Parts({ line }: { line: string }) {
+  return <>{lineParts(line).map((part, index) => <Fragment key={index}>{index > 0 && ' '}<span className="pw-part">{part}</span></Fragment>)}</>;
 }
 
 /** Stop and Discard (12.3): a destructive confirmation whose refusal stays in the dialog. */
@@ -497,7 +505,7 @@ function WhyPanel({ view, data, close }: { view: ThreadView; data: PageProps['da
         <section className="why-section why-jev">
           <h3>{copy.JEV}</h3>
           {placement.jevCalls.length ? placement.jevCalls.map((call, index) => (
-            <p key={index}>{copy.jevCallLine(call.returnedModel, call.usage.input_tokens + call.usage.output_tokens, call.latencyMs)}</p>
+            <p key={index}><Parts line={copy.jevCallLine(call.returnedModel, call.usage.input_tokens + call.usage.output_tokens, call.latencyMs)} /></p>
           )) : <p>{placement.source === 'fallback' ? copy.NO_JEV_ANSWER : copy.NO_JEV_CALL}</p>}
           <p>{copy.PLACED} <Stamp at={placement.decidedAt} /></p>
         </section>

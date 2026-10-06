@@ -237,6 +237,15 @@ export function placementLine(thread: ThreadIndex, view: Pick<ThreadView, 'devic
     isolation: isolationText(thread, true), device: view.deviceName });
 }
 
+/**
+ * A ` · ` separated line (the placement line, a Jev call) in the parts it wraps by: each part but the last keeps its
+ * separator, so a wrapped line ends in `·` and the parts joined with single spaces read as the line itself.
+ */
+export function lineParts(line: string): string[] {
+  const parts = line.split(' · ');
+  return parts.map((part, index) => index < parts.length - 1 ? `${part} ·` : part);
+}
+
 /** How often the thread page reads its view (D79): 1.5 s while live work runs, else 10 s. */
 export const THREAD_POLL_LIVE_MS = 1500;
 export const THREAD_POLL_REST_MS = 10_000;
@@ -556,6 +565,22 @@ export function withoutReportCalls(items: readonly TranscriptItem[], reports: re
     if (item.kind !== 'turn') return [item];
     const blocks = item.turn.blocks.filter(shown);
     if (blocks.length === item.turn.blocks.length) return [item];
+    return blocks.length ? [{ kind: 'turn', turn: { ...item.turn, blocks } }] : [];
+  });
+}
+/**
+ * The thread page shows a turn's closing words once: when the last block of the agent turn right before a report card is
+ * text that reads the same as the report's summary (both trimmed), the card carries it and the text is left out; a turn
+ * left without blocks is dropped. Any other text, a prompt, or text followed by another block stays. Run it after
+ * `withoutReportCalls`, so a report call removed there no longer sits between the text and its card.
+ */
+export function withoutEchoedSummaries(items: readonly TranscriptItem[]): TranscriptItem[] {
+  return items.flatMap((item, index): TranscriptItem[] => {
+    const next = items[index + 1];
+    if (item.kind !== 'turn' || item.turn.role !== 'assistant' || next?.kind !== 'report') return [item];
+    const last = item.turn.blocks.at(-1);
+    if (last?.type !== 'text' || last.text.trim() !== next.report.summary.trim()) return [item];
+    const blocks = item.turn.blocks.slice(0, -1);
     return blocks.length ? [{ kind: 'turn', turn: { ...item.turn, blocks } }] : [];
   });
 }
