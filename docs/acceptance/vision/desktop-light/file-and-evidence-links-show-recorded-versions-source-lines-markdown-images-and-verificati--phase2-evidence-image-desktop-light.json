@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase2-evidence-image-desktop-light.png",
-  "expected": "the Jevellan web app \"evidence image\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"file and evidence links show recorded versions, source lines, Markdown, images and verification output\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"evidence image\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"file and evidence links show recorded versions, source lines, Markdown, images and verification output\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The evidence image preview in the right panel is a small thumbnail (~100px), so you can't make out its contents without opening it.",
+      "Main column is scrolled: the first step's 'Step details' block is partly tucked under the sticky conversation header, with its top edge clipped.",
+      "In the sidebar conversation list, a fourth entry is partly clipped and faded out above 'Some native sessions are unavailable'. It is a scrollable list, so the entry is still reachable."
+    ]
+  }
 }

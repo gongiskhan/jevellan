@@ -10,7 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Title field is filled with what reads like task text ('Read through the project and list what each file is for, one line per file'), while the Task field holds a different, shorter prompt. This looks like a test-data mismatch, not a rendering problem."
+      "The Title field holds what looks like task text ('Read through the project and list what each file is for, one line per file'), while the Task field holds the 'PJ3 long' prompt. The content may be swapped or prefilled from the wrong source, but it reads fine and nothing is cut off."
     ]
   }
 }

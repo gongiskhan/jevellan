@@ -1,9 +1,20 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "step corrections survive reload and undo launches the requested redo with visible history",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase2-undo-desktop-light.png",
-  "expected": "the Jevellan web app \"undo\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"step corrections survive reload and undo launches the requested redo with visible history\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"undo\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"step corrections survive reload and undo launches the requested redo with visible history\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The error banner 'No model can run this step right now: disabled, disabled, disabled, disabled, disabled, disabled.' is shown twice, one right after the other.",
+      "The error message repeats 'disabled' six times without naming the models, so it doesn't tell the user much.",
+      "The Step 1 heading is struck through and the 'Undone' label is small and faint, which is a bit hard to read, though still legible.",
+      "The pink 'corrected:' labels in the Step 1 header are small and low contrast.",
+      "Session titles in the sidebar are cut off with an ellipsis (e.g. 'Change the value to thre…'). This looks intended, but the full titles can't be read."
+    ]
+  }
 }

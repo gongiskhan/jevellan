@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "Settings saves wait through hub loss, reconcile lost replies and abandon a closed editor",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase4-settings-save-wait-phone-dark.png",
-  "expected": "the Jevellan web app \"settings save wait\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"Settings saves wait through hub loss, reconcile lost replies and abandon a closed editor\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"settings save wait\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"Settings saves wait through hub loss, reconcile lost replies and abandon a closed editor\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Saving…' button is shown in a disabled, low-contrast style that is hard to read against the dark background. This is expected for a pending save.",
+      "The page behind the modal shows through dimmed and slightly blurred at the top and bottom edges, where the tab bar and 'Conversation fixture' list sit."
+    ]
+  }
 }

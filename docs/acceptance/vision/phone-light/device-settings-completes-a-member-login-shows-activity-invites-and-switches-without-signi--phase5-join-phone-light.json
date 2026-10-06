@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "device Settings completes a member login, shows activity, invites and switches without signing in again",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase5-join-phone-light.png",
-  "expected": "the Jevellan web app \"join\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"device Settings completes a member login, shows activity, invites and switches without signing in again\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"join\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"device Settings completes a member login, shows activity, invites and switches without signing in again\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The join code field and the code at the end of the command both show as plain grey boxes. This looks like the screenshot tool masking a changing value, not a rendering fault, but it can't be confirmed from this image.",
+      "The command breaks the URL across two lines in the middle of 'http' ('htt' / 'p://127.0.0.1:24772'), which makes it harder to read and copy.",
+      "The page behind the dialog is dimmed and blurred as expected, but parts of it (device cards, 'Open' buttons) still show around the dialog edges, which looks a little busy."
+    ]
+  }
 }

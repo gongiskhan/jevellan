@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The disabled 'Merge' button has very low contrast against the card background. That's expected for a disabled control when there are conflicts, but it's faint to read.",
-      "The 'Idle' status chip and the 'Claude Code Fable · high' subtitle are small and low-contrast, but still readable."
+      "The Merge button's label is low-contrast against its background. It is probably disabled on purpose because of the conflict, but it is hard to read.",
+      "The 'Working…' status pill ends in an ellipsis; this looks like a deliberate in-progress label rather than clipped text.",
+      "Large empty area below the single PR card (expected with only one item)."
     ]
   }
 }

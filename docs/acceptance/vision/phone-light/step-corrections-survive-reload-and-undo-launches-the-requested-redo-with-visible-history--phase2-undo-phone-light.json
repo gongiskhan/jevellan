@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "step corrections survive reload and undo launches the requested redo with visible history",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase2-undo-phone-light.png",
-  "expected": "the Jevellan web app \"undo\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"step corrections survive reload and undo launches the requested redo with visible history\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"undo\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"step corrections survive reload and undo launches the requested redo with visible history\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The header title is cut off with an ellipsis ('Change the value to three, then redo thi…'). The full text still appears in the subtitle line and in the user message.",
+      "The same error banner ('No model can run this step right now: disabled, disabled, …') appears twice in a row, which looks redundant and repeats 'disabled' many times.",
+      "The pink 'corrected: …' labels on Step 1 are small and low-contrast against the light background, but they can still be read.",
+      "The 'Jump to latest ↓' link sits close to the composer. It does not overlap it and can still be tapped."
+    ]
+  }
 }

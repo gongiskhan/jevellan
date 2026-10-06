@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "context merge is drafted read-only, survives reload, cancels and applies through verified publication",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-context-draft-phone-dark.png",
-  "expected": "the Jevellan web app \"context draft\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"context merge is drafted read-only, survives reload, cancels and applies through verified publication\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"context draft\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"context merge is drafted read-only, survives reload, cancels and applies through verified publication\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The background tab row behind the modal overlay is clipped at the left and right edges ('ver', 'Conf'). It is dimmed and not interactive while the modal is open.",
+      "The 'Open work' link uses a pink accent color that contrasts somewhat weakly with the dark card background, but it can still be read.",
+      "The 'Current instruction files' disclosure label is small and low-contrast compared with the rest of the dialog."
+    ]
+  }
 }

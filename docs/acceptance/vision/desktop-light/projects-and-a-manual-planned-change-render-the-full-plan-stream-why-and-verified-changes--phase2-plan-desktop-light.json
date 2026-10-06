@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "Projects and a manual planned change render the full plan, stream, Why and verified Changes",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase2-plan-desktop-light.png",
-  "expected": "the Jevellan web app \"plan\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"plan\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Change the value to two …', 'Context · J11 memory journ…'). Hovering or opening them shows the full text.",
+      "The 'Shell sessions' toggle is pink/magenta, which doesn't match the dark accent used for the primary buttons.",
+      "The plan stage shows the same guidance three times: the 'Awaiting approval' badge, the yellow banner 'Read the full plan, then choose Approve plan or Request changes', and 'Waiting for plan approval. Review plan ↑'."
+    ]
+  }
 }

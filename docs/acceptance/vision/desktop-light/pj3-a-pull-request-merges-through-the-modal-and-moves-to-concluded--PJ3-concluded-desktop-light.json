@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the right panel, the running task title 'Read through the project and list what each file is ...' is cut off with an ellipsis; there is no full title on screen except in the transcript cards.",
-      "In the sidebar, the shell session titles and their subtitles are cut off with an ellipsis (for example 'Context · J11 memory journ…' and 'Done · Mesh journey fixture · de…').",
-      "The transcript shows 'Noted.' many times in a row, sometimes back to back, which adds clutter.",
-      "The status labels next to each section heading in the right panel are small and low-contrast, but still readable."
+      "The title of the running thread in the right panel ('Read through the project and list what each file is ...') is cut off with an ellipsis. It is still readable and seems intentional.",
+      "Sidebar session titles and their metadata lines ('Context · J11 memory jour...', 'Done · J11 memory journey · dev-...') are cut off with an ellipsis. This seems intentional for the narrow sidebar.",
+      "The transcript repeats 'Noted.' many times in a row, which makes the conversation feel cluttered and repetitive."
     ]
   }
 }

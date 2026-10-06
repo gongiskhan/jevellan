@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "conversation titles, expanded tools and outside outcomes survive updates and reload",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-controls-finish-phone-dark.png",
-  "expected": "the Jevellan web app \"controls finish\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"conversation titles, expanded tools and outside outcomes survive updates and reload\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"controls finish\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"conversation titles, expanded tools and outside outcomes survive updates and reload\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Optional' hint sits below the textarea, so it reads like a status note instead of a field label",
+      "The modal backdrop dims the background conversation; this is expected, but the 'Jump to latest' link and the code block behind it are hard to make out",
+      "The textarea's pink focus ring stands out sharply against the dark theme"
+    ]
+  }
 }

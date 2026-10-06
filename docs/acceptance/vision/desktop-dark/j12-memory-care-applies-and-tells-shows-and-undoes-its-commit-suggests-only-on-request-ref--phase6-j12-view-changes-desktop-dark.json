@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase6-j12-view-changes-desktop-dark.png",
-  "expected": "the Jevellan web app \"j12 view changes\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"j12 view changes\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The Memory care diff panel cuts off after the deploy.md hunk header ('---'), apparently because it is a fixed-height scroll area. It is legible, but the rest of the diff is not visible in the capture.",
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Mesh journey fix…').",
+      "The 'Save schedule and jobs' button looks low-contrast or disabled against the dark background.",
+      "The Trial log helper text and the 'Simulated judge responses.' notes are dim, low-contrast grey."
+    ]
+  }
 }

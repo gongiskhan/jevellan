@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis (\"Read through the project an...\"). The full prompt still appears in the Prompt card.",
-      "The terminal attach command is cut off (\"jevellan thread attach thread_01M47PG1QE8W5PM...\"). The copy button next to it still works.",
-      "There is a large empty gap between the tool-call list and the status line \"Working on turn 1...\".",
-      "\"Working on turn 1...\" is shown with an ellipsis, so the turn label may be shortened."
+      "The thread title in the header is cut off with an ellipsis ('Read through the project an...'). This is expected on a narrow screen, but the full title can't be seen here.",
+      "The 'Take over in a terminal' command is cut off ('jevellan thread attach thread_01M47TVV9WXRZHA...'). A copy button is next to it, so it can still be used.",
+      "The status text 'Working on turn 1...' looks truncated or ends in an ellipsis, so it's unclear whether more text was meant to show.",
+      "There is a large empty gap between the last transcript row and the status/composer area at the bottom.",
+      "The metadata block under 'Back to the project' (model, effort, worktree, host) is in small monospace text and wraps over several lines. It's readable but dense."
     ]
   }
 }

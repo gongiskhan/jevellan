@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "Git settings can be saved, reloaded and checked from Projects",
   "layout": "phone-dark",
   "screenshot": "test-results/git-settings-phone-dark.png",
-  "expected": "the Jevellan web app \"git settings\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"Git settings can be saved, reloaded and checked from Projects\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"git settings\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"Git settings can be saved, reloaded and checked from Projects\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The settings tab strip is cut off at both edges: the first tab shows as 'Devices' with its leading text missing, and a partial icon sits at the right edge. This looks like a horizontally scrolling tab bar, but nothing clearly shows that it scrolls.",
+      "The 'Save Git settings' button has very low contrast against the card. It is probably disabled because nothing has changed, but it is hard to see.",
+      "The remote path wraps after the hyphen in 'activity-' and continues as 'context-origin.git' on the next line. It is still readable."
+    ]
+  }
 }

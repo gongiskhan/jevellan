@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The task title 'Tidy the README wording' and the heading 'Why this placement' share one header line in different styles, which reads a little crowded on a narrow phone screen.",
-      "There is a lot of empty space below the JEV footer.",
-      "The 'Fixed: none' row under PLACEMENT has no visual emphasis, so it's easy to miss compared with the other sections."
+      "The header crowds the task title 'Tidy the README wording' and the 'Why this placement' heading together on one line, with little space between them.",
+      "Most of the space below the JEV footer is empty."
     ]
   }
 }

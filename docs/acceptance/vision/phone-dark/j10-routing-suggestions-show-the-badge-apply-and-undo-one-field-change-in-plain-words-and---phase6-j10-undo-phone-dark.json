@@ -1,9 +1,20 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase6-j10-undo-phone-dark.png",
-  "expected": "the Jevellan web app \"j10 undo\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"j10 undo\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The tab strip is clipped at both edges (\"ing\" on the left and a partial icon on the right). This looks like a horizontally scrolling tab bar, but nothing on screen shows that it scrolls.",
+      "Both diff code blocks have a lot of empty padding below the last line.",
+      "The \"Save schedule and jobs\" button has very low contrast against the card. It may be intentionally disabled, but it's hard to read.",
+      "The \"Simulated judge responses.\" note is dim gray on a dark background, so its contrast is low, though it is still readable.",
+      "The \"Undone\" badge on the Recently decided card is low-contrast compared with the other status badges."
+    ]
+  }
 }

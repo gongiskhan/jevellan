@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/J11-mesh-codex-why-phone-dark.png",
-  "expected": "the Jevellan web app \"mesh codex why\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"mesh codex why\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The account list runs past the bottom of the viewport. It looks like normal scrollable content and nothing is cut mid-line.",
+      "The account list and memory captions are small, low-contrast grey text on the dark background. They can still be read.",
+      "The warning box ends with 'Pick the next step:' but nothing follows it, even though the next step already shows as 'picked manually'.",
+      "The third chosen memory is listed only as 'Existing.md', which is unclear next to the other, descriptive entries."
+    ]
+  }
 }

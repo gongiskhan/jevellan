@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase3-connection-desktop-dark.png",
-  "expected": "the Jevellan web app \"connection\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"automatic decisions can resume from missing configuration and explain their simulated choices\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"connection\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"automatic decisions can resume from missing configuration and explain their simulated choices\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Jev key saved.' toast sits on top of the page subtitle under 'Decisions' and hides part of it ('Jev chooses each next step from the … give it.'). The toast is temporary, but the subtitle can't be read while it shows.",
+      "The Jev key input is empty with no placeholder. The 'Saved · ••••df4e' line does show the saved state, but the empty field looks like no key is set.",
+      "The Routing profile textarea cuts off a line of text at its bottom edge. The field scrolls, so the text can still be reached."
+    ]
+  }
 }

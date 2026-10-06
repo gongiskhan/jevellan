@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'). The truncation looks deliberate, but the full text can't be read.",
-      "The meta line under the title ('Claude Code · Fable · high effort · … · dev-madrid') is small, low-contrast monospace text and is hard to read on the dark background.",
-      "The tool rows (Read, Grep, Bash, Read) are collapsed and show only the tool name, with no file or command detail, so the transcript gives little information at a glance.",
-      "There is a large empty area between the last tool row and the 'Working on turn 1…' status, and no report card is visible on this screen."
+      "Sidebar session titles and subtitles are cut off with an ellipsis (e.g. 'Context · J11 memory jour…', 'Mesh journey fixture · de…'). The full text is not shown, but the truncation looks intentional and the items are still identifiable.",
+      "There is a large empty area between the last transcript row ('Read completed') and the 'Working on turn 1…' status line.",
+      "The text in the metadata line under the title is small and low-contrast against the dark background, but it can still be read."
     ]
   }
 }

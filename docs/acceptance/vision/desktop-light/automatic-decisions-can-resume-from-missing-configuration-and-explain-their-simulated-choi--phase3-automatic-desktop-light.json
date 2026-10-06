@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase3-automatic-desktop-light.png",
-  "expected": "the Jevellan web app \"automatic\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"automatic decisions can resume from missing configuration and explain their simulated choices\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"automatic\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"automatic decisions can resume from missing configuration and explain their simulated choices\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "In the sidebar, the fourth conversation item is clipped at the bottom edge of the scrollable list, just above the 'Some native sessions are unavailable' row. Only the top of its title shows. It looks like normal scroll overflow, so the item can still be reached by scrolling.",
+      "Sidebar conversation titles and metadata lines are cut short with ellipses (e.g. 'Exercise automatic decisi…', 'Done · Automatic fixture · dev-m…'). This appears to be deliberate truncation; the full title of the selected conversation shows in the main header.",
+      "The bottom of the main panel is mostly empty space between the last step and the message box. Nothing is hidden."
+    ]
+  }
 }

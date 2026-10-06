@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "context merge is drafted read-only, survives reload, cancels and applies through verified publication",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-context-draft-desktop-dark.png",
-  "expected": "the Jevellan web app \"context draft\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"context merge is drafted read-only, survives reload, cancels and applies through verified publication\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"context draft\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"context merge is drafted read-only, survives reload, cancels and applies through verified publication\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Current instruction files' disclosure sits right at the bottom edge of the modal and has very little padding below it",
+      "The muted gray hint text 'The draft ran read-only. Apply replaces AGENTS.md…' is low-contrast, but you can still read it",
+      "The 'Open work' link sits apart from the Cancel/Apply action row, so the grouping is a bit unclear"
+    ]
+  }
 }

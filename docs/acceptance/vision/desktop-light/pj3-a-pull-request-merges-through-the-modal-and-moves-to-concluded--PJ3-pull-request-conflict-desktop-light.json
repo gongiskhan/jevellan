@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and their metadata lines are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…').",
-      "The title of the running thread in the right panel is cut off with an ellipsis ('Read through the project and list what each file is …').",
-      "The 'Merge' button is pale grey and has little contrast against the card, so it looks disabled even though the pull request shows 'Checks passing'.",
-      "The 'Waiting for you 0' heading uses monospace text, and the '0' sits close to the label."
+      "The topmost user message bubble ('PJ3: add a greeting') is cut off by the chat's scroll edge, so its timestamp is only half visible. This is normal scrolling, not a layout fault.",
+      "The running task title in the right panel ('Read through the project and list what each file is ...') is truncated with an ellipsis.",
+      "Sidebar shell session titles and their metadata lines ('Context · J11 memory jour...', 'dev-ma...') are truncated with ellipses.",
+      "The Merge button on the PR card looks greyed out and has low contrast. That is probably intended because of the conflict, but it is harder to read."
     ]
   }
 }

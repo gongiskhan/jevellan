@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-evidence-source-phone-dark.png",
-  "expected": "the Jevellan web app \"evidence source\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"file and evidence links show recorded versions, source lines, Markdown, images and verification output\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"evidence source\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"file and evidence links show recorded versions, source lines, Markdown, images and verification output\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Line 3 of the code block (\"export const label = '<b>plain text</b>';\") runs right up to the code panel's right border with no padding; it is still fully readable.",
+      "The checkpoint hash is small, low-contrast monospace text, though it can still be read.",
+      "A large empty area sits below the action links, so the content only fills the top third of the panel."
+    ]
+  }
 }

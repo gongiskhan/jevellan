@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "Claude sign-in shows pending progress and resumes polling after a connection error",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/login-recovery-phone-light.png",
-  "expected": "the Jevellan web app \"login recovery\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"Claude sign-in shows pending progress and resumes polling after a connection error\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"login recovery\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"Claude sign-in shows pending progress and resumes polling after a connection error\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The modal title includes the full recovery UUID ('Login recovery d0cd6a21-768e-4538-bbae-b976999f7832'), so it wraps to two lines and feels crowded on a phone-width screen.",
+      "The text 'Paste the test authorization code.' appears, but no code input field is visible in this state. That may be confusing, though it could be intended while the screen says 'Code sent. Waiting for sign-in to finish…'.",
+      "The blurred background shows the same long UUID wrapping in the card behind the modal. This is only visible through the blur and doesn't block anything."
+    ]
+  }
 }

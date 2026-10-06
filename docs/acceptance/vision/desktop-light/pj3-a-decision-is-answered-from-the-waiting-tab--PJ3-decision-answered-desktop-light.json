@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar shortens long session titles and subtitles with ellipses ('Context · J11 memory journ…', 'Done · J11 memory journey · dev-…'). This looks intentional, but the full names can't be read.",
-      "The right panel's 'WAITING FOR YOU 0' and 'Sent to the coordinator.' confirmation sits close above 'Nothing waiting.', so the spacing feels slightly cramped.",
-      "The Answered section under Waiting for you is collapsed (count 1), so the answered decision only shows in full in the main thread."
+      "Sidebar session titles and metadata are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This looks like intended truncation.",
+      "The 'Waiting for you' panel shows 'Answered 1' collapsed, so you can't see the answered decision there without expanding it.",
+      "The 'Waiting for the coordinator' status inside the answered card is small and low-contrast grey text."
     ]
   }
 }

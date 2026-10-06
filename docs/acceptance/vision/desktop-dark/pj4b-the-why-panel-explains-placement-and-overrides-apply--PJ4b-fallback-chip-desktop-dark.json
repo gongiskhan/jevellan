@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'dev-ma…'). This is intentional truncation, and the full titles show elsewhere.",
-      "The main content area is mostly empty below the report card. This is expected for a short thread."
+      "Session titles and subtitles in the sidebar are truncated with ellipses (e.g. 'Context · J11 memory jour…', 'dev-ma…'), but this is expected for a narrow sidebar.",
+      "Most of the main panel below the report card is empty dark space.",
+      "The muted gray-blue monospace metadata line and the 'Some native sessions are unavailable' text have fairly low contrast on the dark background, though both can still be read."
     ]
   }
 }

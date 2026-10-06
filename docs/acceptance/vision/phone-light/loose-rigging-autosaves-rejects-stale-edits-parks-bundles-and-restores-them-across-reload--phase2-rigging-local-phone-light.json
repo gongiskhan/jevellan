@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase2-rigging-local-phone-light.png",
-  "expected": "the Jevellan web app \"rigging local\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"rigging local\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Saved' status label and the 'Source' link sit on the same row with no visual grouping, so it's unclear which content each one refers to.",
+      "The dialog doesn't make it obvious whether the instructions text is editable: there's no visible text-field border or affordance around 'Edited local instructions' / 'Preserve the complete bundle.'",
+      "The background page under the overlay is blurred and partly hidden by the dialog. This is expected for a modal, but the list items behind it, such as browser-promote and browser-package, peek out below the dialog."
+    ]
+  }
 }

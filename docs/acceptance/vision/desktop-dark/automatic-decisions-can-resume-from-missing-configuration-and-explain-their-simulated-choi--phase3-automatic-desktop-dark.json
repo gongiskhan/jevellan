@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase3-automatic-desktop-dark.png",
-  "expected": "the Jevellan web app \"automatic\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"automatic decisions can resume from missing configuration and explain their simulated choices\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"automatic\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"automatic decisions can resume from missing configuration and explain their simulated choices\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "In the sidebar, the fourth conversation item is half-visible, cut off by the bottom edge of the scroll area just above the 'Some native sessions are unavailable' notice. It looks like normal scroll clipping, but the partial line of text looks rough.",
+      "Conversation titles and subtitles in the sidebar are cut short with ellipses (e.g. 'Exercise automatic decisi…', 'Explain the memorybrows…'). They're still readable, and the full title of the active conversation appears in the header.",
+      "The large empty area between the step content and the composer makes the page look sparse."
+    ]
+  }
 }

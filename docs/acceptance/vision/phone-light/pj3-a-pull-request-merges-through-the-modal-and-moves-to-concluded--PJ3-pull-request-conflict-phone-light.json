@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Merge button looks disabled (light grey with muted text) next to the Conflicts badge. This fits a conflict state, but its contrast is low.",
-      "Most of the screen below the single PR card is empty space."
+      "The disabled 'Merge' button has low contrast (grey text on a light blue-grey background). It reads as disabled, which fits the conflict state, but it is faint.",
+      "Everything below the single PR card is empty, so most of the screen is unused.",
+      "The 'Idle' / 'Claude Code Fable · high' status line uses small monospace text. It is readable but slightly harder to read than the rest of the screen."
     ]
   }
 }

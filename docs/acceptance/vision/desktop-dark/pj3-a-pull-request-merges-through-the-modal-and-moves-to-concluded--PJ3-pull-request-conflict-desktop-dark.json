@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Long running-thread title in the right panel ('Read through the project and list what each file is…') is cut off with an ellipsis",
-      "Shell session titles and metadata in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'dev-ma…')",
-      "Two 'Waiting for the coordinator' cards (checks passing, conflicts) have dashed borders while the cards above have solid ones; this may be intended for pending state",
-      "The 'Conflicts' badge and the 'Checks passing' badge appear together, but the chat history also shows a 'Checks failing' card; the state is consistent but could be confusing"
+      "The top of the chat list cuts through the earlier 'PJ3: add a greeting' bubble, so its YOU/timestamp header is half hidden. This looks like normal scroll position.",
+      "In the right panel, the running item title 'Read through the project and list what each file is …' is cut short with an ellipsis.",
+      "Sidebar session titles and their subtitles ('Context · J11 memory jour…', 'Done · Improver sandbox · dev-ma…') are cut short with ellipses.",
+      "The 'Merge' button on the conflicted pull request card is low-contrast, so it reads as disabled. It is still visible, and a muted look may be intended because of the conflicts.",
+      "Several 'Noted.' replies repeat in the chat, two of them back-to-back, which adds visual noise."
     ]
   }
 }

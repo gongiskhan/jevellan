@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "device Settings completes a member login, shows activity, invites and switches without signing in again",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase5-join-desktop-dark.png",
-  "expected": "the Jevellan web app \"join\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"device Settings completes a member login, shows activity, invites and switches without signing in again\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"join\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"device Settings completes a member login, shows activity, invites and switches without signing in again\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The join code field and the code at the end of the npx command are covered by solid light-gray blocks. This looks like the screenshot tool hiding the changing code, not a rendering fault, so the code's own legibility can't be checked from this image.",
+      "The light-gray block over the join code field stands out sharply against the dark theme of the dialog."
+    ]
+  }
 }

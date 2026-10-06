@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "Claude sign-in shows pending progress and resumes polling after a connection error",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/login-recovery-desktop-dark.png",
-  "expected": "the Jevellan web app \"login recovery\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"Claude sign-in shows pending progress and resumes polling after a connection error\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"login recovery\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"Claude sign-in shows pending progress and resumes polling after a connection error\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The dialog title shows a raw UUID ('Login recovery 377189b5-bc21-46b5-b6c5-53a2afcaff72'). It's long and reads like test data, though it fits on one line without being cut off.",
+      "The 'Paste the test authorization code.' prompt still shows, but there's no input field because the code has already been sent. The leftover prompt may be slightly confusing."
+    ]
+  }
 }

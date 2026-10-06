@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase6-j10-undo-desktop-light.png",
-  "expected": "the Jevellan web app \"j10 undo\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"j10 undo\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Sidebar session titles and their meta lines are cut short with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Improver sandbox · dev-ma…'). This is expected truncation and the full text is still reachable.",
+      "'Last runs' says '2 routing suggestions ready', but only 1 is waiting. The other has already been decided and undone, so the summary reads a little out of date.",
+      "The 'Memory care' dropdown ('Apply and tell me') and 'Save schedule and jobs' look greyed out and have low contrast, but they are still readable.",
+      "There is a large empty gap in the sidebar between the session list and 'Some native sessions are unavailable'."
+    ]
+  }
 }

@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Open thread' link is pink and shows no button affordance, so it looks different from the outlined 'Open on GitHub' and 'Merge' buttons next to it",
-      "Most of the screen below the single PR card is empty, which is expected with only one PR",
-      "The 'Idle' status chip and the 'Claude Code Fable · high' subtitle use small, low-contrast monospace text, but it is still readable"
+      "Large empty area below the single PR card (expected with one fixture PR)",
+      "Header subtitle 'Claude Code Fable · high' is small, low-contrast monospace text, but still legible"
     ]
   }
 }

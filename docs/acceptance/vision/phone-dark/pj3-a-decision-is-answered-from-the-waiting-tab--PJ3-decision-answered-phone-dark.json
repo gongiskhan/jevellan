@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Large empty area below the content: the Answered section is collapsed, so most of the screen is blank",
-      "The 'WAITING FOR YOU 0' heading and the '1' count next to 'Answered' are small and low-contrast, but still readable"
+      "The 'WAITING FOR YOU 0' heading and the 'Idle' and model metadata text are small and low-contrast against the dark background, but they're still readable.",
+      "Below the content, most of the screen is empty space."
     ]
   }
 }

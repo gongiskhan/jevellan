@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-rigging-parked-desktop-dark.png",
-  "expected": "the Jevellan web app \"rigging parked\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"rigging parked\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The last conversation in the sidebar list (around y≈712) is cut off at the bottom edge of the scroll area, right above the 'Some native sessions are unavailable' row. This looks like normal scroll overflow, but the half-visible row looks a little untidy.",
+      "Conversation titles and subtitles in the sidebar are shortened with ellipses (for example 'Explain the memorybrows…' and 'Waiting for you · Public memory …'). This is intended truncation.",
+      "The Hooks section continues past the bottom of the screen ('Safety' is the last row visible). The page can be scrolled to reach it."
+    ]
+  }
 }

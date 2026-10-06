@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-evidence-source-desktop-dark.png",
-  "expected": "the Jevellan web app \"evidence source\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"file and evidence links show recorded versions, source lines, Markdown, images and verification output\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"evidence source\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"file and evidence links show recorded versions, source lines, Markdown, images and verification output\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Jump to latest' link sits right under Step 2's action buttons (Changes / Why / Change step), which are cut off at the bottom of the scroll area. They can still be reached by scrolling, but the spot looks crowded.",
+      "In the sidebar, a fourth conversation row is cut off: only fragments of its title show just above the 'Some native sessions are unavailable' link.",
+      "A thin strip of a cut-off element shows just above Step 1 in the main column, near the right edge.",
+      "In the evidence panel, the 'Open working copy' and 'Open recorded step' links sit close together with little space between them."
+    ]
+  }
 }

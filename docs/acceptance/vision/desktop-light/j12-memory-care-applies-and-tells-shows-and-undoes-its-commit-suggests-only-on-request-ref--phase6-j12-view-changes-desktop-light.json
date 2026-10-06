@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase6-j12-view-changes-desktop-light.png",
-  "expected": "the Jevellan web app \"j12 view changes\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"j12 view changes\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The expanded 'View changes' diff in the Memory care card is cut off at the bottom edge (the last visible line '---' is partly clipped). It looks like a fixed-height scroll area, but there is no visible scroll cue showing that more of the diff follows.",
+      "In the sidebar, the shell session titles and subtitles ('Context · J11 memory jour…', 'Context · Mesh journey fix…') are truncated with ellipses.",
+      "The 'Last runs' card is much taller than the 'Schedule and jobs' card next to it, which leaves a large empty area under the schedule card."
+    ]
+  }
 }

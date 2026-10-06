@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles are cut off with ellipses ('Context · J11 memory journ…', 'Context · Mesh journey fixt…') and their subtitles are cut off too ('dev-ma…', 'dev-…', 'de…')",
-      "The 'Restarted as thread_…' link is pink on a dark background with an underline, which makes it a bit hard to read",
-      "The 'Some native sessions are unavailable' note in the sidebar is small, low-contrast text",
-      "There is a lot of empty space between the last report card and the 'This thread has ended' footer"
+      "The sidebar cuts off session titles and subtitles with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…', 'dev-ma…'). This is intended truncation and the main content is unaffected.",
+      "The 'Restarted as thread_…' link is pink, underlined text on a dark background. It is legible but stands out a lot next to the muted metadata line.",
+      "The page title 'Tidy the README wording' sits very close to the top edge of the viewport."
     ]
   }
 }

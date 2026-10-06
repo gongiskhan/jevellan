@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "hub recovery resumes sign-in and reconciles a settings save whose reply was lost",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase4-settings-wait-desktop-light.png",
-  "expected": "the Jevellan web app \"settings wait\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"hub recovery resumes sign-in and reconciles a settings save whose reply was lost\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"settings wait\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"hub recovery resumes sign-in and reconciles a settings save whose reply was lost\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Can't reach the hub' toast sits over the left end of the sticky save footer and touches the bottom edge of the Guards card. Nothing important seems hidden: the 'Saving creates a configuration revision' text, the 'Saving…' button and the 'Stop waiting' button are all visible.",
+      "The last line of the Routing profile textarea is cut off at the bottom edge. This is normal scrolling inside the textarea, and the resize handle is visible.",
+      "The fourth conversation in the sidebar list is cut off at the bottom edge of the scrollable list. Only the top of its title shows above 'Some native sessions are unavailable'.",
+      "The page is scrolled, so the 'max' effort row at the top is partly cut off by the header area."
+    ]
+  }
 }

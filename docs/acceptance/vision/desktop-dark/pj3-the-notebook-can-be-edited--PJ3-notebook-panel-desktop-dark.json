@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'). This is intended truncation, and the full titles are probably available elsewhere.",
-      "The notebook panel has a lot of empty space below its two lines of content. This is expected for a short notebook."
+      "Shell session titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Mesh journey fix…'). This is intended truncation and doesn't block anything.",
+      "The notebook panel's 'Projects fixture' breadcrumb is in a small pink monospace font and has weak contrast against the dark background.",
+      "The 'Some native sessions are unavailable' text in the sidebar is small and has low contrast."
     ]
   }
 }

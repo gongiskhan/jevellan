@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "public project memory shows its notice, note update time and read-only rendered content",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase2-memory-settings-phone-light.png",
-  "expected": "the Jevellan web app \"memory settings\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"public project memory shows its notice, note update time and read-only rendered content\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"memory settings\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"public project memory shows its notice, note update time and read-only rendered content\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The modal body is scrolled, so the 'Path on Offline fixture' label sits right under the header divider and more fields may sit below 'Memory folder'. The body scrolls inside the modal, and the footer buttons stay visible and reachable.",
+      "The label 'Path on Offline fixture' sits next to a 'Browse folders on dev-madrid' button. The device names don't match, which may confuse users, but it's a labeling issue, not a rendering one.",
+      "The Git policy note and the public-memory warning use the same beige warning style, so the memory notice doesn't stand out much from the surrounding content."
+    ]
+  }
 }

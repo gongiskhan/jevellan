@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase6-j10-dismissed-desktop-dark.png",
-  "expected": "the Jevellan web app \"j10 dismissed\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"j10 dismissed\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Shell session titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Mesh journey fix…'). This looks intended, and the full names are available elsewhere.",
+      "The 'Save schedule and jobs' button is low-contrast against the card background. It may just be shown as disabled.",
+      "Long lines in the GPT diff wrap onto a second line, which makes the diff a little harder to read.",
+      "The 'Apply and tell me' field next to Memory care looks like a greyed-out placeholder, so it's unclear whether it can be used while that checkbox is off."
+    ]
+  }
 }

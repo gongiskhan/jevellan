@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Most of the panel below the content is empty dark space",
-      "The 'Projects fixture' breadcrumb text is small and low-contrast pink on dark navy"
+      "The 'Projects fixture' breadcrumb uses small magenta monospace text, which has lower contrast against the dark background than the rest of the text",
+      "Most of the panel below the content is empty, which is expected because the note is short"
     ]
   }
 }

@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "device Settings completes a member login, shows activity, invites and switches without signing in again",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase4-devices-desktop-dark.png",
-  "expected": "the Jevellan web app \"devices\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"device Settings completes a member login, shows activity, invites and switches without signing in again\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"devices\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"device Settings completes a member login, shows activity, invites and switches without signing in again\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Offline fixture' card almost touches the 'Native conversations' card below it. The gap is much smaller than the spacing between the other cards.",
+      "In the sidebar, a fourth conversation item is partly clipped at the bottom of the scrolling list, just above 'Some native sessions are unavailable'. This is expected scroll overflow, but it looks slightly untidy.",
+      "Sidebar conversation titles and subtitles are cut off with an ellipsis (e.g. 'Context · Outside context…', 'Exercise composer choice…'). This is intentional and the text is still readable."
+    ]
+  }
 }

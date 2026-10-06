@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "Projects and a manual planned change render the full plan, stream, Why and verified Changes",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase2-conversation-desktop-light.png",
-  "expected": "the Jevellan web app \"conversation\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"conversation\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Sidebar conversation titles and subtitles are truncated with ellipses (e.g. 'Change the value to two ...', 'Manual conversation fixtu...'). The full title still shows in the main header.",
+      "There are two separate closing banners, 'Work closed. Its changes are kept...' and 'Work closed and published.'. They are stacked one after the other and read as redundant.",
+      "The 'Jump to latest' link is showing even though the view looks like it's already scrolled to the bottom.",
+      "Step 1 has a 'Changes' button with no file count, while Step 2 shows 'Changes · 1 file'. The labels are inconsistent."
+    ]
+  }
 }

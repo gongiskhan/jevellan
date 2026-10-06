@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase2-rigging-parked-phone-light.png",
-  "expected": "the Jevellan web app \"rigging parked\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"rigging parked\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The fourth tab label ('Impr…') is cut off at the right edge of the tab strip. This is probably a horizontal scroller, but nothing on screen shows that more tabs are there.",
+      "The browser-promote metadata wraps onto a second line ('Claude Code') because the Park button takes up the right side. The Park button and the metadata line are not vertically aligned with each other.",
+      "The 'Refresh local items' link sits right next to the checkbox label with little space between them, so it reads as crowded."
+    ]
+  }
 }

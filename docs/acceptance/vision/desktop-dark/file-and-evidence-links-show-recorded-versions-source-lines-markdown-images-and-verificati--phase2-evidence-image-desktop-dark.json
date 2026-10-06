@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-evidence-image-desktop-dark.png",
-  "expected": "the Jevellan web app \"evidence image\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"file and evidence links show recorded versions, source lines, Markdown, images and verification output\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"evidence image\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"file and evidence links show recorded versions, source lines, Markdown, images and verification output\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "In the evidence panel, the screen.png preview is a very small thumbnail (about 96x64) with a lot of empty space around it, so it's hard to see what the image contains without opening it.",
+      "In the sidebar, a conversation row under 'Context · Created instructi…' is cut off by the scroll edge, so only partial marks show just above 'Some native sessions are unavailable'.",
+      "In the main column, the scrolled step-details card under the sticky header shows a clipped top edge. This is normal scroll behaviour but looks a little abrupt."
+    ]
+  }
 }

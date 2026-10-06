@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "loose Rigging becomes managed with bundled files, durable retry and runtime toggles",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase2-rigging-promote-desktop-light.png",
-  "expected": "the Jevellan web app \"rigging promote\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"loose Rigging becomes managed with bundled files, durable retry and runtime toggles\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"rigging promote\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"loose Rigging becomes managed with bundled files, durable retry and runtime toggles\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The disabled 'Claude Code · Current account' checkbox is very pale grey. It's hard to tell whether it's checked, and the dialog doesn't say why it's disabled.",
+      "The 'Close' button in the footer does the same thing as the × button in the header, so the dialog has two close controls."
+    ]
+  }
 }

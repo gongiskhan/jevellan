@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "project, Jev, local Rigging and device Settings recover their hub boundaries",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase4-project-save-wait-desktop-dark.png",
-  "expected": "the Jevellan web app \"project save wait\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"project, Jev, local Rigging and device Settings recover their hub boundaries\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"project save wait\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"project, Jev, local Rigging and device Settings recover their hub boundaries\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Browse folders on dev-madrid' button sits right against the 'Git policy' label below it, with almost no vertical gap.",
+      "The form body cuts off at the 'Test command' label. It looks like normal scroll overflow, but nothing shows that more fields are below.",
+      "The disabled 'Saving…' button has low contrast against the dark background. It is still readable.",
+      "The 'Stop waiting' banner has a large empty area to the right of its button, so the banner looks unbalanced."
+    ]
+  }
 }

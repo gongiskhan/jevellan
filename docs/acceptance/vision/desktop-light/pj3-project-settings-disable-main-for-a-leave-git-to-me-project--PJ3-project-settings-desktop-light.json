@@ -10,7 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Main radio and its label are light grey, as expected for a disabled option, but the helper text 'This project is set to Leave git to me.' is small and low-contrast."
+      "The disabled 'Main' radio and its label are low-contrast gray. That fits a disabled state, but the label is slightly faint.",
+      "The helper text 'This project is set to Leave git to me.' reads awkwardly, because 'Leave git to me' is a setting name used without quotes or emphasis."
     ]
   }
 }

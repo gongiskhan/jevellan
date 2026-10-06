@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The running thread title 'Read through the project and list what each …' is cut off with an ellipsis. That looks intentional for a single-line title.",
-      "The summary for 'Add a greeting' ('Added greeting.txt with a short greeting and committed …') is cut off with an ellipsis. That also looks intentional.",
-      "Below the thread list, more than half the screen is empty."
+      "The running thread title 'Read through the project and list what each …' is cut off with an ellipsis. This looks like intended single-line truncation.",
+      "The 'Add a greeting' summary 'Added greeting.txt with a short greeting and committed …' is cut off with an ellipsis. This looks like intended single-line truncation.",
+      "Below the thread list there is a lot of empty space, so the page looks sparse on a phone screen."
     ]
   }
 }

@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "loose Rigging becomes managed with bundled files, durable retry and runtime toggles",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-rigging-promote-phone-dark.png",
-  "expected": "the Jevellan web app \"rigging promote\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"loose Rigging becomes managed with bundled files, durable retry and runtime toggles\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"rigging promote\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"loose Rigging becomes managed with bundled files, durable retry and runtime toggles\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Claude Code · Current account' checkbox is a muted grey while 'Codex' is bright pink, so it's hard to tell whether it's checked but disabled or just styled differently.",
+      "The tab row behind the modal is cut off at the right edge (the last tab shows only 'Ver…'). It sits behind the overlay, so it doesn't block this step.",
+      "The dimmed background page shows through around the modal ('Make managed', 'Restore locally', 'browser-package'). It's readable but adds visual noise."
+    ]
+  }
 }

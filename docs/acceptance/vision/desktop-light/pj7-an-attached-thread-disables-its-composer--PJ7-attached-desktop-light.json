@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'), but they're still readable and the controls work.",
-      "The attached-thread hint line runs long and pushes the thread ID close to the right edge. It still fits and wraps fine.",
-      "The composer placeholder 'Message this thread' and the disabled send button are low-contrast. This fits the disabled state but they're faint."
+      "Sidebar session titles and metadata get truncated with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'), but these are list rows where truncation is expected",
+      "Very large empty area between the report card and the composer",
+      "The attached thread's composer appears disabled only through a dashed border and muted placeholder, which is a subtle cue"
     ]
   }
 }

@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · dev-ma…'). This is expected truncation and the text is still readable.",
-      "The large empty area below the report card makes the page look sparse."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Improver sandbox · dev-ma…'). This is intended truncation, and the full names are likely available on hover.",
+      "The 'Progress' badge on the Turn 1 report card is small and low-contrast, but it is still readable.",
+      "There is a large empty area between the report card and the message composer. This is normal for a conversation with one turn."
     ]
   }
 }

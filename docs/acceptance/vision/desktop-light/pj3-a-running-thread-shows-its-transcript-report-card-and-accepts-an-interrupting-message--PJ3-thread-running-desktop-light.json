@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'). This is deliberate truncation, but the full names can't be read at this width.",
-      "The status text 'Working on turn 1…' and the 'Interrupt current turn' checkbox are small and pale, so they're easy to miss next to the message box.",
-      "The transcript shows only four collapsed tool rows (Read, Grep, Bash, Read), which leaves most of the main area empty."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This is expected truncation and the meaning stays clear.",
+      "The meta line under the header ('Claude Code · Fable · high effort · … · dev-madrid') is long and dense in small monospace text, but it still fits on one line and is readable.",
+      "There is a large empty area between the transcript cards and the composer, so the page looks sparse while the thread runs.",
+      "No report card is visible on this screen yet. The transcript only shows four collapsed tool rows (Read, Grep, Bash, Read), which is plausible mid-turn."
     ]
   }
 }

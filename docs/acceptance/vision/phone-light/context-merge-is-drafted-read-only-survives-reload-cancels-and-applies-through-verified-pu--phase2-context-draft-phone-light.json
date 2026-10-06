@@ -1,9 +1,16 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "context merge is drafted read-only, survives reload, cancels and applies through verified publication",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase2-context-draft-phone-light.png",
-  "expected": "the Jevellan web app \"context draft\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"context merge is drafted read-only, survives reload, cancels and applies through verified publication\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"context draft\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"context merge is drafted read-only, survives reload, cancels and applies through verified publication\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Background page content shows through the dimmed overlay below the modal (tabs and path text), but it does not interfere with the dialog."
+    ]
+  }
 }

@@ -9,9 +9,6 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": [
-      "The 'From the next turn' and 'Restart with these choices' radio rows have no visible divider or card styling, so the two options look a little undifferentiated",
-      "The background page under the dimmed overlay is hard to read, which is expected for a modal backdrop"
-    ]
+    "cosmetic": []
   }
 }

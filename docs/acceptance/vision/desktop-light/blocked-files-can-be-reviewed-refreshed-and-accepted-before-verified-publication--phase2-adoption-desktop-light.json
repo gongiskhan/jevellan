@@ -1,9 +1,20 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "blocked files can be reviewed, refreshed and accepted before verified publication",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase2-adoption-desktop-light.png",
-  "expected": "the Jevellan web app \"adoption\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"blocked files can be reviewed, refreshed and accepted before verified publication\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"adoption\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"blocked files can be reviewed, refreshed and accepted before verified publication\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The conversation title in the header is shortened with an ellipsis ('Exercise reviewed checkpoint recovery with a simulated read-only viola...'). The full text is still readable in the message bubble below it.",
+      "Sidebar conversation titles are shortened with ellipses ('Exercise reviewed checkp...', 'Change the value to thre...'), and the subtitle lines are shortened too.",
+      "The fourth sidebar conversation item is clipped at the bottom of the list, just above 'Some native sessions are unavailable'. Only the top edge of its text shows. This looks like the edge of a scrollable list.",
+      "The bottom of the right Changes panel is cut off at the viewport edge: the 'JEVELLAN VERIFICATION' text ('No verification receipt yet') is only partly visible. The panel appears to scroll, and the Continue and Refresh changes buttons are fully visible.",
+      "In the 'Review changes' card, the space between the text and the button is a bit tight."
+    ]
+  }
 }

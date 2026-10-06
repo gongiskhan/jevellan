@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Lots of empty space under the modal; the dialog is centered vertically on a mostly blank phone viewport",
-      "The backdrop blur makes the page header and PR card behind the modal hard to read. That's expected while a modal is open."
+      "The PR title is dropped into the sentence without quotes or emphasis, so \"Add a greeting will be squashed into main\" reads awkwardly.",
+      "The dimmed background behind the modal has low-contrast text (e.g. the 'Checks passing' badge and the breadcrumb), but that is expected because a modal overlay is open."
     ]
   }
 }

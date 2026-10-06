@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header status text \"Claude Code Fable · high\" uses a small, low-contrast monospace font, but it can still be read.",
-      "The pink \"Open thread\" link text is small but readable."
+      "The header subtitle 'Claude Code Fable · high' uses a small monospace font that is noticeably lighter and smaller than the rest of the header text, which makes it a little harder to read.",
+      "A large empty area sits between the last chat message and the composer. This is expected for a short conversation."
     ]
   }
 }

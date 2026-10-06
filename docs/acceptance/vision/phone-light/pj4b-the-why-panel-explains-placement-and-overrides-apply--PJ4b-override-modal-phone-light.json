@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal fits on the screen. Its title, both radio options with their descriptions, the Model and Effort selects, the Note field, and the Cancel and Apply buttons are all fully visible and readable.",
-      "The 'jevellan thread attach thread_...' command behind the dimmed overlay is cut off with an ellipsis. It sits outside the modal, so it doesn't block this screen.",
-      "The Note textarea has a pink/magenta border, probably the focus style. It could be mistaken for an error state."
+      "In the dimmed background, the attach command at the bottom ('jevellan thread attach thread_01MVT5PNP...') is cut off with an ellipsis. It sits behind the modal's dark overlay, so it doesn't block this screen.",
+      "In the dimmed background, the breadcrumb wraps onto several lines in a cramped way ('Worktree on jv/tidy-the-readme-wording-d3fdfb · dev-madrid')."
     ]
   }
 }

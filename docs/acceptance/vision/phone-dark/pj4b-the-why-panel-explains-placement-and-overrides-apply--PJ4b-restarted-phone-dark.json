@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The worktree/branch metadata line wraps across three lines in small monospace text. It is still readable.",
-      "There is a large empty area between the last report card and the footer."
+      "The meta line under the header wraps across three lines and splits the worktree branch name from 'dev-madrid' at the separator. It is still readable.",
+      "Below the last report card there is a lot of empty space before the 'This thread has ended' footer.",
+      "The thread ID link is long and in a monospace pink underline. It is readable but stands out heavily against the rest of the header."
     ]
   }
 }

@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "hub recovery resumes sign-in and reconciles a settings save whose reply was lost",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase4-settings-wait-phone-dark.png",
-  "expected": "the Jevellan web app \"settings wait\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"hub recovery resumes sign-in and reconciles a settings save whose reply was lost\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"settings wait\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"hub recovery resumes sign-in and reconciles a settings save whose reply was lost\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The fixed 'Can't reach the hub' banner sits over the bottom of the Guards form, right below the 'Pause after a plan' checkbox. Any fields under it are hidden until the user scrolls, and this screenshot doesn't show whether the page has enough bottom padding to scroll the last controls fully clear of the banner.",
+      "The tab strip is cut off at both edges ('umes' on the left, a partial icon on the right). It looks like a horizontally scrolling strip, not broken layout.",
+      "The textarea at the top is partly scrolled under the sticky header."
+    ]
+  }
 }

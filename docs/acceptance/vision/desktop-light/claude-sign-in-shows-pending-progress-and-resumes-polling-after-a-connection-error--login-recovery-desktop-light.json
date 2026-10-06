@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "Claude sign-in shows pending progress and resumes polling after a connection error",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/login-recovery-desktop-light.png",
-  "expected": "the Jevellan web app \"login recovery\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Claude sign-in shows pending progress and resumes polling after a connection error\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"login recovery\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Claude sign-in shows pending progress and resumes polling after a connection error\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The dialog title shows the full raw ID (\"Login recovery befd6025-b610-497e-b0be-9520cf8d54f2\"), which makes it long and hard to read; a shorter label would read better.",
+      "\"Code sent. Waiting for sign-in to finish…\" and the \"Can't reach Jevellan\" error appear together, which sends mixed signals about whether polling is still running.",
+      "Below the alert the dialog has a lot of empty space at the bottom compared with the spacing elsewhere."
+    ]
+  }
 }

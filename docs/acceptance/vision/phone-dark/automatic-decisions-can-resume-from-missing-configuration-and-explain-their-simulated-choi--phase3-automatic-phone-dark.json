@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase3-automatic-phone-dark.png",
-  "expected": "the Jevellan web app \"automatic\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"automatic decisions can resume from missing configuration and explain their simulated choices\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"automatic\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"automatic decisions can resume from missing configuration and explain their simulated choices\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The header title is cut off with an ellipsis ('Exercise automatic decisions: change t...'). The full text still appears in the subtitle line and the user message.",
+      "There is a large empty area between the step content and the composer. This is expected because the conversation is short.",
+      "The 'Done' status badge and the 'Why' button use low-contrast or accent colours on the dark background, but both are still readable."
+    ]
+  }
 }

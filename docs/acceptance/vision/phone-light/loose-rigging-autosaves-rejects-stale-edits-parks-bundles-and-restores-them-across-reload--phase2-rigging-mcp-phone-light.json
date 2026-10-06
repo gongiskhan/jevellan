@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase2-rigging-mcp-phone-light.png",
-  "expected": "the Jevellan web app \"rigging mcp\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"rigging mcp\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The item is labeled 'config.toml', but the content box shows JSON, not TOML. This could confuse users, though it doesn't affect layout or legibility.",
+      "The dismiss '×' on the 'Item restored to this account.' notice is small and may be a tight tap target on a phone."
+    ]
+  }
 }

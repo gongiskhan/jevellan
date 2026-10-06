@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase2-rigging-mcp-desktop-light.png",
-  "expected": "the Jevellan web app \"rigging mcp\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"rigging mcp\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The background page is blurred and dimmed behind the modal. This is normal for a modal, but it means the rest of the Rigging page can't be checked in this capture.",
+      "The file label says config.toml, but the content editor shows JSON. This may be intended as a preview of the MCP entry, but it could confuse users.",
+      "The Content textarea has a lot of empty space below the short JSON content."
+    ]
+  }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Save Git settings' button has low contrast. It is probably styled this way because it is disabled, but it is harder to read than the other buttons.",
-      "Sidebar session titles are cut off with ellipses ('J11 memory journ…', 'Mesh journey fixt…'). This is expected truncation and does not affect the token card."
+      "The 'Save Git settings' button has low contrast against the card background. It is probably in a disabled state, but it is harder to read than the other buttons.",
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Improver sandbox · dev-ma…'). This looks like intended truncation."
     ]
   }
 }

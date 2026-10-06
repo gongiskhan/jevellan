@@ -1,9 +1,20 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase6-j12-view-changes-phone-dark.png",
-  "expected": "the Jevellan web app \"j12 view changes\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"j12 view changes\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": false,
+    "blocking": [
+      "Memory care card (Improver sandbox, Applied): the expanded 'View changes' diff is clipped at the bottom of its box. The last visible line ('+++ b/.jevellan/memory/deploy.md') is cut in half, and the rest of the diff for deploy.md can't be seen. Nothing shows that the box scrolls, so the main content of this step is cut off."
+    ],
+    "cosmetic": [
+      "Several long file paths in the diff blocks (for example 'a/.jevellan/memory/archive/old-caching-idea.md' and 'b/.../claude-sonnet/description') wrap mid-path, which makes them harder to scan.",
+      "The 'Commit b8e4b1cffa' label next to the Undo button is very small and low-contrast.",
+      "In the 'Last runs' list, the gray 'No working rules to suggest.' subtext is low-contrast against the dark background."
+    ]
+  }
 }

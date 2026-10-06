@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "loose Rigging becomes managed with bundled files, durable retry and runtime toggles",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase2-rigging-managed-phone-light.png",
-  "expected": "the Jevellan web app \"rigging managed\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"loose Rigging becomes managed with bundled files, durable retry and runtime toggles\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"rigging managed\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"loose Rigging becomes managed with bundled files, durable retry and runtime toggles\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The background tab strip is cut off at the right edge ('Mo…' after Decisions). It sits behind the modal overlay and looks like a horizontally scrollable row.",
+      "The underlying page shows through the modal's dimmed backdrop, including the 'browser-package' card and the 'Restore locally' button below the dialog. This is expected for a modal but makes the backdrop look busy.",
+      "Most of the large content textarea is empty space below the two lines of text."
+    ]
+  }
 }

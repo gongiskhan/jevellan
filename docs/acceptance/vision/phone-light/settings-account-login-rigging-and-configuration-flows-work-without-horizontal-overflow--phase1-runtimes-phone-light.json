@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "Settings account, login, Rigging and configuration flows work without horizontal overflow",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase1-runtimes-phone-light.png",
-  "expected": "the Jevellan web app \"runtimes\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"Settings account, login, Rigging and configuration flows work without horizontal overflow\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"runtimes\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"Settings account, login, Rigging and configuration flows work without horizontal overflow\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The top tab bar cuts off the last tab ('Impr…') at the right edge. It looks like an intentional horizontally scrolling tab strip, but nothing shows that it scrolls.",
+      "The Claude Code accounts section has the note 'Codex sign-ins are kept per device for now', which looks like it was copied from the Codex section.",
+      "The 'Fable' model badge is small and set apart, so it reads more like a stray label than a model chip."
+    ]
+  }
 }

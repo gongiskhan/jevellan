@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "loose Rigging becomes managed with bundled files, durable retry and runtime toggles",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-rigging-managed-desktop-dark.png",
-  "expected": "the Jevellan web app \"rigging managed\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"loose Rigging becomes managed with bundled files, durable retry and runtime toggles\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"rigging managed\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"loose Rigging becomes managed with bundled files, durable retry and runtime toggles\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Saved' status and 'Preview' link sit above the 'Content' label, so they read as if they belong to the Name field.",
+      "The large textarea has a lot of empty space for two lines of content.",
+      "The 'Saved' text is in low-contrast gray, but it is still readable."
+    ]
+  }
 }

@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "hub recovery resumes sign-in and reconciles a settings save whose reply was lost",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase4-settings-wait-phone-light.png",
-  "expected": "the Jevellan web app \"settings wait\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"hub recovery resumes sign-in and reconciles a settings save whose reply was lost\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"settings wait\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"hub recovery resumes sign-in and reconciles a settings save whose reply was lost\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Can't reach the hub' wait banner is pinned to the bottom and covers the form below 'Pause after a plan'. That is expected for a fixed overlay, but check that the page has enough bottom padding so the last fields and the save control can scroll above the banner.",
+      "The tab strip is cut off at both edges ('imes' on the left, a partial icon on the right). This looks like a horizontally scrollable tab bar, but there is no visible scroll hint.",
+      "The textarea at the top is partly scrolled out of view, which leaves faint, half-visible text under the tab bar."
+    ]
+  }
 }

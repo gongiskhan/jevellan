@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase6-j12-morning-card-desktop-dark.png",
-  "expected": "the Jevellan web app \"j12 morning card\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"j12 morning card\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Sidebar session titles are truncated with ellipses ('Context · J11 memory jour...', 'Context · Mesh journey fix...'). This is expected overflow behaviour.",
+      "The 'Save schedule and jobs' button is low-contrast and looks disabled, which is likely intentional when nothing has changed.",
+      "The Last runs column is much taller than the Schedule and jobs card, so a large empty area sits below the left card.",
+      "The muted secondary text (memory file paths, 'Simulated judge responses.', the dates) has fairly low contrast on the dark background, but it is still legible."
+    ]
+  }
 }

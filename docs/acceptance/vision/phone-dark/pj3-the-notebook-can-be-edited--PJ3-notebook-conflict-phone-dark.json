@@ -10,8 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Large empty area below the Cancel/Save buttons leaves the bottom third of the screen unused",
-      "The Notebook textarea is much taller than its four lines of content, so most of it is empty space"
+      "Below the Cancel/Save buttons, roughly the bottom 20% of the screen is empty, so the layout looks slightly unbalanced."
     ]
   }
 }

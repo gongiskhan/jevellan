@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "project, Jev, local Rigging and device Settings recover their hub boundaries",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase4-project-save-wait-phone-light.png",
-  "expected": "the Jevellan web app \"project save wait\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"project, Jev, local Rigging and device Settings recover their hub boundaries\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"project save wait\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"project, Jev, local Rigging and device Settings recover their hub boundaries\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The Git policy notice is cut off mid-sentence ('The original branch is preserved…') where the scrollable modal body meets the fixed footer. The rest should be reachable by scrolling, but nothing on screen shows there is more to read.",
+      "The 'Path on dev-madrid' input text runs past the field's right edge ('…/settings'), so the full path can't be seen without scrolling inside the field.",
+      "With the save-wait banner in place, the scrollable form area is quite short on this phone viewport."
+    ]
+  }
 }

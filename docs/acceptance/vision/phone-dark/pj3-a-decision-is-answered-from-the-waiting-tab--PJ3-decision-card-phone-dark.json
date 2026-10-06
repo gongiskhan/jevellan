@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Send' button text has low contrast against its dark background and could pass for a disabled button.",
-      "The tab row runs right up to the screen edge, and the 'Pull requests' tab nearly touches it; there may be more tabs off-screen that you can only reach by scrolling sideways.",
-      "The top-right icons are crowded together, and the overflow '...' button has no visible boundary."
+      "The Send button has low contrast against the card (dark text on a dark fill). This is probably its disabled state while the input is empty, but it is hard to see.",
+      "The 'Idle' status chip and the 'Claude Code Fable · high' subtitle are small and fairly faint mono text.",
+      "The lower half of the screen is empty below the single decision card."
     ]
   }
 }

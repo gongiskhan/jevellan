@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase6-j10-dismissed-desktop-light.png",
-  "expected": "the Jevellan web app \"j10 dismissed\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"j10 dismissed\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Session titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Improver sandbox · dev-ma…'). This looks intentional, and hovering or opening the session still shows the full text.",
+      "The long diff lines in the 'Prefer GPT for implement steps' code block wrap onto a second line inside the dark panel, which makes the -/+ lines harder to compare at a glance.",
+      "The dismissal reason ('“Plans stay on Fable.”') is small, faint grey text with no label, so it is easy to miss as the dismissed card's explanation.",
+      "Each 'Based on 3 corrections (0 with undo)' disclosure is collapsed, so you can't see the supporting corrections in this capture. This is fine, but there is little to show it can be expanded besides the small chevron."
+    ]
+  }
 }

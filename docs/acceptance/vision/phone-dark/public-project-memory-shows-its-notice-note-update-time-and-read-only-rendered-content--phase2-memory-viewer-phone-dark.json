@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "public project memory shows its notice, note update time and read-only rendered content",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-memory-viewer-phone-dark.png",
-  "expected": "the Jevellan web app \"memory viewer\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"public project memory shows its notice, note update time and read-only rendered content\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"memory viewer\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"public project memory shows its notice, note update time and read-only rendered content\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "In the search result row, the title 'Public memory guide' and its updated time are centered with a large empty space on the left, so the row looks unbalanced.",
+      "The background content behind the modal (the project card text and the tab bar) shows through dimly. The modal itself is still legible."
+    ]
+  }
 }

@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "a question with offered answers shows them as buttons, and a picked answer continues the work",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/answer-options-desktop-light.png",
-  "expected": "the Jevellan web app \"answer options\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"a question with offered answers shows them as buttons, and a picked answer continues the work\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"answer options\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"a question with offered answers shows them as buttons, and a picked answer continues the work\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Exercise answer options: ...', 'Context · J11 memory jour...'). This looks like intentional overflow handling, but the full titles can't be seen without hovering.",
+      "There is a large empty area between the answer-options card and the message box, which makes the page look sparse."
+    ]
+  }
 }

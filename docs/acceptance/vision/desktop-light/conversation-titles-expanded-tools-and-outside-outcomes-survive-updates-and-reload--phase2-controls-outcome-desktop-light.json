@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "conversation titles, expanded tools and outside outcomes survive updates and reload",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase2-controls-outcome-desktop-light.png",
-  "expected": "the Jevellan web app \"controls outcome\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"conversation titles, expanded tools and outside outcomes survive updates and reload\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"controls outcome\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"conversation titles, expanded tools and outside outcomes survive updates and reload\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Sidebar conversation list cuts off a partially visible fourth item ('Context · Context fi...') above the 'Some native sessions are unavailable' row. The list is scrollable, so the item can still be reached.",
+      "Sidebar conversation titles and metadata are truncated with ellipses (e.g. 'Context · Created instruct…', 'dev-m…'). This is intended truncation."
+    ]
+  }
 }

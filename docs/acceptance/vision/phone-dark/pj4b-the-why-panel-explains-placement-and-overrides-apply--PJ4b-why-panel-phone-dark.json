@@ -10,9 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title 'Why this placement' sits right next to the pink 'Tidy the README wording' label with little space between them, so the header looks crowded.",
-      "The muted gray secondary text (bar values, footer metadata) has fairly low contrast on the dark background but is still readable.",
-      "There is a lot of empty space below the footer metadata."
+      "The header line puts the small pink monospace task title ('Tidy the README wording') right next to the bold 'Why this placement' heading. It reads a little cramped and doesn't look like a clear heading hierarchy.",
+      "There's a lot of empty space below the JEV footer. The panel doesn't fill the phone viewport in a meaningful way.",
+      "The footer line 'Placement · jev-browser-simulated · 60 tokens · 7 ms' wraps awkwardly, leaving '60 tokens · 7 ms' alone on its own line.",
+      "The low-value bars (0.10/0.15) are very short grey stubs. They're hard to tell apart in the dark theme, though the numbers next to them stay readable.",
+      "No override controls are visible in this capture. That isn't a rendering defect, but this screen doesn't show the 'overrides apply' part of the test."
     ]
   }
 }

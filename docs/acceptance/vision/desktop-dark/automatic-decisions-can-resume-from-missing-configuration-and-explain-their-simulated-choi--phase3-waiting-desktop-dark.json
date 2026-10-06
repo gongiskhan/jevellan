@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase3-waiting-desktop-dark.png",
-  "expected": "the Jevellan web app \"waiting\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"automatic decisions can resume from missing configuration and explain their simulated choices\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"waiting\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"automatic decisions can resume from missing configuration and explain their simulated choices\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "In the sidebar, the fourth conversation item is cut off mid-row at the bottom of the list, just above 'Some native sessions are unavailable'. Only the top half of its title shows. The list probably scrolls, but nothing shows that more items are there.",
+      "The 'Review …' action links wrap onto three ragged lines with uneven spacing next to the 'Try automatic again' button, so the action area looks crowded.",
+      "Conversation titles and subtitles in the sidebar are truncated with ellipses (e.g. 'Exercise automatic decisi…', 'Waiting for you · Automatic fixt…'). This is expected truncation, but it does hide context."
+    ]
+  }
 }

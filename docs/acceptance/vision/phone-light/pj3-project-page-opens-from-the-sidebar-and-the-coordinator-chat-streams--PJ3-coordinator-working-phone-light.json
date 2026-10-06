@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The composer placeholder is clipped at \"Tell the coordinator what you nee\" because the stop and send buttons take up the space; the text is still readable and the input still works.",
-      "The status pill is shortened to \"Working…\" in a narrow box next to the model label, which looks slightly cramped but is still legible.",
-      "There is a lot of empty space between the single user message and the \"Coordinator is working…\" indicator, which is expected before the first streamed reply arrives."
+      "The composer placeholder 'Tell the coordinator what you nee…' is cut off by the stop and send buttons on a phone-width screen. It is placeholder text only, and the input still works.",
+      "The status pill shows 'Working…' with an ellipsis in a small box. It is still readable, and the 'Coordinator is working…' line repeats the same status."
     ]
   }
 }

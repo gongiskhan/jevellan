@@ -10,8 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background behind the modal is blurred and dimmed, so its text can't be read. That's expected for a modal overlay.",
-      "The Cancel and Merge buttons look different from each other: Cancel is outlined and Merge is filled light. This is acceptable for showing which action is primary."
+      "The modal body doesn't set the thread name \"Add a greeting\" apart (no quotes or emphasis), so it reads like part of the sentence."
     ]
   }
 }

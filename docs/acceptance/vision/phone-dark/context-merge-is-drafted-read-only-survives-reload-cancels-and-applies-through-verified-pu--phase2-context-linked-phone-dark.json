@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "context merge is drafted read-only, survives reload, cancels and applies through verified publication",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-context-linked-phone-dark.png",
-  "expected": "the Jevellan web app \"context linked\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"context merge is drafted read-only, survives reload, cancels and applies through verified publication\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"context linked\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"context merge is drafted read-only, survives reload, cancels and applies through verified publication\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The background tab bar is cut off at both edges of the screen (\"…ver\" and \"Conf…\"). It sits behind the dimmed overlay and looks like a horizontal scroll strip.",
+      "The dialog leaves a lot of empty space, and \"Current instruction files\" is collapsed, so the linked file contents aren't visible without opening it."
+    ]
+  }
 }

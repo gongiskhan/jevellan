@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "pending work shows a live stage while controls stay compact",
   "layout": "phone-light",
   "screenshot": "test-results/conversation-progress-phone-light.png",
-  "expected": "the Jevellan web app \"conversation progress\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"pending work shows a live stage while controls stay compact\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"conversation progress\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"pending work shows a live stage while controls stay compact\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The user message bubble sits almost against the right edge of the screen, with less padding than on the left.",
+      "There is a large empty gap between the message and the progress stage near the bottom.",
+      "The \"0s\" timer is small and far to the right, apart from the stage text it belongs to."
+    ]
+  }
 }

@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "device Settings completes a member login, shows activity, invites and switches without signing in again",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase4-devices-phone-light.png",
-  "expected": "the Jevellan web app \"devices\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"device Settings completes a member login, shows activity, invites and switches without signing in again\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"devices\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"device Settings completes a member login, shows activity, invites and switches without signing in again\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The top tab strip is cut off at both edges (\"ions\" on the left, \"G\" on the right). This looks like a horizontally scrolling tab bar, but nothing on screen shows it can scroll.",
+      "The \"Offline fixture\" card and the \"Native conversations\" card have no space between them, and their borders touch or slightly overlap. The other cards have a normal gap.",
+      "The \"Open\" buttons on the dev-madrid and Offline fixture cards are greyed out. That is probably intended (current device / offline), but nothing on screen explains why."
+    ]
+  }
 }

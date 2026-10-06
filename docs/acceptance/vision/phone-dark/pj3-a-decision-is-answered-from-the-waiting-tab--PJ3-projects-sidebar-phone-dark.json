@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The subtitle of the third shell session row is cut off with an ellipsis ('dev-mad…'). The session can still be identified from its title.",
-      "The dimmed main conversation shows through on the right side of the sidebar overlay, with fragments like 'reeting' and '5:10:00' visible at the edge. The overlay still covers it and nothing overlaps the sidebar controls.",
-      "The status-filter chips ('All', 'Running', 'Waiting for you', 'Done') are small and tightly packed, but they are readable and all of them are visible."
+      "Session subtitle 'Done · Mesh journey fixture · dev-mad…' is truncated with an ellipsis (it's still clear, and the full name is in the title)",
+      "The main content behind the sidebar is partly visible but dimmed, which is expected for an overlay drawer"
     ]
   }
 }

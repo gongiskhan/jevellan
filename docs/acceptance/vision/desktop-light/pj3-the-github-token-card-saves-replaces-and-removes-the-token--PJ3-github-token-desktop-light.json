@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Save Git settings' button has low contrast. It is probably disabled on purpose because nothing has changed.",
-      "Sidebar conversation titles and subtitles are cut off with an ellipsis (for example 'Context · J11 memory journ…'). This looks like intended truncation."
+      "Sidebar conversation titles and metadata are cut off with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…', 'dev-ma…'). This looks like intended truncation, but you can't read the full titles.",
+      "The 'Save Git settings' button is shown in a muted, low-contrast style, likely its disabled state, so its label is a little faint.",
+      "The 'Saved · updated Oct 6, 2026' status line under the GitHub token heading is small monospace text and slightly less prominent than the text around it."
     ]
   }
 }

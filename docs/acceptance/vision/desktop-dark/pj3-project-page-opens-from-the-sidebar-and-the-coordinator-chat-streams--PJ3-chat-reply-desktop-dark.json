@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar shell session titles and subtitles are cut off with an ellipsis (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). Hover or the full view still shows them.",
-      "The header status chip reads 'Idle' while the right panel lists 'Add a greeting' as running for 1s. Readers may find this confusing, but nothing is hidden.",
-      "The chat reply area has a lot of empty space between the short reply and the composer. The layout is still fine."
+      "Sidebar session titles and meta lines are cut short with ellipses (e.g. 'Context · J11 memory jour…', 'dev-…'). The truncation looks intentional, but the full names can't be read.",
+      "The small monospace meta text (for example 'Claude Code · Fable · high · Worktree · dev-madrid', session subtitles and 'v0.1.0') is low-contrast against the dark background.",
+      "The chat area has a lot of empty space between the reply and the composer. This is expected for a short conversation."
     ]
   }
 }

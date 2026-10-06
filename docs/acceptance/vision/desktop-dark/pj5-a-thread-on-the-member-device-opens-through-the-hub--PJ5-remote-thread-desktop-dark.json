@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Some sidebar session titles and subtitles are cut short with an ellipsis (for example 'Context · J11 memory journ…', 'Context · Mesh journey fixt…', 'dev-ma…'). The cut is intentional, but the full names can't be seen at this width.",
-      "The 'Some native sessions are unavailable' note at the bottom of the sidebar is small, low-contrast text.",
-      "The thread metadata line under the title (Codex · GPT · high effort · …) is in small, low-contrast monospace type, but it can still be read."
+      "Sidebar session titles and subtitles are cut off with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…', 'dev-…'), so the full names only show on hover or when expanded.",
+      "The thread metadata line ('Codex · GPT · high effort · Projects Codex · Worktree on jv/read-the-readme-on-the-member-1xggak · Browser member') is long, small, low-contrast monospace text that nearly fills the header width. It is still readable.",
+      "Much of the area below the report card is empty because the thread has only one turn."
     ]
   }
 }

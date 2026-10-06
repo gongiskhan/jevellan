@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Answered 1' section is collapsed, so the answered decision isn't shown unless the user expands it.",
-      "The success message ('Sent to the coordinator.') and the 'Nothing waiting' empty state sit close together, so the confirmation is easy to miss."
+      "The counter in the 'WAITING FOR YOU 0' header and the 'Answered 1' count are small, low-contrast monospace text, but they can still be read",
+      "The green 'Sent to the coordinator.' confirmation is small and doesn't stand out much, though it's readable",
+      "Most of the screen below the Answered row is empty, so the answered decision only shows if the user expands the collapsed 'Answered' section"
     ]
   }
 }

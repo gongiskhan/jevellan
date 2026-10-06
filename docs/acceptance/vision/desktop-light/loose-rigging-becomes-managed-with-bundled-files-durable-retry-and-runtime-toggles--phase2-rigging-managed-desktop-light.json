@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "loose Rigging becomes managed with bundled files, durable retry and runtime toggles",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase2-rigging-managed-desktop-light.png",
-  "expected": "the Jevellan web app \"rigging managed\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"loose Rigging becomes managed with bundled files, durable retry and runtime toggles\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"rigging managed\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"loose Rigging becomes managed with bundled files, durable retry and runtime toggles\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Edit Managed browser bundle' modal sits on top of the Rigging page, so the background items and their controls (Park, Make managed, Restore locally, runtime checkboxes) are dimmed and blurred while the dialog is open. That is expected for a modal.",
+      "The textarea takes up most of the dialog but holds only two lines, leaving a lot of empty space."
+    ]
+  }
 }

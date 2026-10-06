@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'jevellan thread attach thread_01M47PEEW789FAR…' command is cut off with an ellipsis. The copy button next to it still gives you the full command.",
-      "The metadata lines ('Claude Code · Fable · high effort ·', 'Projects Claude ·', 'Worktree on … · dev-madrid') wrap with a '·' left dangling at the end of each line."
+      "The thread attach command in the footer is cut off with an ellipsis ('thread_01M47SPYWFTB2Z7…'), but the copy button next to it can still be reached",
+      "The metadata lines ('Claude Code · Fable · high effort ·', 'Projects Claude ·') break in odd places, leaving separators dangling at the ends of lines",
+      "Most of the screen between the report card and the message box is empty"
     ]
   }
 }

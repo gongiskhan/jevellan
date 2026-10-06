@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The send arrow button in the composer has low contrast against the dark input, so it looks disabled.",
-      "The 'Idle' badge and the 'Claude Code Fable · high' subtitle are small, dim monospace text that is hard to read at a glance.",
-      "The space below the notice is mostly empty."
+      "The header still says 'Projects offline' while the banner says the coordinator moved to dev-madrid, which may be confusing even though both are legible",
+      "Most of the chat area below the notice is empty"
     ]
   }
 }

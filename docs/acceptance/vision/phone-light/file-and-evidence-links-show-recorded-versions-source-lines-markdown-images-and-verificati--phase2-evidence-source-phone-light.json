@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase2-evidence-source-phone-light.png",
-  "expected": "the Jevellan web app \"evidence source\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"file and evidence links show recorded versions, source lines, Markdown, images and verification output\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"evidence source\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"file and evidence links show recorded versions, source lines, Markdown, images and verification output\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Code line 3 (\"export const label = '<b>plain text</b>';\") runs right up to the code card's right border with no padding, so it looks cramped and may be scrolling horizontally, though all of the text is visible.",
+      "The checkpoint hash wraps onto its own line after \"Recorded checkpoint ·\", which leaves a dangling separator dot.",
+      "Most of the screen below the action links is empty."
+    ]
+  }
 }

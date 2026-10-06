@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase2-evidence-source-desktop-light.png",
-  "expected": "the Jevellan web app \"evidence source\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"file and evidence links show recorded versions, source lines, Markdown, images and verification output\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"evidence source\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"file and evidence links show recorded versions, source lines, Markdown, images and verification output\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Near the bottom of the transcript, the 'Jump to latest' button sits over the Step 2 'Changes / Why / Change step' buttons and partly hides them. Scrolling brings them back into view.",
+      "The last conversation row in the sidebar ('Context · Created i…') is cut off partway by the edge of the scroll area.",
+      "A faint bordered box under the conversation description (around y≈100) is cut off at the top of the transcript scroll area.",
+      "The 'Recorded checkpoint' hash label is small and low-contrast, but you can still read it."
+    ]
+  }
 }

@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "device Settings completes a member login, shows activity, invites and switches without signing in again",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase5-join-desktop-light.png",
-  "expected": "the Jevellan web app \"join\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"device Settings completes a member login, shows activity, invites and switches without signing in again\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"join\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"device Settings completes a member login, shows activity, invites and switches without signing in again\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The Join code field and the code at the end of the npx command are covered by solid blocks (gray in the field, white in the command). These look like screenshot masks for a secret value, but the code itself can't be checked for legibility in this capture.",
+      "There is no visible copy button for the join code or the command, so users have to select the text by hand."
+    ]
+  }
 }

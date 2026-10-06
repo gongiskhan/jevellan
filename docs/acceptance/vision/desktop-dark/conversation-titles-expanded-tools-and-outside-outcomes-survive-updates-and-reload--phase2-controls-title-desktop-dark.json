@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "conversation titles, expanded tools and outside outcomes survive updates and reload",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-controls-title-desktop-dark.png",
-  "expected": "the Jevellan web app \"controls title\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"conversation titles, expanded tools and outside outcomes survive updates and reload\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"controls title\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"conversation titles, expanded tools and outside outcomes survive updates and reload\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The conversation title in the header is cut off with an ellipsis ('Unbroken_title_titl…'). This looks intentional, but the full title can't be seen on this screen.",
+      "The long tool header name 'long_tool_header_…' breaks in the middle of a word across lines ('lon' / 'g_tool_header'). It is still readable but looks awkward.",
+      "Sidebar conversation titles and subtitles are shortened with ellipses ('A conversation with a lon…', 'Exercise reviewed checkp…'), which is expected for the narrow sidebar.",
+      "'Jump to latest' sits close to the composer and the Jev-unavailable panel, though nothing overlaps."
+    ]
+  }
 }

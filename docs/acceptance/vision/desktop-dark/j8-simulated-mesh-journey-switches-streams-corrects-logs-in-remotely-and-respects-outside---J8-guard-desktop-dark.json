@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/J8-guard-desktop-dark.png",
-  "expected": "the Jevellan web app \"guard\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"guard\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "At the bottom of the scrollable sidebar conversation list, a fourth item is cut off just above the 'Some native sessions are unavailable' row, and only the top edge of its text shows. This is normal scroll overflow, but it looks unfinished.",
+      "Sidebar conversation titles and subtitles are cut short with ellipses (e.g. 'J8: implement after the o…', 'Blocked · Mesh journey fixture ·…'). The full title is shown in the main pane header.",
+      "There are two different 'Retry' buttons: one on the user message bubble and one under the error banner. Next to 'Try automatic again', it isn't clear which action to take.",
+      "The 'Blocked' status chip uses amber text, while the 'Another agent (Claude Code) is active…' banner uses a red border. The two colours suggest different severity levels for the same state."
+    ]
+  }
 }

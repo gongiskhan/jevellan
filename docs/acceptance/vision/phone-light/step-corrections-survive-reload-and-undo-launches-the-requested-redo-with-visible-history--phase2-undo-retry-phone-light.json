@@ -1,9 +1,20 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "step corrections survive reload and undo launches the requested redo with visible history",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase2-undo-retry-phone-light.png",
-  "expected": "the Jevellan web app \"undo retry\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"step corrections survive reload and undo launches the requested redo with visible history\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"undo retry\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"step corrections survive reload and undo launches the requested redo with visible history\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The sticky header partly covers the user message's 'You · Oct 6, 06:35:22' line. This looks like the scroll position, not a layout defect.",
+      "The thread title in the header is cut off with an ellipsis. The full text is shown in the line below it.",
+      "The same 'No model can run this step right now' error appears twice: in the red banner and again in the Resume correction card.",
+      "The error text repeats 'disabled' six times without naming the models, which is hard to read as a reason.",
+      "The Step 1 heading 'Step 1 · Implement' is struck through and greyed out, so it has low contrast. This is likely intentional to show the step was undone."
+    ]
+  }
 }

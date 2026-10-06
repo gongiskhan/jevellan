@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/J11-mesh-codex-why-desktop-light.png",
-  "expected": "the Jevellan web app \"mesh codex why\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"mesh codex why\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The fourth sidebar conversation row ('J8: …') is half-clipped by the bottom of the scrollable list above the 'Some native sessions are unavailable' note.",
+      "The ACCOUNT list in the Why panel is cut off at the bottom of the viewport ('Login fixture: unsupported' is partly visible). The panel appears to scroll.",
+      "Conversation titles and subtitles in the sidebar are truncated with ellipses (e.g. 'Explain how to write a Vit…', 'Remember that this proje…').",
+      "The same authentication-failure message appears twice: in the main step picker card and in the Why panel banner."
+    ]
+  }
 }

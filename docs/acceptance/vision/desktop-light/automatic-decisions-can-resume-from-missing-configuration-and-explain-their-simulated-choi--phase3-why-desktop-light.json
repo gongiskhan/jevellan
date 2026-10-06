@@ -1,9 +1,20 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase3-why-desktop-light.png",
-  "expected": "the Jevellan web app \"why\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"automatic decisions can resume from missing configuration and explain their simulated choices\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"why\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"automatic decisions can resume from missing configuration and explain their simulated choices\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The right 'Why' panel is cut off at the bottom: the line under ACCOUNT is only partly visible. The panel is probably scrollable, but nothing on screen shows there is more below.",
+      "The fourth conversation in the sidebar list is half cut off above 'Some native sessions are unavailable'. This looks like normal scroll overflow, but it shows as a partly visible line of text.",
+      "Long conversation titles and subtitles in the sidebar end in '…' (e.g. 'Exercise automatic decisi…', 'Explain the memorybrows…'). This is deliberate shortening, but the full titles can't be read in this view.",
+      "The small right-aligned labels next to the NEXT STEP and EFFORT headings say only 'Jev'. That may be a cut-off 'Jevellan', or an intentional short label.",
+      "The EFFORT section says 'medium → high', but the bar chart shows medium at 1.00 and high at 0.00. The chart doesn't show the effort that was actually used. This is about content, not layout."
+    ]
+  }
 }

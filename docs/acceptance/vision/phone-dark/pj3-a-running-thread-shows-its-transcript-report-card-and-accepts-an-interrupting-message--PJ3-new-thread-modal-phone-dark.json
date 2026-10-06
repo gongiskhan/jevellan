@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Title input text runs past the edge of the field ('...list what each file is'). This is normal scrolling behavior for a single-line input.",
-      "The background page shows through the modal backdrop only faintly, which is expected."
+      "The Title field is too narrow to show the whole title, so it is cut off at 'what each file is'. This is normal for a single-line input, which scrolls sideways.",
+      "The dimmed page behind the modal (header and the 'Tell the coordinator what you need' box) shows faintly at the top and bottom edges. This is expected backdrop behaviour."
     ]
   }
 }

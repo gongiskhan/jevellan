@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "Settings account, login, Rigging and configuration flows work without horizontal overflow",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase1-rigging-desktop-light.png",
-  "expected": "the Jevellan web app \"rigging\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Settings account, login, Rigging and configuration flows work without horizontal overflow\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"rigging\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Settings account, login, Rigging and configuration flows work without horizontal overflow\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "In the warning banner, the 'Retry' button sits right against the end of 'needs to finish.' with almost no space between them",
+      "Sidebar session titles and metadata are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'dev-ma…'). The truncation is intentional, but the full names can't be read.",
+      "The Safety hook's Claude Code and Codex checkboxes are greyed out and low-contrast. They are likely disabled on purpose for a built-in hook.",
+      "There is a lot of empty space at the bottom of the left sidebar between the session list and 'Install app'"
+    ]
+  }
 }

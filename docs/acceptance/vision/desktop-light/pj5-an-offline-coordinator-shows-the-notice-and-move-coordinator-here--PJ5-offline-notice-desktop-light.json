@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Two sidebar session titles are cut off with ellipses ('Context · J11 memory journ…', 'Context · Mesh journey fixt…'), and their subtitle lines are truncated too ('dev-…', 'de…')",
-      "The empty-state description is vertically centered in a tall, mostly empty main column, so it leaves a lot of whitespace"
+      "Session titles and metadata lines in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This is normal truncation for a narrow sidebar.",
+      "The 'Some native sessions are unavailable' disclosure text is small and low-contrast, but you can still read it."
     ]
   }
 }

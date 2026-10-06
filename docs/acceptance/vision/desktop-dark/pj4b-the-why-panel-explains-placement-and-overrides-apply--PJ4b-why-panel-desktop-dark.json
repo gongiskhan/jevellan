@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar session titles and subtitles are shortened with an ellipsis ('Context · J11 memory journ…', 'Done · Improver sandbox · dev-ma…'). This looks intentional, but the full names can't be read.",
-      "The Why panel header puts the task name in a pink monospace font and the 'Why this placement' title in a sans font, so the two styles look slightly mismatched.",
-      "The 'PLACEMENT' section shows only 'Fixed: none', which says very little.",
-      "The row labels in the score bars ('Main', 'low', 'medium', 'Claude Code Opus') and the 0.10–0.20 values are muted grey on a dark background. They're readable, but the contrast is lower than the highlighted rows."
+      "Sidebar session titles are truncated with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…'), and so are their subtitles ('dev-ma…', 'de…'). That's expected overflow handling and doesn't hide any controls.",
+      "The 'Fixed: none' line under PLACEMENT in the Why panel is small and low-emphasis next to the other sections, but it is still readable.",
+      "The panel header runs the thread title in pink monospace straight into the bold 'Why this placement', so the two read like one line at a glance."
     ]
   }
 }

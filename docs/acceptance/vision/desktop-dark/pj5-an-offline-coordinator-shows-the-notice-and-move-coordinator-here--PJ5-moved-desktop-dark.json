@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Shell session titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'dev-ma…'); this is intentional truncation and the full text is not needed to understand the screen",
-      "The 'Idle' status pill and the 'Claude Code Fable · high' metadata are small, low-contrast monospace text, though still readable"
+      "Sidebar session titles and subtitles get cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · J11 memory journey · dev-…'). This is intended overflow handling.",
+      "The 'Move coordinator here' control isn't visible here. That's consistent with a post-move confirmation screen ('The coordinator moved to dev-madrid.').",
+      "The left column of the main area is mostly empty below the notice."
     ]
   }
 }

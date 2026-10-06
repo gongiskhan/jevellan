@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Move coordinator here' button sits close to the bottom edge of the notice banner, so there's little padding under it.",
-      "Most of the screen between the tabs and the composer is empty, with only the centered intro text."
+      "The header's 'Offline' status badge sits on its own row under the title, so the header uses more vertical space than it needs to",
+      "The empty chat area leaves a big gap between the tab row and the composer"
     ]
   }
 }

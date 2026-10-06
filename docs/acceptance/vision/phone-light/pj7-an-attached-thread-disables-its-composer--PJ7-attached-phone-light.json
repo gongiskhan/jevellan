@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The takeover command at the bottom ('jevellan thread attach thread_01M47PM7102YPXD…') is cut off with an ellipsis. It's still usable because the copy button is next to it and the full thread ID appears in the banner at the top.",
-      "There's a large empty gap between the Turn 1 report card and the attached-composer notice at the bottom.",
-      "The disabled composer's placeholder 'Message this thread' and its send arrow are low-contrast, though still readable."
+      "The take-over command at the bottom ('jevellan thread attach thread_01M47V04GWTVN0B…') is cut off with an ellipsis. The copy button next to it still works, and the full thread ID appears in the notice at the top.",
+      "The disabled composer is quite faint (light placeholder text on a dashed outline). That fits its disabled state, but it is low contrast.",
+      "The metadata lines under the attached notice ('Claude Code · Fable · high effort · Projects Claude · Worktree on …') wrap awkwardly across several lines in small monospace text."
     ]
   }
 }

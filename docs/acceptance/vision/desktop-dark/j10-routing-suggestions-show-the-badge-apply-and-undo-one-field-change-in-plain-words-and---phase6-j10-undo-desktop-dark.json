@@ -1,9 +1,20 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase6-j10-undo-desktop-dark.png",
-  "expected": "the Jevellan web app \"j10 undo\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"j10 undo\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Last runs' card says '2 routing suggestions ready', but only 1 suggestion is waiting and 1 is marked Undone. The wording could confuse people.",
+      "The 'Save schedule and jobs' button has low contrast, probably because it's disabled. It's still readable but faint.",
+      "The 'Memory care' dropdown value 'Apply and tell me' is muted and looks like placeholder text.",
+      "Session titles and subtitles in the sidebar are cut off with an ellipsis (e.g. 'Context · J11 memory jour…'). This looks intentional.",
+      "The 'Recently decided' card has extra empty space below the 'Checked against…' line."
+    ]
+  }
 }

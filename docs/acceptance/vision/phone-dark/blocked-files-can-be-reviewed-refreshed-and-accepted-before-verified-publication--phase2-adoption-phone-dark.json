@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "blocked files can be reviewed, refreshed and accepted before verified publication",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-adoption-phone-dark.png",
-  "expected": "the Jevellan web app \"adoption\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"blocked files can be reviewed, refreshed and accepted before verified publication\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"adoption\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"blocked files can be reviewed, refreshed and accepted before verified publication\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "In the review-note.txt diff, the header line 'diff --git a/review-note.txt b/review-note.txt' runs past the right edge and is clipped. The diff block likely scrolls sideways, and the 'Wrap lines' toggle can show the full line.",
+      "The 'AGENT EVIDENCE' section starts at the bottom of the viewport, and its content is below the fold. This looks like normal page scrolling, not a layout defect."
+    ]
+  }
 }

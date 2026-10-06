@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses ('Context · J11 memory journ…', 'Context · Mesh journey fixt…', 'dev-ma…'). The text is still readable and this is expected for long titles.",
-      "The offline notice banner uses a dark amber background with light text. It is readable but has fairly low contrast against the dark theme.",
-      "The empty-state prompt in the middle and the status column on the right leave a lot of unused vertical space. The layout looks sparse but nothing is broken."
+      "The sidebar thread titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This is intentional truncation, but the device name is hidden.",
+      "The empty-state text in the center column sits in the middle of a large blank area, which leaves a lot of unused vertical space between the offline banner and the composer.",
+      "The small monospace section labels ('WAITING FOR YOU 0', 'PULL REQUESTS 0') and the version text 'v0.1.0' are low-contrast on the dark background, but still readable."
     ]
   }
 }

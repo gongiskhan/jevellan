@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The note textarea has a pink/magenta focus border that looks like a validation error state, but it's probably just the focus ring",
-      "Behind the modal, the background thread content and sidebar are dimmed by the overlay. This is expected, but it does make the page behind hard to read"
+      "Background content behind the modal overlay is dimmed and blurred, which is expected for a modal, so its small text can't be read",
+      "The Note textarea has a pink/magenta focus border, which is a little strong next to the neutral inputs"
     ]
   }
 }

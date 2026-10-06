@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase6-j10-suggestions-phone-dark.png",
-  "expected": "the Jevellan web app \"j10 suggestions\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"j10 suggestions\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The top tab strip cuts off its first and last labels at the screen edges (\"ing\" on the left, a partial tab on the right). It looks like a horizontally scrollable strip, but nothing shows that more tabs are there.",
+      "The diff blocks have extra empty space below the last line of code.",
+      "The \"Save schedule and jobs\" button and the \"Apply and tell me\" placeholder are low-contrast and look disabled. This is probably intentional because nothing has changed yet.",
+      "The \"Simulated judge responses.\" note and the Trial log subtitle are in small, dim text that is harder to read."
+    ]
+  }
 }

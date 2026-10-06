@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The thread ID link 'thread_01M47PJDQH04JYC2ZBKX0PGAFN' runs nearly to the right edge of the header. It's still readable.",
-      "The metadata line wraps over three lines and breaks mid-phrase ('Projects Claude ·' / 'Worktree on ...'), so it's a bit harder to scan.",
-      "There's a large empty gap between the last report card and the footer."
+      "The 'Restarted as thread_…' link can't be told apart from the description text except by its underline and color.",
+      "The large empty area between the last report card and the footer makes the page look sparse.",
+      "The metadata line wraps over three lines in a small monospace font, so it's dense to read on a phone."
     ]
   }
 }

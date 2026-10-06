@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar session titles are cut off with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…'), and so are their subtitles ('dev-ma…', 'de…')",
-      "The 'Send' button in the decision card has low contrast against the dark card background",
-      "The decision card has a pink border and tint that make it stand out a lot more than the other panels"
+      "The 'Send' button on the decision card has low contrast and looks disabled next to the bright magenta card border.",
+      "Sidebar session titles and subtitles are cut short with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). They are still readable and the truncation looks deliberate.",
+      "The center conversation column has a large empty area between the last message and the composer."
     ]
   }
 }

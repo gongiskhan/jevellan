@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "There is a large empty gap between the report card and the attached-thread notice, so the composer sits far down the screen.",
-      "The selected attach command wraps onto two lines, and the magenta selection highlight is uneven across the line break.",
-      "The disabled send button's grey background touches the right edge of the dashed composer border."
+      "There is a large empty gap between the report card and the attached-state notice at the bottom, so the page feels unbalanced.",
+      "The take-over command wraps onto two lines inside the selection highlight; it is still readable, but a little cramped next to the copy icon.",
+      "The thread ID in the header notice runs onto a separate line, so the text breaks unevenly."
     ]
   }
 }

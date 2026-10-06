@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Started \"Add a greeting\" · Claude Code Fable · high · Worktree · dev-madrid' line wraps onto a second line. It is still readable.",
-      "The muted gray text (timestamps, status lines, model label) has fairly low contrast on the dark background, but it is still legible."
+      "The chat feed only fills the top part of the screen, so a large empty area sits above the composer. This is expected for a short conversation.",
+      "The model/effort subtitle 'Claude Code Fable · high' under the title is in small, low-contrast gray text. It is still readable."
     ]
   }
 }

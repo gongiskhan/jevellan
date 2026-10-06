@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-rigging-mcp-desktop-dark.png",
-  "expected": "the Jevellan web app \"rigging mcp\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"rigging mcp\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The file is labelled config.toml but the editor shows content in JSON format. Check whether the label or the content format is intended.",
+      "There is a large empty area inside the content textarea below the short JSON content. It is not a problem, just extra space.",
+      "The background page and sidebar behind the dialog are dimmed and blurred, so you can't read them. This is expected for a dialog and does not block anything."
+    ]
+  }
 }

@@ -1,9 +1,20 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "blocked files can be reviewed, refreshed and accepted before verified publication",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-adoption-desktop-dark.png",
-  "expected": "the Jevellan web app \"adoption\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"blocked files can be reviewed, refreshed and accepted before verified publication\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"adoption\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"blocked files can be reviewed, refreshed and accepted before verified publication\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The conversation title in the header is cut off with an ellipsis ('Exercise reviewed checkpoint recovery with a simulated read-only viola...'). The full title still appears in the first message.",
+      "In the sidebar conversation list, the fourth item is clipped at the bottom edge of its scroll area, so only the tops of its letters show above 'Some native sessions are unavailable'. It is a scroll cutoff, not an overlap.",
+      "The bottom of the right Changes panel is cut off at the viewport edge: the 'JEVELLAN VERIFICATION' text 'No verification receipt yet' is only partly visible. The panel scrolls, so this is reachable.",
+      "Sidebar conversation subtitles are truncated with an ellipsis ('Waiting for you · Checkpoint rec…').",
+      "Diff line text in the Changes panel uses a small, low-contrast monospace font. It is still readable."
+    ]
+  }
 }

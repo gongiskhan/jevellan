@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Working…' status pill in the header is truncated with an ellipsis. That looks deliberate, since it's a spinner label.",
-      "The status text 'Claude Code Fable · high' is in small monospace type with low contrast, but it's still readable."
+      "The page title \"Projects fixture\" is close to the header action buttons, but it isn't cut off.",
+      "Most of the screen below the single pull request card is empty."
     ]
   }
 }

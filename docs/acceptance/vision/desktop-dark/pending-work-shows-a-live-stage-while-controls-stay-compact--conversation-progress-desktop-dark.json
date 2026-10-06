@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "pending work shows a live stage while controls stay compact",
   "layout": "desktop-dark",
   "screenshot": "test-results/conversation-progress-desktop-dark.png",
-  "expected": "the Jevellan web app \"conversation progress\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"pending work shows a live stage while controls stay compact\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"conversation progress\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"pending work shows a live stage while controls stay compact\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The sidebar row for 'Progress fixture' says 'Waiting for you', but the header badge says 'Working' and the live stage shows 'Jev is choosing the next step'. The status labels don't match.",
+      "The sidebar subtitles are cut off with ellipses (e.g. 'Browser fixtur…', 'de…'). This looks like intentional truncation, but the project and host names can't be read in full.",
+      "There is a large empty area between the message bubble and the live stage line at the bottom, so the progress indicator sits far from the conversation content.",
+      "The pink '0s' timer at the far right of the stage line is small and low-contrast."
+    ]
+  }
 }

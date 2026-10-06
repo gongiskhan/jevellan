@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar session titles get cut off with an ellipsis ('Context · J11 memory jour…', 'Context · Mesh journey fix…'), and so do their subtitle lines ('dev-ma…', 'dev-…', 'de…'). This looks like intentional truncation, and the rows are still easy to tell apart.",
-      "The header status says 'Idle' while the right panel shows 'Add a greeting' as Running. This is a state-labeling mismatch, not a rendering problem.",
-      "The chat column has a lot of empty space between the reply and the composer. This is expected because the conversation is short."
+      "The header status says 'Idle' while the right panel shows 'Add a greeting' running (1s). The two disagree.",
+      "Sidebar session titles and metadata are cut off with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…', 'dev-ma…'). This looks intentional, but the full names can't be read.",
+      "The coordinator reply is just 'Started \"Add a greeting\".', which repeats the activity line right above it. That leaves a large empty area in the chat column.",
+      "The small monospace metadata text in the right panel (e.g. 'Claude Code · Fable · high · Worktree · dev-madrid') is low-contrast light gray. It's readable but faint."
     ]
   }
 }

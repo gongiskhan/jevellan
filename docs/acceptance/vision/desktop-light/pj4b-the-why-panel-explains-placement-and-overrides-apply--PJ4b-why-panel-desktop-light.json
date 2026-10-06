@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles are cut off with ellipses ('Context · J11 memory journ…', 'Context · Mesh journey fixt…') and so are their subtitles ('dev-ma…', 'dev-…', 'de…')",
-      "The column header 'Jev' is repeated on the right of every section in the Why panel, which looks a bit cluttered",
-      "The 'Fixed: none' line under PLACEMENT is terse and doesn't explain much"
+      "Sidebar session titles and subtitles are cut short with an ellipsis (e.g. 'Context · J11 memory jour…', 'Done · J11 memory journey · dev-…'). The truncation looks intentional and the full text likely appears on hover.",
+      "The Why panel's own header ('Tidy the README wording' plus 'Why this placement') sits right up against the main thread header; the two areas are only separated by a thin border.",
+      "The thread area has a lot of empty space between the report card and the composer. This is expected with a single turn."
     ]
   }
 }

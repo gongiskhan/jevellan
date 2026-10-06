@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar truncates some project/session names and metadata with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · dev-ma…').",
-      "The running thread title in the right panel is truncated ('Read through the project and list what each file is …').",
-      "The transcript has many repeated 'Noted.' lines in a row, which makes it look padded."
+      "The running thread title 'Read through the project and list what each file is…' is cut off with an ellipsis in the right panel. The full title is still readable in the conversation feed.",
+      "Sidebar session titles and metadata ('Context · J11 memory jour…', 'Done · Improver sandbox · dev-ma…') are cut off with ellipses.",
+      "Several 'Noted.' replies in a row make the conversation feed look repetitive.",
+      "The PR card shows 'Checks passing' while the latest feed event says PR #1 'has conflicts'. Since the Merge button is shown, the conflict status may be missing from the card."
     ]
   }
 }

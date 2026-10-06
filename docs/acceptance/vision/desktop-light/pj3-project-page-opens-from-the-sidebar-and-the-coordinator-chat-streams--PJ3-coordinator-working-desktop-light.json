@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · J11 memory journey · dev-…'), but the full text is likely available on hover",
-      "The 'Working…' status pill text is clipped by an ellipsis in the header badge",
-      "The empty chat area is very large because only one message has arrived so far, which is expected while streaming"
+      "Sidebar session titles and subtitles are cut off with an ellipsis (e.g. 'Context · J11 memory jour…', 'Mesh journey fix…', 'dev-ma…'). This looks like intentional truncation, but the full names can't be read at this width.",
+      "The top-right header crowds its controls a little: the '…' overflow button sits very close to the panel edge."
     ]
   }
 }

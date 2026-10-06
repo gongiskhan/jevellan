@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase6-j10-suggestions-phone-light.png",
-  "expected": "the Jevellan web app \"j10 suggestions\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"j10 suggestions\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The top tab strip is cut off at both edges ('ing' on the left, a partial icon on the right). It looks like a horizontally scrollable tab bar, but nothing on screen shows that it scrolls.",
+      "The 'Apply and tell me' field next to Memory care and the 'Save schedule and jobs' button are greyed out and low contrast. They're still readable, and they appear to be disabled until something changes."
+    ]
+  }
 }

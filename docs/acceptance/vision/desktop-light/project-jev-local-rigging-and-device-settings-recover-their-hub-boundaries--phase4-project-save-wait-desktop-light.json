@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "project, Jev, local Rigging and device Settings recover their hub boundaries",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase4-project-save-wait-desktop-light.png",
-  "expected": "the Jevellan web app \"project save wait\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"project, Jev, local Rigging and device Settings recover their hub boundaries\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"project save wait\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"project, Jev, local Rigging and device Settings recover their hub boundaries\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Browse folders on dev-madrid' button sits directly against the 'Git policy' label below it, with almost no vertical spacing.",
+      "The modal body is clipped at the 'Test command' label. This is a normal scroll cutoff, and the field is reachable by scrolling.",
+      "The disabled 'Saving…' button has low contrast. This is expected for a disabled control, and the text is still readable."
+    ]
+  }
 }

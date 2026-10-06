@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab strip is cut off at both edges: 'Devices' shows as 'evices' on the left, and a tab icon is clipped on the right. This looks like a horizontally scrollable tab bar, but nothing on screen shows that you can scroll it.",
-      "The 'Save Git settings' button has very low contrast against the card. It is probably disabled because nothing has changed, but it is hard to tell that it is a button."
+      "The 'Devices' tab is clipped at the left edge of the tab bar. This is likely a horizontally scrolling tab strip, so it can still be reached.",
+      "The 'Save Git settings' button has very low contrast, probably because it is disabled when nothing has changed. It is still readable.",
+      "A partly visible tab icon is cut off at the right edge of the tab bar."
     ]
   }
 }

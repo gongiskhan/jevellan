@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "Why lists recalled project memory and its selection source after reload",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-memory-why-phone-dark.png",
-  "expected": "the Jevellan web app \"memory why\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"Why lists recalled project memory and its selection source after reload\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"memory why\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"Why lists recalled project memory and its selection source after reload\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The notice 'Jev is unavailable (no key configured). Pick the next step:' ends with a colon, but no choices follow it inside this panel.",
+      "The Candidates list shows only one item (Guide.md · chosen), so it adds little beyond the 'Chosen memory' line."
+    ]
+  }
 }

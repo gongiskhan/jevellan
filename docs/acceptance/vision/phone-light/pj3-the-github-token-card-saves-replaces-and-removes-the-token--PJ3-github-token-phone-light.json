@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The settings tab strip is clipped at both edges: 'Devices' is cut off on the left and the next tab's icon is only partly visible on the right. This looks like a horizontally scrollable tab bar, but nothing shows that it can scroll.",
-      "The 'Save Git settings' button is very low contrast, light text on a pale blue background. This is presumably its disabled state."
+      "The settings tab bar is cut off at both edges: 'Devices' loses its first letter on the left and the last tab shows only an icon on the right. It looks like a horizontally scrolling strip with no visible scroll cue.",
+      "The 'Save Git settings' button is pale and low-contrast. It is probably disabled, but it is hard to tell."
     ]
   }
 }

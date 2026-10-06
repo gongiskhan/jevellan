@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/J11-mesh-claude-why-phone-light.png",
-  "expected": "the Jevellan web app \"mesh claude why\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"mesh claude why\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The warning box text 'Jev is unavailable (authentication failed). Pick the next step:' ends in a colon with nothing after it inside the box. It reads like an unfinished prompt, though the manually picked step, model and effort are shown above.",
+      "The chosen memory title 'Vitest convention for mesh.md Existing.md' wraps onto two lines, so it is unclear whether it is one file name or two.",
+      "The account list reaches the bottom of the screenshot ('Cross-device fixture: unsupported'). There may be more entries below that need scrolling, but every visible row is complete and readable."
+    ]
+  }
 }

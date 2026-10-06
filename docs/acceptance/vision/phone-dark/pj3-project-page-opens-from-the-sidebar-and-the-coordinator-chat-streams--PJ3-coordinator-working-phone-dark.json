@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Composer placeholder is cut off at 'Tell the coordinator what you nee' because the stop button takes up space.",
-      "The status badge is shortened to 'Working…'. It still reads clearly as a working state.",
-      "The send button is dimmed and sits right against the stop button. Both are still visible and reachable."
+      "The composer placeholder is cut off at the stop button ('Tell the coordinator what you nee').",
+      "The status pill shortens its label to 'Working…'. It is still readable.",
+      "The stop button sits close to the send arrow inside the composer, which makes it a little crowded, but both buttons can still be reached."
     ]
   }
 }

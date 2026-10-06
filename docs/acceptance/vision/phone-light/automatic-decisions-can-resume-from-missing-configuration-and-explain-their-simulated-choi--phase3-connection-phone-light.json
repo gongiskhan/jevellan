@@ -1,9 +1,20 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase3-connection-phone-light.png",
-  "expected": "the Jevellan web app \"connection\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"automatic decisions can resume from missing configuration and explain their simulated choices\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"connection\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"automatic decisions can resume from missing configuration and explain their simulated choices\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Jev key saved.' toast sits at the bottom edge, just under the 'Saving creates a configuration revision.' footer. It may hide a save button, if one is there. It can be dismissed with ×.",
+      "The high, xhigh and max effort guide fields are single-line inputs, so their text is cut off at the right edge ('planning a', 'cut acros', 'architecture, U'). The full text is only visible by scrolling inside the field.",
+      "The routing profile textarea holds more text than it shows, so its last visible line is cut through the middle. The rest is reachable by scrolling or resizing.",
+      "The settings tab strip is scrolled sideways, so the first tab shows only as 'mes' and the last as a partial icon. This is expected for a scrollable tab bar on a phone.",
+      "The model card shows the provider 'claude' and the ID 'claude-fable-5-1' with no field label, unlike the other fields."
+    ]
+  }
 }

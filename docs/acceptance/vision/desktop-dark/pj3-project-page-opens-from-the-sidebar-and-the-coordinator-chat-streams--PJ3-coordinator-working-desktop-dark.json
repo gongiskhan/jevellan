@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This looks intended.",
-      "The chat column has a lot of empty space between the single user message and the 'Coordinator is working…' indicator at the bottom.",
-      "Small monospace labels like the model line 'Claude Code Fable · high' and the thread metadata 'Codex · GPT · high · Worktree · Browser member' are low-contrast but still readable."
+      "Sidebar session titles are cut off with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…') and so are their subtitles ('dev-ma…', 'dev-…', 'de…'). This is intentional truncation.",
+      "The 'Working…' status pill in the header is cut off with an ellipsis.",
+      "The dark mode toggle at the bottom left shows a contrast or auto icon as the selected option, so it's unclear which theme is active.",
+      "The lower part of the chat column is mostly empty. That's expected for a new conversation."
     ]
   }
 }

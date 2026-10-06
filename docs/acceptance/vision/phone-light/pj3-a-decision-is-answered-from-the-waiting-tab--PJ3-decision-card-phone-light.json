@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Send button looks pale and low-contrast next to the answer field. It may be disabled because the field is empty, which is likely intended.",
-      "The large empty area below the decision card is expected for a single item."
+      "The Send button is low-contrast, pale grey on light blue. That's probably its disabled state while the input is empty, but it's hard to see.",
+      "The monospace meta text ('Claude Code Fable · high', 'From the coordinator · now') is small and light. It's still readable at phone size.",
+      "The tab row fills the full width, and 'Pull requests' sits close to the right edge. It isn't cut off, but it would clip if the text got any longer."
     ]
   }
 }

@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles are cut off with an ellipsis ('Context · J11 memory jour…', 'Context · Mesh journey fix…'). Their metadata lines are cut off too ('dev-ma…', 'dev-…', 'de…'). Each cut ends in a deliberate ellipsis.",
-      "The empty chat area is mostly blank space with only the centered hint text. This is expected for an empty chat but looks sparse."
+      "Sidebar session titles are truncated with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…'), and so are their metadata lines ('dev-ma…', 'dev-…', 'de…')",
+      "Header status chip text ('Idle', 'Claude Code Fable · high') is small and low-contrast",
+      "Empty-state helper text in the center pane is light gray and low-contrast"
     ]
   }
 }

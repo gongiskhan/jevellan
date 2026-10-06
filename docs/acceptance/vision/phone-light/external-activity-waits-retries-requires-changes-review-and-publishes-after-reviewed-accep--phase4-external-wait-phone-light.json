@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "external activity waits, retries, requires Changes review and publishes after reviewed acceptance",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase4-external-wait-phone-light.png",
-  "expected": "the Jevellan web app \"external wait\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"external activity waits, retries, requires Changes review and publishes after reviewed acceptance\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"external wait\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"external activity waits, retries, requires Changes review and publishes after reviewed acceptance\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Header title is cut off with an ellipsis ('Exercise external activity guards befor...'). The full text appears in the summary line and the message bubble below it.",
+      "Large empty area between the action buttons and the composer at the bottom of the screen."
+    ]
+  }
 }

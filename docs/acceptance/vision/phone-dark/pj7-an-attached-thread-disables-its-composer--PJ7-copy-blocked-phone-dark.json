@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "There is a large empty gap between the report card and the attached-thread notice, so the composer and the copy fallback sit at the very bottom of the screen",
-      "The command's pink selection highlight breaks across two lines and doesn't line up with the copy button, so it looks ragged",
-      "The 'Message this thread' placeholder and the disabled send arrow are very low-contrast, which is acceptable for a disabled state but faint"
+      "There is a large empty gap between the report card and the attached-composer notice, which pushes the composer and take-over command to the bottom of the screen.",
+      "The magenta highlight on the selected attach command wraps across two lines with uneven widths, so it looks a little ragged.",
+      "The muted grey metadata lines (Claude Code · Fable · high effort, worktree path) are low-contrast against the dark background but still readable.",
+      "The long thread ID in the attached notice wraps onto its own line, which looks slightly awkward."
     ]
   }
 }

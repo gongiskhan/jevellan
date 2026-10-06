@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "Projects and a manual planned change render the full plan, stream, Why and verified Changes",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase2-changes-desktop-light.png",
-  "expected": "the Jevellan web app \"changes\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"changes\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The Changes panel header says '1 changed files'. It should say '1 changed file'.",
+      "Two work-closed banners appear one after the other ('Work closed. Its changes are kept…' and 'Work closed and published.'). This looks redundant.",
+      "Session titles in the sidebar ('Change the value to two …', 'Context · J11 memory journ…') are cut off with an ellipsis. This is intended, but the full titles can't be read without hovering.",
+      "The secondary text in the sidebar ('Some native sessions are unavailable', version 'v0.1.0') is small and low in contrast."
+    ]
+  }
 }

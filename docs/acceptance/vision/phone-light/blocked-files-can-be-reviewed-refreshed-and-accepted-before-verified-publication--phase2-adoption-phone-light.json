@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "blocked files can be reviewed, refreshed and accepted before verified publication",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase2-adoption-phone-light.png",
-  "expected": "the Jevellan web app \"adoption\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"blocked files can be reviewed, refreshed and accepted before verified publication\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"adoption\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"blocked files can be reviewed, refreshed and accepted before verified publication\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "In review-note.txt, the long diff header line ('diff --git a/review-note.txt b/review-note...') runs past the right edge of the code block. It can still be read with horizontal scroll or the 'Wrap lines' toggle.",
+      "The screenshot ends at the 'AGENT EVIDENCE' heading, so whatever follows it isn't shown. The main actions (Continue, Refresh changes) are fully visible."
+    ]
+  }
 }

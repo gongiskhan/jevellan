@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "loose Rigging becomes managed with bundled files, durable retry and runtime toggles",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase2-rigging-promote-phone-light.png",
-  "expected": "the Jevellan web app \"rigging promote\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"loose Rigging becomes managed with bundled files, durable retry and runtime toggles\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"rigging promote\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"loose Rigging becomes managed with bundled files, durable retry and runtime toggles\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The disabled, checked 'Claude Code · Current account' checkbox has low contrast and is hard to tell apart from an unchecked box.",
+      "Fine print below the fieldset ('Instructions stay editable...') is small and light gray. It is readable but low in contrast."
+    ]
+  }
 }

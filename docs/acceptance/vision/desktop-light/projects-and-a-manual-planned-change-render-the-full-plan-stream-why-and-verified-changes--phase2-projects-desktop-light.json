@@ -1,9 +1,20 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "Projects and a manual planned change render the full plan, stream, Why and verified Changes",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase2-projects-desktop-light.png",
-  "expected": "the Jevellan web app \"projects\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"projects\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Project saved.' toast sits in the header gap between the 'Projects' title and the 'Git settings' button. It doesn't cover any text or controls.",
+      "Sidebar session titles are cut short with an ellipsis ('Context · J11 memory journ…', 'Context · Mesh journey fixt…', and their 'Done · … · dev-ma…' subtitles). The truncation looks intentional.",
+      "The long path '/tmp/.../activity-context-project' wraps onto a second line in the 'Outside context fixture' card, so that card is taller than its neighbour.",
+      "Card heights in each two-column row don't match, which leaves uneven gaps, for example beside 'Public memory fixture' and 'Manual conversation fixture'.",
+      "'Manual conversation fixture' shows as a project card but isn't in the sidebar PROJECTS list. This may be a data difference rather than a rendering problem."
+    ]
+  }
 }

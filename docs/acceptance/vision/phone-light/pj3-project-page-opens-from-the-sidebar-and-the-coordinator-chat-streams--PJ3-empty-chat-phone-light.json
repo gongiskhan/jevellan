@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The empty-state helper text is gray and fairly low contrast, but it can still be read",
-      "The tab row stops at 'Pull requests' with room to spare, so no tab looks clipped"
+      "The 'Idle' status pill and the 'Claude Code Fable · high' model label are very small, low-contrast monospace text. They're still readable.",
+      "The send button is rendered as disabled (pale) while the input is empty. That's expected, but it's low contrast.",
+      "The empty-state text sits in a large empty area with no other visual anchor, so the page looks a bit sparse."
     ]
   }
 }

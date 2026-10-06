@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Large empty area above and below the centered empty-state text, so the screen looks sparse on a phone",
-      "Send button in the composer is very low contrast against the dark input, which is typical for a disabled state but hard to see",
-      "The 'Idle' status chip and the 'Claude Code Fable · high' model label are small, low-contrast monospace text"
+      "The 'Idle' status pill and the 'Claude Code Fable · high' meta line are small and low-contrast but still readable",
+      "The tab row is close to the right edge with not much padding after 'Pull requests', but nothing is clipped",
+      "The empty-state helper text is fairly low-contrast against the dark background but still readable"
     ]
   }
 }

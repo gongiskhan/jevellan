@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Move coordinator here' button sits close to the notice banner's bottom edge, so there's little padding below it.",
-      "The empty chat area has a lot of unused vertical space above and below the centered helper text.",
-      "The 'Offline' status chip uses small monospace text that is a bit dim against the dark background."
+      "The 'Offline' badge under the title is very small and low-contrast.",
+      "The tab row's right edge sits close to the 'Pull requests' tab. It fits but leaves little margin.",
+      "There is a large empty area between the empty-state text and the composer, so the screen looks sparse."
     ]
   }
 }

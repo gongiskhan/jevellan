@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase6-j12-morning-card-phone-dark.png",
-  "expected": "the Jevellan web app \"j12 morning card\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"j12 morning card\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The top tab bar is cut off on the left: the first tab shows only 'og'. This looks like a horizontally scrolling tab strip, not a layout break.",
+      "The 'Commit b8e4b1cffa' text in the Memory care card is small and low-contrast against the dark card.",
+      "The unchecked project checkboxes and the 'Save schedule and jobs' button are dim and low-contrast in dark mode."
+    ]
+  }
 }

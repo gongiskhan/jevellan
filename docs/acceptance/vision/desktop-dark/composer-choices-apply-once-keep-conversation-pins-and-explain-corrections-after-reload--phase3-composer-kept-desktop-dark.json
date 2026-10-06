@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "composer choices apply once, keep conversation pins and explain corrections after reload",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase3-composer-kept-desktop-dark.png",
-  "expected": "the Jevellan web app \"composer kept\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"composer choices apply once, keep conversation pins and explain corrections after reload\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"composer kept\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"composer choices apply once, keep conversation pins and explain corrections after reload\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Conversation titles in the sidebar are cut off with ellipses (for example 'Exercise composer choic…' and 'Explain the memorybrows…'). This looks deliberate, but the full titles can't be read without hovering or opening the conversation.",
+      "The conversation title is very close to the top edge of the window, with almost no padding above it.",
+      "The 'Proposed plan' heading and the 'The full fixture plan' subtitle are stacked tightly, with little space between them."
+    ]
+  }
 }

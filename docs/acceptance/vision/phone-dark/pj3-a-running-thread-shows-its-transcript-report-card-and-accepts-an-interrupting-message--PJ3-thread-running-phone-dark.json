@@ -10,11 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Header title is cut off with an ellipsis ('Read through the project an...'). The full task text still appears in the Prompt card.",
-      "The attach command at the bottom ('jevellan thread attach thread_01M47PGCWXTVGYQ...') is cut off. The copy button next to it still gives you the full command.",
-      "The 'Working on turn 1…' status ends in an ellipsis, so it's unclear whether the label is cut off or meant to read that way.",
-      "The worktree path in the metadata block wraps across lines with a dangling '·' separator, so it's a little harder to scan.",
-      "The transcript cards (Read, Grep, Bash, Read) are all collapsed and show only the tool name and 'completed', with no summary of what each one did."
+      "The header title is cut off with an ellipsis (\"Read through the project an...\"). It looks intended, but the full thread name can't be seen on this screen.",
+      "The terminal attach command is cut off (\"jevellan thread attach thread_01M47TY2V8FAZXG...\"). The copy button still works, but users can't read the full thread ID.",
+      "There is a large empty gap between the last transcript card and the status/composer area.",
+      "The tool cards show only generic labels (Read, Grep, Bash, Read) with no summary of what each did, so the transcript tells you little at a glance.",
+      "No report card is visible in this capture. That may be expected while the thread is still running."
     ]
   }
 }

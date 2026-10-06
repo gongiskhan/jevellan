@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Large empty area between the notice and the composer; the chat pane has no content, so the screen feels sparse.",
-      "Header status text 'Claude Code Fable · high' is small and low-contrast grey monospace, but still readable."
+      "The 'moved' notice doesn't include a 'Move coordinator here' action or any other next step. That may be intended for this step, but the notice reads as a dead end.",
+      "The title 'Projects offline' and the 'Idle' status badge send mixed signals next to the 'moved to dev-madrid' notice.",
+      "Most of the screen is empty space between the notice and the composer."
     ]
   }
 }

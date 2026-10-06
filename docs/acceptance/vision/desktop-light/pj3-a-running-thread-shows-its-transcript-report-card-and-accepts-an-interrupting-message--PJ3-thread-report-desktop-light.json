@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The status badge reads 'Idle' while the Stop button is still shown and the step is about a running thread. The state may not match, but nothing is hidden or broken.",
-      "Long session titles and subtitles in the sidebar are cut off with an ellipsis (e.g. 'Context · J11 memory journ…', 'dev-ma…'). This is intentional truncation and doesn't block use.",
-      "Much of the main content area is empty space between the report card and the message box."
+      "Sidebar shell-session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). The truncation looks intentional and the main content is not affected.",
+      "The thread status chip says 'Idle' while the Stop button is still shown and the report card says 'Progress'. That is a state mismatch, not a layout problem.",
+      "The large empty area between the report card and the message box is just unused space."
     ]
   }
 }

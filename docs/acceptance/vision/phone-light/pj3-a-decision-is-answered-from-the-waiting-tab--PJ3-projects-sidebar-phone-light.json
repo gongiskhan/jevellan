@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The meta line of the third shell session row ('Done · Mesh journey fixture · dev-mad…') is cut off with an ellipsis, so the full host name isn't shown; this is intentional truncation, not a layout fault",
-      "The low-contrast scrim over the main view still lets background content show through faintly at the right edge, which looks a bit busy but doesn't block anything"
+      "The subtitle of the third shell session row is cut off with an ellipsis ('Done · Mesh journey fixture · dev-mad…'). The full value can be inferred from the rows above it.",
+      "Behind the scrim, the main content to the right of the drawer is partly visible and clipped (timestamps, chips). This is expected for an overlay drawer, but it looks a little busy at this width."
     ]
   }
 }

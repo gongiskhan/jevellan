@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "Settings account, login, Rigging and configuration flows work without horizontal overflow",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase1-runtimes-phone-dark.png",
-  "expected": "the Jevellan web app \"runtimes\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"Settings account, login, Rigging and configuration flows work without horizontal overflow\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"runtimes\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"Settings account, login, Rigging and configuration flows work without horizontal overflow\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The top tab strip runs off the right edge ('Impr…' is cut off). It looks like a horizontally scrollable tab bar, so the tab can still be reached, but the edge could use a fade or scroll hint.",
+      "The device list under Claude Code says 'Codex sign-ins are kept per device for now.' That looks like copy reused from the Codex section.",
+      "The Five hours and Week usage bars show only empty tracks with low contrast against the card background."
+    ]
+  }
 }

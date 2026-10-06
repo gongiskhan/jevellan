@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Main' radio option and its hint 'This project is set to Leave git to me.' use low-contrast grey text. This fits a disabled state, but it is lighter than the rest of the dialog.",
-      "The body may scroll above the Cancel/Save footer, since 'Turn limit per thread' sits right against the divider. There's no scroll indicator, so it's unclear whether more fields are below."
+      "The disabled 'Main' radio and its helper text 'This project is set to Leave git to me.' are light grey and low-contrast, but still readable.",
+      "The dimmed background behind the modal (header, breadcrumb, composer) is blurred, which is expected under a modal scrim."
     ]
   }
 }

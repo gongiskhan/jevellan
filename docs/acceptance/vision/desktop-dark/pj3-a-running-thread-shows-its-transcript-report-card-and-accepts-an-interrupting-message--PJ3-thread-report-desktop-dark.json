@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'). This is intended truncation and the text stays readable.",
-      "The metadata line under 'Back to the project' is long and fills almost the full header width in small, low-contrast monospace text.",
-      "There is a large empty gap between the report card and the message box."
+      "The sidebar session titles and subtitles are cut off with ellipses ('Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This is expected for a narrow sidebar.",
+      "The status badge says 'Idle' even though the step describes a running thread. Stop and Override still show.",
+      "The metadata line under the title uses small, low-contrast monospace text, but it can still be read.",
+      "There is a large empty area between the report card and the message composer."
     ]
   }
 }

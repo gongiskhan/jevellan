@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "conversation titles, expanded tools and outside outcomes survive updates and reload",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-controls-outcome-desktop-dark.png",
-  "expected": "the Jevellan web app \"controls outcome\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"conversation titles, expanded tools and outside outcomes survive updates and reload\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"controls outcome\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"conversation titles, expanded tools and outside outcomes survive updates and reload\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The fourth conversation in the sidebar list ('Context · Context f…') is cut off where the scrollable list meets the 'Some native sessions are unavailable' row. The list can still be scrolled, so the item is reachable.",
+      "Some sidebar conversation subtitles are truncated with ellipses (e.g. 'Done · Undo across works · dev-m…'). This is expected truncation and the full text is still shown in the header.",
+      "The 'Waiting for you 1' filter chip sits tight against the 'Done' chip in the filter row, leaving little space between them."
+    ]
+  }
 }

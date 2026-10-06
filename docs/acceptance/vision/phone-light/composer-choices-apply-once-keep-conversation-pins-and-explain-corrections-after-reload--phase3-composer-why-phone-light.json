@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "composer choices apply once, keep conversation pins and explain corrections after reload",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase3-composer-why-phone-light.png",
-  "expected": "the Jevellan web app \"composer why\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"composer choices apply once, keep conversation pins and explain corrections after reload\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"composer why\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"composer choices apply once, keep conversation pins and explain corrections after reload\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Adversarial Rev...' label is shortened with an ellipsis in the narrow label column. The meaning is still clear.",
+      "The list starts at 'Test' right below the sticky header, so rows above it may be scrolled out of view.",
+      "The last correction entry ('Just override · effort: high → max') runs past the bottom of the screen. This looks like normal scrolling, not clipping.",
+      "Font sizes and styles are mixed (monospace small caps, serif italic, sans) and the type hierarchy is a bit uneven, but all of it is readable."
+    ]
+  }
 }

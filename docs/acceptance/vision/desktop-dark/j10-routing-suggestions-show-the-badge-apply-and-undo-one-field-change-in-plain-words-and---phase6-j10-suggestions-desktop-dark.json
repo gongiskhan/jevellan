@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase6-j10-suggestions-desktop-dark.png",
-  "expected": "the Jevellan web app \"j10 suggestions\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"j10 suggestions\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The sidebar cuts off long session titles and subtitles with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This looks intentional, and the full names show elsewhere.",
+      "'Save schedule and jobs' has low contrast and looks disabled, which is probably right because nothing has changed.",
+      "The 'Apply and tell me' select next to the unchecked 'Memory care' row is dimmed and reads a bit like placeholder text.",
+      "Some diff lines wrap onto a second line instead of scrolling sideways. They're still readable."
+    ]
+  }
 }

@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "public project memory shows its notice, note update time and read-only rendered content",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-memory-settings-phone-dark.png",
-  "expected": "the Jevellan web app \"memory settings\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"public project memory shows its notice, note update time and read-only rendered content\"; the other steps are judged in their own screenshots)"
+  "expected": "the Jevellan web app \"memory settings\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"public project memory shows its notice, note update time and read-only rendered content\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The dialog is scrolled partway down, so the top fields are out of view (they can be reached by scrolling). The 'Path on Offline fixture' label sits right under the header with very little space above it.",
+      "This frame shows the memory settings (public notice, how memory is kept, memory folder) but not the note's update time or the read-only rendered content. Those are presumably shown in other screenshots of this run.",
+      "The modal fills nearly the whole phone viewport, so the background page is barely visible at the edges."
+    ]
+  }
 }
