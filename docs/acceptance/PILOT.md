@@ -8,6 +8,8 @@ The user requested a usable pilot and deferred the remaining build. This is not 
 
 ## Current pilot
 
+On 2026-10-06 the Projects build (commit `49106b7`) became active on the pilot at the same address. It runs as a frozen release in `~/.jevellan-build/pilot-projects-2026-10-06` with the same data home, loopback port and Tailscale route, superseding the copy described under Running copy below; the previous release, the plan-acceptance build of 2026-10-03 in `~/.jevellan-build/pilot-plan-approval-2026-10-03`, is kept for rollback. Accounts, projects, the vault, configuration, settings and every conversation ledger were preserved, and no Projects work was started on the pilot. See the [Projects deployment evidence](deploy-projects-2026-10-06.md).
+
 The [ordinary conversation update](conversation-parity-2026-09-29.md) brings chronological formatted transcripts, readable thinking capture and composer live feedback/Jump to latest to normal Jevellan work.
 
 The [session list controls](session-list-controls-2026-09-29.md) add per-row Rename and drag-and-drop ordering (long press on mobile), with saved presentation shared by browsers using this installation.
