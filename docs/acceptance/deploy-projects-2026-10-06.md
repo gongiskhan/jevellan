@@ -73,6 +73,10 @@ The new release was started with the previous activation's method: a detached No
   - Changed (13): the three hook files above; the hub database, WAL and shared-memory files; `locks/activity.json` and `locks/daemon.db` (the gate's publication and the new daemon's ownership record); `rigging/application.json` and the three per-account `rigging/state` files (the applied rigging for the new package); and `settings-sync.json`.
   - Added (27): the new release's rigging package (3 files per runtime) and its account stages (14 Claude, 7 Codex).
 
+## Known limit on this pilot
+
+Terminal takeover does not work on this pilot yet: its launcher (`run.mjs`, kept from the earlier pilot releases) builds the daemon with `createDaemon` and no `LocalDiagnostics`, so no installation control file is written and every `/api/local/*` route, including `jevellan doctor` and the attach and detach routes behind `jevellan thread attach`, answers 401. The thread page still shows the takeover line. To enable it, the launcher must pass `new LocalDiagnostics(application, address)` to `createDaemon` and close it on shutdown, as `startDaemon` does (apps/daemon/src/index.ts), and the command must run against the pilot's data home; that is a launcher change plus another switch through the same idle-gate flow, not a code change. Recorded, not done.
+
 ## Rollback
 
 The previous release is intact and needs no data change to run again. The new release has written nothing the previous one cannot read. No Projects namespace or `projects/` state exists until Projects is first used. The conversation documents keep their schemas; the one new field, `noProgressReset`, is optional and is only written with a new reply. `ROLLBACK.md` beside the new `run.mjs` has the exact commands:
