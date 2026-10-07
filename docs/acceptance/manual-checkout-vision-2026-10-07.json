@@ -1,0 +1,19 @@
+{
+  "schema": "manual-checkout-vision-summary-v1",
+  "screens": [
+    {
+      "screen": "manual-settings-desktop-light-projects",
+      "label": "live",
+      "ok": true,
+      "blocking": 0,
+      "cosmetic": 2
+    },
+    {
+      "screen": "manual-settings-phone-dark-projects",
+      "label": "live",
+      "ok": true,
+      "blocking": 0,
+      "cosmetic": 2
+    }
+  ]
+}

@@ -53,7 +53,7 @@ export function pullRequestEntries(threads: readonly ThreadIndex[]): PullRequest
 export function effectiveSettings(settings: ProjectWorkSettings, project: Pick<Project, 'branchPolicy'>, gates: Pick<PlacementGates, 'mainIsolation'> = PHASE_GATES): { settings: ProjectWorkSettings; notice?: string } {
   if (settings.defaultIsolation !== 'main') return { settings };
   const worktree: ProjectWorkSettings = { ...settings, defaultIsolation: 'worktree' };
-  if (project.branchPolicy !== 'main') return { settings: worktree, notice: LEAVE_GIT_SETTING };
+  if (project.branchPolicy !== 'main' && gates.mainIsolation) return { settings, notice: LEAVE_GIT_SETTING };
   return gates.mainIsolation ? { settings } : { settings: worktree, notice: MAIN_NOT_AVAILABLE };
 }
 

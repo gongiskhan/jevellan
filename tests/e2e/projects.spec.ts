@@ -579,28 +579,31 @@ test('PJ3 the notebook can be edited', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test('PJ3 project settings disable Main for a Leave git to me project', async ({ page }) => {
+test('PJ3 Leave git to me offers Main and preserves the manual git policy', async ({ page }, info) => {
   const errors = await begin(page);
   await openProject(page, 'Projects external');
   let dialog = await openSettings(page);
   const main = dialog.getByRole('radio', { name: 'Main', exact: true });
   await expect(dialog.getByRole('radio', { name: 'Worktree and pull request', exact: true })).toBeChecked();
-  await expect(main).toBeDisabled();
-  await expect(main).toHaveAccessibleDescription('This project is set to Leave git to me.');
-  await expect(dialog.getByText('This project is set to Leave git to me.', { exact: true })).toBeVisible();
+  await expect(main).toBeEnabled();
+  await expect(main).not.toHaveAttribute('aria-describedby');
+  await expect(dialog).toContainText('Commits and pushes stay with you.');
   const model = dialog.getByRole('combobox', { name: 'Coordinator model', exact: true });
   await expect(model).toHaveValue(''); await expect(model.locator('option').first()).toHaveText('Automatic: first available');
   await expect(dialog.getByRole('combobox', { name: 'Coordinator effort', exact: true })).toHaveValue('medium');
   await expect(dialog.getByRole('textbox', { name: 'Worktree setup command', exact: true })).toHaveAttribute('placeholder', 'npm ci');
   const limits = { 'Max running threads': '6', 'Max per device': '4', 'Turn limit per thread': '30' };
   for (const [name, value] of Object.entries(limits)) await expect(dialog.getByRole('spinbutton', { name, exact: true })).toHaveValue(value);
-  await shot(page, 'project-settings', false);
+  await main.check();
+  await page.screenshot({ path: `/tmp/jevellan-manual-settings-${info.project.name}.png`, fullPage: true });
   await dialog.getByRole('spinbutton', { name: 'Max running threads', exact: true }).fill('3');
   await dialog.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await expect(page.getByRole('status').filter({ hasText: 'Project settings saved.' })).toBeVisible();
   dialog = await openSettings(page);
+  await expect(dialog.getByRole('radio', { name: 'Main', exact: true })).toBeChecked();
   await expect(dialog.getByRole('spinbutton', { name: 'Max running threads', exact: true })).toHaveValue('3');
+  expect(ProjectWorkViewSchema.parse(await read(page, '/api/projects/projects_external/work')).project.branchPolicy).toBe('external');
   await dialog.getByRole('button', { name: 'Cancel', exact: true }).click(); await expect(dialog).toHaveCount(0);
 
   // A project that may use main offers it since phase 6 (D88): the radio is enabled, without a note, and can be chosen (not saved here).

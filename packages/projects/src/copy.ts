@@ -18,7 +18,7 @@ export function clockTime(at: string | Date): string {
 }
 
 // 9.1 Coordinator system append
-export function coordinatorSystemAppend(projectName: string): string {
+export function coordinatorSystemAppend(projectName: string, gitPolicy: 'main' | 'external' = 'main'): string {
   return `You are the coordinator of the project "${projectName}" in Jevellan. You do not write code and you do not edit files. You plan, delegate to threads, keep track, and talk with the owner.
 
 How you work:
@@ -26,7 +26,7 @@ How you work:
 - Preserve the outcome the owner asked for, including Jev's requested-result guidance. Carry it into the thread task and check the report against it. To run an app for the owner, have the thread start a managed app with jevellan_app_start and return its verified browser link. Tests and opening a file on the server do not complete that request. Continue authorized work without asking the owner to repeat it.
 - Route each new request: if it continues work an active thread is doing, send it to that thread with jevellan_thread_message; otherwise start a new thread. Split unrelated requests into separate threads. Do not start two threads that would change the same files at the same time; sequence them instead.
 - Jevellan chooses where each thread runs (isolation, model, effort, device). Only pass isolation, modelId, effort or deviceId when the owner explicitly asked for them.
-- Worktree threads end in a pull request that the owner reviews and merges. You cannot merge. Main threads publish directly to main.
+- Worktree threads end in a pull request that the owner reviews and merges. You cannot merge. ${gitPolicy === 'external' ? 'This project is set to Leave git to me. Main threads edit the existing checkout, including untracked files, and leave all git operations to the owner. Do not ask the owner to commit files or change that policy just to make a code change. Worktree threads see only committed files; do not tell them to edit outside their workspace.' : 'Main threads publish directly to main.'}
 - When a thread reports, decide the next step yourself whenever the answer follows from the owner's instructions, the notebook or the code. Ask the owner with jevellan_ask_user only when the decision is genuinely theirs. Keep questions short, offer 2 to 4 options when possible, and continue other work while waiting.
 - When checks fail or a pull request has conflicts, tell the responsible thread what to fix.
 - When a thread was interrupted by a restart or a failure, resume it with jevellan_thread_message if the work is still wanted.
@@ -108,7 +108,7 @@ export function eventLine(event: CoordinatorEvent, context: EventLineContext): s
     }
     case 'thread-published': {
       const outcome = event.result === 'pr-opened' ? `Pull request #${event.prNumber} opened.` : event.result === 'pr-updated' ? `Pull request #${event.prNumber} updated.`
-        : event.result === 'main-published' ? `Published to main as ${(event.commit ?? '').slice(0, 7)}.` : 'Concluded without changes.';
+        : event.result === 'main-published' ? `Published to main as ${(event.commit ?? '').slice(0, 7)}.` : event.result === 'checkout-completed' ? 'Completed in the project checkout. Git is left to the owner.' : 'Concluded without changes.';
       return `[${thread(event.threadId)}] ${outcome}`;
     }
     case 'thread-verification-failed': return `[${thread(event.threadId)}] Tests failed ${event.attempts} times. Last output:\n${event.tail}`;
@@ -127,7 +127,8 @@ export function eventLine(event: CoordinatorEvent, context: EventLineContext): s
 
 // 9.4 Thread system append and turn prompts
 export function threadSystemAppend(input: { projectName: string; cwd: string; isolation: Isolation; branch?: string | undefined; baseBranch: string;
-  deviceName: string; testCommand?: string | undefined }): string {
+  deviceName: string; testCommand?: string | undefined; gitPolicy?: 'main' | 'external' | undefined }): string {
+  const manual = input.isolation === 'main' && input.gitPolicy === 'external';
   const isolation = input.isolation === 'worktree'
     ? `Isolation: your own git worktree on branch ${input.branch ?? ''}, based on ${input.baseBranch}. Other threads work elsewhere. Commit your work on this branch.`
     : `Isolation: you work directly on main in the project checkout of ${input.deviceName}. Other main threads may work on other devices at the same time. Before editing, reserve the files or folders you will change with jevellan_reserve, check jevellan_mail_inbox at the start of each turn, and tell other threads about changes that affect them with jevellan_mail_send. Release reservations when done.`;
@@ -139,10 +140,10 @@ ${isolation}
 Rules:
 - Do the whole task: understand the code, implement, and run the relevant tests yourself.
 - When the task includes running an app for the owner, use jevellan_app_start: static serves an HTML directory; command launches the project's server with PORT and HOST (or {port}/{host} in its arguments). It returns a verified URL and keeps the app running after your turn ends. Include that URL in your reply and report summary. Use jevellan_apps_list and jevellan_app_stop to inspect or stop this project's apps. If untracked app files are absent from a worktree, you may serve the registered project checkout without changing it. Do not substitute tests or a file opened on the server for a working link.
-- Commit with clear messages using the machine's git identity. Never add attribution trailers, AI credits or session links to commits, code or documentation.
-- Do not push and do not open pull requests. When you report done, Jevellan runs ${input.testCommand || 'the checks'}, pushes${input.isolation === 'worktree' ? ' and opens the pull request' : ''}.
+- ${manual ? 'This project leaves git to the owner. Edit the existing files, including untracked files, and preserve unrelated owner work. Do not commit, stage, stash, reset, switch branches, push or open a pull request. Leave the edits in place for the owner.' : "Commit with clear messages using the machine's git identity. Never add attribution trailers, AI credits or session links to commits, code or documentation."}
+- ${manual ? `When you report done, Jevellan runs ${input.testCommand || 'the checks'} and releases the checkout without changing git.` : `Do not push and do not open pull requests. When you report done, Jevellan runs ${input.testCommand || 'the checks'}, pushes${input.isolation === 'worktree' ? ' and opens the pull request' : ''}.`}
 - If you need a decision that is not yours to make, report needs-decision with a short question and 2 to 4 options, and stop.
-- End every turn by calling jevellan_thread_report exactly once: done when the task is complete and committed, progress when you made progress and will continue when asked, needs-decision when you need an answer, blocked when you cannot continue. Keep the summary short and factual.`;
+- End every turn by calling jevellan_thread_report exactly once: done when the task is complete${manual ? ' and verified' : ' and committed'}, progress when you made progress and will continue when asked, needs-decision when you need an answer, blocked when you cannot continue. Keep the summary short and factual.`;
 }
 export const taskPrompt = (title: string, task: string): string => `Task: ${title}\n\n${task}`;
 export const MESSAGE_SEPARATOR = '\n\n---\n\n';

@@ -76,6 +76,7 @@ export const eventCopy = {
   prOpened: (name: string, n: number | undefined) => sentence(`${name} opened ${n ? `pull request #${n}` : 'a pull request'}`),
   prUpdated: (name: string, n: number | undefined) => sentence(`${name} updated ${n ? `pull request #${n}` : 'its pull request'}`),
   mainPublished: (name: string) => sentence(`${name} published to main`),
+  checkoutCompleted: (name: string) => sentence(`${name} completed in your checkout`),
   noChanges: (name: string) => sentence(`${name} concluded without changes`),
   testsFailed: (name: string, attempts: number) => `Tests failed ${attempts === 1 ? 'once' : `${attempts} times`} in ${name}`,
   interruptedRestart: (name: string) => sentence(`${name} was interrupted by a restart`),
@@ -123,6 +124,10 @@ export const STATE_LABELS = {
 } as const;
 export const mergedOutcome = (n: number): string => `Merged #${n}`;
 export const PUBLISHED_TO_MAIN = 'Published to main';
+export const CHECKOUT_COMPLETED = 'Completed';
+export const MANUAL_MAIN_HELP = 'Main edits your existing project files. Commits and pushes stay with you.';
+export const STOP_KEEPS_CHECKOUT = 'Your edits stay in the project checkout. Git is left to you.';
+export const RESTART_HELP_MANUAL = 'This thread stops and its edits stay in your checkout. A new thread starts with the same title and task. Git is left to you.';
 export const NO_CHANGES_OUTCOME = 'No changes';
 export const STOPPED = 'Stopped';
 export const FAILED = 'Failed';

@@ -84,7 +84,7 @@ const ev = <K extends string, S extends z.ZodRawShape>(kind: K, fields: S) => z.
 export const CoordinatorEventSchema = z.discriminatedUnion('kind', [
   ev('user-message', { text: z.string().min(1).max(20000), clientMessageId: IdSchema }),
   ev('thread-report', { threadId: IdSchema, report: ThreadReportSchema }),
-  ev('thread-published', { threadId: IdSchema, result: z.enum(['pr-opened', 'pr-updated', 'main-published', 'no-changes']),
+  ev('thread-published', { threadId: IdSchema, result: z.enum(['pr-opened', 'pr-updated', 'main-published', 'no-changes', 'checkout-completed']),
     prNumber: positive.optional(), commit: z.string().optional() }),
   ev('thread-verification-failed', { threadId: IdSchema, attempts: positive, tail: z.string().max(4000) }),
   ev('thread-interrupted', { threadId: IdSchema, reason: z.enum(['restart', 'timeout', 'failed', 'stopped']), message: z.string().max(1000) }),
@@ -132,7 +132,7 @@ export const ThreadSchema = z.strictObject({
   title: z.string().min(1).max(120), task: z.string().min(1).max(20000),
   createdAt: TimestampSchema, createdBy: z.enum(['coordinator', 'owner']),
   state: ThreadStateSchema, stateReason: z.string().max(400).optional(),
-  isolation: IsolationSchema, placement: PlacementRecordSchema,
+  isolation: IsolationSchema, placement: PlacementRecordSchema, gitPolicy: z.enum(['main', 'external']).optional(),
   ownerDeviceId: IdSchema, coordinatorDeviceId: IdSchema,
   cwd: z.string(), branch: z.string().optional(), baseBranch: z.string(), baseCommit: z.string(),
   turns: count, turnAllowance: z.number().int(),
@@ -145,7 +145,7 @@ export type Thread = z.infer<typeof ThreadSchema>;
 // 5.6 hub namespace project-threads, key threadId
 export const ThreadIndexSchema = z.strictObject({ schema: z.literal('project-thread-index-v1'), revision,
   id: IdSchema, projectId: IdSchema, title: z.string().min(1).max(120), state: ThreadStateSchema, stateReason: z.string().max(400).optional(),
-  isolation: IsolationSchema, ownerDeviceId: IdSchema, runtime: IdSchema, modelLabel: text, effort: EffortSchema,
+  isolation: IsolationSchema, gitPolicy: z.enum(['main', 'external']).optional(), ownerDeviceId: IdSchema, runtime: IdSchema, modelLabel: text, effort: EffortSchema,
   accountLabel: text, branch: z.string().optional(), pr: PullRequestStateSchema.optional(),
   lastSummary: z.string().max(400).optional(), turns: count,
   createdAt: TimestampSchema, updatedAt: TimestampSchema, endedAt: TimestampSchema.optional() });
@@ -296,7 +296,7 @@ export const ThreadVerificationSchema = z.strictObject({ schema: z.literal('thre
   command: z.string().nullable(), status: z.enum(['passed', 'failed', 'skipped']), exitCode: z.number().int().optional(),
   timedOut: z.boolean(), commit: z.string(), outputRef: z.string().optional(), tail: z.string().max(4000) });
 export const ThreadPublicationSchema = z.strictObject({ schema: z.literal('thread-publication-v1'),
-  result: z.enum(['pr-opened', 'pr-updated', 'main-published', 'no-changes', 'branch-pushed', 'local-only', 'conflict', 'pr-state', 'cleanup']),
+  result: z.enum(['pr-opened', 'pr-updated', 'main-published', 'no-changes', 'branch-pushed', 'local-only', 'conflict', 'pr-state', 'cleanup', 'checkout-completed']),
   prNumber: positive.optional(), commit: z.string().optional(), branch: z.string().optional(), pr: PullRequestStateSchema.optional(),
   files: z.array(z.string()).optional() });
 export const ProjectNoticeSchema = z.strictObject({ schema: z.literal('project-notice-v1'), text, kind: z.enum(['info', 'error']) });

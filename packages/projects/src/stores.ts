@@ -23,7 +23,7 @@ const PATTERNS = new SecretRedactor();
 export function threadIndex(thread: Thread, labels: ThreadLabels, updatedAt: string): ThreadIndex {
   return ThreadIndexSchema.parse({
     schema: 'project-thread-index-v1', revision: 0, id: thread.id, projectId: thread.projectId, title: thread.title, state: thread.state,
-    ...(thread.stateReason === undefined ? {} : { stateReason: thread.stateReason }), isolation: thread.isolation, ownerDeviceId: thread.ownerDeviceId,
+    ...(thread.stateReason === undefined ? {} : { stateReason: thread.stateReason }), isolation: thread.isolation, ...(thread.gitPolicy ? { gitPolicy: thread.gitPolicy } : {}), ownerDeviceId: thread.ownerDeviceId,
     runtime: thread.placement.runtime, modelLabel: labels.modelLabel, effort: thread.placement.effortEffective, accountLabel: labels.accountLabel,
     ...(thread.branch === undefined ? {} : { branch: thread.branch }), ...(thread.pr ? { pr: thread.pr } : {}),
     // Redacted, then cut where no later redaction rewrites it, so the summary keeps within 400 characters on every hop (P8 review S-1)

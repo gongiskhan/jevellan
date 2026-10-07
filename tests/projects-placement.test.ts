@@ -1,6 +1,6 @@
 import { expect, test, vi } from 'vitest';
 import { AccountSchema, AccountStatusSchema, JevCallSchema, PlacementRecordSchema, ProjectSchema, SecretRedactor, seedConfiguration, type Account, type AccountStatus, type ModelOption } from '../packages/core/dist/index.js';
-import { approximateTokens, buildPlacementState, decidePlacement, JevClient, JevError, LEAVE_GIT_MAIN, MAIN_NOT_AVAILABLE, NO_PLACEMENT, NO_THREAD_MODEL, overrideSentence, parseJevResponse, PLACEMENT_INCOMPATIBLE, PLACEMENT_INSTRUCTIONS,
+import { approximateTokens, buildPlacementState, decidePlacement, JevClient, JevError, MAIN_NOT_AVAILABLE, NO_PLACEMENT, NO_THREAD_MODEL, overrideSentence, parseJevResponse, PLACEMENT_INCOMPATIBLE, PLACEMENT_INSTRUCTIONS,
   PLACEMENT_ISOLATION_CRITERIA, PLACEMENT_QUESTION_SET, placementCandidates, placementDevices, placementDeviceSetup, placementFallback, placementOptions, PlacementStateSchema, preparePlacementA, preparePlacementB, REMOTE_NOT_AVAILABLE,
   TASK_SHORTENED, UNKNOWN_PLACEMENT_DEVICE, UNKNOWN_PLACEMENT_MODEL, type DecisionClient, type JevQuestions, type PlacementCandidates, type PlacementDevice, type PlacementInput, type PlacementPacketInput, type PlacementRuntime } from '../packages/decisions/dist/index.js';
 
@@ -99,7 +99,7 @@ test('main isolation needs the main policy, a free checkout and a checkout on ma
   expect(onMain.isolations).toEqual(['worktree', 'main']); expect(ids(onMain.devices)).toEqual(['dev_mini', 'dev_studio']);
   expect(ids(onMain.main!.devices)).toEqual(['dev_studio']); expect(onMain.main!.excludedDevices).toEqual([{ deviceId: 'dev_mini', reason: 'main checkout busy: Fix login' }]);
   expect(placementOptions(onMain, 'main')).toEqual(onMain.main); expect(ids(placementOptions(onMain, 'worktree').devices)).toEqual(['dev_mini', 'dev_studio']);
-  expect(candidates(input({ project: { ...project, branchPolicy: 'external' } })).isolations).toEqual(['worktree']);
+  expect(candidates(input({ project: { ...project, branchPolicy: 'external' } })).isolations).toEqual(['worktree', 'main']);
   expect(candidates(input({ fixed: { isolation: 'worktree' } })).isolations).toEqual(['worktree']);
   const fixedMain = candidates(input({ devices: [busy, device('dev_studio', 'Studio', { checkoutBranch: 'main' })], fixed: { isolation: 'main' } }));
   expect(fixedMain.isolations).toEqual(['main']); expect(ids(fixedMain.devices)).toEqual(['dev_studio']);
@@ -167,8 +167,8 @@ test('phase gates refuse fixed fields in a fixed order and keep defaults on this
   const gated = (fixed: PlacementInput['fixed'], over: Partial<PlacementInput> = {}) => refusal(input({ gates: closed, fixed, ...over }));
   const external = { project: { ...project, branchPolicy: 'external' as const } };
   expect(gated({ isolation: 'main' })).toBe(MAIN_NOT_AVAILABLE);
-  expect(gated({ isolation: 'main' }, external)).toBe(LEAVE_GIT_MAIN);
-  expect(refusal(input({ fixed: { isolation: 'main' }, ...external }))).toBe('This project is set to Leave git to me, so threads cannot work on main.');
+  expect(gated({ isolation: 'main' }, external)).toBe(MAIN_NOT_AVAILABLE);
+  expect(candidates(input({ fixed: { isolation: 'main' }, ...external })).isolations).toEqual(['main']);
   expect(gated({ deviceId: 'dev_studio' })).toBe(REMOTE_NOT_AVAILABLE);
   expect(gated({ isolation: 'main', deviceId: 'dev_studio' })).toBe('Main isolation is not available yet.');
   expect(gated({ modelId: 'nope', isolation: 'main', deviceId: 'dev_ghost' }, external)).toBe(UNKNOWN_PLACEMENT_MODEL);
@@ -182,7 +182,7 @@ test('phase gates refuse fixed fields in a fixed order and keep defaults on this
   expect(result.excludedDevices).toEqual([{ deviceId: 'dev_studio', reason: 'not available until remote threads exist' }]);
   expect(fallback(roster)).toMatchObject({ isolation: 'worktree', deviceId: 'dev_mini', eligibleDevices: ['dev_mini'], excludedDevices: [{ deviceId: 'dev_studio', reason: 'not available until remote threads exist' }] });
   expect(fallback(input({ defaultIsolation: 'main' })).isolation).toBe('main');
-  expect(fallback(input({ defaultIsolation: 'main', ...external })).isolation).toBe('worktree');
+  expect(fallback(input({ defaultIsolation: 'main', ...external })).isolation).toBe('main');
 });
 
 test('the fallback takes the default isolation, the first eligible model and medium effort mapped to the model', () => {
@@ -272,7 +272,7 @@ test('Call A asks isolation only when both are allowed, the eligible models by d
   expect(a.effort).toEqual({ type: 'choice', instructions: 'Choose the reasoning effort this thread needs.', criteria: settings.effortGuide });
   expect(a.effort?.type === 'choice' && Object.keys(a.effort.criteria)).toEqual(['low', 'medium', 'high', 'xhigh', 'max']);
   expect(a.isolation?.type === 'choice' && a.isolation.criteria).toEqual(PLACEMENT_ISOLATION_CRITERIA);
-  expect(questionKeys(input({ project: { ...project, branchPolicy: 'external' } }))).toEqual(['pick_model', 'effort']);
+  expect(questionKeys(input({ project: { ...project, branchPolicy: 'external' } }))).toEqual(['isolation', 'pick_model', 'effort']);
   expect(questionKeys(input({ gates: closed }))).toEqual(['pick_model', 'effort']);
   expect(questionKeys(input({ fixed: { isolation: 'worktree' } }))).toEqual(['pick_model', 'effort']);
   expect(questionKeys(input({ devices: [device('dev_mini', 'Mac mini', { mainBlockedBy: 'Fix login' }), device('dev_studio', 'Studio', { checkoutBranch: 'feature' })] }))).toEqual(['pick_model', 'effort']);
@@ -355,7 +355,7 @@ test('every Jev failure except cancellation places with the fallback and records
   expect(transport).toHaveBeenCalledTimes(1);
   // The fallback keeps its own rules: the default isolation (coerced), the coordinator device, else the fewest running by name.
   expect((await placed(input({ defaultIsolation: 'main' }), jev(new JevError('timeout')))).isolation).toBe('main');
-  expect((await placed(input({ defaultIsolation: 'main', project: { ...project, branchPolicy: 'external' } }), jev(new JevError('timeout')))).isolation).toBe('worktree');
+  expect((await placed(input({ defaultIsolation: 'main', project: { ...project, branchPolicy: 'external' } }), jev(new JevError('timeout')))).isolation).toBe('main');
   const roster = input({ settings: { ...settings, menu: [swift] }, coordinatorDeviceId: 'dev_none', devices: [device('dev_zeta', 'Zeta', { running: 1 }), device('dev_alpha', 'Alpha', { running: 1 })], statuses: ['dev_zeta', 'dev_alpha'].map((id) => status('codex_a', id)) });
   expect((await placed(roster, jev(new JevError('network')))).deviceId).toBe('dev_alpha');
 });
@@ -401,7 +401,7 @@ test('the placement packet is redacted before the task is shortened and carries 
   expect(JSON.parse(state)).toEqual({ schema: 'placement-state-v1',
     rules: { routingProfile: settings.routingProfile, effortGuide: settings.effortGuide,
       recentOverrides: ["model changed from deep to swift for 'Add B' (restart)", "device changed from dev_mini to dev_studio for 'Add B' (restart)", "effort changed from high to low for 'Add A' (next-turn)"] },
-    project: { name: 'App', defaultIsolation: 'worktree' },
+    project: { name: 'App', defaultIsolation: 'worktree', gitPolicy: 'main' },
     thread: { title: 'Add A [redacted]', task: `${'x'.repeat(5975)}[redact${TASK_SHORTENED}`, coordinatorNote: 'Use the [redacted] with Bearer [redacted] now.' }, activeThreads: [active] });
   expect(TASK_SHORTENED).toBe('\n[Task shortened.]'); expect(JSON.parse(state).thread.task).toHaveLength(6000);
   expect(tokens).toBe(approximateTokens(state)); expect(tokens).toBeLessThanOrEqual(12_000);
@@ -417,7 +417,7 @@ test('the placement packet is redacted before the task is shortened and carries 
   // The default isolation is the effective one: main only when main can be offered.
   expect(parsed({}, input({ defaultIsolation: 'main' })).project.defaultIsolation).toBe('main');
   expect(parsed({}, input({ defaultIsolation: 'main', gates: closed })).project.defaultIsolation).toBe('worktree');
-  expect(parsed({}, input({ defaultIsolation: 'main', project: { ...project, branchPolicy: 'external' } })).project.defaultIsolation).toBe('worktree');
+  expect(parsed({}, input({ defaultIsolation: 'main', project: { ...project, branchPolicy: 'external' } })).project.defaultIsolation).toBe('main');
 });
 
 test('an oversized packet drops reserved paths, then threads, then overrides, oldest first, and falls back when still too large', async () => {

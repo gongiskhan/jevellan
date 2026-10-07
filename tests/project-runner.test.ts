@@ -86,11 +86,11 @@ test('views count work, list pull requests and questions, coerce a Leave git def
   expect(pullRequestEntries(threads)).toEqual([{ threadId: 'thread_3', title: 'thread_3', branch: 'jv/x-1', pr: threads[2]!.pr },
     { threadId: 'thread_4', title: 'thread_4', branch: 'jv/y-2', reason: 'Branch pushed. Add a GitHub token in Settings → Git to open pull requests.' }]);
   const main = ProjectWorkSettingsSchema.parse({ ...defaultProjectWorkSettings('proj_a'), defaultIsolation: 'main' });
-  expect(effectiveSettings(main, { branchPolicy: 'external' })).toEqual({ settings: { ...main, defaultIsolation: 'worktree' }, notice: LEAVE_GIT_SETTING });
+  expect(effectiveSettings(main, { branchPolicy: 'external' })).toEqual({ settings: main, notice: LEAVE_GIT_SETTING });
   // A closed main gate (D88) reads a main default as worktree with the phase text; Leave git still wins above. Phase 6 opened it.
   expect(effectiveSettings(main, { branchPolicy: 'main' }, { mainIsolation: false })).toEqual({ settings: { ...main, defaultIsolation: 'worktree' }, notice: MAIN_NOT_AVAILABLE });
   expect(effectiveSettings(main, { branchPolicy: 'main' })).toEqual({ settings: main });
-  expect(effectiveSettings(main, { branchPolicy: 'external' }, { mainIsolation: true })).toEqual({ settings: { ...main, defaultIsolation: 'worktree' }, notice: LEAVE_GIT_SETTING });
+  expect(effectiveSettings(main, { branchPolicy: 'external' }, { mainIsolation: true })).toEqual({ settings: main, notice: LEAVE_GIT_SETTING });
   expect(effectiveSettings(main, { branchPolicy: 'main' }, { mainIsolation: true })).toEqual({ settings: main });
   expect(effectiveSettings(defaultProjectWorkSettings('proj_a'), { branchPolicy: 'external' })).toEqual({ settings: defaultProjectWorkSettings('proj_a') });
 

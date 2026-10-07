@@ -297,7 +297,7 @@ test('work settings, notebook and answers: revision checks, the main default coe
   // On a Leave git project the brief's text wins over the phase text (5.1, D88).
   const stored = await f.app.state.projects.get(pid);
   await f.app.conversations.saveProject({ schema: 'project-write-v1', revision: stored!.revision, project: { ...f.project, branchPolicy: 'external' } });
-  expect(await call(f, route('/work-settings'), 'GET', undefined, 200)).toMatchObject({ settings: { defaultIsolation: 'worktree' }, notice: LEAVE_GIT_SETTING });
+  expect(await call(f, route('/work-settings'), 'GET', undefined, 200)).toMatchObject({ settings: { defaultIsolation: 'main' }, notice: LEAVE_GIT_SETTING });
   expect(ProjectWorkViewSchema.parse(await call(f, route('/work'), 'GET', undefined, 200))).toMatchObject({ project: { branchPolicy: 'external' }, settingsNotice: LEAVE_GIT_SETTING });
   // A retried save with its client request id repeats instead of conflicting (D101).
   const retried = put(2, { maxRunningThreads: 5 }, 'set_retry');

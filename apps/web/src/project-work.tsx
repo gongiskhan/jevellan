@@ -851,6 +851,7 @@ function NewThreadDialog({ props, view, move, close }: { props: PageProps; view:
                 </select>
               </label>
               {mainBlock && <p className="pw-field-note" id={isolationNote}>{mainBlock}</p>}
+              {!mainBlock && view.project.branchPolicy === 'external' && <p className="pw-field-note">{copy.MANUAL_MAIN_HELP}</p>}
             </div>
             <label>{copy.MODEL}
               <select value={form.modelId} onChange={(event) => {
@@ -952,6 +953,7 @@ function SettingsDialog({ props, view, close }: { props: PageProps; view: Projec
                 aria-describedby={mainBlock ? mainNote : undefined} onChange={() => isolation('main')} />{copy.MAIN}
             </label>
             {mainBlock && <p className="pw-field-note pw-radio-note" id={mainNote}>{mainBlock}</p>}
+            {!mainBlock && view.project.branchPolicy === 'external' && <p className="pw-field-note pw-radio-note">{copy.MANUAL_MAIN_HELP}</p>}
           </fieldset>
           <div className="form-grid">
             <label>{copy.COORDINATOR_MODEL}

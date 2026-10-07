@@ -1,0 +1,29 @@
+{
+  "schema": "manual-checkout-live-summary-v1",
+  "at": "2026-10-07T15:50:28.808Z",
+  "label": "live",
+  "state": "done",
+  "isolation": "main",
+  "gitPolicy": "external",
+  "projectPolicy": "external",
+  "jevChoseIsolation": true,
+  "noCommit": true,
+  "noPr": true,
+  "gitUnchanged": true,
+  "changedFiles": [
+    "app.js",
+    "index.html"
+  ],
+  "verification": [
+    {
+      "status": "passed",
+      "command": "node --test",
+      "exitCode": 0
+    }
+  ],
+  "publication": [
+    "checkout-completed"
+  ],
+  "obsoleteWithdrawn": true,
+  "openQuestions": 0
+}

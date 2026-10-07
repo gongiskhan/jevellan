@@ -43,6 +43,7 @@ export type PublicationOutcome =
   | { kind: 'pr'; result: 'pr-opened' | 'pr-updated'; pr: PullRequestState }
   | { kind: 'main-conflict'; files: string[] }
   | { kind: 'main-published'; commit: string }
+  | { kind: 'checkout-completed' }
   /** A git or GitHub failure, redacted and at most 400 characters (a thread state reason). */
   | { kind: 'error'; reason: string };
 export type PublicationResult = { outcome: PublicationOutcome; pushedCommit?: string; verified?: VerificationResult };
@@ -186,6 +187,14 @@ export class ThreadPublication {
     let verified: VerificationResult | undefined;
     const result = (outcome: PublicationOutcome): PublicationResult => ({ outcome, ...(verified ? { verified } : {}) });
     try {
+      if (thread.gitPolicy === 'external' || project.branchPolicy === 'external') {
+        await ws.ownership.assert(project, ws.owner);
+        if (await ws.branch() !== 'refs/heads/main') return result({ kind: 'error', reason: NOT_ON_MAIN });
+        signal?.throwIfAborted();
+        verified = await this.verify(project, thread, ledger, signal);
+        signal?.throwIfAborted();
+        return result(verified.status === 'failed' ? { kind: 'verification-failed', verification: verified } : { kind: 'checkout-completed' });
+      }
       const leases = this.leases; if (!leases) throw new Error('Publication leases are not available on this device.');
       await ws.ownership.assert(project, ws.owner);
       const cwd = ws.path;

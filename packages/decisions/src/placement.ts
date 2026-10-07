@@ -137,13 +137,12 @@ function refusal(input: PlacementInput, evaluation: Evaluation): string {
 
 /** Candidate isolations, models and devices for a new thread (brief 10, D8, D9, D37, D65, D71, D88), or the refusal text. */
 export function placementCandidates(input: PlacementInput): PlacementCandidates | { refused: string } {
-  const { fixed, project } = input;
+  const { fixed } = input;
   if (fixed.modelId !== undefined && !input.settings.menu.some((model) => model.id === fixed.modelId)) return { refused: UNKNOWN_PLACEMENT_MODEL };
   if (fixed.deviceId !== undefined && !input.devices.some((device) => device.id === fixed.deviceId)) return { refused: UNKNOWN_PLACEMENT_DEVICE };
-  if (fixed.isolation === 'main' && project.branchPolicy !== 'main') return { refused: LEAVE_GIT_MAIN };
   if (fixed.isolation === 'main' && !input.gates.mainIsolation) return { refused: MAIN_NOT_AVAILABLE };
   if (fixed.deviceId !== undefined && !input.gates.remoteDevices && fixed.deviceId !== input.deviceId) return { refused: REMOTE_NOT_AVAILABLE };
-  const mainAllowed = input.gates.mainIsolation && project.branchPolicy === 'main' && fixed.isolation !== 'worktree';
+  const mainAllowed = input.gates.mainIsolation && fixed.isolation !== 'worktree';
   const assess = (limits: boolean) => {
     const main = mainAllowed ? evaluate(input, true, limits) : undefined;
     return { main: main?.models.length ? main : undefined, top: fixed.isolation === 'main' ? main! : evaluate(input, false, limits) };
@@ -235,7 +234,7 @@ export const PlacementStateSchema = z.strictObject({
   schema: z.literal('placement-state-v1'),
   // The last 8 overrides of this project, one sentence per changed field.
   rules: z.strictObject({ routingProfile: text, effortGuide: z.record(EffortSchema, text), recentOverrides: z.array(text).max(32) }),
-  project: z.strictObject({ name: text, defaultIsolation: IsolationSchema }),
+  project: z.strictObject({ name: text, defaultIsolation: IsolationSchema, gitPolicy: z.enum(['main', 'external']).optional() }),
   thread: z.strictObject({ title: text, task: text.max(TASK_CHARS), coordinatorNote: text.max(600).optional() }),
   activeThreads: z.array(z.strictObject({ title: text, isolation: IsolationSchema, device: text, model: text, effort: EffortSchema, reservedPaths: z.array(text) })).max(50),
 });
@@ -260,13 +259,13 @@ export function overrideSentence(change: { field: PlacementField; from: string; 
 export function buildPlacementState(input: PlacementStateInput): { state: string; approximateTokens: number } {
   const { packet } = input;
   const overrides = [...packet.overrides].sort((a, b) => Date.parse(b.at) - Date.parse(a.at)).slice(0, 8);
-  const mainAllowed = input.gates.mainIsolation && input.project.branchPolicy === 'main';
+  const mainAllowed = input.gates.mainIsolation;
   const note = packet.note?.trim();
   const redacted = input.redactor.document({
     schema: 'placement-state-v1',
     rules: { routingProfile: input.settings.routingProfile, effortGuide: { ...input.settings.effortGuide },
       recentOverrides: overrides.flatMap((entry) => entry.changes.map((change) => overrideSentence(change, entry.title, entry.mode))).slice(0, 32) },
-    project: { name: input.project.name, defaultIsolation: input.defaultIsolation === 'main' && !mainAllowed ? 'worktree' : input.defaultIsolation },
+    project: { name: input.project.name, defaultIsolation: input.defaultIsolation === 'main' && !mainAllowed ? 'worktree' : input.defaultIsolation, gitPolicy: input.project.branchPolicy },
     thread: { title: packet.title, task: packet.task, ...(note ? { coordinatorNote: note } : {}) },
     activeThreads: packet.activeThreads.slice(-50).map((thread) => ({ title: thread.title, isolation: thread.isolation, device: thread.device, model: thread.model, effort: thread.effort, reservedPaths: [...thread.reservedPaths] })),
   } satisfies PlacementState);
@@ -287,7 +286,9 @@ export function buildPlacementState(input: PlacementStateInput): { state: string
 export function preparePlacementA(input: PlacementInput, candidates: PlacementCandidates): JevQuestions {
   const questions: JevQuestions = {};
   if (input.fixed.isolation === undefined && candidates.isolations.length > 1) {
-    questions.isolation = { type: 'choice', instructions: PLACEMENT_INSTRUCTIONS.isolation, criteria: Object.fromEntries(candidates.isolations.map((isolation) => [isolation, PLACEMENT_ISOLATION_CRITERIA[isolation]])) };
+    const manual = input.project.branchPolicy === 'external';
+    questions.isolation = { type: 'choice', instructions: manual ? 'Choose the workspace. This project leaves git to the owner. Existing uncommitted and untracked files are only present in the project checkout; a worktree starts from committed files.' : PLACEMENT_INSTRUCTIONS.isolation,
+      criteria: Object.fromEntries(candidates.isolations.map((isolation) => [isolation, manual && isolation === 'main' ? 'Edit the existing project checkout, including untracked files. Leave changes in place without staging, committing, switching branches, resetting or pushing. Use this for changes to an app served from that checkout.' : PLACEMENT_ISOLATION_CRITERIA[isolation]])) };
   }
   if (input.fixed.modelId === undefined && candidates.models.length > 1) {
     questions.pick_model = { type: 'choice', instructions: PLACEMENT_INSTRUCTIONS.pick_model, criteria: Object.fromEntries(candidates.models.map(({ model }) => [model.id, model.description])) };

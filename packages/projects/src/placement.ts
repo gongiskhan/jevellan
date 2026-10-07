@@ -65,7 +65,7 @@ export class Placement {
   /** The decisions input for one start; exported for views that explain exclusions. */
   async input(input: PlaceInput): Promise<PlacementInput> {
     const { project, workSettings } = input;
-    const main = this.#o.gates.mainIsolation && project.branchPolicy === 'main' && input.fixed.isolation !== 'worktree';
+    const main = this.#o.gates.mainIsolation && input.fixed.isolation !== 'worktree';
     const [settings, accounts, roster, counts, held] = await Promise.all([this.#o.settings(), this.#o.accounts.list(), this.#o.roster(), this.#o.admission.counts(project.id),
       main ? this.#held(project.id, input.exclude) : new Map<string, string>()]);
     input.signal?.throwIfAborted();

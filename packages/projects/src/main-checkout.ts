@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import {
   GitWorkspace, NOT_ON_MAIN, resolveProjectPath, type CheckoutOwner, type CheckoutOwnership, type Project, type SecretRedactor, type Thread, type ThreadLocal,
 } from '@jevellan/core';
-import { LEAVE_GIT_MAIN, leftoverCommitSubject, mainCheckoutMessage } from './copy.js';
+import { leftoverCommitSubject, mainCheckoutMessage } from './copy.js';
 import type { ThreadGit } from './git.js';
 
 /** The checkout claim of a main thread (brief 8.2 step 4): the thread is both the owner and its work. */
@@ -54,21 +54,21 @@ export class MainCheckout {
   /** The project checkout on this device. */
   path(project: Project): string { return resolveProjectPath(project, this.#o.deviceId, this.#o.deviceName); }
   /** Git on the checkout as this thread's owned work: every write asserts the claim and main. */
-  workspace(project: Project, thread: Pick<Thread, 'id' | 'title'>): GitWorkspace {
-    return new GitWorkspace(project, this.#o.deviceId, this.#ownership(), mainOwner(thread), this.#o.redactor);
+  workspace(project: Project, thread: Pick<Thread, 'id' | 'title' | 'gitPolicy'>): GitWorkspace {
+    return new GitWorkspace(thread.gitPolicy === 'external' ? { ...project, branchPolicy: 'external' } : project, this.#o.deviceId, this.#ownership(), mainOwner(thread), this.#o.redactor);
   }
   /**
    * Preparation, once per thread (D67 re-runs it only while no base was recorded): the outside activity check, the claim, then a clean
    * main fast-forwarded to origin. A failure after the claim releases it unchanged, since nothing ran in the checkout yet.
    */
   async prepare(project: Project, thread: Pick<Thread, 'id' | 'title'>): Promise<PreparedMain> {
-    if (project.branchPolicy !== 'main') throw new Error(LEAVE_GIT_MAIN);
     const ownership = this.#ownership(); const owner = mainOwner(thread); const path = this.path(project);
     try {
       await this.#o.outside?.assertIdle(project, path);
       await ownership.acquire(project, owner);
     } catch (error) { throw this.#error(project, error); }
     try {
+      if (!(await this.onMain(project, thread))) throw new Error(NOT_ON_MAIN);
       return { cwd: path, baseBranch: 'main', baseCommit: await this.workspace(project, thread).prepare() };
     } catch (error) {
       const kept = await ownership.release(project, owner, { processesGone: true, commits: 'unchanged' }).then(() => undefined, (failure: unknown) => this.#error(project, failure).message);
@@ -154,6 +154,10 @@ export class MainCheckout {
     try {
       if (!(await this.#holds(project, thread))) return {};
       await this.#reclaim(project, owner);
+      if (thread.gitPolicy === 'external' || project.branchPolicy === 'external') {
+        await ownership.release(project, owner, { processesGone: true, commits: 'unchanged' });
+        return {};
+      }
       const ws = this.workspace(project, thread); const cwd = ws.path; const git = this.#o.git;
       if (await this.#workingBranch(ws) !== 'refs/heads/main') { if (!seen) refused = await this.#seen(ws, false); throw new Error(NOT_ON_MAIN); }
       try { await this.#o.outside?.assertIdle(project, cwd); }

@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { AccountService } from '@jevellan/accounts';
 import {
-  HubUnavailable, SecretRedactor, ThreadReportSchema, clipRedacted, isTerminal, liveWork, newId, redactWithin, stableJson, type CoordinatorEvent, type Project, type ProjectWorkSettings,
+  HubUnavailable, MANUAL_CHECKOUT_COMPLETED, SecretRedactor, ThreadReportSchema, clipRedacted, isTerminal, liveWork, newId, redactWithin, stableJson, type CoordinatorEvent, type Project, type ProjectWorkSettings,
   type QueuedMessage, type Thread, type ThreadLocal, type ThreadReport, type ThreadState, type TurnProcess,
 } from '@jevellan/core';
 import { SESSION_NOT_FOUND } from '@jevellan/runtime-contract';
@@ -285,7 +285,7 @@ export class ThreadRunner {
         // A stop that arrives meanwhile settles the claim once this step ends (its own step on the chain).
         const made = await this.#c.main.prepare(project, thread);
         if (this.#halted()) return false;
-        this.#set((current) => ({ ...current, cwd: made.cwd, baseBranch: made.baseBranch, baseCommit: made.baseCommit }));
+        this.#set((current) => ({ ...current, cwd: made.cwd, baseBranch: made.baseBranch, baseCommit: made.baseCommit, gitPolicy: project.branchPolicy }));
         return true;
       }
       const ledger = this.#c.ledgers.thread(thread.projectId, thread.id);
@@ -405,7 +405,7 @@ export class ThreadRunner {
       launched = await this.#c.launcher.launch({ owner: { kind: 'thread', projectId: thread.projectId, id: thread.id }, turn, runtime: placement.runtime, modelId: placement.modelId,
         model: placement.model, modelLabel: labels.modelLabel, effort: placement.effortEffective, pinnedAccountId: placement.accountId, permissions: 'write', cwd: thread.cwd,
         systemAppend: threadSystemAppend({ projectName: project.name, cwd: thread.cwd, isolation: thread.isolation, branch: thread.branch, baseBranch: thread.baseBranch,
-          deviceName: this.#c.deviceName, testCommand: project.testCommand }),
+          deviceName: this.#c.deviceName, testCommand: project.testCommand, gitPolicy: thread.gitPolicy }),
         prompt: (resumed) => threadPrompt(thread, next.body, resumed, next.reason), ...(thread.nativeSessionId ? { resume: thread.nativeSessionId } : {}),
         safetyProfile: 'thread', timeoutMs: this.#c.timers.threadTurnTimeoutMs, tools, gitIdentityFrom: this.#c.worktrees.repository(project) });
     } catch (error) { await tools.close(); return { status: 'unavailable', error: this.#message(error) }; }
@@ -513,6 +513,15 @@ export class ThreadRunner {
       const attempts = (current: Thread) => result.verified && result.verified.status !== 'failed' ? 0 : current.verificationAttempts;
       const projectId = thread.projectId; const threadId = thread.id;
       switch (outcome.kind) {
+        case 'checkout-completed': {
+          thread = this.#set((current) => ({ ...withState(current, 'done', MANUAL_CHECKOUT_COMPLETED), verificationAttempts: attempts(current), endedAt: current.endedAt ?? this.#at() }),
+            { type: 'thread-publication', data: { schema: 'thread-publication-v1', result: 'checkout-completed' } });
+          await this.#giveBack(project, thread, 'unchanged');
+          await this.#releaseReservations(thread);
+          this.#undelivered();
+          await this.#tell(projectId, { kind: 'thread-published', threadId, result: 'checkout-completed' });
+          return null;
+        }
         case 'no-changes': {
           thread = this.#set((current) => ({ ...withState(current, 'done', NO_CHANGES), verificationAttempts: attempts(current), endedAt: current.endedAt ?? this.#at() }),
             { type: 'thread-publication', data: { schema: 'thread-publication-v1', result: 'no-changes' } });

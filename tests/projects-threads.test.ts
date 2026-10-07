@@ -464,10 +464,13 @@ test('placement refusals: fixed main on a busy checkout, a device that cannot ru
   expect(f.thread(created.threadId)).toMatchObject({ isolation: 'main', ownerDeviceId: f.app.device.deviceId, cwd: f.checkout, baseBranch: 'main' });
 });
 
-test('placement phase gates: a Leave git project refuses fixed main isolation', { timeout: 60_000 }, async () => {
+test('a Leave git project admits Main without changing its git policy', { timeout: 60_000 }, async () => {
   const f = await setup({ branchPolicy: 'external' });
+  f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'Inspected the checkout.' }), forThread());
   const response = await f.request('/api/projects/project/threads', 'POST', createBody('Gated', 'Work on main.', undefined, { isolation: 'main' }));
-  expect(response.status).toBe(409);
-  expect(await response.json()).toEqual({ schema: 'error-v1', code: 'conflict', message: 'This project is set to Leave git to me, so threads cannot work on main.' });
-  expect((await f.json('/api/projects/project/work', ProjectWorkViewSchema)).threads).toEqual([]);
+  expect(response.ok).toBe(true);
+  const created = ThreadCreatedViewSchema.parse(await response.json());
+  await f.waitFor(() => f.thread(created.threadId), thread => thread.state === 'idle');
+  expect(f.thread(created.threadId)).toMatchObject({ isolation: 'main', gitPolicy: 'external', cwd: f.checkout });
+  expect((await f.json('/api/projects/project/work', ProjectWorkViewSchema)).project.branchPolicy).toBe('external');
 });

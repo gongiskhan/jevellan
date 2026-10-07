@@ -240,7 +240,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
       )}
       {confirming === 'stop' && (
         <ConfirmAction title={copy.STOP_THREAD_TITLE} action={copy.STOP} onError={onError} close={() => setConfirming(undefined)}
-          body={`${copy.STOP_THREAD_BODY} ${thread.isolation === 'worktree' ? copy.STOP_KEEPS_WORKTREE : copy.STOP_SAVES_MAIN_COMMITS}`}
+          body={`${copy.STOP_THREAD_BODY} ${thread.isolation === 'worktree' ? copy.STOP_KEEPS_WORKTREE : thread.gitPolicy === 'external' ? copy.STOP_KEEPS_CHECKOUT : copy.STOP_SAVES_MAIN_COMMITS}`}
           run={async (signal) => acted(await api(`${base}/stop`, ThreadViewSchema, 'POST', { schema: 'thread-stop-request-v1' }, { signal }))} />
       )}
       {confirming === 'discard' && (
@@ -597,7 +597,7 @@ function OverrideDialog({ props, view, projectId, close, applied }: { props: Pag
               onChange={() => mode('restart')} />{copy.RESTART_WITH_CHOICES}
           </label>
           <p className={`pw-field-note pw-radio-note${view.canOverride.restart ? '' : ' pw-refused'}`} id={restartNote}>
-            {view.canOverride.restart ? view.thread.isolation === 'main' ? copy.RESTART_HELP_MAIN : copy.RESTART_HELP : view.canOverride.restartReason}
+            {view.canOverride.restart ? view.thread.isolation === 'main' ? view.thread.gitPolicy === 'external' ? copy.RESTART_HELP_MANUAL : copy.RESTART_HELP_MAIN : copy.RESTART_HELP : view.canOverride.restartReason}
           </p>
         </fieldset>
         <fieldset className="pw-fields" disabled={restart && !work}>
@@ -613,6 +613,7 @@ function OverrideDialog({ props, view, projectId, close, applied }: { props: Pag
                   </select>
                 </label>
                 {mainBlock && <p className="pw-field-note" id={isolationNote}>{mainBlock}</p>}
+                {!mainBlock && work?.project.branchPolicy === 'external' && <p className="pw-field-note">{copy.MANUAL_MAIN_HELP}</p>}
               </div>
             )}
             <label>{copy.MODEL}

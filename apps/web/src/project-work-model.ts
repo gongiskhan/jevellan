@@ -3,6 +3,7 @@ import {
   EffortSchema,
   IdSchema,
   NO_CHANGES,
+  MANUAL_CHECKOUT_COMPLETED,
   OWNER_STARTED_PREFIX,
   OWNER_STOPPED_THREAD,
   OWNER_WORKED_PREFIX,
@@ -120,7 +121,7 @@ export function outcomeText(thread: Pick<ThreadIndex, 'state' | 'stateReason' | 
     case 'done':
       if (thread.pr?.state === 'merged') return copy.mergedOutcome(thread.pr.number);
       // A done worktree thread without a merged pull request concluded without changes (branch-only threads rest idle, D23).
-      return thread.isolation === 'main' && thread.stateReason !== NO_CHANGES ? copy.PUBLISHED_TO_MAIN : copy.NO_CHANGES_OUTCOME;
+      return thread.stateReason === MANUAL_CHECKOUT_COMPLETED ? copy.CHECKOUT_COMPLETED : thread.isolation === 'main' && thread.stateReason !== NO_CHANGES ? copy.PUBLISHED_TO_MAIN : copy.NO_CHANGES_OUTCOME;
     case 'stopped': return copy.STOPPED;
     case 'failed': return copy.FAILED;
     default: return null;
@@ -150,7 +151,7 @@ export function openPullRequests(entries: readonly PullRequestEntry[]): PullRequ
 
 /** Why Main cannot be chosen here, or null: the Leave git text wins over the phase text (D88, D221). */
 export function mainIsolationBlock(view: Pick<ProjectWorkView, 'project' | 'gates'>): string | null {
-  return view.project.branchPolicy !== 'main' ? copy.LEAVE_GIT_SETTING : view.gates.mainIsolation ? null : copy.MAIN_NOT_AVAILABLE;
+  return view.gates.mainIsolation ? null : copy.MAIN_NOT_AVAILABLE;
 }
 /** Why another device cannot be chosen yet, or null (D88, D221). */
 export function deviceBlock(view: Pick<ProjectWorkView, 'gates'>, deviceId: string, currentDeviceId: string): string | null {
@@ -442,7 +443,7 @@ function eventCard(event: Exclude<CoordinatorEvent, { kind: 'user-message' }>, t
     case 'thread-published': {
       const n = name(event.threadId);
       return card(event.result === 'pr-opened' ? text.prOpened(n, event.prNumber) : event.result === 'pr-updated' ? text.prUpdated(n, event.prNumber)
-        : event.result === 'main-published' ? text.mainPublished(n) : text.noChanges(n), event.threadId);
+        : event.result === 'main-published' ? text.mainPublished(n) : event.result === 'checkout-completed' ? text.checkoutCompleted(n) : text.noChanges(n), event.threadId);
     }
     case 'thread-verification-failed': return card(text.testsFailed(name(event.threadId), event.attempts), event.threadId);
     case 'thread-interrupted': {

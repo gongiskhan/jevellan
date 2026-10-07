@@ -7,7 +7,7 @@ import {
 import { PlacementStateSchema, parseJevResponse, type DecisionClient, type JevRequest } from '../packages/decisions/dist/index.js';
 import type { RuntimeAdapter } from '../packages/runtime-contract/dist/index.js';
 import {
-  Admission, Placement, queuedReason, waitingForSlotReason, MAIN_NOT_AVAILABLE, REMOTE_NOT_AVAILABLE, LEAVE_GIT_MAIN, type PendingMain,
+  Admission, Placement, queuedReason, waitingForSlotReason, MAIN_NOT_AVAILABLE, REMOTE_NOT_AVAILABLE, type PendingMain,
 } from '../packages/projects/dist/index.js';
 
 const at = '2026-10-03T10:00:00.000Z';
@@ -180,7 +180,7 @@ test('placement without a Jev client falls back on the coordinator device, recor
   expect(fixed.kind === 'placed' && fixed.record).toMatchObject({ source: 'fixed', fixed: ['isolation', 'model', 'effort', 'device'], effortEffective: 'high' });
   expect(fixed.kind === 'placed' && 'error' in fixed.record).toBe(false);
   expect(await place(value, { fixed: { isolation: 'main' } })).toEqual({ kind: 'refused', message: MAIN_NOT_AVAILABLE });
-  expect(await place(value, { fixed: { isolation: 'main' }, project: { ...project, branchPolicy: 'external' } })).toEqual({ kind: 'refused', message: LEAVE_GIT_MAIN });
+  expect(await place(value, { fixed: { isolation: 'main' }, project: { ...project, branchPolicy: 'external' } })).toEqual({ kind: 'refused', message: MAIN_NOT_AVAILABLE });
   const studio = await place(value, { fixed: { deviceId: 'dev_studio' } });
   expect(studio.kind === 'placed' && [studio.record.deviceId, studio.record.fixed, studio.labels.deviceName]).toEqual(['dev_studio', ['device'], 'Studio']);
   // An offline device is no candidate; the device gate, closed before phase 5, still refuses another device.
@@ -283,7 +283,7 @@ test('main isolation is placed only where the checkout is on main and free: clai
   const outage = placementWith([], { held: [{ deviceId: 'dev_mini', ownerId: 'conv_1', title: 'Tidy the docs' }] }); outage.stub.state.down = true;
   const offline = await place(outage.placement, fixedMain);
   expect(offline.kind === 'placed' && offline.record.deviceId).toBe('dev_mini');
-  // A Leave git project never places main, whatever the default.
+  // A Leave git project can use its existing checkout under the same ownership checks.
   const external = await place(free.placement, { work: { defaultIsolation: 'main' }, project: { ...project, branchPolicy: 'external' } });
-  expect(external.kind === 'placed' && external.record.isolation).toBe('worktree');
+  expect(external.kind === 'placed' && external.record.isolation).toBe('main');
 });

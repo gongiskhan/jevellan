@@ -534,7 +534,7 @@ export class Coordinator {
     let launched: LaunchResult;
     try {
       launched = await this.c.launcher.launch({ owner: { kind: 'coordinator', projectId, id: projectId }, turn, runtime: model.runtime, modelId: model.id, model: model.model,
-        modelLabel: model.label, effort, pinnedAccountId: prepared.accountId, permissions: 'read-only', cwd: prepared.cwd, systemAppend: coordinatorSystemAppend(project.name),
+        modelLabel: model.label, effort, pinnedAccountId: prepared.accountId, permissions: 'read-only', cwd: prepared.cwd, systemAppend: coordinatorSystemAppend(project.name, project.branchPolicy),
         prompt: (resumed) => coordinatorPrompt(prepared.prompt, resumed), ...(session?.nativeSessionId ? { resume: session.nativeSessionId } : {}),
         safetyProfile: 'coordinator', timeoutMs: this.c.timers.turnTimeoutMs, tools });
     } catch (error) { this.#scope = undefined; await tools.close(); return this.#failed(turn, messageOf(error), 'failed'); }

@@ -286,5 +286,11 @@
     "title": "Project tool groups, coordinator choices and managed app links",
     "why": "Keep consecutive identical tool calls in one open area, expose coordinator model and effort overrides, and let Jev carry the expected outcome into delegation. Managed apps return verified browser links and outlive thread completion. Deployed to the existing pilot, with the Todo app running at its verified tailnet link. Focused backend and ten affected browser journeys passed; the initial broad backend run remains failed. See docs/acceptance/project-improvements-2026-10-07.md.",
     "status": "complete"
+  },
+  {
+    "id": "projects-manual-checkout",
+    "title": "Main edits while the owner handles git",
+    "why": "Allow Leave git to me threads to edit the registered checkout, including untracked app files, without staging, committing or publishing. Preserve files during Stop, Restart and recovery; supply the policy and isolation criteria to Jev. Deployed with preserved accounts, history and both app links. Live Jev selected Main and the isolated Codex subscription thread completed the Active-filter request with unchanged git state. Focused backend and both affected browser/vision checks passed; see docs/acceptance/manual-checkout-2026-10-07.md.",
+    "status": "complete"
   }
 ]

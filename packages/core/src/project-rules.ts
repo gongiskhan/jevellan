@@ -46,6 +46,7 @@ export function concludedRecently(thread: { state: ThreadState; endedAt?: string
 // Texts both the owner device writes and the browser reads back (D214): one source, re-exported by the projects copy module.
 /** The `done` reason of a thread that concluded without commits (brief 8.4); the interface shows it as `No changes`. */
 export const NO_CHANGES = 'Concluded without changes.';
+export const MANUAL_CHECKOUT_COMPLETED = 'Completed in the project checkout. Git is left to you.';
 /** Preformatted `thread-user-message` texts (brief 9.5, phase 7 detach; D35) start with these. */
 export const OWNER_STARTED_PREFIX = '[owner started thread "';
 export const OWNER_WORKED_PREFIX = '[owner worked on thread "';

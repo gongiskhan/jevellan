@@ -116,13 +116,13 @@ test('PJ4 Jev places threads with recorded probabilities and falls back on failu
   await f.app.projectWork.pulse();
   expect(await f.index(created.threadId)).toMatchObject({ runtime: 'fake2', modelLabel: 'Deep', effort: 'max', accountLabel: 'Deep account' });
 
-  // 2. A Leave git project is never asked where the thread works (brief 10); its packet lists only its own threads.
+  // 2. A Leave git project can edit its existing checkout without automating git; its packet lists only its own threads.
   const docs = join(f.root, 'docs'); f.git(f.root, 'clone', f.origin, docs);
   await f.app.conversations.saveProject({ schema: 'project-write-v1', revision: 0, project: ProjectSchema.parse({ schema: 'project-v1', id: 'docs', name: 'Docs', paths: { [deviceId]: docs },
     branchPolicy: 'external', memory: { mode: 'repo', dir: '.jevellan/memory' }, context: { state: 'none' } }) });
   deep.enqueueTurn(reportStep({ status: 'progress', summary: 'Outlined the guide.' }), forThread());
   const external = await start(f, 'Write a guide', 'Write the setup guide.', 'docs');
-  expect(Object.keys(transport.state.calls[1]!.questions)).toEqual(['pick_model', 'effort']);
+  expect(Object.keys(transport.state.calls[1]!.questions)).toEqual(['isolation', 'pick_model', 'effort']);
   expect(transport.state.calls[1]!.packet).toMatchObject({ project: { name: 'Docs', defaultIsolation: 'worktree' }, activeThreads: [] });
   await f.waitFor(() => f.app.projectWork.store.get(external.threadId)?.turns, (turns) => turns === 1); await f.app.projectWork.idle();
 

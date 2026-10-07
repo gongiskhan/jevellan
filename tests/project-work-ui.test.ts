@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 import {
-  COORDINATOR_TOOLS, EffortSchema, NO_CHANGES, PlacementRecordSchema, ProjectDecisionSchema, ProjectWorkListViewSchema, ProjectWorkSettingsRequestSchema,
+  COORDINATOR_TOOLS, EffortSchema, MANUAL_CHECKOUT_COMPLETED, NO_CHANGES, PlacementRecordSchema, ProjectDecisionSchema, ProjectWorkListViewSchema, ProjectWorkSettingsRequestSchema,
   SAVED_COMMITS_SENTENCE, ThreadCreateRequestSchema, ThreadIndexSchema, ThreadOverrideRequestSchema, ThreadReportSchema, defaultProjectWorkSettings, idTime, mapEffort, newId,
   type CursorTurn, type Effort, type PlacementRecord, type ProjectDecision, type ProjectLedgerEvent, type ProjectWorkView, type PullRequestEntry, type ThreadIndex,
   type ThreadReport, type ThreadView,
@@ -116,6 +116,7 @@ test('concluded outcomes: merged, published to main, no changes, stopped and fai
   expect(outcomeText(thread({ state: 'done', stateReason: NO_CHANGES }))).toBe('No changes');
   expect(outcomeText(thread({ state: 'done' }))).toBe('No changes');
   expect(outcomeText(thread({ state: 'done', isolation: 'main' }))).toBe('Published to main');
+  expect(outcomeText(thread({ state: 'done', isolation: 'main', stateReason: MANUAL_CHECKOUT_COMPLETED }))).toBe('Completed');
   expect(outcomeText(thread({ state: 'done', isolation: 'main', stateReason: NO_CHANGES }))).toBe('No changes');
   expect(outcomeText(thread({ state: 'stopped', pr: pr({ state: 'closed' }) }))).toBe('Stopped');
   expect(outcomeText(thread({ state: 'failed' }))).toBe('Failed');
@@ -149,8 +150,8 @@ test('placement gates disable Main and other devices with the sentences placemen
   const view = (branchPolicy: 'main' | 'external', mainIsolation: boolean, remoteDevices = false) =>
     ({ project: { id: 'shop', name: 'Shop', branchPolicy, baseBranch: 'main' }, gates: { mainIsolation, remoteDevices } });
   expect(mainIsolationBlock(view('main', false))).toBe(server.MAIN_NOT_AVAILABLE);
-  expect(mainIsolationBlock(view('external', false))).toBe(server.LEAVE_GIT_SETTING);
-  expect(mainIsolationBlock(view('external', true))).toBe(server.LEAVE_GIT_SETTING);
+  expect(mainIsolationBlock(view('external', false))).toBe(server.MAIN_NOT_AVAILABLE);
+  expect(mainIsolationBlock(view('external', true))).toBeNull();
   expect(mainIsolationBlock(view('main', true))).toBeNull();
   expect(deviceBlock(view('main', false), 'mac', 'mac')).toBeNull();
   expect(deviceBlock(view('main', false), 'mini', 'mac')).toBe(server.REMOTE_NOT_AVAILABLE);
