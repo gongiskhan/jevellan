@@ -274,5 +274,11 @@
     "title": "Projects: remote branch cleanup",
     "why": "Delete a thread's branch on the remote after its pull request is merged or closed.",
     "status": "planned"
+  },
+  {
+    "id": "codex-subscription-usage",
+    "title": "Codex subscription usage in Runtimes",
+    "why": "Read the isolated Codex account rate limits after authentication, select the Codex bucket and identify five-hour and weekly windows by duration. Unknown windows remain unknown and quota failures preserve readiness. Deployed to the existing pilot with live weekly usage and reset verified; 92 simulated backend cases and two desktop/phone display cases passed. See docs/acceptance/codex-usage-2026-10-07.md.",
+    "status": "complete"
   }
 ]

@@ -1,5 +1,5 @@
 import { createInterface } from 'node:readline';
-import { minimalEnvironment, EffortSchema, type OfferedModel } from '@jevellan/core';
+import { minimalEnvironment, EffortSchema, AccountUsageSchema, type AccountStatus, type OfferedModel } from '@jevellan/core';
 import { classifyRuntimeError, spawnGroup, terminateGroup, type NativeProcess, type ResolvedAccount } from '@jevellan/runtime-contract';
 import { spawnSync, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { z } from 'zod';
@@ -7,6 +7,24 @@ import { z } from 'zod';
 const ReplySchema = z.object({ id: z.number().int().optional(), result: z.unknown().optional(), error: z.object({ code: z.number(), message: z.string() }).optional() });
 const ModelsSchema = z.object({ data: z.array(z.object({ id: z.string(), model: z.string(), displayName: z.string(), hidden: z.boolean(), isDefault: z.boolean(), supportedReasoningEfforts: z.array(z.object({ reasoningEffort: z.string() })) })), nextCursor: z.string().nullable() });
 const AccountReplySchema = z.object({ account: z.discriminatedUnion('type', [z.object({ type: z.literal('apiKey') }), z.object({ type: z.literal('chatgpt'), email: z.string().nullable(), planType: z.string() }), z.object({ type: z.literal('amazonBedrock'), usesCodexManagedCredentials: z.boolean() })]).nullable(), requiresOpenaiAuth: z.boolean() });
+const RateWindowSchema = z.object({ usedPercent: z.number().nonnegative(), windowDurationMins: z.number().int().positive().nullable(),
+  resetsAt: z.number().int().nonnegative().max(253_402_300_799).nullable() });
+const RateSnapshotSchema = z.object({ limitId: z.string().nullable().optional(), primary: RateWindowSchema.nullable().optional(), secondary: RateWindowSchema.nullable().optional() });
+const RateLimitsReplySchema = z.object({ rateLimits: RateSnapshotSchema, rateLimitsByLimitId: z.record(z.string(), RateSnapshotSchema).nullable().optional() });
+
+function codexUsage(raw: unknown): AccountStatus['usage'] {
+  const response = RateLimitsReplySchema.parse(raw);
+  const snapshot = response.rateLimitsByLimitId?.codex ?? response.rateLimits;
+  if (snapshot.limitId && snapshot.limitId !== 'codex') return;
+  const windows = [snapshot.primary, snapshot.secondary];
+  const five = windows.find(window => window?.windowDurationMins === 300);
+  const week = windows.find(window => window?.windowDurationMins === 10080);
+  if (!five && !week) return;
+  // Primary can be weekly on some subscriptions. Window duration, not position, determines the displayed quota.
+  return AccountUsageSchema.parse({ source: 'probe', observedAt: new Date().toISOString(),
+    ...(five ? { fiveHourPct: Math.min(100, five.usedPercent), ...(five.resetsAt === null ? {} : { fiveHourResetsAt: new Date(five.resetsAt * 1000).toISOString() }) } : {}),
+    ...(week ? { weeklyPct: Math.min(100, week.usedPercent), ...(week.resetsAt === null ? {} : { weeklyResetsAt: new Date(week.resetsAt * 1000).toISOString() }) } : {}) });
+}
 
 export class CodexControl {
   #id = 0;
@@ -70,7 +88,7 @@ export async function listCodexModels(account: ResolvedAccount, executable = 'co
   } finally { await control.close(); }
 }
 
-export async function probeCodex(account: ResolvedAccount, executable = 'codex', fetcher: typeof fetch = fetch) {
+export async function probeCodex(account: ResolvedAccount, executable = 'codex', fetcher: typeof fetch = fetch): Promise<{ auth: AccountStatus['auth']; usage?: AccountStatus['usage']; identity?: ResolvedAccount['account']['identity']; error?: string }> {
   if (account.account.kind === 'api-key') {
     const key = account.env.OPENAI_API_KEY;
     if (!key) return { auth: 'needs-login' as const };
@@ -87,7 +105,15 @@ export async function probeCodex(account: ResolvedAccount, executable = 'codex',
     const response = AccountReplySchema.parse(await control.request('account/read', { refreshToken: true }));
     if (!response.account) return { auth: 'needs-login' as const };
     if (response.account.type === 'amazonBedrock') return { auth: 'unknown' as const, error: 'This credential provider is not supported by this runtime.' };
-    return { auth: 'ready' as const, ...(response.account.type === 'chatgpt' ? { identity: { ...(response.account.email ? { email: response.account.email } : {}), plan: response.account.planType } } : {}) };
+    if (response.account.type !== 'chatgpt') return { auth: 'ready' };
+    const identity = { ...(response.account.email ? { email: response.account.email } : {}), plan: response.account.planType };
+    try {
+      const usage = codexUsage(await control.request('account/rateLimits/read', {}));
+      return { auth: 'ready', identity, ...(usage ? { usage } : {}) };
+    } catch {
+      // Authentication already succeeded. An unavailable quota endpoint must not turn it into a login failure.
+      return { auth: 'ready', identity, error: 'Codex is signed in, but its usage could not be read. Try checking this account again.' };
+    }
   } catch (error) {
     return (error as { kind?: string }).kind === 'auth' ? { auth: 'needs-login' as const, error: 'Codex could not refresh this login. Log in again.' } : { auth: 'unknown' as const, error: 'The Codex account check could not complete. Usage is unknown.' };
   } finally { await control.close(); }

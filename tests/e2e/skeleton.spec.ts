@@ -78,6 +78,33 @@ async function currentProjectPath(page: Page) {
   return page.getByRole('dialog').getByRole('textbox', { name: `Path on ${current.name}`, exact: true });
 }
 
+test('Codex usage shows a reported weekly window and keeps an absent five-hour window unknown', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
+  const view = AccountViewSchema.parse(await (await page.request.post('/hub/accounts', { data: { schema: 'add-account-v1', runtime: 'codex', kind: 'subscription', label: 'Codex usage fixture' } })).json());
+  let weeklyPct = 0;
+  await page.route('**/hub/accounts', async route => {
+    if (route.request().method() !== 'GET') return route.continue();
+    const response = await route.fetch(); const body = await response.json();
+    for (const entry of body.accounts) if (entry.account.id === view.account.id) {
+      for (const status of entry.statuses) status.usage = { source: 'probe', observedAt: new Date().toISOString(), weeklyPct, weeklyResetsAt: '2027-05-11T01:46:40.000Z' };
+    }
+    await route.fulfill({ response, json: body });
+  });
+  await page.goto('/settings/runtimes'); const card = page.locator(`#account-${view.account.id}`);
+  await expect(card.getByRole('progressbar', { name: 'Week usage', exact: true })).toHaveAttribute('value', '0');
+  await expect(card.locator('.usage').filter({ hasText: 'Week' })).toContainText('0%');
+  const five = card.locator('.usage').filter({ hasText: 'Five hours' });
+  await expect(five).toContainText('Unknown'); await expect(five).not.toContainText('Resets');
+  weeklyPct = 37; await page.reload();
+  await expect(card.getByRole('progressbar', { name: 'Week usage', exact: true })).toHaveAttribute('value', '37');
+  await expect(card.locator('.usage').filter({ hasText: 'Week' })).toContainText('37%');
+  await expect(card.locator('.usage').filter({ hasText: 'Week' })).toContainText('Resets');
+  await expect(card).toContainText('Usage checked'); await expect(five).toContainText('Unknown');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
 test('Settings account, login, Rigging and configuration flows work without horizontal overflow', async ({ page }, info) => {
   const errors: string[] = []; page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/');
