@@ -23,12 +23,12 @@ const report = { schema: 'thread-report-v1', turn: 1, status: 'done', summary: '
 const issues = (result: { success: boolean; error?: { issues: Array<{ path: PropertyKey[]; message: string }> } }) => result.error?.issues.map((issue) => ({ path: issue.path.join('.'), message: issue.message }));
 
 test('scope lists: mail and reservations only for main threads, mail for the coordinator', () => {
-  expect(projectToolNames({ kind: 'thread', isolation: 'worktree' })).toEqual(['jevellan_thread_report', 'memory_search', 'memory_read']);
-  expect(projectToolNames({ kind: 'thread', isolation: 'main' })).toEqual(['jevellan_thread_report', 'memory_search', 'memory_read', ...mainTools]);
+  expect(projectToolNames({ kind: 'thread', isolation: 'worktree' })).toEqual(['jevellan_thread_report', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read']);
+  expect(projectToolNames({ kind: 'thread', isolation: 'main' })).toEqual(['jevellan_thread_report', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read', ...mainTools]);
   expect(projectToolNames({ kind: 'coordinator' })).toEqual([...COORDINATOR_TOOLS]);
   expect(COORDINATOR_TOOLS).toContain('jevellan_mail_send');
-  expect(threadTools('worktree')).toEqual(['jevellan_thread_report', 'memory_search', 'memory_read']);
-  expect(threadTools('main')).toEqual(['jevellan_thread_report', 'memory_search', 'memory_read', ...mainTools]);
+  expect(threadTools('worktree')).toEqual(['jevellan_thread_report', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read']);
+  expect(threadTools('main')).toEqual(['jevellan_thread_report', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read', ...mainTools]);
   // Each call returns a fresh array, so a caller cannot change another scope's list.
   const list = projectToolNames({ kind: 'coordinator' }); list.push('jevellan_handoff');
   expect(projectToolNames({ kind: 'coordinator' })).not.toContain('jevellan_handoff');
@@ -39,7 +39,7 @@ test('scope lists: mail and reservations only for main threads, mail for the coo
 
 test('every project tool joins the closed name enum after the unchanged stretch tools and serializes to an object schema', () => {
   expect(BridgeToolNameSchema.options.slice(0, stretchTools.length)).toEqual(stretchTools);
-  expect(BridgeToolNameSchema.options).toHaveLength(stretchTools.length + 15);
+  expect(BridgeToolNameSchema.options).toHaveLength(stretchTools.length + 18);
   expect(Object.keys(BridgeToolSchemas)).toEqual(BridgeToolNameSchema.options);
   for (const scope of [{ kind: 'coordinator' }, { kind: 'thread', isolation: 'worktree' }, { kind: 'thread', isolation: 'main' }] as const) {
     expect(bridgeTools(projectToolNames(scope)).tools.map((tool) => tool.name)).toEqual(projectToolNames(scope));

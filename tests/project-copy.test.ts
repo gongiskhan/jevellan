@@ -20,8 +20,10 @@ const report = ThreadReportSchema.parse({ schema: 'thread-report-v1', turn: 2, s
   options: [{ label: 'Keep it' }, { label: 'Drop it', detail: 'Faster' }], testsRun: { command: 'npm test', passed: false, summary: '1 failing' }, synthesized: false });
 const line = (event: CoordinatorEvent, extra: Partial<typeof context & { askedDirectly: boolean }> = {}) => copy.eventLine(event, { ...context, ...extra });
 
-test('9.1 coordinator system append is verbatim', () => {
-  expect(copy.coordinatorSystemAppend('Shop')).toBe(coordinator);
+const baseInstructions = (text: string) => text.split('\n').filter(line => !line.startsWith('- Preserve the outcome') && !line.startsWith('- When the task includes running an app')).join('\n');
+
+test('9.1 coordinator base instructions are preserved alongside app guidance', () => {
+  expect(baseInstructions(copy.coordinatorSystemAppend('Shop'))).toBe(coordinator);
 });
 
 test('9.2 fresh session context follows the brief layout', () => {
@@ -82,8 +84,8 @@ test('9.3 event block and every event line', () => {
 });
 
 test('9.4 thread system append and turn prompts', () => {
-  expect(copy.threadSystemAppend({ projectName: 'Shop', cwd: '/w/t', isolation: 'worktree', branch: 'jv/fix-login-abc123', baseBranch: 'main', deviceName: 'Mac mini', testCommand: 'npm test' })).toBe(worktree);
-  expect(copy.threadSystemAppend({ projectName: 'Shop', cwd: '/p/shop', isolation: 'main', baseBranch: 'main', deviceName: 'Mac mini' })).toBe(main);
+  expect(baseInstructions(copy.threadSystemAppend({ projectName: 'Shop', cwd: '/w/t', isolation: 'worktree', branch: 'jv/fix-login-abc123', baseBranch: 'main', deviceName: 'Mac mini', testCommand: 'npm test' }))).toBe(worktree);
+  expect(baseInstructions(copy.threadSystemAppend({ projectName: 'Shop', cwd: '/p/shop', isolation: 'main', baseBranch: 'main', deviceName: 'Mac mini' }))).toBe(main);
   expect(copy.taskPrompt('Fix login', 'The redirect loops.')).toBe('Task: Fix login\n\nThe redirect loops.');
   expect(copy.messagesPrompt([{ from: 'owner', text: 'Also log it.' }])).toBe('Also log it.');
   expect(copy.messagesPrompt([{ from: 'coordinator', text: 'Use the new API.' }, { from: 'owner', text: 'Also log it.' }])).toBe('From the coordinator:\nUse the new API.\n\n---\n\nFrom the owner:\nAlso log it.');

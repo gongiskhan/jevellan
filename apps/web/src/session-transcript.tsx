@@ -2,6 +2,7 @@ import { memo } from 'react';
 import type { CursorTurn } from '@jevellan/core/client';
 import { Markdown } from './components.js';
 import { EvidenceLink } from './evidence.js';
+import { transcriptGroups } from './transcript-groups.js';
 import './cursor-sessions.css';
 
 function toolFiles(input: string) {
@@ -20,17 +21,20 @@ const preview = (text: string) => { const line = text.trim().split('\n')[0]!.tri
 export const TranscriptTurn = memo(function TranscriptTurn({ turn, onOpen, userLabel, collapseLongUser }: {
   turn: CursorTurn; onOpen?(ref: string): void; userLabel?: string | undefined; collapseLongUser?: number | undefined;
 }) {
-  const blocks = turn.blocks.map((block, index) => block.type === 'text'
+  const blocks = transcriptGroups(turn.blocks).map((block, index) => block.type === 'text'
     ? <Markdown key={index} {...(onOpen ? { onOpen } : {})}>{block.text}</Markdown>
     : block.type === 'thinking'
       ? <details className="cursor-thinking" key={index} open><summary>Thinking</summary><Markdown {...(onOpen ? { onOpen } : {})}>{block.text}</Markdown></details>
-      : <details className="cursor-tool" key={block.id}>
-        <summary><span>{block.name}</span><span className="muted small-text">{block.state === 'running' ? 'In progress' : block.state === 'unknown' ? 'Recorded' : block.state}</span></summary>
-        {block.input && <><div className="cursor-output-label">Input</div><pre><code>{block.input}</code></pre></>}
-        {onOpen && toolFiles(block.input).map(path => <p className="tool-file" key={path}><EvidenceLink value={path} file open={onOpen} /></p>)}
-        {block.output !== undefined && <><div className="cursor-output-label">Output</div><pre><code>{block.output || 'No text output.'}</code></pre></>}
-        {block.output === undefined && <p className="muted small-text">{block.state === 'running' ? 'Waiting for the tool’s result…' : 'The saved transcript does not include this tool’s result.'}</p>}
-      </details>);
+      : <section className="cursor-tool" key={block.calls[0]!.id} aria-label={`${block.name} tool calls`}>
+        <div className="cursor-tool-header"><span>{block.name}</span><span className="muted small-text">{block.calls.length > 1 ? `${block.calls.length} calls` : ''}</span></div>
+        {block.calls.map(call => <div className="cursor-tool-call" key={call.id}>
+          <div className="cursor-tool-state muted small-text">{call.state === 'running' ? 'In progress' : call.state === 'unknown' ? 'Recorded' : call.state}</div>
+          {call.input && <><div className="cursor-output-label">Input</div><pre><code>{call.input}</code></pre></>}
+          {onOpen && toolFiles(call.input).map(path => <p className="tool-file" key={path}><EvidenceLink value={path} file open={onOpen} /></p>)}
+          {call.output !== undefined && <><div className="cursor-output-label">Output</div><pre><code>{call.output || 'No text output.'}</code></pre></>}
+          {call.output === undefined && <p className="muted small-text">{call.state === 'running' ? 'Waiting for the tool’s result…' : 'The saved transcript does not include this tool’s result.'}</p>}
+        </div>)}
+      </section>);
   const text = turn.role === 'user' && collapseLongUser !== undefined ? userText(turn) : '';
   return <article className={`cursor-turn cursor-turn-${turn.role}`}>
     {turn.role === 'user' && <div className="cursor-turn-label">{turn.automated ? 'Automatic update' : userLabel ?? 'You'}</div>}

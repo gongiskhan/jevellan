@@ -1,0 +1,56 @@
+{
+  "schema": "project-improvements-vision-v1",
+  "screens": [
+    {
+      "screen": "coordinator-override-desktop-light-projects",
+      "label": "live",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "The background page is blurred and dimmed behind the modal on purpose, so the sidebar and the threads panel are hard to read. The modal itself is fully readable.",
+          "The modal has no grouped tool inputs or outputs to check. It only shows the Model and Effort selects, a 'fresh session' checkbox and the Cancel and Apply buttons."
+        ]
+      }
+    },
+    {
+      "screen": "coordinator-override-phone-dark-projects",
+      "label": "live",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "The header and tab text behind the modal overlay is dimmed and hard to read. This is expected while the modal is open.",
+          "No grouped tool inputs or outputs are visible on this screen because the modal covers the chat area."
+        ]
+      }
+    },
+    {
+      "screen": "tool-groups-desktop-light-projects",
+      "label": "live",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "In the sidebar, session titles and subtitles are cut off with ellipses. This looks like intended truncation, not clipping.",
+          "The tool-call headers put 'completed' on a separate line below the tool name and '3 calls' count, which leaves extra vertical space.",
+          "The Bash call's input is {\"file_path\":\"four.txt\"}, which is a file-read input rather than a command (fixture data quirk).",
+          "The status line 'Working on turn 1…' ends with an ellipsis; it looks like a loading indicator rather than cut-off text."
+        ]
+      }
+    },
+    {
+      "screen": "tool-groups-phone-dark-projects",
+      "label": "live",
+      "result": {
+        "ok": true,
+        "blocking": [],
+        "cosmetic": [
+          "The 'Working on turn 1…' status label is cut off with an ellipsis even though there is space beside it.",
+          "The terminal attach command at the bottom is cut off with an ellipsis. It can still be copied with the copy button.",
+          "The header metadata wraps onto 4 lines, and 'Mac.lan' sits alone on the last line."
+        ]
+      }
+    }
+  ]
+}

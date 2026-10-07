@@ -1,4 +1,5 @@
 import { TranscriptTurn } from './session-transcript.js';
+import { mergeTranscriptTurns } from './transcript-groups.js';
 import { useSessionList } from './session-list.js';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { z } from 'zod';
@@ -92,11 +93,11 @@ export function CursorConversationPage({ id, navigation, ...props }: PageProps &
     <div className="cursor-transcript" aria-label={`${runtimeLabel} conversation`}>
       {view.truncated && <p className="muted small-text">Showing the most recent part of this conversation. Earlier history is available in {runtimeLabel}.</p>}
       {!view.turns.length && <p className="muted">{runtimeLabel} hasn’t saved any messages for this session yet.</p>}
-      {view.turns.map(turn => <TranscriptTurn key={turn.id} turn={turn} />)}
+      {mergeTranscriptTurns(view.turns).map(turn => <TranscriptTurn key={turn.id} turn={turn} />)}
       {!!view.activity.length && <section className="cursor-live" aria-label="Recent Cursor activity">
         <h2>{session!.state === 'working' ? 'Live updates' : 'Recent activity'}</h2>
         <p className="muted small-text">Tool results and updates captured directly from this Cursor turn.</p>
-        {view.activity.map(turn => <TranscriptTurn key={turn.id} turn={turn} />)}
+        {mergeTranscriptTurns(view.activity).map(turn => <TranscriptTurn key={turn.id} turn={turn} />)}
       </section>}
     </div>
     {view.messages.filter(message => message.state !== 'cancelled').length > 0 && <details className="cursor-deliveries" open>

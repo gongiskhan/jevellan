@@ -14,7 +14,7 @@ import { MessageInput } from './message-delivery.js';
 import * as copy from './project-work-copy.js';
 import {
   PROJECT_WORK_UPDATED, chatItems, checksBadge, coordinatorChip, decisionSource, defaultTab, deviceBlock, deviceChoices, dotClass, mainIsolationBlock, mergeBlock,
-  openPullRequests, outcomeText, projectDot, projectRoute, rowClockMs, sentText, settingsRequest, showSent, sidebarProjects, threadCreateRequest, threadMeta,
+  nearestEffort, openPullRequests, outcomeText, projectDot, projectRoute, rowClockMs, sentText, settingsRequest, showSent, sidebarProjects, threadCreateRequest, threadMeta,
   threadSections, toolIcon, withdrawals, working, type ChatItem, type ProjectTab, type ThreadForm, type ThreadTitles,
 } from './project-work-model.js';
 import { queuedRefresh } from './refresh.js';
@@ -233,7 +233,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   const [events, setEvents] = useState<ProjectLedgerEvent[]>([]);
   const [stream, setStream] = useState<'connecting' | 'open' | 'reconnecting' | 'closed'>('connecting');
   const [tab, setTab] = useState<ProjectTab>();
-  const [dialog, setDialog] = useState<'new-thread' | 'settings'>();
+  const [dialog, setDialog] = useState<'new-thread' | 'settings' | 'coordinator'>();
   const [notebook, setNotebook] = useState(false);
   const [merging, setMerging] = useState<PullRequestEntry>();
   const [sent, setSent] = useState<{ text: string; known: string[] }>();
@@ -429,6 +429,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
       <div className="section-heading conversation-heading pw-heading" ref={heading}>
         <h1 aria-labelledby={titleId}>{navigation}<span id={titleId} className="session-title" title={view.project.name}>{view.project.name}</span></h1>
         <div className="actions">
+          <button type="button" className="secondary pw-head-button" onClick={() => setDialog('coordinator')}><Icon name="tune" size={15} /><span className="pw-head-label">Override coordinator</span></button>
           <button type="button" className="pw-head-button" onClick={() => setDialog('new-thread')}>
             <Icon name="plus" size={15} /><span className="pw-head-label">{copy.NEW_THREAD}</span>
           </button>
@@ -520,6 +521,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
         </div>
       </div>
       {dialog === 'new-thread' && <NewThreadDialog props={props} view={view} move={moveHere} close={() => setDialog(undefined)} />}
+      {dialog === 'coordinator' && <CoordinatorOverrideDialog props={props} view={view} close={() => setDialog(undefined)} />}
       {dialog === 'settings' && <SettingsDialog props={props} view={view} close={() => setDialog(undefined)} />}
       {merging?.pr && (
         <MergeDialog projectId={id} entry={merging} fallbackBase={view.project.baseBranch} onError={onError}
@@ -1066,4 +1068,52 @@ function NotebookPanel({ projectId, projectName, revision, close, onError }: {
       )}
     </Panel>
   );
+}
+
+
+function CoordinatorOverrideDialog({ props, view, close }: { props: PageProps; view: ProjectWorkView; close(): void }) {
+  const { error, setError, fail } = useLocalError(props.onError);
+  const task = useTask(fail); const save = useSettingsSave();
+  const [base, setBase] = useState<ProjectWorkView['settings']>();
+  const [modelId, setModelId] = useState(view.settings.coordinator.modelId ?? '');
+  const [effort, setEffort] = useState(view.settings.coordinator.effort);
+  const [fresh, setFresh] = useState(false);
+  const path = `/api/projects/${view.project.id}/work-settings`;
+  const read = useCallback(async (signal: AbortSignal) => {
+    const next = await api(path, ProjectWorkSettingsViewSchema, 'GET', undefined, { signal, waitForHub: true });
+    setBase(next.settings); setModelId(next.settings.coordinator.modelId ?? ''); setEffort(next.settings.coordinator.effort); setError('');
+  }, [path, setError]);
+  useEffect(() => { const controller = new AbortController(); read(controller.signal).catch(fail); return () => controller.abort(); }, [read, fail]);
+  const runtimeName = runtimeNames(props.data);
+  const settings = props.data.config.configuration['x-jevellan'];
+  const models = settings.menu.filter(model => model.enabled || model.id === modelId);
+  const selected = models.find(model => model.id === modelId);
+  const effective = selected ? nearestEffort(effort, selected.efforts) : effort;
+  return <Modal title="Override coordinator" close={close}>
+    <form className="pw-settings" onSubmit={event => { event.preventDefault(); if (!base) return;
+      void task.run(async signal => {
+        setError('');
+        await save(path, ProjectWorkSettingsViewSchema, 'PUT', { schema: 'project-work-settings-request-v1', revision: base.revision,
+          settings: { defaultIsolation: base.defaultIsolation, setupCommand: base.setupCommand, maxRunningThreads: base.maxRunningThreads, maxRunningPerDevice: base.maxRunningPerDevice, threadTurnCap: base.threadTurnCap, coordinator: { modelId: modelId || null, effort } } }, signal);
+        if (fresh) await api(`/api/projects/${view.project.id}/coordinator/fresh`, ProjectWorkViewSchema, 'POST', empty, { signal });
+        updated(); afterDialogs(props.message, 'Coordinator choices saved. They apply from the next turn.'); close();
+      });
+    }}>
+      <fieldset className="pw-fields" disabled={!base || task.busy}>
+        <p>These choices apply from the next turn. The current turn can finish.</p>
+        <div className="form-grid">
+          <label>Model<select value={modelId} onChange={event => setModelId(event.target.value)}>
+            <option value="">{copy.AUTOMATIC_FIRST_AVAILABLE}</option>
+            {models.map(model => <option key={model.id} value={model.id} disabled={!model.enabled || !settings.runtimes[model.runtime]?.enabled}>{runtimeName(model.runtime)} {model.label}</option>)}
+          </select></label>
+          <label>Effort<select value={effort} onChange={event => setEffort(EffortSchema.parse(event.target.value))}>{EffortSchema.options.map(value => <option key={value}>{value}</option>)}</select></label>
+        </div>
+        {effective !== effort && <p className="pw-field-note">{effort} → {effective}: nearest effort this model supports.</p>}
+        <label className="checkbox"><input type="checkbox" checked={fresh} disabled={!view.coordinator.online} onChange={event => setFresh(event.target.checked)} />Start a fresh session on the next turn</label>
+        <p className="pw-field-note">A model or effort change starts a fresh session when needed. The project notebook and recent conversation carry over.</p>
+      </fieldset>
+      {error && <><p className="error" role="alert">{error}</p><button type="button" className="secondary" onClick={() => void task.run(read)}>Reload choices</button></>}
+      <div className="actions"><button type="button" className="secondary" onClick={close}>{copy.CANCEL}</button><button disabled={!base || task.busy}>Apply</button></div>
+    </form>
+  </Modal>;
 }

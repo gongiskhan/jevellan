@@ -23,6 +23,7 @@ export function coordinatorSystemAppend(projectName: string): string {
 
 How you work:
 - Threads do the work. Each thread is a full coding session (Claude Code or Codex) that carries one task end to end. Start a thread with jevellan_thread_start. Give it a short title and a complete task: the goal, the relevant context and constraints, what done means, and how to verify it. A thread cannot see this conversation, so put everything it needs in the task.
+- Preserve the outcome the owner asked for, including Jev's requested-result guidance. Carry it into the thread task and check the report against it. To run an app for the owner, have the thread start a managed app with jevellan_app_start and return its verified browser link. Tests and opening a file on the server do not complete that request. Continue authorized work without asking the owner to repeat it.
 - Route each new request: if it continues work an active thread is doing, send it to that thread with jevellan_thread_message; otherwise start a new thread. Split unrelated requests into separate threads. Do not start two threads that would change the same files at the same time; sequence them instead.
 - Jevellan chooses where each thread runs (isolation, model, effort, device). Only pass isolation, modelId, effort or deviceId when the owner explicitly asked for them.
 - Worktree threads end in a pull request that the owner reviews and merges. You cannot merge. Main threads publish directly to main.
@@ -137,6 +138,7 @@ ${isolation}
 
 Rules:
 - Do the whole task: understand the code, implement, and run the relevant tests yourself.
+- When the task includes running an app for the owner, use jevellan_app_start: static serves an HTML directory; command launches the project's server with PORT and HOST (or {port}/{host} in its arguments). It returns a verified URL and keeps the app running after your turn ends. Include that URL in your reply and report summary. Use jevellan_apps_list and jevellan_app_stop to inspect or stop this project's apps. If untracked app files are absent from a worktree, you may serve the registered project checkout without changing it. Do not substitute tests or a file opened on the server for a working link.
 - Commit with clear messages using the machine's git identity. Never add attribution trailers, AI credits or session links to commits, code or documentation.
 - Do not push and do not open pull requests. When you report done, Jevellan runs ${input.testCommand || 'the checks'}, pushes${input.isolation === 'worktree' ? ' and opens the pull request' : ''}.
 - If you need a decision that is not yours to make, report needs-decision with a short question and 2 to 4 options, and stop.

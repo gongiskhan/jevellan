@@ -3,9 +3,9 @@ import type { AccountService } from '@jevellan/accounts';
 import {
   CoordinatorEventSchema, CoordinatorStateSchema, HubUnavailable, ProjectCoordinatorStatusSchema, boundedRedaction, coordinatorMovable, isTerminal, mapEffort, resolveProjectPath, type Account,
   type AccountStatus, type Configuration, type CoordinatorEvent, type CoordinatorState, type Effort, type ModelOption, type Project, type ProjectDecision, type ProjectHub,
-  type ProjectLedgerEvent, type ProjectWorkSettings, type SecretRedactor, type ThreadIndex,
+  type ProjectLedgerEvent, type ProjectRequestOutcome, type ProjectWorkSettings, type SecretRedactor, type ThreadIndex,
 } from '@jevellan/core';
-import { modelCandidates, type RuntimeSupport } from '@jevellan/decisions';
+import { modelCandidates, projectOutcomeInstruction, type RuntimeSupport } from '@jevellan/decisions';
 import { SESSION_NOT_FOUND, type RuntimeAdapter } from '@jevellan/runtime-contract';
 import { ProjectTools, type ProjectScope, type ProjectToolHandlers } from './bridge-tools.js';
 import {
@@ -74,6 +74,7 @@ export { coordinatorMovable };
 export type CoordinatorPromptInput = {
   /** The batch this turn delivers, in arrival order. */
   events: readonly CoordinatorEvent[];
+  outcomes?: readonly ProjectRequestOutcome[];
   notebook: string | null;
   /** The project's thread indexes; concluded ones are not listed as active. */
   threads: readonly ThreadIndex[];
@@ -109,7 +110,8 @@ export function coordinatorFreshContext(input: CoordinatorPromptInput): string {
 }
 /** The turn prompt (brief 8.1): a session that is not resumed gets the fresh context first, then the event block. */
 export function coordinatorPrompt(input: CoordinatorPromptInput, resumed: boolean): string {
-  const block = coordinatorEventBlock(input);
+  const goals = input.outcomes?.filter(outcome => outcome.source === 'jev').map(outcome => `Requested result for ${outcome.eventId} (${outcome.source}): ${projectOutcomeInstruction(outcome)}`).join('\n');
+  const block = coordinatorEventBlock(input) + (goals ? `\n\n${goals}\nCarry this result into the thread task and check the report against it before concluding.` : '');
   return resumed ? block : `${coordinatorFreshContext(input)}\n\n${block}`;
 }
 
@@ -132,6 +134,7 @@ export type CoordinatorContext = {
   decisions: Pick<DecisionItems, 'fallbackFromReports'>;
   /** Bound after construction: the thread service is built later. */
   tools(): CoordinatorToolHandlers;
+  outcome?(projectId: string, event: Extract<CoordinatorEvent, { kind: 'user-message' }>, history: string, signal: AbortSignal): Promise<ProjectRequestOutcome>;
   /**
    * Bound after construction (the outbox is built later): sends events to the project's coordinator device through the hub relay,
    * durably and under their own ids, which the new coordinator dedupes (3.5.4). `handover` is the revision of the assignment the
@@ -198,6 +201,7 @@ export class Coordinator {
   #publishing: Promise<void> = Promise.resolve();
   /** The last status write did not reach the hub (an outage, not a refusal): the sweep writes the current state again (P8 review C-2). */
   #statusDirty = false;
+  #outcomeAbort = new AbortController();
   #fallbacks: Promise<void> = Promise.resolve();
   readonly #tasks = new Set<Promise<unknown>>();
   #base: Promise<string> | undefined;
@@ -326,7 +330,7 @@ export class Coordinator {
   async stop(): Promise<void> {
     if (this.#timer) { clearTimeout(this.#timer); this.#timer = undefined; }
     const running = this.#running; if (!running) return;
-    this.#stopping = true;
+    this.#stopping = true; this.#outcomeAbort.abort();
     await this.#execution?.stop().catch(() => undefined);
     await running;
   }
@@ -338,7 +342,7 @@ export class Coordinator {
   }
   /** Daemon shutdown: a running turn is terminated and left `running` for recovery (2.6.13 step 5). */
   async close(): Promise<void> {
-    this.#closed = true;
+    this.#closed = true; this.#outcomeAbort.abort();
     if (this.#timer) { clearTimeout(this.#timer); this.#timer = undefined; }
     await this.#execution?.shutdown().catch(() => undefined);
     await this.#running;
@@ -389,7 +393,7 @@ export class Coordinator {
   }
   #run(): void {
     if (this.#closed || this.#running || this.#moved) return;
-    this.#again = false; this.#stopping = false;
+    this.#again = false; this.#stopping = false; this.#outcomeAbort = new AbortController();
     const running = this.#turn().catch((error: unknown) => {
       // An unexpected failure never leaves the coordinator looking busy; the next event tries again.
       try {
@@ -430,6 +434,7 @@ export class Coordinator {
     let prepared: Prepared;
     try { prepared = await this.#prepare(events); }
     catch (error) {
+      if (this.#closed || this.#stopping) return 'wait';
       if (error instanceof HubUnavailable) return 'postpone';
       return this.#failed(this.#nextTurn(), messageOf(error), 'failed');
     }
@@ -475,7 +480,9 @@ export class Coordinator {
     const [threads, decisions, notebook, roster, base] = await Promise.all([this.#threads(), this.c.hub.decisions(projectId), this.c.hub.notebook(projectId),
       this.c.roster().catch(() => null), this.#baseBranch(project)]);
     const names = new Map((roster?.devices ?? []).map((view) => [view.device.id, view.device.name]));
-    return { kind: 'ready', project, cwd, ...chosen, session, prompt: { events, notebook: notebook?.document.content ?? null, threads, decisions, history: this.#conversation(),
+    const outcomes: ProjectRequestOutcome[] = [];
+    if (this.c.outcome) for (const event of events) if (event.kind === 'user-message') outcomes.push(await this.c.outcome(projectId, event, recentConversation(this.#conversation()), this.#outcomeAbort.signal));
+    return { kind: 'ready', project, cwd, ...chosen, session, prompt: { events, outcomes, notebook: notebook?.document.content ?? null, threads, decisions, history: this.#conversation(),
       runtimeName: (runtime) => this.c.runtimes.get(runtime)?.displayName ?? runtime, deviceName: (id) => id === deviceId ? deviceName : names.get(id) ?? id, base,
       askedDirectly: this.#askedDirectly(events, decisions) } };
   }

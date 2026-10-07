@@ -64,14 +64,11 @@ test('conversation replies read as chat while tools and recorded details remain 
   await expect(reply.getByRole('button', { name: 'Changes', exact: true })).toBeVisible();
   await expect(reply.getByRole('button', { name: 'Why', exact: true })).toBeVisible();
   const tools = reply.locator('.conversation-tools');
-  await expect(tools.locator(':scope > summary')).toHaveText('2 tools1 failed');
-  await expect(tools.locator('.conversation-tool-list')).not.toBeVisible();
-  await tools.locator(':scope > summary').click();
+  await expect(tools.locator('.cursor-tool')).toHaveCount(2);
+  await expect(tools.locator('details.cursor-tool')).toHaveCount(0);
   const read = tools.locator('.cursor-tool').first();
-  await read.locator(':scope > summary').click();
   await expect(read).toContainText('Recorded file contents.');
   const command = tools.locator('.cursor-tool').last();
-  await command.locator(':scope > summary').click();
   await expect(command).toContainText('Simulated failure details.');
   await reply.locator('.step-details > summary').click();
   await expect(reply.locator('.findings')).toContainText(finding);

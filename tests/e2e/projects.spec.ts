@@ -427,7 +427,7 @@ test('PJ3 a running thread shows its transcript, report card and accepts an inte
   await expect(page.locator('.pw-placement-line')).toHaveText(`${runtime} · ${view.thread.modelLabel} · ${view.thread.effort} effort · ${view.thread.accountLabel} · Worktree on ${view.thread.branch} · ${view.deviceName}`);
   await expectWholeParts(page.locator('.pw-placement-line'));
   const transcript = page.locator('[aria-label="Thread transcript"]');
-  await expect(transcript.locator('.cursor-tool > summary > span:first-child')).toHaveText(['Read', 'Grep', 'Bash', 'Read'], LONG);
+  await expect(transcript.locator('.cursor-tool-header > span:first-child')).toHaveText(['Read', 'Grep', 'Bash', 'Read'], LONG);
   await expect(page.getByRole('status').filter({ hasText: 'Working on turn 1…' })).toBeVisible();
   await expect(page.getByRole('checkbox', { name: 'Interrupt current turn', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Stop', exact: true })).toBeVisible();
@@ -849,7 +849,7 @@ test('PJ5 a thread on the member device opens through the hub', async ({ page })
   const runtime = await runtimeName(page, view.thread.runtime);
   await expect(page.locator('.pw-placement-line')).toHaveText(`${runtime} · ${view.thread.modelLabel} · ${view.thread.effort} effort · ${view.thread.accountLabel} · Worktree on ${view.thread.branch} · Browser member`);
   await expectWholeParts(page.locator('.pw-placement-line'));
-  await expect(page.locator('[aria-label="Thread transcript"] .cursor-tool > summary > span:first-child')).toHaveText(['Read']);
+  await expect(page.locator('[aria-label="Thread transcript"] .cursor-tool-header > span:first-child')).toHaveText(['Read']);
   await expectAlignedCards(page.locator('[aria-label="Thread transcript"]'));
   await expect(page.getByRole('textbox', { name: 'Message this thread', exact: true })).toBeEnabled();
   expect(await page.evaluate(() => (window as unknown as { pj5NotFound?: boolean }).pj5NotFound)).toBe(false);
@@ -1004,4 +1004,50 @@ test('PJ7 an attached thread disables its composer', async ({ page }) => {
   await expect(stoppedCard.locator('.pw-event-detail')).toHaveCount(0);
   await expect(page.locator('.pw-event').filter({ hasText: 'The owner stopped this thread.' })).toHaveCount(0);
   expect(errors).toEqual([]);
+});
+
+test('Coordinator overrides expose model and effort while preserving unrelated project settings', async ({ page }, info) => {
+  const errors = await begin(page); await openProject(page, 'Projects fixture');
+  const before = (await work(page)).settings;
+  await page.getByRole('button', { name: 'Override coordinator', exact: true }).click();
+  let dialog = page.getByRole('dialog', { name: 'Override coordinator', exact: true });
+  await expect(dialog.getByRole('button', { name: 'Apply', exact: true })).toBeEnabled();
+  await dialog.getByRole('combobox', { name: 'Model', exact: true }).selectOption('claude-opus');
+  await dialog.getByRole('combobox', { name: 'Effort', exact: true }).selectOption('low');
+  await expect(dialog).toContainText('The current turn can finish.');
+  await page.screenshot({ path: `/tmp/jevellan-coordinator-override-${info.project.name}.png`, fullPage: true });
+  await dialog.getByRole('button', { name: 'Apply', exact: true }).click(); await expect(dialog).toBeHidden();
+  await expect.poll(async () => (await work(page)).settings.coordinator).toEqual({ modelId: 'claude-opus', effort: 'low' });
+  const after = (await work(page)).settings;
+  const unchanged = (settings: typeof before) => Object.fromEntries(Object.entries(settings).filter(([key]) => !['coordinator', 'revision'].includes(key)));
+  expect(unchanged(after)).toEqual(unchanged(before));
+  await page.getByRole('button', { name: 'Override coordinator', exact: true }).click();
+  dialog = page.getByRole('dialog', { name: 'Override coordinator', exact: true });
+  await expect(dialog.getByRole('combobox', { name: 'Model', exact: true })).toHaveValue('claude-opus');
+  await dialog.getByRole('combobox', { name: 'Model', exact: true }).selectOption('');
+  await dialog.getByRole('combobox', { name: 'Effort', exact: true }).selectOption(before.coordinator.effort);
+  await dialog.getByRole('button', { name: 'Apply', exact: true }).click();
+  await expect.poll(async () => (await work(page)).settings.coordinator).toEqual(before.coordinator); expect(errors).toEqual([]);
+});
+
+test('Consecutive tool calls share an open area and new live output appends to it', async ({ page }, info) => {
+  const errors = await begin(page);
+  const created = await page.request.post(`${PROJECT}/threads`, { data: { schema: 'thread-create-request-v1', clientRequestId: `request_groups_${info.project.name}`, title: 'Inspect app files for grouping', task: 'Read the README and describe the files.', isolation: 'worktree', modelId: 'claude-fable', effort: 'high' } });
+  expect(created.ok()).toBe(true); const started = await created.json();
+  await expect.poll(async () => (await threadView(page, started.threadId)).thread.state, LONG).not.toBe('preparing');
+  const view = await threadView(page, started.threadId); const thread = view.thread;
+  const tool = (id: string, name = 'Read') => ({ type: 'tool' as const, id, name, input: JSON.stringify({ file_path: `${id}.txt` }), output: `Output ${id}`, state: 'completed' as const });
+  const turns = [{ id: 'one', role: 'assistant' as const, blocks: [tool('one')] }, { id: 'two', role: 'assistant' as const, blocks: [tool('two')] },
+    { id: 'boundary', role: 'assistant' as const, blocks: [{ type: 'thinking' as const, text: 'A thinking block starts a new group.' }, tool('three'), tool('four', 'Bash'), tool('five')] }];
+  view.reports = []; view.transcript = { schema: 'cursor-transcript-v1', session: { schema: 'cursor-session-v1', id: 'claude_00000000000000000000000000000000', ownerDeviceId: thread.ownerDeviceId,
+    deviceName: view.deviceName, title: thread.title, cwd: null, project: 'Projects fixture', state: 'idle', lastActivityAt: new Date().toISOString(), connected: false, canSteer: false, canSend: false },
+    turns, messages: [], activity: [], truncated: false, observedAt: new Date().toISOString() };
+  await page.route(`**${PROJECT}/threads/${thread.id}`, route => route.fulfill({ json: view }));
+  await page.goto(`/projects/projects_fixture/threads/${thread.id}`);
+  const areas = page.locator('.cursor-tool'); await expect(areas).toHaveCount(4);
+  await expect(areas.first().locator('.cursor-tool-call')).toHaveCount(2); await expect(areas.first()).toContainText('Output one'); await expect(areas.first()).toContainText('Output two');
+  await expect(page.locator('details.cursor-tool')).toHaveCount(0);
+  turns[0]!.blocks.push(tool('appended')); await expect(areas.first().locator('.cursor-tool-call')).toHaveCount(3);
+  await expect(areas.first()).toContainText('Output appended'); await expect(areas).toHaveCount(4);
+  await page.screenshot({ path: `/tmp/jevellan-tool-groups-${info.project.name}.png`, fullPage: true }); expect(errors).toEqual([]);
 });

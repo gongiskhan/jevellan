@@ -11,7 +11,7 @@ import { MessageInput } from './message-delivery.js';
 import * as copy from './project-work-copy.js';
 import {
   THREAD_POLL_AFTER_ACTION_MS, THREAD_POLL_LIVE_MS, alignReports, composerBlock, deviceBlock, deviceChoices, deviceRefusal, dotClass, effortChoices, fallbackChip, lineParts, mainIsolationBlock, nearestEffort,
-  overrideForm, overrideOffered, overrideReady, overrideRequest, partWords, placementLine, pullRequestBadges, reportBadge, threadActions, threadLiveText,
+  mergeThreadToolTurns, overrideForm, overrideOffered, overrideReady, overrideRequest, partWords, placementLine, pullRequestBadges, reportBadge, threadActions, threadLiveText,
   threadPollDelay, threadReason, threadStarting, transcriptNotice, whyFields, withoutEchoedSummaries, withoutReportCalls, type OverrideForm, type OverrideMode,
 } from './project-work-model.js';
 import { RouteLink, Stamp, afterDialogs, deviceNames, failureText, runtimeNames, updated, useClientIds, useLocalError } from './project-work.js';
@@ -221,7 +221,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
       {actionError && <p className="error">{actionError}</p>}
       <div className="cursor-transcript pw-transcript" aria-label={copy.TRANSCRIPT_LABEL}>
         {notice && <p className="pw-transcript-note">{notice}</p>}
-        {items.map((item) => item.kind === 'turn'
+        {mergeThreadToolTurns(items).map((item) => item.kind === 'turn'
           ? <TranscriptTurn key={item.turn.id} turn={item.turn} userLabel={copy.PROMPT} collapseLongUser={copy.PROMPT_COLLAPSE_CHARACTERS} />
           : <ReportCard key={`report-${item.report.turn}-${item.report.synthesized ? 'synthesized' : 'recorded'}`} report={item.report} />)}
         {view.queuedMessages.length > 0 && (

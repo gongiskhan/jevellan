@@ -29,6 +29,19 @@ export const ProjectWorkSettingsSchema = z.strictObject({
   threadTurnCap: z.number().int().min(5).max(200),
 });
 export type ProjectWorkSettings = z.infer<typeof ProjectWorkSettingsSchema>;
+export const ProjectRequestOutcomeSchema = z.strictObject({ schema: z.literal('project-request-outcome-v1'), projectId: IdSchema, eventId: IdSchema,
+  goal: z.enum(['answer', 'change', 'run-app', 'verify', 'other']).nullable(), source: z.enum(['jev', 'unavailable']),
+  probabilities: z.record(z.string(), z.number().min(0).max(1)).optional(), calls: z.array(JevCallSchema), at: TimestampSchema });
+export type ProjectRequestOutcome = z.infer<typeof ProjectRequestOutcomeSchema>;
+export const ProjectAppInputSchema = z.strictObject({ kind: z.enum(['static', 'command']), directory: z.string().min(1).max(4096).default('.'),
+  command: z.string().min(1).max(4096).optional(), args: z.array(z.string().max(4096)).max(64).default([]),
+  healthPath: z.string().startsWith('/').max(1000).default('/') })
+  .refine(input => input.kind !== 'command' || !!input.command, 'A command app needs an executable.');
+export const ProjectAppSchema = z.strictObject({ schema: z.literal('project-app-v1'), id: IdSchema, projectId: IdSchema, threadId: IdSchema,
+  directory: z.string(), kind: z.enum(['static', 'command']), state: z.enum(['running', 'stopped']), url: z.url(),
+  access: z.enum(['tailnet', 'local']), loopbackPort: z.number().int().min(1).max(65535), httpsPort: z.number().int().min(1).max(65535).optional(),
+  startedAt: TimestampSchema, stoppedAt: TimestampSchema.optional() });
+export type ProjectApp = z.infer<typeof ProjectAppSchema>;
 export function defaultProjectWorkSettings(projectId: string): ProjectWorkSettings {
   return ProjectWorkSettingsSchema.parse({ schema: 'project-work-settings-v1', projectId, revision: 0, defaultIsolation: 'worktree',
     coordinator: { modelId: null, effort: 'medium' }, setupCommand: null, maxRunningThreads: 6, maxRunningPerDevice: 4, threadTurnCap: 30 });

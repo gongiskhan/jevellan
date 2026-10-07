@@ -119,7 +119,7 @@ test('other scopes share the registry, token rules and route, and stretch tokens
   expect(grant.token).toMatch(/^[A-Za-z0-9_-]{43}$/); expect(app.bridges.redactor.text(`token ${grant.token}`)).not.toContain(grant.token);
   const post = (body: unknown) => fetch(`${base}/api/bridge`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${grant.token}` }, body: JSON.stringify(body) });
   const listed = await post({ schema: 'bridge-request-v1', operation: 'list' });
-  expect(listed.status).toBe(200); expect((await listed.json() as { tools: Array<{ name: string }> }).tools.map((tool) => tool.name)).toEqual(['jevellan_thread_report', 'memory_search', 'memory_read']);
+  expect(listed.status).toBe(200); expect((await listed.json() as { tools: Array<{ name: string }> }).tools.map((tool) => tool.name)).toEqual(['jevellan_thread_report', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read']);
   const reported = await post({ schema: 'bridge-request-v1', operation: 'call', name: 'jevellan_thread_report', arguments: { status: 'done', summary: 'Done.' } });
   expect(await reported.json()).toMatchObject({ result: { schema: 'thread-report-result-v1', accepted: true } });
   expect(calls).toEqual([['jevellan_thread_report', { status: 'done', summary: 'Done.' }]]);

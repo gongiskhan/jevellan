@@ -1,3 +1,4 @@
+import { joinToolTurns } from './transcript-groups.js';
 import {
   EffortSchema,
   IdSchema,
@@ -514,6 +515,17 @@ export function working(events: readonly ProjectLedgerEvent[], view: Pick<Projec
 }
 
 export type TranscriptItem = { kind: 'turn'; turn: CursorTurn } | { kind: 'report'; report: ThreadReport };
+
+export function mergeThreadToolTurns(items: readonly TranscriptItem[]): TranscriptItem[] {
+  const result: TranscriptItem[] = [];
+  for (const item of items) {
+    const previous = result.at(-1);
+    const joined = item.kind === 'turn' && previous?.kind === 'turn' ? joinToolTurns(previous.turn, item.turn) : undefined;
+    if (joined) result[result.length - 1] = { kind: 'turn', turn: joined }; else result.push(item);
+  }
+  return result;
+}
+
 const REPORT_TOOL = 'jevellan_thread_report';
 const isPrompt = (turn: CursorTurn) => turn.role === 'user' && !turn.automated;
 /** The summary a `jevellan_thread_report` call carries, if the block is one. */

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { EffortSchema, FindingSchema, HandoffSchema, IdSchema, ResultSchema, TimestampSchema } from './schemas.js';
 import {
-  IsolationSchema, NEEDS_DECISION_QUESTION, OptionSchema, PullRequestStateSchema, ThreadReportFieldsSchema, ThreadReportSchema,
+  IsolationSchema, NEEDS_DECISION_QUESTION, OptionSchema, ProjectAppInputSchema, ProjectAppSchema, PullRequestStateSchema, ThreadReportFieldsSchema, ThreadReportSchema,
   ThreadReportStatusSchema, ThreadStateSchema, reportHasQuestion,
 } from './project-schemas.js';
 
@@ -107,6 +107,9 @@ export const BridgeToolSchemas = {
   jevellan_reserve: ReserveInputSchema,
   jevellan_release: ReleaseInputSchema,
   jevellan_thread_report: ThreadReportInputSchema,
+  jevellan_app_start: ProjectAppInputSchema,
+  jevellan_app_stop: z.strictObject({ appId: IdSchema }),
+  jevellan_apps_list: z.strictObject({}),
 };
 export type BridgeTool = keyof typeof BridgeToolSchemas;
 export const BridgeToolNameSchema = z.enum(Object.keys(BridgeToolSchemas) as [BridgeTool, ...BridgeTool[]]);
@@ -120,6 +123,9 @@ export const BridgeResultSchema = z.strictObject({ schema: z.literal('bridge-res
 export const BridgeToolsSchema = z.strictObject({ schema: z.literal('bridge-tools-v1'), tools: z.array(z.strictObject({ name: BridgeToolNameSchema, description: text, inputSchema: z.object({ type: z.literal('object') }).catchall(z.json()) })) });
 export function bridgeTools(names: BridgeTool[]): z.infer<typeof BridgeToolsSchema> {
   const descriptions: Record<BridgeTool, string> = {
+    jevellan_app_start: 'Start an app and return a verified browser link. Static serves HTML; command runs an executable with args, replacing {port} and {host}. The app is owned by Jevellan and stays running after this turn. Use this when the owner wants to run or use the app, rather than opening a file on the server. Do not pass credentials.',
+    jevellan_app_stop: 'Stop only this project’s managed app by its appId.',
+    jevellan_apps_list: 'List this project’s managed apps and their browser links.',
     jevellan_finding: 'Record a finding with a concrete pointer. Prefix durable constraints with constraint: and decisions with decision:.',
     jevellan_handoff: 'Finish this stretch exactly once with an honest handoff. Supply the full plan or other result as result.content; the daemon stores its blob. Identical retries return the original receipt.',
     jevellan_conversation_search: 'Search only this conversation and return at most 20 excerpts with ledger pointers.',
@@ -154,9 +160,9 @@ export function bridgeTools(names: BridgeTool[]): z.infer<typeof BridgeToolsSche
 export const COORDINATOR_TOOLS = ['jevellan_threads_list', 'jevellan_thread_start', 'jevellan_thread_message', 'jevellan_thread_read', 'jevellan_thread_stop',
   'jevellan_ask_user', 'jevellan_withdraw_question', 'jevellan_notebook_read', 'jevellan_notebook_write', 'jevellan_pr_status', 'jevellan_mail_send', 'memory_search', 'memory_read'] as const satisfies readonly BridgeTool[];
 const MAIN_THREAD_TOOLS = ['jevellan_mail_send', 'jevellan_mail_inbox', 'jevellan_reserve', 'jevellan_release'] as const satisfies readonly BridgeTool[];
-export type ProjectToolName = typeof COORDINATOR_TOOLS[number] | typeof MAIN_THREAD_TOOLS[number] | 'jevellan_thread_report';
+export type ProjectToolName = typeof COORDINATOR_TOOLS[number] | typeof MAIN_THREAD_TOOLS[number] | 'jevellan_thread_report' | 'jevellan_app_start' | 'jevellan_app_stop' | 'jevellan_apps_list';
 export function threadTools(isolation: 'worktree' | 'main'): BridgeTool[] {
-  return ['jevellan_thread_report', 'memory_search', 'memory_read', ...(isolation === 'main' ? MAIN_THREAD_TOOLS : [])];
+  return ['jevellan_thread_report', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read', ...(isolation === 'main' ? MAIN_THREAD_TOOLS : [])];
 }
 /** The tools a scope lists: the coordinator's, or a thread's by isolation (mail and reservations only on main, brief 7.2). A fresh array each call. */
 export function projectToolNames(scope: { kind: 'coordinator' } | { kind: 'thread'; isolation: 'worktree' | 'main' }): BridgeTool[] {
@@ -164,6 +170,8 @@ export function projectToolNames(scope: { kind: 'coordinator' } | { kind: 'threa
 }
 /** The result document each project tool returns inside bridge-result-v1. */
 export const ProjectToolResultSchemas = {
+  jevellan_app_start: ProjectAppSchema, jevellan_app_stop: ProjectAppSchema,
+  jevellan_apps_list: z.strictObject({ schema: z.literal('project-apps-v1'), apps: z.array(ProjectAppSchema) }),
   jevellan_threads_list: ThreadsListResultSchema, jevellan_thread_start: ThreadStartResultSchema, jevellan_thread_message: ThreadMessageResultSchema,
   jevellan_thread_read: ThreadReadResultSchema, jevellan_thread_stop: ThreadStopResultSchema, jevellan_ask_user: AskUserResultSchema,
   jevellan_withdraw_question: WithdrawQuestionResultSchema, jevellan_notebook_read: NotebookReadResultSchema, jevellan_notebook_write: NotebookWriteResultSchema,

@@ -4,7 +4,8 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import { EventEmitter } from 'node:events';
 import { existsSync } from 'node:fs';
-import type { IncomingMessage, ServerResponse } from 'node:http';
+import { request as httpRequest, type IncomingMessage, type ServerResponse } from 'node:http';
+import { Readable } from 'node:stream';
 import { ZodError } from 'zod';
 import {
   CoordinatorMessageReceiptSchema, DecisionAnsweredViewSchema, ProjectEventFrameSchema, ProjectNotebookViewSchema, ProjectWorkListViewSchema, ProjectWorkSettingsSchema,
@@ -51,12 +52,16 @@ type Stream = { text(): string; through(last: number): Promise<ProjectEventFrame
 /** The coordinator chat stream read as raw bytes: every frame must be exactly `id`, `event: project` and one `data` line. */
 async function watch(f: ProjectFixture, options: { query?: string; headers?: Record<string, string>; cookie?: string } = {}): Promise<Stream> {
   const abort = new AbortController(); streams.push(abort);
-  const response = await fetch(`${f.base}/api/projects/${f.project.id}/coordinator/events${options.query ?? ''}`,
-    { headers: { Cookie: options.cookie ?? f.cookie, ...options.headers }, signal: abort.signal });
-  expect(response.status).toBe(200);
-  expect(response.headers.get('content-type')).toBe('text/event-stream; charset=utf-8');
-  expect(response.headers.get('cache-control')).toBe('no-store');
-  const reader = response.body!.getReader(); const decoder = new TextDecoder();
+  // A dedicated connection avoids the idle pooled-socket close race while retaining raw SSE assertions.
+  const response = await new Promise<IncomingMessage>((resolve, reject) => {
+    const request = httpRequest(`${f.base}/api/projects/${f.project.id}/coordinator/events${options.query ?? ''}`,
+      { agent: false, headers: { Cookie: options.cookie ?? f.cookie, ...options.headers }, signal: abort.signal }, resolve);
+    request.on('error', reject); request.end();
+  });
+  expect(response.statusCode).toBe(200);
+  expect(response.headers['content-type']).toBe('text/event-stream; charset=utf-8');
+  expect(response.headers['cache-control']).toBe('no-store');
+  const reader = (Readable.toWeb(response) as ReadableStream<Uint8Array>).getReader(); const decoder = new TextDecoder();
   let text = ''; let consumed = 0; let taken = 0; const frames: ProjectEventFrame[] = [];
   const read = async () => { const chunk = await reader.read(); if (chunk.done) return false; text += decoder.decode(chunk.value, { stream: true }); return true; };
   const parse = () => {

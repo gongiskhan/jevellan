@@ -35,7 +35,7 @@ const rejects = (promise: Promise<unknown>) => promise.then(() => { throw new Er
 
 test('thread tools accept exactly one report per turn, an identical retry repeats its receipt, and inputs fail with one field sentence (brief 7.2, D19)', async () => {
   const { tools: scope } = tools(thread);
-  expect(scope.list().tools.map((tool) => tool.name)).toEqual(['jevellan_thread_report', 'memory_search', 'memory_read']);
+  expect(scope.list().tools.map((tool) => tool.name)).toEqual(['jevellan_thread_report', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read']);
   const report = { status: 'done', summary: 'Added greeting.txt.', testsRun: { command: 'npm test', passed: true, summary: 'ok' } };
   expect(await scope.call('jevellan_thread_report', report)).toEqual({ schema: 'bridge-result-v1', result: { schema: 'thread-report-result-v1', turn: 2, status: 'done', accepted: true, repeated: false } });
   // The retry with the defaults spelled out is the same report.

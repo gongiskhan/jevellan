@@ -57,7 +57,7 @@ test('thread and coordinator scopes answer through the actual stdio MCP command 
   const thread = issue({ kind: 'thread', projectId: 'proj_a', threadId: 'thread_a', turn: 3, isolation: 'worktree' });
   const coordinator = issue({ kind: 'coordinator', projectId: 'proj_b', turn: 1 });
   const [threadClient, coordinatorClient] = [await connect(thread.token), await connect(coordinator.token)];
-  expect((await threadClient!.listTools()).tools.map((tool) => tool.name)).toEqual(['jevellan_thread_report', 'memory_search', 'memory_read']);
+  expect((await threadClient!.listTools()).tools.map((tool) => tool.name)).toEqual(['jevellan_thread_report', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read']);
   const coordinatorTools = (await coordinatorClient!.listTools()).tools.map((tool) => tool.name);
   expect(coordinatorTools).toEqual(projectToolNames({ kind: 'coordinator' }));
   expect(coordinatorTools).not.toContain('jevellan_thread_report'); expect(coordinatorTools).toContain('jevellan_mail_send'); expect(coordinatorTools).not.toContain('jevellan_mail_inbox');

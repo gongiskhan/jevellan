@@ -80,15 +80,15 @@ test('the overlap rule is equal paths or a directory prefix ending in /, in eith
 
 test('scope lists: main threads get mail and reservations, worktree threads do not, and the coordinator mails without an inbox (brief 7.1, 7.2)', async () => {
   const mainTools = ['jevellan_mail_send', 'jevellan_mail_inbox', 'jevellan_reserve', 'jevellan_release'];
-  expect(projectToolNames({ kind: 'thread', isolation: 'main' })).toEqual(['jevellan_thread_report', 'memory_search', 'memory_read', ...mainTools]);
-  expect(projectToolNames({ kind: 'thread', isolation: 'worktree' })).toEqual(['jevellan_thread_report', 'memory_search', 'memory_read']);
+  expect(projectToolNames({ kind: 'thread', isolation: 'main' })).toEqual(['jevellan_thread_report', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read', ...mainTools]);
+  expect(projectToolNames({ kind: 'thread', isolation: 'worktree' })).toEqual(['jevellan_thread_report', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read']);
   expect(projectToolNames({ kind: 'coordinator' })).toEqual([...COORDINATOR_TOOLS]);
   expect(projectToolNames({ kind: 'coordinator' })).toContain('jevellan_mail_send');
   for (const name of ['jevellan_mail_inbox', 'jevellan_reserve', 'jevellan_release', 'jevellan_thread_report']) expect(projectToolNames({ kind: 'coordinator' })).not.toContain(name);
   // Through a turn's tools: the list guard refuses before any handler runs.
   threads(); const service = mailService('dev_a');
   const worktree = tools({ kind: 'thread', projectId: 'project', threadId: W, turn: 1, isolation: 'worktree' }, service);
-  expect(worktree.list().tools.map((tool) => tool.name)).toEqual(['jevellan_thread_report', 'memory_search', 'memory_read']);
+  expect(worktree.list().tools.map((tool) => tool.name)).toEqual(['jevellan_thread_report', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read']);
   for (const name of mainTools) expect(await rejects(worktree.call(name as never, name === 'jevellan_reserve' ? { paths: ['src/'] } : {}))).toEqual({ status: 403, message: TOOL_NOT_IN_TURN });
   const main = tools({ kind: 'thread', projectId: 'project', threadId: T1, turn: 1, isolation: 'main' }, service);
   expect(main.list().tools.map((tool) => tool.name)).toEqual(projectToolNames({ kind: 'thread', isolation: 'main' }));

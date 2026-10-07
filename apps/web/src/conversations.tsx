@@ -4,6 +4,7 @@ import { useShellVisibility } from './shell-visibility.js';
 import { ChangesDiff } from './changes-diff.js';
 import { conversationActivity, conversationAnswerTurns, conversationFallbackAnswer, conversationTurns, repeatedClosingNotice } from './conversation-transcript.js';
 import { TranscriptTurn } from './session-transcript.js';
+import { mergeTranscriptTurns } from './transcript-groups.js';
 import { createPortal } from 'react-dom';
 import { useSessionDrag } from './session-drag.js';
 import { clientId } from './client-id.js';
@@ -1790,18 +1791,7 @@ function StepBlock({
   );
 }
 function ConversationTools({ turns, read }: { turns: ReturnType<typeof conversationTurns>; read(pointer: string, title: string): void }) {
-  const tools = turns.flatMap(turn => turn.blocks).filter(block => block.type === 'tool');
-  const active = tools.filter(tool => tool.state === 'running');
-  const failed = tools.filter(tool => tool.state === 'failed');
-  return <details className="conversation-tools">
-    <summary>
-      {active.length > 0 && <span className="activity-spinner" aria-hidden="true" />}
-      <span>{tools.length} tool{tools.length === 1 ? '' : 's'}</span>
-      {active.length > 0 && <span className="tool-progress">{active.at(-1)!.name} · In progress</span>}
-      {failed.length > 0 && <span className="tool-failure">{failed.length} failed</span>}
-    </summary>
-    <div className="conversation-tool-list">{turns.map(turn => <TranscriptTurn key={turn.id} turn={turn} onOpen={ref => read(ref, ref)} />)}</div>
-  </details>;
+  return <div className="conversation-tools conversation-tool-list">{mergeTranscriptTurns(turns).map(turn => <TranscriptTurn key={turn.id} turn={turn} onOpen={ref => read(ref, ref)} />)}</div>;
 }
 const conversationTime = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
 const fullConversationTime = new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZoneName: 'long' });

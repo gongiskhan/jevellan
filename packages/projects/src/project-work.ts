@@ -1,18 +1,21 @@
+import { join } from 'node:path';
+import { existsSync } from 'node:fs';
 import { setTimeout as delay } from 'node:timers/promises';
 import type { z } from 'zod';
 import type { AccountService } from '@jevellan/accounts';
 import {
-  ProjectNotebookSchema, ProjectNotebookViewSchema, ProjectWorkSettingsSchema, ProjectWorkSettingsViewSchema, ThreadCreatedViewSchema, ThreadOverrideViewSchema, defaultProjectWorkSettings, newId,
+  IdSchema, ProjectRequestOutcomeSchema, readDocument, writeDocument, ProjectNotebookSchema, ProjectNotebookViewSchema, ProjectWorkSettingsSchema, ProjectWorkSettingsViewSchema, ThreadCreatedViewSchema, ThreadOverrideViewSchema, defaultProjectWorkSettings, newId,
   type CheckoutOwnership, type Configuration, type CoordinatorMessageRequestSchema, type DecisionAnswerRequestSchema, type Homes, type NotebookRequestSchema, type Project,
   type ProjectHub, type ProjectWorkListView, type ProjectWorkSettings, type ProjectWorkSettingsRequestSchema, type ProjectWorkView, type PublicationLeaseService,
   type RiggingItem, type SecretRedactor, type SharedProjects, type ThreadCreateRequestSchema, type ThreadMessageRequestSchema, type ThreadOverrideRequestSchema,
   type ThreadStopRequestSchema, type ThreadView, type UnreadableEnvelope,
 } from '@jevellan/core';
 import type { StretchBridges } from '@jevellan/conversations';
-import type { DecisionClient } from '@jevellan/decisions';
+import { decideProjectOutcome, type DecisionClient } from '@jevellan/decisions';
 import type { BasicMemory } from '@jevellan/memory';
 import type { RuntimeAdapter } from '@jevellan/runtime-contract';
 import { Admission } from './admission.js';
+import { ProjectApps, tailnetAppPublisher } from './apps.js';
 import { ThreadAttach, type ThreadAttachView, type ThreadDetachView } from './attach.js';
 import {
   COORDINATOR_ELSEWHERE, COORDINATOR_MEMORY_READ_ONLY, NOTEBOOK_CHANGED, PROJECT_NOT_FOUND, SETTINGS_CHANGED, STOPPED_BY_YOU, THREAD_MEMORY_READ_ONLY, THREAD_NOT_FOUND,
@@ -88,6 +91,7 @@ export class ProjectWork {
   readonly paths: ProjectPaths; readonly ledgers: ProjectLedgers; readonly store: ThreadStore; readonly coordinators: CoordinatorService;
   readonly threads: ThreadService; readonly decisions: DecisionItems; readonly tracker: PullRequestTracker; readonly views: ProjectViews;
   readonly admission: Admission; readonly transcripts: ThreadTranscripts;
+  readonly apps: ProjectApps;
   /** Mail and reservations between main threads (brief 5.11, 7.2). */
   readonly mail: MailService;
   /** The hub relay (D40): durable sends to other devices, and this device's pending envelopes. */
@@ -102,6 +106,7 @@ export class ProjectWork {
   #closing: Promise<void> | undefined;
   constructor(options: ProjectWorkOptions) {
     this.#o = options; const o = options;
+    this.apps = new ProjectApps(o.homes, tailnetAppPublisher(async () => (await o.roster()).devices.find(view => view.device.id === o.deviceId)?.device.url ?? this.daemonUrl), o.redactor);
     const timers = this.#timers = { ...DEFAULT_PROJECT_TIMERS, ...o.timers };
     const now = () => timers.now();
     this.paths = new ProjectPaths(o.homes);
@@ -135,6 +140,19 @@ export class ProjectWork {
     this.coordinators = new CoordinatorService({ deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, store: coordinatorStore, ledgers: this.ledgers, hub: o.hub,
       project: (projectId) => this.#project(projectId), workSettings: (projectId) => this.admission.settings(projectId), settings: o.settings, accounts: o.accounts,
       runtimes: o.runtimes, launcher, heldAccounts: held, decisions: this.decisions, tools: () => this.#coordinatorTools(), roster: o.roster,
+      outcome: async (projectId, event, history, signal) => {
+        const file = join(this.paths.project(projectId), 'request-outcomes', `${IdSchema.parse(event.id)}.json`);
+        if (existsSync(file)) {
+          const saved = readDocument(file, ProjectRequestOutcomeSchema);
+          if (saved.projectId !== projectId || saved.eventId !== event.id) throw new Error('This requested result belongs to another event.');
+          return saved;
+        }
+        const release = o.enterOperation(`project_request_${event.id}`, 'Interpreting a project request');
+        try {
+          const result = await decideProjectOutcome(o.decisionClient, { projectId, eventId: event.id, request: event.text, history, model: (await o.settings()).decisions.model }, signal);
+          return writeDocument(file, ProjectRequestOutcomeSchema, result);
+        } finally { release(); }
+      },
       forward: (projectId, events, handover) => {
         for (const event of events) this.outbox.enqueue(projectId, 'coordinator', { kind: 'coordinator-event', event }, handover === undefined ? {} : { handover });
       },
@@ -152,6 +170,16 @@ export class ProjectWork {
         accountWait: (thread) => launcher.accountWait({ runtime: thread.placement.runtime, model: thread.placement.model }),
         decisions: this.decisions, toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event),
         memory: (project) => o.memory.project(project, o.deviceId, () => { throw new Error(THREAD_MEMORY_READ_ONLY); }), mail: this.mail,
+        appTool: async (scope, name, input, signal) => {
+          if (scope.kind !== 'thread' || signal.aborted) throw new Error('This app call is outside an active thread turn.');
+          const thread = this.store.get(scope.threadId);
+          if (!thread || thread.projectId !== scope.projectId || thread.ownerDeviceId !== o.deviceId) throw refuse(THREAD_NOT_FOUND, 404);
+          if (name === 'jevellan_apps_list') return { schema: 'project-apps-v1', apps: this.apps.list(scope.projectId) };
+          if (name === 'jevellan_app_stop') return this.apps.stop(scope.projectId, (input as { appId: string }).appId);
+          const project = await this.#project(scope.projectId); const directory = project.paths[o.deviceId];
+          if (!directory || !thread.cwd) throw new Error('This project has no local app directory.');
+          return this.apps.start({ projectId: scope.projectId, threadId: scope.threadId, cwd: thread.cwd, projectDirectory: directory }, input, signal);
+        },
         runtimeName: (runtime) => o.runtimes.get(runtime)?.displayName ?? runtime, enterOperation: o.enterOperation,
         timers: { threadTurnTimeoutMs: timers.threadTurnTimeoutMs, setupTimeoutMs: timers.setupTimeoutMs }, now } });
     this.tracker = new PullRequestTracker({ threads: this.store, github, git, worktrees, project: (projectId) => this.#project(projectId),
@@ -176,8 +204,8 @@ export class ProjectWork {
       runner: (threadId) => this.threads.runner(threadId), project: (projectId) => this.#project(projectId), main, accounts: o.accounts, transcripts: this.transcripts });
     this.views = new ProjectViews({ deviceId: o.deviceId, deviceName: o.deviceName, hub: o.hub, projects: o.projects, store: this.store, ledgers: this.ledgers,
       coordinators: this.coordinators, transcripts: this.transcripts, worktrees, accounts: o.accounts, runtimes: o.runtimes, settings: o.settings, roster: o.roster, placement });
-    this.ready = recoverProjects({ paths: this.paths, ledgers: this.ledgers, store: this.store, coordinators: this.coordinators,
-      toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event), redactor: o.redactor, now }).then(() => undefined);
+    this.ready = Promise.all([this.apps.ready, recoverProjects({ paths: this.paths, ledgers: this.ledgers, store: this.store, coordinators: this.coordinators,
+      toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event), redactor: o.redactor, now })]).then(() => undefined);
   }
   /**
    * A relayed envelope this device could not read was dropped (P8 review S-2): the project's chat here says what was lost. Without a
@@ -284,6 +312,7 @@ export class ProjectWork {
       // Coordinator turns first (their tools start and message threads), then runners: tracker transitions wait on runner chains (2.6.14).
       await this.coordinators.close();
       await this.threads.close();
+      await this.apps.close();
       await this.tracker.close();
       await this.#publisher.close();
       await this.outbox.close();

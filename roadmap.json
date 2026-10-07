@@ -280,5 +280,11 @@
     "title": "Codex subscription usage in Runtimes",
     "why": "Read the isolated Codex account rate limits after authentication, select the Codex bucket and identify five-hour and weekly windows by duration. Unknown windows remain unknown and quota failures preserve readiness. Deployed to the existing pilot with live weekly usage and reset verified; 92 simulated backend cases and two desktop/phone display cases passed. See docs/acceptance/codex-usage-2026-10-07.md.",
     "status": "complete"
+  },
+  {
+    "id": "project-request-completion",
+    "title": "Project tool groups, coordinator choices and managed app links",
+    "why": "Keep consecutive identical tool calls in one open area, expose coordinator model and effort overrides, and let Jev carry the expected outcome into delegation. Managed apps return verified browser links and outlive thread completion. Deployed to the existing pilot, with the Todo app running at its verified tailnet link. Focused backend and ten affected browser journeys passed; the initial broad backend run remains failed. See docs/acceptance/project-improvements-2026-10-07.md.",
+    "status": "complete"
   }
 ]
