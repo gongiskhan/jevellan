@@ -96,8 +96,14 @@ const conversationDigest = () => {
 const messages = [];
 const installer = () => new Installer({ homes, manager, commandSearchPath: `${join(user, '.local/bin')}:${process.env.PATH}`, progress: message => { messages.push(message); console.log(message); } });
 const memberInstaller = () => new Installer({ homes: memberHomes, manager: memberService.manager, commandSearchPath: `${join(memberUser, '.local/bin')}:${process.env.PATH}`, progress: message => console.log(message) });
+// Keep the top-level receipts and captures the evidence collector reads; the
+// homes, npm cache, extracted package and archive reach several gigabytes per run.
+const discardFixture = () => {
+  for (const entry of readdirSync(root, { withFileTypes: true }))
+    if (!entry.isFile() || !/\.(json|png)$/.test(entry.name)) rmSync(join(root, entry.name), { recursive: true, force: true });
+};
 const interrupted = () => {
-  void (async () => { releaseWork?.(); gate?.close(); await firstRun?.close(); await Promise.all([service.stop(), memberService.stop()]); })()
+  void (async () => { releaseWork?.(); gate?.close(); await firstRun?.close(); await Promise.all([service.stop(), memberService.stop()]); discardFixture(); })()
     .finally(() => process.exit(1));
 };
 process.once('SIGTERM', interrupted); process.once('SIGINT', interrupted);
@@ -237,14 +243,16 @@ try {
   console.log(`Verified installation commands: ${join(root, 'result.json')}`);
 } finally {
   releaseWork?.(); gate?.close(); await firstRun?.close(); await Promise.all([service.stop(), memberService.stop()]);
+  let needsAttention = false;
   if (liveHttps) for (const [data, create] of [[memberHomes, memberInstaller], [homes, installer]]) {
     if (!existsSync(data.root)) continue;
     const cleanup = create();
     try { await cleanup.purge(data.root); }
-    catch { console.error(`Disposable HTTPS cleanup needs attention in ${data.root}. Existing routes were preserved.`); }
+    catch { needsAttention = true; console.error(`Disposable HTTPS cleanup needs attention in ${data.root}. Existing routes were preserved.`); }
     finally { cleanup.close(); }
   }
   await new Promise(resolve => { neighbour.close(() => resolve()); neighbour.closeAllConnections(); });
+  if (!needsAttention) discardFixture();
   console.log(`Evidence retained in ${basename(root)}.`);
   process.removeListener('SIGTERM', interrupted); process.removeListener('SIGINT', interrupted);
 }
