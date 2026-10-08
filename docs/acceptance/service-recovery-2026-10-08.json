@@ -1,0 +1,38 @@
+{
+  "schema": "pilot-service-recovery-v1",
+  "label": "live",
+  "at": "2026-10-08T15:27:59.143Z",
+  "processRestarted": true,
+  "restartBy": "launchd",
+  "runAtLoad": true,
+  "keepAlive": true,
+  "endpoints": [
+    {
+      "url": "http://127.0.0.1:9773/api/health",
+      "status": 200
+    },
+    {
+      "url": "https://goncalos-mac-mini-1.tail31efa.ts.net:9444/api/health",
+      "status": 200
+    },
+    {
+      "url": "https://goncalos-mac-mini-1.tail31efa.ts.net:9600/",
+      "status": 200
+    },
+    {
+      "url": "https://goncalos-mac-mini-1.tail31efa.ts.net:9601/",
+      "status": 200
+    }
+  ],
+  "checkedFiles": 219,
+  "filesPreserved": true,
+  "accountDefinitionsPreserved": true,
+  "tablePreservation": {
+    "secrets": true,
+    "configuration_revisions": true,
+    "configuration_requests": true,
+    "projects": true
+  },
+  "accountRowChecksumChangedDuringProbe": true,
+  "noNewProviderTurn": true
+}

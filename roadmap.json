@@ -292,5 +292,11 @@
     "title": "Main edits while the owner handles git",
     "why": "Allow Leave git to me threads to edit the registered checkout, including untracked app files, without staging, committing or publishing. Preserve files during Stop, Restart and recovery; supply the policy and isolation criteria to Jev. Deployed with preserved accounts, history and both app links. Live Jev selected Main and the isolated Codex subscription thread completed the Active-filter request with unchanged git state. Focused backend and both affected browser/vision checks passed; see docs/acceptance/manual-checkout-2026-10-07.md.",
     "status": "complete"
+  },
+  {
+    "id": "pilot-service-recovery",
+    "title": "Restore the pilot and supervise it after login",
+    "why": "The Mac restarted and the detached pilot process did not return. Restore the same release, data and app links; register the existing macOS user service with RunAtLoad and KeepAlive. Live graceful-exit recovery preserved 219 checked files and account definitions, vault, configuration and projects. Typecheck, lint, 29 service/resource checks and both desktop/phone sign-in/runtime browser smoke checks passed; another physical reboot is not run. See docs/acceptance/service-recovery-2026-10-08.md.",
+    "status": "complete"
   }
 ]
