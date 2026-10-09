@@ -1,0 +1,32 @@
+{
+  "schema": "external-agent-mcp-deployment-v1",
+  "at": "2026-10-09T15:07:19.246Z",
+  "evidence": "live",
+  "sourceCommit": "d895b6fcf43ee6517256be6dbe4b7539eda4cf1e",
+  "state": "running",
+  "release": {
+    "runtimeSourceInputs": 376,
+    "archiveDigest": "a38d6fa671929d4eb4229b767a29aa7d54f1316bb6147f15c305b915edead5e6",
+    "resourcesVerified": true,
+    "sourceVerified": true,
+    "compiledVerified": true
+  },
+  "preservation": {
+    "checkedFileGroups": 220,
+    "accountDefinitions": 3,
+    "filesUnchanged": true,
+    "tablesUnchanged": true,
+    "accountsUnchanged": true
+  },
+  "health": {
+    "http://127.0.0.1:9773/api/health": 200,
+    "https://goncalos-mac-mini-1.tail31efa.ts.net:9444/api/health": 200,
+    "https://goncalos-mac-mini-1.tail31efa.ts.net:9600/": 200,
+    "https://goncalos-mac-mini-1.tail31efa.ts.net:9601/": 200,
+    "https://goncalos-mac-mini-1.tail31efa.ts.net:9444/mcp": 401
+  },
+  "uiVerified": true,
+  "isolatedCodexWeeklyUsageRefreshed": true,
+  "externalNativeProviderTurn": "not run",
+  "physicalReboot": "not run"
+}
