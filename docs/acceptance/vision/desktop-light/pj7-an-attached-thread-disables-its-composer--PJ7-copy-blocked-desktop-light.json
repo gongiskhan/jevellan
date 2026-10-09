@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and metadata are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'), which is normal truncation and the full text isn't needed here",
-      "The magenta highlight on the selected attach command is fairly bright, though the text is still readable",
-      "The large empty area between the report card and the composer leaves the screen looking sparse"
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · Mesh journey fix…', 'Mac.l…', 'Mac…'). The full text isn't visible, but this is the expected way the sidebar shortens long names.",
+      "The highlighted takeover command uses magenta with white text in a small monospace font. It's readable, but it stands out sharply against the rest of the light theme.",
+      "The disabled composer (dashed border, greyed send button) is low-contrast. It's still clear and comes with the explanation 'Attached in a terminal on Mac.lan. Messages wait until you exit.'"
     ]
   }
 }

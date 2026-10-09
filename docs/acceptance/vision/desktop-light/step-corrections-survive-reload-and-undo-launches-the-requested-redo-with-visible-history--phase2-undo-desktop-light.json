@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The error banner 'No model can run this step right now' appears twice in a row with the same text, and the reason list is just 'disabled' repeated eight times, which tells the user nothing.",
-      "In the sidebar, the last conversation in the list is cut off at the bottom of its scroll area, so only the top of its text shows just above 'Some native sessions are unavailable'.",
-      "Sidebar conversation titles and subtitles are cut short with ellipses (expected in a narrow sidebar, but you can't tell the three 'Change the value to thre…' conversations apart).",
-      "The struck-through 'Step 1 · Implement' label and its pink 'corrected: …' tags are small and low-contrast, but still readable."
+      "The 'No model can run this step right now: disabled, disabled, …' error banner shows up twice in a row, and its message is just 'disabled' repeated eight times, which reads like a glitch.",
+      "In the undone Step 1 the code blocks are greyed out and the header is struck through. Everything is still readable, but contrast is lower, and the small pink 'corrected: …' labels are faint.",
+      "Long conversation titles and subtitles in the sidebar are cut short with an ellipsis. That looks deliberate."
     ]
   }
 }

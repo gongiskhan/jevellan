@@ -118,7 +118,7 @@ export function eventLine(event: CoordinatorEvent, context: EventLineContext): s
       return `[owner answered] "${event.question}" → ${optionLabel ? `${optionLabel}${text ? `. Note: ${text}` : ''}` : text ?? ''}`;
     }
     case 'pr-update': return `[PR #${event.prNumber} "${title(event.threadId)}"] ${event.change === 'conflict' ? `has conflicts with ${context.base}` : PR_CHANGES[event.change]}`;
-    case 'mail': return `[mail from "${title(event.fromThreadId)}" (${event.fromThreadId})] ${event.subject}\n${event.body}`;
+    case 'mail': return `[mail from "${event.fromTitle ?? title(event.fromThreadId)}" (${event.fromThreadId})] ${event.subject}\n${event.body}`;
     case 'thread-user-message':
       return PREFORMATTED.some((prefix) => event.text.startsWith(prefix)) ? event.text : `[owner wrote directly to ${thread(event.threadId)}] ${event.text}`;
     case 'placement-override': return `[owner changed ${thread(event.threadId)}] ${event.summary}`;
@@ -403,14 +403,14 @@ export function placementSummary(input: { runtime: string; modelLabel: string; e
 
 // Placement overrides (brief 10, 12.3; D50, D252)
 export const MODEL_SAME_RUNTIME = 'From the next turn, the model must use the same runtime.';
-export const NEXT_TURN_FIELDS = 'From the next turn, only the model and effort can change.';
+export const NEXT_TURN_FIELDS = 'From the next turn, only the account, model and effort can change within the same runtime.';
 export const RESTART_OPEN_PULL_REQUEST = 'This thread has an open pull request.';
 export const RESTART_PUBLISHED_TO_MAIN = 'This thread already published to main.';
 export const THREAD_ALREADY_RESTARTED = 'This thread was already restarted.';
 /** The old thread's reason after a restart: `Restarted as {newId}.` (brief 10); the prefix is shared with the interface. */
 export const restartedReason = (threadId: string): string => `${RESTARTED_PREFIX}${threadId}.`;
 export const isRestarted = (reason: string | undefined): boolean => !!reason?.startsWith(RESTARTED_PREFIX);
-const OVERRIDE_FIELDS = { isolation: 'Isolation', model: 'Model', effort: 'Effort', device: 'Device' } as const;
+const OVERRIDE_FIELDS = { isolation: 'Isolation', runtime: 'Runtime', account: 'Account', model: 'Model', effort: 'Effort', device: 'Device' } as const;
 /**
  * The coordinator's `placement-override` summary (D50): `Model changed from {from} to {to}.` per change, joined with spaces, a restart's
  * `Restarted as {newId}.` (D252), then ` Note: {note}`; at most 400 characters.

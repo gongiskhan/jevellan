@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Offline' status pill sits on its own row under the header, so it reads as cut off from the title",
-      "The 'Offline fixture' device name in the notice looks like test data",
-      "The empty-state text is centered vertically with a lot of blank space above and below it"
+      "Header icon buttons (filter, +, document, overflow) crowd the title and give it little room, so a longer project name would likely be truncated",
+      "The 'Offline' badge is very small monospace text with low contrast against its light background",
+      "Large empty area between the tab bar and the composer, with the empty-state text placed mid-screen"
     ]
   }
 }

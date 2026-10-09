@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The warning banner text 'needs to finish.' runs straight into the 'Retry' button with no gap.",
-      "In the sidebar, long conversation titles and subtitles are cut short with ellipses (e.g. 'Context · J11 memory journ…', 'Browser fixtur…'). This looks intentional and the text is still readable.",
-      "The disabled Claude Code and Codex checkboxes on the Safety hook are very faint, but their labels are still readable."
+      "In the warning banner, the 'Retry' button sits right against the end of the sentence ('...needs to finish.') with almost no space between them.",
+      "The 'Safety' hook's Claude Code and Codex checkboxes are very faint (greyed out). This looks like an intentional disabled state, but the contrast is low.",
+      "Conversation subtitles in the left sidebar are cut off with ellipses ('Mac…', 'Browser fixtu…'). This looks like intentional truncation, and the full text isn't needed to use the controls."
     ]
   }
 }

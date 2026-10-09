@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation titles and metadata are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Mesh journey fix…', 'dev-ma…'). The truncation looks intentional and the rows are still readable.",
-      "The 'Save Git settings' button has low contrast (light grey text on a light grey fill) because it is disabled. It is still legible.",
-      "The 'Saved · updated Oct 6, 2026' status line uses a small monospace font that differs from the body text around it."
+      "The sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Context · Mesh journey fix…', 'Done · Improver sandbox · Mac.l…'). The truncation is intentional and doesn't affect the GitHub token card.",
+      "The 'Save Git settings' button looks disabled and has low contrast, which is expected when nothing has changed."
     ]
   }
 }

@@ -26,8 +26,78 @@ export class SecretRedactor {
     for (const secret of [...this.#secrets].sort((a, b) => b.length - a.length)) result = result.split(secret).join('[redacted]');
     return result
       .replace(/\b(?:sk-(?:ant-)?[A-Za-z0-9_-]{16,}|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,})\b/g, '[redacted]')
+      .replace(/\bjva_[A-Za-z0-9_-]{1,128}\.[A-Za-z0-9_-]{43}\b/g, '[redacted]')
       .replace(/\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]+\b/g, '[redacted]')
       .replace(/(Bearer\s+)\S+/gi, '$1[redacted]');
+  }
+  /**
+   * A cumulative output snapshot's safe prefix. An unfinished credential (or UTF-16 pair) stays in the
+   * source, never in a public delta. Replaying the source resolves it without persisting raw pending text.
+   */
+  streamText(value: string): string {
+    const protectedRanges: Array<{ start: number; end: number }> = [];
+    for (const secret of this.#secrets) {
+      for (let start = value.indexOf(secret); start >= 0; start = value.indexOf(secret, start + 1)) protectedRanges.push({ start, end: start + secret.length });
+    }
+    const patterns = [
+      /\b(?:sk-(?:ant-)?[A-Za-z0-9_-]{16,}|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,})\b/gu,
+      /\bjva_[A-Za-z0-9_-]{1,128}\.[A-Za-z0-9_-]{43}\b/gu,
+      /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]+\b/gu,
+      /Bearer\s+\S+/giu,
+    ];
+    for (const pattern of patterns) for (const match of value.matchAll(pattern)) protectedRanges.push({ start: match.index, end: match.index + match[0].length });
+    let cut = value.length;
+    const hold = (start: number) => {
+      // Do not cut through a complete credential's replacement, including self-overlapping secrets.
+      if (!protectedRanges.some(range => range.start <= start && range.end === value.length)) cut = Math.min(cut, start);
+    };
+    for (const secret of this.#secrets) {
+      for (let length = Math.min(value.length, secret.length - 1); length > 0; length--) {
+        if (value.endsWith(secret.slice(0, length))) { hold(value.length - length); break; }
+      }
+    }
+    const starts = ['sk-', 'ghp_', 'gho_', 'ghu_', 'ghs_', 'ghr_', 'github_pat_', 'jva_', 'eyJ', 'Bearer'];
+    for (const start of starts) for (let length = 1; length < start.length; length++) {
+      const suffix = value.slice(-length); const position = value.length - length;
+      if ((start === 'Bearer' ? suffix.toLowerCase() === start.slice(0, length).toLowerCase() : suffix === start.slice(0, length)) && (position === 0 || !/\w/u.test(value[position - 1]!))) hold(position);
+    }
+    for (const pattern of [
+      /\b(?:sk-(?:ant-)?[A-Za-z0-9_-]*|gh[pousr]_[A-Za-z0-9]*|github_pat_[A-Za-z0-9_]*|jva_[A-Za-z0-9_-]*(?:\.[A-Za-z0-9_-]*)?|eyJ[A-Za-z0-9_-]*(?:\.[A-Za-z0-9_-]*){0,2})$/u,
+      /\bBearer(?:\s+\S*)?$/iu,
+    ]) { const match = pattern.exec(value); if (match) hold(match.index); }
+    if (/[\uD800-\uDBFF]$/u.test(value)) cut = Math.min(cut, value.length - 1);
+    // A suffix can overlap a completed credential. Moving left preserves the whole protected span.
+    for (;;) {
+      const overlap = protectedRanges.find(range => range.start < cut && range.end > cut);
+      if (!overlap) break; cut = overlap.start;
+    }
+    const redacted = this.text(value.slice(0, cut));
+    return fitRedacted(this, redacted, redacted.length);
+  }
+  /** Cumulative tool payloads can contain unfinished credentials inside quoted JSON values. */
+  streamToolText(value: string): string {
+    // An unfinished quoted value may encode a credential with \u escapes. Its decoded tail is not
+    // available yet, so keep that literal in the source until a complete snapshot can be inspected.
+    let quote = -1; let escaped = false;
+    for (let index = 0; index < value.length; index++) {
+      const character = value[index];
+      if (escaped) { escaped = false; continue; }
+      if (quote >= 0 && character === '\\') { escaped = true; continue; }
+      if (character === '"') quote = quote < 0 ? index : -1;
+    }
+    const prefix = this.streamText(quote < 0 ? value : value.slice(0, quote));
+    return prefix.replace(/"(?:\\.|[^"\\])*"/gu, (literal: string) => {
+      let decoded: unknown; try { decoded = JSON.parse(literal); } catch { return literal; }
+      if (typeof decoded !== 'string') return literal;
+      const safe = this.streamText(decoded);
+      return safe === decoded ? literal : JSON.stringify(safe);
+    });
+  }
+  /** For output payloads whose individual string fields may be unfinished native deltas. */
+  streamDocument<T>(value: T): T {
+    const visit = (entry: unknown): unknown => typeof entry === 'string' ? this.streamText(entry) : Array.isArray(entry) ? entry.map(visit)
+      : entry && typeof entry === 'object' ? Object.fromEntries(Object.entries(entry).map(([key, child]) => [this.text(key), visit(child)])) : entry;
+    return visit(value) as T;
   }
   document<T>(value: T): T {
     const visit = (entry: unknown): unknown => {

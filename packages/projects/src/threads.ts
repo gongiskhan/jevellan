@@ -2,7 +2,7 @@ import type { z } from 'zod';
 import type { AccountService } from '@jevellan/accounts';
 import { existsSync } from 'node:fs';
 import {
-  EffortSchema, HubUnavailable, PlacementOverrideSchema, ThreadReadResultSchema, ThreadSchema, concludedRecently, deviceAway, isTerminal, liveWork, mapEffort, newId, stableJson, type Configuration,
+  EffortSchema, HubUnavailable, PlacementOverrideSchema, ThreadReadResultSchema, ThreadSchema, concludedRecently, deviceAway, isTerminal, liveWork, mapEffort, newId, stableJson, type Configuration, type PlacementRecord,
   type CoordinatorEvent, type PlacementOverride, type ProjectHub, type ProjectLedgerEvent, type QueuedMessage, type SecretRedactor, type SharedProjects, type Thread, type ThreadCommand,
   type ThreadCreateRequestSchema, type ThreadCreatedViewSchema, type ThreadIndex, type ThreadOverrideRequestSchema, type ThreadReport, type ThreadState,
 } from '@jevellan/core';
@@ -281,17 +281,22 @@ export class ThreadService {
     const thread = this.#local(projectId, threadId); const placement = thread.placement;
     if (input.isolation !== undefined || input.deviceId !== undefined) throw refuse(NEXT_TURN_FIELDS, 400);
     if (isTerminal(thread.state)) throw refuse(THREAD_ENDED, 409);
+    if (input.runtimeId != null && input.runtimeId !== placement.runtime) throw refuse(MODEL_SAME_RUNTIME, 409);
+    if ([input.runtimeId, input.accountId, input.modelId, input.effort].includes(null)) return this.#resetNextTurn(thread, input);
     const model = input.modelId === undefined ? undefined : (await this.#o.settings()).menu.find((entry) => entry.id === input.modelId);
     if (input.modelId !== undefined && !model) throw refuse(UNKNOWN_PLACEMENT_MODEL, 409);
     if (model && model.runtime !== placement.runtime) throw refuse(MODEL_SAME_RUNTIME, 409);
-    const changes: OverrideChange[] = [...(model && model.id !== placement.modelId ? [{ field: 'model' as const, from: placement.modelId, to: model.id }] : []),
-      ...(input.effort !== undefined && input.effort !== placement.effortRequested ? [{ field: 'effort' as const, from: placement.effortRequested, to: input.effort }] : [])];
+    const changes: OverrideChange[] = [...(input.runtimeId != null && !placement.fixed.includes('runtime') ? [{ field: 'runtime' as const, from: placement.runtime, to: input.runtimeId }] : []),
+      ...(model && (model.id !== placement.modelId || !placement.fixed.includes('model')) ? [{ field: 'model' as const, from: placement.modelId, to: model.id }] : []),
+      ...(input.accountId != null && (input.accountId !== placement.accountId || !placement.fixed.includes('account')) ? [{ field: 'account' as const, from: placement.accountId, to: input.accountId }] : []),
+      ...(input.effort != null && (input.effort !== placement.effortRequested || !placement.fixed.includes('effort')) ? [{ field: 'effort' as const, from: placement.effortRequested, to: input.effort }] : [])];
     if (!changes.length) return;
-    if (model && model.id !== placement.modelId) {
+    if (model && model.id !== placement.modelId || input.accountId !== undefined) {
       // The model must be able to run this thread where it is: enabled, its runtime able to run threads, an account on this device.
       const project = (await this.#o.projects.get(projectId))?.project; if (!project) throw refuse(PROJECT_NOT_FOUND, 404);
       const refused = await this.#o.placement.refusal({ project, workSettings: await this.#o.admission.settings(projectId), title: thread.title, task: thread.task,
-        fixed: { isolation: thread.isolation, modelId: model.id, deviceId: thread.ownerDeviceId }, coordinatorDeviceId: thread.coordinatorDeviceId, ignoreRunningLimit: true,
+        fixed: { isolation: thread.isolation, modelId: model?.id ?? placement.modelId, runtimeId: placement.runtime, deviceId: thread.ownerDeviceId,
+          ...((input.accountId ?? (placement.fixed.includes('account') ? placement.accountId : undefined)) ? { accountId: input.accountId ?? placement.accountId } : {}) }, coordinatorDeviceId: thread.coordinatorDeviceId, ignoreRunningLimit: true,
         exclude: threadId });
       if (refused) throw refuse(refused, 409);
     }
@@ -303,16 +308,53 @@ export class ThreadService {
       summary: overrideSummary({ changes, note }) });
     await this.#o.delivery.toThreadOwner(projectId, threadId, thread.ownerDeviceId, { type: 'override-next-turn', override });
   }
+  /** Null returns a field to Auto; absence leaves its current choice alone. A native thread keeps its runtime until restart. */
+  async #resetNextTurn(thread: Thread, input: ThreadOverrideRequest): Promise<void> {
+    const current = thread.placement;
+    const requested = { runtime: input.runtimeId, account: input.accountId, model: input.modelId, effort: input.effort };
+    const previous = { runtime: current.runtime, account: current.accountId, model: current.modelId, effort: current.effortRequested };
+    const changes: OverrideChange[] = (Object.keys(requested) as Array<keyof typeof requested>).flatMap((field) => {
+      const value = requested[field];
+      if (value === undefined || value === null && !current.fixed.includes(field)) return [];
+      return value === previous[field] && current.fixed.includes(field) ? [] : [{ field, from: previous[field], to: value ?? 'auto' }];
+    });
+    if (!changes.length) return;
+    const project = (await this.#o.projects.get(thread.projectId))?.project; if (!project) throw refuse(PROJECT_NOT_FOUND, 404);
+    const fixed: PlacementFixed = { isolation: thread.isolation, deviceId: thread.ownerDeviceId, runtimeId: current.runtime,
+      ...(input.modelId === null ? {} : { modelId: input.modelId ?? current.modelId }), ...(input.effort === null ? {} : { effort: input.effort ?? current.effortRequested }),
+      ...(input.accountId === null ? {} : input.accountId !== undefined ? { accountId: input.accountId } : current.fixed.includes('account') ? { accountId: current.accountId } : {}) };
+    const chosen = await this.#o.placement.place({ project, workSettings: await this.#o.admission.settings(thread.projectId), title: thread.title, task: thread.task,
+      note: input.note, fixed, coordinatorDeviceId: thread.coordinatorDeviceId, ignoreRunningLimit: true, exclude: thread.id });
+    if (chosen.kind === 'refused') throw refuse(chosen.message, 409);
+    const fields = new Set(current.fixed);
+    for (const field of Object.keys(requested) as Array<keyof typeof requested>) {
+      if (requested[field] === null) fields.delete(field); else if (requested[field] !== undefined) fields.add(field);
+    }
+    const placement = { ...chosen.record, fixed: [...fields] };
+    const at = this.#o.now(); const note = this.#note(input.note);
+    const override = PlacementOverrideSchema.parse({ schema: 'placement-override-v1', id: derivedId('povr', thread.projectId, thread.id, input.clientRequestId), projectId: thread.projectId,
+      threadId: thread.id, mode: 'next-turn', changes, ...(note ? { note } : {}), at: this.#at(at) });
+    await this.#o.hub.addOverride(override);
+    await this.#o.delivery.toCoordinator(thread.projectId, { schema: 'coordinator-event-v1', kind: 'placement-override', id: derivedId('cev', override.id), at: this.#at(at), threadId: thread.id,
+      summary: overrideSummary({ changes, note }) });
+    await this.#o.delivery.toThreadOwner(thread.projectId, thread.id, thread.ownerDeviceId, { type: 'override-next-turn', override, placement });
+  }
   /** The owner applies a next-turn override: the next launch reads the thread's placement, so a running turn keeps its own (D252). */
-  async #applyNextTurn(threadId: string, override: PlacementOverride): Promise<void> {
+  async #applyNextTurn(threadId: string, override: PlacementOverride, resolved?: PlacementRecord): Promise<void> {
     const menu = (await this.#o.settings()).menu; const current = this.#o.store.get(threadId)!;
     if (isTerminal(current.state)) throw refuse(THREAD_ENDED, 409);
     const to = (field: OverrideChange['field']) => override.changes.find((change) => change.field === field)?.to;
-    const model = menu.find((entry) => entry.id === (to('model') ?? current.placement.modelId));
+    const model = menu.find((entry) => entry.id === (resolved?.modelId ?? to('model') ?? current.placement.modelId));
     if (!model) throw refuse(UNKNOWN_PLACEMENT_MODEL, 409);
-    const requested = EffortSchema.parse(to('effort') ?? current.placement.effortRequested);
-    const placement = { ...current.placement, modelId: model.id, model: model.model, effortRequested: requested, effortEffective: mapEffort(requested, model.efforts) };
-    if (stableJson(placement) !== stableJson(current.placement)) this.#o.store.update(threadId, (latest) => ({ ...latest, placement }), { type: 'thread-placement', data: placement });
+    const requested = EffortSchema.parse(resolved?.effortRequested ?? to('effort') ?? current.placement.effortRequested);
+    const accountId = resolved?.accountId ?? to('account');
+    const placement = resolved ?? { ...current.placement, modelId: model.id, model: model.model, effortRequested: requested, effortEffective: mapEffort(requested, model.efforts),
+      fixed: [...new Set([...current.placement.fixed, ...override.changes.map((change) => change.field)])], ...(accountId ? { accountId } : {}) };
+    if (stableJson(placement) !== stableJson(current.placement)) this.#o.store.update(threadId, (latest) => {
+      const next = { ...latest, placement };
+      if (accountId !== undefined && accountId !== latest.placement.accountId) delete next.nativeSessionId;
+      return next;
+    }, { type: 'thread-placement', data: placement });
     this.#o.store.setLabels(threadId, { modelLabel: model.label });
   }
   /**
@@ -327,6 +369,7 @@ export class ThreadService {
     // Before anything is placed or recorded: no new thread, receipt or override exists for a restart the owner's terminal refused (phase 8).
     if (thread.state === 'attached') throw refuse(attachedRefusal(threadId), 409);
     const fixed: PlacementFixed = { ...(input.isolation ? { isolation: input.isolation } : {}), ...(input.modelId ? { modelId: input.modelId } : {}),
+      ...(input.runtimeId ? { runtimeId: input.runtimeId } : {}), ...(input.accountId ? { accountId: input.accountId } : {}),
       ...(input.effort ? { effort: input.effort } : {}), ...(input.deviceId ? { deviceId: input.deviceId } : {}) };
     const clientRequestId = derivedId('treq', 'restart', projectId, threadId, input.clientRequestId);
     // A retry of an applied restart passes the refusals that the restart itself caused.
@@ -347,6 +390,8 @@ export class ThreadService {
     }
     const changes: OverrideChange[] = [
       ...(fixed.isolation !== undefined && fixed.isolation !== thread.isolation ? [{ field: 'isolation' as const, from: thread.isolation, to: fixed.isolation }] : []),
+      ...(fixed.runtimeId !== undefined && fixed.runtimeId !== placement.runtime ? [{ field: 'runtime' as const, from: placement.runtime, to: fixed.runtimeId }] : []),
+      ...(fixed.accountId !== undefined && fixed.accountId !== placement.accountId ? [{ field: 'account' as const, from: placement.accountId, to: fixed.accountId }] : []),
       ...(fixed.modelId !== undefined && fixed.modelId !== placement.modelId ? [{ field: 'model' as const, from: placement.modelId, to: fixed.modelId }] : []),
       ...(fixed.effort !== undefined && fixed.effort !== placement.effortRequested ? [{ field: 'effort' as const, from: placement.effortRequested, to: fixed.effort }] : []),
       ...(fixed.deviceId !== undefined && fixed.deviceId !== thread.ownerDeviceId ? [{ field: 'device' as const, from: thread.ownerDeviceId, to: fixed.deviceId }] : [])];
@@ -581,7 +626,7 @@ export class ThreadService {
       case 'stop': await runner.stop(command.reason, command.notify ?? false); return;
       case 'discard': await runner.discard(); return;
       case 'allow-turns': await runner.allowTurns(); return;
-      case 'override-next-turn': await this.#applyNextTurn(thread.id, command.override); return;
+      case 'override-next-turn': await this.#applyNextTurn(thread.id, command.override, command.placement); return;
     }
   }
   /** `jevellan_threads_list`: the project's hub indexes that are not concluded; `all` adds those concluded in the last 14 days. */

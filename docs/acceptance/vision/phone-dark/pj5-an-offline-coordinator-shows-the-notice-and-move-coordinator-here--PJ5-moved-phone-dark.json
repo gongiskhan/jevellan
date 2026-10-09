@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header still says \"Projects offline\" even though the notice says the coordinator moved to dev-madrid. This may be stale status text.",
-      "Large empty area between the notice and the composer; the chat has no content or empty-state hint."
+      "The header says \"Projects offline\" and the status badge says \"Idle\" while the banner says \"The coordinator moved to Mac.lan.\" These messages may confuse the user, but all of them are readable.",
+      "The header controls (the sliders button, the plus button, the document button and the more-options menu) are tightly grouped next to the title. They don't overlap, and each one can still be tapped."
     ]
   }
 }

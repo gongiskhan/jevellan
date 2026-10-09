@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Header crowds the task title ('Tidy the README wording') and the panel title ('Why this placement') together on one line with little space between them; on a narrower phone they could start to crowd each other",
-      "The panel ends well above the bottom of the screen, leaving a large blank area"
+      "Header title 'Tidy the README wording' is small and its pink monospace text is low-emphasis next to the bold 'Why this placement' heading",
+      "Large empty white space below the JEV footer section",
+      "Gray secondary text (Jev labels, 0.10/0.15 values, footer metadata) is low contrast but still readable"
     ]
   }
 }

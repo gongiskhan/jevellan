@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Tab bar is cut off at the right edge: the fourth tab shows only a partial icon behind the scroll-right chevron. It can still be reached by scrolling.",
-      "Small monospace metadata lines (e.g. 'Package · Parked · Rigging local fixture · Claude Code') are low-contrast grey on the dark background but still readable."
+      "The tab strip clips the fourth tab's icon under the scroll-arrow button. It looks like an intentional horizontal scroll affordance, and the arrow can still be reached.",
+      "In the metadata lines for browser-promote and browser-package, 'Claude Code' wraps onto a second line, so the row breaks awkwardly.",
+      "The Skills card is cut off at the bottom edge of the viewport. The page scrolls, so the remaining content can still be reached."
     ]
   }
 }

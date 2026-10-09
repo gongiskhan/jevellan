@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Background page content (Rigging tabs, 'browser package' card, 'Restore locally' button) shows through the dim overlay around the modal. This is expected for a modal, but it makes the screen look busy.",
-      "The breadcrumb and the top tab row are partly cut off at the right edge behind the overlay. They can't be used while the modal is open anyway.",
-      "The large empty space in the Content textarea leaves little room for anything else on a phone screen."
+      "The settings tab strip behind the modal clips a fourth tab after 'Decisions' at the right edge. It sits next to a scroll arrow, so it looks like normal horizontal scrolling and not a defect.",
+      "The dimmed Rigging page behind the 'Edit Managed browser bundle' modal ('browser-package' row, 'Restore locally' button) is hard to read, but the modal's backdrop is meant to dim it.",
+      "The modal covers the managed Rigging list underneath, so this capture shows the edit dialog more than the managed list."
     ]
   }
 }

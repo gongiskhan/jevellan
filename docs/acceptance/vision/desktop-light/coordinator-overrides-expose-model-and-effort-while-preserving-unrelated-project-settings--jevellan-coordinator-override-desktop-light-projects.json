@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "Coordinator overrides expose model and effort while preserving unrelated project settings",
+  "layout": "desktop-light",
+  "screenshot": "/tmp/jevellan-coordinator-override-desktop-light-projects.png",
+  "expected": "the Jevellan web app \"jevellan coordinator override projects\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Coordinator overrides expose model and effort while preserving unrelated project settings\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The background page behind the modal is blurred, so its text can't be read. That's expected while a modal is open.",
+      "In the background timeline, the cards behind the modal are covered, so their text is partly hidden ('Checks failing', 'Pull request #...'). That's expected when a modal is in front."
+    ]
+  }
+}

@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The conversation title in the header is cut short with an ellipsis ('...simulated read-only viola...'). The full title still appears in the first message bubble.",
-      "In the left sidebar, the fourth conversation is partly hidden at the bottom of its scroll area, just above the 'Some native sessions are unavailable' line.",
-      "The right Changes panel is cut off at the bottom of the window: the 'No verification receipt yet' text under JEVELLAN VERIFICATION is only half visible. The panel appears to scroll.",
-      "Sidebar timestamps and metadata lines ('Waiting for you · Checkpoint rec…') are cut short with ellipses."
+      "The conversation title in the header is cut off with an ellipsis ('...simulated read-only viol...'). The full title is visible elsewhere, so this is not blocking.",
+      "The conversation list in the sidebar ends on a partly clipped fourth item above 'Some native sessions are unavailable'. It looks like scrollable overflow.",
+      "The bottom of the right Changes panel is cut off at the viewport edge ('No verification receipt yet' is only partly visible). It looks like the panel scrolls.",
+      "The center chat column starts mid-message: the 'Input' label is clipped by the sticky header. This is normal for a scrolled view.",
+      "Several sidebar conversation subtitles are cut off with ellipses ('Checkpoint re…', 'Browser fixtu…')."
     ]
   }
 }

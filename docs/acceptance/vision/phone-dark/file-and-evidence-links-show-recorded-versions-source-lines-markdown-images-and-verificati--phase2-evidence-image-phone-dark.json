@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The image preview is a small thumbnail of about 96px, so its contents are hard to see at phone size.",
-      "The checkpoint hash uses small, low-contrast monospace text that is readable but faint.",
-      "\"Open recorded step\" is gray and has less contrast than the pink \"Open working copy\" link next to it.",
-      "Most of the screen below the links is empty, so the layout looks unbalanced."
+      "The image preview is a small thumbnail (about 96px wide), so you can't make out its content without opening it.",
+      "The 'Open recorded step' link has lower contrast than the pink primary link, though you can still read it.",
+      "The checkpoint hash is in a small monospace font. It fits on the line but is hard to read at phone size.",
+      "Most of the panel below the links is empty."
     ]
   }
 }

@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The transient 'Jev key saved.' toast sits over the middle of the page subtitle ('Jev chooses each next step from the … give it.') and hides part of that sentence until it is dismissed",
-      "The Routing profile textarea's last visible line is clipped at the bottom edge; the field scrolls and can be resized, so the text is still reachable",
-      "The last sidebar conversation row ('Context · Improver sandbox') is cut off at the bottom of the scrollable list"
+      "The 'Jev key saved.' toast covers the middle of the page subtitle ('Jev chooses each next step from the … give it.'). The toast can be dismissed and goes away on its own, so this is temporary.",
+      "The Routing profile text box cuts off its last line at the bottom edge. The box scrolls and can be resized, so the text is still reachable.",
+      "The last conversation in the sidebar ('Context · J11 memory jour…') is cut off at the bottom of the scrollable list.",
+      "The model ID badge 'claude-fable-5-1' sits on the far right, apart from the Label field, which makes the Model menu row look unbalanced."
     ]
   }
 }

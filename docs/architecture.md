@@ -19,7 +19,8 @@ The project uses strict TypeScript, ESM and npm workspaces. The supported Node v
 | `packages/runtime-contract` | Adapter interfaces for stretches and turns, safety profiles, common runtime helpers, the scripted FakeRuntime and the published contract test runner. |
 | `packages/projects` | Project work: the coordinator turn loop, thread runner and lifecycle, placement wiring, worktrees, verification and publication, pull request tracking, decision items, mail, the relay outbox and inbox, terminal attach and restart recovery. |
 | `runtimes/claude`, `runtimes/codex` | Built-in SDK adapters for stretches and turns, isolated account authentication and launch-specific permissions/tools. |
-| `packages/cli` | Install/join/update/rollback/removal, user-service adapters, private dependencies, diagnostics, `jevellan thread attach` and the MCP bridge. |
+| `packages/agent-mcp` | The external-agent MCP catalog, resources, prompts, resumable output and transport-independent contract. |
+| `packages/cli` | Install/join/update/rollback/removal, user-service adapters, private dependencies, diagnostics, `jevellan thread attach`, the worker bridge and the external MCP stdio client. |
 
 The application composition lives in `apps/daemon/src/application.ts`, which wires `ProjectWork` next to the conversation service. Hub and member implementations satisfy the same shared-state and coordination interfaces; the conversation service does not substitute a local writable copy when the hub is unavailable.
 

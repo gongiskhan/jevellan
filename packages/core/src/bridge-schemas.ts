@@ -30,7 +30,7 @@ const reason = text.max(400);
 export const ASK_USER_OPTIONS = 'Give no options or two to four options.';
 export const ThreadsListInputSchema = z.strictObject({ include: z.enum(['active', 'all']).default('active') });
 export const ThreadStartInputSchema = z.strictObject({
-  title: text.max(120), task: text.max(20000), isolation: IsolationSchema.optional(), modelId: IdSchema.optional(),
+  title: text.max(120), task: text.max(20000), isolation: IsolationSchema.optional(), runtimeId: IdSchema.optional(), accountId: IdSchema.optional(), modelId: IdSchema.optional(),
   effort: EffortSchema.optional(), deviceId: IdSchema.optional(), note: z.string().max(600).optional(),
 });
 export const ThreadMessageInputSchema = z.strictObject({ threadId: IdSchema, message: text.max(20000), interrupt: z.boolean().default(false) });

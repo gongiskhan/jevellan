@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Save Git settings' button has low contrast against the card. This is probably its disabled state because nothing has changed, but it is hard to see.",
-      "Sidebar session titles and subtitles end in ellipses ('J11 memory journ…', 'Mesh journey fixt…'). This is expected truncation, but the full names can't be read here.",
-      "Sidebar subtitles in small monospace text ('Done · Improver sandbox · dev-ma…') are dim and only just readable."
+      "The 'Save Git settings' button has low contrast against the card background. It is probably meant to look disabled because nothing has changed, but it is harder to read than the other buttons.",
+      "Some sidebar thread titles and metadata end in an ellipsis (e.g. 'Mesh journey fix…', 'Mac.l…'). This looks like deliberate truncation and does not affect the GitHub token card.",
+      "The breadcrumb 'Settings · Git' is small and low contrast."
     ]
   }
 }

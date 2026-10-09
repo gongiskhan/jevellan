@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation list: the fourth row is cut off halfway at the bottom edge of its scroll area, so only the tops of its glyphs show above the 'Some native sessions are unavailable' line. It looks like ordinary scroll overflow with no fade or edge marking it.",
-      "Sidebar conversation titles and metadata are cut short with ellipses (e.g. 'Exercise automatic decisi…', 'Done · Automatic fixture · dev-m…'). This looks intentional, and the full title shows in the main header."
+      "The scrollable conversation list in the sidebar cuts off a fourth row partway through, just above the 'Some native sessions are unavailable' notice. Only part of its title shows. This is normal overflow in a scroll area, but the cut-off text looks slightly messy.",
+      "Conversation titles and subtitles in the sidebar are cut short with ellipses (e.g. 'Exercise automatic decisi…', 'Done · Automatic fixture · Mac…'). This truncation looks intentional.",
+      "The 'completed' status label in the 'Read project' tool card sits on its own line under the title instead of beside it, which leaves an awkward gap."
     ]
   }
 }

@@ -10,6 +10,7 @@ import { ImproverDeviceRequestSchema, ImproverDeviceResultSchema, ImproverReques
 import { ProjectHubCollectionSchema, ProjectHubRequestSchema, ProjectHubResultSchema, collectionOf, type ProjectHubCollection, type ProjectHubResult } from '@jevellan/core';
 import { ProjectEnvelopeSchema, type ProjectEnvelope, type UnreadableEnvelope } from '@jevellan/core';
 import { z } from 'zod';
+import { AgentAccessHubRequestSchema, AgentAccessHubResultSchema } from '@jevellan/core';
 
 import { HubUnavailable } from '@jevellan/core';
 export { HubUnavailable } from '@jevellan/core';
@@ -110,6 +111,14 @@ export class MemberHubClient {
     return result;
   }
   checkout(input: unknown) { return this.#request('checkout', CheckoutStoreResultSchema, CheckoutStoreRequestSchema.parse(input)); }
+  async agentAccess(input: unknown) {
+    const request = AgentAccessHubRequestSchema.parse(input);
+    if ('authorization' in request) this.options.redactor.add(request.authorization.replace(/^Bearer /, ''));
+    if ('ownerSession' in request) this.options.redactor.add(request.ownerSession);
+    const result = await this.#request('agent-access', AgentAccessHubResultSchema, request);
+    if (result.schema === 'agent-access-created-v1' && result.token) this.options.redactor.add(result.token);
+    return result;
+  }
   publication(input: unknown) { return this.#request('publication', PublicationLeaseResultSchema, PublicationLeaseRequestSchema.parse(input)); }
   indexes(input: unknown) { return this.#request('indexes', IndexResultSchema, IndexRequestSchema.parse(input)); }
   async improver(input: unknown) {

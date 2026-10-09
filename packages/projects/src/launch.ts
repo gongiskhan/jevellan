@@ -17,6 +17,8 @@ export type LaunchRequest = {
   effort: Effort;
   /** The account the session lives on (D16); a different eligible account starts a fresh session. */
   pinnedAccountId?: string | undefined;
+  /** An owner override is a requirement, unlike the preferred account of an automatic session. */
+  requiredAccountId?: string | undefined;
   permissions: 'read-only' | 'write'; cwd: string; systemAppend: string;
   /**
    * Built after account resolution: `resumed` is false when there is no stored session or D16 dropped it, and the caller
@@ -76,9 +78,9 @@ export class TurnLauncher {
    * Why a turn of `runtime` and `model` waits now (phase 8): no eligible account is free because threads attached in a terminal here hold
    * them. Undefined when one is free, and when none is eligible at all (the launch then answers with its own refusal).
    */
-  async accountWait(request: Pick<LaunchRequest, 'runtime' | 'model'>): Promise<string | undefined> {
+  async accountWait(request: Pick<LaunchRequest, 'runtime' | 'model' | 'requiredAccountId'>): Promise<string | undefined> {
     const held = this.#o.held?.(); if (!held?.size) return undefined;
-    const ranking = this.#ranking(await this.#o.accounts.list(), request);
+    const ranking = this.#ranking(await this.#o.accounts.list(), request).filter((entry) => request.requiredAccountId === undefined || entry.account.id === request.requiredAccountId);
     if (ranking.some((entry) => entry.eligible && !held.has(entry.account.id))) return undefined;
     const taken = ranking.find((entry) => entry.eligible);
     return taken && waitingForAccountReason(taken.account.label);
@@ -91,7 +93,7 @@ export class TurnLauncher {
       return { kind: 'unavailable', reason: cannotRunHere(adapter?.displayName ?? request.runtime) };
     }
     const accounts = await this.#o.accounts.list();
-    const ranking = this.#ranking(accounts, request);
+    const ranking = this.#ranking(accounts, request).filter((entry) => request.requiredAccountId === undefined || entry.account.id === request.requiredAccountId);
     // An account a terminal holds is passed over like an ineligible one: the pinned account while it is free, else the next in rank (D16).
     const held = this.#o.held?.() ?? new Set<string>();
     const free = (entry: Ranked) => entry.eligible && !held.has(entry.account.id);

@@ -10,9 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The PR card fills only the top third of the screen, which leaves a large empty dark area below it",
-      "The 'Open thread' link is pink and doesn't match the neutral styling of the other card actions",
-      "The status line 'Claude Code Fable · high' is small, low-contrast monospace text, but it can still be read"
+      "The 'Idle' status badge and the 'Claude Code Fable · high' subtitle use small, low-contrast text, but both are still readable."
     ]
   }
 }

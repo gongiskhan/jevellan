@@ -6,6 +6,7 @@ import { json, requestBody } from './http.js';
 import { SharedStateRequestSchema, boundedRedaction } from '@jevellan/core';
 import { HubProjectStore, HubState } from '@jevellan/mesh';
 import { ImproverDeviceRequestSchema, ImproverRequestSchema, PeerLoginSessionInputSchema } from '@jevellan/core';
+import { AgentAccessHubRequestSchema } from '@jevellan/core';
 
 /** Project hub collections; `handleApi` leaves them to this route's own lifecycle gate (D247). */
 export const PROJECT_HUB_ROUTE = /^\/hub\/mesh\/projects\/([a-z]+)$/;
@@ -21,6 +22,17 @@ export async function handleMeshDeviceApi(app: Application, request: IncomingMes
   const authorization = request.headers.authorization;
   const device = app.devices.authenticate(authorization?.startsWith('Bearer ') ? authorization.slice(7) : undefined);
   const send = (value: unknown) => json(response, app.hub.redactor.document(value));
+  if (path === '/hub/mesh/agent-access' && method === 'POST') {
+    const input = AgentAccessHubRequestSchema.parse(await requestBody(request)); app.devices.authenticate(authorization!.slice(7));
+    const release = ['create', 'revoke', 'mail-send'].includes(input.operation) ? app.lifecycle.enter({ kind: 'request' }) : undefined;
+    try {
+      const result = app.hubAgentAccess!.request(input, device.id, app.hubAuth);
+      // Creation is the one response that returns an agent token, exactly once; every later view is a summary.
+      if (result.schema === 'agent-access-created-v1') json(response, { ...result, connection: app.redactor.document(result.connection) });
+      else send(result);
+    } finally { release?.(); }
+    return true;
+  }
   if (path === '/hub/mesh/improver' && method === 'POST') {
     const input = ImproverRequestSchema.parse(await requestBody(request)); await app.routingImprover!.revisions.ready;
     app.devices.authenticate(authorization!.slice(7));

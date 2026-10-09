@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Read the README on the mem…'). The full task title appears in the prompt card below, so nothing is lost.",
-      "The attach command at the bottom is cut off ('jevellan thread attach thread_01M48K2DJSQ64FT…'). A copy button sits next to it, so the full command can still be copied.",
-      "The metadata line under 'Back to the project' wraps onto four lines, which takes up a lot of vertical space."
+      "The header title is cut off with an ellipsis ('Read the README on the mem…'). The full task title still appears in the Prompt card below.",
+      "The terminal attach command is cut off with an ellipsis ('jevellan thread attach thread_01M4GF8QX2SG9YJC…'). A copy button next to it gives access to the full command.",
+      "The metadata line under 'Back to the project' wraps onto three lines in small, low-contrast grey text. It is still readable."
     ]
   }
 }

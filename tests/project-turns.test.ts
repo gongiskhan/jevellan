@@ -116,6 +116,18 @@ function request(over: Partial<LaunchRequest> = {}): LaunchRequest {
 }
 const done: FakeTurnStep = () => ({ status: 'completed' });
 
+test('a required account is rechecked at launch and never falls back to another account', async () => {
+  const { launcher: value, used } = launcher([status('acc_work', { auth: 'expired' }), status('acc_home')]);
+  const blocked = await value.launch(request({ pinnedAccountId: 'acc_work', requiredAccountId: 'acc_work', resume: 'session-old' }));
+  expect(blocked).toMatchObject({ kind: 'unavailable', reason: expect.stringContaining('login expired') });
+  expect(fake.turnStarts).toEqual([]); expect(used).toEqual([]);
+  fake.enqueueTurn(done, forThread());
+  const automatic = await value.launch(request({ pinnedAccountId: 'acc_work', resume: 'session-old' }));
+  if (automatic.kind !== 'started') throw new Error(automatic.reason);
+  expect(automatic).toMatchObject({ accountId: 'acc_home', resumed: false, accountChanged: true });
+  await automatic.run.done; await automatic.run.terminate(); await automatic.release();
+});
+
 test('the launcher keeps a session on its account, starts fresh on another eligible one, and passes the scoped bridge and the git identity (D15, D16, D94)', async () => {
   const repo = join(root, 'repo'); execFileSync('git', ['init', '-q', repo]); execFileSync('git', ['-C', repo, 'config', 'user.name', 'Owner']); execFileSync('git', ['-C', repo, 'config', 'user.email', 'owner@example.invalid']);
   const { launcher: value, used, bridges } = launcher([status('acc_work'), status('acc_home')]);

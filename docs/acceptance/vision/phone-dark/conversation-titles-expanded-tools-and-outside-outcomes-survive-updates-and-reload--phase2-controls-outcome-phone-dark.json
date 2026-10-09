@@ -9,6 +9,10 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": []
+    "cosmetic": [
+      "The long tool header wraps in the middle of words over five lines. It stays readable but takes up a lot of vertical space.",
+      "The 'value.txt' file link is small, pink and underlined against the dark card, so its contrast is a little low.",
+      "The send button looks faded or disabled next to the composer placeholder. This is likely intended because of the 'Settle this work's changes' notice, but it makes the button less obvious."
+    ]
   }
 }

@@ -10,7 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The PR card's 'Merge' button in the dimmed background has low contrast and looks pressed or disabled, but that is expected behind an open modal."
+      "Background content behind the scrim is very dim, but that's expected for a modal overlay.",
+      "Below the modal there's a lot of empty dark space, so the dialog sits a little above the vertical center."
     ]
   }
 }

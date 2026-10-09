@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis (\"Exercise automatic decisions: change t...\"), but the full text appears in the subtitle and the message bubble, so nothing is lost.",
-      "The \"Review ...\" fixture links take up most of the screen and wrap unevenly. The two \"Review Login recovery\" links, which include long IDs, each wrap onto two lines. Everything is still readable and tappable.",
-      "The \"Review ...\" links are packed closely together, so they make small tap targets on a phone."
+      "The header title is cut off with an ellipsis ('Exercise automatic decisions: change t…'). The full text still appears in the subtitle line and the message, so nothing is lost.",
+      "The long list of 'Review … fixture' links pushes the actions below the notice and makes it crowded on a phone screen. 'Try automatic again' gets less attention as a result.",
+      "Two 'Review Login recovery' links show raw UUIDs and wrap onto a second line, which is hard to read and doesn't tell the two links apart in a meaningful way.",
+      "The notice text 'Automatic Fable: disabled.' is terse. It doesn't say what the user should do to fix it."
     ]
   }
 }

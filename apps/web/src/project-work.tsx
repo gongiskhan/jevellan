@@ -1096,7 +1096,7 @@ function CoordinatorOverrideDialog({ props, view, close }: { props: PageProps; v
       void task.run(async signal => {
         setError('');
         await save(path, ProjectWorkSettingsViewSchema, 'PUT', { schema: 'project-work-settings-request-v1', revision: base.revision,
-          settings: { defaultIsolation: base.defaultIsolation, setupCommand: base.setupCommand, maxRunningThreads: base.maxRunningThreads, maxRunningPerDevice: base.maxRunningPerDevice, threadTurnCap: base.threadTurnCap, coordinator: { modelId: modelId || null, effort } } }, signal);
+          settings: { defaultIsolation: base.defaultIsolation, setupCommand: base.setupCommand, maxRunningThreads: base.maxRunningThreads, maxRunningPerDevice: base.maxRunningPerDevice, threadTurnCap: base.threadTurnCap, coordinator: { ...base.coordinator, modelId: modelId || null, effort } } }, signal);
         if (fresh) await api(`/api/projects/${view.project.id}/coordinator/fresh`, ProjectWorkViewSchema, 'POST', empty, { signal });
         updated(); afterDialogs(props.message, 'Coordinator choices saved. They apply from the next turn.'); close();
       });

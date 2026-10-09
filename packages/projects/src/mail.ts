@@ -57,6 +57,13 @@ export class MailService {
   }
   /** Releases every active reservation of a thread (it stopped, failed or published); the caller treats it as best effort. */
   releaseThread(projectId: string, threadId: string): Promise<number> { return this.o.hub.release(projectId, threadId); }
+  /** External mail was admitted and persisted by the authenticated hub. Delivery retries keep the same event ID. */
+  async deliverExternal(mail: ProjectMail): Promise<void> {
+    const input = ProjectMailSchema.parse(mail);
+    if (input.to !== 'coordinator') return;
+    await this.o.toCoordinator(input.projectId, { schema: 'coordinator-event-v1', id: derivedId('cev', input.id), at: input.at,
+      kind: 'mail', mailId: input.id, fromThreadId: input.from, ...(input.fromTitle ? { fromTitle: input.fromTitle } : {}), subject: input.subject, body: input.body });
+  }
 
   async #known(projectId: string, threadId: string): Promise<Known | undefined> {
     const thread = this.o.local(threadId) ?? (IdSchema.safeParse(threadId).success ? (await this.o.hub.thread(threadId))?.document : undefined);
@@ -115,7 +122,7 @@ export class MailService {
       if (!known) { known = this.#known(projectId, from).then((thread) => thread?.title ?? UNKNOWN_THREAD, () => UNKNOWN_THREAD); titles.set(from, known); }
       return known;
     };
-    return { schema: 'mail-inbox-result-v1', mail: await Promise.all(mail.map(async (entry) => ({ id: entry.id, from: entry.from, fromTitle: await title(entry.from),
+    return { schema: 'mail-inbox-result-v1', mail: await Promise.all(mail.map(async (entry) => ({ id: entry.id, from: entry.from, fromTitle: entry.fromTitle ?? await title(entry.from),
       subject: entry.subject, body: entry.body, at: entry.at }))) };
   }
   /**

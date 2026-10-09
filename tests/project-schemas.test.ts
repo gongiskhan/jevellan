@@ -159,7 +159,9 @@ test('settings, notebook, reservation and override bounds are enforced', () => {
   expect(FileReservationSchema.safeParse({ ...reservation, paths: Array.from({ length: 51 }, (_, n) => `f${n}`) }).success).toBe(false);
   expect(FileReservationSchema.safeParse({ ...reservation, paths: [''] }).success).toBe(false);
   expect(PlacementOverrideSchema.safeParse({ ...override, changes: [] }).success).toBe(false);
-  expect(PlacementOverrideSchema.safeParse({ ...override, changes: [{ field: 'account', from: 'a', to: 'b' }] }).success).toBe(false);
+  expect(PlacementOverrideSchema.safeParse({ ...override, changes: [{ field: 'account', from: 'a', to: 'b' }] }).success).toBe(true);
+  expect(PlacementOverrideSchema.safeParse({ ...override, changes: [{ field: 'runtime', from: 'claude', to: 'codex' }] }).success).toBe(true);
+  expect(PlacementOverrideSchema.safeParse({ ...override, changes: [{ field: 'temperature', from: 'a', to: 'b' }] }).success).toBe(false);
   expect(ThreadSchema.safeParse({ ...thread, title: 'x'.repeat(121) }).success).toBe(false);
   expect(ThreadIndexSchema.safeParse({ ...index, lastSummary: 'x'.repeat(401) }).success).toBe(false);
   expect(PullRequestStateSchema.safeParse({ ...pr, url: 'not a url' }).success).toBe(false);

@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The disabled 'Saving…' button has low-contrast text against the dark background. This is expected for a disabled pending state, but it is hard to read.",
-      "The tab row behind the modal (Runtimes / Pipping / Decisions / …) runs off the right edge of the viewport. It sits under the modal overlay and doesn't affect this step.",
-      "The hub-wait notice wraps to five lines next to the 'Stop waiting' button, so the text column is narrow and the box looks crowded at phone width."
+      "The background page shows faintly around the modal edges (top tabs and the account row below). The overlay dimming handles this as expected.",
+      "The disabled 'Saving…' button has low contrast. That fits its disabled state, and it is still legible."
     ]
   }
 }

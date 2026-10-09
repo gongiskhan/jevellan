@@ -10,11 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The evidence panel's Markdown renders completely and legibly: the 'Evidence guide' heading, both bullet items, the 'Source line' and 'Recorded pixel' links, and the 'Open working copy' / 'Open recorded step' actions are all visible.",
-      "In the sidebar, the fourth conversation row is cut off by the scroll area above 'Some native sessions are unavailable'. Its text is only partly visible, but it can be reached by scrolling.",
-      "In the main column, the '1 tool' row under Step 2 is partly hidden behind the 'Jump to latest' bar. This is scroll overflow and can be reached by scrolling.",
-      "The recorded checkpoint hash is very small monospace text on a tinted background. It is still readable but low in prominence.",
-      "'Show source' sits close above the 'Evidence guide' heading, so the spacing there is tight."
+      "In the transcript, the long screenshot path link wraps across two lines, and the sentence's period lands at the start of the next line ('. The value is now 2…').",
+      "The last sidebar conversation item is partly clipped at the bottom of its scrolling list, where it meets the 'Some native sessions are unavailable' note.",
+      "The 'Step details' section is cut off at the bottom of the transcript by the 'Jump to latest' bar and the message box. The transcript scrolls, so it can still be reached.",
+      "Conversation titles and subtitles in the sidebar are truncated with ellipses (e.g. 'Exercise evidence navigati…')."
     ]
   }
 }

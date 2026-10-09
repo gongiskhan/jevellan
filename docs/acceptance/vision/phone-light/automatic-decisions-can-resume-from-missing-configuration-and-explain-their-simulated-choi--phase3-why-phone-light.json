@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Adversarial Rev...' label in the Next step list is cut short with an ellipsis. Its full name can be guessed but isn't shown.",
-      "The second 'Override and undo' entry under Corrections used is cut off by the bottom of the screen at its second line. The panel probably scrolls, but this capture doesn't show the rest of that entry or anything below it.",
-      "The 'Requested medium; using high' note repeats the 'medium → high (nearest effort this model supports)' line just above it.",
-      "The Effort bars show 'medium' at 1.00 while the line above says high is the effort actually used. The bars may show the requested effort rather than the one in effect, which could confuse readers."
+      "The 'Adversarial Revi…' label in the Next Step list is cut off with an ellipsis. The full option name doesn't show at phone width.",
+      "The last 'Corrections used' entry ('implement in Browser fixture, small change, no risky areas…') is clipped at the bottom of the screen. This looks like the page continuing past the visible area rather than a layout break, but you'd need to scroll to confirm.",
+      "The 'Jev' attribution label at the top right of the Next Step and Effort sections is terse and its meaning isn't obvious."
     ]
   }
 }

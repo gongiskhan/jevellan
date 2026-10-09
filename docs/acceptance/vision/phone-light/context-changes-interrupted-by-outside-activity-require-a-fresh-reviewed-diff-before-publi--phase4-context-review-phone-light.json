@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal body is scrolled, so the top of the intro paragraph ('...context fixture on dev-maund. Review the current changes...') is partly hidden under the sticky header. It can be reached by scrolling.",
-      "The longest diff line ('+A newer synthetic outside contribution.') almost touches the right edge of the code block.",
-      "The error banner at the bottom of the modal is close to the 'Current instruction files' disclosure, so the end of the dialog feels crowded."
+      "The modal is scrolled, so the top line of intro text ('...context fixture on Mac.lan. Review the current changes...') is partly hidden under the header. Scrolling up should reveal it.",
+      "The last diff line '+A newer synthetic outside contribution' runs right up to the right edge of the code block, so the end of the line may be clipped unless the block scrolls sideways.",
+      "The 'These files changed since your review' toast sits close under the 'Current instruction files' toggle, with very little space between them."
     ]
   }
 }

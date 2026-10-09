@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The command in the dark code block wraps in the middle of the URL ('htt' / 'p://127.0.0.1:24772'), which makes it harder to read and copy by eye. Breaking at the space before the URL, or scrolling horizontally, would read better.",
-      "The 'Join code' field and the end of the command are solid blank rectangles with no visible text. They look like masks for dynamic values added during capture, so I'm not counting them as missing content. If they aren't masks, the join code isn't rendering, and that would be a blocking problem.",
-      "The dialog doesn't span the full width at phone size. The blurred page behind it shows at the edges, but nothing is clipped or overlapping."
+      "The join command breaks mid-word across lines ('htt' / 'p://127.0.0.1:31872'), which makes it harder to read. Breaking at spaces or scrolling horizontally would read better.",
+      "The join code field and the end of the command show solid grey blocks instead of text. These look like screenshot masking of the secret code; if they are not masking, the join code is not shown.",
+      "The tab bar behind the modal cuts off the 'Projects' tab label at the screen edge. It is behind the overlay and has scroll arrows, so it does not block anything."
     ]
   }
 }

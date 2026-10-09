@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal fully covers the page content behind it and the backdrop dims it, so the list items underneath (e.g. 'Make managed', 'Restore locally') are hard to read. This is expected while a modal is open.",
-      "The disabled 'Claude Code · Current account' checkbox and its label are low contrast. They are still readable, but only just.",
-      "The top tab bar ('Runtimes', 'Rigging', 'Decisions') is cut off at the right edge of the screen behind a scroll arrow. That's probably intentional horizontal scrolling."
+      "The disabled 'Claude Code · Current account' checkbox and its label are low-contrast grey on the dark background. They can still be read but are noticeably dimmer than the active 'Codex' option.",
+      "The helper text 'Instructions stay editable. Bundled files are retained when the instructions change.' is small and muted, so it reads with slightly reduced contrast.",
+      "Dimmed background content (the 'Make managed', 'Park' and 'Restore locally' buttons and the list rows) shows faintly around the modal edges. The modal fully covers the important area, so nothing overlaps its content."
     ]
   }
 }

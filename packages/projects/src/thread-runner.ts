@@ -403,7 +403,8 @@ export class ThreadRunner {
     let launched: LaunchResult;
     try {
       launched = await this.#c.launcher.launch({ owner: { kind: 'thread', projectId: thread.projectId, id: thread.id }, turn, runtime: placement.runtime, modelId: placement.modelId,
-        model: placement.model, modelLabel: labels.modelLabel, effort: placement.effortEffective, pinnedAccountId: placement.accountId, permissions: 'write', cwd: thread.cwd,
+        model: placement.model, modelLabel: labels.modelLabel, effort: placement.effortEffective, pinnedAccountId: placement.accountId,
+        ...(placement.fixed.includes('account') ? { requiredAccountId: placement.accountId } : {}), permissions: 'write', cwd: thread.cwd,
         systemAppend: threadSystemAppend({ projectName: project.name, cwd: thread.cwd, isolation: thread.isolation, branch: thread.branch, baseBranch: thread.baseBranch,
           deviceName: this.#c.deviceName, testCommand: project.testCommand, gitPolicy: thread.gitPolicy }),
         prompt: (resumed) => threadPrompt(thread, next.body, resumed, next.reason), ...(thread.nativeSessionId ? { resume: thread.nativeSessionId } : {}),
@@ -425,7 +426,10 @@ export class ThreadRunner {
         model: placement.model, effort: placement.effortEffective, accountId: started.accountId } });
       const execution = new TurnExecution({ run: started.run, accountId: started.accountId, secretRef: started.secretRef, model: placement.model, deviceId: this.#c.deviceId,
         accounts: this.#c.accounts, initialUsage: started.usage, redactor: this.#c.redactor,
-        onSession: (sessionId) => { this.#c.store.update(thread.id, (current) => ({ ...current, nativeSessionId: sessionId })); },
+        onSession: (sessionId) => {
+          // A next-turn account override may already have detached this turn from the session's home.
+          if (this.#thread().placement.accountId === started.accountId) this.#c.store.update(thread.id, (current) => ({ ...current, nativeSessionId: sessionId }));
+        },
         onProcess: (native) => {
           this.#c.store.updateLocal(thread.id, (local) => ({ ...local, process: { turn, pid: native.pid, pgid: native.pgid, ...(native.startIdentity ? { startIdentity: native.startIdentity } : {}), startedAt: this.#at() } }));
         } });

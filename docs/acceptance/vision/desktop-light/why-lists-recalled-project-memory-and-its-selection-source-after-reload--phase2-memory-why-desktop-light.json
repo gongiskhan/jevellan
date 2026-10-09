@@ -10,11 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The last conversation in the left sidebar list (around y≈712) is clipped mid-line at the bottom of the scroll area, leaving a partly visible text row above the 'Some native sessions are unavailable' row.",
-      "Sidebar conversation titles and subtitles are cut short with ellipses (e.g. 'Explain the memorybrows…', 'Exercise evidence naviga…', 'Waiting for you · Public memory …').",
-      "The right 'Why this step' panel continues past the bottom of the screen ('JEV' section heading is only partly visible). It appears to scroll, so it is not blocking.",
-      "Long account entries in the Why panel ('Login recovery 4c3ac4e9-…: eligible') nearly reach the panel's right edge.",
-      "The yellow 'Jev is unavailable (no key configured)' notice appears twice, once in the Why panel and once in the conversation."
+      "The Why panel's warning banner ends with 'Pick the next step:' but nothing follows it there. It reads as if content is missing, because the step picker only appears in the main column.",
+      "Sidebar conversation titles and subtitles are cut off with ellipses ('Explain the memorybrows…', 'Context · Created instructio…'). This truncation is intentional.",
+      "In the 'Read project' tool card, the 'completed' status sits on its own line below the title instead of on the same row, which leaves extra empty space.",
+      "The Why panel runs to the very bottom of the screen ('This step was picked manually.'), so there is little room left below the last line."
     ]
   }
 }

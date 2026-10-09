@@ -7,6 +7,7 @@ const patterns = [
   /\bsk-(?:ant-[A-Za-z0-9_-]*|proj-[A-Za-z0-9_-]*|[A-Za-z0-9_-]{20,})/,
   /\bgh[pousr]_[A-Za-z0-9]{20,}/,
   /\bgithub_pat_[A-Za-z0-9_]{20,}/,
+  /\bjva_[A-Za-z0-9_-]{1,128}\.[A-Za-z0-9_-]{43}\b/,
   /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/,
   /\beyJ[A-Za-z0-9_-]{12,}\.[A-Za-z0-9_-]{12,}\.[A-Za-z0-9_-]{12,}/,
 ];

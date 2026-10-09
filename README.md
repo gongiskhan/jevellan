@@ -34,6 +34,10 @@ Browser tests can use an installed Google Chrome with `PLAYWRIGHT_CHANNEL=chrome
 
 Read [architecture](docs/architecture.md), [projects](docs/projects.md), [decisions](docs/decisions.md), [device mesh](docs/mesh.md) and [project memory](docs/memory.md) for the implementation boundaries and recorded limitations.
 
+## Connect another agent
+
+Open **Settings → Agents** to create a named MCP connection. Other agents can start and steer jobs, work with project coordinators, choose providers and accounts or leave choices automatic, and follow organized live output. See [the MCP guide](docs/mcp.md) for client configuration and tools.
+
 ## The fleet
 
 In 1519 Fernão de Magalhães (Magellan) set out with five ships. To keep them together at night, his flagship burned a light called the farol, and a small set of lantern signals told every ship when to turn, change course or shorten sail, as described in Pigafetta's account. Jevellan does the same for your agents. The name is Jev plus Magellan.

@@ -1,18 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "Projects and a manual planned change render the full plan, stream, Why and verified Changes",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase2-conversation-desktop-light.png",
-  "expected": "the Jevellan web app \"conversation\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "Two separate banners say roughly the same thing ('Work closed. Its changes are kept…' and 'Work closed and published.'), which reads as repetitive.",
-      "Step 1's Changes button has no file count, while Step 2's shows '· 1 file'. This is probably correct because the plan step changed no files, but the two buttons look inconsistent.",
-      "Some sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Change the value to two …', 'Done · Manual conversation fixtu…'). This looks like intended truncation, and the full title is visible in the main header."
-    ]
-  }
+  "expected": "the Jevellan web app \"conversation\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)"
 }

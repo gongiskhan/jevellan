@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The small monospace metadata line (Claude Code · Opus · … · dev-madrid) has low contrast against the dark background, but it is still readable.",
-      "A large empty area sits between the last report card and the 'This thread has ended' footer."
+      "The metadata line 'Claude Code · Opus · low effort · Projects Claude · Worktree on jv/tidy-the-readme-wording-7jd836 · Mac.lan' wraps across two lines in small monospace text. It is still readable.",
+      "There is a large empty area between the last report card and the 'This thread has ended' footer."
     ]
   }
 }

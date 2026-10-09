@@ -10,8 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background is heavily blurred and dimmed behind the modal, so the conversation content isn't readable. That's expected for a modal overlay.",
-      "The dialog text says \"redoes it with Reply, Fable, high\". Using these raw settings names in a sentence reads a little awkwardly."
+      "The background behind the modal is heavily dimmed and blurred. That's expected while a modal is open, but it makes the conversation and sidebar unreadable."
     ]
   }
 }

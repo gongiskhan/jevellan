@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar session titles and subtitles are cut off with ellipses (e.g. 'Exercise answer options: ...', 'Context · J11 memory jour...'). This is normal truncation, and the full title appears in the main header.",
-      "There's a large empty area between the answer-options card and the composer at the bottom.",
-      "The 'Why' chip has pink styling while the 'Changes' and 'Change step' chips next to it are neutral, so it looks inconsistent."
+      "In the sidebar, the session list's last visible row is cut off halfway at the bottom edge of the scroll area, above 'Some native sessions are unavailable'. The list scrolls, so the row can still be reached.",
+      "Sidebar session titles and subtitles are shortened with ellipses (e.g. 'Exercise answer options: ...', 'Context · J11 memory jour...'). The full title appears in the main pane.",
+      "The 'completed' status label in the 'Read project' tool card sits on its own line below the card title, leaving some awkward empty space."
     ]
   }
 }

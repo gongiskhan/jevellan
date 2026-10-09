@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dialog text says the redo will use effort 'low', but the dimmed form behind it shows Effort 'high'. This may be a data mismatch rather than a layout problem; check it in the step that verifies the redo.",
-      "The dimmed page behind the dialog is hard to read, which is expected while a modal is open."
+      "The dialog says the step will be redone with effort 'low', but the blurred form behind it shows Effort 'high'. Rendering is fine; this looks like a data or state mismatch worth checking.",
+      "The page title in the header ('Change the value to three, then redo thi...') is cut off with an ellipsis behind the blurred overlay. This is expected truncation and doesn't block anything."
     ]
   }
 }

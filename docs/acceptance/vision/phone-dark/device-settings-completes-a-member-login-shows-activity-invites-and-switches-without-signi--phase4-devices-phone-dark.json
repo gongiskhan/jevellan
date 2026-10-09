@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The settings tab strip cuts off the labels at both edges (a stray 's' on the left, 'Projects' clipped on the right). The scroll arrows on each side keep those tabs reachable.",
-      "The muted secondary text is low-contrast on the dark background but still readable. This includes the activity lines, the SSH note and 'Coming later.'",
-      "The disabled 'Open' buttons on 'dev-madrid' (this device) and 'Offline fixture' are dim. That fits their disabled state but makes them harder to see."
+      "The tab strip clips its first and last tabs at the edges (the first shows only \"s\", and \"Projects\" is cut off). It scrolls sideways and has arrow buttons, so it still works, but it looks a little untidy.",
+      "The \"Open\" buttons on Mac.lan (this device) and Offline fixture are dimmed with low contrast. They are probably disabled on purpose, but they're harder to read than the active button.",
+      "The \"Automatic device choice\" checkbox and its \"Coming later.\" note have low-contrast text."
     ]
   }
 }

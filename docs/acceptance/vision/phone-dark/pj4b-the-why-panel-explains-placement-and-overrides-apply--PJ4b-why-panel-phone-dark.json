@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Header title 'Why this placement' sits right next to the pink 'Tidy the README wording' task label, so the two read as one cramped line",
-      "The JEV footer metadata ('Placement · jev-browser-simulated · 60 tokens · 6 ms') wraps awkwardly in the middle of the line",
-      "Low-contrast grey labels (section headers, 0.10 values, footer text) are legible but faint on the dark background",
-      "Large empty area below the footer makes the panel look unfinished at the bottom"
+      "Large empty area below the footer; the panel content fills only about 80% of the viewport height",
+      "Header task title 'Tidy the README wording' is small and in a monospace accent color, so it reads as a secondary label next to 'Why this placement'",
+      "Footer metadata text (Placement · jev-browser-simulated · 60 tokens · 3 ms) is low-contrast grey on dark but still readable"
     ]
   }
 }

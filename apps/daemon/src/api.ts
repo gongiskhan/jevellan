@@ -15,6 +15,8 @@ import { json, requestBody as body } from './http.js';
 import { PROJECT_HUB_ROUTE, handleMeshDeviceApi, handleMeshUiApi } from './mesh-api.js';
 import { handleLoginApi } from './login-api.js';
 import { ImproverRequestSchema } from '@jevellan/core';
+import { handleAgentAccessApi } from './agent-access-api.js';
+import { handleAgentPeer } from './agent-mcp-api.js';
 
 export { json } from './http.js';
 function failure(message: string, status: number) { return Object.assign(new Error(message), { status }); }
@@ -53,7 +55,8 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     const secureCookies = options.secureCookies ?? secureRequest;
     const path = url.pathname; const method = request.method ?? 'GET'; const token = sessionFromCookie(request.headers.cookie);
     // Project hub requests enter the gate in their route once the operation is known: reads are admitted like GET (D247).
-    if (!['GET', 'HEAD'].includes(method) && !PROJECT_HUB_ROUTE.test(path)) release = app.lifecycle.enter({ kind: 'request' });
+    if (!['GET', 'HEAD'].includes(method) && !PROJECT_HUB_ROUTE.test(path) && path !== '/hub/mesh/agent-access' && path !== '/api/agent-peer') release = app.lifecycle.enter({ kind: 'request' });
+    if (path === '/api/agent-peer') { await handleAgentPeer(app, request, response); return; }
     if (await handleOwnerRequest(app, request, response, url)) return;
     if (path.startsWith('/api/mesh/projects/') && await handleProjectWorkPeer(app, request, response, url, () => { retryable = true; })) return;
     if (path.startsWith('/api/mesh/cursor') && await handleCursorApi(app, request, response, url)) return;
@@ -77,6 +80,8 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     retryable = method === 'GET' && !path.startsWith('/api/logins/');
     if (method === 'POST' && ['/hub/devices/invitations', '/api/devices/switch'].includes(path)) retryable = true;
     if (await handleMeshUiApi(app, request, response, url, secureCookies)) return;
+    if (path === '/api/agent-access' || /^\/api\/agent-access\/[A-Za-z0-9_-]+\/revoke$/.test(path)) retryable = true;
+    if (await handleAgentAccessApi(app, request, response, url, token!)) return;
     if (await handleLoginApi(app, request, response, url, token)) return;
     if (path === '/api/improver' && method === 'GET') { send(await app.improverRequest({ schema: 'improver-request-v1', operation: 'state' })); return; }
     if (path === '/api/improver' && method === 'POST') {
@@ -108,9 +113,15 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
       await app.conversations.ready; const id = IdSchema.parse(project[1]);
       if (project[2] === 'context') send((await app.conversations.context(id)));
       else {
-        const signal = AbortSignal.timeout(30_000); const memory = (await app.conversations.memory(id)); const permalink = url.searchParams.get('permalink');
-        if (permalink) send(await memory.read(permalink, signal));
-        else { const query = url.searchParams.get('query'); if (!query?.trim()) throw new Error('Enter a memory search.'); send(await memory.search(query, signal)); }
+        // First use includes isolated provider startup and foreground sync; each native tool still has its own 30-second limit.
+        const controller = new AbortController(); const disconnected = () => controller.abort();
+        response.once('close', disconnected); if (response.destroyed) disconnected();
+        const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(120_000)]);
+        try {
+          const memory = await app.conversations.memory(id); signal.throwIfAborted(); const permalink = url.searchParams.get('permalink');
+          if (permalink) send(await memory.read(permalink, signal));
+          else { const query = url.searchParams.get('query'); if (!query?.trim()) throw new Error('Enter a memory search.'); send(await memory.search(query, signal)); }
+        } finally { response.off('close', disconnected); }
       }
       return;
     }

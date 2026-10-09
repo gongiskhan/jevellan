@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The title 'Projects fixture' is shown in the header but no project page content is visible. The screen shows only the coordinator chat, which fits the chat reply step.",
-      "The 'Idle' status pill and the 'Claude Code Fable · high' subtitle are small, low-contrast monospace text. They are still readable.",
-      "There is a lot of empty space between the reply and the composer. This is expected for a short conversation."
+      "Below the reply the chat area is mostly empty down to the composer. This is expected for a short conversation.",
+      "The 'Idle' badge and the model line 'Claude Code Fable · high' under the title use small, low-contrast text, but it is still readable."
     ]
   }
 }

@@ -15,6 +15,17 @@ const NativeReference = z.object({ title: z.string(), permalink: z.string().null
 const NativeNote = NativeReference.extend({ content: z.string(), frontmatter: z.record(z.string(), z.unknown()).nullish() });
 type Connection = { client: Client; transport: OwnedMemoryTransport };
 
+/** Stop this caller's wait without cancelling setup or indexing shared by other readers. */
+function waitForMemory<T>(pending: Promise<T>, signal?: AbortSignal): Promise<T> {
+  if (!signal) return pending;
+  return new Promise<T>((resolve, reject) => {
+    const aborted = () => { signal.removeEventListener('abort', aborted); reject(signal.reason); };
+    signal.addEventListener('abort', aborted, { once: true });
+    if (signal.aborted) aborted();
+    void pending.then(value => { signal.removeEventListener('abort', aborted); resolve(value); }, error => { signal.removeEventListener('abort', aborted); reject(error); });
+  });
+}
+
 export function memoryEnvironment(homes: Homes): Record<string, string> {
   return { PATH: process.env.PATH ?? '/usr/bin:/bin', HOME: homes.ensure('basic-memory', 'home'), LANG: 'en_US.UTF-8',
     BASIC_MEMORY_CONFIG_DIR: homes.ensure('basic-memory'), BASIC_MEMORY_AUTO_UPDATE: 'false', BASIC_MEMORY_FORCE_LOCAL: 'true', BASIC_MEMORY_EXPLICIT_ROUTING: 'true',
@@ -95,16 +106,16 @@ export class BasicMemory {
     return pending;
   }
   async call(name: string, path: string, tool: string, args: Record<string, unknown>, signal: AbortSignal): Promise<unknown> {
-    signal.throwIfAborted(); const connection = await this.connection(name, path); signal.throwIfAborted();
+    signal.throwIfAborted(); const connection = await waitForMemory(this.connection(name, path), signal); signal.throwIfAborted();
     // A provider write changes the index outside sync; the next sync must run even if files later return to the synced state.
     if (!['search_notes', 'read_note'].includes(tool)) { const key = `${name}\0${path}`; this.#synced.delete(key); this.#writes.set(key, (this.#writes.get(key) ?? 0) + 1); }
     return this.#call(connection, tool, { ...args, project: name }, signal);
   }
-  async sync(name: string, path: string): Promise<void> {
-    await this.connection(name, path);
+  async sync(name: string, path: string, signal?: AbortSignal): Promise<void> {
+    signal?.throwIfAborted(); await waitForMemory(this.connection(name, path), signal); signal?.throwIfAborted();
     // Each provider sync is a full foreground Python run; skip it when no note changed since the last one.
     if (this.#synced.get(`${name}\0${path}`) === folderDigest(path)) return;
-    await this.#syncFiles(name, path);
+    await waitForMemory(this.#syncFiles(name, path), signal); signal?.throwIfAborted();
   }
   async #syncFiles(name: string, path: string): Promise<void> {
     const digest = folderDigest(path); const writes = this.#writes.get(`${name}\0${path}`) ?? 0;
@@ -162,12 +173,12 @@ export class BasicMemoryProject {
       const previous = existsSync(file) ? readFileSync(file, 'utf8') : '';
       if (!previous.split('\n').includes(pattern)) { mkdirSync(dirname(file), { recursive: true }); appendFileSync(file, `${previous && !previous.endsWith('\n') ? '\n' : ''}${pattern}\n`, { mode: 0o600 }); }
     }
-    await this.manager.connection(this.name, path);
+    signal?.throwIfAborted(); await waitForMemory(this.manager.connection(this.name, path), signal); signal?.throwIfAborted();
   }
   async search(query: string, signal: AbortSignal) {
     const path = this.path; this.#filesAreLocal(path);
     if (!existsSync(path)) return MemorySearchSchema.parse({ schema: 'memory-search-v1', notes: [] });
-    signal.throwIfAborted(); await this.sync(); signal.throwIfAborted();
+    signal.throwIfAborted(); await this.sync(signal); signal.throwIfAborted();
     const response = z.object({ results: z.array(NativeReference) }).parse(await this.manager.call(this.name, path, 'search_notes', { query, search_type: 'text', page_size: 12, search_all_projects: false }, signal));
     const notes: MemoryNote[] = [];
     for (const result of response.results.slice(0, 12)) notes.push(await this.read(result.permalink ?? result.file_path, signal));
@@ -204,5 +215,5 @@ export class BasicMemoryProject {
     const note = NativeReference.parse(await this.manager.call(this.name, this.path, 'edit_note', { identifier: this.#reference(current.permalink), operation: input.operation === 'replace' ? 'find_replace' : input.operation, content: input.content, ...(input.find ? { find_text: input.find, expected_replacements: 1 } : {}) }, signal));
     return this.read(note.permalink ?? note.file_path, signal);
   }
-  async sync(): Promise<void> { this.#filesAreLocal(); if (existsSync(this.path)) await this.manager.sync(this.name, this.path); }
+  async sync(signal?: AbortSignal): Promise<void> { signal?.throwIfAborted(); this.#filesAreLocal(); if (existsSync(this.path)) await this.manager.sync(this.name, this.path, signal); }
 }

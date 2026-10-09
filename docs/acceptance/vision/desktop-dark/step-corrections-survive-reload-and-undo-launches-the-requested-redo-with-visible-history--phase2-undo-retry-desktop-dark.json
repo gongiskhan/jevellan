@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The error text 'No model can run this step right now: disabled, disabled, …' repeats 'disabled' eight times without naming the models, so it's hard to act on. The same message also appears twice: in the red banner and in the Resume correction card.",
-      "The low-contrast grey text is hard to read on the dark background: the '1 tool' and 'Step details' rows, 'Local time', 'Undone', and the 'Completed undo changes are kept…' note.",
-      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Change the value to thre…', 'dev-…'). This looks intentional, but the full titles aren't visible.",
-      "The magenta 'corrected: effort → max' and 'corrected: action → reply, effort → low' labels are small and low in contrast."
+      "The error banner and the Resume correction card both say 'disabled' eight times. It is readable but noisy, and it doesn't say which models are disabled.",
+      "The same 'No model can run this step right now' message appears twice: in the red banner and again in the Resume correction card.",
+      "The step metadata line (struck-through 'Step 1 · Implement', 'Undone', 'corrected: …', 'Local time') is small, low-contrast text on the dark background. It is still readable.",
+      "Sidebar conversation titles and subtitles are cut short with ellipses (e.g. 'Change the value to three,…', 'Blocked · Browser fixture · Mac…'). This is expected truncation with the full text available elsewhere.",
+      "The 'completed' status label in the Read project card sits alone on its own line below the title, which leaves some extra empty space."
     ]
   }
 }

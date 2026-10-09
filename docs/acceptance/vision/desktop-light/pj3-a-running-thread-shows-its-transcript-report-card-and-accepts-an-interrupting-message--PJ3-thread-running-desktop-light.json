@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). They are still readable and have enough context to identify each session.",
-      "The tool rows in the transcript (Read, Grep, Bash, Read) are collapsed and show only 'completed', so this capture doesn't show what each step did.",
-      "The 'Working on turn 1…' status text and the take-over hint below the composer use small type, but both are still readable."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · Mesh journey fix…', 'Done · Improver sandbox · Mac.l…'), but they're still readable",
+      "The 'completed' status on each tool card sits on its own line below the tool name instead of in line with it, which leaves extra empty space",
+      "The tool card inputs and outputs use large dark code blocks with a lot of empty space. Short one-line outputs take up a lot of vertical room",
+      "The 'Some native sessions are unavailable' note in the sidebar is small, low-contrast text"
     ]
   }
 }

@@ -1,17 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase6-j10-dismissed-phone-light.png",
-  "expected": "the Jevellan web app \"j10 dismissed\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The 'Devices' tab label is cut off at the right edge of the tab strip. This looks like intentional horizontal scrolling, since scroll arrows are shown on both sides.",
-      "The diff code blocks wrap long lines on the narrow phone screen. They are still readable."
-    ]
-  }
+  "expected": "the Jevellan web app \"j10 dismissed\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)"
 }

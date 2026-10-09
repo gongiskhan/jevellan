@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The image preview is a small thumbnail (about 100px wide), so the evidence image can't be inspected in detail at this size",
-      "Most of the screen below the content is empty white space",
-      "The checkpoint hash wraps onto its own line after 'Recorded checkpoint ·', leaving a dangling separator"
+      "The image preview thumbnail is very small (about 100px wide), so the image content is hard to make out at phone width.",
+      "Below the content there is a large empty area, so the panel looks sparse.",
+      "The \"Recorded checkpoint ·\" label ends in a dangling separator because the hash wraps onto the next line."
     ]
   }
 }

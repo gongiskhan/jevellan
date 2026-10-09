@@ -9,9 +9,6 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": [
-      "The page below the Cancel/Save buttons is mostly empty white space.",
-      "The 'Projects fixture' breadcrumb in the header is small and low-contrast pink, though you can still read it."
-    ]
+    "cosmetic": []
   }
 }

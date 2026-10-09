@@ -1,18 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "Projects and a manual planned change render the full plan, stream, Why and verified Changes",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase2-plan-desktop-light.png",
-  "expected": "the Jevellan web app \"plan\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The sidebar list cuts off the last conversation row ('Snapshot refresh fixture'): its subtitle and status dot are hidden behind the 'Some native sessions are unavailable' row. The list appears to scroll, so the row should still be reachable.",
-      "Several sidebar conversation titles and subtitles are shortened with ellipses (for example 'Change the value to two …' and 'Waiting for you · Manual convers…'). This looks like intended truncation.",
-      "The 'Review plan ↑' link and the 'Read the full plan…' banner repeat the guidance that the plan card already gives."
-    ]
-  }
+  "expected": "the Jevellan web app \"plan\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)"
 }

@@ -1,17 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/J11-mesh-context-draft-phone-dark.png",
-  "expected": "the Jevellan web app \"mesh context draft\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The modal covers the page behind it, but that background content is dimmed on purpose and can't be used while the modal is open, which is expected",
-      "'Open work' sits below the Cancel/Apply buttons, so it's slightly separated from the other actions"
-    ]
-  }
+  "expected": "the Jevellan web app \"mesh context draft\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\"; the other steps are judged in their own screenshots)"
 }

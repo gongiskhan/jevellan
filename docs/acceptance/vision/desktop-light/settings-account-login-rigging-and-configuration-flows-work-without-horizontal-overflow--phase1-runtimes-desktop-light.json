@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Under Claude Code, the per-device sign-in footer says \"Codex sign-ins are kept per device for now.\" It looks like copy-paste text and should name Claude Code.",
-      "The \"Login recovery\" account names show full UUIDs, which makes the headings long and hard to read.",
-      "The \"Never automatically\" line under the Browser fixture API-key account has no label to explain what it refers to.",
-      "In the left sidebar, conversation subtitles are cut off with ellipses (e.g. \"Waiting for you · Browser fixtur…\"). This is intended truncation and the text stays readable."
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Waiting for you · Browser fixtu…'). This is intended overflow handling.",
+      "Under the Claude Code 'Rigging local fixture' account, the per-device note says 'Codex sign-ins are kept per device for now.' It probably should not say Codex there.",
+      "There's a lot of empty space in the lower sidebar between the conversation list and the footer."
     ]
   }
 }

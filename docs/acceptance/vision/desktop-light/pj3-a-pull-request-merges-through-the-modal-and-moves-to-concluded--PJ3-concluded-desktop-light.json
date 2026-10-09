@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The running thread title in the right rail ('Read through the project and list what each file is…') is cut off with an ellipsis, but it's still readable.",
-      "Session row titles and metadata in the left sidebar ('Context · J11 memory jour…', 'Context · Mesh journey fix…', 'dev-ma…') are cut off with ellipses.",
-      "The Pull Requests count shows 0 while the conversation shows PR #1 being merged. This is correct for the Concluded state, where 'Add a greeting' shows 'Merged #1'.",
-      "The status at the top says 'Idle' even though the right rail lists 1 running thread. This may be correct (the coordinator is idle), but it could confuse readers."
+      "Sidebar session rows and the right-panel running item truncate long titles and metadata with ellipses (e.g. 'Context · Mesh journey fix…', 'Read through the project and list what each file is fo…'); this is intended truncation, and nothing important is lost",
+      "Several bare 'Noted.' coordinator replies appear back to back ('Noted.' 'Noted.'), which looks repetitive",
+      "The Answered group in Waiting for you is collapsed, so the answered question doesn't show unless you expand it"
     ]
   }
 }

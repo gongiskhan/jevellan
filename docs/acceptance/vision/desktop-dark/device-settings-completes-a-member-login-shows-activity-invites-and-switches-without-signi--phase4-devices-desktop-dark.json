@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar conversation list, a fourth row is cut off halfway at the bottom, just above 'Some native sessions are unavailable'. It looks like a scroll overflow with no fade or clear boundary.",
-      "Conversation titles and subtitles in the sidebar are cut short with an ellipsis (e.g. 'Exercise external activity …')",
-      "The 'Browser member' card is shorter than the 'dev-madrid' card next to it, which leaves an uneven gap above the right column",
-      "The text on the 'Automatic device choice' card ('Coming later.') is low-contrast"
+      "In the sidebar conversation list, the fourth item is cut off horizontally by the 'Some native sessions are unavailable' row. It looks like normal scroll clipping, but there is no fade or separator to show it.",
+      "Sidebar conversation titles and subtitles are truncated with ellipses (e.g. 'Context · Outside context fi…', 'Exercise composer choices…'). This is expected, but the full titles can't be read.",
+      "The 'Browser member' card is shorter than the 'Mac.lan' card beside it, which leaves an uneven empty gap in the grid.",
+      "The 'Automatic device choice' checkbox and its 'Coming later.' text are low-contrast and dim. They are still readable."
     ]
   }
 }

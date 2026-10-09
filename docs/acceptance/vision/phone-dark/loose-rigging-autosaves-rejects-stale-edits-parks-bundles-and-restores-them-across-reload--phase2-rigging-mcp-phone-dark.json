@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The file is labeled config.toml, but the editor content is JSON. This looks like a fixture data quirk and doesn't affect the layout.",
-      "The textarea has a lot of empty space below the short content.",
-      "The background behind the modal is dimmed, so the underlying page text (header tabs, Project memory and Safety sections) is low-contrast. This is expected for a modal overlay."
+      "The file is labeled config.toml, but the editor shows JSON content, which may confuse users.",
+      "The settings tab strip behind the modal is cut off at the right edge ('Decisions' then a partly hidden tab and a scroll arrow). It's dimmed behind the overlay and can still be scrolled, so it isn't blocking.",
+      "The editor textarea leaves a lot of empty space under short content, which pushes the autosave note and the toast to the bottom of the modal."
     ]
   }
 }

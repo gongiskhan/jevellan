@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip clips its fourth tab at the right edge. A scroll arrow is shown, so the tab is still reachable.",
-      "Under Claude Code, the device list footer says \"Codex sign-ins are kept per device for now.\" This looks like the wrong copy for that runtime.",
-      "The long \"Login recovery <UUID>\" account names wrap onto two lines. They're still readable but look cluttered.",
-      "The Claude Code section repeats the Rigging device rows (dev-madrid, Browser member, Offline fixture) that also appear under Codex. The page gets long, but nothing overlaps."
+      "The 4th tab in the top tab strip is clipped at the right edge behind the scroll chevron. It's a horizontally scrollable tab bar with a visible next button, so you can still reach it.",
+      "Long account names like 'Login recovery 42e126a5-…' wrap across two lines and are hard to scan, but they're fully readable.",
+      "Usage bars all show 'Unknown' with empty tracks, which makes them look like placeholders."
     ]
   }
 }

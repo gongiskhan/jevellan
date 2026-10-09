@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Optional' hint sits below the textarea, away from the 'What made you finish elsewhere?' label, so it's easy to miss that the field isn't required.",
-      "The magenta focus ring on the textarea is a different color from the dark navy primary button, so the dialog's accent colors don't quite match."
+      "The 'Optional' hint sits below the textarea, so it's easy to miss. Showing it next to the label would make it clearer that the field isn't required.",
+      "The background content is blurred, so text in the dimmed area behind the modal can't be read. That's expected for a modal overlay."
     ]
   }
 }

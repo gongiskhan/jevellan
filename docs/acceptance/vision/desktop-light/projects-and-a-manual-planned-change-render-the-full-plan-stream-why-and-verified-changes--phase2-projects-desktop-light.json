@@ -1,19 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "Projects and a manual planned change render the full plan, stream, Why and verified Changes",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase2-projects-desktop-light.png",
-  "expected": "the Jevellan web app \"projects\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The 'Project saved.' toast sits in the header area between the Projects title and the Git settings and Add project buttons. It doesn't cover them, but it crowds the header.",
-      "Conversation titles and subtitles in the sidebar are cut short with ellipses (e.g. 'Context · J11 memory journ…', 'Waiting for you · Browser fixtur…'). This looks intentional.",
-      "Long project paths wrap onto a second line in some cards (e.g. 'activity-context-project', 'user/picked-project'), so cards in the same row end up different heights.",
-      "The left-hand settings navigation and the project grid leave a lot of empty space below the last card."
-    ]
-  }
+  "expected": "the Jevellan web app \"projects\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)"
 }

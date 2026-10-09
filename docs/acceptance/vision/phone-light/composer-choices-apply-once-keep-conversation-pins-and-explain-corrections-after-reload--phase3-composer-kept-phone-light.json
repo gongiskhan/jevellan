@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Exercise composer choices: explain the…'), but the full text appears in the subtitle and the user message.",
-      "Step 2 shows Started 13:02:37 and Ended 13:02:39 but says Duration 1s, which doesn't match the 2s gap (probably sub-second rounding)."
+      "The header title is cut off with an ellipsis (\"Exercise composer choices: explain the…\"). The full text still shows in the subtitle line below it.",
+      "The step detail chips wrap onto a second line (\"Mac.lan 300 tokens · $0.010\") at phone width. They stay readable.",
+      "Step 2 repeats Step 1's tool output and the line \"The plan has three steps.\" This is a content issue, not a layout problem."
     ]
   }
 }

@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal sits in the upper-middle of the screen and leaves a large empty dark area below it.",
-      "The dimmed 'Conversation settings' panel behind the modal can still be faintly seen. It doesn't get in the way, but it adds a little visual noise.",
-      "The secondary 'Back' button has low contrast compared with the primary 'Discard checkpoints' button."
+      "The dimmed settings panel behind the dialog ('Conversation settings', 'Next step', 'Model', 'Effort', 'Settle kept changes') shows through faintly. It reads as an intentional modal backdrop and doesn't get in the way of the dialog.",
+      "The dialog sits near the top of the screen, which leaves a lot of empty dark space below it on a phone."
     ]
   }
 }

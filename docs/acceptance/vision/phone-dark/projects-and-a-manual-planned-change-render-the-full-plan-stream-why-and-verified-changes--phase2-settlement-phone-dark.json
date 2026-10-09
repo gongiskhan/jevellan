@@ -1,17 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "Projects and a manual planned change render the full plan, stream, Why and verified Changes",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-settlement-phone-dark.png",
-  "expected": "the Jevellan web app \"settlement\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The modal sits roughly in the vertical center and leaves a large empty dimmed area below it on the phone viewport.",
-      "The dimmed 'Conversation settings' panel behind the modal can still be faintly seen, which adds a little visual noise."
-    ]
-  }
+  "expected": "the Jevellan web app \"settlement\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)"
 }

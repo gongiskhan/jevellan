@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The running thread title 'Read through the project and list what each …' is cut off with an ellipsis, which is expected for long titles.",
-      "The 'Add a greeting' summary 'Added greeting.txt with a short greeting and committed …' is cut off with an ellipsis, which is expected for summary lines.",
-      "The 'Idle' status chip in the header and the 'Running 1' section showing a running thread may look inconsistent at first glance, but this doesn't block use."
+      "The running thread title 'Read through the project and list what each fil...' is cut off with an ellipsis. This is intentional single-line truncation.",
+      "The summary line of the 'Add a greeting' thread, 'Added greeting.txt with a short greeting and committed ...', is cut off with an ellipsis. This is intentional truncation.",
+      "The metadata text (agent · model · effort · host) is small and low-contrast gray on the dark background, but it's still readable.",
+      "The bottom half of the screen is empty below the Concluded list. That's expected with only three threads."
     ]
   }
 }

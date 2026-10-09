@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dialog title shows a raw UUID ('Login recovery 39213a17-51e9-45a0-b13f-da387758d10e'), which makes it long and hard to read.",
-      "The status line 'Code sent. Waiting for sign-in to finish…' appears with the 'Can't reach Jevellan' error. The two messages give mixed signals, but this may be intended for this step.",
-      "The 'Open sign-in page' button is a filled light pill and 'Start again' is an outlined button, so they look inconsistent next to each other."
+      "The modal title includes a raw UUID ('Login recovery 7e7c80b9-4f5a-49c7-b013-e58e6eba4404'). It makes the header long and hard to scan, though it fits without being cut off.",
+      "The modal still says 'Paste the test authorization code.' but no code field is shown, because the code was already sent. That instruction may confuse users next to the 'Code sent. Waiting for sign-in to finish…' status.",
+      "'Code sent. Waiting for sign-in to finish…' and the error 'Can't reach Jevellan. Try again when it's connected.' show at the same time, which is a slightly mixed message. Both are still readable and match this step."
     ]
   }
 }

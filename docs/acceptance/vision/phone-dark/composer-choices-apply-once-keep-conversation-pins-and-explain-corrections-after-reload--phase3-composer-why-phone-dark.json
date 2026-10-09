@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Adversarial Review' label in the score list is cut short to 'Adversarial Rev...'. It is still recognizable.",
-      "The panel's content starts at the 'Test' row with no step rows above it, so the sheet looks scrolled. The top of the score list may be off-screen or under the header, but no text visibly overlaps.",
-      "The last correction entry ('Just override · effort: high → max') is cut off at the bottom edge. This looks like ordinary scroll overflow, not clipping.",
-      "Every score bar is empty (0.00), so the bars don't tell the steps apart."
+      "The 'Adversarial Revi…' label is truncated with an ellipsis in the score list, but the label is still recognizable",
+      "Every score bar shows 0.00 and is empty, so the score section gives no visual information",
+      "The panel is scrolled partway, so the top score rows have no section header, and the last correction entry ('Just override · effort: high → max') is cut off at the bottom of the viewport. The content looks scrollable, so this isn't blocking",
+      "The italic serif text for the action/effort transitions is a different style from the surrounding monospace/sans text and is slightly less legible at this size"
     ]
   }
 }

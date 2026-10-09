@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'WAITING FOR YOU 0' header and the 'Answered 1' count are small and low in contrast against the dark background, but you can still read them.",
-      "Most of the screen below the content is empty."
+      "The 'WAITING FOR YOU 0' heading is small, letter-spaced, low-contrast gray text. It's readable, but harder to read than the body text.",
+      "Most of the screen below the content is empty dark space. This is expected for an empty state."
     ]
   }
 }

@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'), so the full names only show on hover or when expanded",
-      "The chat area is mostly empty, with one user message at the top and the 'Coordinator is working…' indicator just above the composer at the bottom, leaving a large unused space in between",
-      "Low-contrast small monospace metadata text (e.g. 'Codex · GPT · high · Worktree · Browser member', sidebar session subtitles) is legible but faint against the dark background"
+      "In the sidebar, long shell session titles and subtitles are cut off with an ellipsis (e.g. 'Context · Mesh journey fix…', 'Mac.l…'). The truncation looks intentional, and the full names are still recognizable.",
+      "The right panel takes up a lot of space but is mostly empty-state text, so the chat column looks sparse while the coordinator is working."
     ]
   }
 }

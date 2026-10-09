@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background is dimmed behind the modal, so parts of the conversation (the header, the message card and the tool output) are only partly visible. This is expected for a modal overlay.",
-      "The background header subtitle is cut off: 'Node across works · dev-sandbox' looks clipped at the left edge behind the dim layer."
+      "The background conversation is dimmed and blurred behind the modal, as expected. Its text is partly hidden by the dialog, but the dialog is the subject of this step.",
+      "The header badge text 'Waiting for you' and the meta text 'Undo across works · Rec.lan' in the background are small and low-contrast.",
+      "The 'Optional' hint sits below the textarea, so it is easy to miss as a label for the field."
     ]
   }
 }

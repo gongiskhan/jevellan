@@ -78,6 +78,20 @@ test('model candidates enforce account ownership, runtime capabilities and enabl
   expect(modelCandidates({ ...base, deviceId: 'other' }).every((entry) => entry.reason === 'needs-login')).toBe(true);
 });
 
+test('conversation resource overrides preserve model and effort auto decisions and normal account eligibility', () => {
+  const entries = modelCandidates({ ...base, selection: { accountId: 'codex_test' } });
+  expect(entries.map((entry) => entry.model.id)).toEqual(['swift']);
+  const plan = ready(forModels(entries, { pins: { runtimeId: 'codex', accountId: 'codex_test' } }));
+  expect(Object.keys(plan.questions)).toEqual(['effort']);
+  const picked = resolveModel(plan, { response: response(plan.questions, { effort: 'high' }), keepCurrentThreshold: 0.6, deviceLabel: 'Here' });
+  expect(picked.model).toMatchObject({ chosen: 'swift', runtime: 'codex', runtimeSource: 'pin', source: 'only-option' });
+  expect(picked.account).toMatchObject({ chosen: 'codex_test', source: 'pin' });
+  expect(picked.effort).toMatchObject({ requested: 'high', source: 'jev' });
+  expect(modelCandidates({ ...base, selection: { runtimeId: 'claude', accountId: 'codex_test' } })).toEqual([]);
+  expect(modelCandidates({ ...base, selection: { accountId: 'codex_test' }, deviceId: 'other' })[0]?.reason).toBe('needs-login');
+  expect(modelCandidates({ ...base, selection: { accountId: 'missing' } }).every((entry) => entry.reason === 'no-account')).toBe(true);
+});
+
 test('an operational implementation selects shell/write capabilities even with no code changes', async () => {
   const example = savedDecisionCases().find(value => value.id === 'run_git_pull')!;
   const decide = vi.fn<JevClient['decide']>(async input => response(input.questions, { next_action: 'implement', remember_request: 0, effort: 'low' }));

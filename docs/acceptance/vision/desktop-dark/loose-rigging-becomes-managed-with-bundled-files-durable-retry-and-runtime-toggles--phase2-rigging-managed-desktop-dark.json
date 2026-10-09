@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Saved' status text in the modal is low-contrast grey on the dark background, but it can still be read.",
-      "The modal's dimmed backdrop covers the Rigging page behind it. That's expected while the modal is open."
+      "The 'Saved' status label and the 'Preview' link sit on a row of their own between the Name and Content fields, so it isn't obvious which field they belong to.",
+      "The textarea fills most of the modal but only holds two lines, which leaves a large empty area."
     ]
   }
 }

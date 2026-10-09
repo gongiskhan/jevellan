@@ -36,9 +36,9 @@ export function changeComposerDraft(
   else if (choice.mode === 'pin') {
     delete next.once[key];
     if (choice.field === 'model') next.pins.modelId = choice.value;
-    else next.pins.effort = choice.value;
+    else if (choice.field === 'effort') next.pins.effort = choice.value;
   } else if (choice.field === 'model') next.once.modelId = choice.value;
-  else next.once.effort = choice.value;
+  else if (choice.field === 'effort') next.once.effort = choice.value;
   return ComposerInitialSchema.parse(next);
 }
 const choiceLabel = (config: Configuration['x-jevellan'], field: Field, value: string) =>

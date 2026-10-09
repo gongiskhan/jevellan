@@ -59,6 +59,39 @@ test('candidates cover every menu entry and roster device exactly once', () => {
   expect(narrowed.models[0]!.unavailable).toEqual([{ deviceId: 'dev_studio', reason: 'Codex needs login' }]);
 });
 
+test('runtime and account overrides constrain resources while Jev still chooses the unfixed placement fields', () => {
+  const value = input({ fixed: { runtimeId: 'codex' } });
+  const result = candidates(value);
+  expect(result.models.map((entry) => entry.model.id)).toEqual(['swift']);
+  expect(Object.keys(preparePlacementA(value, result))).toEqual(['isolation', 'effort']);
+  expect(Object.keys(preparePlacementB(value, result, { isolation: 'worktree', model: swift }))).toEqual(['device']);
+  const explicit = input({ fixed: { accountId: 'codex_a' }, statuses: [status('codex_a', 'dev_studio'), status('claude_a', 'dev_mini')] });
+  expect(candidates(explicit).models.map((entry) => [entry.model.id, entry.devices])).toEqual([['swift', ['dev_studio']]]);
+  expect(fallback(explicit)).toMatchObject({ runtime: 'codex', accountId: 'codex_a', deviceId: 'dev_studio', fixed: ['account'] });
+  expect(refusal(input({ fixed: { runtimeId: 'missing' } }))).toBe('Choose an installed runtime.');
+  expect(refusal(input({ fixed: { accountId: 'missing' } }))).toBe('Choose a registered account.');
+  expect(refusal(input({ fixed: { accountId: 'claude_a', runtimeId: 'codex' } }))).toBe('The selected account does not belong to the selected runtime.');
+  expect(refusal(input({ fixed: { accountId: 'claude_a', modelId: 'swift' } }))).toBe('The selected account does not belong to the selected runtime.');
+});
+
+test('an explicit account never bypasses auth, ceilings, cooling or paid-use policy, even when another account can run', () => {
+  const backup = account('codex_backup', 'codex');
+  const list = [...accounts, backup];
+  for (const unavailable of [
+    status('codex_a', 'dev_mini', { auth: 'expired' }),
+    status('codex_a', 'dev_mini', { usage: { weeklyPct: 95, source: 'probe', observedAt: new Date(now).toISOString() } }),
+    status('codex_a', 'dev_mini', { coolingUntil: later }),
+  ]) {
+    const value = input({ accounts: list, devices: [mini], fixed: { accountId: 'codex_a' }, statuses: [unavailable, status(backup.id, mini.id)] });
+    expect(placementCandidates(value)).toHaveProperty('refused');
+    expect(placementCandidates({ ...value, fixed: {} })).not.toHaveProperty('refused');
+  }
+  const paid = account('paid', 'codex', { kind: 'api-key', paidUse: 'when-subscriptions-run-out', credential: 'shared' });
+  const value = input({ accounts: [...accounts, paid], devices: [mini], fixed: { accountId: paid.id }, statuses: [...ready([mini.id]), status(paid.id, mini.id)] });
+  expect(refusal(value)).toContain('paid use not allowed');
+  expect(fallback({ ...value, statuses: [status('codex_a', mini.id, { auth: 'expired' }), status(paid.id, mini.id)] }).accountId).toBe(paid.id);
+});
+
 test('offline, stale, revoked, unset and full devices are excluded with reasons, and the placing device counts as online', () => {
   const devices = [device('dev_mini', 'Mac mini', { status: 'stale' }), device('dev_studio', 'Studio', { status: 'offline' }), device('dev_lab', 'Lab', { status: 'stale' }),
     device('dev_old', 'Old', { revoked: true }), device('dev_bare', 'Bare', { hasPath: false }), device('dev_denied', 'Denied', { allowed: false }), device('dev_full', 'Full', { running: 4 })];

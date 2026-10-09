@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Projects fixture' label in the header is small, magenta monospace text with fairly low contrast against the dark background",
-      "A large empty area below the Cancel/Save buttons leaves the layout looking unbalanced on a phone screen"
+      "Lots of empty space under the Cancel/Save buttons at the bottom of the screen",
+      "The magenta 'Reload' link is a bit low-contrast against the dark red banner, but you can still read it"
     ]
   }
 }

@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis (\"Exercise automatic decisions: change t…\"). The full text still appears in the subtitle line and the message bubble.",
-      "The long, uneven list of pink \"Review … fixture\" links looks cluttered on a phone. Some links wrap onto two lines because they include raw UUIDs (Login recovery a20c8675…, d8529d0e…).",
-      "The links wrap irregularly: some rows hold two links and others hold one, so the column looks ragged.",
-      "The send button in the composer has low contrast against the dark input background."
+      "The header title is cut off with an ellipsis ('Exercise automatic decisions: change t...'). The full text still shows in the subtitle and the message bubble, so nothing is lost.",
+      "The two 'Review Login recovery <uuid>' links break their UUIDs across lines at hyphens, which looks messy.",
+      "The long list of pink 'Review … fixture' links below the warning is visually dense and makes the main 'Try automatic again' action less prominent."
     ]
   }
 }

@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PJ4b the Why panel explains placement and overrides apply",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/PJ4b-why-overridden-phone-light.png",
+  "expected": "the Jevellan web app \"why overridden\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PJ4b the Why panel explains placement and overrides apply\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Large empty area below the JEV footer leaves the bottom third of the panel blank.",
+      "Header puts the small pink monospace task title 'Tidy the README wording' and the bold 'Why this placement' title side by side, so the header looks crowded and unbalanced.",
+      "The 'Claude Code Sonnet' model row has a '·' marker but no bar or score, so it doesn't match the other rows.",
+      "Footer metadata text ('Placement · jev-browser-simulated · 60 tokens · 2 ms') is small, light grey and low contrast, but still readable."
+    ]
+  }
+}

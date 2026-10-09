@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Header title is truncated with an ellipsis ('Exercise answer options: change the valu…'). The full text is shown just below it, so this is expected header behavior.",
-      "The 'Or type a different answer below.' hint and the 'Started/Ended' timestamp labels use low-contrast gray on the dark background. They are still readable."
+      "The header title is cut off with an ellipsis (\"Exercise answer options: change the valu...\"). This is intentional truncation, and the full title appears just below it.",
+      "The \"Step details\" toggle is low contrast against the dark background."
     ]
   }
 }

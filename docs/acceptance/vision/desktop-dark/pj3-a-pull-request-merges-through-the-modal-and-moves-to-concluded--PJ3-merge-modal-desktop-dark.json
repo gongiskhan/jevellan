@@ -9,9 +9,6 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": [
-      "The modal body sentence runs to almost the full dialog width, leaving very little right padding before the border.",
-      "The blurred background makes the page behind the modal unreadable. That's expected for a modal backdrop."
-    ]
+    "cosmetic": []
   }
 }

@@ -108,6 +108,10 @@ test('views count work, list pull requests and questions, coerce a Leave git def
   expect(plan({ work: work('reader') })).toMatchObject({ kind: 'ready', model: { id: 'reader' }, effort: 'medium' });
   expect(plan({ runtimes: runtimes(false) })).toEqual({ kind: 'unavailable', reason: 'No enabled model can run the coordinator on Mac mini.' });
   expect(plan({ statuses: [{ ...ready, auth: 'needs-login' }] })).toEqual({ kind: 'unavailable', reason: 'No account can run the coordinator model on Mac mini.' });
+  const second = { ...account, id: 'acc_b', label: 'Second' }; const secondReady = { ...ready, accountId: second.id };
+  expect(plan({ accounts: [account, second], statuses: [ready, secondReady], work: { coordinator: { modelId: null, effort: 'medium', runtimeId: 'fake', accountId: second.id } } })).toMatchObject({ kind: 'ready', account: { id: 'acc_b' } });
+  expect(plan({ accounts: [account, second], statuses: [ready, { ...secondReady, auth: 'expired' }], work: { coordinator: { modelId: null, effort: 'medium', accountId: second.id } } })).toMatchObject({ kind: 'unavailable' });
+  expect(plan({ work: { coordinator: { modelId: null, effort: 'medium', runtimeId: 'missing' } } })).toMatchObject({ kind: 'unavailable' });
   expect(derivedId('cev', 'answer', 'pdec_1')).toBe(derivedId('cev', 'answer', 'pdec_1')); expect(derivedId('cev', 'answer', 'pdec_1')).toMatch(/^cev_[0-9a-f]{40}$/);
 });
 

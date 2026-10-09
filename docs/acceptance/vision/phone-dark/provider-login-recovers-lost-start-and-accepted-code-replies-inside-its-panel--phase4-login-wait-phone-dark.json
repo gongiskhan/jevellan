@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Authorization code' label sits almost directly against the 'Open sign-in page' button, with little vertical space between them.",
-      "The disabled 'Continue' button has very low contrast against the dark panel, so it is hard to see (this may be intentional for a disabled state).",
-      "The text block in the hub-wait notice is narrow and wraps tightly next to the 'Stop waiting' button, leaving uneven empty space on the right."
+      "The 'Continue' button looks very faint, almost disabled, even though a code has been entered. This is probably on purpose while the screen waits for the hub, but it is low-contrast.",
+      "The background tab bar ('Runtimes', 'Mapping', 'Decisions', …) is cut off at the right edge. It sits behind the dimmed overlay and seems to be a horizontally scrolling strip, so it doesn't block anything.",
+      "The modal covers the middle of the runtimes list, so some background rows are partly hidden. This is expected for a modal."
     ]
   }
 }

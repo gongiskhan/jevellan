@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Claude Code · Current account' checkbox is disabled and so faint that it's hard to tell whether it is checked, but its label is styled like an active option, which makes its state unclear.",
-      "There is a lot of empty space below the checkbox list inside the 'Install for' fieldset compared with the spacing around it."
+      "The disabled Claude Code checkbox is very faint, so it's hard to tell whether it's checked or unchecked.",
+      "The 'Install for' fieldset has a lot of empty space at the top, above the first checkbox."
     ]
   }
 }

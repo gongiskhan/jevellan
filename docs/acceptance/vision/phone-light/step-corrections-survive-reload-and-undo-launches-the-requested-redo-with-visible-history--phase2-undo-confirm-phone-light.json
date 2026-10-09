@@ -1,17 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "step corrections survive reload and undo launches the requested redo with visible history",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase2-undo-confirm-phone-light.png",
-  "expected": "the Jevellan web app \"undo confirm\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"step corrections survive reload and undo launches the requested redo with visible history\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The modal says the redo will use effort \"low\", but the blurred form behind it shows effort \"high\". This is a content mismatch, not a layout problem, but someone should check it.",
-      "The background is blurred and dimmed behind the modal. This is expected for a modal and doesn't block anything."
-    ]
-  }
+  "expected": "the Jevellan web app \"undo confirm\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"step corrections survive reload and undo launches the requested redo with visible history\"; the other steps are judged in their own screenshots)"
 }

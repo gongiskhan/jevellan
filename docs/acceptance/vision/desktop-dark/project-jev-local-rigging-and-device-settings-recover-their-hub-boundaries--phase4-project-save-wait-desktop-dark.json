@@ -10,8 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Browse folders on dev-madrid' button has almost no space below it before the 'Git policy' label, so the two look crowded.",
-      "The modal body is cut off at the 'Test command' label with no visible scroll cue. The fields below it can still be reached by scrolling."
+      "The 'Browse folders on Mac.lan' button sits right against the 'Git policy' label below it, with almost no vertical gap.",
+      "The long value in 'Path on Mac.lan' is clipped at the input's right edge. This is normal for a text input, but the full path can't be seen.",
+      "The 'Test command' label is cut off at the bottom of the scrollable modal body. Its input is out of view, but scrolling reaches it.",
+      "The disabled 'Saving...' button has low contrast against the dark background."
     ]
   }
 }

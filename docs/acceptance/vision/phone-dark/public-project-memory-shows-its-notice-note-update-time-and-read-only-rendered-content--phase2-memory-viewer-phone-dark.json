@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Public memory guide' result card text is pushed toward the centre-right instead of lining up with the left edge of the other modal content.",
-      "The note title and update time appear twice: once in the selected result card and again in the content header below it."
+      "The search result row has a large empty gap on the left, so its title and updated time sit off-center. It looks like a missing icon or leftover spacing.",
+      "The page behind the modal shows through, but it is dimmed enough that it doesn't get in the way of reading the modal.",
+      "The updated time appears twice: once in the search result row and again under the note header."
     ]
   }
 }

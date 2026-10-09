@@ -166,6 +166,11 @@ test('redaction handles nested values and secrets requiring JSON escaping', () =
   const secret = `quoted"${randomUUID()}\nsecret`; const redactor = new SecretRedactor(); redactor.add(secret);
   expect(redactor.document({ nested: [secret, { text: `before ${secret} after` }] })).toEqual({ nested: ['[redacted]', { text: 'before [redacted] after' }] });
 });
+test('external agent tokens redact after restart without loading a native or saved login', () => {
+  const token = ['jva', '_agent_fixture.', 'A'.repeat(43)].join('');
+  const fresh = new SecretRedactor(); expect(fresh.text(`token ${token}`)).toBe('token [redacted]');
+  expect(fresh.document({ detail: { text: token } })).toEqual({ detail: { text: '[redacted]' } });
+});
 
 test('effort mapping rounds up and unavailable models stay disabled', () => {
   expect(mapEffort('high', ['low', 'xhigh', 'max'])).toBe('xhigh');

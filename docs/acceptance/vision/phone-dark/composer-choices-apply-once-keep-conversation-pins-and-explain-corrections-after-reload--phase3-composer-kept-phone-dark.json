@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Exercise composer choices: explain the...'), but the full text appears in the subtitle line and the user message.",
-      "In each step header the start, end and duration timestamps wrap onto a second line ('Local time'), which takes extra vertical space."
+      "The header title is cut off with an ellipsis ('Exercise composer choices: explain the...'). The full text still appears in the subtitle line and in the user message.",
+      "The step metadata chips (plan/reply, Composer Fable, high/low, Automatic account, Mac.lan, tokens · cost) wrap onto two lines at phone width. They stay readable."
     ]
   }
 }

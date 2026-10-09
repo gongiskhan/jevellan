@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The disabled 'Saving…' button has light text on a pale background, so it has low contrast. It is still readable, and the disabled look is intentional.",
-      "The tab strip behind the modal is cut off at the right edge, with a scroll chevron. It is under the overlay and does not affect this step.",
-      "The wait banner's text wraps tightly next to the 'Stop waiting' button, which makes the message column narrow. It is still fully readable."
+      "The modal covers the background page. The tab strip ('Rigging', 'Decisions') shows through above it, and so does a row below it ('Usage checked…', 'Log in', 'Check now', 'Edit', 'Enable'). This is normal for an overlay.",
+      "The tab bar's scroll arrow at the top right sits partly behind the modal's top edge."
     ]
   }
 }

@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Working' status chip uses a magenta-on-dark style, which is a little low-contrast but still readable.",
-      "There is a large empty gap between the user message and the progress stage near the bottom.",
-      "The progress spinner icon sits on its own line, apart from the stage title.",
-      "The '0s' timer is small and pushed to the far right edge."
+      "The user message card sits almost flush against the right edge of the screen. Its right margin is much smaller than the left padding used elsewhere, so the card's right border looks slightly clipped.",
+      "The progress spinner sits on its own line above 'Jev is choosing the next step' instead of beside it, which leaves a slightly loose vertical rhythm in the progress block.",
+      "The '0s' timer floats alone at the far right, apart from the stage text it belongs to."
     ]
   }
 }

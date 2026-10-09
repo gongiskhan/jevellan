@@ -10,9 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The same 'Claude Code started working in External activity fixture while this step ran…' warning banner appears twice in a row in the main column.",
-      "In the sidebar, the fourth conversation row is cut off at the bottom of the scroll area: only part of its first line shows above 'Some native sessions are unavailable'. The list scrolls, so the row can still be reached.",
-      "Sidebar conversation titles and subtitles are shortened with ellipses (e.g. 'Exercise external activity…', 'Blocked · External activity fixt…'). This looks intentional."
+      "The 'Claude Code started working in External activity fixture…' warning banner appears twice with identical text.",
+      "In the sidebar conversation list, a fourth item is partly visible above 'Some native sessions are unavailable', so its text shows only as a sliver. This is normal scroll clipping.",
+      "The 'Working on the requested change.' line sits right against the header divider, with almost no space above it.",
+      "The sidebar conversation titles and subtitles are cut off with ellipses ('Exercise external activity …', 'Blocked · External activity fix…'). This looks intentional for long titles.",
+      "The Changes panel summary reads '1 changed files' instead of '1 changed file'."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Session titles in the sidebar ('Context · J11 memory journ…', 'Context · Mesh journey fixt…') and their subtitles are truncated with ellipses. This is intentional overflow handling.",
-      "The faint gray low-score bars and score values (0.10–0.20) in the Why panel have fairly low contrast against the dark background, but they're still readable.",
-      "The panel title 'Tidy the README wording' is in a monospace pink style that looks different from the 'Why this placement' heading next to it."
+      "Session titles and subtitles in the left sidebar are truncated with ellipses (e.g. 'Context · Mesh journey fix…', 'Mac.l…'). This looks like intentional overflow handling.",
+      "The panel title in monospace pink ('Tidy the README wording') sits next to the bold 'Why this placement' heading in a different font, which looks a little inconsistent.",
+      "Low-weight bars (0.10–0.20) are short grey stubs, so the low values are hard to tell apart visually. The numbers next to them are still readable."
     ]
   }
 }

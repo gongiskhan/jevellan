@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Mesh journey fixture · de…'). This is intentional, but it hides the full names.",
-      "The small, low-contrast text is hard to read: the 'Some native sessions are unavailable' footer, the monospace metadata line under the thread title, and the 'completed' status label.",
-      "The 'Progress' tag in the report card is very faint against the dark background.",
-      "The page is mostly empty space between the report card and the message composer."
+      "Sidebar session subtitles are truncated with ellipses (e.g. 'Mac.l…', 'M…'), but the full text is likely available elsewhere",
+      "The 'completed' status label on the Read tool card sits on its own line below the 'Read' title rather than lined up with it",
+      "There is a lot of empty space between the last report card and the message composer"
     ]
   }
 }

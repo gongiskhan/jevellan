@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal title wraps the full raw UUID ('Login recovery 8c839ade-3fad-4fbe-8576-9c414f7dddc8') onto two lines. It is readable but long and noisy for a phone header.",
-      "The prompt 'Paste the test authorization code.' appears without a visible code input field. This is probably intended because the code was already sent and the screen is waiting, but the leftover instruction may confuse users.",
-      "The 'Code sent. Waiting for sign-in to finish…' status and the 'Can't reach Jevellan' error banner show at the same time. That fits this step of the scenario, but it can read as mixed signals."
+      "The dialog title includes the full recovery UUID, so it wraps to two lines and is hard to scan. Shortening it or moving the ID out of the title would help.",
+      "The prompt 'Paste the test authorization code.' still shows, but there is no code input field on screen. Next to 'Code sent. Waiting for sign-in to finish…' this reads as conflicting guidance.",
+      "The 'Code sent. Waiting…' pending message and the 'Can't reach Jevellan' error both show at the same time, which makes the current state unclear (this may be the intended state for this step).",
+      "The tab bar behind the dialog is cut off on the right ('Decisions' and a partly hidden tab), but it is behind the modal overlay and a scroll button is shown, so it does not block anything."
     ]
   }
 }

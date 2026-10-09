@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Title input text is truncated at the right edge ('...what each file is'), which is normal for a single-line input that scrolls horizontally",
-      "Background page content (header, breadcrumb, composer) shows faintly behind the modal overlay, as expected for a modal"
+      "Title input text is cut off at the right edge ('...what each file i'). It is a single-line field that scrolls horizontally, so this is expected.",
+      "Background content behind the modal (header and coordinator input) shows through the dim overlay. It does not interfere with the modal."
     ]
   }
 }

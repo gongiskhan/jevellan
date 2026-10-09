@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "There is a large empty gap between the report card and the attached-composer notice, so the thread content and the composer feel far apart on the phone screen.",
-      "The bright pink selection highlight on the command is much louder than the rest of the dark theme. It is still readable, but it stands out sharply.",
-      "The command text wraps onto two lines inside the highlight, and the copy icon sits off to the right, a little apart from it."
+      "The selected command 'jevellan thread attach thread_01M4GFA0X3RGHQSA102NHFPBM7' wraps onto two lines, so the bright pink selection highlight looks ragged and heavy against the dark theme.",
+      "There is a large empty gap between the report card and the attached notice and composer at the bottom.",
+      "The send arrow in the disabled composer has very low contrast. That is acceptable for a disabled state, but it is hard to see."
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Offline' status badge is small, low-contrast monospace text under the title, so it is less prominent than the amber notice banner.",
-      "The amber notice banner's text sits close to its top edge, and the 'Move coordinator here' button is very close to the banner's bottom border, so the padding looks tight."
+      "The 'Offline' badge under the title uses small monospace text in a low-contrast outline, so it is harder to read than the rest of the header.",
+      "The send button in the composer is very dim against the dark background, though that may be intentional because the input is empty."
     ]
   }
 }

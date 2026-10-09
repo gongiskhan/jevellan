@@ -1,19 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/J11-mesh-context-draft-desktop-dark.png",
-  "expected": "the Jevellan web app \"mesh context draft\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The diff lines are plain monospace text without red/green coloring, so removed and added lines can only be told apart by the leading -/+ characters.",
-      "The 'Open work' link sits below the Cancel/Apply buttons, apart from the other controls, so it's easy to miss.",
-      "Both diffs end with lines that are just '-' or '+' (trailing blank-line changes), which look like stray characters.",
-      "The overlay dims the background a lot, but the sidebar text behind it is still faintly visible. This is expected for a modal."
-    ]
-  }
+  "expected": "the Jevellan web app \"mesh context draft\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\"; the other steps are judged in their own screenshots)"
 }

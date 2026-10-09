@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar, the fourth conversation row is partly cut off at the bottom edge, just above the 'Some native sessions are unavailable' line. It looks like a scroll overflow and could use a fade or clearer separation.",
-      "There are two 'Retry' buttons close together: one on the user message and one primary button under the error banner. Users may not know which one to press.",
-      "The 'Retry' and 'Try automatic again' buttons are stacked with different widths and uneven spacing, so the error actions look loosely arranged."
+      "The sidebar conversation list cuts off a fourth item in the middle of its text, just above 'Some native sessions are unavailable'. It looks like the list's scroll edge with no fade or divider.",
+      "Sidebar conversation titles and subtitles are cut short with ellipses (e.g. 'Exercise external activity ...', 'Blocked · External activity fix…'). This is expected for long titles.",
+      "The 'Retry' (solid) and 'Try automatic again' (outlined) buttons are stacked vertically with uneven visual weight. They might read better side by side.",
+      "The message bubble has its own 'Retry' button, which duplicates the main 'Retry' button below the error and may confuse users."
     ]
   }
 }

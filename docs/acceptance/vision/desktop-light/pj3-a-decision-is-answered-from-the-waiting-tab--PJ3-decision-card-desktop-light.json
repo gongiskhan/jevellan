@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar thread titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Improver sandbox · dev-ma…'). The truncation looks intentional, but the full names can't be read.",
-      "The Send button on the decision card has low contrast against its pale pink background. It is probably disabled because the answer field is empty."
+      "Sidebar session titles and metadata lines are cut off with ellipses (e.g. 'Context · Mesh journey fix…', 'Done · Improver sandbox · Mac.l…'). This is intentional truncation, and none of these elements is part of the decision card.",
+      "The 'Send' button on the decision card is low-contrast because it looks disabled while the answer field is empty. It is still visible and reachable."
     ]
   }
 }

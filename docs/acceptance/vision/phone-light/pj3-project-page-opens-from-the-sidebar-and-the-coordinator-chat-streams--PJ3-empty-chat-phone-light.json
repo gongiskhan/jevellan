@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row ends right after 'Pull requests' with no visible sign that it scrolls, so if there are more tabs, nothing shows they exist.",
-      "The 'Idle' badge and the 'Claude Code Fable · high' subtitle are small, low-contrast monospace text, which makes them harder to read on a phone.",
-      "The send button is light gray on a light background and looks disabled, which is probably intended since the input is empty."
+      "Header action icons (filter, +, document, overflow) have no visible labels, so their purpose is unclear at a glance",
+      "The send button in the composer is low-contrast (pale blue on light background), though that may just be its intended disabled state while the field is empty",
+      "The 'Idle' status chip and the 'Claude Code Fable · high' model text are small, so they're slightly hard to read"
     ]
   }
 }

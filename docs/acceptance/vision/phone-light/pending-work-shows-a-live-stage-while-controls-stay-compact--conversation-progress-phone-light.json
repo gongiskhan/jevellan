@@ -10,11 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Working' badge and the progress spinner are pale pink, which is low-contrast on the light background",
-      "The '0s' timer is small and faint pink, so it's hard to see",
-      "The message bubble's right edge sits flush against the viewport edge with no right margin",
-      "The progress spinner sits alone on its own line above the 'Jev is choosing the next step' heading, leaving an awkward gap",
-      "There's a large empty area between the message and the progress stage"
+      "The progress spinner sits on its own line above the 'Jev is choosing the next step' heading instead of inline with it, which leaves an odd stray icon.",
+      "There is a large empty gap between the user message and the progress block at the bottom.",
+      "The '0s' elapsed timer is small, pink, and right-aligned, apart from the stage text, so it's easy to miss.",
+      "The 'Working' status pill text is low-contrast pink on a light background."
     ]
   }
 }

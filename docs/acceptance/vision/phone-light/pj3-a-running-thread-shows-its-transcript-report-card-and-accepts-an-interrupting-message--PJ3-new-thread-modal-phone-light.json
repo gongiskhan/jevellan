@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Title value is clipped at the right edge of the field (\"...what each file is\"). Single-line inputs normally scroll text horizontally, so this is expected.",
-      "The dimmed page behind the modal (header, breadcrumb, composer) shows through faintly. This is the normal modal backdrop and doesn't get in the way."
+      "The Title input text is clipped at the right edge ('...list what each file is'). This is normal scrolling for a single-line input and doesn't block anything.",
+      "The background page is dimmed and blurred behind the modal, which is expected for a modal overlay."
     ]
   }
 }

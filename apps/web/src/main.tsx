@@ -25,6 +25,7 @@ import { RiggingPage } from './rigging.js';
 import { AboutPage, ConfigurationPage, DecisionsPage } from './settings.js';
 import { DeviceSwitcher, DevicesPage } from './devices.js';
 import { GitPage } from './git-settings.js';
+import { AgentsPage } from './agents.js';
 import { ProjectsPage } from './projects.js';
 import { ConversationPage, ConversationSidebar, NewConversation } from './conversations.js';
 import { CursorConversationPage } from './cursor-sessions.js';
@@ -47,6 +48,7 @@ const settingsPages = [
   ['devices', 'Devices', 'devices'],
   ['projects', 'Projects', 'projects'],
   ['git', 'Git', 'git'],
+  ['agents', 'Agents', 'agents'],
   ['configuration', 'Configuration', 'configuration'],
   ['about', 'About', 'about'],
 ] as const satisfies ReadonlyArray<readonly [string, string, IconName]>;
@@ -355,7 +357,9 @@ function App() {
     </SettingsTabs>
   );
   const settingsPage =
-    currentPage === 'git' ? (
+    currentPage === 'agents' ? (
+      <AgentsPage {...props} />
+    ) : currentPage === 'git' ? (
       <GitPage {...props} />
     ) : currentPage === 'projects' ? (
       <ProjectsPage {...props} />

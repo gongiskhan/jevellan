@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses ('Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'). This looks intentional, and the full names are probably available elsewhere.",
-      "Several small labels are low-contrast on the dark background: the monospace metadata line under the header, the 'Some native sessions are unavailable' note, the composer placeholder and the 'v0.1.0' label. They are dim but still readable.",
-      "The 'Stop' button in the header is drawn more faintly than 'Why' and 'Override', so it may look disabled. That may be intended while the thread is attached."
+      "Sidebar session titles and metadata are cut off with ellipses ('Context · Mesh journey fix…', 'Mac.l…'). This is normal truncation, and the full text isn't needed to understand this screen.",
+      "The disabled composer's placeholder ('Message this thread') and send arrow are low-contrast on the dark background. That fits a disabled state, and the note above the composer explains why it is disabled.",
+      "The 'Stop' button in the header is dimmer than 'Why' and 'Override', but it is still readable."
     ]
   }
 }

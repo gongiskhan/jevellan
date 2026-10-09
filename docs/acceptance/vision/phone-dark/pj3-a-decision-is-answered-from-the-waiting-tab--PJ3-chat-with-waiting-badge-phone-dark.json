@@ -9,6 +9,9 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": []
+    "cosmetic": [
+      "Large empty area between the last assistant message and the composer (expected on a short chat).",
+      "The 'Asked you: Which greeting should the page use?' line and the session status line use low-contrast grey text. It is still readable."
+    ]
   }
 }

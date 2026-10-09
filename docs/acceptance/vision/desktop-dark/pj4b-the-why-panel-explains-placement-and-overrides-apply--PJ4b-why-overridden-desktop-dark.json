@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PJ4b the Why panel explains placement and overrides apply",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/screenshots/PJ4b-why-overridden-desktop-dark.png",
+  "expected": "the Jevellan web app \"why overridden\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PJ4b the Why panel explains placement and overrides apply\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Sidebar shell-session titles and subtitles are shortened with ellipses (e.g. 'Context · Mesh journey fix...', 'Done · Improver sandbox · Mac.l...'); this looks deliberate.",
+      "In the Why panel's MODEL section, 'Claude Code Sonnet' is indented with a dot and has no bar or score, so it doesn't line up with the other model rows.",
+      "Monospace metadata lines (the 'Claude Code · Opus · low effort...' header and the JEV footer) are small and low-contrast but still readable."
+    ]
+  }
+}

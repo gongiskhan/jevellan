@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The attach command in the footer is cut off with an ellipsis ('jevellan thread attach thread_01M48JR4SPBCFK1…'). The copy button and the full thread ID in the top banner still make it usable.",
-      "The large empty gap between the report card and the footer notice makes the layout look sparse."
+      "The 'jevellan thread attach thread_01M4GF7JJ4EVWZS2…' command at the bottom is cut off with an ellipsis. The copy button next to it is still visible, and the full thread ID appears in the notice near the top.",
+      "The thread ID in the top notice wraps onto its own line, which makes it a little harder to read."
     ]
   }
 }

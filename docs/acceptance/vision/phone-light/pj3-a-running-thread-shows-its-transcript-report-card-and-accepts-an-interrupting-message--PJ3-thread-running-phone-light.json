@@ -10,11 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Read through the project an…'). It's still readable and the full prompt appears below.",
-      "The 'Working on turn 1…' status text ends in an ellipsis; this may be a loading indicator or the text may be cut off.",
-      "The terminal attach command is cut off ('thread_01M48JAS3BWCPVJ…'), but the copy button next to it gives access to the full command.",
-      "There's a large empty gap between the last tool card and the composer area.",
-      "No report card is visible in this capture. This could be expected while the thread is still running; it's judged in another step."
+      "The thread title in the header ends in an ellipsis ('Read through the project an...'). The full task text appears in the Prompt card.",
+      "The take-over command 'jevellan thread attach thread_01M4GF20DKXQBS4N…' is cut off with an ellipsis. The copy button next to it still works, so this does not block use.",
+      "The 'Working on turn 1...' status line and the 'Interrupt current turn' checkbox are small and close together, but both can be read and used."
     ]
   }
 }

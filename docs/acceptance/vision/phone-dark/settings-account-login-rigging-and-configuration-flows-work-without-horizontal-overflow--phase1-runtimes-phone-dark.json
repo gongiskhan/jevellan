@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fourth tab in the top tab strip is cut off behind the scroll-arrow button. It still looks reachable by scrolling.",
-      "The Claude Code device list ends with the note 'Codex sign-ins are kept per device for now.' This looks like copy meant for the Codex section only.",
-      "The long 'Login recovery <uuid>' account names wrap onto two lines, which makes the cards heavier but still readable."
+      "The settings tab strip cuts off the fourth tab at the right edge, leaving only a partial icon visible. This looks like an intentional horizontal-scroll strip with a '>' scroll button, so it's not blocking.",
+      "Long account names such as 'Login recovery 2478e71e-7edd-4865-8bf9-5f5eb1c7269f' wrap onto two lines and look dense, but they stay fully readable.",
+      "The usage values ('Unknown') and the progress tracks are low-contrast against the dark background, but they're still legible."
     ]
   }
 }

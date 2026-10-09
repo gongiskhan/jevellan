@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal body is scrolled partway down, so the start of the diff block and the content above it are clipped at the modal header. This looks like normal scroll overflow, not lost content.",
-      "The red error banner at the bottom ('These files changed since your review. Review changes again.') sits below the Continue and Refresh changes buttons, so it is easy to miss next to the controls it affects.",
-      "'Open work' is shown as a bare pink text link under the button row. It stays readable, but it does not match the style of the pill-shaped buttons."
+      "The modal body is scrolled, so the start of the diff block is hidden under the modal header. The scroll position doesn't make clear that there is more diff content above.",
+      "The 'These files changed since your review' error appears while the Continue button still looks fully enabled, which may suggest Continue still works."
     ]
   }
 }

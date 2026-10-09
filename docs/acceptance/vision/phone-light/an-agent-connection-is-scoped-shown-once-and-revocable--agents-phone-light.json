@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "an agent connection is scoped, shown once, and revocable",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/mcp-agents-phone-light.png",
+  "expected": "the Jevellan web app \"agents\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"an agent connection is scoped, shown once, and revocable\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The settings tab strip cuts off 'Projects' and 'Configura…' at the edges. It scrolls sideways and has arrow buttons, so both tabs can still be reached.",
+      "In the configuration JSON, the line '\"Authorization\": \"Bearer <connection token>\"' wraps, which puts '<connection token>' at the left edge and breaks the indentation. It's still readable.",
+      "The 'Active' badge sits on its own line under the connection name instead of next to it.",
+      "The 'Expires Oct 16, 2026, 2:20 PM' text breaks across two lines in the middle of the date."
+    ]
+  }
+}

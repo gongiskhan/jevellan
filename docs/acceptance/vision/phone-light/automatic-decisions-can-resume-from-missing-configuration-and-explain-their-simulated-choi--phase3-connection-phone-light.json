@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Effort guide inputs (high, xhigh, max, and to a lesser degree low) clip their text at the right edge of the field; you can still read the full text by scrolling inside the field.",
-      "The Routing profile textarea is cut off at the bottom of its visible area; the rest is reachable by scrolling inside the textarea.",
-      "The tab strip cuts off its neighbouring tabs ('…s' and 'Improve…') at the edges; scroll arrows are present.",
-      "The 'Jev key saved.' toast sits near the page footer but doesn't cover any controls."
+      "The tab strip cuts off the labels at both edges (the first tab shows only 's' and 'Improve' is partly hidden). The scroll arrows still let you reach every tab.",
+      "The Effort guide fields cut off their text on one line (low, high, xhigh, max). The full text is only visible by scrolling inside each field.",
+      "The Routing profile text box cuts its last line off at the bottom edge. The box scrolls, so the text is still reachable.",
+      "The 'Jev key saved.' message sits close under the footer note 'Saving creates a configuration revision.' It doesn't visibly overlap anything, but it could be covering a Save button if one is there.",
+      "The Jev key field and the 'Test connection' button are packed tightly together, with almost no space between them."
     ]
   }
 }

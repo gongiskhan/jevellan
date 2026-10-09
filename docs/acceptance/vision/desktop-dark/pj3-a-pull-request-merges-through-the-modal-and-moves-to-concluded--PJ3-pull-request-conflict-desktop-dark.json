@@ -10,11 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The title of the running thread in the right panel ('Read through the project and list what each file is ...') is cut off with an ellipsis and has no visible way to expand it.",
-      "Session titles and metadata in the sidebar ('Context · J11 memory journ...', 'Done · Improver sandbox · dev-ma...') are cut off with ellipses.",
-      "The coordinator's 'Noted.' reply repeats many times in the transcript, which adds visual noise.",
-      "The 'Merge' button on the PR card looks muted while the 'Conflicts' badge is showing, so it's unclear whether it can be clicked.",
-      "The transcript shows both 'Checks failing' and 'Checks passing' events for PR #1, one after the other, which may confuse readers (the badge correctly reads 'Checks passing')."
+      "The running-thread title in the right panel ('Read through the project and list what each file is fo…') is truncated with an ellipsis. The full title appears in the transcript, so this is intended truncation.",
+      "Sidebar session titles and metadata ('Context · Mesh journey fix…', 'Mac.l…', 'M…') are truncated with ellipses.",
+      "There are several repeated 'Noted.' lines in the transcript, including two in a row at the bottom.",
+      "The Merge button in the pull request card has low contrast compared with 'Open on GitHub', so it may look disabled. This is probably intentional because the pull request has conflicts.",
+      "The 'Shell sessions' toggle switch is bright pink and stands out from the dark theme."
     ]
   }
 }

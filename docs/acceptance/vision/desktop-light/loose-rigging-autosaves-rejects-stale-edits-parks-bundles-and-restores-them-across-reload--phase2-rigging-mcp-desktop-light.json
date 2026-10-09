@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The file label says config.toml, but the content editor shows JSON. This could confuse users, though it may be intentional.",
-      "The Saved status and the Preview link are spaced far apart on the same row, so the Preview link is easy to miss.",
-      "The success message 'Item restored to this account.' sits at the bottom of the modal with a large gap above it. It's readable, but it looks detached from the content."
+      "The file label says config.toml, but the editor shows JSON. This might be intended (a normalized view of the MCP entry), but users could find it confusing.",
+      "The success banner 'Item restored to this account.' sits below the helper text, with a lot of empty space above it. This is fine, but the banner could be placed more tightly."
     ]
   }
 }

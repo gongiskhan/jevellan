@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Claude Code card's device list ends with the note 'Codex sign-ins are kept per device for now'. That note seems to belong to Codex, not Claude Code.",
-      "The 'Five hours' and 'Week' usage bars are empty and barely visible against the dark background.",
-      "Long conversation titles and subtitles in the sidebar are cut off with an ellipsis, which looks intentional.",
-      "The 'Log in on Offline fixture' links are greyed out and hard to read, which looks intentional for offline devices."
+      "The 'Five hours' and 'Week' usage bars are very faint and hard to see against the dark background",
+      "The 'Log in on Offline fixture' links are greyed out with low contrast, which is probably intended because that device is offline",
+      "Sidebar conversation subtitles are cut off with ellipses, which is the intended single-line truncation"
     ]
   }
 }

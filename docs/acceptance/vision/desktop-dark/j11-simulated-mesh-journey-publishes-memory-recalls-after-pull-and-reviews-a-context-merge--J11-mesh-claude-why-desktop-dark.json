@@ -1,19 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/J11-mesh-claude-why-desktop-dark.png",
-  "expected": "the Jevellan web app \"mesh claude why\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The sidebar conversation list clips a fourth item at about y≈712. Only a sliver of its title shows, just above the 'Some native sessions are unavailable' line. It looks like scroll overflow, but nothing on screen shows that the list can scroll.",
-      "The account list in the right 'Why this step' panel runs past the bottom of the viewport, cutting off the last visible row ('J8 Codex account: unsupported'). The panel appears to scroll, so this is expected overflow.",
-      "Long conversation titles and subtitles in the sidebar are cut off with an ellipsis (for example 'Remember that this proje…' and 'J8: implement after the o…'). This is intended, but the full text can't be read without hovering or opening the conversation.",
-      "The right panel repeats the warning 'Jev is unavailable (authentication failed). Pick the next step:' but has no controls of its own. The controls are in the main column, so the repeated warning is a bit redundant."
-    ]
-  }
+  "expected": "the Jevellan web app \"mesh claude why\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\"; the other steps are judged in their own screenshots)"
 }

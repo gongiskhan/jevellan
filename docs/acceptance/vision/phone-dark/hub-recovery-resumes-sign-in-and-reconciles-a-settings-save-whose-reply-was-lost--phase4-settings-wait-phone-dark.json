@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fixed 'Can't reach the hub' banner sits over the bottom of the Guards form. 'Pause after a plan' is still visible just above it, but whatever comes after it is covered at this scroll position. Check that the page has enough bottom padding to scroll everything clear of the banner.",
-      "The scroll arrows clip the tab labels at both ends ('es' on the left, 'Improve' on the right). This is expected for a horizontally scrolling tab bar.",
-      "The textarea at the top is partly hidden under the sticky tab bar, so its text is cut off. This comes from the scroll position, not the layout."
+      "The floating 'Can't reach the hub' banner sits over the bottom of the Guards card. It covers the card's bottom border and sits just below the 'Pause after a plan' checkbox, which is still visible. Anything further down is hidden until you scroll. Adding bottom padding equal to the banner's height would keep the last controls clear of it.",
+      "The tab strip cuts off the labels at both edges ('…es' on the left, 'Improve…' on the right). The scroll arrows suggest this is intended overflow.",
+      "The textarea at the top is partly scrolled out of view, so its text is cut off at the top edge. That's normal for a scrolled page."
     ]
   }
 }

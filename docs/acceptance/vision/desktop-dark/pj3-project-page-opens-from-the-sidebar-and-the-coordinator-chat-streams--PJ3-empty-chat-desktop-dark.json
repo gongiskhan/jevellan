@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Thread titles in the sidebar are cut off with an ellipsis ('Context · J11 memory jour…', 'Context · Mesh journey fix…'). The ellipsis looks intentional, but the full titles can't be read.",
-      "The meta lines under sidebar threads are cut off ('dev-ma…', 'de…'), so the device names are hidden.",
-      "The tiny monospace labels ('Codex · GPT · high · Worktree · Browser member', 'Claude Code Fable · high') have fairly low contrast against the dark background.",
-      "The empty-chat prompt in the center is muted gray. It's readable but has lower contrast than the other main text."
+      "Sidebar thread titles and metadata lines are cut off with ellipses (e.g. 'Context · Mesh journey fix…', 'Mac.l…'). The truncation looks intentional, but it hides device and project names.",
+      "The sidebar footer has a lot of empty space above 'Some native sessions are unavailable', so the sidebar looks sparse.",
+      "The thread metadata line in the Concluded panel ('Codex · GPT · high · Worktree · Browser member') uses small, low-contrast monospace text. It is still readable."
     ]
   }
 }

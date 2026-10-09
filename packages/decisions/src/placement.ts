@@ -15,6 +15,9 @@ export const MAIN_NOT_AVAILABLE = 'Main isolation is not available yet.';
 export const REMOTE_NOT_AVAILABLE = 'Threads run only on this device for now.';
 export const UNKNOWN_PLACEMENT_MODEL = 'Choose a model from the configuration.';
 export const UNKNOWN_PLACEMENT_DEVICE = 'Choose a registered device.';
+export const UNKNOWN_PLACEMENT_RUNTIME = 'Choose an installed runtime.';
+export const UNKNOWN_PLACEMENT_ACCOUNT = 'Choose a registered account.';
+export const PLACEMENT_ACCOUNT_RUNTIME = 'The selected account does not belong to the selected runtime.';
 export const REMOTE_GATE_REASON = 'not available until remote threads exist';
 export const NOT_CHOSEN_REASON = 'not chosen';
 /** The fallback error when Jev chose main with a model that no main checkout can run (D250). */
@@ -43,7 +46,7 @@ export type PlacementDevice = {
   /** Title of the running main thread or conversation owner holding this device's checkout. */
   mainBlockedBy?: string | undefined;
 };
-export type PlacementFixed = { isolation?: Isolation | undefined; modelId?: string | undefined; effort?: Effort | undefined; deviceId?: string | undefined };
+export type PlacementFixed = { isolation?: Isolation | undefined; runtimeId?: string | undefined; accountId?: string | undefined; modelId?: string | undefined; effort?: Effort | undefined; deviceId?: string | undefined };
 export type PlacementRuntime = RuntimeSupport & { turns: boolean; displayName: string };
 /** Capabilities that later phases build; the Projects placement lifts each gate in its phase (D88). */
 export type PlacementGates = { mainIsolation: boolean; remoteDevices: boolean };
@@ -71,6 +74,8 @@ export type PlacementOptions = {
 export type PlacementCandidates = PlacementOptions & { isolations: Isolation[]; atLimit: boolean; main?: PlacementOptions };
 
 function modelReason(input: PlacementInput, model: ModelOption): string | undefined {
+  const accountRuntime = input.fixed.accountId && input.accounts.find((account) => account.id === input.fixed.accountId)?.runtime;
+  if (input.fixed.runtimeId !== undefined && model.runtime !== input.fixed.runtimeId || accountRuntime && model.runtime !== accountRuntime) return NOT_CHOSEN_REASON;
   if (input.fixed.modelId !== undefined && model.id !== input.fixed.modelId) return NOT_CHOSEN_REASON;
   if (!model.enabled) return model.unavailableReason?.trim().replace(/\.$/, '') || 'disabled in Settings';
   if (!input.settings.runtimes[model.runtime]?.enabled) return 'runtime disabled';
@@ -92,7 +97,7 @@ function deviceReason(input: PlacementInput, device: PlacementDevice, main: bool
 
 function ranking(input: PlacementInput, model: ModelOption, deviceId: string): RankedAccount[] {
   return rankAccounts({ accounts: input.accounts, statuses: input.statuses, runtime: model.runtime, model: model.model, deviceId, now: input.now })
-    .filter((entry) => entry.account.runtime === model.runtime);
+    .filter((entry) => entry.account.runtime === model.runtime && (input.fixed.accountId === undefined || entry.account.id === input.fixed.accountId));
 }
 
 type Evaluation = PlacementOptions & { gaps: Exclusion[] };
@@ -138,6 +143,12 @@ function refusal(input: PlacementInput, evaluation: Evaluation): string {
 /** Candidate isolations, models and devices for a new thread (brief 10, D8, D9, D37, D65, D71, D88), or the refusal text. */
 export function placementCandidates(input: PlacementInput): PlacementCandidates | { refused: string } {
   const { fixed } = input;
+  if (fixed.runtimeId !== undefined && !input.runtimes.has(fixed.runtimeId)) return { refused: UNKNOWN_PLACEMENT_RUNTIME };
+  const account = fixed.accountId === undefined ? undefined : input.accounts.find((entry) => entry.id === fixed.accountId);
+  if (fixed.accountId !== undefined && !account) return { refused: UNKNOWN_PLACEMENT_ACCOUNT };
+  const model = input.settings.menu.find((entry) => entry.id === fixed.modelId);
+  if (account && (fixed.runtimeId !== undefined && account.runtime !== fixed.runtimeId || model && account.runtime !== model.runtime)) return { refused: PLACEMENT_ACCOUNT_RUNTIME };
+  if (model && fixed.runtimeId !== undefined && model.runtime !== fixed.runtimeId) return { refused: 'The selected model does not belong to the selected runtime.' };
   if (fixed.modelId !== undefined && !input.settings.menu.some((model) => model.id === fixed.modelId)) return { refused: UNKNOWN_PLACEMENT_MODEL };
   if (fixed.deviceId !== undefined && !input.devices.some((device) => device.id === fixed.deviceId)) return { refused: UNKNOWN_PLACEMENT_DEVICE };
   if (fixed.isolation === 'main' && !input.gates.mainIsolation) return { refused: MAIN_NOT_AVAILABLE };
@@ -184,7 +195,7 @@ export function placementDevices(input: Pick<PlacementInput, 'devices'>, options
   return { devices: options.devices.filter((device) => model.devices.includes(device.id)), excluded: excluded.sort((a, b) => order(a.deviceId) - order(b.deviceId)) };
 }
 
-const FIXED_KEYS = { isolation: 'isolation', model: 'modelId', effort: 'effort', device: 'deviceId' } as const satisfies Record<PlacementField, keyof PlacementFixed>;
+const FIXED_KEYS = { isolation: 'isolation', runtime: 'runtimeId', account: 'accountId', model: 'modelId', effort: 'effort', device: 'deviceId' } as const satisfies Record<PlacementField, keyof PlacementFixed>;
 export function fixedPlacementFields(fixed: PlacementFixed): PlacementField[] {
   return (Object.keys(FIXED_KEYS) as PlacementField[]).filter((field) => fixed[FIXED_KEYS[field]] !== undefined);
 }

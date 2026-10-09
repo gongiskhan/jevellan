@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal body is scrolled, so the 'Path on Offline fixture' label sits right under the dialog header with almost no top padding.",
-      "The 'Browse folders on dev-madrid' button nearly touches the 'Git policy' label below it, leaving uneven vertical spacing compared with the other form groups.",
-      "The memory settings appear as a section inside the 'Edit Public memory fixture' project dialog, not as a separate memory settings screen. The public-repository notice, the 'Keep project memory' select and the 'Memory folder' field are all visible and readable."
+      "The modal body is scrolled, so the 'Path on Offline fixture' label sits right against the header divider and the fields above it are out of view. They can still be reached by scrolling.",
+      "There is almost no space between the 'Browse folders on Mac.lan' button and the 'Git policy' label below it. The other fields have more space between them.",
+      "The 'Allowed devices' checkbox list has a lot of empty space at the bottom of its box."
     ]
   }
 }

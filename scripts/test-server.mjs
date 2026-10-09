@@ -339,6 +339,12 @@ const application = new Application({ homes: new Homes(join(root, 'user', '.jeve
   }
   return new Map([['claude', claude], ['codex', codex]]);
 } });
+// Memory care belongs to the completed sandbox fixture, so startup must not queue jobs for the projects being seeded.
+{
+  const current = application.hub.configuration.current();
+  current.configuration['x-jevellan'].improver.memory.enabled = false;
+  application.hub.configuration.put(current.configuration, current.revision, { deviceId: application.device.deviceId, source: 'install' });
+}
 const git = (cwd, ...args) => execFileSync('git', args, { cwd, stdio: 'ignore' });
 const origin = join(root, 'origin.git'); git(root, 'init', '--bare', '-b', 'main', origin);
 const projectPath = join(root, 'project'); git(root, 'clone', origin, projectPath); git(projectPath, 'config', 'user.name', 'Fixture'); git(projectPath, 'config', 'user.email', 'fixture@example.invalid');
@@ -559,6 +565,7 @@ await application.conversations.saveProject({ schema: 'project-write-v1', revisi
   const current = application.hub.configuration.current(); const settings = current.configuration['x-jevellan'].improver;
   settings.schedule.enabled = false;
   for (const row of await application.state.projects.list()) if (row.project.id !== 'improver_sandbox') settings.memory.projects[row.project.id] = false;
+  settings.memory.enabled = true;
   application.hub.configuration.put(current.configuration, current.revision, { deviceId: application.device.deviceId, source: 'install' });
 }
 const correction = (group, n, action, from, to) => {

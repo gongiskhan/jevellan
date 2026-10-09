@@ -390,24 +390,26 @@ export function overrideReady(view: Pick<ThreadView, 'placement' | 'canOverride'
 }
 
 /** The p-v1 question Jev answers for each placement field (brief 10). */
-export const PLACEMENT_QUESTIONS = { isolation: 'isolation', model: 'pick_model', effort: 'effort', device: 'device' } as const satisfies Record<PlacementField, string>;
+export const PLACEMENT_QUESTIONS: Partial<Record<PlacementField, string>> = { isolation: 'isolation', model: 'pick_model', effort: 'effort', device: 'device' };
 export type FieldSource = keyof typeof copy.FIELD_SOURCES;
 export type WhyField = { field: PlacementField; value: string; source: FieldSource; bars: Array<{ option: string; p: number; chosen: boolean }> };
 const fieldValue = (placement: PlacementRecord, field: PlacementField): string =>
-  field === 'isolation' ? placement.isolation : field === 'model' ? placement.modelId : field === 'effort' ? placement.effortRequested : placement.deviceId;
+  field === 'isolation' ? placement.isolation : field === 'runtime' ? placement.runtime : field === 'account' ? placement.accountId : field === 'model' ? placement.modelId : field === 'effort' ? placement.effortRequested : placement.deviceId;
 /**
  * The Why panel, field by field (12.3, D255): Jev's distribution for each question it answered, highest first, with the value the
  * thread holds now marked. A value that is not Jev's top option was changed by the owner from the next turn (the record keeps
  * Jev's probabilities, D252). Fields Jev was not asked were fixed, the only option left, or the fallback rule's.
  */
 export function whyFields(placement: PlacementRecord): WhyField[] {
-  return PlacementFieldSchema.options.map((field) => {
+  return PlacementFieldSchema.options.filter((field) => !['runtime', 'account'].includes(field) || placement.fixed.includes(field)).map((field) => {
     const value = fieldValue(placement, field);
-    const answered = placement.probabilities?.[PLACEMENT_QUESTIONS[field]];
+    const question = PLACEMENT_QUESTIONS[field];
+    const answered = question ? placement.probabilities?.[question] : undefined;
     const bars = Object.entries(answered ?? {}).sort((a, b) => b[1] - a[1]).map(([option, p]) => ({ option, p, chosen: option === value }));
     const top = Math.max(...bars.map((bar) => bar.p));
-    const source: FieldSource = placement.fixed.includes(field) ? 'fixed'
-      : answered ? (answered[value] ?? -1) < top ? 'changed' : 'jev'
+    const source: FieldSource = answered && (answered[value] ?? -1) < top ? 'changed'
+      : placement.fixed.includes(field) ? 'fixed'
+      : answered ? 'jev'
       : placement.source === 'fallback' ? 'fallback' : 'only';
     return { field, value, source, bars };
   });

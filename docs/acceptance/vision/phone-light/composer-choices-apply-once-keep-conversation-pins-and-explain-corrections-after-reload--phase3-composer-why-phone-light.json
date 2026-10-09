@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The list starts at 'Test' right under the header with no top padding, so earlier rows (e.g. Plan/Implement) may be scrolled out of view or clipped under the header.",
-      "The last correction entry ('Just override · effort: high → max') is cut off at the bottom of the screen, with its description line only partly visible. This looks like scrollable sheet content rather than a broken layout.",
-      "All score bars show 0.00 and are empty, so the bar chart tells the reader nothing.",
-      "There is no section heading above the score rows, so it isn't clear what the numbers mean."
+      "The 'Adversarial Revi...' label is truncated with an ellipsis in the score list.",
+      "The panel is scrolled, so score rows above 'Test' sit out of view under the header. The last correction ('Just override · effort: high → max') is cut off at the bottom edge, though the content looks scrollable.",
+      "Every score bar shows 0.00 with an empty track, so the score section carries little visual information."
     ]
   }
 }

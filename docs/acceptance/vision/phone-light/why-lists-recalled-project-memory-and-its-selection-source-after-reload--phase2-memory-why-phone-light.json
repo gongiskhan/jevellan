@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The panel is scrolled, so a line of text at the top (pink 'high'-like text just below the 'step 1 · reply / Why this step' header) is partly hidden under the sticky header. The memory section it overlaps with is still fully visible.",
-      "The 'Jev is unavailable (no key configured). Pick the next step:' notice is followed by empty space, with no step choices shown below it. The choices may simply be scrolled out of view."
+      "The word 'high' sits alone just under the header with no label, so it may be the end of a line that scrolled under the sticky header.",
+      "The orange notice ends with 'Pick the next step:' but no choices follow it in this panel.",
+      "The two 'Login recovery <UUID>: eligible' lines wrap long IDs onto a second line. They are still readable."
     ]
   }
 }

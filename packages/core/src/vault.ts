@@ -31,6 +31,9 @@ export class SecretVault {
     chmodSync(keyPath, 0o600);
     this.#key = readFileSync(keyPath);
     if (this.#key.length !== 32) throw new Error('Invalid vault key length.');
+    // Output can be read before a new launch after restart. Restore the redaction registry from the
+    // existing encrypted envelopes so cumulative snapshots remain protected at that first read.
+    if (this.redactor) for (const row of db.prepare('SELECT id FROM secrets').all()) this.forLaunch(String(row.id));
   }
   put(id: string, value: string): SecretSummary {
     IdSchema.parse(id);

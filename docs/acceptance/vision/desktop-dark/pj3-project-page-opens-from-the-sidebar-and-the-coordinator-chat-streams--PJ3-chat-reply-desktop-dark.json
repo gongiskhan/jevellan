@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Two sidebar shell-session titles ('Context · J11 memory jour…', 'Context · Mesh journey fix…') and their status lines are cut off with an ellipsis. The ellipsis looks intentional, but the full titles can't be read.",
-      "The small grey monospace metadata text is low contrast against the dark background (e.g. 'Claude Code · Fable · high · Worktree · dev-madrid', 'Codex · GPT · high · Worktree · Browser member', 'v0.1.0'). It is still readable.",
-      "The 'Idle' badge in the header doesn't match the right panel, which shows 'Add a greeting' as running."
+      "Sidebar session titles and metadata are cut off with ellipses ('Context · Mesh journey fix…', 'Done · Mesh journey fixture · M…', 'Mac.l…'). The key parts are still readable.",
+      "Most of the chat area is empty space between the first reply and the composer. This is expected while the coordinator is still working.",
+      "The 'Working…' status badge has small monospace text that is hard to read against the dark background."
     ]
   }
 }

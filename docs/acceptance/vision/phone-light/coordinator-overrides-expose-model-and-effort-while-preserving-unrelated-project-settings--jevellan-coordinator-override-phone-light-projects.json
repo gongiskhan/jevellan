@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "Coordinator overrides expose model and effort while preserving unrelated project settings",
+  "layout": "phone-light",
+  "screenshot": "/tmp/jevellan-coordinator-override-phone-light-projects.png",
+  "expected": "the Jevellan web app \"jevellan coordinator override projects\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"Coordinator overrides expose model and effort while preserving unrelated project settings\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The background chat is blurred behind the modal overlay. That's expected for a modal, but none of the background content can be read.",
+      "The modal sits partway down a very tall full-page capture (about 815–1185px of 2000px displayed), so most of the screenshot is the blurred background."
+    ]
+  }
+}

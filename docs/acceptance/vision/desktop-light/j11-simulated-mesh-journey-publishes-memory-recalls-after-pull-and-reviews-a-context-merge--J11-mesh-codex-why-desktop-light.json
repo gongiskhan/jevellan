@@ -1,19 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/J11-mesh-codex-why-desktop-light.png",
-  "expected": "the Jevellan web app \"mesh codex why\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "Right 'Why this step' panel's account list is cut off at the bottom edge ('Login fixture: unsupported' only partly visible); it looks like a scrollable panel, so the content can still be reached",
-      "Sidebar conversation list cuts off the fourth entry ('J8 ...') above 'Some native sessions are unavailable'; it looks like a scroll overflow",
-      "Conversation titles and subtitles in the sidebar are truncated with ellipses ('Explain how to write a Vit…', 'J11 memory jou…')",
-      "The amber 'Jev is unavailable (authentication failed)' notice appears twice: in the Why panel and in the main step picker"
-    ]
-  }
+  "expected": "the Jevellan web app \"mesh codex why\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\"; the other steps are judged in their own screenshots)"
 }

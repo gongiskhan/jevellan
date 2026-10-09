@@ -10,8 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fourth conversation in the sidebar list ('...external activity...') is partly cut off at the bottom edge of the scrollable list, directly above 'Some native sessions are unavailable'. It looks like normal scroll clipping, not an overlap.",
-      "Conversation titles and subtitles in the sidebar are shortened with ellipses (e.g. 'J8: run on device B while ...', 'Recovery 39a800d3-e8c...'), so the full text isn't visible without hovering or opening them."
+      "The fourth conversation in the sidebar list is cut off at the bottom edge of the scroll area, so its title is only partly visible. The list scrolls, so it can still be reached.",
+      "Sidebar conversation titles and subtitles are cut short with ellipses (e.g. 'J8: run on device B while I ...', 'Recovery 38b9cb76-f390-...').",
+      "The status labels disagree: the sidebar row says 'Ready' while the header badge says 'Working' for the same conversation.",
+      "There's a large empty gap between the 'The user corrected this step.' banner and the 'Saving this step' footer."
     ]
   }
 }

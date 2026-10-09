@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Session subtitle 'Done · Mesh journey fixture · dev-mad…' is cut off with an ellipsis (intentional overflow handling, and the full name still shows in the title)",
-      "The main content behind the drawer overlay is partly visible and clipped, which is expected for a phone sidebar drawer",
-      "The 'Some native sessions are unavailable' row is in low-contrast muted text"
+      "The session subtitle 'Done · Mesh journey fixture · Mac.l…' is cut off with an ellipsis. This looks intentional and the host name still appears in full in the other rows.",
+      "The main view shows through faintly on the right edge behind the drawer. This is expected for an overlay drawer but looks slightly cluttered."
     ]
   }
 }

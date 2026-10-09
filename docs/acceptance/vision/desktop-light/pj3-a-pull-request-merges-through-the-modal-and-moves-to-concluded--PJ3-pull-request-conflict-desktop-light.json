@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Merge' button on the PR card is grey and looks disabled next to the 'Conflicts' badge, but it's still visible. If it is meant to be disabled, nothing on screen explains why.",
-      "Long titles end in '…' in the Running list ('Read through the project and list what each file is …') and in the sidebar session rows ('Context · J11 memory jour…', 'Done · Improver sandbox · dev-ma…'). These are intentional cuts and the meaning stays clear.",
-      "The coordinator transcript repeats many 'Noted.' replies, which adds vertical noise.",
-      "The PR card shows the green 'Checks passing' badge right next to the red 'Conflicts' badge, which can be slightly confusing to read."
+      "The title of the running thread in the right panel is cut off with an ellipsis ('Read through the project and list what each file is fo…'). The full title still shows in the conversation feed.",
+      "Sidebar shell session titles and metadata are cut off with ellipses ('Context · Mesh journey fix…', 'Mac.l…').",
+      "Two 'Noted.' replies appear one after the other at the end of the conversation feed, which looks redundant.",
+      "The Merge button on the pull request card is greyed out, presumably because of the conflict. It is low contrast but still readable."
     ]
   }
 }

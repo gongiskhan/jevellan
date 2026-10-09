@@ -21,6 +21,8 @@ export function routingGroups(records: CorrectionRecord[], now: number, suppress
     if (record.schema === 'composer-override-v1' && record.status !== 'applied') continue;
     if (!record.workId || !record.decisionId || !record.action || !record.context) continue;
     for (const change of record.changes) {
+      // Resource availability is not a learned action/model/effort preference.
+      if (change.field === 'runtime' || change.field === 'account') continue;
       if (change.from === change.to) continue;
       const key = RoutingGroupKeySchema.parse({ ...change, ...(change.field === 'action' ? {} : { action: record.action }) });
       const id = `routing_${createHash('sha256').update(stableJson(key)).digest('hex')}`;

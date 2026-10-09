@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The terminal attach command 'jevellan thread attach thread_01M48GVZ17T8JT5…' is cut off with an ellipsis. A copy button sits next to it, so the full command is still reachable, but the whole thread ID isn't visible on screen.",
-      "The metadata line breaks awkwardly at phone width: 'Projects Claude ·' wraps onto its own line, leaving a stray trailing separator."
+      "The attach command in the footer ('jevellan thread attach thread_01M4GD24TDEWEC2H…') is cut off with an ellipsis. It looks intentional, and the copy button next to it still gives you the full command.",
+      "Most of the screen between the report card and the composer is empty."
     ]
   }
 }

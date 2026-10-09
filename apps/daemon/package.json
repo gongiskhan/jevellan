@@ -11,6 +11,8 @@
     }
   },
   "dependencies": {
+    "@jevellan/agent-mcp": "0.1.0",
+    "@modelcontextprotocol/sdk": "1.30.1",
     "@jevellan/core": "0.1.0",
     "@jevellan/accounts": "0.1.0",
     "@jevellan/runtime-contract": "0.1.0",

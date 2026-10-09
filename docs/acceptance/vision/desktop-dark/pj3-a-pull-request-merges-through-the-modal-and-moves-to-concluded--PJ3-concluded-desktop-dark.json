@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The running thread title in the right panel ('Read through the project and list what each file is …') and the sidebar session titles and metadata ('Context · J11 memory journ…', 'Done · Improver sandbox · dev-ma…') are cut off with ellipses. The cut-off is intentional and the text is still readable.",
-      "The conversation shows many 'Noted.' replies one after another, sometimes two in a row. This adds visual clutter.",
-      "The 'Some native sessions are unavailable' note at the bottom of the sidebar is small, low-contrast text."
+      "Long titles in the right panel's Running list and the sidebar's Shell sessions list are cut short with an ellipsis (e.g. 'Read through the project and list what each file is fo…', 'Context · Mesh journey fix…'). This is intentional truncation and does not block anything.",
+      "The coordinator thread repeats 'Noted.' many times, including twice in a row after the conflicts card, which adds visual noise.",
+      "The thread shows both 'Checks failing' and 'Checks passing' cards for pull request #1 one after the other with no explanation, which may confuse readers but does not affect layout."
     ]
   }
 }

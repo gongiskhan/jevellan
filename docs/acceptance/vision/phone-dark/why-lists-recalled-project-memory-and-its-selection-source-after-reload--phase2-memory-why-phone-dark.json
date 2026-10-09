@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "A pink text fragment ('mgn') is partly hidden under the sticky header at the top. It looks like content that was scrolled under the header, not a layout defect.",
-      "The long 'Login recovery <uuid>' account lines wrap onto two lines, which makes that list a little uneven."
+      "The panel is scrolled, so a row above 'high' is cut off by the sticky header. Scrolling reaches it, so nothing is lost.",
+      "The long 'Login recovery <uuid>: eligible' rows wrap onto two lines.",
+      "The JEV section's monospace text is small and low-contrast but still readable."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'dev-ma…'), but this is standard truncation and the items stay identifiable",
-      "The metadata line under the title ('Claude Code · Opus · low effort · …') is small, low-contrast monospace text",
-      "Much of the space between the last report and the 'thread has ended' footer is empty"
+      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · Mesh journey fix…', 'Done · J11 memory journey · Mac…'), but they're still readable",
+      "There's a lot of empty space between the last report card and the 'This thread has ended' footer",
+      "The 'Restarted as thread_…' link is a long raw ID, which makes it hard to scan"
     ]
   }
 }

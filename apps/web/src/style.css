@@ -375,6 +375,17 @@ input[type="range"] { accent-color: var(--jev); padding: 0; border: 0; backgroun
 .compact-label { margin: 0; }
 .card > .compact-label { max-width: 320px; margin-bottom: 4px; }
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0 16px; }
+.agent-projects { border: 1px solid var(--edge); border-radius: 8px; margin: 8px 0 16px; padding: 12px; }
+.agent-projects .checkbox-label { display: flex; align-items: center; gap: 8px; }
+.agent-issued { margin-top: 24px; border-top: 1px solid var(--edge); padding-top: 16px; }
+.agent-connections { list-style: none; margin: 0; padding: 0; }
+.agent-connections li { display: flex; align-items: start; justify-content: space-between; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--edge); }
+.agent-connections li:last-child { border-bottom: 0; }
+.agent-connections li > div { min-width: 0; }
+.agent-connections .chip { margin-left: 12px; }
+.agent-connections p { margin: 6px 0; }
+.agent-config { white-space: pre-wrap; overflow-wrap: anywhere; }
+.agent-stdio { margin-top: 24px; }
 .inline-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; }
 .inline-form label { flex: 1 1 220px; margin: 0; }
 .saved-secret { font-family: var(--font-mono); font-size: 12px; color: var(--ink-2); }

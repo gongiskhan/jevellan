@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The evidence image preview in the right panel is a small thumbnail (~100x65px) with a lot of empty space below it, so the image content is hard to make out at this size.",
-      "The sidebar conversation list cuts off a partial row at its bottom edge (around y≈710, above 'Some native sessions are unavailable'). It reads as scroll overflow but looks like stray marks.",
-      "The scrolled main column shows the top of the previous step's card ('Step details · 1 finding') tight against the sticky header, with no visual separation."
+      "The evidence image preview in the right panel is a very small thumbnail (about 96px wide) with a lot of empty space below it, so the image content is hard to inspect without opening it.",
+      "The sidebar conversation list cuts off a partially visible fourth row above 'Some native sessions are unavailable', leaving stray text fragments.",
+      "In the message body, the long /private/var/folders/... path wraps across two lines and the following '.' starts its own line ('. The value is now 2…'), which reads awkwardly.",
+      "The recorded checkpoint hash is shown in small, low-contrast monospace text on the dark background."
     ]
   }
 }

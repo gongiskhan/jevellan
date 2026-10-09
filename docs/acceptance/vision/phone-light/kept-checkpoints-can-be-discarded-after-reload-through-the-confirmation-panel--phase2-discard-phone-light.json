@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background behind the scrim (Conversation settings panel) is dimmed and hard to read, which is expected for a modal backdrop",
-      "Large empty dimmed area below the dialog; the dialog sits in the upper half of the screen and isn't vertically centered"
+      "The background settings panel is blurred and dimmed behind the modal. This is normal for a modal, but it makes the content behind it unreadable.",
+      "The dialog title 'Discard this work' doesn't match the main button label 'Discard checkpoints'."
     ]
   }
 }

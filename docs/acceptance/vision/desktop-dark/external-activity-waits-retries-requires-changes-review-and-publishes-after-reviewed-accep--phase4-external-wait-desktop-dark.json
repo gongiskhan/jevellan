@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar, the fourth conversation row is cut off where the conversation list ends, just above the 'Some native sessions are unavailable' line. The list scrolls, so the row can still be reached.",
-      "Conversation titles and subtitles in the sidebar are shortened with an ellipsis (for example, 'Exercise external activity…' and 'External activity fixt…').",
-      "The primary 'Retry' button and the 'Try automatic again' button sit in a vertical stack with a different width and style from each other, so the actions look a little uneven."
+      "Sidebar conversation titles and subtitles are truncated with ellipses (e.g. 'Exercise external activity ...', 'External activity fix...'), but the full title is still readable in the main pane header",
+      "The fourth sidebar conversation row is clipped at the bottom of the scroll area, so only the tops of its letters show; the list scrolls, so it is still reachable",
+      "There are two 'Retry' buttons (one on the user message, one below the error banner), which could confuse users",
+      "The 'Waiting for you' filter badge count '7' sits tight against the label"
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Git policy note is cut off mid-line at the bottom of the scrollable dialog body (\"The original branch is preserved...\"). It looks like a scroll boundary above the sticky footer, not a layout break.",
-      "The 'Path on dev-madrid' input cuts off its long path value. This is normal overflow for a single-line text field.",
-      "The modal's lower part is crowded: the footer buttons and the hub wait banner together take up about a third of the dialog height on this phone viewport, leaving little room for the form."
+      "The orange Git policy notice is cut off mid-sentence ('The original branch is preserved…') where the body meets the sticky footer. The modal body appears to scroll, so the rest can still be read, but nothing on screen shows there is more below.",
+      "The 'Path on Mac.lan' value is cut off on the right inside its input box. This is normal for a single-line text field, but the full path can't be seen.",
+      "The disabled 'Saving…' button uses low-contrast grey text on a pale blue background. It is still readable."
     ]
   }
 }

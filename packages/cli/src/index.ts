@@ -8,6 +8,7 @@ import { createInterface } from 'node:readline/promises';
 import { doctor, doctorLines } from './doctor.js';
 import { installationArguments } from './installation-arguments.js';
 import { attachThread, detachThread } from './thread-attach.js';
+import { serveAgentMcp } from './agent-mcp.js';
 
 function printInstallation(result: Awaited<ReturnType<Installer['install']>>) {
   if (result.changedPort) console.log(`The default port was occupied. Jevellan uses ${result.port}.`);
@@ -27,7 +28,7 @@ async function offerHttps() {
   finally { terminal.close(); }
 }
 
-export async function main(args: string[], options: { installer?: () => Installer; confirmPurge?: (path: string) => Promise<string>; doctor?: typeof doctor; offerHttps?: () => Promise<boolean>; attach?: typeof attachThread; detach?: typeof detachThread } = {}) {
+export async function main(args: string[], options: { installer?: () => Installer; confirmPurge?: (path: string) => Promise<string>; doctor?: typeof doctor; offerHttps?: () => Promise<boolean>; attach?: typeof attachThread; detach?: typeof detachThread; mcpServer?: typeof serveAgentMcp } = {}) {
   if (args[0] === '--version') { console.log(VERSION); return; }
   if (args[0] === 'doctor') {
     if (args.length !== 1) throw new Error('Usage: jevellan doctor');
@@ -45,6 +46,7 @@ export async function main(args: string[], options: { installer?: () => Installe
     return;
   }
   if (args[0] === 'mcp-bridge') { await serveMcpBridge(); return; }
+  if (args[0] === 'mcp-server') { if (args.length !== 1) throw new Error('Usage: jevellan mcp-server (connection details come from the environment).'); await (options.mcpServer ?? serveAgentMcp)(); return; }
   if (args[0] === 'memory-hook') { await serveMemoryHook(); return; }
   if (['install', 'join', 'update', 'rollback', 'uninstall'].includes(args[0] ?? '')) {
     const command = args[0]!, { from, target, purge, https } = installationArguments(command, args.slice(1));
@@ -79,6 +81,6 @@ export async function main(args: string[], options: { installer?: () => Installe
     console.log(`Jevellan is running at ${daemon.addresses.join(' and ')}`);
     return;
   }
-  console.log('Jevellan — Autonomous development, coordinated.\nCommands: install [--from path] [--join hubUrl code] [--https | --no-https], join hubUrl code [--from path] [--https | --no-https], update [--from path], rollback, uninstall [--purge], doctor, start [--port number], thread attach threadId, thread detach threadId, --version');
+  console.log('Jevellan — Autonomous development, coordinated.\nCommands: install [--from path] [--join hubUrl code] [--https | --no-https], join hubUrl code [--from path] [--https | --no-https], update [--from path], rollback, uninstall [--purge], doctor, start [--port number], mcp-server, thread attach threadId, thread detach threadId, --version');
   if (args.length) process.exitCode = 1;
 }

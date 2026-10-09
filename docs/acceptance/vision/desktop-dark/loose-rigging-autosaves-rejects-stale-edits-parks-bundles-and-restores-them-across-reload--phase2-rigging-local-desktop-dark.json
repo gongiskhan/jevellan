@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background page is dimmed and blurred by the modal overlay, which is expected for a modal.",
-      "The 'Saved' status label is low-contrast gray against the dark modal background but still readable."
+      "The notice's dismiss '×' is very small and low-contrast compared with the modal's close button.",
+      "The modal's subtitle line and helper text ('Local edits save automatically on this account.') are small and muted gray, but still readable."
     ]
   }
 }

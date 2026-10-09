@@ -1,19 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "step corrections survive reload and undo launches the requested redo with visible history",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase2-undo-retry-phone-light.png",
-  "expected": "the Jevellan web app \"undo retry\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"step corrections survive reload and undo launches the requested redo with visible history\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The user message bubble at the top is partly scrolled under the sticky header, so its first line is clipped. This comes from the scroll position; the full text still shows in the header subtitle.",
-      "The header title is cut off with an ellipsis ('Change the value to three, then redo this…'), which is expected on a narrow phone screen.",
-      "The error message repeats 'disabled' eight times, which is hard to read and gives no useful detail. Listing each model's name with its reason would be clearer.",
-      "The same 'No model can run this step right now' error appears twice: once in the red banner and again inside the Resume correction card."
-    ]
-  }
+  "expected": "the Jevellan web app \"undo retry\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"step corrections survive reload and undo launches the requested redo with visible history\"; the other steps are judged in their own screenshots)"
 }

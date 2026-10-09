@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip cuts off its edge labels ('ices', 'Configurati'). This looks like intended horizontal scrolling, and the < and > arrows can reach the hidden tabs.",
-      "The 'Save Git settings' button appears disabled with low contrast. This is likely intended because nothing has changed, but it is faint against the background.",
-      "The GitHub token card's 'Saved · updated Oct 6, 2026' line uses a small monospace font that differs from the surrounding text."
+      "The horizontal tab bar cuts off the first tab on the left (\"...vices\" is clipped). It still scrolls, so this doesn't block anything.",
+      "The \"Save Git settings\" button looks faded or disabled. That is probably intentional because nothing has changed yet."
     ]
   }
 }

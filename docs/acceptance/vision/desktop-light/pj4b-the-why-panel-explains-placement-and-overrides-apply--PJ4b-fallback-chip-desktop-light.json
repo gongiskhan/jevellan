@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory jour...', 'dev-ma...'). The full text is still available elsewhere, so this does not block anything.",
-      "The main content area is mostly empty below the report card. This is expected for a thread with a single turn."
+      "The sidebar shortens long session titles and subtitles with ellipses (e.g. 'Context · Mesh journey fix…', 'Done · Improver sandbox · Mac.l…'). This is intended and doesn't affect this screen.",
+      "The main area below the Report card is mostly empty, which is expected for an idle thread with one turn."
     ]
   }
 }

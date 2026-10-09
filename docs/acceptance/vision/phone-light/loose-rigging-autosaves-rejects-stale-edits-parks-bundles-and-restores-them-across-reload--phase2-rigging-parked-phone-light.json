@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab after 'Decisions' is cut off at the right edge, and the round scroll-arrow button sits on top of it. It is still reachable by scrolling the tab strip or tapping the arrow.",
-      "The grey monospace metadata lines (e.g. 'Local · Loose · Rigging local fixture · Claude Code') are small and low-contrast, but still readable.",
-      "The 'Park' button on browser-promote sits beside the wrapped metadata text, while the other rows put their action buttons below the text. The layout is inconsistent but nothing overlaps."
+      "In the top tab strip, the scroll-arrow button covers part of the tab after \"Decisions\". It is a horizontal scroller, so the tab can still be reached.",
+      "The Skills card's bottom border is cut off at the bottom of the viewport, but every parked item and its \"Restore locally\" button can be seen and used.",
+      "Long metadata lines like \"Local · Loose · Rigging local fixture · Claude Code\" wrap in the middle of the item name (\"Claude / Code\"), which looks a little untidy."
     ]
   }
 }

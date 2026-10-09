@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Background content behind the modal is blurred, which is expected for the modal overlay",
-      "The 'Discard checkpoints' primary button and the 'Back' secondary button differ noticeably in visual weight, though both are clear"
+      "Behind the blurred backdrop, the 'Read project…' tool card and the code blocks in the step output are cut off by the modal. This is expected because the modal covers them.",
+      "Behind the blurred backdrop, the long conversation titles in the sidebar are cut off with ellipses."
     ]
   }
 }

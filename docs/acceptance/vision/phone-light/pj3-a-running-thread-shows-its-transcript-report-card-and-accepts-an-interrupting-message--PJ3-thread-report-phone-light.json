@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Read through the project an...'). That is expected for a long title on a phone-width screen.",
-      "The 'jevellan thread attach thread_01M48JAS3BWCPVJ...' command at the bottom is cut off with an ellipsis. The copy button next to it still works, so this doesn't block anything.",
-      "The worktree path in the metadata block wraps over several lines in small monospace text. It is still readable but looks crowded.",
-      "The tool rows (Read, Grep, Bash, Read) are collapsed, so you can't see their details until you tap them. This is expected behavior."
+      "The header title is cut off with an ellipsis (\"Read through the project an...\"). The full prompt appears in the transcript below, so nothing is lost.",
+      "The terminal attach command at the bottom (\"jevellan thread attach thread_01M4GF20DKXQBS4N...\") is cut off with an ellipsis. A copy button sits next to it, so the full command is still available.",
+      "The worktree branch name in the metadata line wraps across lines (\"jv/read-through-the-project-and-list-what-e-mxthsx\"). It is still readable."
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the review-note.txt diff, the header line 'diff --git a/review-note.txt b/review-note.txt' runs past the right edge of the code block. It most likely scrolls sideways, and 'Wrap lines' can show the full line.",
-      "The 'Agent evidence' section starts at the bottom of the viewport, so its content needs scrolling. That's normal for a scrollable page."
+      "In the review-note.txt diff, the header line 'diff --git a/review-note.txt b/review-note.txt' is clipped at the right edge ('b/review-note.tx'). It is a horizontally scrollable code block, and the 'Wrap lines' toggle can show the full line.",
+      "The 'AGENT EVIDENCE' section starts at the bottom edge of the viewport and its content is below the fold. Scrolling reaches it."
     ]
   }
 }

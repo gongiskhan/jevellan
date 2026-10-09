@@ -6,7 +6,7 @@ export const QUESTION_SET = 'q-v2';
 type ActionRecord = DecisionRecord['action'];
 type ModelRecord = NonNullable<DecisionRecord['model']>;
 type EffortRecord = NonNullable<DecisionRecord['effort']>;
-export type Preferences = { modelId?: string | undefined; effort?: Effort | undefined };
+export type Preferences = { runtimeId?: string | undefined; accountId?: string | undefined; modelId?: string | undefined; effort?: Effort | undefined };
 export type ActionPlan = { questions: JevQuestions; allowed: Action[]; fixed?: ActionRecord };
 
 export function prepareAction(input: { allowed: Action[]; override?: Action; newMessage: boolean }): ActionPlan {
@@ -38,14 +38,18 @@ export type RuntimeSupport = { mcp: boolean; readOnlyEnforced: boolean; edit: bo
 export function modelCandidates(input: {
   settings: Configuration['x-jevellan']; action: Action; runtimes: ReadonlyMap<string, RuntimeSupport>;
   accounts: Account[]; statuses: AccountStatus[]; deviceId: string; now?: number;
+  selection?: Pick<Preferences, 'runtimeId' | 'accountId'>;
 }): ModelCandidate[] {
   const writing = ['implement', 'test', 'integrate'].includes(input.action);
+  const requiredAccount = input.selection?.accountId && input.accounts.find((entry) => entry.id === input.selection?.accountId);
   return input.settings.menu.filter((model) => {
+    if (input.selection?.runtimeId !== undefined && model.runtime !== input.selection.runtimeId || requiredAccount && model.runtime !== requiredAccount.runtime) return false;
     const runtime = input.runtimes.get(model.runtime);
     return model.enabled && input.settings.runtimes[model.runtime]?.enabled && runtime?.mcp
       && (writing ? runtime.edit && runtime.shell : runtime.readOnlyEnforced);
   }).map((model) => {
-    const ranking = rankAccounts({ accounts: input.accounts, statuses: input.statuses, runtime: model.runtime, model: model.model, deviceId: input.deviceId, ...(input.now === undefined ? {} : { now: input.now }) }).filter((entry) => entry.account.runtime === model.runtime);
+    const ranking = rankAccounts({ accounts: input.accounts, statuses: input.statuses, runtime: model.runtime, model: model.model, deviceId: input.deviceId, ...(input.now === undefined ? {} : { now: input.now }) })
+      .filter((entry) => entry.account.runtime === model.runtime && (input.selection?.accountId === undefined || entry.account.id === input.selection.accountId));
     const excluded = ranking.some((entry) => entry.eligible) ? undefined : ranking[0]?.reason ?? 'no-account';
     return { model, ranking, ...(excluded && excluded !== 'eligible' ? { reason: excluded } : {}) };
   });
@@ -55,6 +59,7 @@ type ReadyModelPlan = {
   kind: 'ready'; questions: JevQuestions; enabled: ModelCandidate[]; eligible: ModelCandidate[];
   currentId?: string; fixedModel?: { chosen: string; source: 'override' | 'pin' };
   fixedEffort?: { requested: Effort; source: 'override' | 'pin' };
+  runtimeSource?: 'override' | 'pin'; accountSource?: 'override' | 'pin';
 };
 export type ModelPlan = ReadyModelPlan | { kind: 'waiting'; message: string; reasons: { modelId: string; reason: ExclusionReason; accountIds: string[] }[] };
 
@@ -81,7 +86,9 @@ export function prepareModel(input: {
     if (enabled.length > eligible.length) questions.pick_any = { type: 'choice', instructions: `Which model best suits the next step: ${input.action}?`, criteria: criteria(enabled) };
   }
   if (!fixedEffort) questions.effort = { type: 'choice', instructions: `How much reasoning effort does the next step (${input.action}) need, given the work so far?`, criteria: { ...input.effortGuide } };
-  return { kind: 'ready', questions, enabled, eligible, ...(current ? { currentId: current.model.id } : {}), ...(fixedModel ? { fixedModel } : {}), ...(fixedEffort ? { fixedEffort } : {}) };
+  return { kind: 'ready', questions, enabled, eligible, ...(current ? { currentId: current.model.id } : {}), ...(fixedModel ? { fixedModel } : {}), ...(fixedEffort ? { fixedEffort } : {}),
+    ...(input.once?.runtimeId ? { runtimeSource: 'override' } : input.pins?.runtimeId ? { runtimeSource: 'pin' } : {}),
+    ...(input.once?.accountId ? { accountSource: 'override' } : input.pins?.accountId ? { accountSource: 'pin' } : {}) };
 }
 
 export function resolveModel(plan: ReadyModelPlan, input: { response?: JevResponse; keepCurrentThreshold: number; deviceLabel: string }): {
@@ -107,12 +114,12 @@ export function resolveModel(plan: ReadyModelPlan, input: { response?: JevRespon
     if (missing) notices.push({ kind: 'preferred-needs-login', text: `${preferredCandidate.model.label} looked like the best fit, but ${missing.account.label} needs login on ${input.deviceLabel}. Used ${candidate.model.label} instead.`, accountId: missing.account.id });
   }
   return {
-    model: { chosen: candidate.model.id, source: plan.fixedModel?.source ?? (kept ? 'kept' : plan.eligible.length === 1 ? 'only-option' : 'jev'),
+    model: { chosen: candidate.model.id, ...(plan.runtimeSource ? { runtime: candidate.model.runtime, runtimeSource: plan.runtimeSource } : {}), source: plan.fixedModel?.source ?? (kept ? 'kept' : plan.eligible.length === 1 ? 'only-option' : 'jev'),
       ...(keepCurrentP === undefined ? {} : { keepCurrentP }), eligible: plan.eligible.map((entry) => ({ modelId: entry.model.id, ...(picked ? { p: picked.probabilities[entry.model.id]! } : {}) })),
       ...(preferred ? { preferredAny: { modelId: preferred.choice, p: preferred.probabilities[preferred.choice]! } } : {}),
       excluded: plan.enabled.flatMap((entry) => entry.reason ? [{ modelId: entry.model.id, reason: entry.reason }] : []) },
     effort: { requested, effective, source: plan.fixedEffort?.source ?? 'jev', ...(effortAnswer ? { probabilities: effortAnswer.probabilities } : {}) },
-    account: { chosen: account.account.id, ranking: candidate.ranking.map((entry) => ({ accountId: entry.account.id, eligible: entry.eligible, reason: entry.reason })) }, notices,
+    account: { chosen: account.account.id, ...(plan.accountSource ? { source: plan.accountSource } : {}), ranking: candidate.ranking.map((entry) => ({ accountId: entry.account.id, eligible: entry.eligible, reason: entry.reason })) }, notices,
   };
 }
 

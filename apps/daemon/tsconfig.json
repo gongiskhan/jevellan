@@ -10,6 +10,7 @@
     "src/**/*.tsx"
   ],
   "references": [
+    { "path": "../../packages/agent-mcp" },
     { "path": "../../packages/accounts" },
     { "path": "../../packages/decisions" },
     { "path": "../../packages/memory" },

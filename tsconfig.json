@@ -32,6 +32,9 @@
       "path": "runtimes/codex"
     },
     {
+      "path": "packages/agent-mcp"
+    },
+    {
       "path": "apps/daemon"
     },
     {

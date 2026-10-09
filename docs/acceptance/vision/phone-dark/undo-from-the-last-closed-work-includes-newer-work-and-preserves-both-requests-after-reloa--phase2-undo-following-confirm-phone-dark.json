@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Header title is cut short with an ellipsis ('Change the value to two and publish th…'). This is deliberate truncation, and the full text appears in the conversation behind it.",
-      "The background behind the modal is dimmed and hard to read, which is expected while a modal is open. The dialog itself is fully visible and legible, and both buttons ('Undo and redo', 'Back') and the close control can be reached.",
-      "The screen shows the confirmation dialog still open, not the state after confirming. If 'undo following confirm' was meant to capture the state after confirming, the screenshot may have been taken too early."
+      "The background behind the modal is dimmed and blurred, so the header title and the step details are hard to read; this is expected while a modal is open",
+      "The scrim leaves the background composer and the 'Jump to latest' link visible but unusable while the dialog is open"
     ]
   }
 }

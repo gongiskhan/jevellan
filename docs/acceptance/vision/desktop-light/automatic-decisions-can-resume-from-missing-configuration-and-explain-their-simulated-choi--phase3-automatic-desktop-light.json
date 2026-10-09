@@ -10,8 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fourth sidebar conversation item is cut off at the bottom of the scrollable list, just above 'Some native sessions are unavailable'. It looks like normal scroll overflow, but the clipped text is unreadable until the list is scrolled.",
-      "Sidebar conversation titles and subtitles are cut short with ellipses (e.g. 'Exercise automatic decisi…', 'Explain the memorybrows…'). They stay legible, but the full titles can't be read at this width."
+      "In the sidebar, the scrollable conversation list cuts a fourth row in half, just above 'Some native sessions are unavailable'. Its text shows only as a partial line. It is reachable by scrolling, but it looks clipped.",
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Exercise automatic decisi…', 'Done · Automatic fixture · Mac…'). This is intended, but the full context isn't visible.",
+      "The 'completed' status on the 'Read project' tool card sits on its own line at the right, below the title, instead of in line with it. This leaves an awkward gap.",
+      "The large empty space between the end of the step and the composer makes the page look unfinished, but no content is missing."
     ]
   }
 }

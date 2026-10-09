@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The attach command in the footer ('jevellan thread attach thread_01M48JWRG343Z5A…') is cut off with an ellipsis, but the copy button next to it is still visible and usable.",
-      "The metadata lines under the chip ('Claude Code · Fable · high effort ·', 'Projects Claude ·', 'Worktree on …') wrap awkwardly and each ends with a dangling separator dot.",
-      "The metadata text is small and low-contrast grey on the dark background, but it can still be read."
+      "The 'jevellan thread attach thread_01M4GD405CPS20V3…' command is cut off with an ellipsis, but the copy button next to it is still reachable.",
+      "The metadata line wraps over two lines and splits 'Projects Claude' across them."
     ]
   }
 }

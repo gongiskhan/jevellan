@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar conversation list cuts off its last row, 'Short summary', at the bottom edge of the scroll area. This looks like normal scroll overflow.",
-      "Long conversation titles and metadata in the sidebar are shortened with ellipses, which is intended."
+      "The code blocks in undone Steps 1 and 2 use a muted gray background, so their light text has lower contrast than the dark blocks in Step 3. They are still readable.",
+      "Conversation titles and subtitles in the sidebar are cut off with ellipses (for example, 'Change the value to two a…' and 'Waiting for you · Undo across w…'). This looks like intended overflow handling.",
+      "The undone step headings ('Step 1 · Implement', 'Step 2 · Implement') are struck through and shown in light gray, which makes them slightly harder to read."
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'dev-ma…'). The text is still readable and this is normal list truncation.",
-      "The large empty area under the conversation makes the page look sparse, but nothing is missing."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · Mesh journey fix…', 'Mac.l…'). This is intentional truncation in a narrow column.",
+      "The low-contrast muted text ('Some native sessions are unavailable', the footer notice, the metadata line) is dim against the dark background but still readable."
     ]
   }
 }

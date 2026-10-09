@@ -1,19 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase6-j12-morning-card-phone-light.png",
-  "expected": "the Jevellan web app \"j12 morning card\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The top tab strip is clipped at the right edge (third tab reads 'Dec…'). It looks like a horizontally scrollable tab bar, but nothing on screen signals that more tabs are off to the side.",
-      "The page title is 'Settings · Improver', and no element is labelled 'morning card'. The 'Waiting for you (1)' AGENTS.md rule card at the top seems to be the card this step means.",
-      "The page is very long (about 4661px), so the 'Recently decided' cards are far below the fold.",
-      "The diff blocks use small monospace text with tight wrapping. It is readable but dense at phone width."
-    ]
-  }
+  "expected": "the Jevellan web app \"j12 morning card\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)"
 }

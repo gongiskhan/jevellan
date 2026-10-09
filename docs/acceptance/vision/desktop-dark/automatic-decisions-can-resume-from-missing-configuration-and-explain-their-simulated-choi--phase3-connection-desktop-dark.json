@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Jev key saved.' toast sits on top of the page subtitle and hides part of the line 'Jev chooses each next step from the … give it.' The toast is temporary and the subtitle is only descriptive, so nothing needed is hidden.",
-      "The Routing profile textarea text is clipped at the bottom edge (the last line is partly visible). The textarea is resizable and scrollable, so the text can still be reached.",
-      "The last conversation in the sidebar ('Context · Improver sandbox') is partly cut off at the bottom of the scrollable list. It can be reached by scrolling.",
-      "The Jev connection result shows 'Saved model: jev-1.13.0' while the test returned only 'jev-latest'. The mismatch is shown clearly and is not a rendering problem."
+      "The 'Jev key saved.' toast sits on top of the page subtitle ('Jev chooses each next step from the … give it.') and hides part of it. The toast is temporary and can be closed, so this doesn't block anything.",
+      "The Routing profile textarea cuts off its last visible line at the bottom edge. The textarea scrolls and can be resized, so the content is still reachable.",
+      "The last conversation in the sidebar ('Context · J11 memory jour…') is cut off at the bottom of the list. The list scrolls, so it's still reachable.",
+      "The Jev key field is empty after saving, even though the 'Saved · ••••154b' hint shows the key was stored. This may look odd but it's expected."
     ]
   }
 }

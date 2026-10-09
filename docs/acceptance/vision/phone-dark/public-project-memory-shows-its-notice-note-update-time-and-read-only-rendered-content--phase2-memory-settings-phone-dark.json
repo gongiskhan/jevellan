@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal body is scrolled, so the content above 'Path on Offline fixture' is cut off under the header. This is normal scrolling, but a reader can't see that earlier content in this screenshot.",
-      "The 'Memory folder' field sits right at the bottom edge of the scroll area, just above the footer, with little space below it."
+      "The 'Path on Offline fixture' label at the top is partly clipped by the dialog header because the content is scrolled. This is normal for a scroll container.",
+      "Content below 'Memory folder' may continue under the sticky Cancel/Save footer; it can be reached by scrolling."
     ]
   }
 }

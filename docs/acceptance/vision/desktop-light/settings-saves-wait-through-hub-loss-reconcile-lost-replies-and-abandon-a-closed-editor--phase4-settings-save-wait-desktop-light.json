@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The hub-wait banner sits below the Cancel/Saving… footer instead of inside it, so it reads as a separate block under the modal's actions",
-      "The disabled 'Saving…' button has low-contrast gray text on a light gray background (legible, but faint)",
-      "The masked API key dots are very small and tightly spaced"
+      "The 'Stop waiting' button sits a little off-center inside the hub-loss notice, which leaves extra empty space on its right",
+      "The 'Saving…' button is greyed out and low-contrast, but you can still read it"
     ]
   }
 }

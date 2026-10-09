@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The composer placeholder is cut off at \"Tell the coordinator what you nee\" because the stop and send buttons take up the right side of the input.",
-      "The status pill shows \"Working…\" with an ellipsis, which suggests the label is truncated rather than designed to read that way.",
-      "The stop button sits very close to the disabled send arrow, so the two controls look crowded inside the composer."
+      "The composer placeholder 'Tell the coordinator what you need' is cut off at 'nee' where it meets the stop button inside the input field",
+      "The send arrow button looks dimmed and low-contrast next to the stop button (probably on purpose while the coordinator is working)",
+      "The 'Working…' status pill and the 'Claude Code Fable · high' text are small and low-contrast, but still readable"
     ]
   }
 }

@@ -444,7 +444,7 @@ function TakeOver({ device, command, message }: { device: string; command: strin
   );
 }
 
-const FIELD_LABELS = { isolation: copy.ISOLATION, model: copy.MODEL, effort: copy.EFFORT, device: copy.DEVICE } as const satisfies Record<PlacementField, string>;
+const FIELD_LABELS = { isolation: copy.ISOLATION, runtime: 'Runtime', account: 'Account', model: copy.MODEL, effort: copy.EFFORT, device: copy.DEVICE } as const satisfies Record<PlacementField, string>;
 /** Model labels as the Projects pages show them: `{runtime display name} {menu label}`, or the id of a model no longer in the menu. */
 const modelNames = (data: PageProps['data']) => {
   const runtimeName = runtimeNames(data); const menu = data.config.configuration['x-jevellan'].menu;
@@ -460,10 +460,10 @@ function WhyPanel({ view, data, close }: { view: ThreadView; data: PageProps['da
   const { placement, thread } = view;
   const modelName = useMemo(() => modelNames(data), [data]);
   const deviceName = useMemo(() => deviceNames(data), [data]);
-  const label = (field: PlacementField, value: string) =>
-    field === 'isolation' ? value === 'main' ? copy.MAIN : copy.WORKTREE : field === 'model' ? modelName(value) : field === 'device' ? deviceName(value) : value;
-  const fixed = placement.fixed.map((field) => FIELD_LABELS[field]).join(', ');
   const account = data.accounts.find((entry) => entry.account.id === placement.accountId)?.account.label ?? thread.accountLabel;
+  const label = (field: PlacementField, value: string) =>
+    field === 'isolation' ? value === 'main' ? copy.MAIN : copy.WORKTREE : field === 'model' ? modelName(value) : field === 'device' ? deviceName(value) : field === 'account' ? value === placement.accountId ? account : data.accounts.find((entry) => entry.account.id === value)?.account.label ?? value : field === 'runtime' ? runtimeNames(data)(value) : value;
+  const fixed = placement.fixed.map((field) => FIELD_LABELS[field]).join(', ');
   const ranks = (field: 'model' | 'device') => field === 'model'
     ? { chosen: placement.modelId, eligible: placement.eligibleModels, excluded: placement.excludedModels.map((entry) => ({ id: entry.modelId, reason: entry.reason })) }
     : { chosen: placement.deviceId, eligible: placement.eligibleDevices, excluded: placement.excludedDevices.map((entry) => ({ id: entry.deviceId, reason: entry.reason })) };
@@ -506,10 +506,10 @@ function WhyPanel({ view, data, close }: { view: ThreadView; data: PageProps['da
             </section>
           );
         })}
-        <section className="why-section">
+        {!placement.fixed.includes('account') && <section className="why-section">
           <h3>{copy.ACCOUNT}</h3>
           <p className="why-line"><b>{account}</b></p>
-        </section>
+        </section>}
         <section className="why-section why-jev">
           <h3>{copy.JEV}</h3>
           {placement.jevCalls.length ? placement.jevCalls.map((call, index) => (

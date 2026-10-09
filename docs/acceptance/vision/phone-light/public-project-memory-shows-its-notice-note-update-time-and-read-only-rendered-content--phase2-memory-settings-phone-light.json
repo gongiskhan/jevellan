@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal body is scrolled, so the 'Path on Offline fixture' label sits right under the header divider and content above it is out of view. It can still be scrolled back into view.",
-      "Part of the page behind the modal (a '<' glyph and a rounded edge) shows through at the top-left beside the modal header.",
-      "The Memory folder field sits right above the footer divider, so there may be more settings below that need scrolling to reach."
+      "The dialog is scrolled partway down, so the 'Path on Offline fixture' label sits right under the header and the fields above it are off-screen. You can still scroll to them.",
+      "The 'Memory folder' field sits close to the sticky Cancel/Save footer. Any memory settings below it are off-screen until you scroll.",
+      "The page behind the modal shows faintly at the top and bottom edges of the phone viewport."
     ]
   }
 }

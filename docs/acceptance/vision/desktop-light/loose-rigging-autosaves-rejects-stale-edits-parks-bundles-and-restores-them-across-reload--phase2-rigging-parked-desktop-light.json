@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar conversation list, the last item (near y≈712) is cut off horizontally by the scroll container. Only the tops of its letters show above the 'Some native sessions are unavailable' row. It is a scroll overflow, so the content is still reachable.",
-      "Conversation titles and their subtitles in the sidebar are shortened with ellipses (e.g. 'Explain the memorybrows…', 'Undo across works · dev-m…'). This looks intentional but hides context.",
-      "The Hooks section continues below the fold, with the 'Safety' row at the bottom edge. It can be reached by scrolling.",
-      "The disabled Claude Code and Codex checkboxes on the built-in 'Safety' hook are very low-contrast."
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Explain the memorybrows…', 'Context · Created instructio…'). The full text is presumably available elsewhere.",
+      "The Hooks card runs past the bottom of the viewport, so the 'Safety' row is the last one visible. This looks like normal page scroll, not clipping.",
+      "The disabled Claude Code and Codex checkboxes on the 'Safety' hook are very low contrast, so it's hard to tell whether they're checked."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The join code field and the end of the command are covered by solid light boxes. These look like screenshot masks for the changing code, so I couldn't check the code text itself.",
-      "The command breaks across lines in the middle of the URL ('htt' / 'p://127.0.0.1:24774'), which makes it harder to read and copy by eye.",
-      "The light grey join code box stands out sharply against the dark theme of the dialog."
+      "The join code field and the end of the command show solid light-gray boxes instead of text. These look like intentional redaction masks for the screenshot, but if they aren't, the join code is unreadable.",
+      "The command breaks mid-word across lines ('htt' / 'p://127.0.0.1:31874'), which makes it harder to read and copy by eye on a narrow screen.",
+      "The light-gray join code box stands out sharply against the dark theme."
     ]
   }
 }

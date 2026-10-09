@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Header title is truncated with an ellipsis ('J8: run on device B while I steer from de...'), but the full text appears in the first message below it",
-      "Subtitle under the header ('Keep the checkout unchanged; stop for this correction from device A.') wraps onto a second line and sits close to the header chips"
+      "Header title is truncated with an ellipsis ('J8: run on device B while I s...'), but the full prompt is shown in the YOU message below",
+      "Small labels (the 'Local time' caption, the '4s' elapsed counter, timestamps) are low-contrast and small but still readable"
     ]
   }
 }

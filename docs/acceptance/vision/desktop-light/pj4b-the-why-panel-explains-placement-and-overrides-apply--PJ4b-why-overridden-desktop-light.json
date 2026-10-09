@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PJ4b the Why panel explains placement and overrides apply",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/screenshots/PJ4b-why-overridden-desktop-light.png",
+  "expected": "the Jevellan web app \"why overridden\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PJ4b the Why panel explains placement and overrides apply\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · Mesh journey fix…', 'Mac.l…'). The truncation looks intentional and the main content is unaffected.",
+      "In the Model section, 'Claude Code Sonnet' is indented with a dot marker and has no bar or score, so it looks out of line with the other rows. It may be meant to show an ineligible option.",
+      "The Account value says 'fixed', while the Placement line says 'Fixed: Model, Effort, Account'. But Model and Effort are labelled 'changed by you', so these labels seem to disagree."
+    ]
+  }
+}

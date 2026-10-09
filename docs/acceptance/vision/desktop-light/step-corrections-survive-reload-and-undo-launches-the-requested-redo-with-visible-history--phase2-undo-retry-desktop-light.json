@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The error message repeats 'disabled' eight times, which is noisy and hard to read. It shows up in both the red banner and the Resume correction card.",
-      "The step header uses small, low-contrast pink text for the correction history ('corrected: effort → max', 'corrected: action → reply, effort → low') next to the struck-through 'Step 1 · Implement', so it's hard to read.",
-      "The sidebar conversation titles and subtitles are cut off with ellipses ('Change the value to thre…', 'Blocked · Browser fixture · dev-…'). This is intended truncation and nothing is lost, because the full title is in the page header.",
-      "The same error text appears twice: once in the red banner and again in the Resume correction card."
+      "The error message repeats 'disabled' eight times ('disabled, disabled, …') in both the red banner and the Resume correction card. It reads as noisy and tells the user nothing useful, though it is still readable.",
+      "The red error banner and the Resume correction card show the same message twice.",
+      "Conversation titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Change the value to three,…', 'Browser fixtu…', 'Mac…'). This is expected truncation, and the full title appears in the main pane.",
+      "The 'Step 1 · Implement' label is struck through and the correction chips ('corrected: effort → max', 'corrected: action → reply, effort → low') are small pink text. They are readable but low-contrast.",
+      "The 'completed' status label in the Read project tool card sits on its own line below the header instead of beside the title, which leaves extra vertical space."
     ]
   }
 }

@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The settings tab strip cuts off the fourth tab after 'Decisions' (only part of its icon shows) behind the scroll-arrow button. This looks like a deliberate horizontally scrolling tab row, and the arrow keeps the tab reachable.",
-      "In the warning banner, the inline 'Retry' button sits tight against the end of the wrapped text 'needs to finish.', so the line spacing looks uneven.",
-      "The metadata lines (e.g. 'Local · Loose · Rigging local fixture · Claude Code') are small, low-contrast grey monospace text. They can still be read.",
-      "The 'Safety' hook's Claude Code and Codex checkboxes are greyed out. This looks like an intentional disabled state for a required built-in hook."
+      "The fourth tab in the top tab bar is cut off behind the scroll chevron. This is expected for a scrollable tab strip, and the chevron is still there to reach it.",
+      "In the warning banner, the 'Retry' button sits inline right after 'finish.' with almost no space around it, so the text and button look crowded.",
+      "The small grey metadata lines (e.g. 'Local · Loose · Rigging local fixture · Claude Code') have low contrast and wrap awkwardly onto a second line, but they are still readable.",
+      "The disabled checkboxes under Safety are faint, though this is intended."
     ]
   }
 }

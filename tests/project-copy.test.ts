@@ -140,7 +140,7 @@ test('verbatim notices, state reasons and turn-limit options', () => {
   expect([copy.restartedReason('thread_new'), copy.isRestarted('Restarted as thread_new.'), copy.isRestarted('Stopped by you.'), copy.isRestarted(undefined)])
     .toEqual(['Restarted as thread_new.', true, false, false]);
   expect([copy.MODEL_SAME_RUNTIME, copy.NEXT_TURN_FIELDS, copy.RESTART_OPEN_PULL_REQUEST, copy.RESTART_PUBLISHED_TO_MAIN, copy.THREAD_ALREADY_RESTARTED]).toEqual([
-    'From the next turn, the model must use the same runtime.', 'From the next turn, only the model and effort can change.', 'This thread has an open pull request.',
+    'From the next turn, the model must use the same runtime.', 'From the next turn, only the account, model and effort can change within the same runtime.', 'This thread has an open pull request.',
     'This thread already published to main.', 'This thread was already restarted.']);
   // Placement copy is re-exported from decisions, never retyped (D135).
   for (const name of ['NO_PLACEMENT', 'NO_THREAD_MODEL', 'LEAVE_GIT_MAIN', 'MAIN_NOT_AVAILABLE', 'REMOTE_NOT_AVAILABLE', 'UNKNOWN_PLACEMENT_MODEL', 'UNKNOWN_PLACEMENT_DEVICE',

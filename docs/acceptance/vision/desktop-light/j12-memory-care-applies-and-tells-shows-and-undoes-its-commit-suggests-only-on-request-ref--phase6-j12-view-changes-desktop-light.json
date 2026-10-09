@@ -1,18 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/phase6-j12-view-changes-desktop-light.png",
-  "expected": "the Jevellan web app \"j12 view changes\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "Sidebar session titles are cut off with ellipses (e.g. 'Exercise answer options: c…', 'Context · J11 memory jour…'). This looks like intentional overflow handling.",
-      "The 'Save schedule and jobs' button is low-contrast in its disabled state.",
-      "The expanded commit diff in the Memory care card is long and dense, so the page needs a lot of vertical scrolling. It is still readable."
-    ]
-  }
+  "expected": "the Jevellan web app \"j12 view changes\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)"
 }

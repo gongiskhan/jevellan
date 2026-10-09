@@ -1,18 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase6-j12-view-changes-desktop-dark.png",
-  "expected": "the Jevellan web app \"j12 view changes\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The memory care diff is shown expanded inline and makes the page very tall. Because the diff has no height limit, it pushes the Schedule and Last runs panels far down.",
-      "Sidebar session titles are cut off with ellipses, for example 'Exercise answer options: c...' and 'Context · Mesh journey fix...'. The full titles aren't visible, but the truncation is intentional.",
-      "Small monospace metadata text, such as the commit hash 'dc21a92277' and the note file paths, has low contrast against the dark background."
-    ]
-  }
+  "expected": "the Jevellan web app \"j12 view changes\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)"
 }

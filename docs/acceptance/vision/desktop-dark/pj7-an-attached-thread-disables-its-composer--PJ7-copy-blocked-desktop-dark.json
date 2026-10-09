@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles are cut off with ellipses ('Context · J11 memory journ…', 'Context · Mesh journey fixt…') and so are their subtitles ('dev-ma…', 'dev-…', 'de…'). The full text is still available elsewhere.",
-      "The bright pink highlight on the selected 'jevellan thread attach …' command is loud next to the muted dark theme, but the text is still readable.",
-      "The disabled composer's placeholder ('Message this thread') and send arrow are low-contrast. This fits a disabled state, but they're hard to see."
+      "Sidebar thread titles and metadata lines are truncated with ellipses (e.g. 'Context · Mesh journey fix…', 'Mac.l…'), which is expected for a narrow sidebar",
+      "The bright pink selection highlight on the attach command clashes with the dark theme, though the text is still readable",
+      "There is a lot of empty space between the report card and the composer"
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The file label says config.toml, but the content is JSON. This looks like a fixture or data mismatch, not a rendering problem.",
-      "The close (×) button on the 'Item restored to this account.' message is very small, which makes it a small tap target on a phone.",
-      "The tab strip in the dimmed background is cut off at the right edge with a scroll arrow. It's behind the dialog, so it doesn't block anything."
+      "The content is JSON, but the file shown is named config.toml, which may confuse users (a content/labeling issue, not a layout one).",
+      "The status line 'Item restored to this account.' sits inside the modal, close below the 'Local edits save automatically' helper text, so the bottom of the dialog feels slightly crowded.",
+      "The tab strip behind the modal is cut off at the right edge, but it has a scroll arrow and the modal covers it anyway, so it causes no problem."
     ]
   }
 }

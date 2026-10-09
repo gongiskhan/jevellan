@@ -1,18 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "Projects and a manual planned change render the full plan, stream, Why and verified Changes",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase2-plan-phone-dark.png",
-  "expected": "the Jevellan web app \"plan\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The top-bar title 'Change the value to two and verify it.' sits close to the overflow '…' button. It still fits without being cut off.",
-      "The 'Waiting for you' chip is low-contrast amber outline text on the dark background. It is still legible.",
-      "The '1 tool' and 'Step details' disclosure labels are small, dim text that is less prominent than the other text."
-    ]
-  }
+  "expected": "the Jevellan web app \"plan\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)"
 }

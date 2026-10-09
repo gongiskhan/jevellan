@@ -10,8 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Mesh journey fixt…'). The ellipses look intentional, and the full text isn't needed for the notebook panel.",
-      "'Some native sessions are unavailable' is a small, low-contrast link that is somewhat hard to read."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · Mesh journey fix…', 'Done · J11 memory journey · Mac…'). The full text is still available elsewhere and this is expected truncation.",
+      "Sidebar host selector label 'Mac.lan' and the session subtitles 'Mac.l…' are shortened.",
+      "The chat column is squeezed between the sidebar and the notebook panel. Everything is still readable, but it's dense.",
+      "The notebook panel has a lot of empty space below its short content. This is expected for a short note."
     ]
   }
 }

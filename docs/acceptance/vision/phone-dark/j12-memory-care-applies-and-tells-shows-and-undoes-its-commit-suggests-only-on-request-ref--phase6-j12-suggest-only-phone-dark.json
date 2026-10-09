@@ -1,18 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase6-j12-suggest-only-phone-dark.png",
-  "expected": "the Jevellan web app \"j12 suggest only\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "I could only check the image at about one third of its real size because I wasn't allowed to crop it, so small-text problems may not show up at this scale.",
-      "The columns in the Trial log table are tight, and the header text wraps over several lines ('WHY THEY FINISHED ELSEWHERE').",
-      "In the diff blocks, long lines wrap and break mid-word (for example the git diff paths and the AGENTS.md lines). They're still readable."
-    ]
-  }
+  "expected": "the Jevellan web app \"j12 suggest only\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)"
 }

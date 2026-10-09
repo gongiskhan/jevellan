@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Read through the project an...'). The full task text still appears in the Prompt card.",
-      "The 'Take over in a terminal' attach command is cut off ('thread_01M48JYSHQ85FM7...'), but the copy button next to it still gives you the full command.",
-      "The metadata line wraps the long worktree branch name across several lines in an awkward way ('Worktree on / jv/read-through-the-project-and-list-what-e-kdxgat · / dev-madrid').",
-      "The 'Idle' status badge is dim, low-contrast grey on the dark background, though it can still be read."
+      "Header title is truncated with an ellipsis ('Read through the project an…'); the full title still appears in the Prompt card below",
+      "The 'Take over in a terminal' command is truncated with an ellipsis ('jevellan thread attach thread_01M4GF4D5YSTHT3A…'), but a copy button is right next to it",
+      "The 'REPORT · TURN 2' label is small, low-contrast uppercase text",
+      "The meta line under 'Back to the project' wraps in awkward places across four lines, and the worktree branch name breaks in the middle"
     ]
   }
 }

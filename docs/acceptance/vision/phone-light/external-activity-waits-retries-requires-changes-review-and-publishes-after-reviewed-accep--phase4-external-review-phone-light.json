@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Pluralization error: '1 changed files' should be '1 changed file'",
-      "'No checkpoint changes in this step' next to a non-empty uncommitted diff may confuse readers",
-      "Large empty area below 'No verification receipt yet.' at the bottom of the panel"
+      "Pluralization error: '1 changed files' should read '1 changed file'",
+      "'No checkpoint changes in this step.' sits right above an uncommitted diff with changes, which may confuse readers",
+      "Blank space at the bottom of the panel below 'No verification receipt yet.'"
     ]
   }
 }

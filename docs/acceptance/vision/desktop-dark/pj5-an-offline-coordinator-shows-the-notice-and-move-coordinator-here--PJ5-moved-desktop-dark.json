@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Several sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · J11 memory journey · dev-…'). They still read clearly because of the ellipses.",
-      "The notice 'The coordinator moved to dev-madrid.' shows up, but there's no 'Move coordinator here' control on this screen. That's expected, because this is the step after the move.",
-      "The amber notice banner has low contrast against the dark background, but you can still read it."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · Mesh journey fix…', 'Mac.l…'). This is normal truncation for a narrow sidebar.",
+      "The top-right header buttons are a bit crowded, but they don't overlap."
     ]
   }
 }

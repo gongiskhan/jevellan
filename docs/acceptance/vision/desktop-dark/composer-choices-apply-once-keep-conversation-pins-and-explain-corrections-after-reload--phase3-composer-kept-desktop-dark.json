@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation titles and metadata get truncated with ellipses (e.g. 'Exercise composer choic…', 'Done · Automatic fixture · dev-m…'). This is intentional and the full title shows in the header.",
-      "The 'Waiting for you 6' filter chip is tight inside the sidebar width.",
-      "The 'Proposed plan' heading and 'The full fixture plan' subtitle are stacked with very little space between them.",
-      "Both steps repeat 'The plan has three steps.' This is fixture content, not a rendering problem."
+      "Sidebar conversation titles and subtitles are truncated with ellipses (e.g. 'Exercise composer choice…', 'Done · Automatic fixture · Mac…'). This looks intentional, and the full text is probably available elsewhere.",
+      "The 'completed' status label on the 'Read project' tool cards sits on its own line below the card title, which leaves extra empty space.",
+      "Steps 1 and 2 show the same tool output and the same 'The plan has three steps.' text, so the transcript looks repetitive. This is fixture content, not a layout problem.",
+      "The 'Some native sessions are unavailable' note at the bottom of the sidebar is small and low-contrast."
     ]
   }
 }

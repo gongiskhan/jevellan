@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fixed 'Can't reach the hub' banner covers the lower part of the Guards form. The 'Pause after a plan' row sits just above its top edge, and it isn't clear that the rest of the form can scroll out from under the banner (check for bottom padding).",
-      "The tab strip is cut off at both edges ('…es' and 'Improve…'). This looks like a deliberate horizontal scroller with arrow buttons."
+      "The fixed 'Can't reach the hub' toast covers the bottom of the Guards form below 'Pause after a plan'. The fields under it, and possibly the save action, are hidden until you scroll. This screenshot can't show whether the page has enough bottom padding to scroll them clear of the toast.",
+      "The tab strip cuts the left tab label off to 'es' and the 'Improve' label at the right edge. The strip scrolls and has arrow buttons, so this is expected.",
+      "The textarea at the top is cut off by the scroll position."
     ]
   }
 }

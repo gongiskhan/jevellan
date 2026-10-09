@@ -167,7 +167,8 @@ export class ProjectWork {
       runner: { deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, store: this.store, ledgers: this.ledgers, project: (projectId) => this.#project(projectId),
         workSettings: (projectId) => this.admission.settings(projectId), worktrees, main, publication, launcher, accounts: o.accounts, admission: this.admission,
         endProcess: (process) => endTurnProcess(process),
-        accountWait: (thread) => launcher.accountWait({ runtime: thread.placement.runtime, model: thread.placement.model }),
+        accountWait: (thread) => launcher.accountWait({ runtime: thread.placement.runtime, model: thread.placement.model,
+          ...(thread.placement.fixed.includes('account') ? { requiredAccountId: thread.placement.accountId } : {}) }),
         decisions: this.decisions, toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event),
         memory: (project) => o.memory.project(project, o.deviceId, () => { throw new Error(THREAD_MEMORY_READ_ONLY); }), mail: this.mail,
         appTool: async (scope, name, input, signal) => {
@@ -414,6 +415,7 @@ export class ProjectWork {
     const coordinatorDeviceId = await this.#coordinatorHere(projectId);
     const started = await this.threads.start({ projectId, title: input.title, task: input.task, createdBy: 'owner', clientRequestId: input.clientRequestId, coordinatorDeviceId, note: input.note,
       fixed: { ...(input.isolation ? { isolation: input.isolation } : {}), ...(input.modelId ? { modelId: input.modelId } : {}), ...(input.effort ? { effort: input.effort } : {}),
+        ...(input.runtimeId ? { runtimeId: input.runtimeId } : {}), ...(input.accountId ? { accountId: input.accountId } : {}),
         ...(input.deviceId ? { deviceId: input.deviceId } : {}) } });
     return ThreadCreatedViewSchema.parse({ schema: 'thread-created-view-v1', threadId: started.threadId, state: started.state, placement: started.placement });
   }

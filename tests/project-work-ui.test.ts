@@ -494,7 +494,7 @@ test('the Why panel reads the placement field by field: Jev bars with the curren
   expect(fields[1]!.bars).toEqual([{ option: 'fable', p: 0.7, chosen: true }, { option: 'opus', p: 0.2, chosen: false }, { option: 'gpt', p: 0.1, chosen: false }]);
   expect(fields[2]!.bars.map((bar) => bar.option)).toEqual(['high', 'low', 'medium', 'xhigh', 'max']);
   // A next-turn override keeps Jev's probabilities (D252): the bars mark what runs now and the field reads as the owner's change.
-  const changed = whyFields(placement({ modelId: 'opus', effortRequested: 'low', effortEffective: 'low' }));
+  const changed = whyFields(placement({ fixed: ['model', 'effort'], modelId: 'opus', effortRequested: 'low', effortEffective: 'low' }));
   expect(changed.slice(1, 3).map((field) => [field.source, field.bars.find((bar) => bar.chosen)?.option])).toEqual([['changed', 'opus'], ['changed', 'low']]);
   // An exact tie with the top option is still Jev's answer.
   expect(whyFields(placement({ probabilities: { pick_model: { fable: 0.5, opus: 0.5 } }, modelId: 'opus' }))[1]!.source).toBe('jev');

@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Sent to the coordinator.' confirmation sits right above 'Nothing waiting.', so the confirmation and the empty-state message compete a little visually.",
-      "The 'Answered 1' section starts collapsed, so you have to expand it to confirm which decision was answered.",
-      "Most of the screen below the content is empty."
+      "The 'Answered 1' section is collapsed, so the answered decision isn't visible without expanding it",
+      "The Waiting-tab label shows no count badge, even though the section header has a '0' count"
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The selected search result button centers its title and timestamp, while everything else in the dialog is left-aligned",
-      "The note's name and update time show up twice: once in the selected result button and again in the header above the rendered content"
+      "The search result button's title and timestamp are centered, while the rest of the modal is left-aligned.",
+      "The note title and update time appear twice: once in the result button and again in the content header below it."
     ]
   }
 }

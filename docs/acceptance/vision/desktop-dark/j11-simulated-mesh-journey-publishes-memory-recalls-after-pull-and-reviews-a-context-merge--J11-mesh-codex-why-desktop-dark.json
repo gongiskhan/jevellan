@@ -1,19 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/J11-mesh-codex-why-desktop-dark.png",
-  "expected": "the Jevellan web app \"mesh codex why\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The account list in the right 'Why this step' panel runs past the bottom of the screen. The last row ('Login fixture: unsupported') is cut off halfway. The panel appears to scroll, so this doesn't block anything.",
-      "In the sidebar, the fourth conversation item is partly hidden behind a fade just above 'Some native sessions are unavailable'. The list scrolls, so the item can still be reached.",
-      "Sidebar conversation titles and subtitles are cut short with ellipses ('Explain how to write a Vit…', 'J11 memory jou…'). This looks like intended truncation.",
-      "The Jev-unavailable banner in the right panel ('Pick the next step:') ends with a colon but no controls follow. It repeats the main panel's prompt, which may be confusing."
-    ]
-  }
+  "expected": "the Jevellan web app \"mesh codex why\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\"; the other steps are judged in their own screenshots)"
 }

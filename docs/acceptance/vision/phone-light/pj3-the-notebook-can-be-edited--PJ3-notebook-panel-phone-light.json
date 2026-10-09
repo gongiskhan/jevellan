@@ -10,8 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Most of the panel below the content is empty, which is normal for a short note.",
-      "The \"Projects fixture\" breadcrumb is small and pinkish, but it's still readable."
+      "Most of the panel below the content is empty, but that's expected because the notebook is short."
     ]
   }
 }

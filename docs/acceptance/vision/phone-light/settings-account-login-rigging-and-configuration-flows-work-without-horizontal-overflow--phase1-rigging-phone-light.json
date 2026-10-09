@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fourth tab in the top tab strip is cut off behind the scroll-right button. It can still be reached with that button, but the label can't be read.",
-      "In the warning banner, the 'Retry' button sits right against the word 'finish.' with almost no space before it.",
-      "The disabled Claude Code and Codex checkboxes under Safety (Hooks) have very low contrast. This is probably intentional for a disabled state, but they are faint."
+      "The top tab bar clips the last visible tab (an icon after 'Decisions' is cut off at the scroll arrow). It's an intentional horizontally scrollable strip with an arrow control, so it doesn't block anything.",
+      "In the warning banner, the text 'needs to finish.' runs right into the inline 'Retry' button with little spacing, so the wrap looks cramped.",
+      "The item metadata lines (e.g. 'Local · Loose · Rigging local fixture · Claude Code') are very small, light-gray monospace and wrap awkwardly onto a second line, but they stay readable."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles get cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'). This is intentional overflow handling and the content stays reachable.",
-      "The 'Offline' status pill under the title is small, low-contrast monospace text. It is still readable.",
-      "The section headers in the right column ('WAITING FOR YOU 0', 'RUNNING 0', etc.) use small, dim, letter-spaced monospace text, which is a little hard to read on the dark background."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · Mesh journey fix…', 'Mac.l…'). This is normal truncation for a narrow sidebar.",
+      "The banner says 'Offline fixture', but the project is named 'Projects offline'. The device/fixture name is shown without context, which may confuse users.",
+      "The large empty area in the main column above the composer makes the layout look sparse."
     ]
   }
 }

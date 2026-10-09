@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Behind the modal, the page's tab strip is cut off at the right edge after 'Decisions'. A scroll arrow is shown, so this is expected horizontal overflow.",
-      "The 'Source' toggle sits at the far right of the 'Saved' row. It is small and easy to miss as a control.",
-      "The background page text under the scrim is dim and hard to read. This is expected while the modal is open."
+      "The modal has no visible Edit or Park buttons, even though its text describes editing and parking the bundle. Those actions may be shown somewhere else on purpose.",
+      "The tab strip behind the modal is cut off at the right edge after 'Decisions', with a scroll arrow; it is dimmed by the overlay.",
+      "The background list (browser-promote, browser-package) shows through the blurred overlay below the modal. This is expected, but it looks busy at the bottom of the screen.",
+      "The '×' dismiss button in the success toast is very small and has low contrast."
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Saved' status and 'Preview' link sit between the Name field and the 'Content' label, so they look detached from the content area they belong to.",
-      "The modal backdrop dims and blurs the Rigging list behind it. That is expected for a dialog, but it means this capture shows the managed item's row state and runtime toggles only faintly."
+      "The dialog's bottom padding is a little uneven: the helper text sits close to the textarea, and there's extra empty space under it.",
+      "The background behind the modal is blurred and dimmed, as expected for a modal, so the Rigging list behind it can't be read in this step."
     ]
   }
 }

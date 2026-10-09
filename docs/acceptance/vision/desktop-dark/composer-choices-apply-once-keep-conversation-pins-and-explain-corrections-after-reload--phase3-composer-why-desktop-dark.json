@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the right 'Why this step' panel, the top row ('Plan') is partly hidden under the sticky header because the panel is scrolled. It can still be reached by scrolling.",
-      "The bottom account row in the right panel ('Conversation controls fixture: disabled') is cut off at the bottom of the viewport. It can still be reached by scrolling.",
-      "In the sidebar, a fourth conversation item peeks out above the 'Some native sessions are unavailable' notice, so its text shows as a faint, clipped line.",
-      "In the main column, the top message card is scrolled under the sticky conversation header, so its numbered list starts at item 2."
+      "The right 'Why this step' panel is scrolled partway down, so the 'Plan' row at the top is half-hidden under the sticky header. The content scrolls into view, so this is not a blocker.",
+      "The last account row ('Conversation controls fixture: disabled') is cut off at the bottom of the right panel. It can be reached by scrolling.",
+      "The fourth conversation in the sidebar list is clipped under the fade above 'Some native sessions are unavailable'. It can be reached by scrolling the list.",
+      "Long conversation titles and metadata in the sidebar are cut off with an ellipsis ('Exercise composer choice…', 'Mac…')."
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). Hovering may reveal the full text.",
-      "The chat column has a large empty space between the single user message and the composer."
+      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · Mesh journey fix…', 'Done · Mesh journey fixture · M…'). This looks like intentional truncation.",
+      "Most of the chat column is empty, with a large gap between the single user message and the 'Coordinator is working…' indicator. This is expected while streaming."
     ]
   }
 }

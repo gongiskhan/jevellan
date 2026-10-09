@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The worktree/metadata line wraps across three lines in small monospace text, which makes it a bit dense to read.",
-      "There's a lot of empty space between the last report card and the 'This thread has ended' footer."
+      "The metadata line (Claude Code · Opus · low effort · … · Mac.lan) is small grey monospace text, so it's hard to read, though it is still legible and wraps without being cut off.",
+      "The long 'Restarted as thread_01M4GF5BNMHTFGQDRMGZXAXMSS' link nearly fills the full width of the line.",
+      "There is a large empty gap between the last report card and the 'This thread has ended' footer."
     ]
   }
 }

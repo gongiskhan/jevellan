@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The helper text under Device ('Coming later: Jevellan will pick a free machine…') is small and low-contrast, but you can still read it",
-      "Most of the lower half of the screen is empty space under the form card"
+      "Large empty dark area below the form card, so the bottom half of the phone viewport is unused",
+      "The helper text under the Device field ('Coming later: ...') is small and low-contrast, but you can still read it",
+      "The pink outlined 'Plan · Composer Fable · high' chip uses a monospace font that doesn't match the rest of the UI"
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar conversation list, the fourth item is cut off halfway at the bottom edge, just above 'Some native sessions are unavailable'. It looks like normal overflow in a scrollable list, but the half-visible text looks unpolished.",
-      "The pink 'Review …' links wrap onto four lines with no clear grouping. The two long 'Review Login recovery <UUID>' links make the row hard to scan.",
-      "Conversation titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Exercise automatic decisi…'). This is expected truncation, and the full title appears in the header."
+      "The fourth conversation row at the bottom of the sidebar list is clipped mid-line above 'Some native sessions are unavailable'. This looks like normal scroll overflow, but the cut-off text looks untidy.",
+      "The sidebar conversation titles and subtitles end in an ellipsis (for example, 'Exercise automatic decisi…' and 'Automatic fix…'). This is intended, but users can't see the full text without opening the conversation.",
+      "The 'Review …' links are plain pink text, unlike the 'Try automatic again' button, so they look less clickable. The row of links is also long and wraps across four lines, which makes it look crowded."
     ]
   }
 }

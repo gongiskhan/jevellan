@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut short with an ellipsis (e.g. 'Context · J11 memory jour…', 'Context · Mesh journey fix…', 'Done · Improver sandbox · dev-ma…'). This is deliberate truncation and the titles still read.",
-      "The header label 'Fixed: none' in the PLACEMENT section reads a bit vaguely.",
-      "In the right panel, the 'Jev' labels at the right of each section header are small and low-contrast."
+      "Sidebar session titles and subtitles get cut off with ellipses ('Context · Mesh journey fix…', 'Mac.l…'). The hover/overflow menus probably make up for it.",
+      "The Why panel header has a monospace pink thread name next to the bold 'Why this placement' title, so the two styles look mismatched.",
+      "The 'Fixed: none' placement line has no bar or label to separate it, so it looks a bit unfinished next to the sections below."
     ]
   }
 }

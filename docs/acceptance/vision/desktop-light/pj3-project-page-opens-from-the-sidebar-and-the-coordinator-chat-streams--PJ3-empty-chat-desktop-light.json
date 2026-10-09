@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles are cut off with an ellipsis ('Context · J11 memory jour…', 'Context · Mesh journey fix…'), and so are their metadata lines ('dev-ma…', 'de…'). This is intended truncation, and the full titles can likely be seen on hover or by opening the session.",
-      "The empty-state prompt in the chat area is small, low-contrast gray text. It is still readable.",
-      "The mono metadata labels ('Codex · GPT · high · Worktree · Browser member', the status line under the title) are very small and light gray. They are still readable."
+      "Sidebar session titles and metadata lines are truncated with ellipses (e.g. 'Context · Mesh journey fix…', 'Mac.l…'); this is intentional, and the full text is likely available elsewhere",
+      "Device picker shows a truncated host name 'Mac.lan' in monospace, which is legible",
+      "Footer hint 'Some native sessions are unavailable' is in small, low-contrast text"
     ]
   }
 }

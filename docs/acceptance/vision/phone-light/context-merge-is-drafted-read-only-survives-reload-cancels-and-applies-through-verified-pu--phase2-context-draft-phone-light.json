@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background page shows through the modal edges (top tab bar, path text, and buttons along the bottom). That's expected for a dialog, but the dimmed overlay is light, so the background stays fairly visible.",
-      "In the diff blocks, the empty '-' and '+' lines show as bare markers with nothing after them. It's legible, just a little sparse.",
-      "'Current instruction files' is collapsed at the bottom of the modal. You can still reach it, but its contents aren't visible in this capture."
+      "The file headings are uppercased to 'AGENTS.MD' and 'CLAUDE.MD', while the body text spells them 'AGENTS.md' and 'CLAUDE.md'.",
+      "The diff shows empty '-' and '+' lines, which look like stray markers.",
+      "The tab bar and the wrapped path text behind the modal are cut off at the screen edges. They're under the dimmed overlay, so this doesn't block anything."
     ]
   }
 }

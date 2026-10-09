@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The status badge says 'Idle' while the Stop button is still shown, even though this step is about a running thread",
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · dev-ma…'), which looks like intentional truncation",
-      "The metadata line under the title is in small, low-contrast monospace text, but it can still be read",
-      "The tool-call rows (Read, Grep, Bash, Read) only show the tool name and 'completed', with no detail until expanded"
+      "Sidebar session titles and subtitles are cut off with an ellipsis (e.g. 'Context · Mesh journey fix…', 'Done · Improver sandbox · Mac.l…'). The full text is not visible, but it reads fine.",
+      "The thread status chip says 'Idle', yet the Stop control is still shown and the step is about a running thread. The status shown may not match the scenario.",
+      "There is a large empty gap in the sidebar between the session list and the 'Some native sessions are unavailable' notice."
     ]
   }
 }

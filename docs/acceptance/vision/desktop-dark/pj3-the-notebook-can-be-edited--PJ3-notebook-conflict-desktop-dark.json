@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Mesh journey fixt…', 'dev-ma…'). This is intentional overflow handling.",
-      "The notebook textarea leaves a large empty area below a short note, so the conflict banner and the Save/Cancel buttons sit far down the panel."
+      "Sidebar session subtitles are cut off with ellipses (e.g. 'Mac.l…', 'M…', 'Mac…'). This is intended truncation.",
+      "The Notebook panel has a lot of empty space below the Cancel/Save buttons.",
+      "The conflict banner's red/pink border is fairly low-contrast against the dark background, though the banner text and the Reload link are readable."
     ]
   }
 }

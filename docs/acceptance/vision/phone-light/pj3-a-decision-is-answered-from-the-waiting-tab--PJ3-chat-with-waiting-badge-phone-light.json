@@ -10,8 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Large empty area between the last message and the composer at the bottom (normal for a short conversation)",
-      "The header model label 'Claude Code Fable · high' is in small monospace type, but it is still readable"
+      "Large empty gap between the last message and the composer; normal for a short chat"
     ]
   }
 }

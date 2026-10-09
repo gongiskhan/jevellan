@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Header title is truncated with an ellipsis ('Exercise external activity guards befor...'), but the full text shows in the subtitle and the message bubble",
-      "The large empty area between the action buttons and the composer makes the screen look sparse"
+      "Header title is cut off with an ellipsis (\"Exercise external activity guards befor...\"), but the full text is visible in the subtitle line and the message bubble.",
+      "Two Retry buttons appear, one on the user message and one primary below the error banner, which is a little redundant."
     ]
   }
 }

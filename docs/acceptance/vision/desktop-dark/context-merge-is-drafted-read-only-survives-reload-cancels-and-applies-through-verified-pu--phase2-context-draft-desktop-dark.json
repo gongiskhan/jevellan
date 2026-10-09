@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The CLAUDE.md diff renders the symlink as a '+ Symlink → AGENTS.md' content line inside a code block, so it reads like file text rather than a link",
-      "The 'Open work' link sits below the Cancel/Apply buttons and is pushed into the bottom-left corner, apart from the other actions",
-      "The 'Current instruction files' disclosure is close to the dialog's bottom edge and has little padding"
+      "The 'Open work' link sits alone below the Cancel/Apply row, so it looks detached from the actions it relates to.",
+      "The AGENTS.md diff ends with a bare '+' line for the trailing blank line, which looks like a stray marker."
     ]
   }
 }

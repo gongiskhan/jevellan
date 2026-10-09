@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The conversation title in the header is cut off with an ellipsis ('A conversation with a long title · Unbro…'). This looks like intended single-line truncation, but the full title isn't visible on this screen.",
-      "The long tool header ('Read project · long_tool_header_…') wraps character by character over many lines and breaks mid-word, so the tool card is tall and the 'completed' status sits off to the side, centred against the block.",
-      "The bottom composer sits close to the edge of the decision panel above it, with little space between them."
+      "The conversation title in the header is shortened with an ellipsis ('A conversation with a long title · Unbrok…'). The truncation is deliberate and the rest of the header is fine, but the full title can't be read on this screen.",
+      "The long unbroken tool header ('Read project · long_tool_header_…') breaks mid-word across five lines. It stays readable and inside its card, but it is visually dense.",
+      "The status chip 'Waiting for you' uses low-contrast orange text on a light background."
     ]
   }
 }

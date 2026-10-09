@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar, a fourth conversation row is cut off halfway above the 'Some native sessions are unavailable' notice. This looks like normal scroll clipping, but the partial row reads like stray text.",
-      "In the main column, the '1 tool' row of Step 2 is partly hidden behind the 'Jump to latest' bar at the bottom of the scroll area. This is expected scroll overflow.",
-      "Long conversation titles and subtitles in the sidebar are cut short with an ellipsis ('Exercise evidence naviga…', 'Context · Created instructi…'). This is intended truncation.",
-      "In the evidence panel, 'Open working copy' is pink and 'Open recorded step' is grey, so it's not obvious that both are clickable."
+      "The long /private/var/folders/... screenshot path link wraps across two lines, which leaves the closing '. The value is now 2, ready for Jevellan verification.' on its own line starting with a stray period.",
+      "The fourth conversation in the sidebar list is cut off at the bottom edge of the scroll area, so only the tops of its letters show. It looks like normal scroll overflow.",
+      "The 'Step details' panel is cut off at the bottom by the 'Jump to latest' bar and the composer. This is normal scroll behaviour, but the panel's lower content can't be seen.",
+      "In the evidence panel, the 'Show source' toggle sits right above the 'Evidence guide' heading with almost no space between them, so it looks like part of the rendered Markdown."
     ]
   }
 }

@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Change the value to three, then redo this…'). The full text still appears in the chip row and the message bubble.",
-      "The same red error banner appears twice ('No model can run this step right now: disabled, disabled, …'). Its text is just 'disabled' repeated, which tells the user nothing useful.",
-      "The 'Step 1 · Implement' heading has a strikethrough and is drawn in low-contrast gray, so it is harder to read than the other headings. It is still legible.",
-      "The pink 'corrected: effort → max' and 'corrected: action → reply, effort → low' labels wrap onto a second line under the Step 1 header, which makes that area look crowded."
+      "The header title is cut off with an ellipsis ('Change the value to three, then redo this...'), but the full prompt appears in the subtitle and the user message, so nothing is lost.",
+      "The same 'No model can run this step right now: disabled, disabled, …' error banner appears twice in a row, and it repeats 'disabled' eight times without saying which models are disabled. Both copies are readable; this is about content and duplication, not layout.",
+      "The struck-through 'Step 1 · Implement' heading has low contrast against the dark background but can still be read.",
+      "Step 1 says 'The value is now 3', but the tool output above it still says 'The fixture starts with value 1.' This is a content mismatch in the fixture, not a rendering problem.",
+      "The pink 'corrected: …' labels wrap onto a second line next to the step header; they're still readable and don't overlap anything."
     ]
   }
 }

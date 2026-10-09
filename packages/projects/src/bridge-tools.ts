@@ -167,6 +167,7 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
         // Only the fields the coordinator gave are fixed; Jevellan places the rest (brief 7.1, 10).
         const started = await o.threads.start({ projectId, title: input.title, task: input.task, createdBy: 'coordinator', coordinatorDeviceId: o.deviceId, note: input.note,
           clientRequestId: turnId('treq', projectId, turn, input), fixed: { ...(input.isolation ? { isolation: input.isolation } : {}), ...(input.modelId ? { modelId: input.modelId } : {}),
+            ...(input.runtimeId ? { runtimeId: input.runtimeId } : {}), ...(input.accountId ? { accountId: input.accountId } : {}),
             ...(input.effort ? { effort: input.effort } : {}), ...(input.deviceId ? { deviceId: input.deviceId } : {}) } });
         return { schema: 'thread-start-result-v1', threadId: started.threadId, state: started.state, ...(started.stateReason === undefined ? {} : { stateReason: started.stateReason }),
           placement: started.placement.slice(0, 400) };

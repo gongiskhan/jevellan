@@ -10,8 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Background content behind the modal scrim is faint, as expected for an overlay, but the header title 'Change the value to two and publish th...' is truncated with an ellipsis",
-      "The 'Waiting for you' badge in the background header is low-contrast"
+      "The confirm dialog wording 'redoes it with Reply, Fable, high' is a bit awkward. It reads like a list of settings rather than a sentence."
     ]
   }
 }

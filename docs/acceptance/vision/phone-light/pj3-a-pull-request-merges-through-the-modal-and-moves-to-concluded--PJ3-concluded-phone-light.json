@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The running thread title is cut off with an ellipsis ('Read through the project and list what each …'). It's intentional single-line clamping and doesn't block anything.",
-      "The 'Add a greeting' summary is cut off with an ellipsis ('…and committed …'). It's an intentional single-line preview.",
-      "Most of the bottom half of the screen is empty below the Concluded list. That's expected with only three threads."
+      "Running thread title is truncated with an ellipsis ('Read through the project and list what each fil...')",
+      "Summary line for 'Add a greeting' is truncated with an ellipsis ('...and committed ...')",
+      "Large empty area below the list in the lower half of the screen"
     ]
   }
 }

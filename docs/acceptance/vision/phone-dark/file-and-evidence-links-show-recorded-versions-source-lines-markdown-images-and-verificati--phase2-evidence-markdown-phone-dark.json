@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Show source' link sits right on top of the 'Evidence guide' heading with almost no vertical gap.",
-      "The checkpoint hash wraps onto its own line and is indented differently from the 'Recorded checkpoint ·' label.",
-      "'Open recorded step' is low-contrast grey compared with the pink 'Open working copy' link. It looks disabled, but it is still legible.",
-      "Most of the screen below the content is empty."
+      "The 'Show source' toggle sits directly above the 'Evidence guide' heading with almost no space between them, so the two look cramped.",
+      "'Open recorded step' is grey next to the pink 'Open working copy', so it can read as disabled even though it is still legible.",
+      "'Recorded pixel' shows only as a link. If this screen is meant to show the image inline, nothing is shown, but the link is still visible and reachable."
     ]
   }
 }

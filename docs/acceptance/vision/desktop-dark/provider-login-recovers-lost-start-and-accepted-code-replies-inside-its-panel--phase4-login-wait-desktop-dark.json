@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Authorization code' label sits very close under the 'Open sign-in page' button, with almost no vertical spacing.",
-      "The 'Continue' button has low contrast against the dialog background, which is expected for a disabled or waiting state but makes it a little hard to read."
+      "The 'Open sign-in page' button sits almost directly on top of the 'Authorization code' label, with nearly no space between them.",
+      "The disabled 'Continue' button has low contrast against the dialog background. This is expected while the app is waiting for the hub."
     ]
   }
 }

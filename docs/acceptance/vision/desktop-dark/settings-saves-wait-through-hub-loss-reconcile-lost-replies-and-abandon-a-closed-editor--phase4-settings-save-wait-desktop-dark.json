@@ -10,7 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dimmed background shows through faintly behind the modal. This is the normal scrim effect."
+      "The disabled 'Saving…' button has low contrast against the dark dialog background, but it can still be read.",
+      "The hub-loss notice has empty space on the right after the 'Stop waiting' button, so the notice and its button look slightly off-balance in the footer."
     ]
   }
 }

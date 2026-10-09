@@ -46,6 +46,7 @@ export const test = base.extend<{ page: Page }>({
     const original = page.screenshot.bind(page);
     page.screenshot = async (options) => {
       // Evidence shows the settled screen: finished animations and no blinking caret.
+      await expect(page.getByText('Rendering…', { exact: true }), 'Markdown content has finished loading before evidence is captured').toHaveCount(0);
       const settled = { animations: 'disabled' as const, caret: 'hide' as const, ...options };
       let image: Buffer;
       const viewport = page.viewportSize();

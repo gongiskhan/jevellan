@@ -9,6 +9,9 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": []
+    "cosmetic": [
+      "The background page is dimmed behind the modal overlay, so its text is hard to read. That is expected while a modal is open.",
+      "The 'Restart with these choices' radio button is dark grey on the dark background and has low contrast."
+    ]
   }
 }

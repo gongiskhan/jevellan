@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar thread titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This is expected truncation.",
-      "The large empty conversation area below the notice makes the screen look sparse."
+      "Session row titles and metadata in the sidebar are cut off with ellipses (e.g. 'Mesh journey fix…', 'Mac.l…'). This is the intended truncation and still readable.",
+      "The conversation pane is mostly empty below the 'The coordinator moved to Mac.lan.' notice. That is expected for an idle coordinator."
     ]
   }
 }

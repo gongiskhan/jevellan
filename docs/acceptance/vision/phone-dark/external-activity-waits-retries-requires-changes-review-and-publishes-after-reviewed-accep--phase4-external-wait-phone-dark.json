@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis (\"Exercise external activity guards befor...\"). The full text still shows in the subtitle line and the message bubble.",
-      "A large empty gap sits between the \"Try automatic again\" button and the composer at the bottom.",
-      "The amber \"Blocked\" badge is small and low-contrast against the dark header."
+      "The header title is cut off with an ellipsis ('Exercise external activity guards before...'). The full text appears in the subtitle line below it, so nothing is lost.",
+      "There is a large empty area between the action buttons and the composer at the bottom of the screen.",
+      "The 'Retry' button in the user message and the filled 'Retry' button under the error have the same label but different visual weight, which could confuse users."
     ]
   }
 }

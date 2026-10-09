@@ -10,7 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The title field has the task description in it ('Read through the project and list what each file is for, one line per file'), but the Task field says something else ('PJ3 long: read the project files, then wait for my message.'). The title may have been pre-filled or left over from earlier, but it doesn't match the task."
+      "The background is dimmed under the modal overlay, so the page behind it is low-contrast. That's expected for a modal and doesn't count as a blocking problem.",
+      "The Title field holds the long instruction text and the Task field holds a different, shorter message. That looks like fixture content in swapped fields, not a rendering problem."
     ]
   }
 }

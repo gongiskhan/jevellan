@@ -9,9 +9,6 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": [
-      "Background content behind the modal overlay is dimmed and slightly blurred, as expected for a modal backdrop",
-      "Note textarea has a pink/magenta focus border, which is consistent with the accent color but slightly heavy"
-    ]
+    "cosmetic": []
   }
 }

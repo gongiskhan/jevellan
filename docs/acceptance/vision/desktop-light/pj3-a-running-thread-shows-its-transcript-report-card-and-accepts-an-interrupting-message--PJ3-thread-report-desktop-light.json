@@ -10,8 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This looks intentional and the full text is likely available elsewhere.",
-      "The status badge says 'Idle' while the Stop button is still shown and the step describes a running thread. The report card and transcript are complete and readable, so this looks like a state mismatch, not a layout problem."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · Mesh journey fix…', 'Done · Improver sandbox · Mac.l…'), which is acceptable for a narrow sidebar.",
+      "The header status chip says 'Idle' while the 'Stop' button is still shown and the thread is running, which reads as inconsistent.",
+      "Each tool card shows its 'completed' status on a separate line below the tool name, leaving uneven space at the top of the card.",
+      "The worktree branch name in the metadata line is shown in full in a long monospace string that crowds the header row."
     ]
   }
 }

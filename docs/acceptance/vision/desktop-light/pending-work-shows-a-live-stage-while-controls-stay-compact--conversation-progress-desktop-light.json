@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar row for 'Progress fixture' says 'Waiting for you', but the conversation header badge says 'Working' and the live stage line says 'Jev is choosing the next step'. The two status labels contradict each other.",
-      "The sidebar session subtitles are cut short with ellipses (e.g. 'Browser fixtur…', 'de…', 'dev-ma…'). This looks intentional, but the project and environment names can't be read in full.",
-      "The large empty area between the user message and the bottom stage line leaves the pending state with little visual anchoring. Readability isn't affected."
+      "The sidebar row for 'Progress fixture' says 'Waiting for you' (amber dot), but the header badge and the stage line say 'Working'.",
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Waiting for you · Browser fixtu…'). This is deliberate truncation, but it hides the project and host names.",
+      "The large empty area between the message and the progress line makes the stage line easy to miss at the bottom of the screen."
     ]
   }
 }

@@ -11,6 +11,9 @@
   ],
   "references": [
     {
+      "path": "../agent-mcp"
+    },
+    {
       "path": "../mesh"
     },
     {

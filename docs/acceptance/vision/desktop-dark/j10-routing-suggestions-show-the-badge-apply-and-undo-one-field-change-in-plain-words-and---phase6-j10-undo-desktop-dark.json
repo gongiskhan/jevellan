@@ -1,20 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
   "layout": "desktop-dark",
   "screenshot": "docs/acceptance/screenshots/phase6-j10-undo-desktop-dark.png",
-  "expected": "the Jevellan web app \"j10 undo\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Exercise answer options: …', 'Context · J11 memory jour…'). This looks like intentional truncation.",
-      "The 'Apply and tell me' value in the Memory care dropdown and the 'Save schedule and jobs' button are low-contrast and look disabled or placeholder-like.",
-      "The diff code blocks have extra empty space at the bottom.",
-      "The 'Last runs' card says '2 routing suggestions ready' but only one suggestion is waiting and the other is undone. This may confuse users, but it's a content issue, not a layout one.",
-      "The pink 'Dismiss' text link sits next to the outlined 'Apply' and 'Change it' buttons and is styled differently from them."
-    ]
-  }
+  "expected": "the Jevellan web app \"j10 undo\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)"
 }

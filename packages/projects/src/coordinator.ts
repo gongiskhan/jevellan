@@ -38,7 +38,7 @@ export function coordinatorPlan(input: { work: Pick<ProjectWorkSettings, 'coordi
   held?: ReadonlySet<string> | undefined }): CoordinatorPlan {
   const pinned = input.work.coordinator.modelId;
   const candidates = modelCandidates({ settings: input.settings, action: 'reply', runtimes: input.runtimes, accounts: input.accounts, statuses: input.statuses,
-    deviceId: input.deviceId, ...(input.now === undefined ? {} : { now: input.now }) })
+    deviceId: input.deviceId, selection: { runtimeId: input.work.coordinator.runtimeId ?? undefined, accountId: input.work.coordinator.accountId ?? undefined }, ...(input.now === undefined ? {} : { now: input.now }) })
     .filter((candidate) => input.runtimes.get(candidate.model.runtime)?.turns && !candidate.model.unavailableReason && (pinned === null || candidate.model.id === pinned));
   if (!candidates.length) return { kind: 'unavailable', reason: noCoordinatorModel(input.deviceName) };
   const ready = candidates.find((candidate) => !candidate.reason);
@@ -151,7 +151,7 @@ export type CoordinatorContext = {
 /** What a turn attempt leaves: run again now, retry after the delay, postpone (hub unreachable, D76), or wait for an event. */
 type TurnEnd = 'continue' | 'retry' | 'postpone' | 'wait';
 type Prepared = { kind: 'unavailable'; reason: string } | {
-  kind: 'ready'; project: Project; cwd: string; model: ModelOption; effort: Effort; accountId: string; session: CoordinatorSession | null; prompt: CoordinatorPromptInput;
+  kind: 'ready'; project: Project; cwd: string; model: ModelOption; effort: Effort; accountId: string; requiredAccountId?: string; session: CoordinatorSession | null; prompt: CoordinatorPromptInput;
 };
 const withoutReason = (state: CoordinatorState): CoordinatorState => { const next = { ...state }; delete next.unavailableReason; return next; };
 type PlanInput = Omit<Parameters<typeof coordinatorPlan>[0], 'work'>;
@@ -471,8 +471,8 @@ export class Coordinator {
     if (ready.kind === 'unavailable') return ready;
     const { project, cwd, plan, input, work } = ready;
     const stored = this.state().session;
-    const current = stored && coordinatorPlan({ ...input, work: { coordinator: { modelId: stored.modelId, effort: work.coordinator.effort } } });
-    const session = stored && current && keepSession(stored, work.coordinator.modelId, current) ? stored : null;
+    const current = stored && coordinatorPlan({ ...input, work: { coordinator: { ...work.coordinator, modelId: stored.modelId } } });
+    const session = stored && current && (!work.coordinator.accountId || stored.accountId === work.coordinator.accountId) && keepSession(stored, work.coordinator.modelId, current) ? stored : null;
     const chosen = session && current?.kind === 'ready' ? { model: current.model, effort: session.effort, accountId: session.accountId }
       : { model: plan.model, effort: plan.effort, accountId: plan.account.id };
     // The fallback's record of reports it already asked about must be complete before the event lines are rendered (D32).
@@ -482,7 +482,7 @@ export class Coordinator {
     const names = new Map((roster?.devices ?? []).map((view) => [view.device.id, view.device.name]));
     const outcomes: ProjectRequestOutcome[] = [];
     if (this.c.outcome) for (const event of events) if (event.kind === 'user-message') outcomes.push(await this.c.outcome(projectId, event, recentConversation(this.#conversation()), this.#outcomeAbort.signal));
-    return { kind: 'ready', project, cwd, ...chosen, session, prompt: { events, outcomes, notebook: notebook?.document.content ?? null, threads, decisions, history: this.#conversation(),
+    return { kind: 'ready', project, cwd, ...chosen, ...(work.coordinator.accountId ? { requiredAccountId: work.coordinator.accountId } : {}), session, prompt: { events, outcomes, notebook: notebook?.document.content ?? null, threads, decisions, history: this.#conversation(),
       runtimeName: (runtime) => this.c.runtimes.get(runtime)?.displayName ?? runtime, deviceName: (id) => id === deviceId ? deviceName : names.get(id) ?? id, base,
       askedDirectly: this.#askedDirectly(events, decisions) } };
   }
@@ -534,7 +534,7 @@ export class Coordinator {
     let launched: LaunchResult;
     try {
       launched = await this.c.launcher.launch({ owner: { kind: 'coordinator', projectId, id: projectId }, turn, runtime: model.runtime, modelId: model.id, model: model.model,
-        modelLabel: model.label, effort, pinnedAccountId: prepared.accountId, permissions: 'read-only', cwd: prepared.cwd, systemAppend: coordinatorSystemAppend(project.name, project.branchPolicy),
+        modelLabel: model.label, effort, pinnedAccountId: prepared.accountId, ...(prepared.requiredAccountId ? { requiredAccountId: prepared.requiredAccountId } : {}), permissions: 'read-only', cwd: prepared.cwd, systemAppend: coordinatorSystemAppend(project.name, project.branchPolicy),
         prompt: (resumed) => coordinatorPrompt(prepared.prompt, resumed), ...(session?.nativeSessionId ? { resume: session.nativeSessionId } : {}),
         safetyProfile: 'coordinator', timeoutMs: this.c.timers.turnTimeoutMs, tools });
     } catch (error) { this.#scope = undefined; await tools.close(); return this.#failed(turn, messageOf(error), 'failed'); }

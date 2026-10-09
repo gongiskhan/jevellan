@@ -433,6 +433,39 @@ test('account pinning: later turns resume on the placed account; an ineligible a
   expect(f.fake.turnStarts[3]).toMatchObject({ prompt: 'Fourth.', resume: { sessionId: thread.nativeSessionId }, account: { account: { id: 'acc_second' } } });
 });
 
+test('explicit account overrides stay strict and a next-turn account change starts in its own home without resuming the old session', { timeout: 120_000 }, async () => {
+  const f = await setup();
+  f.app.hub.put('accounts', 'acc_second', AccountSchema, { schema: 'account-v1', id: 'acc_second', runtime: 'fake', label: 'Second', kind: 'subscription', enabled: true, ceilingPct: 90, credential: 'per-device' }, 0);
+  await f.app.accounts.check('acc_second');
+  f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'First.' }), forThread());
+  const { threadId } = await start(f, 'Explicit account', 'Keep account choice.', { runtimeId: 'fake', accountId: 'acc_fixture', modelId: 'fixture', effort: 'high' });
+  await f.app.projectWork.idle('project');
+  expect(f.thread(threadId).placement).toMatchObject({ accountId: 'acc_fixture', fixed: ['runtime', 'account', 'model', 'effort'] });
+  expect(f.fake.turnStarts[0]?.account.account.id).toBe('acc_fixture');
+  expect(f.thread(threadId).nativeSessionId).toBeDefined();
+  const overridden = await f.request(`/api/projects/project/threads/${threadId}/override`, 'POST', { schema: 'thread-override-request-v1', clientRequestId: 'choose_second', mode: 'next-turn', accountId: 'acc_second' });
+  expect(overridden.status, await overridden.text()).toBe(200);
+  expect(f.thread(threadId).placement.accountId).toBe('acc_second'); expect(f.thread(threadId).nativeSessionId).toBeUndefined();
+  f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'Second.' }), forThread());
+  await f.app.projectWork.threads.message('project', threadId, 'owner', 'Continue.', false); await f.app.projectWork.idle('project');
+  expect(f.fake.turnStarts[1]?.account.account.id).toBe('acc_second'); expect(f.fake.turnStarts[1]?.resume).toBeUndefined();
+  expect(f.fake.turnStarts[1]?.prompt).toContain('Keep account choice.');
+  await f.app.accounts.recordError('acc_second', 'rate-limit');
+  await f.app.projectWork.threads.message('project', threadId, 'owner', 'Wait on the chosen account.', false); await f.app.projectWork.idle('project');
+  expect(f.fake.turnStarts).toHaveLength(2); expect(f.thread(threadId).placement.accountId).toBe('acc_second');
+  const changedRuntime = await f.request(`/api/projects/project/threads/${threadId}/override`, 'POST', { schema: 'thread-override-request-v1', clientRequestId: 'change_provider', mode: 'next-turn', runtimeId: 'another' });
+  expect(changedRuntime.status).toBe(409);
+  const auto = { schema: 'thread-override-request-v1', clientRequestId: 'return_auto', mode: 'next-turn', runtimeId: null, accountId: null, modelId: null, effort: null };
+  const returned = await f.request(`/api/projects/project/threads/${threadId}/override`, 'POST', auto);
+  expect(returned.status, await returned.text()).toBe(200);
+  expect(f.thread(threadId).placement).toMatchObject({ runtime: 'fake', accountId: 'acc_fixture', fixed: [] });
+  expect(f.thread(threadId).nativeSessionId).toBeUndefined();
+  expect((await f.app.projectHub.recentOverrides('project', 8))[0]?.changes).toEqual(expect.arrayContaining([
+    { field: 'account', from: 'acc_second', to: 'auto' }, { field: 'model', from: 'fixture', to: 'auto' }, { field: 'effort', from: 'high', to: 'auto' },
+  ]));
+  expect((await f.request(`/api/projects/project/threads/${threadId}/override`, 'POST', auto)).status).toBe(200);
+});
+
 test('placement refusals: fixed main on a busy checkout, a device that cannot run threads and an unknown device are refused with nothing created; a main default and a stale heartbeat still place here (D8, D65, D88)', { timeout: 120_000 }, async () => {
   const f = await setup();
   const refusedWith = async (extra: object, message: string) => {

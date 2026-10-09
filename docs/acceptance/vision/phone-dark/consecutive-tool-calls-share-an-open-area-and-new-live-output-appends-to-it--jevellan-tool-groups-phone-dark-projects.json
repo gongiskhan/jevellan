@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "Consecutive tool calls share an open area and new live output appends to it",
+  "layout": "phone-dark",
+  "screenshot": "/tmp/jevellan-tool-groups-phone-dark-projects.png",
+  "expected": "the Jevellan web app \"jevellan tool groups projects\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"Consecutive tool calls share an open area and new live output appends to it\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The terminal attach command at the bottom ('jevellan thread attach thread_01M4GFBET7PJ2D0Z…') is cut off with an ellipsis, but the copy button next to it still works.",
+      "The header metadata line ('Claude Code · Fable · high effort · Projects Claude · Worktree on jv/inspect-app-files-for-grouping-dz56q4 · Mac.lan') wraps across three lines in small, low-contrast text."
+    ]
+  }
+}

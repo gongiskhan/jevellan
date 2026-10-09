@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Change the value to two and publish th…'). This is intentional single-line truncation, and the full request text is shown in the conversation below it.",
-      "The struck-through 'Step 1 · Implement' and 'Step 2 · Implement' headings and their 'Undone' labels are dimmed with low contrast against the dark background. They can still be read.",
-      "The 'Local time' captions and other secondary metadata are small and muted, but they can still be read."
+      "Header title is truncated with an ellipsis ('Change the value to two and publish th…'), but the full request is shown in the first message below",
+      "The 'Waiting for you' status chip has low-contrast orange text on a dark background"
     ]
   }
 }

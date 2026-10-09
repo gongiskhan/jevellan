@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Code line 3 (`export const label = '<b>plain text</b>';`) runs right up to the code panel's right border with no padding. It is still fully visible.",
-      "The recorded checkpoint hash sits on its own indented line under the label, which looks a little detached from it.",
-      "There is a lot of empty space below the action links."
+      "Line 3 of the code block reaches the right edge of the panel, so the trailing semicolon appears clipped. The block probably scrolls sideways, but no scroll cue is shown.",
+      "The highlight on line 2 stops short of the code block's right edge, so it doesn't cover the full row width.",
+      "The recorded checkpoint hash is set in very small, low-contrast monospace text. It is still legible.",
+      "Below the links, most of the panel is empty dark space."
     ]
   }
 }

@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The disabled 'Claude Code · Current account' checkbox and its label are low-contrast, but still readable.",
-      "In the dimmed background, the tab strip cuts off a fourth tab at the right edge. A scroll chevron is shown and the background is inactive while the modal is open."
+      "The disabled 'Claude Code · Current account' checkbox is very pale and low-contrast against the white dialog, but its label is still readable.",
+      "The tab bar in the background is clipped at the right edge, with a partly hidden tab and a scroll arrow. This is expected horizontal scrolling and sits behind the modal.",
+      "Background list items show through the blurred overlay above and below the dialog. This doesn't block the modal's controls."
     ]
   }
 }

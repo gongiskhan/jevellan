@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Merge button is greyed out, which looks like a deliberate disabled state because of the conflict, but the screen has no hint telling the user why it can't be clicked.",
-      "Below the single PR card, most of the screen is empty."
+      "The 'Merge' button is light grey on a light background, so it has low contrast. This is probably on purpose because the pull request has conflicts, but it is a little hard to read.",
+      "The content takes up only the top third of the screen, leaving a large empty area below."
     ]
   }
 }

@@ -22,3 +22,4 @@ export * from './project-schemas.js';
 export * from './project-hub-schemas.js';
 export * from './project-hub.js';
 export * from './project-rules.js';
+export * from './agent-access-schemas.js';

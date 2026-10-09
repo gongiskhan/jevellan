@@ -424,20 +424,34 @@ export class ConversationService {
     const input = StartConversationSchema.parse(raw); const project = (await this.#project(input.projectId)); resolveProjectPath(project, this.options.deviceId);
     const settings = await this.options.settings();
     if (this.#closed) throw new Error('Conversations are closed.');
-    const existing = this.#works.get(input.id);
-    if (existing?.ledger.events().length) {
-      const work = existing;
+    const repeated = () => {
+      const work = this.#works.get(input.id);
+      if (!work?.ledger.events().length) return false;
       const first = work.load().messages[0];
       if (work.load().conversation.projectId !== input.projectId || first?.clientMessageId !== input.clientMessageId || first.text !== work.ledger.redact(input.message)) throw conflict('This conversation id was already used for a different request.');
       const saved = work.ledger.events().flatMap((event) => { const value = StartComposerChoicesSchema.safeParse(work.ledger.data(event)); return value.success ? [value.data.choices] : []; })[0];
       if (stableJson(saved) !== stableJson(input.choices)) throw conflict('This conversation id was already used with different composer choices.');
       if (input.choices) this.#initialChoices(work, input.clientMessageId, input.choices, false);
-      return (await this.view(input.id));
-    }
+      return true;
+    };
+    if (repeated()) return this.view(input.id);
     if (input.choices) {
       for (const modelId of [input.choices.once.modelId, input.choices.pins.modelId]) if (modelId && !settings.menu.some((model) => model.id === modelId)) throw conflict('Choose a model from the configuration.');
+      const accounts = await this.options.accounts.list();
+      for (const values of [input.choices.pins, { ...input.choices.pins, ...input.choices.once }]) {
+        if (values.runtimeId && !this.options.runtimes.has(values.runtimeId)) throw conflict('Choose an installed runtime.');
+        const account = values.accountId && accounts.find((entry) => entry.account.id === values.accountId)?.account;
+        if (values.accountId && !account) throw conflict('Choose a registered account.');
+        const model = settings.menu.find((entry) => entry.id === values.modelId);
+        if (account && (values.runtimeId && account.runtime !== values.runtimeId || model && account.runtime !== model.runtime)) throw conflict('The selected account does not belong to the selected runtime.');
+        if (model && values.runtimeId && model.runtime !== values.runtimeId) throw conflict('The selected model does not belong to the selected runtime.');
+      }
       if (input.choices.once.action && !allowedInitialActions(settings.guards, !!project.testCommand).includes(input.choices.once.action)) throw conflict('This next step is not allowed for the first decision.');
     }
+    if (this.#closed) throw new Error('Conversations are closed.');
+    // Account validation can yield to another create. Recheck identity before the
+    // synchronous ledger writes so that only one request can claim this id.
+    if (repeated()) return this.view(input.id);
     const work = this.#load(input.id, true);
     work.create({ title: input.title, projectId: project.id, ownerDeviceId: this.options.deviceId });
     if (input.choices) work.ledger.append({ type: 'notice', data: StartComposerChoicesSchema.parse({ schema: 'start-composer-choices-v1', choices: input.choices }) });
@@ -604,7 +618,7 @@ export class ConversationService {
     for (const mode of ['pin', 'once'] as const) {
       const values = mode === 'pin' ? choices.pins : choices.once;
       for (const [key, value] of Object.entries(values)) {
-        const field = key === 'modelId' ? 'model' : key;
+        const field = key === 'modelId' ? 'model' : key === 'runtimeId' ? 'runtime' : key === 'accountId' ? 'account' : key;
         const clientRequestId = `initial_${createHash('sha256').update(`${clientId}/${mode}/${field}`).digest('hex')}`;
         if (composerOverrides(work).some((entry) => entry.request.clientRequestId === clientRequestId)) continue;
         if (!fresh) throw conflict('This initial composer choice was interrupted before the first decision. Open the conversation and set it again in the composer.');
@@ -620,6 +634,8 @@ export class ConversationService {
     if (!previous) {
       if (view.conversation.generation !== input.generation) throw conflict('This composer choice is stale. Reload the conversation.');
       if (input.field === 'model' && input.value && !(await this.options.settings()).menu.some((model) => model.id === input.value)) throw conflict('Choose a model from the configuration.');
+      if (input.field === 'runtime' && input.value && !this.options.runtimes.has(input.value)) throw conflict('Choose an installed runtime.');
+      if (input.field === 'account' && input.value && !(await this.options.accounts.list()).some((entry) => entry.account.id === input.value)) throw conflict('Choose a registered account.');
       const project = await this.#project(view.conversation.projectId);
       const allowed = view.conversation.work ? (await this.view(work.ledger.id)).allowed : ActionSchema.options.filter((action) => action !== 'integrate' && action !== 'done' && (action !== 'test' || project.testCommand));
       if (input.field === 'action' && input.value && !allowed.includes(input.value)) throw conflict('This next step is not allowed at the current boundary.');
@@ -765,7 +781,8 @@ export class ConversationService {
         ...(!forcedAction && view.conversation.once.action ? { actionOverride: view.conversation.once.action } : {}), once: view.conversation.once,
         newMessage: packet.latestMessageEventId !== latestDecision?.latestMessageEventId, candidates: async (action) => {
           const accounts = await this.options.accounts.list();
-          return modelCandidates({ settings: config, action, runtimes: new Map([...this.options.runtimes].map(([id, adapter]) => [id, adapter.capabilities])), accounts: accounts.map((entry) => entry.account), statuses: accounts.flatMap((entry) => entry.statuses), deviceId: this.options.deviceId });
+          return modelCandidates({ settings: config, action, runtimes: new Map([...this.options.runtimes].map(([id, adapter]) => [id, adapter.capabilities])), accounts: accounts.map((entry) => entry.account), statuses: accounts.flatMap((entry) => entry.statuses), deviceId: this.options.deviceId,
+            selection: { runtimeId: view.conversation.once.runtimeId ?? view.conversation.pins.runtimeId, accountId: view.conversation.once.accountId ?? view.conversation.pins.accountId } });
         }, effortGuide: config.effortGuide, ...(view.conversation.current ? { currentId: view.conversation.current.modelId } : {}), pins: view.conversation.pins,
         keepCurrentThreshold: config.decisions.keepCurrentThreshold, deviceLabel: this.options.deviceLabel ?? this.options.deviceId,
         // An answered question is not re-posted; Ask you then writes a new one that uses the answer.
@@ -1288,11 +1305,18 @@ export class ConversationService {
   }
   async #stretch(work: ConversationWork, workspace: GitWorkspace, choice: ManualStep, operation: Operation, action: Action, source: 'manual' | 'redo' = 'manual', integration?: IntegrationRunner, prepared?: PreparedDecision): Promise<void> {
     const generation = choice.generation; const config = await this.options.settings(); this.#current(work, generation, operation);
+    const preferences = work.load().conversation;
+    const runtimeId = choice.runtimeId ?? preferences.once.runtimeId ?? preferences.pins.runtimeId;
+    const accountId = choice.accountId ?? preferences.once.accountId ?? preferences.pins.accountId;
+    const runtimeSource = choice.runtimeId || preferences.once.runtimeId ? 'override' as const : preferences.pins.runtimeId ? 'pin' as const : undefined;
+    const accountSource = choice.accountId || preferences.once.accountId ? 'override' as const : preferences.pins.accountId ? 'pin' as const : undefined;
     const modelId = choice.modelId ?? work.load().conversation.current?.modelId; const model = config.menu.find((entry) => entry.id === modelId);
     if (!model?.enabled || !config.runtimes[model.runtime]?.enabled) throw new Error('Choose an enabled model for this step.');
+    if (runtimeId !== undefined && model.runtime !== runtimeId) throw new Error('The selected model does not belong to the selected runtime.');
     const adapter = this.options.runtimes.get(model.runtime); const permissions = actionPermissions(action);
     if (!adapter || !adapter.capabilities.mcp || (permissions === 'read-only' ? !adapter.capabilities.readOnlyEnforced : !adapter.capabilities.edit || !adapter.capabilities.shell)) throw new Error('This runtime cannot enforce the capabilities required by this action.');
-    const accounts = await this.options.accounts.list(); const ranking = rankAccounts({ accounts: accounts.map((entry) => entry.account), statuses: accounts.flatMap((entry) => entry.statuses), runtime: model.runtime, model: model.model, deviceId: this.options.deviceId });
+    const accounts = await this.options.accounts.list(); const ranking = rankAccounts({ accounts: accounts.map((entry) => entry.account), statuses: accounts.flatMap((entry) => entry.statuses), runtime: model.runtime, model: model.model, deviceId: this.options.deviceId })
+      .filter((entry) => entry.account.runtime === model.runtime && (accountId === undefined || entry.account.id === accountId));
     this.#current(work, generation, operation);
     const selected = ranking.find((entry) => entry.eligible); if (!selected) throw new Error(`No model can run this step right now: ${ranking.filter((entry) => entry.account.runtime === model.runtime).map((entry) => entry.reason).join(', ') || 'no account'}.`);
     const serial = !adapter.capabilities.perLaunchConfig;
@@ -1341,12 +1365,12 @@ export class ConversationService {
       const waiting = this.#decisionWait(work);
       const jev = jevMetadata(calls);
       const decision = DecisionRecordSchema.parse({ schema: 'decision-v2', id: newId('decision'), conversationId: work.ledger.id, workId: workspace.owner.workId, n: this.decisions(work.ledger.id).length + 1, generation, ...(operation.redoId ? { redoOf: operation.redoId } : {}), trigger: source === 'redo' ? 'redo' : 'resume', at: new Date().toISOString(), latencyMs: 0,
-        action: { chosen: action === 'integrate' ? action : choice.action, source: action === 'integrate' ? 'guard' : source, allowed: action === 'integrate' ? ['integrate'] : (await this.view(work.ledger.id)).allowed, ...(action === 'integrate' ? { guardReason: 'Resolve the publication conflict before verifying and publishing.' } : {}) }, model: { chosen: model.id, source, eligible: [{ modelId: model.id }], excluded: [] },
+        action: { chosen: action === 'integrate' ? action : choice.action, source: action === 'integrate' ? 'guard' : source, allowed: action === 'integrate' ? ['integrate'] : (await this.view(work.ledger.id)).allowed, ...(action === 'integrate' ? { guardReason: 'Resolve the publication conflict before verifying and publishing.' } : {}) }, model: { chosen: model.id, ...(runtimeSource ? { runtime: model.runtime, runtimeSource } : {}), source, eligible: [{ modelId: model.id }], excluded: [] },
         effort: { requested: effort, effective, source },
         context: { project: workspace.project.name, action, ...facts }, device: { chosen: this.options.deviceId, source: 'here' }, correctionsShown: [],
         notices: [...(effective === effort ? [] : [{ kind: 'effort-adjusted', text: 'nearest effort this model supports' }]), ...(waiting?.kind === 'jev-unavailable' ? [{ kind: waiting.kind, text: waiting.text }] : [])],
         ...prepared?.record, latestMessageEventId: latestMessage.id, remember: choice.remember, ...(jev ? { jev } : {}),
-        account: { chosen: selected.account.id, ranking: ranking.map((entry) => ({ accountId: entry.account.id, eligible: entry.eligible, reason: entry.reason })) },
+        account: { chosen: selected.account.id, ...(accountSource ? { source: accountSource } : {}), ranking: ranking.map((entry) => ({ accountId: entry.account.id, eligible: entry.eligible, reason: entry.reason })) },
         memory: { candidates: recall.candidates, chosen: recall.chosen, source: recall.source, ...(recall.scores ? { scores: recall.scores } : {}) } });
       // Read-only reviewers have no shell, so the change they must review is computed here with read-only Git.
       const change = action === 'review' || action === 'adversarial-review' ? await changeUnderReview(workspace, view.conversation.work!.baseCommit) : undefined;

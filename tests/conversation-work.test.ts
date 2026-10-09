@@ -78,6 +78,26 @@ test('a durable decision consumes composer choices even if their receipts fail, 
   expect(reopened.load().conversation.once).toEqual({ effort: 'low' }); expect(composerOverrides(reopened).at(-1)!.status).toBe('pending');
   expect(reopened.ledger.events().filter((event) => event.type === 'override')).toHaveLength(receiptCount + 1);
 });
+
+test('resource choices survive recovery, apply to launches, and Auto clears a pin without launching work', () => {
+  store.message('Explain this project.', 'request');
+  for (const [field, value, mode] of [['runtime', 'codex', 'pin'], ['account', 'acc_selected', 'once']] as const) {
+    saveComposerChoice(store, { schema: 'composer-choice-v1', clientRequestId: `resource_${field}`, generation: store.load().conversation.generation, field, value, mode });
+  }
+  const restored = new ConversationWork(new ConversationLedger(homes, 'conversation')); restored.recover();
+  const before = restored.load().conversation;
+  expect(before.pins).toEqual({ runtimeId: 'codex' }); expect(before.once).toEqual({ accountId: 'acc_selected' });
+  const decision = DecisionRecordSchema.parse({ schema: 'decision-v2', id: 'decision_resources', conversationId: 'conversation', workId: before.work!.id, n: 1, generation: before.generation, trigger: 'user-message', at: new Date().toISOString(), latencyMs: 0,
+    action: { chosen: 'reply', source: 'jev', allowed: ['reply'] }, model: { chosen: 'model', runtime: 'codex', runtimeSource: 'pin', source: 'only-option', eligible: [{ modelId: 'model' }], excluded: [] },
+    account: { chosen: 'acc_selected', source: 'override', ranking: [{ accountId: 'acc_selected', eligible: true, reason: 'eligible' }] }, effort: { requested: 'high', effective: 'high', source: 'jev' },
+    context: { project: 'Fixture', action: 'reply', changeSize: 'small', riskyAreasTouched: [] }, correctionsShown: [], notices: [] });
+  decision.composer = planComposerBindings(restored, decision); restored.ledger.append({ type: 'decision', data: decision }); bindComposerChoices(restored, decision);
+  expect(restored.load().conversation.once).toEqual({}); expect(restored.load().conversation.pins).toEqual({ runtimeId: 'codex' });
+  expect(composerOverrides(restored).every((record) => record.status === 'applied')).toBe(true);
+  saveComposerChoice(restored, { schema: 'composer-choice-v1', clientRequestId: 'resource_auto', generation: restored.load().conversation.generation, field: 'runtime', value: null, mode: 'pin' });
+  expect(new ConversationWork(new ConversationLedger(homes, 'conversation')).recover().conversation.pins).toEqual({});
+  expect(restored.load().stretches).toEqual([]);
+});
 test('guard reply grants one allowance, including recovery after a lost allowance receipt', () => {
   store.message('Request', 'request'); store.pause('Step limit', 'waiting-for-you', 'steps');
   const original = ledger.append.bind(ledger); let once = true;

@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "Consecutive tool calls share an open area and new live output appends to it",
+  "layout": "desktop-light",
+  "screenshot": "/tmp/jevellan-tool-groups-desktop-light-projects.png",
+  "expected": "the Jevellan web app \"jevellan tool groups projects\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Consecutive tool calls share an open area and new live output appends to it\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The sidebar thread titles and metadata are cut off with ellipses (e.g. 'Context · Mesh journey fix…', 'Mac.l…'). This is normal overflow handling.",
+      "The status line 'Working on turn 1…' ends in an ellipsis and may be cut off.",
+      "The three grouped Read calls sit in one card with a single 'Read' header, but the later Read, Bash and Read calls each get their own card. That matches the expected grouping, which is broken by the thinking block and the tool change.",
+      "The Bash call's input shows {\"file_path\":\"four.txt\"}, which is unusual for Bash. It is fixture data, not a rendering problem."
+    ]
+  }
+}

@@ -10,7 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Current instruction files' disclosure label uses a monospace font, while the rest of the dialog uses a sans-serif font"
+      "The 'Context · Context fixture' modal is mostly empty: one line of status text, one link and a collapsed section, with no explicit Close or Done button besides the X icon.",
+      "'Current instruction files' is set in a monospace font, which doesn't match the rest of the modal text."
     ]
   }
 }

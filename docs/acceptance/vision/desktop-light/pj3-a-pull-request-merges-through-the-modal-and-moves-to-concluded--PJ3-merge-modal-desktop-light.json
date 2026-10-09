@@ -9,6 +9,8 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": []
+    "cosmetic": [
+      "The background behind the modal is blurred, so the text in the sidebar, conversation and right panel can't be read. That's expected while a modal is open, so it isn't blocking."
+    ]
   }
 }

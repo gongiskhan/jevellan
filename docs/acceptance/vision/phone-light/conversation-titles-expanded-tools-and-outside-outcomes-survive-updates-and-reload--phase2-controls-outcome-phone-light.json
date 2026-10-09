@@ -9,6 +9,9 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": []
+    "cosmetic": [
+      "The long tool header 'Read project · long_tool_header_…' breaks mid-word over six lines. It is still readable, but it looks cramped.",
+      "The 'completed' status label sits alone on its own line, right-aligned below the wrapped header, so it reads as detached from the tool title."
+    ]
   }
 }

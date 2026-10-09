@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Claude Code · Current account' checkbox is greyed out (checked but disabled). It looks like a locked default, but the low contrast makes it unclear whether it can be changed.",
-      "The 'Close' button in the footer does the same thing as the × icon in the header, so the dialog has two close controls."
+      "The 'Claude Code · Current account' checkbox is checked but greyed out (disabled) and has low contrast next to the pink 'Codex' checkbox. It's still readable, but it's not obvious why it can't be changed.",
+      "Background content is heavily blurred and dimmed behind the modal, which is expected for a modal overlay."
     ]
   }
 }

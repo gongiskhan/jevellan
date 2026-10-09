@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Title field holds a long instruction-style sentence instead of a short title, though it still fits without being cut off.",
-      "Behind the modal, the background content is dimmed and blurred into near illegibility. This is expected for a modal backdrop."
+      "The background behind the modal overlay is dim and blurred, so the page underneath is hard to read. That's expected while a modal is open.",
+      "The Title field's prefilled text is long and comes close to the right edge of the input, but nothing is cut off."
     ]
   }
 }

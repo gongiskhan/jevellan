@@ -53,6 +53,8 @@ Choose HTTPS during that first join if desired. The member uses the hub's passph
 
 ## Diagnostics, updates and removal
 
+Other agents can connect through **Settings → Agents** and the HTTP MCP endpoint, or use `jevellan mcp-server` for a local-command client. Named connections have project scope, expiry and revocation. See [the MCP guide](mcp.md) for configuration, tools and resumable output.
+
 ```sh
 jevellan doctor
 jevellan update

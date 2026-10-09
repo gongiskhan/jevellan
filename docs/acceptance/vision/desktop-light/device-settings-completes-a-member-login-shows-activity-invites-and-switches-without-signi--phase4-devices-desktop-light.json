@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar conversation list cuts off a fourth row partway, just above 'Some native sessions are unavailable'. It looks like the normal edge of a scrollable list, but the half-visible text looks untidy.",
-      "Sidebar conversation titles and subtitles are shortened with ellipses (for example 'Context · Outside context…', 'Exercise external activity …'). This is intended truncation, but the full titles can't be read here.",
-      "The device cards have different heights. The 'Browser member' card is shorter than 'dev-madrid', so the 'Offline fixture' card under 'dev-madrid' leaves an uneven blank area in the right column."
+      "In the sidebar, the fourth conversation row is clipped by the scroll area just above 'Some native sessions are unavailable'. Only a sliver of its title shows. This looks like normal scroll overflow.",
+      "In the sidebar, conversation titles and subtitles are cut off with ellipses (for example 'Context · Outside context …' and 'Exercise external activity g…'). This is intended single-line truncation.",
+      "The device cards in the two-column grid have different heights. The 'Browser member' card is shorter than the 'Mac.lan' card, which leaves empty space under it."
     ]
   }
 }

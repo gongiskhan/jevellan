@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal title wraps the long login-recovery UUID onto two lines, which makes the header feel heavy.",
-      "The 'Paste the test authorization code.' instruction is still shown, but there is no code input visible because the code has already been sent. This is slightly confusing.",
-      "The error 'Can't reach Jevellan. Try again when it's connected.' doesn't offer a retry button. Only 'Start again' is available.",
-      "The page behind the dimmed overlay still shows through, but it doesn't block the modal."
+      "The long login recovery ID wraps onto two lines in the dialog title and in the card behind the dialog.",
+      "The breadcrumb, tab strip and page content are dimmed behind the modal backdrop, which is expected while the dialog is open.",
+      "The tab strip is cut off on the right edge, with a scroll arrow shown for more tabs."
     ]
   }
 }

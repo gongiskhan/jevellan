@@ -19,6 +19,7 @@ import { materialiseConfiguration, type SharedRigging } from '@jevellan/core';
 import { CursorSessions, DevicePresence, ExternalSessionSensor, type SessionSensorOptions } from '@jevellan/mesh';
 import { SettingsSync } from './settings-sync.js';
 import { LifecycleGate } from '@jevellan/core';
+import { AgentAccess, HubAgentAccess } from '@jevellan/mesh';
 
 export type ApplicationOptions = { homes?: Homes; port?: number; url?: string; runtimes?: (context: RuntimeContext) => ReadonlyMap<string, RuntimeAdapter>; timers?: boolean; repositoryVisibility?: VisibilityProbe; decisionFetch?: typeof fetch; hubFetch?: typeof fetch; nativeSessions?: Omit<SessionSensorOptions, 'homes'>;
   /** Test seam for the improver's memory index; production uses the isolated Basic Memory. */ projectMemory?: (project: Project) => MemoryPort;
@@ -37,6 +38,8 @@ export class Application {
   readonly #mesh: HubMesh | undefined;
   readonly homes: Homes; readonly device: DeviceConfig; readonly redactor: SecretRedactor;
   readonly member: MemberHubClient | undefined;
+  readonly agentAccess: AgentAccess;
+  readonly hubAgentAccess: HubAgentAccess | undefined;
   readonly accounts: AccountService; readonly auth: UiAuth | MemberUiAuth; readonly rigging: SharedRigging;
   readonly bridges: StretchBridges;
   readonly memory: BasicMemory; readonly conversations: ConversationService;
@@ -81,6 +84,8 @@ export class Application {
       this.#hub = new HubDatabase(this.homes, 'hub'); this.redactor = this.#hub.redactor;
       this.auth = new UiAuth(this.#hub, this.#hub.vault, this.device.deviceId);
     }
+    this.hubAgentAccess = this.#hub ? new HubAgentAccess(this.#hub) : undefined;
+    this.agentAccess = new AgentAccess(this.hubAgentAccess, this.member);
     try {
       const contexts = new ContextOperations(this.homes);
       if (this.#hub) {

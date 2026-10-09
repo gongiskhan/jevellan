@@ -10,7 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background page is blurred and dimmed behind the modal. This is expected for a dialog overlay."
+      "The 'Current instruction files' disclosure label uses a monospace font, while the rest of the dialog uses sans-serif type",
+      "The 'Open work' link in pink is fairly small but still readable"
     ]
   }
 }

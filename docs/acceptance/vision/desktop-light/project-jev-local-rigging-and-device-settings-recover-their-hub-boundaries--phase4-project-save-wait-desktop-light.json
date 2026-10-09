@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Browse folders on dev-madrid' button sits almost directly on top of the 'Git policy' label, with too little space between them.",
-      "The modal body cuts off at the 'Test command' label. The field is still reachable by scrolling, but nothing on screen shows the content scrolls.",
-      "The wait banner fills the bottom of the modal, so the visible form area is short. It is still readable, and the 'Stop waiting' button can be reached."
+      "The 'Path on Mac.lan' input cuts off the long path at the right edge. This is normal for a single-line text field, but the end of the path can't be seen.",
+      "The 'Browse folders on Mac.lan' button sits almost directly against the 'Git policy' label below it, with little vertical space between them.",
+      "The 'Test command' field is cut off at the bottom of the scrollable modal body. Scrolling reaches it, but the visible area ends right below its label."
     ]
   }
 }

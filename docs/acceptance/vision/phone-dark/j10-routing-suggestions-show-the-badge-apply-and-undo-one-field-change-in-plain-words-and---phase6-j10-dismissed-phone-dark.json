@@ -1,19 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
   "layout": "phone-dark",
   "screenshot": "docs/acceptance/screenshots/phase6-j10-dismissed-phone-dark.png",
-  "expected": "the Jevellan web app \"j10 dismissed\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The tab strip cuts the 'Devices' tab off at the right edge. Scroll arrows are present, so it is still reachable.",
-      "In the Trial log table, the 'Week of' value '2026-10-05' wraps onto two lines because the column is narrow.",
-      "The header 'WHY THEY FINISHED ELSEWHERE' wraps onto three lines, which makes the Trial log table header row tall.",
-      "The long diff lines in the suggestion cards wrap in the monospace block, which makes them a bit harder to scan."
-    ]
-  }
+  "expected": "the Jevellan web app \"j10 dismissed\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)"
 }

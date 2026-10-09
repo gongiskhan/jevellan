@@ -10,8 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background project list behind the modal is blurred, which is expected for a modal overlay.",
-      "The filesystem path in the blurred background wraps onto a second line ('create-project')."
+      "The 'Open work' link is magenta and stands out from the app's otherwise neutral styling."
     ]
   }
 }

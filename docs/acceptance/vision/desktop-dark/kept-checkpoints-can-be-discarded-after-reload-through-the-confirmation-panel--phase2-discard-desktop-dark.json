@@ -9,9 +9,6 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": [
-      "The background page is blurred and dimmed behind the modal, so the sidebar, conversation and settings panel can't be read. This is the expected modal backdrop and doesn't block anything.",
-      "The 'Discard checkpoints' primary button is light while 'Back' is outlined. That's readable, but nothing marks discard as a destructive action."
-    ]
+    "cosmetic": []
   }
 }

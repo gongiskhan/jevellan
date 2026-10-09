@@ -9,8 +9,6 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": [
-      "The background is blurred and dimmed behind the modal, so the conversation content is hard to read. This is expected for a modal overlay."
-    ]
+    "cosmetic": []
   }
 }

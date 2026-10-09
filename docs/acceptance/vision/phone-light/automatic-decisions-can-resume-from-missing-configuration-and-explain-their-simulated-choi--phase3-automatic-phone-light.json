@@ -10,8 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis (\"Exercise automatic decisions: change t...\"). The full text appears in the subtitle and the message, so this doesn't block anything.",
-      "There's a large empty area between the step content and the composer at the bottom."
+      "Header title is truncated with an ellipsis ('Exercise automatic decisions: change t...'), but the full text appears in the subtitle and the user message below it."
     ]
   }
 }

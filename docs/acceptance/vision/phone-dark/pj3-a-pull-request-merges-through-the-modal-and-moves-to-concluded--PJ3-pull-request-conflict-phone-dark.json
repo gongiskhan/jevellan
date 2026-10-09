@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The disabled 'Merge' button has low contrast (grey text on a dark fill). That fits a disabled state when there are conflicts, but it's hard to read.",
-      "Below the single PR card, most of the screen is empty dark space."
+      "The disabled 'Merge' button has very low contrast against the card background. That fits its disabled state (the PR has conflicts), but the label is faint.",
+      "The 'Idle' status chip and the model label 'Claude Code Fable · high' use small, low-contrast monospace text.",
+      "The 'PULL REQUESTS 1' section header is small, dim text that is only just readable."
     ]
   }
 }

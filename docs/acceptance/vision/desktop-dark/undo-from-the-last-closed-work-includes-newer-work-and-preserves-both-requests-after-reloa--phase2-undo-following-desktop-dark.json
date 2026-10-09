@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar conversation list cuts off the last item ('Short summary') at the bottom of its scroll area, so its descender and subtitle row are clipped. The list scrolls, so the item can still be reached.",
-      "Long conversation titles and subtitles in the sidebar are cut short with an ellipsis (e.g. 'Change the value to two …', 'Waiting for you · Undo across wo…'). This looks intentional.",
-      "The struck-through 'Step 1 · Implement' and 'Step 2 · Implement' headings and the small grey 'Undone' labels are low-contrast on the dark background, but they can still be read."
+      "Step 3 output says 'The plan has three steps.' while the step shows 'Working on the requested change.', which looks like placeholder fixture text",
+      "Sidebar conversation titles and subtitles are cut off with ellipses, as intended",
+      "The 'Undone' label on Steps 1 and 2 is low-contrast grey on the dark background"
     ]
   }
 }

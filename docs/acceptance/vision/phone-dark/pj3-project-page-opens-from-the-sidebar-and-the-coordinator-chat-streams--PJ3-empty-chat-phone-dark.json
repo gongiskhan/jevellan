@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row may not have room for more tabs past \"Pull requests\" at this width. If more tabs exist, they could be hidden off-screen with nothing showing that the row scrolls.",
-      "The \"Idle\" status chip and the model label \"Claude Code Fable · high\" are small, low-contrast monospace text. They're readable but faint."
+      "The tab row ends right next to the screen's right edge after 'Pull requests'. Any extra tabs would be off-screen, but the four visible tabs are fully readable.",
+      "The empty-state text sits in the middle of a large empty area, which leaves a lot of unused space.",
+      "The 'Claude Code Fable · high' model label is small, low-contrast monospace text. It is still readable."
     ]
   }
 }

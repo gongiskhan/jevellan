@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This looks like intentional truncation, and the main content is unaffected.",
-      "The thread status badge says 'Idle' while the header still shows an active 'Stop' button, which may confuse users. Both are still visible and reachable.",
-      "The page has a lot of empty space between the report card and the message composer. This is expected for a short thread."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · Mesh journey fix…', 'Mac.l…'). This looks like intentional truncation.",
+      "The 'completed' status on the Read tool card sits on its own line below the 'Read' heading instead of on the same line, which looks out of place.",
+      "The 'Idle' status badge next to 'Back to the project' doesn't fit well with a thread that shows a completed turn report, and the header still offers a 'Stop' action."
     ]
   }
 }

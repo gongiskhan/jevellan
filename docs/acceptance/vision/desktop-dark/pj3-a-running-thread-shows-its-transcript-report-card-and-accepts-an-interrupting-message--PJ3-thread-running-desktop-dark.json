@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Session titles and subtitles in the sidebar are cut short with an ellipsis (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · dev-ma…'). This looks like intentional truncation.",
-      "The main pane has a lot of empty space between the transcript rows and the composer.",
-      "The metadata line under the title uses small, low-contrast monospace text, but it can still be read."
+      "Shell session titles and subtitles in the sidebar are cut short with ellipses (e.g. 'Context · Mesh journey fix…', 'Done · Improver sandbox · Mac.l…'). This looks like deliberate truncation, but the full text can't be seen.",
+      "Each tool card shows its 'completed' status on its own line below the card title instead of on the same line, which leaves a slightly awkward gap.",
+      "The 'Running' status pill next to 'Back to the project' is small and low-contrast pink on a dark background, though it is still readable."
     ]
   }
 }

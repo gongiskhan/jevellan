@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The file label reads 'config.toml', but the editor shows JSON content. It renders fine, but the label and content may not match.",
-      "The 'Item restored to this account.' toast sits inside the modal and leaves extra empty space under the helper text."
+      "The file label reads 'config.toml', but the editor shows JSON content. This may be confusing for a Codex MCP item.",
+      "The 'Saved' status and the 'Preview' link are small and low-contrast compared with the modal title.",
+      "The 'Item restored to this account.' message sits low in the modal and leaves a large empty gap under the helper text."
     ]
   }
 }

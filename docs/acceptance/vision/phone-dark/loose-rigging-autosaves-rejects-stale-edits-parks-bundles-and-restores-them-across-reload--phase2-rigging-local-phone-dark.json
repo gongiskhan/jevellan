@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row behind the modal (Runtimes / Rigging / Decisions …) is cut off at the right edge. It looks like a horizontally scrollable tab strip, and the modal covers it anyway.",
-      "The pink 'Source' link has fairly low contrast against the dark modal background, though it is still readable.",
-      "The modal has no visible text-editing area or park/restore controls in this state. It shows only the saved title, description and a reload notice, which may be intended for this step."
+      "The close button (×) on the success toast is very small and low-contrast, so it's a small touch target on a phone.",
+      "The pink 'Source' link has a different style from the rest of the muted dialog, and the 'Saved' status label next to it is low-contrast.",
+      "Behind the dimmed overlay, the tab row is clipped at the right edge ('Decisions' and the next tab), so the tab list relies on horizontal scrolling. It's hidden by the modal and not relevant to this step."
     ]
   }
 }

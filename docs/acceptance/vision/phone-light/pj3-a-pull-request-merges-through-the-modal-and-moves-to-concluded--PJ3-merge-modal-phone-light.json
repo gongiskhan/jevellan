@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The PR title 'Add a greeting' in the modal body is plain text with no quotes or emphasis, so it reads as part of the sentence ('Add a greeting will be squashed into main')",
-      "The background behind the scrim is blurred and hard to read, which is expected under a modal"
+      "Background content behind the modal backdrop is heavily blurred and hard to read. That is expected for a modal overlay.",
+      "The modal's top edge sits close to the 'Open thread' / 'Merge' card row behind it, with no visual separation beyond the backdrop."
     ]
   }
 }

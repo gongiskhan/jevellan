@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Background page is dimmed and blurred behind the modal, which is expected for a dialog overlay.",
-      "The modal has a lot of empty space below the status banner. The layout could be tighter."
+      "The dismiss '×' on the reload notice is very small and low-contrast compared with the modal's main close button.",
+      "Placing 'Saved' and 'Source' on the same row reads a little ambiguously. It's unclear whether 'Source' is a link or a label."
     ]
   }
 }

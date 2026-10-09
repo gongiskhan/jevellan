@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Edit Managed browser bundle' dialog covers most of the Rigging screen behind it, so you can only see that screen dimmed at the edges. The dialog itself is fully visible and readable.",
-      "The tab strip under the breadcrumb is clipped at the right edge: a fourth tab is partly hidden behind the scroll-arrow button. That is expected for a scrolling tab bar.",
-      "The large empty space in the Content textarea leaves the dialog bottom-heavy at phone width."
+      "The modal covers most of the Rigging screen, so only the 'browser-package' card and its 'Restore locally' button can be seen behind the overlay. This is expected while a dialog is open.",
+      "The tab strip behind the overlay cuts off a fourth tab at the right edge. It sits next to a scroll arrow, so this looks like a deliberate horizontal-scroll design."
     ]
   }
 }

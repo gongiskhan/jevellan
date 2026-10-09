@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "There is almost no space between the 'Open sign-in page ↗' button and the 'Authorization code' label below it. They don't overlap, but the label looks crowded.",
-      "The disabled 'Continue' button has low-contrast grey text on a light background. That is acceptable for a disabled state, but it is a little faint."
+      "The 'Continue' button looks disabled (pale fill, muted text) even though the authorization code field is filled. This may be intentional while waiting for the hub, but nothing says why it can't be used.",
+      "Inside the hub-wait notice, the 'Can't reach the hub (Fixture hub)…' text wraps to three narrow lines because the 'Stop waiting' button takes up space beside it. It stays readable but looks a bit cramped."
     ]
   }
 }

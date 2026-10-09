@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The right 'Why this step' panel is scrolled, so the top stage row ('Plan') is half-hidden under the sticky header and the bottom 'Conversation controls fixture' row is cut off at the viewport edge. Both are normal scroll clipping.",
-      "The middle transcript is scrolled, so the top of the plan card (step 1) is cut off at the top edge.",
-      "In the sidebar list, the conversation row below 'Explain the memorybrows…' shows only a sliver above the 'Some native sessions are unavailable' row (scroll clipping).",
-      "Sidebar conversation titles and metadata are cut off with an ellipsis ('Exercise composer choic…', 'Done · Automatic fixture · dev-m…'), but the full text shows in the main view."
+      "The right 'Why this step' panel is scrolled, so the top row ('Plan') is partly hidden under the panel header and the account list is cut off at the bottom. Both are normal scroll clipping inside a scrollable panel.",
+      "The fourth conversation in the sidebar list is partly hidden above the 'Some native sessions are unavailable' note. The list scrolls, so it can still be reached.",
+      "Some sidebar conversation titles and subtitles are shortened with an ellipsis (for example 'Exercise composer choice…' and 'Explain the memorybrowse…')."
     ]
   }
 }

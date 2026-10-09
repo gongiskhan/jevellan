@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Open work' link sits a little awkwardly under the Cancel/Apply buttons, outside the button row's alignment.",
-      "The dimmed background is crowded behind the modal, which is expected while a modal is open."
+      "The 'Open work' link sits apart below the Cancel/Apply buttons, so its connection to the draft actions is unclear",
+      "The 'Current instruction files' disclosure is in monospace while the rest of the modal text is not",
+      "The Cancel and Apply buttons nearly touch the bottom edge of the CLAUDE.md diff block"
     ]
   }
 }

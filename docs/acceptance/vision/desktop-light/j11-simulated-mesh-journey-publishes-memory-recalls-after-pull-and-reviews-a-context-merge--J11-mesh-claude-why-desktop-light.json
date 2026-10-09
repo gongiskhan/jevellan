@@ -1,18 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
   "layout": "desktop-light",
   "screenshot": "docs/acceptance/screenshots/J11-mesh-claude-why-desktop-light.png",
-  "expected": "the Jevellan web app \"mesh claude why\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The account list in the right 'Why this step' panel runs past the bottom of the viewport, so the last entry ('J8 Codex account: unsupported') is cut in half. The panel looks scrollable, so this probably doesn't block anything.",
-      "In the sidebar, a fourth conversation row under 'J8: run on device B…' is clipped and shows only as a faint partial line above 'Some native sessions are unavailable'.",
-      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Remember that this proje…', 'Waiting for you · J11 memory jou…'). This looks intended, but the full text can't be read."
-    ]
-  }
+  "expected": "the Jevellan web app \"mesh claude why\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\"; the other steps are judged in their own screenshots)"
 }

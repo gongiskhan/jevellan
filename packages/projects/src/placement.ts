@@ -154,7 +154,8 @@ export class Placement {
     const candidates = placementCandidates(decision);
     if ('refused' in candidates) return { kind: 'refused', message: candidates.refused };
     // All four fields fixed asks nothing, so the packet is not gathered.
-    const packet = fixedPlacementFields(input.fixed).length === 4 ? { title: input.title, task: input.task, activeThreads: [], overrides: [] } : await this.#packet(input, decision.devices);
+    const fields = fixedPlacementFields(input.fixed);
+    const packet = ['isolation', 'model', 'effort', 'device'].every((field) => fields.includes(field as typeof fields[number])) ? { title: input.title, task: input.task, activeThreads: [], overrides: [] } : await this.#packet(input, decision.devices);
     const client = this.#o.decisionClient ? await this.#o.decisionClient() : NO_KEY;
     const placed = await decidePlacement(client, { ...decision, jevModel: decision.settings.decisions.model, packet, redactor: this.#o.redactor },
       input.signal ?? new AbortController().signal);

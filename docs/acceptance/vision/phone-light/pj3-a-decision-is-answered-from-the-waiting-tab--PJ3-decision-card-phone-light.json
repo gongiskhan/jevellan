@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Send' button is shown in a muted, disabled-looking style before any text is entered. That's probably intended, but it has low contrast against the card background.",
-      "A lot of empty space sits below the decision card, which is expected for a single pending item."
+      "The 'Answer in your own words' placeholder text is larger than the card's other body text, so it looks inconsistent.",
+      "The disabled Send button has low contrast (grey text on a light grey-blue background).",
+      "Most of the lower half of the screen is empty below the decision card."
     ]
   }
 }

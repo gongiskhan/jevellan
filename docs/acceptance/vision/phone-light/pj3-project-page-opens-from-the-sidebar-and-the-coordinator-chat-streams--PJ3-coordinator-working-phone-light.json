@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Composer placeholder 'Tell the coordinator what you nee…' is truncated by the stop/send buttons on the narrow phone width",
-      "Status pill text 'Working…' is truncated/ellipsized in the header badge"
+      "The composer placeholder is cut off at 'Tell the coordinator what you nee' because the stop and send buttons take up the input width; it's a placeholder hint only, and the input stays usable.",
+      "The 'Working…' status pill and the 'Claude Code Fable · high' subtitle use small monospace text, which is readable but a bit cramped at phone width.",
+      "The two working indicators (the header 'Working…' pill and the 'Coordinator is working…' footer) say the same thing twice."
     ]
   }
 }

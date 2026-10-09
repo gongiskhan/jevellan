@@ -1,17 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/J11-mesh-context-draft-phone-light.png",
-  "expected": "the Jevellan web app \"mesh context draft\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The modal covers the page behind it, so the background text ('/tmp/jodkh75/jevellan-browser-...', 'This repository is public...') shows through partly hidden at the bottom edge. This is expected for a modal overlay.",
-      "The tab strip behind the modal is partly hidden and cut off at the right edge ('Git' tab). This is behind the overlay and doesn't affect the dialog."
-    ]
-  }
+  "expected": "the Jevellan web app \"mesh context draft\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\"; the other steps are judged in their own screenshots)"
 }

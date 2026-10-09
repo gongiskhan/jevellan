@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The right 'Why this step' panel cuts off at the bottom: the line below 'Automatic account: eligible · selected' is only partly visible. It looks like a scrollable panel, so the rest of the content should be reachable by scrolling.",
-      "The fourth conversation in the sidebar list is cut off horizontally just above 'Some native sessions are unavailable'. The list appears to scroll.",
-      "Long conversation titles and subtitles in the sidebar are shortened with ellipses (for example 'Exercise automatic decisi…' and 'Done · Automatic fixture · dev-m…').",
-      "The effort section says 'medium → high', but the bar chart shows medium at 1.00 and high at 0.00. That may be intended, since the bars show the requested effort rather than the effort used, but it could confuse readers. It's a content issue, not a layout issue."
+      "The 'Why this step' panel cuts off below the ACCOUNT section: the line after 'Automatic account: eligible · selected' is partly clipped at the bottom of the viewport. It looks like scrollable overflow, not a layout bug.",
+      "The fourth conversation in the sidebar list is partly clipped above the 'Some native sessions are unavailable' row. This is normal scroll overflow.",
+      "Conversation titles and subtitles in the sidebar are cut short with ellipses (e.g. 'Exercise automatic decisi...', 'Explain the memorybrowse...'). This is expected for narrow rows.",
+      "The EFFORT section says 'medium → high' was used, but the score bars only fill 'medium' (1.00) and show 'high' at 0.00. This may confuse readers, though everything is legible."
     ]
   }
 }

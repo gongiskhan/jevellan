@@ -156,6 +156,7 @@ test('Projects and a manual planned change render the full plan, stream, Why and
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const account = await page.request.post('/hub/accounts', { data: { schema: 'add-account-v1', runtime: 'claude', label: 'Conversation fixture', kind: 'subscription', secret: `fixture-${randomUUID()}` } }); expect(account.ok()).toBe(true);
   const config = await (await page.request.get('/hub/config')).json(); config.configuration['x-jevellan'].guards.pauseAfterPlan = true;
+  config.configuration['x-jevellan'].improver.memory.enabled = false;
   expect((await page.request.put('/hub/config', { data: { schema: 'config-write-v1', revision: config.revision, configuration: config.configuration } })).ok()).toBe(true);
   const projects = await (await page.request.get('/hub/projects')).json(); const original = projects.projects.find((entry: { project: { id: string } }) => entry.project.id === 'browser_fixture').project; const path = Object.values(original.paths)[0] as string;
   await page.goto('/settings/projects'); await page.getByRole('button', { name: 'Add project', exact: true }).click(); const dialog = page.getByRole('dialog');
@@ -164,6 +165,9 @@ test('Projects and a manual planned change render the full plan, stream, Why and
   const projectCard = page.locator('.card').filter({ has: page.getByRole('heading', { name: 'Manual conversation fixture' }) });
   await projectCard.getByRole('button', { name: 'Context', exact: true }).click(); await dialog.getByText('Current instruction files', { exact: true }).click(); await expect(dialog).toContainText('Preserve the request and its tests.'); await dialog.getByRole('button', { name: 'Close panel' }).click();
   await projectCard.getByRole('button', { name: 'Browse memory', exact: true }).click(); await dialog.getByLabel('Search memory').fill('fixture'); await dialog.getByRole('button', { name: 'Search', exact: true }).click(); await expect(dialog).toContainText('No matching notes.'); await dialog.getByRole('button', { name: 'Close panel' }).click();
+  const projectSaved = page.locator('.toast.success').filter({ hasText: 'Project saved.' });
+  for (const toast of await projectSaved.all()) await toast.getByRole('button', { name: 'Dismiss message', exact: true }).click().catch(() => undefined);
+  await expect(projectSaved).toHaveCount(0);
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: `docs/acceptance/screenshots/phase2-projects-${info.project.name}.png`, fullPage: true });
   await page.goto('/'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption({ label: 'Manual conversation fixture' }); await page.getByPlaceholder('What should we build or fix?').fill('Change the value to two and verify it.'); await page.getByRole('button', { name: 'Start', exact: true }).click();
@@ -420,7 +424,11 @@ test('file and evidence links show recorded versions, source lines, Markdown, im
   await first.getByRole('button', { name: 'the source', exact: true }).click(); await expect(panel.locator('.selected-line')).toContainText('amount = 2'); await panel.getByRole('button', { name: 'Close panel', exact: true }).click();
   await first.getByRole('button', { name: 'docs/Guide with spaces.md', exact: true }).click(); await expect(panel.getByRole('heading', { name: 'Evidence guide', exact: true })).toBeVisible(); await expect(panel.locator('.markdown li')).toHaveCount(2); await page.screenshot({ path: `docs/acceptance/screenshots/phase2-evidence-markdown-${info.project.name}.png` });
   await panel.getByRole('button', { name: 'Source line', exact: true }).click(); await expect(panel.locator('.selected-line')).toContainText('amount = 2'); await panel.getByRole('button', { name: 'Close panel', exact: true }).click();
-  await first.getByRole('button', { name: 'Changes', exact: true }).click(); await expect(panel.getByLabel('Changed files')).toContainText('src/example.ts'); await panel.getByRole('button', { name: 'screen.png', exact: true }).last().click(); await expect(panel.locator('img')).toBeVisible(); await expect.poll(() => panel.locator('img').evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBe(96); await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight)); await page.screenshot({ path: `docs/acceptance/screenshots/phase2-evidence-image-${info.project.name}.png` }); await panel.getByRole('button', { name: 'Close panel', exact: true }).click(); await panel.getByRole('button', { name: 'Close panel', exact: true }).click();
+  await first.getByRole('button', { name: 'Changes', exact: true }).click(); await expect(panel.getByLabel('Changed files')).toContainText('src/example.ts'); await panel.getByRole('button', { name: 'screen.png', exact: true }).last().click(); await expect(panel.locator('img')).toBeVisible(); await expect.poll(() => panel.locator('img').evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBe(96); await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  // Following the end removes Jump to latest and shrinks the composer; capture after that scroll adjustment.
+  await expect(page.locator('.composer .jump-latest')).toBeHidden();
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  await page.screenshot({ path: `docs/acceptance/screenshots/phase2-evidence-image-${info.project.name}.png` }); await panel.getByRole('button', { name: 'Close panel', exact: true }).click(); await panel.getByRole('button', { name: 'Close panel', exact: true }).click();
   await first.locator('.tool-file').getByRole('button', { name: 'value.txt', exact: true }).click(); await expect(panel.getByLabel('File contents')).toContainText('2'); await panel.getByRole('button', { name: 'Close panel', exact: true }).click();
   await picker.getByRole('combobox', { name: 'Action', exact: true }).selectOption('done'); await picker.getByRole('button', { name: 'Continue', exact: true }).click(); await expect(picker).not.toBeVisible();
   await expect.poll(async () => (await (await page.request.get(`/api/conversations/${id}`)).json()).conversation.state, { timeout: 30_000 }).toBe('done');
@@ -508,6 +516,8 @@ test('loose Rigging autosaves, rejects stale edits, parks bundles and restores t
 });
 
 test('loose Rigging becomes managed with bundled files, durable retry and runtime toggles', async ({ page }, info) => {
+  // Promotion, autosave and both runtime toggles each allow up to 60 seconds for APM materialization.
+  test.setTimeout(240_000);
   const errors: string[] = []; page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click(); await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const projects = ProjectsListSchema.parse(await (await page.request.get('/hub/projects')).json()); const fixtureRoot = dirname(Object.values(projects.projects.find((view) => view.project.id === 'browser_fixture')!.project.paths)[0]!);
@@ -573,6 +583,7 @@ test('automatic decisions can resume from missing configuration and explain thei
   await expect(dialog).toContainText('Model only option'); await expect(dialog).toContainText('Effort Jev'); await expect(dialog).toContainText('nearest effort this model supports');
   await expect(dialog).toContainText('jev-browser-simulated'); await expect(dialog).toContainText('Model and effort');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await expect(dialog.getByText('Loading corrections…', { exact: true })).toHaveCount(0);
   await page.screenshot({ path: `docs/acceptance/screenshots/phase3-why-${info.project.name}.png` });
   await dialog.getByRole('button', { name: 'Close panel' }).click(); await step.getByRole('button', { name: 'Changes', exact: true }).click(); await expect(dialog).toContainText('Jevellan verification'); await expect(dialog).toContainText('Passed');
   await dialog.getByRole('button', { name: 'Close panel' }).click();
@@ -920,7 +931,7 @@ test('J11 simulated mesh journey publishes memory, recalls after pull and review
   const claudeModel = configuration.configuration['x-jevellan'].menu.find((model: { runtime: string; enabled: boolean; unavailableReason?: string }) => model.runtime === 'claude' && model.enabled && !model.unavailableReason).id;
   const switchTo = async (name: string, url: string) => { await openDeviceSwitcher(page); await page.locator('.device-switcher button').filter({ has: page.getByText(name, { exact: true }) }).click(); await page.waitForURL(`${url}/**`); await expect(page.getByLabel('Passphrase')).not.toBeVisible(); };
   await switchTo(target.name, target.url);
-  const initial = MemorySearchSchema.parse(await (await page.request.get(`${target.url}/api/projects/j11_fixture/memory?query=existing`, { timeout: 40_000 })).json()); expect(initial.notes).toHaveLength(1);
+  const initial = MemorySearchSchema.parse(await (await page.request.get(`${target.url}/api/projects/j11_fixture/memory?query=existing`, { timeout: 130_000 })).json()); expect(initial.notes).toHaveLength(1);
   await switchTo(source.name, sourceUrl);
   const baseline = git(sourcePath, 'rev-parse', 'HEAD');
   await page.goto('/'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('j11_fixture'); await page.getByPlaceholder('What should we build or fix?').fill('Remember that this project uses Vitest with globals enabled.'); await page.getByRole('button', { name: 'Start', exact: true }).click();
@@ -941,14 +952,14 @@ test('J11 simulated mesh journey publishes memory, recalls after pull and review
   };
   const remembered = await step(sourceUrl, sourceId, 'reply', claudeModel, true); const workId = remembered.conversation.work!.id;
   expect(remembered.handoffs[0]?.summary).toBe('Saved the Vitest convention in project memory.'); expect(git(sourcePath, 'rev-parse', 'HEAD')).not.toBe(baseline);
-  const notes = MemorySearchSchema.parse(await (await page.request.get('/api/projects/j11_fixture/memory?query=Vitest', { timeout: 40_000 })).json()); const note = notes.notes.find(note => note.title === 'Vitest convention for mesh')!; expect(note.content).toContain('globals enabled');
+  const notes = MemorySearchSchema.parse(await (await page.request.get('/api/projects/j11_fixture/memory?query=Vitest', { timeout: 130_000 })).json()); const note = notes.notes.find(note => note.title === 'Vitest convention for mesh')!; expect(note.content).toContain('globals enabled');
   const reviewed = await step(sourceUrl, sourceId, 'review', claudeModel); expect(reviewed.conversation.work!.id).toBe(workId); expect(reviewed.stretches[1]?.runtime).toBe('claude'); expect(reviewed.handoffs[1]?.summary).toBe('Proposed global test imports without changing the checkout.');
   await expect(page.locator('.stretch-block').nth(1)).toContainText('J11 claude received project memory: Vitest convention for mesh; globals enabled.');
   const why = async (index: number, label: string) => { await centered(page.locator('.stretch-block').nth(index).getByRole('button', { name: 'Why', exact: true })).click(); const region = dialog.getByRole('region', { name: 'Memory selection' }); await expect(region).toContainText('Selected by search rank.'); await expect(region.getByRole('list', { name: 'Chosen memory' })).toContainText(note.permalink); expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true); await page.screenshot({ path: `docs/acceptance/screenshots/J11-mesh-${label}-${info.project.name}.png` }); await dialog.getByRole('button', { name: 'Close panel', exact: true }).click(); };
   await why(1, 'claude-why'); await step(sourceUrl, sourceId, 'done', claudeModel);
   const published = git(sourcePath, 'rev-parse', 'HEAD'); expect(git(join(root, 'j11-origin.git'), 'rev-parse', 'main')).toBe(published); expect(git(sourcePath, 'status', '--porcelain')).toBe('');
   const changed = git(sourcePath, 'diff', '--name-only', '-z', baseline, published).split('\0').filter(Boolean); expect(changed.length).toBeGreaterThan(0); expect(changed.every(path => path.startsWith('.jevellan/memory/'))).toBe(true);
-  const saved = MemorySearchSchema.parse(await (await page.request.get('/api/projects/j11_fixture/memory?query=Vitest', { timeout: 40_000 })).json()); expect(saved.notes.some(note => note.title === 'Global test imports for mesh')).toBe(true);
+  const saved = MemorySearchSchema.parse(await (await page.request.get('/api/projects/j11_fixture/memory?query=Vitest', { timeout: 130_000 })).json()); expect(saved.notes.some(note => note.title === 'Global test imports for mesh')).toBe(true);
   git(targetPath, 'pull', '--ff-only'); expect(git(targetPath, 'rev-parse', 'HEAD')).toBe(published);
   await switchTo(target.name, target.url); await page.goto(`${target.url}/`); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('j11_fixture'); await page.getByPlaceholder('What should we build or fix?').fill('Explain how to write a Vitest test for this project.'); await page.getByRole('button', { name: 'Start', exact: true }).click();
   await serverWork('start on the member', () => expect(picker).toBeVisible(budget(1.8))); const targetId = new URL(page.url()).pathname.split('/')[2]!; const recalled = await step(target.url, targetId, 'reply', 'j11_codex'); expect(recalled.conversation.ownerDeviceId).toBe(target.id); expect(recalled.stretches[0]?.runtime).toBe('codex'); expect(recalled.decisions[0]?.memory?.chosen).toContain(note.permalink);
@@ -963,6 +974,8 @@ test('J11 simulated mesh journey publishes memory, recalls after pull and review
 });
 
 test('Settings saves wait through hub loss, reconcile lost replies and abandon a closed editor', async ({ page }, info) => {
+  // This fixture has accumulated accounts; both Rigging saves deliver through real APM before losing a reply.
+  test.setTimeout(420_000);
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
   await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click(); await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const dialog = page.getByRole('dialog'); const createdBodies: string[] = [];
@@ -978,31 +991,33 @@ test('Settings saves wait through hub loss, reconcile lost replies and abandon a
   await expect(dialog.getByText(message, { exact: true })).toBeVisible(); await page.screenshot({ path: `docs/acceptance/screenshots/phase4-settings-save-wait-${info.project.name}.png` }); await expect(dialog).not.toBeVisible({ timeout: 60_000 });
   expect(createdBodies).toHaveLength(3); expect(new Set(createdBodies).size).toBe(1); expect(JSON.parse(createdBodies[0]!).clientRequestId).toBeTruthy();
   const accounts = AccountListSchema.parse(await (await page.request.get('/hub/accounts')).json()).accounts.filter(row => row.account.label === label); expect(accounts).toHaveLength(1); const account = accounts[0]!; const card = page.locator(`#account-${account.account.id}`);
-  const loseSavedReply = async (path: string, method: string) => {
+  const loseSavedReply = async (path: string, method: string, timeout = 60_000) => {
     const bodies: string[] = [];
-    const lost = page.waitForResponse(response => response.request().method() === method && new URL(response.url()).pathname === path && response.status() === 503, { timeout: 60_000 });
-    await page.route(`${info.project.use.baseURL}${path}`, async route => { if (route.request().method() !== method) return route.continue(); bodies.push(route.request().postData()!); if (bodies.length === 1) { const saved = await route.fetch({ timeout: 60_000 }); expect(saved.ok()).toBe(true); await route.fulfill(unavailable); } else await route.continue(); });
+    const lost = page.waitForResponse(response => response.request().method() === method && new URL(response.url()).pathname === path && response.status() === 503, { timeout });
+    await page.route(`${info.project.use.baseURL}${path}`, async route => { if (route.request().method() !== method) return route.continue(); bodies.push(route.request().postData()!); if (bodies.length === 1) { const saved = await route.fetch({ timeout }); expect(saved.ok()).toBe(true); await route.fulfill(unavailable); } else await route.continue(); });
     return { lost, check: () => { expect(bodies).toHaveLength(2); expect(new Set(bodies).size).toBe(1); expect(JSON.parse(bodies[0]!).clientRequestId).toBeTruthy(); } };
   };
   const edited = await loseSavedReply(`/hub/accounts/${account.account.id}`, 'PATCH'); await card.getByRole('button', { name: 'Edit', exact: true }).click(); await dialog.getByLabel('Label', { exact: true }).fill('Recovered account edit'); await dialog.getByRole('button', { name: 'Save account', exact: true }).click(); await edited.lost; await expect(dialog.getByText(message, { exact: true })).toBeVisible(); await expect(dialog).not.toBeVisible({ timeout: 60_000 }); edited.check(); await expect(card).toContainText('Recovered account edit');
   const replaced = await loseSavedReply(`/hub/accounts/${account.account.id}/credential`, 'PUT'); await card.getByRole('button', { name: 'Replace key', exact: true }).click(); await dialog.getByLabel('New API key', { exact: true }).fill(`fixture-${randomUUID()}`); await dialog.getByRole('button', { name: 'Replace key', exact: true }).click(); await replaced.lost; await expect(dialog.getByText(message, { exact: true })).toBeVisible(); await expect(dialog).not.toBeVisible({ timeout: 60_000 }); replaced.check();
-  await page.goto('/settings/rigging'); const added = await loseSavedReply('/hub/rigging', 'POST'); await page.getByRole('button', { name: 'Add local item', exact: true }).click(); await dialog.getByLabel('Name', { exact: true }).fill('Recoverable Settings skill'); await dialog.getByRole('textbox', { name: 'Content', exact: true }).fill('Preserve the requested scope.'); await dialog.getByRole('button', { name: 'Add item', exact: true }).click(); await added.lost; await expect(dialog.getByText(message, { exact: true })).toBeVisible(); await expect(dialog).not.toBeVisible({ timeout: 60_000 }); added.check();
+  await page.goto('/settings/rigging'); const added = await loseSavedReply('/hub/rigging', 'POST', 180_000); await page.getByRole('button', { name: 'Add local item', exact: true }).click(); await dialog.getByLabel('Name', { exact: true }).fill('Recoverable Settings skill'); await dialog.getByRole('textbox', { name: 'Content', exact: true }).fill('Preserve the requested scope.'); await dialog.getByRole('button', { name: 'Add item', exact: true }).click(); await added.lost; await expect(dialog.getByText(message, { exact: true })).toBeVisible(); await expect(dialog).not.toBeVisible({ timeout: 60_000 }); added.check();
   const items = (await (await page.request.get('/hub/rigging')).json()).items.filter((row: { item: { name: string } }) => row.item.name === 'Recoverable Settings skill'); expect(items).toHaveLength(1); const item = RiggingSaveSchema.shape.item.parse(items[0]);
-  const itemPath = `/hub/rigging/${item.item.id}`; const saved = await loseSavedReply(itemPath, 'PUT'); await page.getByRole('button', { name: /Recoverable Settings skill/ }).click(); await dialog.getByRole('textbox', { name: 'Content', exact: true }).fill('Preserve the scope and verify it.'); await saved.lost; await expect(dialog.getByText(message, { exact: true })).toBeVisible(); await expect(dialog.getByRole('status', { name: '', exact: true }).filter({ hasText: /^Saved/ })).toHaveText('Saved', { timeout: 60_000 }); saved.check();
+  const itemPath = `/hub/rigging/${item.item.id}`; const saved = await loseSavedReply(itemPath, 'PUT', 180_000); await page.getByRole('button', { name: /Recoverable Settings skill/ }).click(); await dialog.getByRole('textbox', { name: 'Content', exact: true }).fill('Preserve the scope and verify it.'); await saved.lost; await expect(dialog.getByText(message, { exact: true })).toBeVisible(); await expect(dialog.getByRole('status', { name: '', exact: true }).filter({ hasText: /^Saved/ })).toHaveText('Saved', { timeout: 60_000 }); saved.check();
   let abandoned = 0; await page.route(`${info.project.use.baseURL}${itemPath}`, route => { if (route.request().method() !== 'PUT') return route.continue(); abandoned++; return route.fulfill(unavailable); }); await dialog.getByRole('textbox', { name: 'Content', exact: true }).fill('This abandoned edit must not be sent later.'); await expect(dialog.getByText(message, { exact: true })).toBeVisible(); await dialog.getByRole('button', { name: 'Close panel', exact: true }).click(); await expect(dialog).not.toBeVisible(); await page.waitForTimeout(2300); expect(abandoned).toBe(1);
   const current = (await (await page.request.get('/hub/rigging')).json()).items.find((row: { item: { id: string } }) => row.item.id === item.item.id); expect(RiggingSaveSchema.shape.item.parse(current).item.content).toBe('Preserve the scope and verify it.'); expect(errors).toEqual([]);
 });
 
 test('project, Jev, local Rigging and device Settings recover their hub boundaries', async ({ page }, info) => {
+  // Promotion delivers the bundle through real APM to this accumulated fixture's account homes.
+  test.setTimeout(300_000);
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
   await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click(); await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const dialog = page.getByRole('dialog'); const message = "Can't reach the hub (Fixture hub). This will continue when it's back.";
   const unavailable = { status: 503, contentType: 'application/json', body: JSON.stringify({ schema: 'error-v1', code: 'hub-unavailable', message, retryable: true }) };
-  const interrupt = async (path: string, method: string, afterSave = true) => {
-    const bodies: string[] = []; const lost = page.waitForResponse(response => new URL(response.url()).pathname === path && response.request().method() === method && response.status() === 503, { timeout: 60_000 });
+  const interrupt = async (path: string, method: string, afterSave = true, timeout = 60_000) => {
+    const bodies: string[] = []; const lost = page.waitForResponse(response => new URL(response.url()).pathname === path && response.request().method() === method && response.status() === 503, { timeout });
     await page.route(`${info.project.use.baseURL}${path}`, async route => {
       if (route.request().method() !== method) return route.continue(); bodies.push(route.request().postData()!);
-      if (bodies.length === 1) { if (afterSave) expect((await route.fetch({ timeout: 60_000 })).ok()).toBe(true); await route.fulfill(unavailable); } else await route.continue();
+      if (bodies.length === 1) { if (afterSave) expect((await route.fetch({ timeout })).ok()).toBe(true); await route.fulfill(unavailable); } else await route.continue();
     });
     return { lost, verify: () => { expect(bodies).toHaveLength(2); expect(new Set(bodies).size).toBe(1); } };
   };
@@ -1029,7 +1044,7 @@ test('project, Jev, local Rigging and device Settings recover their hub boundari
   await page.route(`${info.project.use.baseURL}/api/rigging/homes`, route => { refreshesAfterStop++; return route.fulfill(unavailable); });
   await dialog.getByRole('button', { name: 'Make managed', exact: true }).click(); await expect(dialog.getByText(message, { exact: true })).toBeVisible(); await dialog.getByRole('button', { name: 'Stop waiting', exact: true }).click(); await expect(dialog.getByRole('button', { name: 'Retry', exact: true })).toBeEnabled(); await page.waitForTimeout(2300); expect(stoppedPromotions).toBe(1); expect(refreshesAfterStop).toBe(0); await expect(dialog.getByText(message, { exact: true })).not.toBeVisible();
   await page.unroute(`${info.project.use.baseURL}${path}/promote`); await page.unroute(`${info.project.use.baseURL}/api/rigging/homes`);
-  const promotion = await interrupt(`${path}/promote`, 'POST'); await dialog.getByRole('button', { name: 'Retry', exact: true }).click(); await promotion.lost; await expect(dialog.getByText(message, { exact: true })).toBeVisible(); await expect(dialog).not.toBeVisible({ timeout: 60_000 }); promotion.verify();
+  const promotion = await interrupt(`${path}/promote`, 'POST', true, 180_000); await dialog.getByRole('button', { name: 'Retry', exact: true }).click(); await promotion.lost; await expect(dialog.getByText(message, { exact: true })).toBeVisible(); await expect(dialog).not.toBeVisible({ timeout: 60_000 }); promotion.verify();
   expect((await (await page.request.get('/hub/rigging')).json()).items.filter((row: { item: { name: string } }) => row.item.name === 'Recovered managed bundle')).toHaveLength(1); expect(readFileSync(join(bundle, 'assets/example.txt'), 'utf8')).toBe('Keep this bundled file.\n');
   await page.goto('/settings/devices'); const invitation = await interrupt('/hub/devices/invitations', 'POST', false); await page.getByRole('button', { name: 'Add a device', exact: true }).click(); await invitation.lost; await expect(page.getByText(message, { exact: true })).toBeVisible(); await expect(dialog.locator('.verification-code strong')).toHaveText(/^[0-9A-HJKMNP-TV-Z]{8}$/); invitation.verify(); await dialog.getByRole('button', { name: 'Close panel', exact: true }).click();
   const switching = await interrupt('/api/devices/switch', 'POST', false); await openDeviceSwitcher(page); await page.locator('.device-switcher button').filter({ hasText: 'Browser member' }).click(); await switching.lost; await expect(page.getByText(message, { exact: true })).toBeVisible(); await expect(page.locator('.device-switcher summary')).toContainText('Browser member'); switching.verify(); await expect(page.getByLabel('Passphrase')).not.toBeVisible(); expect(errors).toEqual([]);

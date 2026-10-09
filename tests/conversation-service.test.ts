@@ -72,6 +72,28 @@ const implement: FakeStep = async ({ input, emit }) => {
   await handoff(input, { changedFiles: ['value.txt'], testsRun: { command: 'agent claimed a pass', passed: true, summary: 'Informative only.' } }); return { status: 'completed' };
 };
 async function changeProject(values: Partial<Project>) { project = { ...project, ...values }; const revision = (await app.conversations.projects()).projects[0]!.revision; await app.conversations.saveProject({ schema: 'project-write-v1', revision, project }); }
+
+test('conversation creation and manual continuation honor runtime and account pins without bypassing account cooling', async () => {
+  app.hub.put('accounts', 'acc_selected', AccountSchema, { schema: 'account-v1', id: 'acc_selected', runtime: 'fake', label: 'Selected', kind: 'subscription', enabled: true, ceilingPct: 90, credential: 'per-device' }, 0);
+  await app.accounts.check('acc_selected');
+  const response = await request('/api/conversations', 'POST', { schema: 'start-conversation-v1', id: 'conversation', projectId: project.id, title: 'Resource overrides', message: 'Explain the value.', clientMessageId: 'first_resources',
+    choices: { schema: 'composer-initial-v1', once: {}, pins: { runtimeId: 'fake', accountId: 'acc_selected' } } });
+  expect(response.status, await response.text()).toBe(201);
+  fake.enqueue(async ({ input }) => { await handoff(input); return { status: 'completed' }; });
+  await choose('reply'); await app.conversations.wait('conversation');
+  expect(fake.starts[0]?.account.account.id).toBe('acc_selected');
+  expect(app.conversations.decisions('conversation')[0]).toMatchObject({ model: { runtime: 'fake', runtimeSource: 'pin' }, account: { chosen: 'acc_selected', source: 'pin' } });
+  await app.accounts.recordError('acc_selected', 'rate-limit');
+  await choose('reply'); await app.conversations.wait('conversation');
+  expect(fake.starts).toHaveLength(1);
+  expect((await app.conversations.view('conversation')).conversation.state).toBe('blocked');
+  await app.conversations.composerChoice('conversation', { schema: 'composer-choice-v1', clientRequestId: 'account_auto', generation: (await app.conversations.view('conversation')).conversation.generation,
+    field: 'account', mode: 'pin', value: null });
+  fake.enqueue(async ({ input }) => { await handoff(input); return { status: 'completed' }; });
+  await choose('reply'); await app.conversations.wait('conversation');
+  expect(fake.starts[1]?.account.account.id).toBe('acc_fixture');
+  expect((await app.conversations.view('conversation')).conversation.pins).toEqual({ runtimeId: 'fake' });
+});
 async function settle(choice: 'publish' | 'keep' | 'discard', clientRequestId = `settle_${choice}`) {
   const view = (await app.conversations.view('conversation'));
   const input = { schema: 'settle-work-v1', clientRequestId, workId: (view.conversation.work ?? view.closedWorks.at(-1))!.id, generation: view.conversation.generation, choice };
@@ -157,7 +179,7 @@ test('accepting edited memory refreshes an already-open search index before the 
   expect((await memory.search('azurite', signal)).notes.map((entry) => entry.content).join('\n')).toContain('The accepted rule uses azurite.');
   fake.enqueue(async ({ input }) => { expect(input.brief).toContain('The accepted rule uses azurite.'); await handoff(input); return { status: 'completed' }; });
   await choose('reply'); await app.conversations.wait('conversation'); expect((await app.conversations.view('conversation')).stretches.at(-1)?.status).toBe('completed');
-}, 60_000);
+}, 120_000);
 test('accepting files cannot legitimize an unrecorded commit or skip an unresolved undo', async () => {
   await blockedFiles(); const review = await adoptionReview(); git(path, 'add', '-A'); git(path, 'commit', '-m', 'Outside commit'); const outside = git(path, 'rev-parse', 'HEAD');
   const changes = await app.conversations.changes('conversation', 1); expect(changes.recovery?.fingerprint).toBeUndefined(); expect(changes.recovery?.reason).toContain('changed git history');

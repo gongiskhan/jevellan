@@ -1,4 +1,5 @@
 export * from './database.js';
+export * from './agent-access.js';
 export * from './auth.js';
 export * from './devices.js';
 export * from './hub-mesh.js';

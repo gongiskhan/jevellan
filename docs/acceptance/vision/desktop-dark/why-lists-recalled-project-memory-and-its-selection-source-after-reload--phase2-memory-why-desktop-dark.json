@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fourth conversation row in the sidebar (around y≈712) is cut off horizontally just above the 'Some native sessions are unavailable' line. Only the tops of its letters show. This looks like normal scroll overflow in the list, but the half-visible row looks broken.",
-      "Conversation titles and subtitles in the sidebar are cut short with ellipses ('Explain the memorybrows…', 'Exercise evidence naviga…'). This is expected in a narrow column.",
-      "The right 'Why this step' panel goes past the bottom of the viewport: the 'JEV' section heading is only just visible, so the rest has to be scrolled to.",
-      "The amber 'Jev is unavailable (no key configured). Pick the next step:' notice appears twice, once in the Why panel and once in the main step picker. It's repeated, not broken."
+      "Sidebar conversation titles and subtitles are cut short with ellipses (e.g. 'Explain the memorybrows…', 'Context · Created instructio…'). This looks like intended truncation.",
+      "The last line of the right 'Why this step' panel ('This step was picked manually.') sits right at the bottom edge of the viewport, so there may be more content below that needs scrolling to see.",
+      "The 'Jev is unavailable' warning appears twice, once in the Why panel and once in the main step picker, which is redundant."
     ]
   }
 }

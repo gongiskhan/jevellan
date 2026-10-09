@@ -42,7 +42,7 @@ export async function installationBrowser({ origin, project, remote, root, layou
     await dialog.getByRole('combobox', { name: 'Kind', exact: true }).selectOption('api-key');
     await dialog.getByLabel('API key', { exact: true }).fill(`fixture-${randomUUID()}`);
     await dialog.getByLabel('When may Jevellan use this key?').selectOption('always');
-    await dialog.getByRole('button', { name: 'Add account', exact: true }).click(); await expect(dialog).not.toBeVisible();
+    await dialog.getByRole('button', { name: 'Add account', exact: true }).click(); await expect(dialog).not.toBeVisible({ timeout: 60_000 });
     await expect(claude.locator('.account').filter({ hasText: 'Simulated installation account' }).locator('.status')).toHaveText('Ready');
     await page.getByRole('button', { name: 'Continue', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Add your first project', exact: true })).toBeVisible();

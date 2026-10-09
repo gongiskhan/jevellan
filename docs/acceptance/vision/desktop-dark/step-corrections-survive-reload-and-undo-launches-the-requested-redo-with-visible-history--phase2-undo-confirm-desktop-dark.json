@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dialog says the redo uses \"Reply, Fable, low\", but the dimmed form behind it shows Effort set to \"high\". The two may disagree, or the background may just be stale. Either way it doesn't affect how the screen renders.",
-      "The background is heavily dimmed and blurred, so the text behind the modal can't be read. This is expected for a modal backdrop."
+      "The dialog says the redo will use \"Reply, Fable, low\", but the blurred picker behind it shows effort \"high\". This may be intended for the step being redone, but it's worth checking.",
+      "The text in the blurred background can't be read, which is expected behind a modal."
     ]
   }
 }

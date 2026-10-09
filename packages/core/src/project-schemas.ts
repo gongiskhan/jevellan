@@ -10,7 +10,7 @@ const revision = count;
 
 export const IsolationSchema = z.enum(['worktree', 'main']);
 export type Isolation = z.infer<typeof IsolationSchema>;
-export const PlacementFieldSchema = z.enum(['isolation', 'model', 'effort', 'device']);
+export const PlacementFieldSchema = z.enum(['isolation', 'runtime', 'account', 'model', 'effort', 'device']);
 export type PlacementField = z.infer<typeof PlacementFieldSchema>;
 export const ThreadStateSchema = z.enum(['queued', 'preparing', 'running', 'idle', 'publishing', 'in-review',
   'waiting-for-you', 'attached', 'done', 'stopped', 'failed']);
@@ -22,7 +22,7 @@ export type Option = z.infer<typeof OptionSchema>;
 export const ProjectWorkSettingsSchema = z.strictObject({
   schema: z.literal('project-work-settings-v1'), projectId: IdSchema, revision,
   defaultIsolation: IsolationSchema,
-  coordinator: z.strictObject({ modelId: IdSchema.nullable(), effort: EffortSchema }),
+  coordinator: z.strictObject({ runtimeId: IdSchema.nullable().optional(), accountId: IdSchema.nullable().optional(), modelId: IdSchema.nullable(), effort: EffortSchema }),
   setupCommand: z.string().max(500).nullable(),
   maxRunningThreads: z.number().int().min(1).max(20),
   maxRunningPerDevice: z.number().int().min(1).max(10),
@@ -90,7 +90,7 @@ export const CoordinatorEventSchema = z.discriminatedUnion('kind', [
   ev('thread-interrupted', { threadId: IdSchema, reason: z.enum(['restart', 'timeout', 'failed', 'stopped']), message: z.string().max(1000) }),
   ev('decision-answer', { decisionId: IdSchema, threadId: IdSchema.optional(), question: z.string(), answer: DecisionAnswerSchema }),
   ev('pr-update', { threadId: IdSchema, prNumber: positive, change: z.enum(['checks-failed', 'checks-passed', 'merged', 'closed', 'conflict']) }),
-  ev('mail', { mailId: IdSchema, fromThreadId: IdSchema, subject: z.string().min(1).max(200), body: z.string().max(8000) }),
+  ev('mail', { mailId: IdSchema, fromThreadId: IdSchema, fromTitle: z.string().max(160).optional(), subject: z.string().min(1).max(200), body: z.string().max(8000) }),
   ev('thread-user-message', { threadId: IdSchema, text: z.string().min(1).max(20000) }),
   ev('placement-override', { threadId: IdSchema, summary: z.string().max(400) }),
 ]);
@@ -164,6 +164,7 @@ export type ProjectNotebook = z.infer<typeof ProjectNotebookSchema>;
 // 5.11 hub namespaces project-mail and project-reservations
 export const ProjectMailSchema = z.strictObject({ schema: z.literal('project-mail-v1'), revision,
   id: IdSchema, projectId: IdSchema, from: z.string().min(1), to: z.string().min(1),
+  fromTitle: z.string().max(160).optional(),
   subject: z.string().min(1).max(200), body: z.string().max(8000), at: TimestampSchema, readBy: z.array(z.string()) });
 export type ProjectMail = z.infer<typeof ProjectMailSchema>;
 export const FileReservationSchema = z.strictObject({ schema: z.literal('file-reservation-v1'), revision,
@@ -241,7 +242,7 @@ export const ThreadCommandSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal('stop'), reason: z.string().max(400), notify: z.boolean().optional() }),
   z.strictObject({ type: z.literal('discard') }),
   z.strictObject({ type: z.literal('allow-turns') }),
-  z.strictObject({ type: z.literal('override-next-turn'), override: PlacementOverrideSchema }),
+  z.strictObject({ type: z.literal('override-next-turn'), override: PlacementOverrideSchema, placement: PlacementRecordSchema.optional() }),
 ]);
 export type ThreadCommand = z.infer<typeof ThreadCommandSchema>;
 // hub namespace project-envelopes, key envelope id
@@ -360,15 +361,15 @@ export const CoordinatorMessageRequestSchema = z.strictObject({ schema: z.litera
   clientMessageId: IdSchema, text: z.string().min(1).max(20000) });
 export const ThreadCreateRequestSchema = z.strictObject({ schema: z.literal('thread-create-request-v1'), clientRequestId: IdSchema,
   title: z.string().min(1).max(120), task: z.string().min(1).max(20000),
-  isolation: IsolationSchema.optional(), modelId: IdSchema.optional(), effort: EffortSchema.optional(), deviceId: IdSchema.optional(),
+  isolation: IsolationSchema.optional(), runtimeId: IdSchema.optional(), accountId: IdSchema.optional(), modelId: IdSchema.optional(), effort: EffortSchema.optional(), deviceId: IdSchema.optional(),
   // A restart's owner note for placement, sent by the thread's device to the coordinator device (D266); the New thread form sends none.
   note: z.string().max(400).optional() });
 export const ThreadMessageRequestSchema = z.strictObject({ schema: z.literal('thread-message-request-v1'),
   clientMessageId: IdSchema, text: z.string().min(1).max(20000), interrupt: z.boolean() });
 export const ThreadStopRequestSchema = z.strictObject({ schema: z.literal('thread-stop-request-v1'), reason: z.string().max(400).optional() });
 export const ThreadOverrideRequestSchema = z.strictObject({ schema: z.literal('thread-override-request-v1'), clientRequestId: IdSchema,
-  mode: PlacementOverrideSchema.shape.mode, isolation: IsolationSchema.optional(), modelId: IdSchema.optional(),
-  effort: EffortSchema.optional(), deviceId: IdSchema.optional(), note: z.string().max(400).optional() });
+  mode: PlacementOverrideSchema.shape.mode, isolation: IsolationSchema.optional(), runtimeId: IdSchema.nullable().optional(), accountId: IdSchema.nullable().optional(), modelId: IdSchema.nullable().optional(),
+  effort: EffortSchema.nullable().optional(), deviceId: IdSchema.optional(), note: z.string().max(400).optional() });
 export const DecisionAnswerRequestSchema = z.strictObject({ schema: z.literal('decision-answer-request-v1'), clientRequestId: IdSchema,
   ...DecisionAnswerFieldsSchema.shape }).refine(answerPresent, DECISION_ANSWER_REQUIRED);
 export const ProjectWorkSettingsRequestSchema = z.strictObject({ schema: z.literal('project-work-settings-request-v1'), revision,

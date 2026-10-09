@@ -1,18 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase6-j10-suggestions-phone-light.png",
-  "expected": "the Jevellan web app \"j10 suggestions\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The third tab label in the top tab strip is clipped ('Devi…') by the right scroll arrow. This looks like intentional horizontal scrolling, and the arrow lets you reach that tab.",
-      "The long diff header lines wrap mid-path in the code blocks (e.g. 'diff --git a/menu/codex-gpt/description' then 'b/menu/codex-gpt/description' on the next line). They're still readable but harder to scan.",
-      "In 'Memory care', the 'Apply and tell me' field looks like greyed placeholder text, so its current value is unclear."
-    ]
-  }
+  "expected": "the Jevellan web app \"j10 suggestions\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)"
 }

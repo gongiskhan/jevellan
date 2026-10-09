@@ -43,6 +43,15 @@ test('passes a clean history', () => {
   writeFileSync(join(dir, 'readme'), 'A clean project.'); git('add', '.'); git('commit', '-m', 'initial');
   expect(scanSecrets(dir, ['HEAD'], {})).toEqual([]);
 });
+test('blocks external agent capabilities in working files and historical commits', () => {
+  const { dir, git } = repository();
+  const token = ['jva', '_agent_fixture.', 'A'.repeat(43)].join('');
+  writeFileSync(join(dir, 'connection'), token);
+  expect(scanWorkingTree(dir, {})).toEqual([expect.objectContaining({ file: 'connection', reason: 'token or private-key pattern' })]);
+  git('add', '.'); git('commit', '-m', 'fixture');
+  writeFileSync(join(dir, 'connection'), 'removed'); git('add', '.'); git('commit', '-m', 'removed');
+  const results = scanSecrets(dir, ['HEAD'], {}); expect(results).toHaveLength(1); expect(JSON.stringify(results)).not.toContain(token);
+});
 test('scans modified and untracked publishable files without following links or printing secrets', () => {
   const { dir, git } = repository();
   writeFileSync(join(dir, 'tracked'), 'clean'); git('add', '.'); git('commit', '-m', 'initial');

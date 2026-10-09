@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the review-note.txt diff, the header line 'diff --git a/review-note.txt b/review-note…' is cut off at the right edge. It looks like an unwrapped code block that scrolls sideways, and the 'Wrap lines' toggle can show the full line. The line is only metadata, so nothing important is lost.",
-      "The 'AGENT EVIDENCE' section starts at the bottom edge of the screenshot and its content is not shown. This looks like the end of the visible screen, not a layout fault."
+      "In the review-note.txt diff, the header line 'diff --git a/review-note.txt b/review-note.txt' runs past the right edge (shows 'b/review-note.tx'). 'Wrap lines' is off, so this is expected horizontal overflow in a diff block that likely scrolls. It's only header metadata.",
+      "The 'AGENT EVIDENCE' section heading sits at the bottom of the viewport with no content showing. It looks like normal page scrolling, not a clipped control.",
+      "The 'Refresh changes' button looks visually lighter than 'Continue', but it is still readable and reachable."
     ]
   }
 }

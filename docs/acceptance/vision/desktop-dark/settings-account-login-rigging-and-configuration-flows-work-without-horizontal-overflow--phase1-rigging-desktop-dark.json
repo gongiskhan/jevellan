@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the parking warning banner, the text 'needs to finish.' runs right up against the 'Retry' button with almost no gap.",
-      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…'). This truncation looks intentional and has full text on hover.",
-      "The Safety hook's Claude Code and Codex checkboxes are greyed out and low-contrast. They look deliberately disabled for a built-in item, but they're less legible than the other rows."
+      "In the warning banner, the 'Retry' button sits right against the end of the text 'needs to finish.' with almost no space between them",
+      "The checkboxes on the Safety hook row are dimmed grey, which looks intentional for disabled built-in items but is hard to read in dark mode"
     ]
   }
 }

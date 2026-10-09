@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses ('Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). The full text can likely be seen on hover or by opening the session.",
-      "The 'Waiting for the coordinator' status text inside the answered-decision card is small and light grey, so it has low contrast.",
-      "The faded grey metadata lines are hard to read: 'Claude Code Fable · high' and 'Codex · GPT · high · Worktree · Browser member'."
+      "Sidebar session titles and metadata are cut off with ellipses (e.g. 'Context · Mesh journey fix…', 'Mac.l…'). The full text isn't shown, but the rows can still be read and clicked.",
+      "The 'Waiting for the coordinator' label on the answered decision card is small, low-contrast grey text.",
+      "The answered decision card says 'Waiting for the coordinator' while the right panel says 'Sent to the coordinator.' The wording differs slightly, though both describe the same state."
     ]
   }
 }

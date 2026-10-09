@@ -7,6 +7,7 @@ import { handleApi } from './api.js';
 import { closeListeners, detectTailscaleIpv4, listenOnInterfaces } from './network.js';
 import { LocalDiagnostics } from './diagnostics.js';
 import { handleLocalApi } from './local-api.js';
+import { handleAgentMcp } from './agent-mcp-api.js';
 export * from './application.js';
 export * from './routing-improver.js';
 export * from './improver.js';
@@ -21,6 +22,7 @@ export function createDaemon(options: { application?: Application; diagnostics?:
   const server = createServer(async (request, response) => {
     try {
       const url = new URL(request.url ?? '/', 'http://127.0.0.1');
+      if (url.pathname === '/mcp' && options.application) { await handleAgentMcp(options.application, request, response, options); return; }
       // Local control (doctor, terminal takeover) is authorized by the installation control file, before any browser rule.
       if (url.pathname.startsWith('/api/local/')) { await handleLocalApi(options.application, options.diagnostics, request, response, url); return; }
       if (url.pathname === '/api/health' && request.method === 'GET') {

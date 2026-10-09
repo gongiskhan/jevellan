@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Mesh journey fix…'). This looks like intentional truncation and does not hide any controls.",
-      "The empty-state labels 'Nothing waiting.' and 'No threads running.' in the right panel are low-contrast grey on the dark background, but they are still readable.",
-      "The answered-decision card's 'Waiting for the coordinator' text is small and dim, but it is still readable."
+      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · Mesh journey fix…', 'Done · Improver sandbox · Mac.l…'); this is intentional truncation, and the full text likely shows on hover",
+      "The 'Waiting for the coordinator' text in the answered decision card is small and low in contrast, but it can still be read",
+      "The 'Some native sessions are unavailable' footer text is small and dim"
     ]
   }
 }

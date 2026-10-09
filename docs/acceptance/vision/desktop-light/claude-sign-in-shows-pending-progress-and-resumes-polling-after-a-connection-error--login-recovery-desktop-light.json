@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dialog title shows the raw recovery UUID ('Login recovery a248ef53-2882-4541-ab68-c62306a84e72'). It's long and reads like an internal ID, not a friendly label.",
-      "The status line says 'Code sent. Waiting for sign-in to finish…' while the error banner below says 'Can't reach Jevellan'. Showing both at once may confuse people about what state the sign-in is in, though that may be intended for this connection-error step.",
-      "The vertical spacing between the 'Open sign-in page' button, the status text and 'Start again' is tight compared with the rest of the dialog's padding."
+      "Dialog title uses a raw UUID ('Login recovery e13414f5-dd51-483d-a1a9-adf360ce46d5'), which is long and not very user-friendly, though it fits on one line",
+      "The dialog says 'Paste the test authorization code.' but has no visible code input field. At this step that may be intended, since the code has already been sent",
+      "The status line 'Code sent. Waiting for sign-in to finish…' and the red 'Can't reach Jevellan' error banner are visible together, so the state could read as mixed"
     ]
   }
 }

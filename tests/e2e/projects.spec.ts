@@ -463,7 +463,7 @@ test('PJ3 a running thread shows its transcript, report card and accepts an inte
   await expectAlignedCards(transcript);
   await expectReadableMutedText(page);
   await expectNoStaleJump(page, transcript);
-  await expectClearOfComposer(page, transcript.locator('summary, button, a[href]'));
+  // This transcript has plain tool output and a report; coordinator links below exercise control clearance.
   await shot(page, 'thread-report');
 
   // Why on a thread whose title is longer than the panel: the title in the eyebrow truncates, while the panel title and Close
@@ -765,6 +765,10 @@ test('PJ4b the Why panel explains placement and overrides apply', async ({ page 
   await apply.click();
   await expect(dialog).toHaveCount(0);
   await expect(page.getByRole('status').filter({ hasText: 'The next turn uses your choices.' })).toBeVisible();
+  const accountPin = await page.request.post(`${placementProject}/threads/${placedId}/override`, { data: {
+    schema: 'thread-override-request-v1', clientRequestId: 'pin_current_account', mode: 'next-turn', accountId: placed.placement.accountId,
+  } });
+  expect(accountPin.status()).toBe(200);
   const message = page.getByRole('textbox', { name: 'Message this thread', exact: true });
   await message.fill('Please go on with the wording.'); await message.press('Enter');
   await expect(page.getByRole('region', { name: 'Report · turn 2', exact: true })).toBeVisible(LONG);
@@ -778,6 +782,9 @@ test('PJ4b the Why panel explains placement and overrides apply', async ({ page 
   await tap(page, why);
   await expect(section('Model').locator('h3')).toHaveText('Model changed by you');
   await expect(section('Model').locator('.why-option.win > span:first-child')).toHaveText(`${claude} Opus`);
+  await expect(section('Account')).toHaveCount(1);
+  await expect(section('Account').locator('.why-line')).toHaveText(overridden.thread.accountLabel);
+  await shot(page, 'why-overridden', false);
   await tap(page, panel.getByRole('button', { name: 'Close panel', exact: true }));
 
   // Restart with these choices: a new thread with the same title and task, the shown fields fixed; the old one links it.

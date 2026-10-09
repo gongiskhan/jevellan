@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and metadata are cut short with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Mesh journey fix…', 'dev-ma…'). The text is shortened on purpose, but the full names can't be read.",
-      "The notebook panel has a lot of empty space below its short content.",
-      "The notebook panel title mixes a monospace pink 'Projects fixture' label with the bold 'Notebook' heading, so the styling looks inconsistent."
+      "The 'Updated by you · Oct 9, 14:53:14' timestamp in the notebook panel is small, low-contrast grey text",
+      "Sidebar session subtitles are cut off with ellipses (e.g. 'Mac.l…', 'Context · Mesh journey fix…'); this is intentional truncation and the main content is unaffected",
+      "The chat feed shows many repeated 'Noted.' lines, which adds visual noise but doesn't affect legibility"
     ]
   }
 }

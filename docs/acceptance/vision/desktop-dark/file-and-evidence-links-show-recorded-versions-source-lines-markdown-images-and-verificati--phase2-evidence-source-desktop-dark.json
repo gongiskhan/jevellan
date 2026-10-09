@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar, the conversation list cuts off a partly visible row just above 'Some native sessions are unavailable'. Only fragments of it show, but the list scrolls, so it is still reachable.",
-      "In the middle column, the scrolled 'Step details · 1 finding' line sits tight against the sticky conversation header and is partly covered by it.",
-      "The right evidence panel leaves a lot of empty space below the code excerpt and the 'Open working copy' and 'Open recorded step' links."
+      "In the sidebar, the conversation row below 'Context · Created instructio...' is cut off by the 'Some native sessions are unavailable' footer. This is the normal edge of a scrolling list, but it looks clipped.",
+      "In the chat message, the long /private/var/... image path wraps over two lines. That pushes '. The value is now 2...' onto its own line, starting with a stray period.",
+      "The recorded checkpoint hash in the evidence panel uses small, low-contrast grey text. It is still readable but faint."
     ]
   }
 }

@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The same error banner ('No model can run this step right now: disabled, disabled, …') appears twice in a row. The text repeats 'disabled' many times and doesn't help the user.",
-      "In the sidebar conversation list, the bottom item is clipped partway down, just above the 'Some native sessions are unavailable' row. It looks like a scroll cut-off.",
-      "Conversation titles and subtitles in the sidebar are shortened with an ellipsis (e.g. 'Change the value to thre…').",
-      "The struck-through 'Step 1 · Implement' heading and the small grey 'Undone' label have low contrast. They are still readable."
+      "Two identical 'No model can run this step right now: disabled, disabled, …' error banners are stacked one after the other, and the list of repeated 'disabled' reasons doesn't tell the user anything",
+      "The struck-through 'Step 1 · Implement' header and its pink 'corrected: …' tags are small and low-contrast against the dark background, though still readable",
+      "Sidebar conversation titles and subtitles are cut off with ellipses (for example 'Change the value to three,…'), which is expected truncation",
+      "The Step 1 tool output shows 'The fixture starts with value 1.' while the summary says 'The value is now 3', which may confuse readers but isn't a rendering problem"
     ]
   }
 }

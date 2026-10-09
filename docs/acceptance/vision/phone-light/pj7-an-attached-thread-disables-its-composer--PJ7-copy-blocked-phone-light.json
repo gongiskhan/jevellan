@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Large empty gap between the turn-1 report card and the attached-terminal notice above the composer",
-      "The selected command's magenta highlight makes the text harder to read than the surrounding text, though it is still legible",
-      "The disabled composer's placeholder and send arrow are low contrast. That fits the disabled state but is faint"
+      "The selected command text is magenta and wraps across two lines, which makes it a little harder to read. It is still fully legible.",
+      "There is a large empty gap between the report card and the attached-status message at the bottom."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Save Git settings' button is low-contrast and looks disabled. That may be on purpose, since nothing has changed yet.",
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…'). This looks like intentional truncation.",
-      "The breadcrumb 'Settings · Git' is small and light gray, but still readable."
+      "Sidebar thread titles and metadata lines are truncated with ellipses (e.g. 'Context · J11 memory journ…', 'Waiting for you · Browser fixtu…'), which is expected for a narrow sidebar",
+      "The long remote path in the 'Check a project' result runs almost to the card's right edge but is not clipped",
+      "The 'Save Git settings' button looks disabled or low-contrast, which fits having no unsaved changes"
     ]
   }
 }

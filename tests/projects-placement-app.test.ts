@@ -267,12 +267,12 @@ test('PJ4b overrides change the next launch and restarts feed the packet', { tim
   await f.app.projectWork.pulse();
   expect(await f.index(threadId)).toMatchObject({ modelLabel: 'Deep Lite', effort: 'low' });
 
-  // 3. Another runtime only by a restart; next-turn takes only the model and the effort.
+  // 3. Another runtime only by a restart; next-turn may change account, model and effort within that runtime.
   const runtime = await override(f, threadId, overrideBody('next-turn', { modelId: 'swift' }));
   expect(runtime.status).toBe(409);
   expect(await runtime.json()).toEqual({ schema: 'error-v1', code: 'conflict', message: 'From the next turn, the model must use the same runtime.' });
   const fields = await override(f, threadId, overrideBody('next-turn', { isolation: 'worktree' }));
-  expect(fields.status).toBe(400); expect(await fields.json()).toMatchObject({ message: 'From the next turn, only the model and effort can change.' });
+  expect(fields.status).toBe(400); expect(await fields.json()).toMatchObject({ message: 'From the next turn, only the account, model and effort can change within the same runtime.' });
   expect(await f.app.projectHub.recentOverrides('project', 8)).toHaveLength(2);
 
   // 4. Restart with these choices: a new thread with the same title and task and the model fixed; the old one ends and loses its worktree.

@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The last item in the sidebar conversation list is clipped mid-row at the bottom of its scroll area, and you can only see the tops of its letters.",
-      "Sidebar conversation titles and subtitles are cut short with ellipses (for example 'Explain the memorybrows…' and 'Exercise evidence naviga…').",
-      "The Hooks section continues below the bottom of the screen, so you have to scroll to see the rest of it.",
-      "The Claude Code and Codex checkboxes on the Safety hook are dimmed and low-contrast, which looks like an intentional disabled state."
+      "Hooks card is cut off at the bottom of the viewport, so the Safety row's lower edge sits right at the fold. That's normal scrolling and nothing is hidden.",
+      "The Safety hook's Claude Code and Codex checkboxes are greyed out (built-in, locked). This looks intentional, but they read as low-contrast against the dark background.",
+      "Sidebar conversation titles and subtitles are cut short with ellipses (e.g. 'Explain the memorybrows…'). This is deliberate truncation and doesn't affect the Rigging screen."
     ]
   }
 }

@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip clips the labels at both edges: a stray 's' shows on the left and 'Projects' is cut off on the right. It scrolls horizontally with arrow buttons, so the tabs can still be reached.",
-      "The 'Open' buttons on the dev-madrid (this device) and Offline fixture cards are low-contrast and look disabled. That is probably intentional, but they are faint.",
-      "The disabled 'Automatic device choice' checkbox and its 'Coming later.' note are pale grey and low-contrast, though still legible."
+      "The settings tab strip cuts off the labels at both edges ('s' on the left, 'Projects' on the right). The tabs scroll horizontally and have arrow buttons, so they can still be reached.",
+      "The 'Automatic device choice' checkbox and its 'Coming later.' note are greyed out and low-contrast, but still readable.",
+      "The 'Open' button on the Mac.lan card looks muted or disabled next to the other devices' 'Open' buttons. That fits it being the current device, but the difference is subtle.",
+      "The text under the 'Native conversations' heading is larger than the body text on the rest of the screen."
     ]
   }
 }

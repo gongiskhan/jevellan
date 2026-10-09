@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "an agent connection is scoped, shown once, and revocable",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/mcp-agents-phone-dark.png",
+  "expected": "the Jevellan web app \"agents\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"an agent connection is scoped, shown once, and revocable\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The tab strip clips 'Projects' and 'Configuration' at its edges. The scroll arrows still reach both tabs, so this is not blocking.",
+      "In the JSON config block, the long Authorization line wraps, so '<connection token>' starts a new line at column 0 and breaks the indentation.",
+      "The 'Active' badge sits on its own line under the connection name instead of beside it, which leaves some awkward spacing.",
+      "The 'Create connection' button looks low-contrast or disabled. That is probably intentional because the Name field is empty."
+    ]
+  }
+}

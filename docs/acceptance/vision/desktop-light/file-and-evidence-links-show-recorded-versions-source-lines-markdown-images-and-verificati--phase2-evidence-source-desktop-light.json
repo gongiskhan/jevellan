@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation list cuts a fourth row off partway, so only its top edge shows above 'Some native sessions are unavailable'. This looks like normal scroll clipping.",
-      "The middle transcript is scrolled so the top 'Step details' card is partly hidden under the conversation header. This is also scroll clipping.",
-      "The evidence panel has a lot of empty space below the code block and its links."
+      "In the message body, the long path link ends a line, so the period after it starts the next line ('. The value is now 2…').",
+      "The last conversation item in the sidebar is cut off halfway at the bottom of the scrollable list, above 'Some native sessions are unavailable'. It is a scroll region, so the item can still be reached.",
+      "The recorded checkpoint hash appears in a small, low-contrast monospace chip, but it is still readable."
     ]
   }
 }

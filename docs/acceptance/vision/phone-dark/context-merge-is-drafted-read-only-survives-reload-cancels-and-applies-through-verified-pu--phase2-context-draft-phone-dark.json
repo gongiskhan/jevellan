@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Both diffs show the - and + lines in the same colour, so removed and added lines can only be told apart by their prefix",
-      "The background page behind the dialog shows through the scrim and is clipped at the edges (nav tabs, a temp path line near the bottom); it is dimmed and does not overlap the dialog content",
-      "The \"Open work\" link sits close below Cancel/Apply with uneven spacing, but each control is still separate and easy to tap"
+      "The background page text is visible below the modal (path text such as '/private/var/folders/...'), but it is dimmed and does not overlap any modal content.",
+      "The diff blocks show blank '-' and '+' lines for empty lines, which look a little sparse.",
+      "The 'Current instruction files' disclosure is close to the bottom edge of the modal."
     ]
   }
 }

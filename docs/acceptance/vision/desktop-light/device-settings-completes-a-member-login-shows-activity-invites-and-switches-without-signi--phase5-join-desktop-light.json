@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The join code field is a solid grey block, and the code at the end of the npx command is a solid white block. Both look like deliberate screenshot masking of a secret value, not a rendering failure. The two masks use different colours.",
-      "The background page behind the modal is dimmed and blurred, as expected for a modal overlay."
+      "The 'Join code' field shows as a blank grey box, and the token at the end of the command is a solid white block. Both look like the screenshot tool deliberately hiding a secret, not a rendering bug. If that's not the case, the join code can't be read.",
+      "The token block in the command bar is light against the dark background and stands out from the monospace text."
     ]
   }
 }

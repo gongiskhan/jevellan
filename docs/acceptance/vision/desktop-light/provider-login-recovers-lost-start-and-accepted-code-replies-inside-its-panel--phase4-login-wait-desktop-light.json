@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Authorization code' label sits right under the 'Open sign-in page' button with almost no space between them. They don't overlap, but the spacing looks cramped.",
-      "The disabled 'Continue' button has low contrast against the white modal. It is still readable."
+      "The Continue button looks disabled, with low-contrast text on a pale background, even though a code has been entered. This may be on purpose while the app waits for the hub.",
+      "The 'Open sign-in page' button sits right on top of the 'Authorization code' label, with almost no space between them."
     ]
   }
 }

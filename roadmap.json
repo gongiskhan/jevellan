@@ -298,5 +298,17 @@
     "title": "Restore the pilot and supervise it after login",
     "why": "The Mac restarted and the detached pilot process did not return. Restore the same release, data and app links; register the existing macOS user service with RunAtLoad and KeepAlive. Live graceful-exit recovery preserved 219 checked files and account definitions, vault, configuration and projects. Typecheck, lint, 29 service/resource checks and both desktop/phone sign-in/runtime browser smoke checks passed; another physical reboot is not run. See docs/acceptance/service-recovery-2026-10-08.md.",
     "status": "complete"
+  },
+  {
+    "id": "external-agent-mcp",
+    "title": "External agent MCP tools and organized output",
+    "why": "47 HTTP/stdio tools with named, scoped, expiring connections cover conversation and project jobs, coordinator controls, messages, decisions, notebooks, mail, static apps, memory and pull requests. Provider, account, model and effort accept explicit choices or Auto; grouped output is resumable and provides bounded live progress. All corrections from the initial and permitted second review are applied; build/typecheck/lint, 38 focused MCP cases, 126 core/bridge cases and 18 final functional browser cases pass. Complete collectors retain their failed verdicts: 1742 passes and one failure out of 1743 backend cases, 222 passes and six failures out of 228 browser cases. The unchanged backend timeout case passes separately; new automated vision is credential-blocked. The verified isolated release awaits pilot activation. See docs/acceptance/mcp-2026-10-09.md.",
+    "status": "in-progress"
+  },
+  {
+    "id": "external-command-apps",
+    "title": "Command apps for external agents",
+    "why": "Expose persistent command app starts to external agents only through a confined runner that enforces the granted project, runtime safety and resource limits. External MCP app_start serves static apps; arbitrary executable/args access is excluded. See MCP-C3 in docs/acceptance/mcp-2026-10-09.md.",
+    "status": "planned"
   }
 ]

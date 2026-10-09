@@ -136,11 +136,12 @@ export const WorkSchema = z.strictObject({
 });
 export type Work = z.infer<typeof WorkSchema>;
 export const ConversationStateSchema = z.enum(['idle', 'running', 'waiting-for-you', 'blocked', 'done', 'cancelled']);
-export const NextChoicesSchema = z.strictObject({ action: ActionSchema.exclude(['integrate']).optional(), modelId: IdSchema.optional(), effort: EffortSchema.optional() });
+export const ResourceChoicesSchema = z.strictObject({ runtimeId: IdSchema.optional(), accountId: IdSchema.optional(), modelId: IdSchema.optional(), effort: EffortSchema.optional() });
+export const NextChoicesSchema = ResourceChoicesSchema.extend({ action: ActionSchema.exclude(['integrate']).optional() });
 export const ConversationSchema = z.strictObject({
   schema: z.literal('conversation-v2'), id: IdSchema, title: text, projectId: IdSchema, ownerDeviceId: IdSchema,
   createdAt: TimestampSchema, updatedAt: TimestampSchema, state: ConversationStateSchema, generation: count,
-  current: z.strictObject({ modelId: IdSchema, effort: EffortSchema }).optional(), pins: z.strictObject({ modelId: IdSchema.optional(), effort: EffortSchema.optional() }), once: NextChoicesSchema.default({}),
+  current: z.strictObject({ modelId: IdSchema, effort: EffortSchema }).optional(), pins: ResourceChoicesSchema, once: NextChoicesSchema.default({}),
   stretchCount: count, work: WorkSchema.nullable(), outcome: z.strictObject({ kind: z.literal('finished-elsewhere'), reason: text.optional(), at: TimestampSchema }).optional(),
   /** Set only on conversations Jevellan starts itself; absent means a user request. */
   origin: z.enum(['context-operation']).optional(),
@@ -287,9 +288,9 @@ export const DecisionRecordSchema = z.strictObject({
   redoOf: IdSchema.optional(), latestMessageEventId: count.optional(), questionSet: z.literal('q-v2').optional(), remember: z.boolean().optional(),
   jev: z.strictObject({ requestedModel: text, returnedModel: text, usage: z.unknown(), calls: count, records: z.array(JevCallSchema).optional() }).optional(),
   action: z.strictObject({ chosen: ActionSchema, source: z.enum(['jev', 'only-option', 'guard', 'override', 'redo', 'manual']), allowed: z.array(ActionSchema), probabilities: probabilities.optional(), confidence: z.number().min(0).max(1).optional(), guardReason: text.optional() }),
-  model: z.strictObject({ chosen: IdSchema, source: z.enum(['kept', 'jev', 'only-option', 'pin', 'override', 'redo', 'manual']), keepCurrentP: z.number().min(0).max(1).optional(), eligible: z.array(z.strictObject({ modelId: IdSchema, p: z.number().min(0).max(1).optional() })), preferredAny: z.strictObject({ modelId: IdSchema, p: z.number().min(0).max(1).optional() }).optional(), excluded: z.array(z.strictObject({ modelId: IdSchema, reason: ExclusionReasonSchema })) }).optional(),
+  model: z.strictObject({ chosen: IdSchema, runtime: IdSchema.optional(), runtimeSource: z.enum(['override', 'pin']).optional(), source: z.enum(['kept', 'jev', 'only-option', 'pin', 'override', 'redo', 'manual']), keepCurrentP: z.number().min(0).max(1).optional(), eligible: z.array(z.strictObject({ modelId: IdSchema, p: z.number().min(0).max(1).optional() })), preferredAny: z.strictObject({ modelId: IdSchema, p: z.number().min(0).max(1).optional() }).optional(), excluded: z.array(z.strictObject({ modelId: IdSchema, reason: ExclusionReasonSchema })) }).optional(),
   effort: z.strictObject({ requested: EffortSchema, effective: EffortSchema, source: z.enum(['jev', 'pin', 'override', 'redo', 'manual']), probabilities: probabilities.optional() }).optional(),
-  account: z.strictObject({ chosen: IdSchema, ranking: z.array(z.strictObject({ accountId: IdSchema, eligible: z.boolean(), reason: text })) }).optional(),
+  account: z.strictObject({ chosen: IdSchema, source: z.enum(['override', 'pin']).optional(), ranking: z.array(z.strictObject({ accountId: IdSchema, eligible: z.boolean(), reason: text })) }).optional(),
   device: z.strictObject({ chosen: IdSchema, source: z.literal('here') }).optional(),
   memory: z.strictObject({ candidates: z.array(text), chosen: z.array(text), scores: z.record(z.string(), z.number().min(0).max(3)).optional(), source: z.enum(['jev', 'search-rank']) }).optional(),
   context: z.strictObject({ project: text, action: ActionSchema, changeSize: z.enum(['small', 'medium', 'large']), riskyAreasTouched: z.array(text) }).optional(),

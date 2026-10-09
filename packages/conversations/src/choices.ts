@@ -14,7 +14,7 @@ export function composerOverrides(work: ConversationWork): ComposerOverrideRecor
   }
   return [...records.values()];
 }
-const keyFor = (field: ComposerChoice['field']) => field === 'model' ? 'modelId' : field;
+const keyFor = (field: ComposerChoice['field']) => field === 'model' ? 'modelId' : field === 'runtime' ? 'runtimeId' : field === 'account' ? 'accountId' : field;
 
 /** Replay a saved intent separately from its later decision binding. */
 export function replayComposerChoice(conversation: Conversation, records: Map<string, ComposerOverrideRecord>, value: ComposerOverrideRecord): void {
@@ -29,8 +29,13 @@ export function replayComposerChoice(conversation: Conversation, records: Map<st
     } else if (request.field === 'action') conversation.once.action = request.value;
     else if (request.mode === 'pin') {
       delete conversation.once[key];
-      if (request.field === 'model') conversation.pins.modelId = request.value; else conversation.pins.effort = request.value;
+      if (request.field === 'model') conversation.pins.modelId = request.value;
+      else if (request.field === 'runtime') conversation.pins.runtimeId = request.value;
+      else if (request.field === 'account') conversation.pins.accountId = request.value;
+      else conversation.pins.effort = request.value;
     } else if (request.field === 'model') conversation.once.modelId = request.value;
+    else if (request.field === 'runtime') conversation.once.runtimeId = request.value;
+    else if (request.field === 'account') conversation.once.accountId = request.value;
     else conversation.once.effort = request.value;
     conversation.generation++;
   } else {
@@ -63,8 +68,10 @@ export function saveComposerChoice(work: ConversationWork, raw: unknown): Compos
 function bindingStatus(record: ComposerOverrideRecord, decision: DecisionRecord): 'applied' | 'superseded' | undefined {
   const { field, value, mode } = record.request;
   if (decision.action.chosen === 'integrate' && field === 'action' || decision.trigger === 'redo') return;
-  const selected = field === 'action' ? decision.action.chosen : field === 'model' ? decision.model?.chosen : decision.effort?.requested;
-  const source = field === 'model' ? decision.model?.source : decision.effort?.source;
+  // Resource choices apply only to launches, not a reply boundary such as done or ask-you.
+  if ((field === 'runtime' || field === 'account') && !decision.model) return;
+  const selected = field === 'action' ? decision.action.chosen : field === 'model' ? decision.model?.chosen : field === 'runtime' ? decision.model?.runtime : field === 'account' ? decision.account?.chosen : decision.effort?.requested;
+  const source = field === 'model' ? decision.model?.source : field === 'runtime' ? decision.model?.runtimeSource : field === 'account' ? decision.account?.source : decision.effort?.source;
   if (mode === 'pin' && value !== null && (source !== 'pin' || selected !== value)) return;
   return value !== null && selected !== value ? 'superseded' : 'applied';
 }

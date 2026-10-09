@@ -1,18 +1,9 @@
 {
   "schema": "vision-check-v1",
-  "label": "live",
-  "model": "claude-opus-5-5",
+  "label": "not run",
+  "reason": "Disabled for this run.",
   "test": "Projects and a manual planned change render the full plan, stream, Why and verified Changes",
   "layout": "phone-light",
   "screenshot": "docs/acceptance/screenshots/phase2-projects-phone-light.png",
-  "expected": "the Jevellan web app \"projects\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)",
-  "result": {
-    "ok": true,
-    "blocking": [],
-    "cosmetic": [
-      "The 'Project saved.' toast sits over the bottom card ('Undo across works') and partly hides its Open, Browse memory and Context buttons. The toast is temporary and can be dismissed, so the buttons are still reachable.",
-      "In the settings tab strip, the first and last tabs are cut off at the screen edges ('er', 'B'). The strip scrolls sideways and has visible left and right arrow buttons, so this is expected.",
-      "Long project paths break in the middle of words (e.g. 'activity-/context-project', 'create-/project'). They are still readable."
-    ]
-  }
+  "expected": "the Jevellan web app \"projects\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)"
 }

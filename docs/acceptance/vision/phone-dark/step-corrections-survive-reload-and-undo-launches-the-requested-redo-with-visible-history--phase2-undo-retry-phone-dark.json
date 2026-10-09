@@ -10,11 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top of the user message bubble is partly hidden under the sticky header. This comes from the scroll position and the text is still readable.",
-      "The error text says 'No model can run this step right now:' and then repeats 'disabled' nine times instead of naming the models. It is readable but tells the user nothing useful.",
-      "The same 'No model can run this step right now' error appears twice: once in the red alert and again in the 'Resume correction' card.",
-      "The header title is shortened with an ellipsis, but the full text is shown in the line below it.",
-      "The 'corrected: effort → max' and 'corrected: action → reply, effort → low' labels are pink text on a dark background and somewhat low in contrast."
+      "The header title is cut off with an ellipsis ('Change the value to three, then redo thi…'). The full text appears in the subtitle line below it.",
+      "The page is scrolled, so the top of the tool card is cut off at the top edge. The 'Input' label is partly hidden.",
+      "The error text repeats 'disabled' eight times. It is legible but hard to understand, and it appears twice: in the red error banner and again in the Resume correction card.",
+      "The 'Why' chip's magenta/pink text and the 'value.txt' link are fairly low-contrast on the dark background, but still readable."
     ]
   }
 }

@@ -10,9 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The right-hand Changes panel cuts off its bottom text at the edge of the viewport. 'No verification receipt yet' under JEVELLAN VERIFICATION is only partly visible, though the panel looks like it can scroll.",
-      "The fourth conversation in the sidebar list is cut off by the 'Some native sessions are unavailable' row. The list area looks like it can scroll.",
-      "The conversation title in the header and the titles in the sidebar list are shortened with an ellipsis."
+      "The conversation title in the header is cut off with an ellipsis ('...with a simulated read-only viol...'). The full title isn't visible, but it reads as deliberate truncation.",
+      "The tool-call card in the middle column is cut off at the top, so the 'Input' label is half-hidden by the scroll area. This is normal scroll clipping.",
+      "The 'JEVELLAN VERIFICATION' section at the bottom of the right panel is cut off by the viewport ('No verification receipt yet' is partly visible). The panel can be scrolled to reach it.",
+      "In the sidebar, a fourth conversation item peeks out partly clipped above the 'Some native sessions are unavailable' row, leaving a fragment of text visible.",
+      "The subtitles of the conversations in the sidebar are cut off with ellipses ('Checkpoint re…', 'Browser fixtu…')."
     ]
   }
 }

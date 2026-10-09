@@ -9,6 +9,8 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": []
+    "cosmetic": [
+      "Large empty area between the last chat message and the composer at the bottom"
+    ]
   }
 }

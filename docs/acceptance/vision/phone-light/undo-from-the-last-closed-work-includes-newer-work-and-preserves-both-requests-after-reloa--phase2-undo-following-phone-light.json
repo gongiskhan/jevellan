@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Change the value to two and publish th…'). This looks like intentional single-line truncation, and the full request text appears in the conversation.",
-      "The 'Why' and 'corrected: action → reply' labels are pink and small, so they have somewhat low contrast on the light background.",
-      "The 'Undone' labels next to the struck-through step titles (Steps 1 and 2) are light gray and small, so they are a little faint."
+      "The header title is cut off with an ellipsis (\"Change the value to two and publish th…\"). This looks like intended truncation, and the full text appears in the first request.",
+      "The tool input/output code blocks in Steps 1 and 2 have a dimmed gray background, which lowers contrast a little. They're still readable and probably dimmed on purpose because those steps were undone.",
+      "The \"Step 1 · Implement\" and \"Step 2 · Implement\" headings are struck through. This is intentional to show the steps were undone, but it makes the headings slightly harder to read.",
+      "\"corrected: action → reply\" is in small, light pink text with low contrast."
     ]
   }
 }

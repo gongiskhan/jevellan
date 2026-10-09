@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal sits on a dimmed backdrop, so the project cards behind it are blurred and hard to read. That's expected for a dialog.",
-      "The \"Current instruction files\" row is collapsed, so its contents aren't shown."
+      "The paths in the blurred background cards wrap across several lines, but they sit behind the modal and don't affect it.",
+      "The dialog's \"Context · Context fixture\" title says \"Context\" twice."
     ]
   }
 }

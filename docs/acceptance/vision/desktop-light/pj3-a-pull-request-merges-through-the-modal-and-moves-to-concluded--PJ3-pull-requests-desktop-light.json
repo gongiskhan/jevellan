@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The running thread title in the right panel is cut short with an ellipsis ('Read through the project and list what each file is ...'). It looks intentional, but the full title is only readable in the feed.",
-      "Sidebar session names and their metadata lines are cut short with ellipses ('Context · J11 memory jour...', 'dev-...').",
-      "The feed repeats many standalone 'Noted.' replies, which adds visual noise.",
-      "The PR card's chip says 'Checks passing' but has no conflict indicator, even though the feed's latest event says pull request #1 has conflicts. The status may be inconsistent, though it doesn't affect the layout."
+      "Title of the running thread in the right panel is truncated with an ellipsis ('Read through the project and list what each file is fo...')",
+      "Session names and metadata in the left sidebar are truncated with ellipses (e.g. 'Context · Mesh journey fix...', 'Mac.l...')",
+      "Some 'Noted.' replies repeat, and two show up back to back at the bottom of the conversation"
     ]
   }
 }

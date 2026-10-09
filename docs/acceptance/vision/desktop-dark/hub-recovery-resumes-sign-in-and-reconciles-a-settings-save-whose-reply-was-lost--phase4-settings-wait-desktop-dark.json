@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Can't reach the hub' toast sits on the bottom edge of the Guards card and the footer divider. It doesn't cover any control or text.",
-      "The Routing profile textarea cuts its last visible line off mid-line ('Current t...'). The textarea scrolls and can be resized, so the text can still be reached.",
-      "The sidebar conversation list cuts off a fourth item at the bottom edge. The list scrolls.",
-      "The top of the settings panel is scrolled partway, so only the 'max' effort row of the card above shows."
+      "The floating 'Can't reach the hub' toast covers the bottom edge of the Guards card and the left part of the save footer. No controls are hidden: 'Pause after a plan', 'Stop waiting' and 'Saving…' are all visible.",
+      "The last conversation in the sidebar list is cut off partway at the bottom of the scrollable list, above 'Some native sessions are unavailable'.",
+      "The Routing profile textarea text is cut off at the bottom edge, so the textarea scrolls internally."
     ]
   }
 }
