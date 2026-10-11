@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Context · Mesh journey fix…', 'Done · Improver sandbox · Mac.l…'). The truncation is intentional and doesn't affect the GitHub token card.",
-      "The 'Save Git settings' button looks disabled and has low contrast, which is expected when nothing has changed."
+      "The 'GitHub token scope' label and dropdown sit loose between cards instead of inside the GitHub token card, so the grouping is unclear.",
+      "The 'Save Git settings' button has low contrast. It looks disabled, which is probably intended because nothing has changed.",
+      "Session titles and subtitles in the sidebar are cut off with ellipses (e.g. 'J11 memory jour…', 'dev-ma…'). This looks like intended truncation."
     ]
   }
 }

@@ -1,11 +1,13 @@
 import { z } from 'zod';
 import { ProjectReviewReportSchema } from './project-review-schemas.js';
+import { WorkflowDispatchHandoffSchema, WorkflowHandoffStateSchema, WorkflowInputNameSchema, WorkflowInputsSchema } from './workflow-schemas.js';
 import { IdSchema, TimestampSchema } from './schemas.js';
 import { ProjectWorkTaskSchema, TaskTypeSchema } from './project-loop-schemas.js';
 const revision = z.number().int().nonnegative(), date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/u), text = z.string().trim().min(1);
 export const JobRunSpecSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('command'), command: text.max(2000), timeoutMinutes: z.number().int().min(1).max(240) }),
   z.strictObject({ kind: z.literal('github-workflow'), workflow: text.max(200), mode: z.enum(['watch', 'dispatch']), timeoutMinutes: z.number().int().min(5).max(600),
+    inputs: WorkflowInputsSchema.optional(), commitInput: WorkflowInputNameSchema.optional(), dispatchAfterMerge: WorkflowDispatchHandoffSchema.optional(),
     // Explicit evidence requirements, for workflows whose successful scheduling jobs can skip the suite.
     requiredJobs: z.array(text.max(200)).max(20).optional(), requiredSteps: z.array(text.max(200)).max(20).optional() }),
 ]);
@@ -18,6 +20,7 @@ export const ProjectJobRunSchema = z.strictObject({ schema: z.literal('project-j
   startedAt: TimestampSchema, endedAt: TimestampSchema.optional(), conclusion: z.enum(['passed', 'failed', 'timed-out', 'cancelled', 'skipped']).nullable(),
   summary: z.string().max(1200), logTail: z.string().max(8000), url: z.url().optional(), workflowRunId: z.number().int().positive().optional(), workflowHeadBound: z.boolean().optional(),
   dispatchRef: z.string().max(200).optional(), gateRunId: IdSchema.optional(), phase: z.enum(['reserved', 'executing', 'watching', 'finished']), pollAfter: TimestampSchema.optional(),
+  workflowHandoff: WorkflowHandoffStateSchema.optional(),
   // Snapshot before execution: an edit never changes an already reserved job.
   spec: JobRunSpecSchema, setupCommand: z.string().max(500).nullable().default(null), baseBranch: z.string().min(1).max(200), watchAfter: TimestampSchema });
 export type ProjectJobRun = z.infer<typeof ProjectJobRunSchema>;

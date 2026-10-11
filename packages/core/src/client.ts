@@ -38,3 +38,5 @@ export * from './ekoa-schemas.js';
 export * from './merge-schemas.js';
 
 export * from './project-review-schemas.js';
+export * from './workflow-schemas.js';
+export * from './ekoa-code-schemas.js';

@@ -218,10 +218,11 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
       return;
     }
     if (path === '/hub/secrets/github') {
+      const projectId = url.searchParams.has('projectId') ? IdSchema.parse(url.searchParams.get('projectId')) : undefined;
       // Summary only, never the token (D57). Removing twice leaves the same state, so a removal may wait for the hub.
-      if (method === 'GET') { send(GitHubTokenStateSchema.parse(await app.state.github.summary())); return; }
-      if (method === 'PUT') { const input = SecretInputSchema.parse(await body(request)); retryable = input.clientRequestId !== undefined; send(GitHubTokenStateSchema.parse(await app.state.github.put(input.value, input.clientRequestId))); return; }
-      if (method === 'DELETE') { EmptySchema.parse(await body(request)); retryable = true; send(GitHubTokenStateSchema.parse(await app.state.github.remove())); return; }
+      if (method === 'GET') { send(GitHubTokenStateSchema.parse(await app.state.github.summary(projectId))); return; }
+      if (method === 'PUT') { const input = SecretInputSchema.parse(await body(request)); retryable = input.clientRequestId !== undefined; send(GitHubTokenStateSchema.parse(await app.state.github.put(input.value, input.clientRequestId, projectId))); return; }
+      if (method === 'DELETE') { EmptySchema.parse(await body(request)); retryable = true; send(GitHubTokenStateSchema.parse(await app.state.github.remove(undefined, projectId))); return; }
     }
     if (path === '/hub/devices' && method === 'GET') { send({ schema: 'devices-list-v1', currentDeviceId: app.device.deviceId, devices: (await app.roster()).devices.map((row) => row.device) }); return; }
     throw failure('Not found.', 404);

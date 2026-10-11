@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { randomBytes, randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { DeviceSchema, GitHubTokenStateSchema, Homes, SecretRedactor } from '../packages/core/dist/index.js';
+import { DeviceSchema, ProjectSchema, GitHubTokenStateSchema, Homes, SecretRedactor } from '../packages/core/dist/index.js';
 import { HubUnavailable, MemberHubClient, MemberState, joinHub } from '../packages/mesh/dist/index.js';
 import { Application, createDaemon } from '../apps/daemon/dist/index.js';
 
@@ -32,6 +32,20 @@ async function member(id: string, fetcher?: typeof fetch) {
   return { state: new MemberState(client, ['codex']), redactor, token: joined.membership.token };
 }
 const stored = () => JSON.stringify(app.hub.db.prepare('SELECT document FROM documents UNION ALL SELECT document FROM secrets').all());
+
+test('project tokens stay independent across members, and a required scope never borrows the default credential', async () => {
+  for (const id of ['sandbox', 'ekoa', 'legacy']) await app.state.projects.put(ProjectSchema.parse({ schema: 'project-v1', id, name: id, paths: {}, branchPolicy: 'external', memory: { mode: 'device', dir: 'memory' }, context: { state: 'none' }, ...(id !== 'legacy' ? { githubTokenScope: 'project' } : {}) }), 0);
+  const global = githubToken(), scoped = githubToken(); await app.state.github.put(global);
+  expect(await app.state.github.credential('legacy')).toBe(global); expect(await app.state.github.credential('ekoa')).toBeUndefined();
+  const left = await member('left'), right = await member('right');
+  const input = { schema: 'save-secret-v1', clientRequestId: 'scope_save', value: scoped };
+  const result = await request('/hub/secrets/github?projectId=ekoa', 'PUT', input); expect(result.status).toBe(200); expect(await result.text()).not.toContain(scoped);
+  expect(await left.state.github.credential('ekoa')).toBe(scoped); expect(await right.state.github.credential('sandbox')).toBeUndefined();
+  expect(await left.state.github.credential()).toBe(global); expect(stored()).not.toContain(scoped); expect(stored()).not.toContain(global);
+  expect((await request('/hub/secrets/github?projectId=sandbox', 'PUT', input)).status).toBe(409);
+  await right.state.github.remove('scope_remove', 'ekoa'); expect(await left.state.github.credential('ekoa')).toBeUndefined(); expect(await app.state.github.credential()).toBe(global);
+  expect((await request('/hub/secrets/github?projectId=missing')).status).toBe(404); expect((await request('/hub/secrets/github?projectId=../ekoa')).status).toBe(400);
+});
 
 test('the GitHub token routes return a masked summary, never the token, and remove it on request', async () => {
   expect((await fetch(`${base}/hub/secrets/github`)).status).toBe(401);

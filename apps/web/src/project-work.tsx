@@ -4,6 +4,7 @@ import { ProjectDailyListViewSchema } from '@jevellan/core/client';
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { z } from 'zod';
 import {
+  EkoaCodeSetupReceiptSchema,
   CoordinatorMessageReceiptSchema, DecisionAnsweredViewSchema, EffortSchema, MergeResultViewSchema, ProjectEventFrameSchema, ProjectNotebookViewSchema,
   GoalListViewSchema, ProjectWorkListViewSchema, ProjectWorkSettingsViewSchema, ProjectWorkViewSchema, TaskListViewSchema, TaskReceiptSchema, TaskTypeSchema, ThreadViewSchema,
   type Effort, type Isolation, type ProjectDecision, type ProjectLedgerEvent, type ProjectWorkListView, type ProjectWorkView, type PullRequestEntry,
@@ -919,6 +920,7 @@ function NewThreadDialog({ props, view, tasks, goals, move, close }: { props: Pa
         </details>
         {error && <p className="error">{error}</p>}
         <div className="form-actions">
+
           <button type="button" className="secondary" onClick={close}>{copy.CANCEL}</button>
           <button disabled={task.busy || offline}>{task.busy ? copy.STARTING : copy.START_THREAD}</button>
         </div>
@@ -1038,6 +1040,10 @@ function SettingsDialog({ props, view, close }: { props: PageProps; view: Projec
           <p className="error">{error}{stale && <button type="button" className="text-button" disabled={task.busy} onClick={reload}>{copy.RELOAD}</button>}</p>
         )}
         <div className="form-actions">
+          {view.project.name === 'Ekoa Code' && <button type="button" className="secondary" disabled={task.busy || !loaded || !form.modelId} onClick={() => void task.run(async signal => {
+            await api(`/api/projects/${view.project.id}/ekoa-code-setup`, EkoaCodeSetupReceiptSchema, 'POST', { schema: 'ekoa-code-setup-request-v1', modelId: form.modelId, workflowPull: 208 }, { signal, waitForHub: true });
+            updated(); await read(signal);
+          })}>Apply Ekoa Code setup</button>}
           <button type="button" className="secondary" onClick={close}>{copy.CANCEL}</button>
           <button disabled={task.busy || !loaded}>{task.busy ? copy.SAVING : copy.SAVE}</button>
         </div>

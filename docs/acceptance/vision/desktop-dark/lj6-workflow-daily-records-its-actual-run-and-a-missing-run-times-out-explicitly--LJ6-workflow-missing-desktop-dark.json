@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The right panel is scrolled, so the 'CONCLUDED 0' heading is partly clipped at the top under the header bar.",
-      "Sidebar session titles and subtitles are cut off with ellipses (for example 'Context · J11 memory journ…' and 'Mesh journey fixt…').",
-      "The 'Enabled' checkbox labels sit a little below the 'Run now' and 'Edit' buttons, so the row looks slightly misaligned.",
-      "The status badge on the 'Missing run' job says 'Failed at 02:05 AM', but the chat card says 'timed-out'. The wording doesn't match."
+      "The right-hand panel is scrolled, so the 'Concluded 0' heading is partly clipped under the top bar. This is the scroll position, not a layout bug.",
+      "The sidebar session titles and subtitles are cut short with ellipses (e.g. 'Context · J11 memory jour…'). This is intended truncation.",
+      "The text inside the 'Edit' buttons is slightly smaller than the text in the 'Run now' buttons, so the buttons look a bit uneven."
     ]
   }
 }

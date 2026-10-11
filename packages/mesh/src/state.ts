@@ -6,6 +6,7 @@ import type { HubDatabase } from './database.js';
 import { HubProtocolError, type MemberHubClient } from './client.js';
 import { HubRigging } from './rigging.js';
 import { settingsMutation } from './settings-mutation.js';
+import { createHash } from 'node:crypto';
 
 export class HubState {
   readonly configuration: SharedConfiguration;
@@ -49,16 +50,30 @@ export class HubState {
       },
       credential: () => { if (!hub.db.prepare('SELECT id FROM secrets WHERE id=?').get('jev')) return undefined; return hub.vault.forLaunch('jev'); },
     };
-    const github = (): GitHubTokenState => hub.db.prepare('SELECT id FROM secrets WHERE id=?').get('github') ? { schema: 'github-token-summary-v1', id: 'github', saved: true, ...hub.vault.details('github') } : { schema: 'secret-state-v1', id: 'github', saved: false };
+    const githubKey = (projectId?: string) => {
+      if (!projectId) return 'github';
+      if (!hub.get('projects', IdSchema.parse(projectId), ProjectSchema)) throw Object.assign(new Error('Project not found.'), { status: 404 });
+      return `github_${createHash('sha256').update(projectId).digest('hex').slice(0, 40)}`;
+    };
+    const github = (projectId?: string): GitHubTokenState => {
+      const key = githubKey(projectId);
+      return hub.db.prepare('SELECT id FROM secrets WHERE id=?').get(key) ? { schema: 'github-token-summary-v1', id: 'github', saved: true, ...hub.vault.details(key) } : { schema: 'secret-state-v1', id: 'github', saved: false };
+    };
     this.github = {
       summary: github,
-      put: (raw, clientRequestId) => {
+      put: (raw, clientRequestId, projectId) => {
         const value = CredentialInputSchema.parse(raw);
-        settingsMutation(hub, deviceId, 'github-put', { value }, clientRequestId, GitHubTokenStateSchema, () => { hub.vault.put('github', value); return github(); });
-        return github();
+        const key = githubKey(projectId);
+        settingsMutation(hub, deviceId, 'github-put', { value, ...(projectId ? { projectId } : {}) }, clientRequestId, GitHubTokenStateSchema, () => { hub.vault.put(key, value); return github(projectId); });
+        return github(projectId);
       },
-      remove: (clientRequestId) => { settingsMutation(hub, deviceId, 'github-remove', {}, clientRequestId, GitHubTokenStateSchema, () => { hub.vault.remove('github'); return github(); }); return github(); },
-      credential: () => { if (!hub.db.prepare('SELECT id FROM secrets WHERE id=?').get('github')) return undefined; return hub.vault.forLaunch('github'); },
+      remove: (clientRequestId, projectId) => { const key = githubKey(projectId); settingsMutation(hub, deviceId, 'github-remove', projectId ? { projectId } : {}, clientRequestId, GitHubTokenStateSchema, () => { hub.vault.remove(key); return github(projectId); }); return github(projectId); },
+      credential: (projectId) => {
+        const key = githubKey(projectId);
+        if (hub.db.prepare('SELECT id FROM secrets WHERE id=?').get(key)) return hub.vault.forLaunch(key);
+        if (projectId && hub.get('projects', projectId, ProjectSchema)?.document.githubTokenScope !== 'project' && hub.db.prepare('SELECT id FROM secrets WHERE id=?').get('github')) return hub.vault.forLaunch('github');
+        return undefined;
+      },
     };
   }
   async request(raw: unknown) {
@@ -74,10 +89,10 @@ export class HubState {
       case 'jev-summary': result = { schema: 'shared-jev-summary-v1', summary: await this.jev.summary() }; break;
       case 'jev-put': result = { schema: 'shared-jev-summary-v1', summary: await this.jev.put(request.value, request.clientRequestId) }; break;
       case 'jev-credential': result = { schema: 'shared-jev-credential-v1', value: await this.jev.credential() ?? null }; break;
-      case 'github-summary': result = { schema: 'shared-github-summary-v1', summary: await this.github.summary() }; break;
-      case 'github-put': result = { schema: 'shared-github-summary-v1', summary: await this.github.put(request.value, request.clientRequestId) }; break;
-      case 'github-remove': result = { schema: 'shared-github-summary-v1', summary: await this.github.remove(request.clientRequestId) }; break;
-      case 'github-credential': result = { schema: 'shared-github-credential-v1', value: await this.github.credential() ?? null }; break;
+      case 'github-summary': result = { schema: 'shared-github-summary-v1', summary: await this.github.summary(request.projectId) }; break;
+      case 'github-put': result = { schema: 'shared-github-summary-v1', summary: await this.github.put(request.value, request.clientRequestId, request.projectId) }; break;
+      case 'github-remove': result = { schema: 'shared-github-summary-v1', summary: await this.github.remove(request.clientRequestId, request.projectId) }; break;
+      case 'github-credential': result = { schema: 'shared-github-credential-v1', value: await this.github.credential(request.projectId) ?? null }; break;
       case 'rigging': result = { schema: 'shared-rigging-v1', items: this.rigging.list() }; break;
       case 'rigging-get': result = { schema: 'shared-rigging-view-v1', item: this.rigging.get(request.id) }; break;
       case 'rigging-add': result = { schema: 'shared-rigging-view-v1', item: this.rigging.add(request.input) }; break;
@@ -123,10 +138,10 @@ export class MemberState {
     // Saves and removals return the current state, which a later write from another device may already have changed.
     const github = async (operation: string, fields = {}) => { const summary = (await request(operation, 'shared-github-summary-v1', fields)).summary; if (summary.id !== 'github') throw new HubProtocolError(); return summary; };
     this.github = {
-      summary: () => github('github-summary'),
-      put: (value, clientRequestId) => github('github-put', { value, clientRequestId }),
-      remove: (clientRequestId) => github('github-remove', { clientRequestId }),
-      credential: async () => (await request('github-credential', 'shared-github-credential-v1')).value ?? undefined,
+      summary: projectId => github('github-summary', { projectId }),
+      put: (value, clientRequestId, projectId) => github('github-put', { value, clientRequestId, projectId }),
+      remove: (clientRequestId, projectId) => github('github-remove', { clientRequestId, projectId }),
+      credential: async projectId => (await request('github-credential', 'shared-github-credential-v1', { projectId })).value ?? undefined,
     };
     this.rigging = {
       get: async id => { const item = (await request('rigging-get', 'shared-rigging-view-v1', { ...rigging, id })).item; if (item.item.id !== id) throw new HubProtocolError(); return item; },

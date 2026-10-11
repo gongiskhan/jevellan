@@ -81,6 +81,8 @@ export class ProjectMergeGate {
     for (const row of records) if (row.schema === 'merge-route-v1' && row.threadId === threadId && row.commit !== commit && row.decisionId) {
       const old = (await this.o.hub.decision(row.decisionId))?.document; if (old && !old.answer && !old.withdrawnAt) await this.o.hub.withdrawDecision(old.id, new Date(this.o.now()).toISOString());
     }
+    let handoff = false, after: string | undefined;
+    do { const page = await this.o.hub.jobs(thread.projectId, after); handoff ||= page.records.some(job => job.run.kind === 'github-workflow' && job.run.dispatchAfterMerge?.pull === thread!.pr!.number); after = page.next ?? undefined; } while (after);
     let route = (await this.o.hub.mergeDocument(id))?.document;
     if (route && route.schema !== 'merge-route-v1') throw refuse('Invalid merge route receipt.');
     if (!route) {
@@ -93,11 +95,15 @@ export class ProjectMergeGate {
       let client: DecisionClient | undefined; try { client = await this.o.decisionClient?.(); } catch { /* The documented fallback is ask-owner. */ }
       const config = await this.o.configuration();
       const result = await decideMergeRoute(client, packet, config.decisions.model, this.o.redactor, AbortSignal.any([this.#abort.signal, AbortSignal.timeout(config.decisions.timeoutMs)]));
+
       if (this.#closed) return;
       route = await this.#save(MergeRouteSchema.parse({ ...result, schema: 'merge-route-v1', id, projectId: thread.projectId, threadId, deviceId: this.o.deviceId, revision: 0, commit, at: new Date(this.o.now()).toISOString(), prNumber: thread.pr!.number,
         questionSet: 'm-v1', state: 'waiting', failures, decisionId: null, verificationId: null,
-        ...(failures >= 3 ? { route: 'ask-owner', source: 'guard', reason: 'Three verification attempts failed on this pull request.' } : {}) }));
+        ...(failures >= 3 ? { route: 'ask-owner', source: 'guard', reason: 'Three verification attempts failed on this pull request.' } : {}),
+        ...(handoff ? { route: 'ask-owner', source: 'guard', reason: 'The workflow handoff always needs the owner’s merge decision.' } : {}) }));
+
     }
+    if (handoff && route.route !== 'ask-owner') route = await this.#save({ ...route, route: 'ask-owner', source: 'guard', reason: 'The workflow handoff always needs the owner’s merge decision.' });
     if (route.packet.riskyAreas !== settings.riskyAreas) route = await this.#save({ ...route, route: 'ask-owner', source: 'guard', reason: 'The project’s risky areas changed after this routing decision.' });
     if (route.route === 'ask-owner') { await this.#ask(route, thread); return; }
     if (route.state === 'failed') {
@@ -147,7 +153,7 @@ export class ProjectMergeGate {
     if (!['Merge', 'Send back with a note', 'Close'].includes(answer.optionLabel ?? '')) throw refuse('Choose a merge action.', 400);
     if (validateOnly) return true;
     if (answer.optionLabel === 'Merge') { await this.o.tracker.merge(thread.id, decision.merge.commit); await this.#save({ ...row, state: 'merged' }); }
-    else if (answer.optionLabel === 'Close') { const repository = parseGitHubPullUrl(current.url); if (!repository) throw refuse('Not a GitHub pull request.'); await (await this.o.github.open()).closePull(repository, current.number); await this.o.tracker.refresh(thread.id); await this.#save({ ...row, state: 'failed' }); }
+    else if (answer.optionLabel === 'Close') { const repository = parseGitHubPullUrl(current.url); if (!repository) throw refuse('Not a GitHub pull request.'); await (await this.o.github.open(decision.projectId)).closePull(repository, current.number); await this.o.tracker.refresh(thread.id); await this.#save({ ...row, state: 'failed' }); }
     else { await this.o.message(decision.projectId, thread.id, answer.text!, derivedId('tmsg', 'merge-owner', decision.id)); await this.#save({ ...row, state: 'failed' }); }
     return true;
   }

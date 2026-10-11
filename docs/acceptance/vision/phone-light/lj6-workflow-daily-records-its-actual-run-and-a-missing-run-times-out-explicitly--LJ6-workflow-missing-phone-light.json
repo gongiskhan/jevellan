@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The last tab label 'Pull requests' runs off the right edge. It looks like a horizontally scrollable tab strip, so the tab can still be reached.",
-      "The status badge in the header is cut short to 'Working…'.",
-      "The 'Enabled' checkbox sits above its label instead of beside it, so it lines up a little awkwardly with the 'Run now' and 'Edit' buttons."
+      "The 'Pull requests' tab is cut off at the right edge of the top tab bar. The bar looks horizontally scrollable, so the tab can still be reached.",
+      "The 'Enabled' checkbox labels sit lower than the 'Run now' and 'Edit' buttons, so the rows look slightly misaligned."
     ]
   }
 }

@@ -94,7 +94,7 @@ export class PullRequestTracker {
   }
   /** `fromUrl`: a thread on another device is read from its pull request's own address, without this device's checkout (3.5.1 step 8). */
   async #fetch(projectId: string, pr: PullRequestState, fromUrl = false): Promise<PullRequestState> {
-    const repository = (fromUrl ? parseGitHubPullUrl(pr.url) : null) ?? await this.#repository(projectId); const client = await this.#o.github.open();
+    const repository = (fromUrl ? parseGitHubPullUrl(pr.url) : null) ?? await this.#repository(projectId); const client = await this.#o.github.open(projectId);
     const pull = await client.getPull(repository, pr.number);
     const open = !pull.merged && pull.state === 'open';
     const next = pullRequestState(pull, open ? await client.checks(repository, pull.headSha) : pr.checks, this.#at());
@@ -195,7 +195,7 @@ export class PullRequestTracker {
       let message: string;
       try {
         await this.#o.assertMerge?.(thread.projectId, threadId);
-        const result = await (await this.#o.github.open()).merge(await this.#repository(thread.projectId), pr.number, pr.headSha);
+        const result = await (await this.#o.github.open(thread.projectId)).merge(await this.#repository(thread.projectId), pr.number, pr.headSha);
         if (!result.merged) throw refuse(result.message, 409);
         message = result.message;
       } catch (error) {
@@ -227,7 +227,7 @@ export class PullRequestTracker {
     const read = await this.fresh(projectId, threadId); if (read.reason) throw refuse(read.reason, 409);
     const pr = read.pr; if (!pr || pr.state !== 'open') throw refuse(PR_NOT_OPEN, 409);
     const repository = parseGitHubPullUrl(pr.url); if (!repository) throw refuse(NOT_GITHUB, 409);
-    const client = await this.#o.github.open(), files = await client.pullFiles(repository, pr.number);
+    const client = await this.#o.github.open(projectId), files = await client.pullFiles(repository, pr.number);
     if ((await client.getPull(repository, pr.number)).headSha !== pr.headSha) throw refuse('The pull request head changed. Read its diff again.', 409);
     const diff = this.#o.redactor.text(files.map(file => `diff --git a/${file.filename} b/${file.filename}\n${file.patch ?? '[Patch unavailable: binary or oversized file.]'}`).join('\n\n'));
     const shortened = diff.length > 80_000, suffix = '\n[Diff shortened.]';

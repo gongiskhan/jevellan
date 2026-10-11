@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The leftmost tab in the horizontal tab bar is clipped to 'vices' and sits under the scroll-left arrow. This is expected for a scrollable tab strip.",
-      "The 'Save Git settings' button is very low-contrast. It is probably shown as disabled because nothing has changed, but it is hard to see.",
-      "The fine-print note under the connection method is small, dim text. It is still readable."
+      "The horizontal settings tab strip clips the first and last tabs (the label before 'Projects' shows only as 'ices', and an icon is clipped beside 'Ekoa'). This is expected in a scrolling tab bar, and the arrow buttons can reach them.",
+      "The 'Save Git settings' button is disabled and has very low contrast against the card background.",
+      "The 'GitHub token scope' label and dropdown sit outside any card, so they look visually separate from the GitHub token card."
     ]
   }
 }

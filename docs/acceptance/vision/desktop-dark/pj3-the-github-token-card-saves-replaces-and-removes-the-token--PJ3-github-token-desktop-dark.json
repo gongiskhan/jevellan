@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Save Git settings' button has low contrast against the card background. It is probably meant to look disabled because nothing has changed, but it is harder to read than the other buttons.",
-      "Some sidebar thread titles and metadata end in an ellipsis (e.g. 'Mesh journey fix…', 'Mac.l…'). This looks like deliberate truncation and does not affect the GitHub token card.",
-      "The breadcrumb 'Settings · Git' is small and low contrast."
+      "The 'Save Git settings' button has low contrast and no visible border, so it looks disabled or faint next to the outlined 'Replace', 'Remove' and 'Check connection' buttons.",
+      "The 'GitHub token scope' label and dropdown sit outside any card, between the 'GitHub connection' and 'GitHub token' cards, which looks inconsistent with the rest of the layout.",
+      "Some session titles and subtitles in the sidebar are cut short with an ellipsis ('Context · J11 memory jour…', 'dev-ma…'). This looks intentional and doesn't hide any controls."
     ]
   }
 }

@@ -137,7 +137,7 @@ export class Application {
       this.projectHub = this.member ? new MemberProjectStore(this.member) : new HubProjectAccess(this.hub, this.device.deviceId, undefined, () => this.devices.list());
       this.projectWork = new ProjectWork({ homes: this.homes, deviceId: this.device.deviceId, deviceName: this.device.name, redactor: this.redactor,
         projects: this.state.projects, hub: this.projectHub,
-        github: { credential: async () => this.state.github.credential(), ...(options.githubFetch ? { fetch: options.githubFetch } : {}), ...(options.githubBaseUrl ? { baseUrl: options.githubBaseUrl } : {}) },
+        github: { credential: async (projectId) => this.state.github.credential(projectId), ...(options.githubFetch ? { fetch: options.githubFetch } : {}), ...(options.githubBaseUrl ? { baseUrl: options.githubBaseUrl } : {}) },
         accounts: this.accounts, runtimes: this.runtimes, accountRuns, ownership: this.conversations.ownership, leases: this.conversations.leases,
         outside: { assertIdle: async (project, path) => this.conversations.outside.assertIdle(project, path, (await this.configuration()).configuration['x-jevellan'].guards.externalActivityWindowMin) },
         bridges: this.bridges, memory: this.memory, settings: async () => (await this.configuration()).configuration['x-jevellan'], riggingItems: async (runtime) => this.rigging.items(runtime),

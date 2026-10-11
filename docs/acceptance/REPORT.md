@@ -1184,7 +1184,7 @@ Status: implemented. Focused Nightly/merge regressions passed **77/77**, storage
 
 Use 01:00 Europe/Lisbon, autoMerge enabled and exact owner risky areas. Nightly order: Review since last, Legal programme, Full suite with expensive tests, exact-commit gated Deploy, disabled Security. Open one workflow trigger/dispatch-input pull request, preserve weekly legal measurement, always ask the owner, watch in existing order until merged then dispatch. Ekoa token needs Actions and Contents read/write. LJ9 records one real finding and its gate route.
 
-Status: owner decision recorded; implementation pending. Untouched finished phases retain their evidence.
+Status: implemented and validating. Ekoa workflow handoff PR #208 is open for owner merge; independent dedicated Pro and Madrid clones exist. Live hub installation, LJ9 and mirror publication remain blocked on the already requested hidden migration input, isolated Codex sign-in and Settings credentials. Untouched finished phases retain their evidence.
 
 
 ### Decision 653 — Nightly review persistence and provider attribution
@@ -1194,3 +1194,18 @@ Store the versioned review execution and final project-review-report-v1 inside t
 Provider selection uses attributed merged change volume since the preceding review; direct pushes have no reliable runtime attribution but are always included in the commit range. With no attributed majority, use the other provider from the configured coordinator and record that basis. No same-provider review fallback is introduced. The first review covers the complete published history rather than inventing a prior accepted baseline.
 
 Enabled Nightly definitions are explicit owner work and are independent of coding-task refill, pause and open-PR caps, so paused Legal analysis quality does not skip its enabled nightly programme. The one review fix stays linked to the code-review goal. Nightly deploy gates may use only passing gate receipts from the same window, never a daytime receipt. The hold is fenced from the scheduled boundary, including while the coordinator is creating its window. Completed Ekoa night reports remain completed when the owner closes them.
+
+
+### Decision 654 — Ekoa workflow authority, scoped tokens and repeatable setup
+
+Project GitHub credentials are encrypted separately in the hub vault. Existing projects retain the default token fallback; Ekoa and sandbox registrations explicitly require their project token, never borrowing another repository credential. Native Git authentication remains separate and read-only. Owner Settings exposes scope selection and the project requirement.
+
+Fast checks from Ekoa package.json are `npm run build --workspace shared && npm run typecheck && npm run lint`. The initial shared build prepares workspace types; root typecheck builds the bridge and checks all workspaces. This excludes production builds and token-spending/full test suites.
+
+Owner-only Ekoa setup validates its registered repository, project scope, Pro-only device allowance, fast command and account-discovered Opus 5.5/high entry. A versioned private receipt freezes setup settings; stable create IDs make retries preserve later goal/job edits. Goals and definitions are installed before activating Nightly settings. Security remains disabled with a parked session definition, rather than a successful placeholder command.
+
+Ekoa PR #208 removes nightly legal/deploy/all-tests triggers, keeps weekly legal measurement, adds SHA dispatch inputs and extends the root-owned runner hook to explicit pinned workflow_dispatch refs. It always routes to ask-owner in the backend. Before owner merge, windows watch GitHub’s existing Legal → Deploy → Full suite order; after merge they dispatch Legal → Full suite → Deploy. A single versioned handoff snapshot per PR per window avoids switching order mid-window; receipt identity and actual returned run ID survive restarts. Inability to inspect the PR is a blocked receipt with no dispatch. Every Ekoa SHA input pins a dedicated branch ref; gated Deploy uses the same-window passing suite commit even if main advances.
+
+Installing the changed root-owned runner hook requires owner infrastructure execution after #208 merges. Source changes cannot replace that installed file. After merge the system switches to dispatch; an old hook remains a visible blocker, not an implicit watch fallback. Madrid’s existing HTTPS GitHub authentication cloned its dedicated Ekoa checkout after SSH GitHub authentication failed. No owner checkout, native agent home, login or Garrison change was needed.
+
+Verification: focused simulated backend **33/33**; repeatable-setup, workflow and scoped-token cases **10/10** after receipt guards; workflow/safety **53/53** including the unreadable-handoff blocker; hub/client **27/27**. Typecheck, lint and build pass. PJ3/PJ3b/LJ6 pass **12/12** across all four layouts; all **16 live vision judgments** have zero blocking findings. The initial standalone LJ6 fixture clock failure was corrected and is not passing evidence. Jev, providers and GitHub effects remain simulated; actual local git, HTTP, vault and durable receipt paths ran. Ekoa PR #208 has real GitHub publication and 18 passing scoped tooling tests, shared build/lint/shell syntax/secret scan. Live migration, isolated sign-in, scoped Settings tokens, LJ9 and activation remain blocked; owner acceptance is unclaimed.

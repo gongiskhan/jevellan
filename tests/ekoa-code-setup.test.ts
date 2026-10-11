@@ -1,0 +1,24 @@
+import { afterEach, expect, test } from 'vitest';
+import { EkoaCodeSetupReceiptSchema, ProjectSchema } from '../packages/core/dist/index.js';
+import { EKOA_FAST_CHECKS, EKOA_GOALS, EKOA_RISKY_AREAS, EKOA_THREAD_RULES } from '../packages/projects/dist/index.js';
+import { projectFixture, type ProjectFixture } from './helpers/project-fixture.js';
+let fixture: ProjectFixture | undefined;
+afterEach(async () => { await fixture?.close(); fixture = undefined; });
+test('owner setup installs the exact amendment preset once, preserving later goal/settings edits', async () => {
+  const f = fixture = await projectFixture({ menu: [{ id: 'discovered_opus', runtime: 'claude', model: 'reported-native-model', label: 'Claude Opus 5.5', description: 'Fixture model discovery', efforts: ['high'], enabled: true }] });
+  const current = await f.app.state.projects.get('project');
+  await f.app.state.projects.put(ProjectSchema.parse({ ...current!.project, name: 'Ekoa Code', remoteUrl: 'https://github.com/gongiskhan/ekoa-code.git', githubTokenScope: 'project', allowedDevices: [f.app.device.deviceId], testCommand: EKOA_FAST_CHECKS }), current!.revision);
+  const request = { schema: 'ekoa-code-setup-request-v1', modelId: 'discovered_opus', workflowPull: 208 };
+  expect((await fetch(`${f.base}/api/projects/project/ekoa-code-setup`, { method: 'POST', headers: { Origin: f.base, 'Content-Type': 'application/json' }, body: JSON.stringify(request) })).status).toBe(401);
+  const receipt = await f.json('/api/projects/project/ekoa-code-setup', EkoaCodeSetupReceiptSchema, 'POST', request); expect(receipt.completed).toBe(true);
+  const work = f.app.projectWork, goals = await work.goals.list('project'); expect(goals).toHaveLength(6);
+  for (const expected of EKOA_GOALS) expect(goals.find(goal => goal.name === expected.name)).toMatchObject({ ...expected, autonomy: 'propose', dailyRefillCap: 3, openPrCap: 2 });
+  expect((await work.settingsView('project')).settings).toMatchObject({ autoMerge: true, riskyAreas: EKOA_RISKY_AREAS, threadRules: EKOA_THREAD_RULES, setupCommand: 'npm ci', allowMainIsolation: false, maxRunningThreads: 8, maxRunningPerDevice: 6, nightlyWindow: { time: '01:00', timezone: 'Europe/Lisbon', enabled: true } });
+  const dailies = await work.daily.dailies('project'); expect(dailies.map(row => row.name)).toEqual(['Review since last', 'Legal programme', 'Full suite with the expensive tests', 'Deploy', 'Security']); expect(dailies.at(-1)?.enabled).toBe(false);
+  const jobs = await work.daily.jobs('project'), full = jobs.find(job => job.name === 'Full suite with the expensive tests')!;
+  expect(full.run).toMatchObject({ inputs: { expensive: 'true' }, commitInput: 'sha', requiredJobs: ['suite', 'expensive'], dispatchAfterMerge: { pull: 208, watchOrder: 3 } }); expect(jobs.find(job => job.name === 'Deploy')?.gate).toEqual({ jobId: full.id });
+  const goal = goals[0]!; await work.goals.update('project', goal.id, { schema: 'goal-update-request-v1', expectedRevision: goal.revision, health: 'Owner correction' });
+  const before = (await work.settingsView('project')).settings, { schema: _schema, projectId: _projectId, revision, ...fields } = before; void _schema; void _projectId;
+  await work.putSettings('project', { schema: 'project-work-settings-request-v1', revision, settings: { ...fields, riskyAreas: 'Owner correction' } });
+  await f.json('/api/projects/project/ekoa-code-setup', EkoaCodeSetupReceiptSchema, 'POST', request); expect(await work.goals.list('project')).toHaveLength(6); expect(await work.daily.jobs('project')).toHaveLength(3); expect((await work.goals.read('project', goal.id)).health).toBe('Owner correction'); expect((await work.settingsView('project')).settings.riskyAreas).toBe('Owner correction');
+});

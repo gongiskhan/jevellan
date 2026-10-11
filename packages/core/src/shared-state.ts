@@ -31,22 +31,23 @@ export interface SharedJev {
 }
 /** The GitHub token for pull requests: summaries carry the last four characters and the save time, never the token. */
 export interface SharedGitHub {
-  summary(): Available<GitHubTokenState>;
-  put(value: string, clientRequestId?: string): Available<GitHubTokenState>;
-  remove(clientRequestId?: string): Available<GitHubTokenState>;
-  credential(): Available<string | undefined>;
+  summary(projectId?: string): Available<GitHubTokenState>;
+  put(value: string, clientRequestId?: string, projectId?: string): Available<GitHubTokenState>;
+  remove(clientRequestId?: string, projectId?: string): Available<GitHubTokenState>;
+  credential(projectId?: string): Available<string | undefined>;
 }
 const base = { schema: z.literal('shared-state-request-v1') };
 const runtimes = z.array(IdSchema).max(64);
 export const SharedStateRequestSchema = z.discriminatedUnion('operation', [
-  z.strictObject({ ...base, operation: z.enum(['configuration', 'configuration-history', 'projects', 'jev-summary', 'jev-credential', 'github-summary', 'github-credential']) }),
+  z.strictObject({ ...base, operation: z.enum(['configuration', 'configuration-history', 'projects', 'jev-summary', 'jev-credential']) }),
+  z.strictObject({ ...base, operation: z.enum(['github-summary', 'github-credential']), projectId: IdSchema.optional() }),
   z.strictObject({ ...base, operation: z.literal('configuration-put'), input: ConfigWriteSchema }),
   z.strictObject({ ...base, operation: z.literal('project'), id: IdSchema }),
   z.strictObject({ ...base, operation: z.literal('project-put'), clientRequestId: IdSchema.optional(), project: ProjectSchema, revision: z.number().int().nonnegative() }),
   z.strictObject({ ...base, operation: z.literal('project-context'), id: IdSchema, context: ProjectSchema.shape.context, revision: z.number().int().positive() }),
   z.strictObject({ ...base, operation: z.literal('jev-put'), clientRequestId: IdSchema.optional(), value: CredentialInputSchema }),
-  z.strictObject({ ...base, operation: z.literal('github-put'), clientRequestId: IdSchema.optional(), value: CredentialInputSchema }),
-  z.strictObject({ ...base, operation: z.literal('github-remove'), clientRequestId: IdSchema.optional() }),
+  z.strictObject({ ...base, operation: z.literal('github-put'), clientRequestId: IdSchema.optional(), value: CredentialInputSchema, projectId: IdSchema.optional() }),
+  z.strictObject({ ...base, operation: z.literal('github-remove'), clientRequestId: IdSchema.optional(), projectId: IdSchema.optional() }),
   z.strictObject({ ...base, operation: z.literal('rigging'), runtimes }),
   z.strictObject({ ...base, operation: z.literal('rigging-get'), id: IdSchema, runtimes }),
   z.strictObject({ ...base, operation: z.literal('rigging-add'), input: AddRiggingSchema, runtimes }),

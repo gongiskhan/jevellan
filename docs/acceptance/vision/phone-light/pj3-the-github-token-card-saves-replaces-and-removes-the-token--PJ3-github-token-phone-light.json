@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The horizontal tab bar cuts off the first tab on the left (\"...vices\" is clipped). It still scrolls, so this doesn't block anything.",
-      "The \"Save Git settings\" button looks faded or disabled. That is probably intentional because nothing has changed yet."
+      "The settings tab bar is cut off at both edges ('…ices' on the left, a partial icon on the right). It scrolls sideways and has arrow buttons, so this is expected overflow, not lost content.",
+      "The 'GitHub token scope' label and dropdown sit outside any card, unlike the sections around them, so the spacing looks a little uneven.",
+      "The 'Save Git settings' button is disabled and low-contrast. That's expected with no unsaved changes, but it's faint."
     ]
   }
 }

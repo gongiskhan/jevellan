@@ -260,6 +260,8 @@ export function ProjectForm({
             onChange={(event) => change({ remoteUrl: event.target.value })}
           />
         </label>
+        <label className="toggle"><input type="checkbox" checked={project.githubTokenScope === 'project'} onChange={event => change({ githubTokenScope: event.target.checked ? 'project' : 'shared' })} />Require this project's GitHub token</label>
+        <p className="muted small-text">Save it in Settings → Git. When required, this project waits for its own token.</p>
         {props.data.devices.devices.map((device) => (
           <label key={device.id}>
             Path on {device.name}

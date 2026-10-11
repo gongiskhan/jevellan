@@ -1,4 +1,6 @@
 import { NightlyReview } from './nightly-review.js';
+import { applyEkoaCodeSetup, EKOA_FAST_CHECKS } from './ekoa-code.js';
+import { EkoaCodeSetupRequestSchema, parseGitHubRemote } from '@jevellan/core';
 import { ProjectDailyWork } from './daily.js';
 import { ProjectJobRunner } from './job-runner.js';
 import { join } from 'node:path';
@@ -70,7 +72,7 @@ export const DEFAULT_PROJECT_TIMERS: ProjectTimers = {
 export type ProjectWorkOptions = {
   homes: Homes; deviceId: string; deviceName: string; redactor: SecretRedactor;
   projects: SharedProjects; hub: ProjectHub;
-  github: { credential(): Promise<string | undefined>; fetch?: typeof fetch | undefined; baseUrl?: string | undefined };
+  github: { credential(projectId?: string): Promise<string | undefined>; fetch?: typeof fetch | undefined; baseUrl?: string | undefined };
   accounts: Pick<AccountService, 'list' | 'resolve' | 'markUsed' | 'recordUsage' | 'recordError'>;
   runtimes: ReadonlyMap<string, RuntimeAdapter>; accountRuns: Set<string>;
   /** Main isolation (phase 6) publishes under these; worktree threads need neither. */
@@ -389,6 +391,15 @@ export class ProjectWork {
   list(): Promise<ProjectWorkListView> { return this.views.list(); }
   async goalList(projectId: string) { await this.#project(projectId); return this.goals.view(projectId); }
   async prepareDailyWork(projectId: string): Promise<void> { await this.#coordinatorHere(projectId); }
+  async setupEkoaCode(projectId: string, raw: unknown) {
+    const input = EkoaCodeSetupRequestSchema.parse(raw), project = await this.#project(projectId), repository = parseGitHubRemote(project.remoteUrl ?? '');
+    if (repository?.owner !== 'gongiskhan' || repository.repo !== 'ekoa-code' || project.githubTokenScope !== 'project' || project.testCommand !== EKOA_FAST_CHECKS || project.allowedDevices?.length !== 1 || project.allowedDevices[0] !== this.#o.deviceId)
+      throw refuse('Register the dedicated Ekoa Code clone on this device, with its project token, fast checks and this device as its only allowed device.', 409);
+    const entry = (await this.#o.settings()).menu.find(row => row.id === input.modelId && row.enabled && row.runtime === 'claude' && row.efforts.includes('high') && /opus\s*5\.5/iu.test(row.label));
+    if (!entry) throw refuse('Choose the account-discovered Claude Opus 5.5 model with high effort before setting up Ekoa Code.', 409);
+    await this.#coordinatorHere(projectId);
+    return this.tasks.exclusive(projectId, async () => applyEkoaCodeSetup(this, projectId, input, join(this.paths.project(projectId), 'ekoa-code-setup.json'), await this.admission.settings(projectId)));
+  }
   async createGoal(projectId: string, raw: unknown) { await this.#coordinatorHere(projectId); return this.goals.create(projectId, raw); }
   async updateGoal(projectId: string, goalId: string, raw: unknown) { await this.#project(projectId); return this.goals.update(projectId, goalId, raw); }
   async taskList(projectId: string) { await this.#project(projectId); return TaskListViewSchema.parse({ schema: 'task-list-view-v1', projectId, tasks: await this.tasks.list(projectId) }); }

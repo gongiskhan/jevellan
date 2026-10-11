@@ -52,10 +52,13 @@ function JobEditor({ projectId, item, jobs, goals, changed, onError, close }: Ed
   const [request] = useState(clientId), [name, setName] = useState(item?.name ?? ''), [goalId, setGoal] = useState(item?.goalId ?? ''), [enabled, setEnabled] = useState(item?.enabled ?? true), [gate, setGate] = useState(item?.gate?.jobId ?? ''),
     [kind, setKind] = useState(item?.run.kind ?? 'command'), [command, setCommand] = useState(item?.run.kind === 'command' ? item.run.command : ''), [workflow, setWorkflow] = useState(item?.run.kind === 'github-workflow' ? item.run.workflow : ''),
     [mode, setMode] = useState(item?.run.kind === 'github-workflow' ? item.run.mode : 'watch'), [timeout, setTimeout] = useState(item?.run.timeoutMinutes ?? 30),
-    [requiredJobs, setRequiredJobs] = useState(item?.run.kind === 'github-workflow' ? item.run.requiredJobs?.join('\n') ?? '' : ''), [requiredSteps, setRequiredSteps] = useState(item?.run.kind === 'github-workflow' ? item.run.requiredSteps?.join('\n') ?? '' : '');
+    [requiredJobs, setRequiredJobs] = useState(item?.run.kind === 'github-workflow' ? item.run.requiredJobs?.join('\n') ?? '' : ''), [requiredSteps, setRequiredSteps] = useState(item?.run.kind === 'github-workflow' ? item.run.requiredSteps?.join('\n') ?? '' : ''),
+    [inputs, setInputs] = useState(item?.run.kind === 'github-workflow' ? JSON.stringify(item.run.inputs ?? {}, null, 2) : '{}'), [commitInput, setCommitInput] = useState(item?.run.kind === 'github-workflow' ? item.run.commitInput ?? '' : ''),
+    [handoffPull, setHandoffPull] = useState(item?.run.kind === 'github-workflow' ? item.run.dispatchAfterMerge?.pull ?? 0 : 0), [watchOrder, setWatchOrder] = useState(item?.run.kind === 'github-workflow' ? item.run.dispatchAfterMerge?.watchOrder ?? 0 : 0);
   const operation = useTask(onError), names = (value: string) => value.split('\n').map(name => name.trim()).filter(Boolean);
   return <Modal title={item ? 'Edit job' : 'New job'} close={close}><form onSubmit={event => { event.preventDefault(); void operation.run(async signal => {
-    const run = kind === 'command' ? { kind, command, timeoutMinutes: timeout } : { kind, workflow, mode, timeoutMinutes: timeout, requiredJobs: names(requiredJobs), requiredSteps: names(requiredSteps) };
+    const run = kind === 'command' ? { kind, command, timeoutMinutes: timeout } : { kind, workflow, mode, timeoutMinutes: timeout, requiredJobs: names(requiredJobs), requiredSteps: names(requiredSteps), inputs: JSON.parse(inputs) as unknown,
+      ...(commitInput ? { commitInput } : {}), ...(handoffPull ? { dispatchAfterMerge: { schema: 'workflow-dispatch-handoff-v1', pull: handoffPull, watchOrder } } : {}) };
     const fields = { name, goalId: goalId || null, enabled, gate: gate ? { jobId: gate } : null, run };
     await api(item ? `/api/projects/${projectId}/jobs/${item.id}/edit` : `/api/projects/${projectId}/jobs`, ProjectJobSchema, 'POST', { ...fields, schema: item ? 'job-update-request-v1' : 'job-create-request-v1', ...(item ? { expectedRevision: item.revision } : { clientRequestId: request }) }, { signal, waitForHub: true }); changed(); close();
   }); }}>
@@ -65,6 +68,10 @@ function JobEditor({ projectId, item, jobs, goals, changed, onError, close }: Ed
     {kind === 'command' ? <label>Command<textarea required maxLength={2000} value={command} onChange={event => setCommand(event.target.value)} /></label> : <>
       <label>Workflow<input required maxLength={200} placeholder="nightly.yml" value={workflow} onChange={event => setWorkflow(event.target.value)} /></label>
       <label>Mode<select value={mode} onChange={event => setMode(event.target.value as typeof mode)}><option value="watch">Watch an existing run</option><option value="dispatch">Dispatch a run</option></select></label>
+      <label>Workflow inputs (JSON)<textarea maxLength={50000} value={inputs} onChange={event => setInputs(event.target.value)} /></label>
+      <label>Commit input name<input maxLength={64} placeholder="sha" value={commitInput} onChange={event => setCommitInput(event.target.value)} /></label><p className="pw-field-note">Sends the recorded commit to this input. Use a workflow that deploys or tests that exact commit.</p>
+      <label>Dispatch after pull request merges<input type="number" min={0} value={handoffPull} onChange={event => setHandoffPull(Number(event.target.value))} /></label><p className="pw-field-note">Zero means no handoff. Until this pull request merges, watch existing runs.</p>
+      {handoffPull > 0 && <label>Order while watching<input type="number" min={0} max={100} value={watchOrder} onChange={event => setWatchOrder(Number(event.target.value))} /></label>}
       <label>Required job names<textarea value={requiredJobs} onChange={event => setRequiredJobs(event.target.value)} /></label><label>Required step names<textarea value={requiredSteps} onChange={event => setRequiredSteps(event.target.value)} /></label><p className="pw-field-note">One exact name per line. These must run successfully; skipped tests do not pass.</p>
     </>}
     <label>Timeout in minutes<input required type="number" min={kind === 'command' ? 1 : 5} max={kind === 'command' ? 240 : 600} value={timeout} onChange={event => setTimeout(Number(event.target.value))} /></label>

@@ -142,3 +142,6 @@ Supported UI callers wait on an explicit typed hub-unavailable response with req
 
 
 Ekoa Settings operations relay to the hub with both device authentication and an owner session bound to that device. The mirror runs at the authority only and does not block Projects dispatch; members receive public status without tokens.
+
+
+GitHub credentials may be scoped to a registered project in the encrypted hub vault. Members request the project scope over the authenticated shared-state RPC; browser responses expose only masked summaries. Projects marked as requiring a project token never fall back to the legacy shared credential. Scope is included in request-id digests, so retries cannot cross projects.

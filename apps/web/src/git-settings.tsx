@@ -8,6 +8,7 @@ import { GitHubToken } from './github-token.js';
 export function GitPage(props: PageProps) {
   const [settings, setSettings] = useState<z.infer<typeof GitSettingsSchema>>();
   const [transport, setTransport] = useState<'machine' | 'ssh'>('machine');
+  const [tokenScope, setTokenScope] = useState('');
   const [projectId, setProjectId] = useState('');
   const [result, setResult] = useState<z.infer<typeof GitCheckSchema>>();
   const [allProjects, setProjects] = useState<z.infer<typeof ProjectsListSchema>['projects']>([]);
@@ -92,7 +93,11 @@ export function GitPage(props: PageProps) {
           </button>
         </form>
       </section>
-      <GitHubToken onError={props.onError} message={props.message} />
+      <label>GitHub token scope<select value={tokenScope} onChange={event => setTokenScope(event.target.value)}>
+        <option value="">Default for existing projects</option>
+        {allProjects.map(row => <option key={row.project.id} value={row.project.id}>{row.project.name}</option>)}
+      </select></label>
+      <GitHubToken key={tokenScope} projectId={tokenScope || undefined} onError={props.onError} message={props.message} />
       <section className="card">
         <h2>Check a project</h2>
         <p>Test read access using the saved connection method. This check does not fetch, commit or push.</p>

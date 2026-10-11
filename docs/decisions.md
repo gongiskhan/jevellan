@@ -85,3 +85,6 @@ Run the decision-selection, state/memory, transport and automatic-conversation t
 See the [acceptance report](acceptance/REPORT.md) for the current live/simulated distinction and missing-credential blockers.
 
 Placement receipts retain the redacted corrections actually shown to Jev, including size-budget drops; Why presents that list. Legacy corrections without a type count as feature tasks. A dispatched task freezes its type, needs and goal snapshot with its assembled brief so remote retry and restart use the same placement context. New installations receive the thread effort guide; existing owners accept the suggested replacement in Settings → Decisions before saving. Discovery adds requested Opus 5.5 and GPT-6.1 Sol labels only with identifiers and effort levels returned by accounts, preserving an existing disabled choice.
+
+
+2026-10-11 Projects loop amendment A4: Ekoa workflow authority and project credential scope are recorded as acceptance decision 654. Handoff PR #208 stays for the owner to merge; exact-SHA dispatch uses pinned refs and actual returned run identities. Windows freeze handoff state once and cannot mix old watch order with new dispatch order. Live installation remains blocked on the grouped owner inputs.

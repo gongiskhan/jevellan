@@ -362,8 +362,8 @@
   {
     "id": "loop-ekoa-code",
     "title": "Ekoa Code on Jevellan",
-    "why": "Run the first hardening loop in dedicated worktrees.",
-    "status": "planned"
+    "why": "Repeatable owner setup, exact six goals/rules, scoped encrypted credentials and pinned workflow handoff are implemented. Ekoa PR #208 awaits owner merge. Backend checks and twelve four-layout journeys pass with sixteen live vision verdicts. Live hub import, sign-in, Settings tokens and LJ9 remain blocked.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "loop-machines",

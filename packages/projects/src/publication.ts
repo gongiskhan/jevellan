@@ -17,15 +17,15 @@ import { TEST_TIMEOUT_MS, outputTail, runThreadCommand } from './verification.js
 
 /** The GitHub token is read when a publication or poll needs it, so a token saved later applies at once. */
 export class GitHubAccess {
-  readonly #o: { credential(): Promise<string | undefined>; fetch?: typeof fetch | undefined; baseUrl?: string | undefined; redactor: SecretRedactor };
-  constructor(o: { credential(): Promise<string | undefined>; fetch?: typeof fetch | undefined; baseUrl?: string | undefined; redactor: SecretRedactor }) { this.#o = o; }
-  async token(): Promise<string | undefined> { return (await this.#o.credential())?.trim() || undefined; }
+  readonly #o: { credential(projectId?: string): Promise<string | undefined>; fetch?: typeof fetch | undefined; baseUrl?: string | undefined; redactor: SecretRedactor };
+  constructor(o: { credential(projectId?: string): Promise<string | undefined>; fetch?: typeof fetch | undefined; baseUrl?: string | undefined; redactor: SecretRedactor }) { this.#o = o; }
+  async token(projectId?: string): Promise<string | undefined> { return (await this.#o.credential(projectId))?.trim() || undefined; }
   /** A client for one operation with a token already read. */
   client(token: string): GitHubClient {
     return new GitHubClient({ token: async () => token, redactor: this.#o.redactor, ...(this.#o.fetch ? { fetch: this.#o.fetch } : {}), ...(this.#o.baseUrl ? { baseUrl: this.#o.baseUrl } : {}) });
   }
   /** Reads the token once; without one every request fails as `no-token` (`No GitHub token is saved.`). */
-  async open(): Promise<GitHubClient> { return this.client(await this.token() ?? ''); }
+  async open(projectId?: string): Promise<GitHubClient> { return this.client(await this.token(projectId) ?? ''); }
 }
 /** The stored pull request state of a GitHub pull (brief 8.5 mapping). */
 export function pullRequestState(pull: GitHubPull, checks: PullRequestState['checks'], at: string): PullRequestState {
@@ -151,7 +151,7 @@ export class ThreadPublication {
       input.onPushed?.(pushedCommit);
       const repository = parseGitHubRemote(remote);
       if (!repository) return result({ kind: 'branch-only', reason: NOT_GITHUB, branch });
-      const token = await this.#github.token();
+      const token = await this.#github.token(project.id);
       if (!token) return result({ kind: 'branch-only', reason: BRANCH_PUSHED_NO_TOKEN, branch });
       const client = this.#github.client(token);
       try {

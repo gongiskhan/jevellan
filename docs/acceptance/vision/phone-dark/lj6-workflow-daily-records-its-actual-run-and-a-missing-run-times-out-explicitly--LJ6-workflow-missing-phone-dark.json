@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Pull requests' tab is cut off at the right edge of the tab bar. It is probably a horizontally scrollable tab strip.",
-      "The 'Working…' status pill in the header is truncated with an ellipsis."
+      "The top tab row runs off the right edge, so 'Pull requests' is cut off. The row is probably meant to scroll sideways.",
+      "The 'Enabled' checkbox sits above its label instead of beside it, which looks a little awkward next to the Run now and Edit buttons."
     ]
   }
 }

@@ -1281,6 +1281,21 @@ test('LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and ga
   await shot(page, 'nightly-failed-night-report'); expect(errors).toEqual([]);
 });
 
+test('PJ3b project GitHub tokens remain separate from the default connection', async ({ page }) => {
+  const errors = await begin(page); await page.goto('/settings/git');
+  const card = page.locator('section').filter({ has: page.getByRole('heading', { level: 2, name: 'GitHub token', exact: true }) });
+  await page.getByRole('combobox', { name: 'GitHub token scope', exact: true }).selectOption('projects_fixture');
+  await expect(card.locator('.pw-token-summary')).toHaveText('Not set');
+  await card.getByRole('button', { name: 'Add token', exact: true }).click(); const dialog = page.getByRole('dialog', { name: 'Add a GitHub token', exact: true });
+  const value = `fixture-${randomUUID()}`; await dialog.getByLabel('GitHub token', { exact: true }).fill(value); await dialog.getByRole('button', { name: 'Save token', exact: true }).click();
+  await expect(dialog).toHaveCount(0); await expect(card.locator('.pw-token-summary')).toContainText('Saved'); expect(await page.content()).not.toContain(value);
+  await shot(page, 'project-github-token');
+  await page.getByRole('combobox', { name: 'GitHub token scope', exact: true }).selectOption(''); await expect(card.locator('.pw-token-summary')).toContainText('Saved');
+  await page.getByRole('combobox', { name: 'GitHub token scope', exact: true }).selectOption('projects_fixture'); await card.getByRole('button', { name: 'Remove', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Remove the GitHub token?', exact: true }).getByRole('button', { name: 'Remove', exact: true }).click(); await expect(card.locator('.pw-token-summary')).toHaveText('Not set');
+  await page.getByRole('combobox', { name: 'GitHub token scope', exact: true }).selectOption(''); await expect(card.locator('.pw-token-summary')).toContainText('Saved'); expect(errors).toEqual([]);
+});
+
 test('LJ6 workflow daily records its actual run and a missing run times out explicitly', async ({ page }, info) => {
   const errors = await begin(page), route = '/api/projects/projects_workflows'; await openProject(page, 'Projects workflows');
   if (phone(info)) await tap(page, page.getByRole('tab', { name: /^Queue/ }));

@@ -107,6 +107,7 @@ export class HubProjectStore {
     if (this.devices?.().find(view => view.device.id === this.deviceId)?.device.workPolicy?.mode === 'apps-only') refuse('This device serves apps only; project work runs on a working device.', 409);
     const task = this.task(document.taskId)?.document;
     if (!task || task.projectId !== document.projectId || task.jobId !== document.jobId) refuse('The job run must belong to its task.', 400);
+    if (previous && stableJson(previous.workflowHandoff) !== stableJson(document.workflowHandoff)) refuse('The workflow handoff receipt cannot change.', 409);
     if (previous && (previous.taskId !== document.taskId || previous.jobId !== document.jobId || previous.projectDay !== document.projectDay || previous.startedAt !== document.startedAt || previous.deviceId !== document.deviceId || previous.setupCommand !== document.setupCommand || stableJson(previous.spec) !== stableJson(document.spec))) refuse('Job run identity cannot change.', 400);
     if (previous?.conclusion && stableJson({ ...previous, revision: 0 }) !== stableJson({ ...document, revision: 0 })) refuse('A finished job receipt cannot change.', 409);
     return this.#put('project-job-runs', document.id, ProjectJobRunSchema, document, expectedRevision);
@@ -151,6 +152,7 @@ export class HubProjectStore {
       if (this.coordinator(task.projectId)?.document.deviceId !== this.deviceId) refuse('Only the current coordinator device can write the task queue.', 403);
       const current = this.task(task.id);
       if (current && current.document.projectId !== task.projectId) refuse('This task belongs to another project.', 403);
+      if (current && stableJson(current.document.workflowHandoff) !== stableJson(task.workflowHandoff)) refuse('The task workflow handoff cannot change.', 409);
       if (task.nightlyReview && (task.source !== 'daily' || task.type !== 'review' || task.kind !== 'session' || task.threadId)) refuse('Nightly reviews are read-only daily sessions.', 400);
       if (task.reviewRun && (!task.nightlyReview || task.reviewRun.report && (task.reviewRun.report.taskId !== task.id || task.reviewRun.report.projectId !== task.projectId || task.reviewRun.report.commit !== task.reviewRun.commit || task.reviewRun.report.fromCommit !== task.reviewRun.fromCommit))) refuse('The review report must match its task and commit range.', 400);
       if (current?.document.reviewRun?.state === 'completed') {

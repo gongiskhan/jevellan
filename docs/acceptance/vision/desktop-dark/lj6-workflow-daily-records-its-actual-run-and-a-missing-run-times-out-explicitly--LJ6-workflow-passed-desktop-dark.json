@@ -10,9 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar session titles are truncated with ellipses, e.g. 'Context · J11 memory journ…' and 'Context · Mesh journey fixt…', and so are their subtitles.",
-      "The right panel is cut off at the bottom: 'Jobs (1)' sits at the viewport edge, and anything below it has to be scrolled to.",
-      "The 'Enabled' checkbox sits above its label instead of beside it, so it lines up awkwardly with the 'Run now' and 'Edit' buttons."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'dev-…'). Full names are not visible at this width.",
+      "The 'Jobs (1)' disclosure sits right at the bottom edge of the right panel, so it is only just inside the viewport (it looks reachable by scrolling).",
+      "The right panel's left padding is uneven: section headings like 'WAITING FOR YOU' are indented more than 'Project day: 2026-10-11' and the 'Order'/'Goals' chips.",
+      "The 'Enabled' checkbox sits above its label instead of beside it, so it is out of line with the 'Run now' and 'Edit' buttons.",
+      "The 'No output recorded.' block is shown even though the workflow passed, which reads like an empty state."
     ]
   }
 }

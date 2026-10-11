@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row overflows on the right: the 'Pull requests' tab is clipped at the screen edge, and any tabs after it are off-screen. It looks like a horizontally scrollable strip, so the tabs should still be reachable.",
-      "The 'Working…' status badge is cut short with an ellipsis.",
-      "The 'Enabled' checkbox sits above its label rather than inline with it, so it doesn't line up with the 'Run now' and 'Edit' buttons.",
-      "The output panel says 'No output recorded.' even though the workflow succeeded, which reads a bit oddly."
+      "The last tab, 'Pull requests', is cut off at the right edge of the tab row. The row is probably meant to scroll sideways, but nothing on screen shows that.",
+      "The 'Enabled' checkbox sits above its label instead of beside it, so it doesn't line up with the 'Run now' and 'Edit' buttons.",
+      "Showing 'No output recorded.' in a large code-style box for a successful run takes up a lot of space."
     ]
   }
 }

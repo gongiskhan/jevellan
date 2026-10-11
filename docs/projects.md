@@ -222,3 +222,6 @@ The task queue supplies typed placement context. Corrections prefer the same tas
 
 
 Settings → Ekoa connects the owner account using its MCP URL and bearer token, kept in the hub vault. Connection testing lists capabilities. Jevellan-created tasks have durable mappings and ownership markers; retrying a lost reply recovers the existing task, never blindly creates another. Decisions and draft aggregates link back to their project.
+
+
+Ekoa Code has an owner-only setup action in Project settings. Register its dedicated clone with project-scoped GitHub authentication and the documented fast checks, then select the account-discovered Opus 5.5/high entry. A durable receipt installs the exact goals and Nightly definitions once. The workflow handoff PR remains an owner decision even if m-v1 selects merge. See loop.md and acceptance decision 654.

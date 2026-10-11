@@ -131,10 +131,10 @@ export class GitHubClient {
     if (!sha.test(commit) || !/^jv\/jobs\/[A-Za-z0-9_-]+$/u.test(branch)) throw new Error('Invalid workflow dispatch ref.');
     await this.#request('POST', `${repo(repository)}/git/refs`, z.object({ ref: z.string(), object: z.object({ sha: z.string() }) }), { ref: `refs/heads/${branch}`, sha: commit });
   }
-  async dispatchWorkflow(repository: GitHubRepository, workflow: string, ref: string) {
+  async dispatchWorkflow(repository: GitHubRepository, workflow: string, ref: string, inputs?: Record<string, string>) {
     // This API version can return the actual run; never infer identity from a generic latest run.
     return this.#request('POST', `${repo(repository)}/actions/workflows/${encodeURIComponent(workflow)}/dispatches`, GitHubWorkflowDispatchSchema,
-      { ref, return_run_details: true }, { version: '2026-03-10' });
+      { ref, return_run_details: true, ...(inputs ? { inputs } : {}) }, { version: '2026-03-10' });
   }
   async workflowJobLog(repository: GitHubRepository, jobId: number): Promise<string> {
     return this.#request('GET', `${repo(repository)}/actions/jobs/${pullNumber(jobId)}/logs`, z.string(), undefined, { text: true, download: true });

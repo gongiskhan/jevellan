@@ -701,7 +701,8 @@ async function projectControl(request, response) {
     } else if (input.action === 'open') {
       frozenProjectClock += 60_000; await application.projectWork.pulse(); send(200, { schema: 'fixture-daily-opened-v1' });
     } else if (input.action === 'workflow') {
-      github.addWorkflow({ created_at: new Date(frozenProjectClock).toISOString(), run_started_at: new Date(frozenProjectClock).toISOString(), jobs: [{ id: 701, name: 'Suite', status: 'completed', conclusion: 'success', steps: [{ name: 'Run full suite', status: 'completed', conclusion: 'success' }] }] });
+      const at = new Date(frozenProjectClock ?? Date.now() + projectClockOffset).toISOString();
+      github.addWorkflow({ created_at: at, run_started_at: at, jobs: [{ id: 701, name: 'Suite', status: 'completed', conclusion: 'success', steps: [{ name: 'Run full suite', status: 'completed', conclusion: 'success' }] }] });
       send(200, { schema: 'fixture-workflow-added-v1' });
     } else { writeFileSync(dailyMarker, input.action); send(200, { schema: 'fixture-daily-released-v1' }); }
   } else if (request.url === '/projects/pulse') {

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ProjectReviewRunSchema } from './project-review-schemas.js';
+import { WorkflowHandoffStateSchema } from './workflow-schemas.js';
 import { EffortSchema, IdSchema, TimestampSchema } from './schemas.js';
 import { IsolationSchema } from './project-schemas.js';
 import { TaskPlacementContextSchema, TaskTypeSchema } from './task-types.js';
@@ -17,7 +18,7 @@ export const ProjectWorkTaskSchema = z.strictObject({ schema: z.literal('project
   title, brief, kind: TaskKindSchema, type: TaskTypeSchema, goalId: IdSchema.nullable(), source: TaskSourceSchema, state: TaskStateSchema,
   rank: z.string().min(1).max(64), ownerRanked: z.boolean(), now: z.boolean(), after, needs,
   dailyId: IdSchema.nullable(), jobId: IdSchema.nullable(), threadId: IdSchema.nullable(), jobRunId: IdSchema.nullable(), fixed: TaskFixedSchema,
-  nightlyReview: z.boolean().optional(), reviewRun: ProjectReviewRunSchema.optional(), nightlyWindowId: IdSchema.optional(), nightlyFixFor: IdSchema.optional(), refillEventId: IdSchema.optional(), projectDay: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u).optional(), placementNote: z.string().max(400).optional(), createdAt: TimestampSchema, updatedAt: TimestampSchema, dispatchedAt: TimestampSchema.optional(), endedAt: TimestampSchema.optional(), endNote: z.string().max(400).optional(),
+  workflowHandoff: WorkflowHandoffStateSchema.optional(), nightlyReview: z.boolean().optional(), reviewRun: ProjectReviewRunSchema.optional(), nightlyWindowId: IdSchema.optional(), nightlyFixFor: IdSchema.optional(), refillEventId: IdSchema.optional(), projectDay: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u).optional(), placementNote: z.string().max(400).optional(), createdAt: TimestampSchema, updatedAt: TimestampSchema, dispatchedAt: TimestampSchema.optional(), endedAt: TimestampSchema.optional(), endNote: z.string().max(400).optional(),
   // Frozen before the first start. A lost response/restart repeats identical start input.
   dispatchText: z.string().min(1).max(32768).optional(), dispatchBrief: z.string().min(1).max(32768).optional(), dispatchContext: TaskPlacementContextSchema.optional(), requestDigest: z.string().regex(/^[0-9a-f]{64}$/u).optional() });
 export type ProjectWorkTask = z.infer<typeof ProjectWorkTaskSchema>;

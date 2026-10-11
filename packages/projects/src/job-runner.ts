@@ -1,6 +1,6 @@
 import { existsSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { deviceAllowsWork, parseGitHubRemote, ProjectJobRunSchema, resolveProjectPath, type CoordinatorEvent, type Homes, type Project, type ProjectHub, type ProjectJob, type ProjectJobRun, type ProjectWorkTask, type ProjectWorkSettings, type SecretRedactor } from '@jevellan/core';
+import { deviceAllowsWork, parseGitHubRemote, ProjectJobRunSchema, resolveProjectPath, WorkflowHandoffStateSchema, type WorkflowHandoffState, type CoordinatorEvent, type Homes, type Project, type ProjectHub, type ProjectJob, type ProjectJobRun, type ProjectWorkTask, type ProjectWorkSettings, type SecretRedactor } from '@jevellan/core';
 import { derivedId } from './decision-items.js';
 import { ThreadGit, threadBaseRef } from './git.js';
 import type { GitHubAccess } from './publication.js';
@@ -20,6 +20,18 @@ export class ProjectJobRunner {
     now(): number; settings(projectId: string): Promise<ProjectWorkSettings>; project(projectId: string): Promise<Project>; baseBranch(repo: string): Promise<string>; event(projectId: string, event: CoordinatorEvent): Promise<void>;
     windowOpened(projectId: string): Promise<string | undefined>; day(projectId: string): Promise<string>; dayStart(projectId: string, day: string): Promise<number>; changed(): void }) {}
   busy(projectId?: string): boolean { return projectId ? this.#running.has(projectId) || this.#starting.has(projectId) : this.#running.size > 0 || this.#starting.size > 0; }
+  async handoff(projectId: string, job: ProjectJob): Promise<WorkflowHandoffState | undefined> {
+    if (job.run.kind !== 'github-workflow' || !job.run.dispatchAfterMerge) return undefined;
+    const pull = job.run.dispatchAfterMerge.pull, checkedAt = new Date(this.o.now()).toISOString();
+    try {
+      const project = await this.o.project(projectId), repo = resolveProjectPath(project, this.o.deviceId, this.o.deviceName), repository = parseGitHubRemote(await this.o.git.remoteUrl(repo) ?? '');
+      if (!repository) throw new Error('This project does not have a GitHub remote.');
+      const current = await (await this.o.github.open(projectId)).getPull(repository, pull);
+      return WorkflowHandoffStateSchema.parse({ schema: 'workflow-handoff-state-v1', pull, checkedAt, state: current.merged ? 'merged' : 'waiting' });
+    } catch (error) {
+      return WorkflowHandoffStateSchema.parse({ schema: 'workflow-handoff-state-v1', pull, checkedAt, state: 'blocked', reason: this.o.redactor.text(error instanceof Error ? error.message : 'Cannot read the workflow handoff pull request.').slice(0, 300) });
+    }
+  }
   async runs(projectId: string): Promise<ProjectJobRun[]> {
     const result: ProjectJobRun[] = []; let after: string | undefined;
     do { const page = await this.o.hub.jobRuns(projectId, after); result.push(...page.records); after = page.next ?? undefined; } while (after);
@@ -58,14 +70,18 @@ export class ProjectJobRunner {
       const base = remote ? await this.o.git.fetchPrivate(repo, baseBranch, privateRef) : await this.o.git.resolve(repo, `refs/heads/${baseBranch}`);
       if (!base) throw Object.assign(new Error('The project has no published base commit for this job.'), { status: 409 });
       const window = task.nightlyWindowId ? (await this.o.hub.window(task.nightlyWindowId))?.document : null;
-      const day = task.projectDay ?? await this.o.day(task.projectId), gate = job.gate ? (await this.runs(task.projectId)).find(row => row.jobId === job.gate!.jobId && row.projectDay === day && row.conclusion === 'passed' && (!window || window.taskIds.includes(row.taskId))) : undefined;
+      const handoff = task.workflowHandoff ?? await this.handoff(task.projectId, job), watch = handoff?.state === 'waiting';
+      const spec = job.run.kind === 'github-workflow' && handoff ? { ...job.run, mode: watch ? 'watch' as const : 'dispatch' as const } : job.run;
+      const gateRequired = !!job.gate && !watch;
+      const day = task.projectDay ?? await this.o.day(task.projectId), gate = gateRequired ? (await this.runs(task.projectId)).find(row => row.jobId === job.gate!.jobId && row.projectDay === day && row.conclusion === 'passed' && (!window || window.taskIds.includes(row.taskId))) : undefined;
       const at = new Date(this.o.now()).toISOString();
       run = await this.#save(ProjectJobRunSchema.parse({ schema: 'project-job-run-v1', id, projectId: task.projectId, revision: 0, jobId: job.id, taskId: task.id,
-        commit: gate?.commit ?? base, deviceId: this.o.deviceId, projectDay: day, startedAt: at, conclusion: null, summary: '', logTail: '', spec: job.run, baseBranch,
-        phase: 'reserved', setupCommand: (await this.o.settings(task.projectId)).setupCommand, ...(gate ? { gateRunId: gate.id } : {}), watchAfter: await this.o.windowOpened(task.projectId) ?? new Date(await this.o.dayStart(task.projectId, day)).toISOString() }));
-      if (job.run.kind === 'github-workflow' || job.gate && !gate) await this.o.git.run(repo, ['update-ref', '-d', privateRef]);
-      if (job.gate && !gate) {
-        const gateName = (await this.o.hub.job(job.gate.jobId))?.document.name ?? 'The gate job';
+        commit: gate?.commit ?? base, deviceId: this.o.deviceId, projectDay: day, startedAt: at, conclusion: null, summary: '', logTail: '', spec, baseBranch,
+        phase: 'reserved', setupCommand: (await this.o.settings(task.projectId)).setupCommand, ...(gate ? { gateRunId: gate.id } : {}), ...(handoff ? { workflowHandoff: handoff } : {}), watchAfter: await this.o.windowOpened(task.projectId) ?? new Date(await this.o.dayStart(task.projectId, day)).toISOString() }));
+      if (job.run.kind === 'github-workflow' || gateRequired && !gate) await this.o.git.run(repo, ['update-ref', '-d', privateRef]);
+      if (handoff?.state === 'blocked') { this.#launch(run, async () => this.#finish(run!, 'failed', `Workflow handoff blocked: ${handoff.reason ?? 'Cannot read the pull request.'}`)); return; }
+      if (gateRequired && !gate) {
+        const gateName = (await this.o.hub.job(job.gate!.jobId))?.document.name ?? 'The gate job';
         // Finish outside the queue lock, as receipt synchronization takes that lock too.
         this.#launch(run, async () => this.#finish(run!, 'skipped', `Skipped: ${gateName} has not passed today.`)); return;
       }
@@ -83,6 +99,7 @@ export class ProjectJobRunner {
   async #execute(initial: ProjectJobRun, _job: ProjectJob, signal: AbortSignal): Promise<void> {
     let run = (await this.o.hub.jobRun(initial.id))?.document ?? initial;
     if (run.conclusion) return this.#sync(run);
+    if (run.workflowHandoff?.state === 'blocked') { await this.#finish(run, 'failed', `Workflow handoff blocked: ${run.workflowHandoff.reason ?? 'Cannot read the pull request.'}`); return; }
     if (run.phase === 'executing') { await this.#stopRecordedProcess(run); await this.#finish(run, 'failed', 'The daemon restarted during execution. The operation was not repeated. Run it again explicitly.'); return; }
     try {
       const project = await this.o.project(run.projectId), repo = resolveProjectPath(project, this.o.deviceId, this.o.deviceName);
@@ -114,13 +131,15 @@ export class ProjectJobRunner {
       } else {
         const repository = parseGitHubRemote(await this.o.git.remoteUrl(repo) ?? ''); if (!repository) throw new Error('This project does not have a GitHub remote.');
         const workflowSpec = run.spec;
-        const client = await this.o.github.open();
+        const client = await this.o.github.open(run.projectId);
         if (run.phase === 'reserved' && run.spec.mode === 'dispatch') {
           // Crash after this write refuses re-dispatch rather than risking duplicate workflow effects.
           run = await this.#save({ ...run, phase: 'executing' });
-          const ref = run.gateRunId ? `jv/jobs/${run.id}` : run.baseBranch;
-          if (run.gateRunId) await client.pinWorkflowRef(repository, ref, run.commit);
-          const dispatched = await client.dispatchWorkflow(repository, workflowSpec.workflow, ref);
+          const pinned = !!run.gateRunId || !!workflowSpec.commitInput;
+          const ref = pinned ? `jv/jobs/${run.id}` : run.baseBranch;
+          if (pinned) await client.pinWorkflowRef(repository, ref, run.commit);
+          const inputs = { ...workflowSpec.inputs, ...(workflowSpec.commitInput ? { [workflowSpec.commitInput]: run.commit } : {}) };
+          const dispatched = await client.dispatchWorkflow(repository, workflowSpec.workflow, ref, Object.keys(inputs).length ? inputs : undefined);
           run = await this.#save({ ...run, phase: 'watching', workflowRunId: dispatched.workflow_run_id, url: dispatched.html_url, dispatchRef: ref });
         } else if (run.phase === 'reserved') run = await this.#save({ ...run, phase: 'watching' });
         if (run.pollAfter && Date.parse(run.pollAfter) > this.o.now()) return;
@@ -128,7 +147,7 @@ export class ProjectJobRunner {
         const actual = run.workflowRunId ? await client.workflowRun(repository, run.workflowRunId) : (await client.workflowRuns(repository, spec.workflow, run.baseBranch, run.watchAfter))
           .filter(row => Date.parse(row.run_started_at ?? row.created_at) >= Date.parse(run.watchAfter) && (!run.gateRunId || row.head_sha === run.commit))
           .sort((a, b) => (b.run_started_at ?? b.created_at).localeCompare(a.run_started_at ?? a.created_at) || b.id - a.id)[0];
-        if (actual && (!run.workflowRunId || !run.workflowHeadBound && !run.gateRunId)) run = await this.#save({ ...run, workflowRunId: actual.id, url: actual.html_url, commit: actual.head_sha, workflowHeadBound: true });
+        if (actual && (!run.workflowRunId || !run.workflowHeadBound && !run.gateRunId && !(spec.mode === 'dispatch' && spec.commitInput))) run = await this.#save({ ...run, workflowRunId: actual.id, url: actual.html_url, commit: actual.head_sha, workflowHeadBound: true });
         if (actual && (actual.id !== run.workflowRunId || actual.head_sha !== run.commit)) { await this.#finish(run, 'failed', 'The workflow run does not match its recorded commit.'); return; }
         if (actual?.status === 'completed') {
           const jobs = await client.workflowJobs(repository, actual.id), failed = jobs.filter(row => row.conclusion && !['success', 'skipped', 'neutral'].includes(row.conclusion));
