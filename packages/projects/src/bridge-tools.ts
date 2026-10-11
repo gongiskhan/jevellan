@@ -123,7 +123,7 @@ export type CoordinatorToolsOptions = {
   tasks?: ProjectTasks; goals?: ProjectGoals; daily?: ProjectDailyWork; jobs?: ProjectJobRunner;
   store: Pick<ThreadStore, 'get'>;
   decisions: Pick<DecisionItems, 'ask' | 'withdraw'>;
-  pullRequests: Pick<PullRequestTracker, 'fresh'> & Partial<Pick<PullRequestTracker, 'diff' | 'review'>>;
+  pullRequests: Pick<PullRequestTracker, 'fresh'> & Partial<Pick<PullRequestTracker, 'diff'>>;
   hub: Pick<ProjectHub, 'thread' | 'notebook' | 'putNotebook'>;
   ledgers: Pick<ProjectLedgers, 'coordinator'>;
   /** Mail to the threads that work on main (brief 7.1). */
@@ -159,6 +159,7 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
   // from 1 again, and its deliveries never repeat the former device's ids (P8 review C-3).
   const turnId = (prefix: string, projectId: string, turn: number, input: unknown) => derivedId(prefix, 'coordinator', projectId, o.deviceId, String(turn), stableJson(input));
   async function call(projectId: string, turn: number, name: ProjectToolName, raw: unknown, signal: AbortSignal): Promise<unknown> {
+    signal.throwIfAborted();
     switch (name) {
       case 'jevellan_jobs_list': if (!o.daily) throw new Error('Jobs are unavailable.'); return { schema: 'project-job-list-view-v1', projectId, jobs: await o.daily.jobs(projectId) };
       case 'jevellan_daily_list': if (!o.daily) throw new Error('Daily work is unavailable.'); return o.daily.view(projectId);
@@ -258,13 +259,6 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
         const result = await o.pullRequests.diff(projectId, input.threadId);
         if (heads.size > 256) heads.clear(); heads.set(`${projectId}:${turn}:${input.threadId}`, result.commit);
         return result;
-      }
-      case 'jevellan_pr_review': {
-        const input = raw as Input<typeof name>, commit = heads.get(`${projectId}:${turn}:${input.threadId}`);
-        if (!commit || !o.pullRequests.review) throw failure('Read this pull request with jevellan_pr_diff in this turn before reviewing it.', 409);
-        const review = await o.pullRequests.review(projectId, input.threadId, commit, input.verdict, input.note, signal);
-        if (input.verdict === 'changes') await o.threads.message(projectId, input.threadId, 'coordinator', input.note, false, turnId('tcmd', projectId, turn, input));
-        return { schema: 'pr-review-result-v1', review };
       }
       case 'jevellan_mail_send': return o.mail.coordinatorSend(projectId, turn, raw as Input<typeof name>, o.deviceId);
       // The thread tools (report, inbox and reservations) are not the coordinator's.

@@ -27,10 +27,9 @@ How you work:
 - Route each new request: if it continues work an active thread is doing, send it to that thread with jevellan_thread_message; otherwise create a new task. Split unrelated requests into separate threads. Do not start two threads that would change the same files at the same time; sequence them instead.
 - Jevellan chooses where each thread runs (isolation, model, effort, device). Only pass isolation, modelId, effort or deviceId when the owner explicitly asked for them.
 - When goals need work, read their motivation and health with jevellan_goals_list, the notebook, recent tasks, job runs and the code. Create at most one worthwhile refill task per listed goal; create nothing when none is worthwhile. Code enforces autonomy and caps. A failed job or a finding may warrant one finding task per distinct problem, linked with after. Never duplicate open work. Only the owner changes goals.
-- Worktree threads end in a pull request that the owner reviews and merges. You cannot merge. ${gitPolicy === 'external' ? 'This project is set to Leave git to me. Main threads edit the existing checkout, including untracked files, and leave all git operations to the owner. Do not ask the owner to commit files or change that policy just to make a code change. Worktree threads see only committed files; do not tell them to edit outside their workspace.' : 'Main threads publish directly to main.'}
+- Worktree threads end in a pull request handled by Jevellan's merge gate when the owner enables automatic merging. Otherwise the owner merges. You have no merge tool. ${gitPolicy === 'external' ? 'This project is set to Leave git to me. Main threads edit the existing checkout, including untracked files, and leave all git operations to the owner. Do not ask the owner to commit files or change that policy just to make a code change. Worktree threads see only committed files; do not tell them to edit outside their workspace.' : 'Main threads publish directly to main.'}
 - When a thread reports, decide the next step yourself whenever the answer follows from the owner's instructions, the notebook or the code. Ask the owner with jevellan_ask_user only when the decision is genuinely theirs. Keep questions short, offer 2 to 4 options when possible, and continue other work while waiting.
 - When checks fail or a pull request has conflicts, tell the responsible thread what to fix.
-- When a pull request is ready for review, read it with jevellan_pr_diff and review correctness, the project's rules, missing tests, security mistakes and needless complexity. Approve with jevellan_pr_review when it is good to merge; otherwise request changes with a note listing each change. You cannot merge.
 - When a thread was interrupted by a restart or a failure, resume it with jevellan_thread_message if the work is still wanted.
 - Keep the notebook current with jevellan_notebook_write: the owner's standing instructions and preferences for this project, decisions taken, the current plan and open questions. Keep it concise. The notebook is your memory across sessions.
 
@@ -121,6 +120,7 @@ export function eventLine(event: CoordinatorEvent, context: EventLineContext): s
     }
     case 'pr-update': return `[PR #${event.prNumber} "${title(event.threadId)}"] ${event.change === 'conflict' ? `has conflicts with ${context.base}` : PR_CHANGES[event.change]}`;
     case 'pr-ready-for-review': return `[PR #${event.prNumber} "${title(event.threadId)}" on ${event.commit.slice(0, 7)}] ready for coordinator review`;
+    case 'merge-gate': return `[PR #${event.prNumber} "${title(event.threadId)}" on ${event.commit.slice(0, 7)}] ${event.outcome}: ${event.summary}`;
     case 'job-finished': return `[job "${event.name}" ${event.conclusion === 'timed-out' ? 'timed out' : event.conclusion === 'skipped' ? 'was skipped' : event.conclusion} on ${event.commit.slice(0, 7)}] ${event.summary}`;
     case 'window-opened': return `[nightly window opened: ${event.pending} daily tasks pending]`;
     case 'window-finished': return `[nightly window finished] ${event.outcome}`;
@@ -148,7 +148,7 @@ ${isolation}
 - Keep the coordinator informed. End every turn with exactly one jevellan_thread_report: progress while you are still working, done when the task is complete, blocked when something outside your control stops you, and needs-decision with two to four options when a choice belongs to the owner.
 - ${manual ? "This project leaves git to the owner. Preserve unrelated work; do not commit, stage, stash, reset, switch branches, push or open a pull request. Leave the edits in place for the owner." : "Commit your work with the machine's git identity and no attribution. Jevellan pushes and opens the pull request; never push or open one yourself."}
 - Run only surgical tests: the ones that cover what you changed. Jevellan runs the project's checks and the full suite.
-- Don't review your own work beyond normal care. The coordinator reviews every pull request and will message you with anything to change.`;
+- Don't review your own work beyond normal care. Tests run after you, and a nightly review covers everything that merges.`;
 }
 
 export const taskPrompt = (title: string, task: string): string => `Task: ${title}\n\n${task}`;

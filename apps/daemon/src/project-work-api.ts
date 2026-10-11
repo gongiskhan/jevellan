@@ -2,7 +2,7 @@ import { JobCreateRequestSchema, JobUpdateRequestSchema, DailyCreateRequestSchem
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import {
   CoordinatorMessageReceiptSchema, CoordinatorMessageRequestSchema, DecisionAnswerRequestSchema, DecisionAnsweredViewSchema, DeviceOriginSchema, EmptySchema, ErrorDocumentSchema, IdSchema,
-  MergeResultViewSchema, NotebookRequestSchema, PeerLoginSessionInputSchema, ProjectEventFrameSchema, ProjectWorkSettingsRequestSchema, ThreadCreateRequestSchema, ThreadCreatedViewSchema,
+  MergeResultViewSchema, MergeCorrectionInputSchema, NotebookRequestSchema, PeerLoginSessionInputSchema, ProjectEventFrameSchema, ProjectWorkSettingsRequestSchema, ThreadCreateRequestSchema, ThreadCreatedViewSchema,
   ThreadMessageReceiptSchema, ThreadMessageRequestSchema, ThreadOverrideRequestSchema, ThreadStopRequestSchema, UiSessionTokenSchema, boundedRedaction, type ProjectLedgerEvent,
   GoalCreateRequestSchema, GoalUpdateRequestSchema, TaskCreateRequestSchema, TaskUpdateRequestSchema, TaskActionRequestSchema,
 } from '@jevellan/core';
@@ -16,7 +16,7 @@ import { json, requestBody } from './http.js';
 import { OWNER_REQUEST_TIMEOUT_MS, forwardOwner } from './owner-proxy.js';
 
 export type ProjectWorkRouteName = 'list' | 'view' | 'events' | 'message' | 'stop' | 'fresh' | 'move' | 'settings' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
-  | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'pr-merge' | 'pr-refresh' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'job-list' | 'job-create' | 'job-update' | 'job-run' | 'job-runs' | 'daily-list' | 'daily-create' | 'daily-update' | 'daily-run' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
+  | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'pr-merge' | 'pr-refresh' | 'pr-route' | 'pr-correction' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'job-list' | 'job-create' | 'job-update' | 'job-run' | 'job-runs' | 'daily-list' | 'daily-create' | 'daily-update' | 'daily-run' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
 /** Where a route runs: this device (`local`), the project's coordinator device, the thread's owner device, or any device. */
 export type ProjectWorkRoute = { name: ProjectWorkRouteName; projectId?: string; threadId?: string; decisionId?: string; taskId?: string; goalId?: string; jobId?: string; dailyId?: string;
   target: 'local' | 'coordinator' | 'owner' | 'any'; stream?: boolean };
@@ -61,6 +61,8 @@ const rows: readonly Row[] = [
   { name: 'thread-allow', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/allow-turns$/, methods: ['POST'], target: 'owner' },
   { name: 'thread-override', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/override$/, methods: ['POST'], target: 'owner' },
   { name: 'pr-merge', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/pr\/merge$/, methods: ['POST'], target: 'owner' },
+  { name: 'pr-route', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/pr\/route$/, methods: ['GET'], target: 'any' },
+  { name: 'pr-correction', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/pr\/correction$/, methods: ['POST'], target: 'any' },
   { name: 'pr-refresh', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/pr\/refresh$/, methods: ['POST'], target: 'owner' },
   { name: 'answer', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/decisions\/([A-Za-z0-9_-]+)\/answer$/, methods: ['POST'], target: 'any', ids: ['projectId', 'decisionId'] },
 ];
@@ -68,7 +70,7 @@ const rows: readonly Row[] = [
  * Requests carrying a client id repeat safely, so a hub outage during them is reported as retryable (settings only when the body has
  * one); so does Move coordinator here, whose repeat completes the first one (D269).
  */
-const withClientId = new Set<ProjectWorkRouteName>(['message', 'move', 'thread-create', 'thread-message', 'thread-override', 'answer', 'task-create', 'goal-create', 'job-create', 'daily-create', 'job-run', 'daily-run']);
+const withClientId = new Set<ProjectWorkRouteName>(['message', 'move', 'thread-create', 'thread-message', 'thread-override', 'answer', 'pr-correction', 'task-create', 'goal-create', 'job-create', 'daily-create', 'job-run', 'daily-run']);
 const failure = (message: string, status: number) => Object.assign(new Error(message), { status });
 const API_PREFIX = '/api/projects/';
 /** UI-proxied requests from another device (phase 5, D41, D266): the owner and coordinator routes of the table. */
@@ -188,6 +190,13 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
   const projectId = route.projectId ?? ''; const threadId = route.threadId ?? ''; const decisionId = route.decisionId ?? '';
   const write = request.method !== 'GET';
   if (withClientId.has(route.name)) retryable();
+  if (route.name === 'answer') {
+    const owner = await work.decisionOwner(projectId, decisionId);
+    if (owner && owner !== app.device.deviceId) {
+      if (caller.peer) throw failure(THREAD_NOT_FOUND, 404);
+      await proxy(app, request, response, url, { ...route, target: 'owner' }, owner, caller); return true;
+    }
+  }
   if (route.target === 'owner') {
     const owner = await work.threadOwner(projectId, threadId);
     if (owner === null) throw failure(THREAD_NOT_FOUND, 404);
@@ -255,6 +264,8 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
       send(ThreadMessageReceiptSchema.parse({ schema: 'thread-message-receipt-v1', repeated }), 202); return true;
     }
     case 'pr-merge': EmptySchema.parse(await requestBody(request)); send(MergeResultViewSchema.parse(await work.mergePullRequest(projectId, threadId))); return true;
+    case 'pr-route': send(await work.mergeRoute(projectId, threadId)); return true;
+    case 'pr-correction': send(await work.mergeCorrection(projectId, threadId, MergeCorrectionInputSchema.parse(await requestBody(request)))); return true;
     // A restart answers with the new thread's id, which the page opens.
     case 'thread-override': send(await work.overrideThread(projectId, threadId, ThreadOverrideRequestSchema.parse(await requestBody(request)), remoteStart(app, caller))); return true;
     case 'thread-stop': await work.stopThread(projectId, threadId, ThreadStopRequestSchema.parse(await requestBody(request))); break;

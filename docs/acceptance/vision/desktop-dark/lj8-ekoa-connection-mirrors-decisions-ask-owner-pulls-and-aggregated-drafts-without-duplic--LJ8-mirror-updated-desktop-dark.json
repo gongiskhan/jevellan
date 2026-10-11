@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ8 Ekoa connection mirrors decisions, ask-owner pulls and aggregated drafts without duplicates",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/screenshots/LJ8-mirror-updated-desktop-dark.png",
+  "expected": "the Jevellan web app \"LJ8 mirror updated\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"LJ8 Ekoa connection mirrors decisions, ask-owner pulls and aggregated drafts without duplicates\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Mirror tasks to Ekoa' checkbox sits on its own line above its label instead of next to it, so the two don't read as a pair",
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…'). This looks like intended truncation.",
+      "The 'Connected' card has a lot of empty space, and 'Available tools' is collapsed"
+    ]
+  }
+}

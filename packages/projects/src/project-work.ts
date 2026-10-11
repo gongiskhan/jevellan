@@ -47,6 +47,8 @@ import { ThreadWorktree } from './worktree.js';
 import { ProjectGoals } from './goals.js';
 import { ProjectTasks } from './tasks.js';
 import { ProjectDispatcher } from './dispatcher.js';
+import { ProjectMergeGate } from './merge-gate.js';
+import { PullRequestVerification } from './pr-verification.js';
 import { TaskCreateRequestSchema, TaskListViewSchema, TaskViewSchema, type TaskUpdateRequest } from '@jevellan/core';
 
 export type ProjectTimers = {
@@ -101,6 +103,7 @@ export class ProjectWork {
   readonly apps: ProjectApps;
   readonly daily: ProjectDailyWork; readonly jobs: ProjectJobRunner;
   readonly goals: ProjectGoals; readonly tasks: ProjectTasks; readonly dispatcher: ProjectDispatcher;
+  readonly mergeGate: ProjectMergeGate;
   /** Mail and reservations between main threads (brief 5.11, 7.2). */
   readonly mail: MailService;
   /** The hub relay (D40): durable sends to other devices, and this device's pending envelopes. */
@@ -135,7 +138,7 @@ export class ProjectWork {
       deviceName: o.deviceName, hub: o.hub, redactor: o.redactor, now, ...(o.decisionClient ? { decisionClient: o.decisionClient } : {}),
       local: (projectId) => this.store.list(projectId).map((thread) => threadIndex(thread, this.store.labels(thread.id), thread.createdAt)),
       pendingMain: (projectId) => this.threads.pendingMain(projectId) });
-    this.decisions = new DecisionItems({ hub: o.hub, now, toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event), threads: () => ({
+    this.decisions = new DecisionItems({ hub: o.hub, now, toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event), mergeAnswer: (decision, answer, validateOnly) => this.mergeGate.answer(decision, answer, validateOnly), threads: () => ({
       allowTurns: (projectId, threadId, commandId) => this.threads.allowTurns(projectId, threadId, commandId),
       stop: (projectId, threadId, reason, commandId) => this.threads.stop(projectId, threadId, reason, true, commandId),
       stopRefusal: (projectId, threadId) => this.threads.stopRefusal(projectId, threadId),
@@ -221,8 +224,12 @@ export class ProjectWork {
     this.tracker = new PullRequestTracker({ threads: this.store, github, git, worktrees, project: (projectId) => this.#project(projectId),
       toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event),
       transition: async (threadId, apply) => { const runner = this.threads.runner(threadId); if (runner) await runner.transition(apply); else await apply(); },
-      hub: o.hub, deviceId: o.deviceId, assertMerge: id => this.daily.assertMerge(id), reviewEnabled: async projectId => (await this.admission.settings(projectId)).coordinatorReview,
+      hub: o.hub, deviceId: o.deviceId, assertMerge: id => this.daily.assertMerge(id),
       redactor: o.redactor, now, pollMs: timers.prPollMs, periodic: timers.periodic });
+    const verification = new PullRequestVerification({ hub: o.hub, homes: o.homes, git, launcher, deviceId: o.deviceId, redactor: o.redactor, now, settings: o.settings, accounts: o.accounts, runtimes: o.runtimes, timeoutMs: timers.testTimeoutMs });
+    this.mergeGate = new ProjectMergeGate({ hub: o.hub, store: this.store, tracker: this.tracker, github, verification, deviceId: o.deviceId, redactor: o.redactor, now,
+      settings: id => this.admission.settings(id), configuration: o.settings, ...(o.decisionClient ? { decisionClient: o.decisionClient } : {}), project: id => this.#project(id), repository: project => worktrees.repository(project),
+      event: (id, event) => delivery.toCoordinator(id, event), assertMerge: id => this.daily.assertMerge(id), message: (id, tid, text, messageId) => this.threads.message(id, tid, 'coordinator', text, false, messageId) });
     this.outbox = new Outbox({ paths: this.paths, hub: o.hub, deviceId: o.deviceId, redactor: o.redactor, timers,
       delivered: (envelope) => { if (envelope.targetDeviceId === o.deviceId) this.relayArrived(); } });
     this.inbox = new Inbox({ paths: this.paths, hub: o.hub, deviceId: o.deviceId, timers, handlers: {
@@ -340,6 +347,7 @@ export class ProjectWork {
   async #sweepTasks(): Promise<void> {
     if (!this.#started || this.#closing || !deviceAllowsWork(this.#o.homes)) return;
     try {
+      this.mergeGate.sweep();
       for (const { project } of await this.#o.projects.list()) {
         if ((await this.#o.hub.coordinator(project.id))?.document.deviceId === this.#o.deviceId) { await this.daily.sweep(project.id); await this.dispatcher.sweep(project.id); await this.goals.sweep(project.id); }
       }
@@ -349,7 +357,7 @@ export class ProjectWork {
   async idle(projectId?: string): Promise<void> {
     await this.ready;
     for (let quiet = 0; quiet < 2;) {
-      await delay(20); quiet = this.jobs.busy(projectId) || this.threads.busy(projectId) || this.dispatcher.busy(projectId) || this.coordinators.busy(projectId) || this.outbox.busy || this.inbox.busy ? 0 : quiet + 1;
+      await delay(20); quiet = this.mergeGate.busy() || this.jobs.busy(projectId) || this.threads.busy(projectId) || this.dispatcher.busy(projectId) || this.coordinators.busy(projectId) || this.outbox.busy || this.inbox.busy ? 0 : quiet + 1;
     }
   }
   /** Stops timers, terminates every running turn (shutdown intent) and drains; thread states are never rewritten (D24). */
@@ -361,6 +369,7 @@ export class ProjectWork {
       await this.inbox.close();
       // Coordinator turns first (their tools start and message threads), then runners: tracker transitions wait on runner chains (2.6.14).
       await this.coordinators.close();
+      await this.mergeGate.close();
       await this.threads.close();
       await this.dispatcher.close();
       await this.jobs.close();
@@ -455,7 +464,7 @@ export class ProjectWork {
   async putSettings(projectId: string, input: z.infer<typeof ProjectWorkSettingsRequestSchema>, clientRequestId?: string): Promise<z.infer<typeof ProjectWorkSettingsViewSchema>> {
     const project = await this.#project(projectId);
     const current = (await this.#o.hub.settings(projectId))?.document ?? defaultProjectWorkSettings(projectId);
-    const settings = ProjectWorkSettingsSchema.parse({ ...current, ...input.settings, schema: 'project-work-settings-v2', projectId, revision: input.revision });
+    const settings = ProjectWorkSettingsSchema.parse({ ...current, ...input.settings, schema: 'project-work-settings-v3', projectId, revision: input.revision });
     const requestId = input.clientRequestId ?? clientRequestId;
     try { return this.#settingsView(project, (await this.#o.hub.putSettings(settings, input.revision, ...(requestId === undefined ? [] : [requestId]))).document); }
     catch (error) { if (statusOf(error) === 409) throw refuse(SETTINGS_CHANGED, 409); throw error; }
@@ -509,6 +518,12 @@ export class ProjectWork {
     return ThreadOverrideViewSchema.parse({ schema: 'thread-override-view-v1', newThreadId });
   }
   async mergePullRequest(projectId: string, threadId: string): Promise<MergeResultView> { this.#thread(projectId, threadId); return this.tracker.merge(threadId); }
+  async mergeRoute(projectId: string, threadId: string) { await this.#project(projectId); return this.mergeGate.view(projectId, threadId); }
+  async mergeCorrection(projectId: string, threadId: string, input: unknown) { await this.#project(projectId); return this.mergeGate.correct(projectId, threadId, input); }
+  async decisionOwner(projectId: string, decisionId: string) {
+    const decision = (await this.#o.hub.decision(decisionId))?.document;
+    return decision?.projectId === projectId && decision.merge && decision.threadId ? this.threadOwner(projectId, decision.threadId) : null;
+  }
   async refreshPullRequest(projectId: string, threadId: string): Promise<void> { this.#thread(projectId, threadId); await this.tracker.refresh(threadId); }
   answerDecision(projectId: string, decisionId: string, input: z.infer<typeof DecisionAnswerRequestSchema>): Promise<{ repeated: boolean }> {
     return this.decisions.answer(projectId, decisionId, input);

@@ -85,6 +85,9 @@ export class GitHubClient {
   async getPull(repository: GitHubRepository, number: number): Promise<GitHubPull> {
     return pull(await this.#request('GET', `${repo(repository)}/pulls/${pullNumber(number)}`, GitHubPullResponseSchema));
   }
+  async closePull(repository: GitHubRepository, number: number): Promise<GitHubPull> {
+    return pull(await this.#request('PATCH', `${repo(repository)}/pulls/${pullNumber(number)}`, GitHubPullResponseSchema, { state: 'closed' }));
+  }
   async pullFiles(repository: GitHubRepository, number: number): Promise<z.infer<typeof PullFiles>> {
     const files: z.infer<typeof PullFiles> = [];
     for (let page = 1; page <= 30; page++) {
@@ -146,7 +149,7 @@ export class GitHubClient {
     return all;
   }
   #text(value: string): string { return this.#redactor.text(value).replace(/[\p{Cc}\s]+/gu, ' ').trim().slice(0, 300); }
-  async #request<T>(method: 'GET' | 'POST' | 'PUT', path: string, schema: z.ZodType<T>, body?: unknown, options: { version?: string; text?: boolean; download?: boolean } = {}): Promise<T> {
+  async #request<T>(method: 'GET' | 'POST' | 'PUT' | 'PATCH', path: string, schema: z.ZodType<T>, body?: unknown, options: { version?: string; text?: boolean; download?: boolean } = {}): Promise<T> {
     const token = (await this.#token())?.trim();
     if (!token) throw new GitHubError('no-token', 'No GitHub token is saved.');
     this.#redactor.add(token);

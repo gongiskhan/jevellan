@@ -5,6 +5,16 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const context = { cwd: '/private/tmp/jevellan-fixture', action: 'implement', daemonPid: 41999 };
+test('verification permits basic commands but denies edits, commits and publication in both hooks', async () => {
+  const verification = { cwd: context.cwd, daemonPid: context.daemonPid, profile: 'verification' as const };
+  for (const command of ['npm test', 'git diff --stat', 'git status --porcelain']) expect(safetyDenial(command, verification)).toBeNull();
+  for (const command of ['git commit -m test', 'git add -A', 'git push', 'git checkout main', 'gh pr merge 1']) expect(safetyDenial(command, verification)).toBe('Verification must not change, commit or push anything.');
+  const hook = claudePermissionHook({ ...verification, permissions: 'write' });
+  expect(await hook({ tool_name: 'Edit', tool_input: {} })).toMatchObject({ hookSpecificOutput: { permissionDecision: 'deny' } });
+  expect(await hook({ tool_name: 'Bash', tool_input: { command: 'npm test' } })).toEqual({});
+  const result = spawnSync(process.execPath, [fileURLToPath(new URL('../runtimes/codex/dist/safety-hook.js', import.meta.url)), JSON.stringify(verification)], { input: JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'git commit -m test' } }), encoding: 'utf8' });
+  expect(result.status).toBe(0); expect(JSON.parse(result.stdout)).toMatchObject({ hookSpecificOutput: { permissionDecision: 'deny' } });
+});
 test.each([
   'git push', 'git -C . push origin main', '/usr/bin/git push --force', 'git rebase origin/main',
   'git reset HEAD --hard', 'git clean -fd', 'git branch old -D', 'git branch --delete old --force',

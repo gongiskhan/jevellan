@@ -356,7 +356,7 @@
   {
     "id": "loop-ekoa-link",
     "title": "Ekoa task mirror",
-    "why": "Durable authenticated MCP mirror implemented; 23 backend cases, typecheck/lint/build and four-layout LJ8 passed, eight live vision checks without blockers. Live owner token and amendment 1 conversion remain.",
+    "why": "Durable authenticated MCP mirror implemented; ask-owner merge decisions replace reviewed pull requests under A2. Backend cases and four-layout LJ8 pass with live vision and no blockers. Live owner token and the amended failed-night report remain pending.",
     "status": "complete-with-blockers"
   },
   {
@@ -370,5 +370,11 @@
     "title": "Working devices and resource guards",
     "why": "Use Pro and dev-madrid for Ekoa while the mini stays apps-only.",
     "status": "planned"
+  },
+  {
+    "id": "loop-merge-gate",
+    "title": "Merge after checks with basic verification",
+    "why": "Amendment A2 replaces coordinator PR review with owner opt-in m-v1 merge routing, durable basic verification and ask-owner decisions. Backend/API regressions and eight four-layout browser journeys pass; 16 live vision judgments have no blockers. Live owner credentials and final release gates remain.",
+    "status": "complete-with-blockers"
   }
 ]

@@ -23,8 +23,9 @@ test('coordinator delegates through complete queued tasks and follows up through
   expect(text).not.toContain('jevellan_thread_start');
   expect(text).toContain('without this conversation');
   expect(text).toContain('jevellan_thread_message');
-  expect(text).toContain('read it with jevellan_pr_diff');
-  expect(text).toContain('Approve with jevellan_pr_review');
+  expect(COORDINATOR_TOOLS).toContain('jevellan_pr_diff');
+  expect(COORDINATOR_TOOLS).not.toContain('jevellan_pr_review');
+  expect(text).toContain("Jevellan's merge gate");
   expect(COORDINATOR_TOOLS).not.toContain('jevellan_thread_start');
 });
 
@@ -89,7 +90,7 @@ test('9.4 thread system append and turn prompts', () => {
   const worktree = copy.threadSystemAppend({ projectName: 'Shop', cwd: '/w/t', isolation: 'worktree', branch: 'jv/fix-login-abc123', baseBranch: 'main', deviceName: 'Mac mini', testCommand: 'npm test' });
   expect(worktree).toContain('one task'); expect(worktree).toContain('exactly one jevellan_thread_report');
   expect(worktree).toContain('never push or open one yourself'); expect(worktree).toContain('Run only surgical tests');
-  expect(worktree).toContain('jv/fix-login-abc123'); expect(worktree).toContain('coordinator reviews every pull request');
+  expect(worktree).toContain('jv/fix-login-abc123'); expect(worktree).toContain('a nightly review covers everything that merges');
   const main = copy.threadSystemAppend({ projectName: 'Shop', cwd: '/p/shop', isolation: 'main', baseBranch: 'main', deviceName: 'Mac mini' });
   expect(main).toContain('jevellan_reserve'); expect(main).toContain('jevellan_mail_inbox'); expect(main).toContain('jevellan_mail_send');
   expect(copy.taskPrompt('Fix login', 'The redirect loops.')).toBe('Task: Fix login\n\nThe redirect loops.');

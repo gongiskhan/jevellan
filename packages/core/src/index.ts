@@ -73,3 +73,5 @@ export * from './task-types.js';
 export * from './effort-guide.js';
 
 export * from './ekoa-schemas.js';
+
+export * from './merge-schemas.js';

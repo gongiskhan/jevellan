@@ -139,8 +139,8 @@ test('nested documents are strict too', () => {
 });
 
 test('defaults match the brief and fill optional collections', () => {
-  expect(settings).toEqual({ schema: 'project-work-settings-v2', projectId: 'project', revision: 0, defaultIsolation: 'worktree', coordinator: { modelId: null, effort: 'medium' }, setupCommand: null, maxRunningThreads: 6, maxRunningPerDevice: 4, threadTurnCap: 30,
-    allowMainIsolation: true, threadRules: '', coordinatorReview: true, nightlyWindow: { enabled: false, time: '02:00', timezone: 'Europe/Lisbon' }, refill: { enabled: true, minIntervalMinutes: 30 } });
+  expect(settings).toEqual({ schema: 'project-work-settings-v3', projectId: 'project', revision: 0, defaultIsolation: 'worktree', coordinator: { modelId: null, effort: 'medium' }, setupCommand: null, maxRunningThreads: 6, maxRunningPerDevice: 4, threadTurnCap: 30,
+    allowMainIsolation: true, threadRules: '', autoMerge: false, riskyAreas: '', nightlyWindow: { enabled: false, time: '02:00', timezone: 'Europe/Lisbon' }, refill: { enabled: true, minIntervalMinutes: 30 } });
   expect(() => defaultProjectWorkSettings('../escape')).toThrow();
   expect(ThreadReportSchema.parse(without(report, 'changedFiles')).changedFiles).toEqual([]);
   expect(ProjectDecisionSchema.parse(without(decision, 'options')).options).toEqual([]);
@@ -274,6 +274,7 @@ test('hub requests map to one collection each and results carry matching revisio
   const run = { schema: 'project-job-run-v1', id: 'jrun_1', projectId: 'project', revision: 0, jobId: 'pjob_1', taskId: 'task_1', commit: 'a'.repeat(40), deviceId: 'dev_a', projectDay: '2026-10-11', startedAt: at, conclusion: null, summary: '', logTail: '', spec: job.run, baseBranch: 'main', watchAfter: at, phase: 'reserved' };
   const window = { schema: 'project-window-v1', id: 'window_1', projectId: 'project', revision: 0, date: '2026-10-11', closingProjectDay: '2026-10-10', state: 'open', mergesHeld: true, openedAt: at, taskIds: [], plans: [] };
   const requests: Record<ProjectHubOperation, Record<string, unknown>> = {
+    'merge-documents': { projectId: 'project' }, 'merge-document-get': { id: 'merge_1' }, 'merge-document-put': { document: { schema: 'merge-correction-v1', id: 'merge_1', projectId: 'project', revision: 0, deviceId: 'dev_a', threadId, commit: 'a'.repeat(40), at, title: 'Fix', correction: 'should-have-asked' }, expectedRevision: 0 },
     'jobs-list': { projectId: 'project' }, 'job-get': { jobId: 'pjob_1' }, 'job-put': { job, expectedRevision: 0 },
     'dailies-list': { projectId: 'project' }, 'daily-get': { dailyId: 'daily_1' }, 'daily-put': { daily, expectedRevision: 0 },
     'job-runs-list': { projectId: 'project' }, 'job-run-get': { jobRunId: 'jrun_1' }, 'job-run-put': { jobRun: run, expectedRevision: 0 },
@@ -301,7 +302,7 @@ test('hub requests map to one collection each and results carry matching revisio
     'checkouts-held': { projectId: 'project' },
   };
   const expected = { jobs: ['jobs-list', 'job-get', 'job-put'], dailies: ['dailies-list', 'daily-get', 'daily-put'], 'job-runs': ['job-runs-list', 'job-run-get', 'job-run-put'], windows: ['windows-list', 'window-get', 'window-put'], settings: ['settings-get', 'settings-put'], coordinators: ['coordinator-get', 'coordinator-assign', 'coordinator-status-get', 'coordinator-status-put'],
-    goals: ['goals-list', 'goal-get', 'goal-put', 'refill-get', 'refill-put'], tasks: ['tasks-list', 'task-get', 'task-put', 'task-history'], threads: ['threads-list', 'thread-get', 'thread-publish', 'review-get', 'review-put'], decisions: ['decisions-list', 'decision-get', 'decision-create', 'decision-withdraw', 'decision-answer'], notebooks: ['notebook-get', 'notebook-put'],
+    goals: ['goals-list', 'goal-get', 'goal-put', 'refill-get', 'refill-put'], tasks: ['tasks-list', 'task-get', 'task-put', 'task-history'], threads: ['threads-list', 'thread-get', 'thread-publish', 'review-get', 'review-put', 'merge-documents', 'merge-document-get', 'merge-document-put'], decisions: ['decisions-list', 'decision-get', 'decision-create', 'decision-withdraw', 'decision-answer'], notebooks: ['notebook-get', 'notebook-put'],
     overrides: ['override-add', 'overrides-recent'], envelopes: ['envelope-put', 'envelopes-pending', 'envelope-ack'], work: ['work-summaries'],
     mail: ['mail-send', 'mail-inbox', 'mail-read'], reservations: ['reserve', 'release', 'reservations-list'], checkouts: ['checkouts-held'] };
   for (const [operation, fields] of Object.entries(requests) as Array<[ProjectHubOperation, Record<string, unknown>]>) {

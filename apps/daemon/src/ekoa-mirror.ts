@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
-import { EkoaConnectionSchema, EkoaMirrorSchema, EkoaRequestSchema, EkoaSettingsSchema, EkoaStateSchema, ProjectDecisionSchema, ProjectSchema, PullRequestReviewSchema, ProjectWorkTaskSchema as TaskSchema, ThreadIndexSchema,
-  StoredProjectWorkSettingsSchema, defaultProjectWorkSettings, newId, stableJson, type EkoaMirror, type EkoaRequest } from '@jevellan/core';
+import { EkoaConnectionSchema, EkoaMirrorSchema, EkoaRequestSchema, EkoaSettingsSchema, EkoaStateSchema, ProjectDecisionSchema, ProjectSchema, ProjectWorkTaskSchema as TaskSchema, ThreadIndexSchema,
+  newId, stableJson, type EkoaMirror, type EkoaRequest } from '@jevellan/core';
 import { settingsMutation, type HubDatabase } from '@jevellan/mesh';
 import { connectEkoa, type EkoaClient, type EkoaConnector } from './ekoa-client.js';
 type Desired = { kind: EkoaMirror['kind']; id: string; projectId: string; title: string; notes: string; allowCreate: boolean };
@@ -63,16 +63,12 @@ export class EkoaMirrorService {
     const add = (item: Desired) => { const id = `em_${hash([endpoint, item.kind, item.id]).slice(0, 40)}`; wanted.set(id, { ...item, title: this.hub.redactor.text(item.title).slice(0, 200), notes: this.hub.redactor.text(item.notes).slice(0, 19_000) }); };
     for (const { document: project } of this.hub.list('projects', ProjectSchema)) {
       const link = `${this.hubUrl()}/projects/${encodeURIComponent(project.id)}`;
-      for (const { document: decision } of this.hub.listByField('project-decisions', 'projectId', project.id, ProjectDecisionSchema)) if (!decision.answeredAt && !decision.withdrawnAt)
-        add({ kind: 'decision', id: decision.id, projectId: project.id, title: `Jevellan · ${project.name}: ${decision.question.slice(0, 80)}`,
-          notes: `${decision.question}\n${decision.options.map(option => `- ${option.label}${option.detail ? `: ${option.detail}` : ''}`).join('\n')}\n\nAnswer in Jevellan: ${link}`, allowCreate: true });
-      const work = this.hub.get('project-work-settings', project.id, StoredProjectWorkSettingsSchema)?.document ?? defaultProjectWorkSettings(project.id);
-      for (const { document: thread } of this.hub.listByField('project-threads', 'projectId', project.id, ThreadIndexSchema)) if (thread.pr?.state === 'open') {
-        const review = this.hub.get('project-pr-reviews', thread.id, PullRequestReviewSchema)?.document;
-        const approved = !work.coordinatorReview || review?.verdict === 'approve' && review.commit === thread.pr.headSha;
-        const ready = approved && ['passing', 'none'].includes(thread.pr.checks) && thread.pr.mergeable === 'clean';
-        add({ kind: 'pull-request', id: thread.id, projectId: project.id, title: `Jevellan · ${project.name}: merge #${thread.pr.number} ${thread.title}`,
-          notes: `${thread.lastSummary ?? thread.title}\n\n${approved && review ? `Coordinator review: ${review.note}\n\n` : ''}${ready ? '' : 'Waiting for current checks and coordinator review.\n\n'}${thread.pr.url}\n${link}`, allowCreate: ready });
+      for (const { document: decision } of this.hub.listByField('project-decisions', 'projectId', project.id, ProjectDecisionSchema)) if (!decision.answeredAt && !decision.withdrawnAt) {
+        const thread = decision.merge && decision.threadId ? this.hub.get('project-threads', decision.threadId, ThreadIndexSchema)?.document : undefined;
+        if (decision.merge && (thread?.projectId !== project.id || thread.pr?.state !== 'open' || thread.pr.headSha !== decision.merge.commit)) continue;
+        const title = decision.merge ? decision.question.replace(/^Merge /u, 'merge ').replace(/\?$/u, '') : decision.question;
+        add({ kind: 'decision', id: decision.id, projectId: project.id, title: `Jevellan · ${project.name}: ${title.slice(0, 80)}`,
+          notes: `${decision.question}\n${decision.merge ? `Checked commit: ${decision.merge.commit}\n${thread?.pr?.url ?? ''}\n` : ''}${decision.options.map(option => `- ${option.label}${option.detail ? `: ${option.detail}` : ''}`).join('\n')}\n\nAnswer in Jevellan: ${link}`, allowCreate: true });
       }
       const drafts = this.hub.listByField('project-work-tasks', 'projectId', project.id, TaskSchema).map(row => row.document).filter(task => task.state === 'draft');
       if (drafts.length) add({ kind: 'drafts', id: project.id, projectId: project.id, title: `Jevellan · ${project.name}: ${drafts.length} proposed tasks`,

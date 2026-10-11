@@ -23,10 +23,10 @@ function pull(state: 'open' | 'merged' = 'open', commit = 'a'.repeat(40)) {
   hub.put('project-threads', 'thread', ThreadIndexSchema, { schema: 'project-thread-index-v1', revision: (old?.revision ?? 0) + 1, id: 'thread', projectId: 'project', title: 'Handle empty input', state: 'in-review', isolation: 'worktree', ownerDeviceId: 'pro', runtime: 'codex', modelLabel: 'Model', effort: 'high', accountLabel: 'Account', turns: 1, createdAt: at, updatedAt: at,
     pr: { number: 1, url: 'https://github.com/fixture/repo/pull/1', state, headSha: commit, checks: 'passing', mergeable: 'clean', updatedAt: at } }, old?.revision ?? 0);
 }
-test('LJ8 decisions complete, reviewed pulls mirror once and drafts update one aggregate then reopen it', async () => {
+test('LJ8 decisions complete, ask-owner pulls mirror once and drafts update one aggregate then reopen it', async () => {
   decision(); pull(); for (const id of ['one', 'two', 'three']) draft(id);
   await service.tick(); expect(remote.tasks.size).toBe(2); expect(remote.labels).toEqual(new Set(['Jevellan']));
-  hub.put('project-pr-reviews', 'thread', PullRequestReviewSchema, { schema: 'pull-request-review-v1', revision: 1, projectId: 'project', threadId: 'thread', deviceId: 'pro', commit: 'a'.repeat(40), verdict: 'approve', note: 'The focused test covers the fix.', reviewedAt: at }, 0);
+  hub.put('project-decisions', 'merge_choice', ProjectDecisionSchema, { schema: 'project-decision-v1', revision: 1, id: 'merge_choice', projectId: 'project', threadId: 'thread', from: 'thread', question: 'Merge #1 Handle empty input?', options: [{ label: 'Merge' }, { label: 'Send back with a note' }, { label: 'Close' }], createdAt: at, merge: { commit: 'a'.repeat(40), prNumber: 1 } }, 0);
   await service.tick(); await service.tick(); expect(remote.tasks.size).toBe(3);
   const choice = hub.get('project-decisions', 'choice', ProjectDecisionSchema)!; hub.put('project-decisions', 'choice', ProjectDecisionSchema, { ...choice.document, answeredAt: at, answer: { text: 'Short.' } }, choice.revision);
   const first = hub.get('project-work-tasks', 'one', ProjectWorkTaskSchema)!; hub.put('project-work-tasks', 'one', ProjectWorkTaskSchema, { ...first.document, state: 'queued' }, first.revision);
@@ -49,7 +49,7 @@ test('an ownership marker removed by the owner prevents completion or modificati
   const row = hub.get('project-decisions', 'choice', ProjectDecisionSchema)!; hub.put('project-decisions', 'choice', ProjectDecisionSchema, { ...row.document, withdrawnAt: at }, row.revision);
   await service.tick(); expect(task.status).toBe('open'); expect(service.state().mirrors[0]!.error).toContain('ownership marker'); expect(remote.calls.some(call => call.name === 'task_complete')).toBe(false);
 });
-test('new heads require their own approval and global failures back off without blocking Projects', async () => {
+test('historical reviews do not create merge items and global failures back off without blocking Projects', async () => {
   pull(); hub.put('project-pr-reviews', 'thread', PullRequestReviewSchema, { schema: 'pull-request-review-v1', revision: 1, projectId: 'project', threadId: 'thread', deviceId: 'pro', commit: 'b'.repeat(40), verdict: 'approve', note: 'Old head.', reviewedAt: at }, 0);
   await service.tick(); expect(remote.tasks.size).toBe(0); remote.failLabels(true); await service.tick();
   const count = remote.calls.length; await service.tick(); expect(remote.calls.length).toBe(count); expect(service.state().connection?.status).toBe('blocked');

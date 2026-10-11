@@ -186,7 +186,7 @@ export function threadCreateRequest(clientRequestId: string, form: ThreadForm) {
 }
 
 export type SettingsForm = { defaultIsolation: Isolation; isolationChanged: boolean; modelId: string; effort: Effort; setupCommand: string;
-  refill?: ProjectWorkView['settings']['refill']; nightlyWindow?: ProjectWorkView['settings']['nightlyWindow']; coordinatorReview?: boolean; threadRules?: string; allowMainIsolation?: boolean;
+  refill?: ProjectWorkView['settings']['refill']; nightlyWindow?: ProjectWorkView['settings']['nightlyWindow']; autoMerge?: boolean; riskyAreas?: string; threadRules?: string; allowMainIsolation?: boolean;
   maxRunningThreads: number; maxRunningPerDevice: number; threadTurnCap: number };
 /**
  * `PUT /api/projects/:id/work-settings`. Reads show a stored `main` default as worktree with a notice (D205); unless the
@@ -195,12 +195,12 @@ export type SettingsForm = { defaultIsolation: Isolation; isolationChanged: bool
 export function settingsRequest(view: Pick<ProjectWorkView, 'settings' | 'settingsNotice'>, form: SettingsForm) {
   const keptMain = !form.isolationChanged && view.settingsNotice !== undefined;
   const settings = { allowMainIsolation: view.settings.allowMainIsolation, threadRules: view.settings.threadRules,
-    coordinatorReview: view.settings.coordinatorReview, nightlyWindow: view.settings.nightlyWindow, refill: view.settings.refill };
+    autoMerge: view.settings.autoMerge, riskyAreas: view.settings.riskyAreas, nightlyWindow: view.settings.nightlyWindow, refill: view.settings.refill };
   return { schema: 'project-work-settings-request-v1' as const, revision: view.settings.revision, settings: {
     ...settings, refill: form.refill ?? view.settings.refill, nightlyWindow: form.nightlyWindow ?? view.settings.nightlyWindow,
     defaultIsolation: keptMain ? 'main' as const : form.defaultIsolation,
     coordinator: { ...view.settings.coordinator, modelId: form.modelId || null, effort: form.effort }, setupCommand: form.setupCommand.trim() || null,
-    coordinatorReview: form.coordinatorReview ?? view.settings.coordinatorReview, threadRules: form.threadRules ?? view.settings.threadRules,
+    autoMerge: form.autoMerge ?? view.settings.autoMerge, riskyAreas: form.riskyAreas ?? view.settings.riskyAreas, threadRules: form.threadRules ?? view.settings.threadRules,
     allowMainIsolation: form.allowMainIsolation ?? view.settings.allowMainIsolation,
     maxRunningThreads: form.maxRunningThreads, maxRunningPerDevice: form.maxRunningPerDevice, threadTurnCap: form.threadTurnCap } };
 }
@@ -467,6 +467,7 @@ function eventCard(event: Exclude<CoordinatorEvent, { kind: 'user-message' }>, t
     }
     case 'decision-answer': return card(text.answered(firstLine(event.question)), event.threadId, text.answer(event.answer.optionLabel, event.answer.text));
     case 'pr-ready-for-review': return card(`Pull request #${event.prNumber} is ready for the coordinator's review`, event.threadId, `Commit ${event.commit}`);
+    case 'merge-gate': return card(`Pull request #${event.prNumber}: ${event.outcome.replaceAll('-', ' ')}`, event.threadId, event.summary);
     case 'task-reviewed': return card(`You ${event.outcome} "${event.title}"`, undefined);
     case 'task-not-started': return card(`"${event.title}" could not start`, undefined, event.reason);
     case 'pr-update': {

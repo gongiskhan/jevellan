@@ -175,7 +175,7 @@ export class ProjectViews {
     const devices = this.#o.placement.deviceSetup(project, work, roster, placing, { settings: config, accounts });
     return ProjectWorkViewSchema.parse({ schema: 'project-work-view-v1', project: { id: project.id, name: project.name, branchPolicy: project.branchPolicy, baseBranch },
       settings: shown.settings, ...(shown.notice ? { settingsNotice: shown.notice } : {}), coordinator, threads,
-      decisions: decisionLists(decisions), pullRequests: pullRequestEntries(threads).map(entry => ({ ...entry, reviewRequired: work.coordinatorReview })), notebookRevision: notebook?.revision ?? 0, lastEventId, gates: PHASE_GATES, devices });
+      decisions: decisionLists(decisions), pullRequests: pullRequestEntries(threads), notebookRevision: notebook?.revision ?? 0, lastEventId, gates: PHASE_GATES, devices });
   }
   /** `GET /api/projects/:id/threads/:tid` for a thread this device owns (D81 `canMessage`; overrides as the API allows them, D252). */
   async thread(projectId: string, threadId: string): Promise<ThreadView> {

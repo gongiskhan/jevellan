@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ2 native setup remains visible and merge routing explains its ask-owner choice",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/screenshots/LJ2-merge-route-why-desktop-dark.png",
+  "expected": "the Jevellan web app \"LJ2 merge route why\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"LJ2 native setup remains visible and merge routing explains its ask-owner choice\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Saved for future merge decisions.' message appears below the feedback buttons even though neither button looks selected, so it's unclear which choice was saved.",
+      "The feedback buttons are right-aligned on the same row as the 'Changed files and context' disclosure, which makes that row a bit crowded.",
+      "The commit hash is very long and runs right up to the edge of its line, so the text after it wraps awkwardly."
+    ]
+  }
+}

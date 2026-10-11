@@ -1161,3 +1161,27 @@ Source-grounded compatibility: Ekoa currently requires OAuth bearer access token
 Simulated backend with real local MCP HTTP transport: 22 cases passed, including vault-only storage, owner authentication, head approval, task aggregation, ownership refusal, lost-reply restart recovery and backoff. Typecheck and lint passed. The first LJ8 browser run exposed an empty-URL schema refinement throwing before the Settings page could load; its default-state regression is fixed. Four-layout rerun and vision checks are in progress. The real Ekoa connection and migration remain blocked on owner inputs; owner acceptance is unclaimed.
 
 Phase 8 closing checkpoint: 23 backend tests passed, typecheck/lint/build passed, and all four LJ8 browser journeys passed in 1.1 minutes. Eight live vision verdicts have zero blocking findings. The phone loading race now disables editing until settings load, and Settings captures include the complete mirror list. Earlier failures are not passing evidence. The working-tree secret scan passed; the push performs its mandatory history scan. Amendment 1 is applied after this checkpoint.
+
+
+### Decision 650 — Amendment A2 replaces coordinator pull-request review
+
+Remove the active review tool, ready event, review UI and setting in one conversion commit. Keep read-only diff and no coordinator merge tool. AutoMerge defaults off; m-v1 records merge/test-then-merge/ask-owner with fallback to the owner, checked-head squash merge, basic cross-provider verification at medium effort, three-failure escalation, owner corrections and Why. Ekoa mirrors ask-owner merge decisions. The amendment replaces the sandbox-only merge restriction and the last thread instruction.
+
+Status: implemented in one conversion checkpoint. Legacy review documents remain decodable as historical evidence; active tools, events, setting and PR review states are removed. Settings migrate explicitly to v3, preserving v1/v2 account and unrelated choices. Durable routing/verification receipts recover across restart, enforce opt-in and checked heads, and retire superseded or owner-merged unanswered decisions. The coordinator retains no merge tool.
+
+Verification: simulated providers/Jev/GitHub with real local git, HTTP and process controls. The updated backend selection passed **126/126**, runtime/API regressions **106/106**, and the closing merge-gate selection passed **15/15**, including owner-button cleanup. Typecheck, lint and build pass. Changed LJ2/LJ8 journeys passed **8/8** across desktop/phone and light/dark; **16 live vision judgments**, zero blocking findings. The first browser attempt failed because its fixture sent flat settings instead of the versioned nested request; the corrected journey passes without a product relaxation. Real automatic GitHub merges and live verification sessions remain blocked on owner credentials/sign-in. The hub import remains pending hidden terminal prompts; no owner acceptance is claimed.
+
+
+
+### Decision 651 — Amendment A3 replaces daily skipping and the nightly window
+
+Every enabled item runs every night regardless of daytime success. Keep daily schema names but label Nightly. Read-only high-effort review-since-last advances an exact-commit watermark after its stored report and covers direct pushes. The coordinator may create one code-review finding fix; only that fix can merge before the 150-minute cutoff. Ordered jobs follow; seven hours releases the hold. Failed items produce one Ekoa night report.
+
+Status: owner decision recorded; implementation pending. Untouched finished phases retain their evidence.
+
+
+### Decision 652 — Amendment A4 replaces the Ekoa Code nightly preset
+
+Use 01:00 Europe/Lisbon, autoMerge enabled and exact owner risky areas. Nightly order: Review since last, Legal programme, Full suite with expensive tests, exact-commit gated Deploy, disabled Security. Open one workflow trigger/dispatch-input pull request, preserve weekly legal measurement, always ask the owner, watch in existing order until merged then dispatch. Ekoa token needs Actions and Contents read/write. LJ9 records one real finding and its gate route.
+
+Status: owner decision recorded; implementation pending. Untouched finished phases retain their evidence.

@@ -1,3 +1,4 @@
+import type { MergeDocument } from './merge-schemas.js';
 import type { ProjectJob, ProjectDaily, ProjectJobRun, ProjectWindow } from './project-daily-schemas.js';
 import type {
   DecisionAnswer, FileReservation, PlacementOverride, ProjectCoordinator, ProjectCoordinatorStatus, ProjectDecision, ProjectEnvelope, ProjectMail, ProjectNotebook, ProjectWorkSettings, PullRequestReview, ThreadIndex,
@@ -22,6 +23,9 @@ export type ReserveOutcome = { granted: true; reservation: Stored<FileReservatio
  * Phase 6 adds mail, reservations and held checkouts.
  */
 export interface ProjectHub {
+  mergeDocuments(projectId: string, after?: string): Promise<{ records: MergeDocument[]; next: string | null }>;
+  mergeDocument(id: string): Promise<Stored<MergeDocument> | null>;
+  putMergeDocument(document: MergeDocument, expectedRevision: number): Promise<Stored<MergeDocument>>;
   jobs(projectId: string, after?: string): Promise<{ records: ProjectJob[]; next: string | null }>;
   job(jobId: string): Promise<Stored<ProjectJob> | null>;
   putJob(job: ProjectJob, expectedRevision: number): Promise<Stored<ProjectJob>>;

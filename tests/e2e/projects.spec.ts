@@ -1064,7 +1064,7 @@ test('Consecutive tool calls share an open area and new live output appends to i
   await page.screenshot({ path: `/tmp/jevellan-tool-groups-${info.project.name}.png`, fullPage: true }); expect(errors).toEqual([]);
 });
 
-test('LJ2 native setup is visible and coordinator changes are followed by approval on the new head', async ({ page }, info) => {
+test('LJ2 native setup remains visible and merge routing explains its ask-owner choice', async ({ page }, info) => {
   const errors = await begin(page);
   await page.goto('/settings/runtimes');
   await expect(page.getByRole('checkbox', { name: 'Use my own Claude Code setup' })).toBeChecked();
@@ -1072,19 +1072,22 @@ test('LJ2 native setup is visible and coordinator changes are followed by approv
   await expect(page.locator('.native-setup').filter({ hasText: 'fixture_hello' })).toContainText('skills');
   await shot(page, 'native-setup');
   await page.goto('/projects/projects_fixture');
-  const created = await page.request.post(`${PROJECT}/threads`, { data: { schema: 'thread-create-request-v1', clientRequestId: `request_review_${info.project.name}`, title: 'Review loop', task: 'LJ2 review loop: add a greeting example.', isolation: 'worktree', modelId: 'claude-fable', effort: 'high' } });
+  const settingsResponse = await page.request.get(`${PROJECT}/work-settings`), settings = await settingsResponse.json();
+  expect(settings.settings.autoMerge).toBe(false);
+  const saved = await page.request.put(`${PROJECT}/work-settings`, { data: { schema: 'project-work-settings-request-v1', revision: settings.settings.revision, clientRequestId: `merge_settings_${info.project.name}`, settings: { ...Object.fromEntries(Object.entries(settings.settings).filter(([key]) => !['schema', 'projectId', 'revision'].includes(key))), autoMerge: true, riskyAreas: 'Stored data and deploy files.' } } });
+  expect(saved.ok(), await saved.text()).toBe(true);
+  const created = await page.request.post(`${PROJECT}/threads`, { data: { schema: 'thread-create-request-v1', clientRequestId: `request_gate_${info.project.name}`, title: 'Review loop', task: 'LJ2 review loop: add a greeting example.', isolation: 'worktree', modelId: 'claude-fable', effort: 'high' } });
   expect(created.ok(), await created.text()).toBe(true); const started = await created.json();
   await expect.poll(async () => (await work(page)).pullRequests.find(entry => entry.threadId === started.threadId)?.pr?.number, LONG).toBeGreaterThan(0);
   const number = (await work(page)).pullRequests.find(entry => entry.threadId === started.threadId)!.pr!.number;
   await control(`/projects/github/${number}`, { schema: 'fixture-pull-change-v1', checks: 'passing', mergeable: 'clean' });
-  await expect.poll(async () => (await work(page)).pullRequests.find(entry => entry.threadId === started.threadId)?.pr?.review?.verdict, LONG).toBe('approve');
-  const current = (await work(page)).pullRequests.find(entry => entry.threadId === started.threadId)!;
-  expect(current.pr?.review?.commit).toBe(current.pr?.headSha);
-  const detail = await threadView(page, started.threadId); expect(detail.thread.turns).toBeGreaterThanOrEqual(2);
+  await expect.poll(async () => (await work(page)).decisions.open.some(item => item.question.startsWith(`Merge #${number} `)), LONG).toBe(true);
   if (phone(info)) await tap(page, tab(page, 'Pull requests'));
-  const row = page.locator('.pw-pr').filter({ hasText: 'Review loop' }); await expect(row).toContainText('Reviewed by the coordinator', LONG);
-  await row.getByText('Review note', { exact: true }).click(); await expect(row).toContainText('The behavior and its verification are ready.');
-  await shot(page, 'reviewed'); expect(errors).toEqual([]);
+  const row = page.locator('.pw-pr').filter({ hasText: 'Review loop' }); await expect(row).toBeVisible(LONG);
+  await row.getByRole('button', { name: 'Why', exact: true }).click();
+  const drawer = page.getByRole('dialog', { name: 'Why this merge route' }); await expect(drawer).toContainText('Ask owner'); await expect(drawer).toContainText('Stored data and deploy files.');
+  await drawer.getByRole('button', { name: "Didn't need asking", exact: true }).click(); await expect(drawer.getByRole('status')).toContainText('Saved');
+  await shot(page, 'merge-route-why', true); expect(errors).toEqual([]);
 });
 
 
@@ -1314,7 +1317,7 @@ test('LJ7 two fix effort corrections appear first in the next fix Why panel', as
   expect(errors).toEqual([]);
 });
 
-test('LJ8 Ekoa connection mirrors decisions, approved pulls and aggregated drafts without duplicates', async ({ page }) => {
+test('LJ8 Ekoa connection mirrors decisions, ask-owner pulls and aggregated drafts without duplicates', async ({ page }) => {
   const errors = await begin(page);
   const prepared = await control('/projects/ekoa', { schema: 'fixture-ekoa-loop-v1', action: 'prepare' }) as { url: string; token: string };
   await page.goto('/settings/ekoa'); await expect(page.getByRole('heading', { name: 'Ekoa', exact: true })).toBeVisible();
@@ -1327,8 +1330,8 @@ test('LJ8 Ekoa connection mirrors decisions, approved pulls and aggregated draft
   await expect(page.getByRole('heading', { name: 'Connected', exact: true })).toBeVisible(LONG);
   await expect(page.getByText('Jevellan · Projects mirror: 3 proposed tasks', { exact: true })).toBeVisible(LONG);
   await shot(page, 'connected-drafts');
-  const reviewed = await step('review') as { tasks: Array<{ title: string; status: string }> };
-  expect(reviewed.tasks.filter(row => row.title === 'Jevellan · Projects mirror: merge #99 Handle empty input')).toHaveLength(1);
+  const routed = await step('ask-owner') as { tasks: Array<{ title: string; status: string }> };
+  expect(routed.tasks.filter(row => row.title === 'Jevellan · Projects mirror: merge #99 Handle empty input')).toHaveLength(1);
   await step('tick'); await step('answer'); await step('approve'); const final = await step('merge') as { tasks: Array<{ title: string; status: string }> };
   expect(final.tasks.find(row => row.title === 'Jevellan · Projects mirror: Which empty state?')?.status).toBe('done');
   expect(final.tasks.find(row => row.title.includes('merge #99'))?.status).toBe('done');

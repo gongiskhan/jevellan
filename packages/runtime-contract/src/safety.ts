@@ -6,10 +6,11 @@ export const THREAD_SAFETY_REASON = 'Jevellan handles this. Report what you need
 export const COORDINATOR_SAFETY_REASON = 'Jevellan handles this. Ask a thread to do it with jevellan_thread_message.';
 export const COORDINATOR_READ_ONLY_REASON = 'The coordinator is read-only. Use the read tools and the Jevellan tools.';
 const READ_ONLY_REASON = 'This step is read-only. Use the read tools and return a handoff.';
-export type SafetyProfile = 'stretch' | 'coordinator' | 'thread';
+export type SafetyProfile = 'stretch' | 'coordinator' | 'thread' | 'verification';
 // No profile means a stretch. Turns carry a profile and no action.
 export type SafetyContext = { cwd: string; daemonPid: number; action?: string | undefined; profile?: SafetyProfile | undefined };
 export function safetyReason(context: Pick<SafetyContext, 'profile'>): string {
+  if (context.profile === 'verification') return 'Verification must not change, commit or push anything.';
   return context.profile === 'thread' ? THREAD_SAFETY_REASON : context.profile === 'coordinator' ? COORDINATOR_SAFETY_REASON : SAFETY_REASON;
 }
 
@@ -59,9 +60,11 @@ export function safetyDenial(command: string, context: SafetyContext): string | 
         if (['-C', '-c', '--git-dir', '--work-tree', '--namespace', '--config-env'].includes(flag ?? '')) words.shift();
       }
       const operation = words.shift();
+      if (context.profile === 'verification' && ['commit', 'push', 'merge', 'rebase', 'reset', 'checkout', 'switch', 'add', 'apply', 'cherry-pick', 'revert', 'clean'].includes(operation ?? '')) return 'Verification must not change, commit or push anything.';
       if (operation === 'push' || operation === 'clean' || (operation === 'rebase' && context.action !== 'integrate' && context.profile !== 'thread') ||
           (operation === 'reset' && words.includes('--hard')) || (operation === 'branch' && (words.includes('-D') || (words.includes('--delete') && words.includes('--force'))))) return safetyReason(context);
     }
+    if (program === 'gh' && context.profile === 'verification') return safetyReason(context);
     if (program === 'gh' && ((words[0] === 'repo' && ['edit', 'delete'].includes(words[1] ?? '')) ||
         (words[0] === 'api' && words.some((word) => /^(?:private|visibility)=|"(?:private|visibility)"\s*:/.test(word))))) return safetyReason(context);
     const jevellan = ['jevellan', 'jevellan.mjs'].includes(program) || program === 'node' && basename(words[0] ?? '') === 'jevellan.mjs' ||
@@ -97,6 +100,7 @@ export function claudePermissionHook(context: SafetyContext & { permissions: 're
   return async (input: { tool_name?: string; tool_input?: unknown }) => {
     const tool = input.tool_name ?? '';
     let reason: string | null = null;
+    if (context.profile === 'verification' && ['Write', 'Edit', 'MultiEdit', 'NotebookEdit'].includes(tool)) reason = 'Verification must not change, commit or push anything.';
     if (context.permissions === 'read-only') {
       // Discovery loads tool definitions; the discovered invocation still passes
       // through this hook. Blocking it also blocks the required MCP handoff.

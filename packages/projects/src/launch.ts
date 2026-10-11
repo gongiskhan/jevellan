@@ -3,9 +3,8 @@ import { rankAccounts } from '@jevellan/accounts';
 import type { AccountService } from '@jevellan/accounts';
 import { ACCOUNT_REASON_TEXT } from '@jevellan/decisions';
 import { PROJECT_MEMORY_ID, applicationRoot, deviceAllowsWork, type AccountStatus, type Effort, type Homes, type RiggingItem, type SecretRedactor } from '@jevellan/core';
-import type { StretchBridges } from '@jevellan/conversations';
+import type { BridgeScopeTools, StretchBridges } from '@jevellan/conversations';
 import { TurnInputSchema, type RuntimeAdapter, type StretchRun, type TurnInput } from '@jevellan/runtime-contract';
-import type { ProjectTools } from './bridge-tools.js';
 import { ACCOUNT_BUSY, MEMORY_HOOKS_UNDELIVERED, accountInTerminal, cannotRunHere, noTurnAccount, waitingForAccountReason } from './copy.js';
 import { ThreadGit } from './git.js';
 
@@ -25,7 +24,7 @@ export type LaunchRequest = {
    * then includes its fresh preamble (the thread task block, D94; the coordinator's fresh context).
    */
   prompt(resumed: boolean): string;
-  resume?: string | undefined; safetyProfile: 'coordinator' | 'thread'; timeoutMs: number; tools: ProjectTools;
+  resume?: string | undefined; safetyProfile: TurnInput['safetyProfile']; timeoutMs: number; tools: BridgeScopeTools;
   /** Thread turns: the project checkout whose git identity the agent commits with (D15). */
   gitIdentityFrom?: string | undefined;
 };

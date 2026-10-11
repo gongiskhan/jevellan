@@ -1,3 +1,4 @@
+import { MergeDocumentSchema } from './merge-schemas.js';
 import { ProjectJobSchema, ProjectDailySchema, ProjectJobRunSchema, ProjectWindowSchema } from './project-daily-schemas.js';
 import { z } from 'zod';
 import {
@@ -51,6 +52,9 @@ const project = { projectId: IdSchema };
 const page = { projectId: IdSchema, after: IdSchema.optional() };
 const expectedRevision = z.number().int().nonnegative();
 export const ProjectHubRequestSchema = z.discriminatedUnion('operation', [
+  z.strictObject({ ...request, operation: z.literal('merge-documents'), ...page }),
+  z.strictObject({ ...request, operation: z.literal('merge-document-get'), id: IdSchema }),
+  z.strictObject({ ...request, operation: z.literal('merge-document-put'), document: MergeDocumentSchema, expectedRevision }),
   z.strictObject({ ...request, operation: z.literal('jobs-list'), ...page }),
   z.strictObject({ ...request, operation: z.literal('job-get'), jobId: IdSchema }),
   z.strictObject({ ...request, operation: z.literal('job-put'), job: ProjectJobSchema, expectedRevision }),
@@ -112,6 +116,7 @@ export const ProjectHubRequestSchema = z.discriminatedUnion('operation', [
 export type ProjectHubRequest = z.infer<typeof ProjectHubRequestSchema>;
 export type ProjectHubOperation = ProjectHubRequest['operation'];
 const collections = {
+  'merge-documents': 'threads', 'merge-document-get': 'threads', 'merge-document-put': 'threads',
   'jobs-list': 'jobs', 'job-get': 'jobs', 'job-put': 'jobs',
   'dailies-list': 'dailies', 'daily-get': 'dailies', 'daily-put': 'dailies',
   'job-runs-list': 'job-runs', 'job-run-get': 'job-runs', 'job-run-put': 'job-runs',
@@ -135,6 +140,7 @@ const collections = {
 export function collectionOf(operation: ProjectHubOperation): ProjectHubCollection { return collections[operation]; }
 // Every operation is classified, so an operation added by a later phase cannot skip the lifecycle gate unnoticed.
 const access = {
+  'merge-documents': 'read', 'merge-document-get': 'read', 'merge-document-put': 'write',
   'jobs-list': 'read', 'job-get': 'read', 'job-put': 'write',
   'dailies-list': 'read', 'daily-get': 'read', 'daily-put': 'write',
   'job-runs-list': 'read', 'job-run-get': 'read', 'job-run-put': 'write',
@@ -165,6 +171,9 @@ function stored<T extends z.ZodType<{ revision: number }>>(document: T) {
 const result = { schema: z.literal('project-hub-result-v1') };
 const records = <T extends z.ZodType>(document: T) => ({ records: z.array(document).max(PROJECT_HUB_PAGE), next: IdSchema.nullable() });
 export const ProjectHubResultSchema = z.discriminatedUnion('operation', [
+  z.strictObject({ ...result, operation: z.literal('merge-documents'), ...records(MergeDocumentSchema) }),
+  z.strictObject({ ...result, operation: z.literal('merge-document-get'), record: stored(MergeDocumentSchema).nullable() }),
+  z.strictObject({ ...result, operation: z.literal('merge-document-put'), record: stored(MergeDocumentSchema) }),
   z.strictObject({ ...result, operation: z.literal('jobs-list'), ...records(ProjectJobSchema) }),
   z.strictObject({ ...result, operation: z.literal('job-get'), record: stored(ProjectJobSchema).nullable() }),
   z.strictObject({ ...result, operation: z.literal('job-put'), record: stored(ProjectJobSchema) }),

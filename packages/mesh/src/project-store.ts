@@ -1,3 +1,4 @@
+import { MergeDocumentSchema, type MergeDocument } from '@jevellan/core';
 import { PlacementOverrideFilterSchema, type PlacementOverrideFilter } from '@jevellan/core';
 import { ProjectJobSchema, ProjectDailySchema, ProjectJobRunSchema, ProjectWindowSchema, type ProjectJob, type ProjectDaily, type ProjectJobRun, type ProjectWindow } from '@jevellan/core';
 import { ProjectGoalSchema, ProjectRefillStateSchema, type ProjectGoal, type ProjectRefillState } from '@jevellan/core';
@@ -242,17 +243,29 @@ export class HubProjectStore {
     });
   }
 
+  mergeDocuments(projectId: string, after?: string) { return this.#page('project-merge-documents', MergeDocumentSchema, projectId, after, () => true); }
+  mergeDocument(id: string) { return this.#get('project-merge-documents', id, MergeDocumentSchema); }
+  putMergeDocument(raw: MergeDocument, expectedRevision: number) {
+    const document = MergeDocumentSchema.parse(raw);
+    return this.hub.transaction(() => {
+      this.#project(document.projectId);
+      if (document.deviceId !== this.deviceId) refuse('This merge receipt belongs to another device.', 403);
+      const thread = this.thread(document.threadId)?.document;
+      if (!thread || thread.projectId !== document.projectId) refuse('Thread not found.', 404);
+      if (document.schema !== 'merge-correction-v1' && thread.ownerDeviceId !== this.deviceId) refuse('Only the thread owner can advance its merge gate.', 403);
+      const old = this.mergeDocument(document.id);
+      if (old && (old.document.schema !== document.schema || old.document.projectId !== document.projectId || old.document.threadId !== document.threadId || old.document.commit !== document.commit || old.document.deviceId !== document.deviceId)) refuse('A merge receipt cannot change identity.');
+      if (old && document.schema === 'merge-correction-v1') {
+        if (stableJson({ ...old.document, revision: 0, at: '' }) !== stableJson({ ...document, revision: 0, at: '' })) refuse('This correction ID already stores a different correction.');
+        return old;
+      }
+      return this.#put('project-merge-documents', document.id, MergeDocumentSchema, document, expectedRevision);
+    });
+  }
   review(threadId: string): Stored<PullRequestReview> | null { return this.#get('project-pr-reviews', threadId, PullRequestReviewSchema); }
   putReview(raw: PullRequestReview, expectedRevision: number): Stored<PullRequestReview> {
-    const review = PullRequestReviewSchema.parse(raw);
-    return this.hub.transaction(() => {
-      if (review.deviceId !== this.deviceId || this.coordinator(review.projectId)?.document.deviceId !== this.deviceId) refuse('Only the current coordinator can review a pull request.', 403);
-      const thread = this.thread(review.threadId)?.document;
-      if (!thread || thread.projectId !== review.projectId || thread.pr?.state !== 'open' || thread.pr.headSha !== review.commit) refuse('The pull request head changed. Read its diff again.');
-      const current = this.review(review.threadId);
-      if (current && stableJson({ ...current.document, revision: 0 }) === stableJson({ ...review, revision: 0 })) return current;
-      return this.#put('project-pr-reviews', review.threadId, PullRequestReviewSchema, review, expectedRevision);
-    });
+    void raw; void expectedRevision;
+    return refuse('Coordinator pull request review has been retired.', 410);
   }
   /** Open questions plus those answered in the last 14 days by the hub clock; withdrawn ones leave the list. */
   decisions(projectId: string, after?: string): Page<ProjectDecision> {
@@ -583,6 +596,9 @@ export class HubProjectStore {
       case 'threads-list': result = { ...base, ...this.threads(request.projectId, request.after) }; break;
       case 'thread-get': result = { ...base, record: this.thread(request.threadId) }; break;
       case 'thread-publish': result = { ...base, threadId: request.index.id, ...this.publishThread(request.index, request.eventId) }; break;
+      case 'merge-documents': result = { ...base, ...this.mergeDocuments(request.projectId, request.after) }; break;
+      case 'merge-document-get': result = { ...base, record: this.mergeDocument(request.id) }; break;
+      case 'merge-document-put': result = { ...base, record: this.putMergeDocument(request.document, request.expectedRevision) }; break;
       case 'review-get': result = { ...base, record: this.review(request.threadId) }; break;
       case 'review-put': result = { ...base, record: this.putReview(request.review, request.expectedRevision) }; break;
       case 'decisions-list': result = { ...base, ...this.decisions(request.projectId, request.after) }; break;
@@ -647,6 +663,9 @@ export class HubProjectAccess implements ProjectHub {
   async threads(projectId: string, after?: string) { return this.#store.threads(projectId, after); }
   async thread(threadId: string) { return this.#store.thread(threadId); }
   async publishThread(index: ThreadIndex, eventId: number) { return this.#store.publishThread(index, eventId); }
+  async mergeDocuments(projectId: string, after?: string) { return this.#store.mergeDocuments(projectId, after); }
+  async mergeDocument(id: string) { return this.#store.mergeDocument(id); }
+  async putMergeDocument(document: MergeDocument, expectedRevision: number) { return this.#store.putMergeDocument(document, expectedRevision); }
   async review(threadId: string) { return this.#store.review(threadId); }
   async putReview(review: PullRequestReview, expectedRevision: number) { return this.#store.putReview(review, expectedRevision); }
   async decisions(projectId: string) {
@@ -734,6 +753,9 @@ export class MemberProjectStore implements ProjectHub {
   }
   async threads(projectId: string, after?: string) { return this.#page((await this.#call('threads-list', { projectId, ...(after === undefined ? {} : { after }) })), projectId, after); }
   async thread(threadId: string) { return this.#check((await this.#call('thread-get', { threadId })).record, (row) => !row || row.document.id === threadId); }
+  async mergeDocuments(projectId: string, after?: string) { return this.#page(await this.#call('merge-documents', { projectId, ...(after ? { after } : {}) }), projectId, after); }
+  async mergeDocument(id: string) { return this.#check((await this.#call('merge-document-get', { id })).record, row => !row || row.document.id === id); }
+  async putMergeDocument(document: MergeDocument, expectedRevision: number) { return this.#check((await this.#call('merge-document-put', { document, expectedRevision })).record, row => row.document.id === document.id && (row.revision === expectedRevision + 1 || document.schema === 'merge-correction-v1' && stableJson({ ...row.document, revision: 0, at: '' }) === stableJson({ ...document, revision: 0, at: '' }))); }
   async review(threadId: string) { return this.#check((await this.#call('review-get', { threadId })).record, row => !row || row.document.threadId === threadId); }
   async putReview(review: PullRequestReview, expectedRevision: number) { return this.#check((await this.#call('review-put', { review, expectedRevision })).record, row => row.document.threadId === review.threadId && row.document.commit === review.commit); }
   async publishThread(index: ThreadIndex, eventId: number) {

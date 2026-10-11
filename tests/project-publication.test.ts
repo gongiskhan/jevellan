@@ -5,7 +5,7 @@ import { existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
-  Homes, PlacementRecordSchema, ProjectSchema, PullRequestReviewSchema, SecretRedactor, ThreadReportSchema, ThreadSchema, type CoordinatorEvent, type Project, type Thread, type PullRequestReview, type Stored,
+  Homes, PlacementRecordSchema, ProjectSchema, SecretRedactor, ThreadReportSchema, ThreadSchema, type CoordinatorEvent, type Project, type Thread,
 } from '../packages/core/dist/index.js';
 import {
   BRANCH_PUSHED_NO_TOKEN, GitHubAccess, MERGE_CHECKS_FAILING, MERGE_CONFLICTS, NOT_GITHUB, NO_REMOTE, PR_CLOSED, REMOTE_CREDENTIALS, ProjectLedgers, ProjectPaths, PullRequestTracker,
@@ -232,21 +232,17 @@ test('pull request tracking reports check and conflict transitions once, merges 
   expect(changes().at(-1)).toBe('4 closed'); expect(existsSync(fourth.cwd)).toBe(false);
 }, 120_000);
 
-test('ready review is emitted once per head, approvals clear on a new commit and stale diffs cannot be reviewed', async () => {
-  const events: CoordinatorEvent[] = []; let saved: Stored<PullRequestReview> | null = null;
-  const tracker = new PullRequestTracker({ threads, github: access, git, worktrees, project: async () => project, toCoordinator: async (_id, event) => { events.push(event); }, redactor, deviceId: 'dev_a', now: () => now, reviewEnabled: async () => true,
-    hub: { thread: async () => null, review: async () => saved, putReview: async review => { const revision = (saved?.revision ?? 0) + 1; return saved = { revision, document: PullRequestReviewSchema.parse({ ...review, revision }) }; } } });
-  const thread = await prepared('thread_review', 'Add review coverage'); commit(thread.cwd, { 'greeting.txt': 'First greeting\n' });
+test('read-only diffs follow the current head and no coordinator review event is emitted', async () => {
+  const events: CoordinatorEvent[] = [];
+  const tracker = new PullRequestTracker({ threads, github: access, git, worktrees, project: async () => project, toCoordinator: async (_id, event) => { events.push(event); }, redactor, deviceId: 'dev_a', now: () => now });
+  const thread = await prepared('thread_review', 'Add coverage'); commit(thread.cwd, { 'greeting.txt': 'First greeting\n' });
   const result = await publish(thread); if (result.outcome.kind !== 'pr') throw new Error('The fixture did not publish.');
-  const pr = result.outcome.pr; threads.update(thread.id, current => ({ ...current, state: 'in-review', pr }));
-  await tracker.poll(); await tracker.poll(); expect(events.filter(event => event.kind === 'pr-ready-for-review')).toHaveLength(1);
+  threads.update(thread.id, current => ({ ...current, state: 'in-review', pr: result.outcome.kind === 'pr' ? result.outcome.pr : undefined }));
+  await tracker.poll(); await tracker.poll(); expect(events.filter(event => event.kind === 'pr-ready-for-review')).toHaveLength(0);
   const diff = await tracker.diff(project.id, thread.id); expect(diff.files.map(file => file.path)).toContain('greeting.txt'); expect(diff.diff).toContain('+First greeting');
-  await tracker.review(project.id, thread.id, diff.commit, 'approve', 'The changed behavior has coverage.');
-  expect((await tracker.fresh(project.id, thread.id)).pr?.review).toMatchObject({ commit: diff.commit, verdict: 'approve' });
   commit(thread.cwd, { 'greeting.txt': 'Second greeting\n' }); run(thread.cwd, 'push', 'origin', thread.branch!);
-  await tracker.poll(); expect(events.filter(event => event.kind === 'pr-ready-for-review')).toHaveLength(2);
+  await tracker.poll(); expect(events.filter(event => event.kind === 'pr-ready-for-review')).toHaveLength(0);
   expect((await tracker.fresh(project.id, thread.id)).pr?.review).toBeUndefined();
-  await expect(tracker.review(project.id, thread.id, diff.commit, 'approve', 'An old diff')).rejects.toMatchObject({ status: 409 });
-  const next = await tracker.diff(project.id, thread.id); await tracker.review(project.id, thread.id, next.commit, 'changes', 'Add the missing edge case.');
-  expect((await tracker.fresh(project.id, thread.id)).pr?.review).toMatchObject({ commit: next.commit, verdict: 'changes' }); await tracker.close();
+  await expect(tracker.merge(thread.id, diff.commit)).rejects.toMatchObject({ status: 409 });
+  const next = await tracker.diff(project.id, thread.id); expect(next.commit).not.toBe(diff.commit); expect(next.diff).toContain('+Second greeting'); await tracker.close();
 }, 60_000);

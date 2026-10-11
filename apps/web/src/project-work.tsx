@@ -1,4 +1,5 @@
 import { NightlyBanner, ProjectDailyPanel, type DailyView } from './project-daily.js';
+import { MergeWhy } from './merge-route.js';
 import { ProjectDailyListViewSchema } from '@jevellan/core/client';
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { z } from 'zod';
@@ -776,12 +777,9 @@ function PullRequestRow({ projectId, entry, navigate, merge, hold }: { projectId
         <span className={`chip pw-badge pw-tone-${badge.tone}`}>{badge.text}</span>
         {pr.mergeable === 'conflict' && <span className="chip pw-badge pw-tone-danger">{copy.CONFLICTS}</span>}
       </div>
-      {entry.reviewRequired && <p className="pw-pr-reason">{pr.review?.commit === pr.headSha
-        ? pr.review.verdict === 'approve' ? 'Reviewed by the coordinator' : 'Changes requested by the coordinator'
-        : "Waiting for the coordinator's review"}</p>}
-      {pr.review?.commit === pr.headSha && <details><summary>Review note</summary><Markdown>{pr.review.note}</Markdown></details>}
       {hold && <p className="pw-pr-reason">Merges are held while the nightly window runs.</p>}
       <div className="pw-pr-actions">
+        <MergeWhy projectId={projectId} threadId={entry.threadId} commit={pr.headSha} />
         <RouteLink className="text-button pw-open-thread" href={thread} navigate={navigate}>{copy.OPEN_THREAD}</RouteLink>
         <a className="button-link secondary small" href={pr.url} target="_blank" rel="noopener noreferrer"><Icon name="external" size={14} />{copy.OPEN_ON_GITHUB}</a>
         <span className="pw-merge" title={block ?? undefined}>
@@ -934,7 +932,7 @@ const settingsForm = (from: SettingsBase) => ({
   defaultIsolation: from.settings.defaultIsolation, isolationChanged: false, modelId: from.settings.coordinator.modelId ?? '',
   effort: from.settings.coordinator.effort, setupCommand: from.settings.setupCommand ?? '', maxRunningThreads: String(from.settings.maxRunningThreads),
   maxRunningPerDevice: String(from.settings.maxRunningPerDevice), threadTurnCap: String(from.settings.threadTurnCap),
-  refill: from.settings.refill, nightlyWindow: from.settings.nightlyWindow, coordinatorReview: from.settings.coordinatorReview, threadRules: from.settings.threadRules, allowMainIsolation: from.settings.allowMainIsolation,
+  refill: from.settings.refill, nightlyWindow: from.settings.nightlyWindow, autoMerge: from.settings.autoMerge, riskyAreas: from.settings.riskyAreas, threadRules: from.settings.threadRules, allowMainIsolation: from.settings.allowMainIsolation,
 });
 /**
  * Project settings (12.2). The dialog reads the settings when it opens (the page view may predate a save made a moment
@@ -1013,7 +1011,8 @@ function SettingsDialog({ props, view, close }: { props: PageProps; view: Projec
             <input value={form.setupCommand} maxLength={500} placeholder={copy.SETUP_COMMAND_PLACEHOLDER} spellCheck={false}
               onChange={(event) => change({ setupCommand: event.target.value })} />
           </label>
-          <label className="checkbox"><input type="checkbox" checked={form.coordinatorReview} onChange={event => change({ coordinatorReview: event.target.checked })} />The coordinator reviews pull requests</label>
+          <label className="checkbox"><input type="checkbox" checked={form.autoMerge} onChange={event => change({ autoMerge: event.target.checked })} />Merge automatically after checks</label>
+          <label>Risky areas<textarea maxLength={2000} value={form.riskyAreas} onChange={event => change({ riskyAreas: event.target.value })} /></label>
           <label className="checkbox"><input type="checkbox" checked={form.allowMainIsolation} onChange={event => change({ allowMainIsolation: event.target.checked })} />Allow work directly on main</label>
           <label className="checkbox"><input type="checkbox" checked={form.refill.enabled} onChange={event => change({ refill: { ...form.refill, enabled: event.target.checked } })} />Refill goals automatically</label>
           <label>Minutes between refills<input type="number" min={10} max={1440} value={form.refill.minIntervalMinutes} onChange={event => change({ refill: { ...form.refill, minIntervalMinutes: Number(event.target.value) } })} /></label>
@@ -1145,7 +1144,7 @@ function CoordinatorOverrideDialog({ props, view, close }: { props: PageProps; v
         setError('');
         const kept = { defaultIsolation: base.defaultIsolation, setupCommand: base.setupCommand, maxRunningThreads: base.maxRunningThreads,
           maxRunningPerDevice: base.maxRunningPerDevice, threadTurnCap: base.threadTurnCap, allowMainIsolation: base.allowMainIsolation,
-          threadRules: base.threadRules, coordinatorReview: base.coordinatorReview, nightlyWindow: base.nightlyWindow, refill: base.refill };
+          threadRules: base.threadRules, autoMerge: base.autoMerge, riskyAreas: base.riskyAreas, nightlyWindow: base.nightlyWindow, refill: base.refill };
         await save(path, ProjectWorkSettingsViewSchema, 'PUT', { schema: 'project-work-settings-request-v1', revision: base.revision,
           settings: { ...kept, coordinator: { ...base.coordinator, modelId: modelId || null, effort } } }, signal);
         if (fresh) await api(`/api/projects/${view.project.id}/coordinator/fresh`, ProjectWorkViewSchema, 'POST', empty, { signal });

@@ -18,7 +18,7 @@ export async function startGitHubFixture({ token, repositories = {}, port = 0 })
     try { return execFileSync('git', ['--git-dir', origin(repo), 'rev-parse', '--verify', '--quiet', `refs/heads/${ref}`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() || null; } catch { return null; }
   };
   // Force pushes move the head: re-read it from the bare origin on every call.
-  const refresh = (pull) => { const sha = headOf(pull.repo, pull.head); if (sha) pull.headSha = sha; return pull; };
+  const refresh = (pull) => { const sha = headOf(pull.repo, pull.head); if (sha) { pull.headSha = sha; execFileSync('git', ['--git-dir', origin(pull.repo), 'update-ref', `refs/pull/${pull.number}/head`, sha]); } return pull; };
   const find = (number, repo = Object.keys(repositories)[0]) => {
     const pull = pulls.find((entry) => entry.repo === repo && entry.number === Number(number));
     if (!pull) throw new Error(`No fixture pull request ${repo}#${number}.`);
@@ -106,7 +106,13 @@ export async function startGitHubFixture({ token, repositories = {}, port = 0 })
       if (!headSha || !headOf(repo, base)) return send(response, 422, { message: 'Validation Failed', errors: [{ resource: 'PullRequest', field: headSha ? 'base' : 'head', code: 'invalid' }] });
       if (pulls.some((pull) => pull.repo === repo && pull.state === 'open' && pull.head === ref)) return send(response, 422, { message: 'Validation Failed', errors: [{ resource: 'PullRequest', code: 'custom', message: `A pull request already exists for ${owner}:${ref}.` }] });
       const pull = { repo, number: pulls.filter((entry) => entry.repo === repo).length + 1, title, body: description, head: ref, base, state: 'open', merged: false, mergedAt: null, mergeable: 'clean', checks: 'none', headSha, mergeSha: null };
+      execFileSync('git', ['--git-dir', origin(repo), 'update-ref', `refs/pull/${pull.number}/head`, headSha]);
       pulls.push(pull); return send(response, 201, view(pull));
+    }
+    if ((match = /^\/pulls\/(\d+)$/.exec(rest)) && method === 'PATCH') {
+      const pull = refresh(find(match[1], repo));
+      if (body?.state !== 'closed') return send(response, 422, { message: 'Expected a close request.' });
+      apply(pull, { closed: true }); return send(response, 200, view(pull));
     }
     if ((match = /^\/pulls\/(\d+)$/.exec(rest)) && method === 'GET') {
       const pull = pulls.find((entry) => entry.repo === repo && entry.number === Number(match[1]));

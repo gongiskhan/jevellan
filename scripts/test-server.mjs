@@ -1,5 +1,5 @@
 import { startEkoaFixture } from '../tests/fixtures/ekoa-server.mjs';
-import { ProjectDecisionSchema, ProjectWorkTaskSchema, PullRequestReviewSchema, ThreadIndexSchema } from '../packages/core/dist/index.js';
+import { ProjectDecisionSchema, ProjectWorkTaskSchema, ThreadIndexSchema } from '../packages/core/dist/index.js';
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { execFileSync, spawn } from 'node:child_process';
@@ -93,20 +93,9 @@ async function projectTool(turn, name, args) {
   catch (error) { turn.emit({ type: 'tool-end', id, ok: false, output: error instanceof Error ? error.message : 'The tool call failed.' }); throw error; }
 }
 const EVENTS_HEADER = eventBlock([]);
-const reviewedHeads = new Set();
 function coordinatorStep(input) {
-  // Only the delivered events count: a fresh session's recap repeats earlier owner messages.
+  // Only delivered events count; the fresh-session recap repeats earlier messages.
   const at = input.prompt.lastIndexOf(EVENTS_HEADER); const events = at < 0 ? input.prompt : input.prompt.slice(at);
-  if (events.includes('ready for coordinator review')) return async turn => {
-    const list = await turn.bridge('jevellan_threads_list', { include: 'all' });
-    for (const thread of list.threads.filter(thread => thread.pr?.state === 'open')) {
-      await projectTool(turn, 'jevellan_pr_diff', { threadId: thread.id });
-      const changes = thread.title === 'Review loop' && !reviewedHeads.has(thread.id);
-      await projectTool(turn, 'jevellan_pr_review', { threadId: thread.id, verdict: changes ? 'changes' : 'approve', note: changes ? 'Add the empty-name edge case.' : 'The behavior and its verification are ready.' });
-      reviewedHeads.add(thread.id);
-    }
-    turn.say('Reviewed the pull request.'); return { status: 'completed' };
-  };
   // The greeting turn holds after its first words until the control route releases it (or the turn is stopped), so the
   // working state is on screen for as long as a journey needs to capture it, however loaded the machine is.
   if (events.includes('PJ3: add a greeting')) return async (turn) => {
@@ -303,6 +292,7 @@ const decisionFetch = async (_url, init) => {
   if (init?.method === 'GET') return Response.json({ models: [{ name: 'jev-latest', description: 'Simulated browser fixture.', release_date: '2026-09-22' }] });
   const body = JSON.parse(init.body); const state = JSON.parse(body.state);
   // Placement packets carry no conversation, so they are answered before anything reads one.
+  if (state.schema === 'merge-route-state-v1') return Response.json({ model: 'jev-browser-simulated', usage: { input_tokens: 25, output_tokens: 15 }, answers: { merge_route: { type: 'choice', choice: 'ask-owner', confidence: 1, probabilities: { merge: 0, 'test-then-merge': 0, 'ask-owner': 1 } } } });
   if (state.schema === 'placement-state-v2') return placementAnswers(body, state);
   const improver = improverAnswers(body, state);
   if (improver) return Response.json({ model: 'jev-browser-simulated', usage: { input_tokens: 25, output_tokens: 15 }, answers: improver });
@@ -639,7 +629,7 @@ const correction = (group, n, action, from, to) => {
 for (const n of [1, 2, 3]) { correction('implement', n, 'implement', 'claude-fable', 'codex-gpt'); correction('review', n, 'review', 'claude-fable', 'claude-opus'); }
 // Projects control (design 5.5 item 9), on the same listener: POST routes; every body is a versioned fixture document (pulse has none).
 const ControlClockSchema = z.strictObject({ schema: z.literal('fixture-project-clock-v1'), advanceMinutes: z.number().int().min(0).max(1440) });
-const ControlEkoaSchema = z.strictObject({ schema: z.literal('fixture-ekoa-loop-v1'), action: z.enum(['prepare', 'answer', 'approve', 'review', 'merge', 'tick', 'list']) });
+const ControlEkoaSchema = z.strictObject({ schema: z.literal('fixture-ekoa-loop-v1'), action: z.enum(['prepare', 'answer', 'approve', 'ask-owner', 'merge', 'tick', 'list']) });
 const ControlDailySchema = z.strictObject({ schema: z.literal('fixture-daily-control-v1'), action: z.enum(['prepare', 'open', 'pass', 'fail', 'workflow']) });
 const dailyMarker = join(root, 'daily-result');
 const ControlPullSchema = z.strictObject({ schema: z.literal('fixture-pull-change-v1'), checks: z.enum(['none', 'pending', 'passing', 'passing-status', 'failing']).optional(),
@@ -672,7 +662,7 @@ async function projectControl(request, response) {
     }
     if (input.action === 'answer') { const row = application.hub.get('project-decisions', 'mirror_decision', ProjectDecisionSchema); application.hub.put('project-decisions', 'mirror_decision', ProjectDecisionSchema, { ...row.document, answeredAt: at, answer: { text: 'Short.' } }, row.revision); }
     if (input.action === 'approve') { const row = application.hub.get('project-work-tasks', 'mirror_one', ProjectWorkTaskSchema); application.hub.put('project-work-tasks', 'mirror_one', ProjectWorkTaskSchema, { ...row.document, state: 'queued' }, row.revision); }
-    if (input.action === 'review') application.hub.put('project-pr-reviews', 'mirror_thread', PullRequestReviewSchema, { schema: 'pull-request-review-v1', revision: 1, projectId, threadId: 'mirror_thread', deviceId: application.device.deviceId, commit: 'a'.repeat(40), verdict: 'approve', note: 'The focused test covers empty input.', reviewedAt: at }, 0);
+    if (input.action === 'ask-owner') application.hub.put('project-decisions', 'mirror_merge_decision', ProjectDecisionSchema, { schema: 'project-decision-v1', revision: 1, id: 'mirror_merge_decision', projectId, threadId: 'mirror_thread', from: 'thread', question: 'Merge #99 Handle empty input?', options: [{ label: 'Merge' }, { label: 'Send back with a note' }, { label: 'Close' }], createdAt: at, merge: { commit: 'a'.repeat(40), prNumber: 99 } }, 0);
     if (input.action === 'merge') { const row = application.hub.get('project-threads', 'mirror_thread', ThreadIndexSchema); application.hub.put('project-threads', 'mirror_thread', ThreadIndexSchema, { ...row.document, pr: { ...row.document.pr, state: 'merged' } }, row.revision); }
     if (input.action !== 'list') await application.ekoa.tick();
     send(200, { schema: 'fixture-ekoa-state-v1', tasks: [...ekoaFixture.tasks.values()].map(task => ({ title: task.title, status: task.status })) });
