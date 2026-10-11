@@ -29,7 +29,7 @@ export function threadIndex(thread: Thread, labels: ThreadLabels, updatedAt: str
     // Redacted, then cut where no later redaction rewrites it, so the summary keeps within 400 characters on every hop (P8 review S-1)
     // and a token-like word never cuts the rest of the sentence away (P8 review N-1).
     ...(thread.lastReport ? { lastSummary: redactWithin(PATTERNS, thread.lastReport.summary, 400) } : {}), turns: thread.turns,
-    createdAt: thread.createdAt, updatedAt, ...(thread.endedAt === undefined ? {} : { endedAt: thread.endedAt }),
+    ...(thread.restartedAs ? { restartedAs: thread.restartedAs } : {}), createdAt: thread.createdAt, updatedAt, ...(thread.endedAt === undefined ? {} : { endedAt: thread.endedAt }),
   });
 }
 /** Index fields that differ between two versions of a thread (revision and updatedAt excluded). */

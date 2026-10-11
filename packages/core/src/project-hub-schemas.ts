@@ -5,11 +5,12 @@ import {
 } from './project-schemas.js';
 import { DevicePresenceSchema } from './mesh-schemas.js';
 import { IdSchema, TimestampSchema } from './schemas.js';
+import { ProjectWorkTaskSchema, TaskHistoryEventSchema } from './project-loop-schemas.js';
 
 // Members reach project hub state through POST /hub/mesh/projects/<collection> with operation-discriminated bodies (D7).
 // The main isolation phase adds the held checkouts read (6).
 export const ProjectHubCollectionSchema = z.enum(['settings', 'coordinators', 'threads', 'decisions', 'notebooks', 'overrides',
-  'envelopes', 'work', 'mail', 'reservations', 'checkouts']);
+  'envelopes', 'work', 'mail', 'reservations', 'checkouts', 'tasks']);
 export type ProjectHubCollection = z.infer<typeof ProjectHubCollectionSchema>;
 export const PROJECT_HUB_PAGE = 100;
 /** A pending-envelope page also stops near this many serialized bytes (at least one envelope), under the member's 2 MiB reply cap (D260). */
@@ -47,6 +48,10 @@ const project = { projectId: IdSchema };
 const page = { projectId: IdSchema, after: IdSchema.optional() };
 const expectedRevision = z.number().int().nonnegative();
 export const ProjectHubRequestSchema = z.discriminatedUnion('operation', [
+  z.strictObject({ ...request, operation: z.literal('tasks-list'), ...page }),
+  z.strictObject({ ...request, operation: z.literal('task-get'), taskId: IdSchema }),
+  z.strictObject({ ...request, operation: z.literal('task-put'), task: ProjectWorkTaskSchema, expectedRevision }),
+  z.strictObject({ ...request, operation: z.literal('task-history'), taskId: IdSchema }),
   z.strictObject({ ...request, operation: z.literal('settings-get'), ...project }),
   z.strictObject({ ...request, operation: z.literal('settings-put'), settings: ProjectWorkSettingsSchema, expectedRevision, clientRequestId: IdSchema.optional() }),
   z.strictObject({ ...request, operation: z.literal('coordinator-get'), ...project }),
@@ -87,6 +92,7 @@ export const ProjectHubRequestSchema = z.discriminatedUnion('operation', [
 export type ProjectHubRequest = z.infer<typeof ProjectHubRequestSchema>;
 export type ProjectHubOperation = ProjectHubRequest['operation'];
 const collections = {
+  'tasks-list': 'tasks', 'task-get': 'tasks', 'task-put': 'tasks', 'task-history': 'tasks',
   'settings-get': 'settings', 'settings-put': 'settings',
   'coordinator-get': 'coordinators', 'coordinator-assign': 'coordinators', 'coordinator-status-get': 'coordinators', 'coordinator-status-put': 'coordinators',
   'threads-list': 'threads', 'thread-get': 'threads', 'thread-publish': 'threads',
@@ -104,6 +110,7 @@ const collections = {
 export function collectionOf(operation: ProjectHubOperation): ProjectHubCollection { return collections[operation]; }
 // Every operation is classified, so an operation added by a later phase cannot skip the lifecycle gate unnoticed.
 const access = {
+  'tasks-list': 'read', 'task-get': 'read', 'task-put': 'write', 'task-history': 'read',
   'settings-get': 'read', 'settings-put': 'write',
   'coordinator-get': 'read', 'coordinator-assign': 'write', 'coordinator-status-get': 'read', 'coordinator-status-put': 'write',
   'threads-list': 'read', 'thread-get': 'read', 'thread-publish': 'write',
@@ -128,6 +135,10 @@ function stored<T extends z.ZodType<{ revision: number }>>(document: T) {
 const result = { schema: z.literal('project-hub-result-v1') };
 const records = <T extends z.ZodType>(document: T) => ({ records: z.array(document).max(PROJECT_HUB_PAGE), next: IdSchema.nullable() });
 export const ProjectHubResultSchema = z.discriminatedUnion('operation', [
+  z.strictObject({ ...result, operation: z.literal('tasks-list'), ...records(ProjectWorkTaskSchema) }),
+  z.strictObject({ ...result, operation: z.literal('task-get'), record: stored(ProjectWorkTaskSchema).nullable() }),
+  z.strictObject({ ...result, operation: z.literal('task-put'), record: stored(ProjectWorkTaskSchema) }),
+  z.strictObject({ ...result, operation: z.literal('task-history'), records: z.array(TaskHistoryEventSchema) }),
   z.strictObject({ ...result, operation: z.literal('settings-get'), record: stored(ProjectWorkSettingsSchema).nullable() }),
   z.strictObject({ ...result, operation: z.literal('settings-put'), record: stored(ProjectWorkSettingsSchema) }),
   z.strictObject({ ...result, operation: z.literal('coordinator-get'), record: stored(ProjectCoordinatorSchema).nullable() }),

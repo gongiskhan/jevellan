@@ -108,8 +108,14 @@ function coordinatorStep(input) {
   if (events.includes('PJ3: add a greeting')) return async (turn) => {
     turn.say('Starting a thread for the greeting.\n');
     if (await hold('PJ3: add a greeting', turn.signal) === 'aborted') return { status: 'interrupted' };
-    await projectTool(turn, 'jevellan_thread_start', { title: 'Add a greeting', task: 'PJ3: create greeting.txt' });
+    await projectTool(turn, 'jevellan_task_create', { title: 'Add a greeting', brief: 'PJ3: create greeting.txt', type: 'feature', source: 'owner-request' });
     await projectPause(1_000, turn.signal); turn.say('Started "Add a greeting".'); return { status: 'completed' };
+  };
+  if (events.includes('LJ3 five queue tasks')) return async turn => {
+    const ids = [];
+    for (let number = 1; number <= 5; number++) ids.push((await projectTool(turn, 'jevellan_task_create', { title: `Loop task ${number}`, brief: 'LJ3 queue: inspect the seed project and report done without changing files.', type: 'analysis', source: 'owner-request' })).taskId);
+    await projectTool(turn, 'jevellan_task_update', { taskId: ids[2], after: [ids[3]] });
+    turn.say('Queued five tasks, with the third following the fourth.'); return { status: 'completed' };
   };
   if (events.includes('PJ3 decision')) return async (turn) => {
     turn.say('One choice is yours.\n'); await projectPause(350, turn.signal);
@@ -124,6 +130,11 @@ const LONG_TOOLS = [['Read', { file_path: 'README.md' }, '# Projects app\n\nA sm
 const longThreads = new Set();
 function threadStep(input) {
   const report = (status, summary, extra = {}) => async (turn) => { await projectPause(350, turn.signal); turn.say(summary); await projectTool(turn, 'jevellan_thread_report', { status, summary, ...extra }); return { status: 'completed' }; };
+  if (input.prompt.includes('LJ3 queue:')) return async turn => {
+    const title = input.prompt.split('\n', 1)[0].slice('Task: '.length);
+    if (await hold(`LJ3 ${title}`, turn.signal) === 'aborted') return { status: 'interrupted' };
+    return report('done', 'Inspected the project; no changes needed.')(turn);
+  };
   if (input.prompt.includes('LJ2 review loop') || input.prompt.includes('Add the empty-name edge case.')) return async turn => {
     const updated = input.turn > 1;
     writeFileSync(join(turn.input.cwd, 'review-loop.txt'), updated ? 'Hello, including an empty name.\n' : 'Hello, named person.\n');
@@ -532,6 +543,7 @@ if (projectsMode) {
   const save = (id, name, paths, branchPolicy, extra = {}) => application.conversations.saveProject({ schema: 'project-write-v1', revision: 0, project: ProjectSchema.parse({ schema: 'project-v1', id, name, paths, branchPolicy, ...extra,
     memory: { mode: 'repo', dir: '.jevellan/memory' }, context: { state: 'none' } }) });
   await save('projects_fixture', 'Projects fixture', { [hubId]: projectsPath, [memberId]: projectsMember }, 'main', { testCommand: 'test -f greeting.txt' });
+  await save('projects_queue', 'Projects queue', { [hubId]: clone(projectsOrigin, join(root, 'projects-queue')) }, 'main');
   await save('projects_external', 'Projects external', { [hubId]: clone(externalOrigin, join(root, 'projects-external')) }, 'external');
   await save('projects_offline', 'Projects offline', { [hubId]: clone(offlineOrigin, join(root, 'projects-offline')) }, 'main');
   // Enabled accounts let model discovery enable the Fable and GPT menu entries, so threads and the coordinator can run here.

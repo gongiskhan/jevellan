@@ -15,6 +15,7 @@ import type { DeviceRoster } from './placement.js';
 import type { PullRequestTracker } from './pull-requests.js';
 import type { ThreadStore } from './stores.js';
 import type { ThreadService } from './threads.js';
+import { taskOpen, type ProjectTasks } from './tasks.js';
 
 export type ProjectScope = { kind: 'coordinator'; projectId: string; turn: number }
   | { kind: 'thread'; projectId: string; threadId: string; turn: number; isolation: 'worktree' | 'main' };
@@ -116,6 +117,7 @@ export class ProjectTools implements BridgeScopeTools {
 export type CoordinatorToolsOptions = {
   deviceId: string; deviceName: string;
   threads: Pick<ThreadService, 'start' | 'message' | 'stop' | 'list' | 'read'>;
+  tasks?: ProjectTasks;
   store: Pick<ThreadStore, 'get'>;
   decisions: Pick<DecisionItems, 'ask' | 'withdraw'>;
   pullRequests: Pick<PullRequestTracker, 'fresh'> & Partial<Pick<PullRequestTracker, 'diff' | 'review'>>;
@@ -163,15 +165,29 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
           ...(thread.pr ? { pr: { number: thread.pr.number, state: thread.pr.state, checks: thread.pr.checks } } : {}),
           ...(thread.lastSummary ? { lastSummary: thread.lastSummary } : {}), turns: thread.turns })) };
       }
-      case 'jevellan_thread_start': {
+      case 'jevellan_task_create': {
         const input = raw as Input<typeof name>;
-        // Only the fields the coordinator gave are fixed; Jevellan places the rest (brief 7.1, 10).
-        const started = await o.threads.start({ projectId, title: input.title, task: input.task, createdBy: 'coordinator', coordinatorDeviceId: o.deviceId, note: input.note,
-          clientRequestId: turnId('treq', projectId, turn, input), fixed: { ...(input.isolation ? { isolation: input.isolation } : {}), ...(input.modelId ? { modelId: input.modelId } : {}),
-            ...(input.runtimeId ? { runtimeId: input.runtimeId } : {}), ...(input.accountId ? { accountId: input.accountId } : {}),
-            ...(input.effort ? { effort: input.effort } : {}), ...(input.deviceId ? { deviceId: input.deviceId } : {}) } });
-        return { schema: 'thread-start-result-v1', threadId: started.threadId, state: started.state, ...(started.stateReason === undefined ? {} : { stateReason: started.stateReason }),
-          placement: started.placement.slice(0, 400) };
+        if (!o.tasks) throw new Error('The task queue is unavailable.');
+        const ledger = o.ledgers.coordinator(projectId), events = ledger.events();
+        const started = events.findLast(event => event.type === 'coordinator-turn-start' && event.turn === turn);
+        const ids = new Set(started ? ledger.payload(started as ProjectLedgerEvent & { type: 'coordinator-turn-start' }).eventIds : []);
+        const ownerRequested = events.some(event => event.type === 'coordinator-event' && (() => { const item = ledger.payload(event as ProjectLedgerEvent & { type: 'coordinator-event' }); return ids.has(item.id) && item.kind === 'user-message'; })());
+        const { source, ...fields } = input;
+        return o.tasks.create(projectId, { ...fields, schema: 'task-create-request-v1', clientRequestId: turnId('treq', projectId, turn, input) }, source, { ownerRequested });
+      }
+      case 'jevellan_tasks_list': {
+        const input = raw as Input<typeof name>; if (!o.tasks) throw new Error('The task queue is unavailable.');
+        return { schema: 'tasks-list-result-v1', tasks: (await o.tasks.list(projectId)).filter(task => (input.include === 'all' || taskOpen(task)) && (input.goalId === undefined || task.goalId === input.goalId)).map((task, index) => ({ ...task, position: index + 1 })) };
+      }
+      case 'jevellan_task_update': {
+        const input = raw as Input<typeof name>; if (!o.tasks) throw new Error('The task queue is unavailable.');
+        const current = await o.tasks.read(projectId, input.taskId), { taskId, ...fields } = input;
+        return { schema: 'task-update-result-v1', task: await o.tasks.update(projectId, taskId, { ...fields, schema: 'task-update-request-v1', expectedRevision: current.revision }, false) };
+      }
+      case 'jevellan_task_cancel': {
+        const input = raw as Input<typeof name>; if (!o.tasks) throw new Error('The task queue is unavailable.');
+        const current = await o.tasks.read(projectId, input.taskId);
+        return { schema: 'task-cancel-result-v1', task: await o.tasks.action(projectId, input.taskId, { schema: 'task-action-request-v1', expectedRevision: current.revision, action: 'cancel', reason: input.reason }, false) };
       }
       case 'jevellan_thread_message': {
         const input = raw as Input<typeof name>;

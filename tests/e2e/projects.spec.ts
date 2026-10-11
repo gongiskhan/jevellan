@@ -59,10 +59,7 @@ async function threadId(page: Page, title: string) {
   return (await work(page)).threads.find((thread) => thread.title === title)!.id;
 }
 /** The one-line placement summary of a started thread, as the chat's tool row and the start toast read it. */
-async function placementSummary(page: Page, view: ThreadView) {
-  const fallback = view.placement.source === 'fallback' && view.placement.error ? ` · placed without Jev: ${view.placement.error.message}` : '';
-  return `${await runtimeName(page, view.thread.runtime)} ${view.thread.modelLabel} · ${view.thread.effort} · Worktree · ${view.deviceName}${fallback}`;
-}
+
 
 /**
  * A ` · ` line wraps between its parts: every part that is narrower than the line on its own sits on one line (a branch name
@@ -269,13 +266,13 @@ test('PJ3 project page opens from the sidebar and the coordinator chat streams',
   // No coordinator session yet: the chip shows the planned one; the settings effort `medium` runs as `high` here (D91).
   await expect(page.locator('.pw-chip')).toHaveText('Idle');
   await expect(page.locator('.pw-session')).toHaveText('Claude Code Fable · high');
-  for (const name of ['New thread', 'Notebook']) await expect(page.getByRole('button', { name, exact: true })).toBeVisible();
+  for (const name of ['New task', 'Notebook']) await expect(page.getByRole('button', { name, exact: true })).toBeVisible();
   await expect(page.locator('summary[aria-label="Project menu"]')).toBeVisible();
   await expect(page.getByText('Describe what you want done. The coordinator splits it into threads, runs them on your devices and accounts, and brings back what needs you.', { exact: true })).toBeVisible();
   await expect(composer(page)).toHaveAttribute('placeholder', 'Tell the coordinator what you need');
   const tabs = page.getByRole('tablist', { name: 'Project sections', exact: true });
   if (phone(info)) {
-    await expect(tabs.getByRole('tab')).toHaveText(['Chat', 'Waiting', 'Threads', 'Pull requests']);
+    await expect(tabs.getByRole('tab')).toHaveText(['Chat', 'Waiting', 'Queue', 'Threads', 'Pull requests']);
     await expect(tab(page, 'Chat')).toHaveAttribute('aria-selected', 'true');
     await tap(page, tab(page, 'Threads'));
     await expect(region(page, 'Running')).toContainText('No threads running.');
@@ -286,7 +283,7 @@ test('PJ3 project page opens from the sidebar and the coordinator chat streams',
   } else {
     // Two columns: the chat and the sections in the brief's order, each with its count and its empty line.
     await expect(tabs).toBeHidden();
-    await expect(page.locator('.pw-side .pw-section-heading')).toHaveText(['Waiting for you 0', 'Running 0', 'Pull requests 0', 'Concluded 1']);
+    await expect(page.locator('.pw-side .pw-section-heading')).toHaveText(['Waiting for you 0', 'Queue 0', 'Running 0', 'Pull requests 0', 'Concluded 1']);
     await expect(region(page, 'Waiting for you')).toContainText('Nothing waiting.');
     await expect(region(page, 'Running')).toContainText('No threads running.');
     await expect(region(page, 'Pull requests')).toContainText('No open pull requests.');
@@ -321,14 +318,14 @@ test('PJ3 project page opens from the sidebar and the coordinator chat streams',
 
   // The thread start streams in as a muted tool row linking to the thread, then the reply as Markdown.
   const id = await threadId(page, 'Add a greeting');
-  const tool = page.getByRole('link', { name: /^Started "Add a greeting" · / });
+  const tool = page.locator('.pw-tool').filter({ hasText: 'Queued task "Add a greeting"' });
   await expect(tool).toBeVisible(LONG);
-  await expect(tool).toHaveText(`Started "Add a greeting" · ${await placementSummary(page, await threadView(page, id))}`);
-  await expect(tool).toHaveAttribute('href', `/projects/projects_fixture/threads/${id}`);
+  await expect(tool).toHaveText('Queued task "Add a greeting"');
+  expect((await threadView(page, id)).thread.title).toBe('Add a greeting');
   const reply = page.locator('.pw-reply').filter({ hasText: 'Started "Add a greeting".' });
   await expect(reply).toHaveText('Started "Add a greeting".', LONG);
   const entries = await page.locator('.pw-timeline > *').allTextContents();
-  expect(entries.findIndex((entry) => entry.startsWith('Started "Add a greeting" · '))).toBeLessThan(entries.indexOf('Started "Add a greeting".'));
+  expect(entries.findIndex((entry) => entry.startsWith('Queued task "Add a greeting"'))).toBeLessThan(entries.indexOf('Started "Add a greeting".'));
   await shot(page, 'chat-reply');
   expect(errors).toEqual([]);
 });
@@ -389,12 +386,12 @@ test('PJ3 a decision is answered from the Waiting tab', async ({ page }, info) =
 test('PJ3 a running thread shows its transcript, report card and accepts an interrupting message', async ({ page }, info) => {
   const errors = await begin(page);
   await openProject(page, 'Projects fixture');
-  await tap(page, page.getByRole('button', { name: 'New thread', exact: true }));
-  const dialog = page.getByRole('dialog', { name: 'New thread', exact: true });
+  await tap(page, page.getByRole('button', { name: 'New task', exact: true }));
+  const dialog = page.getByRole('dialog', { name: 'New task', exact: true });
   await dialog.getByRole('textbox', { name: 'Title', exact: true }).fill(LONG_TITLE);
   // The scripted thread keeps working on a task marked `PJ3 long` until it is released or interrupted.
-  await dialog.getByRole('textbox', { name: 'Task', exact: true }).fill('PJ3 long: read the project files, then wait for my message.');
-  await dialog.locator('summary').filter({ hasText: 'Placement' }).click();
+  await dialog.getByRole('textbox', { name: 'Brief', exact: true }).fill('PJ3 long: read the project files, then wait for my message.');
+  await dialog.locator('summary').filter({ hasText: 'Choose where it runs' }).click();
   for (const name of ['Isolation', 'Model', 'Effort', 'Device']) {
     const select = dialog.getByRole('combobox', { name, exact: true });
     await expect(select).toHaveValue(''); await expect(select.locator('option').first()).toHaveText('Automatic');
@@ -413,16 +410,18 @@ test('PJ3 a running thread shows its transcript, report card and accepts an inte
   await expect(device.locator('option', { hasText: 'Offline fixture: offline' })).toHaveJSProperty('disabled', true);
   await expect(device.locator('option', { hasText: 'Browser member' })).toHaveJSProperty('disabled', false);
   await shot(page, 'new-thread-modal', false);
-  await dialog.getByRole('button', { name: 'Start thread', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Add to queue', exact: true }).click();
 
   // A started thread opens its page; the toast tells where it was placed.
-  await expect(page).toHaveURL(/\/projects\/projects_fixture\/threads\/thread_[^/]+$/, LONG);
-  const id = new URL(page.url()).pathname.split('/')[4]!;
+  await expect(dialog).toHaveCount(0);
   const toast = page.locator('.toast.success > span'); await expect(toast).toBeVisible(); const placed = await toast.textContent();
+  let id = '';
+  await expect.poll(async () => { const body = await read(page, '/api/projects/projects_fixture/tasks') as { tasks: Array<{ title: string; threadId: string | null }> }; id = body.tasks.find(task => task.title === LONG_TITLE)?.threadId ?? ''; return id; }, LONG).toMatch(/^thread_/);
+  await page.goto(`/projects/projects_fixture/threads/${id}`);
   await expect(page.getByRole('heading', { level: 1, name: LONG_TITLE, exact: true })).toBeVisible();
   await expect.poll(async () => (await threadView(page, id)).thread.branch ?? '', LONG).toMatch(/^jv\//);
   const view = await threadView(page, id); const runtime = await runtimeName(page, view.thread.runtime);
-  expect(placed).toBe(await placementSummary(page, view));
+  expect(placed).toContain('Queued task');
   await expect(page.locator('.pw-state-chip')).toHaveText('Running', LONG);
   await expect(page.locator('.pw-placement-line')).toHaveText(`${runtime} · ${view.thread.modelLabel} · ${view.thread.effort} effort · ${view.thread.accountLabel} · Worktree on ${view.thread.branch} · ${view.deviceName}`);
   await expectWholeParts(page.locator('.pw-placement-line'));
@@ -827,23 +826,25 @@ test('PJ5 a thread on the member device opens through the hub', async ({ page })
   const errors = await begin(page);
   const title = 'Read the README on the member';
   await openProject(page, 'Projects fixture');
-  await tap(page, page.getByRole('button', { name: 'New thread', exact: true }));
-  const dialog = page.getByRole('dialog', { name: 'New thread', exact: true });
+  await tap(page, page.getByRole('button', { name: 'New task', exact: true }));
+  const dialog = page.getByRole('dialog', { name: 'New task', exact: true });
   await dialog.getByRole('textbox', { name: 'Title', exact: true }).fill(title);
   // The member's scripted thread reads the README on a task marked `PJ5` and reports.
-  await dialog.getByRole('textbox', { name: 'Task', exact: true }).fill('PJ5: read the README on the member device and say what it holds.');
-  await dialog.locator('summary').filter({ hasText: 'Placement' }).click();
+  await dialog.getByRole('textbox', { name: 'Brief', exact: true }).fill('PJ5: read the README on the member device and say what it holds.');
+  await dialog.locator('summary').filter({ hasText: 'Choose where it runs' }).click();
   await dialog.getByRole('combobox', { name: 'Device', exact: true }).selectOption({ label: 'Browser member' });
   // The thread exists on the member only once it read the start from the hub; until then its page keeps loading (D274).
-  await page.evaluate(() => {
+  await page.addInitScript(() => {
     const seen = window as unknown as { pj5NotFound?: boolean }; seen.pj5NotFound = false;
-    new MutationObserver(() => { if (document.body.textContent?.includes('This thread was not found.')) seen.pj5NotFound = true; })
-      .observe(document.body, { childList: true, subtree: true, characterData: true });
+    document.addEventListener('DOMContentLoaded', () => new MutationObserver(() => { if (document.body.textContent?.includes('This thread was not found.')) seen.pj5NotFound = true; })
+      .observe(document.body, { childList: true, subtree: true, characterData: true }));
   });
-  await dialog.getByRole('button', { name: 'Start thread', exact: true }).click();
-  await expect(page).toHaveURL(/\/projects\/projects_fixture\/threads\/thread_[^/]+$/, LONG);
-  const id = new URL(page.url()).pathname.split('/')[4]!;
+  await dialog.getByRole('button', { name: 'Add to queue', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
   const toast = page.locator('.toast.success > span'); await expect(toast).toBeVisible(); const placed = await toast.textContent();
+  let id = '';
+  await expect.poll(async () => { const body = await read(page, '/api/projects/projects_fixture/tasks') as { tasks: Array<{ title: string; threadId: string | null }> }; id = body.tasks.find(task => task.title === title)?.threadId ?? ''; return id; }, LONG).toMatch(/^thread_/);
+  await page.goto(`/projects/projects_fixture/threads/${id}`);
   await expect(page.getByRole('heading', { level: 1, name: title, exact: true })).toBeVisible(LONG);
 
   // The hub's page shows the member's thread: its view and transcript come from the member through the proxy.
@@ -854,8 +855,7 @@ test('PJ5 a thread on the member device opens through the hub', async ({ page })
   const view = await threadView(page, id);
   expect(view.deviceName).toBe('Browser member');
   expect(view.placement).toMatchObject({ fixed: ['device'], deviceId: view.thread.ownerDeviceId });
-  expect(placed).toBe(await placementSummary(page, view));
-  expect(placed).toMatch(/ · Browser member$/);
+  expect(placed).toContain('Queued task');
   const runtime = await runtimeName(page, view.thread.runtime);
   await expect(page.locator('.pw-placement-line')).toHaveText(`${runtime} · ${view.thread.modelLabel} · ${view.thread.effort} effort · ${view.thread.accountLabel} · Worktree on ${view.thread.branch} · Browser member`);
   await expectWholeParts(page.locator('.pw-placement-line'));
@@ -911,15 +911,17 @@ test('PJ7 an attached thread disables its composer', async ({ page }) => {
   const roster = DeviceRosterSchema.parse(await read(page, '/hub/devices/roster'));
   const here = roster.devices.find((row) => row.device.id === roster.currentDeviceId)!.device.name;
   await openProject(page, 'Projects fixture');
-  await tap(page, page.getByRole('button', { name: 'New thread', exact: true }));
-  const dialog = page.getByRole('dialog', { name: 'New thread', exact: true });
+  await tap(page, page.getByRole('button', { name: 'New task', exact: true }));
+  const dialog = page.getByRole('dialog', { name: 'New task', exact: true });
   await dialog.getByRole('textbox', { name: 'Title', exact: true }).fill(title);
-  await dialog.getByRole('textbox', { name: 'Task', exact: true }).fill('PJ7: tidy the README wording, then wait for me to look at it in a terminal.');
-  await dialog.locator('summary').filter({ hasText: 'Placement' }).click();
+  await dialog.getByRole('textbox', { name: 'Brief', exact: true }).fill('PJ7: tidy the README wording, then wait for me to look at it in a terminal.');
+  await dialog.locator('summary').filter({ hasText: 'Choose where it runs' }).click();
   await dialog.getByRole('combobox', { name: 'Device', exact: true }).selectOption({ label: here });
-  await dialog.getByRole('button', { name: 'Start thread', exact: true }).click();
-  await expect(page).toHaveURL(/\/projects\/projects_fixture\/threads\/thread_[^/]+$/, LONG);
-  const id = new URL(page.url()).pathname.split('/')[4]!;
+  await dialog.getByRole('button', { name: 'Add to queue', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  let id = '';
+  await expect.poll(async () => { const body = await read(page, '/api/projects/projects_fixture/tasks') as { tasks: Array<{ title: string; threadId: string | null }> }; id = body.tasks.find(task => task.title === title)?.threadId ?? ''; return id; }, LONG).toMatch(/^thread_/);
+  await page.goto(`/projects/projects_fixture/threads/${id}`);
   await expect(page.getByRole('region', { name: 'Report · turn 1', exact: true })).toBeVisible(LONG);
   await expect(page.locator('.pw-state-chip')).toHaveText('Idle', LONG);
   expect((await threadView(page, id)).deviceName).toBe(here);
@@ -1083,4 +1085,92 @@ test('LJ2 native setup is visible and coordinator changes are followed by approv
   const row = page.locator('.pw-pr').filter({ hasText: 'Review loop' }); await expect(row).toContainText('Reviewed by the coordinator', LONG);
   await row.getByText('Review note', { exact: true }).click(); await expect(row).toContainText('The behavior and its verification are ready.');
   await shot(page, 'reviewed'); expect(errors).toEqual([]);
+});
+
+
+test('LJ3 one queue preserves dependency order, owner ordering and recovery without duplicate threads', async ({ page }, info) => {
+  const errors = await begin(page); await openProject(page, 'Projects fixture');
+  const first = `Queue parent ${info.project.name}`, second = `Queue dependent ${info.project.name}`;
+  const add = async (title: string, parent?: string) => {
+    await tap(page, page.getByRole('button', { name: 'New task', exact: true }));
+    const dialog = page.getByRole('dialog', { name: 'New task', exact: true });
+    await dialog.getByRole('textbox', { name: 'Title', exact: true }).fill(title);
+    await dialog.getByRole('textbox', { name: 'Brief', exact: true }).fill('PJ3 long: inspect the project, then wait for my message.');
+    if (parent) { await dialog.getByRole('listbox', { name: 'After', exact: true }).selectOption(parent); await dialog.getByRole('checkbox', { name: 'Start now', exact: true }).check(); }
+    await dialog.getByRole('button', { name: 'Add to queue', exact: true }).click(); await expect(dialog).toHaveCount(0);
+  };
+  const queue = async () => await read(page, `${PROJECT}/tasks`) as { tasks: Array<{ id: string; title: string; threadId: string | null; state: string; ownerRanked: boolean }> };
+  await add(first); let parentId = '', thread = '';
+  await expect.poll(async () => { const task = (await queue()).tasks.find(task => task.title === first); parentId = task?.id ?? ''; thread = task?.threadId ?? ''; return task?.state; }, LONG).toBe('active');
+  await add(second, parentId); if (phone(info)) await tap(page, tab(page, 'Queue'));
+  const row = page.locator('.pw-task').filter({ hasText: second }); await row.locator('summary').click();
+  await expect(row).toContainText(`Waiting on: ${first}`); await expect(row).toContainText('Now');
+  await row.getByRole('button', { name: 'Move to top', exact: true }).click();
+  await expect.poll(async () => (await queue()).tasks.find(task => task.title === second)?.ownerRanked).toBe(true);
+  const pending = (await queue()).tasks.find(task => task.title === second)!; expect(pending.threadId).toBeNull();
+  await shot(page, 'queue-dependency');
+  await page.reload(); if (phone(info)) await tap(page, tab(page, 'Queue'));
+  expect((await queue()).tasks.filter(task => task.title === first)).toHaveLength(1);
+  const stopped = await page.request.post(`${PROJECT}/threads/${thread}/stop`, { data: { schema: 'thread-stop-request-v1' } }); expect(stopped.ok()).toBe(true);
+  await expect.poll(async () => (await queue()).tasks.find(task => task.id === pending.id)?.state, LONG).toBe('active');
+  expect((await queue()).tasks.filter(task => task.title === second)).toHaveLength(1);
+  const dependent = (await queue()).tasks.find(task => task.id === pending.id)!;
+  await page.request.post(`${PROJECT}/threads/${dependent.threadId}/stop`, { data: { schema: 'thread-stop-request-v1' } });
+  await shot(page, 'queue-recovered'); expect(errors).toEqual([]);
+});
+
+
+test('LJ3 five tasks obey phone drag, Now, the two-thread cap and after links', async ({ page }, info) => {
+  const errors = await begin(page), route = '/api/projects/projects_queue'; await openProject(page, 'Projects queue');
+  const settings = await read(page, `${route}/work-settings`) as { settings: Record<string, unknown> };
+  const { schema: _schema, projectId: _projectId, revision, ...fields } = settings.settings; void _schema; void _projectId;
+  const saved = await page.request.put(`${route}/work-settings`, { data: { schema: 'project-work-settings-request-v1', revision, settings: { ...fields, maxRunningThreads: 2, maxRunningPerDevice: 2 } } }); expect(saved.ok()).toBe(true);
+  const blockers: string[] = [];
+  for (const number of [1, 2]) { const result = await page.request.post(`${route}/threads`, { data: { schema: 'thread-create-request-v1', clientRequestId: `barrier_${number}`, title: `Queue barrier ${number}`, task: 'PJ3 long: hold the running slot while I arrange the queue.' } }); expect(result.ok()).toBe(true); blockers.push((await result.json()).threadId); }
+  await expect.poll(async () => (ProjectWorkViewSchema.parse(await read(page, `${route}/work`))).threads.filter(thread => blockers.includes(thread.id) && thread.state === 'running').length, LONG).toBe(2);
+  await composer(page).fill('LJ3 five queue tasks'); await composer(page).press('Enter');
+  type Row = { id: string; title: string; state: string; threadId: string | null; ownerRanked: boolean; revision: number };
+  const queue = async () => (await read(page, `${route}/tasks`) as { tasks: Row[] }).tasks;
+  await expect.poll(async () => (await queue()).length, LONG).toBe(5);
+  if (phone(info)) await tap(page, tab(page, 'Queue'));
+  const rows = await queue(), fourth = rows.find(row => row.title === 'Loop task 4')!, first = rows.find(row => row.title === 'Loop task 1')!;
+  // Use the same touch events as a held finger, including the actual 450 ms long-press timer, in every layout.
+  await page.evaluate(({ from, to }) => {
+    const source = document.querySelector(`[data-session-id="${from}"] summary`)!, target = document.querySelector(`[data-session-id="${to}"] summary`)!;
+    source.scrollIntoView({ block: 'nearest' }); const box = source.getBoundingClientRect(), point = new Touch({ identifier: 1, target: source, clientX: box.left + 20, clientY: box.top + 12 });
+    source.dispatchEvent(new TouchEvent('touchstart', { bubbles: true, touches: [point], targetTouches: [point], changedTouches: [point] }));
+    const state = window as unknown as { queueDrag?: { source: Element; target: Element } }; state.queueDrag = { source, target };
+  }, { from: fourth.id, to: first.id });
+  await expect(page.locator('.pw-task-dragging')).toHaveCount(1);
+  await page.evaluate(() => {
+    const state = window as unknown as { queueDrag: { source: Element; target: Element } }, { source, target } = state.queueDrag;
+    const box = target.getBoundingClientRect(), point = new Touch({ identifier: 1, target: source, clientX: box.left + 20, clientY: box.top + 4 });
+    source.dispatchEvent(new TouchEvent('touchmove', { bubbles: true, cancelable: true, touches: [point], targetTouches: [point], changedTouches: [point] }));
+    source.dispatchEvent(new TouchEvent('touchend', { bubbles: true, cancelable: true, touches: [], targetTouches: [], changedTouches: [point] }));
+  });
+  await expect.poll(async () => (await queue()).find(row => row.id === fourth.id)?.ownerRanked).toBe(true);
+  await page.waitForTimeout(750); // The shared drag hook suppresses accidental clicks for 700 ms after a drop.
+  const fifth = page.locator('.pw-task').filter({ hasText: 'Loop task 5' }); await fifth.locator('summary').click(); await fifth.getByRole('button', { name: 'Start now', exact: true }).click();
+  await shot(page, 'five-ranked-tasks');
+  for (const id of blockers) expect((await page.request.post(`${route}/threads/${id}/stop`, { data: { schema: 'thread-stop-request-v1' } })).ok()).toBe(true);
+  await expect.poll(async () => (await queue()).filter(row => row.state === 'active').map(row => row.title).sort(), LONG).toEqual(['Loop task 4', 'Loop task 5']);
+  expect((await queue()).filter(row => row.state === 'queued')).toHaveLength(3);
+  const third = page.locator('.pw-task').filter({ hasText: 'Loop task 3' }); await third.locator('summary').click(); await expect(third).toContainText('Waiting on: Loop task 4');
+  await shot(page, 'priority-dispatched');
+  await control('/projects/release', { schema: 'fixture-release-v1', marker: 'LJ3 Loop task 4' });
+  await expect.poll(async () => (await queue()).find(row => row.id === fourth.id)?.state, LONG).toBe('done');
+  await expect.poll(async () => (await queue()).find(row => row.title === 'Loop task 3')?.state, LONG).toBe('active');
+  // Starts can advance during cleanup. Resolve each current row rather than acting on an earlier revision.
+  for (const original of await queue()) {
+    if (original.state === 'done') continue;
+    await expect.poll(async () => {
+      const row = (await queue()).find(task => task.id === original.id)!;
+      if (['done', 'cancelled', 'failed'].includes(row.state)) return true;
+      const response = row.threadId
+        ? await page.request.post(`${route}/threads/${row.threadId}/stop`, { data: { schema: 'thread-stop-request-v1' } })
+        : await page.request.post(`${route}/tasks/${row.id}/action`, { data: { schema: 'task-action-request-v1', expectedRevision: row.revision, action: 'cancel' } });
+      return response.ok();
+    }, LONG).toBe(true);
+  }
+  expect(errors).toEqual([]);
 });

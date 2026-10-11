@@ -12,7 +12,7 @@ import {
 import { PlacementStateSchema, type JevQuestions } from '../packages/decisions/dist/index.js';
 import { forCoordinator, forThread, type FakeRuntime, type FakeTurnStep, type TurnInput } from '../packages/runtime-contract/dist/index.js';
 import { PROJECT_OPERATION_NOT_FOUND, STOPPED_BY_YOU, WAITING_FOR_HUB, type ProjectWork } from '../packages/projects/dist/index.js';
-import { expectNoLeaks, holdStep, projectFixture, projectMember, type ProjectFixture, type ProjectMember } from './helpers/project-fixture.js';
+import { expectNoLeaks, queueThread, holdStep, projectFixture, projectMember, type ProjectFixture, type ProjectMember } from './helpers/project-fixture.js';
 
 let fixture: ProjectFixture | undefined;
 afterEach(async () => {
@@ -112,14 +112,14 @@ test('PJ5 the hub coordinator runs a thread on a member through the relay', { ti
   // turn with its own account.
   let started: Record<string, unknown> | undefined;
   hubSteps.push(async (turn) => {
-    started = await turn.bridge('jevellan_thread_start', { title: 'Add search', task: 'Add a search box to the catalog page.' }) as Record<string, unknown>;
+    started = await queueThread(f, turn, { title: 'Add search', task: 'Add a search box to the catalog page.' }) as Record<string, unknown>;
     turn.say('Started "Add search".'); return { status: 'completed' };
   });
   m.fake.enqueueTurn(sayStep('Working.'), forThread());
   expect((await f.request(`/api/projects/${pid}/coordinator/messages`, 'POST', ownerMessage('Add search to the catalog.'))).status).toBe(202);
   await f.waitFor(() => started); await f.app.projectWork.idle();
   const threadId = String(started!.threadId);
-  expect(started).toMatchObject({ threadId: expect.stringMatching(/^thread_/), state: 'preparing' });
+  expect(started).toMatchObject({ threadId: expect.stringMatching(/^thread_/), state: 'queued' });
   const device = transport.calls.find((questions) => 'device' in questions)?.device;
   expect(device?.type === 'choice' && Object.keys(device.criteria).sort()).toEqual([hubId, m.deviceId].sort());
   expect(existsSync(f.app.projectWork.paths.threadFile(pid, threadId))).toBe(false);

@@ -45,7 +45,7 @@ export async function handleAgentPeer(app: Application, request: IncomingMessage
     const input = AgentPeerRequestSchema.parse(await requestBody(request)); const adapter = new AgentApiAdapter(app, grant, authorization, true);
     const controller = new AbortController(); response.once('close', () => controller.abort());
     const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(120_000)]);
-    const data = input.kind === 'call' ? await adapter.call(input.operation, input.arguments, signal) : await adapter.events(AgentTargetSchema.parse(input.target), input.after, input.limit, signal);
+    const data = input.kind === 'call' ? await adapter.call(input.operation, input.arguments, signal) : input.kind === 'restart-start' ? await adapter.restartStart(input.projectId, input.threadId, input.input, signal) : await adapter.events(AgentTargetSchema.parse(input.target), input.after, input.limit, signal);
     json(response, AgentPeerResultSchema.parse({ schema: 'agent-peer-result-v1', data: publicAgentData(app, data) }));
   } catch (error) { refuse(app, response, error); }
 }

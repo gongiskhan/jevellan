@@ -67,7 +67,7 @@ test.each(['claude', 'codex'] as const)('a first thread turn carries the system 
 
 test.each(['claude', 'codex'] as const)('a resumed coordinator turn stays read-only with exactly its scope tools (%s)', async (runtime) => {
   const { adapter, coordinator } = setup(runtime);
-  const requests = [{ tool: 'Write', input: { file_path: join(root, 'blocked'), content: 'no' } }, { tool: 'mcp__jevellan__jevellan_thread_start', input: { title: 'Fixture', task: 'Fixture task.' } }, { tool: 'Bash', input: { command: 'git status' } }];
+  const requests = [{ tool: 'Write', input: { file_path: join(root, 'blocked'), content: 'no' } }, { tool: 'mcp__jevellan__jevellan_task_create', input: { title: 'Fixture', brief: 'Fixture task.', type: 'feature', source: 'owner-request' } }, { tool: 'Bash', input: { command: 'git status' } }];
   const prompt = directive('permissions', requests);
   const response = await respond(adapter, { ...coordinator, resume: { sessionId: 'stored-coordinator' }, prompt });
   const tools = projectToolNames({ kind: 'coordinator' }).map((name) => `mcp__jevellan__${name}`);

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 type Drag = { id: string; target?: string | undefined; after: boolean; x: number; y: number; width: number; order: string[] };
-type Options = { disabled: boolean; start(): void; drop(id: string, target: string, after: boolean): void };
+type Options = { handleSelector?: string; disabled: boolean; start(): void; drop(id: string, target: string, after: boolean): void };
 
 export function useSessionDrag(options: Options) {
   const list = useRef<HTMLDivElement>(null);
@@ -58,7 +58,7 @@ export function useSessionDrag(options: Options) {
     const prepare = (target: EventTarget | null, x: number, y: number, touch: boolean) => {
       if (latest.current.disabled || !(target instanceof Element)) return;
       // Only the session itself starts dragging; the actions menu stays tappable.
-      const button = target.closest('.conversation-row');
+      const button = target.closest(latest.current.handleSelector ?? '.conversation-row');
       const row = button?.closest<HTMLElement>('[data-session-id]');
       if (!row || !element.contains(row)) return;
       pending = { id: row.dataset.sessionId!, x, y, touch };
@@ -100,7 +100,7 @@ export function useSessionDrag(options: Options) {
     const context = (event: MouseEvent) => { if (pending?.touch || active) event.preventDefault(); };
     const key = (event: KeyboardEvent) => {
       if (event.key === 'Escape') { finish(); return; }
-      if (latest.current.disabled || !event.altKey || !['ArrowUp', 'ArrowDown'].includes(event.key) || !(event.target instanceof Element) || !event.target.closest('.conversation-row')) return;
+      if (latest.current.disabled || !event.altKey || !['ArrowUp', 'ArrowDown'].includes(event.key) || !(event.target instanceof Element) || !event.target.closest(latest.current.handleSelector ?? '.conversation-row')) return;
       const items = rows(), row = event.target.closest<HTMLElement>('[data-session-id]');
       const index = items.indexOf(row!); const after = event.key === 'ArrowDown';
       const target = items[index + (after ? 1 : -1)];

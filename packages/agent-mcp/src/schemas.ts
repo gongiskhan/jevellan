@@ -4,6 +4,7 @@ import { IdSchema } from '@jevellan/core';
 export const AgentTargetSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('project'), projectId: IdSchema }),
   z.strictObject({ kind: z.literal('thread'), projectId: IdSchema, threadId: IdSchema }),
+  z.strictObject({ kind: z.literal('task'), projectId: IdSchema, taskId: IdSchema }),
   z.strictObject({ kind: z.literal('conversation'), conversationId: IdSchema }),
 ]);
 export type AgentTarget = z.infer<typeof AgentTargetSchema>;

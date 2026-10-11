@@ -22,7 +22,7 @@ export const COORDINATOR_WORKING_CHIP = 'Working…';
 export const COORDINATOR_UNAVAILABLE = 'Unavailable';
 export const COORDINATOR_OFFLINE = 'Offline';
 export const coordinatorSession = (runtime: string, modelLabel: string, effort: string): string => `${runtime} ${modelLabel} · ${effort}`;
-export const NEW_THREAD = 'New thread';
+export const NEW_THREAD = 'New task';
 export const NOTEBOOK = 'Notebook';
 export const PROJECT_MENU = 'Project menu';
 export const PROJECT_SETTINGS = 'Project settings';
@@ -43,7 +43,7 @@ export const NOTHING_WAITING = 'Nothing waiting.';
 export const NO_THREADS_RUNNING = 'No threads running.';
 export const NO_OPEN_PULL_REQUESTS = 'No open pull requests.';
 export const NOTHING_CONCLUDED = 'Nothing concluded in the last 14 days.';
-export const TAB_LABELS = { chat: 'Chat', waiting: 'Waiting', threads: 'Threads', 'pull-requests': 'Pull requests' } as const;
+export const TAB_LABELS = { chat: 'Chat', queue: 'Queue', waiting: 'Waiting', threads: 'Threads', 'pull-requests': 'Pull requests' } as const;
 export const PROJECT_SECTIONS = 'Project sections';
 export const LOADING = 'Loading…';
 export const RELOAD = 'Reload';
@@ -153,14 +153,14 @@ export const MERGE_FAILED = 'The pull request was not merged.';
 
 // 12.2 New thread modal
 export const TITLE = 'Title';
-export const TASK = 'Task';
+export const TASK = 'Brief';
 export const PLACEMENT = 'Placement';
 export const ISOLATION = 'Isolation';
 export const AUTOMATIC = 'Automatic';
 export const MODEL = 'Model';
 export const EFFORT = 'Effort';
 export const DEVICE = 'Device';
-export const START_THREAD = 'Start thread';
+export const START_THREAD = 'Add to queue';
 export const STARTING = 'Starting…';
 /** Placement phase gates (D88), the same sentences placement refuses with (D221). */
 export const MAIN_NOT_AVAILABLE = 'Main isolation is not available yet.';

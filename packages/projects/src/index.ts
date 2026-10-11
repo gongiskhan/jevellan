@@ -25,4 +25,6 @@ export * from './envelopes.js';
 export * from './recovery.js';
 export * from './views.js';
 export * from './project-work.js';
+export * from './tasks.js';
+export * from './dispatcher.js';
 export * from './apps.js';

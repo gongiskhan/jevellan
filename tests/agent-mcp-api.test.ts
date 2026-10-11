@@ -85,15 +85,15 @@ test('watch replays durably, groups adjacent tools and revocation ends bounded w
 });
 test('an explicit forbidden project cannot start a job, and arbitrary adapter operations are absent', async () => {
   const created = await connection(['allowed']); const grant = await app.agentAccess.authenticateBearer(`Bearer ${created.token}`); const api = new AgentApiAdapter(app, grant!, `Bearer ${created.token}`);
-  const launch = vi.spyOn(app.projectWork, 'createThread');
+  const launch = vi.spyOn(app.projectWork, 'createTask');
   await expect(api.call('thread_start', { projectId: 'denied', clientRequestId: 'job_denied', title: 'Forbidden', task: 'Edit', runtimeId: 'auto', modelId: 'auto', effort: 'auto' }, AbortSignal.timeout(1000))).rejects.toMatchObject({ status: 403 }); expect(launch).not.toHaveBeenCalled();
   await expect(api.call('credential', {}, AbortSignal.timeout(1000))).rejects.toMatchObject({ status: 404 });
 });
 test('tool starts pass explicit provider/account choices and leave automatic fields for Jev and normal guards', async () => {
   const created = await connection(['allowed']); const external = await client(created.token);
-  const launch = vi.spyOn(app.projectWork, 'createThread').mockRejectedValue(Object.assign(new Error('Normal placement refused this fixture account.'), { status: 409 }));
+  const launch = vi.spyOn(app.projectWork, 'createTask').mockRejectedValue(Object.assign(new Error('Normal placement refused this fixture account.'), { status: 409 }));
   const refused = await external.callTool({ name: 'jevellan_thread_start', arguments: { projectId: 'allowed', clientRequestId: 'explicit_choices', title: 'Fixture job', task: 'Work', providerId: 'fake', accountId: 'selected_account', modelId: 'auto', effort: 'auto', isolation: 'auto' } });
-  expect(refused.isError).toBe(true); expect(launch).toHaveBeenCalledWith('allowed', { schema: 'thread-create-request-v1', clientRequestId: 'explicit_choices', title: 'Fixture job', task: 'Work', runtimeId: 'fake', accountId: 'selected_account' });
+  expect(refused.isError).toBe(true); expect(launch).toHaveBeenCalledWith('allowed', { schema: 'task-create-request-v1', clientRequestId: 'explicit_choices', title: 'Fixture job', brief: 'Work', type: 'feature', goalId: null, now: false, after: [], needs: [], fixed: { runtimeId: 'fake', accountId: 'selected_account' } });
   launch.mockClear();
   const conflict = await external.callTool({ name: 'jevellan_thread_start', arguments: { projectId: 'allowed', clientRequestId: 'conflicting_choices', title: 'Fixture job', task: 'Work', providerId: 'fake', runtimeId: 'other' } });
   expect(conflict.isError).toBe(true); expect(launch).not.toHaveBeenCalled();

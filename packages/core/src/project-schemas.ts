@@ -100,6 +100,8 @@ export const CoordinatorEventSchema = z.discriminatedUnion('kind', [
   ev('decision-answer', { decisionId: IdSchema, threadId: IdSchema.optional(), question: z.string(), answer: DecisionAnswerSchema }),
   ev('pr-update', { threadId: IdSchema, prNumber: positive, change: z.enum(['checks-failed', 'checks-passed', 'merged', 'closed', 'conflict']) }),
   ev('pr-ready-for-review', { threadId: IdSchema, prNumber: positive, commit: z.string().regex(/^[a-f0-9]{40,64}$/u) }),
+  ev('task-reviewed', { taskId: IdSchema, title: text.max(120), outcome: z.enum(['approved', 'rejected']) }),
+  ev('task-not-started', { taskId: IdSchema, title: text.max(120), reason: z.string().max(400) }),
   ev('mail', { mailId: IdSchema, fromThreadId: IdSchema, fromTitle: z.string().max(160).optional(), subject: z.string().min(1).max(200), body: z.string().max(8000) }),
   ev('thread-user-message', { threadId: IdSchema, text: z.string().min(1).max(20000) }),
   ev('placement-override', { threadId: IdSchema, summary: z.string().max(400) }),
@@ -142,8 +144,8 @@ export const QueuedMessageSchema = z.strictObject({ id: IdSchema, from: z.enum([
 export type QueuedMessage = z.infer<typeof QueuedMessageSchema>;
 export const ThreadSchema = z.strictObject({
   schema: z.literal('project-thread-v1'), id: IdSchema, projectId: IdSchema,
-  title: z.string().min(1).max(120), task: z.string().min(1).max(32768),
-  createdAt: TimestampSchema, createdBy: z.enum(['coordinator', 'owner']),
+  title: z.string().min(1).max(120), task: z.string().min(1).max(32768), brief: z.string().min(1).max(32768).optional(),
+  createdAt: TimestampSchema, createdBy: z.enum(['coordinator', 'owner']), restartedAs: IdSchema.optional(),
   state: ThreadStateSchema, stateReason: z.string().max(400).optional(),
   isolation: IsolationSchema, placement: PlacementRecordSchema, gitPolicy: z.enum(['main', 'external']).optional(),
   ownerDeviceId: IdSchema, coordinatorDeviceId: IdSchema,
@@ -155,12 +157,14 @@ export const ThreadSchema = z.strictObject({
   attach: z.strictObject({ startedAt: TimestampSchema }).optional(), endedAt: TimestampSchema.optional(),
 });
 export type Thread = z.infer<typeof ThreadSchema>;
+export const ThreadStartPlanSchema = z.strictObject({ schema: z.literal('thread-start-plan-v1'), projectId: IdSchema, clientRequestId: IdSchema,
+  digest: z.string().regex(/^[0-9a-f]{64}$/u), thread: ThreadSchema, labels: z.strictObject({ modelLabel: z.string().min(1), accountLabel: z.string().min(1), deviceName: z.string().min(1) }) });
 // 5.6 hub namespace project-threads, key threadId
 export const ThreadIndexSchema = z.strictObject({ schema: z.literal('project-thread-index-v1'), revision,
   id: IdSchema, projectId: IdSchema, title: z.string().min(1).max(120), state: ThreadStateSchema, stateReason: z.string().max(400).optional(),
   isolation: IsolationSchema, gitPolicy: z.enum(['main', 'external']).optional(), ownerDeviceId: IdSchema, runtime: IdSchema, modelLabel: text, effort: EffortSchema,
   accountLabel: text, branch: z.string().optional(), pr: PullRequestStateSchema.optional(),
-  lastSummary: z.string().max(400).optional(), turns: count,
+  lastSummary: z.string().max(400).optional(), turns: count, restartedAs: IdSchema.optional(),
   createdAt: TimestampSchema, updatedAt: TimestampSchema, endedAt: TimestampSchema.optional() });
 export type ThreadIndex = z.infer<typeof ThreadIndexSchema>;
 // 5.9 hub namespace project-decisions, key id
@@ -373,7 +377,7 @@ export type ThreadView = z.infer<typeof ThreadViewSchema>;
 export const CoordinatorMessageRequestSchema = z.strictObject({ schema: z.literal('coordinator-message-request-v1'),
   clientMessageId: IdSchema, text: z.string().min(1).max(20000) });
 export const ThreadCreateRequestSchema = z.strictObject({ schema: z.literal('thread-create-request-v1'), clientRequestId: IdSchema,
-  title: z.string().min(1).max(120), task: z.string().min(1).max(20000),
+  title: z.string().min(1).max(120), task: z.string().min(1).max(32768),
   isolation: IsolationSchema.optional(), runtimeId: IdSchema.optional(), accountId: IdSchema.optional(), modelId: IdSchema.optional(), effort: EffortSchema.optional(), deviceId: IdSchema.optional(),
   // A restart's owner note for placement, sent by the thread's device to the coordinator device (D266); the New thread form sends none.
   note: z.string().max(400).optional() });

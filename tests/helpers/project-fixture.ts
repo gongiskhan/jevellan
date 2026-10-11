@@ -354,3 +354,10 @@ export async function expectNoLeaks(f: ProjectFixture, extra: ReadonlyArray<[str
     ...threadIds.map((threadId): [string, string] => [`thread ledger ${threadId}`, f.ledgerText(threadId)]), ...extra];
   expect(texts.flatMap(([where, text]) => secrets.filter(([, value]) => text.includes(value)).map(([kind]) => `${kind} in ${where}`))).toEqual([]);
 }
+
+/** Exercise the coordinator's real queued-task tool, then wait for durable dispatch to a local or remote thread. */
+export async function queueThread(f: ProjectFixture, turn: FakeTurn, input: { title: string; task: string }): Promise<{ schema: 'task-receipt-v1'; taskId: string; state: string; repeated: boolean; threadId: string }> {
+  const receipt = await turn.bridge('jevellan_task_create', { title: input.title, brief: input.task, type: 'feature', source: 'owner-request' }) as { schema: 'task-receipt-v1'; taskId: string; state: string; repeated: boolean };
+  const task = await f.waitFor(() => f.app.projectWork.tasks.read(f.project.id, receipt.taskId), value => value.threadId !== null);
+  return { ...receipt, threadId: task.threadId! };
+}

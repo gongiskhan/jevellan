@@ -3,6 +3,7 @@ import type {
 } from './project-schemas.js';
 import type { HeldCheckout, ProjectWorkSummary, ReservationConflict, ReservationRequest } from './project-hub-schemas.js';
 import type { Stored } from './store.js';
+import type { ProjectWorkTask, TaskHistoryEvent } from './project-loop-schemas.js';
 
 /**
  * A pending envelope this device could not read (P8 review S-2: another Jevellan version, for example): what its record still names,
@@ -18,6 +19,10 @@ export type ReserveOutcome = { granted: true; reservation: Stored<FileReservatio
  * Phase 6 adds mail, reservations and held checkouts.
  */
 export interface ProjectHub {
+  tasks(projectId: string, after?: string): Promise<{ records: ProjectWorkTask[]; next: string | null }>;
+  task(taskId: string): Promise<Stored<ProjectWorkTask> | null>;
+  putTask(task: ProjectWorkTask, expectedRevision: number): Promise<Stored<ProjectWorkTask>>;
+  taskHistory(taskId: string): Promise<TaskHistoryEvent[]>;
   // settings: any device; idempotent by clientRequestId
   settings(projectId: string): Promise<Stored<ProjectWorkSettings> | null>;
   putSettings(settings: ProjectWorkSettings, expectedRevision: number, clientRequestId?: string): Promise<Stored<ProjectWorkSettings>>;

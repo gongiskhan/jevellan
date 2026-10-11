@@ -12,7 +12,7 @@ import {
   EVENT_CURSOR_AHEAD, MESSAGE_ID_REUSED, RESTARTED, coordinatorFailedTwiceNotice, coordinatorSystemAppend, coordinatorUnavailableNotice, derivedId, noCoordinatorAccount, noCoordinatorModel,
 } from '../packages/projects/dist/index.js';
 import {
-  FIXTURE_MENU, commitStep, expectNoLeaks, holdStep, never, projectFixture, reportStep, type ProjectFixture, type ProjectFixtureOptions,
+  FIXTURE_MENU, commitStep, expectNoLeaks, queueThread, holdStep, never, projectFixture, reportStep, type ProjectFixture, type ProjectFixtureOptions,
 } from './helpers/project-fixture.js';
 
 let fixture: ProjectFixture | undefined;
@@ -87,8 +87,8 @@ test('PJ2 one owner message starts two threads and the publications arrive batch
   const bothInReview = deferred(); const starts: unknown[] = [];
   // Coordinator turn 1 starts both threads and stays open until both pull requests are open, so their publications batch.
   f.fake.enqueueTurn(async (turn) => {
-    starts.push(await turn.bridge('jevellan_thread_start', { title: 'Add A', task: 'Create a.txt.' }));
-    starts.push(await turn.bridge('jevellan_thread_start', { title: 'Fix B', task: 'Create b.txt.' }));
+    starts.push(await queueThread(f, turn, { title: 'Add A', task: 'Create a.txt.' }));
+    starts.push(await queueThread(f, turn, { title: 'Fix B', task: 'Create b.txt.' }));
     await Promise.race([bothInReview.promise, aborted(turn.signal)]);
     turn.say('Started two threads.'); return { status: 'completed' };
   }, forCoordinator);
@@ -104,8 +104,8 @@ test('PJ2 one owner message starts two threads and the publications arrive batch
   bothInReview.resolve(); await idle(f);
 
   const byTitle = new Map(ids.map((id) => [f.thread(id).title, id])); const idA = byTitle.get('Add A')!; const idB = byTitle.get('Fix B')!;
-  expect(starts).toEqual([{ schema: 'thread-start-result-v1', threadId: idA, state: 'preparing', placement: expect.stringMatching(/^Scripted test runtime Fixture · high · Worktree · /) },
-    { schema: 'thread-start-result-v1', threadId: idB, state: 'preparing', placement: expect.stringMatching(/^Scripted test runtime Fixture · high · Worktree · /) }]);
+  expect(starts).toEqual([{ schema: 'task-receipt-v1', taskId: expect.any(String), threadId: idA, state: 'queued', repeated: false },
+    { schema: 'task-receipt-v1', taskId: expect.any(String), threadId: idB, state: 'queued', repeated: false }]);
   for (const id of [idA, idB]) expect(f.thread(id)).toMatchObject({ createdBy: 'coordinator', state: 'in-review' });
 
   // 1-3. Two coordinator turns: the first read-only with the fresh context, the second resumes it with exactly the two publications.
@@ -126,8 +126,8 @@ test('PJ2 one owner message starts two threads and the publications arrive batch
   expect(ledgerTypes(f)).toEqual(['coordinator-event', 'coordinator-turn-start', 'coordinator-tool', 'coordinator-tool', 'coordinator-event', 'coordinator-event', 'coordinator-text',
     'coordinator-turn-end', 'coordinator-turn-start', 'coordinator-text', 'coordinator-turn-end']);
   expect(payloads(f, 'coordinator-tool')).toEqual([
-    { schema: 'coordinator-tool-v1', tool: 'jevellan_thread_start', ok: true, summary: expect.stringMatching(/^Started "Add A" · Scripted test runtime Fixture · high · Worktree · /), threadId: idA },
-    { schema: 'coordinator-tool-v1', tool: 'jevellan_thread_start', ok: true, summary: expect.stringMatching(/^Started "Fix B" · Scripted test runtime Fixture · high · Worktree · /), threadId: idB }]);
+    { schema: 'coordinator-tool-v1', tool: 'jevellan_task_create', ok: true, summary: 'Queued task "Add A"' },
+    { schema: 'coordinator-tool-v1', tool: 'jevellan_task_create', ok: true, summary: 'Queued task "Fix B"' }]);
   expect(payloads(f, 'coordinator-text').map((data) => data.text)).toEqual(['Started two threads.', 'Both pull requests are open.']);
   expect(payloads(f, 'coordinator-turn-end')).toEqual([{ schema: 'coordinator-turn-end-v1', turn: 1, status: 'completed' }, { schema: 'coordinator-turn-end-v1', turn: 2, status: 'completed' }]);
   const events = received(f);
@@ -176,7 +176,7 @@ test('PJ2b a needs-decision report becomes an owner question and the answer reac
       results.push(await turn.bridge('jevellan_ask_user', { question, options: [{ label: 'SQLite', detail: 'Single file' }, { label: 'Postgres' }], threadId }));
       turn.say('Asked you which database to use.');
     } else if (/\[owner \d{2}:\d{2}\]/.test(events)) {
-      const started = await turn.bridge('jevellan_thread_start', { title: 'Store data', task: 'Store the data.' }) as { threadId: string };
+      const started = await queueThread(f, turn, { title: 'Store data', task: 'Store the data.' }) as { threadId: string };
       threadId = started.threadId; results.push(started); turn.say('Started Store data.');
     } else turn.say('Noted.');
     return { status: 'completed' };
@@ -222,7 +222,7 @@ test('PJ2b a needs-decision report becomes an owner question and the answer reac
   const view = await work(f);
   expect(view.decisions.open).toEqual([]);
   expect(view.decisions.answered).toEqual([expect.objectContaining({ id: decisionId, answer: { optionLabel: 'SQLite' } })]);
-  expect(payloads(f, 'coordinator-tool').map((line) => [line.tool, line.ok])).toEqual([['jevellan_thread_start', true], ['jevellan_ask_user', true], ['jevellan_thread_message', true]]);
+  expect(payloads(f, 'coordinator-tool').map((line) => [line.tool, line.ok])).toEqual([['jevellan_task_create', true], ['jevellan_ask_user', true], ['jevellan_thread_message', true]]);
   expect(payloads(f, 'coordinator-tool')[1]).toEqual({ schema: 'coordinator-tool-v1', tool: 'jevellan_ask_user', ok: true, summary: `Asked you: ${question}`, threadId, decisionId });
 });
 
@@ -316,7 +316,7 @@ test('PJ2d the coordinator rotates its session at 40 turns and on Fresh coordina
   let threadId = '';
   f.fake.enqueueTurn(async (turn) => {
     await turn.bridge('jevellan_ask_user', { question: 'Which database?', options: [{ label: 'SQLite' }, { label: 'Postgres' }] });
-    threadId = (await turn.bridge('jevellan_thread_start', { title: 'Store data', task: 'Draft the storage schema.' }) as { threadId: string }).threadId;
+    threadId = (await queueThread(f, turn, { title: 'Store data', task: 'Draft the storage schema.' }) as { threadId: string }).threadId;
     turn.say('Started Store data and asked about the database.'); return { status: 'completed' };
   }, forCoordinator);
   f.fake.enqueueTurn(say('Noted.'), forCoordinator);
@@ -399,7 +399,7 @@ test('a restart drops the running coordinator turn; its events stay queued and t
   const f = await setup({ coordinator: true }); const pid = f.project.id;
   let threadId = ''; const opened = deferred();
   f.fake.enqueueTurn(async (turn) => {
-    threadId = (await turn.bridge('jevellan_thread_start', { title: 'Add cache', task: 'Add the cache.' }) as { threadId: string }).threadId;
+    threadId = (await queueThread(f, turn, { title: 'Add cache', task: 'Add the cache.' }) as { threadId: string }).threadId;
     opened.resolve(); await aborted(turn.signal); return { status: 'completed' };
   }, forCoordinator);
   f.fake.enqueueTurn(holdStep(never()), forThread((input) => input.prompt.startsWith('Task: Add cache')));

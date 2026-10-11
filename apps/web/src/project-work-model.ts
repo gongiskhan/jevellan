@@ -54,7 +54,7 @@ export function projectRoute(path: string): ProjectRoute | null {
   return parts.length === 3 ? { projectId: parts[2] } : null;
 }
 
-export type ProjectTab = 'chat' | 'waiting' | 'threads' | 'pull-requests';
+export type ProjectTab = 'chat' | 'queue' | 'waiting' | 'threads' | 'pull-requests';
 /** The tab below 1180 px: Waiting when a question is open, else Chat. Computed once, after the first view load. */
 export function defaultTab(view: Pick<ProjectWorkView, 'decisions'>): ProjectTab {
   return view.decisions.open.length ? 'waiting' : 'chat';
@@ -225,7 +225,7 @@ export function showSent(sent: { known: readonly string[] } | undefined, open: r
 }
 
 const TOOL_ICONS: Record<string, IconName> = {
-  jevellan_threads_list: 'thread', jevellan_thread_start: 'plus', jevellan_thread_message: 'message', jevellan_thread_read: 'search',
+  jevellan_tasks_list: 'thread', jevellan_task_create: 'plus', jevellan_task_update: 'settings', jevellan_task_cancel: 'stop', jevellan_threads_list: 'thread', jevellan_thread_start: 'plus', jevellan_thread_message: 'message', jevellan_thread_read: 'search',
   jevellan_thread_stop: 'stop', jevellan_ask_user: 'why', jevellan_withdraw_question: 'close', jevellan_notebook_read: 'file',
   jevellan_notebook_write: 'file', jevellan_pr_status: 'pull-request', jevellan_pr_diff: 'file', jevellan_pr_review: 'pull-request', jevellan_mail_send: 'message', memory_search: 'search', memory_read: 'file',
 };
@@ -463,6 +463,8 @@ function eventCard(event: Exclude<CoordinatorEvent, { kind: 'user-message' }>, t
     }
     case 'decision-answer': return card(text.answered(firstLine(event.question)), event.threadId, text.answer(event.answer.optionLabel, event.answer.text));
     case 'pr-ready-for-review': return card(`Pull request #${event.prNumber} is ready for the coordinator's review`, event.threadId, `Commit ${event.commit}`);
+    case 'task-reviewed': return card(`You ${event.outcome} "${event.title}"`, undefined);
+    case 'task-not-started': return card(`"${event.title}" could not start`, undefined, event.reason);
     case 'pr-update': {
       const change = { 'checks-failed': text.checksFailed, 'checks-passed': text.checksPassed, merged: text.prMerged, closed: text.prClosed, conflict: text.prConflict }[event.change];
       return card(change(name(event.threadId), event.prNumber), event.threadId);

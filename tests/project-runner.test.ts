@@ -273,7 +273,7 @@ test('an owner thread prepares a worktree, runs its turn, opens the pull request
   github.markMerged(1); await work.pulse(); await settle(work);
   expect(work.store.get(created.threadId)).toMatchObject({ state: 'done', pr: { state: 'merged' } });
   expect(existsSync(thread.cwd)).toBe(false);
-  expect(kinds(queue(work))).toEqual(['thread-user-message', 'thread-published', 'pr:merged']);
+  expect(kinds(queue(work))).toEqual(['thread-user-message', 'thread-published', 'pr-ready-for-review', 'pr:merged']);
   expect({ head: run(checkout, 'rev-parse', 'HEAD'), status: run(checkout, 'status', '--porcelain=v1') }).toEqual(before);
 });
 

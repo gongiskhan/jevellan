@@ -31,7 +31,7 @@ BRIEF.md is the local specification and stays untracked. Read it completely befo
 
 ## Vocabulary
 
-Use configuration, runtime, account, rigging, conversation, stretch, handoff, finding, decision, action, model, effort, work, device, hub, project, guard, project work, coordinator, thread, turn, isolation, placement, report, decision item, notebook, mail and reservation. The Projects area says Coordinator, Thread, Waiting for you, Running, Pull requests, Concluded, Worktree and Main, and never shows stretch, handoff or conversation. Historical source names belong only in reference documentation. The navigation theme belongs only in the README.
+Use configuration, runtime, account, rigging, conversation, stretch, handoff, finding, decision, action, model, effort, work, device, hub, project, guard, project work, coordinator, thread, turn, isolation, placement, report, decision item, notebook, mail, reservation, queue, task, goal, draft, Now, daily, job, nightly window and review. The Projects area says Coordinator, Thread, Waiting for you, Running, Pull requests, Concluded, Worktree and Main, and never shows stretch, handoff or conversation. Historical source names belong only in reference documentation. The navigation theme belongs only in the README.
 
 ## Verification
 

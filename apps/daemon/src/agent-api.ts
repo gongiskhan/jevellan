@@ -13,6 +13,7 @@ const failure = (message: string, status: number) => Object.assign(new Error(mes
 export const AgentPeerRequestSchema = z.discriminatedUnion('kind', [
   z.strictObject({ schema: z.literal('agent-peer-request-v1'), kind: z.literal('call'), operation: z.string().min(1).max(120), arguments: z.record(z.string(), z.unknown()) }),
   z.strictObject({ schema: z.literal('agent-peer-request-v1'), kind: z.literal('events'), target: z.unknown(), after: z.number().int().nonnegative(), limit: z.number().int().min(1).max(200) }),
+  z.strictObject({ schema: z.literal('agent-peer-request-v1'), kind: z.literal('restart-start'), projectId: C.IdSchema, threadId: C.IdSchema, input: C.ThreadCreateRequestSchema }),
 ]);
 export const AgentPeerResultSchema = z.strictObject({ schema: z.literal('agent-peer-result-v1'), data: z.unknown() });
 const PRIVATE = new Set(['native', 'nativeSessionId', 'sessionId', 'secretRef', 'secret', 'env', 'authorization', 'ownerSession', 'token', 'tokenRef', 'tokenFingerprint', 'requestFingerprint', 'cwd']);
@@ -115,7 +116,7 @@ export class AgentApiAdapter implements AgentApi {
     let owner: string | null | undefined;
     if (conversationId && operation !== 'job_start') owner = (await this.#job(conversationId)).ownerDeviceId;
     if (threadId && projectId) { owner = await this.app.projectWork.threadOwner(projectId, threadId); if (!owner) throw failure('Thread not found.', 404); }
-    if (projectId && ['coordinator_send', 'coordinator_stop', 'coordinator_fresh', 'thread_start'].includes(operation)) owner = await this.app.projectWork.coordinatorDevice(projectId);
+    if (projectId && ['coordinator_send', 'coordinator_stop', 'coordinator_fresh', 'thread_start', 'task_update', 'task_action'].includes(operation)) owner = await this.app.projectWork.coordinatorDevice(projectId);
     if (['apps_list', 'app_stop', 'memory_search', 'memory_read'].includes(operation) && typeof input.deviceId === 'string') owner = input.deviceId;
     if (owner && owner !== this.app.device.deviceId) return this.#forward(owner, { schema: 'agent-peer-request-v1', kind: 'call', operation, arguments: parsed }, signal);
     const release = definition.readOnly ? undefined : this.app.lifecycle.enter({ kind: 'request' });
@@ -144,11 +145,15 @@ export class AgentApiAdapter implements AgentApi {
           const view = await work.settingsView(projectId!); const choices = { ...view.settings.coordinator };
           for (const key of ['runtimeId', 'accountId', 'modelId'] as const) if (parsed[key] !== undefined || key === 'runtimeId' && parsed.providerId !== undefined) choices[key] = input[key] as string | undefined ?? null;
           if (parsed.effort !== undefined) choices.effort = input.effort as C.Effort | undefined ?? 'medium';
-          const settings = pick(view.settings, ['defaultIsolation', 'placement', 'coordinator', 'setupCommand', 'maxRunningThreads', 'maxRunningPerDevice', 'threadTurnCap']);
+          const settings = pick(view.settings, ['defaultIsolation', 'placement', 'coordinator', 'setupCommand', 'maxRunningThreads', 'maxRunningPerDevice', 'threadTurnCap', 'allowMainIsolation', 'threadRules', 'coordinatorReview', 'nightlyWindow', 'refill']);
           result = await work.putSettings(projectId!, C.ProjectWorkSettingsRequestSchema.parse({ schema: 'project-work-settings-request-v1', revision: input.revision, clientRequestId: input.clientRequestId, settings: { ...settings, coordinator: choices } })); break;
         }
         case 'threads_list': result = { schema: 'agent-threads-v1', projectId, threads: (await work.view(projectId!)).threads }; break;
-        case 'thread_start': result = await work.createThread(projectId!, C.ThreadCreateRequestSchema.parse({ schema: 'thread-create-request-v1', ...pick(input, ['clientRequestId', 'title', 'task', ...selections]) })); break;
+        case 'thread_start': result = await work.createTask(projectId!, C.TaskCreateRequestSchema.parse({ schema: 'task-create-request-v1', ...pick(input, ['clientRequestId', 'title', 'type', 'goalId', 'now', 'after', 'needs']), brief: input.task, ...(input.note ? { placementNote: input.note } : {}), fixed: pick(input, selections) })); break;
+        case 'tasks_list': result = await work.taskList(projectId!); break;
+        case 'task_read': result = await work.taskView(projectId!, String(input.taskId)); break;
+        case 'task_update': result = await work.updateTask(projectId!, String(input.taskId), C.TaskUpdateRequestSchema.parse({ ...pick(input, ['expectedRevision', 'title', 'brief', 'type', 'now', 'position']), schema: 'task-update-request-v1' })); break;
+        case 'task_action': result = await work.taskAction(projectId!, String(input.taskId), C.TaskActionRequestSchema.parse({ ...pick(input, ['expectedRevision', 'action', 'reason']), schema: 'task-action-request-v1' })); break;
         case 'thread_read': result = await work.threadView(projectId!, threadId!); break;
         case 'thread_send': result = { schema: 'thread-message-receipt-v1', ...await work.threadMessage(projectId!, threadId!, C.ThreadMessageRequestSchema.parse({ schema: 'thread-message-request-v1', ...pick(input, ['clientMessageId', 'text', 'interrupt']) })) }; break;
         case 'thread_stop': await work.stopThread(projectId!, threadId!, C.ThreadStopRequestSchema.parse({ schema: 'thread-stop-request-v1', ...pick(input, ['reason']) })); result = await work.threadView(projectId!, threadId!); break;
@@ -157,7 +162,7 @@ export class AgentApiAdapter implements AgentApi {
         case 'thread_override': case 'thread_restart': {
           const choices = pick(input, ['clientRequestId', ...selections]);
           if (operation === 'thread_override') for (const key of ['runtimeId', 'accountId', 'modelId', 'effort']) if (parsed[key] === 'auto' || key === 'runtimeId' && parsed.providerId === 'auto') choices[key] = null;
-          result = await work.overrideThread(projectId!, threadId!, C.ThreadOverrideRequestSchema.parse({ schema: 'thread-override-request-v1', mode: operation === 'thread_restart' ? 'restart' : 'next-turn', ...choices }), async (id, deviceId, request) => C.ThreadCreatedViewSchema.parse(await this.#forward(deviceId, { schema: 'agent-peer-request-v1', kind: 'call', operation: 'thread_start', arguments: { projectId: id, ...pick(request as unknown as Record<string, unknown>, ['clientRequestId', 'title', 'task', ...selections]) } }, signal))); break;
+          result = await work.overrideThread(projectId!, threadId!, C.ThreadOverrideRequestSchema.parse({ schema: 'thread-override-request-v1', mode: operation === 'thread_restart' ? 'restart' : 'next-turn', ...choices }), async (id, deviceId, request) => C.ThreadCreatedViewSchema.parse(await this.#forward(deviceId, { schema: 'agent-peer-request-v1', kind: 'restart-start', projectId: id, threadId, input: request }, signal))); break;
         }
         case 'jobs_list': { const list = await this.app.conversations.list(); result = { ...list, conversations: list.conversations.filter(row => !this.grant.projectIds || this.grant.projectIds.includes(row.projectId)) }; break; }
         case 'job_start': {
@@ -214,7 +219,7 @@ export class AgentApiAdapter implements AgentApi {
       await this.#project(target.projectId);
       owner = target.kind === 'thread' ? await this.app.projectWork.threadOwner(target.projectId, target.threadId) : await this.app.projectWork.coordinatorDevice(target.projectId);
       if (target.kind === 'thread' && !owner) throw failure('Thread not found.', 404);
-      key = target.kind === 'thread' ? `thread_${target.projectId}_${target.threadId}` : `project_${target.projectId}`;
+      key = target.kind === 'thread' ? `thread_${target.projectId}_${target.threadId}` : target.kind === 'task' ? `task_${target.projectId}_${target.taskId}` : `project_${target.projectId}`;
     }
     if (owner && owner !== this.app.device.deviceId) return AgentEventPageSchema.parse(await this.#forward(owner, { schema: 'agent-peer-request-v1', kind: 'events', target, after, limit }, signal));
     let queues = journalQueues.get(this.app); if (!queues) { queues = new Map(); journalQueues.set(this.app, queues); }
@@ -234,6 +239,10 @@ export class AgentApiAdapter implements AgentApi {
         const view = await this.app.projectWork.view(target.projectId); state = view.coordinator.state;
         const ledger = await this.app.projectWork.coordinatorEvents(target.projectId);
         updated = reconcileAgentJournal(journal, { ledger: ledger.events().map(event => ({ id: event.id, type: event.type, t: event.t, ...(event.turn ? { turn: event.turn } : {}), data: agentDataWithoutPrivateFields(ledger.payload(event)) })), redactor: this.app.redactor });
+      } else if (target.kind === 'task') {
+        const view = await this.app.projectWork.taskView(target.projectId, target.taskId); state = view.task.state;
+        const history = await this.app.projectHub.taskHistory(target.taskId);
+        updated = reconcileAgentJournal(journal, { ledger: history.map(event => ({ id: event.sequence, type: 'notice', t: event.at, data: { text: `${event.title}: ${event.state}${event.note ? ` — ${event.note}` : ''}${event.threadId ? ` (thread ${event.threadId})` : ''}` } })), redactor: this.app.redactor });
       } else {
         const view = await this.app.projectWork.threadView(target.projectId, target.threadId); state = view.thread.state;
         const ledger = this.app.projectWork.ledgers.thread(target.projectId, target.threadId);
@@ -246,5 +255,11 @@ export class AgentApiAdapter implements AgentApi {
     });
     queues.set(key, task);
     try { return await task; } finally { if (queues.get(key) === task) queues.delete(key); }
+  }
+  async restartStart(projectId: string, threadId: string, input: z.infer<typeof C.ThreadCreateRequestSchema>, signal: AbortSignal) {
+    await this.#authorized(signal); await this.#project(projectId);
+    if (!this.supportedOperations.includes('thread_restart') || !await this.app.projectWork.threadOwner(projectId, threadId)) throw failure('This restart is not available.', 403);
+    if (await this.app.projectWork.coordinatorDevice(projectId) !== this.app.device.deviceId) throw failure('Restart placement belongs to the coordinator device.', 409);
+    return this.app.projectWork.createThread(projectId, input);
   }
 }

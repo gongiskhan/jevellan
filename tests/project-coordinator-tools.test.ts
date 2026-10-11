@@ -12,7 +12,7 @@ import { HubProjectAccess } from '../packages/mesh/dist/index.js';
 import { forCoordinator, forThread, type FakeTurn, type TurnInput } from '../packages/runtime-contract/dist/index.js';
 import {
   ASK_USER_OPTIONS, NO_PULL_REQUEST, QUESTION_NOT_FOUND, THREAD_ATTACHED, THREAD_ENDED, THREAD_NOT_FOUND, TOOL_NOT_IN_TURN,
-  UNKNOWN_PLACEMENT_DEVICE, coordinatorToolSummary, firstSentence, notebookConflict, queuedReason, transcriptStaysOn,
+  UNKNOWN_PLACEMENT_DEVICE, coordinatorToolSummary, firstSentence, notebookConflict, transcriptStaysOn,
 } from '../packages/projects/dist/index.js';
 import { commitStep, expectNoLeaks, holdStep, never, projectFixture, reportStep, type ProjectFixture } from './helpers/project-fixture.js';
 
@@ -34,6 +34,7 @@ type Held = {
   call<N extends Tool>(name: N, args: unknown): Promise<ResultOf<N>>;
   /** A tool call that must fail: the HTTP status and the daemon's sentence. */
   refused(name: string, args: unknown): Promise<Refusal>;
+  start(args: { title: string; task: string; note?: string; deviceId?: string }): Promise<{ threadId: string; taskId: string; state: string }>;
   release(): void;
 };
 async function bridge(input: TurnInput, body: object): Promise<Response> {
@@ -51,6 +52,15 @@ async function hold(f: ProjectFixture, text: string): Promise<Held> {
     call: async <N extends Tool>(name: N, args: unknown) => {
       const result = await turn.bridge(name, args); bridgeTexts.push([`bridge ${name}`, JSON.stringify(result)]);
       return ProjectToolResultSchemas[name].parse(result) as ResultOf<N>;
+    },
+    async start(args) {
+      const result = await turn.bridge('jevellan_task_create', { title: args.title, brief: args.task, type: 'feature', source: 'owner-request',
+        ...(args.deviceId ? { fixed: { deviceId: args.deviceId } } : {}) });
+      const receipt = ProjectToolResultSchemas.jevellan_task_create.parse(result);
+      bridgeTexts.push(['bridge jevellan_task_create', JSON.stringify(receipt)]);
+      const task = await f.waitFor(() => f.app.projectWork.tasks.read(f.project.id, receipt.taskId), value => value.threadId !== null || value.state === 'failed');
+      if (!task.threadId) return { threadId: '', taskId: task.id, state: task.state };
+      return { threadId: task.threadId, taskId: task.id, state: f.thread(task.threadId).state };
     },
     async refused(name, args) {
       const response = await bridge(turn.input, { operation: 'call', name, arguments: args });
@@ -86,7 +96,6 @@ function remoteIndex(over: Partial<ThreadIndex>): ThreadIndex {
 
 test('thread tools start, list, read, message and stop as brief 7.1 says, refuse ended and attached threads, and leave one chat line per call', { timeout: 120_000 }, async () => {
   const f = fixture = await projectFixture({ coordinator: true });
-  const placement = `Scripted test runtime Fixture · high · Worktree · ${f.deviceName} · placed without Jev: no key configured`;
   // Fix login holds its first turn until it is interrupted; Add docs reports progress at once.
   f.fake.enqueueTurn(holdStep(never()), forThread((input) => input.prompt.startsWith('Task: Fix login')));
   f.fake.enqueueTurn(async (turn) => { turn.say('Fixed the cookie path.'); await turn.bridge('jevellan_thread_report', { status: 'progress', summary: 'Cookie path fixed.' }); return { status: 'completed' }; },
@@ -107,16 +116,18 @@ test('thread tools start, list, read, message and stop as brief 7.1 says, refuse
   for (const name of ['memory_write', 'jevellan_thread_report', 'jevellan_mail_inbox', 'jevellan_reserve', 'jevellan_handoff']) expect(await c.refused(name, {})).toEqual({ status: 403, message: TOOL_NOT_IN_TURN });
 
   // Start: zod errors are field sentences; a valid start answers after placement, preparation continues in the background.
-  expect(await c.refused('jevellan_thread_start', { title: 'Fix login' })).toEqual({ status: 400, message: expect.stringMatching(fieldSentence('task')) });
-  expect(await c.refused('jevellan_thread_start', { title: 'Fix login', task: 'Make the login form work.', note: 'n'.repeat(601) }))
-    .toEqual({ status: 400, message: expect.stringMatching(fieldSentence('note')) });
+  expect(await c.refused('jevellan_thread_start', { title: 'Fix login' })).toEqual({ status: 403, message: TOOL_NOT_IN_TURN });
+  expect(await c.refused('jevellan_task_create', { title: 'Fix login', source: 'owner-request', type: 'feature' })).toEqual({ status: 400, message: expect.stringMatching(fieldSentence('brief')) });
+  expect(await c.refused('jevellan_task_create', { title: 'Fix login', source: 'owner-request', type: 'feature', brief: 'n'.repeat(20001) }))
+    .toEqual({ status: 400, message: expect.stringMatching(fieldSentence('brief')) });
   const startLogin = { title: 'Fix login', task: 'Make the login form work.', note: 'The owner asked for this first.' };
-  const login = await c.call('jevellan_thread_start', startLogin);
-  expect(login).toEqual({ schema: 'thread-start-result-v1', threadId: expect.stringMatching(/^thread_/), state: 'preparing', placement });
+  const login = await c.start(startLogin);
+  expect(login).toMatchObject({ threadId: expect.stringMatching(/^thread_/), taskId: expect.stringMatching(/^task_/) });
+  expect((await f.app.projectWork.tasks.read(f.project.id, login.taskId)).source).toBe('owner-request');
   expect(f.thread(login.threadId)).toMatchObject({ createdBy: 'coordinator', title: 'Fix login', placement: { fixed: [] } });
   // A retried call of the same turn (an MCP transport retry) gets the same thread, never a second one (D201).
-  expect((await c.call('jevellan_thread_start', startLogin)).threadId).toBe(login.threadId);
-  const docs = await c.call('jevellan_thread_start', { title: 'Add docs', task: 'Outline the docs.' });
+  expect((await c.start(startLogin)).threadId).toBe(login.threadId);
+  const docs = await c.start({ title: 'Add docs', task: 'Outline the docs.' });
   expect(f.app.projectWork.paths.threadIds(f.project.id).sort()).toEqual([login.threadId, docs.threadId].sort());
   await state(f, login.threadId, 'running'); await state(f, docs.threadId, 'idle');
   await index(f, login.threadId, (value) => value?.state === 'running'); await index(f, docs.threadId, (value) => value?.state === 'idle');
@@ -178,13 +189,12 @@ test('thread tools start, list, read, message and stop as brief 7.1 says, refuse
   }
 
   // The chat lines, in call order (refusals before the scope checks leave none).
-  const placementOf = (state: string) => `${state} "Fix login" · ${placement}`;
   expect(toolLines(f)).toEqual([
-    line('jevellan_thread_start', false, /^Could not start "Fix login": task: .+\.$/),
-    line('jevellan_thread_start', false, /^Could not start "Fix login": note: .+\.$/),
-    line('jevellan_thread_start', true, placementOf('Started'), { threadId: login.threadId }),
-    line('jevellan_thread_start', true, placementOf('Started'), { threadId: login.threadId }),
-    line('jevellan_thread_start', true, `Started "Add docs" · ${placement}`, { threadId: docs.threadId }),
+    line('jevellan_task_create', false, /^Could not create a task: brief: .+\.$/),
+    line('jevellan_task_create', false, /^Could not create a task: brief: .+\.$/),
+    line('jevellan_task_create', true, 'Queued task "Fix login"'),
+    line('jevellan_task_create', true, 'Queued task "Fix login"'),
+    line('jevellan_task_create', true, 'Queued task "Add docs"'),
     line('jevellan_threads_list', true, 'Listed threads'),
     line('jevellan_threads_list', true, 'Listed threads'),
     line('jevellan_thread_message', true, 'Sent a message to "Fix login"', { threadId: login.threadId }),
@@ -223,12 +233,15 @@ test('questions, the notebook with its revision conflict, pull request status, q
   const c = await hold(f, 'Add a cache and tests for it.');
 
   // Starts: the second waits at the running limit (queued, not refused); a fixed choice that cannot be placed is refused.
-  const added = await c.call('jevellan_thread_start', { title: 'Add cache', task: 'Add the cache.' });
-  expect(added.state).toBe('preparing');
-  const tests = await c.call('jevellan_thread_start', { title: 'Write tests', task: 'Write the cache tests.' });
-  expect(tests).toMatchObject({ schema: 'thread-start-result-v1', state: 'queued', stateReason: queuedReason(1, null) });
-  expect(await c.refused('jevellan_thread_start', { title: 'Elsewhere', task: 'Work on another device.', deviceId: 'dev_unknown' })).toEqual({ status: 409, message: UNKNOWN_PLACEMENT_DEVICE });
+  const added = await c.start({ title: 'Add cache', task: 'Add the cache.' });
+  expect(added.threadId).toMatch(/^thread_/);
+  const tests = await c.start({ title: 'Write tests', task: 'Write the cache tests.' });
+  expect(tests.state).toBe('queued');
+  const elsewhere = await c.call('jevellan_task_create', { title: 'Elsewhere', brief: 'Work on another device.', type: 'feature', source: 'owner-request', fixed: { deviceId: 'dev_unknown' } });
   cache.resolve();
+  await f.app.projectWork.pulse();
+  await f.waitFor(() => f.app.projectWork.tasks.read(f.project.id, elsewhere.taskId), task => task.state === 'failed');
+  expect((await f.app.projectWork.tasks.read(f.project.id, elsewhere.taskId))).toMatchObject({ state: 'failed', endNote: UNKNOWN_PLACEMENT_DEVICE });
   const opened = await index(f, added.threadId, (value) => value?.state === 'in-review');
   await state(f, tests.threadId, 'idle');
 
@@ -276,9 +289,9 @@ test('questions, the notebook with its revision conflict, pull request status, q
   expect(f.thread(tests.threadId).lastReport).toMatchObject({ summary: 'Cache covered.', synthesized: false });
 
   expect(toolLines(f)).toEqual([
-    line('jevellan_thread_start', true, /^Started "Add cache" · Scripted test runtime Fixture · high · Worktree · /, { threadId: added.threadId }),
-    line('jevellan_thread_start', true, /^Queued "Write tests" · Scripted test runtime Fixture · high · Worktree · /, { threadId: tests.threadId }),
-    line('jevellan_thread_start', false, `Could not start "Elsewhere": ${UNKNOWN_PLACEMENT_DEVICE}`),
+    line('jevellan_task_create', true, 'Queued task "Add cache"'),
+    line('jevellan_task_create', true, 'Queued task "Write tests"'),
+    line('jevellan_task_create', true, 'Queued task "Elsewhere"'),
     line('jevellan_pr_status', true, 'Checked PR #1', { threadId: added.threadId }),
     line('jevellan_pr_status', true, 'Checked PR #1', { threadId: added.threadId }),
     line('jevellan_pr_status', true, 'Checked "Write tests": no pull request', { threadId: tests.threadId }),

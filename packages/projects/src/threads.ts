@@ -1,6 +1,9 @@
 import type { z } from 'zod';
 import type { AccountService } from '@jevellan/accounts';
 import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { createHash } from 'node:crypto';
+import { IdSchema, ThreadStartPlanSchema, readDocument, writeDocument } from '@jevellan/core';
 import {
   EffortSchema, HubUnavailable, PlacementOverrideSchema, ThreadReadResultSchema, ThreadSchema, concludedRecently, deviceAway, isTerminal, liveWork, mapEffort, newId, stableJson, type Configuration, type PlacementRecord,
   type CoordinatorEvent, type PlacementOverride, type ProjectHub, type ProjectLedgerEvent, type QueuedMessage, type SecretRedactor, type SharedProjects, type Thread, type ThreadCommand,
@@ -86,6 +89,7 @@ export type StartRequest = {
   clientRequestId?: string | undefined;
   /** The project's coordinator device; starts run there (D9a). */
   coordinatorDeviceId: string;
+  assembledTask?: string;
   /**
    * Internal, a restart of a main thread (D292): that thread's own claim does not count against the main rule, and the new thread's
    * preparation waits for the caller, which starts it once the old thread has given the checkout back.
@@ -109,6 +113,8 @@ export type ThreadServiceOptions = {
   /** The sweeps check a project's waiting questions at most this often (a new needs-decision report checks at once). */
   fallbackCheckMs: number;
   now(): number;
+  managedQueue?: boolean;
+  queueChanged?(projectId: string): void;
 };
 const oldestMessage = (thread: Thread) => thread.queuedMessages.reduce((oldest, message) => message.at < oldest ? message.at : oldest, thread.queuedMessages[0]?.at ?? '');
 type Queued = { id: string; ownerDeviceId: string; createdAt: string; local: boolean };
@@ -171,6 +177,11 @@ export class ThreadService {
   #result(thread: Thread, labels: { modelLabel: string; deviceName: string }, repeated: boolean): StartResult {
     return { threadId: thread.id, state: thread.state, ...(thread.stateReason === undefined ? {} : { stateReason: thread.stateReason }), placement: this.#summary(thread, labels), repeated };
   }
+  async #ownerStarted(thread: Thread): Promise<void> {
+    if (thread.createdBy !== 'owner') return;
+    await this.#o.delivery.toCoordinator(thread.projectId, { schema: 'coordinator-event-v1', kind: 'thread-user-message', id: derivedId('cev', 'owner-started', thread.id), at: thread.createdAt,
+      threadId: thread.id, text: ownerStartedLine(thread.title, thread.id, thread.task) });
+  }
   /**
    * Lets queued starts and waiting turns run (after `ProjectWork.start`, once the daemon URL is known). Every project coordinated here
    * is read once for queued threads on other devices, which an earlier run may have started.
@@ -189,23 +200,39 @@ export class ThreadService {
   start(request: StartRequest): Promise<StartResult> {
     return this.#exclusive(request.projectId, async () => {
       const { projectId } = request;
-      const normalized = { title: request.title, task: request.task, ...request.fixed };
+      const normalized = { title: request.title, task: request.assembledTask ?? request.task, ...request.fixed };
+      const digest = createHash('sha256').update(stableJson(normalized)).digest('hex');
+      const planFile = request.clientRequestId ? join(this.#o.store.paths.project(projectId), 'start-plans', `${IdSchema.parse(request.clientRequestId)}.json`) : undefined;
       if (request.clientRequestId !== undefined) {
         const prior = this.#o.receipts.get(projectId, request.clientRequestId, normalized);
         const existing = prior && this.#o.store.get(prior.threadId);
-        if (existing) return this.#result(existing, { modelLabel: this.#o.store.labels(existing.id).modelLabel, deviceName: this.#o.deviceName }, true);
+        if (existing) { if (planFile && existsSync(planFile)) await this.#ownerStarted(existing); return this.#result(existing, { modelLabel: this.#o.store.labels(existing.id).modelLabel, deviceName: this.#o.deviceName }, true); }
         // A thread started on another device: its index once the owner published it, else what the start answered (D264).
-        if (prior?.started) return this.#repeated(prior.threadId, prior.started);
+        if (prior?.started) { if (planFile && existsSync(planFile)) await this.#ownerStarted(readDocument(planFile, ThreadStartPlanSchema).thread); return this.#repeated(prior.threadId, prior.started); }
+      }
+      if (planFile && existsSync(planFile)) {
+        const plan = readDocument(planFile, ThreadStartPlanSchema);
+        if (plan.projectId !== projectId || plan.clientRequestId !== request.clientRequestId || plan.digest !== digest) throw refuse('This request ID already reserved a different thread.', 409);
+        const existing = this.#o.store.get(plan.thread.id);
+        if (!existing) await this.#o.delivery.startOnDevice(plan.thread, plan.labels);
+        const thread = existing ?? plan.thread, result = this.#result(thread, plan.labels, true);
+        this.#o.receipts.put(projectId, request.clientRequestId!, normalized, thread.id, this.#summaryOf(result));
+        await this.#ownerStarted(thread);
+        if (thread.state === 'preparing' && thread.ownerDeviceId === this.#o.deviceId && !request.deferPrepare) void this.runner(thread.id)?.prepare();
+        if (thread.state === 'preparing' && thread.ownerDeviceId !== this.#o.deviceId) this.#o.admission.dispatched(projectId, thread.ownerDeviceId, thread.id);
+        if (thread.state === 'queued' && thread.ownerDeviceId !== this.#o.deviceId) this.#remoteQueue.set(projectId, (this.#remoteQueue.get(projectId) ?? new Set()).add(thread.id));
+        return result;
       }
       const project = (await this.#o.projects.get(projectId))?.project;
       if (!project) throw refuse(PROJECT_NOT_FOUND, 404);
       const settings = await this.#o.admission.settings(projectId);
-      const task = [request.task, settings.threadRules ? `Rules for every thread:\n${settings.threadRules}` : ''].filter(Boolean).join('\n\n');
+      const task = request.assembledTask ?? [request.task, settings.threadRules ? `Rules for every thread:\n${settings.threadRules}` : ''].filter(Boolean).join('\n\n');
+      if (task.length > 32768) throw refuse('The assembled task exceeds 32768 characters. Shorten the brief or thread rules.', 400);
       const counts = await this.#o.admission.counts(projectId);
       const projectFull = counts.project >= counts.limits.project;
       const placed = await this.#o.placement.place({ project, workSettings: settings, title: request.title, task, note: request.note, fixed: request.fixed,
         coordinatorDeviceId: request.coordinatorDeviceId, ignoreRunningLimit: projectFull, exclude: request.exclude });
-      if (placed.kind === 'refused') throw refuse(placed.message, 409);
+      if (placed.kind === 'refused') throw Object.assign(refuse(placed.message, 409), { resourceRefusal: placed.retryable ?? true });
       const at = this.#o.now(); const threadId = newId('thread', at); const record = placed.record;
       let queued = projectFull ? queuedReason(counts.limits.project, null) : placed.atLimit ? queuedReason(settings.maxRunningPerDevice, placed.labels.deviceName) : undefined;
       let hold: (() => void) | undefined;
@@ -214,12 +241,14 @@ export class ThreadService {
         const admitted = await this.#o.admission.admit(projectId, record.deviceId, threadId);
         if (admitted.ok) hold = admitted.release; else queued = admitted.queued;
       }
-      const thread = ThreadSchema.parse({ schema: 'project-thread-v1', id: threadId, projectId, title: request.title, task, createdAt: new Date(at).toISOString(),
+      const thread = ThreadSchema.parse({ schema: 'project-thread-v1', id: threadId, projectId, title: request.title, task, brief: request.task, createdAt: new Date(at).toISOString(),
         createdBy: request.createdBy, state: queued === undefined ? 'preparing' : 'queued', ...(queued === undefined ? {} : { stateReason: queued }), isolation: record.isolation,
         placement: record, ownerDeviceId: record.deviceId, coordinatorDeviceId: request.coordinatorDeviceId, cwd: '', baseBranch: '', baseCommit: '', turns: 0,
         turnAllowance: settings.threadTurnCap, queuedMessages: [], verificationAttempts: 0 });
       try {
         const accountLabel = (await this.#o.accounts.list()).find((view) => view.account.id === record.accountId)?.account.label ?? record.accountId;
+        if (planFile) writeDocument(planFile, ThreadStartPlanSchema, { schema: 'thread-start-plan-v1', projectId, clientRequestId: request.clientRequestId!, digest,
+          thread, labels: { modelLabel: placed.labels.modelLabel, accountLabel, deviceName: placed.labels.deviceName } });
         await this.#o.delivery.startOnDevice(thread, { modelLabel: placed.labels.modelLabel, accountLabel });
         // Started elsewhere: the slot stays taken until the owner publishes the thread (3.5.1 step 1, D9).
         if (queued === undefined && thread.ownerDeviceId !== this.#o.deviceId) this.#o.admission.dispatched(projectId, thread.ownerDeviceId, threadId);
@@ -230,10 +259,7 @@ export class ThreadService {
       } finally { hold?.(); }
       const result = this.#result(thread, { modelLabel: placed.labels.modelLabel, deviceName: placed.labels.deviceName }, false);
       if (request.clientRequestId !== undefined) this.#o.receipts.put(projectId, request.clientRequestId, normalized, threadId, this.#summaryOf(result));
-      if (request.createdBy === 'owner') {
-        await this.#o.delivery.toCoordinator(projectId, { schema: 'coordinator-event-v1', kind: 'thread-user-message', id: newId('cev', at), at: new Date(at).toISOString(),
-          threadId, text: ownerStartedLine(thread.title, threadId, thread.task) });
-      }
+      await this.#ownerStarted(thread);
       // Preparation runs in the background: the start answers within the bridge budget.
       if (queued === undefined && thread.ownerDeviceId === this.#o.deviceId && !request.deferPrepare) void this.runner(threadId)?.prepare();
       if (queued !== undefined && thread.ownerDeviceId !== this.#o.deviceId) this.#remoteQueue.set(projectId, (this.#remoteQueue.get(projectId) ?? new Set()).add(threadId));
@@ -374,19 +400,20 @@ export class ThreadService {
       ...(input.effort ? { effort: input.effort } : {}), ...(input.deviceId ? { deviceId: input.deviceId } : {}) };
     const clientRequestId = derivedId('treq', 'restart', projectId, threadId, input.clientRequestId);
     // A retry of an applied restart passes the refusals that the restart itself caused.
-    if (!this.#o.receipts.get(projectId, clientRequestId, { title: thread.title, task: thread.task, ...fixed })) { const refused = restartRefusal(thread); if (refused) throw refuse(refused, 409); }
+    const brief = thread.brief ?? thread.task;
+    if (!this.#o.receipts.get(projectId, clientRequestId, { title: thread.title, task: brief, ...fixed })) { const refused = restartRefusal(thread); if (refused) throw refuse(refused, 409); }
     const note = this.#note(input.note);
     // A main thread still holds its checkout until it stops below: its own claim does not count, and the new thread prepares after (D292).
     const settles = thread.isolation === 'main' && !isTerminal(thread.state);
     let started: Pick<StartResult, 'threadId'>;
     if (coordinatorDeviceId === this.#o.deviceId) {
-      started = await this.start({ projectId, title: thread.title, task: thread.task, createdBy: 'owner', fixed, note, clientRequestId, coordinatorDeviceId,
+      started = await this.start({ projectId, title: thread.title, task: brief, createdBy: 'owner', fixed, note, clientRequestId, coordinatorDeviceId,
         ...(settles ? { exclude: threadId, deferPrepare: true } : {}) });
     }
     else {
       if (!remote) throw refuse(COORDINATOR_ELSEWHERE, 409);
-      const created = await remote(projectId, coordinatorDeviceId, { schema: 'thread-create-request-v1', clientRequestId, title: thread.title, task: thread.task, ...fixed, ...(note ? { note } : {}) });
-      this.#o.receipts.put(projectId, clientRequestId, { title: thread.title, task: thread.task, ...fixed }, created.threadId, this.#summaryOf(created));
+      const created = await remote(projectId, coordinatorDeviceId, { schema: 'thread-create-request-v1', clientRequestId, title: thread.title, task: brief, ...fixed, ...(note ? { note } : {}) });
+      this.#o.receipts.put(projectId, clientRequestId, { title: thread.title, task: brief, ...fixed }, created.threadId, this.#summaryOf(created));
       started = created;
     }
     const changes: OverrideChange[] = [
@@ -398,6 +425,7 @@ export class ThreadService {
       ...(fixed.deviceId !== undefined && fixed.deviceId !== thread.ownerDeviceId ? [{ field: 'device' as const, from: thread.ownerDeviceId, to: fixed.deviceId }] : [])];
     const id = derivedId('povr', projectId, threadId, input.clientRequestId); const at = this.#at(this.#o.now());
     if (changes.length) await this.#o.hub.addOverride(PlacementOverrideSchema.parse({ schema: 'placement-override-v1', id, projectId, threadId, mode: 'restart', changes, ...(note ? { note } : {}), at }));
+    this.#o.store.update(threadId, current => ({ ...current, restartedAs: started.threadId }));
     await this.runner(threadId)!.restarted(restartedReason(started.threadId));
     // The old thread gave the checkout back: a new thread waiting here prepares now (a repeat finds it past preparing and changes nothing).
     if (settles && this.#o.store.get(started.threadId)?.state === 'preparing') void this.runner(started.threadId)?.prepare();
@@ -411,12 +439,14 @@ export class ThreadService {
    * (any device before an assignment, which then holds only its own threads); a thread elsewhere gets a `dispatch` command
    * once, counted until its owner publishes it (D264).
    */
-  sweepQueue(projectId: string): Promise<void> {
+  sweepQueue(projectId: string, selected?: readonly string[]): Promise<void> {
     if (!this.#started || this.#closed) return Promise.resolve();
+    if (this.#o.managedQueue && selected === undefined) return Promise.resolve();
     return this.#exclusive(projectId, async () => {
       const queued = await this.#queued(projectId); if (!queued.length || !(await this.#coordinatesHere(projectId))) return;
       const full = new Set<string>();
       for (const thread of queued) {
+        if (selected && !selected.includes(thread.id)) continue;
         if (this.#closed) return;
         if (full.has(thread.ownerDeviceId) || (!thread.local && this.#o.admission.isDispatched(thread.id))) continue;
         const admitted = await this.#o.admission.admit(projectId, thread.ownerDeviceId, thread.id);
@@ -540,6 +570,7 @@ export class ThreadService {
   /** A thread left live work: run the sweeps soon, once per burst. */
   #rested(projectId: string): void {
     if (!this.#started || this.#closed) return;
+    if (this.#o.managedQueue) this.#o.queueChanged?.(projectId);
     if (this.#sweep) { this.#sweep.add(projectId); return; }
     const projects = this.#sweep = new Set([projectId]);
     setImmediate(() => {

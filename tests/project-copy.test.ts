@@ -5,7 +5,6 @@ import * as copy from '../packages/projects/dist/copy.js';
 
 // Expected texts are the brief section 9 blocks with the placeholders filled in, pasted literally: the brief itself is
 // not part of the repository.
-const coordinator = "You are the coordinator of the project \"Shop\" in Jevellan. You do not write code and you do not edit files. You plan, delegate to threads, keep track, and talk with the owner.\n\nHow you work:\n- Threads do the work. Each thread is a full coding session (Claude Code or Codex) that carries one task end to end. Start a thread with jevellan_thread_start. Give it a short title and a complete task: the goal, the relevant context and constraints, what done means, and how to verify it. A thread cannot see this conversation, so put everything it needs in the task.\n- Route each new request: if it continues work an active thread is doing, send it to that thread with jevellan_thread_message; otherwise start a new thread. Split unrelated requests into separate threads. Do not start two threads that would change the same files at the same time; sequence them instead.\n- Jevellan chooses where each thread runs (isolation, model, effort, device). Only pass isolation, modelId, effort or deviceId when the owner explicitly asked for them.\n- Worktree threads end in a pull request that the owner reviews and merges. You cannot merge. Main threads publish directly to main.\n- When a thread reports, decide the next step yourself whenever the answer follows from the owner's instructions, the notebook or the code. Ask the owner with jevellan_ask_user only when the decision is genuinely theirs. Keep questions short, offer 2 to 4 options when possible, and continue other work while waiting.\n- When checks fail or a pull request has conflicts, tell the responsible thread what to fix.\n- When a thread was interrupted by a restart or a failure, resume it with jevellan_thread_message if the work is still wanted.\n- Keep the notebook current with jevellan_notebook_write: the owner's standing instructions and preferences for this project, decisions taken, the current plan and open questions. Keep it concise. The notebook is your memory across sessions.\n\nReplying to the owner: be brief and concrete. Say what you started, routed, asked or concluded, naming threads by title. Never paste long transcripts. Write in the owner's language.";
 const verify = "Jevellan ran npm test after your report and it failed (attempt 2 of 3). Fix the cause, run the tests, commit, and report done again.\n\nLast output:\nFAIL login.test.ts";
 const conflict = "Main moved while you worked and your commits conflict with it in: src/a.ts, src/b.ts. Run git fetch origin main and git rebase origin/main, resolve the conflicts keeping both intents, run the tests, and report done again.";
 const pr = "Fixed the login redirect.\n\nTests: Passed: npm test\n\nThread: Fix login\nPlacement: Codex GPT-5, high effort, Mac mini";
@@ -18,12 +17,15 @@ const report = ThreadReportSchema.parse({ schema: 'thread-report-v1', turn: 2, s
   options: [{ label: 'Keep it' }, { label: 'Drop it', detail: 'Faster' }], testsRun: { command: 'npm test', passed: false, summary: '1 failing' }, synthesized: false });
 const line = (event: CoordinatorEvent, extra: Partial<typeof context & { askedDirectly: boolean }> = {}) => copy.eventLine(event, { ...context, ...extra });
 
-const baseInstructions = (text: string) => text.split('\n').filter(line => !line.startsWith('- Preserve the outcome') && !line.startsWith('- When the task includes running an app') && !line.startsWith('- When a pull request is ready for review')).join('\n');
-
-test('9.1 coordinator base instructions are preserved alongside app guidance', () => {
-  expect(baseInstructions(copy.coordinatorSystemAppend('Shop'))).toBe(coordinator);
-  expect(copy.coordinatorSystemAppend('Shop')).toContain('read it with jevellan_pr_diff');
-  expect(copy.coordinatorSystemAppend('Shop')).toContain('Approve with jevellan_pr_review');
+test('coordinator delegates through complete queued tasks and follows up through existing threads', () => {
+  const text = copy.coordinatorSystemAppend('Shop');
+  expect(text).toContain('jevellan_task_create');
+  expect(text).not.toContain('jevellan_thread_start');
+  expect(text).toContain('without this conversation');
+  expect(text).toContain('jevellan_thread_message');
+  expect(text).toContain('read it with jevellan_pr_diff');
+  expect(text).toContain('Approve with jevellan_pr_review');
+  expect(COORDINATOR_TOOLS).not.toContain('jevellan_thread_start');
 });
 
 test('9.2 fresh session context follows the brief layout', () => {
@@ -172,5 +174,5 @@ test('Projects copy outside the brief texts never uses conversation vocabulary o
     expect(text).not.toContain(String.fromCharCode(0x2014));
   }
   // The coordinator append and the fresh context are brief-verbatim and do say "conversation".
-  expect(copy.coordinatorSystemAppend('Shop')).toContain('cannot see this conversation');
+  expect(copy.coordinatorSystemAppend('Shop')).toContain('without this conversation');
 });

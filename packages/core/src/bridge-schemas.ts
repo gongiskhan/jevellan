@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ProjectWorkTaskSchema, TaskCreateRequestSchema, TaskReceiptSchema, TaskUpdateRequestSchema } from './project-loop-schemas.js';
 import { EffortSchema, FindingSchema, HandoffSchema, IdSchema, ResultSchema, TimestampSchema } from './schemas.js';
 import {
   IsolationSchema, NEEDS_DECISION_QUESTION, OptionSchema, ProjectAppInputSchema, ProjectAppSchema, PullRequestStateSchema, ThreadReportFieldsSchema, ThreadReportSchema,
@@ -95,6 +96,10 @@ export const BridgeToolSchemas = {
   memory_edit: MemoryEditSchema,
   memory_propose: MemoryProposalInputSchema,
   jevellan_threads_list: ThreadsListInputSchema,
+  jevellan_tasks_list: z.strictObject({ include: z.enum(['open', 'all']).default('open'), goalId: IdSchema.nullable().optional() }),
+  jevellan_task_create: TaskCreateRequestSchema.omit({ schema: true, clientRequestId: true }).extend({ source: z.enum(['owner-request', 'refill', 'finding']) }),
+  jevellan_task_update: TaskUpdateRequestSchema.omit({ schema: true, expectedRevision: true, fixed: true, now: true }).extend({ taskId: IdSchema }),
+  jevellan_task_cancel: z.strictObject({ taskId: IdSchema, reason: z.string().min(1).max(400) }),
   jevellan_thread_start: ThreadStartInputSchema,
   jevellan_thread_message: ThreadMessageInputSchema,
   jevellan_thread_read: ThreadReadInputSchema,
@@ -143,7 +148,11 @@ export function bridgeTools(names: BridgeTool[]): z.infer<typeof BridgeToolsSche
     memory_edit: 'Edit a project memory note. For replace, provide the exact text in find.',
     memory_propose: 'Queue a proposed memory note. It does not change the checkout; Jevellan applies it later under ownership.',
     jevellan_threads_list: 'List this project’s threads with their state, isolation, device, model, branch, pull request and last report summary. include: all adds threads that ended in the last 14 days.',
-    jevellan_thread_start: 'Start a thread that carries one task end to end. Write a self-contained title and task. Leave isolation, modelId, effort and deviceId out unless the owner asked for that exact choice; Jevellan places the thread. note is your one-line reason. Returns the thread id, its state and where it runs.',
+    jevellan_thread_start: 'Legacy immediate start for internal restart operations.',
+    jevellan_tasks_list: 'Read the task queue, including drafts and linked threads. Open includes draft, queued, active and in-review tasks.',
+    jevellan_task_create: 'Create a session task with a self-contained brief and type. Owner-request requires an owner message in this turn; only that source may use Now. Code decides proposal state, placement and dispatch.',
+    jevellan_task_update: 'Edit a draft or queued task before dispatch. Never reorder an owner-ranked task.',
+    jevellan_task_cancel: 'Cancel a draft or queued task. Stop active work through its thread.',
     jevellan_thread_message: 'Send a message to a thread. An idle or in-review thread starts a turn now; a running thread receives it as its next turn, or at once with interrupt: true. Threads that are attached, done, stopped or failed refuse messages.',
     jevellan_thread_read: 'Read a thread’s state, its last three reports and its pull request. detail: transcript adds the end of its assistant text.',
     jevellan_thread_stop: 'Stop a thread: end any running turn and mark it stopped. Its worktree and branch stay until the owner discards them.',
@@ -163,7 +172,7 @@ export function bridgeTools(names: BridgeTool[]): z.infer<typeof BridgeToolsSche
 
 // Project scopes (D104). The coordinator's read-only Claude allow list and the bridge's scope lists both derive from
 // projectToolNames, never a copy.
-export const COORDINATOR_TOOLS = ['jevellan_threads_list', 'jevellan_thread_start', 'jevellan_thread_message', 'jevellan_thread_read', 'jevellan_thread_stop',
+export const COORDINATOR_TOOLS = ['jevellan_tasks_list', 'jevellan_task_create', 'jevellan_task_update', 'jevellan_task_cancel', 'jevellan_threads_list', 'jevellan_thread_message', 'jevellan_thread_read', 'jevellan_thread_stop',
   'jevellan_ask_user', 'jevellan_withdraw_question', 'jevellan_notebook_read', 'jevellan_notebook_write', 'jevellan_pr_status', 'jevellan_pr_diff', 'jevellan_pr_review', 'jevellan_mail_send', 'memory_search', 'memory_read'] as const satisfies readonly BridgeTool[];
 const MAIN_THREAD_TOOLS = ['jevellan_mail_send', 'jevellan_mail_inbox', 'jevellan_reserve', 'jevellan_release'] as const satisfies readonly BridgeTool[];
 export type ProjectToolName = typeof COORDINATOR_TOOLS[number] | typeof MAIN_THREAD_TOOLS[number] | 'jevellan_thread_report' | 'jevellan_app_start' | 'jevellan_app_stop' | 'jevellan_apps_list';
@@ -178,7 +187,11 @@ export function projectToolNames(scope: { kind: 'coordinator' } | { kind: 'threa
 export const ProjectToolResultSchemas = {
   jevellan_app_start: ProjectAppSchema, jevellan_app_stop: ProjectAppSchema,
   jevellan_apps_list: z.strictObject({ schema: z.literal('project-apps-v1'), apps: z.array(ProjectAppSchema) }),
-  jevellan_threads_list: ThreadsListResultSchema, jevellan_thread_start: ThreadStartResultSchema, jevellan_thread_message: ThreadMessageResultSchema,
+  jevellan_tasks_list: z.strictObject({ schema: z.literal('tasks-list-result-v1'), tasks: z.array(ProjectWorkTaskSchema.extend({ position: z.number().int().positive() })) }),
+  jevellan_task_create: TaskReceiptSchema,
+  jevellan_task_update: z.strictObject({ schema: z.literal('task-update-result-v1'), task: ProjectWorkTaskSchema }),
+  jevellan_task_cancel: z.strictObject({ schema: z.literal('task-cancel-result-v1'), task: ProjectWorkTaskSchema }),
+  jevellan_threads_list: ThreadsListResultSchema, jevellan_thread_message: ThreadMessageResultSchema,
   jevellan_thread_read: ThreadReadResultSchema, jevellan_thread_stop: ThreadStopResultSchema, jevellan_ask_user: AskUserResultSchema,
   jevellan_withdraw_question: WithdrawQuestionResultSchema, jevellan_notebook_read: NotebookReadResultSchema, jevellan_notebook_write: NotebookWriteResultSchema,
   jevellan_pr_status: PrStatusResultSchema, jevellan_mail_send: MailSendResultSchema, jevellan_mail_inbox: MailInboxResultSchema,

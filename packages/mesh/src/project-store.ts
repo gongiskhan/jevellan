@@ -4,6 +4,7 @@ import {
   CheckoutClaimSchema, ConversationIndexSchema, DecisionAnswerSchema, ENVELOPE_PAGE_BYTES, FileReservationSchema, IdSchema, MAIL_PAGE_BYTES, PROJECT_HUB_PAGE, PlacementOverrideSchema, ProjectCoordinatorSchema, ProjectCoordinatorStatusSchema,
   ProjectDecisionSchema, ProjectEnvelopeSchema, ProjectHubRequestSchema, ProjectHubResultSchema, ProjectMailSchema, ProjectNotebookSchema, ProjectSchema, ProjectWorkSettingsSchema, StoredProjectWorkSettingsSchema, PullRequestReviewSchema,
   ProjectWorkSummarySchema, ReservationRequestSchema, ThreadIndexCursorSchema, ThreadIndexSchema, TimestampSchema, checkHubRevision, collectionOf, compareEnvelopes, coordinatorMovable,
+  ProjectWorkTaskSchema, TaskHistoryEventSchema, type ProjectWorkTask,
   coordinatorWorking, isTerminal, mailReaches, pathsOverlap, reservationActive, stableJson, withHubRevision, workCounts,
   type DecisionAnswer, type DeviceView, type DocumentSchema, type FileReservation, type HeldCheckout, type PlacementOverride, type ProjectCoordinator, type ProjectCoordinatorStatus, type ProjectDecision,
   type ProjectEnvelope, type ProjectHub, type ProjectHubOperation, type ProjectHubResult, type ProjectHubResultOf, type ProjectMail, type ProjectNotebook, type ProjectWorkSettings,
@@ -69,6 +70,32 @@ export class HubProjectStore {
   }
 
   settings(projectId: string): Stored<ProjectWorkSettings> | null { return this.#get(SETTINGS, projectId, StoredProjectWorkSettingsSchema); }
+  tasks(projectId: string, after?: string): Page<ProjectWorkTask> { return this.#page('project-work-tasks', ProjectWorkTaskSchema, projectId, after, () => true); }
+  task(taskId: string): Stored<ProjectWorkTask> | null { return this.#get('project-work-tasks', taskId, ProjectWorkTaskSchema); }
+  taskHistory(taskId: string) { return this.hub.listByField('project-work-task-history', 'taskId', IdSchema.parse(taskId), TaskHistoryEventSchema).map(row => row.document).sort((a, b) => a.sequence - b.sequence); }
+  putTask(raw: ProjectWorkTask, expectedRevision: number): Stored<ProjectWorkTask> {
+    const task = ProjectWorkTaskSchema.parse(raw);
+    return this.hub.transaction(() => {
+      this.#project(task.projectId);
+      if (this.coordinator(task.projectId)?.document.deviceId !== this.deviceId) refuse('Only the current coordinator device can write the task queue.', 403);
+      const current = this.task(task.id);
+      if (current && current.document.projectId !== task.projectId) refuse('This task belongs to another project.', 403);
+      if (task.after.includes(task.id) || new Set(task.after).size !== task.after.length) refuse('Task dependencies must be distinct and cannot include the task itself.', 400);
+      const visit = (id: string, visited = new Set<string>()): void => {
+        if (id === task.id) refuse('Task dependencies cannot contain a cycle.', 400);
+        if (visited.has(id)) return; visited.add(id);
+        const parent = this.task(id)?.document; if (!parent || parent.projectId !== task.projectId) refuse('Every dependency must be a task of this project.', 400);
+        for (const dependency of parent.after) visit(dependency, visited);
+      };
+      for (const id of task.after) visit(id);
+      if (task.threadId && this.#documents('project-work-tasks', ProjectWorkTaskSchema, task.projectId).some(other => other.id !== task.id && other.threadId === task.threadId)) refuse('A thread already belongs to another task.');
+      if (current && stableJson({ ...current.document, revision: 0 }) === stableJson({ ...task, revision: 0 })) return current;
+      const stored = this.#put('project-work-tasks', task.id, ProjectWorkTaskSchema, task, expectedRevision);
+      this.hub.put('project-work-task-history', `${task.id}_${String(stored.revision).padStart(10, '0')}`, TaskHistoryEventSchema,
+        { schema: 'task-history-event-v1', taskId: task.id, projectId: task.projectId, sequence: stored.revision, state: task.state, title: task.title, at: task.updatedAt, threadId: task.threadId, ...(task.endNote ? { note: task.endNote } : {}) }, 0);
+      return stored;
+    });
+  }
   /** Compare-and-swap on the row revision; a repeated clientRequestId returns the first result. */
   putSettings(raw: ProjectWorkSettings, expectedRevision: number, clientRequestId?: string): Stored<ProjectWorkSettings> {
     const settings = ProjectWorkSettingsSchema.parse(raw);
@@ -279,9 +306,11 @@ export class HubProjectStore {
     const records = page.map((project): ProjectWorkSummary => {
       const threads = this.hub.listByField(THREADS, 'projectId', project.id, ThreadIndexSchema).map((row) => checkHubRevision(row).document);
       const decisions = this.hub.listByField(DECISIONS, 'projectId', project.id, ProjectDecisionSchema).map((row) => checkHubRevision(row).document);
+      const drafts = this.#documents('project-work-tasks', ProjectWorkTaskSchema, project.id).filter(task => task.state === 'draft').length;
+      const counts = workCounts(threads, decisions); counts.waiting += drafts;
       const assigned = this.coordinator(project.id)?.document.deviceId; const view = assigned === undefined ? undefined : devices.get(assigned);
       const status = assigned === undefined ? undefined : this.coordinatorStatus(project.id)?.document;
-      return ProjectWorkSummarySchema.parse({ schema: 'project-work-summary-v1', projectId: project.id, name: project.name, ...workCounts(threads, decisions),
+      return ProjectWorkSummarySchema.parse({ schema: 'project-work-summary-v1', projectId: project.id, name: project.name, ...counts,
         coordinator: assigned === undefined ? null : { deviceId: assigned, device: view ? { name: view.device.name, status: view.status, revoked: view.revoked } : null,
           state: status && status.deviceId === assigned ? status.state : null } });
     });
@@ -447,6 +476,10 @@ export class HubProjectStore {
     const request = ProjectHubRequestSchema.parse(raw); const base = { schema: 'project-hub-result-v1', operation: request.operation };
     let result: unknown;
     switch (request.operation) {
+      case 'tasks-list': result = { ...base, ...this.tasks(request.projectId, request.after) }; break;
+      case 'task-get': result = { ...base, record: this.task(request.taskId) }; break;
+      case 'task-put': result = { ...base, record: this.putTask(request.task, request.expectedRevision) }; break;
+      case 'task-history': result = { ...base, records: this.taskHistory(request.taskId) }; break;
       case 'settings-get': result = { ...base, record: this.settings(request.projectId) }; break;
       case 'settings-put': result = { ...base, record: this.putSettings(request.settings, request.expectedRevision, request.clientRequestId) }; break;
       case 'coordinator-get': result = { ...base, record: this.coordinator(request.projectId) }; break;
@@ -491,6 +524,10 @@ export class HubProjectAccess implements ProjectHub {
   readonly #store: HubProjectStore;
   constructor(hub: HubDatabase, deviceId: string, now?: () => number, devices?: () => readonly DeviceView[]) { this.#store = new HubProjectStore(hub, deviceId, now, devices); }
   async settings(projectId: string) { return this.#store.settings(projectId); }
+  async tasks(projectId: string, after?: string) { return this.#store.tasks(projectId, after); }
+  async task(taskId: string) { return this.#store.task(taskId); }
+  async putTask(task: ProjectWorkTask, expectedRevision: number) { return this.#store.putTask(task, expectedRevision); }
+  async taskHistory(taskId: string) { return this.#store.taskHistory(taskId); }
   async putSettings(settings: ProjectWorkSettings, expectedRevision: number, clientRequestId?: string) { return this.#store.putSettings(settings, expectedRevision, clientRequestId); }
   async coordinator(projectId: string) { return this.#store.coordinator(projectId); }
   async assignCoordinator(projectId: string, deviceId: string, expectedRevision: number) { return this.#store.assignCoordinator(projectId, deviceId, expectedRevision); }
@@ -550,6 +587,10 @@ export class MemberProjectStore implements ProjectHub {
   #check<T>(record: T, valid: (value: T) => boolean): T { if (!valid(record)) throw new HubProtocolError(); return record; }
 
   async settings(projectId: string) { return this.#check((await this.#call('settings-get', { projectId })).record, (row) => !row || row.document.projectId === projectId); }
+  async tasks(projectId: string, after?: string) { return this.#page(await this.#call('tasks-list', { projectId, ...(after ? { after } : {}) }), projectId, after); }
+  async task(taskId: string) { return this.#check((await this.#call('task-get', { taskId })).record, row => !row || row.document.id === taskId); }
+  async putTask(task: ProjectWorkTask, expectedRevision: number) { return this.#check((await this.#call('task-put', { task, expectedRevision })).record, row => row.document.id === task.id && row.document.projectId === task.projectId); }
+  async taskHistory(taskId: string) { return this.#check((await this.#call('task-history', { taskId })).records, rows => rows.every((row, index) => row.taskId === taskId && (index === 0 || row.sequence > rows[index - 1]!.sequence))); }
   async putSettings(settings: ProjectWorkSettings, expectedRevision: number, clientRequestId?: string) {
     const result = await this.#call('settings-put', { settings, expectedRevision, ...(clientRequestId === undefined ? {} : { clientRequestId }) });
     return this.#check(result.record, (row) => row.document.projectId === settings.projectId && row.revision === expectedRevision + 1);

@@ -19,7 +19,7 @@ export type PlacementLabels = { modelLabel: string; deviceName: string; runtimeN
 export type PlacementResult =
   /** `atLimit`: every device that could run the thread is at its running limit, so the start queues (D9, D133). */
   | { kind: 'placed'; record: PlacementRecord; labels: PlacementLabels; atLimit: boolean }
-  | { kind: 'refused'; message: string };
+  | { kind: 'refused'; message: string; retryable?: boolean };
 export type PlaceInput = {
   project: Project; workSettings: ProjectWorkSettings; title: string; task: string;
   /** The coordinator's one-line reason (`jevellan_thread_start`), or the owner's note of a restart (D252). */
@@ -152,7 +152,7 @@ export class Placement {
   async place(input: PlaceInput): Promise<PlacementResult> {
     const decision = await this.input(input);
     const candidates = placementCandidates(decision);
-    if ('refused' in candidates) return { kind: 'refused', message: candidates.refused };
+    if ('refused' in candidates) return { kind: 'refused', message: candidates.refused, retryable: candidates.retryable ?? false };
     // All four fields fixed asks nothing, so the packet is not gathered.
     const fields = fixedPlacementFields(input.fixed);
     const packet = ['isolation', 'model', 'effort', 'device'].every((field) => fields.includes(field as typeof fields[number])) ? { title: input.title, task: input.task, activeThreads: [], overrides: [] } : await this.#packet(input, decision.devices);

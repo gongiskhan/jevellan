@@ -162,6 +162,7 @@
   .pw-layout:not([data-tab="chat"]) > .pw-chat,
   .pw-layout[data-tab="chat"] > .pw-side,
   .pw-layout[data-tab="waiting"] .pw-side > :not([data-tab="waiting"]),
+  .pw-layout[data-tab="queue"] .pw-side > :not([data-tab="queue"]),
   .pw-layout[data-tab="threads"] .pw-side > :not([data-tab="threads"]),
   .pw-layout[data-tab="pull-requests"] .pw-side > :not([data-tab="pull-requests"]) { display: none; }
 }
@@ -374,6 +375,11 @@ a.pw-pr-title:hover { color: var(--jev-ink); text-decoration: underline; }
 .pw-merge { display: inline-flex; }
 .pw-branch { justify-self: start; max-width: 100%; font-size: 11.5px; }
 .pw-pr-reason { margin: 0; color: var(--ink-3); font-size: 12.5px; line-height: 1.45; }
+.pw-task { min-width: 0; padding: 10px 12px; border: 1px solid var(--edge); border-radius: var(--radius); background: var(--card); margin-bottom: 8px; }
+.pw-task summary { overflow-wrap: anywhere; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.pw-task summary strong { flex: 1; min-width: 120px; }
+.pw-task .actions { flex-wrap: wrap; margin-top: 10px; }
+.pw-task .markdown { overflow-wrap: anywhere; }
 
 /* Dialogs and the Notebook panel. */
 /* A field's note sits close under it; a field without one keeps the form's usual 12px rhythm (Isolation and Device often have none). */
@@ -617,3 +623,6 @@ button.danger:disabled, button.danger:disabled:hover { background: var(--bg-3); 
 .pw-token-summary { margin: 0 0 8px; }
 .pw-token-help { margin: 0; }
 .pw-token-actions { margin: 14px 0 0; }
+
+.pw-task-dragging { opacity: .6; }
+.pw-task-drop { outline: 2px solid var(--accent); outline-offset: 2px; }

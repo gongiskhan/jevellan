@@ -3,6 +3,7 @@ import {
   CoordinatorMessageReceiptSchema, CoordinatorMessageRequestSchema, DecisionAnswerRequestSchema, DecisionAnsweredViewSchema, DeviceOriginSchema, EmptySchema, ErrorDocumentSchema, IdSchema,
   MergeResultViewSchema, NotebookRequestSchema, PeerLoginSessionInputSchema, ProjectEventFrameSchema, ProjectWorkSettingsRequestSchema, ThreadCreateRequestSchema, ThreadCreatedViewSchema,
   ThreadMessageReceiptSchema, ThreadMessageRequestSchema, ThreadOverrideRequestSchema, ThreadStopRequestSchema, UiSessionTokenSchema, boundedRedaction, type ProjectLedgerEvent,
+  TaskCreateRequestSchema, TaskUpdateRequestSchema, TaskActionRequestSchema,
 } from '@jevellan/core';
 import {
   COORDINATOR_DEVICE_REDIRECT, COORDINATOR_NOT_HERE, EVENT_CURSOR_AHEAD, EVENT_CURSOR_INVALID, PROJECT_OPERATION_NOT_FOUND, THREAD_DEVICE_GONE, THREAD_NOT_FOUND, coordinatorOfflineNotice,
@@ -14,16 +15,21 @@ import { json, requestBody } from './http.js';
 import { OWNER_REQUEST_TIMEOUT_MS, forwardOwner } from './owner-proxy.js';
 
 export type ProjectWorkRouteName = 'list' | 'view' | 'events' | 'message' | 'stop' | 'fresh' | 'move' | 'settings' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
-  | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'pr-merge' | 'pr-refresh' | 'answer';
+  | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'pr-merge' | 'pr-refresh' | 'answer' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
 /** Where a route runs: this device (`local`), the project's coordinator device, the thread's owner device, or any device. */
-export type ProjectWorkRoute = { name: ProjectWorkRouteName; projectId?: string; threadId?: string; decisionId?: string;
+export type ProjectWorkRoute = { name: ProjectWorkRouteName; projectId?: string; threadId?: string; decisionId?: string; taskId?: string;
   target: 'local' | 'coordinator' | 'owner' | 'any'; stream?: boolean };
-type IdName = 'projectId' | 'threadId' | 'decisionId';
+type IdName = 'projectId' | 'threadId' | 'decisionId' | 'taskId';
 /** `ids` names the captured ids in order (default project then thread); `stream` marks the event stream. */
 type Row = { name: ProjectWorkRouteName; pattern: RegExp; methods: readonly ('GET' | 'POST' | 'PUT')[]; target: ProjectWorkRoute['target']; ids?: readonly IdName[]; stream?: true };
 
 // The closed route table (brief 11, design 2.10). Paths are matched whole; ids are validated after a match.
 const rows: readonly Row[] = [
+  { name: 'task-list', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/tasks$/, methods: ['GET'], target: 'any' },
+  { name: 'task-create', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/tasks$/, methods: ['POST'], target: 'coordinator' },
+  { name: 'task', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/tasks\/([A-Za-z0-9_-]+)$/, methods: ['GET'], target: 'any', ids: ['projectId', 'taskId'] },
+  { name: 'task-update', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/tasks\/([A-Za-z0-9_-]+)\/edit$/, methods: ['POST'], target: 'coordinator', ids: ['projectId', 'taskId'] },
+  { name: 'task-action', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/tasks\/([A-Za-z0-9_-]+)\/action$/, methods: ['POST'], target: 'coordinator', ids: ['projectId', 'taskId'] },
   { name: 'list', pattern: /^\/api\/project-work$/, methods: ['GET'], target: 'any' },
   { name: 'view', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/work$/, methods: ['GET'], target: 'any' },
   { name: 'events', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/coordinator\/events$/, methods: ['GET'], target: 'coordinator', stream: true },
@@ -49,7 +55,7 @@ const rows: readonly Row[] = [
  * Requests carrying a client id repeat safely, so a hub outage during them is reported as retryable (settings only when the body has
  * one); so does Move coordinator here, whose repeat completes the first one (D269).
  */
-const withClientId = new Set<ProjectWorkRouteName>(['message', 'move', 'thread-create', 'thread-message', 'thread-override', 'answer']);
+const withClientId = new Set<ProjectWorkRouteName>(['message', 'move', 'thread-create', 'thread-message', 'thread-override', 'answer', 'task-create']);
 const failure = (message: string, status: number) => Object.assign(new Error(message), { status });
 const API_PREFIX = '/api/projects/';
 /** UI-proxied requests from another device (phase 5, D41, D266): the owner and coordinator routes of the table. */
@@ -64,7 +70,7 @@ type Caller = { token: string; sourceDeviceId: string; peer: boolean; authentica
 export function projectWorkRoute(path: string, method: string): ProjectWorkRoute | null {
   for (const row of rows) {
     const match = path.match(row.pattern); if (!match) continue;
-    if (!(row.methods as readonly string[]).includes(method)) throw failure('This operation does not support that method.', 405);
+    if (!(row.methods as readonly string[]).includes(method)) { if (rows.some(other => other.pattern.source === row.pattern.source && (other.methods as readonly string[]).includes(method))) continue; throw failure('This operation does not support that method.', 405); }
     const ids = (row.ids ?? ['projectId', 'threadId']).flatMap((name, index) => match[index + 1] === undefined ? [] : [[name, IdSchema.parse(match[index + 1])] as const]);
     return { name: row.name, target: row.target, ...(row.stream ? { stream: true } : {}), ...Object.fromEntries(ids) };
   }
@@ -184,6 +190,11 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
     if (coordinator !== null && coordinator !== app.device.deviceId) { await proxy(app, request, response, url, route, coordinator, caller); return true; }
   }
   switch (route.name) {
+    case 'task-list': send(await work.taskList(projectId)); return true;
+    case 'task-create': send(await work.createTask(projectId, TaskCreateRequestSchema.parse(await requestBody(request))), 201); return true;
+    case 'task': send(await work.taskView(projectId, route.taskId!)); return true;
+    case 'task-update': send(await work.updateTask(projectId, route.taskId!, TaskUpdateRequestSchema.parse(await requestBody(request)))); return true;
+    case 'task-action': send(await work.taskAction(projectId, route.taskId!, TaskActionRequestSchema.parse(await requestBody(request)))); return true;
     case 'list': send(await work.list()); return true;
     case 'view': send(await work.view(projectId)); return true;
     case 'events': {

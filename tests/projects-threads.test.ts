@@ -82,7 +82,8 @@ test('PJ1 owner thread runs in a worktree, opens a pull request, follows checks 
   expect(first.resume).toBeUndefined();
   expect(first.systemAppend).toContain('Isolation: your own git worktree on branch jv/add-greeting-');
   expect(first.systemAppend).toContain(', based on main.');
-  expect(first.systemAppend).toContain('Jevellan runs test -f greeting.txt, pushes and opens the pull request.');
+  expect(first.systemAppend).toContain('Jevellan pushes and opens the pull request');
+  expect(first.systemAppend).toContain('Run only surgical tests');
   expect(first.launch.env.GIT_AUTHOR_NAME).toBe('Fixture');
 
   // 5. Branch and worktree outside the checkout.
@@ -110,16 +111,16 @@ test('PJ1 owner thread runs in a worktree, opens a pull request, follows checks 
   expect(payloads(f, threadId, 'thread-publication')).toContainEqual(expect.objectContaining({ result: 'pr-opened', prNumber: 1 }));
 
   // 9. The coordinator queue (no coordinator runs in this fixture): the owner start line, then the publication.
-  expect(kinds(queue(f))).toEqual(['thread-user-message', 'thread-published']);
+  expect(kinds(queue(f))).toEqual(['thread-user-message', 'thread-published', 'pr-ready-for-review']);
   expect(queue(f)[0]).toMatchObject({ threadId, text: `[owner started thread "Add greeting" (${threadId})] Create greeting.txt.` });
   expect(queue(f)[1]).toMatchObject({ threadId, result: 'pr-opened', prNumber: 1 });
 
   // 10. Failing checks are reported once per head.
   f.github.setChecks(1, 'failing'); await f.app.projectWork.pulse();
   expect((await f.index(threadId))!.pr!.checks).toBe('failing');
-  expect(kinds(queue(f))).toEqual(['thread-user-message', 'thread-published', 'pr:checks-failed']);
+  expect(kinds(queue(f))).toEqual(['thread-user-message', 'thread-published', 'pr-ready-for-review', 'pr:checks-failed']);
   await f.app.projectWork.pulse();
-  expect(queue(f)).toHaveLength(3);
+  expect(queue(f)).toHaveLength(4);
 
   // 11. A success run while the combined status still reads pending with no statuses: passing.
   f.github.setChecks(1, 'passing'); await f.app.projectWork.pulse();
@@ -159,7 +160,7 @@ test('PJ1 merge from the API squashes the reviewed head', { timeout: 120_000 }, 
   // A conflict refuses with the UI reason.
   f.github.setMergeable(1, 'dirty'); await f.app.projectWork.pulse();
   expect(f.thread(threadId).pr).toMatchObject({ mergeable: 'conflict' });
-  expect(kinds(queue(f)).at(-1)).toBe('pr:conflict');
+  expect(kinds(queue(f))).toContain('pr:conflict');
   let refused = await f.request(route, 'POST', empty);
   expect(refused.status).toBe(409);
   expect(await refused.json()).toEqual({ schema: 'error-v1', code: 'conflict', message: 'This pull request has conflicts. Ask the thread to resolve them first.' });
@@ -205,7 +206,7 @@ test.each([
   expect(queue(f)[1]).toMatchObject({ threadId, report: { status: 'blocked', synthesized: true, summary: reason } });
   // A pushed branch is listed with its reason among the pull requests.
   const work = await f.json('/api/projects/project/work', ProjectWorkViewSchema);
-  expect(work.pullRequests).toEqual(pushed ? [{ threadId, title: 'Add greeting', branch: thread.branch, reason }] : []);
+  expect(work.pullRequests).toEqual(pushed ? [{ threadId, title: 'Add greeting', branch: thread.branch, reason, reviewRequired: true }] : []);
 });
 
 test('PJ1 done without commits concludes without changes', { timeout: 120_000 }, async () => {

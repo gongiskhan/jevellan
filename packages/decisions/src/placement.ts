@@ -141,7 +141,7 @@ function refusal(input: PlacementInput, evaluation: Evaluation): string {
 }
 
 /** Candidate isolations, models and devices for a new thread (brief 10, D8, D9, D37, D65, D71, D88), or the refusal text. */
-export function placementCandidates(input: PlacementInput): PlacementCandidates | { refused: string } {
+export function placementCandidates(input: PlacementInput): PlacementCandidates | { refused: string; retryable?: boolean } {
   const { fixed } = input;
   if (fixed.runtimeId !== undefined && !input.runtimes.has(fixed.runtimeId)) return { refused: UNKNOWN_PLACEMENT_RUNTIME };
   const account = fixed.accountId === undefined ? undefined : input.accounts.find((entry) => entry.id === fixed.accountId);
@@ -160,7 +160,7 @@ export function placementCandidates(input: PlacementInput): PlacementCandidates 
   };
   const limited = assess(!input.ignoreRunningLimit);
   const chosen = limited.top.models.length ? limited : input.ignoreRunningLimit ? undefined : assess(false);
-  if (!chosen?.top.models.length) return { refused: refusal(input, (chosen ?? limited).top) };
+  if (!chosen?.top.models.length) return { refused: refusal(input, (chosen ?? limited).top), retryable: true };
   const isolations: Isolation[] = [...(fixed.isolation === 'main' ? [] : ['worktree' as const]), ...(chosen.main ? ['main' as const] : [])];
   return { ...options(chosen.top), isolations, atLimit: chosen !== limited, ...(chosen.main ? { main: options(chosen.main) } : {}) };
 }

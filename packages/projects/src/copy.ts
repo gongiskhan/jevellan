@@ -22,9 +22,9 @@ export function coordinatorSystemAppend(projectName: string, gitPolicy: 'main' |
   return `You are the coordinator of the project "${projectName}" in Jevellan. You do not write code and you do not edit files. You plan, delegate to threads, keep track, and talk with the owner.
 
 How you work:
-- Threads do the work. Each thread is a full coding session (Claude Code or Codex) that carries one task end to end. Start a thread with jevellan_thread_start. Give it a short title and a complete task: the goal, the relevant context and constraints, what done means, and how to verify it. A thread cannot see this conversation, so put everything it needs in the task.
+- Work arrives as tasks in the project queue. Create a task for every new piece of work with jevellan_task_create: a short title, a complete brief that a capable engineer could act on without this conversation, its type, and the goal it serves or no goal. Use source owner-request only for work the owner asked for in this turn, and mark it now only when the owner wants it done right away. When the work needs something from the machine it runs on, such as a residential network or a Mac, say so in needs. Follow-ups to work already under way go to that thread with jevellan_thread_message. Never duplicate an open task. Code controls dispatch, placement and limits.
 - Preserve the outcome the owner asked for, including Jev's requested-result guidance. Carry it into the thread task and check the report against it. To run an app for the owner, have the thread start a managed app with jevellan_app_start and return its verified browser link. Tests and opening a file on the server do not complete that request. Continue authorized work without asking the owner to repeat it.
-- Route each new request: if it continues work an active thread is doing, send it to that thread with jevellan_thread_message; otherwise start a new thread. Split unrelated requests into separate threads. Do not start two threads that would change the same files at the same time; sequence them instead.
+- Route each new request: if it continues work an active thread is doing, send it to that thread with jevellan_thread_message; otherwise create a new task. Split unrelated requests into separate threads. Do not start two threads that would change the same files at the same time; sequence them instead.
 - Jevellan chooses where each thread runs (isolation, model, effort, device). Only pass isolation, modelId, effort or deviceId when the owner explicitly asked for them.
 - Worktree threads end in a pull request that the owner reviews and merges. You cannot merge. ${gitPolicy === 'external' ? 'This project is set to Leave git to me. Main threads edit the existing checkout, including untracked files, and leave all git operations to the owner. Do not ask the owner to commit files or change that policy just to make a code change. Worktree threads see only committed files; do not tell them to edit outside their workspace.' : 'Main threads publish directly to main.'}
 - When a thread reports, decide the next step yourself whenever the answer follows from the owner's instructions, the notebook or the code. Ask the owner with jevellan_ask_user only when the decision is genuinely theirs. Keep questions short, offer 2 to 4 options when possible, and continue other work while waiting.
@@ -120,6 +120,8 @@ export function eventLine(event: CoordinatorEvent, context: EventLineContext): s
     }
     case 'pr-update': return `[PR #${event.prNumber} "${title(event.threadId)}"] ${event.change === 'conflict' ? `has conflicts with ${context.base}` : PR_CHANGES[event.change]}`;
     case 'pr-ready-for-review': return `[PR #${event.prNumber} "${title(event.threadId)}" on ${event.commit.slice(0, 7)}] ready for coordinator review`;
+    case 'task-reviewed': return `[task "${event.title}" ${event.outcome} by the owner]`;
+    case 'task-not-started': return `[task "${event.title}" not started] ${event.reason}`;
     case 'mail': return `[mail from "${event.fromTitle ?? title(event.fromThreadId)}" (${event.fromThreadId})] ${event.subject}\n${event.body}`;
     case 'thread-user-message':
       return PREFORMATTED.some((prefix) => event.text.startsWith(prefix)) ? event.text : `[owner wrote directly to ${thread(event.threadId)}] ${event.text}`;
@@ -369,6 +371,10 @@ export function coordinatorToolSummary(tool: string, input: unknown, outcome: To
   const line = (done: string, attempt: string) => (outcome.ok ? done : `Could not ${attempt}: ${firstSentence(outcome.error)}`).slice(0, 400);
   switch (tool) {
     case 'jevellan_threads_list': return line('Listed threads', 'list threads');
+    case 'jevellan_tasks_list': return line('Listed tasks', 'list tasks');
+    case 'jevellan_task_create': return line(`Queued task "${textField(input, 'title') ?? ''}"`, 'create a task');
+    case 'jevellan_task_update': return line('Updated a queued task', 'update a task');
+    case 'jevellan_task_cancel': return line('Cancelled a queued task', 'cancel a task');
     case 'jevellan_thread_start': {
       const named = textField(input, 'title');
       return line(`${field(result, 'state') === 'queued' ? 'Queued' : 'Started'} "${named ?? ''}" · ${textField(result, 'placement') ?? ''}`, named ? `start "${named}"` : 'start a thread');
