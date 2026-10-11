@@ -310,5 +310,65 @@
     "title": "Command apps for external agents",
     "why": "Expose persistent command app starts to external agents only through a confined runner that enforces the granted project, runtime safety and resource limits. External MCP app_start serves static apps; arbitrary executable/args access is excluded. See MCP-C3 in docs/acceptance/mcp-2026-10-09.md.",
     "status": "planned"
+  },
+  {
+    "id": "hub-macbook-pro",
+    "title": "Hub on the MacBook Pro",
+    "why": "Move hub authority safely while the mini keeps its existing apps.",
+    "status": "planned"
+  },
+  {
+    "id": "own-setup-sessions",
+    "title": "Sessions use native setup",
+    "why": "Apply read-only native setup, root instruction fallback and coordinator review.",
+    "status": "planned"
+  },
+  {
+    "id": "projects-live",
+    "title": "Projects live on both runtimes",
+    "why": "Prove the real Claude and Codex sandbox journeys.",
+    "status": "planned"
+  },
+  {
+    "id": "loop-tasks",
+    "title": "Tasks and one project queue",
+    "why": "Make every new piece of work visible, ranked and dispatchable.",
+    "status": "planned"
+  },
+  {
+    "id": "loop-goals",
+    "title": "Goals and refill",
+    "why": "Keep owner goals moving through bounded proposed work.",
+    "status": "planned"
+  },
+  {
+    "id": "loop-daily",
+    "title": "Daily work and nightly window",
+    "why": "Run missed daily work with exact-commit gates and a merge hold.",
+    "status": "planned"
+  },
+  {
+    "id": "loop-placement-types",
+    "title": "Placement learns by task type",
+    "why": "Apply relevant owner corrections to future placement.",
+    "status": "planned"
+  },
+  {
+    "id": "loop-ekoa-link",
+    "title": "Ekoa task mirror",
+    "why": "Show owner decisions, reviewed PRs and drafts in Ekoa.",
+    "status": "planned"
+  },
+  {
+    "id": "loop-ekoa-code",
+    "title": "Ekoa Code on Jevellan",
+    "why": "Run the first hardening loop in dedicated worktrees.",
+    "status": "planned"
+  },
+  {
+    "id": "loop-machines",
+    "title": "Working devices and resource guards",
+    "why": "Use Pro and dev-madrid for Ekoa while the mini stays apps-only.",
+    "status": "planned"
   }
 ]
