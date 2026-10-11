@@ -1279,3 +1279,37 @@ test('LJ6 workflow daily records its actual run and a missing run times out expl
   await expect.poll(async () => (await view()).runs.find(run => run.jobId === definition.id)?.conclusion, LONG).toBe('timed-out'); await expect(absent).toContainText('No run of missing.yml started today.'); await shot(page, 'workflow-missing');
   expect(errors).toEqual([]);
 });
+
+test('LJ7 two fix effort corrections appear first in the next fix Why panel', async ({ page }) => {
+  const errors = await begin(page); const api = '/api/projects/projects_typed';
+  for (let i = 1; i <= 3; i++) {
+    await page.goto('/projects/projects_typed');
+    await page.getByRole('button', { name: 'New task', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'New task', exact: true });
+    await dialog.getByRole('textbox', { name: 'Title', exact: true }).fill(`Small fix ${i}`);
+    await dialog.getByRole('textbox', { name: 'Brief', exact: true }).fill(`LJ7 fix: repair edge case ${i}.`);
+    await dialog.getByRole('combobox', { name: 'Type', exact: true }).selectOption('fix');
+    await dialog.locator('summary').filter({ hasText: 'Choose where it runs' }).click();
+    await dialog.getByRole('combobox', { name: 'Model', exact: true }).selectOption('codex-gpt');
+    await dialog.getByRole('button', { name: 'Add to queue', exact: true }).click(); await expect(dialog).toBeHidden();
+    let id = '';
+    await expect.poll(async () => { const tasks = TaskListViewSchema.parse(await read(page, `${api}/tasks`)); id = tasks.tasks.find(row => row.title === `Small fix ${i}`)?.threadId ?? ''; return id; }, LONG).toMatch(/^thread_/);
+    await page.goto(`/projects/projects_typed/threads/${id}`); await expect(page.locator('.pw-state-chip')).toHaveText('Idle', LONG);
+    if (i < 3) {
+      await page.getByRole('button', { name: 'Override', exact: true }).click();
+      const override = page.getByRole('dialog', { name: 'Override', exact: true });
+      await override.getByRole('combobox', { name: 'Effort', exact: true }).selectOption('medium');
+      await override.getByRole('button', { name: 'Apply', exact: true }).click(); await expect(override).toBeHidden();
+    } else {
+      const receipt = ThreadViewSchema.parse(await read(page, `${api}/threads/${id}`)).placement;
+      const sentences = ["effort changed from high to medium for a fix task 'Small fix 2' (next-turn)", "effort changed from high to medium for a fix task 'Small fix 1' (next-turn)"];
+      expect(receipt.correctionsShown).toEqual(sentences); expect(receipt.taskContext?.type).toBe('fix');
+      await page.getByRole('button', { name: 'Why', exact: true }).click();
+      const panel = page.getByRole('dialog', { name: 'Why this placement', exact: true });
+      await expect(panel.getByRole('heading', { name: 'Corrections shown to Jev', exact: true })).toBeVisible();
+      await expect(panel.locator('ol li')).toHaveText(sentences);
+      await shot(page, 'typed-corrections', false);
+    }
+  }
+  expect(errors).toEqual([]);
+});

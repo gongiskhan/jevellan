@@ -242,9 +242,9 @@ const TASK_CHARS = 6000;
 const text = z.string();
 /** The redacted packet both placement calls send (brief 10). Rules hold configuration; thread and project text stays outside them. */
 export const PlacementStateSchema = z.strictObject({
-  schema: z.literal('placement-state-v1'),
-  // The last 8 overrides of this project, one sentence per changed field.
-  rules: z.strictObject({ routingProfile: text, effortGuide: z.record(EffortSchema, text), recentOverrides: z.array(text).max(32) }),
+  schema: z.literal('placement-state-v2'), task: TaskPlacementContextSchema,
+  // The newest eight same-type corrections, then four from other types; one sentence per changed field.
+  rules: z.strictObject({ routingProfile: text, effortGuide: z.record(EffortSchema, text), recentOverrides: z.array(text).max(72) }),
   project: z.strictObject({ name: text, defaultIsolation: IsolationSchema, gitPolicy: z.enum(['main', 'external']).optional() }),
   thread: z.strictObject({ title: text, task: text.max(TASK_CHARS), coordinatorNote: text.max(600).optional() }),
   activeThreads: z.array(z.strictObject({ title: text, isolation: IsolationSchema, device: text, model: text, effort: EffortSchema, reservedPaths: z.array(text) })).max(50),
@@ -252,36 +252,39 @@ export const PlacementStateSchema = z.strictObject({
 export type PlacementState = z.infer<typeof PlacementStateSchema>;
 /** A non-terminal thread of the project as the packet shows it: device name and model label, not ids. */
 export type PlacementActiveThread = PlacementState['activeThreads'][number];
-export type PlacementOverrideEntry = Pick<PlacementOverride, 'mode' | 'changes' | 'at'> & { title: string };
-/** activeThreads: oldest first (the newest 50 are kept). overrides: any order; the newest 8 by `at` are used (D249). */
-export type PlacementPacketInput = { title: string; task: string; note?: string | undefined; activeThreads: PlacementActiveThread[]; overrides: PlacementOverrideEntry[] };
+export type PlacementOverrideEntry = Pick<PlacementOverride, 'mode' | 'changes' | 'at' | 'taskType'> & { title: string };
+/** Active threads are oldest first. Corrections prefer the newest eight of this type, then four of other types. */
+export type PlacementPacketInput = { title: string; task: string; taskContext?: TaskPlacementContext | undefined; note?: string | undefined; activeThreads: PlacementActiveThread[]; overrides: PlacementOverrideEntry[] };
 type PlacementStateInput = PlacementInput & { packet: PlacementPacketInput; redactor: Pick<SecretRedactor, 'document'> };
 
 /** `{field} changed from {from} to {to} for '{title}' ({mode})` (brief 10), with the stored values (model ids, D249). */
-export function overrideSentence(change: { field: PlacementField; from: string; to: string }, title: string, mode: PlacementOverride['mode']): string {
-  return `${change.field} changed from ${change.from} to ${change.to} for '${title}' (${mode})`;
+export function overrideSentence(change: { field: PlacementField; from: string; to: string }, title: string, mode: PlacementOverride['mode'], type: TaskType = 'feature'): string {
+  return `${change.field} changed from ${change.from} to ${change.to} for a ${type} task '${title}' (${mode})`;
 }
 
 /**
- * The `placement-state-v1` packet: redacted first, then the task is cut to 6,000 characters with the marker and the note to 600, so a
+ * The `placement-state-v2` packet: redacted first, then the task is cut to 6,000 characters with the marker and the note to 600, so a
  * cut never splits a secret before the redactor saw it. Over 12,000 estimated tokens it drops reserved paths, then active threads,
  * then override sentences, oldest first each; still too large is `state-too-large` (D249).
  */
 export function buildPlacementState(input: PlacementStateInput): { state: string; approximateTokens: number } {
   const { packet } = input;
-  const overrides = [...packet.overrides].sort((a, b) => Date.parse(b.at) - Date.parse(a.at)).slice(0, 8);
+  const taskContext = packet.taskContext ?? { type: 'feature', needs: [], goal: null };
+  const recent = [...packet.overrides].sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
+  const same = (entry: PlacementOverrideEntry) => (entry.taskType ?? 'feature') === taskContext.type;
+  const overrides = [...recent.filter(same).slice(0, 8), ...recent.filter(entry => !same(entry)).slice(0, 4)];
   const mainAllowed = input.gates.mainIsolation;
   const note = packet.note?.trim();
   const redacted = input.redactor.document({
-    schema: 'placement-state-v1',
+    schema: 'placement-state-v2', task: taskContext,
     rules: { routingProfile: input.settings.routingProfile, effortGuide: { ...input.settings.effortGuide },
-      recentOverrides: overrides.flatMap((entry) => entry.changes.map((change) => overrideSentence(change, entry.title, entry.mode))).slice(0, 32) },
+      recentOverrides: overrides.flatMap((entry) => entry.changes.map((change) => overrideSentence(change, entry.title, entry.mode, entry.taskType))).slice(0, 72) },
     project: { name: input.project.name, defaultIsolation: input.defaultIsolation === 'main' && !mainAllowed ? 'worktree' : input.defaultIsolation, gitPolicy: input.project.branchPolicy },
     thread: { title: packet.title, task: packet.task, ...(note ? { coordinatorNote: note } : {}) },
     activeThreads: packet.activeThreads.slice(-50).map((thread) => ({ title: thread.title, isolation: thread.isolation, device: thread.device, model: thread.model, effort: thread.effort, reservedPaths: [...thread.reservedPaths] })),
   } satisfies PlacementState);
   const { task, coordinatorNote } = redacted.thread;
-  const packed = PlacementStateSchema.parse({ ...redacted, thread: { ...redacted.thread,
+  const packed = PlacementStateSchema.parse({ ...redacted, task: { ...redacted.task, goal: redacted.task.goal ? { ...redacted.task.goal, motivation: redacted.task.goal.motivation.slice(0, 600) } : null }, thread: { ...redacted.thread,
     task: task.length > TASK_CHARS ? `${task.slice(0, TASK_CHARS - TASK_SHORTENED.length)}${TASK_SHORTENED}` : task,
     ...(coordinatorNote ? { coordinatorNote: coordinatorNote.slice(0, 600) } : {}) } });
   let state = '';
@@ -338,7 +341,11 @@ export async function decidePlacement(client: DecisionClient, input: PlacementSt
   const candidates = placementCandidates(input);
   if ('refused' in candidates) return { kind: 'refused', message: candidates.refused };
   if (signal.aborted) throw new JevError('cancelled');
-  const placed = (record: PlacementRecord): PlacementDecision => ({ kind: 'placed', record, atLimit: candidates.atLimit });
+  const placed = (record: PlacementRecord): PlacementDecision => {
+    const packet = state ? PlacementStateSchema.parse(JSON.parse(state)) : undefined;
+    return { kind: 'placed', record: PlacementRecordSchema.parse({ ...record,
+      ...(packet ? { taskContext: packet.task, correctionsShown: packet.rules.recentOverrides } : {}) }), atLimit: candidates.atLimit };
+  };
   const calls: JevCall[] = []; const probabilities: Record<string, Record<string, number>> = {}; let state: string | undefined;
   const ask = async (questions: JevQuestions) => {
     if (!Object.keys(questions).length) return undefined;
@@ -375,3 +382,4 @@ export async function decidePlacement(client: DecisionClient, input: PlacementSt
     throw error;
   }
 }
+import { TaskPlacementContextSchema, type TaskPlacementContext, type TaskType } from '@jevellan/core';

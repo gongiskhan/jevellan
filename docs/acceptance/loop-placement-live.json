@@ -1,0 +1,10 @@
+{
+  "schema": "loop-placement-live-v1",
+  "evidence": "live",
+  "resources": "simulated",
+  "at": "2026-10-11T16:20:54.000Z",
+  "status": "passed",
+  "source": "jev",
+  "effort": "medium",
+  "calls": 1
+}

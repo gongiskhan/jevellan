@@ -335,3 +335,10 @@ test('apps-only members cannot claim the coordinator even when the project allow
   await expect(left.hub.assignCoordinator('project', 'left', 0)).rejects.toMatchObject({ status: 409, message: expect.stringContaining('apps only') });
   expect(await left.hub.coordinator('project')).toBeNull();
 });
+
+test('typed corrections are filtered on the hub before applying the limit, across member reads', async () => {
+  const left = await member('left'), right = await member('right'); await left.hub.publishThread(index('thread_a'), 1);
+  for (let i = 0; i < 30; i++) await left.hub.addOverride(override(`typed_${i}`, { taskType: i < 10 ? 'fix' : 'feature', at: new Date(Date.parse(at) + i * 60_000).toISOString() }));
+  expect((await right.hub.recentOverrides('project', 8, { type: 'fix', match: 'same' })).map(entry => entry.id)).toEqual(Array.from({ length: 8 }, (_, i) => `typed_${9 - i}`));
+  expect((await right.hub.recentOverrides('project', 4, { type: 'fix', match: 'other' })).map(entry => entry.id)).toEqual(['typed_29', 'typed_28', 'typed_27', 'typed_26']);
+});

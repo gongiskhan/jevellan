@@ -510,6 +510,14 @@ function WhyPanel({ view, data, close }: { view: ThreadView; data: PageProps['da
           <h3>{copy.ACCOUNT}</h3>
           <p className="why-line"><b>{account}</b></p>
         </section>}
+        {placement.taskContext && <section className="why-section">
+          <h3>Task</h3><p>{placement.taskContext.type}{placement.taskContext.goal ? ` · ${placement.taskContext.goal.name}` : ''}</p>
+          {placement.taskContext.needs.length > 0 && <p>Needs: {placement.taskContext.needs.join(', ')}</p>}
+        </section>}
+        {!!placement.correctionsShown?.length && <section className="why-section">
+          <h3>Corrections shown to Jev</h3>
+          <ol className="why-rank">{placement.correctionsShown.map((sentence, index) => <li key={index}>{sentence}</li>)}</ol>
+        </section>}
         <section className="why-section why-jev">
           <h3>{copy.JEV}</h3>
           {placement.jevCalls.length ? placement.jevCalls.map((call, index) => (

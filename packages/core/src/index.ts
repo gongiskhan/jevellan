@@ -69,3 +69,5 @@ export * from './project-goal-schemas.js';
 export * from './project-daily-schemas.js';
 
 export * from './github-actions.js';
+export * from './task-types.js';
+export * from './effort-guide.js';

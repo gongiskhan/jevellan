@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ7 two fix effort corrections appear first in the next fix Why panel",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/LJ7-typed-corrections-phone-light.png",
+  "expected": "the Jevellan web app \"LJ7 typed corrections\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"LJ7 two fix effort corrections appear first in the next fix Why panel\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The JEV footer line ('Placement · jev-browser-simulated · 40 tokens · 1 ms') is cut off at the bottom of the viewport. The panel likely scrolls, and it's only metadata, so it doesn't block anything.",
+      "The second correction item wraps unevenly ('...for a fix task 'Small fix 1'' then '(next-turn)' on its own line). It's still readable."
+    ]
+  }
+}

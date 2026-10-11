@@ -69,7 +69,7 @@ export interface ProjectHub {
   // placement overrides (phase 4): append-only, idempotent by id; recorded by the thread's owner device
   addOverride(override: PlacementOverride): Promise<void>;
   /** The newest `limit` overrides of the project, newest first. */
-  recentOverrides(projectId: string, limit: number): Promise<PlacementOverride[]>;
+  recentOverrides(projectId: string, limit: number, filter?: PlacementOverrideFilter): Promise<PlacementOverride[]>;
   // relay envelopes (phase 5, D40): only the source device puts, only the target reads and acknowledges
   /** Revision 0 creates; an identical retry answers `stored: false`, the same id with other content is refused (409). */
   putEnvelope(envelope: ProjectEnvelope): Promise<{ stored: boolean }>;
@@ -100,3 +100,4 @@ export interface ProjectHub {
   /** Per device, the claim or main thread that keeps new main threads off its project checkout, in device id order. */
   heldCheckouts(projectId: string): Promise<HeldCheckout[]>;
 }
+import type { PlacementOverrideFilter } from './task-types.js';

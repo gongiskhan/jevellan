@@ -1,4 +1,4 @@
-import { HubUnavailable, ProjectWorkTaskSchema, stableJson, type CoordinatorEvent, type ProjectWorkTask } from '@jevellan/core';
+import { HubUnavailable, ProjectWorkTaskSchema, stableJson, type CoordinatorEvent, type ProjectWorkTask, type TaskPlacementContext } from '@jevellan/core';
 import { derivedId } from './decision-items.js';
 import { ProjectTasks, taskOrder, taskRankBetween, taskThreadState } from './tasks.js';
 import type { ThreadService } from './threads.js';
@@ -6,7 +6,7 @@ import type { ThreadService } from './threads.js';
 export class ProjectDispatcher {
   readonly #running = new Map<string, Promise<void>>();
   constructor(readonly o: { tasks: ProjectTasks; threads: Pick<ThreadService, 'start' | 'list' | 'sweepQueue'>; deviceId: string;
-    text(task: ProjectWorkTask): Promise<{ brief: string; assembled: string }>;
+    text(task: ProjectWorkTask): Promise<{ brief: string; assembled: string; taskContext?: TaskPlacementContext }>;
     job?(task: ProjectWorkTask): Promise<void>;
     eligible?(task: ProjectWorkTask, tasks: readonly ProjectWorkTask[]): Promise<boolean>;
     event(projectId: string, event: CoordinatorEvent): Promise<void> }) {}
@@ -64,9 +64,9 @@ export class ProjectDispatcher {
       }
       try {
         if (!task.dispatchText) {
-          const text = await this.o.text(task); task = await this.o.tasks.save({ ...task, dispatchBrief: text.brief, dispatchText: text.assembled });
+          const text = await this.o.text(task); task = await this.o.tasks.save({ ...task, dispatchBrief: text.brief, dispatchText: text.assembled, ...(text.taskContext ? { dispatchContext: text.taskContext } : {}) });
         }
-        const started = await this.o.threads.start({ projectId, title: task.title, task: task.dispatchBrief ?? task.dispatchText!, assembledTask: task.dispatchText!, fixed: task.fixed,
+        const started = await this.o.threads.start({ projectId, title: task.title, task: task.dispatchBrief ?? task.dispatchText!, assembledTask: task.dispatchText!, taskContext: task.dispatchContext, fixed: task.fixed,
           ...(task.placementNote ? { note: task.placementNote } : {}), createdBy: task.source === 'owner' ? 'owner' : 'coordinator', coordinatorDeviceId: this.o.deviceId, clientRequestId: derivedId('treq', 'task', task.id) });
         task = await this.o.tasks.save({ ...task, threadId: started.threadId, state: started.state === 'queued' ? 'queued' : 'active', dispatchedAt: this.o.tasks.at() });
         tasks = tasks.map(row => row.id === task.id ? task : row);

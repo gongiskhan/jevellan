@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { CursorTranscriptSchema } from './cursor-schemas.js';
 import { EffortSchema, IdSchema, JevCallSchema, TimestampSchema } from './schemas.js';
+import { TaskPlacementContextSchema, TaskTypeSchema } from './task-types.js';
 
 // Browser-safe: zod and shared schemas only. Every stored, sent or received Projects document lives here.
 const text = z.string().min(1);
@@ -140,6 +141,7 @@ export const PlacementRecordSchema = z.strictObject({ schema: z.literal('placeme
   eligibleModels: z.array(IdSchema), excludedModels: z.array(z.strictObject({ modelId: IdSchema, reason: z.string() })),
   eligibleDevices: z.array(IdSchema), excludedDevices: z.array(z.strictObject({ deviceId: IdSchema, reason: z.string() })),
   error: z.strictObject({ kind: z.string(), message: z.string().max(300) }).optional(),
+  taskContext: TaskPlacementContextSchema.optional(), correctionsShown: z.array(z.string().max(12000)).max(72).optional(),
   jevCalls: z.array(JevCallSchema), decidedAt: TimestampSchema });
 export type PlacementRecord = z.infer<typeof PlacementRecordSchema>;
 // 5.5 owner-local <home>/projects/<pid>/threads/<tid>/thread.json
@@ -149,6 +151,7 @@ export type QueuedMessage = z.infer<typeof QueuedMessageSchema>;
 export const ThreadSchema = z.strictObject({
   schema: z.literal('project-thread-v1'), id: IdSchema, projectId: IdSchema,
   title: z.string().min(1).max(120), task: z.string().min(1).max(32768), brief: z.string().min(1).max(32768).optional(),
+  taskContext: TaskPlacementContextSchema.optional(),
   createdAt: TimestampSchema, createdBy: z.enum(['coordinator', 'owner']), restartedAs: IdSchema.optional(),
   state: ThreadStateSchema, stateReason: z.string().max(400).optional(),
   isolation: IsolationSchema, placement: PlacementRecordSchema, gitPolicy: z.enum(['main', 'external']).optional(),
@@ -195,7 +198,7 @@ export const FileReservationSchema = z.strictObject({ schema: z.literal('file-re
 export type FileReservation = z.infer<typeof FileReservationSchema>;
 // 5.12 hub namespace project-placement-overrides, key id
 export const PlacementOverrideSchema = z.strictObject({ schema: z.literal('placement-override-v1'), id: IdSchema,
-  projectId: IdSchema, threadId: IdSchema, mode: z.enum(['next-turn', 'restart']),
+  projectId: IdSchema, threadId: IdSchema, mode: z.enum(['next-turn', 'restart']), taskType: TaskTypeSchema.optional(),
   changes: z.array(z.strictObject({ field: PlacementFieldSchema, from: z.string(), to: z.string() })).min(1),
   note: z.string().max(400).optional(), at: TimestampSchema });
 export type PlacementOverride = z.infer<typeof PlacementOverrideSchema>;
@@ -382,6 +385,7 @@ export const CoordinatorMessageRequestSchema = z.strictObject({ schema: z.litera
   clientMessageId: IdSchema, text: z.string().min(1).max(20000) });
 export const ThreadCreateRequestSchema = z.strictObject({ schema: z.literal('thread-create-request-v1'), clientRequestId: IdSchema,
   title: z.string().min(1).max(120), task: z.string().min(1).max(32768),
+  taskContext: TaskPlacementContextSchema.optional(),
   isolation: IsolationSchema.optional(), runtimeId: IdSchema.optional(), accountId: IdSchema.optional(), modelId: IdSchema.optional(), effort: EffortSchema.optional(), deviceId: IdSchema.optional(),
   // A restart's owner note for placement, sent by the thread's device to the coordinator device (D266); the New thread form sends none.
   note: z.string().max(400).optional() });

@@ -1,3 +1,4 @@
+import type { TaskPlacementContext } from '@jevellan/core';
 import type { z } from 'zod';
 import type { AccountService } from '@jevellan/accounts';
 import {
@@ -21,7 +22,7 @@ export type PlacementResult =
   | { kind: 'placed'; record: PlacementRecord; labels: PlacementLabels; atLimit: boolean }
   | { kind: 'refused'; message: string; retryable?: boolean };
 export type PlaceInput = {
-  project: Project; workSettings: ProjectWorkSettings; title: string; task: string;
+  project: Project; workSettings: ProjectWorkSettings; title: string; task: string; taskContext?: TaskPlacementContext | undefined;
   /** The coordinator's one-line reason (`jevellan_thread_start`), or the owner's note of a restart (D252). */
   note?: string | undefined;
   fixed: PlacementFixed; coordinatorDeviceId: string; ignoreRunningLimit: boolean; signal?: AbortSignal | undefined;
@@ -137,8 +138,10 @@ export class Placement {
    */
   async #packet(input: PlaceInput, devices: PlacementDevice[]): Promise<PlacementPacketInput> {
     const projectId = input.project.id;
-    const [remote, overrides, reservations] = await Promise.all([bestEffort(this.#indexes(projectId), []), bestEffort(this.#o.hub.recentOverrides(projectId, 8), []),
-      bestEffort(this.#o.hub.reservations(projectId), [])]);
+    const type = input.taskContext?.type ?? 'feature';
+    const [remote, same, other, reservations] = await Promise.all([bestEffort(this.#indexes(projectId), []), bestEffort(this.#o.hub.recentOverrides(projectId, 8, { type, match: 'same' }), []),
+      bestEffort(this.#o.hub.recentOverrides(projectId, 4, { type, match: 'other' }), []), bestEffort(this.#o.hub.reservations(projectId), [])]);
+    const overrides = [...same, ...other];
     const indexes = new Map(remote.map((index) => [index.id, index]));
     for (const index of this.#o.local(projectId)) indexes.set(index.id, index);
     const device = (deviceId: string) => devices.find((entry) => entry.id === deviceId)?.name ?? deviceId;
@@ -146,8 +149,8 @@ export class Placement {
     const activeThreads = [...indexes.values()].filter((index) => !isTerminal(index.state)).sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))
       .map((index): PlacementActiveThread => ({ title: index.title, isolation: index.isolation, device: device(index.ownerDeviceId), model: index.modelLabel, effort: index.effort,
         reservedPaths: reserved(index.id) }));
-    return { title: input.title, task: input.task, note: input.note, activeThreads,
-      overrides: overrides.map((entry) => ({ mode: entry.mode, changes: entry.changes, at: entry.at, title: indexes.get(entry.threadId)?.title ?? UNKNOWN_THREAD })) };
+    return { title: input.title, task: input.task, taskContext: input.taskContext, note: input.note, activeThreads,
+      overrides: overrides.map((entry) => ({ mode: entry.mode, taskType: entry.taskType, changes: entry.changes, at: entry.at, title: indexes.get(entry.threadId)?.title ?? UNKNOWN_THREAD })) };
   }
   async place(input: PlaceInput): Promise<PlacementResult> {
     const decision = await this.input(input);
@@ -155,7 +158,7 @@ export class Placement {
     if ('refused' in candidates) return { kind: 'refused', message: candidates.refused, retryable: candidates.retryable ?? false };
     // All four fields fixed asks nothing, so the packet is not gathered.
     const fields = fixedPlacementFields(input.fixed);
-    const packet = ['isolation', 'model', 'effort', 'device'].every((field) => fields.includes(field as typeof fields[number])) ? { title: input.title, task: input.task, activeThreads: [], overrides: [] } : await this.#packet(input, decision.devices);
+    const packet = ['isolation', 'model', 'effort', 'device'].every((field) => fields.includes(field as typeof fields[number])) ? { title: input.title, task: input.task, taskContext: input.taskContext, activeThreads: [], overrides: [] } : await this.#packet(input, decision.devices);
     const client = this.#o.decisionClient ? await this.#o.decisionClient() : NO_KEY;
     const placed = await decidePlacement(client, { ...decision, jevModel: decision.settings.decisions.model, packet, redactor: this.#o.redactor },
       input.signal ?? new AbortController().signal);

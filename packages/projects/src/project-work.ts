@@ -216,7 +216,7 @@ export class ProjectWork {
       text: async task => {
         const goal = task.goalId ? await this.goals.read(task.projectId, task.goalId) : null;
         const brief = `${task.brief}${goal ? `\n\nGoal: ${goal.name}. Why it matters: ${goal.motivation}` : ''}\n\nTask type: ${task.type}.`, settings = await this.admission.settings(task.projectId);
-        return { brief, assembled: [brief, settings.threadRules ? `Rules for every thread:\n${settings.threadRules}` : ''].filter(Boolean).join('\n\n') };
+        return { brief, taskContext: { type: task.type, needs: task.needs, goal: goal ? { name: o.redactor.text(goal.name), motivation: o.redactor.text(goal.motivation).slice(0, 600) } : null }, assembled: [brief, settings.threadRules ? `Rules for every thread:\n${settings.threadRules}` : ''].filter(Boolean).join('\n\n') };
       }, job: task => this.jobs.start(task), eligible: async (task, tasks) => await this.daily.eligible(task, tasks) && await this.goals.eligible(task, tasks), event: (projectId, event) => delivery.toCoordinator(projectId, event) });
     this.tracker = new PullRequestTracker({ threads: this.store, github, git, worktrees, project: (projectId) => this.#project(projectId),
       toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event),
@@ -479,7 +479,7 @@ export class ProjectWork {
    */
   async createThread(projectId: string, input: ThreadCreateRequest): Promise<z.infer<typeof ThreadCreatedViewSchema>> {
     const coordinatorDeviceId = await this.#coordinatorHere(projectId);
-    const started = await this.threads.start({ projectId, title: input.title, task: input.task, createdBy: 'owner', clientRequestId: input.clientRequestId, coordinatorDeviceId, note: input.note,
+    const started = await this.threads.start({ projectId, title: input.title, task: input.task, taskContext: input.taskContext, createdBy: 'owner', clientRequestId: input.clientRequestId, coordinatorDeviceId, note: input.note,
       fixed: { ...(input.isolation ? { isolation: input.isolation } : {}), ...(input.modelId ? { modelId: input.modelId } : {}), ...(input.effort ? { effort: input.effort } : {}),
         ...(input.runtimeId ? { runtimeId: input.runtimeId } : {}), ...(input.accountId ? { accountId: input.accountId } : {}),
         ...(input.deviceId ? { deviceId: input.deviceId } : {}) } });

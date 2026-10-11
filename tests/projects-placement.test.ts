@@ -351,12 +351,12 @@ test('Jev answers resolve to the highest probability, the mapped effort and the 
   expect(record).toEqual({ schema: 'placement-v1', questionSet: 'p-v1', source: 'jev', fixed: [], isolation: 'worktree', runtime: 'claude', modelId: 'deep', model: 'deep-version',
     effortRequested: 'max', effortEffective: 'max', deviceId: 'dev_studio', accountId: 'claude_b',
     probabilities: { isolation: { worktree: 0.8, main: 0.2 }, pick_model: { swift: 0.4945, deep: 0.5055 }, effort: { low: 0, medium: 0.1, high: 0.3, xhigh: 0, max: 0.6 }, device: { dev_mini: 0, dev_studio: 1 } },
-    eligibleModels: ['swift', 'deep'], excludedModels: [], eligibleDevices: ['dev_mini', 'dev_studio'], excludedDevices: [], jevCalls: [placementCall, placementCall], decidedAt: '2026-10-03T10:00:00.000Z' });
+    eligibleModels: ['swift', 'deep'], excludedModels: [], eligibleDevices: ['dev_mini', 'dev_studio'], excludedDevices: [], taskContext: { type: 'feature', needs: [], goal: null }, correctionsShown: [], jevCalls: [placementCall, placementCall], decidedAt: '2026-10-03T10:00:00.000Z' });
   expect(PlacementRecordSchema.parse(record)).toEqual(record);
   const [first, second] = decide.mock.calls.map(([request]) => request);
   expect(Object.keys(first!.questions)).toEqual(['isolation', 'pick_model', 'effort']); expect(Object.keys(second!.questions)).toEqual(['device']);
   expect(first!.model).toBe('jev-1.13.0'); expect(second!.state).toBe(first!.state);
-  expect(PlacementStateSchema.parse(JSON.parse(first!.state))).toMatchObject({ schema: 'placement-state-v1', thread: { title: 'Add A', task: 'Add the A endpoint with tests.' } });
+  expect(PlacementStateSchema.parse(JSON.parse(first!.state))).toMatchObject({ schema: 'placement-state-v2', thread: { title: 'Add A', task: 'Add the A endpoint with tests.' } });
   // Effort maps to the chosen model; an exact tie goes to Jev's choice, else to the first tied option.
   const local = input({ gates: closed });
   expect(await placed(local, jev({ pick_model: 'deep', effort: 'low' }))).toMatchObject({ modelId: 'deep', effortRequested: 'low', effortEffective: 'high', probabilities: { pick_model: { swift: 0, deep: 1 } } });
@@ -431,20 +431,20 @@ test('the placement packet is redacted before the task is shortened and carries 
   const build = (over: Partial<PlacementPacketInput> = {}, value = input()) => buildPlacementState({ ...value, packet: { ...packet, ...over }, redactor });
   const { state, approximateTokens: tokens } = build({ title: `Add A ${secret}`, task: `${'x'.repeat(5975)}${secret}${'y'.repeat(100)}`, note: `  Use the ${secret} with Bearer abc123 now.  `, activeThreads: [active], overrides });
   expect(state).not.toContain(secret.slice(0, 7)); expect(state).not.toContain('abc123');
-  expect(JSON.parse(state)).toEqual({ schema: 'placement-state-v1',
+  expect(JSON.parse(state)).toEqual({ schema: 'placement-state-v2', task: { type: 'feature', needs: [], goal: null },
     rules: { routingProfile: settings.routingProfile, effortGuide: settings.effortGuide,
-      recentOverrides: ["model changed from deep to swift for 'Add B' (restart)", "device changed from dev_mini to dev_studio for 'Add B' (restart)", "effort changed from high to low for 'Add A' (next-turn)"] },
+      recentOverrides: ["model changed from deep to swift for a feature task 'Add B' (restart)", "device changed from dev_mini to dev_studio for a feature task 'Add B' (restart)", "effort changed from high to low for a feature task 'Add A' (next-turn)"] },
     project: { name: 'App', defaultIsolation: 'worktree', gitPolicy: 'main' },
     thread: { title: 'Add A [redacted]', task: `${'x'.repeat(5975)}[redact${TASK_SHORTENED}`, coordinatorNote: 'Use the [redacted] with Bearer [redacted] now.' }, activeThreads: [active] });
   expect(TASK_SHORTENED).toBe('\n[Task shortened.]'); expect(JSON.parse(state).thread.task).toHaveLength(6000);
   expect(tokens).toBe(approximateTokens(state)); expect(tokens).toBeLessThanOrEqual(12_000);
-  expect(overrideSentence({ field: 'effort', from: 'high', to: 'low' }, 'Add A', 'next-turn')).toBe("effort changed from high to low for 'Add A' (next-turn)");
+  expect(overrideSentence({ field: 'effort', from: 'high', to: 'low' }, 'Add A', 'next-turn')).toBe("effort changed from high to low for a feature task 'Add A' (next-turn)");
   const parsed = (over: Partial<PlacementPacketInput> = {}, value = input()) => PlacementStateSchema.parse(JSON.parse(build(over, value).state));
   expect(parsed({ task: 'y'.repeat(6000), note: ' ' })).toMatchObject({ thread: { task: 'y'.repeat(6000) } }); expect(parsed({ note: ' ' }).thread).not.toHaveProperty('coordinatorNote');
   expect(parsed({ note: 'n'.repeat(700) }).thread.coordinatorNote).toBe('n'.repeat(600));
   // The newest 8 overrides, newest first; the newest 50 active threads in their order.
   const many = Array.from({ length: 10 }, (_, index) => ({ title: `T${index}`, mode: 'next-turn' as const, changes: [{ field: 'effort' as const, from: 'low', to: 'high' }], at: new Date(now + index * 60_000).toISOString() }));
-  expect(parsed({ overrides: [...many].reverse() }).rules.recentOverrides).toEqual(many.slice(2).reverse().map((entry) => `effort changed from low to high for '${entry.title}' (next-turn)`));
+  expect(parsed({ overrides: [...many].reverse() }).rules.recentOverrides).toEqual(many.slice(2).reverse().map((entry) => `effort changed from low to high for a feature task '${entry.title}' (next-turn)`));
   const threads = Array.from({ length: 52 }, (_, index) => ({ ...active, title: `Thread ${index}` }));
   expect(parsed({ activeThreads: threads }).activeThreads.map((thread) => thread.title)).toEqual(threads.slice(2).map((thread) => thread.title));
   // The default isolation is the effective one: main only when main can be offered.
@@ -476,4 +476,16 @@ test('an oversized packet drops reserved paths, then threads, then overrides, ol
   expect(decide).not.toHaveBeenCalled();
   // The packet is built only when a question needs it.
   expect(await placed(input({ ...huge, gates: closed, settings: { ...huge.settings, menu: [deep] }, fixed: { effort: 'high' } }), decide)).toMatchObject({ source: 'fixed' });
+});
+
+test('typed placement prefers eight older same-type corrections before four recent other types, and redacts goals before cutting', async () => {
+  const secret = 'typed-goal-secret'; const redactor = new SecretRedactor(); redactor.add(secret);
+  const entry = (type: 'fix' | 'feature', index: number) => ({ title: `${type} ${index}`, taskType: type, mode: 'next-turn' as const,
+    changes: [{ field: 'effort' as const, from: 'high', to: 'medium' }], at: new Date(now + (type === 'fix' ? index : 100 + index) * 60_000).toISOString() });
+  const overrides = [...Array.from({ length: 10 }, (_, i) => entry('fix', i)), ...Array.from({ length: 20 }, (_, i) => entry('feature', i))];
+  const context = { type: 'fix' as const, needs: ['mac'], goal: { name: `Reliability ${secret}`, motivation: 'x'.repeat(595) + secret + 'y'.repeat(30) } };
+  const state = PlacementStateSchema.parse(JSON.parse(buildPlacementState({ ...input(), packet: { ...packet, taskContext: context, overrides }, redactor }).state));
+  expect(state.task).toMatchObject({ type: 'fix', needs: ['mac'], goal: { name: 'Reliability [redacted]' } });
+  expect(state.task.goal!.motivation).toHaveLength(600); expect(JSON.stringify(state)).not.toContain(secret.slice(0, 5));
+  expect(state.rules.recentOverrides).toEqual([...overrides.slice(2, 10).reverse(), ...overrides.slice(-4).reverse()].map(entry => overrideSentence(entry.changes[0]!, entry.title, entry.mode, entry.taskType)));
 });

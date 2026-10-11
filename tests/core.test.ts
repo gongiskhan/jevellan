@@ -181,3 +181,13 @@ test('effort mapping rounds up and unavailable models stay disabled', () => {
   expect(reconcileMenu(menu, 'claude', []).filter((model) => model.runtime === 'claude').every((model) => !model.enabled && model.unavailableReason)).toBe(true);
   expect(newId('acc')).toMatch(/^acc_[0-9A-HJKMNP-TV-Z]{26}$/);
 });
+
+test('requested menu labels use only discovered identifiers and efforts without enabling an owner-disabled choice', () => {
+  const offered = [{ id: 'opaque-account-model', label: 'GPT-6.1 Sol', efforts: ['medium', 'xhigh'] as const }];
+  const first = reconcileMenu([], 'codex', offered.map(model => ({ ...model, efforts: [...model.efforts] })));
+  expect(first).toHaveLength(1); expect(first[0]).toMatchObject({ model: 'opaque-account-model', enabled: true, efforts: ['medium', 'xhigh'] });
+  expect(reconcileMenu(first, 'codex', offered.map(model => ({ ...model, efforts: [...model.efforts] })))).toEqual(first);
+  expect(reconcileMenu([{ ...first[0]!, enabled: false }], 'codex', offered.map(model => ({ ...model, efforts: [...model.efforts] })))[0]!.enabled).toBe(false);
+  expect(reconcileMenu([], 'claude', [{ id: 'subscription-opus', label: 'Claude Opus 5.5', efforts: ['high'] }])[0]).toMatchObject({ model: 'subscription-opus', efforts: ['high'], enabled: true });
+  expect(reconcileMenu([], 'codex', [{ id: 'unsupported', label: 'GPT-6.1 Sol', efforts: [] }])).toEqual([]);
+});

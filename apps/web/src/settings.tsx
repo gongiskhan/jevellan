@@ -1,3 +1,4 @@
+import { SUGGESTED_EFFORT_GUIDE, suggestedEffortCriteria } from '@jevellan/core/client';
 import { clientId } from './client-id.js';
 import { useEffect, useState } from 'react';
 import { z } from 'zod';
@@ -297,6 +298,7 @@ export function DecisionsPage(props: PageProps) {
         </section>
         <section className="card">
           <h2>Effort guide</h2>
+          {!Object.entries(suggestedEffortCriteria).every(([effort, text]) => config.effortGuide[effort as keyof typeof config.effortGuide] === text) && <div className="notice"><p>{SUGGESTED_EFFORT_GUIDE}</p><button type="button" className="secondary small" onClick={() => change(value => { value.effortGuide = { ...suggestedEffortCriteria }; })}>Use suggested effort guide</button></div>}
           {Object.entries(config.effortGuide).map(([effort, description]) => (
             <label key={effort} className="effort-line">
               <span>{effort}</span>

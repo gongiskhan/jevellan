@@ -1,3 +1,4 @@
+import { suggestedEffortCriteria } from './effort-guide.js';
 import type { DatabaseSync } from 'node:sqlite';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
@@ -112,7 +113,7 @@ export function seedConfiguration(): Configuration {
         { id: 'codex-gpt', runtime: 'codex', model: 'discover-latest-gpt', efforts: ['low', 'medium', 'high', 'xhigh'], label: 'GPT', description: 'Long, well-specified implementation runs; nearly as strong as Fable, and its quota lasts about five times longer. An independent reviewer for work written by Claude.', enabled: false, unavailableReason: 'Model discovery has not run.' },
         { id: 'claude-sonnet', runtime: 'claude', model: 'claude-sonnet-5', efforts: ['low', 'medium', 'high'], label: 'Sonnet', description: 'Only trivial, mechanical work.', enabled: false },
       ],
-      effortGuide: { low: 'Quick, obvious work: short answers, one-line fixes, renames.', medium: 'Routine work with a clear path.', high: 'Non-trivial work: most implementation, planning and reviews.', xhigh: 'Hard problems: tricky bugs, changes that cut across the system.', max: 'The hardest work: deep debugging, architecture, UI judged by eye, or a step that already failed at a lower effort.' },
+      effortGuide: { ...suggestedEffortCriteria },
       routingProfile: [
         'The user builds TypeScript and JavaScript web apps and agent platforms.',
         'Prefer staying on the current model when it fits the next step. Every step starts a fresh session either way, but consecutive steps on the same model reuse its prompt cache, so switching has a cost.',

@@ -39,7 +39,7 @@ function jev() {
     if ((init?.method ?? 'GET') === 'GET') return Response.json({ models: [{ name: 'jev-latest', description: 'Fixture.', release_date: '2026-01-01' }] });
     const body = JSON.parse(String(init!.body)) as { model: string; state: string; questions: JevQuestions };
     const packet = JSON.parse(body.state) as { schema?: string };
-    if (packet.schema !== 'placement-state-v1') return new Response('Only placements are scripted here.', { status: 400 });
+    if (packet.schema !== 'placement-state-v2') return new Response('Only placements are scripted here.', { status: 400 });
     state.calls.push({ model: body.model, questions: body.questions, packet: PlacementStateSchema.parse(packet), authorization: new Headers(init!.headers).get('authorization') });
     if (state.mode === 'auth') return new Response('Private provider body is not evidence.', { status: 401 });
     const answers = Object.fromEntries(Object.entries(body.questions).map(([id, question]) => {
@@ -241,7 +241,7 @@ test('PJ4b overrides change the next launch and restarts feed the packet', { tim
   const answer = await override(f, threadId, lower);
   expect(answer.status).toBe(200); expect(await answer.json()).toEqual({ schema: 'thread-override-view-v1' });
   const [first] = await f.app.projectHub.recentOverrides('project', 8);
-  expect(first).toEqual({ schema: 'placement-override-v1', id: expect.stringMatching(/^povr_/), projectId: 'project', threadId, mode: 'next-turn',
+  expect(first).toEqual({ schema: 'placement-override-v1', id: expect.stringMatching(/^povr_/), projectId: 'project', threadId, mode: 'next-turn', taskType: 'feature',
     changes: [{ field: 'effort', from: 'max', to: 'low' }], at: expect.any(String) });
   expect(placementEvents(f)).toEqual([expect.objectContaining({ kind: 'placement-override', threadId, summary: 'Effort changed from max to low.' })]);
   expect(f.thread(threadId).placement).toMatchObject({ modelId: 'deep', effortRequested: 'low', effortEffective: mapEffort('low', DEEP.efforts) });
@@ -293,7 +293,7 @@ test('PJ4b overrides change the next launch and restarts feed the packet', { tim
   expect(Object.keys(restartCall.questions)).toEqual(['isolation', 'effort']);
   expect(replacement.isolation).toBe('worktree');
   expect(restartCall.packet.thread).toEqual({ title: 'Add search', task: 'Add a search box to the catalog page.', coordinatorNote: 'Swift is enough for this.' });
-  expect(restartCall.packet.rules.recentOverrides).toEqual(["model changed from deep to deep-lite for 'Add search' (next-turn)", "effort changed from max to low for 'Add search' (next-turn)"]);
+  expect(restartCall.packet.rules.recentOverrides).toEqual(["model changed from deep to deep-lite for a feature task 'Add search' (next-turn)", "effort changed from max to low for a feature task 'Add search' (next-turn)"]);
   // The change is recorded from the model the thread had (deep-lite after step 2) and the coordinator hears both threads.
   expect((await f.app.projectHub.recentOverrides('project', 1))[0]).toMatchObject({ mode: 'restart', threadId, changes: [{ field: 'model', from: 'deep-lite', to: 'swift' }], note: 'Swift is enough for this.' });
   // The new thread's own events may follow at any time, so only these two are compared, in order.
@@ -316,8 +316,8 @@ test('PJ4b overrides change the next launch and restarts feed the packet', { tim
   deep.enqueueTurn(reportStep({ status: 'progress', summary: 'Planned the filters.' }), forThread());
   const filters = await start(f, 'Add filters', 'Add price filters to the catalog page.');
   const packet = transport.state.calls.at(-1)!.packet;
-  expect(packet.rules.recentOverrides).toEqual(["model changed from deep-lite to swift for 'Add search' (restart)", "model changed from deep to deep-lite for 'Add search' (next-turn)",
-    "effort changed from max to low for 'Add search' (next-turn)"]);
+  expect(packet.rules.recentOverrides).toEqual(["model changed from deep-lite to swift for a feature task 'Add search' (restart)", "model changed from deep to deep-lite for a feature task 'Add search' (next-turn)",
+    "effort changed from max to low for a feature task 'Add search' (next-turn)"]);
   expect(packet.activeThreads).toEqual([{ title: 'Add search', isolation: 'worktree', device: f.deviceName, model: 'Swift', effort: replacement.placement.effortEffective, reservedPaths: [] }]);
   await settle(f, filters.threadId, 1);
 
@@ -381,4 +381,22 @@ test('apps-only placement rejects fixed device requests before a thread is creat
   expect(response.status).toBe(409);
   expect(f.app.projectWork.store.list('project')).toHaveLength(0);
   expect(transport.state.calls).toHaveLength(0);
+});
+
+test('LJ7 fix corrections survive next-turn overrides and are exposed in the next placement Why receipt', { timeout: 120_000 }, async () => {
+  const transport = jev(); transport.state.answers.effort = { high: 1 };
+  const f = await setup([{ ...DEEP, efforts: ['medium', 'high'] }], transport);
+  for (let i = 1; i <= 3; i++) {
+    f.runtimes.fake2!.enqueueTurn(reportStep({ status: 'progress', summary: `Fix ${i} underway.` }), forThread());
+    const created = await f.json('/api/projects/project/threads', ThreadCreatedViewSchema, 'POST', { ...createBody(`Fix ${i}`, `Repair the ${i} edge case.`), taskContext: { type: 'fix', needs: [], goal: null } });
+    await settle(f, created.threadId, 1);
+    if (i < 3) expect((await override(f, created.threadId, overrideBody('next-turn', { effort: 'medium' }))).status).toBe(200);
+    else {
+      const receipt = (await view(f, created.threadId)).placement;
+      expect(receipt.taskContext?.type).toBe('fix');
+      expect(receipt.correctionsShown).toEqual(["effort changed from high to medium for a fix task 'Fix 2' (next-turn)", "effort changed from high to medium for a fix task 'Fix 1' (next-turn)"]);
+      expect(transport.state.calls.at(-1)!.packet.rules.recentOverrides).toEqual(receipt.correctionsShown);
+    }
+  }
+  expect((await f.app.projectHub.recentOverrides('project', 8)).every(row => row.taskType === 'fix')).toBe(true);
 });

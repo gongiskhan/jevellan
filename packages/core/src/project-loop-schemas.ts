@@ -1,8 +1,9 @@
 import { z } from 'zod';
 import { EffortSchema, IdSchema, TimestampSchema } from './schemas.js';
 import { IsolationSchema } from './project-schemas.js';
+import { TaskPlacementContextSchema, TaskTypeSchema } from './task-types.js';
+export { TaskTypeSchema } from './task-types.js';
 
-export const TaskTypeSchema = z.enum(['feature', 'fix', 'finding', 'refactor', 'docs', 'analysis', 'review', 'ops']);
 export const TaskKindSchema = z.enum(['session', 'job']);
 export const TaskStateSchema = z.enum(['draft', 'queued', 'active', 'in-review', 'done', 'failed', 'cancelled']);
 export const TaskSourceSchema = z.enum(['owner', 'owner-request', 'refill', 'finding', 'daily', 'ekoa']);
@@ -17,7 +18,7 @@ export const ProjectWorkTaskSchema = z.strictObject({ schema: z.literal('project
   dailyId: IdSchema.nullable(), jobId: IdSchema.nullable(), threadId: IdSchema.nullable(), jobRunId: IdSchema.nullable(), fixed: TaskFixedSchema,
   refillEventId: IdSchema.optional(), projectDay: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u).optional(), placementNote: z.string().max(400).optional(), createdAt: TimestampSchema, updatedAt: TimestampSchema, dispatchedAt: TimestampSchema.optional(), endedAt: TimestampSchema.optional(), endNote: z.string().max(400).optional(),
   // Frozen before the first start. A lost response/restart repeats identical start input.
-  dispatchText: z.string().min(1).max(32768).optional(), dispatchBrief: z.string().min(1).max(32768).optional(), requestDigest: z.string().regex(/^[0-9a-f]{64}$/u).optional() });
+  dispatchText: z.string().min(1).max(32768).optional(), dispatchBrief: z.string().min(1).max(32768).optional(), dispatchContext: TaskPlacementContextSchema.optional(), requestDigest: z.string().regex(/^[0-9a-f]{64}$/u).optional() });
 export type ProjectWorkTask = z.infer<typeof ProjectWorkTaskSchema>;
 export const TaskPositionSchema = z.union([z.enum(['top', 'bottom']), z.strictObject({ before: IdSchema }), z.strictObject({ after: IdSchema })]);
 export const TaskCreateRequestSchema = z.strictObject({ schema: z.literal('task-create-request-v1'), clientRequestId: IdSchema, title, brief,

@@ -66,7 +66,7 @@ During the window the dispatcher starts only its daily tasks, one at a time. Mer
 
 ## Placement and corrections
 
-The coordinator determines the work, its goal, type and needs. Jev selects placement among candidates validated by code. Placement includes the task type, requirements and goal motivation, cut to 600 characters, plus resource facts and tags. Corrections identify the task type; packets carry the newest eight same-type overrides followed by the newest four of other types. Why explains the choices and exclusions.
+The coordinator determines the work, its goal, type and needs. Jev selects placement among candidates validated by code. Placement includes the task type, requirements and goal motivation, cut to 600 characters, plus resource facts and tags. Corrections identify the task type; packets carry the newest eight same-type overrides followed by the newest four of other types. Why explains the choices and exclusions and lists the corrections actually shown to Jev. A queued task snapshots context together with its first dispatch brief; resumed turns keep that task identity.
 
 The suggested effort guide defaults to high, uses extra high or the highest supported effort below max for features, architecture and broad changes, uses medium for small fixes and mechanical work, and never selects low for a thread. Models and efforts come from account discovery, including Opus 5.5 and GPT-6.1 Sol when offered by the runtime.
 

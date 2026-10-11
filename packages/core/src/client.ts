@@ -30,3 +30,5 @@ export * from './project-loop-schemas.js';
 export * from './project-goal-schemas.js';
 
 export * from './project-daily-schemas.js';
+export * from './task-types.js';
+export * from './effort-guide.js';

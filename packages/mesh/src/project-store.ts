@@ -1,3 +1,4 @@
+import { PlacementOverrideFilterSchema, type PlacementOverrideFilter } from '@jevellan/core';
 import { ProjectJobSchema, ProjectDailySchema, ProjectJobRunSchema, ProjectWindowSchema, type ProjectJob, type ProjectDaily, type ProjectJobRun, type ProjectWindow } from '@jevellan/core';
 import { ProjectGoalSchema, ProjectRefillStateSchema, type ProjectGoal, type ProjectRefillState } from '@jevellan/core';
 import { createHash } from 'node:crypto';
@@ -320,10 +321,10 @@ export class HubProjectStore {
     });
   }
   /** The project's newest overrides by time, newest first; the collection is small (D90 leaves it unpruned). */
-  recentOverrides(projectId: string, limit: number): PlacementOverride[] {
-    const count = z.number().int().min(1).max(PROJECT_HUB_PAGE).parse(limit);
+  recentOverrides(projectId: string, limit: number, filter?: PlacementOverrideFilter): PlacementOverride[] {
+    const count = z.number().int().min(1).max(PROJECT_HUB_PAGE).parse(limit); if (filter) PlacementOverrideFilterSchema.parse(filter);
     return this.hub.listByField(OVERRIDES, 'projectId', IdSchema.parse(projectId), PlacementOverrideSchema).map((row) => row.document)
-      .sort((a, b) => Date.parse(b.at) - Date.parse(a.at) || b.id.localeCompare(a.id)).slice(0, count);
+      .filter(row => !filter || ((row.taskType ?? 'feature') === filter.type) === (filter.match === 'same')).sort((a, b) => Date.parse(b.at) - Date.parse(a.at) || b.id.localeCompare(a.id)).slice(0, count);
   }
 
   /**
@@ -592,7 +593,7 @@ export class HubProjectStore {
       case 'notebook-get': result = { ...base, record: this.notebook(request.projectId) }; break;
       case 'notebook-put': result = { ...base, record: this.putNotebook(request.notebook, request.expectedRevision) }; break;
       case 'override-add': result = { ...base, override: this.addOverride(request.override) }; break;
-      case 'overrides-recent': result = { ...base, records: this.recentOverrides(request.projectId, request.limit) }; break;
+      case 'overrides-recent': result = { ...base, records: this.recentOverrides(request.projectId, request.limit, request.filter) }; break;
       case 'envelope-put': result = { ...base, id: request.envelope.id, ...this.putEnvelope(request.envelope) }; break;
       case 'envelopes-pending': result = { ...base, ...this.pendingEnvelopes(request.targetDeviceId) }; break;
       case 'envelope-ack': result = { ...base, id: request.id, ...this.ackEnvelope(request.id) }; break;
@@ -659,7 +660,7 @@ export class HubProjectAccess implements ProjectHub {
   async notebook(projectId: string) { return this.#store.notebook(projectId); }
   async putNotebook(notebook: ProjectNotebook, expectedRevision: number) { return this.#store.putNotebook(notebook, expectedRevision); }
   async addOverride(override: PlacementOverride) { this.#store.addOverride(override); }
-  async recentOverrides(projectId: string, limit: number) { return this.#store.recentOverrides(projectId, limit); }
+  async recentOverrides(projectId: string, limit: number, filter?: PlacementOverrideFilter) { return this.#store.recentOverrides(projectId, limit, filter); }
   async putEnvelope(envelope: ProjectEnvelope) { return this.#store.putEnvelope(envelope); }
   async pendingEnvelopes(targetDeviceId: string) { return this.#store.pendingEnvelopes(targetDeviceId); }
   async ackEnvelope(id: string) { this.#store.ackEnvelope(id); }
@@ -761,9 +762,9 @@ export class MemberProjectStore implements ProjectHub {
     this.#check((await this.#call('override-add', { override })).override, (stored) => stored.id === override.id && stored.projectId === override.projectId && stored.threadId === override.threadId);
   }
   /** Every record belongs to the project, at most `limit`, newest first. */
-  async recentOverrides(projectId: string, limit: number) {
-    return this.#check((await this.#call('overrides-recent', { projectId, limit })).records, (records) => records.length <= limit
-      && records.every((record, index) => record.projectId === projectId && (index === 0 || Date.parse(records[index - 1]!.at) >= Date.parse(record.at))));
+  async recentOverrides(projectId: string, limit: number, filter?: PlacementOverrideFilter) {
+    return this.#check((await this.#call('overrides-recent', { projectId, limit, ...(filter ? { filter } : {}) })).records, (records) => records.length <= limit
+      && records.every((record, index) => record.projectId === projectId && (!filter || ((record.taskType ?? 'feature') === filter.type) === (filter.match === 'same')) && (index === 0 || Date.parse(records[index - 1]!.at) >= Date.parse(record.at))));
   }
   async putEnvelope(envelope: ProjectEnvelope) {
     const result = this.#check(await this.#call('envelope-put', { envelope }), (value) => value.id === envelope.id);

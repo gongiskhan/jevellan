@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { EffortSchema, IdSchema, ModelOptionSchema, type Effort, type ModelOption } from './schemas.js';
 
 export function newId(prefix: string, now = Date.now()): string {
@@ -18,7 +18,7 @@ export function mapEffort(requested: Effort, supported: Effort[]): Effort {
 }
 export type OfferedModel = { id: string; label: string; efforts: Effort[] };
 export function reconcileMenu(menu: ModelOption[], runtime: string, offered: OfferedModel[]): ModelOption[] {
-  return menu.map((raw) => {
+  const reconciled = menu.map((raw) => {
     const entry = ModelOptionSchema.parse(raw);
     if (entry.runtime !== runtime) return entry;
     // Runtime ordering is authoritative for its current default/latest model.
@@ -27,4 +27,13 @@ export function reconcileMenu(menu: ModelOption[], runtime: string, offered: Off
     const { unavailableReason, ...current } = entry;
     return ModelOptionSchema.parse({ ...current, model: model.id, efforts: model.efforts, enabled: unavailableReason === 'Model discovery has not run.' ? true : entry.enabled });
   });
+  // These are the owner's requested menu labels. Runtime discovery owns the identifiers and effort levels.
+  const requested = runtime === 'claude' ? /^(?:Claude )?Opus 5\.5$/iu : runtime === 'codex' ? /^GPT[ -]6\.1 Sol$/iu : undefined;
+  for (const model of offered) {
+    if (!requested?.test(model.label) || !model.efforts.length || reconciled.length >= 19
+      || reconciled.some(entry => entry.runtime === runtime && entry.model === model.id)) continue;
+    reconciled.push(ModelOptionSchema.parse({ id: `model_${createHash('sha256').update(`${runtime}\0${model.id}`).digest('hex').slice(0, 24)}`,
+      runtime, model: model.id, label: model.label, description: 'Available from your account.', enabled: true, efforts: model.efforts }));
+  }
+  return reconciled;
 }

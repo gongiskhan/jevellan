@@ -142,6 +142,7 @@ const LONG_TOOLS = [['Read', { file_path: 'README.md' }, '# Projects app\n\nA sm
 const longThreads = new Set();
 function threadStep(input) {
   const report = (status, summary, extra = {}) => async (turn) => { await projectPause(350, turn.signal); turn.say(summary); await projectTool(turn, 'jevellan_thread_report', { status, summary, ...extra }); return { status: 'completed' }; };
+  if (input.prompt.includes('LJ7 fix:')) return report('progress', 'Inspected the small fix; waiting for the owner.');
   if (input.prompt.includes('LJ5 review:')) return report('done', 'Reviewed yesterday; no additional findings.');
   if (input.prompt.includes('LJ4:')) return async turn => {
     if (await hold('LJ4 goal task', turn.signal) === 'aborted') return { status: 'interrupted' };
@@ -300,7 +301,7 @@ const decisionFetch = async (_url, init) => {
   if (init?.method === 'GET') return Response.json({ models: [{ name: 'jev-latest', description: 'Simulated browser fixture.', release_date: '2026-09-22' }] });
   const body = JSON.parse(init.body); const state = JSON.parse(body.state);
   // Placement packets carry no conversation, so they are answered before anything reads one.
-  if (state.schema === 'placement-state-v1') return placementAnswers(body, state);
+  if (state.schema === 'placement-state-v2') return placementAnswers(body, state);
   const improver = improverAnswers(body, state);
   if (improver) return Response.json({ model: 'jev-browser-simulated', usage: { input_tokens: 25, output_tokens: 15 }, answers: improver });
   const composer = state.conversation.request === 'Exercise composer choices: explain the value.';
@@ -334,7 +335,7 @@ const application = new Application({ homes: new Homes(join(root, 'user', '.jeve
     // Projects journeys also get Opus, a second Claude entry for the PJ4b next-turn override (same runtime); Fable stays first.
     runtime.listModels = async () => runtime.id === 'claude'
       ? [{ id: 'claude-fable-5-1', label: 'Fable', efforts: ['low', 'high'] }, ...(projectsMode ? [{ id: 'claude-opus-5-5', label: 'Opus', efforts: ['low', 'high'] }] : [])]
-      : [{ id: 'gpt-fixture', label: 'GPT fixture', efforts: ['low', 'high'] }];
+      : [{ id: 'gpt-fixture', label: 'GPT fixture', efforts: ['low', 'medium', 'high'] }];
     runtime.beginLogin = async (account) => {
       let state = 'pending'; let error; let completeAt;
       const complete = async () => { if (account.credential === 'shared') await context.saveSecret(account.id, `fixture-${randomUUID()}`); state = 'done'; };
@@ -499,7 +500,7 @@ member = new Application({ homes: memberHomes, port: port + 100, timers: false, 
   const turns = new FakeRuntime(); runtime.startTurn = projectsMode ? scriptedTurns(turns) : input => turns.startTurn(input);
   runtime.capabilities = { ...runtime.capabilities, shell: true, readOnlyEnforced: true }; // Simulated provider: no native sandbox.
   runtime.probe = async resolved => ({ auth: existsSync(join(resolved.home, 'auth.json')) && readDocument(join(resolved.home, 'auth.json'), FixtureAuthSchema).fixture_login ? 'ready' : 'missing', identity: { email: 'remote-fixture@example.test' } });
-  runtime.listModels = async () => [{ id: 'gpt-fixture', label: 'GPT fixture', efforts: ['low', 'high'] }];
+  runtime.listModels = async () => [{ id: 'gpt-fixture', label: 'GPT fixture', efforts: ['low', 'medium', 'high'] }];
   runtime.beginLogin = async (_account, home) => {
     let state = 'pending';
     return { instructions: 'Paste the simulated callback address for this device.', url: 'https://example.test/authorize', poll: async () => state,
@@ -561,6 +562,7 @@ if (projectsMode) {
     memory: { mode: 'repo', dir: '.jevellan/memory' }, context: { state: 'none' } }) });
   await save('projects_fixture', 'Projects fixture', { [hubId]: projectsPath, [memberId]: projectsMember }, 'main', { testCommand: 'test -f greeting.txt' });
   await save('projects_goals', 'Projects goals', { [hubId]: clone(projectsOrigin, join(root, 'projects-goals')) }, 'main');
+  await save('projects_typed', 'Projects typed', { [hubId]: clone(projectsOrigin, join(root, 'projects-typed')) }, 'main');
   await save('projects_queue', 'Projects queue', { [hubId]: clone(projectsOrigin, join(root, 'projects-queue')) }, 'main');
   for (const [id, name] of [['projects_daily', 'Projects daily'], ['projects_workflows', 'Projects workflows']]) {
     const path = clone(projectsOrigin, join(root, id)); git(path, 'remote', 'set-url', 'origin', PROJECTS_REMOTE); git(path, 'config', `url.${projectsOrigin}.insteadOf`, PROJECTS_REMOTE);

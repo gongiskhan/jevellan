@@ -91,7 +91,7 @@ export const ProjectHubRequestSchema = z.discriminatedUnion('operation', [
   z.strictObject({ ...request, operation: z.literal('notebook-get'), ...project }),
   z.strictObject({ ...request, operation: z.literal('notebook-put'), notebook: ProjectNotebookSchema, expectedRevision }),
   z.strictObject({ ...request, operation: z.literal('override-add'), override: PlacementOverrideSchema }),
-  z.strictObject({ ...request, operation: z.literal('overrides-recent'), ...project, limit: z.number().int().min(1).max(PROJECT_HUB_PAGE) }),
+  z.strictObject({ ...request, operation: z.literal('overrides-recent'), ...project, limit: z.number().int().min(1).max(PROJECT_HUB_PAGE), filter: PlacementOverrideFilterSchema.optional() }),
   // Relay (phase 5, D40): the source puts, the target reads its pending envelopes and acknowledges each one, which deletes it (D90).
   z.strictObject({ ...request, operation: z.literal('envelope-put'), envelope: ProjectEnvelopeSchema }),
   z.strictObject({ ...request, operation: z.literal('envelopes-pending'), targetDeviceId: IdSchema }),
@@ -223,3 +223,4 @@ export const ProjectHubResultSchema = z.discriminatedUnion('operation', [
 ]);
 export type ProjectHubResult = z.infer<typeof ProjectHubResultSchema>;
 export type ProjectHubResultOf<O extends ProjectHubOperation> = Extract<ProjectHubResult, { operation: O }>;
+import { PlacementOverrideFilterSchema } from './task-types.js';

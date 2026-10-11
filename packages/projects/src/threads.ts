@@ -1,3 +1,4 @@
+import type { TaskPlacementContext } from '@jevellan/core';
 import type { z } from 'zod';
 import type { AccountService } from '@jevellan/accounts';
 import { existsSync } from 'node:fs';
@@ -89,7 +90,7 @@ export type StartRequest = {
   clientRequestId?: string | undefined;
   /** The project's coordinator device; starts run there (D9a). */
   coordinatorDeviceId: string;
-  assembledTask?: string;
+  assembledTask?: string; taskContext?: TaskPlacementContext | undefined;
   /**
    * Internal, a restart of a main thread (D292): that thread's own claim does not count against the main rule, and the new thread's
    * preparation waits for the caller, which starts it once the old thread has given the checkout back.
@@ -200,7 +201,7 @@ export class ThreadService {
   start(request: StartRequest): Promise<StartResult> {
     return this.#exclusive(request.projectId, async () => {
       const { projectId } = request;
-      const normalized = { title: request.title, task: request.assembledTask ?? request.task, ...request.fixed };
+      const normalized = { title: request.title, task: request.assembledTask ?? request.task, ...(request.taskContext ? { taskContext: request.taskContext } : {}), ...request.fixed };
       const digest = createHash('sha256').update(stableJson(normalized)).digest('hex');
       const planFile = request.clientRequestId ? join(this.#o.store.paths.project(projectId), 'start-plans', `${IdSchema.parse(request.clientRequestId)}.json`) : undefined;
       if (request.clientRequestId !== undefined) {
@@ -230,7 +231,7 @@ export class ThreadService {
       if (task.length > 32768) throw refuse('The assembled task exceeds 32768 characters. Shorten the brief or thread rules.', 400);
       const counts = await this.#o.admission.counts(projectId);
       const projectFull = counts.project >= counts.limits.project;
-      const placed = await this.#o.placement.place({ project, workSettings: settings, title: request.title, task, note: request.note, fixed: request.fixed,
+      const placed = await this.#o.placement.place({ project, workSettings: settings, title: request.title, task, taskContext: request.taskContext, note: request.note, fixed: request.fixed,
         coordinatorDeviceId: request.coordinatorDeviceId, ignoreRunningLimit: projectFull, exclude: request.exclude });
       if (placed.kind === 'refused') throw Object.assign(refuse(placed.message, 409), { resourceRefusal: placed.retryable ?? true });
       const at = this.#o.now(); const threadId = newId('thread', at); const record = placed.record;
@@ -241,7 +242,7 @@ export class ThreadService {
         const admitted = await this.#o.admission.admit(projectId, record.deviceId, threadId);
         if (admitted.ok) hold = admitted.release; else queued = admitted.queued;
       }
-      const thread = ThreadSchema.parse({ schema: 'project-thread-v1', id: threadId, projectId, title: request.title, task, brief: request.task, createdAt: new Date(at).toISOString(),
+      const thread = ThreadSchema.parse({ schema: 'project-thread-v1', id: threadId, projectId, title: request.title, task, brief: request.task, ...(request.taskContext ? { taskContext: request.taskContext } : {}), createdAt: new Date(at).toISOString(),
         createdBy: request.createdBy, state: queued === undefined ? 'preparing' : 'queued', ...(queued === undefined ? {} : { stateReason: queued }), isolation: record.isolation,
         placement: record, ownerDeviceId: record.deviceId, coordinatorDeviceId: request.coordinatorDeviceId, cwd: '', baseBranch: '', baseCommit: '', turns: 0,
         turnAllowance: settings.threadTurnCap, queuedMessages: [], verificationAttempts: 0 });
@@ -321,7 +322,7 @@ export class ThreadService {
     if (model && model.id !== placement.modelId || input.accountId !== undefined) {
       // The model must be able to run this thread where it is: enabled, its runtime able to run threads, an account on this device.
       const project = (await this.#o.projects.get(projectId))?.project; if (!project) throw refuse(PROJECT_NOT_FOUND, 404);
-      const refused = await this.#o.placement.refusal({ project, workSettings: await this.#o.admission.settings(projectId), title: thread.title, task: thread.task,
+      const refused = await this.#o.placement.refusal({ project, workSettings: await this.#o.admission.settings(projectId), title: thread.title, task: thread.task, taskContext: thread.taskContext,
         fixed: { isolation: thread.isolation, modelId: model?.id ?? placement.modelId, runtimeId: placement.runtime, deviceId: thread.ownerDeviceId,
           ...((input.accountId ?? (placement.fixed.includes('account') ? placement.accountId : undefined)) ? { accountId: input.accountId ?? placement.accountId } : {}) }, coordinatorDeviceId: thread.coordinatorDeviceId, ignoreRunningLimit: true,
         exclude: threadId });
@@ -329,7 +330,7 @@ export class ThreadService {
     }
     const at = this.#o.now(); const note = this.#note(input.note);
     const override = PlacementOverrideSchema.parse({ schema: 'placement-override-v1', id: derivedId('povr', projectId, threadId, input.clientRequestId), projectId, threadId,
-      mode: 'next-turn', changes, ...(note ? { note } : {}), at: this.#at(at) });
+      mode: 'next-turn', taskType: thread.taskContext?.type ?? 'feature', changes, ...(note ? { note } : {}), at: this.#at(at) });
     await this.#o.hub.addOverride(override);
     await this.#o.delivery.toCoordinator(projectId, { schema: 'coordinator-event-v1', kind: 'placement-override', id: derivedId('cev', override.id), at: this.#at(at), threadId,
       summary: overrideSummary({ changes, note }) });
@@ -350,7 +351,7 @@ export class ThreadService {
     const fixed: PlacementFixed = { isolation: thread.isolation, deviceId: thread.ownerDeviceId, runtimeId: current.runtime,
       ...(input.modelId === null ? {} : { modelId: input.modelId ?? current.modelId }), ...(input.effort === null ? {} : { effort: input.effort ?? current.effortRequested }),
       ...(input.accountId === null ? {} : input.accountId !== undefined ? { accountId: input.accountId } : current.fixed.includes('account') ? { accountId: current.accountId } : {}) };
-    const chosen = await this.#o.placement.place({ project, workSettings: await this.#o.admission.settings(thread.projectId), title: thread.title, task: thread.task,
+    const chosen = await this.#o.placement.place({ project, workSettings: await this.#o.admission.settings(thread.projectId), title: thread.title, task: thread.task, taskContext: thread.taskContext,
       note: input.note, fixed, coordinatorDeviceId: thread.coordinatorDeviceId, ignoreRunningLimit: true, exclude: thread.id });
     if (chosen.kind === 'refused') throw refuse(chosen.message, 409);
     const fields = new Set(current.fixed);
@@ -360,7 +361,7 @@ export class ThreadService {
     const placement = { ...chosen.record, fixed: [...fields] };
     const at = this.#o.now(); const note = this.#note(input.note);
     const override = PlacementOverrideSchema.parse({ schema: 'placement-override-v1', id: derivedId('povr', thread.projectId, thread.id, input.clientRequestId), projectId: thread.projectId,
-      threadId: thread.id, mode: 'next-turn', changes, ...(note ? { note } : {}), at: this.#at(at) });
+      threadId: thread.id, mode: 'next-turn', taskType: thread.taskContext?.type ?? 'feature', changes, ...(note ? { note } : {}), at: this.#at(at) });
     await this.#o.hub.addOverride(override);
     await this.#o.delivery.toCoordinator(thread.projectId, { schema: 'coordinator-event-v1', kind: 'placement-override', id: derivedId('cev', override.id), at: this.#at(at), threadId: thread.id,
       summary: overrideSummary({ changes, note }) });
@@ -401,19 +402,19 @@ export class ThreadService {
     const clientRequestId = derivedId('treq', 'restart', projectId, threadId, input.clientRequestId);
     // A retry of an applied restart passes the refusals that the restart itself caused.
     const brief = thread.brief ?? thread.task;
-    if (!this.#o.receipts.get(projectId, clientRequestId, { title: thread.title, task: brief, ...fixed })) { const refused = restartRefusal(thread); if (refused) throw refuse(refused, 409); }
+    if (!this.#o.receipts.get(projectId, clientRequestId, { title: thread.title, task: brief, ...(thread.taskContext ? { taskContext: thread.taskContext } : {}), ...fixed })) { const refused = restartRefusal(thread); if (refused) throw refuse(refused, 409); }
     const note = this.#note(input.note);
     // A main thread still holds its checkout until it stops below: its own claim does not count, and the new thread prepares after (D292).
     const settles = thread.isolation === 'main' && !isTerminal(thread.state);
     let started: Pick<StartResult, 'threadId'>;
     if (coordinatorDeviceId === this.#o.deviceId) {
-      started = await this.start({ projectId, title: thread.title, task: brief, createdBy: 'owner', fixed, note, clientRequestId, coordinatorDeviceId,
+      started = await this.start({ projectId, title: thread.title, task: brief, ...(thread.taskContext ? { taskContext: thread.taskContext } : {}), createdBy: 'owner', fixed, note, clientRequestId, coordinatorDeviceId,
         ...(settles ? { exclude: threadId, deferPrepare: true } : {}) });
     }
     else {
       if (!remote) throw refuse(COORDINATOR_ELSEWHERE, 409);
-      const created = await remote(projectId, coordinatorDeviceId, { schema: 'thread-create-request-v1', clientRequestId, title: thread.title, task: brief, ...fixed, ...(note ? { note } : {}) });
-      this.#o.receipts.put(projectId, clientRequestId, { title: thread.title, task: brief, ...fixed }, created.threadId, this.#summaryOf(created));
+      const created = await remote(projectId, coordinatorDeviceId, { schema: 'thread-create-request-v1', clientRequestId, title: thread.title, task: brief, ...(thread.taskContext ? { taskContext: thread.taskContext } : {}), ...fixed, ...(note ? { note } : {}) });
+      this.#o.receipts.put(projectId, clientRequestId, { title: thread.title, task: brief, ...(thread.taskContext ? { taskContext: thread.taskContext } : {}), ...fixed }, created.threadId, this.#summaryOf(created));
       started = created;
     }
     const changes: OverrideChange[] = [
@@ -424,7 +425,7 @@ export class ThreadService {
       ...(fixed.effort !== undefined && fixed.effort !== placement.effortRequested ? [{ field: 'effort' as const, from: placement.effortRequested, to: fixed.effort }] : []),
       ...(fixed.deviceId !== undefined && fixed.deviceId !== thread.ownerDeviceId ? [{ field: 'device' as const, from: thread.ownerDeviceId, to: fixed.deviceId }] : [])];
     const id = derivedId('povr', projectId, threadId, input.clientRequestId); const at = this.#at(this.#o.now());
-    if (changes.length) await this.#o.hub.addOverride(PlacementOverrideSchema.parse({ schema: 'placement-override-v1', id, projectId, threadId, mode: 'restart', changes, ...(note ? { note } : {}), at }));
+    if (changes.length) await this.#o.hub.addOverride(PlacementOverrideSchema.parse({ schema: 'placement-override-v1', id, projectId, threadId, mode: 'restart', taskType: thread.taskContext?.type ?? 'feature', changes, ...(note ? { note } : {}), at }));
     this.#o.store.update(threadId, current => ({ ...current, restartedAs: started.threadId }));
     await this.runner(threadId)!.restarted(restartedReason(started.threadId));
     // The old thread gave the checkout back: a new thread waiting here prepares now (a repeat finds it past preparing and changes nothing).
