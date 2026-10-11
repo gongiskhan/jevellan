@@ -31,7 +31,8 @@ export class ProjectTasks {
     reviewed?(task: ProjectWorkTask, outcome: 'approved' | 'rejected'): Promise<void>;
     cancelThread?(task: ProjectWorkTask, reason: string, owner: boolean): Promise<void>;
     changed?(projectId: string): void;
-    validateGoal?(projectId: string, goalId: string | null, source: ProjectWorkTask['source']): Promise<'draft' | 'queued'> }) {}
+    projectDay?(projectId: string): Promise<string>;
+    validateGoal?(projectId: string, goalId: string | null, source: ProjectWorkTask['source'], refillEventId?: string): Promise<'draft' | 'queued'> }) {}
   exclusive<T>(projectId: string, work: () => Promise<T>): Promise<T> {
     const result = (this.#chains.get(projectId) ?? Promise.resolve()).then(work), tail = result.then(() => undefined, () => undefined);
     this.#chains.set(projectId, tail); void tail.then(() => { if (this.#chains.get(projectId) === tail) this.#chains.delete(projectId); }); return result;
@@ -52,7 +53,7 @@ export class ProjectTasks {
   #rank(ordered: ProjectWorkTask[], index: number): string {
     return taskRankBetween(ordered[index - 1]?.rank ?? null, ordered[index]?.rank ?? null);
   }
-  create(projectId: string, raw: TaskCreateRequest, source: ProjectWorkTask['source'] = 'owner', authority: { ownerRequested?: boolean; id?: string } = {}) {
+  create(projectId: string, raw: TaskCreateRequest, source: ProjectWorkTask['source'] = 'owner', authority: { ownerRequested?: boolean; id?: string; refillEventId?: string } = {}) {
     return this.exclusive(projectId, async () => {
       await this.assertWriter(projectId); const input = TaskCreateRequestSchema.parse(raw);
       if (source === 'owner-request' && !authority.ownerRequested) refuse("Only a task the owner asked for in this turn can be marked as the owner's request.", 403);
@@ -60,13 +61,13 @@ export class ProjectTasks {
       const id = authority.id ?? derivedId('task', projectId, input.clientRequestId), digest = createHash('sha256').update(stableJson({ ...input, source })).digest('hex');
       const previous = (await this.o.hub.task(id))?.document;
       if (previous) { if (previous.projectId !== projectId || previous.requestDigest !== digest) refuse('This request ID already created a different task.'); return { schema: 'task-receipt-v1' as const, taskId: id, state: previous.state, repeated: true }; }
-      const state = await this.o.validateGoal?.(projectId, input.goalId, source) ?? 'queued';
+      const state = await this.o.validateGoal?.(projectId, input.goalId, source, authority.refillEventId) ?? 'queued';
       if (input.goalId !== null && !this.o.validateGoal) refuse('Goals are not available yet.', 400);
       const ordered = (await this.list(projectId)).filter(taskOpen).sort((a, b) => a.rank.localeCompare(b.rank));
       const { clientRequestId: _requestId, ...fields } = input; void _requestId;
       const at = this.at(), task = await this.save(ProjectWorkTaskSchema.parse({ ...fields, schema: 'project-work-task-v1', id, projectId, revision: 0,
         kind: 'session', source, state, rank: this.#rank(ordered, ordered.length), ownerRanked: false, dailyId: null, jobId: null, threadId: null, jobRunId: null,
-        createdAt: at, updatedAt: at, requestDigest: digest }));
+        createdAt: at, updatedAt: at, requestDigest: digest, ...(authority.refillEventId ? { refillEventId: authority.refillEventId } : {}), ...(this.o.projectDay ? { projectDay: await this.o.projectDay(projectId) } : {}) }));
       this.o.changed?.(projectId);
       return { schema: 'task-receipt-v1' as const, taskId: task.id, state: task.state, repeated: false };
     });

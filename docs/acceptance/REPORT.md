@@ -1129,3 +1129,10 @@ Current pilot deployment (2026-10-09): the pushed MCP implementation `d895b6f` r
 ### Decision 645 — Queue recovery and verification checkpoint
 
 A persisted thread-start plan repairs crashes before the start receipt and prepares the original local thread; deterministic owner notifications are retried safely. Thread briefs and internal restart transport allow 32768 characters, with assembled overflow refused before placement. The seven queue cases, 16 immediate-thread cases and focused runner case pass. Browser queue behavior was observed in four layouts; the final cleanup rerun and full release matrix remain pending. The full backend run is not passing evidence, including older memory/context failures. Phase 4 is implemented without claiming release or owner acceptance.
+
+### Decision 646 — Owner goals and durable refill
+
+Goals are owner-managed perpetual work purposes. The coordinator reads them and may answer each eligible refill event with at most one task per goal; the hub enforces duplicate and daily-cap checks in the task transaction. Refill receipts persist before event delivery and replay by ID after restart. Queued work respects paused/done goals, reserved or active sessions and open pull-request caps. Project days use local wall-clock boundaries: the earliest repeated minute on fall-back and the next existing minute after a spring gap. Goal creation has a stable owner request identity, preserving edits on retry. Goal UI grouping is remembered per browser. Focused backend and four-layout LJ4 passed; full release and live owner checks remain open.
+
+
+Phase 5 boundary correction: when the nightly window is disabled, project days begin at midnight in the configured zone. With the window enabled, its closing time defines the boundary. The final owner/API/bridge selection passed 28 cases; the complete backend and browser release gates remain outstanding.

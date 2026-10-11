@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ3 one queue preserves dependency order, owner ordering and recovery without duplicate threads",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/screenshots/LJ3-queue-dependency-desktop-dark.png",
+  "expected": "the Jevellan web app \"LJ3 queue dependency\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"LJ3 one queue preserves dependency order, owner ordering and recovery without duplicate threads\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Read the README on the member' summary in the Running list is cut off with an ellipsis ('...one line about th…'). The full text appears in the main thread.",
+      "Shell session titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…').",
+      "The queue item title 'Queue dependent desktop-dark-projects' wraps onto two lines next to the 'Now · Queued' badge, which makes the header row taller than the other queue items."
+    ]
+  }
+}

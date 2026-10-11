@@ -28,3 +28,6 @@ export * from './project-work.js';
 export * from './tasks.js';
 export * from './dispatcher.js';
 export * from './apps.js';
+
+export * from './goals.js';
+export * from './project-day.js';

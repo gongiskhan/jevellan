@@ -31,7 +31,7 @@ export const ProjectWorkSettingsSchemaV1 = z.strictObject({
 export const ProjectWorkSettingsSchema = ProjectWorkSettingsSchemaV1.extend({
   schema: z.literal('project-work-settings-v2'), allowMainIsolation: z.boolean().default(true),
   threadRules: z.string().max(4000).default(''), coordinatorReview: z.boolean().default(true),
-  nightlyWindow: z.strictObject({ enabled: z.boolean(), time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/u), timezone: text.max(64) })
+  nightlyWindow: z.strictObject({ enabled: z.boolean(), time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/u), timezone: text.max(64).refine(value => { try { new Intl.DateTimeFormat('en', { timeZone: value }); return true; } catch { return false; } }, 'Use a supported time zone.') })
     .default({ enabled: false, time: '02:00', timezone: 'Europe/Lisbon' }),
   refill: z.strictObject({ enabled: z.boolean(), minIntervalMinutes: z.number().int().min(10).max(1440) }).default({ enabled: true, minIntervalMinutes: 30 }),
 });
@@ -100,6 +100,7 @@ export const CoordinatorEventSchema = z.discriminatedUnion('kind', [
   ev('decision-answer', { decisionId: IdSchema, threadId: IdSchema.optional(), question: z.string(), answer: DecisionAnswerSchema }),
   ev('pr-update', { threadId: IdSchema, prNumber: positive, change: z.enum(['checks-failed', 'checks-passed', 'merged', 'closed', 'conflict']) }),
   ev('pr-ready-for-review', { threadId: IdSchema, prNumber: positive, commit: z.string().regex(/^[a-f0-9]{40,64}$/u) }),
+  ev('goal-refill', { goals: z.array(z.strictObject({ goalId: IdSchema, name: z.string().min(1).max(80), refillsToday: count, cap: z.number().int().min(0).max(20) })).max(100) }),
   ev('task-reviewed', { taskId: IdSchema, title: text.max(120), outcome: z.enum(['approved', 'rejected']) }),
   ev('task-not-started', { taskId: IdSchema, title: text.max(120), reason: z.string().max(400) }),
   ev('mail', { mailId: IdSchema, fromThreadId: IdSchema, fromTitle: z.string().max(160).optional(), subject: z.string().min(1).max(200), body: z.string().max(8000) }),

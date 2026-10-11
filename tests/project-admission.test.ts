@@ -179,14 +179,14 @@ test('placement without a Jev client falls back on the coordinator device, recor
   const fixed = await place(value, { fixed: { isolation: 'worktree', modelId: 'swift', effort: 'high', deviceId: 'dev_mini' } });
   expect(fixed.kind === 'placed' && fixed.record).toMatchObject({ source: 'fixed', fixed: ['isolation', 'model', 'effort', 'device'], effortEffective: 'high' });
   expect(fixed.kind === 'placed' && 'error' in fixed.record).toBe(false);
-  expect(await place(value, { fixed: { isolation: 'main' } })).toEqual({ kind: 'refused', message: MAIN_NOT_AVAILABLE });
-  expect(await place(value, { fixed: { isolation: 'main' }, project: { ...project, branchPolicy: 'external' } })).toEqual({ kind: 'refused', message: MAIN_NOT_AVAILABLE });
+  expect(await place(value, { fixed: { isolation: 'main' } })).toMatchObject({ kind: 'refused', message: MAIN_NOT_AVAILABLE });
+  expect(await place(value, { fixed: { isolation: 'main' }, project: { ...project, branchPolicy: 'external' } })).toMatchObject({ kind: 'refused', message: MAIN_NOT_AVAILABLE });
   const studio = await place(value, { fixed: { deviceId: 'dev_studio' } });
   expect(studio.kind === 'placed' && [studio.record.deviceId, studio.record.fixed, studio.labels.deviceName]).toEqual(['dev_studio', ['device'], 'Studio']);
   // An offline device is no candidate; the device gate, closed before phase 5, still refuses another device.
-  expect((await place(placementWith([], { studio: 'offline' }).placement, { fixed: { deviceId: 'dev_studio' } }))).toEqual({ kind: 'refused', message: 'No device can run any enabled model: Studio: offline.' });
+  expect((await place(placementWith([], { studio: 'offline' }).placement, { fixed: { deviceId: 'dev_studio' } }))).toMatchObject({ kind: 'refused', message: 'No device can run any enabled model: Studio: offline.' });
   const gated = placementWith([], { gates: { mainIsolation: false, remoteDevices: false } }).placement;
-  expect(await place(gated, { fixed: { deviceId: 'dev_studio' } })).toEqual({ kind: 'refused', message: REMOTE_NOT_AVAILABLE });
+  expect(await place(gated, { fixed: { deviceId: 'dev_studio' } })).toMatchObject({ kind: 'refused', message: REMOTE_NOT_AVAILABLE });
   expect((await place(gated)).kind === 'placed' && (await place(gated) as { record: { excludedDevices: unknown } }).record.excludedDevices)
     .toEqual([{ deviceId: 'dev_studio', reason: 'not available until remote threads exist' }]);
 });
@@ -263,7 +263,7 @@ test('main isolation is placed only where the checkout is on main and free: clai
   await place(free.placement, { fixed: { isolation: 'worktree' } }); expect(free.reads.held).toBe(1);
   // The hub's held checkouts (a conversation here) and a checkout on another branch leave no device.
   const busy = placementWith([], { branches: { dev_studio: 'feature' }, held: [{ deviceId: 'dev_mini', ownerId: 'conv_1', title: 'Tidy the docs' }] }).placement;
-  expect(await place(busy, fixedMain)).toEqual({ kind: 'refused',
+  expect(await place(busy, fixedMain)).toMatchObject({ kind: 'refused',
     message: 'No device can run any enabled model: Mac mini: main checkout busy: Tidy the docs; Studio: checkout is on feature, not main.' });
   // Without fixing the isolation, a main default falls back to the worktree where main has no device.
   const fallback = await place(busy, { work: { defaultIsolation: 'main' } });
@@ -274,7 +274,7 @@ test('main isolation is placed only where the checkout is on main and free: clai
   expect(elsewhere.kind === 'placed' && elsewhere.record).toMatchObject({ deviceId: 'dev_studio', excludedDevices: [{ deviceId: 'dev_mini', reason: 'main checkout busy: Fix login' }] });
   // A main thread just sent to Studio counts there before the hub has its index.
   const inFlight = placementWith([], { local: [main('thread_own', 'running', 'dev_mini', 'Fix login')], pending: [{ threadId: 'thread_sent', deviceId: 'dev_studio', title: 'Add search' }] }).placement;
-  expect(await place(inFlight, fixedMain)).toEqual({ kind: 'refused',
+  expect(await place(inFlight, fixedMain)).toMatchObject({ kind: 'refused',
     message: 'No device can run any enabled model: Mac mini: main checkout busy: Fix login; Studio: main checkout busy: Add search.' });
   // A thread's own claim does not count against itself (a next-turn override checks the thread where it is).
   expect(await own.refusal({ project, workSettings: settings(), title: 'Fix login', task: 'x', fixed: { isolation: 'main', modelId: 'swift', deviceId: 'dev_mini' },

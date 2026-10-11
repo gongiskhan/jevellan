@@ -2,7 +2,7 @@ import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useSta
 import { z } from 'zod';
 import {
   CoordinatorMessageReceiptSchema, DecisionAnsweredViewSchema, EffortSchema, MergeResultViewSchema, ProjectEventFrameSchema, ProjectNotebookViewSchema,
-  ProjectWorkListViewSchema, ProjectWorkSettingsViewSchema, ProjectWorkViewSchema, TaskListViewSchema, TaskReceiptSchema, TaskTypeSchema, ThreadViewSchema,
+  GoalListViewSchema, ProjectWorkListViewSchema, ProjectWorkSettingsViewSchema, ProjectWorkViewSchema, TaskListViewSchema, TaskReceiptSchema, TaskTypeSchema, ThreadViewSchema,
   type Effort, type Isolation, type ProjectDecision, type ProjectLedgerEvent, type ProjectWorkListView, type ProjectWorkView, type PullRequestEntry,
   type ThreadIndex, type ProjectWorkTask,
 } from '@jevellan/core/client';
@@ -18,6 +18,7 @@ import {
   threadSections, toolIcon, withdrawals, working, type ChatItem, type ProjectTab, type ThreadForm, type ThreadTitles,
 } from './project-work-model.js';
 import { queuedRefresh } from './refresh.js';
+import { ProjectGoals, type GoalEntry } from './project-goals.js';
 import { TaskQueue } from './task-queue.js';
 import { relativeDuration, shortTime, timeStamp } from './time.js';
 
@@ -230,6 +231,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   const here = data.devices.currentDeviceId;
   const titleId = useId(); const tabsId = useId(); const chatId = useId(); const sideId = useId();
   const [view, setView] = useState<ProjectWorkView>();
+  const [goals, setGoals] = useState<GoalEntry[]>([]);
   const [tasks, setTasks] = useState<ProjectWorkTask[]>([]);
   const [loadError, setLoadError] = useState('');
   const [events, setEvents] = useState<ProjectLedgerEvent[]>([]);
@@ -281,14 +283,14 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
       if (!stopped) open();
     };
     const reads = queuedRefresh(
-      (signal) => Promise.all([api(`/api/projects/${id}/work`, ProjectWorkViewSchema, 'GET', undefined, { signal, waitForHub: true }), api(`/api/projects/${id}/tasks`, TaskListViewSchema, 'GET', undefined, { signal, waitForHub: true })]),
-      ([next, queue]) => {
+      (signal) => Promise.all([api(`/api/projects/${id}/work`, ProjectWorkViewSchema, 'GET', undefined, { signal, waitForHub: true }), api(`/api/projects/${id}/tasks`, TaskListViewSchema, 'GET', undefined, { signal, waitForHub: true }), api(`/api/projects/${id}/goals`, GoalListViewSchema, 'GET', undefined, { signal, waitForHub: true })]),
+      ([next, queue, goalList]) => {
         const device = next.coordinator.deviceId ?? here; const moved = streaming !== undefined && device !== streaming; streaming = device;
         if (after.current === undefined) setTab(defaultTab(next));
         if (after.current === undefined || moved) after.current = next.lastEventId;
         if (moved) restart();
         setView(next); setLoadError('');
-        setTasks(queue.tasks);
+        setTasks(queue.tasks); setGoals(goalList.goals);
       },
       (failure) => {
         if (failure instanceof ApiError && failure.status === 401) onError(failure);
@@ -495,7 +497,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
           <section className="pw-section" data-tab="waiting" aria-labelledby={`${sideId}-waiting`}>
             {sectionHeading(`${sideId}-waiting`, copy.WAITING_FOR_YOU, open.length + drafts.length)}
             {sent && showSent(sent, open) && <p className="pw-sent" role="status"><Icon name="check" size={14} />{sent.text}</p>}
-            {drafts.length > 0 && <div className="pw-proposed"><h4>Proposed tasks</h4><TaskQueue projectId={id} tasks={drafts} navigate={navigate} changed={updated} onError={onError} /></div>}
+            {drafts.length > 0 && <div className="pw-proposed"><h4>Proposed tasks</h4><TaskQueue projectId={id} tasks={drafts} goals={goals} threads={view.threads} navigate={navigate} changed={updated} onError={onError} /></div>}
             {open.length ? open.map((decision) => (
               <DecisionCard key={decision.id} projectId={id} decision={decision} titles={titles} now={now} answered={answeredQuestion} onError={onError} />
             )) : drafts.length === 0 && <p className="pw-empty">{copy.NOTHING_WAITING}</p>}
@@ -503,7 +505,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
           </section>
           <section className="pw-section" data-tab="queue" aria-labelledby={`${sideId}-queue`}>
             {sectionHeading(`${sideId}-queue`, 'Queue', tasks.filter(task => ['draft', 'queued', 'active', 'in-review'].includes(task.state)).length)}
-            <TaskQueue projectId={id} tasks={tasks} navigate={navigate} changed={updated} onError={onError} />
+            <TaskQueue projectId={id} tasks={tasks} goals={goals} threads={view.threads} grouped navigate={navigate} changed={updated} onError={onError} />
           </section>
           <section className="pw-section" data-tab="threads" aria-labelledby={`${sideId}-running`}>
             {sectionHeading(`${sideId}-running`, copy.RUNNING, sections.running.length)}
@@ -527,9 +529,13 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
               </div>
             ) : <p className="pw-empty">{copy.NOTHING_CONCLUDED}</p>}
           </section>
+          <section className="pw-section" data-tab="queue" aria-labelledby={`${sideId}-goals`}>
+            {sectionHeading(`${sideId}-goals`, 'Goals', goals.filter(entry => entry.goal.state !== 'done').length)}
+            <ProjectGoals projectId={id} goals={goals} changed={updated} onError={onError} />
+          </section>
         </div>
       </div>
-      {dialog === 'new-thread' && <NewThreadDialog props={props} view={view} tasks={tasks} move={moveHere} close={() => setDialog(undefined)} />}
+      {dialog === 'new-thread' && <NewThreadDialog props={props} view={view} tasks={tasks} goals={goals} move={moveHere} close={() => setDialog(undefined)} />}
       {dialog === 'coordinator' && <CoordinatorOverrideDialog props={props} view={view} close={() => setDialog(undefined)} />}
       {dialog === 'settings' && <SettingsDialog props={props} view={view} close={() => setDialog(undefined)} />}
       {merging?.pr && (
@@ -815,7 +821,7 @@ function MergeDialog({ projectId, entry, fallbackBase, close, merged, onError }:
  * start, so the dialog says so with Move coordinator here instead of failing (D9a); after the move the form starts the thread
  * on this device's coordinator. A started thread opens its page (D74).
  */
-function NewThreadDialog({ props, view, tasks, move, close }: { props: PageProps; view: ProjectWorkView; tasks: readonly ProjectWorkTask[]; move(signal: AbortSignal): Promise<void>; close(): void }) {
+function NewThreadDialog({ props, view, tasks, goals, move, close }: { props: PageProps; view: ProjectWorkView; tasks: readonly ProjectWorkTask[]; goals: readonly GoalEntry[]; move(signal: AbortSignal): Promise<void>; close(): void }) {
   const { data } = props;
   const { error, setError, fail } = useLocalError(props.onError);
   const task = useTask(fail);
@@ -823,6 +829,7 @@ function NewThreadDialog({ props, view, tasks, move, close }: { props: PageProps
   const ids = useClientIds('thread_req');
   const [form, setForm] = useState<ThreadForm>({ title: '', task: '', isolation: '', modelId: '', effort: '', deviceId: '' });
   const [type, setType] = useState<'feature' | 'fix' | 'finding' | 'refactor' | 'docs' | 'analysis' | 'review' | 'ops'>('feature');
+  const [goalId, setGoalId] = useState('');
   const [now, setNow] = useState(false), [after, setAfter] = useState<string[]>([]), [needs, setNeeds] = useState('');
   const change = (fields: Partial<ThreadForm>) => setForm((previous) => ({ ...previous, ...fields }));
   const isolationNote = useId(); const deviceNote = useId();
@@ -845,7 +852,7 @@ function NewThreadDialog({ props, view, tasks, move, close }: { props: PageProps
           const request = threadCreateRequest(ids.id({ form, type, now, after, needs }), form);
           const { schema: _schema, clientRequestId, title, task: brief, ...fixed } = request; void _schema;
           const created = await api(`/api/projects/${view.project.id}/tasks`, TaskReceiptSchema, 'POST',
-            { schema: 'task-create-request-v1', clientRequestId, title, brief, fixed, type, now, after, needs: needs.split(',').map(value => value.trim()).filter(Boolean) }, { signal, waitForHub: true });
+            { schema: 'task-create-request-v1', clientRequestId, title, brief, fixed, type, goalId: goalId || null, now, after, needs: needs.split(',').map(value => value.trim()).filter(Boolean) }, { signal, waitForHub: true });
           ids.done(); updated();
           afterDialogs(props.message, `Queued task "${form.title}".`); close();
           if (created.taskId) props.navigate(`/projects/${view.project.id}`);
@@ -856,6 +863,7 @@ function NewThreadDialog({ props, view, tasks, move, close }: { props: PageProps
         <label>{copy.TITLE}<input required maxLength={120} value={form.title} onChange={(event) => change({ title: event.target.value })} /></label>
         <label>{copy.TASK}<textarea required maxLength={20000} rows={6} value={form.task} onChange={(event) => change({ task: event.target.value })} /></label>
         <label>Type<select value={type} onChange={event => setType(TaskTypeSchema.parse(event.target.value))}>{TaskTypeSchema.options.map(value => <option key={value}>{value}</option>)}</select></label>
+        <label>Goal<select value={goalId} onChange={event => setGoalId(event.target.value)}><option value="">Asks</option>{goals.filter(entry => entry.goal.state !== 'done').map(entry => <option key={entry.goal.id} value={entry.goal.id}>{entry.goal.name}</option>)}</select></label>
         <label className="check"><input type="checkbox" checked={now} onChange={event => setNow(event.target.checked)} />Start now</label>
         <label>After<select multiple value={after} onChange={event => setAfter(Array.from(event.target.selectedOptions, option => option.value))}>{tasks.filter(task => task.state !== 'done' && task.state !== 'cancelled').map(task => <option value={task.id} key={task.id}>{task.title}</option>)}</select></label>
         <label>Needs<input value={needs} placeholder="residential, mac" onChange={event => setNeeds(event.target.value)} /></label>
@@ -915,7 +923,7 @@ const settingsForm = (from: SettingsBase) => ({
   defaultIsolation: from.settings.defaultIsolation, isolationChanged: false, modelId: from.settings.coordinator.modelId ?? '',
   effort: from.settings.coordinator.effort, setupCommand: from.settings.setupCommand ?? '', maxRunningThreads: String(from.settings.maxRunningThreads),
   maxRunningPerDevice: String(from.settings.maxRunningPerDevice), threadTurnCap: String(from.settings.threadTurnCap),
-  coordinatorReview: from.settings.coordinatorReview, threadRules: from.settings.threadRules, allowMainIsolation: from.settings.allowMainIsolation,
+  refill: from.settings.refill, nightlyWindow: from.settings.nightlyWindow, coordinatorReview: from.settings.coordinatorReview, threadRules: from.settings.threadRules, allowMainIsolation: from.settings.allowMainIsolation,
 });
 /**
  * Project settings (12.2). The dialog reads the settings when it opens (the page view may predate a save made a moment
@@ -996,6 +1004,10 @@ function SettingsDialog({ props, view, close }: { props: PageProps; view: Projec
           </label>
           <label className="checkbox"><input type="checkbox" checked={form.coordinatorReview} onChange={event => change({ coordinatorReview: event.target.checked })} />The coordinator reviews pull requests</label>
           <label className="checkbox"><input type="checkbox" checked={form.allowMainIsolation} onChange={event => change({ allowMainIsolation: event.target.checked })} />Allow work directly on main</label>
+          <label className="checkbox"><input type="checkbox" checked={form.refill.enabled} onChange={event => change({ refill: { ...form.refill, enabled: event.target.checked } })} />Refill goals automatically</label>
+          <label>Minutes between refills<input type="number" min={10} max={1440} value={form.refill.minIntervalMinutes} onChange={event => change({ refill: { ...form.refill, minIntervalMinutes: Number(event.target.value) } })} /></label>
+          <label className="checkbox"><input type="checkbox" checked={form.nightlyWindow.enabled} onChange={event => change({ nightlyWindow: { ...form.nightlyWindow, enabled: event.target.checked } })} />Nightly window</label>
+          <div className="form-grid"><label>Time<input type="time" value={form.nightlyWindow.time} onChange={event => change({ nightlyWindow: { ...form.nightlyWindow, time: event.target.value } })} /></label><label>Time zone<input value={form.nightlyWindow.timezone} maxLength={64} onChange={event => change({ nightlyWindow: { ...form.nightlyWindow, timezone: event.target.value } })} /></label></div>
           <label>Rules for every thread<textarea rows={5} value={form.threadRules} maxLength={4000} onChange={event => change({ threadRules: event.target.value })} /></label>
           <div className="form-grid pw-limits">
             <label>{copy.MAX_RUNNING_THREADS}

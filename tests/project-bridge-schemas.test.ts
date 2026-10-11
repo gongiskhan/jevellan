@@ -39,7 +39,7 @@ test('scope lists: mail and reservations only for main threads, mail for the coo
 
 test('every project tool joins the closed name enum after the unchanged stretch tools and serializes to an object schema', () => {
   expect(BridgeToolNameSchema.options.slice(0, stretchTools.length)).toEqual(stretchTools);
-  expect(BridgeToolNameSchema.options).toHaveLength(stretchTools.length + 18);
+  expect([...BridgeToolNameSchema.options].sort()).toEqual([...new Set([...stretchTools, ...projectTools, 'jevellan_thread_start'])].sort());
   expect(Object.keys(BridgeToolSchemas)).toEqual(BridgeToolNameSchema.options);
   for (const scope of [{ kind: 'coordinator' }, { kind: 'thread', isolation: 'worktree' }, { kind: 'thread', isolation: 'main' }] as const) {
     expect(bridgeTools(projectToolNames(scope)).tools.map((tool) => tool.name)).toEqual(projectToolNames(scope));

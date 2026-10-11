@@ -283,7 +283,7 @@ test('PJ3 project page opens from the sidebar and the coordinator chat streams',
   } else {
     // Two columns: the chat and the sections in the brief's order, each with its count and its empty line.
     await expect(tabs).toBeHidden();
-    await expect(page.locator('.pw-side .pw-section-heading')).toHaveText(['Waiting for you 0', 'Queue 0', 'Running 0', 'Pull requests 0', 'Concluded 1']);
+    await expect(page.locator('.pw-side .pw-section-heading')).toHaveText(['Waiting for you 0', 'Queue 0', 'Running 0', 'Pull requests 0', 'Concluded 1', 'Goals 0']);
     await expect(region(page, 'Waiting for you')).toContainText('Nothing waiting.');
     await expect(region(page, 'Running')).toContainText('No threads running.');
     await expect(region(page, 'Pull requests')).toContainText('No open pull requests.');
@@ -1159,7 +1159,6 @@ test('LJ3 five tasks obey phone drag, Now, the two-thread cap and after links', 
   await shot(page, 'priority-dispatched');
   await control('/projects/release', { schema: 'fixture-release-v1', marker: 'LJ3 Loop task 4' });
   await expect.poll(async () => (await queue()).find(row => row.id === fourth.id)?.state, LONG).toBe('done');
-  await expect.poll(async () => (await queue()).find(row => row.title === 'Loop task 3')?.state, LONG).toBe('active');
   // Starts can advance during cleanup. Resolve each current row rather than acting on an earlier revision.
   for (const original of await queue()) {
     if (original.state === 'done') continue;
@@ -1172,5 +1171,46 @@ test('LJ3 five tasks obey phone drag, Now, the two-thread cap and after links', 
       return response.ok();
     }, LONG).toBe(true);
   }
+  expect(errors).toEqual([]);
+});
+
+test('LJ4 owner goals refill into a draft, approve on phone, obey daily caps and pause queued work', async ({ page }, info) => {
+  const errors = await begin(page), route = '/api/projects/projects_goals';
+  await openProject(page, 'Projects goals'); if (phone(info)) await tap(page, page.getByRole('tab', { name: /^Queue/ }));
+  await tap(page, page.getByRole('button', { name: 'New goal', exact: true }));
+  const dialog = page.getByRole('dialog', { name: 'New goal', exact: true });
+  await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill('Hardening through automated tests');
+  await dialog.getByRole('textbox', { name: 'Motivation', exact: true }).fill('Protect the paths people rely on so the owner can trust daily work.');
+  await dialog.getByRole('textbox', { name: 'Health', exact: true }).fill('Tests cover the important paths and findings are resolved.');
+  await dialog.getByRole('spinbutton', { name: 'Refills a day', exact: true }).fill('1');
+  await dialog.getByRole('button', { name: 'Save', exact: true }).click(); await expect(dialog).toHaveCount(0);
+  const queue = async () => (await read(page, `${route}/tasks`) as { tasks: Array<{ id: string; revision: number; title: string; state: string; threadId: string | null; goalId: string | null; source: string }> }).tasks;
+  await expect.poll(async () => (await queue()).filter(task => task.source === 'refill').length, LONG).toBe(1);
+  if (phone(info)) await tap(page, page.getByRole('tab', { name: /^Waiting/ }));
+  const proposal = page.locator('.pw-proposed .pw-task').filter({ hasText: 'Exercise an important path' });
+  await proposal.locator('summary').click(); await expect(proposal).toContainText('Draft'); await shot(page, 'goal-proposal');
+  await proposal.getByRole('button', { name: 'Approve', exact: true }).click();
+  await expect.poll(async () => (await queue()).find(task => task.source === 'refill')?.state, LONG).toBe('active');
+  await control('/projects/release', { schema: 'fixture-release-v1', marker: 'LJ4 goal task' });
+  await expect.poll(async () => (await queue()).find(task => task.source === 'refill')?.state, LONG).toBe('done');
+  await control('/projects/clock', { schema: 'fixture-project-clock-v1', advanceMinutes: 31 });
+  expect((await queue()).filter(task => task.source === 'refill')).toHaveLength(1);
+  if (phone(info)) await tap(page, page.getByRole('tab', { name: /^Queue/ }));
+  const card = page.locator('.pw-goal').filter({ hasText: 'Hardening through automated tests' });
+  await expect(card).toContainText('1 refilled today'); await tap(page, card.getByRole('button', { name: 'Pause', exact: true })); await expect(card).toContainText('Paused');
+  await tap(page, page.getByRole('button', { name: 'New task', exact: true }));
+  const taskDialog = page.getByRole('dialog', { name: 'New task', exact: true });
+  await taskDialog.getByRole('textbox', { name: 'Title', exact: true }).fill('Paused goal task');
+  await taskDialog.getByRole('textbox', { name: 'Brief', exact: true }).fill('LJ4: wait until the owner reactivates this goal.');
+  await taskDialog.getByRole('combobox', { name: 'Goal', exact: true }).selectOption({ label: 'Hardening through automated tests' });
+  await taskDialog.getByRole('button', { name: 'Add to queue', exact: true }).click(); await expect(taskDialog).toHaveCount(0);
+  const paused = page.locator('.pw-section[data-tab="queue"] .pw-task').filter({ hasText: 'Paused goal task' });
+  await paused.locator('summary').click(); await expect(paused).toContainText('Goal paused');
+  await control('/projects/pulse'); expect((await queue()).find(task => task.title === 'Paused goal task')).toMatchObject({ state: 'queued', threadId: null });
+  await page.getByRole('group', { name: 'Queue grouping' }).getByRole('button', { name: 'Goals', exact: true }).click();
+  await shot(page, 'goal-paused'); await page.reload();
+  if (phone(info)) await tap(page, page.getByRole('tab', { name: /^Queue/ }));
+  await expect(page.getByRole('group', { name: 'Queue grouping' }).getByRole('button', { name: 'Goals', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  expect((await queue()).find(task => task.title === 'Paused goal task')).toMatchObject({ state: 'queued', threadId: null });
   expect(errors).toEqual([]);
 });

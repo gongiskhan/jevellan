@@ -26,9 +26,10 @@ export default defineConfig({
   projects: [...projects, { name: 'installation', workers: 1, testMatch: 'installation.spec.ts' }],
   // A --projects server is ready once its control listener answers, which binds after the accounts and projects are seeded.
   // SIGTERM lets each fixture server close its daemons and remove its temporary root (a SIGKILL leaves about 25 MB behind).
-  webServer: projects.map((project, index) => {
+  webServer: projects.flatMap((project, index) => {
+    if (process.env.JEVELLAN_E2E_FIXTURE_GROUP === 'projects' && !project.name.endsWith('-projects')) return [];
     const seeded = project.name.endsWith('-projects');
-    return { command: `node scripts/test-server.mjs --port ${base + index}${seeded ? ' --projects' : ''}`, url: seeded ? `http://127.0.0.1:${base + index + 200}/projects/ready` : `${project.use.baseURL}/api/health`,
-      reuseExistingServer: false, gracefulShutdown: { signal: 'SIGTERM' as const, timeout: 15_000 } };
+    return [{ command: `node scripts/test-server.mjs --port ${base + index}${seeded ? ' --projects' : ''}`, url: seeded ? `http://127.0.0.1:${base + index + 200}/projects/ready` : `${project.use.baseURL}/api/health`,
+      reuseExistingServer: false, gracefulShutdown: { signal: 'SIGTERM' as const, timeout: 15_000 } }];
   }),
 });

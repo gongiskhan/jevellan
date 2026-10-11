@@ -5,6 +5,8 @@ import type { HeldCheckout, ProjectWorkSummary, ReservationConflict, Reservation
 import type { Stored } from './store.js';
 import type { ProjectWorkTask, TaskHistoryEvent } from './project-loop-schemas.js';
 
+import type { ProjectGoal, ProjectRefillState } from './project-goal-schemas.js';
+
 /**
  * A pending envelope this device could not read (P8 review S-2: another Jevellan version, for example): what its record still names,
  * each field null when even that is unreadable. The inbox acknowledges it when its id is readable and says what was lost.
@@ -19,6 +21,11 @@ export type ReserveOutcome = { granted: true; reservation: Stored<FileReservatio
  * Phase 6 adds mail, reservations and held checkouts.
  */
 export interface ProjectHub {
+  goals(projectId: string, after?: string): Promise<{ records: ProjectGoal[]; next: string | null }>;
+  goal(goalId: string): Promise<Stored<ProjectGoal> | null>;
+  putGoal(goal: ProjectGoal, expectedRevision: number): Promise<Stored<ProjectGoal>>;
+  refill(projectId: string): Promise<Stored<ProjectRefillState> | null>;
+  putRefill(refill: ProjectRefillState, expectedRevision: number): Promise<Stored<ProjectRefillState>>;
   tasks(projectId: string, after?: string): Promise<{ records: ProjectWorkTask[]; next: string | null }>;
   task(taskId: string): Promise<Stored<ProjectWorkTask> | null>;
   putTask(task: ProjectWorkTask, expectedRevision: number): Promise<Stored<ProjectWorkTask>>;

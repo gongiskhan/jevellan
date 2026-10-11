@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { EffortSchema, IdSchema, IsolationSchema, TaskTypeSchema, TaskPositionSchema } from '@jevellan/core';
+import { EffortSchema, IdSchema, IsolationSchema, TaskTypeSchema, TaskUpdateRequestSchema, GoalCreateRequestSchema, GoalUpdateRequestSchema } from '@jevellan/core';
 import { AgentWatchRequestSchema } from './schemas.js';
 
 const autoId = z.union([z.literal('auto'), IdSchema]);
@@ -36,9 +36,12 @@ export const AGENT_OPERATIONS: readonly AgentOperation[] = [
   operation('coordinator_override', 'Override coordinator choices', 'Change runtime/provider, account, model or effort for later coordinator turns. Auto clears a runtime/account/model override; effort auto restores the configured default. Does not move active work.', z.strictObject({ ...project, ...requestId, revision: z.number().int().nonnegative(), ...choice }), false, { idempotent: true }),
   operation('threads_list', 'List project threads', 'List all project jobs/threads, their states, owner devices, choices and conclusions.', z.strictObject(project), true),
   operation('thread_start', 'Queue project task', 'Create a queued session task and return task-receipt-v1. The dispatcher starts its thread under automatic placement and normal resource gates. Use task_read or watch a task target to follow it.', z.strictObject({ ...project, ...requestId, title: z.string().min(1).max(120), task: text, type: TaskTypeSchema.default('feature'), goalId: IdSchema.nullable().default(null), now: z.boolean().default(false), after: z.array(IdSchema).max(10).default([]), needs: z.array(z.string().regex(/^[a-z0-9-]{1,32}$/u)).max(8).default([]), ...placement, note: z.string().max(400).optional() }), false, { idempotent: true }),
+  operation('goals_list', 'Read goals', 'Read owner-defined goals and project-day counts.', z.strictObject(project), true),
+  operation('goal_create', 'Create goal', 'Owner operation: create a perpetual goal. Reuse the client request ID on retry.', GoalCreateRequestSchema.omit({ schema: true }).extend(project), false, { idempotent: true }),
+  operation('goal_update', 'Edit goal', 'Owner operation: change, pause, reactivate or mark a goal done. Supply its current revision.', GoalUpdateRequestSchema.omit({ schema: true }).extend({ ...project, goalId: IdSchema }), false),
   operation('tasks_list', 'List tasks', 'Read the project task queue and linked thread IDs.', z.strictObject(project), true),
   operation('task_read', 'Read task', 'Read a durable task, its state and linked thread or job run.', z.strictObject({ ...project, taskId: IdSchema }), true),
-  operation('task_update', 'Update task', 'Edit or reorder a draft or queued task before dispatch.', z.strictObject({ ...project, taskId: IdSchema, expectedRevision: z.number().int().positive(), title: z.string().min(1).max(120).optional(), brief: text.optional(), type: TaskTypeSchema.optional(), now: z.boolean().optional(), position: TaskPositionSchema.optional() }), false),
+  operation('task_update', 'Update task', 'Edit or reorder a draft or queued task before dispatch.', TaskUpdateRequestSchema.omit({ schema: true }).extend({ ...project, taskId: IdSchema }), false),
   operation('task_action', 'Act on task', 'Approve or reject a draft, cancel queued work, or change Now.', z.strictObject({ ...project, taskId: IdSchema, expectedRevision: z.number().int().positive(), action: z.enum(['approve', 'reject', 'cancel', 'now', 'later']), reason: z.string().max(400).optional() }), false),
   operation('thread_read', 'Read project job', 'Read one thread, placement explanation, reports, output and available controls. Native sessions and authentication never leave the owner.', z.strictObject(thread), true),
   operation('thread_send', 'Message project job', 'Send a correction or a queued next-turn message to this thread. interrupt=true requests interruption using its normal guard.', z.strictObject({ ...thread, clientMessageId: IdSchema, text, interrupt: z.boolean().default(false) }), false, { idempotent: true }),

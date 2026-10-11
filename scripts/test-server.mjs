@@ -65,7 +65,8 @@ const githubFetch = async (url, init) => {
 };
 // The hub's Projects loops follow its own timers. The member keeps `timers: false` for everything else but runs its Projects loops
 // (inbox, outbox, sweeps, pull requests), so a thread placed on it starts without a pulse, as on a real device (design 5.5 item 3).
-const projectOptions = github ? { githubBaseUrl: github.url, githubFetch, projectTimers: { prPollMs: 2_000, coordinatorStartMs: 100, inboxPollMs: 500, queueSweepMs: 1_000, outboxRetryMs: 500, outboxMaxMs: 2_000 } } : {};
+let projectClockOffset = 0;
+const projectOptions = github ? { githubBaseUrl: github.url, githubFetch, projectTimers: { now: () => Date.now() + projectClockOffset, prPollMs: 2_000, coordinatorStartMs: 100, inboxPollMs: 500, queueSweepMs: 1_000, outboxRetryMs: 500, outboxMaxMs: 2_000 } } : {};
 const memberProjectOptions = github ? { ...projectOptions, projectTimers: { ...projectOptions.projectTimers, periodic: true } } : {};
 const projectPause = (ms, signal) => new Promise((resolve) => {
   const timer = setTimeout(resolve, ms);
@@ -111,6 +112,11 @@ function coordinatorStep(input) {
     await projectTool(turn, 'jevellan_task_create', { title: 'Add a greeting', brief: 'PJ3: create greeting.txt', type: 'feature', source: 'owner-request' });
     await projectPause(1_000, turn.signal); turn.say('Started "Add a greeting".'); return { status: 'completed' };
   };
+  if (events.includes('goals that need work:') && input.owner.projectId === 'projects_goals') return async turn => {
+    const goals = await projectTool(turn, 'jevellan_goals_list', {});
+    for (const entry of goals.goals.filter(entry => entry.goal.state === 'active')) await projectTool(turn, 'jevellan_task_create', { title: 'Exercise an important path', brief: 'LJ4: inspect the important paths and report without changing files.', type: 'analysis', goalId: entry.goal.id, source: 'refill' });
+    turn.say('Proposed a task that protects a path people rely on.'); return { status: 'completed' };
+  };
   if (events.includes('LJ3 five queue tasks')) return async turn => {
     const ids = [];
     for (let number = 1; number <= 5; number++) ids.push((await projectTool(turn, 'jevellan_task_create', { title: `Loop task ${number}`, brief: 'LJ3 queue: inspect the seed project and report done without changing files.', type: 'analysis', source: 'owner-request' })).taskId);
@@ -130,6 +136,10 @@ const LONG_TOOLS = [['Read', { file_path: 'README.md' }, '# Projects app\n\nA sm
 const longThreads = new Set();
 function threadStep(input) {
   const report = (status, summary, extra = {}) => async (turn) => { await projectPause(350, turn.signal); turn.say(summary); await projectTool(turn, 'jevellan_thread_report', { status, summary, ...extra }); return { status: 'completed' }; };
+  if (input.prompt.includes('LJ4:')) return async turn => {
+    if (await hold('LJ4 goal task', turn.signal) === 'aborted') return { status: 'interrupted' };
+    return report('done', 'Inspected important paths; no changes needed.')(turn);
+  };
   if (input.prompt.includes('LJ3 queue:')) return async turn => {
     const title = input.prompt.split('\n', 1)[0].slice('Task: '.length);
     if (await hold(`LJ3 ${title}`, turn.signal) === 'aborted') return { status: 'interrupted' };
@@ -543,6 +553,7 @@ if (projectsMode) {
   const save = (id, name, paths, branchPolicy, extra = {}) => application.conversations.saveProject({ schema: 'project-write-v1', revision: 0, project: ProjectSchema.parse({ schema: 'project-v1', id, name, paths, branchPolicy, ...extra,
     memory: { mode: 'repo', dir: '.jevellan/memory' }, context: { state: 'none' } }) });
   await save('projects_fixture', 'Projects fixture', { [hubId]: projectsPath, [memberId]: projectsMember }, 'main', { testCommand: 'test -f greeting.txt' });
+  await save('projects_goals', 'Projects goals', { [hubId]: clone(projectsOrigin, join(root, 'projects-goals')) }, 'main');
   await save('projects_queue', 'Projects queue', { [hubId]: clone(projectsOrigin, join(root, 'projects-queue')) }, 'main');
   await save('projects_external', 'Projects external', { [hubId]: clone(externalOrigin, join(root, 'projects-external')) }, 'external');
   await save('projects_offline', 'Projects offline', { [hubId]: clone(offlineOrigin, join(root, 'projects-offline')) }, 'main');
@@ -610,6 +621,7 @@ const correction = (group, n, action, from, to) => {
 };
 for (const n of [1, 2, 3]) { correction('implement', n, 'implement', 'claude-fable', 'codex-gpt'); correction('review', n, 'review', 'claude-fable', 'claude-opus'); }
 // Projects control (design 5.5 item 9), on the same listener: POST routes; every body is a versioned fixture document (pulse has none).
+const ControlClockSchema = z.strictObject({ schema: z.literal('fixture-project-clock-v1'), advanceMinutes: z.number().int().min(0).max(1440) });
 const ControlPullSchema = z.strictObject({ schema: z.literal('fixture-pull-change-v1'), checks: z.enum(['none', 'pending', 'passing', 'passing-status', 'failing']).optional(),
   mergeable: z.enum(['clean', 'dirty', 'unknown', 'unstable']).optional(), merged: z.literal(true).optional(), closed: z.literal(true).optional() });
 const ControlReleaseSchema = z.strictObject({ schema: z.literal('fixture-release-v1'), marker: z.string().min(1).max(200) });
@@ -629,6 +641,8 @@ async function projectControl(request, response) {
     const { checks, mergeable, merged, closed } = input;
     const answer = await fetch(`${github.url}/_control/pulls/${pull[1]}`, { method: 'POST', headers: { Authorization: `Bearer ${githubToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ checks, mergeable, merged, closed, repo: PROJECTS_REPOSITORY }) });
     send(answer.status, await answer.json());
+  } else if (request.url === '/projects/clock' && (input = parse(ControlClockSchema))) {
+    projectClockOffset += input.advanceMinutes * 60_000; await application.projectWork.pulse(); send(200, { schema: 'fixture-project-clock-result-v1', advancedMinutes: input.advanceMinutes });
   } else if (request.url === '/projects/pulse') {
     await Promise.all([application.projectWork.pulse(), member.projectWork.pulse()]); send(200, { pulsed: true });
   } else if (request.url === '/projects/release' && (input = parse(ControlReleaseSchema))) {

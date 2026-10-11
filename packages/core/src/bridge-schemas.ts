@@ -1,3 +1,4 @@
+import { GoalListViewSchema } from './project-goal-schemas.js';
 import { z } from 'zod';
 import { ProjectWorkTaskSchema, TaskCreateRequestSchema, TaskReceiptSchema, TaskUpdateRequestSchema } from './project-loop-schemas.js';
 import { EffortSchema, FindingSchema, HandoffSchema, IdSchema, ResultSchema, TimestampSchema } from './schemas.js';
@@ -97,6 +98,7 @@ export const BridgeToolSchemas = {
   memory_propose: MemoryProposalInputSchema,
   jevellan_threads_list: ThreadsListInputSchema,
   jevellan_tasks_list: z.strictObject({ include: z.enum(['open', 'all']).default('open'), goalId: IdSchema.nullable().optional() }),
+  jevellan_goals_list: z.strictObject({}),
   jevellan_task_create: TaskCreateRequestSchema.omit({ schema: true, clientRequestId: true }).extend({ source: z.enum(['owner-request', 'refill', 'finding']) }),
   jevellan_task_update: TaskUpdateRequestSchema.omit({ schema: true, expectedRevision: true, fixed: true, now: true }).extend({ taskId: IdSchema }),
   jevellan_task_cancel: z.strictObject({ taskId: IdSchema, reason: z.string().min(1).max(400) }),
@@ -150,6 +152,7 @@ export function bridgeTools(names: BridgeTool[]): z.infer<typeof BridgeToolsSche
     jevellan_threads_list: 'List this project’s threads with their state, isolation, device, model, branch, pull request and last report summary. include: all adds threads that ended in the last 14 days.',
     jevellan_thread_start: 'Legacy immediate start for internal restart operations.',
     jevellan_tasks_list: 'Read the task queue, including drafts and linked threads. Open includes draft, queued, active and in-review tasks.',
+    jevellan_goals_list: 'Read owner-defined goals, motivations, health, state, autonomy, limits and today counts. Goals can only be changed by the owner.',
     jevellan_task_create: 'Create a session task with a self-contained brief and type. Owner-request requires an owner message in this turn; only that source may use Now. Code decides proposal state, placement and dispatch.',
     jevellan_task_update: 'Edit a draft or queued task before dispatch. Never reorder an owner-ranked task.',
     jevellan_task_cancel: 'Cancel a draft or queued task. Stop active work through its thread.',
@@ -172,7 +175,7 @@ export function bridgeTools(names: BridgeTool[]): z.infer<typeof BridgeToolsSche
 
 // Project scopes (D104). The coordinator's read-only Claude allow list and the bridge's scope lists both derive from
 // projectToolNames, never a copy.
-export const COORDINATOR_TOOLS = ['jevellan_tasks_list', 'jevellan_task_create', 'jevellan_task_update', 'jevellan_task_cancel', 'jevellan_threads_list', 'jevellan_thread_message', 'jevellan_thread_read', 'jevellan_thread_stop',
+export const COORDINATOR_TOOLS = ['jevellan_goals_list', 'jevellan_tasks_list', 'jevellan_task_create', 'jevellan_task_update', 'jevellan_task_cancel', 'jevellan_threads_list', 'jevellan_thread_message', 'jevellan_thread_read', 'jevellan_thread_stop',
   'jevellan_ask_user', 'jevellan_withdraw_question', 'jevellan_notebook_read', 'jevellan_notebook_write', 'jevellan_pr_status', 'jevellan_pr_diff', 'jevellan_pr_review', 'jevellan_mail_send', 'memory_search', 'memory_read'] as const satisfies readonly BridgeTool[];
 const MAIN_THREAD_TOOLS = ['jevellan_mail_send', 'jevellan_mail_inbox', 'jevellan_reserve', 'jevellan_release'] as const satisfies readonly BridgeTool[];
 export type ProjectToolName = typeof COORDINATOR_TOOLS[number] | typeof MAIN_THREAD_TOOLS[number] | 'jevellan_thread_report' | 'jevellan_app_start' | 'jevellan_app_stop' | 'jevellan_apps_list';
@@ -185,6 +188,7 @@ export function projectToolNames(scope: { kind: 'coordinator' } | { kind: 'threa
 }
 /** The result document each project tool returns inside bridge-result-v1. */
 export const ProjectToolResultSchemas = {
+  jevellan_goals_list: GoalListViewSchema,
   jevellan_app_start: ProjectAppSchema, jevellan_app_stop: ProjectAppSchema,
   jevellan_apps_list: z.strictObject({ schema: z.literal('project-apps-v1'), apps: z.array(ProjectAppSchema) }),
   jevellan_tasks_list: z.strictObject({ schema: z.literal('tasks-list-result-v1'), tasks: z.array(ProjectWorkTaskSchema.extend({ position: z.number().int().positive() })) }),

@@ -42,6 +42,7 @@ import { LocalDelivery, ThreadService, type RemoteStart } from './threads.js';
 import { ThreadTranscripts } from './transcript.js';
 import { ProjectViews, effectiveSettings } from './views.js';
 import { ThreadWorktree } from './worktree.js';
+import { ProjectGoals } from './goals.js';
 import { ProjectTasks } from './tasks.js';
 import { ProjectDispatcher } from './dispatcher.js';
 import { TaskCreateRequestSchema, TaskListViewSchema, TaskViewSchema, type TaskUpdateRequest } from '@jevellan/core';
@@ -96,7 +97,7 @@ export class ProjectWork {
   readonly threads: ThreadService; readonly decisions: DecisionItems; readonly tracker: PullRequestTracker; readonly views: ProjectViews;
   readonly admission: Admission; readonly transcripts: ThreadTranscripts;
   readonly apps: ProjectApps;
-  readonly tasks: ProjectTasks; readonly dispatcher: ProjectDispatcher;
+  readonly goals: ProjectGoals; readonly tasks: ProjectTasks; readonly dispatcher: ProjectDispatcher;
   /** Mail and reservations between main threads (brief 5.11, 7.2). */
   readonly mail: MailService;
   /** The hub relay (D40): durable sends to other devices, and this device's pending envelopes. */
@@ -167,10 +168,18 @@ export class ProjectWork {
       command: (projectId, threadId, command) => this.threads.command(projectId, threadId, command) });
     this.mail = new MailService({ hub: o.hub, toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event), local: (threadId) => this.store.get(threadId), now });
     this.tasks = new ProjectTasks({ hub: o.hub, deviceId: o.deviceId, redactor: o.redactor, now,
+      validateGoal: (projectId, goalId, source, refillEventId) => this.goals.validate(projectId, goalId, source, refillEventId), projectDay: projectId => this.goals.day(projectId),
       changed: () => { void this.#sweepTasks().catch(() => undefined); },
       cancelThread: (task, reason, owner) => this.threads.stop(task.projectId, task.threadId!, reason, owner),
       reviewed: async (task, outcome) => delivery.toCoordinator(task.projectId, { schema: 'coordinator-event-v1', kind: 'task-reviewed', taskId: task.id, title: task.title, outcome,
         id: `cev_${task.id}_${task.revision}`, at: task.updatedAt }) });
+    this.goals = new ProjectGoals({ hub: o.hub, tasks: this.tasks, redactor: o.redactor, now, settings: projectId => this.admission.settings(projectId),
+      event: (projectId, event) => delivery.toCoordinator(projectId, event), changed: () => { void this.#sweepTasks().catch(() => undefined); },
+      available: async projectId => {
+        const coordinator = this.coordinators.get(projectId), state = coordinator.state();
+        if (state.state !== 'idle' || state.queue.length || state.failedTurnsInARow >= 2 || coordinator.busy) return false;
+        const view = await this.views.project(projectId); return view.coordinator.state === 'idle' && view.coordinator.planned !== null;
+      } });
     this.threads = new ThreadService({ deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, store: this.store, ledgers: this.ledgers, receipts, hub: o.hub,
       projects: o.projects, admission: this.admission, placement, accounts: o.accounts, transcripts: this.transcripts, delivery, settings: o.settings, now,
       roster: o.roster, decisions: this.decisions, fallbackCheckMs: timers.fallbackCheckMs, managedQueue: true,
@@ -196,9 +205,10 @@ export class ProjectWork {
         timers: { threadTurnTimeoutMs: timers.threadTurnTimeoutMs, setupTimeoutMs: timers.setupTimeoutMs }, now } });
     this.dispatcher = new ProjectDispatcher({ tasks: this.tasks, threads: this.threads, deviceId: o.deviceId,
       text: async task => {
-        const brief = `${task.brief}\n\nTask type: ${task.type}.`, settings = await this.admission.settings(task.projectId);
+        const goal = task.goalId ? await this.goals.read(task.projectId, task.goalId) : null;
+        const brief = `${task.brief}${goal ? `\n\nGoal: ${goal.name}. Why it matters: ${goal.motivation}` : ''}\n\nTask type: ${task.type}.`, settings = await this.admission.settings(task.projectId);
         return { brief, assembled: [brief, settings.threadRules ? `Rules for every thread:\n${settings.threadRules}` : ''].filter(Boolean).join('\n\n') };
-      }, event: (projectId, event) => delivery.toCoordinator(projectId, event) });
+      }, eligible: (task, tasks) => this.goals.eligible(task, tasks), event: (projectId, event) => delivery.toCoordinator(projectId, event) });
     this.tracker = new PullRequestTracker({ threads: this.store, github, git, worktrees, project: (projectId) => this.#project(projectId),
       toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event),
       transition: async (threadId, apply) => { const runner = this.threads.runner(threadId); if (runner) await runner.transition(apply); else await apply(); },
@@ -240,7 +250,7 @@ export class ProjectWork {
   }
   /** Coordinator tool handlers (brief 7.1), built on first use because the thread service and the tracker come after the coordinators. Memory is read-only. */
   #coordinatorTools(): CoordinatorToolHandlers {
-    return this.#tools ??= coordinatorToolHandlers({ deviceId: this.#o.deviceId, deviceName: this.#o.deviceName, threads: this.threads, tasks: this.tasks, store: this.store, decisions: this.decisions,
+    return this.#tools ??= coordinatorToolHandlers({ deviceId: this.#o.deviceId, deviceName: this.#o.deviceName, threads: this.threads, tasks: this.tasks, goals: this.goals, store: this.store, decisions: this.decisions,
       pullRequests: this.tracker, hub: this.#o.hub, ledgers: this.ledgers, mail: this.mail, roster: this.#o.roster, now: () => this.#timers.now(),
       memory: async (projectId) => this.#o.memory.project(await this.#project(projectId), this.#o.deviceId, () => { throw new Error(COORDINATOR_MEMORY_READ_ONLY); }) });
   }
@@ -322,7 +332,7 @@ export class ProjectWork {
     if (!this.#started || this.#closing || !deviceAllowsWork(this.#o.homes)) return;
     try {
       for (const { project } of await this.#o.projects.list()) {
-        if ((await this.#o.hub.coordinator(project.id))?.document.deviceId === this.#o.deviceId) await this.dispatcher.sweep(project.id);
+        if ((await this.#o.hub.coordinator(project.id))?.document.deviceId === this.#o.deviceId) { await this.dispatcher.sweep(project.id); await this.goals.sweep(project.id); }
       }
     } catch (error) { if (!(error instanceof HubUnavailable)) throw error; }
   }
@@ -353,6 +363,9 @@ export class ProjectWork {
 
   // Browser and API operations. Refusals throw Error(sentence) with a status.
   list(): Promise<ProjectWorkListView> { return this.views.list(); }
+  async goalList(projectId: string) { await this.#project(projectId); return this.goals.view(projectId); }
+  async createGoal(projectId: string, raw: unknown) { await this.#coordinatorHere(projectId); return this.goals.create(projectId, raw); }
+  async updateGoal(projectId: string, goalId: string, raw: unknown) { await this.#project(projectId); return this.goals.update(projectId, goalId, raw); }
   async taskList(projectId: string) { await this.#project(projectId); return TaskListViewSchema.parse({ schema: 'task-list-view-v1', projectId, tasks: await this.tasks.list(projectId) }); }
   async taskView(projectId: string, taskId: string) { return TaskViewSchema.parse({ schema: 'task-view-v1', task: await this.tasks.read(projectId, taskId) }); }
   async createTask(projectId: string, raw: unknown) {

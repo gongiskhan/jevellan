@@ -116,7 +116,7 @@ export class AgentApiAdapter implements AgentApi {
     let owner: string | null | undefined;
     if (conversationId && operation !== 'job_start') owner = (await this.#job(conversationId)).ownerDeviceId;
     if (threadId && projectId) { owner = await this.app.projectWork.threadOwner(projectId, threadId); if (!owner) throw failure('Thread not found.', 404); }
-    if (projectId && ['coordinator_send', 'coordinator_stop', 'coordinator_fresh', 'thread_start', 'task_update', 'task_action'].includes(operation)) owner = await this.app.projectWork.coordinatorDevice(projectId);
+    if (projectId && ['coordinator_send', 'coordinator_stop', 'coordinator_fresh', 'thread_start', 'task_update', 'task_action', 'goal_create'].includes(operation)) owner = await this.app.projectWork.coordinatorDevice(projectId);
     if (['apps_list', 'app_stop', 'memory_search', 'memory_read'].includes(operation) && typeof input.deviceId === 'string') owner = input.deviceId;
     if (owner && owner !== this.app.device.deviceId) return this.#forward(owner, { schema: 'agent-peer-request-v1', kind: 'call', operation, arguments: parsed }, signal);
     const release = definition.readOnly ? undefined : this.app.lifecycle.enter({ kind: 'request' });
@@ -150,9 +150,12 @@ export class AgentApiAdapter implements AgentApi {
         }
         case 'threads_list': result = { schema: 'agent-threads-v1', projectId, threads: (await work.view(projectId!)).threads }; break;
         case 'thread_start': result = await work.createTask(projectId!, C.TaskCreateRequestSchema.parse({ schema: 'task-create-request-v1', ...pick(input, ['clientRequestId', 'title', 'type', 'goalId', 'now', 'after', 'needs']), brief: input.task, ...(input.note ? { placementNote: input.note } : {}), fixed: pick(input, selections) })); break;
+        case 'goals_list': result = await work.goalList(projectId!); break;
+        case 'goal_create': result = await work.createGoal(projectId!, C.GoalCreateRequestSchema.parse({ ...pick(input, ['clientRequestId', 'name', 'motivation', 'health', 'state', 'autonomy', 'dailyRefillCap', 'openPrCap']), schema: 'goal-create-request-v1' })); break;
+        case 'goal_update': result = await work.updateGoal(projectId!, String(input.goalId), C.GoalUpdateRequestSchema.parse({ ...pick(input, ['expectedRevision', 'name', 'motivation', 'health', 'state', 'autonomy', 'dailyRefillCap', 'openPrCap']), schema: 'goal-update-request-v1' })); break;
         case 'tasks_list': result = await work.taskList(projectId!); break;
         case 'task_read': result = await work.taskView(projectId!, String(input.taskId)); break;
-        case 'task_update': result = await work.updateTask(projectId!, String(input.taskId), C.TaskUpdateRequestSchema.parse({ ...pick(input, ['expectedRevision', 'title', 'brief', 'type', 'now', 'position']), schema: 'task-update-request-v1' })); break;
+        case 'task_update': result = await work.updateTask(projectId!, String(input.taskId), C.TaskUpdateRequestSchema.parse({ ...pick(input, ['expectedRevision', 'title', 'brief', 'type', 'goalId', 'after', 'needs', 'fixed', 'now', 'position']), schema: 'task-update-request-v1' })); break;
         case 'task_action': result = await work.taskAction(projectId!, String(input.taskId), C.TaskActionRequestSchema.parse({ ...pick(input, ['expectedRevision', 'action', 'reason']), schema: 'task-action-request-v1' })); break;
         case 'thread_read': result = await work.threadView(projectId!, threadId!); break;
         case 'thread_send': result = { schema: 'thread-message-receipt-v1', ...await work.threadMessage(projectId!, threadId!, C.ThreadMessageRequestSchema.parse({ schema: 'thread-message-request-v1', ...pick(input, ['clientMessageId', 'text', 'interrupt']) })) }; break;

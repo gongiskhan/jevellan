@@ -1,3 +1,4 @@
+import { ProjectGoalSchema, ProjectRefillStateSchema, type ProjectGoal, type ProjectRefillState } from '@jevellan/core';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import {
@@ -69,6 +70,20 @@ export class HubProjectStore {
     return { records: records.slice(0, PROJECT_HUB_PAGE), next: records.length > PROJECT_HUB_PAGE ? records[PROJECT_HUB_PAGE - 1]!.id : null };
   }
 
+  goals(projectId: string, after?: string): Page<ProjectGoal> { return this.#page('project-goals', ProjectGoalSchema, projectId, after, () => true); }
+  goal(goalId: string): Stored<ProjectGoal> | null { return this.#get('project-goals', goalId, ProjectGoalSchema); }
+  putGoal(raw: ProjectGoal, expectedRevision: number): Stored<ProjectGoal> {
+    const goal = ProjectGoalSchema.parse(raw); this.#project(goal.projectId);
+    const previous = this.goal(goal.id)?.document;
+    if (previous && (previous.projectId !== goal.projectId || previous.createdAt !== goal.createdAt || previous.requestDigest !== goal.requestDigest)) refuse('Goal identity cannot change.', 400);
+    return this.#put('project-goals', goal.id, ProjectGoalSchema, goal, expectedRevision);
+  }
+  refill(projectId: string): Stored<ProjectRefillState> | null { return this.#get('project-refill-state', projectId, ProjectRefillStateSchema); }
+  putRefill(raw: ProjectRefillState, expectedRevision: number): Stored<ProjectRefillState> {
+    const refill = ProjectRefillStateSchema.parse(raw); this.#project(refill.projectId);
+    if (this.coordinator(refill.projectId)?.document.deviceId !== this.deviceId) refuse('Only the coordinator device can request a refill.', 403);
+    return this.#put('project-refill-state', refill.projectId, ProjectRefillStateSchema, refill, expectedRevision);
+  }
   settings(projectId: string): Stored<ProjectWorkSettings> | null { return this.#get(SETTINGS, projectId, StoredProjectWorkSettingsSchema); }
   tasks(projectId: string, after?: string): Page<ProjectWorkTask> { return this.#page('project-work-tasks', ProjectWorkTaskSchema, projectId, after, () => true); }
   task(taskId: string): Stored<ProjectWorkTask> | null { return this.#get('project-work-tasks', taskId, ProjectWorkTaskSchema); }
@@ -90,6 +105,14 @@ export class HubProjectStore {
       for (const id of task.after) visit(id);
       if (task.threadId && this.#documents('project-work-tasks', ProjectWorkTaskSchema, task.projectId).some(other => other.id !== task.id && other.threadId === task.threadId)) refuse('A thread already belongs to another task.');
       if (current && stableJson({ ...current.document, revision: 0 }) === stableJson({ ...task, revision: 0 })) return current;
+      if (!current && task.source === 'refill') {
+        const refill = this.refill(task.projectId)?.document, goal = task.goalId ? this.goal(task.goalId)?.document : undefined;
+        if (!goal || goal.projectId !== task.projectId || goal.state !== 'active' || !task.refillEventId || refill?.eventId !== task.refillEventId || !refill.goals.some(item => item.goalId === goal.id)) refuse('This goal was not requested for refill in the current turn.', 403);
+        const others = this.#documents('project-work-tasks', ProjectWorkTaskSchema, task.projectId);
+        if (others.some(other => other.goalId === goal.id && other.refillEventId === task.refillEventId)) refuse('Only one task per goal can answer a refill event.', 409);
+        if (others.filter(other => other.goalId === goal.id && other.source === 'refill' && other.projectDay === task.projectDay).length >= goal.dailyRefillCap) refuse('The goal reached its daily refill cap.', 409);
+      }
+      if (task.goalId && this.goal(task.goalId)?.document.projectId !== task.projectId) refuse('The goal must belong to this project.', 400);
       const stored = this.#put('project-work-tasks', task.id, ProjectWorkTaskSchema, task, expectedRevision);
       this.hub.put('project-work-task-history', `${task.id}_${String(stored.revision).padStart(10, '0')}`, TaskHistoryEventSchema,
         { schema: 'task-history-event-v1', taskId: task.id, projectId: task.projectId, sequence: stored.revision, state: task.state, title: task.title, at: task.updatedAt, threadId: task.threadId, ...(task.endNote ? { note: task.endNote } : {}) }, 0);
@@ -476,6 +499,11 @@ export class HubProjectStore {
     const request = ProjectHubRequestSchema.parse(raw); const base = { schema: 'project-hub-result-v1', operation: request.operation };
     let result: unknown;
     switch (request.operation) {
+      case 'goals-list': result = { ...base, ...this.goals(request.projectId, request.after) }; break;
+      case 'goal-get': result = { ...base, record: this.goal(request.goalId) }; break;
+      case 'goal-put': result = { ...base, record: this.putGoal(request.goal, request.expectedRevision) }; break;
+      case 'refill-get': result = { ...base, record: this.refill(request.projectId) }; break;
+      case 'refill-put': result = { ...base, record: this.putRefill(request.refill, request.expectedRevision) }; break;
       case 'tasks-list': result = { ...base, ...this.tasks(request.projectId, request.after) }; break;
       case 'task-get': result = { ...base, record: this.task(request.taskId) }; break;
       case 'task-put': result = { ...base, record: this.putTask(request.task, request.expectedRevision) }; break;
@@ -524,6 +552,11 @@ export class HubProjectAccess implements ProjectHub {
   readonly #store: HubProjectStore;
   constructor(hub: HubDatabase, deviceId: string, now?: () => number, devices?: () => readonly DeviceView[]) { this.#store = new HubProjectStore(hub, deviceId, now, devices); }
   async settings(projectId: string) { return this.#store.settings(projectId); }
+  async goals(projectId: string, after?: string) { return this.#store.goals(projectId, after); }
+  async goal(goalId: string) { return this.#store.goal(goalId); }
+  async putGoal(goal: ProjectGoal, expectedRevision: number) { return this.#store.putGoal(goal, expectedRevision); }
+  async refill(projectId: string) { return this.#store.refill(projectId); }
+  async putRefill(refill: ProjectRefillState, expectedRevision: number) { return this.#store.putRefill(refill, expectedRevision); }
   async tasks(projectId: string, after?: string) { return this.#store.tasks(projectId, after); }
   async task(taskId: string) { return this.#store.task(taskId); }
   async putTask(task: ProjectWorkTask, expectedRevision: number) { return this.#store.putTask(task, expectedRevision); }
@@ -587,6 +620,11 @@ export class MemberProjectStore implements ProjectHub {
   #check<T>(record: T, valid: (value: T) => boolean): T { if (!valid(record)) throw new HubProtocolError(); return record; }
 
   async settings(projectId: string) { return this.#check((await this.#call('settings-get', { projectId })).record, (row) => !row || row.document.projectId === projectId); }
+  async goals(projectId: string, after?: string) { return this.#page(await this.#call('goals-list', { projectId, ...(after ? { after } : {}) }), projectId, after); }
+  async goal(goalId: string) { return this.#check((await this.#call('goal-get', { goalId })).record, row => !row || row.document.id === goalId); }
+  async putGoal(goal: ProjectGoal, expectedRevision: number) { return this.#check((await this.#call('goal-put', { goal, expectedRevision })).record, row => row.document.id === goal.id && row.document.projectId === goal.projectId); }
+  async refill(projectId: string) { return this.#check((await this.#call('refill-get', { projectId })).record, row => !row || row.document.projectId === projectId); }
+  async putRefill(refill: ProjectRefillState, expectedRevision: number) { return this.#check((await this.#call('refill-put', { refill, expectedRevision })).record, row => row.document.projectId === refill.projectId); }
   async tasks(projectId: string, after?: string) { return this.#page(await this.#call('tasks-list', { projectId, ...(after ? { after } : {}) }), projectId, after); }
   async task(taskId: string) { return this.#check((await this.#call('task-get', { taskId })).record, row => !row || row.document.id === taskId); }
   async putTask(task: ProjectWorkTask, expectedRevision: number) { return this.#check((await this.#call('task-put', { task, expectedRevision })).record, row => row.document.id === task.id && row.document.projectId === task.projectId); }

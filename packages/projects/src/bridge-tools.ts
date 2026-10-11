@@ -15,6 +15,7 @@ import type { DeviceRoster } from './placement.js';
 import type { PullRequestTracker } from './pull-requests.js';
 import type { ThreadStore } from './stores.js';
 import type { ThreadService } from './threads.js';
+import type { ProjectGoals } from './goals.js';
 import { taskOpen, type ProjectTasks } from './tasks.js';
 
 export type ProjectScope = { kind: 'coordinator'; projectId: string; turn: number }
@@ -117,7 +118,7 @@ export class ProjectTools implements BridgeScopeTools {
 export type CoordinatorToolsOptions = {
   deviceId: string; deviceName: string;
   threads: Pick<ThreadService, 'start' | 'message' | 'stop' | 'list' | 'read'>;
-  tasks?: ProjectTasks;
+  tasks?: ProjectTasks; goals?: ProjectGoals;
   store: Pick<ThreadStore, 'get'>;
   decisions: Pick<DecisionItems, 'ask' | 'withdraw'>;
   pullRequests: Pick<PullRequestTracker, 'fresh'> & Partial<Pick<PullRequestTracker, 'diff' | 'review'>>;
@@ -157,6 +158,7 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
   const turnId = (prefix: string, projectId: string, turn: number, input: unknown) => derivedId(prefix, 'coordinator', projectId, o.deviceId, String(turn), stableJson(input));
   async function call(projectId: string, turn: number, name: ProjectToolName, raw: unknown, signal: AbortSignal): Promise<unknown> {
     switch (name) {
+      case 'jevellan_goals_list': { if (!o.goals) throw new Error('Goals are unavailable.'); return o.goals.view(projectId); }
       case 'jevellan_threads_list': {
         const input = raw as Input<typeof name>;
         const [threads, deviceName] = await Promise.all([o.threads.list(projectId, input.include), deviceNames()]);
@@ -172,8 +174,9 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
         const started = events.findLast(event => event.type === 'coordinator-turn-start' && event.turn === turn);
         const ids = new Set(started ? ledger.payload(started as ProjectLedgerEvent & { type: 'coordinator-turn-start' }).eventIds : []);
         const ownerRequested = events.some(event => event.type === 'coordinator-event' && (() => { const item = ledger.payload(event as ProjectLedgerEvent & { type: 'coordinator-event' }); return ids.has(item.id) && item.kind === 'user-message'; })());
+        const refill = events.filter(event => event.type === 'coordinator-event').map(event => ledger.payload(event as ProjectLedgerEvent & { type: 'coordinator-event' })).findLast(item => ids.has(item.id) && item.kind === 'goal-refill' && item.goals.some(goal => goal.goalId === input.goalId));
         const { source, ...fields } = input;
-        return o.tasks.create(projectId, { ...fields, schema: 'task-create-request-v1', clientRequestId: turnId('treq', projectId, turn, input) }, source, { ownerRequested });
+        return o.tasks.create(projectId, { ...fields, schema: 'task-create-request-v1', clientRequestId: turnId('treq', projectId, turn, input) }, source, { ownerRequested, ...(source === 'refill' && refill ? { refillEventId: refill.id } : {}) });
       }
       case 'jevellan_tasks_list': {
         const input = raw as Input<typeof name>; if (!o.tasks) throw new Error('The task queue is unavailable.');

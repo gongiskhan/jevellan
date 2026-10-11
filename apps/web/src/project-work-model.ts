@@ -186,7 +186,7 @@ export function threadCreateRequest(clientRequestId: string, form: ThreadForm) {
 }
 
 export type SettingsForm = { defaultIsolation: Isolation; isolationChanged: boolean; modelId: string; effort: Effort; setupCommand: string;
-  coordinatorReview?: boolean; threadRules?: string; allowMainIsolation?: boolean;
+  refill?: ProjectWorkView['settings']['refill']; nightlyWindow?: ProjectWorkView['settings']['nightlyWindow']; coordinatorReview?: boolean; threadRules?: string; allowMainIsolation?: boolean;
   maxRunningThreads: number; maxRunningPerDevice: number; threadTurnCap: number };
 /**
  * `PUT /api/projects/:id/work-settings`. Reads show a stored `main` default as worktree with a notice (D205); unless the
@@ -197,7 +197,7 @@ export function settingsRequest(view: Pick<ProjectWorkView, 'settings' | 'settin
   const settings = { allowMainIsolation: view.settings.allowMainIsolation, threadRules: view.settings.threadRules,
     coordinatorReview: view.settings.coordinatorReview, nightlyWindow: view.settings.nightlyWindow, refill: view.settings.refill };
   return { schema: 'project-work-settings-request-v1' as const, revision: view.settings.revision, settings: {
-    ...settings,
+    ...settings, refill: form.refill ?? view.settings.refill, nightlyWindow: form.nightlyWindow ?? view.settings.nightlyWindow,
     defaultIsolation: keptMain ? 'main' as const : form.defaultIsolation,
     coordinator: { ...view.settings.coordinator, modelId: form.modelId || null, effort: form.effort }, setupCommand: form.setupCommand.trim() || null,
     coordinatorReview: form.coordinatorReview ?? view.settings.coordinatorReview, threadRules: form.threadRules ?? view.settings.threadRules,
@@ -225,7 +225,7 @@ export function showSent(sent: { known: readonly string[] } | undefined, open: r
 }
 
 const TOOL_ICONS: Record<string, IconName> = {
-  jevellan_tasks_list: 'thread', jevellan_task_create: 'plus', jevellan_task_update: 'settings', jevellan_task_cancel: 'stop', jevellan_threads_list: 'thread', jevellan_thread_start: 'plus', jevellan_thread_message: 'message', jevellan_thread_read: 'search',
+  jevellan_goals_list: 'search', jevellan_tasks_list: 'thread', jevellan_task_create: 'plus', jevellan_task_update: 'settings', jevellan_task_cancel: 'stop', jevellan_threads_list: 'thread', jevellan_thread_start: 'plus', jevellan_thread_message: 'message', jevellan_thread_read: 'search',
   jevellan_thread_stop: 'stop', jevellan_ask_user: 'why', jevellan_withdraw_question: 'close', jevellan_notebook_read: 'file',
   jevellan_notebook_write: 'file', jevellan_pr_status: 'pull-request', jevellan_pr_diff: 'file', jevellan_pr_review: 'pull-request', jevellan_mail_send: 'message', memory_search: 'search', memory_read: 'file',
 };
@@ -445,6 +445,7 @@ function eventCard(event: Exclude<CoordinatorEvent, { kind: 'user-message' }>, t
   const name = (threadId: string) => { const title = titles(threadId); return title ? copy.quotedTitle(title) : copy.UNKNOWN_THREAD_NAME; };
   const text = copy.eventCopy;
   switch (event.kind) {
+    case 'goal-refill': return card('Goals need work', undefined, event.goals.map(goal => `${goal.name}: ${goal.refillsToday} refilled today of ${goal.cap}`).join('\n'));
     case 'thread-report': {
       const status = { progress: text.reportProgress, done: text.reportDone, 'needs-decision': text.reportDecision, blocked: text.reportBlocked }[event.report.status];
       return card(status(name(event.threadId)), event.threadId, event.report.summary);

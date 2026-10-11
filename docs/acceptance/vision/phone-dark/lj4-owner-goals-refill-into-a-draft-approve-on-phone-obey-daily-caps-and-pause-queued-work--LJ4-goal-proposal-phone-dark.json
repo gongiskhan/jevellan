@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ4 owner goals refill into a draft, approve on phone, obey daily caps and pause queued work",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/LJ4-goal-proposal-phone-dark.png",
+  "expected": "the Jevellan web app \"LJ4 goal proposal\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"LJ4 owner goals refill into a draft, approve on phone, obey daily caps and pause queued work\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Pull requ…' tab is cut off at the right edge of the tab bar. The bar looks horizontally scrollable, so the tab is still reachable.",
+      "The move-down arrow button wraps alone onto a third row of action buttons, which leaves the controls looking unbalanced.",
+      "The subtitle 'analysis · Hardening through automated tests' is in a low-contrast muted blue on the dark card. It is still readable."
+    ]
+  }
+}

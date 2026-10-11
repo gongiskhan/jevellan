@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ3 one queue preserves dependency order, owner ordering and recovery without duplicate threads",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/screenshots/LJ3-queue-recovered-desktop-light.png",
+  "expected": "the Jevellan web app \"LJ3 queue recovered\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"LJ3 one queue preserves dependency order, owner ordering and recovery without duplicate threads\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "In the sidebar, the shell session titles are cut off with ellipses (\"Context · J11 memory journ…\", \"Context · Mesh journey fixt…\"), and so are their subtitles (\"Done · Improver sandbox · dev-ma…\").",
+      "In the right panel under RUNNING, the description of \"Read the README on the member\" is cut off with an ellipsis (\"…about th…\").",
+      "The \"Working…\" status chip under the header is clipped to \"Working…\" in a small bordered chip."
+    ]
+  }
+}

@@ -273,6 +273,8 @@ test('hub requests map to one collection each and results carry matching revisio
     'settings-get': { projectId: 'project' }, 'settings-put': { settings: { ...settings, revision: 1 }, expectedRevision: 0, clientRequestId: 'req_1' },
     'coordinator-get': { projectId: 'project' }, 'coordinator-assign': { projectId: 'project', deviceId: 'dev_a', expectedRevision: 0 },
     'coordinator-status-get': { projectId: 'project' }, 'coordinator-status-put': { status },
+    'goals-list': { projectId: 'project' }, 'goal-get': { goalId: 'goal_1' }, 'goal-put': { goal: { schema: 'project-goal-v1', id: 'goal_1', projectId: 'project', revision: 0, name: 'Tests', motivation: 'Keep it working.', health: '', state: 'active', autonomy: 'propose', dailyRefillCap: 3, openPrCap: 2, createdAt: at, updatedAt: at }, expectedRevision: 0 },
+    'refill-get': { projectId: 'project' }, 'refill-put': { refill: { schema: 'project-refill-state-v1', projectId: 'project', revision: 0, lastAt: at, eventId: 'cev_refill', goals: [] }, expectedRevision: 0 },
     'tasks-list': { projectId: 'project' }, 'task-get': { taskId: 'task_1' },
     'task-put': { task: { schema: 'project-work-task-v1', id: 'task_1', projectId: 'project', revision: 0, title: 'Fix login', brief: 'Fix the login page.', kind: 'session', type: 'feature', goalId: null, source: 'owner', state: 'queued', rank: '8', ownerRanked: false, now: false, after: [], needs: [], dailyId: null, jobId: null, threadId: null, jobRunId: null, fixed: {}, createdAt: at, updatedAt: at }, expectedRevision: 0 },
     'task-history': { taskId: 'task_1' },
@@ -291,7 +293,7 @@ test('hub requests map to one collection each and results carry matching revisio
     'checkouts-held': { projectId: 'project' },
   };
   const expected = { settings: ['settings-get', 'settings-put'], coordinators: ['coordinator-get', 'coordinator-assign', 'coordinator-status-get', 'coordinator-status-put'],
-    tasks: ['tasks-list', 'task-get', 'task-put', 'task-history'], threads: ['threads-list', 'thread-get', 'thread-publish', 'review-get', 'review-put'], decisions: ['decisions-list', 'decision-get', 'decision-create', 'decision-withdraw', 'decision-answer'], notebooks: ['notebook-get', 'notebook-put'],
+    goals: ['goals-list', 'goal-get', 'goal-put', 'refill-get', 'refill-put'], tasks: ['tasks-list', 'task-get', 'task-put', 'task-history'], threads: ['threads-list', 'thread-get', 'thread-publish', 'review-get', 'review-put'], decisions: ['decisions-list', 'decision-get', 'decision-create', 'decision-withdraw', 'decision-answer'], notebooks: ['notebook-get', 'notebook-put'],
     overrides: ['override-add', 'overrides-recent'], envelopes: ['envelope-put', 'envelopes-pending', 'envelope-ack'], work: ['work-summaries'],
     mail: ['mail-send', 'mail-inbox', 'mail-read'], reservations: ['reserve', 'release', 'reservations-list'], checkouts: ['checkouts-held'] };
   for (const [operation, fields] of Object.entries(requests) as Array<[ProjectHubOperation, Record<string, unknown>]>) {
@@ -301,7 +303,7 @@ test('hub requests map to one collection each and results carry matching revisio
     expect(ProjectHubCollectionSchema.options).toContain(collectionOf(operation));
     expect((expected as Record<string, string[]>)[collectionOf(operation)]).toContain(operation);
   }
-  expect(ProjectHubCollectionSchema.options).toEqual(['settings', 'coordinators', 'threads', 'decisions', 'notebooks', 'overrides', 'envelopes', 'work', 'mail', 'reservations', 'checkouts', 'tasks']);
+  expect(ProjectHubCollectionSchema.options).toEqual(['settings', 'coordinators', 'threads', 'decisions', 'notebooks', 'overrides', 'envelopes', 'work', 'mail', 'reservations', 'checkouts', 'tasks', 'goals']);
   // The Projects list in one read (D267): pages of at most 100 summaries; a coordinator carries its device's presence or null.
   expect(isProjectHubRead('work-summaries')).toBe(true);
   const summary = { schema: 'project-work-summary-v1', projectId: 'project', name: 'Site', waiting: 1, running: 2, inReview: 0,

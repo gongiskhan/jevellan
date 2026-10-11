@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ4 owner goals refill into a draft, approve on phone, obey daily caps and pause queued work",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/screenshots/LJ4-goal-paused-desktop-light.png",
+  "expected": "the Jevellan web app \"LJ4 goal paused\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"LJ4 owner goals refill into a draft, approve on phone, obey daily caps and pause queued work\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The right-panel goal card is cut off at the bottom of the viewport mid-sentence ('Health: Tests cover the important paths and findings are'). The panel appears scrollable, so the content is still reachable.",
+      "Sidebar session titles and metadata are cut short with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…', 'Done · Improver sandbox · dev-ma…').",
+      "The 'Asks' and 'Daily' subsections sit close together, with little space between the 'Nothing open for this goal.' line and the next heading.",
+      "The 'Goal paused' and 'Queued' badges on the 'Paused goal task' row use small monospace text with low contrast."
+    ]
+  }
+}
