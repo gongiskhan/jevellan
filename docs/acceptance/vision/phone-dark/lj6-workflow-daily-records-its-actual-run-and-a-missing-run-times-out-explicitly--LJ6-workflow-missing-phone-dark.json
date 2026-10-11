@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab strip is cut off at the right edge: 'Pull requests' runs into the viewport edge. It is probably a horizontally scrollable row, but nothing shows that more tabs are there.",
-      "The header status chip is shortened to 'Working…'.",
-      "The expanded 'Nightly tests' entry shows only 'No output recorded.', while the 'Missing run' entry is collapsed. The two cards look uneven, but this is not a defect."
+      "The 'Pull requests' tab is cut off at the right edge of the tab bar. It is probably a horizontally scrollable tab strip.",
+      "The 'Working…' status pill in the header is truncated with an ellipsis."
     ]
   }
 }

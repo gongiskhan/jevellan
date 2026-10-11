@@ -40,7 +40,7 @@ export class ProjectMergeGate {
       const promise = this.#advance(thread.id).catch(() => undefined).finally(() => this.#active.delete(thread.id)); this.#active.set(thread.id, promise);
     }
   }
-  async #save(route: MergeRoute) { return MergeRouteSchema.parse((await this.o.hub.putMergeDocument(MergeRouteSchema.parse(this.o.redactor.document(route)), route.revision)).document); }
+  async #save(route: MergeRoute) { if (route.state === 'merged' && !route.mergedAt) route = { ...route, mergedAt: new Date(this.o.now()).toISOString() }; return MergeRouteSchema.parse((await this.o.hub.putMergeDocument(MergeRouteSchema.parse(this.o.redactor.document(route)), route.revision)).document); }
   async #event(route: MergeRoute, outcome: Extract<CoordinatorEvent, { kind: 'merge-gate' }>['outcome'], summary: string) {
     const key = `${outcome}:${route.failures}`;
     if (route.notified.includes(key)) return route;

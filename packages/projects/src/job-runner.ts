@@ -57,7 +57,8 @@ export class ProjectJobRunner {
       const privateRef = threadBaseRef(id), remote = await this.o.git.remoteUrl(repo);
       const base = remote ? await this.o.git.fetchPrivate(repo, baseBranch, privateRef) : await this.o.git.resolve(repo, `refs/heads/${baseBranch}`);
       if (!base) throw Object.assign(new Error('The project has no published base commit for this job.'), { status: 409 });
-      const day = task.projectDay ?? await this.o.day(task.projectId), gate = job.gate ? (await this.runs(task.projectId)).find(row => row.jobId === job.gate!.jobId && row.projectDay === day && row.conclusion === 'passed') : undefined;
+      const window = task.nightlyWindowId ? (await this.o.hub.window(task.nightlyWindowId))?.document : null;
+      const day = task.projectDay ?? await this.o.day(task.projectId), gate = job.gate ? (await this.runs(task.projectId)).find(row => row.jobId === job.gate!.jobId && row.projectDay === day && row.conclusion === 'passed' && (!window || window.taskIds.includes(row.taskId))) : undefined;
       const at = new Date(this.o.now()).toISOString();
       run = await this.#save(ProjectJobRunSchema.parse({ schema: 'project-job-run-v1', id, projectId: task.projectId, revision: 0, jobId: job.id, taskId: task.id,
         commit: gate?.commit ?? base, deviceId: this.o.deviceId, projectDay: day, startedAt: at, conclusion: null, summary: '', logTail: '', spec: job.run, baseBranch,

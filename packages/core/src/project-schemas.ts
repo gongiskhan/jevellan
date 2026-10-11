@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ProjectReviewReportSchema } from './project-review-schemas.js';
 import { CursorTranscriptSchema } from './cursor-schemas.js';
 import { EffortSchema, IdSchema, JevCallSchema, TimestampSchema } from './schemas.js';
 import { TaskPlacementContextSchema, TaskTypeSchema } from './task-types.js';
@@ -105,6 +106,7 @@ export const CoordinatorEventSchema = z.discriminatedUnion('kind', [
   ev('pr-ready-for-review', { threadId: IdSchema, prNumber: positive, commit: z.string().regex(/^[a-f0-9]{40,64}$/u) }),
   ev('job-finished', { jobId: IdSchema, runId: IdSchema, taskId: IdSchema, name: text.max(80), conclusion: z.enum(['passed', 'failed', 'timed-out', 'cancelled', 'skipped']), commit: z.string().regex(/^[0-9a-f]{40}$/u), summary: z.string().max(1200) }),
   ev('window-opened', { pending: z.number().int().min(1).max(50) }),
+  ev('project-reviewed', { report: ProjectReviewReportSchema }),
   ev('window-finished', { outcome: z.string().max(8000) }),
   ev('goal-refill', { goals: z.array(z.strictObject({ goalId: IdSchema, name: z.string().min(1).max(80), refillsToday: count, cap: z.number().int().min(0).max(20) })).max(100) }),
   ev('task-reviewed', { taskId: IdSchema, title: text.max(120), outcome: z.enum(['approved', 'rejected']) }),

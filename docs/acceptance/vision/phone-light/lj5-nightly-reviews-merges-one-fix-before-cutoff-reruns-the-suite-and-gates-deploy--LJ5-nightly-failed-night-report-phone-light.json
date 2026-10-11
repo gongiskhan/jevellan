@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/LJ5-nightly-failed-night-report-phone-light.png",
+  "expected": "the Jevellan web app \"LJ5 nightly failed night report\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The tab row is cut off at the right edge ('Pull requ…'). It is most likely a horizontally scrollable tab strip, but nothing on screen shows that more tabs are available.",
+      "The 'Enabled' checkbox sits above its label instead of beside it, which looks slightly off next to the Run now and Edit buttons.",
+      "Each nightly card repeats its title in the subtitle line (for example 'Review since last' / 'Review since last'), which is redundant."
+    ]
+  }
+}

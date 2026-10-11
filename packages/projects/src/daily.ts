@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { DailyCreateRequestSchema, DailyUpdateRequestSchema, JobCreateRequestSchema, JobUpdateRequestSchema, ProjectDailyListViewSchema, ProjectDailySchema, ProjectJobSchema, ProjectRunRequestSchema,
-  ProjectWindowSchema, ProjectWorkTaskSchema, stableJson, type CoordinatorEvent, type ProjectDaily, type ProjectHub, type ProjectJob, type ProjectWindow, type ProjectWorkSettings, type ProjectWorkTask, type SecretRedactor } from '@jevellan/core';
+  ReviewFollowupInputSchema, ProjectWindowSchema, ProjectWorkTaskSchema, stableJson, type CoordinatorEvent, type ProjectDaily, type ProjectHub, type ProjectJob, type ProjectWindow, type ProjectWorkSettings, type ProjectWorkTask, type SecretRedactor } from '@jevellan/core';
 import { derivedId } from './decision-items.js';
 import type { ProjectJobRunner } from './job-runner.js';
 import { projectBoundary, projectDay, shiftProjectDate } from './project-day.js';
@@ -19,7 +19,7 @@ export class ProjectDailyWork {
   async dailies(projectId: string): Promise<ProjectDaily[]> {
     const rows: ProjectDaily[] = []; let after: string | undefined;
     do { const page = await this.o.hub.dailies(projectId, after); rows.push(...page.records); after = page.next ?? undefined; } while (after);
-    return rows.sort((a, b) => a.order - b.order || a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
+    return rows.sort((a, b) => Number(b.target.kind === 'review-since-last') - Number(a.target.kind === 'review-since-last') || a.order - b.order || a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
   }
   async windows(projectId: string): Promise<ProjectWindow[]> {
     const rows: ProjectWindow[] = []; let after: string | undefined;
@@ -28,16 +28,65 @@ export class ProjectDailyWork {
   }
   async window(projectId: string): Promise<ProjectWindow | null> { return (await this.windows(projectId)).find(row => row.state === 'open') ?? null; }
   async mergesHeld(projectId: string): Promise<boolean> {
-    const window = await this.window(projectId); return !!window?.mergesHeld && this.o.now() < Date.parse(window.openedAt) + 6 * 3_600_000;
+    const window = await this.window(projectId); if (window) return window.mergesHeld && this.o.now() < Date.parse(window.openedAt) + 7 * 3_600_000;
+    // Fence merges at the configured time even while the coordinator is creating its durable window.
+    const settings = await this.o.settings(projectId); if (!settings.nightlyWindow.enabled) return false;
+    const date = await this.day(projectId), boundary = await this.dayStart(projectId, date);
+    return this.o.now() >= boundary && this.o.now() < boundary + 7 * 3_600_000 && !(await this.o.hub.window(derivedId('window', projectId, date))) && (await this.dailies(projectId)).some(row => row.enabled);
   }
-  async assertMerge(projectId: string): Promise<void> { if (await this.mergesHeld(projectId)) refuse(NIGHTLY_MERGE_HOLD); }
+  async allowedMergeThreads(projectId: string, tasks?: readonly ProjectWorkTask[]): Promise<string[]> {
+    const window = await this.window(projectId); if (!window || this.o.now() >= Date.parse(window.openedAt) + 150 * 60_000) return [];
+    const rows = tasks ?? await this.o.tasks.list(projectId), review = rows.find(row => window.taskIds.includes(row.id) && row.nightlyReview);
+    const fix = review?.reviewRun?.fixTaskId ? rows.find(row => row.id === review.reviewRun!.fixTaskId && row.nightlyFixFor === review.id) : null;
+    return fix?.threadId ? [fix.threadId] : [];
+  }
+  async assertMerge(projectId: string, threadId?: string): Promise<void> {
+    if (await this.mergesHeld(projectId) && (!threadId || !(await this.allowedMergeThreads(projectId)).includes(threadId))) refuse(NIGHTLY_MERGE_HOLD);
+  }
+  #next(window: ProjectWindow, tasks: readonly ProjectWorkTask[]): string | undefined {
+    for (const plan of window.plans) {
+      const task = tasks.find(row => row.id === plan.id); if (!task || !ended(task)) return plan.id;
+      if (task.nightlyReview && task.reviewRun?.state === 'completed' && this.o.now() < Date.parse(window.openedAt) + 150 * 60_000) {
+        if (!task.reviewRun.followupChosen) return 'awaiting-review-followup';
+        if (task.reviewRun.fixTaskId) {
+          const fix = tasks.find(row => row.id === task.reviewRun!.fixTaskId);
+          if (!fix || !['done', 'failed', 'cancelled'].includes(fix.state)) return task.reviewRun.fixTaskId;
+        }
+      }
+    }
+    return undefined;
+  }
+  async followup(projectId: string, raw: unknown) {
+    const input = ReviewFollowupInputSchema.parse(raw);
+    return this.o.tasks.exclusive(projectId, async () => {
+      await this.o.tasks.assertWriter(projectId);
+      const review = await this.o.tasks.read(projectId, input.reviewTaskId), run = review.reviewRun;
+      if (!review.nightlyReview || !run || run.state !== 'completed') return refuse('Choose a follow-up only for a completed nightly review.');
+      if (run.followupChosen) return { schema: 'review-followup-receipt-v1' as const, taskId: run.fixTaskId, repeated: true };
+      const window = review.nightlyWindowId ? (await this.o.hub.window(review.nightlyWindowId))?.document : null;
+      const inWindow = window?.state === 'open' && this.o.now() < Date.parse(window.openedAt) + 150 * 60_000;
+      let fixTaskId: string | null = null;
+      if (input.task) {
+        const goal = review.goalId ? (await this.o.hub.goal(review.goalId))?.document : null;
+        if (goal?.name !== 'Hardening through code review') return refuse('The review fix needs the Hardening through code review goal.');
+        fixTaskId = derivedId('task', 'review-fix', review.id);
+        if (!(await this.o.hub.task(fixTaskId))) await this.o.tasks.save(ProjectWorkTaskSchema.parse(this.o.redactor.document({ schema: 'project-work-task-v1', id: fixTaskId, projectId, revision: 0,
+          ...input.task, kind: 'session', type: 'finding', goalId: review.goalId, source: 'finding', state: 'queued', rank: taskRankBetween(null, (await this.o.tasks.list(projectId)).map(row => row.rank).sort()[0] ?? null), ownerRanked: false, now: true,
+          after: [], needs: [], dailyId: null, jobId: null, threadId: null, jobRunId: null, fixed: { isolation: 'worktree' }, nightlyFixFor: review.id,
+          ...(inWindow ? { nightlyWindowId: window.id } : {}), projectDay: review.projectDay, createdAt: this.o.tasks.at(), updatedAt: this.o.tasks.at() })));
+      }
+      await this.o.tasks.save({ ...review, reviewRun: { ...run, followupChosen: true, fixTaskId } }); this.o.changed();
+      return { schema: 'review-followup-receipt-v1' as const, taskId: fixTaskId, repeated: false };
+    });
+  }
   async day(projectId: string): Promise<string> { const s = await this.o.settings(projectId); return projectDay(this.o.now(), s.nightlyWindow.enabled ? s.nightlyWindow.time : '00:00', s.nightlyWindow.timezone); }
   async dayStart(projectId: string, day: string): Promise<number> { const s = await this.o.settings(projectId); return projectBoundary(day, s.nightlyWindow.enabled ? s.nightlyWindow.time : '00:00', s.nightlyWindow.timezone); }
   async view(projectId: string) {
     const [projectDay, dailies, jobs, runs, tasks, windows] = await Promise.all([this.day(projectId), this.dailies(projectId), this.jobs(projectId), this.o.runner.runs(projectId), this.o.tasks.list(projectId), this.windows(projectId)]);
     const window = windows.find(row => row.state === 'open') ?? windows[0] ?? null;
-    return ProjectDailyListViewSchema.parse({ schema: 'project-daily-list-view-v1', projectId, projectDay, dailies, jobs, runs, tasks, window,
-      mergesHeld: !!window?.mergesHeld && this.o.now() < Date.parse(window.openedAt) + 6 * 3_600_000 });
+    const lastReview = tasks.filter(row => row.reviewRun?.state === 'completed').sort((a, b) => b.reviewRun!.sequence - a.reviewRun!.sequence || b.reviewRun!.completedAt!.localeCompare(a.reviewRun!.completedAt!))[0]?.reviewRun?.report ?? null;
+    return ProjectDailyListViewSchema.parse({ schema: 'project-daily-list-view-v1', projectId, projectDay, dailies, jobs, runs, tasks, window, lastReview, lastReviewedCommit: lastReview?.commit ?? null, mergeAllowedThreads: await this.allowedMergeThreads(projectId, tasks),
+      mergesHeld: await this.mergesHeld(projectId) });
   }
   async createJob(projectId: string, raw: unknown): Promise<ProjectJob> {
     const input = JobCreateRequestSchema.parse(raw), id = derivedId('pjob', projectId, input.clientRequestId), requestDigest = createHash('sha256').update(stableJson(input)).digest('hex');
@@ -73,12 +122,13 @@ export class ProjectDailyWork {
   }
   async #dailyTarget(projectId: string, daily: Pick<ProjectDaily, 'goalId' | 'target'>): Promise<void> {
     await this.o.validateGoal(projectId, daily.goalId);
+    if (daily.target.kind === 'review-since-last' && daily.goalId && (await this.o.hub.goal(daily.goalId))?.document.name !== 'Hardening through code review') return refuse('Review since last uses the Hardening through code review goal.', 400);
     if (daily.target.kind === 'job' && (await this.o.hub.job(daily.target.jobId))?.document.projectId !== projectId) return refuse('A daily job must belong to this project.', 400);
   }
   async #plan(projectId: string, id: string, day: string, daily: ProjectDaily | null, job: ProjectJob | null, rank: string): Promise<ProjectWorkTask> {
-    const target = daily?.target, at = this.o.tasks.at(), session = target?.kind === 'session' ? target : null;
+    const target = daily?.target, at = this.o.tasks.at(), review = target?.kind === 'review-since-last', session = target?.kind === 'session' ? target : null;
     return ProjectWorkTaskSchema.parse({ schema: 'project-work-task-v1', id, projectId, revision: 0, title: session?.title ?? daily?.name ?? job!.name,
-      brief: session?.brief ?? `Run the configured job "${job!.name}" and record its result.`, kind: session ? 'session' : 'job', type: session?.type ?? 'ops', goalId: daily?.goalId ?? job?.goalId ?? null,
+      brief: session?.brief ?? (review ? 'Review every commit reaching main since the last completed review, including direct pushes.' : `Run the configured job "${job!.name}" and record its result.`), ...(review ? { nightlyReview: true } : {}), kind: session || review ? 'session' : 'job', type: session?.type ?? (review ? 'review' : 'ops'), goalId: daily?.goalId ?? job?.goalId ?? null,
       source: daily ? 'daily' : 'owner', state: 'queued', rank, ownerRanked: false, now: false, after: [], needs: [], dailyId: daily?.id ?? null,
       jobId: target?.kind === 'job' ? target.jobId : job?.id ?? null, threadId: null, jobRunId: null, fixed: {}, projectDay: day, createdAt: at, updatedAt: at });
   }
@@ -111,8 +161,8 @@ export class ProjectDailyWork {
   }
   async eligible(task: ProjectWorkTask, tasks: readonly ProjectWorkTask[]): Promise<boolean> {
     const window = await this.window(task.projectId);
-    if (window && this.o.now() < Date.parse(window.openedAt) + 6 * 3_600_000) {
-      const next = window.taskIds.find(id => !tasks.some(row => row.id === id && ended(row)));
+    if (window && this.o.now() < Date.parse(window.openedAt) + 7 * 3_600_000) {
+      const next = this.#next(window, tasks);
       if (task.id !== next) return false;
     }
     return task.kind !== 'job' || !this.o.runner.busy(task.projectId) && !tasks.some(row => row.id !== task.id && row.kind === 'job' && row.state === 'active');
@@ -124,14 +174,17 @@ export class ProjectDailyWork {
       let window = await this.window(projectId); const tasks = await this.o.tasks.list(projectId);
       if (window) {
         for (const plan of window.plans) if (!tasks.some(row => row.id === plan.id)) { const saved = await this.o.tasks.save(plan); tasks.push(saved); }
-        const expired = this.o.now() >= Date.parse(window.openedAt) + 6 * 3_600_000;
-        if (expired || window.taskIds.every(id => tasks.some(row => row.id === id && ended(row)))) {
+        const expired = this.o.now() >= Date.parse(window.openedAt) + 7 * 3_600_000;
+        if (expired || !this.#next(window, tasks)) {
           if (expired) for (const task of tasks.filter(row => window!.taskIds.includes(row.id) && row.state === 'queued')) {
-            const saved = await this.o.tasks.save({ ...task, state: 'cancelled', endedAt: this.o.tasks.at(), endNote: 'The six-hour nightly window ended before this task started.' });
+            const saved = await this.o.tasks.save({ ...task, state: 'cancelled', endedAt: this.o.tasks.at(), endNote: 'The seven-hour nightly window ended before this task started.' });
             tasks[tasks.findIndex(row => row.id === saved.id)] = saved;
           }
-          const outcome = window.plans.map(plan => `${plan.title}: ${tasks.find(row => row.id === plan.id)?.state ?? 'not started'}`).join('\n').slice(0, 8000), finishedAt = this.o.tasks.at();
-          window = (await this.o.hub.putWindow({ ...window, state: 'finished', mergesHeld: false, finishedAt, outcome }, window.revision)).document;
+          if (expired) this.o.runner.cancel(projectId);
+          const review = tasks.find(row => window!.taskIds.includes(row.id) && row.nightlyReview), fix = tasks.find(row => row.id === review?.reviewRun?.fixTaskId);
+          const failed = expired || window.taskIds.some(id => tasks.some(row => row.id === id && ['failed', 'cancelled'].includes(row.state))) || !!fix && ['failed', 'cancelled'].includes(fix.state);
+          const outcome = [...window.plans, ...(fix ? [fix] : [])].map(plan => `${plan.title}: ${tasks.find(row => row.id === plan.id)?.state ?? 'not started'}`).join('\n').slice(0, 8000), finishedAt = this.o.tasks.at();
+          window = (await this.o.hub.putWindow({ ...window, state: 'finished', mergesHeld: false, finishedAt, outcome, failed }, window.revision)).document;
           await this.o.event(projectId, { schema: 'coordinator-event-v1', kind: 'window-finished', id: derivedId('cev', 'window-finished', window.id), at: finishedAt, outcome }); this.o.changed();
         } else {
           await this.o.event(projectId, { schema: 'coordinator-event-v1', kind: 'window-opened', id: derivedId('cev', 'window-opened', window.id), at: window.openedAt, pending: window.taskIds.length }); return;
@@ -141,21 +194,21 @@ export class ProjectDailyWork {
       const last = (await this.windows(projectId)).find(row => row.state === 'finished');
       if (last) await this.o.event(projectId, { schema: 'coordinator-event-v1', kind: 'window-finished', id: derivedId('cev', 'window-finished', last.id), at: last.finishedAt!, outcome: last.outcome ?? '' });
       const date = await this.day(projectId), boundary = await this.dayStart(projectId, date);
-      if (this.o.now() < boundary || this.o.now() >= boundary + 6 * 3_600_000) return;
+      if (this.o.now() < boundary || this.o.now() >= boundary + 7 * 3_600_000) return;
       const id = derivedId('window', projectId, date), previous = (await this.o.hub.window(id))?.document;
       if (previous) {
         // A crash after the closing receipt must not lose the coordinator's notification.
         if (previous.state === 'finished') await this.o.event(projectId, { schema: 'coordinator-event-v1', kind: 'window-finished', id: derivedId('cev', 'window-finished', previous.id), at: previous.finishedAt!, outcome: previous.outcome ?? '' });
         return;
       }
-      const closingProjectDay = shiftProjectDate(date, -1), pending = (await this.dailies(projectId)).filter(daily => daily.enabled && !tasks.some(task => task.dailyId === daily.id && task.projectDay === closingProjectDay && task.state === 'done'));
+      const closingProjectDay = shiftProjectDate(date, -1), pending = (await this.dailies(projectId)).filter(daily => daily.enabled);
       if (!pending.length) return;
       const plans: ProjectWorkTask[] = []; let rank = taskRankBetween(null, tasks.map(task => task.rank).sort()[0] ?? null);
       // Build in reverse to keep daily order ahead of all ordinary tasks, including Now.
       for (const daily of [...pending].reverse()) {
         const job = daily.target.kind === 'job' ? (await this.o.hub.job(daily.target.jobId))?.document ?? null : null;
         if (daily.target.kind === 'job' && !job) return refuse('A daily job definition is missing.');
-        plans.unshift(await this.#plan(projectId, derivedId('task', 'window', id, daily.id), closingProjectDay, daily, job, rank)); rank = taskRankBetween(null, rank);
+        plans.unshift({ ...await this.#plan(projectId, derivedId('task', 'window', id, daily.id), closingProjectDay, daily, job, rank), nightlyWindowId: id }); rank = taskRankBetween(null, rank);
       }
       const openedAt = new Date(boundary).toISOString();
       window = (await this.o.hub.putWindow(ProjectWindowSchema.parse({ schema: 'project-window-v1', id, projectId, revision: 0, date, closingProjectDay, state: 'open', mergesHeld: true, openedAt, taskIds: plans.map(plan => plan.id), plans }), 0)).document;

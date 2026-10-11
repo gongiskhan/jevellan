@@ -2,7 +2,7 @@ import { afterEach, beforeEach, expect, test } from 'vitest';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { EkoaStateSchema, Homes, ProjectSchema, ProjectDecisionSchema, ProjectWorkTaskSchema, PullRequestReviewSchema, ThreadIndexSchema } from '../packages/core/dist/index.js';
+import { EkoaStateSchema, ProjectWindowSchema, Homes, ProjectSchema, ProjectDecisionSchema, ProjectWorkTaskSchema, PullRequestReviewSchema, ThreadIndexSchema } from '../packages/core/dist/index.js';
 import { HubDatabase } from '../packages/mesh/dist/index.js';
 import { EkoaMirrorService } from '../apps/daemon/dist/ekoa-mirror.js';
 import { connectEkoa } from '../apps/daemon/dist/ekoa-client.js';
@@ -66,4 +66,13 @@ test('a server without ownership recovery tools is blocked before it can create 
   const incomplete = await startEkoaFixture({ omitTool: 'task_get' });
   try { await expect(connectEkoa(incomplete.url, incomplete.token)).rejects.toThrow('missing task_get'); expect(incomplete.tasks.size).toBe(0); }
   finally { await incomplete.close(); }
+});
+
+
+test('one failed night creates one durable report mirror and respects the owner completing it', async () => {
+  hub.put('project-windows', 'night', ProjectWindowSchema, { schema: 'project-window-v1', id: 'night', projectId: 'project', revision: 1, date: '2026-10-11', closingProjectDay: '2026-10-10', state: 'finished', mergesHeld: false, openedAt: at, finishedAt: at, taskIds: [], plans: [], failed: true, outcome: 'Full suite: failed\nDeploy: skipped' }, 0);
+  await service.tick(); await service.tick(); expect(remote.tasks.size).toBe(1);
+  const report = [...remote.tasks.values()][0]!; expect(report.title).toBe('Jevellan · App: night report'); expect(report.notes).toContain('Deploy: skipped');
+  report.status = 'done'; await service.tick(); expect(report.status).toBe('done'); expect(service.state().mirrors[0]).toMatchObject({ kind: 'night-report', state: 'completed' });
+  expect(remote.calls.filter(call => call.name === 'task_create')).toHaveLength(1); expect(remote.calls.some(call => call.name === 'task_reopen')).toBe(false);
 });

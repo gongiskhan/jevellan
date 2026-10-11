@@ -1,0 +1,20 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/screenshots/LJ5-nightly-reviewed-and-passed-desktop-light.png",
+  "expected": "the Jevellan web app \"LJ5 nightly reviewed and passed\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "In the 'Nightly window finished' card, the last line reads 'Deploy: done…' and is cut off with an ellipsis, so the full status can't be read.",
+      "Some sidebar session titles and metadata are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Mesh journey fixt…'). This looks intentional.",
+      "The page contradicts itself: the timeline says Job 'Deploy' passed and the nightly window finished, but the right panel still shows Deploy as 'Queued' (under Queue and in the Nightly cards) and its 'Run now' button looks disabled. The 'Nightly window · merges held' banner and the 'Merges are held while the nightly window runs' notices are also still showing.",
+      "PR #1 still shows 'Checks running' after the nightly window finished, and the header still says 'Working…' / 'Coordinator is working…'. The capture may have been taken before the page finished updating.",
+      "The 'Enabled' checkboxes on the Nightly cards sit stacked above their labels instead of beside them, which looks slightly misaligned."
+    ]
+  }
+}

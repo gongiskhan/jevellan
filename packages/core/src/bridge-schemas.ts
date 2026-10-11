@@ -2,6 +2,7 @@ import { VerificationReportSchema } from './merge-schemas.js';
 import { ProjectDailyListViewSchema, ProjectJobListViewSchema, ProjectJobRunListViewSchema } from './project-daily-schemas.js';
 import { GoalListViewSchema } from './project-goal-schemas.js';
 import { z } from 'zod';
+import { ProjectReviewBodySchema, ReviewFollowupInputSchema } from './project-review-schemas.js';
 import { ProjectWorkTaskSchema, TaskCreateRequestSchema, TaskReceiptSchema, TaskUpdateRequestSchema } from './project-loop-schemas.js';
 import { EffortSchema, FindingSchema, HandoffSchema, IdSchema, ResultSchema, TimestampSchema } from './schemas.js';
 import {
@@ -119,6 +120,8 @@ export const BridgeToolSchemas = {
   jevellan_pr_status: PrStatusInputSchema,
   jevellan_pr_diff: PrStatusInputSchema,
   jevellan_verification_report: VerificationReportSchema,
+  jevellan_project_review_report: ProjectReviewBodySchema,
+  jevellan_review_followup: ReviewFollowupInputSchema,
   // Retired schema retained only so historical ledgers remain readable. Never offered by any scope.
   jevellan_pr_review: z.strictObject({ threadId: IdSchema, verdict: z.enum(['approve', 'changes']), note: text.max(4000) }),
   jevellan_mail_send: MailSendInputSchema,
@@ -148,6 +151,8 @@ export function bridgeTools(names: BridgeTool[]): z.infer<typeof BridgeToolsSche
     jevellan_daily_list: 'Read daily items, today status and nightly window. You cannot define or edit daily items.',
 
     jevellan_pr_diff: 'Read the current pull request head and changed files, with a unified diff of up to 80,000 characters. Read before reviewing in this turn.',
+    jevellan_project_review_report: 'End the read-only nightly review with one summary and findings covering every commit in its range.',
+    jevellan_review_followup: 'Choose at most one combined code-review finding fix, or explicitly choose none, for the completed nightly review.',
     jevellan_verification_report: 'End the basic PR verification with exactly one passed or failed report, commands and bounded failures.',
     jevellan_pr_review: 'Retired historical tool. Review the head read by jevellan_pr_diff in this turn. Approve with a note or request changes; a changed head requires another diff read. This never merges.',
     jevellan_app_start: 'Start an app and return a verified browser link. Static serves HTML; command runs an executable with args, replacing {port} and {host}. The app is owned by Jevellan and stays running after this turn. Use this when the owner wants to run or use the app, rather than opening a file on the server. Do not pass credentials.',
@@ -189,7 +194,7 @@ export function bridgeTools(names: BridgeTool[]): z.infer<typeof BridgeToolsSche
 
 // Project scopes (D104). The coordinator's read-only Claude allow list and the bridge's scope lists both derive from
 // projectToolNames, never a copy.
-export const COORDINATOR_TOOLS = ['jevellan_jobs_list', 'jevellan_job_run', 'jevellan_job_runs', 'jevellan_daily_list', 'jevellan_goals_list', 'jevellan_tasks_list', 'jevellan_task_create', 'jevellan_task_update', 'jevellan_task_cancel', 'jevellan_threads_list', 'jevellan_thread_message', 'jevellan_thread_read', 'jevellan_thread_stop',
+export const COORDINATOR_TOOLS = ['jevellan_review_followup', 'jevellan_jobs_list', 'jevellan_job_run', 'jevellan_job_runs', 'jevellan_daily_list', 'jevellan_goals_list', 'jevellan_tasks_list', 'jevellan_task_create', 'jevellan_task_update', 'jevellan_task_cancel', 'jevellan_threads_list', 'jevellan_thread_message', 'jevellan_thread_read', 'jevellan_thread_stop',
   'jevellan_ask_user', 'jevellan_withdraw_question', 'jevellan_notebook_read', 'jevellan_notebook_write', 'jevellan_pr_status', 'jevellan_pr_diff', 'jevellan_mail_send', 'memory_search', 'memory_read'] as const satisfies readonly BridgeTool[];
 const MAIN_THREAD_TOOLS = ['jevellan_mail_send', 'jevellan_mail_inbox', 'jevellan_reserve', 'jevellan_release'] as const satisfies readonly BridgeTool[];
 export type ProjectToolName = typeof COORDINATOR_TOOLS[number] | typeof MAIN_THREAD_TOOLS[number] | 'jevellan_pr_review' | 'jevellan_thread_report' | 'jevellan_app_start' | 'jevellan_app_stop' | 'jevellan_apps_list';
@@ -202,6 +207,7 @@ export function projectToolNames(scope: { kind: 'coordinator' } | { kind: 'threa
 }
 /** The result document each project tool returns inside bridge-result-v1. */
 export const ProjectToolResultSchemas = {
+  jevellan_review_followup: z.strictObject({ schema: z.literal('review-followup-receipt-v1'), taskId: IdSchema.nullable(), repeated: z.boolean() }),
   jevellan_jobs_list: ProjectJobListViewSchema,
   jevellan_job_run: TaskReceiptSchema,
   jevellan_job_runs: ProjectJobRunListViewSchema,

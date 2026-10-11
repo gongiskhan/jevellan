@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Pull requests' tab is cut off at the right edge of the tab row. The row probably scrolls sideways, so the tab can likely still be reached.",
-      "The status badge is cut short to 'Working…' next to the 'Claude Code Fable · high' label.",
-      "The workflow result says 'No output recorded.', so this passed run shows no actual output."
+      "The tab row overflows on the right: the 'Pull requests' tab is clipped at the screen edge, and any tabs after it are off-screen. It looks like a horizontally scrollable strip, so the tabs should still be reachable.",
+      "The 'Working…' status badge is cut short with an ellipsis.",
+      "The 'Enabled' checkbox sits above its label rather than inline with it, so it doesn't line up with the 'Run now' and 'Edit' buttons.",
+      "The output panel says 'No output recorded.' even though the workflow succeeded, which reads a bit oddly."
     ]
   }
 }

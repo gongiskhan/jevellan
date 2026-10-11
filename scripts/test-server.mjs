@@ -57,18 +57,25 @@ const PROJECTS_REMOTE = `https://github.com/${PROJECTS_REPOSITORY}.git`;
 const projectsOrigin = join(root, 'projects-origin.git');
 const githubToken = `fixture-${randomUUID()}`;
 // The fake GitHub reads the bare origin lazily, so it can start before the repository exists.
-const github = projectsMode ? await startGitHubFixture({ token: githubToken, repositories: { [PROJECTS_REPOSITORY]: projectsOrigin } }) : undefined;
+const github = projectsMode ? await startGitHubFixture({ token: githubToken, repositories: { [PROJECTS_REPOSITORY]: projectsOrigin }, onMerge: pull => {
+  if (pull.title !== 'Fix the nightly review finding') return;
+  // Simulate GitHub's atomic squash merge in the real bare origin before exposing its merged state.
+  const run = (...args) => execFileSync('git', ['--git-dir', projectsOrigin, ...args], { encoding: 'utf8', env: { ...process.env, GIT_AUTHOR_NAME: 'Fixture', GIT_AUTHOR_EMAIL: 'fixture@example.test', GIT_COMMITTER_NAME: 'Fixture', GIT_COMMITTER_EMAIL: 'fixture@example.test' } }).trim();
+  const base = run('rev-parse', `refs/heads/${pull.base}`), tree = run('merge-tree', '--write-tree', base, pull.headSha).split('\n')[0];
+  const sha = run('commit-tree', tree, '-p', base, '-m', pull.title); run('update-ref', `refs/heads/${pull.base}`, sha, base); return sha;
+} }) : undefined;
 // A new pull request starts with its checks queued, as CI does on GitHub (the fixture's own default stays `none`).
 const githubFetch = async (url, init) => {
   const response = await fetch(url, init);
   const created = /^\/repos\/([^/]+\/[^/]+)\/pulls$/.exec(new URL(String(url)).pathname);
-  if (created && init?.method === 'POST' && response.status === 201) github.setChecks((await response.clone().json()).number, 'pending', decodeURIComponent(created[1]));
+  if (created && init?.method === 'POST' && response.status === 201) github.setChecks((await response.clone().json()).number, JSON.parse(init.body).title === 'Fix the nightly review finding' ? 'passing' : 'pending', decodeURIComponent(created[1]));
   return response;
 };
 // The hub's Projects loops follow its own timers. The member keeps `timers: false` for everything else but runs its Projects loops
 // (inbox, outbox, sweeps, pull requests), so a thread placed on it starts without a pulse, as on a real device (design 5.5 item 3).
 let projectClockOffset = 0;
 let frozenProjectClock;
+let nightlyLateFix = false;
 const projectOptions = github ? { githubBaseUrl: github.url, githubFetch, projectTimers: { now: () => frozenProjectClock ?? Date.now() + projectClockOffset, prPollMs: 2_000, coordinatorStartMs: 100, inboxPollMs: 500, queueSweepMs: 1_000, outboxRetryMs: 500, outboxMaxMs: 2_000 } } : {};
 const memberProjectOptions = github ? { ...projectOptions, projectTimers: { ...projectOptions.projectTimers, periodic: true } } : {};
 const projectPause = (ms, signal) => new Promise((resolve) => {
@@ -98,6 +105,11 @@ function coordinatorStep(input) {
   const at = input.prompt.lastIndexOf(EVENTS_HEADER); const events = at < 0 ? input.prompt : input.prompt.slice(at);
   // The greeting turn holds after its first words until the control route releases it (or the turn is stopped), so the
   // working state is on screen for as long as a journey needs to capture it, however loaded the machine is.
+  if (events.includes('[nightly review at') && input.owner.projectId === 'projects_daily') return async turn => {
+    const reviewTaskId = /for reviewTaskId ([A-Za-z0-9_-]+)/u.exec(events)?.[1];
+    await projectTool(turn, 'jevellan_review_followup', { reviewTaskId, task: { title: 'Fix the nightly review finding', brief: 'LJ5 nightly fix: fix the single combined finding without reviewing your own work.' } });
+    turn.say('Queued one combined fix for the nightly review.'); return { status: 'completed' };
+  };
   if (events.includes('PJ3: add a greeting')) return async (turn) => {
     turn.say('Starting a thread for the greeting.\n');
     if (await hold('PJ3: add a greeting', turn.signal) === 'aborted') return { status: 'interrupted' };
@@ -133,6 +145,12 @@ const LONG_TOOLS = [['Read', { file_path: 'README.md' }, '# Projects app\n\nA sm
 const longThreads = new Set();
 function threadStep(input) {
   const report = (status, summary, extra = {}) => async (turn) => { await projectPause(350, turn.signal); turn.say(summary); await projectTool(turn, 'jevellan_thread_report', { status, summary, ...extra }); return { status: 'completed' }; };
+  if (input.prompt.includes('LJ5 nightly fix:')) return async turn => {
+    if (nightlyLateFix && await hold('LJ5 late fix', turn.signal) === 'aborted') return { status: 'interrupted' };
+    writeFileSync(join(turn.input.cwd, 'nightly-fix.txt'), `${frozenProjectClock}\n`);
+    git(turn.input.cwd, 'add', 'nightly-fix.txt'); git(turn.input.cwd, 'commit', '-m', 'Fix the nightly review finding');
+    return report('done', 'Fixed the combined nightly finding.', { changedFiles: ['nightly-fix.txt'] })(turn);
+  };
   if (input.prompt.includes('LJ7 fix:')) return report('progress', 'Inspected the small fix; waiting for the owner.');
   if (input.prompt.includes('LJ5 review:')) return report('done', 'Reviewed yesterday; no additional findings.');
   if (input.prompt.includes('LJ4:')) return async turn => {
@@ -190,7 +208,7 @@ function scriptedTurns(turns) {
   // Mirrors the adapter it serves: coordinators need read-only turns (D199); placement reads the adapter's capabilities.
   turns.capabilities.readOnlyEnforced = true;
   return (input) => {
-    turns.enqueueTurn(input.owner.kind === 'coordinator' ? coordinatorStep(input) : threadStep(input), (candidate) => candidate.owner.id === input.owner.id && candidate.turn === input.turn);
+    turns.enqueueTurn(input.owner.kind === 'coordinator' ? coordinatorStep(input) : input.owner.kind === 'review' ? async turn => { await projectTool(turn, 'jevellan_project_review_report', { summary: 'Reviewed the complete commit range, including direct pushes. One combined finding is worth fixing.', findings: [{ what: 'Keep the regression path current.', detail: 'Update the small nightly regression fixture.', files: ['nightly-fix.txt'] }] }); return { status: 'completed' }; } : threadStep(input), (candidate) => candidate.owner.id === input.owner.id && candidate.turn === input.turn);
     return turns.startTurn(input);
   };
 }
@@ -292,6 +310,7 @@ const decisionFetch = async (_url, init) => {
   if (init?.method === 'GET') return Response.json({ models: [{ name: 'jev-latest', description: 'Simulated browser fixture.', release_date: '2026-09-22' }] });
   const body = JSON.parse(init.body); const state = JSON.parse(body.state);
   // Placement packets carry no conversation, so they are answered before anything reads one.
+  if (state.schema === 'merge-route-state-v1' && state.title === 'Fix the nightly review finding') return Response.json({ model: 'jev-browser-simulated', usage: { input_tokens: 25, output_tokens: 15 }, answers: { merge_route: { type: 'choice', choice: 'merge', confidence: 1, probabilities: { merge: 1, 'test-then-merge': 0, 'ask-owner': 0 } } } });
   if (state.schema === 'merge-route-state-v1') return Response.json({ model: 'jev-browser-simulated', usage: { input_tokens: 25, output_tokens: 15 }, answers: { merge_route: { type: 'choice', choice: 'ask-owner', confidence: 1, probabilities: { merge: 0, 'test-then-merge': 0, 'ask-owner': 1 } } } });
   if (state.schema === 'placement-state-v2') return placementAnswers(body, state);
   const improver = improverAnswers(body, state);
@@ -630,7 +649,7 @@ for (const n of [1, 2, 3]) { correction('implement', n, 'implement', 'claude-fab
 // Projects control (design 5.5 item 9), on the same listener: POST routes; every body is a versioned fixture document (pulse has none).
 const ControlClockSchema = z.strictObject({ schema: z.literal('fixture-project-clock-v1'), advanceMinutes: z.number().int().min(0).max(1440) });
 const ControlEkoaSchema = z.strictObject({ schema: z.literal('fixture-ekoa-loop-v1'), action: z.enum(['prepare', 'answer', 'approve', 'ask-owner', 'merge', 'tick', 'list']) });
-const ControlDailySchema = z.strictObject({ schema: z.literal('fixture-daily-control-v1'), action: z.enum(['prepare', 'open', 'pass', 'fail', 'workflow']) });
+const ControlDailySchema = z.strictObject({ schema: z.literal('fixture-daily-control-v1'), action: z.enum(['prepare', 'prepare-late', 'reset', 'open', 'pass', 'fail', 'workflow']) });
 const dailyMarker = join(root, 'daily-result');
 const ControlPullSchema = z.strictObject({ schema: z.literal('fixture-pull-change-v1'), checks: z.enum(['none', 'pending', 'passing', 'passing-status', 'failing']).optional(),
   mergeable: z.enum(['clean', 'dirty', 'unknown', 'unstable']).optional(), merged: z.literal(true).optional(), closed: z.literal(true).optional() });
@@ -670,13 +689,15 @@ async function projectControl(request, response) {
     if (frozenProjectClock === undefined) projectClockOffset += input.advanceMinutes * 60_000; else frozenProjectClock += input.advanceMinutes * 60_000;
     await application.projectWork.pulse(); send(200, { schema: 'fixture-project-clock-result-v1', advancedMinutes: input.advanceMinutes });
   } else if (request.url === '/projects/daily' && (input = parse(ControlDailySchema))) {
-    if (input.action === 'prepare') {
-      frozenProjectClock = frozenProjectClock === undefined ? Date.parse('2026-10-12T00:59:00Z') : frozenProjectClock + 24 * 3_600_000 - 60_000;
+    if (['prepare', 'prepare-late'].includes(input.action)) {
+      nightlyLateFix = input.action === 'prepare-late';
+      frozenProjectClock = frozenProjectClock === undefined ? Date.parse('2026-10-12T00:59:00Z') : Date.parse(`${new Date(frozenProjectClock + 24 * 3_600_000).toISOString().slice(0, 10)}T00:59:00Z`);
       rmSync(dailyMarker, { force: true });
       await application.projectWork.prepareDailyWork('projects_daily');
       const settings = await application.projectWork.admission.settings('projects_daily');
       await application.projectHub.putSettings({ ...settings, nightlyWindow: { enabled: true, time: '02:00', timezone: 'Europe/Lisbon' }, refill: { enabled: false, minIntervalMinutes: 30 } }, settings.revision);
       send(200, { schema: 'fixture-daily-prepared-v1', command: `while [ ! -f '${dailyMarker}' ]; do sleep 0.1; done; test "$(cat '${dailyMarker}')" = pass` });
+    } else if (input.action === 'reset') { rmSync(dailyMarker, { force: true }); send(200, { schema: 'fixture-daily-reset-v1' });
     } else if (input.action === 'open') {
       frozenProjectClock += 60_000; await application.projectWork.pulse(); send(200, { schema: 'fixture-daily-opened-v1' });
     } else if (input.action === 'workflow') {

@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/LJ5-nightly-merges-held-phone-light.png",
+  "expected": "the Jevellan web app \"LJ5 nightly merges held\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Pull requests' tab pill runs past the right edge of the viewport, so its right border is clipped. The label is still readable and the row looks horizontally scrollable.",
+      "The disabled 'Merge' button has low contrast. This fits the 'merges held' state, but the label is faint."
+    ]
+  }
+}

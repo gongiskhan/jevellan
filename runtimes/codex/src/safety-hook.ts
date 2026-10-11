@@ -3,7 +3,7 @@ import { ActionSchema } from '@jevellan/core';
 import { safetyDenial, safetyReason, SAFETY_REASON, type SafetyContext } from '@jevellan/runtime-contract';
 
 // Stretches send their action; turns send their profile and no action.
-const Context = z.strictObject({ cwd: z.string(), daemonPid: z.number().int().positive(), action: ActionSchema.optional(), profile: z.enum(['stretch', 'coordinator', 'thread', 'verification']).optional() });
+const Context = z.strictObject({ cwd: z.string(), daemonPid: z.number().int().positive(), action: ActionSchema.optional(), profile: z.enum(['stretch', 'coordinator', 'thread', 'verification', 'review']).optional() });
 const Event = z.object({ hook_event_name: z.literal('PreToolUse'), tool_name: z.string(), tool_input: z.unknown() });
 let context: SafetyContext | undefined;
 try {

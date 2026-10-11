@@ -1,3 +1,4 @@
+import { NightlyReview } from './nightly-review.js';
 import { ProjectDailyWork } from './daily.js';
 import { ProjectJobRunner } from './job-runner.js';
 import { join } from 'node:path';
@@ -101,7 +102,7 @@ export class ProjectWork {
   readonly threads: ThreadService; readonly decisions: DecisionItems; readonly tracker: PullRequestTracker; readonly views: ProjectViews;
   readonly admission: Admission; readonly transcripts: ThreadTranscripts;
   readonly apps: ProjectApps;
-  readonly daily: ProjectDailyWork; readonly jobs: ProjectJobRunner;
+  readonly reviews: NightlyReview; readonly daily: ProjectDailyWork; readonly jobs: ProjectJobRunner;
   readonly goals: ProjectGoals; readonly tasks: ProjectTasks; readonly dispatcher: ProjectDispatcher;
   readonly mergeGate: ProjectMergeGate;
   /** Mail and reservations between main threads (brief 5.11, 7.2). */
@@ -215,21 +216,24 @@ export class ProjectWork {
       windowOpened: async id => (await this.daily.window(id))?.openedAt, day: id => this.daily.day(id), dayStart: (id, day) => this.daily.dayStart(id, day), changed: () => { void this.#sweepTasks().catch(() => undefined); } });
     this.daily = new ProjectDailyWork({ hub: o.hub, tasks: this.tasks, runner: this.jobs, redactor: o.redactor, now, deviceId: o.deviceId, settings: id => this.admission.settings(id),
       validateGoal: async (id, goalId) => { if (goalId) await this.goals.read(id, goalId); }, event: (id, event) => delivery.toCoordinator(id, event), changed: () => { void this.#sweepTasks().catch(() => undefined); } });
+    this.reviews = new NightlyReview({ hub: o.hub, tasks: this.tasks, homes: o.homes, git, launcher, deviceId: o.deviceId, redactor: o.redactor, now,
+      settings: o.settings, accounts: o.accounts, runtimes: o.runtimes, project: id => this.#project(id), repository: project => worktrees.repository(project), baseBranch: repo => worktrees.baseBranch(repo), timeoutMs: timers.threadTurnTimeoutMs,
+      event: (id, event) => delivery.toCoordinator(id, event), changed: () => { void this.#sweepTasks().catch(() => undefined); } });
     this.dispatcher = new ProjectDispatcher({ tasks: this.tasks, threads: this.threads, deviceId: o.deviceId,
       text: async task => {
         const goal = task.goalId ? await this.goals.read(task.projectId, task.goalId) : null;
         const brief = `${task.brief}${goal ? `\n\nGoal: ${goal.name}. Why it matters: ${goal.motivation}` : ''}\n\nTask type: ${task.type}.`, settings = await this.admission.settings(task.projectId);
         return { brief, taskContext: { type: task.type, needs: task.needs, goal: goal ? { name: o.redactor.text(goal.name), motivation: o.redactor.text(goal.motivation).slice(0, 600) } : null }, assembled: [brief, settings.threadRules ? `Rules for every thread:\n${settings.threadRules}` : ''].filter(Boolean).join('\n\n') };
-      }, job: task => this.jobs.start(task), eligible: async (task, tasks) => await this.daily.eligible(task, tasks) && await this.goals.eligible(task, tasks), event: (projectId, event) => delivery.toCoordinator(projectId, event) });
+      }, review: task => this.reviews.start(task), job: task => this.jobs.start(task), eligible: async (task, tasks) => await this.daily.eligible(task, tasks) && await this.goals.eligible(task, tasks), event: (projectId, event) => delivery.toCoordinator(projectId, event) });
     this.tracker = new PullRequestTracker({ threads: this.store, github, git, worktrees, project: (projectId) => this.#project(projectId),
       toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event),
       transition: async (threadId, apply) => { const runner = this.threads.runner(threadId); if (runner) await runner.transition(apply); else await apply(); },
-      hub: o.hub, deviceId: o.deviceId, assertMerge: id => this.daily.assertMerge(id),
+      hub: o.hub, deviceId: o.deviceId, assertMerge: (id, tid) => this.daily.assertMerge(id, tid),
       redactor: o.redactor, now, pollMs: timers.prPollMs, periodic: timers.periodic });
     const verification = new PullRequestVerification({ hub: o.hub, homes: o.homes, git, launcher, deviceId: o.deviceId, redactor: o.redactor, now, settings: o.settings, accounts: o.accounts, runtimes: o.runtimes, timeoutMs: timers.testTimeoutMs });
     this.mergeGate = new ProjectMergeGate({ hub: o.hub, store: this.store, tracker: this.tracker, github, verification, deviceId: o.deviceId, redactor: o.redactor, now,
       settings: id => this.admission.settings(id), configuration: o.settings, ...(o.decisionClient ? { decisionClient: o.decisionClient } : {}), project: id => this.#project(id), repository: project => worktrees.repository(project),
-      event: (id, event) => delivery.toCoordinator(id, event), assertMerge: id => this.daily.assertMerge(id), message: (id, tid, text, messageId) => this.threads.message(id, tid, 'coordinator', text, false, messageId) });
+      event: (id, event) => delivery.toCoordinator(id, event), assertMerge: (id, tid) => this.daily.assertMerge(id, tid), message: (id, tid, text, messageId) => this.threads.message(id, tid, 'coordinator', text, false, messageId) });
     this.outbox = new Outbox({ paths: this.paths, hub: o.hub, deviceId: o.deviceId, redactor: o.redactor, timers,
       delivered: (envelope) => { if (envelope.targetDeviceId === o.deviceId) this.relayArrived(); } });
     this.inbox = new Inbox({ paths: this.paths, hub: o.hub, deviceId: o.deviceId, timers, handlers: {
@@ -347,17 +351,17 @@ export class ProjectWork {
   async #sweepTasks(): Promise<void> {
     if (!this.#started || this.#closing || !deviceAllowsWork(this.#o.homes)) return;
     try {
-      this.mergeGate.sweep();
       for (const { project } of await this.#o.projects.list()) {
-        if ((await this.#o.hub.coordinator(project.id))?.document.deviceId === this.#o.deviceId) { await this.daily.sweep(project.id); await this.dispatcher.sweep(project.id); await this.goals.sweep(project.id); }
+        if ((await this.#o.hub.coordinator(project.id))?.document.deviceId === this.#o.deviceId) { await this.reviews.sweep(project.id); await this.daily.sweep(project.id); await this.dispatcher.sweep(project.id); await this.goals.sweep(project.id); }
       }
+      this.mergeGate.sweep();
     } catch (error) { if (!(error instanceof HubUnavailable)) throw error; }
   }
   /** Resolves when no start, sweep, thread step or coordinator turn is in flight or scheduled (test seam; checks every 20 ms, twice in a row). */
   async idle(projectId?: string): Promise<void> {
     await this.ready;
     for (let quiet = 0; quiet < 2;) {
-      await delay(20); quiet = this.mergeGate.busy() || this.jobs.busy(projectId) || this.threads.busy(projectId) || this.dispatcher.busy(projectId) || this.coordinators.busy(projectId) || this.outbox.busy || this.inbox.busy ? 0 : quiet + 1;
+      await delay(20); quiet = this.reviews.busy(projectId) || this.mergeGate.busy() || this.jobs.busy(projectId) || this.threads.busy(projectId) || this.dispatcher.busy(projectId) || this.coordinators.busy(projectId) || this.outbox.busy || this.inbox.busy ? 0 : quiet + 1;
     }
   }
   /** Stops timers, terminates every running turn (shutdown intent) and drains; thread states are never rewritten (D24). */
@@ -370,6 +374,7 @@ export class ProjectWork {
       // Coordinator turns first (their tools start and message threads), then runners: tracker transitions wait on runner chains (2.6.14).
       await this.coordinators.close();
       await this.mergeGate.close();
+      await this.reviews.close();
       await this.threads.close();
       await this.dispatcher.close();
       await this.jobs.close();

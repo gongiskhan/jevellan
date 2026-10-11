@@ -9,7 +9,7 @@ const EMPTY_STATUS = { state: 'pending', total_count: 0, statuses: [] };
 const MERGEABLE = { clean: true, unstable: true, dirty: false, unknown: null };
 const NOT_MERGEABLE = 'Pull Request is not mergeable';
 
-export async function startGitHubFixture({ token, repositories = {}, port = 0 }) {
+export async function startGitHubFixture({ token, repositories = {}, port = 0, onMerge }) {
   if (typeof token !== 'string' || !token) throw new Error('The GitHub fixture needs a token.');
   const workflowView = value => { const { jobs, repo, workflow, ...run } = value; void jobs; void repo; void workflow; return run; };
   const requests = []; const pulls = []; const failures = []; const workflows = []; let loseDispatchReply = false;
@@ -134,7 +134,10 @@ export async function startGitHubFixture({ token, repositories = {}, port = 0 })
       refresh(pull);
       if (pull.state !== 'open' || pull.mergeable === 'dirty') return send(response, 405, { message: NOT_MERGEABLE });
       if (body?.sha !== undefined && body.sha !== pull.headSha) return send(response, 409, { message: 'Head branch was modified. Review and try the merge again.' });
+      // A real merge reaches the base before other clients can observe `merged`.
+      const mergedSha = await onMerge?.(pull);
       apply(pull, { merged: true });
+      if (mergedSha) pull.mergeSha = mergedSha;
       return send(response, 200, { sha: pull.mergeSha, merged: true, message: 'Pull Request successfully merged' });
     }
     if ((match = /^\/commits\/([^/]+)\/check-runs$/.exec(rest)) && method === 'GET') {

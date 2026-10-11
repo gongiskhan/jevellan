@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/LJ5-nightly-merges-held-phone-dark.png",
+  "expected": "the Jevellan web app \"LJ5 nightly merges held\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The tab strip runs off the right edge: the 'Pull requests' pill is clipped at its right border and there is no visible sign that the row scrolls. The label is still readable.",
+      "The status pill shows 'Working…' with an ellipsis, so the text may be cut short. The status is still clear.",
+      "The Merge button is shown dimmed and disabled, which matches merges being held. It is low-contrast next to the other actions."
+    ]
+  }
+}

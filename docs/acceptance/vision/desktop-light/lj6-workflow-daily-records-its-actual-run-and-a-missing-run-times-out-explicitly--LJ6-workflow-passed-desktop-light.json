@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'dev-ma…'), but this is intentional single-line truncation.",
-      "The 'Enabled' checkbox sits above its label instead of next to it, so it looks slightly out of line with the 'Run now' and 'Edit' buttons.",
-      "The 'Jobs (1)' toggle sits right at the bottom edge of the right panel; it can still be seen and reached by scrolling.",
-      "The main conversation column is mostly empty with no feedback beyond 'Coordinator is working…'."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Mesh journey fixt…', 'dev-ma…'). This is normal ellipsis truncation, not broken layout.",
+      "The right panel continues below the bottom edge: 'Jobs (1)' sits right at the bottom and needs scrolling to see fully.",
+      "The Nightly tests card shows 'No output recorded.' even though the workflow succeeded, so the output box adds little.",
+      "The 'Enabled' checkbox sits above its label instead of beside it, which looks a bit misaligned next to the Run now/Edit buttons."
     ]
   }
 }

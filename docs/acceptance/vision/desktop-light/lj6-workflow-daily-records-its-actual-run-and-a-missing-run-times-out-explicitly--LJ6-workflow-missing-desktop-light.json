@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The right panel is scrolled, so the 'CONCLUDED 0' section heading is partly cut off under the top header. This is normal scroll clipping and the content is still reachable.",
-      "The 'Missing run' job card shows 'Failed at 02:05 AM', but the chat message says 'timed-out'. The wording is slightly inconsistent, but both say the run did not happen.",
-      "The 'Enabled' checkbox labels sit lower than the 'Run now'/'Edit' buttons in both job cards, so they look slightly out of line."
+      "At the top of the right panel, the scrolled 'CONCLUDED 0' section heading is partly cut off at the header edge. This comes from the scroll position, and the content is still reachable.",
+      "In the job cards, the 'Enabled' checkbox sits above its label instead of next to it, so it lines up awkwardly with the Run now and Edit buttons.",
+      "'Project day: 2026-10-14' is not indented to match the nearby section text ('Nothing concluded…', the goal hint text).",
+      "The 'Missing run' card says 'Failed at 02:05 AM', but the chat message calls it 'timed-out'. The status wording is inconsistent, though both are readable."
     ]
   }
 }

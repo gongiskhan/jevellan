@@ -14,7 +14,7 @@ export const EkoaSettingsInputSchema = z.strictObject({ schema: z.literal('ekoa-
 export const EkoaConnectionSchema = z.strictObject({ schema: z.literal('ekoa-connection-v1'), at: TimestampSchema,
   settingsRevision: z.number().int().nonnegative().default(0), attempts: z.number().int().nonnegative().default(0), retryAt: TimestampSchema.nullable().default(null),
   status: z.enum(['connected', 'blocked', 'unavailable']), tools: z.array(z.string().max(120)).max(300), reason: z.string().max(1200).optional() });
-export const EkoaMirrorSchema = z.strictObject({ schema: z.literal('ekoa-mirror-v1'), id: IdSchema, projectId: IdSchema, kind: z.enum(['decision', 'pull-request', 'drafts']),
+export const EkoaMirrorSchema = z.strictObject({ schema: z.literal('ekoa-mirror-v1'), id: IdSchema, projectId: IdSchema, kind: z.enum(['decision', 'pull-request', 'drafts', 'night-report']),
   jevellanId: IdSchema, title: z.string().max(200).optional(), endpoint: EkoaUrlSchema, marker: IdSchema, ekoaTaskId: z.string().min(1).max(200).nullable(),
   state: z.enum(['pending', 'open', 'completed']), createAttempted: z.boolean(), payloadDigest: z.string().regex(/^[a-f0-9]{64}$/u).nullable(),
   attempts: z.number().int().nonnegative(), retryAt: TimestampSchema.nullable(), error: z.string().max(1200).optional(), updatedAt: TimestampSchema });

@@ -1177,7 +1177,7 @@ Verification: simulated providers/Jev/GitHub with real local git, HTTP and proce
 
 Every enabled item runs every night regardless of daytime success. Keep daily schema names but label Nightly. Read-only high-effort review-since-last advances an exact-commit watermark after its stored report and covers direct pushes. The coordinator may create one code-review finding fix; only that fix can merge before the 150-minute cutoff. Ordered jobs follow; seven hours releases the hold. Failed items produce one Ekoa night report.
 
-Status: owner decision recorded; implementation pending. Untouched finished phases retain their evidence.
+Status: implemented. Focused Nightly/merge regressions passed **77/77**, storage/runtime checks **120/120**, and publication/client fixture regressions **17/17**. Typecheck, lint and build passed. Changed LJ5/LJ6 passed **8/8** in 4.4 minutes across desktop/phone and light/dark, with **24 live vision judgments** and zero blocking findings. Provider/Jev/GitHub behaviour is simulated; actual git, HTTP, durable storage and process controls ran. Initial private-ref, watermark-timestamp, fixture-endpoint and simulated-GitHub merge ordering failures were corrected and are not passing evidence. The fixture now updates its bare main before exposing merged state; subsequent jobs demonstrably run on the merged commit. The live hub import, sign-in and owner-account jobs remain blocked. Full release gates and owner acceptance remain unclaimed.
 
 
 ### Decision 652 — Amendment A4 replaces the Ekoa Code nightly preset
@@ -1185,3 +1185,12 @@ Status: owner decision recorded; implementation pending. Untouched finished phas
 Use 01:00 Europe/Lisbon, autoMerge enabled and exact owner risky areas. Nightly order: Review since last, Legal programme, Full suite with expensive tests, exact-commit gated Deploy, disabled Security. Open one workflow trigger/dispatch-input pull request, preserve weekly legal measurement, always ask the owner, watch in existing order until merged then dispatch. Ekoa token needs Actions and Contents read/write. LJ9 records one real finding and its gate route.
 
 Status: owner decision recorded; implementation pending. Untouched finished phases retain their evidence.
+
+
+### Decision 653 — Nightly review persistence and provider attribution
+
+Store the versioned review execution and final project-review-report-v1 inside the existing task receipt. Its completed report is the durable lastReviewedCommit; a per-project review sequence selects the latest receipt even when timestamps are equal or the clock changes. The report and watermark become effective in one task CAS after the read-only worker ends and its worktree is checked. Interrupted or dirty reviews never advance it. Native process identities remain only in private owner-local sidecars.
+
+Provider selection uses attributed merged change volume since the preceding review; direct pushes have no reliable runtime attribution but are always included in the commit range. With no attributed majority, use the other provider from the configured coordinator and record that basis. No same-provider review fallback is introduced. The first review covers the complete published history rather than inventing a prior accepted baseline.
+
+Enabled Nightly definitions are explicit owner work and are independent of coding-task refill, pause and open-PR caps, so paused Legal analysis quality does not skip its enabled nightly programme. The one review fix stays linked to the code-review goal. Nightly deploy gates may use only passing gate receipts from the same window, never a daytime receipt. The hold is fenced from the scheduled boundary, including while the coordinator is creating its window. Completed Ekoa night reports remain completed when the owner closes them.

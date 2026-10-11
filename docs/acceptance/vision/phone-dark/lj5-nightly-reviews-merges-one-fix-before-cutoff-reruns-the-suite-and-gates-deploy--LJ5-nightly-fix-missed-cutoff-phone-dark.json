@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/LJ5-nightly-fix-missed-cutoff-phone-dark.png",
+  "expected": "the Jevellan web app \"LJ5 nightly fix missed cutoff\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Pull requests' tab is clipped at the right edge of the tab row. It looks like a horizontally scrolling tab bar, so the tab can still be reached.",
+      "The 'Working…' status badge in the header is truncated with an ellipsis.",
+      "Each nightly card has a lot of empty space at the bottom, below the Run now/Edit/Enabled row."
+    ]
+  }
+}

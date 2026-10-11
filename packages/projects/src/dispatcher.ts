@@ -7,6 +7,7 @@ export class ProjectDispatcher {
   readonly #running = new Map<string, Promise<void>>();
   constructor(readonly o: { tasks: ProjectTasks; threads: Pick<ThreadService, 'start' | 'list' | 'sweepQueue'>; deviceId: string;
     text(task: ProjectWorkTask): Promise<{ brief: string; assembled: string; taskContext?: TaskPlacementContext }>;
+    review?(task: ProjectWorkTask): Promise<void>;
     job?(task: ProjectWorkTask): Promise<void>;
     eligible?(task: ProjectWorkTask, tasks: readonly ProjectWorkTask[]): Promise<boolean>;
     event(projectId: string, event: CoordinatorEvent): Promise<void> }) {}
@@ -50,8 +51,8 @@ export class ProjectDispatcher {
     for (let task of tasks.filter(task => task.state === 'queued').sort(taskOrder)) {
       if (task.after.some(id => !tasks.some(parent => parent.id === id && ['done', 'cancelled'].includes(parent.state)))) continue;
       if (this.o.eligible && !await this.o.eligible(task, tasks)) continue;
-      if (task.kind === 'job') {
-        try { await this.o.job?.(task); tasks = await this.o.tasks.list(projectId); }
+      if (task.kind === 'job' || task.nightlyReview) {
+        try { if (task.nightlyReview) await this.o.review?.(task); else await this.o.job?.(task); tasks = await this.o.tasks.list(projectId); }
         catch (error) { if ((error as { status?: number }).status === undefined) throw error; const reason = this.o.tasks.o.redactor.text(error instanceof Error ? error.message : 'Job could not start.').slice(0, 400); await this.o.tasks.save({ ...task, state: 'failed', endNote: reason, endedAt: this.o.tasks.at() }); }
         continue;
       }

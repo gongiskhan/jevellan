@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
-import { EkoaConnectionSchema, EkoaMirrorSchema, EkoaRequestSchema, EkoaSettingsSchema, EkoaStateSchema, ProjectDecisionSchema, ProjectSchema, ProjectWorkTaskSchema as TaskSchema, ThreadIndexSchema,
+import { ProjectWindowSchema, EkoaConnectionSchema, EkoaMirrorSchema, EkoaRequestSchema, EkoaSettingsSchema, EkoaStateSchema, ProjectDecisionSchema, ProjectSchema, ProjectWorkTaskSchema as TaskSchema, ThreadIndexSchema,
   newId, stableJson, type EkoaMirror, type EkoaRequest } from '@jevellan/core';
 import { settingsMutation, type HubDatabase } from '@jevellan/mesh';
 import { connectEkoa, type EkoaClient, type EkoaConnector } from './ekoa-client.js';
@@ -70,6 +70,9 @@ export class EkoaMirrorService {
         add({ kind: 'decision', id: decision.id, projectId: project.id, title: `Jevellan · ${project.name}: ${title.slice(0, 80)}`,
           notes: `${decision.question}\n${decision.merge ? `Checked commit: ${decision.merge.commit}\n${thread?.pr?.url ?? ''}\n` : ''}${decision.options.map(option => `- ${option.label}${option.detail ? `: ${option.detail}` : ''}`).join('\n')}\n\nAnswer in Jevellan: ${link}`, allowCreate: true });
       }
+      for (const { document: window } of this.hub.listByField('project-windows', 'projectId', project.id, ProjectWindowSchema)) if (window.state === 'finished' && window.failed) {
+        add({ kind: 'night-report', id: window.id, projectId: project.id, title: `Jevellan · ${project.name}: night report`, notes: `${window.date}\n${window.outcome ?? 'Nightly items failed.'}\n\nOpen Jevellan: ${link}`, allowCreate: true });
+      }
       const drafts = this.hub.listByField('project-work-tasks', 'projectId', project.id, TaskSchema).map(row => row.document).filter(task => task.state === 'draft');
       if (drafts.length) add({ kind: 'drafts', id: project.id, projectId: project.id, title: `Jevellan · ${project.name}: ${drafts.length} proposed tasks`,
         notes: `${drafts.map(task => `- ${task.title}: ${task.brief}`).join('\n\n')}\n\nApprove in Jevellan: ${link}`, allowCreate: true });
@@ -117,9 +120,9 @@ export class EkoaMirrorService {
       this.#put({ ...record, state: 'completed', attempts: 0, retryAt: null, error: undefined, updatedAt: new Date(this.now()).toISOString() }); return;
     }
     const digest = hash({ title: desired.title, notes: desired.notes });
-    if (owned.status === 'done' && desired.allowCreate) await client.call('task_reopen', { id: record.ekoaTaskId });
+    if (owned.status === 'done' && desired.allowCreate && record.kind !== 'night-report') await client.call('task_reopen', { id: record.ekoaTaskId });
     if (record.payloadDigest !== digest) await client.call('task_update', { id: record.ekoaTaskId, title: desired.title, notes: `${desired.notes}\n\n${markerText(record)}`, labels: ['Jevellan'] });
-    this.#put({ ...record, title: desired.title, state: owned.status === 'done' && !desired.allowCreate ? 'completed' : 'open', payloadDigest: digest, attempts: 0, retryAt: null, error: undefined, updatedAt: new Date(this.now()).toISOString() });
+    this.#put({ ...record, title: desired.title, state: owned.status === 'done' && (!desired.allowCreate || record.kind === 'night-report') ? 'completed' : 'open', payloadDigest: digest, attempts: 0, retryAt: null, error: undefined, updatedAt: new Date(this.now()).toISOString() });
   }
   async #sweep() {
     const settings = this.settings(); if (!settings.enabled) return;

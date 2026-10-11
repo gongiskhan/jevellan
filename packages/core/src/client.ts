@@ -36,3 +36,5 @@ export * from './effort-guide.js';
 export * from './ekoa-schemas.js';
 
 export * from './merge-schemas.js';
+
+export * from './project-review-schemas.js';

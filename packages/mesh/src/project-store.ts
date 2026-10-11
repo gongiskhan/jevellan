@@ -92,6 +92,7 @@ export class HubProjectStore {
   putDaily(raw: ProjectDaily, expectedRevision: number): Stored<ProjectDaily> {
     const document = ProjectDailySchema.parse(raw); this.#project(document.projectId);
     const previous = this.daily(document.id)?.document;
+    if (document.target.kind === 'review-since-last' && this.#documents('project-dailies', ProjectDailySchema, document.projectId).some(row => row.id !== document.id && row.target.kind === 'review-since-last')) refuse('A project has one Review since last item.', 409);
     if (previous && previous.projectId !== document.projectId) refuse('This document belongs to another project.', 403);
     if (previous && (previous.createdAt !== document.createdAt || previous.requestDigest !== document.requestDigest)) refuse('Document identity cannot change.', 400);
     return this.#put('project-dailies', document.id, ProjectDailySchema, document, expectedRevision);
@@ -150,6 +151,18 @@ export class HubProjectStore {
       if (this.coordinator(task.projectId)?.document.deviceId !== this.deviceId) refuse('Only the current coordinator device can write the task queue.', 403);
       const current = this.task(task.id);
       if (current && current.document.projectId !== task.projectId) refuse('This task belongs to another project.', 403);
+      if (task.nightlyReview && (task.source !== 'daily' || task.type !== 'review' || task.kind !== 'session' || task.threadId)) refuse('Nightly reviews are read-only daily sessions.', 400);
+      if (task.reviewRun && (!task.nightlyReview || task.reviewRun.report && (task.reviewRun.report.taskId !== task.id || task.reviewRun.report.projectId !== task.projectId || task.reviewRun.report.commit !== task.reviewRun.commit || task.reviewRun.report.fromCommit !== task.reviewRun.fromCommit))) refuse('The review report must match its task and commit range.', 400);
+      if (current?.document.reviewRun?.state === 'completed') {
+        const { followupChosen: _chosen, fixTaskId: _fix, ...old } = current.document.reviewRun; void _chosen; void _fix;
+        const { followupChosen: _nextChosen, fixTaskId: _nextFix, ...next } = task.reviewRun ?? {}; void _nextChosen; void _nextFix;
+        if (stableJson(old) !== stableJson(next) || current.document.reviewRun.followupChosen && stableJson(current.document.reviewRun) !== stableJson(task.reviewRun)) refuse('A completed review and chosen follow-up cannot change.', 409);
+      }
+      if (task.nightlyFixFor) {
+        const review = this.task(task.nightlyFixFor)?.document;
+        if (review?.projectId !== task.projectId || review.reviewRun?.state !== 'completed' || review.goalId !== task.goalId || task.source !== 'finding' || task.type !== 'finding') refuse('The nightly fix must belong to its completed review and goal.', 400);
+        if (this.#documents('project-work-tasks', ProjectWorkTaskSchema, task.projectId).some(row => row.id !== task.id && row.nightlyFixFor === task.nightlyFixFor)) refuse('A review can create at most one combined fix.', 409);
+      }
       if (task.after.includes(task.id) || new Set(task.after).size !== task.after.length) refuse('Task dependencies must be distinct and cannot include the task itself.', 400);
       const visit = (id: string, visited = new Set<string>()): void => {
         if (id === task.id) refuse('Task dependencies cannot contain a cycle.', 400);

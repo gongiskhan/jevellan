@@ -161,6 +161,7 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
   async function call(projectId: string, turn: number, name: ProjectToolName, raw: unknown, signal: AbortSignal): Promise<unknown> {
     signal.throwIfAborted();
     switch (name) {
+      case 'jevellan_review_followup': if (!o.daily) throw new Error('Nightly reviews are unavailable.'); return o.daily.followup(projectId, raw);
       case 'jevellan_jobs_list': if (!o.daily) throw new Error('Jobs are unavailable.'); return { schema: 'project-job-list-view-v1', projectId, jobs: await o.daily.jobs(projectId) };
       case 'jevellan_daily_list': if (!o.daily) throw new Error('Daily work is unavailable.'); return o.daily.view(projectId);
       case 'jevellan_job_run': { if (!o.daily) throw new Error('Jobs are unavailable.'); const input = raw as Input<typeof name>; return o.daily.runJob(projectId, input.jobId, { schema: 'project-run-request-v1', clientRequestId: turnId('jreq', projectId, turn, input) }); }

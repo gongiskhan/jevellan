@@ -60,7 +60,7 @@ test('a persisted executing receipt is failed after restart without repeating co
   expect((await f.app.projectWork.jobs.runs('project'))[0]?.summary).toContain('not repeated'); expect(existsSync(join(f.checkout, 'repeated.txt'))).toBe(false);
 });
 
-test('nightly windows serialize closing-day tasks, recover missing plans and release holds at completion or six hours', async () => {
+test('nightly windows serialize closing-day tasks, recover missing plans and release holds at completion or seven hours', async () => {
   let now = Date.parse('2026-10-25T01:59:00Z'); const f = fixture = await projectFixture({ projectTimers: { now: () => now } });
   await f.app.projectHub.assignCoordinator('project', f.app.device.deviceId, 0);
   const settings = await f.app.projectWork.admission.settings('project'); await f.app.projectHub.putSettings({ ...settings, nightlyWindow: { enabled: true, time: '02:00', timezone: 'Europe/Lisbon' } }, 0);
@@ -72,18 +72,19 @@ test('nightly windows serialize closing-day tasks, recover missing plans and rel
   const first = await create('First', 0), second = await create('Second', 1), already = await create('Already done', 2);
   const done = await daily.runDaily('project', already.id, runInput('earlier')); await f.app.projectWork.tasks.save({ ...await f.app.projectWork.tasks.read('project', done.taskId), state: 'done' });
   now += 60_000; await daily.sweep('project');
-  const window = (await daily.window('project'))!; expect(window).toMatchObject({ closingProjectDay: '2026-10-24', mergesHeld: true }); expect(window.plans.map(plan => plan.dailyId)).toEqual([first.id, second.id]);
+  const window = (await daily.window('project'))!; expect(window).toMatchObject({ closingProjectDay: '2026-10-24', mergesHeld: true }); expect(window.plans.map(plan => plan.dailyId)).toEqual([first.id, second.id, already.id]);
   expect(window.plans.every(plan => plan.projectDay === '2026-10-24')).toBe(true); await expect(daily.assertMerge('project')).rejects.toThrow('Merges are held');
   let tasks = await f.app.projectWork.tasks.list('project'); expect(await daily.eligible(window.plans[0]!, tasks)).toBe(true); expect(await daily.eligible(window.plans[1]!, tasks)).toBe(false);
   // Crash after the window receipt, before all plan documents were written.
   f.app.hub.delete('project-work-tasks', window.plans[1]!.id); f.app.hub.delete('project-work-task-history', `${window.plans[1]!.id}_0000000001`); daily = make(); await daily.sweep('project'); expect(await f.app.projectHub.task(window.plans[1]!.id)).not.toBeNull();
   await f.app.projectWork.tasks.save({ ...await f.app.projectWork.tasks.read('project', window.plans[0]!.id), state: 'done' }); tasks = await f.app.projectWork.tasks.list('project'); expect(await daily.eligible(window.plans[1]!, tasks)).toBe(true);
-  await f.app.projectWork.tasks.save({ ...await f.app.projectWork.tasks.read('project', window.plans[1]!.id), state: 'done' }); await daily.sweep('project'); expect(await daily.mergesHeld('project')).toBe(false);
+  await f.app.projectWork.tasks.save({ ...await f.app.projectWork.tasks.read('project', window.plans[1]!.id), state: 'done' }); await daily.sweep('project'); expect(await daily.mergesHeld('project')).toBe(true);
+  await f.app.projectWork.tasks.save({ ...await f.app.projectWork.tasks.read('project', window.plans[2]!.id), state: 'done' }); await daily.sweep('project'); expect(await daily.mergesHeld('project')).toBe(false);
   expect((await daily.view('project')).window?.state).toBe('finished'); expect(events.filter(event => event.kind === 'window-opened')).toHaveLength(1);
-  now += 24 * 3_600_000; await daily.sweep('project'); expect(await daily.mergesHeld('project')).toBe(true); now += 6 * 3_600_000; await daily.sweep('project'); expect(await daily.mergesHeld('project')).toBe(false);
+  now += 24 * 3_600_000; await daily.sweep('project'); expect(await daily.mergesHeld('project')).toBe(true); now += 7 * 3_600_000; await daily.sweep('project'); expect(await daily.mergesHeld('project')).toBe(false);
   expect((await daily.view('project')).tasks.filter(task => task.projectDay === '2026-10-25').every(task => task.state === 'cancelled')).toBe(true);
   expect((await daily.view('project')).window?.outcome).toContain('cancelled');
-  // Closing receipts repair notifications even after the six-hour limit.
+  // Closing receipts repair notifications even after the seven-hour limit.
   events.splice(0); daily = make(); await daily.sweep('project'); expect(events.filter(event => event.kind === 'window-finished')).toHaveLength(1);
 });
 
@@ -98,7 +99,7 @@ test('both owner API and the shared merge backend refuse during the nightly wind
   const denied = await f.request(`/api/projects/project/threads/${created.threadId}/pr/merge`, 'POST', { schema: 'empty-request-v1' });
   expect(denied.status).toBe(409); expect((await denied.json()).message).toBe('Merges are held while the nightly window runs.');
   await expect(f.app.projectWork.tracker.merge(created.threadId)).rejects.toThrow('Merges are held'); expect(f.github.requests.some(row => row.method === 'PUT' && row.path.endsWith('/merge'))).toBe(false);
-  now += 6 * 3_600_000; expect((await f.app.projectWork.tracker.merge(created.threadId)).merged).toBe(true);
+  now += 7 * 3_600_000; expect((await f.app.projectWork.tracker.merge(created.threadId)).merged).toBe(true);
 });
 
 test('restart stops a recorded orphan before removing its job worktree, and never repeats the command', async () => {
@@ -114,4 +115,19 @@ test('restart stops a recorded orphan before removing its job worktree, and neve
     await f.restart(); await f.waitFor(() => f.app.projectWork.tasks.read('project', task.id), row => row.state === 'failed'); await f.app.projectWork.idle(); await f.app.projectWork.pulse();
     expect(groupAlive(native.pgid)).toBe(false); expect(existsSync(path)).toBe(false); expect(existsSync(join(f.checkout, 'repeated.txt'))).toBe(false);
   } finally { try { process.kill(-child.pid!, 'SIGKILL'); } catch { /* already stopped */ } }
+});
+
+
+test('a failed nightly suite cannot borrow a passing daytime receipt for deploy', async () => {
+  let now = Date.parse('2026-10-11T00:59:00Z'); const f = fixture = await projectFixture({ projectTimers: { now: () => now } }), work = f.app.projectWork;
+  await f.app.projectHub.assignCoordinator('project', f.app.device.deviceId, 0);
+  const settings = await work.admission.settings('project'); await f.app.projectHub.putSettings({ ...settings, nightlyWindow: { enabled: true, time: '02:00', timezone: 'Europe/Lisbon' }, refill: { enabled: false, minIntervalMinutes: 30 } }, 0);
+  const full = await job(f, 'Full suite'), deploy = await job(f, 'Deploy', 'true', full.id);
+  const day = await work.daily.runJob('project', full.id, runInput('daytime')); await f.waitFor(() => work.tasks.read('project', day.taskId), task => task.state === 'done');
+  const { clientRequestId: unused, ...fields } = jobInput('Full suite', 'exit 1'); void unused;
+  await work.daily.updateJob('project', full.id, { ...fields, schema: 'job-update-request-v1', expectedRevision: full.revision });
+  for (const [definition, order] of [[full, 0], [deploy, 1]] as const) await work.daily.createDaily('project', { schema: 'daily-create-request-v1', clientRequestId: `night_${order}`, name: definition.name, goalId: null, order, enabled: true, target: { kind: 'job', jobId: definition.id } });
+  now += 60_000; await work.pulse(); await f.waitFor(() => work.daily.view('project'), view => view.window?.state === 'finished');
+  const view = await work.daily.view('project'), runs = view.runs.filter(run => view.window!.taskIds.includes(run.taskId));
+  expect(runs.find(run => run.jobId === full.id)).toMatchObject({ conclusion: 'failed' }); expect(runs.find(run => run.jobId === deploy.id)).toMatchObject({ conclusion: 'skipped' }); expect(view.window?.failed).toBe(true);
 });

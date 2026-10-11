@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The right panel is scrolled, so a section heading at the top ('CONCLUDED 0') is half hidden under the header bar",
-      "The 'Enabled' checkbox sits above its label instead of next to it, so it looks misaligned with the Run now/Edit buttons",
-      "Job names in the chat ('Nightly workflow', 'Missing workflow') don't match the card titles ('Nightly tests', 'Missing run')",
-      "The 'Open workflow run' link is bright pink, so it stands out from the rest of the dark theme"
+      "The right panel is scrolled, so the 'CONCLUDED 0' heading is partly clipped at the top under the header bar.",
+      "Sidebar session titles and subtitles are cut off with ellipses (for example 'Context · J11 memory journ…' and 'Mesh journey fixt…').",
+      "The 'Enabled' checkbox labels sit a little below the 'Run now' and 'Edit' buttons, so the row looks slightly misaligned.",
+      "The status badge on the 'Missing run' job says 'Failed at 02:05 AM', but the chat card says 'timed-out'. The wording doesn't match."
     ]
   }
 }

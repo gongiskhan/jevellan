@@ -117,7 +117,7 @@ const turnSession = (input: TurnInput, daemonPid: number, executable?: string): 
   const control: Control = { current: undefined, interrupted: false, previous: { input: 0, output: 0, read: 0, write: 0, cost: 0 } };
   const { env, mcpServers } = workerEnvironment(input);
   // The coordinator is the read-only owner; its allow list is its scope's exact tool list, shared with the hook.
-  const bridgeTools = input.owner.kind === 'coordinator' ? claudeBridgeToolNames(projectToolNames({ kind: 'coordinator' })) : undefined;
+  const bridgeTools = input.owner.kind === 'coordinator' ? claudeBridgeToolNames(projectToolNames({ kind: 'coordinator' })) : input.owner.kind === 'review' ? claudeBridgeToolNames(['jevellan_project_review_report']) : undefined;
   const hook = claudePermissionHook({ cwd: input.cwd, daemonPid, profile: input.safetyProfile, permissions: input.permissions, ...(bridgeTools ? { bridgeTools } : {}) });
   return {
     async interrupt() { control.interrupted = true; await control.current?.interrupt(); },

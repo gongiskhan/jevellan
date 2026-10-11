@@ -446,7 +446,8 @@ function eventCard(event: Exclude<CoordinatorEvent, { kind: 'user-message' }>, t
   const text = copy.eventCopy;
   switch (event.kind) {
     case 'job-finished': return card(`Job "${event.name}" ${event.conclusion}`, undefined, `${event.commit.slice(0, 7)} · ${event.summary}`);
-    case 'window-opened': return card('Nightly window opened', undefined, `${event.pending} daily tasks pending. Merges are held.`);
+    case 'project-reviewed': return card('Nightly review completed', undefined, event.report.summary);
+    case 'window-opened': return card('Nightly window opened', undefined, `${event.pending} nightly tasks pending. Merges are held.`);
     case 'window-finished': return card('Nightly window finished', undefined, event.outcome);
     case 'goal-refill': return card('Goals need work', undefined, event.goals.map(goal => `${goal.name}: ${goal.refillsToday} refilled today of ${goal.cap}`).join('\n'));
     case 'thread-report': {

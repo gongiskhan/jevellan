@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row is cut off at the right edge: 'Pull requests' is partly clipped and any tabs after it are hidden. It is probably a horizontally scrollable tab strip, but nothing on screen shows that it scrolls.",
-      "Under 'Nightly tests', the 'Workflow success' details box only says 'No output recorded.', which adds little."
+      "The last tab label 'Pull requests' runs off the right edge. It looks like a horizontally scrollable tab strip, so the tab can still be reached.",
+      "The status badge in the header is cut short to 'Working…'.",
+      "The 'Enabled' checkbox sits above its label instead of beside it, so it lines up a little awkwardly with the 'Run now' and 'Edit' buttons."
     ]
   }
 }

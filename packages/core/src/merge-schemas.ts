@@ -17,7 +17,7 @@ export const MergeRouteSchema = z.strictObject({ schema: z.literal('merge-route-
   calls: z.array(JevCallSchema), probabilities: z.record(z.string(), z.number().min(0).max(1)).optional(),
   state: z.enum(['waiting', 'verifying', 'asked', 'merging', 'merged', 'failed']), failures: z.number().int().min(0).max(3),
   notified: z.array(z.string().max(80)).max(12).default([]),
-  decisionId: IdSchema.nullable(), verificationId: IdSchema.nullable(), nextAttemptAt: TimestampSchema.optional() });
+  mergedAt: TimestampSchema.optional(), decisionId: IdSchema.nullable(), verificationId: IdSchema.nullable(), nextAttemptAt: TimestampSchema.optional() });
 export type MergeRoute = z.infer<typeof MergeRouteSchema>;
 export const MergeCorrectionSchema = z.strictObject({ schema: z.literal('merge-correction-v1'), ...identity, title: z.string().max(120),
   correction: z.enum(['should-have-asked', 'did-not-need-asking']) });

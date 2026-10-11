@@ -115,3 +115,10 @@ test('the coordinator hook is read-only and allows exactly its scope tools', asy
     expect(await hook({ tool_name: tool, tool_input: { command: 'git status' } })).toEqual(denied(COORDINATOR_READ_ONLY_REASON));
   }
 });
+
+
+test('nightly reviews only read and report through their exact tool scope', async () => {
+  const hook = claudePermissionHook({ cwd: context.cwd, daemonPid: context.daemonPid, profile: 'review', permissions: 'read-only', bridgeTools: claudeBridgeToolNames(['jevellan_project_review_report']) });
+  for (const tool_name of ['Read', 'Grep', 'mcp__jevellan__jevellan_project_review_report']) expect(await hook({ tool_name })).toEqual({});
+  for (const tool_name of ['Bash', 'Write', 'Edit', 'mcp__jevellan__jevellan_task_create']) expect(await hook({ tool_name })).toMatchObject({ hookSpecificOutput: { permissionDecision: 'deny' } });
+});

@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Mesh journey fixt…'), which is intentional truncation",
-      "The 'Jobs (1)' disclosure sits at the bottom edge of the right panel and can be reached by scrolling",
-      "The 'Enabled' checkbox label sits slightly out of line with the 'Run now' and 'Edit' buttons",
-      "The 'Nothing in the queue…' text in the right panel is indented less than the other empty-state messages"
+      "The sidebar session titles are truncated with ellipses, e.g. 'Context · J11 memory journ…' and 'Context · Mesh journey fixt…', and so are their subtitles.",
+      "The right panel is cut off at the bottom: 'Jobs (1)' sits at the viewport edge, and anything below it has to be scrolled to.",
+      "The 'Enabled' checkbox sits above its label instead of beside it, so it lines up awkwardly with the 'Run now' and 'Edit' buttons."
     ]
   }
 }

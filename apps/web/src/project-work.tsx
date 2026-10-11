@@ -525,7 +525,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
           <section className="pw-section" data-tab="pull-requests" aria-labelledby={`${sideId}-pulls`}>
             {sectionHeading(`${sideId}-pulls`, copy.PULL_REQUESTS, pulls.length)}
             {pulls.length ? pulls.map((entry) => (
-              <PullRequestRow key={entry.threadId} projectId={id} entry={entry} navigate={navigate} hold={daily?.mergesHeld === true} merge={() => setMerging(entry)} />
+              <PullRequestRow key={entry.threadId} projectId={id} entry={entry} navigate={navigate} hold={daily?.mergesHeld === true && !daily.mergeAllowedThreads.includes(entry.threadId)} merge={() => setMerging(entry)} />
             )) : <p className="pw-empty">{copy.NO_OPEN_PULL_REQUESTS}</p>}
           </section>
           <section className="pw-section" data-tab="threads" aria-labelledby={`${sideId}-concluded`}>
@@ -537,7 +537,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
             ) : <p className="pw-empty">{copy.NOTHING_CONCLUDED}</p>}
           </section>
           <section className="pw-section" data-tab="queue" aria-labelledby={`${sideId}-daily`}>
-            {sectionHeading(`${sideId}-daily`, 'Daily', daily?.dailies.filter(item => item.enabled).length ?? 0)}
+            {sectionHeading(`${sideId}-daily`, 'Nightly', daily?.dailies.filter(item => item.enabled).length ?? 0)}
             {daily && <ProjectDailyPanel view={daily} goals={goals} changed={updated} onError={onError} />}
           </section>
           <section className="pw-section" data-tab="queue" aria-labelledby={`${sideId}-goals`}>

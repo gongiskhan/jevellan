@@ -57,6 +57,8 @@ export class ProjectGoals {
     return ['refill', 'finding'].includes(source) && goal.autonomy === 'propose' ? 'draft' : 'queued';
   }
   async eligible(task: ProjectWorkTask, tasks: readonly ProjectWorkTask[]): Promise<boolean> {
+    // Enabled Nightly definitions are explicit owner work; goal refill and coding-task pause/caps do not skip them.
+    if (task.source === 'daily') return true;
     if (!task.goalId) return true;
     const goal = await this.read(task.projectId, task.goalId); if (goal.state !== 'active') return false;
     if (task.kind !== 'session') return true;
