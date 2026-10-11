@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ6 workflow daily records its actual run and a missing run times out explicitly",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/LJ6-workflow-missing-phone-dark.png",
+  "expected": "the Jevellan web app \"LJ6 workflow missing\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"LJ6 workflow daily records its actual run and a missing run times out explicitly\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The top tab strip is cut off at the right edge: 'Pull requests' runs into the viewport edge. It is probably a horizontally scrollable row, but nothing shows that more tabs are there.",
+      "The header status chip is shortened to 'Working…'.",
+      "The expanded 'Nightly tests' entry shows only 'No output recorded.', while the 'Missing run' entry is collapsed. The two cards look uneven, but this is not a defect."
+    ]
+  }
+}

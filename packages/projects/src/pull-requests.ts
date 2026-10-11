@@ -12,6 +12,7 @@ import type { ThreadWorktree } from './worktree.js';
 export type MergeResultView = z.infer<typeof MergeResultViewSchema>;
 type PrChange = Extract<CoordinatorEvent, { kind: 'pr-update' }>['change'];
 export type PullRequestTrackerOptions = {
+  assertMerge?(projectId: string): Promise<void>;
   threads: Pick<ThreadStore, 'all' | 'get' | 'update' | 'local' | 'updateLocal' | 'ledgers'>;
   github: GitHubAccess; git: ThreadGit; worktrees: Pick<ThreadWorktree, 'repository' | 'remove'>;
   /** The project as stored in shared state. */
@@ -191,12 +192,14 @@ export class PullRequestTracker {
   merge(threadId: string): Promise<MergeResultView> {
     return this.#serial(threadId, async () => {
       const thread = this.#o.threads.get(threadId); if (!thread) throw refuse(THREAD_NOT_FOUND, 404);
+      await this.#o.assertMerge?.(thread.projectId);
       const pr = thread.pr; if (!pr) throw refuse(NO_PULL_REQUEST, 409);
       if (pr.state !== 'open' || this.#transitions.has(threadId)) throw refuse(PR_NOT_OPEN, 409);
       if (pr.mergeable === 'conflict') throw refuse(MERGE_CONFLICTS, 409);
       if (pr.checks === 'failing') throw refuse(MERGE_CHECKS_FAILING, 409);
       let message: string;
       try {
+        await this.#o.assertMerge?.(thread.projectId);
         const result = await (await this.#o.github.open()).merge(await this.#repository(thread.projectId), pr.number, pr.headSha);
         if (!result.merged) throw refuse(result.message, 409);
         message = result.message;

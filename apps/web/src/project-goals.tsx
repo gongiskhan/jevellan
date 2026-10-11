@@ -25,7 +25,7 @@ export function ProjectGoals({ projectId, goals, changed, onError }: { projectId
       </div>
     </article>)}
     {editing && <GoalEditor projectId={projectId} entry={editing === 'new' ? undefined : editing} saved={changed} close={() => setEditing(undefined)} onError={onError} />}
-    {done && <Confirm title={`Mark "${done.goal.name}" done?`} action="Mark done" busy={operation.busy} confirm={() => update(done, { state: 'done' })} close={() => setDone(undefined)}><p>Its queued tasks stay in history and stop dispatching. Running tasks can finish.</p></Confirm>}
+    {done && <Confirm title={`Mark "${done.goal.name}" done?`} action="Mark done" busy={operation.busy} confirm={() => update(done, { state: 'done' })} close={() => setDone(undefined)}><p>It stops producing tasks until you make it active again.</p></Confirm>}
   </>;
 }
 function GoalEditor({ projectId, entry, saved, close, onError }: { projectId: string; entry?: GoalEntry | undefined; saved(): void; close(): void; onError(error: unknown): void }) {

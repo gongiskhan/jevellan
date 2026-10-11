@@ -344,8 +344,8 @@
   {
     "id": "loop-daily",
     "title": "Daily work and nightly window",
-    "why": "Run missed daily work with exact-commit gates and a merge hold.",
-    "status": "planned"
+    "why": "Durable command and GitHub jobs, exact-commit gates and nightly windows implemented; four-layout browser verification and full release gates remain.",
+    "status": "in-progress"
   },
   {
     "id": "loop-placement-types",

@@ -1,4 +1,4 @@
-import { gitEnvironment, runOwnedCommand, type CommandResult, type Homes, type SecretRedactor } from '@jevellan/core';
+import { gitEnvironment, runOwnedCommand, type CommandResult, type Homes, type SecretRedactor, type NativeProcess } from '@jevellan/core';
 import { tail } from './git.js';
 
 export const SETUP_TIMEOUT_MS = 15 * 60_000;
@@ -9,9 +9,9 @@ export const TEST_TIMEOUT_MS = 30 * 60_000;
  * environment with HOME set to an empty Jevellan folder (no user credentials or test tokens), redacted output, and the
  * whole process group stopped at the timeout.
  */
-export async function runThreadCommand(cwd: string, command: string, o: { homes: Homes; workId: string; timeoutMs: number; redactor: SecretRedactor; signal?: AbortSignal | undefined }): Promise<CommandResult> {
-  const env = gitEnvironment(); env.HOME = o.homes.ensure('tmp', 'verification', o.workId);
-  return runOwnedCommand('/bin/sh', ['-c', command], { cwd, env, timeoutMs: o.timeoutMs, redactor: o.redactor, ...(o.signal ? { signal: o.signal } : {}) });
+export async function runThreadCommand(cwd: string, command: string, o: { homes: Homes; workId: string; timeoutMs: number; redactor: SecretRedactor; signal?: AbortSignal | undefined; minimal?: boolean; onProcess?(native: NativeProcess): void | Promise<void> }): Promise<CommandResult> {
+  const env = gitEnvironment(); if (o.minimal) delete env.SSH_AUTH_SOCK; env.HOME = o.homes.ensure('tmp', 'verification', o.workId);
+  return runOwnedCommand('/bin/sh', ['-c', command], { cwd, env, timeoutMs: o.timeoutMs, redactor: o.redactor, ...(o.minimal ? { outputLimitBytes: 64 * 1024 } : {}), ...(o.signal ? { signal: o.signal } : {}), ...(o.onProcess ? { onProcess: o.onProcess } : {}) });
 }
 /** The last 4,000 characters of redacted stdout followed by stderr (D49). */
 export const outputTail = (result: Pick<CommandResult, 'stdout' | 'stderr'>, max = 4000): string =>

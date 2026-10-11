@@ -151,7 +151,7 @@
   .pw-side {
     position: sticky;
     top: var(--pw-sticky-top, 0px);
-    max-height: calc(100dvh - var(--pw-sticky-top, 0px));
+    max-height: calc(100dvh - var(--pw-layout-top, var(--pw-sticky-top, 0px)));
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-width: thin;
@@ -633,3 +633,6 @@ button.danger:disabled, button.danger:disabled:hover { background: var(--bg-3); 
 .pw-task-group { display: grid; gap: 6px; min-width: 0; }
 .pw-group-control { display: flex; gap: 6px; padding: 6px 10px; }
 .pw-group-control [aria-pressed=true] { color: var(--jev); border-color: var(--jev); }
+
+.pw-job-log { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 18rem; overflow: auto; font-size: .8rem; }
+.pw-jobs { margin-block: 1rem; }

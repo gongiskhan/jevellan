@@ -1,3 +1,4 @@
+import { ProjectJobSchema, ProjectDailySchema, ProjectJobRunSchema, ProjectWindowSchema, type ProjectJob, type ProjectDaily, type ProjectJobRun, type ProjectWindow } from '@jevellan/core';
 import { ProjectGoalSchema, ProjectRefillStateSchema, type ProjectGoal, type ProjectRefillState } from '@jevellan/core';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
@@ -68,6 +69,58 @@ export class HubProjectStore {
       cursor = rows.at(-1)!.document.id;
     }
     return { records: records.slice(0, PROJECT_HUB_PAGE), next: records.length > PROJECT_HUB_PAGE ? records[PROJECT_HUB_PAGE - 1]!.id : null };
+  }
+
+  jobs(projectId: string, after?: string): Page<ProjectJob> { return this.#page('project-jobs', ProjectJobSchema, projectId, after, () => true); }
+  job(jobId: string): Stored<ProjectJob> | null { return this.#get('project-jobs', jobId, ProjectJobSchema); }
+  putJob(raw: ProjectJob, expectedRevision: number): Stored<ProjectJob> {
+    const document = ProjectJobSchema.parse(raw); this.#project(document.projectId);
+    const previous = this.job(document.id)?.document;
+    if (previous && previous.projectId !== document.projectId) refuse('This document belongs to another project.', 403);
+    if (previous && (previous.createdAt !== document.createdAt || previous.requestDigest !== document.requestDigest)) refuse('Document identity cannot change.', 400);
+    let parent = document.gate?.jobId; const visited = new Set([document.id]);
+    while (parent) {
+      if (visited.has(parent)) refuse('Job gates cannot contain a cycle.', 400); visited.add(parent);
+      const gate = this.job(parent)?.document; if (!gate || gate.projectId !== document.projectId) refuse('A gate must be a job of this project.', 400); parent = gate.gate?.jobId;
+    }
+    return this.#put('project-jobs', document.id, ProjectJobSchema, document, expectedRevision);
+  }
+  dailies(projectId: string, after?: string): Page<ProjectDaily> { return this.#page('project-dailies', ProjectDailySchema, projectId, after, () => true); }
+  daily(dailyId: string): Stored<ProjectDaily> | null { return this.#get('project-dailies', dailyId, ProjectDailySchema); }
+  putDaily(raw: ProjectDaily, expectedRevision: number): Stored<ProjectDaily> {
+    const document = ProjectDailySchema.parse(raw); this.#project(document.projectId);
+    const previous = this.daily(document.id)?.document;
+    if (previous && previous.projectId !== document.projectId) refuse('This document belongs to another project.', 403);
+    if (previous && (previous.createdAt !== document.createdAt || previous.requestDigest !== document.requestDigest)) refuse('Document identity cannot change.', 400);
+    return this.#put('project-dailies', document.id, ProjectDailySchema, document, expectedRevision);
+  }
+  jobRuns(projectId: string, after?: string): Page<ProjectJobRun> { return this.#page('project-job-runs', ProjectJobRunSchema, projectId, after, () => true); }
+  jobRun(jobRunId: string): Stored<ProjectJobRun> | null { return this.#get('project-job-runs', jobRunId, ProjectJobRunSchema); }
+  putJobRun(raw: ProjectJobRun, expectedRevision: number): Stored<ProjectJobRun> {
+    const document = ProjectJobRunSchema.parse(raw); this.#project(document.projectId);
+    const previous = this.jobRun(document.id)?.document;
+    if (previous && previous.projectId !== document.projectId) refuse('This document belongs to another project.', 403);
+    if (this.coordinator(document.projectId)?.document.deviceId !== this.deviceId) refuse('Only the coordinator device can write execution receipts.', 403);
+    if (this.devices?.().find(view => view.device.id === this.deviceId)?.device.workPolicy?.mode === 'apps-only') refuse('This device serves apps only; project work runs on a working device.', 409);
+    const task = this.task(document.taskId)?.document;
+    if (!task || task.projectId !== document.projectId || task.jobId !== document.jobId) refuse('The job run must belong to its task.', 400);
+    if (previous && (previous.taskId !== document.taskId || previous.jobId !== document.jobId || previous.projectDay !== document.projectDay || previous.startedAt !== document.startedAt || previous.deviceId !== document.deviceId || previous.setupCommand !== document.setupCommand || stableJson(previous.spec) !== stableJson(document.spec))) refuse('Job run identity cannot change.', 400);
+    if (previous?.conclusion && stableJson({ ...previous, revision: 0 }) !== stableJson({ ...document, revision: 0 })) refuse('A finished job receipt cannot change.', 409);
+    return this.#put('project-job-runs', document.id, ProjectJobRunSchema, document, expectedRevision);
+  }
+  windows(projectId: string, after?: string): Page<ProjectWindow> { return this.#page('project-windows', ProjectWindowSchema, projectId, after, () => true); }
+  window(windowId: string): Stored<ProjectWindow> | null { return this.#get('project-windows', windowId, ProjectWindowSchema); }
+  putWindow(raw: ProjectWindow, expectedRevision: number): Stored<ProjectWindow> {
+    const document = ProjectWindowSchema.parse(raw); this.#project(document.projectId);
+    const previous = this.window(document.id)?.document;
+    if (previous && previous.projectId !== document.projectId) refuse('This document belongs to another project.', 403);
+    if (this.coordinator(document.projectId)?.document.deviceId !== this.deviceId) refuse('Only the coordinator device can write execution receipts.', 403);
+    if (this.devices?.().find(view => view.device.id === this.deviceId)?.device.workPolicy?.mode === 'apps-only') refuse('This device serves apps only; project work runs on a working device.', 409);
+    if (document.mergesHeld !== (document.state === 'open') || new Set(document.taskIds).size !== document.taskIds.length || document.taskIds.length !== document.plans.length || document.plans.some((plan, index) => plan.id !== document.taskIds[index] || plan.projectId !== document.projectId || plan.projectDay !== document.closingProjectDay || plan.source !== 'daily')) refuse('The nightly window plans are invalid.', 400);
+    if (previous && (previous.date !== document.date || previous.closingProjectDay !== document.closingProjectDay || previous.openedAt !== document.openedAt || stableJson(previous.plans) !== stableJson(document.plans) || stableJson(previous.taskIds) !== stableJson(document.taskIds))) refuse('Nightly window identity cannot change.', 400);
+    if (previous?.state === 'finished' && document.state !== 'finished') refuse('A finished nightly window cannot reopen.', 409);
+    if (!previous && this.#documents('project-windows', ProjectWindowSchema, document.projectId).some(row => row.state === 'open')) refuse('This project already has an open nightly window.', 409);
+    return this.#put('project-windows', document.id, ProjectWindowSchema, document, expectedRevision);
   }
 
   goals(projectId: string, after?: string): Page<ProjectGoal> { return this.#page('project-goals', ProjectGoalSchema, projectId, after, () => true); }
@@ -499,6 +552,18 @@ export class HubProjectStore {
     const request = ProjectHubRequestSchema.parse(raw); const base = { schema: 'project-hub-result-v1', operation: request.operation };
     let result: unknown;
     switch (request.operation) {
+      case 'jobs-list': result = { ...base, ...this.jobs(request.projectId, request.after) }; break;
+      case 'job-get': result = { ...base, record: this.job(request.jobId) }; break;
+      case 'job-put': result = { ...base, record: this.putJob(request.job, request.expectedRevision) }; break;
+      case 'dailies-list': result = { ...base, ...this.dailies(request.projectId, request.after) }; break;
+      case 'daily-get': result = { ...base, record: this.daily(request.dailyId) }; break;
+      case 'daily-put': result = { ...base, record: this.putDaily(request.daily, request.expectedRevision) }; break;
+      case 'job-runs-list': result = { ...base, ...this.jobRuns(request.projectId, request.after) }; break;
+      case 'job-run-get': result = { ...base, record: this.jobRun(request.jobRunId) }; break;
+      case 'job-run-put': result = { ...base, record: this.putJobRun(request.jobRun, request.expectedRevision) }; break;
+      case 'windows-list': result = { ...base, ...this.windows(request.projectId, request.after) }; break;
+      case 'window-get': result = { ...base, record: this.window(request.windowId) }; break;
+      case 'window-put': result = { ...base, record: this.putWindow(request.window, request.expectedRevision) }; break;
       case 'goals-list': result = { ...base, ...this.goals(request.projectId, request.after) }; break;
       case 'goal-get': result = { ...base, record: this.goal(request.goalId) }; break;
       case 'goal-put': result = { ...base, record: this.putGoal(request.goal, request.expectedRevision) }; break;
@@ -549,6 +614,18 @@ export class HubProjectStore {
 
 /** The hub's own `ProjectHub`: the same store and authority rules, bound to the hub device. */
 export class HubProjectAccess implements ProjectHub {
+  async jobs(projectId: string, after?: string) { return this.#store.jobs(projectId, after); }
+  async job(jobId: string) { return this.#store.job(jobId); }
+  async putJob(job: ProjectJob, expectedRevision: number) { return this.#store.putJob(job, expectedRevision); }
+  async dailies(projectId: string, after?: string) { return this.#store.dailies(projectId, after); }
+  async daily(dailyId: string) { return this.#store.daily(dailyId); }
+  async putDaily(daily: ProjectDaily, expectedRevision: number) { return this.#store.putDaily(daily, expectedRevision); }
+  async jobRuns(projectId: string, after?: string) { return this.#store.jobRuns(projectId, after); }
+  async jobRun(jobRunId: string) { return this.#store.jobRun(jobRunId); }
+  async putJobRun(jobRun: ProjectJobRun, expectedRevision: number) { return this.#store.putJobRun(jobRun, expectedRevision); }
+  async windows(projectId: string, after?: string) { return this.#store.windows(projectId, after); }
+  async window(windowId: string) { return this.#store.window(windowId); }
+  async putWindow(window: ProjectWindow, expectedRevision: number) { return this.#store.putWindow(window, expectedRevision); }
   readonly #store: HubProjectStore;
   constructor(hub: HubDatabase, deviceId: string, now?: () => number, devices?: () => readonly DeviceView[]) { this.#store = new HubProjectStore(hub, deviceId, now, devices); }
   async settings(projectId: string) { return this.#store.settings(projectId); }
@@ -620,6 +697,18 @@ export class MemberProjectStore implements ProjectHub {
   #check<T>(record: T, valid: (value: T) => boolean): T { if (!valid(record)) throw new HubProtocolError(); return record; }
 
   async settings(projectId: string) { return this.#check((await this.#call('settings-get', { projectId })).record, (row) => !row || row.document.projectId === projectId); }
+  async jobs(projectId: string, after?: string) { return this.#page(await this.#call('jobs-list', { projectId, ...(after ? { after } : {}) }), projectId, after); }
+  async job(jobId: string) { return this.#check((await this.#call('job-get', { jobId })).record, row => !row || row.document.id === jobId); }
+  async putJob(job: ProjectJob, expectedRevision: number) { return this.#check((await this.#call('job-put', { job, expectedRevision })).record, row => row.document.id === job.id && row.document.projectId === job.projectId); }
+  async dailies(projectId: string, after?: string) { return this.#page(await this.#call('dailies-list', { projectId, ...(after ? { after } : {}) }), projectId, after); }
+  async daily(dailyId: string) { return this.#check((await this.#call('daily-get', { dailyId })).record, row => !row || row.document.id === dailyId); }
+  async putDaily(daily: ProjectDaily, expectedRevision: number) { return this.#check((await this.#call('daily-put', { daily, expectedRevision })).record, row => row.document.id === daily.id && row.document.projectId === daily.projectId); }
+  async jobRuns(projectId: string, after?: string) { return this.#page(await this.#call('job-runs-list', { projectId, ...(after ? { after } : {}) }), projectId, after); }
+  async jobRun(jobRunId: string) { return this.#check((await this.#call('job-run-get', { jobRunId })).record, row => !row || row.document.id === jobRunId); }
+  async putJobRun(jobRun: ProjectJobRun, expectedRevision: number) { return this.#check((await this.#call('job-run-put', { jobRun, expectedRevision })).record, row => row.document.id === jobRun.id && row.document.projectId === jobRun.projectId); }
+  async windows(projectId: string, after?: string) { return this.#page(await this.#call('windows-list', { projectId, ...(after ? { after } : {}) }), projectId, after); }
+  async window(windowId: string) { return this.#check((await this.#call('window-get', { windowId })).record, row => !row || row.document.id === windowId); }
+  async putWindow(window: ProjectWindow, expectedRevision: number) { return this.#check((await this.#call('window-put', { window, expectedRevision })).record, row => row.document.id === window.id && row.document.projectId === window.projectId); }
   async goals(projectId: string, after?: string) { return this.#page(await this.#call('goals-list', { projectId, ...(after ? { after } : {}) }), projectId, after); }
   async goal(goalId: string) { return this.#check((await this.#call('goal-get', { goalId })).record, row => !row || row.document.id === goalId); }
   async putGoal(goal: ProjectGoal, expectedRevision: number) { return this.#check((await this.#call('goal-put', { goal, expectedRevision })).record, row => row.document.id === goal.id && row.document.projectId === goal.projectId); }

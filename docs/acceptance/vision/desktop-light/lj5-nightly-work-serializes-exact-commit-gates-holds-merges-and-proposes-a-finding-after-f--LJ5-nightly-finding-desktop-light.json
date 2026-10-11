@@ -1,0 +1,20 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ5 nightly work serializes exact-commit gates, holds merges and proposes a finding after failure",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/screenshots/LJ5-nightly-finding-desktop-light.png",
+  "expected": "the Jevellan web app \"LJ5 nightly finding\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"LJ5 nightly work serializes exact-commit gates, holds merges and proposes a finding after failure\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Some sidebar shell session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Mesh journey fixt…', 'Done · Mesh journey fixture · de…'), but they're still readable",
+      "The right column's GOALS section is cut off at the bottom of the viewport; it can be reached by scrolling",
+      "The banner says 'Last night: 1 of 3 daily tasks passed.' but the last nightly window shows 'Review: done', and the banner text sits tight against the Dismiss button",
+      "In the daily cards, the 'Enabled' checkbox is stacked above its label instead of beside it, so it looks a bit misaligned",
+      "The status pill reads 'Working…' at the top while 'Coordinator is working…' also shows at the bottom of the feed, which is redundant"
+    ]
+  }
+}

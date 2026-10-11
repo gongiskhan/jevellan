@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ5 nightly work serializes exact-commit gates, holds merges and proposes a finding after failure",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/LJ5-nightly-merges-held-phone-light.png",
+  "expected": "the Jevellan web app \"LJ5 nightly merges held\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"LJ5 nightly work serializes exact-commit gates, holds merges and proposes a finding after failure\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The active 'Pull requests' tab is clipped at the right edge of the viewport. The tab row looks horizontally scrollable, so it can still be reached, but the label is partly cut off and nothing shows that the row scrolls.",
+      "The 'Merge' button is light grey and low-contrast. This matches a disabled state while merges are held, but the label is fainter than the other controls."
+    ]
+  }
+}

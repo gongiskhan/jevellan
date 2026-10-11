@@ -1,3 +1,4 @@
+import { GitHubWorkflowRunSchema, GitHubWorkflowRunsSchema, GitHubWorkflowJobsSchema, GitHubWorkflowDispatchSchema } from './github-actions.js';
 import { z } from 'zod';
 import { SecretRedactor } from './environment.js';
 import type { PullRequestState } from './project-schemas.js';
@@ -109,6 +110,33 @@ export class GitHubClient {
     return { merged: result.merged, ...(result.sha === undefined ? {} : { sha: result.sha }), message: this.#text(result.message) };
   }
 
+  async workflowRuns(repository: GitHubRepository, workflow: string, branch: string, since: string) {
+    const runs: z.infer<typeof GitHubWorkflowRunSchema>[] = [];
+    for (let page = 1; page <= 10; page++) {
+      void since; // The caller filters started time; a queued run may have been created before the day.
+      const query = new URLSearchParams({ branch, per_page: '100', page: String(page) });
+      const next = await this.#request('GET', `${repo(repository)}/actions/workflows/${encodeURIComponent(workflow)}/runs?${query}`, GitHubWorkflowRunsSchema);
+      runs.push(...next.workflow_runs); if (next.workflow_runs.length < 100) break;
+    }
+    return runs;
+  }
+  async workflowRun(repository: GitHubRepository, runId: number) { return this.#request('GET', `${repo(repository)}/actions/runs/${pullNumber(runId)}`, GitHubWorkflowRunSchema); }
+  async workflowJobs(repository: GitHubRepository, runId: number) {
+    return this.#pages(page => this.#request('GET', `${repo(repository)}/actions/runs/${pullNumber(runId)}/jobs?per_page=100&page=${page}`, GitHubWorkflowJobsSchema), value => value.jobs);
+  }
+  async pinWorkflowRef(repository: GitHubRepository, branch: string, commit: string): Promise<void> {
+    if (!sha.test(commit) || !/^jv\/jobs\/[A-Za-z0-9_-]+$/u.test(branch)) throw new Error('Invalid workflow dispatch ref.');
+    await this.#request('POST', `${repo(repository)}/git/refs`, z.object({ ref: z.string(), object: z.object({ sha: z.string() }) }), { ref: `refs/heads/${branch}`, sha: commit });
+  }
+  async dispatchWorkflow(repository: GitHubRepository, workflow: string, ref: string) {
+    // This API version can return the actual run; never infer identity from a generic latest run.
+    return this.#request('POST', `${repo(repository)}/actions/workflows/${encodeURIComponent(workflow)}/dispatches`, GitHubWorkflowDispatchSchema,
+      { ref, return_run_details: true }, { version: '2026-03-10' });
+  }
+  async workflowJobLog(repository: GitHubRepository, jobId: number): Promise<string> {
+    return this.#request('GET', `${repo(repository)}/actions/jobs/${pullNumber(jobId)}/logs`, z.string(), undefined, { text: true, download: true });
+  }
+
   async #pages<T extends { total_count: number }, E>(load: (page: number) => Promise<T>, entries: (result: T) => E[]): Promise<E[]> {
     const all: E[] = [];
     for (let page = 1; page <= PAGE_LIMIT; page++) {
@@ -118,7 +146,7 @@ export class GitHubClient {
     return all;
   }
   #text(value: string): string { return this.#redactor.text(value).replace(/[\p{Cc}\s]+/gu, ' ').trim().slice(0, 300); }
-  async #request<T>(method: 'GET' | 'POST' | 'PUT', path: string, schema: z.ZodType<T>, body?: unknown): Promise<T> {
+  async #request<T>(method: 'GET' | 'POST' | 'PUT', path: string, schema: z.ZodType<T>, body?: unknown, options: { version?: string; text?: boolean; download?: boolean } = {}): Promise<T> {
     const token = (await this.#token())?.trim();
     if (!token) throw new GitHubError('no-token', 'No GitHub token is saved.');
     this.#redactor.add(token);
@@ -130,11 +158,18 @@ export class GitHubClient {
       try {
         response = await this.#fetch(`${this.#base}${path}`, {
           method, redirect: 'manual', signal: controller.signal,
-          headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': GITHUB_API_VERSION, 'User-Agent': 'jevellan',
+          headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': options.version ?? GITHUB_API_VERSION, 'User-Agent': 'jevellan',
             ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
           ...(body === undefined ? {} : { body: JSON.stringify(body) }),
         });
       } catch { throw controller.signal.aborted ? timedOut() : new GitHubError('network', 'GitHub could not be reached.'); }
+      if (options.download && response.status === 302) {
+        const location = response.headers.get('location'); await response.body?.cancel();
+        let target: URL; try { target = new URL(location ?? ''); } catch { throw invalid(); }
+        if (target.protocol !== 'https:' || target.username || target.password || !(target.hostname.endsWith('.githubusercontent.com') || target.hostname.endsWith('.blob.core.windows.net'))) throw invalid();
+        // Signed log URLs carry their own authorization; never forward the GitHub token.
+        response = await this.#fetch(target, { redirect: 'manual', signal: controller.signal });
+      }
       const status = response.status;
       if (response.type === 'opaqueredirect' || (status >= 300 && status < 400)) {
         await response.body?.cancel().catch(() => undefined);
@@ -146,7 +181,7 @@ export class GitHubClient {
         throw new GitHubError(errorKind(status), message || `GitHub answered with HTTP ${status}.`, status);
       }
       let value: unknown;
-      try { value = JSON.parse(await read(response, BODY_LIMIT, controller.signal, true)); } catch (error) { if (error instanceof GitHubError) throw error; throw invalid(); }
+      try { const content = await read(response, BODY_LIMIT, controller.signal, true); value = options.text ? this.#redactor.text(content).slice(-8000) : JSON.parse(content); } catch (error) { if (error instanceof GitHubError) throw error; throw invalid(); }
       const parsed = schema.safeParse(value); if (!parsed.success) throw invalid();
       return parsed.data;
     } finally { clearTimeout(timer); }

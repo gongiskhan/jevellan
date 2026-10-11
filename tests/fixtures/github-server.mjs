@@ -11,7 +11,8 @@ const NOT_MERGEABLE = 'Pull Request is not mergeable';
 
 export async function startGitHubFixture({ token, repositories = {}, port = 0 }) {
   if (typeof token !== 'string' || !token) throw new Error('The GitHub fixture needs a token.');
-  const requests = []; const pulls = []; const failures = [];
+  const workflowView = value => { const { jobs, repo, workflow, ...run } = value; void jobs; void repo; void workflow; return run; };
+  const requests = []; const pulls = []; const failures = []; const workflows = []; let loseDispatchReply = false;
   const origin = (repo) => repositories[repo];
   const headOf = (repo, ref) => {
     try { return execFileSync('git', ['--git-dir', origin(repo), 'rev-parse', '--verify', '--quiet', `refs/heads/${ref}`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() || null; } catch { return null; }
@@ -67,6 +68,31 @@ export async function startGitHubFixture({ token, repositories = {}, port = 0 })
     const repo = route && `${decodeURIComponent(route[1])}/${decodeURIComponent(route[2])}`;
     if (!route || !origin(repo)) return send(response, 404, { message: 'Not Found' });
     const rest = route[3]; const [owner] = repo.split('/'); let match;
+    if (rest === '/git/refs' && method === 'POST') {
+      if (!/^refs\/heads\/jv\/jobs\/[A-Za-z0-9_-]+$/.test(body?.ref ?? '') || !/^[a-f0-9]{40}$/.test(body?.sha ?? '')) return send(response, 422, { message: 'Invalid ref' });
+      try { execFileSync('git', ['--git-dir', origin(repo), 'update-ref', body.ref, body.sha, ''], { stdio: 'ignore' }); } catch { return send(response, 422, { message: 'Reference already exists' }); }
+      return send(response, 201, { ref: body.ref, object: { sha: body.sha } });
+    }
+    if ((match = /^\/actions\/workflows\/([^/]+)\/dispatches$/.exec(rest)) && method === 'POST') {
+      const head = headOf(repo, body?.ref); if (!head) return send(response, 422, { message: 'Invalid ref' });
+      const id = workflows.length + 1, at = new Date().toISOString();
+      workflows.push({ repo, workflow: decodeURIComponent(match[1]), id, html_url: `https://github.com/${repo}/actions/runs/${id}`, head_sha: head, head_branch: body.ref, event: 'workflow_dispatch', status: 'queued', conclusion: null, created_at: at, run_started_at: at, jobs: [] });
+      if (loseDispatchReply) { loseDispatchReply = false; response.destroy(); return; }
+      return send(response, 200, { workflow_run_id: id, html_url: `https://github.com/${repo}/actions/runs/${id}` });
+    }
+    if ((match = /^\/actions\/workflows\/([^/]+)\/runs$/.exec(rest)) && method === 'GET') {
+      const runs = workflows.filter(run => run.repo === repo && run.workflow === decodeURIComponent(match[1]) && run.head_branch === url.searchParams.get('branch')).sort((a, b) => b.id - a.id);
+      const page = Number(url.searchParams.get('page') ?? '1'); return send(response, 200, { workflow_runs: runs.slice((page - 1) * 100, page * 100).map(workflowView) });
+    }
+    if ((match = /^\/actions\/runs\/(\d+)(\/jobs)?$/.exec(rest)) && method === 'GET') {
+      const run = workflows.find(run => run.repo === repo && run.id === Number(match[1])); if (!run) return send(response, 404, { message: 'Not Found' });
+      if (match[2]) return send(response, 200, { total_count: run.jobs.length, jobs: run.jobs });
+      return send(response, 200, workflowView(run));
+    }
+    if ((match = /^\/actions\/jobs\/(\d+)\/logs$/.exec(rest)) && method === 'GET') {
+      const job = workflows.flatMap(run => run.jobs).find(job => job.id === Number(match[1])); if (!job || job.logs === undefined) return send(response, 403, { message: 'Logs not readable' });
+      response.writeHead(200, { 'content-type': 'text/plain' }); return response.end(job.logs);
+    }
     if (rest === '/pulls' && method === 'GET') {
       const head = url.searchParams.get('head'); const state = url.searchParams.get('state') ?? 'open';
       const ref = head && (head.includes(':') ? (head.startsWith(`${owner}:`) ? head.slice(owner.length + 1) : null) : head);
@@ -116,7 +142,10 @@ export async function startGitHubFixture({ token, repositories = {}, port = 0 })
   const server = createServer((request, response) => { handle(request, response).catch((error) => { if (!response.headersSent) send(response, 500, { message: error.message }); else response.destroy(); }); });
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(port, '127.0.0.1', resolve); });
   return {
-    url: `http://127.0.0.1:${server.address().port}`, requests, pulls,
+    url: `http://127.0.0.1:${server.address().port}`, requests, pulls, workflows,
+    loseNextDispatchReply: () => { loseDispatchReply = true; },
+    addWorkflow: value => { const id = workflows.length + 1; const run = { repo: Object.keys(repositories)[0], workflow: 'nightly.yml', id, html_url: `https://github.com/fixture/repo/actions/runs/${id}`, head_sha: headOf(Object.keys(repositories)[0], 'main'), head_branch: 'main', event: 'schedule', status: 'completed', conclusion: 'success', created_at: new Date().toISOString(), jobs: [], ...value }; workflows.push(run); return run; },
+    changeWorkflow: (id, patch) => { const run = workflows.find(row => row.id === id); if (!run) throw new Error('Workflow missing.'); Object.assign(run, patch); return run; },
     setChecks: (number, checks, repo) => { apply(find(number, repo), { checks }); },
     setMergeable: (number, mergeable, repo) => { apply(find(number, repo), { mergeable }); },
     markMerged: (number, repo) => { apply(find(number, repo), { merged: true }); },

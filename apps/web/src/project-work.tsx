@@ -1,3 +1,5 @@
+import { NightlyBanner, ProjectDailyPanel, type DailyView } from './project-daily.js';
+import { ProjectDailyListViewSchema } from '@jevellan/core/client';
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { z } from 'zod';
 import {
@@ -232,6 +234,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   const titleId = useId(); const tabsId = useId(); const chatId = useId(); const sideId = useId();
   const [view, setView] = useState<ProjectWorkView>();
   const [goals, setGoals] = useState<GoalEntry[]>([]);
+  const [daily, setDaily] = useState<DailyView>();
   const [tasks, setTasks] = useState<ProjectWorkTask[]>([]);
   const [loadError, setLoadError] = useState('');
   const [events, setEvents] = useState<ProjectLedgerEvent[]>([]);
@@ -283,14 +286,14 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
       if (!stopped) open();
     };
     const reads = queuedRefresh(
-      (signal) => Promise.all([api(`/api/projects/${id}/work`, ProjectWorkViewSchema, 'GET', undefined, { signal, waitForHub: true }), api(`/api/projects/${id}/tasks`, TaskListViewSchema, 'GET', undefined, { signal, waitForHub: true }), api(`/api/projects/${id}/goals`, GoalListViewSchema, 'GET', undefined, { signal, waitForHub: true })]),
-      ([next, queue, goalList]) => {
+      (signal) => Promise.all([api(`/api/projects/${id}/work`, ProjectWorkViewSchema, 'GET', undefined, { signal, waitForHub: true }), api(`/api/projects/${id}/tasks`, TaskListViewSchema, 'GET', undefined, { signal, waitForHub: true }), api(`/api/projects/${id}/goals`, GoalListViewSchema, 'GET', undefined, { signal, waitForHub: true }), api(`/api/projects/${id}/dailies`, ProjectDailyListViewSchema, 'GET', undefined, { signal, waitForHub: true })]),
+      ([next, queue, goalList, dailyList]) => {
         const device = next.coordinator.deviceId ?? here; const moved = streaming !== undefined && device !== streaming; streaming = device;
         if (after.current === undefined) setTab(defaultTab(next));
         if (after.current === undefined || moved) after.current = next.lastEventId;
         if (moved) restart();
         setView(next); setLoadError('');
-        setTasks(queue.tasks); setGoals(goalList.goals);
+        setTasks(queue.tasks); setGoals(goalList.goals); setDaily(dailyList);
       },
       (failure) => {
         if (failure instanceof ApiError && failure.status === 401) onError(failure);
@@ -326,11 +329,13 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
     const measure = () => {
       setWide(element.getBoundingClientRect().width >= 840);
       element.style.setProperty('--pw-sticky-top', `${Math.round(head.getBoundingClientRect().height)}px`);
+      const layout = element.querySelector('.pw-layout');
+      if (layout) element.style.setProperty('--pw-layout-top', `${Math.ceil(layout.getBoundingClientRect().top + window.scrollY)}px`);
     };
     measure();
     const observer = new ResizeObserver(measure); observer.observe(element); observer.observe(head);
     return () => observer.disconnect();
-  }, []);
+  }, [daily?.mergesHeld, daily?.window?.id, daily?.window?.state]);
   const current = tab ?? 'chat';
   const chatShown = wide || current === 'chat';
   // Follow the newest chat entry while the chat is on screen, unless the reader scrolled up (as the reading pages do).
@@ -463,6 +468,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
         </div>
       </div>
       {loadError && <p className="notice" role="status">{loadError}</p>}
+      {daily && <NightlyBanner view={daily} />}
       {coordinator.state === 'unavailable' && coordinator.unavailableReason && <p className="notice">{copy.coordinatorUnavailableNotice(coordinator.unavailableReason)}</p>}
       {offline && <OfflineNotice device={coordinatorDevice} canMove={coordinator.canMoveHere} refusal={coordinator.moveRefusal} moving={moving.busy} move={move} />}
       {moveFailure.error && <p className="error" role="alert">{moveFailure.error}</p>}
@@ -518,7 +524,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
           <section className="pw-section" data-tab="pull-requests" aria-labelledby={`${sideId}-pulls`}>
             {sectionHeading(`${sideId}-pulls`, copy.PULL_REQUESTS, pulls.length)}
             {pulls.length ? pulls.map((entry) => (
-              <PullRequestRow key={entry.threadId} projectId={id} entry={entry} navigate={navigate} merge={() => setMerging(entry)} />
+              <PullRequestRow key={entry.threadId} projectId={id} entry={entry} navigate={navigate} hold={daily?.mergesHeld === true} merge={() => setMerging(entry)} />
             )) : <p className="pw-empty">{copy.NO_OPEN_PULL_REQUESTS}</p>}
           </section>
           <section className="pw-section" data-tab="threads" aria-labelledby={`${sideId}-concluded`}>
@@ -528,6 +534,10 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
                 {sections.concluded.map((thread) => <ThreadRow key={thread.id} projectId={id} thread={thread} meta={meta(thread)} now={now} navigate={navigate} />)}
               </div>
             ) : <p className="pw-empty">{copy.NOTHING_CONCLUDED}</p>}
+          </section>
+          <section className="pw-section" data-tab="queue" aria-labelledby={`${sideId}-daily`}>
+            {sectionHeading(`${sideId}-daily`, 'Daily', daily?.dailies.filter(item => item.enabled).length ?? 0)}
+            {daily && <ProjectDailyPanel view={daily} goals={goals} changed={updated} onError={onError} />}
           </section>
           <section className="pw-section" data-tab="queue" aria-labelledby={`${sideId}-goals`}>
             {sectionHeading(`${sideId}-goals`, 'Goals', goals.filter(entry => entry.goal.state !== 'done').length)}
@@ -745,7 +755,7 @@ function ThreadRow({ projectId, thread, meta, now, navigate }: { projectId: stri
  * A pull request (12.2): the GitHub link, the checks and conflict badges, Merge (disabled with its reason on conflicts or
  * failing checks, allowed while checks run) and Open on GitHub; a branch-only thread shows its branch and reason (D58).
  */
-function PullRequestRow({ projectId, entry, navigate, merge }: { projectId: string; entry: PullRequestEntry; navigate(path: string): void; merge(): void }) {
+function PullRequestRow({ projectId, entry, navigate, merge, hold }: { projectId: string; entry: PullRequestEntry; navigate(path: string): void; merge(): void; hold?: boolean }) {
   const blockId = useId();
   const thread = `/projects/${projectId}/threads/${entry.threadId}`;
   const pr = entry.pr;
@@ -758,7 +768,7 @@ function PullRequestRow({ projectId, entry, navigate, merge }: { projectId: stri
       </article>
     );
   }
-  const badge = checksBadge(pr); const block = mergeBlock(pr);
+  const badge = checksBadge(pr); const block = hold ? 'Merges are held while the nightly window runs.' : mergeBlock(pr);
   return (
     <article className="pw-pr">
       <a className="pw-pr-title" href={pr.url} target="_blank" rel="noopener noreferrer">{copy.pullRequestTitle(pr.number, entry.title)}</a>
@@ -770,6 +780,7 @@ function PullRequestRow({ projectId, entry, navigate, merge }: { projectId: stri
         ? pr.review.verdict === 'approve' ? 'Reviewed by the coordinator' : 'Changes requested by the coordinator'
         : "Waiting for the coordinator's review"}</p>}
       {pr.review?.commit === pr.headSha && <details><summary>Review note</summary><Markdown>{pr.review.note}</Markdown></details>}
+      {hold && <p className="pw-pr-reason">Merges are held while the nightly window runs.</p>}
       <div className="pw-pr-actions">
         <RouteLink className="text-button pw-open-thread" href={thread} navigate={navigate}>{copy.OPEN_THREAD}</RouteLink>
         <a className="button-link secondary small" href={pr.url} target="_blank" rel="noopener noreferrer"><Icon name="external" size={14} />{copy.OPEN_ON_GITHUB}</a>

@@ -1,3 +1,5 @@
+import type { ProjectDailyWork } from './daily.js';
+import type { ProjectJobRunner } from './job-runner.js';
 import { z } from 'zod';
 import {
   BridgeResultSchema, BridgeToolSchemas, IdSchema, MemoryNoteSchema, MemorySearchSchema, ProjectNotebookSchema, ProjectToolResultSchemas, ThreadReportSchema, bridgeTools,
@@ -118,7 +120,7 @@ export class ProjectTools implements BridgeScopeTools {
 export type CoordinatorToolsOptions = {
   deviceId: string; deviceName: string;
   threads: Pick<ThreadService, 'start' | 'message' | 'stop' | 'list' | 'read'>;
-  tasks?: ProjectTasks; goals?: ProjectGoals;
+  tasks?: ProjectTasks; goals?: ProjectGoals; daily?: ProjectDailyWork; jobs?: ProjectJobRunner;
   store: Pick<ThreadStore, 'get'>;
   decisions: Pick<DecisionItems, 'ask' | 'withdraw'>;
   pullRequests: Pick<PullRequestTracker, 'fresh'> & Partial<Pick<PullRequestTracker, 'diff' | 'review'>>;
@@ -158,6 +160,10 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
   const turnId = (prefix: string, projectId: string, turn: number, input: unknown) => derivedId(prefix, 'coordinator', projectId, o.deviceId, String(turn), stableJson(input));
   async function call(projectId: string, turn: number, name: ProjectToolName, raw: unknown, signal: AbortSignal): Promise<unknown> {
     switch (name) {
+      case 'jevellan_jobs_list': if (!o.daily) throw new Error('Jobs are unavailable.'); return { schema: 'project-job-list-view-v1', projectId, jobs: await o.daily.jobs(projectId) };
+      case 'jevellan_daily_list': if (!o.daily) throw new Error('Daily work is unavailable.'); return o.daily.view(projectId);
+      case 'jevellan_job_run': { if (!o.daily) throw new Error('Jobs are unavailable.'); const input = raw as Input<typeof name>; return o.daily.runJob(projectId, input.jobId, { schema: 'project-run-request-v1', clientRequestId: turnId('jreq', projectId, turn, input) }); }
+      case 'jevellan_job_runs': { if (!o.jobs) throw new Error('Job receipts are unavailable.'); const input = raw as Input<typeof name>; return { schema: 'project-job-run-list-view-v1', projectId, runs: (await o.jobs.runs(projectId)).filter(run => !input.jobId || run.jobId === input.jobId) }; }
       case 'jevellan_goals_list': { if (!o.goals) throw new Error('Goals are unavailable.'); return o.goals.view(projectId); }
       case 'jevellan_threads_list': {
         const input = raw as Input<typeof name>;

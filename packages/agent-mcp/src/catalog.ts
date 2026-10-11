@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { EffortSchema, IdSchema, IsolationSchema, TaskTypeSchema, TaskUpdateRequestSchema, GoalCreateRequestSchema, GoalUpdateRequestSchema } from '@jevellan/core';
+import { EffortSchema, IdSchema, IsolationSchema, TaskTypeSchema, TaskUpdateRequestSchema, GoalCreateRequestSchema, GoalUpdateRequestSchema, JobCreateRequestSchema, JobUpdateRequestSchema, DailyCreateRequestSchema, DailyUpdateRequestSchema } from '@jevellan/core';
 import { AgentWatchRequestSchema } from './schemas.js';
 
 const autoId = z.union([z.literal('auto'), IdSchema]);
@@ -36,6 +36,15 @@ export const AGENT_OPERATIONS: readonly AgentOperation[] = [
   operation('coordinator_override', 'Override coordinator choices', 'Change runtime/provider, account, model or effort for later coordinator turns. Auto clears a runtime/account/model override; effort auto restores the configured default. Does not move active work.', z.strictObject({ ...project, ...requestId, revision: z.number().int().nonnegative(), ...choice }), false, { idempotent: true }),
   operation('threads_list', 'List project threads', 'List all project jobs/threads, their states, owner devices, choices and conclusions.', z.strictObject(project), true),
   operation('thread_start', 'Queue project task', 'Create a queued session task and return task-receipt-v1. The dispatcher starts its thread under automatic placement and normal resource gates. Use task_read or watch a task target to follow it.', z.strictObject({ ...project, ...requestId, title: z.string().min(1).max(120), task: text, type: TaskTypeSchema.default('feature'), goalId: IdSchema.nullable().default(null), now: z.boolean().default(false), after: z.array(IdSchema).max(10).default([]), needs: z.array(z.string().regex(/^[a-z0-9-]{1,32}$/u)).max(8).default([]), ...placement, note: z.string().max(400).optional() }), false, { idempotent: true }),
+  operation('project_jobs_list', 'List project jobs', 'Read deterministic Projects work.', z.strictObject(project), true),
+  operation('project_job_create', 'Define project job', 'Owner operation: define deterministic Projects work.', JobCreateRequestSchema.omit({ schema: true }).extend(project), false, { idempotent: true }),
+  operation('project_job_update', 'Edit project job', 'Owner operation: edit deterministic Projects work.', JobUpdateRequestSchema.omit({ schema: true }).extend({ ...project, jobId: IdSchema }), false),
+  operation('project_job_run', 'Run project job', 'Queue configured work. Gates and window limits apply.', z.strictObject({ ...project, ...requestId, jobId: IdSchema }), false, { idempotent: true }),
+  operation('project_dailies_list', 'List project dailies', 'Read deterministic Projects work.', z.strictObject(project), true),
+  operation('project_daily_create', 'Define project daily', 'Owner operation: define deterministic Projects work.', DailyCreateRequestSchema.omit({ schema: true }).extend(project), false, { idempotent: true }),
+  operation('project_daily_update', 'Edit project daily', 'Owner operation: edit deterministic Projects work.', DailyUpdateRequestSchema.omit({ schema: true }).extend({ ...project, dailyId: IdSchema }), false),
+  operation('project_daily_run', 'Run project daily', 'Queue configured work. Gates and window limits apply.', z.strictObject({ ...project, ...requestId, dailyId: IdSchema }), false, { idempotent: true }),
+  operation('project_job_runs', 'Read project job receipts', 'Read exact commits, conclusions and redacted logs.', z.strictObject(project), true),
   operation('goals_list', 'Read goals', 'Read owner-defined goals and project-day counts.', z.strictObject(project), true),
   operation('goal_create', 'Create goal', 'Owner operation: create a perpetual goal. Reuse the client request ID on retry.', GoalCreateRequestSchema.omit({ schema: true }).extend(project), false, { idempotent: true }),
   operation('goal_update', 'Edit goal', 'Owner operation: change, pause, reactivate or mark a goal done. Supply its current revision.', GoalUpdateRequestSchema.omit({ schema: true }).extend({ ...project, goalId: IdSchema }), false),

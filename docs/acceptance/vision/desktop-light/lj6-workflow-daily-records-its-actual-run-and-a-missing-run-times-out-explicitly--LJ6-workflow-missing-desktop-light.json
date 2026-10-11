@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ6 workflow daily records its actual run and a missing run times out explicitly",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/screenshots/LJ6-workflow-missing-desktop-light.png",
+  "expected": "the Jevellan web app \"LJ6 workflow missing\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"LJ6 workflow daily records its actual run and a missing run times out explicitly\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The right panel is scrolled, so the 'CONCLUDED 0' section heading is partly cut off under the top header. This is normal scroll clipping and the content is still reachable.",
+      "The 'Missing run' job card shows 'Failed at 02:05 AM', but the chat message says 'timed-out'. The wording is slightly inconsistent, but both say the run did not happen.",
+      "The 'Enabled' checkbox labels sit lower than the 'Run now'/'Edit' buttons in both job cards, so they look slightly out of line."
+    ]
+  }
+}

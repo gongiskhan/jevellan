@@ -1,6 +1,6 @@
 import type { Locator, Page, TestInfo } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
-import { DeviceRosterSchema, ProjectWorkViewSchema, RuntimeListSchema, ThreadViewSchema, type ThreadView } from '../../packages/core/dist/client.js';
+import { DeviceRosterSchema, ProjectDailyListViewSchema, ProjectWorkViewSchema, RuntimeListSchema, TaskListViewSchema, TaskReceiptSchema, ThreadViewSchema, type ThreadView } from '../../packages/core/dist/client.js';
 import { threadDeviceOffline } from '../../packages/projects/dist/copy.js';
 import { expect, test } from './fixtures.js';
 import { expectClearOfComposer, expectNoStaleJump, openSidebar } from './navigation.js';
@@ -283,7 +283,7 @@ test('PJ3 project page opens from the sidebar and the coordinator chat streams',
   } else {
     // Two columns: the chat and the sections in the brief's order, each with its count and its empty line.
     await expect(tabs).toBeHidden();
-    await expect(page.locator('.pw-side .pw-section-heading')).toHaveText(['Waiting for you 0', 'Queue 0', 'Running 0', 'Pull requests 0', 'Concluded 1', 'Goals 0']);
+    await expect(page.locator('.pw-side .pw-section-heading')).toHaveText(['Waiting for you 0', 'Queue 0', 'Running 0', 'Pull requests 0', 'Concluded 1', 'Daily 0', 'Goals 0']);
     await expect(region(page, 'Waiting for you')).toContainText('Nothing waiting.');
     await expect(region(page, 'Running')).toContainText('No threads running.');
     await expect(region(page, 'Pull requests')).toContainText('No open pull requests.');
@@ -1212,5 +1212,70 @@ test('LJ4 owner goals refill into a draft, approve on phone, obey daily caps and
   if (phone(info)) await tap(page, page.getByRole('tab', { name: /^Queue/ }));
   await expect(page.getByRole('group', { name: 'Queue grouping' }).getByRole('button', { name: 'Goals', exact: true })).toHaveAttribute('aria-pressed', 'true');
   expect((await queue()).find(task => task.title === 'Paused goal task')).toMatchObject({ state: 'queued', threadId: null });
+  expect(errors).toEqual([]);
+});
+
+test('LJ5 nightly work serializes exact-commit gates, holds merges and proposes a finding after failure', async ({ page }, info) => {
+  const errors = await begin(page), route = '/api/projects/projects_daily';
+  const prepared = await control('/projects/daily', { schema: 'fixture-daily-control-v1', action: 'prepare' }) as { command: string };
+  const post = async (path: string, data: object) => { const response = await page.request.post(`${route}${path}`, { data }); expect(response.ok(), await response.text()).toBe(true); return response.json(); };
+  const goal = (await post('/goals', { schema: 'goal-create-request-v1', clientRequestId: 'daily_goal', name: 'Hardening through automated tests', motivation: 'Catch regressions before people meet them.', health: 'Findings are resolved and the suite stays green.' })).goal;
+  await openProject(page, 'Projects daily'); if (phone(info)) await tap(page, page.getByRole('tab', { name: /^Queue/ }));
+  await tap(page, page.getByRole('button', { name: 'New job', exact: true }));
+  const dialog = page.getByRole('dialog', { name: 'New job', exact: true });
+  await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill('Full suite'); await dialog.getByRole('textbox', { name: 'Command', exact: true }).fill(prepared.command);
+  await dialog.getByRole('combobox', { name: 'Goal', exact: true }).selectOption(goal.id); await dialog.getByRole('button', { name: 'Save', exact: true }).click(); await expect(dialog).toHaveCount(0);
+  const view = async () => ProjectDailyListViewSchema.parse(await read(page, `${route}/dailies`));
+  const full = (await view()).jobs.find(job => job.name === 'Full suite')!;
+  const deploy = await post('/jobs', { schema: 'job-create-request-v1', clientRequestId: 'daily_deploy', name: 'Deploy', goalId: goal.id, enabled: true, gate: { jobId: full.id }, run: { kind: 'command', command: 'test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"', timeoutMinutes: 1 } });
+  for (const [name, jobId, order] of [['Full suite', full.id, 1], ['Deploy', deploy.id, 2]] as const) await post('/dailies', { schema: 'daily-create-request-v1', clientRequestId: `daily_${order}`, name, goalId: goal.id, order, enabled: true, target: { kind: 'job', jobId } });
+  await post('/dailies', { schema: 'daily-create-request-v1', clientRequestId: 'daily_review', name: 'Review', goalId: null, order: 3, enabled: true, target: { kind: 'session', title: 'Review', type: 'review', brief: 'LJ5 review: inspect yesterday and report done without edits.' } });
+  const candidate = TaskReceiptSchema.parse(await post('/tasks', { schema: 'task-create-request-v1', clientRequestId: 'daily_pr', title: 'Daily merge candidate', brief: 'PJ3: create greeting.txt', type: 'feature' }));
+  const tasks = async () => TaskListViewSchema.parse(await read(page, `${route}/tasks`)).tasks;
+  await expect.poll(async () => (await tasks()).find(task => task.id === candidate.taskId)?.state, LONG).toBe('in-review');
+  const thread = (await tasks()).find(task => task.id === candidate.taskId)!.threadId!;
+  const workView = ProjectWorkViewSchema.parse(await read(page, `${route}/work`)), number = workView.threads.find(row => row.id === thread)!.pr!.number;
+  await control(`/projects/github/${number}`, { schema: 'fixture-pull-change-v1', checks: 'passing', mergeable: 'clean' });
+  await control('/projects/daily', { schema: 'fixture-daily-control-v1', action: 'open' });
+  await expect.poll(async () => (await view()).mergesHeld, LONG).toBe(true);
+  if (phone(info)) await tap(page, page.getByRole('tab', { name: /^Pull requests/ }));
+  const merge = page.locator('.pw-pr').filter({ hasText: 'Daily merge candidate' }).getByRole('button', { name: 'Merge', exact: true });
+  await expect(merge).toBeDisabled(); await expect(merge).toHaveAttribute('title', 'Merges are held while the nightly window runs.');
+  const denied = await page.request.post(`${route}/threads/${thread}/pr/merge`, { data: { schema: 'empty-request-v1' } }); expect(denied.status()).toBe(409);
+  await expect(page.getByText('Nightly window · merges held until the daily tasks finish', { exact: true })).toBeVisible(); await shot(page, 'nightly-merges-held');
+  await control('/projects/daily', { schema: 'fixture-daily-control-v1', action: 'pass' });
+  await expect.poll(async () => (await view()).window?.state, LONG).toBe('finished');
+  const passed = await view(), runs = passed.runs.filter(run => passed.window!.taskIds.includes(run.taskId));
+  expect(runs.map(run => run.conclusion)).toEqual(['passed', 'passed']); expect(runs[0]!.commit).toBe(runs[1]!.commit);
+  await expect(merge).toBeEnabled(); if (phone(info)) await tap(page, page.getByRole('tab', { name: /^Queue/ })); await shot(page, 'nightly-passed');
+  await control('/projects/daily', { schema: 'fixture-daily-control-v1', action: 'prepare' }); await control('/projects/daily', { schema: 'fixture-daily-control-v1', action: 'open' });
+  await expect.poll(async () => (await view()).mergesHeld, LONG).toBe(true); await control('/projects/daily', { schema: 'fixture-daily-control-v1', action: 'fail' });
+  await expect.poll(async () => (await view()).window?.state, LONG).toBe('finished');
+  const failed = await view(); expect(failed.runs.find(run => run.jobId === deploy.id && failed.window!.taskIds.includes(run.taskId))?.summary).toBe('Skipped: Full suite has not passed today.');
+  await expect.poll(async () => (await tasks()).filter(task => task.title === 'Fix the full suite finding' && task.state === 'draft').length, LONG).toBe(1);
+  await shot(page, 'nightly-failed'); if (phone(info)) await tap(page, page.getByRole('tab', { name: /^Waiting/ }));
+  const proposal = page.locator('.pw-proposed .pw-task').filter({ hasText: 'Fix the full suite finding' }); await proposal.locator('summary').click(); await shot(page, 'nightly-finding');
+  expect(errors).toEqual([]);
+});
+
+test('LJ6 workflow daily records its actual run and a missing run times out explicitly', async ({ page }, info) => {
+  const errors = await begin(page), route = '/api/projects/projects_workflows'; await openProject(page, 'Projects workflows');
+  if (phone(info)) await tap(page, page.getByRole('tab', { name: /^Queue/ }));
+  await tap(page, page.getByRole('button', { name: 'New job', exact: true })); const dialog = page.getByRole('dialog', { name: 'New job', exact: true });
+  await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill('Nightly workflow'); await dialog.getByRole('combobox', { name: 'Run', exact: true }).selectOption('github-workflow');
+  await dialog.getByRole('textbox', { name: 'Workflow', exact: true }).fill('nightly.yml'); await dialog.getByRole('spinbutton', { name: 'Timeout in minutes', exact: true }).fill('5');
+  await dialog.getByRole('textbox', { name: 'Required step names', exact: true }).fill('Run full suite'); await dialog.getByRole('button', { name: 'Save', exact: true }).click(); await expect(dialog).toHaveCount(0);
+  await tap(page, page.getByRole('button', { name: 'New daily item', exact: true })); const daily = page.getByRole('dialog', { name: 'New daily item', exact: true });
+  await daily.getByRole('textbox', { name: 'Name', exact: true }).fill('Nightly tests'); await daily.getByRole('combobox', { name: 'Job', exact: true }).selectOption({ label: 'Nightly workflow' }); await daily.getByRole('button', { name: 'Save', exact: true }).click(); await expect(daily).toHaveCount(0);
+  await control('/projects/daily', { schema: 'fixture-daily-control-v1', action: 'workflow' });
+  const row = page.locator('[data-daily-id]').filter({ hasText: 'Nightly tests' }); await row.getByRole('button', { name: 'Run now', exact: true }).click();
+  const view = async () => ProjectDailyListViewSchema.parse(await read(page, `${route}/dailies`));
+  await expect.poll(async () => (await view()).runs[0]?.conclusion, LONG).toBe('passed'); await expect(row).toContainText('Done today'); await row.locator('details summary').click(); await shot(page, 'workflow-passed');
+  const missing = await page.request.post(`${route}/jobs`, { data: { schema: 'job-create-request-v1', clientRequestId: 'missing_workflow', name: 'Missing workflow', goalId: null, enabled: true, gate: null, run: { kind: 'github-workflow', workflow: 'missing.yml', mode: 'watch', timeoutMinutes: 5 } } }); expect(missing.ok()).toBe(true);
+  const definition = await missing.json(); const created = await page.request.post(`${route}/dailies`, { data: { schema: 'daily-create-request-v1', clientRequestId: 'missing_daily', name: 'Missing run', goalId: null, enabled: true, order: 2, target: { kind: 'job', jobId: definition.id } } }); expect(created.ok()).toBe(true);
+  const absent = page.locator('[data-daily-id]').filter({ hasText: 'Missing run' }); await absent.getByRole('button', { name: 'Run now', exact: true }).click();
+  await expect.poll(async () => (await view()).runs.some(run => run.jobId === definition.id && run.phase === 'watching'), LONG).toBe(true);
+  await control('/projects/clock', { schema: 'fixture-project-clock-v1', advanceMinutes: 5 });
+  await expect.poll(async () => (await view()).runs.find(run => run.jobId === definition.id)?.conclusion, LONG).toBe('timed-out'); await expect(absent).toContainText('No run of missing.yml started today.'); await shot(page, 'workflow-missing');
   expect(errors).toEqual([]);
 });

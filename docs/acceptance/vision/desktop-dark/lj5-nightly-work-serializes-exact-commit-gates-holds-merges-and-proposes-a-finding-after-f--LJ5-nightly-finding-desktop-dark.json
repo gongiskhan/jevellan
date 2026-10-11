@@ -1,0 +1,20 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ5 nightly work serializes exact-commit gates, holds merges and proposes a finding after failure",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/screenshots/LJ5-nightly-finding-desktop-dark.png",
+  "expected": "the Jevellan web app \"LJ5 nightly finding\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"LJ5 nightly work serializes exact-commit gates, holds merges and proposes a finding after failure\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Dismiss' button in the 'Last night: 1 of 3 daily tasks passed.' banner sits right up against the banner text, with almost no gap.",
+      "Sidebar session titles like 'Context · J11 memory jour…' and 'Context · Mesh journey fix…' and their subtitles are cut off with an ellipsis. This looks intentional, but the full names can't be read.",
+      "The 'Hardening through automated tests' goal card is cut off by the bottom edge of the right column. It looks like the column scrolls, so this is probably just where the viewport ends.",
+      "The panel shows two identical 'Review — Reviewed yesterday; no additional findings.' entries under CONCLUDED, which looks repetitive.",
+      "Some labels have low contrast against the dark background: the monospace metadata under the CONCLUDED entries, 'Waiting for the coordinator', and 'Some native sessions are unavailable'."
+    ]
+  }
+}

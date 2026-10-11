@@ -1,3 +1,7 @@
+export type GitHubFixtureWorkflow = {
+  repo: string; workflow: string; id: number; html_url: string; head_sha: string; head_branch: string; event: string; status: string; conclusion: string | null; created_at: string; run_started_at?: string;
+  jobs: { id: number; name: string; status: string; conclusion: string | null; logs?: string; steps?: { name: string; status: string; conclusion: string | null }[] }[];
+};
 export type GitHubFixtureChecks = 'pending' | 'passing' | 'passing-status' | 'failing' | 'none'
   | { runs?: { status: string; conclusion: string | null }[]; statuses?: { state: string }[] };
 export type GitHubFixtureMergeable = 'clean' | 'dirty' | 'unknown' | 'unstable';
@@ -14,6 +18,10 @@ export type GitHubFixture = {
   /** Every API request, without the token. Control routes are not recorded. */
   requests: GitHubFixtureRequest[];
   pulls: GitHubFixturePull[];
+  workflows: GitHubFixtureWorkflow[];
+  loseNextDispatchReply(): void;
+  addWorkflow(value: Partial<GitHubFixtureWorkflow>): GitHubFixtureWorkflow;
+  changeWorkflow(id: number, patch: Partial<GitHubFixtureWorkflow>): GitHubFixtureWorkflow;
   /** `repo` defaults to the first configured repository. */
   setChecks(number: number, checks: GitHubFixtureChecks, repo?: string): void;
   setMergeable(number: number, mergeable: GitHubFixtureMergeable, repo?: string): void;

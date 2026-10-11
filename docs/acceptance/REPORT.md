@@ -1136,3 +1136,9 @@ Goals are owner-managed perpetual work purposes. The coordinator reads them and 
 
 
 Phase 5 boundary correction: when the nightly window is disabled, project days begin at midnight in the configured zone. With the window enabled, its closing time defines the boundary. The final owner/API/bridge selection passed 28 cases; the complete backend and browser release gates remain outstanding.
+
+### Decision 647 — Durable Daily work and nightly windows
+
+Snapshot jobs and setup before execution; persist receipts before effects. Commands use fresh detached private-ref worktrees and isolated minimal environments, with bounded redacted tails and local process recovery. Workflow dispatch records its returned run ID using GitHub's return_run_details API; gated dispatch uses a dedicated commit-pinned ref. Required job/step evidence rejects skipped suites. Window documents retain the closing day and immutable task plans so restart repairs partial task creation. Stable event IDs recover notifications; six hours releases holds and cancels unstarted window tasks. Session publication ends a daily turn without requiring its held merge. Derived window IDs and distinct external Projects job names preserve existing hub and conversation-job contracts. Browser and full release gates remain open at this checkpoint.
+
+Phase 6 verification: 130 focused backend cases, typecheck, lint and build passed. LJ5/LJ6 passed eight cases across all four layouts with 24 live vision verdicts and no blocking findings. A desktop panel-height regression found by the journey was repaired and verified. Full affected Projects matrix is still running; final full release and owner live checks are unclaimed.

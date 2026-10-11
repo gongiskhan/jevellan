@@ -269,7 +269,15 @@ test('ledger envelopes are separate from conversation ledgers and payloads are v
 });
 
 test('hub requests map to one collection each and results carry matching revisions', () => {
+  const job = { schema: 'project-job-v1', id: 'pjob_1', projectId: 'project', revision: 0, name: 'Tests', goalId: null, run: { kind: 'command', command: 'true', timeoutMinutes: 1 }, gate: null, enabled: true, createdAt: at, updatedAt: at };
+  const daily = { schema: 'project-daily-v1', id: 'daily_1', projectId: 'project', revision: 0, name: 'Tests', goalId: null, order: 0, target: { kind: 'job', jobId: 'pjob_1' }, enabled: true, createdAt: at, updatedAt: at };
+  const run = { schema: 'project-job-run-v1', id: 'jrun_1', projectId: 'project', revision: 0, jobId: 'pjob_1', taskId: 'task_1', commit: 'a'.repeat(40), deviceId: 'dev_a', projectDay: '2026-10-11', startedAt: at, conclusion: null, summary: '', logTail: '', spec: job.run, baseBranch: 'main', watchAfter: at, phase: 'reserved' };
+  const window = { schema: 'project-window-v1', id: 'window_1', projectId: 'project', revision: 0, date: '2026-10-11', closingProjectDay: '2026-10-10', state: 'open', mergesHeld: true, openedAt: at, taskIds: [], plans: [] };
   const requests: Record<ProjectHubOperation, Record<string, unknown>> = {
+    'jobs-list': { projectId: 'project' }, 'job-get': { jobId: 'pjob_1' }, 'job-put': { job, expectedRevision: 0 },
+    'dailies-list': { projectId: 'project' }, 'daily-get': { dailyId: 'daily_1' }, 'daily-put': { daily, expectedRevision: 0 },
+    'job-runs-list': { projectId: 'project' }, 'job-run-get': { jobRunId: 'jrun_1' }, 'job-run-put': { jobRun: run, expectedRevision: 0 },
+    'windows-list': { projectId: 'project' }, 'window-get': { windowId: 'window_1' }, 'window-put': { window, expectedRevision: 0 },
     'settings-get': { projectId: 'project' }, 'settings-put': { settings: { ...settings, revision: 1 }, expectedRevision: 0, clientRequestId: 'req_1' },
     'coordinator-get': { projectId: 'project' }, 'coordinator-assign': { projectId: 'project', deviceId: 'dev_a', expectedRevision: 0 },
     'coordinator-status-get': { projectId: 'project' }, 'coordinator-status-put': { status },
@@ -292,7 +300,7 @@ test('hub requests map to one collection each and results carry matching revisio
     'release': { projectId: 'project', threadId, id: 'resv_1' }, 'reservations-list': { projectId: 'project' },
     'checkouts-held': { projectId: 'project' },
   };
-  const expected = { settings: ['settings-get', 'settings-put'], coordinators: ['coordinator-get', 'coordinator-assign', 'coordinator-status-get', 'coordinator-status-put'],
+  const expected = { jobs: ['jobs-list', 'job-get', 'job-put'], dailies: ['dailies-list', 'daily-get', 'daily-put'], 'job-runs': ['job-runs-list', 'job-run-get', 'job-run-put'], windows: ['windows-list', 'window-get', 'window-put'], settings: ['settings-get', 'settings-put'], coordinators: ['coordinator-get', 'coordinator-assign', 'coordinator-status-get', 'coordinator-status-put'],
     goals: ['goals-list', 'goal-get', 'goal-put', 'refill-get', 'refill-put'], tasks: ['tasks-list', 'task-get', 'task-put', 'task-history'], threads: ['threads-list', 'thread-get', 'thread-publish', 'review-get', 'review-put'], decisions: ['decisions-list', 'decision-get', 'decision-create', 'decision-withdraw', 'decision-answer'], notebooks: ['notebook-get', 'notebook-put'],
     overrides: ['override-add', 'overrides-recent'], envelopes: ['envelope-put', 'envelopes-pending', 'envelope-ack'], work: ['work-summaries'],
     mail: ['mail-send', 'mail-inbox', 'mail-read'], reservations: ['reserve', 'release', 'reservations-list'], checkouts: ['checkouts-held'] };
@@ -303,7 +311,7 @@ test('hub requests map to one collection each and results carry matching revisio
     expect(ProjectHubCollectionSchema.options).toContain(collectionOf(operation));
     expect((expected as Record<string, string[]>)[collectionOf(operation)]).toContain(operation);
   }
-  expect(ProjectHubCollectionSchema.options).toEqual(['settings', 'coordinators', 'threads', 'decisions', 'notebooks', 'overrides', 'envelopes', 'work', 'mail', 'reservations', 'checkouts', 'tasks', 'goals']);
+  expect(ProjectHubCollectionSchema.options).toEqual(['settings', 'coordinators', 'threads', 'decisions', 'notebooks', 'overrides', 'envelopes', 'work', 'mail', 'reservations', 'checkouts', 'tasks', 'goals', 'jobs', 'dailies', 'job-runs', 'windows']);
   // The Projects list in one read (D267): pages of at most 100 summaries; a coordinator carries its device's presence or null.
   expect(isProjectHubRead('work-summaries')).toBe(true);
   const summary = { schema: 'project-work-summary-v1', projectId: 'project', name: 'Site', waiting: 1, running: 2, inReview: 0,

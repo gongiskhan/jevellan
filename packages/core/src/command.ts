@@ -1,12 +1,19 @@
-import { spawnGroup, terminateGroup } from './process-group.js';
+import { spawnGroup, terminateGroup, type NativeProcess } from './process-group.js';
 import { SecretRedactor } from './environment.js';
 
 export type CommandResult = { code: number; stdout: string; stderr: string; timedOut: boolean };
-export async function runOwnedCommand(command: string, args: string[], options: { cwd: string; env?: Record<string, string>; timeoutMs?: number; redactor?: SecretRedactor; redactOutput?: boolean; input?: string; signal?: AbortSignal }): Promise<CommandResult> {
+export async function runOwnedCommand(command: string, args: string[], options: { cwd: string; env?: Record<string, string>; timeoutMs?: number; redactor?: SecretRedactor; redactOutput?: boolean; input?: string; signal?: AbortSignal; outputLimitBytes?: number; onProcess?(native: NativeProcess): void | Promise<void> }): Promise<CommandResult> {
   options.signal?.throwIfAborted();
   const { child, native } = await spawnGroup(command, args, { cwd: options.cwd, env: options.env ?? {} });
   const stdout: Buffer[] = []; const stderr: Buffer[] = [];
-  child.stdout.on('data', (chunk: Buffer) => stdout.push(chunk)); child.stderr.on('data', (chunk: Buffer) => stderr.push(chunk)); child.stdin.on('error', () => {}); child.stdin.end(options.input);
+  const collect = (chunks: Buffer[], chunk: Buffer) => {
+    chunks.push(chunk);
+    if (options.outputLimitBytes && chunks.reduce((sum, entry) => sum + entry.length, 0) > options.outputLimitBytes) {
+      const text = (options.redactor ?? new SecretRedactor()).text(Buffer.concat(chunks).toString('utf8'));
+      chunks.splice(0, chunks.length, Buffer.from(text).subarray(-options.outputLimitBytes));
+    }
+  };
+  child.stdout.on('data', (chunk: Buffer) => collect(stdout, chunk)); child.stderr.on('data', (chunk: Buffer) => collect(stderr, chunk)); child.stdin.on('error', () => {}); child.stdin.end(options.input);
   let timedOut = false; let cleanup: Promise<void> | undefined; let cleanupError: unknown;
   let fail!: (error: Error) => void;
   const completion = new Promise<number>((resolve, reject) => {
@@ -17,7 +24,7 @@ export async function runOwnedCommand(command: string, args: string[], options: 
   options.signal?.addEventListener('abort', stop, { once: true });
   if (options.signal?.aborted) stop();
   let code: number;
-  try { code = await completion; }
+  try { await options.onProcess?.(native); code = await completion; }
   finally { clearTimeout(timer); options.signal?.removeEventListener('abort', stop); await cleanup; await terminateGroup(native); }
   if (cleanupError) throw new Error('Command process cleanup could not be confirmed.');
   options.signal?.throwIfAborted();

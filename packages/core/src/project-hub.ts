@@ -1,3 +1,4 @@
+import type { ProjectJob, ProjectDaily, ProjectJobRun, ProjectWindow } from './project-daily-schemas.js';
 import type {
   DecisionAnswer, FileReservation, PlacementOverride, ProjectCoordinator, ProjectCoordinatorStatus, ProjectDecision, ProjectEnvelope, ProjectMail, ProjectNotebook, ProjectWorkSettings, PullRequestReview, ThreadIndex,
 } from './project-schemas.js';
@@ -21,6 +22,18 @@ export type ReserveOutcome = { granted: true; reservation: Stored<FileReservatio
  * Phase 6 adds mail, reservations and held checkouts.
  */
 export interface ProjectHub {
+  jobs(projectId: string, after?: string): Promise<{ records: ProjectJob[]; next: string | null }>;
+  job(jobId: string): Promise<Stored<ProjectJob> | null>;
+  putJob(job: ProjectJob, expectedRevision: number): Promise<Stored<ProjectJob>>;
+  dailies(projectId: string, after?: string): Promise<{ records: ProjectDaily[]; next: string | null }>;
+  daily(dailyId: string): Promise<Stored<ProjectDaily> | null>;
+  putDaily(daily: ProjectDaily, expectedRevision: number): Promise<Stored<ProjectDaily>>;
+  jobRuns(projectId: string, after?: string): Promise<{ records: ProjectJobRun[]; next: string | null }>;
+  jobRun(jobRunId: string): Promise<Stored<ProjectJobRun> | null>;
+  putJobRun(jobRun: ProjectJobRun, expectedRevision: number): Promise<Stored<ProjectJobRun>>;
+  windows(projectId: string, after?: string): Promise<{ records: ProjectWindow[]; next: string | null }>;
+  window(windowId: string): Promise<Stored<ProjectWindow> | null>;
+  putWindow(window: ProjectWindow, expectedRevision: number): Promise<Stored<ProjectWindow>>;
   goals(projectId: string, after?: string): Promise<{ records: ProjectGoal[]; next: string | null }>;
   goal(goalId: string): Promise<Stored<ProjectGoal> | null>;
   putGoal(goal: ProjectGoal, expectedRevision: number): Promise<Stored<ProjectGoal>>;

@@ -1,3 +1,4 @@
+import { JobCreateRequestSchema, JobUpdateRequestSchema, DailyCreateRequestSchema, DailyUpdateRequestSchema, ProjectRunRequestSchema } from '@jevellan/core';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import {
   CoordinatorMessageReceiptSchema, CoordinatorMessageRequestSchema, DecisionAnswerRequestSchema, DecisionAnsweredViewSchema, DeviceOriginSchema, EmptySchema, ErrorDocumentSchema, IdSchema,
@@ -15,16 +16,25 @@ import { json, requestBody } from './http.js';
 import { OWNER_REQUEST_TIMEOUT_MS, forwardOwner } from './owner-proxy.js';
 
 export type ProjectWorkRouteName = 'list' | 'view' | 'events' | 'message' | 'stop' | 'fresh' | 'move' | 'settings' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
-  | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'pr-merge' | 'pr-refresh' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
+  | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'pr-merge' | 'pr-refresh' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'job-list' | 'job-create' | 'job-update' | 'job-run' | 'job-runs' | 'daily-list' | 'daily-create' | 'daily-update' | 'daily-run' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
 /** Where a route runs: this device (`local`), the project's coordinator device, the thread's owner device, or any device. */
-export type ProjectWorkRoute = { name: ProjectWorkRouteName; projectId?: string; threadId?: string; decisionId?: string; taskId?: string; goalId?: string;
+export type ProjectWorkRoute = { name: ProjectWorkRouteName; projectId?: string; threadId?: string; decisionId?: string; taskId?: string; goalId?: string; jobId?: string; dailyId?: string;
   target: 'local' | 'coordinator' | 'owner' | 'any'; stream?: boolean };
-type IdName = 'projectId' | 'threadId' | 'decisionId' | 'taskId' | 'goalId';
+type IdName = 'projectId' | 'threadId' | 'decisionId' | 'taskId' | 'goalId' | 'jobId' | 'dailyId';
 /** `ids` names the captured ids in order (default project then thread); `stream` marks the event stream. */
 type Row = { name: ProjectWorkRouteName; pattern: RegExp; methods: readonly ('GET' | 'POST' | 'PUT')[]; target: ProjectWorkRoute['target']; ids?: readonly IdName[]; stream?: true };
 
 // The closed route table (brief 11, design 2.10). Paths are matched whole; ids are validated after a match.
 const rows: readonly Row[] = [
+  { name: 'job-list', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/jobs$/, methods: ['GET'], target: 'any' },
+  { name: 'job-create', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/jobs$/, methods: ['POST'], target: 'coordinator' },
+  { name: 'job-update', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/jobs\/([A-Za-z0-9_-]+)\/edit$/, methods: ['POST'], target: 'any', ids: ['projectId', 'jobId'] },
+  { name: 'job-run', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/jobs\/([A-Za-z0-9_-]+)\/run$/, methods: ['POST'], target: 'coordinator', ids: ['projectId', 'jobId'] },
+  { name: 'daily-list', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/dailies$/, methods: ['GET'], target: 'any' },
+  { name: 'daily-create', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/dailies$/, methods: ['POST'], target: 'coordinator' },
+  { name: 'daily-update', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/dailies\/([A-Za-z0-9_-]+)\/edit$/, methods: ['POST'], target: 'any', ids: ['projectId', 'dailyId'] },
+  { name: 'daily-run', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/dailies\/([A-Za-z0-9_-]+)\/run$/, methods: ['POST'], target: 'coordinator', ids: ['projectId', 'dailyId'] },
+  { name: 'job-runs', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/job-runs$/, methods: ['GET'], target: 'any' },
   { name: 'goal-list', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/goals$/, methods: ['GET'], target: 'any' },
   { name: 'goal-create', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/goals$/, methods: ['POST'], target: 'coordinator' },
   { name: 'goal-update', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/goals\/([A-Za-z0-9_-]+)\/edit$/, methods: ['POST'], target: 'any', ids: ['projectId', 'goalId'] },
@@ -58,7 +68,7 @@ const rows: readonly Row[] = [
  * Requests carrying a client id repeat safely, so a hub outage during them is reported as retryable (settings only when the body has
  * one); so does Move coordinator here, whose repeat completes the first one (D269).
  */
-const withClientId = new Set<ProjectWorkRouteName>(['message', 'move', 'thread-create', 'thread-message', 'thread-override', 'answer', 'task-create', 'goal-create']);
+const withClientId = new Set<ProjectWorkRouteName>(['message', 'move', 'thread-create', 'thread-message', 'thread-override', 'answer', 'task-create', 'goal-create', 'job-create', 'daily-create', 'job-run', 'daily-run']);
 const failure = (message: string, status: number) => Object.assign(new Error(message), { status });
 const API_PREFIX = '/api/projects/';
 /** UI-proxied requests from another device (phase 5, D41, D266): the owner and coordinator routes of the table. */
@@ -192,7 +202,18 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
     if (caller.peer && coordinator !== app.device.deviceId) throw failure(COORDINATOR_NOT_HERE, 404);
     if (coordinator !== null && coordinator !== app.device.deviceId) { await proxy(app, request, response, url, route, coordinator, caller); return true; }
   }
+  if (route.target === 'coordinator' && /^(job|daily)-(create|run)$/u.test(route.name)) await work.prepareDailyWork(projectId);
   switch (route.name) {
+    case 'job-list': send({ schema: 'project-job-list-view-v1', projectId, jobs: await work.daily.jobs(projectId) }); return true;
+    case 'job-create': send(await work.daily.createJob(projectId, JobCreateRequestSchema.parse(await requestBody(request))), 201); return true;
+    case 'job-update': send(await work.daily.updateJob(projectId, route.jobId!, JobUpdateRequestSchema.parse(await requestBody(request)))); return true;
+    case 'job-run': send(await work.daily.runJob(projectId, route.jobId!, ProjectRunRequestSchema.parse(await requestBody(request))), 202); return true;
+    case 'job-runs': send({ schema: 'project-job-run-list-view-v1', projectId, runs: await work.jobs.runs(projectId) }); return true;
+    case 'daily-list': send(await work.daily.view(projectId)); return true;
+    case 'daily-create': send(await work.daily.createDaily(projectId, DailyCreateRequestSchema.parse(await requestBody(request))), 201); return true;
+    case 'daily-update': send(await work.daily.updateDaily(projectId, route.dailyId!, DailyUpdateRequestSchema.parse(await requestBody(request)))); return true;
+    case 'daily-run': send(await work.daily.runDaily(projectId, route.dailyId!, ProjectRunRequestSchema.parse(await requestBody(request))), 202); return true;
+
     case 'goal-list': send(await work.goalList(projectId)); return true;
     case 'goal-create': send(await work.createGoal(projectId, GoalCreateRequestSchema.parse(await requestBody(request))), 201); return true;
     case 'goal-update': send(await work.updateGoal(projectId, route.goalId!, GoalUpdateRequestSchema.parse(await requestBody(request)))); return true;

@@ -1,3 +1,5 @@
+import { ProjectDailyWork } from './daily.js';
+import { ProjectJobRunner } from './job-runner.js';
 import { join } from 'node:path';
 import { existsSync } from 'node:fs';
 import { deviceAllowsWork } from '@jevellan/core';
@@ -97,6 +99,7 @@ export class ProjectWork {
   readonly threads: ThreadService; readonly decisions: DecisionItems; readonly tracker: PullRequestTracker; readonly views: ProjectViews;
   readonly admission: Admission; readonly transcripts: ThreadTranscripts;
   readonly apps: ProjectApps;
+  readonly daily: ProjectDailyWork; readonly jobs: ProjectJobRunner;
   readonly goals: ProjectGoals; readonly tasks: ProjectTasks; readonly dispatcher: ProjectDispatcher;
   /** Mail and reservations between main threads (brief 5.11, 7.2). */
   readonly mail: MailService;
@@ -175,6 +178,7 @@ export class ProjectWork {
         id: `cev_${task.id}_${task.revision}`, at: task.updatedAt }) });
     this.goals = new ProjectGoals({ hub: o.hub, tasks: this.tasks, redactor: o.redactor, now, settings: projectId => this.admission.settings(projectId),
       event: (projectId, event) => delivery.toCoordinator(projectId, event), changed: () => { void this.#sweepTasks().catch(() => undefined); },
+      windowOpen: projectId => this.daily.mergesHeld(projectId),
       available: async projectId => {
         const coordinator = this.coordinators.get(projectId), state = coordinator.state();
         if (state.state !== 'idle' || state.queue.length || state.failedTurnsInARow >= 2 || coordinator.busy) return false;
@@ -203,16 +207,21 @@ export class ProjectWork {
         },
         runtimeName: (runtime) => o.runtimes.get(runtime)?.displayName ?? runtime, enterOperation: o.enterOperation,
         timers: { threadTurnTimeoutMs: timers.threadTurnTimeoutMs, setupTimeoutMs: timers.setupTimeoutMs }, now } });
+    this.jobs = new ProjectJobRunner({ homes: o.homes, hub: o.hub, tasks: this.tasks, git, github, deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, now,
+      project: id => this.#project(id), settings: id => this.admission.settings(id), baseBranch: repo => worktrees.baseBranch(repo), event: (id, event) => delivery.toCoordinator(id, event),
+      windowOpened: async id => (await this.daily.window(id))?.openedAt, day: id => this.daily.day(id), dayStart: (id, day) => this.daily.dayStart(id, day), changed: () => { void this.#sweepTasks().catch(() => undefined); } });
+    this.daily = new ProjectDailyWork({ hub: o.hub, tasks: this.tasks, runner: this.jobs, redactor: o.redactor, now, deviceId: o.deviceId, settings: id => this.admission.settings(id),
+      validateGoal: async (id, goalId) => { if (goalId) await this.goals.read(id, goalId); }, event: (id, event) => delivery.toCoordinator(id, event), changed: () => { void this.#sweepTasks().catch(() => undefined); } });
     this.dispatcher = new ProjectDispatcher({ tasks: this.tasks, threads: this.threads, deviceId: o.deviceId,
       text: async task => {
         const goal = task.goalId ? await this.goals.read(task.projectId, task.goalId) : null;
         const brief = `${task.brief}${goal ? `\n\nGoal: ${goal.name}. Why it matters: ${goal.motivation}` : ''}\n\nTask type: ${task.type}.`, settings = await this.admission.settings(task.projectId);
         return { brief, assembled: [brief, settings.threadRules ? `Rules for every thread:\n${settings.threadRules}` : ''].filter(Boolean).join('\n\n') };
-      }, eligible: (task, tasks) => this.goals.eligible(task, tasks), event: (projectId, event) => delivery.toCoordinator(projectId, event) });
+      }, job: task => this.jobs.start(task), eligible: async (task, tasks) => await this.daily.eligible(task, tasks) && await this.goals.eligible(task, tasks), event: (projectId, event) => delivery.toCoordinator(projectId, event) });
     this.tracker = new PullRequestTracker({ threads: this.store, github, git, worktrees, project: (projectId) => this.#project(projectId),
       toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event),
       transition: async (threadId, apply) => { const runner = this.threads.runner(threadId); if (runner) await runner.transition(apply); else await apply(); },
-      hub: o.hub, deviceId: o.deviceId, reviewEnabled: async projectId => (await this.admission.settings(projectId)).coordinatorReview,
+      hub: o.hub, deviceId: o.deviceId, assertMerge: id => this.daily.assertMerge(id), reviewEnabled: async projectId => (await this.admission.settings(projectId)).coordinatorReview,
       redactor: o.redactor, now, pollMs: timers.prPollMs, periodic: timers.periodic });
     this.outbox = new Outbox({ paths: this.paths, hub: o.hub, deviceId: o.deviceId, redactor: o.redactor, timers,
       delivered: (envelope) => { if (envelope.targetDeviceId === o.deviceId) this.relayArrived(); } });
@@ -250,7 +259,7 @@ export class ProjectWork {
   }
   /** Coordinator tool handlers (brief 7.1), built on first use because the thread service and the tracker come after the coordinators. Memory is read-only. */
   #coordinatorTools(): CoordinatorToolHandlers {
-    return this.#tools ??= coordinatorToolHandlers({ deviceId: this.#o.deviceId, deviceName: this.#o.deviceName, threads: this.threads, tasks: this.tasks, goals: this.goals, store: this.store, decisions: this.decisions,
+    return this.#tools ??= coordinatorToolHandlers({ deviceId: this.#o.deviceId, deviceName: this.#o.deviceName, threads: this.threads, tasks: this.tasks, goals: this.goals, daily: this.daily, jobs: this.jobs, store: this.store, decisions: this.decisions,
       pullRequests: this.tracker, hub: this.#o.hub, ledgers: this.ledgers, mail: this.mail, roster: this.#o.roster, now: () => this.#timers.now(),
       memory: async (projectId) => this.#o.memory.project(await this.#project(projectId), this.#o.deviceId, () => { throw new Error(COORDINATOR_MEMORY_READ_ONLY); }) });
   }
@@ -332,7 +341,7 @@ export class ProjectWork {
     if (!this.#started || this.#closing || !deviceAllowsWork(this.#o.homes)) return;
     try {
       for (const { project } of await this.#o.projects.list()) {
-        if ((await this.#o.hub.coordinator(project.id))?.document.deviceId === this.#o.deviceId) { await this.dispatcher.sweep(project.id); await this.goals.sweep(project.id); }
+        if ((await this.#o.hub.coordinator(project.id))?.document.deviceId === this.#o.deviceId) { await this.daily.sweep(project.id); await this.dispatcher.sweep(project.id); await this.goals.sweep(project.id); }
       }
     } catch (error) { if (!(error instanceof HubUnavailable)) throw error; }
   }
@@ -340,7 +349,7 @@ export class ProjectWork {
   async idle(projectId?: string): Promise<void> {
     await this.ready;
     for (let quiet = 0; quiet < 2;) {
-      await delay(20); quiet = this.threads.busy(projectId) || this.dispatcher.busy(projectId) || this.coordinators.busy(projectId) || this.outbox.busy || this.inbox.busy ? 0 : quiet + 1;
+      await delay(20); quiet = this.jobs.busy(projectId) || this.threads.busy(projectId) || this.dispatcher.busy(projectId) || this.coordinators.busy(projectId) || this.outbox.busy || this.inbox.busy ? 0 : quiet + 1;
     }
   }
   /** Stops timers, terminates every running turn (shutdown intent) and drains; thread states are never rewritten (D24). */
@@ -354,6 +363,7 @@ export class ProjectWork {
       await this.coordinators.close();
       await this.threads.close();
       await this.dispatcher.close();
+      await this.jobs.close();
       await this.apps.close();
       await this.tracker.close();
       await this.#publisher.close();
@@ -364,6 +374,7 @@ export class ProjectWork {
   // Browser and API operations. Refusals throw Error(sentence) with a status.
   list(): Promise<ProjectWorkListView> { return this.views.list(); }
   async goalList(projectId: string) { await this.#project(projectId); return this.goals.view(projectId); }
+  async prepareDailyWork(projectId: string): Promise<void> { await this.#coordinatorHere(projectId); }
   async createGoal(projectId: string, raw: unknown) { await this.#coordinatorHere(projectId); return this.goals.create(projectId, raw); }
   async updateGoal(projectId: string, goalId: string, raw: unknown) { await this.#project(projectId); return this.goals.update(projectId, goalId, raw); }
   async taskList(projectId: string) { await this.#project(projectId); return TaskListViewSchema.parse({ schema: 'task-list-view-v1', projectId, tasks: await this.tasks.list(projectId) }); }

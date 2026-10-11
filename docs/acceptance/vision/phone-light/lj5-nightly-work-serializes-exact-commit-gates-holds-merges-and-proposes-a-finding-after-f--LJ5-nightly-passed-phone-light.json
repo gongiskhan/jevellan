@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ5 nightly work serializes exact-commit gates, holds merges and proposes a finding after failure",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/LJ5-nightly-passed-phone-light.png",
+  "expected": "the Jevellan web app \"LJ5 nightly passed\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"LJ5 nightly work serializes exact-commit gates, holds merges and proposes a finding after failure\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Pull requests' tab is clipped at the right edge of the tab row. This is probably a horizontally scrollable tab strip, but nothing on screen shows that more tabs are available.",
+      "The 'Enabled' checkbox sits above its label instead of next to it, so it lines up awkwardly with the Run now and Edit buttons.",
+      "The 'Project day: 2026-10-12' line is left-aligned without the inset that other section content has."
+    ]
+  }
+}

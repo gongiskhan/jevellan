@@ -225,7 +225,7 @@ export function showSent(sent: { known: readonly string[] } | undefined, open: r
 }
 
 const TOOL_ICONS: Record<string, IconName> = {
-  jevellan_goals_list: 'search', jevellan_tasks_list: 'thread', jevellan_task_create: 'plus', jevellan_task_update: 'settings', jevellan_task_cancel: 'stop', jevellan_threads_list: 'thread', jevellan_thread_start: 'plus', jevellan_thread_message: 'message', jevellan_thread_read: 'search',
+  jevellan_jobs_list: 'search', jevellan_job_runs: 'search', jevellan_daily_list: 'search', jevellan_job_run: 'plus', jevellan_goals_list: 'search', jevellan_tasks_list: 'thread', jevellan_task_create: 'plus', jevellan_task_update: 'settings', jevellan_task_cancel: 'stop', jevellan_threads_list: 'thread', jevellan_thread_start: 'plus', jevellan_thread_message: 'message', jevellan_thread_read: 'search',
   jevellan_thread_stop: 'stop', jevellan_ask_user: 'why', jevellan_withdraw_question: 'close', jevellan_notebook_read: 'file',
   jevellan_notebook_write: 'file', jevellan_pr_status: 'pull-request', jevellan_pr_diff: 'file', jevellan_pr_review: 'pull-request', jevellan_mail_send: 'message', memory_search: 'search', memory_read: 'file',
 };
@@ -445,6 +445,9 @@ function eventCard(event: Exclude<CoordinatorEvent, { kind: 'user-message' }>, t
   const name = (threadId: string) => { const title = titles(threadId); return title ? copy.quotedTitle(title) : copy.UNKNOWN_THREAD_NAME; };
   const text = copy.eventCopy;
   switch (event.kind) {
+    case 'job-finished': return card(`Job "${event.name}" ${event.conclusion}`, undefined, `${event.commit.slice(0, 7)} · ${event.summary}`);
+    case 'window-opened': return card('Nightly window opened', undefined, `${event.pending} daily tasks pending. Merges are held.`);
+    case 'window-finished': return card('Nightly window finished', undefined, event.outcome);
     case 'goal-refill': return card('Goals need work', undefined, event.goals.map(goal => `${goal.name}: ${goal.refillsToday} refilled today of ${goal.cap}`).join('\n'));
     case 'thread-report': {
       const status = { progress: text.reportProgress, done: text.reportDone, 'needs-decision': text.reportDecision, blocked: text.reportBlocked }[event.report.status];

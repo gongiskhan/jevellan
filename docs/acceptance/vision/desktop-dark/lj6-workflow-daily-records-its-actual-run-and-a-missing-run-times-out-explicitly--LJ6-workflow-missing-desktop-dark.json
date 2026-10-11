@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ6 workflow daily records its actual run and a missing run times out explicitly",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/screenshots/LJ6-workflow-missing-desktop-dark.png",
+  "expected": "the Jevellan web app \"LJ6 workflow missing\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"LJ6 workflow daily records its actual run and a missing run times out explicitly\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The right panel is scrolled, so a section heading at the top ('CONCLUDED 0') is half hidden under the header bar",
+      "The 'Enabled' checkbox sits above its label instead of next to it, so it looks misaligned with the Run now/Edit buttons",
+      "Job names in the chat ('Nightly workflow', 'Missing workflow') don't match the card titles ('Nightly tests', 'Missing run')",
+      "The 'Open workflow run' link is bright pink, so it stands out from the rest of the dark theme"
+    ]
+  }
+}

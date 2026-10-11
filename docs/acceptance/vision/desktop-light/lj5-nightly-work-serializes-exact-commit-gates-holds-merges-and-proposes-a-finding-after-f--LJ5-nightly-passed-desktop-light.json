@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ5 nightly work serializes exact-commit gates, holds merges and proposes a finding after failure",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/screenshots/LJ5-nightly-passed-desktop-light.png",
+  "expected": "the Jevellan web app \"LJ5 nightly passed\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"LJ5 nightly work serializes exact-commit gates, holds merges and proposes a finding after failure\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Dismiss' button in the 'Last night: 3 of 3 daily tasks passed.' banner sits almost flush against the end of the sentence, with no space between them.",
+      "The session titles and metadata lines in the left sidebar are cut short with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Mesh journey fix…').",
+      "The right-hand Daily panel runs past the bottom of the viewport. The 'Deploy' card is cut off partway down, so the user has to scroll to see the rest.",
+      "The Daily cards still read 'Not run today' even though the banner and the 'Nightly window finished' timeline entry say all daily tasks passed or are done. This looks inconsistent, but nothing is broken visually."
+    ]
+  }
+}

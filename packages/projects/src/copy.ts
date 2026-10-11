@@ -121,6 +121,9 @@ export function eventLine(event: CoordinatorEvent, context: EventLineContext): s
     }
     case 'pr-update': return `[PR #${event.prNumber} "${title(event.threadId)}"] ${event.change === 'conflict' ? `has conflicts with ${context.base}` : PR_CHANGES[event.change]}`;
     case 'pr-ready-for-review': return `[PR #${event.prNumber} "${title(event.threadId)}" on ${event.commit.slice(0, 7)}] ready for coordinator review`;
+    case 'job-finished': return `[job "${event.name}" ${event.conclusion === 'timed-out' ? 'timed out' : event.conclusion === 'skipped' ? 'was skipped' : event.conclusion} on ${event.commit.slice(0, 7)}] ${event.summary}`;
+    case 'window-opened': return `[nightly window opened: ${event.pending} daily tasks pending]`;
+    case 'window-finished': return `[nightly window finished] ${event.outcome}`;
     case 'goal-refill': return `[goals that need work: ${event.goals.map(goal => `"${goal.name}" (refills today ${goal.refillsToday} of ${goal.cap})`).join('; ')}]`;
     case 'task-reviewed': return `[task "${event.title}" ${event.outcome} by the owner]`;
     case 'task-not-started': return `[task "${event.title}" not started] ${event.reason}`;
@@ -372,6 +375,10 @@ export function coordinatorToolSummary(tool: string, input: unknown, outcome: To
   const thread = `"${title ?? UNKNOWN_THREAD}"`;
   const line = (done: string, attempt: string) => (outcome.ok ? done : `Could not ${attempt}: ${firstSentence(outcome.error)}`).slice(0, 400);
   switch (tool) {
+    case 'jevellan_jobs_list': return line('Read jobs', 'read jobs');
+    case 'jevellan_job_runs': return line('Read job runs', 'read job runs');
+    case 'jevellan_daily_list': return line('Read daily work', 'read daily work');
+    case 'jevellan_job_run': return line('Queued job', 'queued a job');
     case 'jevellan_goals_list': return line('Read goals', 'read goals');
     case 'jevellan_threads_list': return line('Listed threads', 'list threads');
     case 'jevellan_tasks_list': return line('Listed tasks', 'list tasks');

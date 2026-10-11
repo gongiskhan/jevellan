@@ -1,3 +1,4 @@
+import { ProjectJobSchema, ProjectDailySchema, ProjectJobRunSchema, ProjectWindowSchema } from './project-daily-schemas.js';
 import { z } from 'zod';
 import {
   DecisionAnswerSchema, FileReservationSchema, PlacementOverrideSchema, ProjectCoordinatorSchema, ProjectCoordinatorStatusSchema, ProjectDecisionSchema, ProjectEnvelopeSchema, ProjectMailSchema,
@@ -12,7 +13,7 @@ import { ProjectGoalSchema, ProjectRefillStateSchema } from './project-goal-sche
 // Members reach project hub state through POST /hub/mesh/projects/<collection> with operation-discriminated bodies (D7).
 // The main isolation phase adds the held checkouts read (6).
 export const ProjectHubCollectionSchema = z.enum(['settings', 'coordinators', 'threads', 'decisions', 'notebooks', 'overrides',
-  'envelopes', 'work', 'mail', 'reservations', 'checkouts', 'tasks', 'goals']);
+  'envelopes', 'work', 'mail', 'reservations', 'checkouts', 'tasks', 'goals', 'jobs', 'dailies', 'job-runs', 'windows']);
 export type ProjectHubCollection = z.infer<typeof ProjectHubCollectionSchema>;
 export const PROJECT_HUB_PAGE = 100;
 /** A pending-envelope page also stops near this many serialized bytes (at least one envelope), under the member's 2 MiB reply cap (D260). */
@@ -50,6 +51,18 @@ const project = { projectId: IdSchema };
 const page = { projectId: IdSchema, after: IdSchema.optional() };
 const expectedRevision = z.number().int().nonnegative();
 export const ProjectHubRequestSchema = z.discriminatedUnion('operation', [
+  z.strictObject({ ...request, operation: z.literal('jobs-list'), ...page }),
+  z.strictObject({ ...request, operation: z.literal('job-get'), jobId: IdSchema }),
+  z.strictObject({ ...request, operation: z.literal('job-put'), job: ProjectJobSchema, expectedRevision }),
+  z.strictObject({ ...request, operation: z.literal('dailies-list'), ...page }),
+  z.strictObject({ ...request, operation: z.literal('daily-get'), dailyId: IdSchema }),
+  z.strictObject({ ...request, operation: z.literal('daily-put'), daily: ProjectDailySchema, expectedRevision }),
+  z.strictObject({ ...request, operation: z.literal('job-runs-list'), ...page }),
+  z.strictObject({ ...request, operation: z.literal('job-run-get'), jobRunId: IdSchema }),
+  z.strictObject({ ...request, operation: z.literal('job-run-put'), jobRun: ProjectJobRunSchema, expectedRevision }),
+  z.strictObject({ ...request, operation: z.literal('windows-list'), ...page }),
+  z.strictObject({ ...request, operation: z.literal('window-get'), windowId: IdSchema }),
+  z.strictObject({ ...request, operation: z.literal('window-put'), window: ProjectWindowSchema, expectedRevision }),
   z.strictObject({ ...request, operation: z.literal('goals-list'), ...page }),
   z.strictObject({ ...request, operation: z.literal('goal-get'), goalId: IdSchema }),
   z.strictObject({ ...request, operation: z.literal('goal-put'), goal: ProjectGoalSchema, expectedRevision }),
@@ -99,6 +112,10 @@ export const ProjectHubRequestSchema = z.discriminatedUnion('operation', [
 export type ProjectHubRequest = z.infer<typeof ProjectHubRequestSchema>;
 export type ProjectHubOperation = ProjectHubRequest['operation'];
 const collections = {
+  'jobs-list': 'jobs', 'job-get': 'jobs', 'job-put': 'jobs',
+  'dailies-list': 'dailies', 'daily-get': 'dailies', 'daily-put': 'dailies',
+  'job-runs-list': 'job-runs', 'job-run-get': 'job-runs', 'job-run-put': 'job-runs',
+  'windows-list': 'windows', 'window-get': 'windows', 'window-put': 'windows',
   'goals-list': 'goals', 'goal-get': 'goals', 'goal-put': 'goals', 'refill-get': 'goals', 'refill-put': 'goals',
   'tasks-list': 'tasks', 'task-get': 'tasks', 'task-put': 'tasks', 'task-history': 'tasks',
   'settings-get': 'settings', 'settings-put': 'settings',
@@ -118,6 +135,10 @@ const collections = {
 export function collectionOf(operation: ProjectHubOperation): ProjectHubCollection { return collections[operation]; }
 // Every operation is classified, so an operation added by a later phase cannot skip the lifecycle gate unnoticed.
 const access = {
+  'jobs-list': 'read', 'job-get': 'read', 'job-put': 'write',
+  'dailies-list': 'read', 'daily-get': 'read', 'daily-put': 'write',
+  'job-runs-list': 'read', 'job-run-get': 'read', 'job-run-put': 'write',
+  'windows-list': 'read', 'window-get': 'read', 'window-put': 'write',
   'goals-list': 'read', 'goal-get': 'read', 'goal-put': 'write', 'refill-get': 'read', 'refill-put': 'write',
   'tasks-list': 'read', 'task-get': 'read', 'task-put': 'write', 'task-history': 'read',
   'settings-get': 'read', 'settings-put': 'write',
@@ -144,6 +165,18 @@ function stored<T extends z.ZodType<{ revision: number }>>(document: T) {
 const result = { schema: z.literal('project-hub-result-v1') };
 const records = <T extends z.ZodType>(document: T) => ({ records: z.array(document).max(PROJECT_HUB_PAGE), next: IdSchema.nullable() });
 export const ProjectHubResultSchema = z.discriminatedUnion('operation', [
+  z.strictObject({ ...result, operation: z.literal('jobs-list'), ...records(ProjectJobSchema) }),
+  z.strictObject({ ...result, operation: z.literal('job-get'), record: stored(ProjectJobSchema).nullable() }),
+  z.strictObject({ ...result, operation: z.literal('job-put'), record: stored(ProjectJobSchema) }),
+  z.strictObject({ ...result, operation: z.literal('dailies-list'), ...records(ProjectDailySchema) }),
+  z.strictObject({ ...result, operation: z.literal('daily-get'), record: stored(ProjectDailySchema).nullable() }),
+  z.strictObject({ ...result, operation: z.literal('daily-put'), record: stored(ProjectDailySchema) }),
+  z.strictObject({ ...result, operation: z.literal('job-runs-list'), ...records(ProjectJobRunSchema) }),
+  z.strictObject({ ...result, operation: z.literal('job-run-get'), record: stored(ProjectJobRunSchema).nullable() }),
+  z.strictObject({ ...result, operation: z.literal('job-run-put'), record: stored(ProjectJobRunSchema) }),
+  z.strictObject({ ...result, operation: z.literal('windows-list'), ...records(ProjectWindowSchema) }),
+  z.strictObject({ ...result, operation: z.literal('window-get'), record: stored(ProjectWindowSchema).nullable() }),
+  z.strictObject({ ...result, operation: z.literal('window-put'), record: stored(ProjectWindowSchema) }),
   z.strictObject({ ...result, operation: z.literal('goals-list'), ...records(ProjectGoalSchema) }),
   z.strictObject({ ...result, operation: z.literal('goal-get'), record: stored(ProjectGoalSchema).nullable() }),
   z.strictObject({ ...result, operation: z.literal('goal-put'), record: stored(ProjectGoalSchema) }),
