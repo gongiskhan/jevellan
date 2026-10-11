@@ -1,3 +1,4 @@
+import { EkoaRequestSchema } from '@jevellan/core';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { AccountHubRequestSchema, ConsumeSwitchSchema, DeviceSwitchInputSchema, EmptySchema, MeshSessionInputSchema, MeshSessionResultSchema, PassphraseInputSchema, PeerSessionInputSchema, ProjectHubCollectionSchema, ProjectHubRequestSchema, collectionOf, isProjectHubRead } from '@jevellan/core';
 import { HubAccounts, HubCheckoutStore, HubIndexes, HubPublicationLeases, sessionCookie } from '@jevellan/mesh';
@@ -22,6 +23,14 @@ export async function handleMeshDeviceApi(app: Application, request: IncomingMes
   const authorization = request.headers.authorization;
   const device = app.devices.authenticate(authorization?.startsWith('Bearer ') ? authorization.slice(7) : undefined);
   const send = (value: unknown) => json(response, app.hub.redactor.document(value));
+  if (path === '/hub/mesh/ekoa' && method === 'POST') {
+    const input = EkoaRequestSchema.parse(await requestBody(request)); app.redactor.add(input.ownerSession);
+    if (input.operation === 'save' && input.input.token) app.redactor.add(input.input.token);
+    if (!app.hubAuth.verify(input.ownerSession, device.id)) throw Object.assign(new Error('Sign in to Jevellan.'), { status: 401 });
+    const result = await app.ekoa!.request(input, device.id); app.devices.authenticate(authorization!.slice(7));
+    if (!app.hubAuth.verify(input.ownerSession, device.id)) throw Object.assign(new Error('Sign in to Jevellan.'), { status: 401 });
+    send(result); return true;
+  }
   if (path === '/hub/mesh/agent-access' && method === 'POST') {
     const input = AgentAccessHubRequestSchema.parse(await requestBody(request)); app.devices.authenticate(authorization!.slice(7));
     const release = ['create', 'revoke', 'mail-send'].includes(input.operation) ? app.lifecycle.enter({ kind: 'request' }) : undefined;

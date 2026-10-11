@@ -356,8 +356,8 @@
   {
     "id": "loop-ekoa-link",
     "title": "Ekoa task mirror",
-    "why": "Show owner decisions, reviewed PRs and drafts in Ekoa.",
-    "status": "planned"
+    "why": "Durable authenticated MCP mirror implemented; 23 backend cases, typecheck/lint/build and four-layout LJ8 passed, eight live vision checks without blockers. Live owner token and amendment 1 conversion remain.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "loop-ekoa-code",

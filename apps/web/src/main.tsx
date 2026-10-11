@@ -1,3 +1,4 @@
+import { EkoaPage } from './ekoa.js';
 import { clientId } from './client-id.js';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
@@ -48,6 +49,7 @@ const settingsPages = [
   ['devices', 'Devices', 'devices'],
   ['projects', 'Projects', 'projects'],
   ['git', 'Git', 'git'],
+  ['ekoa', 'Ekoa', 'projects'],
   ['agents', 'Agents', 'agents'],
   ['configuration', 'Configuration', 'configuration'],
   ['about', 'About', 'about'],
@@ -359,6 +361,8 @@ function App() {
   const settingsPage =
     currentPage === 'agents' ? (
       <AgentsPage {...props} />
+    ) : currentPage === 'ekoa' ? (
+      <EkoaPage {...props} />
     ) : currentPage === 'git' ? (
       <GitPage {...props} />
     ) : currentPage === 'projects' ? (

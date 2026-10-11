@@ -1,0 +1,1 @@
+export function startEkoaFixture(options?: { omitTool?: string }): Promise<{ url: string; token: string; tasks: Map<string, { id: string; title: string; notes?: string; labels?: string[]; status: string }>; labels: Set<string>; calls: Array<{ name: string; args: Record<string, unknown> }>; loseCreate(): void; failLabels(value: boolean): void; close(): Promise<void> }>;

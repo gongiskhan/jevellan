@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ8 Ekoa connection mirrors decisions, approved pulls and aggregated drafts without duplicates",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/screenshots/LJ8-connected-drafts-desktop-light.png",
+  "expected": "the Jevellan web app \"LJ8 connected drafts\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"LJ8 Ekoa connection mirrors decisions, approved pulls and aggregated drafts without duplicates\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Mirror tasks to Ekoa' checkbox sits above its label instead of beside it, so the control and its label look disconnected.",
+      "The Ekoa settings nav item uses the same folder icon as 'Projects', so the two items are hard to tell apart.",
+      "Session titles and metadata in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory jour...', 'dev-ma...'). This looks intentional, and it is not part of the Ekoa screen."
+    ]
+  }
+}

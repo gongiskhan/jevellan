@@ -1,3 +1,5 @@
+import { startEkoaFixture } from '../tests/fixtures/ekoa-server.mjs';
+import { ProjectDecisionSchema, ProjectWorkTaskSchema, PullRequestReviewSchema, ThreadIndexSchema } from '../packages/core/dist/index.js';
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { execFileSync, spawn } from 'node:child_process';
@@ -468,6 +470,7 @@ const packageArchive = application.homes.ensure('rigging/parked/claude/acc_riggi
 writeFileSync(join(application.homes.account('codex', 'acc_rigging_codex'), 'config.toml'), 'model_reasoning_effort = "high"\n[mcp_servers.fixture_tools]\ncommand = "fixture-tools"\nargs = []\n');
 await application.auth.setup({ schema: 'passphrase-input-v1', passphrase: 'jevellan-browser-fixture' });
 const server = createDaemon({ application });
+const ekoaFixture = projectsMode ? await startEkoaFixture() : undefined;
 let member; let memberServer; let memberHeartbeat; let improverControl;
 // Fixture control requests in flight: their routes call both applications, so they finish before either closes.
 const controlWork = new Set();
@@ -482,7 +485,7 @@ async function close() {
     await member?.close();
     await closeListeners([server]);
     await application.close();
-    await github?.close();
+    await github?.close(); await ekoaFixture?.close();
   } catch (error) {
     failure = error; console.error('The fixture server did not close cleanly:', error);
   } finally {
@@ -562,6 +565,7 @@ if (projectsMode) {
     memory: { mode: 'repo', dir: '.jevellan/memory' }, context: { state: 'none' } }) });
   await save('projects_fixture', 'Projects fixture', { [hubId]: projectsPath, [memberId]: projectsMember }, 'main', { testCommand: 'test -f greeting.txt' });
   await save('projects_goals', 'Projects goals', { [hubId]: clone(projectsOrigin, join(root, 'projects-goals')) }, 'main');
+  await save('projects_mirror', 'Projects mirror', { [hubId]: clone(projectsOrigin, join(root, 'projects-mirror')) }, 'main');
   await save('projects_typed', 'Projects typed', { [hubId]: clone(projectsOrigin, join(root, 'projects-typed')) }, 'main');
   await save('projects_queue', 'Projects queue', { [hubId]: clone(projectsOrigin, join(root, 'projects-queue')) }, 'main');
   for (const [id, name] of [['projects_daily', 'Projects daily'], ['projects_workflows', 'Projects workflows']]) {
@@ -635,6 +639,7 @@ const correction = (group, n, action, from, to) => {
 for (const n of [1, 2, 3]) { correction('implement', n, 'implement', 'claude-fable', 'codex-gpt'); correction('review', n, 'review', 'claude-fable', 'claude-opus'); }
 // Projects control (design 5.5 item 9), on the same listener: POST routes; every body is a versioned fixture document (pulse has none).
 const ControlClockSchema = z.strictObject({ schema: z.literal('fixture-project-clock-v1'), advanceMinutes: z.number().int().min(0).max(1440) });
+const ControlEkoaSchema = z.strictObject({ schema: z.literal('fixture-ekoa-loop-v1'), action: z.enum(['prepare', 'answer', 'approve', 'review', 'merge', 'tick', 'list']) });
 const ControlDailySchema = z.strictObject({ schema: z.literal('fixture-daily-control-v1'), action: z.enum(['prepare', 'open', 'pass', 'fail', 'workflow']) });
 const dailyMarker = join(root, 'daily-result');
 const ControlPullSchema = z.strictObject({ schema: z.literal('fixture-pull-change-v1'), checks: z.enum(['none', 'pending', 'passing', 'passing-status', 'failing']).optional(),
@@ -656,6 +661,21 @@ async function projectControl(request, response) {
     const { checks, mergeable, merged, closed } = input;
     const answer = await fetch(`${github.url}/_control/pulls/${pull[1]}`, { method: 'POST', headers: { Authorization: `Bearer ${githubToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ checks, mergeable, merged, closed, repo: PROJECTS_REPOSITORY }) });
     send(answer.status, await answer.json());
+  } else if (request.url === '/projects/ekoa' && (input = parse(ControlEkoaSchema))) {
+    const at = new Date().toISOString(), projectId = 'projects_mirror';
+    if (input.action === 'prepare') {
+      application.hub.put('project-decisions', 'mirror_decision', ProjectDecisionSchema, { schema: 'project-decision-v1', revision: 1, id: 'mirror_decision', projectId, from: 'coordinator', question: 'Which empty state?', options: [{ label: 'Short' }, { label: 'Detailed' }], createdAt: at }, 0);
+      for (const id of ['mirror_one', 'mirror_two', 'mirror_three']) application.hub.put('project-work-tasks', id, ProjectWorkTaskSchema, { schema: 'project-work-task-v1', id, projectId, revision: 1, title: id, brief: 'Inspect a small finding.', kind: 'session', type: 'fix', goalId: null, source: 'finding', state: 'draft', rank: id, ownerRanked: false, now: false, after: [], needs: [], dailyId: null, jobId: null, threadId: null, jobRunId: null, fixed: {}, createdAt: at, updatedAt: at }, 0);
+      application.hub.put('project-threads', 'mirror_thread', ThreadIndexSchema, { schema: 'project-thread-index-v1', revision: 1, id: 'mirror_thread', projectId, title: 'Handle empty input', state: 'in-review', isolation: 'worktree', ownerDeviceId: application.device.deviceId, runtime: 'claude', modelLabel: 'Fable', effort: 'high', accountLabel: 'Projects Claude', turns: 1, createdAt: at, updatedAt: at,
+        pr: { number: 99, url: 'https://github.com/fixture/loop/pull/99', state: 'open', headSha: 'a'.repeat(40), checks: 'passing', mergeable: 'clean', updatedAt: at } }, 0);
+      send(200, { schema: 'fixture-ekoa-prepared-v1', url: ekoaFixture.url, token: ekoaFixture.token }); return true;
+    }
+    if (input.action === 'answer') { const row = application.hub.get('project-decisions', 'mirror_decision', ProjectDecisionSchema); application.hub.put('project-decisions', 'mirror_decision', ProjectDecisionSchema, { ...row.document, answeredAt: at, answer: { text: 'Short.' } }, row.revision); }
+    if (input.action === 'approve') { const row = application.hub.get('project-work-tasks', 'mirror_one', ProjectWorkTaskSchema); application.hub.put('project-work-tasks', 'mirror_one', ProjectWorkTaskSchema, { ...row.document, state: 'queued' }, row.revision); }
+    if (input.action === 'review') application.hub.put('project-pr-reviews', 'mirror_thread', PullRequestReviewSchema, { schema: 'pull-request-review-v1', revision: 1, projectId, threadId: 'mirror_thread', deviceId: application.device.deviceId, commit: 'a'.repeat(40), verdict: 'approve', note: 'The focused test covers empty input.', reviewedAt: at }, 0);
+    if (input.action === 'merge') { const row = application.hub.get('project-threads', 'mirror_thread', ThreadIndexSchema); application.hub.put('project-threads', 'mirror_thread', ThreadIndexSchema, { ...row.document, pr: { ...row.document.pr, state: 'merged' } }, row.revision); }
+    if (input.action !== 'list') await application.ekoa.tick();
+    send(200, { schema: 'fixture-ekoa-state-v1', tasks: [...ekoaFixture.tasks.values()].map(task => ({ title: task.title, status: task.status })) });
   } else if (request.url === '/projects/clock' && (input = parse(ControlClockSchema))) {
     if (frozenProjectClock === undefined) projectClockOffset += input.advanceMinutes * 60_000; else frozenProjectClock += input.advanceMinutes * 60_000;
     await application.projectWork.pulse(); send(200, { schema: 'fixture-project-clock-result-v1', advancedMinutes: input.advanceMinutes });

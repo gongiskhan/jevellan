@@ -1,3 +1,6 @@
+import { EkoaMirrorService } from './ekoa-mirror.js';
+import type { EkoaConnector } from './ekoa-client.js';
+import { EkoaRequestSchema } from '@jevellan/core';
 import { existsSync } from 'node:fs';
 import { hostname } from 'node:os';
 import { z } from 'zod';
@@ -25,7 +28,7 @@ import { assertHubNotMoved, deviceAllowsWork } from '@jevellan/core';
 export type ApplicationOptions = { homes?: Homes; port?: number; url?: string; runtimes?: (context: RuntimeContext) => ReadonlyMap<string, RuntimeAdapter>; timers?: boolean; repositoryVisibility?: VisibilityProbe; decisionFetch?: typeof fetch; hubFetch?: typeof fetch; nativeSessions?: Omit<SessionSensorOptions, 'homes'>;
   /** Test seam for the improver's memory index; production uses the isolated Basic Memory. */ projectMemory?: (project: Project) => MemoryPort;
   /** Projects test seams: the GitHub transport and API base (a fake server in tests), and Projects timers (periodic loops follow `timers`). */
-  githubFetch?: typeof fetch; githubBaseUrl?: string; projectTimers?: Partial<ProjectTimers>; forceHub?: boolean };
+  githubFetch?: typeof fetch; githubBaseUrl?: string; projectTimers?: Partial<ProjectTimers>; ekoaConnector?: EkoaConnector; forceHub?: boolean };
 
 export class Application {
   #closing: Promise<void> | undefined;
@@ -45,6 +48,7 @@ export class Application {
   readonly bridges: StretchBridges;
   readonly memory: BasicMemory; readonly conversations: ConversationService;
   /** Projects on this device (brief 8): threads, their turns and pull requests, beside the conversations. */
+  readonly ekoa: EkoaMirrorService | undefined;
   readonly projectWork: ProjectWork; readonly projectHub: ProjectHub;
   readonly projectVisibility: ProjectVisibility;
   readonly state: HubState | MemberState;
@@ -140,6 +144,7 @@ export class Application {
         decisionClient: this.decisionClient, roster: () => this.roster(),
         enterOperation: (id, title) => this.lifecycle.enter({ kind: 'conversation', id, title }),
         timers: { periodic: options.timers !== false, ...options.projectTimers } });
+      this.ekoa = this.#hub ? new EkoaMirrorService(this.hub, () => this.device.url, options.ekoaConnector) : undefined;
       const improverReady = Promise.all([this.conversations.ready, this.backgroundDrafts.ready]).then(() => undefined);
       const hub = this.#hub; const mesh = this.#mesh;
       this.improver = hub && mesh ? new Improver({ hub, deviceId: this.device.deviceId, ready: improverReady,
@@ -178,8 +183,13 @@ export class Application {
   bindDaemonUrl(url: string): void {
     this.conversations.daemonUrl = url; this.backgroundDrafts.daemonUrl = url;
     // Thread turns need the bridge URL; queued work may start from here. Its periodic loops follow `timers` on their own.
+    if (this.#improverTimers) this.ekoa?.start();
     this.projectWork.daemonUrl = url; this.projectWork.start();
     if (this.#improverTimers) { this.routingImprover?.start(); this.projectImprover.start(); }
+  }
+  async ekoaRequest(raw: unknown, ownerSession: string) {
+    const request = EkoaRequestSchema.parse({ ...(raw as object), ownerSession });
+    return this.member ? this.member.ekoa(request) : this.ekoa!.request(request, this.device.deviceId);
   }
   async improverRequest(input: unknown) { return this.member ? this.member.improver(input) : this.routingImprover!.request(input, this.device.deviceId); }
   async configuration() {
@@ -235,6 +245,7 @@ export class Application {
   close(): Promise<void> { return this.#closing ??= (async () => {
     const failures: unknown[] = [];
     try { await this.settingsSync.close(); await this.#riggingQueue.catch(() => undefined); } catch (error) { failures.push(error); }
+    try { await this.ekoa?.close(); } catch (error) { failures.push(error); }
     try { await this.presence.close(); } catch (error) { failures.push(error); }
     try { await this.projectImprover.close(); } catch (error) { failures.push(error); }
     try { await this.routingImprover?.close(); } catch (error) { failures.push(error); }

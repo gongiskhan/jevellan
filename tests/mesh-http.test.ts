@@ -46,6 +46,23 @@ async function member(id = 'member') {
   return { input, joined, connection: client(joined) };
 }
 
+test('Ekoa settings require an owner session on UI and member routes and keep tokens in the vault', async () => {
+  const input = { schema: 'ekoa-settings-input-v1', clientRequestId: randomUUID(), revision: 0, url: 'https://mcp.example.test/mcp', enabled: false, token: `fixture-ekoa-${randomUUID()}` };
+  expect((await fetch(`${base}/hub/ekoa`)).status).toBe(401);
+  const saved = await fetch(`${base}/hub/ekoa`, { method: 'PUT', headers: { Cookie: cookie, Origin: base, 'Content-Type': 'application/json' }, body: JSON.stringify(input) });
+  expect(saved.status).toBe(200); const text = await saved.text(); expect(text).not.toContain(input.token); expect(JSON.parse(text).tokenSaved).toBe(true);
+  expect(app.hub.vault.forLaunch('ekoa')).toBe(input.token);
+  const documents = app.hub.db.prepare("SELECT document FROM documents WHERE namespace IN ('ekoa-settings','settings-mutations')").all();
+  expect(JSON.stringify(documents)).not.toContain(input.token);
+  const { joined, connection } = await member();
+  const request = { schema: 'ekoa-request-v1', operation: 'state' };
+  expect((await device('ekoa', joined.membership.token, request)).status).toBe(400);
+  const ownerSession = await connection.login({ schema: 'passphrase-input-v1', passphrase });
+  expect((await connection.ekoa({ ...request, operation: 'state', ownerSession })).tokenSaved).toBe(true);
+  app.hubAuth.logout(ownerSession, 'member');
+  await expect(connection.ekoa({ ...request, operation: 'state', ownerSession })).rejects.toThrow();
+});
+
 function ownerIndex(ownerDeviceId: string) {
   app.hub.put('conversations', 'remote', ConversationIndexSchema, { schema: 'conversation-index-v1', id: 'remote', title: 'Remote history', projectId: 'project', ownerDeviceId, state: 'idle', updatedAt: new Date().toISOString() }, 0);
 }

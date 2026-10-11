@@ -1,3 +1,4 @@
+import { EkoaSettingsInputSchema, EmptySchema as EkoaEmptySchema } from '@jevellan/core';
 import { handleSessionListApi } from './session-list-api.js';
 import { handleGitApi } from './git-api.js';
 import { handleProjectWorkApi, handleProjectWorkPeer } from './project-work-api.js';
@@ -87,6 +88,9 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     if (path === '/api/improver' && method === 'POST') {
       const input = ImproverRequestSchema.parse(await body(request)); retryable = true; send(await app.improverRequest(input)); return;
     }
+    if (path === '/hub/ekoa' && method === 'GET') { send(await app.ekoaRequest({ schema: 'ekoa-request-v1', operation: 'state' }, token!)); return; }
+    if (path === '/hub/ekoa' && method === 'PUT') { send(await app.ekoaRequest({ schema: 'ekoa-request-v1', operation: 'save', input: EkoaSettingsInputSchema.parse(await body(request)) }, token!)); return; }
+    if (path === '/hub/ekoa/test' && method === 'POST') { EkoaEmptySchema.parse(await body(request)); send(await app.ekoaRequest({ schema: 'ekoa-request-v1', operation: 'test' }, token!)); return; }
     if (await handleGitApi(app, request, response, url)) return;
     if (await handleProjectWorkApi(app, request, response, url, token!, () => { retryable = true; })) return;
     if (await handleSessionListApi(app, request, response, url)) return;

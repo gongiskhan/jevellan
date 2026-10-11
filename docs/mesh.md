@@ -139,3 +139,6 @@ See [HTTP and registration evidence](acceptance/phase4-http.md) and [registry ev
 ## UI request recovery
 
 Supported UI callers wait on an explicit typed hub-unavailable response with request-specific retry permission. Sign-in retries stateless session issuance; configuration saves use atomic device-scoped request receipts, and new conversations retain stable request IDs. A configuration retry returns its original revision without overwriting a newer save. Pending browser request bodies remain in memory and stop waiting on cancellation or navigation. Generic network/HTTP failures are not replay authority. Account, managed Rigging, project, Jev, local Rigging and device Settings cover their own recovery boundaries; see [Settings saves](acceptance/phase4-settings-saves.md) and [Settings boundaries](acceptance/phase4-settings-boundaries.md). Initial composer choices validate before creation and save locally before the first decision boundary, as verified in [creation admission](acceptance/phase4-creation-admission.md).
+
+
+Ekoa Settings operations relay to the hub with both device authentication and an owner session bound to that device. The mirror runs at the authority only and does not block Projects dispatch; members receive public status without tokens.

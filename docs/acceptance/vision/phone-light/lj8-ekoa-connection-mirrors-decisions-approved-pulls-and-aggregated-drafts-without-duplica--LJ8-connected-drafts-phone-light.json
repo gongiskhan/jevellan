@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ8 Ekoa connection mirrors decisions, approved pulls and aggregated drafts without duplicates",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/LJ8-connected-drafts-phone-light.png",
+  "expected": "the Jevellan web app \"LJ8 connected drafts\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"LJ8 Ekoa connection mirrors decisions, approved pulls and aggregated drafts without duplicates\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The horizontal tab strip clips the 'Projects' tab at its left edge, behind the scroll arrow. The tab is still reachable with the scroll arrows.",
+      "The 'Mirror tasks to Ekoa' checkbox sits on its own line above its label instead of next to it, so the two look loosely connected.",
+      "'Remove token' wraps onto a second row of buttons by itself, which makes the action row look uneven."
+    ]
+  }
+}

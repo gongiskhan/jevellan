@@ -1313,3 +1313,27 @@ test('LJ7 two fix effort corrections appear first in the next fix Why panel', as
   }
   expect(errors).toEqual([]);
 });
+
+test('LJ8 Ekoa connection mirrors decisions, approved pulls and aggregated drafts without duplicates', async ({ page }) => {
+  const errors = await begin(page);
+  const prepared = await control('/projects/ekoa', { schema: 'fixture-ekoa-loop-v1', action: 'prepare' }) as { url: string; token: string };
+  await page.goto('/settings/ekoa'); await expect(page.getByRole('heading', { name: 'Ekoa', exact: true })).toBeVisible();
+  await page.getByRole('textbox', { name: 'MCP URL', exact: true }).fill(prepared.url);
+  await page.getByLabel('Ekoa token', { exact: true }).fill(prepared.token);
+  await page.getByRole('checkbox', { name: 'Mirror tasks to Ekoa', exact: true }).check();
+  await page.getByRole('button', { name: 'Save', exact: true }).click(); await expect(page.getByLabel('Ekoa token', { exact: true })).toHaveValue('');
+  const step = (action: string) => control('/projects/ekoa', { schema: 'fixture-ekoa-loop-v1', action });
+  await step('tick'); await page.getByRole('button', { name: 'Test connection', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Connected', exact: true })).toBeVisible(LONG);
+  await expect(page.getByText('Jevellan · Projects mirror: 3 proposed tasks', { exact: true })).toBeVisible(LONG);
+  await shot(page, 'connected-drafts');
+  const reviewed = await step('review') as { tasks: Array<{ title: string; status: string }> };
+  expect(reviewed.tasks.filter(row => row.title === 'Jevellan · Projects mirror: merge #99 Handle empty input')).toHaveLength(1);
+  await step('tick'); await step('answer'); await step('approve'); const final = await step('merge') as { tasks: Array<{ title: string; status: string }> };
+  expect(final.tasks.find(row => row.title === 'Jevellan · Projects mirror: Which empty state?')?.status).toBe('done');
+  expect(final.tasks.find(row => row.title.includes('merge #99'))?.status).toBe('done');
+  expect(final.tasks.filter(row => row.title.includes('Projects mirror: 2 proposed tasks'))).toHaveLength(1);
+  await page.reload(); await expect(page.getByText('Jevellan · Projects mirror: 2 proposed tasks', { exact: true })).toBeVisible(LONG);
+  expect(await page.content()).not.toContain(prepared.token); await shot(page, 'mirror-updated');
+  expect(errors).toEqual([]);
+});

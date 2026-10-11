@@ -219,3 +219,6 @@ Projects journeys PJ1 to PJ7 pass with simulated evidence; see [PJ1](acceptance/
 The live journey [PJ-live](acceptance/PJ-live.md) (`node scripts/spikes/live-journeys.mjs --journey PJ-live`) runs the coordinator, a thread, a real pull request and its merge on a real Codex account, real Jev and a disposable GitHub repository. Without its credentials it writes a blocked receipt and starts nothing, so it is blocked, not passed. The deployment state and the current status of every check are recorded in the [acceptance report](acceptance/REPORT.md). The owner's acceptance is not claimed.
 
 The task queue supplies typed placement context. Corrections prefer the same task type, and Why shows the exact redacted sentences used for that placement. Context remains stable through dispatch recovery and explicit thread restarts.
+
+
+Settings → Ekoa connects the owner account using its MCP URL and bearer token, kept in the hub vault. Connection testing lists capabilities. Jevellan-created tasks have durable mappings and ownership markers; retrying a lost reply recovers the existing task, never blindly creates another. Decisions and draft aggregates link back to their project.

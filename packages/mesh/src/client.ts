@@ -1,3 +1,4 @@
+import { EkoaRequestSchema, EkoaStateSchema } from '@jevellan/core';
 import { AuthStateSchema, ConsumeSwitchSchema, DeviceOriginSchema, DeviceRosterSchema, DeviceSwitchInputSchema, DeviceSwitchSchema, DeviceTokenSchema, DeviceViewSchema, EmptySchema, ErrorDocumentSchema, HeartbeatSchema, IdSchema, JoinedDeviceSchema, JoinDeviceInputSchema, JoinInvitationSchema, MeshSessionInputSchema, MeshSessionResultSchema, MeshSessionStateSchema, PassphraseInputSchema, SwitchedSessionSchema, UiSigningMaterialSchema, stableJson, type DocumentSchema, type SecretRedactor, type UiSigningMaterial } from '@jevellan/core';
 import { verifySharedSession } from './auth.js';
 import { AccountHubRequestSchema, AccountHubResultSchema } from '@jevellan/core';
@@ -22,8 +23,8 @@ type TransportOptions = { hubUrl: string; hubName: string; redactor: SecretRedac
 class HubTransport {
   readonly origin: string;
   constructor(private readonly options: TransportOptions) { this.origin = DeviceOriginSchema.parse(options.hubUrl); }
-  async request<T>(path: string, schema: DocumentSchema<T>, body: unknown | undefined, token?: string): Promise<T> {
-    const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), this.options.timeoutMs ?? 5000);
+  async request<T>(path: string, schema: DocumentSchema<T>, body: unknown | undefined, token?: string, timeoutMs?: number): Promise<T> {
+    const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), timeoutMs ?? this.options.timeoutMs ?? 5000);
     let response: Response;
     try {
       response = await (this.options.fetch ?? fetch)(`${this.origin}/hub/mesh/${path}`, {
@@ -84,9 +85,14 @@ export class MemberHubClient {
   readonly #transport: HubTransport;
   readonly deviceId: string;
   constructor(private readonly options: MemberHubOptions) { this.deviceId = IdSchema.parse(options.deviceId); this.#transport = new HubTransport(options); }
-  #request<T>(path: string, schema: DocumentSchema<T>, body?: unknown) {
+  #request<T>(path: string, schema: DocumentSchema<T>, body?: unknown, timeoutMs?: number) {
     const token = DeviceTokenSchema.parse(this.options.token()); this.options.redactor.add(token);
-    return this.#transport.request(path, schema, body, token);
+    return this.#transport.request(path, schema, body, token, timeoutMs);
+  }
+  async ekoa(input: unknown) {
+    const request = EkoaRequestSchema.parse(input); this.options.redactor.add(request.ownerSession);
+    if (request.operation === 'save' && request.input.token) this.options.redactor.add(request.input.token);
+    return this.#request('ekoa', EkoaStateSchema, request, 65_000);
   }
   async devices() {
     const result = await this.#request('devices', DeviceRosterSchema);

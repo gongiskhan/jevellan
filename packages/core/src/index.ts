@@ -71,3 +71,5 @@ export * from './project-daily-schemas.js';
 export * from './github-actions.js';
 export * from './task-types.js';
 export * from './effort-guide.js';
+
+export * from './ekoa-schemas.js';

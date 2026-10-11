@@ -19,3 +19,5 @@ export * from './cursor-service.js';
 export { NATIVE_SESSION_UNAVAILABLE, nativeSessionId, nativeSessionsAt, nativeTranscriptAt, type NativeJournal, type NativeTranscriptAtOptions } from './native-sessions.js';
 export type { NativeRuntime } from './native-transcript.js';
 export * from './native-transcript-reader.js';
+
+export { settingsMutation } from './settings-mutation.js';
