@@ -86,6 +86,16 @@ export async function startGitHubFixture({ token, repositories = {}, port = 0 })
       const pull = pulls.find((entry) => entry.repo === repo && entry.number === Number(match[1]));
       return pull ? send(response, 200, view(refresh(pull))) : send(response, 404, { message: 'Not Found' });
     }
+    if ((match = /^\/pulls\/(\d+)\/files$/.exec(rest)) && method === 'GET') {
+      const pull = refresh(find(match[1], repo));
+      const diff = args => execFileSync('git', ['--git-dir', origin(repo), 'diff', ...args, `${pull.base}...${pull.headSha}`], { encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 });
+      const files = diff(['--numstat']).trim().split('\n').filter(Boolean).map(line => {
+        const [added, removed, filename] = line.split('\t');
+        const patch = execFileSync('git', ['--git-dir', origin(repo), 'diff', `${pull.base}...${pull.headSha}`, '--', filename], { encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 });
+        return { filename, status: 'modified', additions: Number(added) || 0, deletions: Number(removed) || 0, patch };
+      });
+      const page = Number(url.searchParams.get('page') ?? '1'); return send(response, 200, files.slice((page - 1) * 100, page * 100));
+    }
     if ((match = /^\/pulls\/(\d+)\/merge$/.exec(rest)) && method === 'PUT') {
       const pull = pulls.find((entry) => entry.repo === repo && entry.number === Number(match[1]));
       if (!pull) return send(response, 404, { message: 'Not Found' });

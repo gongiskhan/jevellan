@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { EffortSchema, FindingSchema, HandoffSchema, IdSchema, ResultSchema, TimestampSchema } from './schemas.js';
 import {
   IsolationSchema, NEEDS_DECISION_QUESTION, OptionSchema, ProjectAppInputSchema, ProjectAppSchema, PullRequestStateSchema, ThreadReportFieldsSchema, ThreadReportSchema,
-  ThreadReportStatusSchema, ThreadStateSchema, reportHasQuestion,
+  ThreadReportStatusSchema, ThreadStateSchema, PullRequestReviewSchema, reportHasQuestion,
 } from './project-schemas.js';
 
 const text = z.string().min(1);
@@ -42,6 +42,8 @@ export const WithdrawQuestionInputSchema = z.strictObject({ decisionId: IdSchema
 export const NotebookReadInputSchema = z.strictObject({});
 export const NotebookWriteInputSchema = z.strictObject({ content: z.string().max(65536), expectedRevision: count });
 export const PrStatusInputSchema = z.strictObject({ threadId: IdSchema });
+export const PrDiffResultSchema = z.strictObject({ schema: z.literal('pr-diff-result-v1'), threadId: IdSchema, commit: z.string(),
+  files: z.array(z.strictObject({ path: z.string(), additions: count, deletions: count, status: z.string() })).max(3000), diff: z.string().max(80000), shortened: z.boolean() });
 export const MailSendInputSchema = z.strictObject({ to: text.max(128), subject: text.max(200), body: z.string().max(8000) });
 export const MailInboxInputSchema = z.strictObject({});
 export const ReservePathsSchema = z.array(text.max(300)).min(1).max(50);
@@ -102,6 +104,8 @@ export const BridgeToolSchemas = {
   jevellan_notebook_read: NotebookReadInputSchema,
   jevellan_notebook_write: NotebookWriteInputSchema,
   jevellan_pr_status: PrStatusInputSchema,
+  jevellan_pr_diff: PrStatusInputSchema,
+  jevellan_pr_review: z.strictObject({ threadId: IdSchema, verdict: z.enum(['approve', 'changes']), note: text.max(4000) }),
   jevellan_mail_send: MailSendInputSchema,
   jevellan_mail_inbox: MailInboxInputSchema,
   jevellan_reserve: ReserveInputSchema,
@@ -123,6 +127,8 @@ export const BridgeResultSchema = z.strictObject({ schema: z.literal('bridge-res
 export const BridgeToolsSchema = z.strictObject({ schema: z.literal('bridge-tools-v1'), tools: z.array(z.strictObject({ name: BridgeToolNameSchema, description: text, inputSchema: z.object({ type: z.literal('object') }).catchall(z.json()) })) });
 export function bridgeTools(names: BridgeTool[]): z.infer<typeof BridgeToolsSchema> {
   const descriptions: Record<BridgeTool, string> = {
+    jevellan_pr_diff: 'Read the current pull request head and changed files, with a unified diff of up to 80,000 characters. Read before reviewing in this turn.',
+    jevellan_pr_review: 'Review the head read by jevellan_pr_diff in this turn. Approve with a note or request changes; a changed head requires another diff read. This never merges.',
     jevellan_app_start: 'Start an app and return a verified browser link. Static serves HTML; command runs an executable with args, replacing {port} and {host}. The app is owned by Jevellan and stays running after this turn. Use this when the owner wants to run or use the app, rather than opening a file on the server. Do not pass credentials.',
     jevellan_app_stop: 'Stop only this project’s managed app by its appId.',
     jevellan_apps_list: 'List this project’s managed apps and their browser links.',
@@ -158,7 +164,7 @@ export function bridgeTools(names: BridgeTool[]): z.infer<typeof BridgeToolsSche
 // Project scopes (D104). The coordinator's read-only Claude allow list and the bridge's scope lists both derive from
 // projectToolNames, never a copy.
 export const COORDINATOR_TOOLS = ['jevellan_threads_list', 'jevellan_thread_start', 'jevellan_thread_message', 'jevellan_thread_read', 'jevellan_thread_stop',
-  'jevellan_ask_user', 'jevellan_withdraw_question', 'jevellan_notebook_read', 'jevellan_notebook_write', 'jevellan_pr_status', 'jevellan_mail_send', 'memory_search', 'memory_read'] as const satisfies readonly BridgeTool[];
+  'jevellan_ask_user', 'jevellan_withdraw_question', 'jevellan_notebook_read', 'jevellan_notebook_write', 'jevellan_pr_status', 'jevellan_pr_diff', 'jevellan_pr_review', 'jevellan_mail_send', 'memory_search', 'memory_read'] as const satisfies readonly BridgeTool[];
 const MAIN_THREAD_TOOLS = ['jevellan_mail_send', 'jevellan_mail_inbox', 'jevellan_reserve', 'jevellan_release'] as const satisfies readonly BridgeTool[];
 export type ProjectToolName = typeof COORDINATOR_TOOLS[number] | typeof MAIN_THREAD_TOOLS[number] | 'jevellan_thread_report' | 'jevellan_app_start' | 'jevellan_app_stop' | 'jevellan_apps_list';
 export function threadTools(isolation: 'worktree' | 'main'): BridgeTool[] {
@@ -176,6 +182,7 @@ export const ProjectToolResultSchemas = {
   jevellan_thread_read: ThreadReadResultSchema, jevellan_thread_stop: ThreadStopResultSchema, jevellan_ask_user: AskUserResultSchema,
   jevellan_withdraw_question: WithdrawQuestionResultSchema, jevellan_notebook_read: NotebookReadResultSchema, jevellan_notebook_write: NotebookWriteResultSchema,
   jevellan_pr_status: PrStatusResultSchema, jevellan_mail_send: MailSendResultSchema, jevellan_mail_inbox: MailInboxResultSchema,
+  jevellan_pr_diff: PrDiffResultSchema, jevellan_pr_review: z.strictObject({ schema: z.literal('pr-review-result-v1'), review: PullRequestReviewSchema }),
   jevellan_reserve: ReserveResultSchema, jevellan_release: ReleaseResultSchema, jevellan_thread_report: ThreadReportResultSchema,
   memory_search: MemorySearchSchema, memory_read: MemoryNoteSchema,
 } as const satisfies Record<ProjectToolName, z.ZodType>;

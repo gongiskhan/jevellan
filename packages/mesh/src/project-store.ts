@@ -2,12 +2,12 @@ import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import {
   CheckoutClaimSchema, ConversationIndexSchema, DecisionAnswerSchema, ENVELOPE_PAGE_BYTES, FileReservationSchema, IdSchema, MAIL_PAGE_BYTES, PROJECT_HUB_PAGE, PlacementOverrideSchema, ProjectCoordinatorSchema, ProjectCoordinatorStatusSchema,
-  ProjectDecisionSchema, ProjectEnvelopeSchema, ProjectHubRequestSchema, ProjectHubResultSchema, ProjectMailSchema, ProjectNotebookSchema, ProjectSchema, ProjectWorkSettingsSchema,
+  ProjectDecisionSchema, ProjectEnvelopeSchema, ProjectHubRequestSchema, ProjectHubResultSchema, ProjectMailSchema, ProjectNotebookSchema, ProjectSchema, ProjectWorkSettingsSchema, StoredProjectWorkSettingsSchema, PullRequestReviewSchema,
   ProjectWorkSummarySchema, ReservationRequestSchema, ThreadIndexCursorSchema, ThreadIndexSchema, TimestampSchema, checkHubRevision, collectionOf, compareEnvelopes, coordinatorMovable,
   coordinatorWorking, isTerminal, mailReaches, pathsOverlap, reservationActive, stableJson, withHubRevision, workCounts,
   type DecisionAnswer, type DeviceView, type DocumentSchema, type FileReservation, type HeldCheckout, type PlacementOverride, type ProjectCoordinator, type ProjectCoordinatorStatus, type ProjectDecision,
   type ProjectEnvelope, type ProjectHub, type ProjectHubOperation, type ProjectHubResult, type ProjectHubResultOf, type ProjectMail, type ProjectNotebook, type ProjectWorkSettings,
-  type ProjectWorkSummary, type ReservationConflict, type ReservationRequest, type ReserveOutcome, type Stored, type ThreadIndex,
+  type ProjectWorkSummary, type ReservationConflict, type ReservationRequest, type ReserveOutcome, type Stored, type ThreadIndex, type PullRequestReview,
 } from '@jevellan/core';
 import type { HubDatabase } from './database.js';
 import { HubProtocolError, type MemberHubClient } from './client.js';
@@ -68,12 +68,12 @@ export class HubProjectStore {
     return { records: records.slice(0, PROJECT_HUB_PAGE), next: records.length > PROJECT_HUB_PAGE ? records[PROJECT_HUB_PAGE - 1]!.id : null };
   }
 
-  settings(projectId: string): Stored<ProjectWorkSettings> | null { return this.#get(SETTINGS, projectId, ProjectWorkSettingsSchema); }
+  settings(projectId: string): Stored<ProjectWorkSettings> | null { return this.#get(SETTINGS, projectId, StoredProjectWorkSettingsSchema); }
   /** Compare-and-swap on the row revision; a repeated clientRequestId returns the first result. */
   putSettings(raw: ProjectWorkSettings, expectedRevision: number, clientRequestId?: string): Stored<ProjectWorkSettings> {
     const settings = ProjectWorkSettingsSchema.parse(raw);
     return settingsMutation(this.hub, this.deviceId, 'project-work-settings-put', { settings, expectedRevision }, clientRequestId, StoredSettingsSchema, () => {
-      this.#project(settings.projectId); return this.#put(SETTINGS, settings.projectId, ProjectWorkSettingsSchema, settings, expectedRevision);
+      this.#project(settings.projectId); return this.#put(SETTINGS, settings.projectId, StoredProjectWorkSettingsSchema, settings, expectedRevision);
     });
   }
 
@@ -138,6 +138,18 @@ export class HubProjectStore {
     });
   }
 
+  review(threadId: string): Stored<PullRequestReview> | null { return this.#get('project-pr-reviews', threadId, PullRequestReviewSchema); }
+  putReview(raw: PullRequestReview, expectedRevision: number): Stored<PullRequestReview> {
+    const review = PullRequestReviewSchema.parse(raw);
+    return this.hub.transaction(() => {
+      if (review.deviceId !== this.deviceId || this.coordinator(review.projectId)?.document.deviceId !== this.deviceId) refuse('Only the current coordinator can review a pull request.', 403);
+      const thread = this.thread(review.threadId)?.document;
+      if (!thread || thread.projectId !== review.projectId || thread.pr?.state !== 'open' || thread.pr.headSha !== review.commit) refuse('The pull request head changed. Read its diff again.');
+      const current = this.review(review.threadId);
+      if (current && stableJson({ ...current.document, revision: 0 }) === stableJson({ ...review, revision: 0 })) return current;
+      return this.#put('project-pr-reviews', review.threadId, PullRequestReviewSchema, review, expectedRevision);
+    });
+  }
   /** Open questions plus those answered in the last 14 days by the hub clock; withdrawn ones leave the list. */
   decisions(projectId: string, after?: string): Page<ProjectDecision> {
     const since = this.now() - DECISION_LIST_WINDOW_MS;
@@ -444,6 +456,8 @@ export class HubProjectStore {
       case 'threads-list': result = { ...base, ...this.threads(request.projectId, request.after) }; break;
       case 'thread-get': result = { ...base, record: this.thread(request.threadId) }; break;
       case 'thread-publish': result = { ...base, threadId: request.index.id, ...this.publishThread(request.index, request.eventId) }; break;
+      case 'review-get': result = { ...base, record: this.review(request.threadId) }; break;
+      case 'review-put': result = { ...base, record: this.putReview(request.review, request.expectedRevision) }; break;
       case 'decisions-list': result = { ...base, ...this.decisions(request.projectId, request.after) }; break;
       case 'decision-get': result = { ...base, record: this.decision(request.id) }; break;
       case 'decision-create': result = { ...base, record: this.createDecision(request.decision) }; break;
@@ -485,6 +499,8 @@ export class HubProjectAccess implements ProjectHub {
   async threads(projectId: string, after?: string) { return this.#store.threads(projectId, after); }
   async thread(threadId: string) { return this.#store.thread(threadId); }
   async publishThread(index: ThreadIndex, eventId: number) { return this.#store.publishThread(index, eventId); }
+  async review(threadId: string) { return this.#store.review(threadId); }
+  async putReview(review: PullRequestReview, expectedRevision: number) { return this.#store.putReview(review, expectedRevision); }
   async decisions(projectId: string) {
     const records: ProjectDecision[] = []; let after: string | undefined;
     for (;;) { const page = this.#store.decisions(projectId, after); records.push(...page.records); if (page.next === null) return records; after = page.next; }
@@ -549,6 +565,8 @@ export class MemberProjectStore implements ProjectHub {
   }
   async threads(projectId: string, after?: string) { return this.#page((await this.#call('threads-list', { projectId, ...(after === undefined ? {} : { after }) })), projectId, after); }
   async thread(threadId: string) { return this.#check((await this.#call('thread-get', { threadId })).record, (row) => !row || row.document.id === threadId); }
+  async review(threadId: string) { return this.#check((await this.#call('review-get', { threadId })).record, row => !row || row.document.threadId === threadId); }
+  async putReview(review: PullRequestReview, expectedRevision: number) { return this.#check((await this.#call('review-put', { review, expectedRevision })).record, row => row.document.threadId === review.threadId && row.document.commit === review.commit); }
   async publishThread(index: ThreadIndex, eventId: number) {
     const result = this.#check(await this.#call('thread-publish', { index, eventId }), (value) => value.threadId === index.id && value.eventId >= eventId);
     return { eventId: result.eventId };

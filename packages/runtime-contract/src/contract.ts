@@ -1,6 +1,6 @@
 import { isAbsolute } from 'node:path';
 import { z } from 'zod';
-import { AccountSchema, ActionSchema, EffortSchema, IdSchema, NativeProcessSchema, type Account, type AccountStatus, type Effort, type Homes, type RiggingItem, type SecretRedactor } from '@jevellan/core';
+import { NativeLaunchSetupSchema, AccountSchema, ActionSchema, EffortSchema, IdSchema, NativeProcessSchema, type Account, type AccountStatus, type Effort, type Homes, type RiggingItem, type SecretRedactor } from '@jevellan/core';
 
 // scope 'model': a limit on the model that ran, not on the whole account. resetsAt: when the runtime reports it.
 export const RuntimeErrorSchema = z.strictObject({ kind: z.enum(['rate-limit', 'auth', 'other']), message: z.string(), scope: z.enum(['account', 'model']).optional(), resetsAt: z.iso.datetime().optional() });
@@ -16,7 +16,7 @@ export const RuntimeEventSchema = z.discriminatedUnion('type', [
 export type RuntimeEvent = z.infer<typeof RuntimeEventSchema>;
 export const ResolvedAccountSchema = z.strictObject({ account: AccountSchema, home: z.string().min(1), env: z.record(z.string(), z.string()) });
 export type ResolvedAccount = z.infer<typeof ResolvedAccountSchema>;
-export const LaunchSchema = z.strictObject({ mcpServers: z.record(z.string(), z.strictObject({ command: z.string().min(1), args: z.array(z.string()), env: z.record(z.string(), z.string()) })), env: z.record(z.string(), z.string()) });
+export const LaunchSchema = z.strictObject({ useOwnSetup: z.boolean().optional(), nativeSetup: NativeLaunchSetupSchema.optional(), mcpServers: z.record(z.string(), z.strictObject({ command: z.string().min(1), args: z.array(z.string()), env: z.record(z.string(), z.string()) })), env: z.record(z.string(), z.string()) });
 export const StretchInputSchema = z.strictObject({
   schema: z.literal('stretch-input-v1'), conversationId: IdSchema, stretch: z.number().int().positive(), action: ActionSchema,
   cwd: z.string().min(1), permissions: z.enum(['read-only', 'write']), memoryWrite: z.boolean(), systemAppend: z.string(), brief: z.string(),

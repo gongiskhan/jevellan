@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ2 native setup is visible and coordinator changes are followed by approval on the new head",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/screenshots/LJ2-native-setup-desktop-light.png",
+  "expected": "the Jevellan web app \"LJ2 native setup\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"LJ2 native setup is visible and coordinator changes are followed by approval on the new head\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Both Claude Code account device lists end with the note 'Codex sign-ins are kept per device for now.' This looks like copy pasted from the Codex section; it should probably say Claude Code.",
+      "Some session titles and subtitles in the left sidebar are cut off with an ellipsis (e.g. 'Context · J11 memory jour...'). This looks like intentional truncation."
+    ]
+  }
+}

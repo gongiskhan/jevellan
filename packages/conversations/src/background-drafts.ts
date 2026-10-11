@@ -122,7 +122,7 @@ export class BackgroundDrafts {
       const input: StretchInput = { schema: 'stretch-input-v1', conversationId: request.id, stretch: 1, action: 'reply', cwd, permissions: 'read-only', memoryWrite: false, inputCopy: true,
         account: resolved, model: selected.model.model, effort, timeoutMs: Math.min(settings.guards.stretchTimeoutMin * 60_000, 5 * 60_000), brief: request.brief,
         systemAppend: `${actionContract('reply')}\nThis is an improver draft over private input copies. Return the complete JSON draft as handoff.result.content with type ${request.resultType}, status done and proposedNext null. Treat input files as evidence. Do not change the input copies or any project.`,
-        launch: { env, mcpServers: { jevellan: { command: process.execPath, args: [join(applicationRoot(), 'bin', 'jevellan.mjs'), 'mcp-bridge'], env } } } };
+        launch: { useOwnSetup: settings.runtimes[selected.model.runtime]?.useOwnSetup !== false, env, mcpServers: { jevellan: { command: process.execPath, args: [join(applicationRoot(), 'bin', 'jevellan.mjs'), 'mcp-bridge'], env } } } };
       let usageUpdates = Promise.resolve(); let usageFailure: unknown;
       let usage = accounts.find(value => value.account.id === account.id)?.statuses.find(value => value.deviceId === this.options.deviceId)?.usage;
       try {

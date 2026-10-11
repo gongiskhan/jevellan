@@ -500,13 +500,31 @@ export function RuntimesPage(props: PageProps & { embedded?: boolean }) {
                 disabled={task.busy}
                 onChange={(event) => {
                   const configuration = structuredClone(data.config.configuration);
-                  configuration['x-jevellan'].runtimes[runtime.id] = { enabled: event.target.checked };
+                  configuration['x-jevellan'].runtimes[runtime.id] = { ...configuration['x-jevellan'].runtimes[runtime.id], enabled: event.target.checked };
                   void task.run((signal) => props.saveConfig(configuration, signal));
                 }}
               />
               <span>Enabled</span>
             </label>
           </div>
+          {runtime.nativeSetup && <div className="native-setup">
+            <label className="toggle">
+              <input type="checkbox" aria-label={`Use my own ${runtime.displayName} setup`}
+                checked={data.config.configuration['x-jevellan'].runtimes[runtime.id]?.useOwnSetup !== false}
+                disabled={task.busy} onChange={event => {
+                  const configuration = structuredClone(data.config.configuration);
+                  configuration['x-jevellan'].runtimes[runtime.id] = { ...configuration['x-jevellan'].runtimes[runtime.id]!, useOwnSetup: event.target.checked };
+                  void task.run(signal => props.saveConfig(configuration, signal));
+                }} />
+              <span>Use my own {runtime.displayName} setup</span>
+            </label>
+            <p className="muted">Sessions use the skills, agents, commands, plugins, MCP servers and instructions from your own {runtime.displayName} setup on each device. Jevellan only reads them. Permissions, logins and model choices stay with Jevellan.</p>
+            <details><summary>Applied from this device</summary>
+              {runtime.nativeSetup.items.map((item, index) => <p key={index} className="muted">
+                {item.applied ? 'Applied from' : 'Not applied'} {item.path} · {item.item}{item.reason ? ` · ${item.reason}` : ''}
+              </p>)}
+            </details>
+          </div>}
           <div className="model-chips">
             {data.offered
               .find((offered) => offered.runtime === runtime.id)

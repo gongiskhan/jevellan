@@ -751,6 +751,10 @@ function PullRequestRow({ projectId, entry, navigate, merge }: { projectId: stri
         <span className={`chip pw-badge pw-tone-${badge.tone}`}>{badge.text}</span>
         {pr.mergeable === 'conflict' && <span className="chip pw-badge pw-tone-danger">{copy.CONFLICTS}</span>}
       </div>
+      {entry.reviewRequired && <p className="pw-pr-reason">{pr.review?.commit === pr.headSha
+        ? pr.review.verdict === 'approve' ? 'Reviewed by the coordinator' : 'Changes requested by the coordinator'
+        : "Waiting for the coordinator's review"}</p>}
+      {pr.review?.commit === pr.headSha && <details><summary>Review note</summary><Markdown>{pr.review.note}</Markdown></details>}
       <div className="pw-pr-actions">
         <RouteLink className="text-button pw-open-thread" href={thread} navigate={navigate}>{copy.OPEN_THREAD}</RouteLink>
         <a className="button-link secondary small" href={pr.url} target="_blank" rel="noopener noreferrer"><Icon name="external" size={14} />{copy.OPEN_ON_GITHUB}</a>
@@ -894,6 +898,7 @@ const settingsForm = (from: SettingsBase) => ({
   defaultIsolation: from.settings.defaultIsolation, isolationChanged: false, modelId: from.settings.coordinator.modelId ?? '',
   effort: from.settings.coordinator.effort, setupCommand: from.settings.setupCommand ?? '', maxRunningThreads: String(from.settings.maxRunningThreads),
   maxRunningPerDevice: String(from.settings.maxRunningPerDevice), threadTurnCap: String(from.settings.threadTurnCap),
+  coordinatorReview: from.settings.coordinatorReview, threadRules: from.settings.threadRules, allowMainIsolation: from.settings.allowMainIsolation,
 });
 /**
  * Project settings (12.2). The dialog reads the settings when it opens (the page view may predate a save made a moment
@@ -972,6 +977,9 @@ function SettingsDialog({ props, view, close }: { props: PageProps; view: Projec
             <input value={form.setupCommand} maxLength={500} placeholder={copy.SETUP_COMMAND_PLACEHOLDER} spellCheck={false}
               onChange={(event) => change({ setupCommand: event.target.value })} />
           </label>
+          <label className="checkbox"><input type="checkbox" checked={form.coordinatorReview} onChange={event => change({ coordinatorReview: event.target.checked })} />The coordinator reviews pull requests</label>
+          <label className="checkbox"><input type="checkbox" checked={form.allowMainIsolation} onChange={event => change({ allowMainIsolation: event.target.checked })} />Allow work directly on main</label>
+          <label>Rules for every thread<textarea rows={5} value={form.threadRules} maxLength={4000} onChange={event => change({ threadRules: event.target.value })} /></label>
           <div className="form-grid pw-limits">
             <label>{copy.MAX_RUNNING_THREADS}
               <input type="number" required min={1} max={20} step={1} inputMode="numeric" value={form.maxRunningThreads}
@@ -1095,8 +1103,11 @@ function CoordinatorOverrideDialog({ props, view, close }: { props: PageProps; v
     <form className="pw-settings" onSubmit={event => { event.preventDefault(); if (!base) return;
       void task.run(async signal => {
         setError('');
+        const kept = { defaultIsolation: base.defaultIsolation, setupCommand: base.setupCommand, maxRunningThreads: base.maxRunningThreads,
+          maxRunningPerDevice: base.maxRunningPerDevice, threadTurnCap: base.threadTurnCap, allowMainIsolation: base.allowMainIsolation,
+          threadRules: base.threadRules, coordinatorReview: base.coordinatorReview, nightlyWindow: base.nightlyWindow, refill: base.refill };
         await save(path, ProjectWorkSettingsViewSchema, 'PUT', { schema: 'project-work-settings-request-v1', revision: base.revision,
-          settings: { defaultIsolation: base.defaultIsolation, setupCommand: base.setupCommand, maxRunningThreads: base.maxRunningThreads, maxRunningPerDevice: base.maxRunningPerDevice, threadTurnCap: base.threadTurnCap, coordinator: { ...base.coordinator, modelId: modelId || null, effort } } }, signal);
+          settings: { ...kept, coordinator: { ...base.coordinator, modelId: modelId || null, effort } } }, signal);
         if (fresh) await api(`/api/projects/${view.project.id}/coordinator/fresh`, ProjectWorkViewSchema, 'POST', empty, { signal });
         updated(); afterDialogs(props.message, 'Coordinator choices saved. They apply from the next turn.'); close();
       });

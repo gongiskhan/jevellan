@@ -12,6 +12,7 @@ const name = /^(?!\.{1,2}$)[A-Za-z0-9._-]{1,100}$/;
 const sha = /^[a-f0-9]{40,64}$/;
 
 export type GitHubRepository = { owner: string; repo: string };
+const PullFiles = z.array(z.object({ filename: z.string().max(4096), status: z.string(), additions: z.number().int().nonnegative(), deletions: z.number().int().nonnegative(), patch: z.string().optional() })).max(100);
 /** Owner and repository of a raw GitHub remote URL (D18): https, scp-like ssh and ssh:// forms, optional `.git` and trailing `/`, case kept. */
 export function parseGitHubRemote(url: string): GitHubRepository | null {
   const match = /^(?:https:\/\/github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)([^/]+)\/([^/]+?)(?:\.git)?\/?$/i.exec(url.trim());
@@ -82,6 +83,14 @@ export class GitHubClient {
   }
   async getPull(repository: GitHubRepository, number: number): Promise<GitHubPull> {
     return pull(await this.#request('GET', `${repo(repository)}/pulls/${pullNumber(number)}`, GitHubPullResponseSchema));
+  }
+  async pullFiles(repository: GitHubRepository, number: number): Promise<z.infer<typeof PullFiles>> {
+    const files: z.infer<typeof PullFiles> = [];
+    for (let page = 1; page <= 30; page++) {
+      const next = await this.#request('GET', `${repo(repository)}/pulls/${pullNumber(number)}/files?per_page=100&page=${page}`, PullFiles);
+      files.push(...next); if (next.length < 100) break;
+    }
+    return files;
   }
   /** Check runs and commit statuses of a head commit (brief 8.5). Pages of 100, at most 10 pages each. */
   async checks(repository: GitHubRepository, commit: string): Promise<GitHubChecks> {

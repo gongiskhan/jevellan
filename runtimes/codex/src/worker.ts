@@ -3,7 +3,7 @@ import { serveWorker, classifyRuntimeError, type RunResult, type RuntimeEvent, t
 import { z } from 'zod';
 import { fileURLToPath } from 'node:url';
 import { realpathSync } from 'node:fs';
-import { projectTrustOverride, projectInstructions, worktreeGitDirs } from './configuration.js';
+import { projectTrustOverride, projectInstructionPrompt, worktreeGitDirs } from './configuration.js';
 
 const ItemSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('reasoning'), id: z.string(), text: z.string() }),
@@ -24,7 +24,7 @@ function codexRuntime(input: Pick<StretchInput | TurnInput, 'launch'>, cwd: stri
   // Keep the path inside a TOML value so the native CLI receives one exact key.
   return new Codex({ codexPathOverride: fileURLToPath(new URL('../bin/launch.mjs', import.meta.url)), env,
     configOverrides: [projectTrustOverride(cwd)],
-    config: { jevellan_executable: executable ?? 'codex', features: { multi_agent: false, hooks: true }, mcp_servers: mcp, hooks: { PreToolUse: [{ matcher: '^Bash$', hooks: [{ type: 'command', command: safety, timeout: 10 }] }] } },
+    config: { ...input.launch.nativeSetup?.settings, jevellan_executable: executable ?? 'codex', features: { multi_agent: false, hooks: true }, mcp_servers: mcp, hooks: { PreToolUse: [{ matcher: '^Bash$', hooks: [{ type: 'command', command: safety, timeout: 10 }] }] } },
   });
 }
 
@@ -92,7 +92,7 @@ async function execute(control: Control, timeoutMs: number, prepare: () => { thr
 
 const stretchSession = (input: StretchInput, daemonPid: number, executable?: string): WorkerSession => {
   const cwd = realpathSync(input.cwd);
-  const instructions = projectInstructions(cwd); let firstTurn = true;
+  let firstTurn = true;
   const runtime = codexRuntime(input, cwd, { cwd: input.cwd, action: input.action, daemonPid }, executable);
   const options: ThreadOptions = { workingDirectory: cwd, model: input.model, modelReasoningEffort: input.effort, sandboxMode: input.permissions === 'read-only' ? 'read-only' : 'workspace-write', approvalPolicy: 'never', networkAccessEnabled: input.permissions === 'write', ...(input.inputCopy ? { skipGitRepoCheck: true } : {}) };
   let thread = runtime.startThread(options);
@@ -104,7 +104,7 @@ const stretchSession = (input: StretchInput, daemonPid: number, executable?: str
         if (!thread.id) throw new Error('Codex did not provide a session to continue.');
         thread = runtime.resumeThread(thread.id, { ...options, sandboxMode: 'read-only', networkAccessEnabled: false });
       }
-      const prompt = firstTurn && instructions ? `# Project instructions: AGENTS.md\n${instructions}\n\n# Current stretch\n${message}` : message;
+      const prompt = `${input.launch.nativeSetup?.instructions ? '# Native Codex instructions\n' + input.launch.nativeSetup.instructions + '\n\n' : ''}${projectInstructionPrompt(cwd)}# Current stretch\n${message}`;
       firstTurn = false;
       return { thread, prompt };
     }, emit, session),
@@ -112,7 +112,7 @@ const stretchSession = (input: StretchInput, daemonPid: number, executable?: str
 };
 
 // A turn runs once with the sandbox from its permissions, resumed or not. Codex has no system prompt channel, so the
-// append and the root AGENTS.md ride the first prompt of a session only (D21).
+// root instructions are read again on each new or resumed turn.
 const turnSession = (input: TurnInput, daemonPid: number, executable?: string): WorkerSession => {
   const cwd = realpathSync(input.cwd);
   const runtime = codexRuntime(input, cwd, { cwd: input.cwd, daemonPid, profile: input.safetyProfile }, executable);
@@ -123,9 +123,9 @@ const turnSession = (input: TurnInput, daemonPid: number, executable?: string): 
     async interrupt() { control.controller.abort(); },
     run: (message, timeoutMs, emit, session) => execute(control, timeoutMs, () => {
       // A resumed exec may not announce its thread again; the stored session stays the turn's session.
-      if (input.resume) { session(input.resume.sessionId); return { thread: runtime.resumeThread(input.resume.sessionId, options), prompt: message }; }
-      const instructions = projectInstructions(cwd);
-      return { thread: runtime.startThread(options), prompt: `${instructions ? `# Project instructions: AGENTS.md\n${instructions}\n\n` : ''}${input.systemAppend}\n\n${message}` };
+      const prompt = `${input.launch.nativeSetup?.instructions ? '# Native Codex instructions\n' + input.launch.nativeSetup.instructions + '\n\n' : ''}${projectInstructionPrompt(cwd)}${input.systemAppend}\n\n${message}`;
+      if (input.resume) { session(input.resume.sessionId); return { thread: runtime.resumeThread(input.resume.sessionId, options), prompt }; }
+      return { thread: runtime.startThread(options), prompt };
     }, emit, session),
   };
 };

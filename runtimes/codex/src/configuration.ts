@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
+import { lstatSync, mkdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { inside } from '@jevellan/core';
 
@@ -8,13 +8,28 @@ export function projectTrustOverride(cwd: string): string {
   return `projects={${JSON.stringify(realpathSync(cwd))}={trust_level="untrusted"}}`;
 }
 
-/** Supply project instructions without enabling project configuration or hooks. */
-export function projectInstructions(cwd: string): string {
-  const root = realpathSync(cwd); const path = join(root, 'AGENTS.md');
-  if (!existsSync(path)) return '';
-  if (!inside(root, realpathSync(path))) throw new Error('Project AGENTS.md must resolve inside the project.');
-  if (!statSync(path).isFile() || statSync(path).size > 32_768) throw new Error('Project AGENTS.md must be a file of at most 32768 bytes.');
-  return readFileSync(path, 'utf8');
+/** Select once by presence, so an invalid AGENTS.md cannot silently enable the fallback. */
+export function projectInstructionFile(cwd: string): { filename: 'AGENTS.md' | 'CLAUDE.md'; text: string } | null {
+  const root = realpathSync(cwd);
+  for (const filename of ['AGENTS.md', 'CLAUDE.md'] as const) {
+    const path = join(root, filename);
+    try { lstatSync(path); }
+    catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') continue; throw error; }
+    const target = realpathSync(path);
+    if (!inside(root, target)) throw new Error(`Project ${filename} must resolve inside the project.`);
+    const info = statSync(target);
+    if (!info.isFile() || info.size > 32_768) throw new Error(`Project ${filename} must be a file of at most 32768 bytes.`);
+    const bytes = readFileSync(target);
+    if (bytes.length > 32_768) throw new Error(`Project ${filename} must be a file of at most 32768 bytes.`);
+    return { filename, text: bytes.toString('utf8') };
+  }
+  return null;
+}
+export function projectInstructions(cwd: string): string { return projectInstructionFile(cwd)?.text ?? ''; }
+/** Read afresh on every run, including native session resumes. */
+export function projectInstructionPrompt(cwd: string): string {
+  const file = projectInstructionFile(cwd);
+  return file ? `# Project instructions: ${file.filename}\n${file.text}\n\n` : '';
 }
 
 /** What a commit in a linked worktree writes: the common directory's objects, refs and logs and the worktree's own git directory,

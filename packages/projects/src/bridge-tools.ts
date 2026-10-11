@@ -118,7 +118,7 @@ export type CoordinatorToolsOptions = {
   threads: Pick<ThreadService, 'start' | 'message' | 'stop' | 'list' | 'read'>;
   store: Pick<ThreadStore, 'get'>;
   decisions: Pick<DecisionItems, 'ask' | 'withdraw'>;
-  pullRequests: Pick<PullRequestTracker, 'fresh'>;
+  pullRequests: Pick<PullRequestTracker, 'fresh'> & Partial<Pick<PullRequestTracker, 'diff' | 'review'>>;
   hub: Pick<ProjectHub, 'thread' | 'notebook' | 'putNotebook'>;
   ledgers: Pick<ProjectLedgers, 'coordinator'>;
   /** Mail to the threads that work on main (brief 7.1). */
@@ -139,6 +139,7 @@ const idField = (value: unknown, key: string): string | undefined => { const fou
  * derived from the turn and the input. Every call leaves one line in the coordinator chat (D200).
  */
 export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Omit<ProjectToolHandlers, 'isCurrent'>> {
+  const heads = new Map<string, string>();
   const deviceNames = async () => {
     const names = new Map(((await o.roster().catch(() => null))?.devices ?? []).map((view) => [view.device.id, view.device.name]));
     return (deviceId: string) => names.get(deviceId) ?? (deviceId === o.deviceId ? o.deviceName : deviceId);
@@ -152,7 +153,7 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
   // The turn number is this device's (coordinator-local), so the coordinator device is part of every id: after a move the new device counts
   // from 1 again, and its deliveries never repeat the former device's ids (P8 review C-3).
   const turnId = (prefix: string, projectId: string, turn: number, input: unknown) => derivedId(prefix, 'coordinator', projectId, o.deviceId, String(turn), stableJson(input));
-  async function call(projectId: string, turn: number, name: ProjectToolName, raw: unknown): Promise<unknown> {
+  async function call(projectId: string, turn: number, name: ProjectToolName, raw: unknown, signal: AbortSignal): Promise<unknown> {
     switch (name) {
       case 'jevellan_threads_list': {
         const input = raw as Input<typeof name>;
@@ -226,13 +227,27 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
         const read = await o.pullRequests.fresh(projectId, input.threadId);
         return { schema: 'pr-status-result-v1', threadId: input.threadId, pr: read.pr, ...(read.reason ? { reason: read.reason.slice(0, 400) } : {}) };
       }
+      case 'jevellan_pr_diff': {
+        const input = raw as Input<typeof name>;
+        if (!o.pullRequests.diff) throw failure('Pull request diff is unavailable.', 409);
+        const result = await o.pullRequests.diff(projectId, input.threadId);
+        if (heads.size > 256) heads.clear(); heads.set(`${projectId}:${turn}:${input.threadId}`, result.commit);
+        return result;
+      }
+      case 'jevellan_pr_review': {
+        const input = raw as Input<typeof name>, commit = heads.get(`${projectId}:${turn}:${input.threadId}`);
+        if (!commit || !o.pullRequests.review) throw failure('Read this pull request with jevellan_pr_diff in this turn before reviewing it.', 409);
+        const review = await o.pullRequests.review(projectId, input.threadId, commit, input.verdict, input.note, signal);
+        if (input.verdict === 'changes') await o.threads.message(projectId, input.threadId, 'coordinator', input.note, false, turnId('tcmd', projectId, turn, input));
+        return { schema: 'pr-review-result-v1', review };
+      }
       case 'jevellan_mail_send': return o.mail.coordinatorSend(projectId, turn, raw as Input<typeof name>, o.deviceId);
       // The thread tools (report, inbox and reservations) are not the coordinator's.
       default: throw failure(TOOL_NOT_IN_TURN, 403);
     }
   }
   return {
-    call: (scope, name, input) => call(scope.projectId, scope.turn, name, input),
+    call: (scope, name, input, signal) => call(scope.projectId, scope.turn, name, input, signal),
     memory: (scope) => o.memory(scope.projectId),
     line: async (name, input, outcome, scope) => {
       // Mail names its thread in `to` (`all` and `coordinator` are id-shaped but no thread).

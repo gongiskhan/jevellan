@@ -1043,7 +1043,7 @@ test('Coordinator overrides expose model and effort while preserving unrelated p
 test('Consecutive tool calls share an open area and new live output appends to it', async ({ page }, info) => {
   const errors = await begin(page);
   const created = await page.request.post(`${PROJECT}/threads`, { data: { schema: 'thread-create-request-v1', clientRequestId: `request_groups_${info.project.name}`, title: 'Inspect app files for grouping', task: 'Read the README and describe the files.', isolation: 'worktree', modelId: 'claude-fable', effort: 'high' } });
-  expect(created.ok()).toBe(true); const started = await created.json();
+  expect(created.ok(), await created.text()).toBe(true); const started = await created.json();
   await expect.poll(async () => (await threadView(page, started.threadId)).thread.state, LONG).not.toBe('preparing');
   const view = await threadView(page, started.threadId); const thread = view.thread;
   const tool = (id: string, name = 'Read') => ({ type: 'tool' as const, id, name, input: JSON.stringify({ file_path: `${id}.txt` }), output: `Output ${id}`, state: 'completed' as const });
@@ -1060,4 +1060,27 @@ test('Consecutive tool calls share an open area and new live output appends to i
   turns[0]!.blocks.push(tool('appended')); await expect(areas.first().locator('.cursor-tool-call')).toHaveCount(3);
   await expect(areas.first()).toContainText('Output appended'); await expect(areas).toHaveCount(4);
   await page.screenshot({ path: `/tmp/jevellan-tool-groups-${info.project.name}.png`, fullPage: true }); expect(errors).toEqual([]);
+});
+
+test('LJ2 native setup is visible and coordinator changes are followed by approval on the new head', async ({ page }, info) => {
+  const errors = await begin(page);
+  await page.goto('/settings/runtimes');
+  await expect(page.getByRole('checkbox', { name: 'Use my own Claude Code setup' })).toBeChecked();
+  await expect(page.locator('.native-setup').filter({ hasText: 'fixture_hello' })).toContainText('Applied from');
+  await expect(page.locator('.native-setup').filter({ hasText: 'fixture_hello' })).toContainText('skills');
+  await shot(page, 'native-setup');
+  await page.goto('/projects/projects_fixture');
+  const created = await page.request.post(`${PROJECT}/threads`, { data: { schema: 'thread-create-request-v1', clientRequestId: `request_review_${info.project.name}`, title: 'Review loop', task: 'LJ2 review loop: add a greeting example.', isolation: 'worktree', modelId: 'claude-fable', effort: 'high' } });
+  expect(created.ok(), await created.text()).toBe(true); const started = await created.json();
+  await expect.poll(async () => (await work(page)).pullRequests.find(entry => entry.threadId === started.threadId)?.pr?.number, LONG).toBeGreaterThan(0);
+  const number = (await work(page)).pullRequests.find(entry => entry.threadId === started.threadId)!.pr!.number;
+  await control(`/projects/github/${number}`, { schema: 'fixture-pull-change-v1', checks: 'passing', mergeable: 'clean' });
+  await expect.poll(async () => (await work(page)).pullRequests.find(entry => entry.threadId === started.threadId)?.pr?.review?.verdict, LONG).toBe('approve');
+  const current = (await work(page)).pullRequests.find(entry => entry.threadId === started.threadId)!;
+  expect(current.pr?.review?.commit).toBe(current.pr?.headSha);
+  const detail = await threadView(page, started.threadId); expect(detail.thread.turns).toBeGreaterThanOrEqual(2);
+  if (phone(info)) await tap(page, tab(page, 'Pull requests'));
+  const row = page.locator('.pw-pr').filter({ hasText: 'Review loop' }); await expect(row).toContainText('Reviewed by the coordinator', LONG);
+  await row.getByText('Review note', { exact: true }).click(); await expect(row).toContainText('The behavior and its verification are ready.');
+  await shot(page, 'reviewed'); expect(errors).toEqual([]);
 });

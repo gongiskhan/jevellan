@@ -18,6 +18,7 @@
     "@jevellan/core": "0.1.0",
     "@xterm/headless": "6.0.0",
     "node-pty": "1.1.0",
-    "zod": "4.6.5"
+    "zod": "4.6.5",
+    "@modelcontextprotocol/sdk": "1.30.1"
   }
 }

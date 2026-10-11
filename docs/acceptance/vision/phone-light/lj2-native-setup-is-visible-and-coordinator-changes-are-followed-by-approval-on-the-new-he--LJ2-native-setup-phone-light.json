@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ2 native setup is visible and coordinator changes are followed by approval on the new head",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/LJ2-native-setup-phone-light.png",
+  "expected": "the Jevellan web app \"LJ2 native setup\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"LJ2 native setup is visible and coordinator changes are followed by approval on the new head\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The tab bar is clipped on the right: a fourth tab is partly hidden behind the scroll arrow button. The arrow still lets users reach it.",
+      "The device lists under both Claude Code accounts say \"Codex sign-ins are kept per device for now.\" This looks like the wrong product name copied from the Codex section."
+    ]
+  }
+}

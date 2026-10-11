@@ -1,5 +1,5 @@
 import type {
-  DecisionAnswer, FileReservation, PlacementOverride, ProjectCoordinator, ProjectCoordinatorStatus, ProjectDecision, ProjectEnvelope, ProjectMail, ProjectNotebook, ProjectWorkSettings, ThreadIndex,
+  DecisionAnswer, FileReservation, PlacementOverride, ProjectCoordinator, ProjectCoordinatorStatus, ProjectDecision, ProjectEnvelope, ProjectMail, ProjectNotebook, ProjectWorkSettings, PullRequestReview, ThreadIndex,
 } from './project-schemas.js';
 import type { HeldCheckout, ProjectWorkSummary, ReservationConflict, ReservationRequest } from './project-hub-schemas.js';
 import type { Stored } from './store.js';
@@ -30,6 +30,8 @@ export interface ProjectHub {
   threads(projectId: string, after?: string): Promise<{ records: ThreadIndex[]; next: string | null }>;
   thread(threadId: string): Promise<Stored<ThreadIndex> | null>;
   publishThread(index: ThreadIndex, eventId: number): Promise<{ eventId: number }>;
+  review(threadId: string): Promise<Stored<PullRequestReview> | null>;
+  putReview(review: PullRequestReview, expectedRevision: number): Promise<Stored<PullRequestReview>>;
   // decisions: open plus answered in the last 14 days, ordered by id
   decisions(projectId: string): Promise<ProjectDecision[]>;
   decision(id: string): Promise<Stored<ProjectDecision> | null>;

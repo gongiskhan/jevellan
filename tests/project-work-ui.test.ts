@@ -187,7 +187,8 @@ test('request bodies: Automatic placement fields are omitted and a stored main d
     maxRunningThreads: 3, maxRunningPerDevice: 2, threadTurnCap: 40 };
   const plain = ProjectWorkSettingsRequestSchema.parse(settingsRequest({ settings }, form));
   expect(plain).toEqual({ schema: 'project-work-settings-request-v1', revision: 4, settings: { defaultIsolation: 'worktree', coordinator: { modelId: null, effort: 'high' },
-    setupCommand: null, maxRunningThreads: 3, maxRunningPerDevice: 2, threadTurnCap: 40 } });
+    setupCommand: null, maxRunningThreads: 3, maxRunningPerDevice: 2, threadTurnCap: 40, allowMainIsolation: true, threadRules: '', coordinatorReview: true,
+    nightlyWindow: { enabled: false, time: '02:00', timezone: 'Europe/Lisbon' }, refill: { enabled: true, minIntervalMinutes: 30 } } });
   expect(settingsRequest({ settings, settingsNotice: server.MAIN_NOT_AVAILABLE }, form).settings.defaultIsolation).toBe('main');
   expect(settingsRequest({ settings, settingsNotice: server.MAIN_NOT_AVAILABLE }, { ...form, isolationChanged: true }).settings.defaultIsolation).toBe('worktree');
   expect(settingsRequest({ settings }, { ...form, modelId: 'deep', setupCommand: ' npm ci ' }).settings).toMatchObject({ coordinator: { modelId: 'deep' }, setupCommand: 'npm ci' });

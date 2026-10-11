@@ -29,6 +29,7 @@ How you work:
 - Worktree threads end in a pull request that the owner reviews and merges. You cannot merge. ${gitPolicy === 'external' ? 'This project is set to Leave git to me. Main threads edit the existing checkout, including untracked files, and leave all git operations to the owner. Do not ask the owner to commit files or change that policy just to make a code change. Worktree threads see only committed files; do not tell them to edit outside their workspace.' : 'Main threads publish directly to main.'}
 - When a thread reports, decide the next step yourself whenever the answer follows from the owner's instructions, the notebook or the code. Ask the owner with jevellan_ask_user only when the decision is genuinely theirs. Keep questions short, offer 2 to 4 options when possible, and continue other work while waiting.
 - When checks fail or a pull request has conflicts, tell the responsible thread what to fix.
+- When a pull request is ready for review, read it with jevellan_pr_diff and review correctness, the project's rules, missing tests, security mistakes and needless complexity. Approve with jevellan_pr_review when it is good to merge; otherwise request changes with a note listing each change. You cannot merge.
 - When a thread was interrupted by a restart or a failure, resume it with jevellan_thread_message if the work is still wanted.
 - Keep the notebook current with jevellan_notebook_write: the owner's standing instructions and preferences for this project, decisions taken, the current plan and open questions. Keep it concise. The notebook is your memory across sessions.
 
@@ -118,6 +119,7 @@ export function eventLine(event: CoordinatorEvent, context: EventLineContext): s
       return `[owner answered] "${event.question}" → ${optionLabel ? `${optionLabel}${text ? `. Note: ${text}` : ''}` : text ?? ''}`;
     }
     case 'pr-update': return `[PR #${event.prNumber} "${title(event.threadId)}"] ${event.change === 'conflict' ? `has conflicts with ${context.base}` : PR_CHANGES[event.change]}`;
+    case 'pr-ready-for-review': return `[PR #${event.prNumber} "${title(event.threadId)}" on ${event.commit.slice(0, 7)}] ready for coordinator review`;
     case 'mail': return `[mail from "${event.fromTitle ?? title(event.fromThreadId)}" (${event.fromThreadId})] ${event.subject}\n${event.body}`;
     case 'thread-user-message':
       return PREFORMATTED.some((prefix) => event.text.startsWith(prefix)) ? event.text : `[owner wrote directly to ${thread(event.threadId)}] ${event.text}`;
@@ -132,19 +134,16 @@ export function threadSystemAppend(input: { projectName: string; cwd: string; is
   const isolation = input.isolation === 'worktree'
     ? `Isolation: your own git worktree on branch ${input.branch ?? ''}, based on ${input.baseBranch}. Other threads work elsewhere. Commit your work on this branch.`
     : `Isolation: you work directly on main in the project checkout of ${input.deviceName}. Other main threads may work on other devices at the same time. Before editing, reserve the files or folders you will change with jevellan_reserve, check jevellan_mail_inbox at the start of each turn, and tell other threads about changes that affect them with jevellan_mail_send. Release reservations when done.`;
-  return `You are working on one thread of the project "${input.projectName}", coordinated by Jevellan. A coordinator assigned you this task and may send you follow-up messages.
+  return `You are working on one task for this project's coordinator. Work the way you normally would, in the project "${input.projectName}" at ${input.cwd}.
 
-Workspace: ${input.cwd}
 ${isolation}
 
-Rules:
-- Do the whole task: understand the code, implement, and run the relevant tests yourself.
-- When the task includes running an app for the owner, use jevellan_app_start: static serves an HTML directory; command launches the project's server with PORT and HOST (or {port}/{host} in its arguments). It returns a verified URL and keeps the app running after your turn ends. Include that URL in your reply and report summary. Use jevellan_apps_list and jevellan_app_stop to inspect or stop this project's apps. If untracked app files are absent from a worktree, you may serve the registered project checkout without changing it. Do not substitute tests or a file opened on the server for a working link.
-- ${manual ? 'This project leaves git to the owner. Edit the existing files, including untracked files, and preserve unrelated owner work. Do not commit, stage, stash, reset, switch branches, push or open a pull request. Leave the edits in place for the owner.' : "Commit with clear messages using the machine's git identity. Never add attribution trailers, AI credits or session links to commits, code or documentation."}
-- ${manual ? `When you report done, Jevellan runs ${input.testCommand || 'the checks'} and releases the checkout without changing git.` : `Do not push and do not open pull requests. When you report done, Jevellan runs ${input.testCommand || 'the checks'}, pushes${input.isolation === 'worktree' ? ' and opens the pull request' : ''}.`}
-- If you need a decision that is not yours to make, report needs-decision with a short question and 2 to 4 options, and stop.
-- End every turn by calling jevellan_thread_report exactly once: done when the task is complete${manual ? ' and verified' : ' and committed'}, progress when you made progress and will continue when asked, needs-decision when you need an answer, blocked when you cannot continue. Keep the summary short and factual.`;
+- Keep the coordinator informed. End every turn with exactly one jevellan_thread_report: progress while you are still working, done when the task is complete, blocked when something outside your control stops you, and needs-decision with two to four options when a choice belongs to the owner.
+- ${manual ? "This project leaves git to the owner. Preserve unrelated work; do not commit, stage, stash, reset, switch branches, push or open a pull request. Leave the edits in place for the owner." : "Commit your work with the machine's git identity and no attribution. Jevellan pushes and opens the pull request; never push or open one yourself."}
+- Run only surgical tests: the ones that cover what you changed. Jevellan runs the project's checks and the full suite.
+- Don't review your own work beyond normal care. The coordinator reviews every pull request and will message you with anything to change.`;
 }
+
 export const taskPrompt = (title: string, task: string): string => `Task: ${title}\n\n${task}`;
 export const MESSAGE_SEPARATOR = '\n\n---\n\n';
 /** One queued message is sent as is; several are each prefixed on their own line (D22). */
@@ -386,6 +385,8 @@ export function coordinatorToolSummary(tool: string, input: unknown, outcome: To
       const number = field(field(result, 'pr'), 'number');
       return line(typeof number === 'number' ? `Checked PR #${number}` : `Checked ${thread}: no pull request`, `check the pull request of ${thread}`);
     }
+    case 'jevellan_pr_diff': return line(`Read the pull request diff of ${thread}`, `read the pull request diff of ${thread}`);
+    case 'jevellan_pr_review': return line(`${field(input, 'verdict') === 'approve' ? 'Approved' : 'Requested changes on'} the pull request of ${thread}`, `review the pull request of ${thread}`);
     case 'jevellan_mail_send': {
       // A thread recipient reads as its title when it is known, like the other thread lines; `all` stays as written.
       const to = textField(input, 'to') ?? ''; const named = to === 'all' || title === undefined ? to : thread;

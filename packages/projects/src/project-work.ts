@@ -120,7 +120,7 @@ export class ProjectWork {
     // A thread attached in a terminal holds its account for every turn on this device, read from the threads themselves (phase 8).
     const held = (): ReadonlySet<string> => new Set(this.store.all().filter((thread) => thread.state === 'attached').map((thread) => thread.placement.accountId));
     const launcher = new TurnLauncher({ accounts: o.accounts, runtimes: o.runtimes, accountRuns: o.accountRuns, riggingItems: o.riggingItems, bridges: o.bridges, homes: o.homes,
-      deviceId: o.deviceId, deviceName: o.deviceName, daemonUrl: () => this.daemonUrl, redactor: o.redactor, held });
+      deviceId: o.deviceId, deviceName: o.deviceName, daemonUrl: () => this.daemonUrl, redactor: o.redactor, held, useOwnSetup: async runtime => (await o.settings()).runtimes[runtime]?.useOwnSetup !== false });
     this.admission = new Admission({ hub: o.hub, deviceId: o.deviceId, deviceName: o.deviceName, localLive: (projectId) => this.threads.liveThreads(projectId),
       nameOf: async (deviceId) => (await o.roster()).devices.find((view) => view.device.id === deviceId)?.device.name, now });
     const placement = new Placement({ settings: o.settings, accounts: o.accounts, runtimes: o.runtimes, roster: o.roster, admission: this.admission, deviceId: o.deviceId,
@@ -187,7 +187,8 @@ export class ProjectWork {
     this.tracker = new PullRequestTracker({ threads: this.store, github, git, worktrees, project: (projectId) => this.#project(projectId),
       toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event),
       transition: async (threadId, apply) => { const runner = this.threads.runner(threadId); if (runner) await runner.transition(apply); else await apply(); },
-      hub: o.hub, redactor: o.redactor, now, pollMs: timers.prPollMs, periodic: timers.periodic });
+      hub: o.hub, deviceId: o.deviceId, reviewEnabled: async projectId => (await this.admission.settings(projectId)).coordinatorReview,
+      redactor: o.redactor, now, pollMs: timers.prPollMs, periodic: timers.periodic });
     this.outbox = new Outbox({ paths: this.paths, hub: o.hub, deviceId: o.deviceId, redactor: o.redactor, timers,
       delivered: (envelope) => { if (envelope.targetDeviceId === o.deviceId) this.relayArrived(); } });
     this.inbox = new Inbox({ paths: this.paths, hub: o.hub, deviceId: o.deviceId, timers, handlers: {
@@ -393,7 +394,8 @@ export class ProjectWork {
   /** Settings 5.1 with a revision check; a conflict is the owner's reload sentence. */
   async putSettings(projectId: string, input: z.infer<typeof ProjectWorkSettingsRequestSchema>, clientRequestId?: string): Promise<z.infer<typeof ProjectWorkSettingsViewSchema>> {
     const project = await this.#project(projectId);
-    const settings = ProjectWorkSettingsSchema.parse({ ...input.settings, schema: 'project-work-settings-v1', projectId, revision: input.revision });
+    const current = (await this.#o.hub.settings(projectId))?.document ?? defaultProjectWorkSettings(projectId);
+    const settings = ProjectWorkSettingsSchema.parse({ ...current, ...input.settings, schema: 'project-work-settings-v2', projectId, revision: input.revision });
     const requestId = input.clientRequestId ?? clientRequestId;
     try { return this.#settingsView(project, (await this.#o.hub.putSettings(settings, input.revision, ...(requestId === undefined ? [] : [requestId]))).document); }
     catch (error) { if (statusOf(error) === 409) throw refuse(SETTINGS_CHANGED, 409); throw error; }

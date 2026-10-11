@@ -89,9 +89,20 @@ async function projectTool(turn, name, args) {
   catch (error) { turn.emit({ type: 'tool-end', id, ok: false, output: error instanceof Error ? error.message : 'The tool call failed.' }); throw error; }
 }
 const EVENTS_HEADER = eventBlock([]);
+const reviewedHeads = new Set();
 function coordinatorStep(input) {
   // Only the delivered events count: a fresh session's recap repeats earlier owner messages.
   const at = input.prompt.lastIndexOf(EVENTS_HEADER); const events = at < 0 ? input.prompt : input.prompt.slice(at);
+  if (events.includes('ready for coordinator review')) return async turn => {
+    const list = await turn.bridge('jevellan_threads_list', { include: 'all' });
+    for (const thread of list.threads.filter(thread => thread.pr?.state === 'open')) {
+      await projectTool(turn, 'jevellan_pr_diff', { threadId: thread.id });
+      const changes = thread.title === 'Review loop' && !reviewedHeads.has(thread.id);
+      await projectTool(turn, 'jevellan_pr_review', { threadId: thread.id, verdict: changes ? 'changes' : 'approve', note: changes ? 'Add the empty-name edge case.' : 'The behavior and its verification are ready.' });
+      reviewedHeads.add(thread.id);
+    }
+    turn.say('Reviewed the pull request.'); return { status: 'completed' };
+  };
   // The greeting turn holds after its first words until the control route releases it (or the turn is stopped), so the
   // working state is on screen for as long as a journey needs to capture it, however loaded the machine is.
   if (events.includes('PJ3: add a greeting')) return async (turn) => {
@@ -113,6 +124,14 @@ const LONG_TOOLS = [['Read', { file_path: 'README.md' }, '# Projects app\n\nA sm
 const longThreads = new Set();
 function threadStep(input) {
   const report = (status, summary, extra = {}) => async (turn) => { await projectPause(350, turn.signal); turn.say(summary); await projectTool(turn, 'jevellan_thread_report', { status, summary, ...extra }); return { status: 'completed' }; };
+  if (input.prompt.includes('LJ2 review loop') || input.prompt.includes('Add the empty-name edge case.')) return async turn => {
+    const updated = input.turn > 1;
+    writeFileSync(join(turn.input.cwd, 'review-loop.txt'), updated ? 'Hello, including an empty name.\n' : 'Hello, named person.\n');
+    // The fake GitHub merge changes PR state only. Make this journey's project check independent of earlier journeys.
+    if (!existsSync(join(turn.input.cwd, 'greeting.txt'))) writeFileSync(join(turn.input.cwd, 'greeting.txt'), 'Hello!\n');
+    git(turn.input.cwd, 'add', 'review-loop.txt', 'greeting.txt'); git(turn.input.cwd, 'commit', '-m', updated ? 'Cover the empty name' : 'Add the greeting example');
+    return report('done', updated ? 'Added the edge case.' : 'Added the greeting example.', { changedFiles: ['review-loop.txt'] })(turn);
+  };
   if (input.turn === 1 && input.prompt.includes('PJ3: create greeting.txt')) return async (turn) => {
     turn.say('Creating greeting.txt.\n'); await projectPause(350, turn.signal);
     writeFileSync(join(turn.input.cwd, 'greeting.txt'), 'Hello!\n'); git(turn.input.cwd, 'add', 'greeting.txt'); git(turn.input.cwd, 'commit', '-m', 'Add a greeting');
@@ -269,6 +288,10 @@ const decisionFetch = async (_url, init) => {
     return [id, { type: 'choice', choice, probabilities: Object.fromEntries(Object.keys(question.criteria).map((option) => [option, option === choice ? 1 : 0])), confidence: 1 }];
   })) });
 };
+const nativeSkill = join(root, 'user', '.claude', 'skills', 'say-hello'); mkdirSync(nativeSkill, { recursive: true });
+writeFileSync(join(nativeSkill, 'SKILL.md'), '---\nname: say-hello\ndescription: Say hello\n---\nHello from the fixture.\n');
+writeFileSync(join(root, 'user', '.claude', 'CLAUDE.md'), 'Use the project rules.\n');
+writeFileSync(join(root, 'user', '.claude.json'), JSON.stringify({ mcpServers: { fixture_hello: { command: process.execPath, args: ['fixture-hello.mjs'] } } }));
 const application = new Application({ homes: new Homes(join(root, 'user', '.jevellan'), join(root, 'user')), port, decisionFetch, ...projectOptions, repositoryVisibility: async (path) => path === join(root, 'memory-project') ? 'PUBLIC' : 'UNKNOWN', runtimes: (context) => {
   const claude = createClaude(context); const codex = createCodex(context);
   for (const runtime of [claude, codex]) {

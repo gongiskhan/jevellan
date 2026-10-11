@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ2 native setup is visible and coordinator changes are followed by approval on the new head",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/LJ2-native-setup-phone-dark.png",
+  "expected": "the Jevellan web app \"LJ2 native setup\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"LJ2 native setup is visible and coordinator changes are followed by approval on the new head\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The top tab bar is cut off on the right: a fourth tab after 'Decisions' is only partly visible behind the scroll-arrow button. You can still reach it by scrolling the tabs sideways, so it doesn't block anything.",
+      "Small text is low-contrast on the dark background in places, for example 'Codex sign-ins are kept per device for now.', the 'Unknown' values and the grey 'Disabled'/'Offline' status labels, but it is still readable.",
+      "The Disabled state on the 'Rigging local fixture' and 'Rigging Codex fixture' accounts is subtle: the per-device rows still show active pink 'Log in here' links, which could look interactive even though the account is disabled."
+    ]
+  }
+}

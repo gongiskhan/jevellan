@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ2 native setup is visible and coordinator changes are followed by approval on the new head",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/LJ2-reviewed-phone-dark.png",
+  "expected": "the Jevellan web app \"LJ2 reviewed\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"LJ2 native setup is visible and coordinator changes are followed by approval on the new head\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Idle' status chip and the 'Claude Code Fable · high' subtitle use very small monospace text that is hard to read at phone size",
+      "About two-thirds of the screen below the single PR card is empty"
+    ]
+  }
+}

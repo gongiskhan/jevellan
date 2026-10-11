@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import {
   DecisionAnswerSchema, FileReservationSchema, PlacementOverrideSchema, ProjectCoordinatorSchema, ProjectCoordinatorStatusSchema, ProjectDecisionSchema, ProjectEnvelopeSchema, ProjectMailSchema,
-  ProjectNotebookSchema, ProjectWorkSettingsSchema, ThreadIndexSchema,
+  ProjectNotebookSchema, ProjectWorkSettingsSchema, PullRequestReviewSchema, ThreadIndexSchema,
 } from './project-schemas.js';
 import { DevicePresenceSchema } from './mesh-schemas.js';
 import { IdSchema, TimestampSchema } from './schemas.js';
@@ -56,6 +56,8 @@ export const ProjectHubRequestSchema = z.discriminatedUnion('operation', [
   z.strictObject({ ...request, operation: z.literal('threads-list'), ...page }),
   z.strictObject({ ...request, operation: z.literal('thread-get'), threadId: IdSchema }),
   z.strictObject({ ...request, operation: z.literal('thread-publish'), index: ThreadIndexSchema, eventId: z.number().int().positive() }),
+  z.strictObject({ ...request, operation: z.literal('review-get'), threadId: IdSchema }),
+  z.strictObject({ ...request, operation: z.literal('review-put'), review: PullRequestReviewSchema, expectedRevision }),
   z.strictObject({ ...request, operation: z.literal('decisions-list'), ...page }),
   z.strictObject({ ...request, operation: z.literal('decision-get'), id: IdSchema }),
   z.strictObject({ ...request, operation: z.literal('decision-create'), decision: ProjectDecisionSchema }),
@@ -88,6 +90,7 @@ const collections = {
   'settings-get': 'settings', 'settings-put': 'settings',
   'coordinator-get': 'coordinators', 'coordinator-assign': 'coordinators', 'coordinator-status-get': 'coordinators', 'coordinator-status-put': 'coordinators',
   'threads-list': 'threads', 'thread-get': 'threads', 'thread-publish': 'threads',
+  'review-get': 'threads', 'review-put': 'threads',
   'decisions-list': 'decisions', 'decision-get': 'decisions', 'decision-create': 'decisions', 'decision-withdraw': 'decisions', 'decision-answer': 'decisions',
   'notebook-get': 'notebooks', 'notebook-put': 'notebooks',
   'override-add': 'overrides', 'overrides-recent': 'overrides',
@@ -104,6 +107,7 @@ const access = {
   'settings-get': 'read', 'settings-put': 'write',
   'coordinator-get': 'read', 'coordinator-assign': 'write', 'coordinator-status-get': 'read', 'coordinator-status-put': 'write',
   'threads-list': 'read', 'thread-get': 'read', 'thread-publish': 'write',
+  'review-get': 'read', 'review-put': 'write',
   'decisions-list': 'read', 'decision-get': 'read', 'decision-create': 'write', 'decision-withdraw': 'write', 'decision-answer': 'write',
   'notebook-get': 'read', 'notebook-put': 'write',
   'override-add': 'write', 'overrides-recent': 'read',
@@ -133,6 +137,8 @@ export const ProjectHubResultSchema = z.discriminatedUnion('operation', [
   z.strictObject({ ...result, operation: z.literal('threads-list'), ...records(ThreadIndexSchema) }),
   z.strictObject({ ...result, operation: z.literal('thread-get'), record: stored(ThreadIndexSchema).nullable() }),
   z.strictObject({ ...result, operation: z.literal('thread-publish'), threadId: IdSchema, eventId: z.number().int().positive() }),
+  z.strictObject({ ...result, operation: z.literal('review-get'), record: stored(PullRequestReviewSchema).nullable() }),
+  z.strictObject({ ...result, operation: z.literal('review-put'), record: stored(PullRequestReviewSchema) }),
   z.strictObject({ ...result, operation: z.literal('decisions-list'), ...records(ProjectDecisionSchema) }),
   z.strictObject({ ...result, operation: z.literal('decision-get'), record: stored(ProjectDecisionSchema).nullable() }),
   z.strictObject({ ...result, operation: z.literal('decision-create'), record: stored(ProjectDecisionSchema) }),

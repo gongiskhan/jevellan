@@ -9,3 +9,5 @@ export * from './fake.js';
 export * from './fake-native.js';
 export * from './native-format.js';
 export * from './testing.js';
+
+export * from './native-hooks.js';

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, test } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, realpathSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, writeFileSync, realpathSync } from 'node:fs';
 import { rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -16,6 +16,13 @@ afterEach(async () => { await rm(root, { recursive: true, force: true }); });
 const quote = (text: string) => `'${text.replaceAll("'", "'\\''")}'`;
 const denied = (reason: string) => ({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason } });
 const directive = (mode: string, requests: unknown[]) => `CONTRACT:${JSON.stringify({ mode, requests })}`;
+test.skipIf(process.platform !== 'darwin' && !existsSync('/usr/bin/bwrap'))('native hooks run after Safety and cannot replace its denial on resumed Claude turns', async () => {
+  const { adapter, input } = setup('claude'), native = join(homes.userHome, '.claude'); mkdirSync(native);
+  writeFileSync(join(native, 'settings.json'), JSON.stringify({ hooks: { PreToolUse: [{ matcher: '.*', hooks: [{ type: 'command', command: 'exit 2' }] }] } }));
+  const result = await respond(adapter, { ...input, resume: { sessionId: 'stored-session' }, prompt: directive('permissions', [{ tool: 'Bash', input: { command: 'rm -rf /' } }, { tool: 'Read', input: { file_path: 'README.md' } }]) }) as { replies: unknown[] };
+  expect(result.replies[0]).toEqual(denied(THREAD_SAFETY_REASON));
+  expect(result.replies[1]).toMatchObject({ hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: 'A native user hook blocked this tool.' } });
+});
 
 function setup(runtime: 'claude' | 'codex') {
   const executable = join(root, 'fixture-cli');
@@ -44,7 +51,7 @@ test.each(['claude', 'codex'] as const)('PJ1e resumed turns pass the stored sess
   const prompt = directive('permissions', requests);
   const response = await respond(adapter, { ...input, resume: { sessionId: 'stored-session' }, prompt });
   if (runtime === 'claude') expect(response).toEqual({ replies: [denied(THREAD_SAFETY_REASON), {}, {}], permissionMode: 'bypassPermissions', bypassAllowed: true, resume: 'stored-session', model: 'fixture-model', effort: 'low', allowedTools: null, append: 'FIXTURE_APPEND', prompt });
-  else expect(response).toEqual({ sandbox: 'workspace-write', network: true, approval: 'never', cwd: root, projectTrust: 'untrusted', resume: 'stored-session', effort: 'low', addDirs: [], prompt });
+  else expect(response).toEqual({ sandbox: 'workspace-write', network: true, approval: 'never', cwd: root, projectTrust: 'untrusted', resume: 'stored-session', effort: 'low', addDirs: [], prompt: `FIXTURE_APPEND\n\n${prompt}` });
   // The per-launch Safety hook receives the thread profile: rebase is allowed, push keeps the thread denial.
   expect(await respond(adapter, { ...input, resume: { sessionId: 'stored-session' }, prompt: directive('safety', requests.slice(0, 2)) })).toEqual([denied(THREAD_SAFETY_REASON), {}]);
 }, 45_000);
@@ -66,7 +73,7 @@ test.each(['claude', 'codex'] as const)('a resumed coordinator turn stays read-o
   const tools = projectToolNames({ kind: 'coordinator' }).map((name) => `mcp__jevellan__${name}`);
   expect(tools).toContain('mcp__jevellan__jevellan_mail_send');
   if (runtime === 'claude') expect(response).toEqual({ replies: [denied(COORDINATOR_READ_ONLY_REASON), {}, denied(COORDINATOR_READ_ONLY_REASON)], permissionMode: 'dontAsk', bypassAllowed: false, resume: 'stored-coordinator', model: 'fixture-model', effort: 'low', allowedTools: tools.join(','), append: 'FIXTURE_APPEND', prompt });
-  else expect(response).toEqual({ sandbox: 'read-only', network: false, approval: 'never', cwd: root, projectTrust: 'untrusted', resume: 'stored-coordinator', effort: 'low', addDirs: [], prompt });
+  else expect(response).toEqual({ sandbox: 'read-only', network: false, approval: 'never', cwd: root, projectTrust: 'untrusted', resume: 'stored-coordinator', effort: 'low', addDirs: [], prompt: `FIXTURE_APPEND\n\n${prompt}` });
 }, 30_000);
 
 test('a Codex write turn in a linked worktree may write the shared objects, refs and logs but not the owner checkout', async () => {
@@ -122,3 +129,18 @@ test('a Claude resume of a session that no longer exists fails with one sentence
     expect(done).toEqual({ status: 'failed', error: { kind: 'other', message: 'The session to resume no longer exists.' } });
   } finally { await run.terminate(); }
 }, 30_000);
+
+test('Codex uses CLAUDE-only root instructions and refreshes them on resumed turns', async () => {
+  const { adapter, input } = setup('codex'); const prompt = directive('permissions', []);
+  writeFileSync(join(root, 'CLAUDE.md'), 'First project rules');
+  const first = await respond(adapter, { ...input, turn: 1, prompt }) as { prompt: string };
+  expect(first.prompt).toBe(`# Project instructions: CLAUDE.md\nFirst project rules\n\nFIXTURE_APPEND\n\n${prompt}`);
+  writeFileSync(join(root, 'CLAUDE.md'), 'Changed project rules');
+  const resumed = await respond(adapter, { ...input, turn: 2, resume: { sessionId: 'stored-session' }, prompt }) as { prompt: string };
+  expect(resumed.prompt).toContain('# Project instructions: CLAUDE.md\nChanged project rules');
+  expect(resumed.prompt).not.toContain('First project rules');
+  writeFileSync(join(root, 'AGENTS.md'), 'Authoritative Codex rules');
+  const precedence = await respond(adapter, { ...input, turn: 3, resume: { sessionId: 'stored-session' }, prompt }) as { prompt: string };
+  expect(precedence.prompt).toContain('# Project instructions: AGENTS.md\nAuthoritative Codex rules');
+  expect(precedence.prompt).not.toContain('Changed project rules');
+}, 45_000);

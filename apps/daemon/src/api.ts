@@ -5,7 +5,7 @@ import { handleCursorApi } from './cursor-api.js';
 import { projectFolders } from './project-folders.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { z } from 'zod';
-import { CorrectionsListSchema, CorrectionsReadSchema, ErrorDocumentSchema, GitHubTokenStateSchema, IdSchema, ProjectWriteSchema, SecretSummarySchema, EmptySchema, ConfigWriteSchema, ImportSchema, SecretInputSchema, AccountListSchema, RiggingListSchema, RuntimeListSchema, exportConfiguration, parseConfiguration, stableJson } from '@jevellan/core';
+import { nativeSetup, CorrectionsListSchema, CorrectionsReadSchema, ErrorDocumentSchema, GitHubTokenStateSchema, IdSchema, ProjectWriteSchema, SecretSummarySchema, EmptySchema, ConfigWriteSchema, ImportSchema, SecretInputSchema, AccountListSchema, RiggingListSchema, RuntimeListSchema, exportConfiguration, parseConfiguration, stableJson } from '@jevellan/core';
 import { HubUnavailable, clearSessionCookie, sessionCookie, sessionFromCookie } from '@jevellan/mesh';
 import { AddAccountSchema, AddRiggingSchema, ReplaceCredentialSchema, UpdateAccountSchema, UpdateRiggingSchema } from '@jevellan/core';
 import { Application } from './application.js';
@@ -154,7 +154,7 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     }
     if (path === '/api/runtimes' && method === 'GET') {
       const config = (await app.configuration()).configuration['x-jevellan'];
-      send(RuntimeListSchema.parse({ schema: 'runtimes-list-v1', runtimes: [...app.runtimes.values()].map((runtime) => ({ id: runtime.id, displayName: runtime.displayName, enabled: config.runtimes[runtime.id]?.enabled === true, accountKinds: runtime.accountKinds, riggingKinds: runtime.riggingKinds, capabilities: runtime.capabilities })), offered: (await app.accounts.offered()) })); return;
+      send(RuntimeListSchema.parse({ schema: 'runtimes-list-v1', runtimes: [...app.runtimes.values()].map((runtime) => ({ id: runtime.id, displayName: runtime.displayName, enabled: config.runtimes[runtime.id]?.enabled === true, accountKinds: runtime.accountKinds, riggingKinds: runtime.riggingKinds, capabilities: runtime.capabilities, ...(['claude', 'codex'].includes(runtime.id) ? { nativeSetup: nativeSetup(app.homes, runtime.id as 'claude' | 'codex', undefined, config.runtimes[runtime.id]?.useOwnSetup !== false).inventory } : {}) })), offered: (await app.accounts.offered()) })); return;
     }
     if (path === '/hub/accounts' && method === 'GET') { send(AccountListSchema.parse({ schema: 'accounts-list-v1', accounts: (await app.accounts.list()) })); return; }
     if (path === '/hub/accounts' && method === 'POST') {

@@ -59,7 +59,7 @@ export function effectiveSettings(settings: ProjectWorkSettings, project: Pick<P
 
 export type ProjectViewsOptions = {
   deviceId: string; deviceName: string;
-  hub: Pick<ProjectHub, 'threads' | 'decisions' | 'settings' | 'coordinator' | 'coordinatorStatus' | 'notebook' | 'workSummaries'>;
+  hub: Pick<ProjectHub, 'threads' | 'decisions' | 'settings' | 'coordinator' | 'coordinatorStatus' | 'notebook' | 'workSummaries' | 'review'>;
   projects: Pick<SharedProjects, 'get' | 'list'>;
   store: Pick<ThreadStore, 'get' | 'labels' | 'local'>; ledgers: ProjectLedgers; coordinators: Pick<CoordinatorService, 'get'>;
   transcripts: Pick<ThreadTranscripts, 'read'>; worktrees: Pick<ThreadWorktree, 'repository' | 'baseBranch'>;
@@ -81,6 +81,11 @@ export class ProjectViews {
   async #threads(projectId: string): Promise<ThreadIndex[]> {
     const threads: ThreadIndex[] = []; let after: string | undefined;
     do { const page = await this.#o.hub.threads(projectId, after); threads.push(...page.records.filter((index) => index.projectId === projectId)); after = page.next ?? undefined; } while (after !== undefined);
+    await Promise.all(threads.map(async thread => {
+      if (!thread.pr) return;
+      const review = (await this.#o.hub.review(thread.id))?.document;
+      delete thread.pr.review; if (review?.commit === thread.pr.headSha) thread.pr.review = review;
+    }));
     return threads;
   }
   /** The base branch of the project checkout here (D93), detected once per project; null without a checkout. */
@@ -170,7 +175,7 @@ export class ProjectViews {
     const devices = this.#o.placement.deviceSetup(project, work, roster, placing, { settings: config, accounts });
     return ProjectWorkViewSchema.parse({ schema: 'project-work-view-v1', project: { id: project.id, name: project.name, branchPolicy: project.branchPolicy, baseBranch },
       settings: shown.settings, ...(shown.notice ? { settingsNotice: shown.notice } : {}), coordinator, threads,
-      decisions: decisionLists(decisions), pullRequests: pullRequestEntries(threads), notebookRevision: notebook?.revision ?? 0, lastEventId, gates: PHASE_GATES, devices });
+      decisions: decisionLists(decisions), pullRequests: pullRequestEntries(threads).map(entry => ({ ...entry, reviewRequired: work.coordinatorReview })), notebookRevision: notebook?.revision ?? 0, lastEventId, gates: PHASE_GATES, devices });
   }
   /** `GET /api/projects/:id/threads/:tid` for a thread this device owns (D81 `canMessage`; overrides as the API allows them, D252). */
   async thread(projectId: string, threadId: string): Promise<ThreadView> {

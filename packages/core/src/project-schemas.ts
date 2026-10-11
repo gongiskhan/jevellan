@@ -19,7 +19,7 @@ export const OptionSchema = z.strictObject({ label: z.string().min(1).max(120), 
 export type Option = z.infer<typeof OptionSchema>;
 
 // 5.1 hub namespace project-work-settings, key projectId
-export const ProjectWorkSettingsSchema = z.strictObject({
+export const ProjectWorkSettingsSchemaV1 = z.strictObject({
   schema: z.literal('project-work-settings-v1'), projectId: IdSchema, revision,
   defaultIsolation: IsolationSchema,
   coordinator: z.strictObject({ runtimeId: IdSchema.nullable().optional(), accountId: IdSchema.nullable().optional(), modelId: IdSchema.nullable(), effort: EffortSchema }),
@@ -28,7 +28,16 @@ export const ProjectWorkSettingsSchema = z.strictObject({
   maxRunningPerDevice: z.number().int().min(1).max(10),
   threadTurnCap: z.number().int().min(5).max(200),
 });
+export const ProjectWorkSettingsSchema = ProjectWorkSettingsSchemaV1.extend({
+  schema: z.literal('project-work-settings-v2'), allowMainIsolation: z.boolean().default(true),
+  threadRules: z.string().max(4000).default(''), coordinatorReview: z.boolean().default(true),
+  nightlyWindow: z.strictObject({ enabled: z.boolean(), time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/u), timezone: text.max(64) })
+    .default({ enabled: false, time: '02:00', timezone: 'Europe/Lisbon' }),
+  refill: z.strictObject({ enabled: z.boolean(), minIntervalMinutes: z.number().int().min(10).max(1440) }).default({ enabled: true, minIntervalMinutes: 30 }),
+});
 export type ProjectWorkSettings = z.infer<typeof ProjectWorkSettingsSchema>;
+export const StoredProjectWorkSettingsSchema = z.union([ProjectWorkSettingsSchemaV1, ProjectWorkSettingsSchema])
+  .transform(value => ProjectWorkSettingsSchema.parse({ ...value, schema: 'project-work-settings-v2' }));
 export const ProjectRequestOutcomeSchema = z.strictObject({ schema: z.literal('project-request-outcome-v1'), projectId: IdSchema, eventId: IdSchema,
   goal: z.enum(['answer', 'change', 'run-app', 'verify', 'other']).nullable(), source: z.enum(['jev', 'unavailable']),
   probabilities: z.record(z.string(), z.number().min(0).max(1)).optional(), calls: z.array(JevCallSchema), at: TimestampSchema });
@@ -43,7 +52,7 @@ export const ProjectAppSchema = z.strictObject({ schema: z.literal('project-app-
   startedAt: TimestampSchema, stoppedAt: TimestampSchema.optional() });
 export type ProjectApp = z.infer<typeof ProjectAppSchema>;
 export function defaultProjectWorkSettings(projectId: string): ProjectWorkSettings {
-  return ProjectWorkSettingsSchema.parse({ schema: 'project-work-settings-v1', projectId, revision: 0, defaultIsolation: 'worktree',
+  return ProjectWorkSettingsSchema.parse({ schema: 'project-work-settings-v2', projectId, revision: 0, defaultIsolation: 'worktree',
     coordinator: { modelId: null, effort: 'medium' }, setupCommand: null, maxRunningThreads: 6, maxRunningPerDevice: 4, threadTurnCap: 30 });
 }
 
@@ -90,6 +99,7 @@ export const CoordinatorEventSchema = z.discriminatedUnion('kind', [
   ev('thread-interrupted', { threadId: IdSchema, reason: z.enum(['restart', 'timeout', 'failed', 'stopped']), message: z.string().max(1000) }),
   ev('decision-answer', { decisionId: IdSchema, threadId: IdSchema.optional(), question: z.string(), answer: DecisionAnswerSchema }),
   ev('pr-update', { threadId: IdSchema, prNumber: positive, change: z.enum(['checks-failed', 'checks-passed', 'merged', 'closed', 'conflict']) }),
+  ev('pr-ready-for-review', { threadId: IdSchema, prNumber: positive, commit: z.string().regex(/^[a-f0-9]{40,64}$/u) }),
   ev('mail', { mailId: IdSchema, fromThreadId: IdSchema, fromTitle: z.string().max(160).optional(), subject: z.string().min(1).max(200), body: z.string().max(8000) }),
   ev('thread-user-message', { threadId: IdSchema, text: z.string().min(1).max(20000) }),
   ev('placement-override', { threadId: IdSchema, summary: z.string().max(400) }),
@@ -108,9 +118,12 @@ export const CoordinatorStateSchema = z.strictObject({
 export type CoordinatorState = z.infer<typeof CoordinatorStateSchema>;
 
 // 5.5
+export const PullRequestReviewSchema = z.strictObject({ schema: z.literal('pull-request-review-v1'), projectId: IdSchema, threadId: IdSchema,
+  revision, commit: z.string().regex(/^[a-f0-9]{40,64}$/u), verdict: z.enum(['approve', 'changes']), note: text.max(4000), reviewedAt: TimestampSchema, deviceId: IdSchema });
+export type PullRequestReview = z.infer<typeof PullRequestReviewSchema>;
 export const PullRequestStateSchema = z.strictObject({ number: positive, url: z.url(),
   state: z.enum(['open', 'merged', 'closed']), headSha: z.string(), checks: z.enum(['pending', 'passing', 'failing', 'none']),
-  mergeable: z.enum(['clean', 'conflict', 'unknown']), updatedAt: TimestampSchema });
+  mergeable: z.enum(['clean', 'conflict', 'unknown']), updatedAt: TimestampSchema, review: PullRequestReviewSchema.optional() });
 export type PullRequestState = z.infer<typeof PullRequestStateSchema>;
 // 5.8
 export const PlacementRecordSchema = z.strictObject({ schema: z.literal('placement-v1'), questionSet: z.literal('p-v1'),
@@ -129,7 +142,7 @@ export const QueuedMessageSchema = z.strictObject({ id: IdSchema, from: z.enum([
 export type QueuedMessage = z.infer<typeof QueuedMessageSchema>;
 export const ThreadSchema = z.strictObject({
   schema: z.literal('project-thread-v1'), id: IdSchema, projectId: IdSchema,
-  title: z.string().min(1).max(120), task: z.string().min(1).max(20000),
+  title: z.string().min(1).max(120), task: z.string().min(1).max(32768),
   createdAt: TimestampSchema, createdBy: z.enum(['coordinator', 'owner']),
   state: ThreadStateSchema, stateReason: z.string().max(400).optional(),
   isolation: IsolationSchema, placement: PlacementRecordSchema, gitPolicy: z.enum(['main', 'external']).optional(),
@@ -188,7 +201,7 @@ export const ThreadLocalSchema = z.strictObject({ schema: z.literal('thread-loca
   process: TurnProcessSchema.optional(),
   pushedCommit: z.string().regex(/^[0-9a-f]{40,64}$/).optional(),
   gitIdentity: z.strictObject({ name: z.string(), email: z.string() }).optional(),
-  prNotified: z.strictObject({ headSha: z.string(), checks: z.enum(['failing', 'passing']).optional(), conflict: z.boolean().optional() }).optional(),
+  prNotified: z.strictObject({ headSha: z.string(), checks: z.enum(['failing', 'passing']).optional(), conflict: z.boolean().optional(), reviewReady: z.boolean().optional() }).optional(),
   seenCommands: z.array(IdSchema).max(200).optional(),
   // Owner thread messages already taken, by clientMessageId with the digest of their text (D153): retries repeat.
   seenMessages: z.array(z.strictObject({ id: IdSchema, digest: z.string().regex(/^[a-f0-9]{64}$/) })).max(200).optional(),
@@ -329,7 +342,7 @@ export const CoordinatorViewSchema = z.strictObject({ state: CoordinatorStateNam
   moveRefusal: z.string().max(400).optional() });
 export type CoordinatorView = z.infer<typeof CoordinatorViewSchema>;
 export const PullRequestEntrySchema = z.strictObject({ threadId: IdSchema, title: text, branch: z.string().optional(),
-  pr: PullRequestStateSchema.optional(), reason: z.string().optional() });
+  pr: PullRequestStateSchema.optional(), reason: z.string().optional(), reviewRequired: z.boolean().optional() });
 export type PullRequestEntry = z.infer<typeof PullRequestEntrySchema>;
 // phase 5: one roster device as a new thread of the project sees it; `reason` says why no thread can run there (D281)
 export const ProjectDeviceSetupSchema = z.strictObject({ schema: z.literal('project-device-setup-v1'), deviceId: IdSchema, name: text, reason: z.string().max(400).optional() });
@@ -373,7 +386,10 @@ export const ThreadOverrideRequestSchema = z.strictObject({ schema: z.literal('t
 export const DecisionAnswerRequestSchema = z.strictObject({ schema: z.literal('decision-answer-request-v1'), clientRequestId: IdSchema,
   ...DecisionAnswerFieldsSchema.shape }).refine(answerPresent, DECISION_ANSWER_REQUIRED);
 export const ProjectWorkSettingsRequestSchema = z.strictObject({ schema: z.literal('project-work-settings-request-v1'), revision,
-  settings: ProjectWorkSettingsSchema.omit({ schema: true, projectId: true, revision: true }), clientRequestId: IdSchema.optional() });
+  settings: ProjectWorkSettingsSchema.omit({ schema: true, projectId: true, revision: true }).extend({
+    allowMainIsolation: z.boolean().optional(), threadRules: z.string().max(4000).optional(), coordinatorReview: z.boolean().optional(),
+    nightlyWindow: ProjectWorkSettingsSchema.shape.nightlyWindow.removeDefault().optional(), refill: ProjectWorkSettingsSchema.shape.refill.removeDefault().optional(),
+  }), clientRequestId: IdSchema.optional() });
 export const NotebookRequestSchema = z.strictObject({ schema: z.literal('notebook-request-v1'), expectedRevision: revision,
   content: z.string().max(65536) });
 

@@ -1392,7 +1392,7 @@ export class ConversationService {
       const launchEnv = { JEVELLAN_STRETCH_TOKEN: grant.token, JEVELLAN_DAEMON_URL: this.daemonUrl };
       const input: StretchInput = { schema: 'stretch-input-v1', conversationId: work.ledger.id, stretch: n, action, cwd: workspace.path, permissions, memoryWrite, account,
         model: model.model, effort: effective, systemAppend: actionContract(action) + (choice.action === 'ask-you' ? `\n${ASK_YOU_APPEND}` : ''), brief: brief.text,
-        timeoutMs: config.guards.stretchTimeoutMin * 60_000, launch: { env: launchEnv, mcpServers: { jevellan: { command: process.execPath, args: [join(applicationRoot(), 'bin', 'jevellan.mjs'), 'mcp-bridge'], env: launchEnv } } } };
+        timeoutMs: config.guards.stretchTimeoutMin * 60_000, launch: { useOwnSetup: config.runtimes[model.runtime]?.useOwnSetup !== false, env: launchEnv, mcpServers: { jevellan: { command: process.execPath, args: [join(applicationRoot(), 'bin', 'jevellan.mjs'), 'mcp-bridge'], env: launchEnv } } } };
       const outside = this.outside.watch(workspace.project, workspace.path, config.guards.externalActivityWindowMin, reason => {
         work.ledger.append({ type: 'git', stretch: n, data: CheckpointBlockSchema.parse({ schema: 'checkpoint-block-v1', workId: workspace.owner.workId, stretch: n, before, reason }) });
         this.#notice(work, reason, 'error');

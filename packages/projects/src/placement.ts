@@ -73,7 +73,7 @@ export class Placement {
       settings, project, defaultIsolation: workSettings.defaultIsolation, runtimes: this.#runtimes(),
       accounts: accounts.map((view) => view.account), statuses: accounts.flatMap((view) => view.statuses), devices: this.#devices(project, roster, input.coordinatorDeviceId, counts.devices, held),
       maxRunningPerDevice: workSettings.maxRunningPerDevice, ignoreRunningLimit: input.ignoreRunningLimit,
-      deviceId: this.#o.deviceId, coordinatorDeviceId: input.coordinatorDeviceId, gates: this.#o.gates, fixed: input.fixed, now: this.#o.now(),
+      deviceId: this.#o.deviceId, coordinatorDeviceId: input.coordinatorDeviceId, gates: { ...this.#o.gates, mainIsolation: this.#o.gates.mainIsolation && workSettings.allowMainIsolation }, fixed: input.fixed, now: this.#o.now(),
     };
   }
   #runtimes(): PlacementInput['runtimes'] {
@@ -115,7 +115,7 @@ export class Placement {
     const devices = this.#devices(project, roster, placing);
     const reasons = new Map(placementDeviceSetup({ settings, project, defaultIsolation: workSettings.defaultIsolation, runtimes: this.#runtimes(), accounts: accounts.map((view) => view.account),
       statuses: accounts.flatMap((view) => view.statuses), devices, maxRunningPerDevice: workSettings.maxRunningPerDevice, ignoreRunningLimit: true, deviceId: placing,
-      coordinatorDeviceId: placing, gates: this.#o.gates, fixed: {}, now: this.#o.now() }).map((entry) => [entry.deviceId, entry.reason]));
+      coordinatorDeviceId: placing, gates: { ...this.#o.gates, mainIsolation: this.#o.gates.mainIsolation && workSettings.allowMainIsolation }, fixed: {}, now: this.#o.now() }).map((entry) => [entry.deviceId, entry.reason]));
     return devices.filter((device) => !device.revoked).map((device) => {
       const reason = reasons.get(device.id);
       return ProjectDeviceSetupSchema.parse({ schema: 'project-device-setup-v1', deviceId: device.id, name: device.name, ...(reason ? { reason: reason.slice(0, 400) } : {}) });

@@ -150,7 +150,8 @@ export function openPullRequests(entries: readonly PullRequestEntry[]): PullRequ
 }
 
 /** Why Main cannot be chosen here, or null: the Leave git text wins over the phase text (D88, D221). */
-export function mainIsolationBlock(view: Pick<ProjectWorkView, 'project' | 'gates'>): string | null {
+export function mainIsolationBlock(view: Pick<ProjectWorkView, 'project' | 'gates'> & Partial<Pick<ProjectWorkView, 'settings'>>): string | null {
+  if (view.settings?.allowMainIsolation === false) return 'This project requires worktree isolation.';
   return view.gates.mainIsolation ? null : copy.MAIN_NOT_AVAILABLE;
 }
 /** Why another device cannot be chosen yet, or null (D88, D221). */
@@ -185,6 +186,7 @@ export function threadCreateRequest(clientRequestId: string, form: ThreadForm) {
 }
 
 export type SettingsForm = { defaultIsolation: Isolation; isolationChanged: boolean; modelId: string; effort: Effort; setupCommand: string;
+  coordinatorReview?: boolean; threadRules?: string; allowMainIsolation?: boolean;
   maxRunningThreads: number; maxRunningPerDevice: number; threadTurnCap: number };
 /**
  * `PUT /api/projects/:id/work-settings`. Reads show a stored `main` default as worktree with a notice (D205); unless the
@@ -192,9 +194,14 @@ export type SettingsForm = { defaultIsolation: Isolation; isolationChanged: bool
  */
 export function settingsRequest(view: Pick<ProjectWorkView, 'settings' | 'settingsNotice'>, form: SettingsForm) {
   const keptMain = !form.isolationChanged && view.settingsNotice !== undefined;
+  const settings = { allowMainIsolation: view.settings.allowMainIsolation, threadRules: view.settings.threadRules,
+    coordinatorReview: view.settings.coordinatorReview, nightlyWindow: view.settings.nightlyWindow, refill: view.settings.refill };
   return { schema: 'project-work-settings-request-v1' as const, revision: view.settings.revision, settings: {
+    ...settings,
     defaultIsolation: keptMain ? 'main' as const : form.defaultIsolation,
-    coordinator: { modelId: form.modelId || null, effort: form.effort }, setupCommand: form.setupCommand.trim() || null,
+    coordinator: { ...view.settings.coordinator, modelId: form.modelId || null, effort: form.effort }, setupCommand: form.setupCommand.trim() || null,
+    coordinatorReview: form.coordinatorReview ?? view.settings.coordinatorReview, threadRules: form.threadRules ?? view.settings.threadRules,
+    allowMainIsolation: form.allowMainIsolation ?? view.settings.allowMainIsolation,
     maxRunningThreads: form.maxRunningThreads, maxRunningPerDevice: form.maxRunningPerDevice, threadTurnCap: form.threadTurnCap } };
 }
 
@@ -220,7 +227,7 @@ export function showSent(sent: { known: readonly string[] } | undefined, open: r
 const TOOL_ICONS: Record<string, IconName> = {
   jevellan_threads_list: 'thread', jevellan_thread_start: 'plus', jevellan_thread_message: 'message', jevellan_thread_read: 'search',
   jevellan_thread_stop: 'stop', jevellan_ask_user: 'why', jevellan_withdraw_question: 'close', jevellan_notebook_read: 'file',
-  jevellan_notebook_write: 'file', jevellan_pr_status: 'pull-request', jevellan_mail_send: 'message', memory_search: 'search', memory_read: 'file',
+  jevellan_notebook_write: 'file', jevellan_pr_status: 'pull-request', jevellan_pr_diff: 'file', jevellan_pr_review: 'pull-request', jevellan_mail_send: 'message', memory_search: 'search', memory_read: 'file',
 };
 /** The icon of a chat one-liner, by tool. */
 export function toolIcon(tool: string): IconName {
@@ -455,6 +462,7 @@ function eventCard(event: Exclude<CoordinatorEvent, { kind: 'user-message' }>, t
       return card(reason(name(event.threadId)), event.threadId, event.message);
     }
     case 'decision-answer': return card(text.answered(firstLine(event.question)), event.threadId, text.answer(event.answer.optionLabel, event.answer.text));
+    case 'pr-ready-for-review': return card(`Pull request #${event.prNumber} is ready for the coordinator's review`, event.threadId, `Commit ${event.commit}`);
     case 'pr-update': {
       const change = { 'checks-failed': text.checksFailed, 'checks-passed': text.checksPassed, merged: text.prMerged, closed: text.prClosed, conflict: text.prConflict }[event.change];
       return card(change(name(event.threadId), event.prNumber), event.threadId);

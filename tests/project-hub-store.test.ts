@@ -6,12 +6,29 @@ import { randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { z } from 'zod';
-import { DeviceSchema, Homes, LifecycleGate, PlacementOverrideSchema, ProjectDecisionSchema, ProjectSchema, SecretRedactor, ThreadIndexSchema, defaultProjectWorkSettings, isProjectHubRead, lifecycleActivity, type PlacementOverride, type ProjectDecision, type ProjectHubOperation, type ThreadIndex } from '../packages/core/dist/index.js';
+import { DeviceSchema, Homes, LifecycleGate, PlacementOverrideSchema, ProjectDecisionSchema, ProjectSchema, ProjectWorkSettingsSchemaV1, PullRequestReviewSchema, SecretRedactor, ThreadIndexSchema, defaultProjectWorkSettings, isProjectHubRead, lifecycleActivity, type PlacementOverride, type ProjectDecision, type ProjectHubOperation, type ThreadIndex } from '../packages/core/dist/index.js';
 import { HubProjectAccess, HubProjectStore, HubProtocolError, HubUnavailable, MemberHubClient, MemberProjectStore, joinHub } from '../packages/mesh/dist/index.js';
 import { Application, createDaemon } from '../apps/daemon/dist/index.js';
 
 let root: string; let app: Application; let server: Server; let base: string;
 const at = new Date().toISOString();
+test('stored v1 settings migrate explicitly without losing fixed coordinator choices or unrelated fields', async () => {
+  const legacy = ProjectWorkSettingsSchemaV1.parse({ ...Object.fromEntries(Object.entries(defaultProjectWorkSettings('project')).filter(([key]) => !['allowMainIsolation', 'threadRules', 'coordinatorReview', 'nightlyWindow', 'refill'].includes(key))), schema: 'project-work-settings-v1', coordinator: { runtimeId: 'claude', accountId: 'fixed', modelId: 'chosen', effort: 'high' }, setupCommand: 'npm ci', maxRunningThreads: 9 });
+  app.hub.put('project-work-settings', 'project', ProjectWorkSettingsSchemaV1, { ...legacy, revision: 1 }, 0);
+  const left = await member('left'), migrated = await left.hub.settings('project');
+  expect(migrated?.document).toMatchObject({ schema: 'project-work-settings-v2', revision: 1, coordinator: legacy.coordinator, setupCommand: 'npm ci', maxRunningThreads: 9, coordinatorReview: true, allowMainIsolation: true });
+  expect((await left.hub.putSettings(migrated!.document, 1)).document).toEqual({ ...migrated!.document, revision: 2 });
+});
+test('coordinator reviews survive transport retries and reject other devices or a different head', async () => {
+  const left = await member('left'), right = await member('right'); await left.hub.assignCoordinator('project', 'left', 0);
+  const pr = { number: 1, url: 'https://github.com/fixture/repo/pull/1', headSha: 'a'.repeat(40), checks: 'passing' as const, mergeable: 'clean' as const, state: 'open' as const, updatedAt: at };
+  await left.hub.publishThread(index('reviewed_thread', { state: 'in-review', pr }), 1);
+  const review = PullRequestReviewSchema.parse({ schema: 'pull-request-review-v1', projectId: 'project', threadId: 'reviewed_thread', revision: 0, commit: pr.headSha, verdict: 'approve', note: 'Tests cover the changed behavior.', reviewedAt: at, deviceId: 'left' });
+  await expect(right.hub.putReview({ ...review, deviceId: 'right' }, 0)).rejects.toMatchObject({ status: 403 });
+  const saved = await left.hub.putReview(review, 0); expect(await left.hub.putReview(review, 0)).toEqual(saved); expect(await right.hub.review('reviewed_thread')).toEqual(saved);
+  await left.hub.publishThread(index('reviewed_thread', { state: 'in-review', pr: { ...pr, headSha: 'b'.repeat(40) } }), 2);
+  await expect(left.hub.putReview({ ...review, note: 'An old diff' }, 1)).rejects.toMatchObject({ status: 409 });
+});
 beforeEach(async () => {
   root = mkdtempSync(join(tmpdir(), 'jevellan-project-hub-')); mkdirSync(join(root, 'user'));
   app = new Application({ homes: new Homes(join(root, 'hub'), join(root, 'user')), timers: false, runtimes: () => new Map() });

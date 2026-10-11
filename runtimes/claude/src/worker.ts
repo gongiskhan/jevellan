@@ -1,5 +1,5 @@
 import { query, type Query, type Options } from '@anthropic-ai/claude-agent-sdk';
-import { SESSION_NOT_FOUND, claudeBridgeToolNames, claudePermissionHook, claudeReadOnlyBridgeTools, classifyRuntimeError, serveWorker, type RunResult, type RuntimeEvent, type StretchInput, type TurnInput, type WorkerSession } from '@jevellan/runtime-contract';
+import { nativePreToolUse, SESSION_NOT_FOUND, claudeBridgeToolNames, claudePermissionHook, claudeReadOnlyBridgeTools, classifyRuntimeError, serveWorker, type RunResult, type RuntimeEvent, type StretchInput, type TurnInput, type WorkerSession } from '@jevellan/runtime-contract';
 import { z } from 'zod';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -92,8 +92,8 @@ const stretchSession = (input: StretchInput, daemonPid: number, executable?: str
       const hook = claudePermissionHook({ cwd: input.cwd, action: input.action, daemonPid, permissions, memoryWrite: !repairing && input.memoryWrite });
       return execute(control, message, timeoutMs, {
         cwd: input.cwd, env, model: input.model, effort: input.effort,
-        systemPrompt: { type: 'preset', preset: 'claude_code', append: input.systemAppend },
-        settingSources: ['user', 'project', 'local'], settings: { ...CLAUDE_FLAG_SETTINGS }, includePartialMessages: true,
+        systemPrompt: { type: 'preset', preset: 'claude_code', append: [input.launch.nativeSetup?.instructions, input.systemAppend].filter(Boolean).join('\n\n') },
+        settingSources: ['user', 'project', 'local'], settings: { ...input.launch.nativeSetup?.settings, ...CLAUDE_FLAG_SETTINGS }, plugins: (input.launch.nativeSetup?.plugins ?? []).map(path => ({ type: 'local' as const, path })), includePartialMessages: true,
         permissionMode: permissions === 'write' ? 'bypassPermissions' : 'dontAsk',
         allowDangerouslySkipPermissions: permissions === 'write',
         // Native Claude builds may omit Glob/Grep in favour of Bash. Read-only
@@ -104,7 +104,7 @@ const stretchSession = (input: StretchInput, daemonPid: number, executable?: str
           // PreToolUse permits them. Keep this list shared with the hook policy.
           allowedTools: claudeReadOnlyBridgeTools(!repairing && input.memoryWrite),
         } : {}),
-        hooks: { PreToolUse: [{ hooks: [async (event) => 'tool_name' in event ? hook(event) : {}] }] },
+        hooks: { PreToolUse: [{ hooks: [async event => { if (!('tool_name' in event)) return {}; const safety = await hook(event); if ('hookSpecificOutput' in safety) return safety; return nativePreToolUse(input.launch.nativeSetup, event, { home: input.account.home, cwd: input.cwd, writable: input.permissions === 'write', env }); }] }] },
         mcpServers, stderr: () => {}, ...(sessionId ? { resume: sessionId } : {}),
         ...(executable ? { pathToClaudeCodeExecutable: executable } : {}),
       }, emit, (id) => { sessionId = id; session(id); }, false);
@@ -123,12 +123,12 @@ const turnSession = (input: TurnInput, daemonPid: number, executable?: string): 
     async interrupt() { control.interrupted = true; await control.current?.interrupt(); },
     run: (message, timeoutMs, emit, session) => execute(control, message, timeoutMs, {
       cwd: input.cwd, env, model: input.model, effort: input.effort,
-      systemPrompt: { type: 'preset', preset: 'claude_code', append: input.systemAppend },
-      settingSources: ['user', 'project', 'local'], settings: { ...CLAUDE_FLAG_SETTINGS }, includePartialMessages: true,
+      systemPrompt: { type: 'preset', preset: 'claude_code', append: [input.launch.nativeSetup?.instructions, input.systemAppend].filter(Boolean).join('\n\n') },
+      settingSources: ['user', 'project', 'local'], settings: { ...input.launch.nativeSetup?.settings, ...CLAUDE_FLAG_SETTINGS }, plugins: (input.launch.nativeSetup?.plugins ?? []).map(path => ({ type: 'local' as const, path })), includePartialMessages: true,
       permissionMode: input.permissions === 'write' ? 'bypassPermissions' : 'dontAsk',
       allowDangerouslySkipPermissions: input.permissions === 'write',
       ...(input.permissions === 'read-only' ? { tools: ['Read', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'ToolSearch'], allowedTools: bridgeTools ?? [] } : {}),
-      hooks: { PreToolUse: [{ hooks: [async (event) => 'tool_name' in event ? hook(event) : {}] }] },
+      hooks: { PreToolUse: [{ hooks: [async event => { if (!('tool_name' in event)) return {}; const safety = await hook(event); if ('hookSpecificOutput' in safety) return safety; return nativePreToolUse(input.launch.nativeSetup, event, { home: input.account.home, cwd: input.cwd, writable: input.permissions === 'write', env }); }] }] },
       mcpServers, stderr: () => {}, ...(input.resume ? { resume: input.resume.sessionId } : {}),
       ...(executable ? { pathToClaudeCodeExecutable: executable } : {}),
     }, emit, session, true),

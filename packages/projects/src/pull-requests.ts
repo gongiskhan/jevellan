@@ -1,5 +1,5 @@
 import {
-  GitHubError, MergeResultViewSchema, isTerminal, newId, parseGitHubPullUrl, parseGitHubRemote, stableJson,
+  GitHubError, MergeResultViewSchema, PrDiffResultSchema, PullRequestReviewSchema, isTerminal, newId, parseGitHubPullUrl, parseGitHubRemote, stableJson,
   type CoordinatorEvent, type GitHubRepository, type Project, type ProjectHub, type PullRequestState, type SecretRedactor, type Thread, type ThreadLocal,
 } from '@jevellan/core';
 import type { z } from 'zod';
@@ -23,7 +23,9 @@ export type PullRequestTrackerOptions = {
    */
   transition?(threadId: string, apply: () => Promise<void>): Promise<void>;
   /** Hub index of a thread owned elsewhere, for `jevellan_pr_status` (phase 5). */
-  hub?: Pick<ProjectHub, 'thread'>;
+  hub?: Pick<ProjectHub, 'thread' | 'review' | 'putReview'>;
+  deviceId?: string;
+  reviewEnabled?(projectId: string): Promise<boolean>;
   redactor: SecretRedactor; now?(): number;
   /** 60 s polling when periodic (brief 8.5); tests drive `poll()` directly. */
   pollMs?: number; periodic?: boolean;
@@ -91,11 +93,14 @@ export class PullRequestTracker {
     return repository;
   }
   /** `fromUrl`: a thread on another device is read from its pull request's own address, without this device's checkout (3.5.1 step 8). */
-  async #fetch(projectId: string, pr: PullRequestState, fromUrl = false): Promise<PullRequestState> {
+  async #fetch(projectId: string, pr: PullRequestState, threadId: string, fromUrl = false): Promise<PullRequestState> {
     const repository = (fromUrl ? parseGitHubPullUrl(pr.url) : null) ?? await this.#repository(projectId); const client = await this.#o.github.open();
     const pull = await client.getPull(repository, pr.number);
     const open = !pull.merged && pull.state === 'open';
-    return pullRequestState(pull, open ? await client.checks(repository, pull.headSha) : pr.checks, this.#at());
+    const next = pullRequestState(pull, open ? await client.checks(repository, pull.headSha) : pr.checks, this.#at());
+    const review = (await this.#o.hub?.review(threadId))?.document;
+    if (review?.commit === next.headSha) next.review = review;
+    return next;
   }
   #notice(thread: Thread, text: string): void {
     this.#o.threads.ledgers.thread(thread.projectId, thread.id).append({ type: 'notice', data: { schema: 'project-notice-v1', text, kind: 'error' } });
@@ -108,7 +113,7 @@ export class PullRequestTracker {
       const pending = this.#transitions.get(threadId);
       if (pending) { if (wait) await pending; return { pr: this.#o.threads.get(threadId)?.pr ?? thread.pr }; }
       let next: PullRequestState;
-      try { next = await this.#fetch(thread.projectId, thread.pr); }
+      try { next = await this.#fetch(thread.projectId, thread.pr, threadId); }
       catch (error) {
         const message = this.#o.redactor.text(error instanceof Error ? error.message : String(error));
         const kind = error instanceof GitHubError ? error.kind : 'other';
@@ -141,6 +146,10 @@ export class PullRequestTracker {
     if (next.mergeable === 'conflict' && !notified.conflict) { changes.push('conflict'); notified = { ...notified, conflict: true }; }
     if (stableJson(notified) !== stableJson(local.prNotified ?? null)) this.#o.threads.updateLocal(thread.id, (current) => ({ ...current, prNotified: notified }));
     for (const change of changes) await this.#tell(thread, next.number, change);
+    if ((next.checks === 'passing' || next.checks === 'none') && !next.review && !notified.reviewReady && await this.#o.reviewEnabled?.(thread.projectId)) {
+      await this.#o.toCoordinator(thread.projectId, { schema: 'coordinator-event-v1', kind: 'pr-ready-for-review', id: newId('cev', this.#o.now()), at: this.#at(), threadId: thread.id, prNumber: next.number, commit: next.headSha });
+      this.#o.threads.updateLocal(thread.id, current => ({ ...current, prNotified: { ...notified, reviewReady: true } }));
+    }
   }
   async #tell(thread: Thread, prNumber: number, change: PrChange): Promise<void> {
     const at = this.#o.now();
@@ -210,7 +219,32 @@ export class PullRequestTracker {
     if (!index || index.projectId !== projectId) throw refuse(THREAD_NOT_FOUND, 404);
     if (!index.pr) return { pr: null, reason: NO_PULL_REQUEST };
     if (index.pr.state !== 'open') return { pr: index.pr };
-    try { return { pr: await this.#fetch(projectId, index.pr, true) }; }
+    try {
+      const pr = await this.#fetch(projectId, index.pr, threadId, true); const review = (await this.#o.hub?.review(threadId))?.document;
+      if (review?.commit === pr.headSha) pr.review = review;
+      return { pr };
+    }
     catch (error) { return { pr: index.pr, reason: this.#o.redactor.text(error instanceof Error ? error.message : String(error)) }; }
+  }
+  async diff(projectId: string, threadId: string): Promise<z.infer<typeof PrDiffResultSchema>> {
+    const read = await this.fresh(projectId, threadId); if (read.reason) throw refuse(read.reason, 409);
+    const pr = read.pr; if (!pr || pr.state !== 'open') throw refuse(PR_NOT_OPEN, 409);
+    const repository = parseGitHubPullUrl(pr.url); if (!repository) throw refuse(NOT_GITHUB, 409);
+    const client = await this.#o.github.open(), files = await client.pullFiles(repository, pr.number);
+    if ((await client.getPull(repository, pr.number)).headSha !== pr.headSha) throw refuse('The pull request head changed. Read its diff again.', 409);
+    const diff = this.#o.redactor.text(files.map(file => `diff --git a/${file.filename} b/${file.filename}\n${file.patch ?? '[Patch unavailable: binary or oversized file.]'}`).join('\n\n'));
+    const shortened = diff.length > 80_000, suffix = '\n[Diff shortened.]';
+    return PrDiffResultSchema.parse({ schema: 'pr-diff-result-v1', threadId, commit: pr.headSha, files: files.map(file => ({ path: file.filename, additions: file.additions, deletions: file.deletions, status: file.status })), diff: shortened ? diff.slice(0, 80_000 - suffix.length) + suffix : diff, shortened });
+  }
+  async review(projectId: string, threadId: string, commit: string, verdict: 'approve' | 'changes', note: string, signal?: AbortSignal) {
+    const read = await this.fresh(projectId, threadId);
+    if (read.reason) throw refuse(read.reason, 409);
+    if (read.pr?.state !== 'open' || read.pr.headSha !== commit) throw refuse('The pull request head changed. Read its diff again.', 409);
+    if (!this.#o.hub || !this.#o.deviceId) throw refuse('The coordinator review store is unavailable.', 409);
+    if (signal?.aborted) throw refuse('The coordinator turn ended.', 401);
+    const current = await this.#o.hub.review(threadId);
+    if (current?.document.commit === commit && current.document.verdict === verdict && current.document.note === note) return current.document;
+    const review = PullRequestReviewSchema.parse({ schema: 'pull-request-review-v1', projectId, threadId, revision: current?.revision ?? 0, commit, verdict, note: this.#o.redactor.text(note), reviewedAt: this.#at(), deviceId: this.#o.deviceId });
+    return (await this.#o.hub.putReview(review, current?.revision ?? 0)).document;
   }
 }

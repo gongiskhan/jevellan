@@ -1,8 +1,10 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { createInterface } from 'node:readline';
 import { realpathSync } from 'node:fs';
 import { isAbsolute } from 'node:path';
-import { minimalEnvironment, SecretRedactor } from '@jevellan/core';
+import { fileURLToPath } from 'node:url';
+import { minimalEnvironment, nativeSetup, removeNativeGeneration, SecretRedactor } from '@jevellan/core';
 import { AsyncQueue } from './queue.js';
 import { groupAlive, terminateGroup, terminateDescendants, rememberProcessTree, identifySpawnedGroup, type NativeProcess } from './process-group.js';
 import { StretchInputSchema, TurnInputSchema, WorkerCommandSchema, WorkerMessageSchema, type RuntimeContext, type RuntimeEvent, type RunResult, type StretchInput, type StretchRun, type TurnInput, type WorkerCommand } from './contract.js';
@@ -48,13 +50,22 @@ export class WorkerRun implements StretchRun {
     }
     const env = launchEnvironment(runtime, input);
     this.#redactor = context.redactor ?? new SecretRedactor();
+    const native = nativeSetup(context.homes, runtime, input.account.home, input.launch.useOwnSetup !== false, this.#redactor);
+    for (const server of native.mcp) {
+      if (input.launch.mcpServers[server.name]) continue;
+      const key = `JEVELLAN_NATIVE_MCP_${createHash('sha256').update(server.name).digest('hex').slice(0, 16)}`;
+      const value = JSON.stringify({ schema: 'native-mcp-launch-v1', ...server, name: undefined });
+      env[key] = value; this.#redactor.add(value);
+      input.launch.mcpServers[server.name] = { command: process.execPath, args: [fileURLToPath(new URL('./native-mcp.js', import.meta.url)), key], env: {} };
+    }
     for (const [key, value] of Object.entries(env)) if (/TOKEN|KEY/.test(key)) this.#redactor.add(value);
     for (const server of Object.values(input.launch.mcpServers)) {
       for (const [key, value] of Object.entries(server.env)) if (env[key] !== value) throw new Error('Per-launch MCP environment must use the scoped inherited environment.');
     }
-    const clean = { account: { ...input.account, env: {} }, launch: { env: {}, mcpServers: Object.fromEntries(Object.entries(input.launch.mcpServers).map(([name, server]) => [name, { ...server, env: {} }])) } };
+    const clean = { account: { ...input.account, env: {} }, launch: { nativeSetup: native.launch, env: {}, mcpServers: Object.fromEntries(Object.entries(input.launch.mcpServers).map(([name, server]) => [name, { ...server, env: {} }])) } };
     this.#begin(input.timeoutMs);
     this.#child = spawn(process.execPath, [worker], { cwd: input.cwd, env, detached: true, stdio: ['pipe', 'pipe', 'pipe'] });
+    this.#child.once('exit', () => removeNativeGeneration(input.account.home, native.launch));
     this.#child.on('error', () => this.#finish({ status: 'failed', error: { kind: 'other', message: 'Runtime worker failed to start.' } }));
     if (!this.#child.pid) { clearTimeout(this.#timer); throw new Error('Runtime worker did not start.'); }
     try { this.native = identifySpawnedGroup(this.#child.pid); }

@@ -59,3 +59,6 @@ export * from './project-rules.js';
 export * from './github.js';
 export * from './agent-access-schemas.js';
 export * from './hub-migration-schemas.js';
+
+export * from './native-setup.js';
+export * from './native-setup-schemas.js';

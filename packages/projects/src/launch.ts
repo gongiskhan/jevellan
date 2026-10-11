@@ -47,6 +47,7 @@ export type TurnLauncherOptions = {
    * restart keeps them and detach frees them. No turn starts on them, whatever the runtime's serial guard says.
    */
   held?(): ReadonlySet<string>;
+  useOwnSetup?(runtime: string): Promise<boolean>;
 };
 type Ranked = ReturnType<typeof rankAccounts>[number];
 
@@ -131,7 +132,7 @@ export class TurnLauncher {
       const input = TurnInputSchema.parse({
         schema: 'turn-input-v1', owner: request.owner, turn: request.turn, cwd: request.cwd, permissions: request.permissions, model: request.model, effort: request.effort,
         account: resolved, systemAppend: request.systemAppend, prompt: request.prompt(resumed), ...(resumed ? { resume: { sessionId: request.resume } } : {}),
-        launch: { env, mcpServers: { jevellan: { command: process.execPath, args: [join(applicationRoot(), 'bin', 'jevellan.mjs'), 'mcp-bridge'], env } } },
+        launch: { useOwnSetup: await this.#o.useOwnSetup?.(request.runtime) ?? true, env, mcpServers: { jevellan: { command: process.execPath, args: [join(applicationRoot(), 'bin', 'jevellan.mjs'), 'mcp-bridge'], env } } },
         safetyProfile: request.safetyProfile, timeoutMs: request.timeoutMs,
       });
       const run = adapter.startTurn(input);

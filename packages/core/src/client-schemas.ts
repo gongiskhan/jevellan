@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { NativeSetupInventorySchema } from './native-setup-schemas.js';
 import { RiggingBundleSchema, RiggingBundleSummarySchema } from './rigging-bundle-schemas.js';
 import { AccountSchema, AccountStatusSchema, AccountUsageSchema, AuthSchema, EffortSchema, IdSchema, TimestampSchema, RiggingItemSchema, ConfigurationSchema, ConfigRevisionSchema, DeviceSchema } from './schemas.js';
 
@@ -69,7 +70,7 @@ export const SecretInputSchema = z.strictObject({ schema: z.literal('save-secret
 export const AccountListSchema = z.strictObject({ schema: z.literal('accounts-list-v1'), accounts: z.array(AccountViewSchema) });
 export const RiggingListSchema = z.strictObject({ schema: z.literal('rigging-list-v1'), items: z.array(RiggingViewSchema), application: RiggingApplicationSchema.nullable() });
 export const CapabilitiesSchema = z.strictObject({ edit: z.boolean(), shell: z.boolean(), mcp: z.boolean(), images: z.boolean(), interrupt: z.boolean(), usage: z.boolean(), continueSession: z.boolean(), perLaunchConfig: z.boolean(), readOnlyEnforced: z.boolean(), turns: z.boolean() });
-export const RuntimeListSchema = z.strictObject({ schema: z.literal('runtimes-list-v1'), runtimes: z.array(z.strictObject({ id: IdSchema, displayName: z.string(), enabled: z.boolean(), accountKinds: z.array(z.enum(['subscription', 'api-key'])), riggingKinds: z.array(z.enum(['skill', 'mcp', 'hook', 'rule', 'setting', 'command'])), capabilities: CapabilitiesSchema })), offered: z.array(OfferedModelsSchema) });
+export const RuntimeListSchema = z.strictObject({ schema: z.literal('runtimes-list-v1'), runtimes: z.array(z.strictObject({ id: IdSchema, displayName: z.string(), enabled: z.boolean(), accountKinds: z.array(z.enum(['subscription', 'api-key'])), riggingKinds: z.array(z.enum(['skill', 'mcp', 'hook', 'rule', 'setting', 'command'])), capabilities: CapabilitiesSchema, nativeSetup: NativeSetupInventorySchema.optional() })), offered: z.array(OfferedModelsSchema) });
 
 
 export const ConfigHistorySchema = z.strictObject({ schema: z.literal('config-history-v1'), revisions: z.array(ConfigRevisionSchema) });

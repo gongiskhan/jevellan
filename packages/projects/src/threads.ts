@@ -200,9 +200,10 @@ export class ThreadService {
       const project = (await this.#o.projects.get(projectId))?.project;
       if (!project) throw refuse(PROJECT_NOT_FOUND, 404);
       const settings = await this.#o.admission.settings(projectId);
+      const task = [request.task, settings.threadRules ? `Rules for every thread:\n${settings.threadRules}` : ''].filter(Boolean).join('\n\n');
       const counts = await this.#o.admission.counts(projectId);
       const projectFull = counts.project >= counts.limits.project;
-      const placed = await this.#o.placement.place({ project, workSettings: settings, title: request.title, task: request.task, note: request.note, fixed: request.fixed,
+      const placed = await this.#o.placement.place({ project, workSettings: settings, title: request.title, task, note: request.note, fixed: request.fixed,
         coordinatorDeviceId: request.coordinatorDeviceId, ignoreRunningLimit: projectFull, exclude: request.exclude });
       if (placed.kind === 'refused') throw refuse(placed.message, 409);
       const at = this.#o.now(); const threadId = newId('thread', at); const record = placed.record;
@@ -213,7 +214,7 @@ export class ThreadService {
         const admitted = await this.#o.admission.admit(projectId, record.deviceId, threadId);
         if (admitted.ok) hold = admitted.release; else queued = admitted.queued;
       }
-      const thread = ThreadSchema.parse({ schema: 'project-thread-v1', id: threadId, projectId, title: request.title, task: request.task, createdAt: new Date(at).toISOString(),
+      const thread = ThreadSchema.parse({ schema: 'project-thread-v1', id: threadId, projectId, title: request.title, task, createdAt: new Date(at).toISOString(),
         createdBy: request.createdBy, state: queued === undefined ? 'preparing' : 'queued', ...(queued === undefined ? {} : { stateReason: queued }), isolation: record.isolation,
         placement: record, ownerDeviceId: record.deviceId, coordinatorDeviceId: request.coordinatorDeviceId, cwd: '', baseBranch: '', baseCommit: '', turns: 0,
         turnAllowance: settings.threadTurnCap, queuedMessages: [], verificationAttempts: 0 });
