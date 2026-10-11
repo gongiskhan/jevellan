@@ -310,3 +310,11 @@ test('work summaries give every project its counts and coordinator with the devi
   expect((await left.hub.workSummaries()).map((summary) => summary.projectId)).toEqual([...Array.from({ length: 150 }, (_, n) => `bulk_${String(n).padStart(3, '0')}`), 'other', 'project']);
   expect(isProjectHubRead('work-summaries')).toBe(true);
 });
+
+test('apps-only members cannot claim the coordinator even when the project allows their device', async () => {
+  const left = await member('left');
+  const mini = app.hub.get('devices', 'left', DeviceSchema)!;
+  app.hub.put('devices', 'left', DeviceSchema, { ...mini.document, workPolicy: { schema: 'device-work-policy-v1', mode: 'apps-only' } }, mini.revision);
+  await expect(left.hub.assignCoordinator('project', 'left', 0)).rejects.toMatchObject({ status: 409, message: expect.stringContaining('apps only') });
+  expect(await left.hub.coordinator('project')).toBeNull();
+});

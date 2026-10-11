@@ -314,8 +314,8 @@
   {
     "id": "hub-macbook-pro",
     "title": "Hub on the MacBook Pro",
-    "why": "Move hub authority safely while the mini keeps its existing apps.",
-    "status": "planned"
+    "why": "Encrypted migration and apps-only guards implemented; Pro user service installed. Live import, sign-in, mini membership and LJ0 wait for owner input.",
+    "status": "in-progress"
   },
   {
     "id": "own-setup-sessions",

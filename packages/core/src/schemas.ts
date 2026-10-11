@@ -93,9 +93,11 @@ const AccountStatusV2Schema = z.strictObject({
 export const AccountStatusSchema = z.preprocess((value) => value && typeof value === 'object' && (value as { schema?: unknown }).schema === 'account-status-v1' ? { ...value, schema: 'account-status-v2' } : value, AccountStatusV2Schema);
 export type AccountStatus = z.infer<typeof AccountStatusSchema>;
 
+export const DeviceWorkPolicySchema = z.strictObject({ schema: z.literal('device-work-policy-v1'), mode: z.enum(['work', 'apps-only']) });
 export const DeviceSchema = z.strictObject({
   schema: z.literal('device-v1'), id: IdSchema, name: text, role: z.enum(['hub', 'member']), url: z.url(),
   os: z.enum(['darwin', 'linux']), version: text, joinedAt: TimestampSchema, lastHeartbeatAt: TimestampSchema.optional(),
+  workPolicy: DeviceWorkPolicySchema.optional(),
 });
 export type Device = z.infer<typeof DeviceSchema>;
 export const DeviceConfigSchema = z.strictObject({
@@ -125,6 +127,7 @@ export const HeartbeatSchema = z.strictObject({
   schema: z.literal('heartbeat-v1'), deviceId: IdSchema, at: TimestampSchema, version: text,
   runningConversations: z.array(IdSchema), projects: z.array(z.strictObject({ projectId: IdSchema, path: text, branch: text, head: text, dirty: z.boolean(), ahead: count, behind: count })),
   externalSessions: z.array(ExternalSessionSchema), load: z.strictObject({ cpuPct: percentage, memFreeMb: z.number().nonnegative() }),
+  workPolicy: DeviceWorkPolicySchema.optional(),
 });
 export type Heartbeat = z.infer<typeof HeartbeatSchema>;
 

@@ -88,6 +88,7 @@ export class HubProjectStore {
    */
   assignCoordinator(projectId: string, deviceId: string, expectedRevision: number): Stored<ProjectCoordinator> {
     IdSchema.parse(projectId); if (IdSchema.parse(deviceId) !== this.deviceId) refuse('A device can only make itself the coordinator.', 403);
+    if (this.devices?.().find(view => view.device.id === deviceId)?.device.workPolicy?.mode === 'apps-only') refuse('This device serves apps only; project work runs on a working device.', 409);
     return this.hub.transaction(() => {
       this.#project(projectId);
       const former = this.coordinator(projectId)?.document.deviceId;

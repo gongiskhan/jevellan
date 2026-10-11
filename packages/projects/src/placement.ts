@@ -96,7 +96,7 @@ export class Placement {
   }
   /** The roster as placement sees it, with running counts per device and the main rule's holders when given. */
   #devices(project: Project, roster: DeviceRoster, coordinatorDeviceId: string, counts?: ReadonlyMap<string, number>, held?: ReadonlyMap<string, string>): PlacementDevice[] {
-    const device = (id: string, name: string) => ({ id, name, hasPath: !!project.paths[id], allowed: !project.allowedDevices || project.allowedDevices.includes(id),
+    const device = (id: string, name: string) => ({ id, name, hasPath: !!project.paths[id], allowed: roster.devices.find(view => view.device.id === id)?.device.workPolicy?.mode !== 'apps-only' && (!project.allowedDevices || project.allowedDevices.includes(id)),
       running: counts?.get(id) ?? 0, isCoordinator: id === coordinatorDeviceId, ...(held?.has(id) ? { mainBlockedBy: held.get(id)! } : {}) });
     const devices: PlacementDevice[] = roster.devices.map((view) => ({ ...device(view.device.id, view.device.name), status: view.status, revoked: view.revoked,
       checkoutBranch: view.heartbeat?.projects.find((entry) => entry.projectId === project.id)?.branch }));

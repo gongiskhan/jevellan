@@ -9,6 +9,7 @@ import { doctor, doctorLines } from './doctor.js';
 import { installationArguments } from './installation-arguments.js';
 import { attachThread, detachThread } from './thread-attach.js';
 import { serveAgentMcp } from './agent-mcp.js';
+import { hubCommand } from './hub-command.js';
 
 function printInstallation(result: Awaited<ReturnType<Installer['install']>>) {
   if (result.changedPort) console.log(`The default port was occupied. Jevellan uses ${result.port}.`);
@@ -30,6 +31,7 @@ async function offerHttps() {
 
 export async function main(args: string[], options: { installer?: () => Installer; confirmPurge?: (path: string) => Promise<string>; doctor?: typeof doctor; offerHttps?: () => Promise<boolean>; attach?: typeof attachThread; detach?: typeof detachThread; mcpServer?: typeof serveAgentMcp } = {}) {
   if (args[0] === '--version') { console.log(VERSION); return; }
+  if (args[0] === 'hub') { await hubCommand(args.slice(1)); return; }
   if (args[0] === 'doctor') {
     if (args.length !== 1) throw new Error('Usage: jevellan doctor');
     const report = await (options.doctor ?? doctor)(); doctorLines(report).forEach(line => console.log(line));
@@ -75,12 +77,12 @@ export async function main(args: string[], options: { installer?: () => Installe
     const index = args.indexOf('--port');
     const port = index < 0 ? DEFAULT_PORT : Number(args[index + 1]);
     if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Port must be between 1 and 65535.');
-    const { startDaemon } = await import('@jevellan/daemon'); const daemon = await startDaemon(port);
+    const { startDaemon } = await import('@jevellan/daemon'); const daemon = await startDaemon(port, { forceHub: args.includes('--force') });
     const stop = () => { void daemon.close().catch(() => { process.exitCode = 1; }); };
     process.once('SIGINT', stop); process.once('SIGTERM', stop);
     console.log(`Jevellan is running at ${daemon.addresses.join(' and ')}`);
     return;
   }
-  console.log('Jevellan — Autonomous development, coordinated.\nCommands: install [--from path] [--join hubUrl code] [--https | --no-https], join hubUrl code [--from path] [--https | --no-https], update [--from path], rollback, uninstall [--purge], doctor, start [--port number], mcp-server, thread attach threadId, thread detach threadId, --version');
+  console.log('Jevellan — Autonomous development, coordinated.\nCommands: install [--from path] [--join hubUrl code] [--https | --no-https], join hubUrl code [--from path] [--https | --no-https], update [--from path], rollback, uninstall [--purge], doctor, start [--port number] [--force], hub export --out file --to destination-name, hub import file [--paths mapping-file], mcp-server, thread attach threadId, thread detach threadId, --version');
   if (args.length) process.exitCode = 1;
 }

@@ -1,5 +1,6 @@
 import { join } from 'node:path';
 import { existsSync } from 'node:fs';
+import { deviceAllowsWork } from '@jevellan/core';
 import { setTimeout as delay } from 'node:timers/promises';
 import type { z } from 'zod';
 import type { AccountService } from '@jevellan/accounts';
@@ -236,6 +237,7 @@ export class ProjectWork {
    * ranked for this device at placement; the launcher ranks again here when it is no longer eligible (D16).
    */
   async #threadStart(envelope: EnvelopeOf<'thread-start'>): Promise<void> {
+    if (!deviceAllowsWork(this.#o.homes)) throw refuse('This device serves apps only; project work runs on a working device.', 409);
     const { thread } = envelope.body;
     if (thread.projectId !== envelope.projectId || thread.ownerDeviceId !== this.#o.deviceId) throw refuse(THREAD_STARTS_ELSEWHERE, 409);
     await this.#project(envelope.projectId);
@@ -268,6 +270,7 @@ export class ProjectWork {
     this.#started = true;
     void this.ready.then(() => {
       if (this.#closing) return;
+      if (!deviceAllowsWork(this.#o.homes)) { this.inbox.start(); return; }
       this.threads.begin();
       this.coordinators.begin();
       void this.threads.sweep().catch(() => undefined);
@@ -284,6 +287,7 @@ export class ProjectWork {
    */
   async pulse(): Promise<void> {
     await this.ready;
+    if (!deviceAllowsWork(this.#o.homes)) { await this.inbox.poll(); return; }
     await this.tracker.poll();
     await this.#publisher.flush().catch(() => undefined);
     await this.threads.sweep();

@@ -58,3 +58,4 @@ export * from './project-hub.js';
 export * from './project-rules.js';
 export * from './github.js';
 export * from './agent-access-schemas.js';
+export * from './hub-migration-schemas.js';

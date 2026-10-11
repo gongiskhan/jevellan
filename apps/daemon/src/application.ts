@@ -20,11 +20,12 @@ import { CursorSessions, DevicePresence, ExternalSessionSensor, type SessionSens
 import { SettingsSync } from './settings-sync.js';
 import { LifecycleGate } from '@jevellan/core';
 import { AgentAccess, HubAgentAccess } from '@jevellan/mesh';
+import { assertHubNotMoved, deviceAllowsWork } from '@jevellan/core';
 
 export type ApplicationOptions = { homes?: Homes; port?: number; url?: string; runtimes?: (context: RuntimeContext) => ReadonlyMap<string, RuntimeAdapter>; timers?: boolean; repositoryVisibility?: VisibilityProbe; decisionFetch?: typeof fetch; hubFetch?: typeof fetch; nativeSessions?: Omit<SessionSensorOptions, 'homes'>;
   /** Test seam for the improver's memory index; production uses the isolated Basic Memory. */ projectMemory?: (project: Project) => MemoryPort;
   /** Projects test seams: the GitHub transport and API base (a fake server in tests), and Projects timers (periodic loops follow `timers`). */
-  githubFetch?: typeof fetch; githubBaseUrl?: string; projectTimers?: Partial<ProjectTimers> };
+  githubFetch?: typeof fetch; githubBaseUrl?: string; projectTimers?: Partial<ProjectTimers>; forceHub?: boolean };
 
 export class Application {
   #closing: Promise<void> | undefined;
@@ -66,7 +67,7 @@ export class Application {
   constructor(options: ApplicationOptions = {}) {
     this.#improverTimers = options.timers !== false;
     this.projectVisibility = new ProjectVisibility(options.repositoryVisibility);
-    this.homes = options.homes ?? new Homes(); this.homes.ensure();
+    this.homes = options.homes ?? new Homes(); assertHubNotMoved(this.homes, options.forceHub); this.homes.ensure();
     this.#ownership = new DaemonOwnership(this.homes);
     let lifecycle: LifecycleGate | undefined; let startup: (() => void) | undefined;
     try {
@@ -105,7 +106,7 @@ export class Application {
         }
       }
       const context: RuntimeContext = { homes: this.homes, daemonPid: process.pid, redactor: this.redactor, saveSecret: async (id, value, requestId) => { await this.accounts.captureSecret(id, value, undefined, requestId); } };
-      this.runtimes = options.runtimes?.(context) ?? new Map([['claude', createClaude(context)], ['codex', createCodex(context)]]);
+      this.runtimes = deviceAllowsWork(this.homes) ? options.runtimes?.(context) ?? new Map([['claude', createClaude(context)], ['codex', createCodex(context)]]) : new Map();
       this.state = this.member ? new MemberState(this.member, [...this.runtimes.keys()]) : new HubState(this.hub, this.device.deviceId, [...this.runtimes.keys()]); this.rigging = this.state.rigging;
       this.riggingDisk = new RiggingDisk(this.homes, this.redactor);
       this.bridges = new StretchBridges(this.redactor);
@@ -159,6 +160,7 @@ export class Application {
         draft: (request, signal) => this.backgroundDrafts.run(request, signal), handoffs: projectId => this.conversations.recentHandoffSummaries(projectId),
         enterOperation: (id, title) => this.lifecycle.enter({ kind: 'settings', id, title }), pollMs: this.member ? 15_000 : 60_000 });
       this.presence = new DevicePresence({ deviceId: this.device.deviceId, version: VERSION, sensor: this.sessions,
+        workPolicy: () => ({ schema: 'device-work-policy-v1', mode: deviceAllowsWork(this.homes) ? 'work' : 'apps-only' }),
         projects: async () => (await this.state.projects.list()).map(row => row.project), running: () => this.conversations.localRunning(),
         report: async heartbeat => {
           await this.conversations.checkExternalActivity();

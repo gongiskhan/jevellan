@@ -107,7 +107,8 @@ export class DeviceRegistry {
       const previous = this.hub.get('heartbeats', deviceId, StoredHeartbeatSchema);
       this.hub.put('heartbeats', deviceId, StoredHeartbeatSchema, { schema: 'stored-heartbeat-v1', receivedAt: at, heartbeat }, previous?.revision ?? 0);
       const stored = this.hub.get('devices', deviceId, DeviceSchema)!;
-      this.hub.put('devices', deviceId, DeviceSchema, { ...device, version: heartbeat.version, lastHeartbeatAt: at }, stored.revision);
+      this.hub.put('devices', deviceId, DeviceSchema, { ...device, version: heartbeat.version, lastHeartbeatAt: at,
+        ...(heartbeat.workPolicy ? { workPolicy: heartbeat.workPolicy } : {}) }, stored.revision);
       return this.view(deviceId);
     });
   }

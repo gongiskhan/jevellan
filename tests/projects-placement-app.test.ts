@@ -372,3 +372,13 @@ test('PJ4b an override during a running turn applies from the next turn, and a r
   expect(placementEvents(f).map((event) => event.kind === 'placement-override' && event.summary)).toEqual(['Model changed from deep to deep-lite. Effort changed from max to low.',
     `Model changed from deep-lite to swift. Restarted as ${newId}.`]);
 });
+
+test('apps-only placement rejects fixed device requests before a thread is created', { timeout: 120_000 }, async () => {
+  const transport = jev(); const f = await setup([SWIFT], transport);
+  const id = f.app.device.deviceId; const stored = f.app.hub.get('devices', id, DeviceSchema)!;
+  f.app.hub.put('devices', id, DeviceSchema, { ...stored.document, workPolicy: { schema: 'device-work-policy-v1', mode: 'apps-only' } }, stored.revision);
+  const response = await f.request('/api/projects/project/threads', 'POST', { ...createBody('Excluded device', 'A fixed choice cannot enable an apps-only device.'), deviceId: id, modelId: SWIFT.id, effort: 'high', isolation: 'worktree' });
+  expect(response.status).toBe(409);
+  expect(f.app.projectWork.store.list('project')).toHaveLength(0);
+  expect(transport.state.calls).toHaveLength(0);
+});

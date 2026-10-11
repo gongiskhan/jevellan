@@ -2,7 +2,7 @@ import { join } from 'node:path';
 import { rankAccounts } from '@jevellan/accounts';
 import type { AccountService } from '@jevellan/accounts';
 import { ACCOUNT_REASON_TEXT } from '@jevellan/decisions';
-import { PROJECT_MEMORY_ID, applicationRoot, type AccountStatus, type Effort, type Homes, type RiggingItem, type SecretRedactor } from '@jevellan/core';
+import { PROJECT_MEMORY_ID, applicationRoot, deviceAllowsWork, type AccountStatus, type Effort, type Homes, type RiggingItem, type SecretRedactor } from '@jevellan/core';
 import type { StretchBridges } from '@jevellan/conversations';
 import { TurnInputSchema, type RuntimeAdapter, type StretchRun, type TurnInput } from '@jevellan/runtime-contract';
 import type { ProjectTools } from './bridge-tools.js';
@@ -86,6 +86,7 @@ export class TurnLauncher {
     return taken && waitingForAccountReason(taken.account.label);
   }
   async launch(request: LaunchRequest): Promise<LaunchResult> {
+    if (!deviceAllowsWork(this.#o.homes)) return { kind: 'unavailable', reason: 'This device serves apps only; project work runs on a working device.' };
     const daemonUrl = this.#o.daemonUrl();
     if (!daemonUrl) throw new Error('Project turns start after the daemon is listening.');
     const adapter = this.#o.runtimes.get(request.runtime); const capabilities = adapter?.capabilities;

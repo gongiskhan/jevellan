@@ -6,13 +6,13 @@ import { readFile, realpath, stat } from 'node:fs/promises';
 import { existsSync, readdirSync } from 'node:fs';
 import { extname, join, resolve, sep } from 'node:path';
 import { z } from 'zod';
-import { NativeProcessSchema, ProjectAppInputSchema, ProjectAppSchema, readDocument, spawnGroup, terminateGroup, writeDocument,
+import { NativeProcessSchema, ProjectAppInputSchema, ProjectAppSchema, deviceAllowsWork, readDocument, spawnGroup, terminateGroup, writeDocument,
   type Homes, type NativeProcess, type ProjectApp, type SecretRedactor } from '@jevellan/core';
 
 export type AppInput = z.infer<typeof ProjectAppInputSchema>;
 export type AppScope = { projectId: string; threadId: string; cwd: string; projectDirectory: string };
 type Link = Pick<ProjectApp, 'url' | 'access' | 'httpsPort'>;
-export type AppPublisher = { publish(port: number): Promise<Link>; remove(app: ProjectApp): Promise<void> };
+export type AppPublisher = { publish(port: number, retained?: ProjectApp): Promise<Link>; remove(app: ProjectApp): Promise<void> };
 const run = promisify(execFile);
 const ServeSchema = z.object({ TCP: z.record(z.string(), z.unknown()).optional(), Web: z.record(z.string(), z.object({
   Handlers: z.record(z.string(), z.object({ Proxy: z.string().optional() }).passthrough()) })).optional() }).passthrough();
@@ -22,11 +22,17 @@ export function tailnetAppPublisher(origin: () => Promise<string>, execute: (arg
   (await run('tailscale', args, { timeout: 15_000, maxBuffer: 1024 * 1024 })).stdout): AppPublisher {
   const status = async () => ServeSchema.parse(JSON.parse(await execute(['serve', 'status', '--json'])));
   return {
-    async publish(port) {
+    async publish(port, retained) {
       const base = new URL(await origin());
       if (!base.hostname.endsWith('.ts.net')) return { access: 'local', url: `http://127.0.0.1:${port}/` };
-      const before = await status(); let httpsPort = 9600;
-      while (before.TCP?.[String(httpsPort)] || before.Web?.[`${base.hostname}:${httpsPort}`]) httpsPort++;
+      const before = await status(); let httpsPort = retained?.httpsPort ?? 9600;
+      const retainedKey = retained ? `${base.hostname}:${httpsPort}` : undefined;
+      if (retained) {
+        if (retained.access !== 'tailnet' || new URL(retained.url).hostname !== base.hostname || retained.httpsPort === undefined || httpsPort < 9600 || httpsPort > 9699) throw new Error('The retained app address does not belong to this device.');
+        const handlers = before.Web?.[retainedKey!]?.Handlers;
+        if (!handlers && before.TCP?.[String(httpsPort)]) throw new Error('The retained app port has another owner. Its route was preserved.');
+        if (handlers && (Object.keys(handlers).length !== 1 || handlers['/']?.Proxy !== `http://127.0.0.1:${retained.loopbackPort}`)) throw new Error('The retained app route changed. Its current owner was preserved.');
+      } else while (before.TCP?.[String(httpsPort)] || before.Web?.[`${base.hostname}:${httpsPort}`]) httpsPort++;
       if (httpsPort > 9699) throw new Error('No app port is available on the tailnet.');
       const target = `http://127.0.0.1:${port}`;
       try {
@@ -34,10 +40,14 @@ export function tailnetAppPublisher(origin: () => Promise<string>, execute: (arg
         const after = await status();
         if (after.Web?.[`${base.hostname}:${httpsPort}`]?.Handlers['/']?.Proxy !== target) throw new Error('The app’s tailnet link could not be verified.');
         for (const namespace of ['Web', 'TCP'] as const) for (const [key, value] of Object.entries(before[namespace] ?? {})) {
+          if (namespace === 'Web' && key === retainedKey) continue;
           if (JSON.stringify(after[namespace]?.[key]) !== JSON.stringify(value)) throw new Error('Existing tailnet routes changed while starting the app.');
         }
       } catch (error) {
-        if ((await status()).Web?.[`${base.hostname}:${httpsPort}`]?.Handlers['/']?.Proxy === target) await execute(['serve', `--https=${httpsPort}`, 'off']);
+        if ((await status()).Web?.[`${base.hostname}:${httpsPort}`]?.Handlers['/']?.Proxy === target) {
+          const former = retainedKey ? before.Web?.[retainedKey]?.Handlers['/']?.Proxy : undefined;
+          await execute(former ? ['serve', '--bg', `--https=${httpsPort}`, former] : ['serve', `--https=${httpsPort}`, 'off']);
+        }
         throw error;
       }
       return { access: 'tailnet', url: `https://${base.hostname}:${httpsPort}/`, httpsPort };
@@ -54,8 +64,8 @@ const mime: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.cs
   '.mjs': 'text/javascript; charset=utf-8', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.ico': 'image/x-icon', '.woff2': 'font/woff2', '.webmanifest': 'application/manifest+json' };
 const contained = (root: string, file: string) => file === root || file.startsWith(root + sep);
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-const listen = (server: Server): Promise<number> => new Promise((resolve, reject) => {
-  server.once('error', reject); server.listen(0, '127.0.0.1', () => { server.off('error', reject); const address = server.address();
+const listen = (server: Server, port = 0): Promise<number> => new Promise((resolve, reject) => {
+  server.once('error', reject); server.listen(port, '127.0.0.1', () => { server.off('error', reject); const address = server.address();
     if (!address || typeof address === 'string') reject(new Error('No app port was allocated.')); else resolve(address.port); });
 });
 const closeServer = (server: Server) => new Promise<void>((resolve, reject) => { if (!server.listening) { resolve(); return; } server.closeAllConnections(); server.close(error => error ? reject(error) : resolve()); });
@@ -65,11 +75,12 @@ function appHeaders(headers: import('node:http').IncomingHttpHeaders) {
   return clean;
 }
 type RunningApp = { record: ProjectApp; fingerprint: string; server: Server; sockets?: Set<import('node:stream').Duplex>; native?: NativeProcess };
-const AppStateSchema = z.strictObject({ schema: z.literal('project-app-state-v1'), app: ProjectAppSchema, native: NativeProcessSchema.omit({ sessionId: true }).optional() });
+const AppStateSchema = z.strictObject({ schema: z.literal('project-app-state-v1'), app: ProjectAppSchema, native: NativeProcessSchema.omit({ sessionId: true }).optional(), restoreOnStart: z.boolean().optional() });
 
 /** Apps are separate resources: ending a model turn never terminates them. Shutdown stops only owned resources. */
 export class ProjectApps {
   readonly #apps = new Map<string, RunningApp>();
+  readonly #restore = new Set<string>();
   #pending: Promise<unknown> = Promise.resolve(); #closed = false;
   readonly ready: Promise<void>;
   constructor(readonly homes: Homes, readonly publisher: AppPublisher, readonly redactor: SecretRedactor) {
@@ -79,7 +90,13 @@ export class ProjectApps {
     const root = this.homes.at('apps'); if (!existsSync(root)) return;
     for (const id of readdirSync(root).filter(id => /^app_[a-f0-9]{24}$/.test(id))) {
       const file = this.homes.at('apps', id, 'app.json'); if (!existsSync(file)) continue;
-      const state = readDocument(file, AppStateSchema); if (state.app.state === 'stopped') continue;
+      const state = readDocument(file, AppStateSchema);
+      if (state.restoreOnStart && state.app.kind === 'static' && !deviceAllowsWork(this.homes)) {
+        this.#restore.add(id);
+        await this.#start({ projectId: state.app.projectId, threadId: state.app.threadId, cwd: state.app.directory, projectDirectory: state.app.directory }, { kind: 'static' }, undefined, state.app);
+        continue;
+      }
+      if (state.app.state === 'stopped') continue;
       await this.publisher.remove(state.app); if (state.native) await terminateGroup({ pid: state.native.pid, pgid: state.native.pgid, ...(state.native.startIdentity ? { startIdentity: state.native.startIdentity } : {}) });
       const record = this.#save({ ...state.app, state: 'stopped', stoppedAt: new Date().toISOString() });
       this.#apps.set(id, { record, fingerprint: '', server: createServer() });
@@ -87,10 +104,24 @@ export class ProjectApps {
   }
   #serial<T>(work: () => Promise<T>): Promise<T> { const result = this.#pending.then(work); this.#pending = result.catch(() => undefined); return result; }
   #save(record: ProjectApp, native?: NativeProcess): ProjectApp {
-    writeDocument(this.homes.at('apps', record.id, 'app.json'), AppStateSchema, { schema: 'project-app-state-v1', app: record, ...(native ? { native } : {}) }); return record;
+    writeDocument(this.homes.at('apps', record.id, 'app.json'), AppStateSchema, { schema: 'project-app-state-v1', app: record, ...(native ? { native } : {}), ...(this.#restore.has(record.id) ? { restoreOnStart: true } : {}) }); return record;
   }
   list(projectId: string): ProjectApp[] { return [...this.#apps.values()].filter(app => app.record.projectId === projectId).map(app => structuredClone(app.record)); }
-  start(scope: AppScope, raw: unknown, signal?: AbortSignal): Promise<ProjectApp> { return this.#serial(async () => {
+  start(scope: AppScope, raw: unknown, signal?: AbortSignal): Promise<ProjectApp> { return this.#serial(() => this.#start(scope, raw, signal)); }
+  /** Owner migration operation; restored static apps retain their address and restart on an apps-only member. */
+  restoreStatic(raw: ProjectApp): Promise<ProjectApp> { return this.#serial(async () => {
+    const app = ProjectAppSchema.parse(raw);
+    if (app.kind !== 'static' || deviceAllowsWork(this.homes)) throw new Error('Static app restoration requires an apps-only device.');
+    const existing = this.#apps.get(app.id)?.record;
+    if (existing && (existing.projectId !== app.projectId || existing.threadId !== app.threadId || existing.directory !== app.directory)) throw new Error('The retained app identity belongs to different work.');
+    this.#restore.add(app.id);
+    try { return await this.#start({ projectId: app.projectId, threadId: app.threadId, cwd: app.directory, projectDirectory: app.directory }, { kind: 'static' }, undefined, app); }
+    catch (error) { this.#restore.delete(app.id);
+      const saved = this.homes.at('apps', app.id, 'app.json');
+      if (existsSync(saved)) this.#save(readDocument(saved, AppStateSchema).app);
+      throw error; }
+  }); }
+  async #start(scope: AppScope, raw: unknown, signal?: AbortSignal, retained?: ProjectApp): Promise<ProjectApp> {
     signal?.throwIfAborted();
     if (this.#closed) throw new Error('Apps are shutting down.');
     const input = ProjectAppInputSchema.parse(raw);
@@ -100,7 +131,7 @@ export class ProjectApps {
     if (contained(this.homes.root, directory) || ['.claude', '.codex', '.cursor', '.gemini', '.basic-memory'].some(name => contained(join(this.homes.userHome, name), directory))) throw new Error('An app cannot serve agent or runtime homes.');
     if (!((await stat(directory)).isDirectory())) throw new Error('The app directory does not exist.');
     const fingerprint = createHash('sha256').update(JSON.stringify({ projectId: scope.projectId, input, directory })).digest('hex');
-    const id = `app_${fingerprint.slice(0, 24)}`; const existing = this.#apps.get(id);
+    const id = retained?.id ?? `app_${fingerprint.slice(0, 24)}`; const existing = this.#apps.get(id);
     if (existing?.record.state === 'running') {
       try { const response = await fetch(existing.record.url + input.healthPath.slice(1), { signal: AbortSignal.timeout(2000), redirect: 'manual' });
         const ready = response.status < 400; await response.body?.cancel(); if (ready) return structuredClone(existing.record);
@@ -165,7 +196,7 @@ export class ProjectApps {
       } else {
         const index = await realpath(join(directory, 'index.html')); if (!contained(directory, index)) throw new Error('The app entry cannot link outside its directory.');
       }
-      signal?.throwIfAborted(); if (!port) port = await listen(server); link = await this.publisher.publish(port);
+      signal?.throwIfAborted(); if (!port) port = await listen(server, retained?.access === 'local' ? retained.loopbackPort : 0); link = await this.publisher.publish(port, retained);
       this.#save(ProjectAppSchema.parse({ schema: 'project-app-v1', id, projectId: scope.projectId, threadId: scope.threadId, directory, kind: input.kind,
         state: 'running', loopbackPort: port, ...link, startedAt: new Date().toISOString() }), native);
       const response = await fetch(link.url + input.healthPath.slice(1), { signal: AbortSignal.timeout(10_000), redirect: 'manual' });
@@ -182,19 +213,23 @@ export class ProjectApps {
       const saved = this.homes.at('apps', id, 'app.json'); if (existsSync(saved)) this.#save({ ...readDocument(saved, AppStateSchema).app, state: 'stopped', stoppedAt: new Date().toISOString() });
       throw new Error(this.redactor.text(error instanceof Error ? error.message : 'The app could not start.'));
     }
-  }); }
+  }
   stop(projectId: string, appId: string): Promise<ProjectApp> { return this.#serial(() => this.#stop(projectId, appId)); }
-  async #stop(projectId: string, appId: string): Promise<ProjectApp> {
+  async #stop(projectId: string, appId: string, forgetRestore = true): Promise<ProjectApp> {
     const app = this.#apps.get(appId); if (!app || app.record.projectId !== projectId) throw new Error('This app does not belong to the project.');
-    if (app.record.state === 'stopped') return structuredClone(app.record);
+    if (app.record.state === 'stopped') {
+      if (forgetRestore) { this.#restore.delete(appId); this.#save(app.record); }
+      return structuredClone(app.record);
+    }
     for (const socket of app.sockets ?? []) socket.destroy();
     const cleanup = await Promise.allSettled([this.publisher.remove(app.record), closeServer(app.server), ...(app.native ? [terminateGroup(app.native)] : [])]);
     const failure = cleanup.find(result => result.status === 'rejected'); if (failure?.status === 'rejected') throw failure.reason;
+    if (forgetRestore) this.#restore.delete(appId);
     app.record = this.#save({ ...app.record, state: 'stopped', stoppedAt: new Date().toISOString() }); return structuredClone(app.record);
   }
   async close(): Promise<void> {
     this.#closed = true; await this.#pending;
-    const results = await Promise.allSettled([...this.#apps.values()].map(app => this.stop(app.record.projectId, app.record.id)));
+    const results = await Promise.allSettled([...this.#apps.values()].map(app => this.#serial(() => this.#stop(app.record.projectId, app.record.id, false))));
     const failure = results.find(result => result.status === 'rejected'); if (failure?.status === 'rejected') throw failure.reason;
   }
 }

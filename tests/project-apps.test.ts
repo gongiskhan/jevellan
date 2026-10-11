@@ -2,7 +2,7 @@ import { afterEach, expect, test } from 'vitest';
 import { mkdtemp, mkdir, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { Homes, SecretRedactor } from '../packages/core/dist/index.js';
+import { DeviceWorkPolicySchema, Homes, SecretRedactor, writeDocument } from '../packages/core/dist/index.js';
 import { ProjectApps, tailnetAppPublisher, type AppPublisher } from '../packages/projects/dist/index.js';
 let root = ''; let apps: ProjectApps | undefined;
 afterEach(async () => { await apps?.close(); apps = undefined; if (root) await rm(root, { recursive: true, force: true }); root = ''; });
@@ -76,4 +76,36 @@ test('a delayed old-process exit cannot stop the replacement app with the same i
   await expect(apps!.stop('other_project', old.id)).rejects.toThrow('does not belong');
   expect(apps!.list(scope.projectId)).toMatchObject([{ id: old.id, state: 'running', url: replacement.url }]);
   expect(await (await fetch(replacement.url)).text()).toBe('ready');
+});
+
+test('an apps-only member restores a static app at its original address and keeps original files across service restarts', async () => {
+  const { scope, directory } = await setup(); const original = await apps!.start(scope, { kind: 'static' });
+  const homes = apps!.homes; const before = await readFile(join(directory, 'index.html'));
+  await apps!.close(); apps = undefined;
+  writeDocument(homes.at('device-work-policy.json'), DeviceWorkPolicySchema, { schema: 'device-work-policy-v1', mode: 'apps-only' });
+  apps = new ProjectApps(homes, local, new SecretRedactor()); await apps.ready;
+  const restored = await apps.restoreStatic(original); expect(restored.url).toBe(original.url); expect(restored.id).toBe(original.id);
+  expect(await (await fetch(original.url)).text()).toContain('Todo');
+  await apps.close(); apps = new ProjectApps(homes, local, new SecretRedactor()); await apps.ready;
+  expect(apps.list(scope.projectId)).toMatchObject([{ id: original.id, state: 'running', url: original.url }]);
+  expect(await readFile(join(directory, 'index.html'))).toEqual(before); expect(await (await fetch(original.url + 'app.js')).text()).toContain('console.log');
+  await apps.stop(scope.projectId, original.id); await apps.close(); apps = new ProjectApps(homes, local, new SecretRedactor()); await apps.ready;
+  expect(apps.list(scope.projectId)).toEqual([]);
+});
+
+test('retained tailnet publication uses the same URL and refuses a changed route', async () => {
+  const { scope } = await setup(); const app = await apps!.start(scope, { kind: 'static' });
+  const retained = { ...app, access: 'tailnet' as const, url: 'https://device.tail.ts.net:9600/', httpsPort: 9600, loopbackPort: 23456 };
+  const state = { TCP: { '9444': { HTTPS: true }, '9600': { HTTPS: true } }, Web: {
+    'device.tail.ts.net:9444': { Handlers: { '/': { Proxy: 'http://127.0.0.1:9773' } } },
+    'device.tail.ts.net:9600': { Handlers: { '/': { Proxy: 'http://127.0.0.1:23456' } } },
+  } };
+  const publisher = tailnetAppPublisher(async () => 'https://device.tail.ts.net:9444', async args => {
+    if (args[1] !== 'status') state.Web['device.tail.ts.net:9600'].Handlers['/'].Proxy = args.at(-1)!;
+    return JSON.stringify(state);
+  });
+  expect(await publisher.publish(34567, retained)).toMatchObject({ url: retained.url, httpsPort: 9600 });
+  expect(state.Web['device.tail.ts.net:9444'].Handlers['/'].Proxy).toBe('http://127.0.0.1:9773');
+  await expect(publisher.publish(45678, retained)).rejects.toThrow('changed');
+  expect(state.Web['device.tail.ts.net:9600'].Handlers['/'].Proxy).toBe('http://127.0.0.1:34567');
 });

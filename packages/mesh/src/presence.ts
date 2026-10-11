@@ -35,6 +35,7 @@ export type DevicePresenceOptions = {
   deviceId: string; version: string; sensor: Pick<ExternalSessionSensor, 'read'>;
   projects(): Promise<Project[]>; running(): string[]; report(heartbeat: Heartbeat): Promise<unknown> | unknown;
   ready?: Promise<void>; timers?: boolean; now?: () => number;
+  workPolicy?(): NonNullable<Heartbeat['workPolicy']>;
 };
 /** Failure to report presence cannot stop a runtime. There is one in-flight
  * pulse; shutdown drains it before the hub or its credentials are closed. */
@@ -65,6 +66,7 @@ export class DevicePresence {
     const cpu = cpuTimes(); const total = cpu.total - this.#cpu.total; const idle = cpu.idle - this.#cpu.idle; this.#cpu = cpu;
     const heartbeat = HeartbeatSchema.parse({ schema: 'heartbeat-v1', deviceId: this.options.deviceId, version: this.options.version, at: new Date((this.options.now ?? Date.now)()).toISOString(),
       runningConversations: this.options.running(), projects: checkouts, externalSessions: sessions.sessions,
+      ...(this.options.workPolicy ? { workPolicy: this.options.workPolicy() } : {}),
       load: { cpuPct: total > 0 ? Math.max(0, Math.min(100, 100 * (1 - idle / total))) : 0, memFreeMb: freemem() / 1024 / 1024 } });
     await this.options.report(heartbeat); this.last = heartbeat; this.unavailable = false; return heartbeat;
   }
