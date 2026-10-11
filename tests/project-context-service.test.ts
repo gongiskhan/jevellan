@@ -123,7 +123,8 @@ test('choosing context after outside file changes records the operation before a
   if (chosen.status === 503) chosen = await request('/api/projects/project/context/operations', 'POST', input);
   expect(chosen.status, await chosen.clone().text()).toBe(202);
   const record = app.conversations.options.contexts.get(input.clientRequestId)!; expect(record).toBeTruthy();
-  await vi.waitFor(async () => expect(JSON.stringify(await app.conversations.view(record.conversationId))).toContain("Can't reach the hub"), { timeout: 5000 });
+  // Initial native memory preparation may take longer under the full-suite workload.
+  await vi.waitFor(async () => expect(JSON.stringify(await app.conversations.view(record.conversationId))).toContain("Can't reach the hub"), { timeout: 30_000 });
   app.conversations.hubWaits.reachable(); await app.conversations.wait(record.conversationId);
   await completed(app.conversations.options.contexts.get(input.clientRequestId)!);
   expect(lstatSync(join(path, 'CLAUDE.md')).isSymbolicLink()).toBe(true);

@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "PJ3 the GitHub token card saves, replaces and removes the token",
   "layout": "desktop-dark",
-  "screenshot": "docs/acceptance/screenshots/PJ3-github-token-desktop-dark.png",
+  "screenshot": "screenshots/PJ3-github-token-desktop-dark.png",
   "expected": "the Jevellan web app \"github token\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PJ3 the GitHub token card saves, replaces and removes the token\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Save Git settings' button has low contrast and no visible border, so it looks disabled or faint next to the outlined 'Replace', 'Remove' and 'Check connection' buttons.",
-      "The 'GitHub token scope' label and dropdown sit outside any card, between the 'GitHub connection' and 'GitHub token' cards, which looks inconsistent with the rest of the layout.",
-      "Some session titles and subtitles in the sidebar are cut short with an ellipsis ('Context · J11 memory jour…', 'dev-ma…'). This looks intentional and doesn't hide any controls."
+      "The 'GitHub token scope' label and dropdown sit outside any card, between the 'GitHub connection' and 'GitHub token' cards. That breaks the card grouping used everywhere else on the page.",
+      "The 'Save Git settings' button has very low contrast against the card background. It is probably disabled styling, but it reads as faint.",
+      "Sidebar session titles ('Context · J11 memory journ…', 'Context · Mesh journey fixt…') and their subtitles are cut off with ellipses. This looks like intentional overflow handling."
     ]
   }
 }

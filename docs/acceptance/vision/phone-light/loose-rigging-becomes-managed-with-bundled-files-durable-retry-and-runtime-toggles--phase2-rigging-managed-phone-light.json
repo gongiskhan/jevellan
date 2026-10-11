@@ -4,14 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "loose Rigging becomes managed with bundled files, durable retry and runtime toggles",
   "layout": "phone-light",
-  "screenshot": "docs/acceptance/screenshots/phase2-rigging-managed-phone-light.png",
+  "screenshot": "screenshots/phase2-rigging-managed-phone-light.png",
   "expected": "the Jevellan web app \"rigging managed\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"loose Rigging becomes managed with bundled files, durable retry and runtime toggles\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal covers most of the Rigging screen, so only the 'browser-package' card and its 'Restore locally' button can be seen behind the overlay. This is expected while a dialog is open.",
-      "The tab strip behind the overlay cuts off a fourth tab at the right edge. It sits next to a scroll arrow, so this looks like a deliberate horizontal-scroll design."
+      "The content textarea is much taller than its two lines of text, so most of the dialog is empty space.",
+      "The bundled file is only mentioned in the helper text ('1 bundled file is retained'). The file itself is not listed or shown in the dialog.",
+      "The background page is dimmed and partly hidden behind the modal, so the runtime toggles and the restore card can't be checked on this screen."
     ]
   }
 }

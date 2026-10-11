@@ -4,14 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "PJ5 an offline coordinator shows the notice and Move coordinator here",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/PJ5-moved-phone-dark.png",
+  "screenshot": "screenshots/PJ5-moved-phone-dark.png",
   "expected": "the Jevellan web app \"moved\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PJ5 an offline coordinator shows the notice and Move coordinator here\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header says \"Projects offline\" and the status badge says \"Idle\" while the banner says \"The coordinator moved to Mac.lan.\" These messages may confuse the user, but all of them are readable.",
-      "The header controls (the sliders button, the plus button, the document button and the more-options menu) are tightly grouped next to the title. They don't overlap, and each one can still be tapped."
+      "The tab row is clipped at the right edge: 'Pull requests' runs past the viewport, and any tabs after it can't be seen. This looks like a horizontally scrollable tab strip, but nothing on screen shows that it scrolls.",
+      "The 'Idle' status chip and the 'Claude Code Fable · high' subtitle are in small, low-contrast monospace text. They can still be read.",
+      "The moved notice is the only content, so most of the screen below it is empty."
     ]
   }
 }

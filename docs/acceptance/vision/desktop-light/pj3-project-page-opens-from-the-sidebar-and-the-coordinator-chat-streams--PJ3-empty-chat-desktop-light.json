@@ -4,15 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "PJ3 project page opens from the sidebar and the coordinator chat streams",
   "layout": "desktop-light",
-  "screenshot": "docs/acceptance/screenshots/PJ3-empty-chat-desktop-light.png",
+  "screenshot": "screenshots/PJ3-empty-chat-desktop-light.png",
   "expected": "the Jevellan web app \"empty chat\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PJ3 project page opens from the sidebar and the coordinator chat streams\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and metadata lines are truncated with ellipses (e.g. 'Context · Mesh journey fix…', 'Mac.l…'); this is intentional, and the full text is likely available elsewhere",
-      "Device picker shows a truncated host name 'Mac.lan' in monospace, which is legible",
-      "Footer hint 'Some native sessions are unavailable' is in small, low-contrast text"
+      "Sidebar session titles are cut off with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…'), and so are their metadata lines ('dev-ma…', 'dev-…', 'de…')",
+      "The 'Project day: 2026-10-11' text in the Nightly section uses a larger font than the other muted body text in the right panel, so the type sizes don't match",
+      "The 'Order' chip uses a pink accent border that clashes a little with the neutral 'Goals' chip next to it",
+      "The right panel's top border line ends before the right edge of the window, which leaves a small uneven gap"
     ]
   }
 }

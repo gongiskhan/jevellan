@@ -4,14 +4,13 @@
   "model": "claude-opus-5-5",
   "test": "context merge is drafted read-only, survives reload, cancels and applies through verified publication",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/phase2-context-linked-phone-dark.png",
+  "screenshot": "screenshots/phase2-context-linked-phone-dark.png",
   "expected": "the Jevellan web app \"context linked\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"context merge is drafted read-only, survives reload, cancels and applies through verified publication\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The paths in the blurred background cards wrap across several lines, but they sit behind the modal and don't affect it.",
-      "The dialog's \"Context · Context fixture\" title says \"Context\" twice."
+      "The background page text behind the modal backdrop shows through faintly. This is normal dimming and doesn't affect the modal."
     ]
   }
 }

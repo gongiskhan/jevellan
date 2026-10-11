@@ -1,0 +1,21 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "Closing packed installation",
+  "layout": "phone-light",
+  "screenshot": "screenshots/phase5-guide-conversation-phone-light.png",
+  "expected": "the first-conversation setup step with readable controls",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The progress stepper wraps into a 2x2 grid, so the pink active bar sits between '2 Account' and '4 Conversation'. It's unclear which step it marks.",
+      "Only steps 1 and 2 have grey bars above their labels. Steps 3 and 4 have none, so the stepper looks uneven.",
+      "The 'Auto' button uses a monospace font, unlike the rest of the screen.",
+      "The 'Start' button is light grey on a light background, so its text has low contrast. It's probably disabled because the text box is empty, but it's still harder to read.",
+      "The banner reads 'Until then you pick each step yourself', which is awkward wording.",
+      "The step label 'STEP 4 OF 4' uses widely spaced pink capitals that look faint."
+    ]
+  }
+}

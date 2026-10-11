@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "Projects and a manual planned change render the full plan, stream, Why and verified Changes",
   "layout": "desktop-light",
-  "screenshot": "docs/acceptance/screenshots/phase2-changes-desktop-light.png",
-  "expected": "the Jevellan web app \"changes\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)"
+  "screenshot": "screenshots/phase2-changes-desktop-light.png",
+  "expected": "the Jevellan web app \"changes\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "In the sidebar conversation list, a fourth row near y≈710 is cut off by the scroll container, leaving only faint text fragments above the 'Some native sessions are unavailable' row; an edge fade or better spacing would make it clear the list scrolls.",
+      "In the middle column, the first step card is scrolled so its bottom edge is clipped right under the 'Change the value to two and verify it.' line (y≈105). The card looks unfinished.",
+      "Conversation titles and subtitles in the sidebar ('Change the value to two …', 'Done · Manual conversation fixtu…', 'Blocked · picked-project · dev-m…') are cut off with ellipses, so the full fixture and project names can't be read.",
+      "The two stacked banners ('Work closed. Its changes are kept…' and 'Work closed and published.') look the same and repeat each other, so it's unclear which is the current state."
+    ]
+  }
 }

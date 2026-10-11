@@ -4,16 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "conversation titles, expanded tools and outside outcomes survive updates and reload",
   "layout": "desktop-dark",
-  "screenshot": "docs/acceptance/screenshots/phase2-controls-outcome-desktop-dark.png",
+  "screenshot": "screenshots/phase2-controls-outcome-desktop-dark.png",
   "expected": "the Jevellan web app \"controls outcome\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"conversation titles, expanded tools and outside outcomes survive updates and reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The long tool header breaks mid-word ('long_too' / 'l_header') instead of at a natural point",
-      "Sidebar conversation titles and metadata are cut short with ellipses (e.g. 'Context · Created instructi…', 'Mac…')",
-      "The last sidebar conversation item ('Change the value to two an…') is partly cut off at the bottom of the list's scroll area",
-      "The 'Waiting for you 5' filter chip's count sits close against its label"
+      "The last conversation in the sidebar list ('Change the value to two a…') is cut off at the bottom edge of the scroll area. The list scrolls, so it can still be reached.",
+      "The long underscore-joined tool header wraps across three lines inside the tool card. It is readable but looks dense.",
+      "Conversation titles and subtitles in the sidebar are truncated with ellipses (e.g. 'Context · Created instruct…', 'Done · Undo across works · dev-m…')."
     ]
   }
 }

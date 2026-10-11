@@ -4,14 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "LJ10 hard device needs, resource refusals, facts in Why and confirmed orphan cleanup",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/LJ10-device-facts-why-phone-dark.png",
+  "screenshot": "screenshots/LJ10-device-facts-why-phone-dark.png",
   "expected": "the Jevellan web app \"LJ10 device facts why\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"LJ10 hard device needs, resource refusals, facts in Why and confirmed orphan cleanup\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The last line under 'Devices when placed' ('Offline fixture: 0 running, tags linux, datacenter') sits right at the bottom edge with no padding. More content may continue below the fold, but the sheet looks scrollable, so nothing is cut off.",
-      "The ✗ refusal reasons (e.g. 'Claude Code Sonnet: Not offered by this runtime right now') are low-contrast gray on the dark background. They are still readable."
+      "The panel seems to continue past the bottom of the viewport: the 'Offline fixture' entry under 'Devices when placed' is the last thing visible, and the screen doesn't make it clear whether more content follows.",
+      "Each model and effort row shows its value twice: a bar and a number in a separate column on the right. The rows are dense on a phone-width screen."
     ]
   }
 }

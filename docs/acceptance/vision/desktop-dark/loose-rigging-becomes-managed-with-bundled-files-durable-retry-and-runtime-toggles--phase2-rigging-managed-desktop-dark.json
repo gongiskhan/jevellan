@@ -4,14 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "loose Rigging becomes managed with bundled files, durable retry and runtime toggles",
   "layout": "desktop-dark",
-  "screenshot": "docs/acceptance/screenshots/phase2-rigging-managed-desktop-dark.png",
+  "screenshot": "screenshots/phase2-rigging-managed-desktop-dark.png",
   "expected": "the Jevellan web app \"rigging managed\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"loose Rigging becomes managed with bundled files, durable retry and runtime toggles\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Saved' status label and the 'Preview' link sit on a row of their own between the Name and Content fields, so it isn't obvious which field they belong to.",
-      "The textarea fills most of the modal but only holds two lines, which leaves a large empty area."
+      "Edit modal is centered over the Rigging page, so the background content (page header, item rows, runtime toggles) is dimmed and partly hidden. That's expected for an open modal.",
+      "The 'Saved' status label is grey and lower-contrast than the other modal text but still readable.",
+      "The content textarea is mostly empty space below the two lines of instructions."
     ]
   }
 }

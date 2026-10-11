@@ -10,7 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Worktree setup command field still shows when Main isolation is selected, where it may not apply."
+      "The modal body looks like it may scroll past the Time/Time zone row, and nothing on screen shows there is more content below.",
+      "The 'Worktree setup command' placeholder 'npm ci' is low-contrast and could be mistaken for a value someone already entered."
     ]
   }
 }

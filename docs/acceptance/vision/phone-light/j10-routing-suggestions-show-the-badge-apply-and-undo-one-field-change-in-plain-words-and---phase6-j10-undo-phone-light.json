@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
   "layout": "phone-light",
-  "screenshot": "docs/acceptance/screenshots/phase6-j10-undo-phone-light.png",
-  "expected": "the Jevellan web app \"j10 undo\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)"
+  "screenshot": "screenshots/phase6-j10-undo-phone-light.png",
+  "expected": "the Jevellan web app \"j10 undo\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The tab strip clips the third tab label ('Devi…') at the right edge. It can still be reached with the scroll arrows.",
+      "'Last runs' says '2 routing suggestions ready', but only 1 suggestion is waiting and the other appears under Recently decided as Undone. The wording could mislead, though it isn't a layout problem.",
+      "The 'Memory care' dropdown ('Apply and tell me') looks enabled even though its checkbox is unchecked, so it's unclear whether it applies."
+    ]
+  }
 }

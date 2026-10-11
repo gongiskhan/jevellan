@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "PJ7 an attached thread disables its composer",
   "layout": "desktop-dark",
-  "screenshot": "docs/acceptance/screenshots/PJ7-copy-blocked-desktop-dark.png",
+  "screenshot": "screenshots/PJ7-copy-blocked-desktop-dark.png",
   "expected": "the Jevellan web app \"copy blocked\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PJ7 an attached thread disables its composer\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar thread titles and metadata lines are truncated with ellipses (e.g. 'Context · Mesh journey fix…', 'Mac.l…'), which is expected for a narrow sidebar",
-      "The bright pink selection highlight on the attach command clashes with the dark theme, though the text is still readable",
-      "There is a lot of empty space between the report card and the composer"
+      "The selected takeover command has a bright magenta highlight that clashes with the dark theme. The command is still readable.",
+      "Sidebar session titles and subtitles are shortened with ellipses (e.g. 'Context · J11 memory journ…', 'dev-ma…'). This is expected but hides some detail.",
+      "The selected command runs right up to its highlight edge, with little space before the copy icon."
     ]
   }
 }

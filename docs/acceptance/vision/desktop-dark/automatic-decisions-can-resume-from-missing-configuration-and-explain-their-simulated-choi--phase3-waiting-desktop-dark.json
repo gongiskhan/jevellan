@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
   "layout": "desktop-dark",
-  "screenshot": "docs/acceptance/screenshots/phase3-waiting-desktop-dark.png",
+  "screenshot": "screenshots/phase3-waiting-desktop-dark.png",
   "expected": "the Jevellan web app \"waiting\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"automatic decisions can resume from missing configuration and explain their simulated choices\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fourth conversation row at the bottom of the sidebar list is clipped mid-line above 'Some native sessions are unavailable'. This looks like normal scroll overflow, but the cut-off text looks untidy.",
-      "The sidebar conversation titles and subtitles end in an ellipsis (for example, 'Exercise automatic decisi…' and 'Automatic fix…'). This is intended, but users can't see the full text without opening the conversation.",
-      "The 'Review …' links are plain pink text, unlike the 'Try automatic again' button, so they look less clickable. The row of links is also long and wraps across four lines, which makes it look crowded."
+      "In the sidebar, the fourth conversation item is cut off by the bottom edge of the scrollable list, just above 'Some native sessions are unavailable'. Only the top of its title shows. The list scrolls, so it can still be reached.",
+      "Long conversation titles and subtitles in the sidebar end in ellipses (e.g. 'Exercise automatic decisi…', 'Waiting for you · Automatic fixt…'). This looks like intended truncation.",
+      "The 'Review …' fixture links take up four wrapped lines and are hard to scan. They are all still visible and readable."
     ]
   }
 }

@@ -5,6 +5,8 @@ Projects connects a coordinator, coding threads, pull requests and the owner's d
 
 This document describes the intended complete product. Implementation and live evidence are tracked separately in the roadmap and acceptance report.
 
+Release 0.2.0 packages the amended loop separately from the installed 0.1.0, which remains available for installer rollback. Source and simulated verification do not activate the new hub: hidden migration input, isolated sign-ins, project/Ekoa Settings credentials and live device enrollment remain prerequisite owner actions. The closing activation handoff is in `docs/acceptance/loop-activation.md`.
+
 ## The hub and devices
 
 The MacBook Pro is the hub and primary working device. Supported encrypted hub export and import preserve accounts, the vault, configuration, Rigging, projects, notebooks, history and project work. Export requires a stopped daemon; import validates the manifest and activates atomically with rollback. The destination has its own device identity. Codex subscription authentication is not transferred: imported accounts need sign-in through Settings.
@@ -116,7 +118,7 @@ The daily view contains the current project day, definitions, tasks, receipts, l
 
 Ekoa mirroring is implemented behind owner Settings and a capability-tested token connection. Durable create intents use read-back recovery and ownership markers; missing recovery tools or unsupported authentication remain visible blockers. Implementation evidence is in the acceptance report. Amendment 1 replaces reviewed pull requests with ask-owner merge items and adds failed night reports.
 
-Amendment A2 implementation checkpoint: opt-in merge routing, verification, owner decisions and ask-owner Ekoa mirrors are implemented. The changed four-layout journeys and backend/API regressions pass, with 16 live vision checks and no blocking findings. Actual owner-account merges remain blocked on setup. Amendment A3/A4 implementation follows; this specification is not a release or owner-acceptance claim.
+Amendment A2 implementation checkpoint: opt-in merge routing, verification, owner decisions and ask-owner Ekoa mirrors are implemented. The changed four-layout journeys and backend/API regressions pass, with 16 live vision checks and no blocking findings. Actual owner-account merges remain blocked on setup. Amendment A3/A4 are implemented as recorded below; this specification is not an activation or owner-acceptance claim.
 
 Amendment A3 is implemented. Review reports and their commit watermark share a durable task receipt; ordered review sequences handle equal timestamps. Every enabled Nightly definition runs independently of daytime success and coding-goal refill eligibility. LJ5/LJ6 passed eight four-layout journeys, including a fix before cutoff, a fix continuing after cutoff, and a failed suite that skips deploy and mirrors one night report. All 24 live vision judgments have zero blockers. Backend/storage/runtime checks passed 197 cases, plus 17 publication/client regressions. See acceptance decision 653 for provider attribution and first-review choices; actual provider and GitHub runs still await owner setup.
 
@@ -124,3 +126,15 @@ Amendment A3 is implemented. Review reports and their commit watermark share a d
 Ekoa Code setup is an owner action in Project settings, using an account-discovered Claude Opus 5.5 entry with high effort. It installs the exact six goals and five Nightly definitions once, with a durable setup receipt and stable create IDs. Later owner edits are preserved. Register the dedicated clone, require a project token in Settings → Projects and save that token in Settings → Git before work starts. Fast checks are `npm run build --workspace shared && npm run typecheck && npm run lint`; they avoid production and expensive test runs.
 
 [Ekoa workflow handoff #208](https://github.com/gongiskhan/ekoa-code/pull/208) retains the weekly measurement schedule and adds exact-commit dispatch inputs. Each window snapshots its merge status once: waiting runs watch Legal → Deploy → Full suite; merged runs dispatch Legal → Full suite → Deploy. Missing access blocks the handoff rather than guessing. Run now uses its own snapshot. Dispatch refs and the `sha` input bind every Ekoa run to its recorded commit; Deploy additionally binds to the passing Full suite receipt from the same window. The installed root-owned runner hook must be updated after the owner merges #208; otherwise its refusal remains a recorded dispatch failure.
+
+
+Closing verification covers all 268 unique browser cases across the full run and targeted reruns in desktop/phone and light/dark, including packed installation, update, rollback and removal. Final live vision has 494 clear versioned verdicts, with 470 retained screenshots and 24 generic temporary-capture references. The closing review and permitted second review are complete with their findings corrected. The complete backend run passes 1,861 cases across 168 files, followed by 18/18 final merge-gate cases. Typecheck, lint and build pass on Node22. The inspected 0.2.0 Mac distribution is ready for the gated publication checkpoint; the mandatory history secret scan runs before push. Release 0.2.0 and the retained 0.1.0 rollback are described in [the activation handoff](acceptance/loop-activation.md); owner migration/sign-in/Settings inputs continue to block live activation.
+
+
+Native MCP delivery preserves Jevellan's role permissions. Read-only sessions and basic verification receive only their scoped Jevellan bridge; imported native servers are withheld because their external write effects cannot be confined by the repository sandbox. Ordinary write threads retain supported native stdio/HTTP/SSE transports. Native instructions, settings and skills continue to apply in protected roles. Acceptance decision 658 records the closing review finding and regression coverage.
+
+
+Codex native stdio bridges forward their generated secret-reference variable through the per-server environment allow list. The configuration and arguments contain the reference name only; credential values remain ephemeral in the worker environment. Protected roles continue to withhold imported servers.
+
+
+Automatic merge routing waits for running, preparing, publishing and attached turns, and checks that state again after verification. A passed verification is retained while publication settles; a new head goes through the gate again. Acceptance decision 659 records the concurrency regressions.

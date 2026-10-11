@@ -58,6 +58,8 @@ export const FIXTURE_REMOTE = 'https://github.com/fixture/repo.git';
 export const COORDINATOR_ENTRY: ModelOption = { id: 'coord', runtime: 'fake2', model: 'scripted-model', label: 'Coordinator', description: 'Simulated coordinator model.', efforts: ['high'], enabled: true };
 const IDENTITY = ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid'];
 const PASSPHRASE = 'disposable projects passphrase';
+/** Resource admission is deterministic in simulated-provider tests; physical facts have their own tests. */
+const fixtureFacts = (os: 'darwin' | 'linux' = 'darwin'): DeviceFacts => ({ schema: 'device-facts-v1', cores: 8, load1: 1, load5: 2, totalMemoryBytes: 32e9, freeMemoryBytes: 12e9, freeDiskBytes: 80e9, os, runningThreads: [], runningJobRuns: [] });
 
 /** `git` with the fixture identity; output trimmed, stderr dropped, failures throw. */
 export function git(cwd: string, ...args: string[]): string {
@@ -120,7 +122,7 @@ export async function projectFixture(options: ProjectFixtureOptions = {}): Promi
     Object.defineProperty(coordinator, 'id', { value: 'fake2' }); coordinator.capabilities.readOnlyEnforced = true;
   }
   const appOptions = { homes, timers: false, repositoryVisibility: async () => 'PUBLIC' as const, runtimes: () => new Map(Object.entries(runtimes)), githubBaseUrl: github.url,
-    ...(options.deviceFacts ? { deviceFacts: options.deviceFacts } : {}),
+    deviceFacts: options.deviceFacts ?? fixtureFacts,
     ...(options.decisionFetch ? { decisionFetch: options.decisionFetch } : {}), projectTimers: { periodic: false, coordinatorStartMs: 0, coordinatorRetryMs: 50, ...options.projectTimers } };
   // With `control`, `startDaemon` listens at once and owns the listener; otherwise the application listens after the setup below.
   let daemon: Awaited<ReturnType<typeof startDaemon>> | undefined;
@@ -279,7 +281,7 @@ export async function projectMember(f: ProjectFixture, options: { name?: string 
     await member.afterCall?.(call, parsed);
     return response;
   };
-  const app = new Application({ homes, timers: false, repositoryVisibility: async () => 'PUBLIC', runtimes: () => new Map([['fake', fake as RuntimeAdapter]]), githubBaseUrl: f.github.url, hubFetch,
+  const app = new Application({ homes, timers: false, repositoryVisibility: async () => 'PUBLIC', deviceFacts: () => fixtureFacts('linux'), runtimes: () => new Map([['fake', fake as RuntimeAdapter]]), githubBaseUrl: f.github.url, hubFetch,
     projectTimers: { periodic: false, coordinatorStartMs: 0, coordinatorRetryMs: 50 } });
   serverOptions.application = app; await app.started; app.bindDaemonUrl(base);
   f.closers.push(async () => {

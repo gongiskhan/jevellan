@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · Mesh journey fix…', 'Mac.l…'). This is intended truncation and the text is still readable.",
-      "Only the first group shows a call count ('3 calls'). The single-call groups (Read, Bash, Read) show only 'completed', so the headers look inconsistent.",
-      "The Bash tool call's input is {\"file_path\":\"four.txt\"}. This looks like fixture data, not a real command, but it doesn't affect the layout.",
-      "Bottom of sidebar shows 'Some native sessions are unavailable'. It's small, low-contrast text but still legible."
+      "Shell session titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'). This looks like intentional truncation, but the full names can't be read.",
+      "Only the first tool group shows a call count ('3 calls'). The single-call Read/Bash/Read groups have no count, so the group headers look inconsistent.",
+      "The 'Bash' tool card shows a file_path input ({\"file_path\":\"four.txt\"}). This looks like a fixture-data oddity, not a rendering problem.",
+      "The 'completed' status labels on the second and third calls in the first group sit alone on their own row above 'Input', which leaves extra space."
     ]
   }
 }

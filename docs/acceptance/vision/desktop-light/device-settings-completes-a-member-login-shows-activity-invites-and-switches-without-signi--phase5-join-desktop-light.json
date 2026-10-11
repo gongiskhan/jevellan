@@ -4,14 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "device Settings completes a member login, shows activity, invites and switches without signing in again",
   "layout": "desktop-light",
-  "screenshot": "docs/acceptance/screenshots/phase5-join-desktop-light.png",
+  "screenshot": "screenshots/phase5-join-desktop-light.png",
   "expected": "the Jevellan web app \"join\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"device Settings completes a member login, shows activity, invites and switches without signing in again\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Join code' field shows as a blank grey box, and the token at the end of the command is a solid white block. Both look like the screenshot tool deliberately hiding a secret, not a rendering bug. If that's not the case, the join code can't be read.",
-      "The token block in the command bar is light against the dark background and stands out from the monospace text."
+      "The join code field is a solid grey box and the code at the end of the npx command is a blank white box. Both look like deliberate masking of the secret by the screenshot tool, not a rendering failure. If they aren't masked on purpose, the join code is missing, which would be blocking.",
+      "The dialog is fully visible and centred. Its title, close button, instruction text, command and expiry line all render legibly with nothing overlapping or cut off.",
+      "The page behind the dialog is blurred, as expected for a modal."
     ]
   }
 }

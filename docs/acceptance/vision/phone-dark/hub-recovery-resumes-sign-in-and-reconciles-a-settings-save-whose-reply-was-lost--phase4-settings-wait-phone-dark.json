@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "hub recovery resumes sign-in and reconciles a settings save whose reply was lost",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/phase4-settings-wait-phone-dark.png",
+  "screenshot": "screenshots/phase4-settings-wait-phone-dark.png",
   "expected": "the Jevellan web app \"settings wait\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"hub recovery resumes sign-in and reconciles a settings save whose reply was lost\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The floating 'Can't reach the hub' banner sits over the bottom of the Guards card. It covers the card's bottom border and sits just below the 'Pause after a plan' checkbox, which is still visible. Anything further down is hidden until you scroll. Adding bottom padding equal to the banner's height would keep the last controls clear of it.",
-      "The tab strip cuts off the labels at both edges ('…es' on the left, 'Improve…' on the right). The scroll arrows suggest this is intended overflow.",
-      "The textarea at the top is partly scrolled out of view, so its text is cut off at the top edge. That's normal for a scrolled page."
+      "The fixed 'Can't reach the hub' wait banner sits over the lower part of the Guards form and hides any fields below 'Pause after a plan' in this view. This only blocks access if the page lacks bottom padding to scroll those fields clear of the banner, which one screenshot can't show.",
+      "The tab strip cuts off its edge labels ('…es' on the left, 'Improve…' on the right). The arrow buttons show it scrolls sideways, so this is expected.",
+      "The textarea at the top is partly scrolled out of view, so its text is clipped by the viewport edge (scroll position, not a layout defect)."
     ]
   }
 }

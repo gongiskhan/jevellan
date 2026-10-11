@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
   "layout": "desktop-light",
-  "screenshot": "docs/acceptance/screenshots/J11-mesh-claude-why-desktop-light.png",
-  "expected": "the Jevellan web app \"mesh claude why\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\"; the other steps are judged in their own screenshots)"
+  "screenshot": "screenshots/J11-mesh-claude-why-desktop-light.png",
+  "expected": "the Jevellan web app \"mesh claude why\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The account list at the bottom of the right 'Why this step' panel is cut off by the edge of the screen (the last 'Login recovery 5397…' row is clipped). The panel looks scrollable, so the content can still be reached.",
+      "In the sidebar, a fourth conversation row is half-hidden behind the 'Some native sessions are unavailable' line, at the edge of the scroll area.",
+      "Sidebar conversation titles and subtitles are shortened with an ellipsis (e.g. 'Remember that this proje…', 'J8: implement after the o…'). This is intended, but the full titles can't be read.",
+      "The right panel repeats the warning 'Jev is unavailable (authentication failed). Pick the next step:' with no controls under it, while the actual step picker is in the main column."
+    ]
+  }
 }

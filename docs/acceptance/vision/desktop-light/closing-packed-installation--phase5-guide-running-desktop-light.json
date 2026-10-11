@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "Closing packed installation",
+  "layout": "desktop-light",
+  "screenshot": "screenshots/phase5-guide-running-desktop-light.png",
+  "expected": "the running conversation with readable transcript and reachable controls",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Sidebar conversation titles are cut off with ellipses ('Installation acceptance: ...', 'Context · Installation fixtu...') and so are the subtitle lines, but the full title is shown in the main header",
+      "Large empty area between the transcript and the composer",
+      "'Running' status is shown in three places at once: the header 'Working' badge, the step's 'Running' label, and 'Agent is working' above the composer",
+      "The light/dark/system theme switcher and the version text are small and low-contrast"
+    ]
+  }
+}

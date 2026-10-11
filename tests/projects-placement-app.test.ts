@@ -182,10 +182,9 @@ test('PJ4 Call B asks for the device when a second device qualifies', { timeout:
   expect(Object.keys(callB!.questions)).toEqual(['device']);
   const device = callB!.questions.device;
   expect(device?.type === 'choice' && Object.keys(device.criteria).sort()).toEqual([hubId, 'dev_studio'].sort());
-  // The hub's heartbeat reports its checkout branch; the second device reported no projects.
-  const branch = f.git(f.checkout, 'rev-parse', '--abbrev-ref', 'HEAD');
-  expect(device?.type === 'choice' && device.criteria).toEqual({ [hubId]: `${f.deviceName}: 0 threads running here, this is the coordinator's device, project checkout is on ${branch}`,
-    dev_studio: 'Studio: 0 threads running here' });
+  // Facts and owner tags are now part of the bounded device choice packet.
+  expect(device?.type === 'choice' && device.criteria).toEqual({ [hubId]: `${f.deviceName}: 0 running, load 2 on 8 cores, 80 GB free, 12 GB memory free, tags mac, residential, browser-automation`,
+    dev_studio: 'Studio: 0 threads running here, tags linux, datacenter' });
   const record = f.thread(created.threadId).placement;
   expect(record).toMatchObject({ source: 'jev', modelId: 'deep', effortRequested: 'max', deviceId: hubId, accountId: 'acc_deep', probabilities: { device: { [hubId]: 0.75, dev_studio: 0.25 } } });
   expect([...record.eligibleDevices].sort()).toEqual([hubId, 'dev_studio'].sort());

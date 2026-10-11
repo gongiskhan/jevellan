@@ -10,9 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The first tab in the horizontal tab strip is cut off at the left edge ('…vices'). This is expected for a scrollable tab strip, and the scroll arrows are visible.",
-      "The long repository path under CONNECTED breaks in the middle of words across several lines. It is still readable.",
-      "The 'Save Git settings' button looks disabled and has low contrast. This is probably intended because there are no unsaved changes."
+      "The settings tab strip clips its labels at both edges (\"ices\" on the left, a partly hidden tab after \"Ekoa\" on the right). Scroll arrows are shown, so the tabs can still be reached.",
+      "The 'Save Git settings' button has very low contrast. That fits a disabled state, but it is hard to see against the dark card.",
+      "The 'GitHub token scope' label and dropdown sit outside any card, unlike the other sections, so the layout looks inconsistent.",
+      "The helper text under 'Use SSH for GitHub' is small and low-contrast grey, though still readable.",
+      "The long repository path wraps in the middle of a word ('activity-context-' / 'origin.git'). It is still fully readable."
     ]
   }
 }

@@ -10,11 +10,14 @@ import { afterEach, expect, test } from 'vitest';
 // its temporary root behind (D320).
 
 const started: { launcher: ChildProcess; tmp: string }[] = [];
-afterEach(() => {
+afterEach(async () => {
   for (const { launcher, tmp } of started.splice(0)) {
+    // Capture the detached child before killing its launcher, which reparents it immediately on Linux.
+    const groups = processes().filter(row => row.ppid === launcher.pid).map(row => row.pgid);
     try { process.kill(-launcher.pid!, 'SIGKILL'); } catch { /* already gone */ }
-    for (const row of processes()) if (row.ppid === launcher.pid) try { process.kill(-row.pgid, 'SIGKILL'); } catch { /* already gone */ }
-    rmSync(tmp, { recursive: true, force: true });
+    for (const group of groups) try { process.kill(-group, 'SIGKILL'); } catch { /* already gone */ }
+    await until(() => !processes().some(row => groups.includes(row.pgid)), 5_000, 'failed fixture children to exit');
+    rmSync(tmp, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
   }
 });
 
@@ -36,6 +39,8 @@ const until = async (check: () => boolean | Promise<boolean>, timeoutMs: number,
   const deadline = Date.now() + timeoutMs;
   while (!(await check())) { if (Date.now() > deadline) throw new Error(`Timed out waiting for ${what}.`); await new Promise((resolve) => setTimeout(resolve, 100)); }
 };
+// The Linux Codex SDK creates a reusable, UID-scoped mount-target cache on import. It is not a server root.
+const fixtureEntries = (tmp: string) => readdirSync(tmp).filter(name => name !== `codex-bwrap-synthetic-mount-targets-${process.getuid?.()}`);
 
 /**
  * Starts the fixture server in a process group of its own, as Playwright's shell does, with a private temporary folder, and
@@ -48,8 +53,8 @@ async function start({ ready = true } = {}) {
   let stderr = ''; launcher.stderr!.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
   const exited = new Promise<number | null>((resolve) => launcher.once('exit', (code) => resolve(code)));
   if (ready) await until(async () => !(await free(port + 200)), 60_000, 'the fixture server');
-  else await until(() => readdirSync(tmp).length > 0, 30_000, 'the temporary root');
-  expect(readdirSync(tmp)).toHaveLength(1);
+  else await until(() => fixtureEntries(tmp).length > 0, 30_000, 'the temporary root');
+  expect(fixtureEntries(tmp)).toEqual([expect.stringMatching(/^jevellan-browser-/u)]);
   return { launcher, tmp, port, exited, stderr: () => stderr };
 }
 const released = async (port: number) => (await Promise.all([port, port + 100, port + 200].map(free))).every(Boolean);
@@ -64,7 +69,7 @@ test('a fixture server stopped by a signal to its process group runs its own gro
   process.kill(-server.launcher.pid!, 'SIGTERM');
   expect(await server.exited).toBe(0);
   expect(server.stderr()).not.toContain('did not complete');
-  expect(readdirSync(server.tmp)).toEqual([]);
+  expect(fixtureEntries(server.tmp)).toEqual([]);
   expect(await released(server.port)).toBe(true);
 }, 90_000);
 
@@ -74,7 +79,7 @@ test('a fixture server whose launcher is killed closes and removes its root, als
     const server = await start({ ready });
     process.kill(-server.launcher.pid!, 'SIGKILL');
     await server.exited;
-    await until(() => readdirSync(server.tmp).length === 0, 40_000, `the temporary root to be removed (ready: ${ready})`);
+    await until(() => fixtureEntries(server.tmp).length === 0, 40_000, `the temporary root to be removed (ready: ${ready})`);
     await until(() => released(server.port), 30_000, `the ports to be released (ready: ${ready})`);
   }
 }, 150_000);

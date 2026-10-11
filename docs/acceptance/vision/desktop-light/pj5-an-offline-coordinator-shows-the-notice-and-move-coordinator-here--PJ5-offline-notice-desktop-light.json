@@ -4,14 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "PJ5 an offline coordinator shows the notice and Move coordinator here",
   "layout": "desktop-light",
-  "screenshot": "docs/acceptance/screenshots/PJ5-offline-notice-desktop-light.png",
+  "screenshot": "screenshots/PJ5-offline-notice-desktop-light.png",
   "expected": "the Jevellan web app \"offline notice\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PJ5 an offline coordinator shows the notice and Move coordinator here\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Session titles and subtitles in the sidebar are truncated with ellipses (e.g. 'Context · Mesh journey fix…', 'Mac.l…'), but the full text is presumably available on hover",
-      "Large empty gap in the sidebar between the session list and the 'Some native sessions are unavailable' footer"
+      "Sidebar session titles and subtitles (e.g. 'Context · J11 memory journ…', 'Done · J11 memory journey · dev-…') are truncated with ellipses, which is expected for overflow",
+      "Nightly section header spacing is uneven: 'Project day: 2026-10-11' sits flush left while the other section bodies are indented",
+      "Empty-state helper text is indented inconsistently: under Queue it sits flush left, under Nightly and Goals it is indented"
     ]
   }
 }

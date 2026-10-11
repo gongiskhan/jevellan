@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "Projects and a manual planned change render the full plan, stream, Why and verified Changes",
   "layout": "desktop-dark",
-  "screenshot": "docs/acceptance/screenshots/phase2-conversation-desktop-dark.png",
-  "expected": "the Jevellan web app \"conversation\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)"
+  "screenshot": "screenshots/phase2-conversation-desktop-dark.png",
+  "expected": "the Jevellan web app \"conversation\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Sidebar conversation titles and subtitles are cut short with ellipses (e.g. 'Change the value to two ...', 'Context · J11 memory journ...'). This is normal truncation, and the full titles appear elsewhere.",
+      "Two similar status banners appear one after the other ('Work closed. Its changes are kept...' and 'Work closed and published.'), which looks redundant.",
+      "The Step 2 tool output still says 'The fixture starts with value 1.' while the step summary says the value is now 2. This is a content mismatch, not a layout problem.",
+      "The muted grey labels ('Local time', 'Input', 'Output', 'completed') are low-contrast against the dark background but still readable."
+    ]
+  }
 }

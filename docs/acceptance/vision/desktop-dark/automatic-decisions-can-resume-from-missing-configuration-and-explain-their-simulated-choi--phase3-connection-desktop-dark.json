@@ -4,16 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
   "layout": "desktop-dark",
-  "screenshot": "docs/acceptance/screenshots/phase3-connection-desktop-dark.png",
+  "screenshot": "screenshots/phase3-connection-desktop-dark.png",
   "expected": "the Jevellan web app \"connection\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"automatic decisions can resume from missing configuration and explain their simulated choices\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Jev key saved.' toast sits on top of the page subtitle ('Jev chooses each next step from the … give it.') and hides part of it. The toast is temporary and can be closed, so this doesn't block anything.",
-      "The Routing profile textarea cuts off its last visible line at the bottom edge. The textarea scrolls and can be resized, so the content is still reachable.",
-      "The last conversation in the sidebar ('Context · J11 memory jour…') is cut off at the bottom of the list. The list scrolls, so it's still reachable.",
-      "The Jev key field is empty after saving, even though the 'Saved · ••••154b' hint shows the key was stored. This may look odd but it's expected."
+      "The 'Jev key saved.' toast covers part of the page subtitle under 'Decisions' ('Jev chooses each next step from the … give it'). The toast is temporary and can be dismissed.",
+      "The 'xhigh' row in the Effort guide cuts off its text at the right edge of its single-line input ('…when extra'). The input still scrolls, so the text can be reached.",
+      "The Routing profile text box cuts off its last line at the bottom edge, but the box scrolls.",
+      "The last conversation in the sidebar ('Context · Improver sandbox') is partly hidden by the scroll area's bottom edge. The list scrolls."
     ]
   }
 }

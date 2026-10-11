@@ -10,7 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Override coordinator dialog sits low on the page, around y≈850–1150 of a 2000px-tall capture, instead of at the top of the viewport. It's still fully visible and usable."
+      "The background behind the modal is heavily dimmed and blurred, so the page underneath is hard to read. This is expected while the dialog is open."
     ]
   }
 }

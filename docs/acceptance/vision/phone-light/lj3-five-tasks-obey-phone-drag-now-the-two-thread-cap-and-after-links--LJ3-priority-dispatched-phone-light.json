@@ -4,14 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "LJ3 five tasks obey phone drag, Now, the two-thread cap and after links",
   "layout": "phone-light",
-  "screenshot": "docs/acceptance/screenshots/LJ3-priority-dispatched-phone-light.png",
+  "screenshot": "screenshots/LJ3-priority-dispatched-phone-light.png",
   "expected": "the Jevellan web app \"LJ3 priority dispatched\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"LJ3 five tasks obey phone drag, Now, the two-thread cap and after links\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Pull requests' tab is clipped at the right edge of the tab row. It looks like a horizontally scrollable tab strip, but nothing on screen shows that more tabs are there.",
-      "The ↓ (move down) button on Loop task 3 has a lighter style than the ↑ button. It may be disabled because the task is last in the queue, but the low contrast could make it look unreadable."
+      "The tab row is clipped at the right edge, so 'Pull requests' is cut off. It is probably a horizontally scrolling tab strip, so the tab can still be reached.",
+      "The long dev_ session ID wraps onto its own line in the Loop task 5 card. It is still readable."
     ]
   }
 }

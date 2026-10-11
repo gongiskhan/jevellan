@@ -4,16 +4,17 @@
   "model": "claude-opus-5-5",
   "test": "PJ3 a pull request merges through the modal and moves to Concluded",
   "layout": "desktop-light",
-  "screenshot": "docs/acceptance/screenshots/PJ3-pull-request-conflict-desktop-light.png",
+  "screenshot": "screenshots/PJ3-pull-request-conflict-desktop-light.png",
   "expected": "the Jevellan web app \"pull request conflict\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PJ3 a pull request merges through the modal and moves to Concluded\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The title of the running thread in the right panel is cut off with an ellipsis ('Read through the project and list what each file is fo…'). The full title still shows in the conversation feed.",
-      "Sidebar shell session titles and metadata are cut off with ellipses ('Context · Mesh journey fix…', 'Mac.l…').",
-      "Two 'Noted.' replies appear one after the other at the end of the conversation feed, which looks redundant.",
-      "The Merge button on the pull request card is greyed out, presumably because of the conflict. It is low contrast but still readable."
+      "The 'Merge' button on the pull request #1 card has a grey background and low contrast. It may look disabled even though the PR has conflicts, so it's unclear whether it can be clicked.",
+      "Session titles in the left sidebar are cut off with ellipses ('Context · J11 memory journ…', 'Context · Mesh journey fixt…'). Their metadata lines are cut off too ('dev-ma…', 'dev-…', 'de…').",
+      "The running task title 'Read through the project and list what each file is …' is cut off with an ellipsis in the right panel.",
+      "The center chat column is long and fills the whole viewport. The 'Pull request #1 of \"Add a greeting\" has conflicts' card sits just above the composer and is only seen after scrolling.",
+      "Several 'Noted.' replies repeat back to back, which adds visual noise."
     ]
   }
 }

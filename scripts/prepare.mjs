@@ -1,7 +1,9 @@
 import { existsSync } from 'node:fs';
 import { chmod, mkdir, writeFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
-import './prepare-runtime.mjs';
+import { prepareRuntime } from './prepare-runtime.mjs';
+
+prepareRuntime();
 
 if (existsSync('.git')) {
   const result = spawnSync('git', ['config', '--local', 'core.hooksPath', '.githooks'], { stdio: 'inherit' });

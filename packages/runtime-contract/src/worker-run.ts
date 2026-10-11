@@ -51,7 +51,10 @@ export class WorkerRun implements StretchRun {
     const env = launchEnvironment(runtime, input);
     this.#redactor = context.redactor ?? new SecretRedactor();
     const native = nativeSetup(context.homes, runtime, input.account.home, input.launch.useOwnSetup !== false, this.#redactor);
-    for (const server of native.mcp) {
+    // Native MCP tools have no enforceable read-only contract. Keep protected roles
+    // on their scoped Jevellan bridge, regardless of provider or transport.
+    const nativeMcp = input.permissions === 'write' && !(input.schema === 'turn-input-v1' && input.safetyProfile === 'verification') ? native.mcp : [];
+    for (const server of nativeMcp) {
       if (input.launch.mcpServers[server.name]) continue;
       const key = `JEVELLAN_NATIVE_MCP_${createHash('sha256').update(server.name).digest('hex').slice(0, 16)}`;
       const value = JSON.stringify({ schema: 'native-mcp-launch-v1', ...server, name: undefined });

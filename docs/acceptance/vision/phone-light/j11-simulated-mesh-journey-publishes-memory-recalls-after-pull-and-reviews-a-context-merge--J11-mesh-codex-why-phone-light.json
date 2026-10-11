@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
   "layout": "phone-light",
-  "screenshot": "docs/acceptance/screenshots/J11-mesh-codex-why-phone-light.png",
-  "expected": "the Jevellan web app \"mesh codex why\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\"; the other steps are judged in their own screenshots)"
+  "screenshot": "screenshots/J11-mesh-codex-why-phone-light.png",
+  "expected": "the Jevellan web app \"mesh codex why\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Candidates (3)' disclosure label is set in a larger font than the other section labels, so it looks inconsistent.",
+      "The warning text 'Pick the next step:' ends with a colon but no picker follows it inside the banner. The text is legible, but the call to action looks unfinished.",
+      "The memory list item 'Existing.md' looks like a generic placeholder file name."
+    ]
+  }
 }

@@ -7,7 +7,7 @@ import { z } from 'zod';
 
 const run = promisify(execFile);
 const Receipt = z.object({
-  schema: z.literal('installation-command-check-v8'), passed: z.literal(true),
+  schema: z.literal('installation-command-check-v9'), passed: z.literal(true),
   work: z.literal('real-conversation-simulated-providers'),
   firstRun: z.strictObject({ layout: z.enum(['desktop', 'phone']), theme: z.enum(['light', 'dark']), browserSetup: z.literal(true), guidedSetup: z.literal(true), skippedJev: z.boolean(), configuredDoctor: z.literal(true), verifiedPublication: z.literal(true), retainedConversation: z.literal(true), providers: z.literal('simulated') }),
 });

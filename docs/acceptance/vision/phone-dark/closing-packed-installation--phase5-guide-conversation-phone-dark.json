@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "Closing packed installation",
+  "layout": "phone-dark",
+  "screenshot": "screenshots/phase5-guide-conversation-phone-dark.png",
+  "expected": "the first-conversation setup step with readable controls",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The progress bars in the stepper are confusing: a pink active-style bar sits under '2 Account', but step 4 'Conversation' is the current step and has no bar of its own.",
+      "The disabled 'Start' button has very low contrast against the card background, so it's hard to see. It's disabled because the prompt is empty, which is expected.",
+      "The helper text under Device ('Coming later: Jevellan will pick a free machine...') is small and dim, though still readable.",
+      "The 'Auto' control is a very faint outline button, so it's hard to tell what it does and that it can be clicked."
+    ]
+  }
+}

@@ -271,10 +271,12 @@ export class HubProjectStore {
       const old = this.mergeDocument(document.id);
       if (old && (old.document.schema !== document.schema || old.document.projectId !== document.projectId || old.document.threadId !== document.threadId || old.document.commit !== document.commit || old.document.deviceId !== document.deviceId)) refuse('A merge receipt cannot change identity.');
       if (old && document.schema === 'merge-correction-v1') {
-        if (stableJson({ ...old.document, revision: 0, at: '' }) !== stableJson({ ...document, revision: 0, at: '' })) refuse('This correction ID already stores a different correction.');
+        if (stableJson({ ...old.document, revision: 0, at: '', receivedOrder: 0 }) !== stableJson({ ...document, revision: 0, at: '', receivedOrder: 0 })) refuse('This correction ID already stores a different correction.');
         return old;
       }
-      return this.#put('project-merge-documents', document.id, MergeDocumentSchema, document, expectedRevision);
+      const receivedOrder = document.schema === 'merge-correction-v1' ? this.hub.listByField('project-merge-documents', 'projectId', document.projectId, MergeDocumentSchema)
+        .reduce((last, row) => row.document.schema === 'merge-correction-v1' ? Math.max(last, row.document.receivedOrder ?? 0) : last, 0) + 1 : undefined;
+      return this.#put('project-merge-documents', document.id, MergeDocumentSchema, receivedOrder === undefined ? document : { ...document, receivedOrder }, expectedRevision);
     });
   }
   review(threadId: string): Stored<PullRequestReview> | null { return this.#get('project-pr-reviews', threadId, PullRequestReviewSchema); }
@@ -351,8 +353,8 @@ export class HubProjectStore {
   /** The project's newest overrides by time, newest first; the collection is small (D90 leaves it unpruned). */
   recentOverrides(projectId: string, limit: number, filter?: PlacementOverrideFilter): PlacementOverride[] {
     const count = z.number().int().min(1).max(PROJECT_HUB_PAGE).parse(limit); if (filter) PlacementOverrideFilterSchema.parse(filter);
-    return this.hub.listByField(OVERRIDES, 'projectId', IdSchema.parse(projectId), PlacementOverrideSchema).map((row) => row.document)
-      .filter(row => !filter || ((row.taskType ?? 'feature') === filter.type) === (filter.match === 'same')).sort((a, b) => Date.parse(b.at) - Date.parse(a.at) || b.id.localeCompare(a.id)).slice(0, count);
+    return this.hub.listByField(OVERRIDES, 'projectId', IdSchema.parse(projectId), PlacementOverrideSchema, { order: 'insertion-desc' }).map((row) => row.document)
+      .filter(row => !filter || ((row.taskType ?? 'feature') === filter.type) === (filter.match === 'same')).sort((a, b) => Date.parse(b.at) - Date.parse(a.at)).slice(0, count);
   }
 
   /**
@@ -770,7 +772,7 @@ export class MemberProjectStore implements ProjectHub {
   async thread(threadId: string) { return this.#check((await this.#call('thread-get', { threadId })).record, (row) => !row || row.document.id === threadId); }
   async mergeDocuments(projectId: string, after?: string) { return this.#page(await this.#call('merge-documents', { projectId, ...(after ? { after } : {}) }), projectId, after); }
   async mergeDocument(id: string) { return this.#check((await this.#call('merge-document-get', { id })).record, row => !row || row.document.id === id); }
-  async putMergeDocument(document: MergeDocument, expectedRevision: number) { return this.#check((await this.#call('merge-document-put', { document, expectedRevision })).record, row => row.document.id === document.id && (row.revision === expectedRevision + 1 || document.schema === 'merge-correction-v1' && stableJson({ ...row.document, revision: 0, at: '' }) === stableJson({ ...document, revision: 0, at: '' }))); }
+  async putMergeDocument(document: MergeDocument, expectedRevision: number) { return this.#check((await this.#call('merge-document-put', { document, expectedRevision })).record, row => row.document.id === document.id && (row.revision === expectedRevision + 1 || document.schema === 'merge-correction-v1' && stableJson({ ...row.document, revision: 0, at: '', receivedOrder: 0 }) === stableJson({ ...document, revision: 0, at: '', receivedOrder: 0 }))); }
   async review(threadId: string) { return this.#check((await this.#call('review-get', { threadId })).record, row => !row || row.document.threadId === threadId); }
   async putReview(review: PullRequestReview, expectedRevision: number) { return this.#check((await this.#call('review-put', { review, expectedRevision })).record, row => row.document.threadId === review.threadId && row.document.commit === review.commit); }
   async publishThread(index: ThreadIndex, eventId: number) {

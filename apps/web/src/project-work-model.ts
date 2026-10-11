@@ -226,6 +226,7 @@ export function showSent(sent: { known: readonly string[] } | undefined, open: r
 }
 
 const TOOL_ICONS: Record<string, IconName> = {
+  jevellan_review_followup: 'pull-request',
   jevellan_jobs_list: 'search', jevellan_job_runs: 'search', jevellan_daily_list: 'search', jevellan_job_run: 'plus', jevellan_goals_list: 'search', jevellan_tasks_list: 'thread', jevellan_task_create: 'plus', jevellan_task_update: 'settings', jevellan_task_cancel: 'stop', jevellan_threads_list: 'thread', jevellan_thread_start: 'plus', jevellan_thread_message: 'message', jevellan_thread_read: 'search',
   jevellan_thread_stop: 'stop', jevellan_ask_user: 'why', jevellan_withdraw_question: 'close', jevellan_notebook_read: 'file',
   jevellan_notebook_write: 'file', jevellan_pr_status: 'pull-request', jevellan_pr_diff: 'file', jevellan_pr_review: 'pull-request', jevellan_mail_send: 'message', memory_search: 'search', memory_read: 'file',

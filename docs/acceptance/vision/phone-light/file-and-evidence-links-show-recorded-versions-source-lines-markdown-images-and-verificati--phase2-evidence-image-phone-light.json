@@ -4,15 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
   "layout": "phone-light",
-  "screenshot": "docs/acceptance/screenshots/phase2-evidence-image-phone-light.png",
+  "screenshot": "screenshots/phase2-evidence-image-phone-light.png",
   "expected": "the Jevellan web app \"evidence image\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"file and evidence links show recorded versions, source lines, Markdown, images and verification output\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The image preview thumbnail is very small (about 100px wide), so the image content is hard to make out at phone width.",
-      "Below the content there is a large empty area, so the panel looks sparse.",
-      "The \"Recorded checkpoint ·\" label ends in a dangling separator because the hash wraps onto the next line."
+      "The image preview is a small thumbnail (about 100px wide), which leaves most of the screen empty; on a phone it could fill the width.",
+      "The 'Recorded checkpoint ·' label ends with a separator, and the hash wraps onto its own line, so the label looks unfinished.",
+      "The checkpoint hash is shown in small monospace text on a light tint. It is readable but has low emphasis.",
+      "The 'Open recorded step' link is grey and looks less obviously clickable than the magenta 'Open working copy' link next to it."
     ]
   }
 }

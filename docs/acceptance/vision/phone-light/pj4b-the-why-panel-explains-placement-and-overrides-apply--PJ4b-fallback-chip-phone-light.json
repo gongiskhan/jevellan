@@ -4,14 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "PJ4b the Why panel explains placement and overrides apply",
   "layout": "phone-light",
-  "screenshot": "docs/acceptance/screenshots/PJ4b-fallback-chip-phone-light.png",
+  "screenshot": "screenshots/PJ4b-fallback-chip-phone-light.png",
   "expected": "the Jevellan web app \"fallback chip\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PJ4b the Why panel explains placement and overrides apply\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The attach command in the footer ('jevellan thread attach thread_01M4GD24TDEWEC2H…') is cut off with an ellipsis. It looks intentional, and the copy button next to it still gives you the full command.",
-      "Most of the screen between the report card and the composer is empty."
+      "The terminal attach command at the bottom ('jevellan thread attach thread_01M4PAGGJ6XSJ20…') is cut off with an ellipsis. The copy button next to it still gives you the full command.",
+      "The metadata lines ('Claude Code · Fable · high effort · / Projects Claude · / Worktree on … · / dev-madrid') break at awkward points and leave a trailing separator dot at the end of some lines.",
+      "The large empty gap between the report card and the message composer makes the layout look sparse."
     ]
   }
 }

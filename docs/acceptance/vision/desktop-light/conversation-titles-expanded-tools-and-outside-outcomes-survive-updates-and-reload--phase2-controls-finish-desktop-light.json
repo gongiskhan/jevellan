@@ -4,7 +4,7 @@
   "model": "claude-opus-5-5",
   "test": "conversation titles, expanded tools and outside outcomes survive updates and reload",
   "layout": "desktop-light",
-  "screenshot": "docs/acceptance/screenshots/phase2-controls-finish-desktop-light.png",
+  "screenshot": "screenshots/phase2-controls-finish-desktop-light.png",
   "expected": "the Jevellan web app \"controls finish\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"conversation titles, expanded tools and outside outcomes survive updates and reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,

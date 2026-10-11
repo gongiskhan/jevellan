@@ -4,15 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy",
   "layout": "phone-light",
-  "screenshot": "docs/acceptance/screenshots/LJ5-nightly-reviewed-and-passed-phone-light.png",
+  "screenshot": "screenshots/LJ5-nightly-reviewed-and-passed-phone-light.png",
   "expected": "the Jevellan web app \"LJ5 nightly reviewed and passed\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Pull requests' tab is cut off at the right edge of the tab bar. It reads like a horizontally scrolling tab strip, but nothing shows that more tabs are off-screen.",
-      "The 'Working…' status pill in the header is shortened with an ellipsis.",
-      "The Review since last card shows the same text twice: its title and the line under it both read 'Review since last'."
+      "The tab strip is clipped at both edges: 'Chat' is cut off on the left and 'Pull requests' runs up against the right edge. It looks like a horizontally scrollable strip, so the tabs can still be reached.",
+      "Each 'Enabled' checkbox sits above its label instead of beside it, so the controls row looks slightly uneven."
     ]
   }
 }

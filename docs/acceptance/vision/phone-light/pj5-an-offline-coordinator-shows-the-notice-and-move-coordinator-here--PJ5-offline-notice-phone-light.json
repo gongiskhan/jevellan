@@ -4,15 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "PJ5 an offline coordinator shows the notice and Move coordinator here",
   "layout": "phone-light",
-  "screenshot": "docs/acceptance/screenshots/PJ5-offline-notice-phone-light.png",
+  "screenshot": "screenshots/PJ5-offline-notice-phone-light.png",
   "expected": "the Jevellan web app \"offline notice\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PJ5 an offline coordinator shows the notice and Move coordinator here\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Header icon buttons (filter, +, document, overflow) crowd the title and give it little room, so a longer project name would likely be truncated",
-      "The 'Offline' badge is very small monospace text with low contrast against its light background",
-      "Large empty area between the tab bar and the composer, with the empty-state text placed mid-screen"
+      "The last tab label, \"Pull requests\", is clipped at the right edge of the tab strip. The strip looks horizontally scrollable, so the tab can still be reached, but there's no clear sign that it scrolls.",
+      "The \"Offline\" badge under the title is small and low-contrast, but it's still readable."
     ]
   }
 }

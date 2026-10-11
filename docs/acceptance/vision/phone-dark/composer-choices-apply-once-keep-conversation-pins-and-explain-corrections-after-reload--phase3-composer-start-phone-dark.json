@@ -4,15 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "composer choices apply once, keep conversation pins and explain corrections after reload",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/phase3-composer-start-phone-dark.png",
+  "screenshot": "screenshots/phase3-composer-start-phone-dark.png",
   "expected": "the Jevellan web app \"composer start\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"composer choices apply once, keep conversation pins and explain corrections after reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Large empty dark area below the form card, so the bottom half of the phone viewport is unused",
-      "The helper text under the Device field ('Coming later: ...') is small and low-contrast, but you can still read it",
-      "The pink outlined 'Plan · Composer Fable · high' chip uses a monospace font that doesn't match the rest of the UI"
+      "The 'Coming later' helper text under the device selector is small and low-contrast, but you can still read it",
+      "The settings chip ('Plan · Composer Fable · high') uses small monospace text, which is a bit dense on a phone screen"
     ]
   }
 }

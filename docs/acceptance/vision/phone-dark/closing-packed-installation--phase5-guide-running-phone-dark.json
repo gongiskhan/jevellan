@@ -1,0 +1,20 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "Closing packed installation",
+  "layout": "phone-dark",
+  "screenshot": "screenshots/phase5-guide-running-phone-dark.png",
+  "expected": "the running conversation with readable transcript and reachable controls",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The header title is cut off with an ellipsis ('Installation acceptance: ch...'). The full text still appears in the subtitle line and the message bubble.",
+      "There is a large empty area between the step divider and the 'Agent is working' indicator, so the status sits far from the step content.",
+      "The 'Agent is working' status is shown twice: once as the 'Running' step badge and once in the footer status block.",
+      "The '0s' elapsed counter sits alone at the far right above the composer and is loosely tied to the status text.",
+      "The 'Elapsed 0s' and 'Local time' labels are small and low-contrast, but still readable."
+    ]
+  }
+}

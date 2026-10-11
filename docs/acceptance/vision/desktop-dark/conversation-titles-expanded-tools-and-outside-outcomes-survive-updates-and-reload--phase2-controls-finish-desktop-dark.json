@@ -4,14 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "conversation titles, expanded tools and outside outcomes survive updates and reload",
   "layout": "desktop-dark",
-  "screenshot": "docs/acceptance/screenshots/phase2-controls-finish-desktop-dark.png",
+  "screenshot": "screenshots/phase2-controls-finish-desktop-dark.png",
   "expected": "the Jevellan web app \"controls finish\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"conversation titles, expanded tools and outside outcomes survive updates and reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dimmed background has a tool header string ('long_tool_header_long_tool_header...') that runs past its container. It sits behind the modal overlay and doesn't affect the dialog.",
-      "The 'Optional' helper text under the textarea has low contrast, but you can still read it."
+      "The 'Optional' helper text sits under the textarea instead of beside the field label, which is a less common spot for it",
+      "The background behind the modal is heavily dimmed and blurred, so the conversation context can't be read (expected while a modal is open)"
     ]
   }
 }

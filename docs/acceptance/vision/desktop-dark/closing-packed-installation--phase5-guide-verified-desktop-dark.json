@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "Closing packed installation",
+  "layout": "desktop-dark",
+  "screenshot": "screenshots/phase5-guide-verified-desktop-dark.png",
+  "expected": "the finished conversation and verification result without overlap or clipping",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The sidebar conversation titles and subtitles are truncated with ellipses ('Installation acceptance: ...', 'Done · Installation fixture · de...'). This is expected truncation and nothing is lost.",
+      "Most of the right panel below the verification card is empty space, and so is the gap between the conversation and the composer.",
+      "The small grey and dim text has low contrast: 'Some native sessions are unavailable', 'Local time', the diff line numbers and v0.2.0.",
+      "The 'completed' status label in the Write file card sits on its own line under the title instead of beside it."
+    ]
+  }
+}

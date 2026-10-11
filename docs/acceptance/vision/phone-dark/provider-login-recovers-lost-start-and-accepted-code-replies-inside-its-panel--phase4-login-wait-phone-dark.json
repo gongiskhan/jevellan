@@ -4,15 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "provider login recovers lost start and accepted-code replies inside its panel",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/phase4-login-wait-phone-dark.png",
+  "screenshot": "screenshots/phase4-login-wait-phone-dark.png",
   "expected": "the Jevellan web app \"login wait\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"provider login recovers lost start and accepted-code replies inside its panel\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Continue' button looks very faint, almost disabled, even though a code has been entered. This is probably on purpose while the screen waits for the hub, but it is low-contrast.",
-      "The background tab bar ('Runtimes', 'Mapping', 'Decisions', …) is cut off at the right edge. It sits behind the dimmed overlay and seems to be a horizontally scrolling strip, so it doesn't block anything.",
-      "The modal covers the middle of the runtimes list, so some background rows are partly hidden. This is expected for a modal."
+      "The 'Open sign-in page' button sits almost directly on top of the 'Authorization code' label, with very little vertical spacing between them.",
+      "The disabled 'Continue' button has very low contrast against the dark panel. This is expected while the wait is in progress, but the button is hard to see.",
+      "The 'Can't reach the hub' message wraps into a narrow column next to 'Stop waiting', which makes the text block look cramped and leaves unused space on the right.",
+      "The tab strip and page title in the dimmed background behind the modal are cut off at the right edge. They sit behind the overlay and can't be used while the modal is open."
     ]
   }
 }

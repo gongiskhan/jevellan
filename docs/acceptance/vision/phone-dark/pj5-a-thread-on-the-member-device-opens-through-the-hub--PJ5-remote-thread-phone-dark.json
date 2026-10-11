@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "PJ5 a thread on the member device opens through the hub",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/PJ5-remote-thread-phone-dark.png",
+  "screenshot": "screenshots/PJ5-remote-thread-phone-dark.png",
   "expected": "the Jevellan web app \"remote thread\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PJ5 a thread on the member device opens through the hub\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Read the README on the mem…'). The full task title still appears in the Prompt card below.",
-      "The terminal attach command is cut off with an ellipsis ('jevellan thread attach thread_01M4GF8QX2SG9YJC…'). A copy button next to it gives access to the full command.",
-      "The metadata line under 'Back to the project' wraps onto three lines in small, low-contrast grey text. It is still readable."
+      "The thread title in the header is cut off with an ellipsis ('Read the README on the mem…'). The full title still appears in the Prompt card.",
+      "The terminal take-over command is cut off ('jevellan thread attach thread_01M4PAPR9ZZH736…'). The copy button next to it still gives you the full command.",
+      "The REPORT card's left accent border looks slightly brighter than the borders of the other cards. This is a minor visual inconsistency."
     ]
   }
 }

@@ -4,15 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "PJ7 an attached thread disables its composer",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/PJ7-copy-blocked-phone-dark.png",
+  "screenshot": "screenshots/PJ7-copy-blocked-phone-dark.png",
   "expected": "the Jevellan web app \"copy blocked\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PJ7 an attached thread disables its composer\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The selected command 'jevellan thread attach thread_01M4GFA0X3RGHQSA102NHFPBM7' wraps onto two lines, so the bright pink selection highlight looks ragged and heavy against the dark theme.",
-      "There is a large empty gap between the report card and the attached notice and composer at the bottom.",
-      "The send arrow in the disabled composer has very low contrast. That is acceptable for a disabled state, but it is hard to see."
+      "There is a large empty gap between the report card and the 'Attached in a terminal' notice. The bottom part of the screen looks crowded while the middle is empty.",
+      "The composer still shows the 'Message this thread' placeholder and a send arrow. Apart from slightly faded styling, it doesn't clearly look disabled.",
+      "The bright pink highlight on the selected command clashes with the dark theme. It is still readable.",
+      "The thread ID shows up in full twice (in the header notice and in the takeover command), which makes the screen feel repetitive."
     ]
   }
 }

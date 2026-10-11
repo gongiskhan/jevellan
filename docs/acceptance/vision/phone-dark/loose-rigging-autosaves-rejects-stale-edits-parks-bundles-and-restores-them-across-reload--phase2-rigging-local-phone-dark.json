@@ -4,15 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/phase2-rigging-local-phone-dark.png",
+  "screenshot": "screenshots/phase2-rigging-local-phone-dark.png",
   "expected": "the Jevellan web app \"rigging local\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The close button (×) on the success toast is very small and low-contrast, so it's a small touch target on a phone.",
-      "The pink 'Source' link has a different style from the rest of the muted dialog, and the 'Saved' status label next to it is low-contrast.",
-      "Behind the dimmed overlay, the tab row is clipped at the right edge ('Decisions' and the next tab), so the tab list relies on horizontal scrolling. It's hidden by the modal and not relevant to this step."
+      "The 'Saved' status label is low-contrast gray on the dark modal background.",
+      "The 'Source' link in pink/magenta doesn't match the rest of the palette, though it's still readable.",
+      "In the dimmed background, the top tab bar is cut off at the right edge after 'Decisions'. The modal covers this page, so it doesn't block anything here.",
+      "The monospace path 'skills/browser-local' and the small helper text are fairly small on a phone screen, but they're still readable."
     ]
   }
 }

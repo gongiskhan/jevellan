@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/phase3-waiting-phone-dark.png",
+  "screenshot": "screenshots/phase3-waiting-phone-dark.png",
   "expected": "the Jevellan web app \"waiting\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"automatic decisions can resume from missing configuration and explain their simulated choices\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Exercise automatic decisions: change t...'). The full text still shows in the subtitle and the message bubble, so nothing is lost.",
-      "The two 'Review Login recovery <uuid>' links break their UUIDs across lines at hyphens, which looks messy.",
-      "The long list of pink 'Review … fixture' links below the warning is visually dense and makes the main 'Try automatic again' action less prominent."
+      "The header title is cut off with an ellipsis ('Exercise automatic decisions: change t…'). The full text still appears in the subtitle line below it and in the message bubble.",
+      "The 'Review … fixture' links are a long, uneven list that wraps raggedly. Some rows hold two links and others one, and the long UUID-based 'Login recovery' labels break across lines, so the list is hard to scan.",
+      "The 'Waiting for you' badge's thin amber outline has fairly low contrast against the dark background."
     ]
   }
 }

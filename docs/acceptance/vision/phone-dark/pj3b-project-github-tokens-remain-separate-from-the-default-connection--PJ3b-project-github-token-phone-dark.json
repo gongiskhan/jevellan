@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "PJ3b project GitHub tokens remain separate from the default connection",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/PJ3b-project-github-token-phone-dark.png",
+  "screenshot": "screenshots/PJ3b-project-github-token-phone-dark.png",
   "expected": "the Jevellan web app \"project github token\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PJ3b project GitHub tokens remain separate from the default connection\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The horizontal settings tab strip cuts off its edge tabs (\"...ices\" on the left, and a partly visible icon after \"Ekoa\" on the right). The scroll arrows suggest this is intended overflow, and both arrows can be reached.",
-      "The \"Save Git settings\" button is a low-contrast disabled style, so it is hard to see against the dark card.",
-      "The \"Saved · updated Oct 11, 2026\" line uses a monospace font that doesn't match the rest of the card's text."
+      "The tab strip cuts off its first and last labels ('…ices' and a partial icon after 'Ekoa'). The scroll arrows on both sides show this is intentional horizontal scrolling.",
+      "The 'Save Git settings' button is low-contrast. It looks disabled because nothing has changed, and its label is still readable.",
+      "The 'GitHub token scope' label and its select sit outside any card, so they are styled differently from the card sections around them."
     ]
   }
 }

@@ -4,14 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "context merge is drafted read-only, survives reload, cancels and applies through verified publication",
   "layout": "desktop-dark",
-  "screenshot": "docs/acceptance/screenshots/phase2-context-linked-desktop-dark.png",
+  "screenshot": "screenshots/phase2-context-linked-desktop-dark.png",
   "expected": "the Jevellan web app \"context linked\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"context merge is drafted read-only, survives reload, cancels and applies through verified publication\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Current instruction files' disclosure label uses a monospace font, while the rest of the dialog uses sans-serif type",
-      "The 'Open work' link in pink is fairly small but still readable"
+      "The background page is blurred and dimmed behind the modal, which is expected for a modal overlay, so its text is unreadable by design.",
+      "The modal leaves a lot of empty space. 'Current instruction files' is a collapsed disclosure, so its contents aren't visible until it's expanded."
     ]
   }
 }

@@ -4,16 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "composer choices apply once, keep conversation pins and explain corrections after reload",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/phase3-composer-why-phone-dark.png",
+  "screenshot": "screenshots/phase3-composer-why-phone-dark.png",
   "expected": "the Jevellan web app \"composer why\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"composer choices apply once, keep conversation pins and explain corrections after reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Adversarial Revi…' label is truncated with an ellipsis in the score list, but the label is still recognizable",
-      "Every score bar shows 0.00 and is empty, so the score section gives no visual information",
-      "The panel is scrolled partway, so the top score rows have no section header, and the last correction entry ('Just override · effort: high → max') is cut off at the bottom of the viewport. The content looks scrollable, so this isn't blocking",
-      "The italic serif text for the action/effort transitions is a different style from the surrounding monospace/sans text and is slightly less legible at this size"
+      "The stage label \"Adversarial Rev...\" is cut off with an ellipsis. The narrow label column hides the full name \"Adversarial Review\".",
+      "The last entry under Corrections used (\"Just override · effort: high → max\") is cut off at the bottom edge of the screen, and its description is hidden. This looks like content that continues below the fold. Scrolling isn't confirmed from this single frame.",
+      "The stage list (Test, Review, Adversarial Rev..., Ask you, Done) starts right under the header with no section title. It's unclear whether the panel opened already scrolled.",
+      "Every stage bar is empty and reads 0.00, so the bars tell the reader nothing on this screen."
     ]
   }
 }

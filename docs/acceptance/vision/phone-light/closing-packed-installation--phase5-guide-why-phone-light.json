@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "Closing packed installation",
+  "layout": "phone-light",
+  "screenshot": "screenshots/phase5-guide-why-phone-light.png",
+  "expected": "the Why panel with readable decision details and reachable controls",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Adversarial Rev...' label in the Next Step list is shortened with an ellipsis, so the full option name isn't visible.",
+      "The timestamp line at the bottom of the Jev section is partly cut off by the bottom edge of the screen. The panel probably scrolls, but that can't be confirmed from this screenshot.",
+      "In the Memory section, 'No memory notes were selected.' uses a larger body font than the nearby muted text, so it looks inconsistent."
+    ]
+  }
+}

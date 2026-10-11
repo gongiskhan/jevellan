@@ -4,15 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "LJ8 Ekoa connection mirrors decisions, ask-owner pulls and aggregated drafts without duplicates",
   "layout": "phone-light",
-  "screenshot": "docs/acceptance/screenshots/LJ8-connected-drafts-phone-light.png",
+  "screenshot": "screenshots/LJ8-connected-drafts-phone-light.png",
   "expected": "the Jevellan web app \"LJ8 connected drafts\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"LJ8 Ekoa connection mirrors decisions, ask-owner pulls and aggregated drafts without duplicates\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Projects' tab label is partly faded and clipped by the left scroll arrow in the horizontally scrolling tab bar. The tab can still be reached by scrolling.",
-      "The 'Mirror tasks to Ekoa' label sits below its checkbox instead of beside it, so the two look less clearly connected.",
-      "The Save/Test connection row and the Remove token button wrap onto separate lines, which leaves uneven spacing."
+      "The leftmost tab label 'Projects' is partly hidden under the left scroll arrow in the horizontal tab strip. The strip scrolls, so the tab is still reachable.",
+      "The 'Mirror tasks to Ekoa' label sits on its own line below the checkbox instead of beside it, so the two look loosely connected.",
+      "The 'Remove token' button wraps onto a second row below 'Save' and 'Test connection', which looks a little unbalanced.",
+      "The 'Connected' card shows only a collapsed 'Available tools' row and no details about the connection, so the section looks sparse."
     ]
   }
 }

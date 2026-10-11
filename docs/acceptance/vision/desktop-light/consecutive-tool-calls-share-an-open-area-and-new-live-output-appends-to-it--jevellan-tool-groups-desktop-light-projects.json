@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar thread titles and metadata are cut off with ellipses (e.g. 'Context · Mesh journey fix…', 'Mac.l…'). This is normal overflow handling.",
-      "The status line 'Working on turn 1…' ends in an ellipsis and may be cut off.",
-      "The three grouped Read calls sit in one card with a single 'Read' header, but the later Read, Bash and Read calls each get their own card. That matches the expected grouping, which is broken by the thinking block and the tool change.",
-      "The Bash call's input shows {\"file_path\":\"four.txt\"}, which is unusual for Bash. It is fixture data, not a rendering problem."
+      "Sidebar session titles and metadata are cut off with ellipses (e.g., 'Context · J11 memory journ...', 'Done · Mesh journey fixture · de...'). This is intentional truncation and the text stays readable.",
+      "The 'Bash' tool card shows the input {\"file_path\":\"four.txt\"}, which looks like Read-style fixture data. It renders fine.",
+      "The first grouped Read card shows '3 calls', but each item in the group repeats its own 'completed' label, which is slightly redundant."
     ]
   }
 }

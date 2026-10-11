@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test } from 'vitest';
-import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -19,6 +19,22 @@ function input(brief = 'read environment'): StretchInput {
 }
 function launch(value = input()) { const run = new WorkerRun('codex', fileURLToPath(new URL('./fixtures/runtime-worker.mjs', import.meta.url)), value, { homes }); runs.push(run); return run; }
 async function collect(run: WorkerRun): Promise<RuntimeEvent[]> { const events: RuntimeEvent[] = []; for await (const event of run.events) events.push(event); return events; }
+
+test.each(['coordinator', 'review', 'verification', 'thread', 'reply'] as const)('native MCP respects the %s role before provider launch', async role => {
+  const native = join(homes.userHome, '.codex'); mkdirSync(native);
+  const source = '[mcp_servers.owner_tools]\ncommand = "fixture-native-mcp"\n';
+  writeFileSync(join(native, 'config.toml'), source);
+  const base = turn(), projectId = base.owner.projectId;
+  const run = role === 'reply' ? launch() : launchTurn({ ...base,
+    owner: { kind: role, projectId, id: role === 'coordinator' ? projectId : 'role_fixture' },
+    permissions: role === 'coordinator' || role === 'review' ? 'read-only' : 'write', safetyProfile: role });
+  const events = await collect(run); expect(await run.done).toEqual({ status: 'completed' });
+  const text = events.find(event => event.type === 'text'); if (text?.type !== 'text') throw new Error('Missing fixture event.');
+  const output = JSON.parse(text.delta) as { mcp: Record<string, unknown>; keys: string[] };
+  expect(Object.keys(output.mcp)).toEqual(role === 'thread' ? ['jevellan', 'owner_tools'] : ['jevellan']);
+  expect(output.keys.some(key => key.startsWith('JEVELLAN_NATIVE_MCP_'))).toBe(role === 'thread');
+  expect(readFileSync(join(native, 'config.toml'), 'utf8')).toBe(source);
+});
 
 test('owned worker validates/redacts events and strips secrets from stdin and arguments', async () => {
   const run = launch(); const events = await collect(run);

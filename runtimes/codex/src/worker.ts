@@ -3,7 +3,7 @@ import { serveWorker, classifyRuntimeError, type RunResult, type RuntimeEvent, t
 import { z } from 'zod';
 import { fileURLToPath } from 'node:url';
 import { realpathSync } from 'node:fs';
-import { projectTrustOverride, projectInstructionPrompt, worktreeGitDirs } from './configuration.js';
+import { codexMcpServers, projectTrustOverride, projectInstructionPrompt, worktreeGitDirs } from './configuration.js';
 
 const ItemSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('reasoning'), id: z.string(), text: z.string() }),
@@ -17,7 +17,7 @@ const EventSchema = z.object({ type: z.string(), thread_id: z.string().optional(
 // The bridge configuration and Safety hook wiring are identical for stretches and turns; only the hook's context differs.
 function codexRuntime(input: Pick<StretchInput | TurnInput, 'launch'>, cwd: string, safetyContext: object, executable?: string): Codex {
   const env = Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined));
-  const mcp = Object.fromEntries(Object.entries(input.launch.mcpServers).map(([name, server]) => [name, { command: server.command, args: server.args, env_vars: ['JEVELLAN_STRETCH_TOKEN', 'JEVELLAN_DAEMON_URL'], default_tools_approval_mode: 'approve' }]));
+  const mcp = codexMcpServers(input.launch.mcpServers);
   const quote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`;
   const safety = [process.execPath, fileURLToPath(new URL('./safety-hook.js', import.meta.url)), JSON.stringify(safetyContext)].map(quote).join(' ');
   // SDK object flattening treats dots in project paths as configuration levels.

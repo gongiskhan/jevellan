@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
   "layout": "desktop-light",
-  "screenshot": "docs/acceptance/screenshots/phase6-j10-change-it-desktop-light.png",
-  "expected": "the Jevellan web app \"j10 change it\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)"
+  "screenshot": "screenshots/phase6-j10-change-it-desktop-light.png",
+  "expected": "the Jevellan web app \"j10 change it\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The before line in the 'Revised change' diff shows only 'Strong default for planning, implementation and reviews.' The left textarea's after text adds 'Preferred for review steps.' Nothing marks which text the revision is based on, so the comparison can be confusing.",
+      "The diff block uses a dark background inside a light-theme modal. It's legible, but it looks heavy next to the rest of the dialog.",
+      "The two textareas take up a lot of empty vertical space for one or two lines of text."
+    ]
+  }
 }

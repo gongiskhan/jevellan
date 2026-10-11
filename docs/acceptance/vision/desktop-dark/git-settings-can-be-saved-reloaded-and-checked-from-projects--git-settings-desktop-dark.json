@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Save Git settings' button has low contrast. It may be disabled, but it's still readable.",
-      "Sidebar thread titles and subtitles are cut off with ellipses (for example 'Context · J11 memory journ...'), which is the intended truncation.",
-      "The 'Waiting for you' badge count '1' has low contrast."
+      "The 'Save Git settings' button has very low contrast against the card background. It may just be the disabled state, but it is hard to read.",
+      "The 'GitHub token scope' label and dropdown sit outside any card, between the 'GitHub connection' and 'GitHub token' cards, so they look inconsistent with the rest of the page.",
+      "Sidebar session titles and subtitles are cut short with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Mesh journey fixt…'). This is intentional, and they're outside the main settings content.",
+      "The 'Not set' status under 'GitHub token' and the 'CONNECTED' label are small and fairly dim, though still readable."
     ]
   }
 }

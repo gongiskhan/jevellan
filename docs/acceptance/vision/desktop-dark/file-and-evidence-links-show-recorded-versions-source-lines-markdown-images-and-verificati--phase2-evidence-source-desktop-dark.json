@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
   "layout": "desktop-dark",
-  "screenshot": "docs/acceptance/screenshots/phase2-evidence-source-desktop-dark.png",
+  "screenshot": "screenshots/phase2-evidence-source-desktop-dark.png",
   "expected": "the Jevellan web app \"evidence source\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"file and evidence links show recorded versions, source lines, Markdown, images and verification output\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar, the conversation row below 'Context · Created instructio...' is cut off by the 'Some native sessions are unavailable' footer. This is the normal edge of a scrolling list, but it looks clipped.",
-      "In the chat message, the long /private/var/... image path wraps over two lines. That pushes '. The value is now 2...' onto its own line, starting with a stray period.",
-      "The recorded checkpoint hash in the evidence panel uses small, low-contrast grey text. It is still readable but faint."
+      "In the sidebar conversation list, the fourth item is cut off partway at the bottom edge of the scroll area, just above 'Some native sessions are unavailable'. It is still reachable by scrolling.",
+      "In the center pane, the last visible line ('Working on the requested change.') is cut off by the 'Jump to latest' bar and the composer. This is normal scroll overflow.",
+      "The recorded checkpoint hash in the evidence panel is in small, low-contrast grey text, but it can still be read."
     ]
   }
 }

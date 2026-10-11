@@ -4,17 +4,17 @@
   "model": "claude-opus-5-5",
   "test": "external activity waits, retries, requires Changes review and publishes after reviewed acceptance",
   "layout": "desktop-dark",
-  "screenshot": "docs/acceptance/screenshots/phase4-external-review-desktop-dark.png",
+  "screenshot": "screenshots/phase4-external-review-desktop-dark.png",
   "expected": "the Jevellan web app \"external review\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"external activity waits, retries, requires Changes review and publishes after reviewed acceptance\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Claude Code started working in External activity fixture…' warning banner appears twice with identical text.",
-      "In the sidebar conversation list, a fourth item is partly visible above 'Some native sessions are unavailable', so its text shows only as a sliver. This is normal scroll clipping.",
-      "The 'Working on the requested change.' line sits right against the header divider, with almost no space above it.",
-      "The sidebar conversation titles and subtitles are cut off with ellipses ('Exercise external activity …', 'Blocked · External activity fix…'). This looks intentional for long titles.",
-      "The Changes panel summary reads '1 changed files' instead of '1 changed file'."
+      "The same 'Claude Code started working in External activity fixture while this step ran…' warning appears twice in a row.",
+      "'Working on the requested change.' sits right against the divider above it, with almost no top spacing.",
+      "The last row of the sidebar conversation list is partly cut off above 'Some native sessions are unavailable'. This is scroll clipping, and the row can still be reached by scrolling.",
+      "Long conversation titles in the sidebar end in ellipses ('Exercise external activity…', 'Exercise composer choic…', 'Exercise automatic decisi…'). This is intended truncation, and the full title of the active conversation is shown in the main header.",
+      "In the Changes panel header, the 'step 1' label is small and low-contrast next to the 'Changes' title."
     ]
   }
 }

@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "Closing packed installation",
+  "layout": "phone-dark",
+  "screenshot": "screenshots/phase5-guide-manual-phone-dark.png",
+  "expected": "the manual choices after skipped Jev setup with readable controls",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The header title is cut off with an ellipsis ('Installation acceptance: change the val…'). The full text still shows in the subtitle and the message bubble.",
+      "The 'Try automatic again' button sits outside the manual-choice panel, so it's a little unclear whether it belongs to that panel.",
+      "The Effort dropdown only fills half the width and leaves an empty gap to its right."
+    ]
+  }
+}

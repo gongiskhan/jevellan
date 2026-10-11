@@ -4,16 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
   "layout": "desktop-light",
-  "screenshot": "docs/acceptance/screenshots/phase3-automatic-desktop-light.png",
+  "screenshot": "screenshots/phase3-automatic-desktop-light.png",
   "expected": "the Jevellan web app \"automatic\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"automatic decisions can resume from missing configuration and explain their simulated choices\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar, the scrollable conversation list cuts a fourth row in half, just above 'Some native sessions are unavailable'. Its text shows only as a partial line. It is reachable by scrolling, but it looks clipped.",
-      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Exercise automatic decisi…', 'Done · Automatic fixture · Mac…'). This is intended, but the full context isn't visible.",
-      "The 'completed' status on the 'Read project' tool card sits on its own line at the right, below the title, instead of in line with it. This leaves an awkward gap.",
-      "The large empty space between the end of the step and the composer makes the page look unfinished, but no content is missing."
+      "In the sidebar, the fourth conversation row is cut off where it meets the 'Some native sessions are unavailable' notice. This looks like the scrollable list's normal overflow, but it has no fade or other hint that the list scrolls.",
+      "Sidebar conversation titles and metadata end in ellipses (for example 'Exercise automatic decisi…' and 'Done · Automatic fixture · dev-m…'). This is deliberate truncation, but the full text can't be read without hovering or opening the conversation.",
+      "The 'completed' status in the 'Read project' tool card sits on a line of its own under the title instead of next to it, which leaves some awkward empty space."
     ]
   }
 }

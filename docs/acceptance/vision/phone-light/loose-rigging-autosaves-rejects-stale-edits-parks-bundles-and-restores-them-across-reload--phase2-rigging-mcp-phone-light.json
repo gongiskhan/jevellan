@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
   "layout": "phone-light",
-  "screenshot": "docs/acceptance/screenshots/phase2-rigging-mcp-phone-light.png",
+  "screenshot": "screenshots/phase2-rigging-mcp-phone-light.png",
   "expected": "the Jevellan web app \"rigging mcp\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The content is JSON, but the file shown is named config.toml, which may confuse users (a content/labeling issue, not a layout one).",
-      "The status line 'Item restored to this account.' sits inside the modal, close below the 'Local edits save automatically' helper text, so the bottom of the dialog feels slightly crowded.",
-      "The tab strip behind the modal is cut off at the right edge, but it has a scroll arrow and the modal covers it anyway, so it causes no problem."
+      "The file label says config.toml, but the content shown is JSON. This may be fine for the fixture, but it reads as a mismatch.",
+      "Behind the modal, the tab row (Runtimes / Rigging / Decisions / …) is cut off at the right edge and needs the scroll arrow. That's expected on a phone, and the overlay dims it anyway.",
+      "The modal covers most of the Rigging MCP screen underneath, so the list items behind it are only partly visible. This is expected while an edit dialog is open."
     ]
   }
 }

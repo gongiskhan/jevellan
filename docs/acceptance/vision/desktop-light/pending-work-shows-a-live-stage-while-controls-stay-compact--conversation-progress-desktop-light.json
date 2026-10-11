@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar row for 'Progress fixture' says 'Waiting for you' (amber dot), but the header badge and the stage line say 'Working'.",
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Waiting for you · Browser fixtu…'). This is deliberate truncation, but it hides the project and host names.",
-      "The large empty area between the message and the progress line makes the stage line easy to miss at the bottom of the screen."
+      "Sidebar session subtitles are cut off with ellipses (e.g. 'Waiting for you · Browser fixtur…', 'Done · Improver sandbox · dev-ma…'). They still read, but the project/host details are lost.",
+      "The 'Progress fixture' session says 'Waiting for you' in the sidebar while the conversation header shows 'Working'. That's a state mismatch, not a layout problem.",
+      "The large empty area between the user message and the live stage line makes the pending state feel sparse.",
+      "The '0s' elapsed timer in the stage row is small and low-contrast at the far right edge."
     ]
   }
 }

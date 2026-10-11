@@ -23,7 +23,7 @@ test('Leave git to me edits an untracked app in its existing checkout without a 
   f.fake.enqueueTurn(async turn => {
     expect(turn.input.cwd).toBe(f.checkout);
     expect(readFileSync(join(turn.input.cwd, 'app.js'), 'utf8')).toContain("'all'");
-    expect(turn.input.systemAppend).toContain('Do not commit, stage, stash, reset, switch branches, push or open a pull request');
+    expect(turn.input.systemAppend).toContain('do not commit, stage, stash, reset, switch branches, push or open a pull request');
     writeFileSync(join(turn.input.cwd, 'app.js'), "const filter = 'active';\n");
     await turn.bridge('jevellan_thread_report', { status: 'done', summary: 'Active is the default.', changedFiles: ['app.js'] });
     return { status: 'completed' };

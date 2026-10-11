@@ -1,0 +1,20 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "Closing packed installation",
+  "layout": "desktop-light",
+  "screenshot": "screenshots/phase5-guide-why-desktop-light.png",
+  "expected": "the Why panel with readable decision details and reachable controls",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The sidebar conversation titles and subtitles are cut off with ellipses ('Installation acceptance: ...', 'Done · Installation fixture · de...'), but you can still pick each conversation.",
+      "The 'Changes' button has an extra space before the dot: 'Changes · 1 file'.",
+      "In the Why panel header, 'step 1 · implement' is pink monospace while 'Why this step' is in a different font, so the header looks a little mismatched.",
+      "Every bar in the Next step and Effort charts reads either 1.00 or 0.00. The charts are readable but tell you little beyond which option was chosen.",
+      "The Jev details at the bottom of the Why panel are in small gray monospace text with fairly low contrast."
+    ]
+  }
+}

@@ -4,14 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "Settings saves wait through hub loss, reconcile lost replies and abandon a closed editor",
   "layout": "desktop-light",
-  "screenshot": "docs/acceptance/screenshots/phase4-settings-save-wait-desktop-light.png",
+  "screenshot": "screenshots/phase4-settings-save-wait-desktop-light.png",
   "expected": "the Jevellan web app \"settings save wait\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Settings saves wait through hub loss, reconcile lost replies and abandon a closed editor\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Stop waiting' button sits a little off-center inside the hub-loss notice, which leaves extra empty space on its right",
-      "The 'Saving…' button is greyed out and low-contrast, but you can still read it"
+      "The \"Saving…\" button is greyed out and its text is a little low in contrast, but you can still read it and it looks deliberately disabled while the save waits",
+      "The background page is blurred under the modal overlay, as you'd expect, so the settings content behind it can't be read"
     ]
   }
 }

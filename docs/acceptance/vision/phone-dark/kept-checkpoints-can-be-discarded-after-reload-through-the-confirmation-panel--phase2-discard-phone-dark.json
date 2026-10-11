@@ -4,14 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "kept checkpoints can be discarded after reload through the confirmation panel",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/phase2-discard-phone-dark.png",
+  "screenshot": "screenshots/phase2-discard-phone-dark.png",
   "expected": "the Jevellan web app \"discard\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"kept checkpoints can be discarded after reload through the confirmation panel\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dimmed settings panel behind the dialog ('Conversation settings', 'Next step', 'Model', 'Effort', 'Settle kept changes') shows through faintly. It reads as an intentional modal backdrop and doesn't get in the way of the dialog.",
-      "The dialog sits near the top of the screen, which leaves a lot of empty dark space below it on a phone."
+      "The modal sits a bit high, which leaves a large empty dimmed area below it.",
+      "The background dialog (Conversation settings) shows through the backdrop. That's expected behind a modal, but its text is hard to read at this opacity.",
+      "The title 'Discard this work' and the primary button 'Discard checkpoints' use different wording."
     ]
   }
 }

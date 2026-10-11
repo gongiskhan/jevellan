@@ -1,9 +1,17 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
   "layout": "phone-light",
-  "screenshot": "docs/acceptance/screenshots/J11-mesh-context-draft-phone-light.png",
-  "expected": "the Jevellan web app \"mesh context draft\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\"; the other steps are judged in their own screenshots)"
+  "screenshot": "screenshots/J11-mesh-context-draft-phone-light.png",
+  "expected": "the Jevellan web app \"mesh context draft\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The dimmed background (the tab bar, a path line and a 'This repository is public' notice) shows around the modal, and the path line is partly hidden behind the modal's bottom edge. That is normal for a modal overlay and doesn't affect the dialog.",
+      "The diff code blocks and the 'Current instruction files' disclosure label use a small monospace font. It is readable but dense at phone width."
+    ]
+  }
 }

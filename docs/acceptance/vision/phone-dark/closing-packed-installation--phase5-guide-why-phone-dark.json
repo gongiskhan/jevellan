@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "Closing packed installation",
+  "layout": "phone-dark",
+  "screenshot": "screenshots/phase5-guide-why-phone-dark.png",
+  "expected": "the Why panel with readable decision details and reachable controls",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The label 'Adversarial Rev…' in the Next step list is cut short with an ellipsis; its full name isn't visible.",
+      "The last line of the Jev section (a timestamp like 'Oct 11, 2026, 11:25 PM') is clipped at the bottom edge of the panel. The panel likely scrolls, but this screenshot doesn't confirm it.",
+      "'Candidates (0)' can be expanded even though the list is empty."
+    ]
+  }
+}

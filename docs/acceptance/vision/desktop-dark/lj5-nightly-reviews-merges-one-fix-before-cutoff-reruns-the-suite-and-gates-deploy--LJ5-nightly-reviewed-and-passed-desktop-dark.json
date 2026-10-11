@@ -4,17 +4,17 @@
   "model": "claude-opus-5-5",
   "test": "LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy",
   "layout": "desktop-dark",
-  "screenshot": "docs/acceptance/screenshots/LJ5-nightly-reviewed-and-passed-desktop-dark.png",
+  "screenshot": "screenshots/LJ5-nightly-reviewed-and-passed-desktop-dark.png",
   "expected": "the Jevellan web app \"LJ5 nightly reviewed and passed\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Nightly window finished' card in the timeline cuts off its last line at 'Deploy: done…', so the rest of the summary can't be read without opening the card.",
-      "Session titles and subtitles in the left sidebar are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Mesh journey fix…', 'dev-…').",
-      "The Deploy job's 'Run now' button in the right pane is dim and low-contrast compared with the other 'Run now' buttons.",
-      "The page contradicts itself, though this is a state problem, not a layout one: the timeline says the nightly window finished and the Deploy job passed, but the right pane still shows Deploy as 'Queued' in both Queue and Nightly. Banners at the top and in the Nightly section still say merges are held, and the PR #1 card says checks are running. The header still shows 'Working…' and the composer shows 'Coordinator is working…'. The screenshot may have been taken before the right pane refreshed.",
-      "Small monospace labels such as the Claude Code · Fable · high meta line and the 'Done today at 02:00 AM' badges are low-contrast against the dark background, but they can still be read."
+      "The 'Nightly window finished' card ends its summary with 'Deploy: done…', so the rest of that line is hidden. This looks like an intentional line clamp, but the full status can't be read in the card.",
+      "In the right panel, the text under 'Last night's review · cefd7ec' runs past the bottom of the viewport ('Keep the regression path current' is clipped). The panel can still scroll, so nothing is unreachable.",
+      "In the nightly item cards, the 'Enabled' checkboxes sit above their labels instead of beside them, and they don't line up with the Run now / Edit buttons.",
+      "The 'Review since last' card shows the same text as both title and subtitle.",
+      "In the top banner, the 'Dismiss' button sits right against the end of the message text."
     ]
   }
 }

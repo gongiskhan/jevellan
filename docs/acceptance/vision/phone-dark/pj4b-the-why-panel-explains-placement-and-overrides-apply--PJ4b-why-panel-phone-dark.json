@@ -4,15 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "PJ4b the Why panel explains placement and overrides apply",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/PJ4b-why-panel-phone-dark.png",
+  "screenshot": "screenshots/PJ4b-why-panel-phone-dark.png",
   "expected": "the Jevellan web app \"why panel\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PJ4b the Why panel explains placement and overrides apply\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Large empty area below the footer; the panel content fills only about 80% of the viewport height",
-      "Header task title 'Tidy the README wording' is small and in a monospace accent color, so it reads as a secondary label next to 'Why this placement'",
-      "Footer metadata text (Placement · jev-browser-simulated · 60 tokens · 3 ms) is low-contrast grey on dark but still readable"
+      "The bottom of the panel is clipped at the viewport edge. The next section heading (\"JEV…\") is only partly visible, so the panel probably scrolls; this screenshot alone doesn't prove the rest of the content is reachable.",
+      "The empty tracks behind the score bars and the muted grey labels have low contrast against the dark background.",
+      "The header row is cramped: the pink task title \"Tidy the README wording\" sits tight against the \"Why this placement\" heading on a narrow phone screen.",
+      "The \"Jev\" source labels on the right of each section heading are small and faint."
     ]
   }
 }

@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "project, Jev, local Rigging and device Settings recover their hub boundaries",
   "layout": "desktop-light",
-  "screenshot": "docs/acceptance/screenshots/phase4-project-save-wait-desktop-light.png",
+  "screenshot": "screenshots/phase4-project-save-wait-desktop-light.png",
   "expected": "the Jevellan web app \"project save wait\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"project, Jev, local Rigging and device Settings recover their hub boundaries\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Path on Mac.lan' input cuts off the long path at the right edge. This is normal for a single-line text field, but the end of the path can't be seen.",
-      "The 'Browse folders on Mac.lan' button sits almost directly against the 'Git policy' label below it, with little vertical space between them.",
-      "The 'Test command' field is cut off at the bottom of the scrollable modal body. Scrolling reaches it, but the visible area ends right below its label."
+      "The 'Browse folders on dev-madrid' button sits directly on the 'Git policy' label below it, with no vertical spacing between them.",
+      "The policy notice starting 'Jevellan automatically switches clean checkouts to main…' is cut off at the bottom of the scrollable dialog body. The rest can be reached by scrolling.",
+      "The hub-wait banner ('Can't reach the hub…' with 'Stop waiting') appears below the Cancel/Saving… footer buttons, which is an unusual order. It is fully visible and reachable."
     ]
   }
 }

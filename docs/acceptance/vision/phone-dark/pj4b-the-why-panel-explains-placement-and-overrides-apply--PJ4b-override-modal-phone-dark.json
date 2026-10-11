@@ -4,13 +4,13 @@
   "model": "claude-opus-5-5",
   "test": "PJ4b the Why panel explains placement and overrides apply",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/PJ4b-override-modal-phone-dark.png",
+  "screenshot": "screenshots/PJ4b-override-modal-phone-dark.png",
   "expected": "the Jevellan web app \"override modal\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PJ4b the Why panel explains placement and overrides apply\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Background content behind the modal (header metadata line, 'Take over in a terminal' command) is truncated, but it is dimmed by the overlay and isn't part of the modal"
+      "The background thread content behind the dimmed overlay is cut off at the edges (for example 'Worktree on jv/tidy-the-readme-wording-based...' and the attach command), but it is not part of the modal and the overlay is meant to dim it"
     ]
   }
 }

@@ -4,14 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "PJ5 a thread on the member device opens through the hub",
   "layout": "phone-light",
-  "screenshot": "docs/acceptance/screenshots/PJ5-remote-thread-phone-light.png",
+  "screenshot": "screenshots/PJ5-remote-thread-phone-light.png",
   "expected": "the Jevellan web app \"remote thread\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PJ5 a thread on the member device opens through the hub\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Header title 'Read the README on the member…' is truncated with an ellipsis; the full title still appears in the prompt card",
-      "Attach command 'jevellan thread attach thread_01M4GF6FQFWEQ5MV…' is truncated, but the copy button next to it can still be reached"
+      "The header title is cut off with an ellipsis ('Read the README on the mem…'). The full task name still appears in the Prompt card.",
+      "The terminal attach command is cut off with an ellipsis ('jevellan thread attach thread_01M4PAPMSF08THW…'). A copy button next to it gives the full value.",
+      "The metadata line ('Codex · GPT · high effort · …') wraps across four lines in small monospace text. It is dense but readable."
     ]
   }
 }

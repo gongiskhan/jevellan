@@ -4,17 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "PJ3 a pull request merges through the modal and moves to Concluded",
   "layout": "desktop-dark",
-  "screenshot": "docs/acceptance/screenshots/PJ3-pull-requests-desktop-dark.png",
+  "screenshot": "screenshots/PJ3-pull-requests-desktop-dark.png",
   "expected": "the Jevellan web app \"pull requests\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PJ3 a pull request merges through the modal and moves to Concluded\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The running item's title is cut off with an ellipsis ('Read through the project and list what each file is fo...'). This looks intentional and the full title appears in the feed.",
-      "Sidebar session titles and metadata are cut off with ellipses ('Context · Mesh journey fix...', 'Mac.l...', 'M...').",
-      "The small monospace metadata text (e.g. 'Claude Code · Fable · high · Worktree · Mac.lan', 'Merged #7 42m') is low-contrast on the dark background, but still readable.",
-      "The PR card shows 'Checks passing', but the last feed event says the pull request 'has conflicts'. The two states disagree, though this doesn't affect layout or legibility.",
-      "Repeated 'Noted.' lines in the feed add visual noise."
+      "The running-task title 'Read through the project and list what each file is ...' is truncated with an ellipsis in the right panel. The full title is shown in the queue card above it.",
+      "Sidebar session titles ('Context · J11 memory journ...', 'Context · Mesh journey fixt...') and their subtitles are truncated with ellipses.",
+      "The 'Some native sessions are unavailable' note in the lower sidebar is very small, low-contrast text.",
+      "The repeated 'Noted.' replies in the conversation make the thread look cluttered."
     ]
   }
 }

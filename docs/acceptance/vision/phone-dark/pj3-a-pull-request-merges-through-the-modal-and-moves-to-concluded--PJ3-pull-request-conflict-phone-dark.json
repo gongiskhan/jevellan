@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "PJ3 a pull request merges through the modal and moves to Concluded",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/PJ3-pull-request-conflict-phone-dark.png",
+  "screenshot": "screenshots/PJ3-pull-request-conflict-phone-dark.png",
   "expected": "the Jevellan web app \"pull request conflict\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PJ3 a pull request merges through the modal and moves to Concluded\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The disabled 'Merge' button has very low contrast against the card background. That fits its disabled state (the PR has conflicts), but the label is faint.",
-      "The 'Idle' status chip and the model label 'Claude Code Fable · high' use small, low-contrast monospace text.",
-      "The 'PULL REQUESTS 1' section header is small, dim text that is only just readable."
+      "The 'Pull requests' tab label is clipped at the right edge of the tab strip. The strip looks horizontally scrollable, so the tab can still be reached.",
+      "The disabled 'Merge' button has low contrast against the dark card. Its muted look fits the conflict state, but it's hard to see.",
+      "The 'Why' and 'Open thread' links use pink text on a dark background, which is a little low in contrast but still readable."
     ]
   }
 }

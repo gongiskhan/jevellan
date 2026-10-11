@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "LJ4 owner goals refill into a draft, approve on phone, obey daily caps and pause queued work",
   "layout": "phone-light",
-  "screenshot": "docs/acceptance/screenshots/LJ4-goal-proposal-phone-light.png",
+  "screenshot": "screenshots/LJ4-goal-proposal-phone-light.png",
   "expected": "the Jevellan web app \"LJ4 goal proposal\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"LJ4 owner goals refill into a draft, approve on phone, obey daily caps and pause queued work\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Pull requests' tab is cut off at the right edge ('Pull requ'). This looks like a horizontally scrollable tab strip, so the tab can still be reached.",
-      "The move-down arrow button wraps onto its own line below the other action buttons, so the action row looks uneven.",
-      "The secondary text ('analysis · Hardening through automated tests') is low-contrast gray, but it is still readable."
+      "The tab bar is cut off at the right edge: the last tab shows only \"Pull requ\" and any tabs after it are hidden. This looks like a tab strip you can scroll sideways, so they can probably still be reached.",
+      "The action buttons wrap onto three rows, and the down-arrow button sits alone on the last row. It looks a little unbalanced, but every button is fully visible and can be tapped.",
+      "The 'WAITING FOR YOU 1' header is in small, light grey monospace text with low contrast, but it can still be read."
     ]
   }
 }

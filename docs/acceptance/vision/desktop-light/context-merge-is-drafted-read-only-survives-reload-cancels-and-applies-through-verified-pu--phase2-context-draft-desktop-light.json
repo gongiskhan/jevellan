@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "context merge is drafted read-only, survives reload, cancels and applies through verified publication",
   "layout": "desktop-light",
-  "screenshot": "docs/acceptance/screenshots/phase2-context-draft-desktop-light.png",
+  "screenshot": "screenshots/phase2-context-draft-desktop-light.png",
   "expected": "the Jevellan web app \"context draft\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"context merge is drafted read-only, survives reload, cancels and applies through verified publication\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Open work' link sits apart below the Cancel/Apply buttons, so its connection to the draft actions is unclear",
-      "The 'Current instruction files' disclosure is in monospace while the rest of the modal text is not",
-      "The Cancel and Apply buttons nearly touch the bottom edge of the CLAUDE.md diff block"
+      "The background page and sidebar are dimmed behind the modal overlay, but that is expected for a dialog.",
+      "The diff code blocks end with lone '-' and '+' lines for blank lines, which look a little sparse but are still readable.",
+      "'Open work' sits close to the bottom of the review card. Spacing is a bit tight but nothing overlaps."
     ]
   }
 }

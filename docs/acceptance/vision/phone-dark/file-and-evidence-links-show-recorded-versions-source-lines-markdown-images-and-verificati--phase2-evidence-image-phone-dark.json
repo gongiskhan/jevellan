@@ -4,16 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/phase2-evidence-image-phone-dark.png",
+  "screenshot": "screenshots/phase2-evidence-image-phone-dark.png",
   "expected": "the Jevellan web app \"evidence image\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"file and evidence links show recorded versions, source lines, Markdown, images and verification output\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The image preview is a small thumbnail (about 96px wide), so you can't make out its content without opening it.",
-      "The 'Open recorded step' link has lower contrast than the pink primary link, though you can still read it.",
-      "The checkpoint hash is in a small monospace font. It fits on the line but is hard to read at phone size.",
-      "Most of the panel below the links is empty."
+      "The evidence image is only a small thumbnail (about 96px wide) with a lot of empty space below it, so it's hard to see what the image shows without opening it.",
+      "The checkpoint hash is in small, low-contrast gray monospace text on a dark background. It can be read, but it's faint.",
+      "The 'Open recorded step' link is a muted gray, so it looks weaker or less clickable than the pink 'Open working copy' link."
     ]
   }
 }

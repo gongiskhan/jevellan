@@ -4,16 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/phase3-connection-phone-dark.png",
+  "screenshot": "screenshots/phase3-connection-phone-dark.png",
   "expected": "the Jevellan web app \"connection\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"automatic decisions can resume from missing configuration and explain their simulated choices\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Effort guide inputs cut off long text (low, high, xhigh, max), which is normal for single-line inputs.",
-      "The Routing profile textarea's text runs past its visible area, but the textarea scrolls and can be resized.",
-      "The tab bar cuts off the neighbouring tabs ('es', 'Improve') at the edges, but scroll arrows are shown.",
-      "The 'Jev key saved.' toast sits at the bottom of the screen and might cover content when the page is scrolled."
+      "The single-line Effort guide inputs cut off their text at the right edge (for example 'Never choose low', 'mechanical change', 'below max for fe'). The full guidance can't be read without scrolling inside each field. A multi-line field would show it all.",
+      "The Routing profile textarea shows a partly clipped last line at its bottom edge. This is expected for a scrollable field.",
+      "The 'claude' provider label in the Model menu card has low contrast against the dark card background.",
+      "Tabs in the section tab bar are cut off at both edges ('es', 'Improve'). They can still be reached with the scroll arrows."
     ]
   }
 }

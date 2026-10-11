@@ -4,16 +4,17 @@
   "model": "claude-opus-5-5",
   "test": "device Settings completes a member login, shows activity, invites and switches without signing in again",
   "layout": "desktop-dark",
-  "screenshot": "docs/acceptance/screenshots/phase4-devices-desktop-dark.png",
+  "screenshot": "screenshots/phase4-devices-desktop-dark.png",
   "expected": "the Jevellan web app \"devices\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"device Settings completes a member login, shows activity, invites and switches without signing in again\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar conversation list, the fourth item is cut off horizontally by the 'Some native sessions are unavailable' row. It looks like normal scroll clipping, but there is no fade or separator to show it.",
-      "Sidebar conversation titles and subtitles are truncated with ellipses (e.g. 'Context · Outside context fi…', 'Exercise composer choices…'). This is expected, but the full titles can't be read.",
-      "The 'Browser member' card is shorter than the 'Mac.lan' card beside it, which leaves an uneven empty gap in the grid.",
-      "The 'Automatic device choice' checkbox and its 'Coming later.' text are low-contrast and dim. They are still readable."
+      "The 'Open' button on the dev-madrid (this device) card is dimmed, so it is hard to tell at a glance whether it is disabled on purpose or just low-contrast.",
+      "The two-column card layout leaves empty space under the 'Browser member' card next to the 'Offline fixture' card, so the grid looks uneven.",
+      "Conversation titles and subtitles in the sidebar are cut short with ellipses (for example 'Exercise external activity ...'). This is intended truncation, but the full titles can't be read without hovering.",
+      "The secondary text is small and low-contrast: the 'Some native sessions are unavailable' note and the 'Thread worktrees: 0 GB' lines.",
+      "The 'Inspect worktrees' and 'Open' buttons on the offline device are greyed out with no label saying why."
     ]
   }
 }

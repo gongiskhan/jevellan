@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "Closing packed installation",
+  "layout": "desktop-dark",
+  "screenshot": "screenshots/phase5-guide-project-desktop-dark.png",
+  "expected": "the first-project setup step with readable project controls",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Contrast is low on the secondary text: the subtitle, the helper line 'Add a checked-out project to start a conversation.', the inactive stepper labels and the sidebar empty-state text. It's still readable.",
+      "The 'Add project' button doesn't stand out much more than the 'Continue' button, so the main action on this step isn't obvious.",
+      "'Continue' looks enabled even though no project has been added yet, which may be unclear."
+    ]
+  }
+}

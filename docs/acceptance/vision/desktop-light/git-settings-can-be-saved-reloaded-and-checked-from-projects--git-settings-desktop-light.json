@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar thread titles and metadata lines are truncated with ellipses (e.g. 'Context · J11 memory journ…', 'Waiting for you · Browser fixtu…'), which is expected for a narrow sidebar",
-      "The long remote path in the 'Check a project' result runs almost to the card's right edge but is not clipped",
-      "The 'Save Git settings' button looks disabled or low-contrast, which fits having no unsaved changes"
+      "The 'GitHub token scope' label and dropdown sit outside any card, between the 'GitHub connection' and 'GitHub token' cards. This breaks the card layout used everywhere else on the page.",
+      "Session titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Cancelled · Browser fixture · de…'). This looks like intended truncation, not a layout fault.",
+      "'Save Git settings' looks disabled because it is low-contrast. That is expected when nothing has changed, but it is hard to read against the card background."
     ]
   }
 }

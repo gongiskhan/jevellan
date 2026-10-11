@@ -4,14 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "kept checkpoints can be discarded after reload through the confirmation panel",
   "layout": "desktop-light",
-  "screenshot": "docs/acceptance/screenshots/phase2-discard-desktop-light.png",
+  "screenshot": "screenshots/phase2-discard-desktop-light.png",
   "expected": "the Jevellan web app \"discard\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"kept checkpoints can be discarded after reload through the confirmation panel\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Behind the blurred backdrop, the 'Read project…' tool card and the code blocks in the step output are cut off by the modal. This is expected because the modal covers them.",
-      "Behind the blurred backdrop, the long conversation titles in the sidebar are cut off with ellipses."
+      "The blurred background behind the modal is hard to read, but that's the intended backdrop effect and doesn't hide any active controls.",
+      "The dialog body is set close to its title and buttons, so the panel feels slightly cramped, though everything is readable."
     ]
   }
 }

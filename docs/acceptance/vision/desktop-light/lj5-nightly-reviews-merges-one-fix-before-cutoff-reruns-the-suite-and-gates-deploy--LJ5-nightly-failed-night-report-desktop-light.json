@@ -4,17 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy",
   "layout": "desktop-light",
-  "screenshot": "docs/acceptance/screenshots/LJ5-nightly-failed-night-report-desktop-light.png",
+  "screenshot": "screenshots/LJ5-nightly-failed-night-report-desktop-light.png",
   "expected": "the Jevellan web app \"LJ5 nightly failed night report\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Mesh journey fixt…'). The full names are still identifiable.",
-      "Nightly window finished cards cut off the last line ('Deploy: done…', 'Deploy: failed…'). This looks like intentional summary clamping.",
-      "Many repeated 'Noted.' lines make the thread long and visually noisy.",
-      "Concluded items show three entries all titled 'Fix the nightly review finding', so they are hard to tell apart without reading the PR numbers.",
-      "The 'Checks running' badge on PR #1 is small and low-contrast."
+      "Sidebar shell session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · dev-ma…'); this looks like intentional truncation.",
+      "The 'Nightly window finished' summary cards end with 'Deploy: done…' / 'Deploy: failed…', so the summary is cut off inside the card.",
+      "The timeline repeats many 'Noted.' lines between events, which makes it long and visually noisy.",
+      "The 'Proposed tasks' card and the Queue list both show a 'Fix the full suite finding' Draft item, which looks redundant."
     ]
   }
 }

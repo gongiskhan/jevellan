@@ -4,14 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "undo from the last closed work includes newer work and preserves both requests after reload",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/phase2-undo-following-confirm-phone-dark.png",
+  "screenshot": "screenshots/phase2-undo-following-confirm-phone-dark.png",
   "expected": "the Jevellan web app \"undo following confirm\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"undo from the last closed work includes newer work and preserves both requests after reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background behind the modal is dimmed and blurred, so the header title and the step details are hard to read; this is expected while a modal is open",
-      "The scrim leaves the background composer and the 'Jump to latest' link visible but unusable while the dialog is open"
+      "The page header title is cut off with an ellipsis (\"Change the value to two and publish th...\"). This is normal truncation on a phone-width screen.",
+      "The \"Change this step\" confirmation dialog is still open over the page. If this screenshot was supposed to show the screen after the undo was confirmed, the dialog may not have closed yet. That is a question about app state, not rendering: the dialog text and both buttons (\"Undo and redo\", \"Back\") are fully readable and reachable.",
+      "The page behind the dialog is dimmed and partly covered (step 1 details, Retry/Edit buttons, the \"Step 2 · Implement · Fable\" status). This is expected while a dialog is open. The message box and \"Jump to latest\" link stay visible at the bottom."
     ]
   }
 }

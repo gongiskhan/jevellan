@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "PJ3b project GitHub tokens remain separate from the default connection",
   "layout": "phone-light",
-  "screenshot": "docs/acceptance/screenshots/PJ3b-project-github-token-phone-light.png",
+  "screenshot": "screenshots/PJ3b-project-github-token-phone-light.png",
   "expected": "the Jevellan web app \"project github token\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PJ3b project GitHub tokens remain separate from the default connection\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The settings tab strip cuts off its edge tabs ('…ices' on the left and a partly visible icon tab on the right) behind the scroll arrows. This is normal for a horizontally scrolling tab strip, and the arrows keep those tabs reachable.",
-      "The 'GitHub token scope' label and dropdown sit outside any card, so they look visually detached from the 'GitHub token' card they control.",
-      "The 'Save Git settings' button is a pale disabled state with low contrast, but its text is still readable."
+      "The settings tab strip cuts off the labels at both edges (\"…ices\" on the left and a partial icon after \"Ekoa\" on the right). It is a scrollable strip with arrow buttons, so the tabs can still be reached.",
+      "The \"Save Git settings\" button is pale and low-contrast. It looks disabled, which is probably intended because nothing has changed.",
+      "The project picker in \"Check a project\" shows \"Outside context fixture\", but the token scope above is \"Projects fixture\". This could confuse users but does not block anything."
     ]
   }
 }

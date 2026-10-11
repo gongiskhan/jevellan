@@ -4,14 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "PJ4b the Why panel explains placement and overrides apply",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/PJ4b-restarted-phone-dark.png",
+  "screenshot": "screenshots/PJ4b-restarted-phone-dark.png",
   "expected": "the Jevellan web app \"restarted\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PJ4b the Why panel explains placement and overrides apply\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The metadata line 'Claude Code · Opus · low effort · Projects Claude · Worktree on jv/tidy-the-readme-wording-7jd836 · Mac.lan' wraps across two lines in small monospace text. It is still readable.",
-      "There is a large empty area between the last report card and the 'This thread has ended' footer."
+      "The metadata line wraps over three lines and breaks in the middle of the branch name ('jv/tidy-the-readme-wording-havsrh' then 'dev-madrid' on the next line). It's still fully readable.",
+      "The cards end about halfway down the screen, leaving a large empty area above the 'This thread has ended' footer."
     ]
   }
 }

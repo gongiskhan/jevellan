@@ -4,16 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy",
   "layout": "desktop-light",
-  "screenshot": "docs/acceptance/screenshots/LJ5-nightly-merges-held-desktop-light.png",
+  "screenshot": "screenshots/LJ5-nightly-merges-held-desktop-light.png",
   "expected": "the Jevellan web app \"LJ5 nightly merges held\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Review since last' nightly card shows the same text as both its title and its description.",
-      "The 'Enabled' checkbox sits above its label instead of beside it, so it doesn't line up with the 'Run now' and 'Edit' buttons.",
-      "The 'Full suite' nightly card is cut off at the bottom edge of the screen. This is the right column's scroll overflow, not a layout break.",
-      "Session titles and subtitles in the sidebar are shortened with ellipses (e.g. 'Context · J11 memory journ…'), which is expected."
+      "Sidebar session titles are cut off with ellipses ('Context · J11 memory journ…', 'Context · Mesh journey fixt…'), and so are their subtitle lines ('dev-ma…', 'dev-…', 'de…').",
+      "The 'Full suite' nightly card at the bottom of the right column is cut off by the viewport ('Hardening through automated tests'), but the column can be scrolled to see it.",
+      "The 'Review since last' card shows its title twice: once as the heading and again as the description.",
+      "The 'Merge' button on PR #1 is greyed out with no tooltip; this fits merges being held, but 'Why' is the only thing that explains it."
     ]
   }
 }

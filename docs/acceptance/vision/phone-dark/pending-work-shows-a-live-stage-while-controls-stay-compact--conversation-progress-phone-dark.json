@@ -10,9 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The user message card sits almost flush against the right edge of the screen. Its right margin is much smaller than the left padding used elsewhere, so the card's right border looks slightly clipped.",
-      "The progress spinner sits on its own line above 'Jev is choosing the next step' instead of beside it, which leaves a slightly loose vertical rhythm in the progress block.",
-      "The '0s' timer floats alone at the far right, apart from the stage text it belongs to."
+      "Large empty gap between the user message and the progress stage at the bottom; the live stage sits far from the conversation content",
+      "The progress stage spinner is on its own line above the title instead of next to it, which looks a little disconnected",
+      "The '0s' elapsed timer is very small and sits far right, away from the stage text",
+      "The send button looks dim/disabled against the composer background, so its contrast is low",
+      "The header status chip text ('Working') is small and pink on a dark background, so it's only just legible"
     ]
   }
 }

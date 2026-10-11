@@ -4,16 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "PJ3 a pull request merges through the modal and moves to Concluded",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/PJ3-concluded-phone-dark.png",
+  "screenshot": "screenshots/PJ3-concluded-phone-dark.png",
   "expected": "the Jevellan web app \"concluded\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PJ3 a pull request merges through the modal and moves to Concluded\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The running thread title 'Read through the project and list what each fil...' is cut off with an ellipsis. This is intentional single-line truncation.",
-      "The summary line of the 'Add a greeting' thread, 'Added greeting.txt with a short greeting and committed ...', is cut off with an ellipsis. This is intentional truncation.",
-      "The metadata text (agent · model · effort · host) is small and low-contrast gray on the dark background, but it's still readable.",
-      "The bottom half of the screen is empty below the Concluded list. That's expected with only three threads."
+      "The 'Pull requests' tab is clipped at the right edge. The tab bar looks horizontally scrollable, but nothing on screen shows there is more to scroll to.",
+      "The long thread title 'Read through the project and list what each …' and the summary 'Added greeting.txt with a short greeting and committed …' are cut off with ellipses. This looks intentional, but the full text isn't visible.",
+      "The header icon buttons and the '···' menu sit very close to the right edge on this narrow viewport.",
+      "The metadata lines (e.g. 'Claude Code · Fable · high · Worktree · dev-madrid') are small, low-contrast grey text on the dark background. They're readable but faint."
     ]
   }
 }

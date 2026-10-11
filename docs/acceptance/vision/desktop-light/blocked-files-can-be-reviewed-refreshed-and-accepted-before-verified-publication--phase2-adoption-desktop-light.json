@@ -4,17 +4,17 @@
   "model": "claude-opus-5-5",
   "test": "blocked files can be reviewed, refreshed and accepted before verified publication",
   "layout": "desktop-light",
-  "screenshot": "docs/acceptance/screenshots/phase2-adoption-desktop-light.png",
+  "screenshot": "screenshots/phase2-adoption-desktop-light.png",
   "expected": "the Jevellan web app \"adoption\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"blocked files can be reviewed, refreshed and accepted before verified publication\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The conversation title in the header is cut off with an ellipsis ('...simulated read-only viol...'). The full title is visible elsewhere, so this is not blocking.",
-      "The conversation list in the sidebar ends on a partly clipped fourth item above 'Some native sessions are unavailable'. It looks like scrollable overflow.",
-      "The bottom of the right Changes panel is cut off at the viewport edge ('No verification receipt yet' is only partly visible). It looks like the panel scrolls.",
-      "The center chat column starts mid-message: the 'Input' label is clipped by the sticky header. This is normal for a scrolled view.",
-      "Several sidebar conversation subtitles are cut off with ellipses ('Checkpoint re…', 'Browser fixtu…')."
+      "The conversation title in the middle column header is cut off with an ellipsis ('Exercise reviewed checkpoint recovery with a simulated read-only viola...').",
+      "Sidebar conversation titles are cut off with ellipses ('Exercise reviewed checkp...', 'Change the value to thre...').",
+      "The middle column is scrolled partway into a tool-call card, so the top of the card ('Input' label) sits flush against the header area.",
+      "The bottom of the right panel cuts the 'JEVELLAN VERIFICATION' text ('No verification receipt yet') off at the viewport edge; the panel scrolls, so it can be reached.",
+      "The bottom of the sidebar conversation list shows a partly clipped fourth item above the 'Some native sessions are unavailable' row; the list scrolls."
     ]
   }
 }

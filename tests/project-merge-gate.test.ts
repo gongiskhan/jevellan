@@ -76,6 +76,16 @@ test('a workflow handoff is always ask-owner even when Jev chooses merge', async
   await settings(f); await gate(f); expect(f.thread(thread.id).pr?.state).toBe('open'); expect((await routes(f, thread.id))[0]).toMatchObject({ route: 'ask-owner', source: 'guard', reason: 'The workflow handoff always needs the owner’s merge decision.' });
   expect(f.github.requests.some(row => row.method === 'PUT' && row.path.endsWith('/merge'))).toBe(false);
 }, 90_000);
+test('automatic merging waits for publication and routes the newly pushed head', async () => {
+  const { f, jev } = await setup(), thread = await published(f); await settings(f);
+  f.app.projectWork.store.update(thread.id, current => ({ ...current, state: 'publishing' }));
+  writeFileSync(join(thread.cwd, 'greeting.txt'), 'new greeting\n'); git(thread.cwd, 'add', '-A'); git(thread.cwd, 'commit', '-m', 'New greeting');
+  await gate(f); expect(jev.state.calls).toHaveLength(0); expect(f.github.requests.some(row => row.method === 'PUT' && row.path.endsWith('/merge'))).toBe(false);
+  const head = git(thread.cwd, 'rev-parse', 'HEAD'); git(thread.cwd, 'push', 'origin', thread.branch!);
+  f.app.projectWork.store.update(thread.id, current => ({ ...current, state: 'in-review' }));
+  await gate(f); expect(f.thread(thread.id).pr?.state).toBe('merged'); expect((await routes(f, thread.id))[0]?.commit).toBe(head);
+  expect(f.github.requests.find(row => row.method === 'PUT' && row.path.endsWith('/merge'))?.body).toMatchObject({ sha: head });
+}, 90_000);
 test('pending checks and unknown mergeability never route; a hold delays the checked-head merge', async () => {
   const { f, jev } = await setup(), thread = await published(f); await settings(f);
   f.github.setChecks(thread.pr!.number, 'pending'); await gate(f); expect(jev.state.calls).toHaveLength(0);
@@ -99,9 +109,11 @@ test('a changed head refuses its old owner decision and creates a new route', as
 }, 90_000);
 test('basic verification uses the other provider, medium effort and a fresh clean head before merging', async () => {
   const { f, second } = await setup('test-then-merge'), thread = await published(f), before = git(f.checkout, 'status', '--porcelain=v1');
-  second.enqueueTurn(async turn => { expect(turn.input.owner.kind).toBe('verification'); expect(turn.input.systemAppend).toBe(VERIFICATION_APPEND); expect(turn.input.effort).toBe('medium'); expect(turn.input.cwd).not.toBe(thread.cwd); expect(git(turn.input.cwd, 'rev-parse', 'HEAD')).toBe(thread.pr!.headSha); expect(await turn.tools()).toEqual(['jevellan_verification_report']); await turn.bridge('jevellan_verification_report', { result: 'passed', commands: ['test -f greeting.txt'], failures: [] }); return { status: 'completed' }; }, input => input.owner.kind === 'verification');
+  second.enqueueTurn(async turn => { expect(turn.input.owner.kind).toBe('verification'); expect(turn.input.systemAppend).toBe(VERIFICATION_APPEND); expect(turn.input.effort).toBe('medium'); expect(turn.input.cwd).not.toBe(thread.cwd); expect(git(turn.input.cwd, 'rev-parse', 'HEAD')).toBe(thread.pr!.headSha); expect(await turn.tools()).toEqual(['jevellan_verification_report']); f.app.projectWork.store.update(thread.id, current => ({ ...current, state: 'publishing' })); await turn.bridge('jevellan_verification_report', { result: 'passed', commands: ['test -f greeting.txt'], failures: [] }); return { status: 'completed' }; }, input => input.owner.kind === 'verification');
   await settings(f); await gate(f); const view = await f.app.projectWork.mergeRoute(f.project.id, thread.id);
-  expect(view.records.find(row => row.schema === 'verification-run-v1')).toMatchObject({ providerChoice: 'other-provider', runtime: 'fake2', state: 'passed' }); expect(f.thread(thread.id).pr?.state).toBe('merged'); expect(git(f.checkout, 'status', '--porcelain=v1')).toBe(before);
+  expect(view.records.find(row => row.schema === 'verification-run-v1')).toMatchObject({ providerChoice: 'other-provider', runtime: 'fake2', state: 'passed' }); expect(f.thread(thread.id).pr?.state).toBe('open');
+  f.app.projectWork.store.update(thread.id, current => ({ ...current, state: 'in-review' })); await gate(f);
+  expect(f.thread(thread.id).pr?.state).toBe('merged'); expect(second.turnStarts).toHaveLength(1); expect(git(f.checkout, 'status', '--porcelain=v1')).toBe(before);
 }, 90_000);
 test('no eligible alternate provider or model asks the owner without starting a verification', async () => {
   const { f } = await setup('test-then-merge', false), thread = await published(f); await settings(f); await gate(f);
@@ -121,6 +133,19 @@ test('the newest eight owner corrections are retained in the next m-v1 packet', 
   const view = await f.json(`/api/projects/project/threads/${thread.id}/pr/route`, MergeDocumentsViewSchema); expect(view.records.filter(row => row.schema === 'merge-correction-v1')).toHaveLength(10);
   writeFileSync(join(thread.cwd, 'greeting.txt'), 'changed\n'); git(thread.cwd, 'add', '-A'); git(thread.cwd, 'commit', '-m', 'New head'); git(thread.cwd, 'push', 'origin', thread.branch!); await gate(f);
   const input = JSON.parse(jev.state.calls.at(-1)!.state) as { corrections: string[] }; expect(input.corrections).toHaveLength(8); expect(input.corrections.every(sentence => sentence.includes('the owner said'))).toBe(true);
+}, 90_000);
+
+test('equal-time merge corrections use hub-assigned order rather than IDs or caller order', async () => {
+  const { f, jev } = await setup('ask-owner'), thread = await published(f); await settings(f); await gate(f);
+  const at = new Date().toISOString();
+  for (let n = 0; n < 10; n++) await f.app.projectHub.putMergeDocument({ schema: 'merge-correction-v1', id: `mcor_${9 - n}`, projectId: 'project',
+    revision: 0, deviceId: f.app.device.deviceId, threadId: thread.id, commit: thread.pr!.headSha, at, title: `Correction ${n}`, correction: 'should-have-asked', receivedOrder: 9999 }, 0);
+  const rows = (await f.app.projectHub.mergeDocuments('project')).records.filter(row => row.schema === 'merge-correction-v1');
+  expect(rows.map(row => row.receivedOrder).sort((a, b) => a! - b!)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  await f.app.projectHub.putMergeDocument({ ...rows.find(row => row.id === 'mcor_9')!, revision: 0, receivedOrder: 9999 }, 0);
+  writeFileSync(join(thread.cwd, 'greeting.txt'), 'changed\n'); git(thread.cwd, 'add', '-A'); git(thread.cwd, 'commit', '-m', 'New head'); git(thread.cwd, 'push', 'origin', thread.branch!); await gate(f);
+  const input = JSON.parse(jev.state.calls.at(-1)!.state) as { corrections: string[] };
+  expect(input.corrections).toEqual(Array.from({ length: 8 }, (_, n) => `For “Correction ${9 - n}”, the owner said: Should have asked me.`));
 }, 90_000);
 
 test('three failed basic verifications on one pull request escalate to one owner item', async () => {

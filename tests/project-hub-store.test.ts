@@ -7,13 +7,13 @@ import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { z } from 'zod';
 import { DeviceSchema, Homes, LifecycleGate, PlacementOverrideSchema, ProjectDecisionSchema, ProjectSchema, ProjectWorkSettingsSchemaV1, PullRequestReviewSchema, SecretRedactor, ThreadIndexSchema, defaultProjectWorkSettings, isProjectHubRead, lifecycleActivity, type PlacementOverride, type ProjectDecision, type ProjectHubOperation, type ThreadIndex } from '../packages/core/dist/index.js';
-import { HubProjectAccess, HubProjectStore, HubProtocolError, HubUnavailable, MemberHubClient, MemberProjectStore, joinHub } from '../packages/mesh/dist/index.js';
+import { HubDatabase, HubProjectAccess, HubProjectStore, HubProtocolError, HubUnavailable, MemberHubClient, MemberProjectStore, joinHub } from '../packages/mesh/dist/index.js';
 import { Application, createDaemon } from '../apps/daemon/dist/index.js';
 
 let root: string; let app: Application; let server: Server; let base: string;
 const at = new Date().toISOString();
 test('stored v1 settings migrate explicitly without losing fixed coordinator choices or unrelated fields', async () => {
-  const legacy = ProjectWorkSettingsSchemaV1.parse({ ...Object.fromEntries(Object.entries(defaultProjectWorkSettings('project')).filter(([key]) => !['allowMainIsolation', 'threadRules', 'coordinatorReview', 'autoMerge', 'riskyAreas', 'nightlyWindow', 'refill'].includes(key))), schema: 'project-work-settings-v1', coordinator: { runtimeId: 'claude', accountId: 'fixed', modelId: 'chosen', effort: 'high' }, setupCommand: 'npm ci', maxRunningThreads: 9 });
+  const legacy = ProjectWorkSettingsSchemaV1.parse({ ...Object.fromEntries(Object.entries(defaultProjectWorkSettings('project')).filter(([key]) => !['allowMainIsolation', 'threadRules', 'coordinatorReview', 'autoMerge', 'riskyAreas', 'nightlyWindow', 'refill', 'perDeviceLimits'].includes(key))), schema: 'project-work-settings-v1', coordinator: { runtimeId: 'claude', accountId: 'fixed', modelId: 'chosen', effort: 'high' }, setupCommand: 'npm ci', maxRunningThreads: 9 });
   app.hub.put('project-work-settings', 'project', ProjectWorkSettingsSchemaV1, { ...legacy, revision: 1 }, 0);
   const left = await member('left'), migrated = await left.hub.settings('project');
   expect(migrated?.document).toMatchObject({ schema: 'project-work-settings-v3', revision: 1, coordinator: legacy.coordinator, setupCommand: 'npm ci', maxRunningThreads: 9, autoMerge: false, riskyAreas: '', allowMainIsolation: true });
@@ -77,6 +77,13 @@ test('listByField filters on one top-level field in SQL, orders by id and pages 
   for (const field of ['nested.projectId', "x') OR 1=1 --", '1projectId', '', 'project_id']) expect(() => app.hub.listByField('fixture-documents', field, 'a', Fixture)).toThrow('Invalid document field.');
   for (const limit of [0, -1, 1.5]) expect(() => app.hub.listByField('fixture-documents', 'projectId', 'a', Fixture, { limit })).toThrow('Invalid document limit.');
   expect(() => app.hub.listByField('fixture-documents', 'projectId', 'a', Fixture, { after: '../x' })).toThrow();
+});
+test('a member reads hyphenated job-runs over the authenticated hub collection route', async () => {
+  const left = await member('left');
+  expect(await left.hub.jobRuns('project')).toEqual({ records: [], next: null });
+  const unknown = await device('projects/unknown-collection', left.token, { schema: 'project-hub-request-v1', operation: 'job-runs-list', projectId: 'project' });
+  expect(unknown.status).toBe(404);
+  expect((await device('projects/job-runs', left.token, { schema: 'project-hub-request-v1', operation: 'jobs-list', projectId: 'project' })).status).toBe(400);
 });
 
 test('settings, coordinators and notebooks are compare-and-swap records whose embedded revision equals the hub row (D3)', async () => {
@@ -290,6 +297,16 @@ test('placement overrides are append-only, recorded by the thread owner, idempot
   await expect(right.hub.recentOverrides('project', 0)).rejects.toThrow();
   // The hub's own access reads the same records.
   expect((await new HubProjectAccess(app.hub, app.device.deviceId).recentOverrides('project', 1)).map((entry) => entry.id)).toEqual(['povr_2']);
+});
+
+test('equal-time placement corrections keep newest insertion first through retries and a reopened database', async () => {
+  const left = await member('left'), right = await member('right'); await left.hub.publishThread(index('thread_a'), 1);
+  const older = override('z_older', { taskType: 'fix' }), newer = override('a_newer', { taskType: 'fix' });
+  await left.hub.addOverride(older); await left.hub.addOverride(newer); await left.hub.addOverride(older);
+  expect((await right.hub.recentOverrides('project', 8, { type: 'fix', match: 'same' })).map(row => row.id)).toEqual(['a_newer', 'z_older']);
+  const reopened = new HubDatabase(app.homes, 'hub');
+  try { expect((await new HubProjectAccess(reopened, app.device.deviceId).recentOverrides('project', 8)).map(row => row.id)).toEqual(['a_newer', 'z_older']); }
+  finally { reopened.close(); }
 });
 
 test('work summaries give every project its counts and coordinator with the device presence in one read, paged by project id (D267)', async () => {

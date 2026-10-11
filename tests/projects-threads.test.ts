@@ -111,16 +111,16 @@ test('PJ1 owner thread runs in a worktree, opens a pull request, follows checks 
   expect(payloads(f, threadId, 'thread-publication')).toContainEqual(expect.objectContaining({ result: 'pr-opened', prNumber: 1 }));
 
   // 9. The coordinator queue (no coordinator runs in this fixture): the owner start line, then the publication.
-  expect(kinds(queue(f))).toEqual(['thread-user-message', 'thread-published', 'pr-ready-for-review']);
+  expect(kinds(queue(f))).toEqual(['thread-user-message', 'thread-published']);
   expect(queue(f)[0]).toMatchObject({ threadId, text: `[owner started thread "Add greeting" (${threadId})] Create greeting.txt.` });
   expect(queue(f)[1]).toMatchObject({ threadId, result: 'pr-opened', prNumber: 1 });
 
   // 10. Failing checks are reported once per head.
   f.github.setChecks(1, 'failing'); await f.app.projectWork.pulse();
   expect((await f.index(threadId))!.pr!.checks).toBe('failing');
-  expect(kinds(queue(f))).toEqual(['thread-user-message', 'thread-published', 'pr-ready-for-review', 'pr:checks-failed']);
+  expect(kinds(queue(f))).toEqual(['thread-user-message', 'thread-published', 'pr:checks-failed']);
   await f.app.projectWork.pulse();
-  expect(queue(f)).toHaveLength(4);
+  expect(queue(f)).toHaveLength(3);
 
   // 11. A success run while the combined status still reads pending with no statuses: passing.
   f.github.setChecks(1, 'passing'); await f.app.projectWork.pulse();
@@ -151,7 +151,7 @@ test('PJ1 owner thread runs in a worktree, opens a pull request, follows checks 
   for (const text of [viewText, hubText, f.ledgerText(), f.ledgerText(threadId)]) { expect(text).not.toContain(sessionId); expect(text).not.toContain(thread.cwd); }
 });
 
-test('PJ1 merge from the API squashes the reviewed head', { timeout: 120_000 }, async () => {
+test('PJ1 merge from the API squashes the checked head', { timeout: 120_000 }, async () => {
   const f = await setup({ testCommand: 'test -f greeting.txt' });
   f.fake.enqueueTurn(commitStep({ 'greeting.txt': 'hello\n' }, { status: 'done', summary: 'Added greeting.txt.' }), forThread());
   const { threadId } = ThreadCreatedViewSchema.parse(await (await f.request('/api/projects/project/threads', 'POST', createBody('Add greeting', 'Create greeting.txt.'))).json());
@@ -171,7 +171,7 @@ test('PJ1 merge from the API squashes the reviewed head', { timeout: 120_000 }, 
   expect(refused.status).toBe(409);
   expect(await refused.json()).toEqual({ schema: 'error-v1', code: 'conflict', message: 'Pull Request is not mergeable' });
   expect(f.thread(threadId).state).toBe('in-review');
-  // The squash merge of the reviewed head concludes without a poll.
+  // The squash merge of the checked head concludes without a poll.
   const headSha = f.thread(threadId).pr!.headSha;
   const merged = await f.request(route, 'POST', empty);
   expect(merged.status).toBe(200);
@@ -206,7 +206,7 @@ test.each([
   expect(queue(f)[1]).toMatchObject({ threadId, report: { status: 'blocked', synthesized: true, summary: reason } });
   // A pushed branch is listed with its reason among the pull requests.
   const work = await f.json('/api/projects/project/work', ProjectWorkViewSchema);
-  expect(work.pullRequests).toEqual(pushed ? [{ threadId, title: 'Add greeting', branch: thread.branch, reason, reviewRequired: true }] : []);
+  expect(work.pullRequests).toEqual(pushed ? [{ threadId, title: 'Add greeting', branch: thread.branch, reason }] : []);
 });
 
 test('PJ1 done without commits concludes without changes', { timeout: 120_000 }, async () => {

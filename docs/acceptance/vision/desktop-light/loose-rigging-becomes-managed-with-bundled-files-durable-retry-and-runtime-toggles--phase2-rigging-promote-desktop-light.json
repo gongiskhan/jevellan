@@ -4,14 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "loose Rigging becomes managed with bundled files, durable retry and runtime toggles",
   "layout": "desktop-light",
-  "screenshot": "docs/acceptance/screenshots/phase2-rigging-promote-desktop-light.png",
+  "screenshot": "screenshots/phase2-rigging-promote-desktop-light.png",
   "expected": "the Jevellan web app \"rigging promote\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"loose Rigging becomes managed with bundled files, durable retry and runtime toggles\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The disabled Claude Code checkbox is very faint, so it's hard to tell whether it's checked or unchecked.",
-      "The 'Install for' fieldset has a lot of empty space at the top, above the first checkbox."
+      "The disabled 'Claude Code · Current account' checkbox is very faint against the white background, so its state (checked or unchecked) is hard to tell at a glance.",
+      "The modal doesn't say why the Claude Code option is disabled."
     ]
   }
 }

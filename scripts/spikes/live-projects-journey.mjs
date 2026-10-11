@@ -46,7 +46,7 @@ const RECEIPT = fileURLToPath(new URL('../../docs/acceptance/PJ-live.json', impo
 const SANDBOX_NAME = 'jevellan-acceptance-sandbox';
 const PROJECT_ID = 'live_projects';
 const PROJECT_NAME = 'PJ-live sandbox';
-const REQUEST = 'Start one thread for this: add a small file with one exported function that returns a greeting for a name, and a test for that function that npm test runs. Keep the change to those two files. I will review and merge the pull request myself.';
+const REQUEST = 'Start one thread for this: add a small file with one exported function that returns a greeting for a name, and a test for that function that npm test runs. Keep the change to those two files. I will merge the pull request from Projects after checks pass.';
 
 const { authentication, values, variables, blockedBy, optionalMissing } = resolveLiveAuthentication(process.argv.slice(2));
 // No agent, worker or Git process may inherit a test credential; Jevellan receives them only through its own API.

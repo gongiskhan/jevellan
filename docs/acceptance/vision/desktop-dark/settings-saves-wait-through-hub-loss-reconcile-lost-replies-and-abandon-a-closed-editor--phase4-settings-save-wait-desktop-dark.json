@@ -4,14 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "Settings saves wait through hub loss, reconcile lost replies and abandon a closed editor",
   "layout": "desktop-dark",
-  "screenshot": "docs/acceptance/screenshots/phase4-settings-save-wait-desktop-dark.png",
+  "screenshot": "screenshots/phase4-settings-save-wait-desktop-dark.png",
   "expected": "the Jevellan web app \"settings save wait\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"Settings saves wait through hub loss, reconcile lost replies and abandon a closed editor\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The disabled 'Saving…' button has low contrast against the dark dialog background, but it can still be read.",
-      "The hub-loss notice has empty space on the right after the 'Stop waiting' button, so the notice and its button look slightly off-balance in the footer."
+      "The disabled 'Saving…' button has low contrast against the dialog background. It is still readable and is expected to look this way while saving.",
+      "The secondary hint 'Stopping the wait does not undo a request already received.' is small text. It is still readable."
     ]
   }
 }

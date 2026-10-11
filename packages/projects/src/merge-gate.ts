@@ -7,7 +7,8 @@ import type { GitHubAccess } from './publication.js';
 import type { PullRequestVerification } from './pr-verification.js';
 import { derivedId } from './decision-items.js';
 const refuse = (message: string, status = 409) => Object.assign(new Error(message), { status });
-const green = (thread: Thread) => thread.pr?.state === 'open' && ['passing', 'none'].includes(thread.pr.checks) && thread.pr.mergeable === 'clean';
+const turnBusy = (thread: Thread) => ['running', 'preparing', 'publishing', 'attached'].includes(thread.state);
+const green = (thread: Thread) => !turnBusy(thread) && thread.pr?.state === 'open' && ['passing', 'none'].includes(thread.pr.checks) && thread.pr.mergeable === 'clean';
 
 /** The thread's owner advances the gate. Hub CAS receipts and checked GitHub SHAs fence retries and moved heads. */
 export class ProjectMergeGate {
@@ -36,7 +37,7 @@ export class ProjectMergeGate {
   sweep(): void {
     if (this.#closed) return;
     for (const thread of this.o.store.all()) {
-      if (!thread.pr || thread.ownerDeviceId !== this.o.deviceId || ['running', 'preparing', 'attached'].includes(thread.state) || this.#active.has(thread.id)) continue;
+      if (!thread.pr || thread.ownerDeviceId !== this.o.deviceId || turnBusy(thread) || this.#active.has(thread.id)) continue;
       const promise = this.#advance(thread.id).catch(() => undefined).finally(() => this.#active.delete(thread.id)); this.#active.set(thread.id, promise);
     }
   }
@@ -87,7 +88,7 @@ export class ProjectMergeGate {
     if (route && route.schema !== 'merge-route-v1') throw refuse('Invalid merge route receipt.');
     if (!route) {
       const diff = await this.o.tracker.diff(thread.projectId, threadId); if (diff.commit !== commit) return;
-      const corrections = records.filter(row => row.schema === 'merge-correction-v1').sort((a, b) => b.at.localeCompare(a.at) || b.id.localeCompare(a.id)).slice(0, 8)
+      const corrections = records.filter(row => row.schema === 'merge-correction-v1').sort((a, b) => b.at.localeCompare(a.at) || (b.receivedOrder ?? 0) - (a.receivedOrder ?? 0) || b.id.localeCompare(a.id)).slice(0, 8)
         .map(row => row.schema === 'merge-correction-v1' ? `For “${row.title}”, the owner said: ${row.correction === 'should-have-asked' ? 'Should have asked me' : "Didn't need asking"}.` : '');
       const packet = { schema: 'merge-route-state-v1' as const, title: thread.title.slice(0, 120), task: thread.taskContext ?? { type: 'feature' as const, needs: [], goal: null }, summary: (thread.lastReport?.summary ?? '').slice(0, 4000), riskyAreas: settings.riskyAreas,
         files: diff.files.map(({ path, additions, deletions }) => ({ path, additions, deletions })), totalSize: diff.files.reduce((sum, file) => sum + file.additions + file.deletions, 0), corrections };

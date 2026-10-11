@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Worktree and pull request' radio is unselected, but its fill is a dark grey rather than a hollow outline, so at a glance it looks almost like it's in a different state.",
-      "The 'npm ci' placeholder text in the worktree setup field is low-contrast, though still readable.",
-      "The background content behind the modal ('Projects external' header, composer) shows through the dim overlay. This is expected, but the overlay could be a little darker."
+      "The modal body scrolls, so the footer cuts off the bottom of the 'Time' input (02:00 AM) and any fields below it are offscreen. They can still be reached by scrolling.",
+      "The 'Worktree and pull request' radio has no description line, while 'Main' does, so the two options look uneven.",
+      "The 'Default isolation' fieldset legend sits tight against the top border."
     ]
   }
 }

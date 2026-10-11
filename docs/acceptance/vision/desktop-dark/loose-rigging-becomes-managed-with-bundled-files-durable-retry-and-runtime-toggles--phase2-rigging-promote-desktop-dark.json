@@ -4,14 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "loose Rigging becomes managed with bundled files, durable retry and runtime toggles",
   "layout": "desktop-dark",
-  "screenshot": "docs/acceptance/screenshots/phase2-rigging-promote-desktop-dark.png",
+  "screenshot": "screenshots/phase2-rigging-promote-desktop-dark.png",
   "expected": "the Jevellan web app \"rigging promote\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"loose Rigging becomes managed with bundled files, durable retry and runtime toggles\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Claude Code · Current account' checkbox is checked but greyed out (disabled) and has low contrast next to the pink 'Codex' checkbox. It's still readable, but it's not obvious why it can't be changed.",
-      "Background content is heavily blurred and dimmed behind the modal, which is expected for a modal overlay."
+      "The 'Claude Code · Current account' checkbox is shown checked but greyed out (disabled), which looks different from the pink Codex checkbox. It reads as intentional, but it is low-contrast against the dark dialog.",
+      "The helper text below 'Install for' is small and low-contrast grey, though it is still readable."
     ]
   }
 }

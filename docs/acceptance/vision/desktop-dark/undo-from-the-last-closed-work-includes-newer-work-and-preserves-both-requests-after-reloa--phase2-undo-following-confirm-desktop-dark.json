@@ -4,13 +4,13 @@
   "model": "claude-opus-5-5",
   "test": "undo from the last closed work includes newer work and preserves both requests after reload",
   "layout": "desktop-dark",
-  "screenshot": "docs/acceptance/screenshots/phase2-undo-following-confirm-desktop-dark.png",
+  "screenshot": "screenshots/phase2-undo-following-confirm-desktop-dark.png",
   "expected": "the Jevellan web app \"undo following confirm\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"undo from the last closed work includes newer work and preserves both requests after reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background behind the modal is heavily dimmed and blurred. That's expected while a modal is open, but it makes the conversation and sidebar unreadable."
+      "Some background content behind the modal overlay looks a little misaligned or patchy (e.g., the gap around the 'Step 2' area), but it's dimmed and doesn't affect the dialog"
     ]
   }
 }

@@ -16,8 +16,14 @@ export async function installationBrowser({ origin, project, remote, root, layou
     await expect(page.getByLabel('Jev key', { exact: true })).toHaveValue('');
     await page.getByRole('button', { name: 'Test connection', exact: true }).click(); await expect(page.getByText('Connected to Jev.', { exact: true })).toBeVisible();
     await expect(page.getByText(/^Latency: \d+ ms\.$/)).toBeVisible(); await expect(page.getByText(/Returned models: jev-1\.13\.0/)).toBeVisible();
+    const dismiss = page.getByRole('button', { name: 'Dismiss message', exact: true });
+    if (await dismiss.isVisible()) await dismiss.click();
+    await expect(page.getByText('Jev key saved.', { exact: true })).not.toBeVisible();
   };
   const capture = async name => {
+    const dismiss = page.getByRole('button', { name: 'Dismiss message', exact: true });
+    if (await dismiss.isVisible()) await dismiss.click();
+    await expect(dismiss).not.toBeVisible();
     expect(await page.evaluate(() => globalThis.document.documentElement.scrollWidth <= globalThis.innerWidth)).toBe(true);
     await page.screenshot({ path: join(root, `first-run-${name}-${layout}-${theme}.png`), animations: 'disabled', fullPage: !['verified', 'why'].includes(name), mask: [page.locator('.saved-secret')] });
   };

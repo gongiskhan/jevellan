@@ -4,14 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work",
   "layout": "phone-light",
-  "screenshot": "docs/acceptance/screenshots/J8-proxy-phone-light.png",
+  "screenshot": "screenshots/J8-proxy-phone-light.png",
   "expected": "the Jevellan web app \"proxy\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Header title is truncated with an ellipsis ('J8: run on device B while I s...'), but the full prompt is shown in the YOU message below",
-      "Small labels (the 'Local time' caption, the '4s' elapsed counter, timestamps) are low-contrast and small but still readable"
+      "The header title is cut off with an ellipsis ('J8: run on device B while I steer from de...'). It looks like intentional single-line truncation, and the full text appears in the message below.",
+      "The Step 1 metadata wraps oddly: 'Local time' sits alone on a line under the Started/Ended/Duration row.",
+      "Content between the header and the composer needs scrolling, though the full journey state fits within this capture."
     ]
   }
 }

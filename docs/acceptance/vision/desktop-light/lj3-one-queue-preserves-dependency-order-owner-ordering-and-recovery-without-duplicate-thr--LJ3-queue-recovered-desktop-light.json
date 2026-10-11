@@ -4,15 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "LJ3 one queue preserves dependency order, owner ordering and recovery without duplicate threads",
   "layout": "desktop-light",
-  "screenshot": "docs/acceptance/screenshots/LJ3-queue-recovered-desktop-light.png",
+  "screenshot": "screenshots/LJ3-queue-recovered-desktop-light.png",
   "expected": "the Jevellan web app \"LJ3 queue recovered\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"LJ3 one queue preserves dependency order, owner ordering and recovery without duplicate threads\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar, the shell session titles are cut off with ellipses (\"Context · J11 memory journ…\", \"Context · Mesh journey fixt…\"), and so are their subtitles (\"Done · Improver sandbox · dev-ma…\").",
-      "In the right panel under RUNNING, the description of \"Read the README on the member\" is cut off with an ellipsis (\"…about th…\").",
-      "The \"Working…\" status chip under the header is clipped to \"Working…\" in a small bordered chip."
+      "Task titles in the Running list are cut off with an ellipsis (e.g. \"Read through the project and list what each file is f…\")",
+      "Shell session names in the sidebar are cut off (e.g. \"Context · J11 memory journ…\", \"Context · Mesh journey fixt…\")",
+      "Many separate \"Noted.\" lines repeat throughout the conversation, which makes it long and visually noisy",
+      "The Queue section lists \"Queue dependent desktop-light-projects\" as \"Now · Active\", and the conversation also shows it as stopped and waiting for the coordinator; this is a state cue, not a layout problem"
     ]
   }
 }

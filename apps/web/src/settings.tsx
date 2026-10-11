@@ -302,8 +302,9 @@ export function DecisionsPage(props: PageProps) {
           {Object.entries(config.effortGuide).map(([effort, description]) => (
             <label key={effort} className="effort-line">
               <span>{effort}</span>
-              <input
+              <textarea
                 required
+                rows={3}
                 value={description}
                 onChange={(event) =>
                   change((value) => {

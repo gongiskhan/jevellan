@@ -4,16 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "Settings account, login, Rigging and configuration flows work without horizontal overflow",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/phase1-rigging-phone-dark.png",
+  "screenshot": "screenshots/phase1-rigging-phone-dark.png",
   "expected": "the Jevellan web app \"rigging\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"Settings account, login, Rigging and configuration flows work without horizontal overflow\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fourth tab in the top tab bar is cut off behind the scroll chevron. This is expected for a scrollable tab strip, and the chevron is still there to reach it.",
-      "In the warning banner, the 'Retry' button sits inline right after 'finish.' with almost no space around it, so the text and button look crowded.",
-      "The small grey metadata lines (e.g. 'Local · Loose · Rigging local fixture · Claude Code') have low contrast and wrap awkwardly onto a second line, but they are still readable.",
-      "The disabled checkboxes under Safety are faint, though this is intended."
+      "The fourth tab in the top tab strip is clipped at the right edge. It can still be reached with the scroll arrow, so this is the expected overflow of a scrollable tab bar, not page overflow.",
+      "In the parking warning banner, the 'Retry' button sits tight against the end of the text ('finish.Retry') with almost no gap, so the line looks slightly cramped.",
+      "The 'Safety' hook's Claude Code and Codex checkboxes are greyed out (disabled), and their contrast is low against the dark background, though still readable."
     ]
   }
 }

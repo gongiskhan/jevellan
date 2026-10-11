@@ -4,15 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
   "layout": "desktop-light",
-  "screenshot": "docs/acceptance/screenshots/phase2-evidence-source-desktop-light.png",
+  "screenshot": "screenshots/phase2-evidence-source-desktop-light.png",
   "expected": "the Jevellan web app \"evidence source\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"file and evidence links show recorded versions, source lines, Markdown, images and verification output\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the message body, the long path link ends a line, so the period after it starts the next line ('. The value is now 2…').",
-      "The last conversation item in the sidebar is cut off halfway at the bottom of the scrollable list, above 'Some native sessions are unavailable'. It is a scroll region, so the item can still be reached.",
-      "The recorded checkpoint hash appears in a small, low-contrast monospace chip, but it is still readable."
+      "The recorded checkpoint hash appears in small, low-contrast monospace text on a pale chip, so it is hard to read at a glance.",
+      "The source preview shows an empty line 4, which adds a trailing blank row to the code block.",
+      "At the bottom of the sidebar list, a fourth conversation row is cut in half where the list scrolls. It is partly hidden behind the 'Some native sessions are unavailable' notice.",
+      "In the main timeline, the line 'Working on the requested change.' is partly hidden behind the 'Jump to latest' bar. This is normal clipping in a scrolling area."
     ]
   }
 }

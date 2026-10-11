@@ -9,9 +9,6 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": [
-      "The background conversation is dimmed and blurred behind the modal. This is expected for a modal and doesn't block anything.",
-      "The project subtitle in the header ('Claude Code Fable · high') is low-contrast and only partly legible under the scrim."
-    ]
+    "cosmetic": []
   }
 }

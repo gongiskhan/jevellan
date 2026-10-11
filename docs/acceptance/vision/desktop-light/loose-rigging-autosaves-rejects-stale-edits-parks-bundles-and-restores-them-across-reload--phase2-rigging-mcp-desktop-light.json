@@ -4,14 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
   "layout": "desktop-light",
-  "screenshot": "docs/acceptance/screenshots/phase2-rigging-mcp-desktop-light.png",
+  "screenshot": "screenshots/phase2-rigging-mcp-desktop-light.png",
   "expected": "the Jevellan web app \"rigging mcp\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The file label says config.toml, but the editor shows JSON. This might be intended (a normalized view of the MCP entry), but users could find it confusing.",
-      "The success banner 'Item restored to this account.' sits below the helper text, with a lot of empty space above it. This is fine, but the banner could be placed more tightly."
+      "The file label reads 'config.toml', but the editor shows JSON content. A reader may find that confusing, though it doesn't block use.",
+      "The 'Saved' status and the 'Preview' link sit on the same row as plain text with little visual separation."
     ]
   }
 }

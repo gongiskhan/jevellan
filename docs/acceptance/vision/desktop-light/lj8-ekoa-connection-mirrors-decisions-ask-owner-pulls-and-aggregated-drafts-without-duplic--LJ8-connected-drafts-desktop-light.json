@@ -4,15 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "LJ8 Ekoa connection mirrors decisions, ask-owner pulls and aggregated drafts without duplicates",
   "layout": "desktop-light",
-  "screenshot": "docs/acceptance/screenshots/LJ8-connected-drafts-desktop-light.png",
+  "screenshot": "screenshots/LJ8-connected-drafts-desktop-light.png",
   "expected": "the Jevellan web app \"LJ8 connected drafts\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"LJ8 Ekoa connection mirrors decisions, ask-owner pulls and aggregated drafts without duplicates\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'dev-ma…'). This is expected in a narrow sidebar.",
-      "The 'Mirror tasks to Ekoa' label sits below its checkbox instead of next to it, so the two look less clearly linked.",
-      "The Ekoa nav item uses the same folder icon as Projects."
+      "The 'Mirror tasks to Ekoa' label sits below its checkbox instead of next to it, so they look disconnected",
+      "The Ekoa nav item uses the same folder icon as Projects",
+      "Session titles and metadata in the sidebar are cut short with ellipses (e.g. 'Context · J11 memory jour…'). This is intentional truncation, but the full text is not visible",
+      "The 'Available tools' disclosure in the Connected card is collapsed, so the card shows little content"
     ]
   }
 }

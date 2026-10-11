@@ -10,7 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Background header text behind the modal scrim ('Projects external', the 'Claude Code Fable · high' line) is partly covered by the dialog, which is expected for a modal"
+      "The Time field at the bottom is partly hidden behind the sticky Cancel/Save footer. This looks like a scrollable modal body, so it is probably reachable by scrolling.",
+      "A dark element from the page behind the modal shows past the modal's left and right edges near the top."
     ]
   }
 }

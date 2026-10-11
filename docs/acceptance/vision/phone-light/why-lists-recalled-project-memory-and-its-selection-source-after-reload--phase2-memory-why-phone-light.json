@@ -4,15 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "Why lists recalled project memory and its selection source after reload",
   "layout": "phone-light",
-  "screenshot": "docs/acceptance/screenshots/phase2-memory-why-phone-light.png",
+  "screenshot": "screenshots/phase2-memory-why-phone-light.png",
   "expected": "the Jevellan web app \"memory why\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"Why lists recalled project memory and its selection source after reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The word 'high' sits alone just under the header with no label, so it may be the end of a line that scrolled under the sticky header.",
-      "The orange notice ends with 'Pick the next step:' but no choices follow it in this panel.",
-      "The two 'Login recovery <UUID>: eligible' lines wrap long IDs onto a second line. They are still readable."
+      "The account list reaches the bottom edge of the viewport with no bottom padding. It may continue below the fold, but the last visible item ('Undo across works fixture: eligible') is fully readable.",
+      "Most of the screen is taken up by the long account eligibility list, which makes the memory section less prominent."
     ]
   }
 }

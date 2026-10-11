@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "Why lists recalled project memory and its selection source after reload",
   "layout": "desktop-dark",
-  "screenshot": "docs/acceptance/screenshots/phase2-memory-why-desktop-dark.png",
+  "screenshot": "screenshots/phase2-memory-why-desktop-dark.png",
   "expected": "the Jevellan web app \"memory why\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"Why lists recalled project memory and its selection source after reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation titles and subtitles are cut short with ellipses (e.g. 'Explain the memorybrows…', 'Context · Created instructio…'). This looks like intended truncation.",
-      "The last line of the right 'Why this step' panel ('This step was picked manually.') sits right at the bottom edge of the viewport, so there may be more content below that needs scrolling to see.",
-      "The 'Jev is unavailable' warning appears twice, once in the Why panel and once in the main step picker, which is redundant."
+      "The sidebar conversation list cuts off a fourth item at about y≈710. Only the top of its text shows, just above the 'Some native sessions are unavailable' note. It looks like the scroll container is clipping it, but the partial row looks broken.",
+      "The same 'Jev is unavailable (no key configured). Pick the next step:' banner appears in both the Why panel and the main step picker.",
+      "Long conversation titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Explain the memorybrows…', 'Exercise evidence naviga…')."
     ]
   }
 }

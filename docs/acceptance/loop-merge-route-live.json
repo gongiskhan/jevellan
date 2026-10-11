@@ -1,0 +1,21 @@
+{
+  "schema": "loop-merge-route-live-v1",
+  "evidence": "live",
+  "resources": "simulated",
+  "at": "2026-10-11T20:11:24.433Z",
+  "status": "passed",
+  "cases": [
+    {
+      "title": "Add a tested greeting helper",
+      "route": "merge",
+      "source": "jev",
+      "calls": 1
+    },
+    {
+      "title": "Migrate stored account data",
+      "route": "ask-owner",
+      "source": "jev",
+      "calls": 1
+    }
+  ]
+}

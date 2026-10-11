@@ -4,15 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "LJ3 one queue preserves dependency order, owner ordering and recovery without duplicate threads",
   "layout": "desktop-light",
-  "screenshot": "docs/acceptance/screenshots/LJ3-queue-dependency-desktop-light.png",
+  "screenshot": "screenshots/LJ3-queue-dependency-desktop-light.png",
   "expected": "the Jevellan web app \"LJ3 queue dependency\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"LJ3 one queue preserves dependency order, owner ordering and recovery without duplicate threads\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The running item 'Read the README on the member' cuts off its progress line with an ellipsis ('about th…').",
-      "Shell session titles and metadata in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Mesh journey fixt…').",
-      "The queue item title 'Queue dependent desktop-light-projects' wraps onto two lines next to the 'Now · Queued' badge."
+      "Under Running, the task titles and progress lines are cut short with an ellipsis (e.g. 'Read through the project and list what each file is f...', 'Read the README on this device: a title and one line about th...'). They read as intentional single-line truncation.",
+      "In the left sidebar, shell session names and their details are cut short with an ellipsis (e.g. 'Context · J11 memory journ...', 'Context · Mesh journey fixt...')."
     ]
   }
 }

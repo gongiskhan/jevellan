@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "Closing packed installation",
+  "layout": "desktop-dark",
+  "screenshot": "screenshots/phase5-guide-why-desktop-dark.png",
+  "expected": "the Why panel with readable decision details and reachable controls",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Sidebar session titles and subtitles are cut off with an ellipsis ('Installation acceptance: ...', 'Done · Installation fixture · de...'), so the full title is not visible without hovering or opening the session.",
+      "In the Why panel, the 0.00 bars for unchosen options are very faint, close to the track color, so it is hard to tell that they are empty bars.",
+      "The JEV footer in the Why panel uses small, low-contrast monospace text, which is readable but faint."
+    ]
+  }
+}

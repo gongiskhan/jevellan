@@ -1,9 +1,18 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/phase6-j12-suggest-only-phone-dark.png",
-  "expected": "the Jevellan web app \"j12 suggest only\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)"
+  "screenshot": "screenshots/phase6-j12-suggest-only-phone-dark.png",
+  "expected": "the Jevellan web app \"j12 suggest only\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "At this downscaled size I can't check the small monospace diff text in the suggestion cards and the Recently Decided cards character by character. It looks legible and wraps rather than being cut off.",
+      "The trial log table's columns are narrow on a phone, so the 'Why they finished elsewhere' header wraps onto several lines.",
+      "The page is very long (about 5900px). Run history and the Recently Decided cards push the Schedule and jobs controls far down, though they can still be reached by scrolling."
+    ]
+  }
 }

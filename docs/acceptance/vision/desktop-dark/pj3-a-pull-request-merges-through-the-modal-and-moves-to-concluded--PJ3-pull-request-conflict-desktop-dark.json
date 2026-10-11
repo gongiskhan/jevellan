@@ -4,17 +4,17 @@
   "model": "claude-opus-5-5",
   "test": "PJ3 a pull request merges through the modal and moves to Concluded",
   "layout": "desktop-dark",
-  "screenshot": "docs/acceptance/screenshots/PJ3-pull-request-conflict-desktop-dark.png",
+  "screenshot": "screenshots/PJ3-pull-request-conflict-desktop-dark.png",
   "expected": "the Jevellan web app \"pull request conflict\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PJ3 a pull request merges through the modal and moves to Concluded\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The running-thread title in the right panel ('Read through the project and list what each file is fo…') is truncated with an ellipsis. The full title appears in the transcript, so this is intended truncation.",
-      "Sidebar session titles and metadata ('Context · Mesh journey fix…', 'Mac.l…', 'M…') are truncated with ellipses.",
-      "There are several repeated 'Noted.' lines in the transcript, including two in a row at the bottom.",
-      "The Merge button in the pull request card has low contrast compared with 'Open on GitHub', so it may look disabled. This is probably intentional because the pull request has conflicts.",
-      "The 'Shell sessions' toggle switch is bright pink and stands out from the dark theme."
+      "The running task title 'Read through the project and list what each file is ...' is truncated with an ellipsis in the right panel. The full title appears in the queue card above it.",
+      "Sidebar session titles and subtitles ('Context · J11 memory journ...', 'Context · Mesh journey fixt...', 'Done · Improver sandbox · dev-ma...') are truncated with ellipses.",
+      "The 'Conflicts' badge (red on dark) and the 'Merge' button (muted grey) have low contrast, but both are still readable.",
+      "The conversation has many repeated 'Noted.' lines, which adds visual noise.",
+      "Small monospace metadata text (e.g. 'Claude Code · Fable · high · Worktree · dev-madrid') is small and dim but readable."
     ]
   }
 }

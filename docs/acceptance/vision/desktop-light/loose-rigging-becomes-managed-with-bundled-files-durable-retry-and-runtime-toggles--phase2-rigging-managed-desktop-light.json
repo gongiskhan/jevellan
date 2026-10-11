@@ -4,14 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "loose Rigging becomes managed with bundled files, durable retry and runtime toggles",
   "layout": "desktop-light",
-  "screenshot": "docs/acceptance/screenshots/phase2-rigging-managed-desktop-light.png",
+  "screenshot": "screenshots/phase2-rigging-managed-desktop-light.png",
   "expected": "the Jevellan web app \"rigging managed\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"loose Rigging becomes managed with bundled files, durable retry and runtime toggles\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dialog's bottom padding is a little uneven: the helper text sits close to the textarea, and there's extra empty space under it.",
-      "The background behind the modal is blurred and dimmed, as expected for a modal, so the Rigging list behind it can't be read in this step."
+      "The 'Edit Managed browser bundle' modal covers most of the Rigging screen. The page behind it is dimmed and blurred, so you can't check that page's details in this shot, but that is how a modal normally looks.",
+      "The 'Saved' status and 'Preview' link sit above the 'Content' label, which makes the status look like it belongs to the Name field.",
+      "The Content textarea is mostly empty space below its two lines of text."
     ]
   }
 }

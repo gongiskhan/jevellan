@@ -4,16 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "step corrections survive reload and undo launches the requested redo with visible history",
   "layout": "desktop-dark",
-  "screenshot": "docs/acceptance/screenshots/phase2-undo-desktop-dark.png",
+  "screenshot": "screenshots/phase2-undo-desktop-dark.png",
   "expected": "the Jevellan web app \"undo\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"step corrections survive reload and undo launches the requested redo with visible history\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Two identical 'No model can run this step right now: disabled, disabled, …' error banners are stacked one after the other, and the list of repeated 'disabled' reasons doesn't tell the user anything",
-      "The struck-through 'Step 1 · Implement' header and its pink 'corrected: …' tags are small and low-contrast against the dark background, though still readable",
-      "Sidebar conversation titles and subtitles are cut off with ellipses (for example 'Change the value to three,…'), which is expected truncation",
-      "The Step 1 tool output shows 'The fixture starts with value 1.' while the summary says 'The value is now 3', which may confuse readers but isn't a rendering problem"
+      "Two identical red 'No model can run this step right now' banners appear stacked, and each lists 'disabled' eight times. They are readable, but the repetition is noisy.",
+      "Conversation titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Change the value to thre…', 'Browser fixtur…'). This looks intentional and the full title shows in the main header.",
+      "The struck-through 'Step 1 · Implement' heading and the gray 'Undone' and 'Local time' labels have low contrast against the dark background, but they can still be read.",
+      "The pink correction labels ('corrected: effort → max', 'corrected: action → reply, effort → low') are small and dense, but they can still be read."
     ]
   }
 }

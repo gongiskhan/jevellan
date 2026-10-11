@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "hub recovery resumes sign-in and reconciles a settings save whose reply was lost",
   "layout": "phone-light",
-  "screenshot": "docs/acceptance/screenshots/phase4-settings-wait-phone-light.png",
+  "screenshot": "screenshots/phase4-settings-wait-phone-light.png",
   "expected": "the Jevellan web app \"settings wait\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"hub recovery resumes sign-in and reconciles a settings save whose reply was lost\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fixed 'Can't reach the hub' toast covers the bottom of the Guards form below 'Pause after a plan'. The fields under it, and possibly the save action, are hidden until you scroll. This screenshot can't show whether the page has enough bottom padding to scroll them clear of the toast.",
-      "The tab strip cuts the left tab label off to 'es' and the 'Improve' label at the right edge. The strip scrolls and has arrow buttons, so this is expected.",
-      "The textarea at the top is cut off by the scroll position."
+      "The fixed 'Can't reach the hub' banner covers the form content below 'Pause after a plan'. The checkbox is still visible just above the banner, but the page may need extra bottom padding so the last fields can be scrolled clear of it.",
+      "The tab strip cuts off its neighbouring labels ('…es' on the left, 'Improve…' on the right). This looks like normal horizontal scrolling, and arrow buttons are present.",
+      "The textarea at the top is partly scrolled out of view under the sticky tab bar, so its text is only partly visible."
     ]
   }
 }

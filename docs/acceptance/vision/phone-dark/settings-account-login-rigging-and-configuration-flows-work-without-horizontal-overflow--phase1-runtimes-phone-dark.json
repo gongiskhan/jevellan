@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "Settings account, login, Rigging and configuration flows work without horizontal overflow",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/phase1-runtimes-phone-dark.png",
+  "screenshot": "screenshots/phase1-runtimes-phone-dark.png",
   "expected": "the Jevellan web app \"runtimes\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"Settings account, login, Rigging and configuration flows work without horizontal overflow\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The settings tab strip cuts off the fourth tab at the right edge, leaving only a partial icon visible. This looks like an intentional horizontal-scroll strip with a '>' scroll button, so it's not blocking.",
-      "Long account names such as 'Login recovery 2478e71e-7edd-4865-8bf9-5f5eb1c7269f' wrap onto two lines and look dense, but they stay fully readable.",
-      "The usage values ('Unknown') and the progress tracks are low-contrast against the dark background, but they're still legible."
+      "The fourth settings tab in the top tab strip is clipped at the right edge behind the scroll-arrow button. This is expected for a scrollable tab strip, and the arrow keeps the hidden tabs reachable.",
+      "The long 'Login recovery <uuid>' account names wrap onto two lines and break in the middle of the UUID, which looks a bit ragged.",
+      "The 'Unknown' values for the Five hours and Week usage rows are low-contrast grey on the dark background, but they can still be read."
     ]
   }
 }

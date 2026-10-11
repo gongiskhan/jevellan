@@ -36,12 +36,14 @@ export class HubDatabase {
   list<T>(namespace: string, schema: DocumentSchema<T>): Array<{ revision: number; document: T }> {
     return this.db.prepare('SELECT revision,document FROM documents WHERE namespace=? ORDER BY id').all(IdSchema.parse(namespace)).map((row) => ({ revision: Number(row.revision), document: schema.parse(JSON.parse(String(row.document))) }));
   }
-  /** Documents of a namespace whose top-level string `field` equals `value`, ordered by id, after an exclusive id cursor. */
-  listByField<T>(namespace: string, field: string, value: string, schema: DocumentSchema<T>, options: { limit?: number; after?: string } = {}): Array<{ revision: number; document: T }> {
+  /** Matching documents, normally ordered by id; append-only readers may request newest insertion first without a cursor. */
+  listByField<T>(namespace: string, field: string, value: string, schema: DocumentSchema<T>, options: { limit?: number; after?: string; order?: 'insertion-desc' } = {}): Array<{ revision: number; document: T }> {
     if (!/^[A-Za-z][A-Za-z0-9]*$/.test(field)) throw new Error('Invalid document field.');
     if (options.limit !== undefined && (!Number.isSafeInteger(options.limit) || options.limit < 1)) throw new Error('Invalid document limit.');
+    if (options.order && options.after !== undefined) throw new Error('Insertion order cannot use an id cursor.');
     const after = options.after === undefined ? null : IdSchema.parse(options.after);
-    return this.db.prepare("SELECT revision,document FROM documents WHERE namespace=? AND json_extract(document, '$.' || ?)=? AND (? IS NULL OR id>?) ORDER BY id LIMIT ?")
+    const order = options.order === 'insertion-desc' ? 'rowid DESC' : 'id';
+    return this.db.prepare(`SELECT revision,document FROM documents WHERE namespace=? AND json_extract(document, '$.' || ?)=? AND (? IS NULL OR id>?) ORDER BY ${order} LIMIT ?`)
       .all(IdSchema.parse(namespace), field, value, after, after, options.limit ?? -1)
       .map((row) => ({ revision: Number(row.revision), document: schema.parse(JSON.parse(String(row.document))) }));
   }

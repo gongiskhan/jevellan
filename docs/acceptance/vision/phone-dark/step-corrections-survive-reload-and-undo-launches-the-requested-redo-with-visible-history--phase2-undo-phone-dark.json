@@ -4,17 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "step corrections survive reload and undo launches the requested redo with visible history",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/phase2-undo-phone-dark.png",
+  "screenshot": "screenshots/phase2-undo-phone-dark.png",
   "expected": "the Jevellan web app \"undo\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"step corrections survive reload and undo launches the requested redo with visible history\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Change the value to three, then redo this...'), but the full prompt appears in the subtitle and the user message, so nothing is lost.",
-      "The same 'No model can run this step right now: disabled, disabled, …' error banner appears twice in a row, and it repeats 'disabled' eight times without saying which models are disabled. Both copies are readable; this is about content and duplication, not layout.",
-      "The struck-through 'Step 1 · Implement' heading has low contrast against the dark background but can still be read.",
-      "Step 1 says 'The value is now 3', but the tool output above it still says 'The fixture starts with value 1.' This is a content mismatch in the fixture, not a rendering problem.",
-      "The pink 'corrected: …' labels wrap onto a second line next to the step header; they're still readable and don't overlap anything."
+      "Header title is cut off with an ellipsis ('Change the value to three, then redo this...'). The full text appears in the subtitle and the message bubble, so nothing is lost.",
+      "The same 'No model can run this step right now: disabled, disabled, …' error banner appears twice in a row, and its repeated 'disabled' list is hard to read.",
+      "The muted grey text ('Local time', 'Undone', the 'Input'/'Output' labels, 'Step details') has low contrast on the dark background but can still be read.",
+      "Step 1's output says the value is now 3, but the tool output above it still shows 'value 1'. That is a content inconsistency, not a rendering problem."
     ]
   }
 }

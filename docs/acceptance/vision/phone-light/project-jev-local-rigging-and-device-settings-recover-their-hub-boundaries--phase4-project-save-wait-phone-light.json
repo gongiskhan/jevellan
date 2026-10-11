@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "project, Jev, local Rigging and device Settings recover their hub boundaries",
   "layout": "phone-light",
-  "screenshot": "docs/acceptance/screenshots/phase4-project-save-wait-phone-light.png",
+  "screenshot": "screenshots/phase4-project-save-wait-phone-light.png",
   "expected": "the Jevellan web app \"project save wait\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"project, Jev, local Rigging and device Settings recover their hub boundaries\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The orange Git policy notice is cut off mid-sentence ('The original branch is preserved…') where the body meets the sticky footer. The modal body appears to scroll, so the rest can still be read, but nothing on screen shows there is more below.",
-      "The 'Path on Mac.lan' value is cut off on the right inside its input box. This is normal for a single-line text field, but the full path can't be seen.",
-      "The disabled 'Saving…' button uses low-contrast grey text on a pale blue background. It is still readable."
+      "The 'Path on dev-madrid' field cuts off the long /tmp/... path at the right edge. This is normal for a single-line text field because the full value is still in the field and can be scrolled.",
+      "There is very little space between the 'Browse folders on dev-madrid' button and the 'Git policy' label below it.",
+      "The wait panel at the bottom ends close to the dialog's bottom edge and the bottom of the screen, leaving little bottom padding."
     ]
   }
 }

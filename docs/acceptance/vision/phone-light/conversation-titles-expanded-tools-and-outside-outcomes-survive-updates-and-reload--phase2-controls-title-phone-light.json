@@ -4,15 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "conversation titles, expanded tools and outside outcomes survive updates and reload",
   "layout": "phone-light",
-  "screenshot": "docs/acceptance/screenshots/phase2-controls-title-phone-light.png",
+  "screenshot": "screenshots/phase2-controls-title-phone-light.png",
   "expected": "the Jevellan web app \"controls title\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"conversation titles, expanded tools and outside outcomes survive updates and reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The conversation title in the header is shortened with an ellipsis ('A conversation with a long title · Unbrok…'). The truncation is deliberate and the rest of the header is fine, but the full title can't be read on this screen.",
-      "The long unbroken tool header ('Read project · long_tool_header_…') breaks mid-word across five lines. It stays readable and inside its card, but it is visually dense.",
-      "The status chip 'Waiting for you' uses low-contrast orange text on a light background."
+      "The conversation title in the header ends with an ellipsis ('A conversation with a long title · Unbro…'). This looks like intentional truncation on a narrow phone screen, but the full title can't be read on this screen.",
+      "The long tool header ('Read project · long_tool_header_…') breaks in the middle of words and takes up six lines. It stays readable but looks crowded."
     ]
   }
 }

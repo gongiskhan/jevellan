@@ -387,6 +387,7 @@ test('a main thread gives its reservations back when it stops or fails; a worktr
     turns: 1, turnAllowance: 30, queuedMessages: [], verificationAttempts: 0, ...fields });
   const real = mailService('dev_a'); const released: string[] = [];
   const context = { deviceId: 'dev_a', deviceName: 'Mac mini', redactor: new SecretRedactor(), store: threadStore, ledgers, now: () => now, rested: () => undefined,
+    admission: { admit: async () => ({ ok: true, release: () => undefined }) },
     decisions: { withdrawTurnLimit: async () => undefined }, toCoordinator: async () => undefined, enterOperation: () => () => undefined,
     project: async () => { throw new Error('The checkout is gone.'); },
     mail: { threadTool: real.threadTool.bind(real), releaseThread: async (projectId: string, threadId: string) => { released.push(threadId); return real.releaseThread(projectId, threadId); } },

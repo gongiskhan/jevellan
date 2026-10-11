@@ -4,15 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "LJ2 native setup remains visible and merge routing explains its ask-owner choice",
   "layout": "desktop-dark",
-  "screenshot": "docs/acceptance/screenshots/LJ2-merge-route-why-desktop-dark.png",
+  "screenshot": "screenshots/LJ2-merge-route-why-desktop-dark.png",
   "expected": "the Jevellan web app \"LJ2 merge route why\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"LJ2 native setup remains visible and merge routing explains its ask-owner choice\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Saved for future merge decisions.' message appears below the feedback buttons even though neither button looks selected, so it's unclear which choice was saved.",
-      "The feedback buttons are right-aligned on the same row as the 'Changed files and context' disclosure, which makes that row a bit crowded.",
-      "The commit hash is very long and runs right up to the edge of its line, so the text after it wraps awkwardly."
+      "The 'Should have asked me' and 'Didn't need asking' buttons are right-aligned on the same row as the 'Changed files and context' toggle, so the toggle and the buttons look grouped together when they aren't related.",
+      "The confirmation 'Saved for future merge decisions.' appears right below the feedback buttons, but neither button looks selected, so it's unclear which choice was saved.",
+      "The sentence '2 added and removed lines across 2 files' is awkward; it doesn't say how many lines were added versus removed.",
+      "The long full commit hash makes that line wrap, so the sentence reads choppily."
     ]
   }
 }

@@ -4,15 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/phase3-automatic-phone-dark.png",
+  "screenshot": "screenshots/phase3-automatic-phone-dark.png",
   "expected": "the Jevellan web app \"automatic\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"automatic decisions can resume from missing configuration and explain their simulated choices\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis (\"Exercise automatic decisions: change t...\"). The full text still appears in the subtitle and the user message below it.",
-      "The \"value.txt\" link label is pink and small against the dark card, so it has lower contrast than the text around it.",
-      "There is a lot of empty space between \"Step details\" and the composer at the bottom."
+      "The header title is cut off with an ellipsis (\"Exercise automatic decisions: change t…\"). The full text still appears in the subtitle line and in the user message bubble.",
+      "The YOU timestamp header on the user message bubble is low contrast against the dark background."
     ]
   }
 }

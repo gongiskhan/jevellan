@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The attach command in the footer is cut off with an ellipsis ('jevellan thread attach thread_01M4GF91956ZM8WB…'). It's still usable because the copy button next to it copies the full command.",
-      "The Bash tool card shows a file_path JSON input ('four.txt'). This looks like fixture data rather than a rendering problem."
+      "The 'jevellan thread attach thread_01M4PAS1M78SQS1…' command at the bottom is cut off with an ellipsis. The copy button next to it is still visible and reachable, so this doesn't block anything.",
+      "The Bash tool card shows a file_path input ({\"file_path\":\"four.txt\"}). This looks like fixture data, not a rendering problem."
     ]
   }
 }

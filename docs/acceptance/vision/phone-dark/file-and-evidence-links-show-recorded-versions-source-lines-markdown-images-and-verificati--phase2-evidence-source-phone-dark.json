@@ -4,16 +4,17 @@
   "model": "claude-opus-5-5",
   "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/phase2-evidence-source-phone-dark.png",
+  "screenshot": "screenshots/phase2-evidence-source-phone-dark.png",
   "expected": "the Jevellan web app \"evidence source\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"file and evidence links show recorded versions, source lines, Markdown, images and verification output\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Line 3 of the code block reaches the right edge of the panel, so the trailing semicolon appears clipped. The block probably scrolls sideways, but no scroll cue is shown.",
-      "The highlight on line 2 stops short of the code block's right edge, so it doesn't cover the full row width.",
-      "The recorded checkpoint hash is set in very small, low-contrast monospace text. It is still legible.",
-      "Below the links, most of the panel is empty dark space."
+      "Code line 3 (`export const label = '<b>plain text</b>';`) runs right up to the right edge of the code panel with almost no padding, so a slightly longer line would be clipped or need horizontal scrolling.",
+      "The checkpoint hash wraps onto its own line under 'Recorded checkpoint ·', leaving the separator hanging at the end of the first line.",
+      "The checkpoint hash is small, low-contrast monospace text. It can be read but it's faint against the dark background.",
+      "'Open recorded step' is muted grey next to the pink 'Open working copy', so it looks less clearly clickable.",
+      "There's a large empty area below the content."
     ]
   }
 }

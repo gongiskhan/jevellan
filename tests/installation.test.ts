@@ -186,10 +186,15 @@ test('installation offers HTTPS once before first startup and explicit choices d
 
 test('install skips the occupied default port and starts an owned copy without changing its neighbour', async () => {
   const f = fixture(), installer = f.open(), neighbour = createServer((_request, response) => response.end('Fake Garrison')); servers.push(neighbour);
-  await new Promise<void>((resolve, reject) => { neighbour.once('error', reject); neighbour.listen(DEFAULT_PORT, '127.0.0.1', resolve); });
+  const ownedNeighbour = await new Promise<boolean>((resolve, reject) => {
+    neighbour.once('error', error => (error as NodeJS.ErrnoException).code === 'EADDRINUSE' ? resolve(false) : reject(error));
+    neighbour.listen(DEFAULT_PORT, '127.0.0.1', () => resolve(true));
+  });
   const distribution = f.source(), result = await installer.install(distribution);
   expect(result.changedPort).toBe(true); expect(result.port).toBeGreaterThan(DEFAULT_PORT);
-  expect(result.url).toBe(`http://127.0.0.1:${result.port}`); expect(await (await fetch(`http://127.0.0.1:${DEFAULT_PORT}`)).text()).toBe('Fake Garrison');
+  expect(result.url).toBe(`http://127.0.0.1:${result.port}`);
+  // An existing owner listener is also an occupied port: never stop or query it.
+  if (ownedNeighbour) expect(await (await fetch(`http://127.0.0.1:${DEFAULT_PORT}`)).text()).toBe('Fake Garrison');
   const manifest = installer.files.load(); expect(manifest.activeVersion).toBe('0.1.0'); expect(manifest.pendingSwitch).toBeUndefined();
   expect(manifest.service!.definition.spec.entry).toBe(join(f.homes.root, 'app/0.1.0/bin/jevellan.mjs'));
   rmSync(distribution, { recursive: true }); expect(existsSync(manifest.service!.definition.spec.entry)).toBe(true); f.unchanged();

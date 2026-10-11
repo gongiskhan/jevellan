@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "Closing packed installation",
+  "layout": "desktop-dark",
+  "screenshot": "screenshots/phase5-guide-welcome-desktop-dark.png",
+  "expected": "the passphrase welcome screen with readable text and reachable setup controls",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The footer tagline 'AUTONOMOUS DEVELOPMENT, COORDINATED.' is low-contrast and small, but you can still read it",
+      "The helper text 'At least 8 characters.' is small and muted against the dark card",
+      "There's a fairly large gap between the passphrase field and the helper text below it"
+    ]
+  }
+}

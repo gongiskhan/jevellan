@@ -4,14 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "PJ3 a decision is answered from the Waiting tab",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/PJ3-projects-sidebar-phone-dark.png",
+  "screenshot": "screenshots/PJ3-projects-sidebar-phone-dark.png",
   "expected": "the Jevellan web app \"projects sidebar\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PJ3 a decision is answered from the Waiting tab\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The session subtitle 'Done · Mesh journey fixture · Mac.l…' is cut off with an ellipsis. This looks intentional and the host name still appears in full in the other rows.",
-      "The main view shows through faintly on the right edge behind the drawer. This is expected for an overlay drawer but looks slightly cluttered."
+      "The third shell session's subtitle is cut off with an ellipsis ('Done · Mesh journey fixture · dev-mad…'). The text is a deliberate truncation, still readable, and the full context is clear.",
+      "Background page content shows at the right edge behind the drawer (timestamps, a 'Pull requ…' button). This is normal for a drawer overlay, not an overlap problem.",
+      "The version label 'v0.2.0' is small, low-contrast grey text on the dark background."
     ]
   }
 }

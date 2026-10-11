@@ -4,16 +4,17 @@
   "model": "claude-opus-5-5",
   "test": "composer choices apply once, keep conversation pins and explain corrections after reload",
   "layout": "desktop-dark",
-  "screenshot": "docs/acceptance/screenshots/phase3-composer-kept-desktop-dark.png",
+  "screenshot": "screenshots/phase3-composer-kept-desktop-dark.png",
   "expected": "the Jevellan web app \"composer kept\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"composer choices apply once, keep conversation pins and explain corrections after reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation titles and subtitles are truncated with ellipses (e.g. 'Exercise composer choice…', 'Done · Automatic fixture · Mac…'). This looks intentional, and the full text is probably available elsewhere.",
-      "The 'completed' status label on the 'Read project' tool cards sits on its own line below the card title, which leaves extra empty space.",
-      "Steps 1 and 2 show the same tool output and the same 'The plan has three steps.' text, so the transcript looks repetitive. This is fixture content, not a layout problem.",
-      "The 'Some native sessions are unavailable' note at the bottom of the sidebar is small and low-contrast."
+      "Conversation titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Exercise composer choic…', 'Done · Automatic fixture · dev-m…'). This looks intentional, but the full text can't be read.",
+      "The 'completed' status label on each tool card sits on its own line under the 'Read project' title instead of on the same line, which leaves awkward empty space.",
+      "The pink 'Composer Fable' chip text on its pink-tinted background has fairly low contrast.",
+      "Small muted text like 'Local time', the step timing labels and 'Some native sessions are unavailable' has low contrast against the dark background.",
+      "Step 2 (Reply) repeats the same 'Read project' card and 'The plan has three steps.' text as Step 1, which looks redundant but doesn't affect the layout."
     ]
   }
 }

@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "Closing packed installation",
+  "layout": "phone-dark",
+  "screenshot": "screenshots/phase5-guide-verified-phone-dark.png",
+  "expected": "the finished conversation and verification result without overlap or clipping",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The summary says '1 changed files'. It should say '1 changed file'.",
+      "The 'Wrap lines' label sits close to the right edge of the panel.",
+      "The commit hash line in the verification card almost fills the card's width, so a longer value could overflow.",
+      "The space below the verification card is empty. This screen shows the step's changes and a 'Passed' verification result, but no conversation."
+    ]
+  }
+}

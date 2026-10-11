@@ -1,6 +1,6 @@
 {
   "name": "@jevellan/daemon",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "license": "MIT",
@@ -11,18 +11,18 @@
     }
   },
   "dependencies": {
-    "@jevellan/agent-mcp": "0.1.0",
+    "@jevellan/agent-mcp": "0.2.0",
     "@modelcontextprotocol/sdk": "1.30.1",
-    "@jevellan/core": "0.1.0",
-    "@jevellan/accounts": "0.1.0",
-    "@jevellan/runtime-contract": "0.1.0",
-    "@jevellan/conversations": "0.1.0",
-    "@jevellan/decisions": "0.1.0",
-    "@jevellan/memory": "0.1.0",
-    "@jevellan/mesh": "0.1.0",
-    "@jevellan/projects": "0.1.0",
-    "@jevellan/runtime-claude": "0.1.0",
-    "@jevellan/runtime-codex": "0.1.0",
+    "@jevellan/core": "0.2.0",
+    "@jevellan/accounts": "0.2.0",
+    "@jevellan/runtime-contract": "0.2.0",
+    "@jevellan/conversations": "0.2.0",
+    "@jevellan/decisions": "0.2.0",
+    "@jevellan/memory": "0.2.0",
+    "@jevellan/mesh": "0.2.0",
+    "@jevellan/projects": "0.2.0",
+    "@jevellan/runtime-claude": "0.2.0",
+    "@jevellan/runtime-codex": "0.2.0",
     "zod": "4.6.5"
   }
 }

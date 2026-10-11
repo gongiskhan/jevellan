@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "hub recovery resumes sign-in and reconciles a settings save whose reply was lost",
   "layout": "desktop-dark",
-  "screenshot": "docs/acceptance/screenshots/phase4-settings-wait-desktop-dark.png",
+  "screenshot": "screenshots/phase4-settings-wait-desktop-dark.png",
   "expected": "the Jevellan web app \"settings wait\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"hub recovery resumes sign-in and reconciles a settings save whose reply was lost\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The floating 'Can't reach the hub' toast covers the bottom edge of the Guards card and the left part of the save footer. No controls are hidden: 'Pause after a plan', 'Stop waiting' and 'Saving…' are all visible.",
-      "The last conversation in the sidebar list is cut off partway at the bottom of the scrollable list, above 'Some native sessions are unavailable'.",
-      "The Routing profile textarea text is cut off at the bottom edge, so the textarea scrolls internally."
+      "The 'Can't reach the hub' wait toast covers the bottom edge of the Guards card and the left part of the save footer. No visible control seems to be hidden under it: 'Pause after a plan', the 'Saving creates a configuration revision.' note and the 'Saving…' button can all still be seen.",
+      "The Routing profile textarea cuts off its last line mid-row. It scrolls, so this is just clipping.",
+      "In the sidebar conversation list, a partly visible row is clipped behind the 'Some native sessions are unavailable' notice, and long titles are shortened with ellipses."
     ]
   }
 }

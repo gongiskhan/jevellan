@@ -13,12 +13,14 @@ import { chromium } from '@playwright/test';
 import { installationBrowser } from './installation-browser.mjs';
 import { checkInstalledNotices } from './installation-notices.mjs';
 
+const baseVersion = z.string().regex(/^\d+\.\d+\.\d+$/).parse(JSON.parse(readFileSync(resolve('package.json'), 'utf8')).version);
+const [major, minor] = baseVersion.split('.').map(Number), nextVersion = `${major}.${minor + 1}.0`;
 const Result = z.strictObject({
-  schema: z.literal('installation-command-check-v8'), at: z.iso.datetime(), passed: z.literal(true), root: z.string(),
+  schema: z.literal('installation-command-check-v9'), at: z.iso.datetime(), passed: z.literal(true), root: z.string(),
   firstRun: z.strictObject({ layout: z.enum(['desktop', 'phone']), theme: z.enum(['light', 'dark']), browserSetup: z.literal(true), guidedSetup: z.literal(true), skippedJev: z.boolean(), configuredDoctor: z.literal(true), verifiedPublication: z.literal(true), retainedConversation: z.literal(true), providers: z.literal('simulated') }).nullable(),
   https: z.enum(['live-tailscale', 'not-enabled']), httpsBrowserChecks: z.number().int().min(0), tailscaleRoutesPreserved: z.boolean().nullable(),
-  package: z.literal('real-packed-application'), dependencies: z.literal('live'), serviceManager: z.literal('fake-owned-processes'), work: z.enum(['simulated-admission', 'real-conversation-simulated-providers']), updateRelease: z.literal('simulated-version-0.2.0'), devices: z.literal('local-simulated-devices'),
-  checks: z.strictObject({ independentCopy: z.literal(true), installedCommand: z.literal(true), commandUpdate: z.literal(true), commandRollback: z.literal(true), commandRemoved: z.literal(true), occupiedPortSkipped: z.literal(true), uiAndAsset: z.literal(true), doctorExecutableChecks: z.literal(true), doctorMissingCredentials: z.literal(true), memberJoined: z.literal(true), memberUiLogin: z.literal(true), memberRepeatPreserved: z.literal(true), memberRemoval: z.literal(true), busyUninstallRefused: z.literal(true), updateWaited: z.literal(true), updateVersion: z.literal('0.2.0'), rollbackVersion: z.literal('0.1.0'), removedServiceAndApplications: z.literal(true), dataRetained: z.literal(true), purgeRemovedHome: z.literal(true), purgePreservedExternalFiles: z.literal(true), canariesPreserved: z.literal(true), nativeServicesInvoked: z.literal(false) }),
+  package: z.literal('real-packed-application'), dependencies: z.literal('live'), serviceManager: z.literal('fake-owned-processes'), work: z.enum(['simulated-admission', 'real-conversation-simulated-providers']), updateRelease: z.literal(`simulated-version-${nextVersion}`), devices: z.literal('local-simulated-devices'),
+  checks: z.strictObject({ independentCopy: z.literal(true), installedCommand: z.literal(true), commandUpdate: z.literal(true), commandRollback: z.literal(true), commandRemoved: z.literal(true), occupiedPortSkipped: z.literal(true), uiAndAsset: z.literal(true), doctorExecutableChecks: z.literal(true), doctorMissingCredentials: z.literal(true), memberJoined: z.literal(true), memberUiLogin: z.literal(true), memberRepeatPreserved: z.literal(true), memberRemoval: z.literal(true), busyUninstallRefused: z.literal(true), updateWaited: z.literal(true), updateVersion: z.literal(nextVersion), rollbackVersion: z.literal(baseVersion), removedServiceAndApplications: z.literal(true), dataRetained: z.literal(true), purgeRemovedHome: z.literal(true), purgePreservedExternalFiles: z.literal(true), canariesPreserved: z.literal(true), nativeServicesInvoked: z.literal(false) }),
 });
 const flags = process.argv.slice(2);
 if (flags.some(arg => !['--https', '--conversation', '--phone', '--dark'].includes(arg)) || new Set(flags).size !== flags.length || !flags.includes('--conversation') && flags.some(arg => ['--phone', '--dark'].includes(arg))) throw new Error('Usage: installation-commands.mjs [--https] [--conversation [--phone] [--dark]]');
@@ -148,10 +150,10 @@ async function checkHttpsBrowser(origin, passphrase, label) {
 try {
   await main(['install', '--from', archive, ...(liveHttps ? ['--https'] : [])], { installer });
   let current = installer(), manifest = current.files.load(); current.close();
-  const port = manifest.service.definition.spec.port; if (port === 9771) throw new Error('The occupied port was not skipped.'); await health(port, '0.1.0');
-  commandVersion(user, '0.1.0');
-  if (manifest.service.definition.spec.entry !== join(homes.root, 'app/0.1.0/bin/jevellan.mjs')) throw new Error('The daemon is not using its installed copy.');
-  const notices = checkInstalledNotices(source, join(homes.root, 'app/0.1.0'));
+  const port = manifest.service.definition.spec.port; if (port === 9771) throw new Error('The occupied port was not skipped.'); await health(port, baseVersion);
+  commandVersion(user, baseVersion);
+  if (manifest.service.definition.spec.entry !== join(homes.root, 'app', baseVersion, 'bin/jevellan.mjs')) throw new Error('The daemon is not using its installed copy.');
+  const notices = checkInstalledNotices(source, join(homes.root, 'app', baseVersion));
   writeFileSync(join(root, 'installation-notices.json'), JSON.stringify(notices, null, 2) + '\n', { mode: 0o600 });
   const page = await fetch(`http://127.0.0.1:${port}/`), html = await page.text(), asset = /src="([^"]+\.js)"/.exec(html)?.[1];
   if (!page.ok || !asset || !(await fetch(new URL(asset, `http://127.0.0.1:${port}`))).ok) throw new Error('The installed UI or its script could not load.');
@@ -178,7 +180,7 @@ try {
   if (!invited.ok) throw new Error('The disposable hub did not issue an invitation.');
   const invitation = JoinInvitationSchema.parse(await invited.json());
   await main(['join', hubOrigin, invitation.code, '--from', archive, ...(liveHttps ? ['--https'] : [])], { installer: memberInstaller });
-  commandVersion(memberUser, '0.1.0');
+  commandVersion(memberUser, baseVersion);
   const memberDevice = DeviceConfigSchema.parse(JSON.parse(readFileSync(join(memberHomes.root, 'device.json'), 'utf8')));
   if (memberDevice.role !== 'member' || existsSync(join(memberHomes.root, 'hub'))) throw new Error('Joining incorrectly created a hub.');
   const login = await post(memberDevice.url, '/api/auth/login', { schema: 'passphrase-input-v1', passphrase });
@@ -194,33 +196,33 @@ try {
   if (readFileSync(join(memberHomes.root, 'retained-member.txt'), 'utf8') !== 'Keep the member data.') throw new Error('Member uninstall lost retained data.');
   await main(['uninstall', '--purge'], { installer: memberInstaller, confirmPurge: async path => { if (path !== memberHomes.root) throw new Error('Unexpected member purge path.'); return path; } });
   if (existsSync(memberHomes.root) || existsSync(join(memberUser, '.local/bin/jevellan')) || readdirSync(memberUser).some(name => name.startsWith('.jevellan.purge-')) || digest() !== before) throw new Error('Member removal changed external files or left its home or command.');
-  await health(port, '0.1.0');
+  await health(port, baseVersion);
   console.log('The second local daemon joined, accepted the hub UI login, preserved its identity on repeat and removed only its own installation. Devices are simulated locally.');
   writeFileSync(join(homes.root, 'retained-work.txt'), 'Keep this application data.\n');
   if (!conversationCheck) { gate = new LifecycleGate(homes); releaseWork = gate.enter({ kind: 'conversation', id: 'fixture_work', title: 'Disposable admitted work' }); }
   let refused = false; try { await main(['uninstall'], { installer }); } catch (error) { refused = error instanceof Error && error.message.includes(conversationCheck ? 'Installation acceptance: change the value to two.' : 'Disposable admitted work'); }
   if (!refused) throw new Error('Busy uninstall was not refused.');
   const next = join(root, 'next-release'); cpSync(source, next, { recursive: true, verbatimSymlinks: true });
-  const packagePath = join(next, 'package.json'), identity = JSON.parse(readFileSync(packagePath, 'utf8')); identity.version = '0.2.0'; writeFileSync(packagePath, JSON.stringify(identity, null, 2) + '\n');
+  const packagePath = join(next, 'package.json'), identity = JSON.parse(readFileSync(packagePath, 'utf8')); identity.version = nextVersion; writeFileSync(packagePath, JSON.stringify(identity, null, 2) + '\n');
   for (const file of new Set(['packages/core/dist/index.js', 'node_modules/@jevellan/core/dist/index.js'].map(path => realpathSync(join(next, path))))) {
-    const text = readFileSync(file, 'utf8'); if (!text.includes("export const VERSION = '0.1.0';")) throw new Error('Unexpected packed version marker.'); writeFileSync(file, text.replace("export const VERSION = '0.1.0';", "export const VERSION = '0.2.0';"));
+    const text = readFileSync(file, 'utf8'); if (!text.includes(`export const VERSION = '${baseVersion}';`)) throw new Error('Unexpected packed version marker.'); writeFileSync(file, text.replace(`export const VERSION = '${baseVersion}';`, `export const VERSION = '${nextVersion}';`));
   }
-  const updateArchive = join(root, 'jevellan-fixture-0.2.0.tgz'); await c({ file: updateArchive, cwd: next, prefix: 'package', gzip: true }, readdirSync(next));
+  const updateArchive = join(root, `jevellan-fixture-${nextVersion}.tgz`); await c({ file: updateArchive, cwd: next, prefix: 'package', gzip: true }, readdirSync(next));
   const updating = main(['update', '--from', updateArchive], { installer }); let updateError; void updating.catch(error => { updateError = error; });
   const deadline = Date.now() + 120_000;
   while (!messages.some(message => message.startsWith('Waiting for'))) { if (updateError) throw updateError; if (Date.now() > deadline) throw new Error('Update did not reach the running-work wait.'); await delay(100); }
   if (!messages.includes('Waiting for 1 running conversations to finish') || service.starts() !== 1) throw new Error('Update did not preserve the running service with the specified wait message.');
-  await health(port, '0.1.0'); commandVersion(user, '0.1.0');
+  await health(port, baseVersion); commandVersion(user, baseVersion);
   if (conversationCheck) { if (readFileSync(join(project, 'value.txt'), 'utf8') !== '1\n') throw new Error('The held conversation already changed the project.'); service.release(); }
   else { releaseWork(); releaseWork = undefined; }
-  await updating; const updateVersion = await health(port, '0.2.0'); commandVersion(user, '0.2.0');
+  await updating; const updateVersion = await health(port, nextVersion); commandVersion(user, nextVersion);
   if (firstRun) {
     await firstRun.verifyCompleted();
     if (git(project, 'status', '--porcelain') || git(project, 'rev-parse', 'HEAD') !== git(projectOrigin, 'rev-parse', 'main') || readFileSync(join(project, 'value.txt'), 'utf8') !== '2\n') throw new Error('The real conversation did not publish a clean verified change.');
     execFileSync(process.execPath, ['--test', 'value.test.mjs'], { cwd: project, stdio: 'pipe' });
     console.log('Update waited for the actual conversation, verification and Git publication, then switched to the simulated next release.');
   }
-  await main(['rollback'], { installer }); const rollbackVersion = await health(port, '0.1.0'); commandVersion(user, '0.1.0');
+  await main(['rollback'], { installer }); const rollbackVersion = await health(port, baseVersion); commandVersion(user, baseVersion);
   if (firstRun) { await firstRun.verifyCompleted(); await firstRun.close(); }
   const retainedLedger = firstRun ? conversationDigest() : undefined;
   await main(['uninstall'], { installer });
@@ -237,7 +239,7 @@ try {
   const serveAfter = liveHttps ? serveStatus() : undefined;
   if (serveAfter) writeFileSync(join(root, 'tailscale-after.json'), JSON.stringify(serveAfter, null, 2) + '\n', { mode: 0o600 });
   if (serveBefore && stableJson(serveAfter) !== stableJson(serveBefore)) throw new Error('The Tailscale routes did not return to their original configuration.');
-  const result = Result.parse({ schema: 'installation-command-check-v8', at: new Date().toISOString(), passed: true, root, firstRun: conversationCheck ? { layout, theme, browserSetup: true, guidedSetup: true, skippedJev: firstRun.skippedJev, configuredDoctor: true, verifiedPublication: true, retainedConversation: true, providers: 'simulated' } : null, https: liveHttps ? 'live-tailscale' : 'not-enabled', httpsBrowserChecks, tailscaleRoutesPreserved: liveHttps ? true : null, package: 'real-packed-application', dependencies: 'live', serviceManager: 'fake-owned-processes', work: conversationCheck ? 'real-conversation-simulated-providers' : 'simulated-admission', updateRelease: 'simulated-version-0.2.0', devices: 'local-simulated-devices', checks: { independentCopy: true, installedCommand: true, commandUpdate: true, commandRollback: true, commandRemoved: true, occupiedPortSkipped: true, uiAndAsset: true, doctorExecutableChecks: true, doctorMissingCredentials: true, memberJoined: true, memberUiLogin: true, memberRepeatPreserved: true, memberRemoval: true, busyUninstallRefused: true, updateWaited: true, updateVersion, rollbackVersion, removedServiceAndApplications: true, dataRetained: true, purgeRemovedHome: true, purgePreservedExternalFiles: true, canariesPreserved: true, nativeServicesInvoked: false } });
+  const result = Result.parse({ schema: 'installation-command-check-v9', at: new Date().toISOString(), passed: true, root, firstRun: conversationCheck ? { layout, theme, browserSetup: true, guidedSetup: true, skippedJev: firstRun.skippedJev, configuredDoctor: true, verifiedPublication: true, retainedConversation: true, providers: 'simulated' } : null, https: liveHttps ? 'live-tailscale' : 'not-enabled', httpsBrowserChecks, tailscaleRoutesPreserved: liveHttps ? true : null, package: 'real-packed-application', dependencies: 'live', serviceManager: 'fake-owned-processes', work: conversationCheck ? 'real-conversation-simulated-providers' : 'simulated-admission', updateRelease: `simulated-version-${nextVersion}`, devices: 'local-simulated-devices', checks: { independentCopy: true, installedCommand: true, commandUpdate: true, commandRollback: true, commandRemoved: true, occupiedPortSkipped: true, uiAndAsset: true, doctorExecutableChecks: true, doctorMissingCredentials: true, memberJoined: true, memberUiLogin: true, memberRepeatPreserved: true, memberRemoval: true, busyUninstallRefused: true, updateWaited: true, updateVersion, rollbackVersion, removedServiceAndApplications: true, dataRetained: true, purgeRemovedHome: true, purgePreservedExternalFiles: true, canariesPreserved: true, nativeServicesInvoked: false } });
   writeFileSync(join(root, 'result.json'), JSON.stringify(result, null, 2) + '\n', { mode: 0o600 });
   rmSync(distribution, { recursive: true }); rmSync(next, { recursive: true });
   console.log(`Verified installation commands: ${join(root, 'result.json')}`);

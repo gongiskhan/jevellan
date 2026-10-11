@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/LJ5-nightly-reviewed-and-passed-phone-dark.png",
+  "screenshot": "screenshots/LJ5-nightly-reviewed-and-passed-phone-dark.png",
   "expected": "the Jevellan web app \"LJ5 nightly reviewed and passed\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row cuts off 'Pull requests' at the right edge. It looks like a tab bar that scrolls sideways, so the tab can still be reached, but nothing on screen shows that more tabs are off to the right.",
-      "The status pill in the header reads 'Working…' and is cut short with an ellipsis.",
-      "Each nightly card repeats its title in a subtitle ('Review since last' / 'Review since last'), which adds clutter."
+      "The 'Chat' tab is clipped at the left edge of the tab strip. The strip looks horizontally scrollable, so the tab is still reachable.",
+      "The status badge is cut short to 'Working…'.",
+      "In each nightly card, the 'Enabled' label sits under its checkbox instead of beside it, so it lines up unevenly with the Run now and Edit buttons."
     ]
   }
 }

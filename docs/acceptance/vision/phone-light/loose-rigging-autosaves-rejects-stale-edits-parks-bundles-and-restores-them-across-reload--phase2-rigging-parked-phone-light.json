@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
   "layout": "phone-light",
-  "screenshot": "docs/acceptance/screenshots/phase2-rigging-parked-phone-light.png",
+  "screenshot": "screenshots/phase2-rigging-parked-phone-light.png",
   "expected": "the Jevellan web app \"rigging parked\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the top tab strip, the scroll-arrow button covers part of the tab after \"Decisions\". It is a horizontal scroller, so the tab can still be reached.",
-      "The Skills card's bottom border is cut off at the bottom of the viewport, but every parked item and its \"Restore locally\" button can be seen and used.",
-      "Long metadata lines like \"Local · Loose · Rigging local fixture · Claude Code\" wrap in the middle of the item name (\"Claude / Code\"), which looks a little untidy."
+      "In the top tab strip, the scroll arrow button partly covers the fourth tab's icon. The strip scrolls sideways and the arrow points that way, so the tab can still be reached.",
+      "The metadata lines under each item (e.g. 'Package · Parked · Rigging local fixture · Claude Code' and the date) are small and light grey. They are readable but low-contrast.",
+      "The metadata for 'browser-promote' wraps early because the 'Park' button takes up space, leaving 'Claude Code' alone on a second line."
     ]
   }
 }

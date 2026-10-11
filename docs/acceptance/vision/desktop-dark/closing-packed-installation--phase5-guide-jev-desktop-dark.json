@@ -1,0 +1,20 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "Closing packed installation",
+  "layout": "desktop-dark",
+  "screenshot": "screenshots/phase5-guide-jev-desktop-dark.png",
+  "expected": "the Connect Jev setup step with readable text and reachable controls",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The yellow banner tells the user to add the Jev key in Settings → Decisions, but there is a Jev key field right below it on this screen. The two messages contradict each other.",
+      "'Test connection' sits on its own row under the input, while 'Save key' sits next to the input. The two buttons don't line up.",
+      "The disabled 'Continue' and 'Test connection' buttons have very low contrast against the dark background. They're readable but faint.",
+      "The Jev key input has no placeholder or helper text showing what format the key should be in.",
+      "The page content takes up only the top half of the screen, leaving a large empty area below."
+    ]
+  }
+}

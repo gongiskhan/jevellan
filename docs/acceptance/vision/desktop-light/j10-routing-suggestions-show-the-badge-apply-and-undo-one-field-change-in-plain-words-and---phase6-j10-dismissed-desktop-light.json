@@ -1,9 +1,19 @@
 {
   "schema": "vision-check-v1",
-  "label": "not run",
-  "reason": "Disabled for this run.",
+  "label": "live",
+  "model": "claude-opus-5-5",
   "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
   "layout": "desktop-light",
-  "screenshot": "docs/acceptance/screenshots/phase6-j10-dismissed-desktop-light.png",
-  "expected": "the Jevellan web app \"j10 dismissed\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)"
+  "screenshot": "screenshots/phase6-j10-dismissed-desktop-light.png",
+  "expected": "the Jevellan web app \"j10 dismissed\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Sidebar session titles and metadata lines are cut off with ellipses (e.g. 'Exercise answer options: ...', 'Context · J11 memory jour...', 'Ready · Automatic fixture · dev-...'). This looks like intentional truncation.",
+      "The 'Save schedule and jobs' button is low-contrast and looks disabled, but its text can still be read.",
+      "'Undo (22s)' shows a live countdown, so the screenshot is timing-dependent. The 'Prefer Opus for review steps, revised' card is in the Applied state, and the Undone card's history state also appears on this screen.",
+      "The 'Memory care' select shows its placeholder 'Apply and tell me' in grey text that reads like a disabled control."
+    ]
+  }
 }

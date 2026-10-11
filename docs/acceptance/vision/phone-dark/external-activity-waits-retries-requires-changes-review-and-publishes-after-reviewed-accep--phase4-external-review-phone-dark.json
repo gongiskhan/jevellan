@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "external activity waits, retries, requires Changes review and publishes after reviewed acceptance",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/phase4-external-review-phone-dark.png",
+  "screenshot": "screenshots/phase4-external-review-phone-dark.png",
   "expected": "the Jevellan web app \"external review\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"external activity waits, retries, requires Changes review and publishes after reviewed acceptance\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The summary row says \"1 changed files\" instead of \"1 changed file\".",
-      "The line \"No checkpoint changes in this step.\" sits right above a non-empty uncommitted diff, which may confuse readers even though it's technically correct.",
-      "The diff line-number gutter is very dim against the dark background, so it's hard to see at phone size."
+      "The summary row says \"1 changed files\"; it should say \"1 changed file\".",
+      "The low-contrast muted gray text (\"No checkpoint changes in this step.\", \"Working copy diff\", \"No verification receipt yet.\", and the diff header lines) is readable but faint on the dark background.",
+      "The pink link-style \"value.txt\" under AGENT EVIDENCE stands out strongly against the rest of the muted dark palette."
     ]
   }
 }

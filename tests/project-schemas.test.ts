@@ -140,7 +140,7 @@ test('nested documents are strict too', () => {
 
 test('defaults match the brief and fill optional collections', () => {
   expect(settings).toEqual({ schema: 'project-work-settings-v3', projectId: 'project', revision: 0, defaultIsolation: 'worktree', coordinator: { modelId: null, effort: 'medium' }, setupCommand: null, maxRunningThreads: 6, maxRunningPerDevice: 4, threadTurnCap: 30,
-    allowMainIsolation: true, threadRules: '', autoMerge: false, riskyAreas: '', nightlyWindow: { enabled: false, time: '02:00', timezone: 'Europe/Lisbon' }, refill: { enabled: true, minIntervalMinutes: 30 } });
+    perDeviceLimits: {}, allowMainIsolation: true, threadRules: '', autoMerge: false, riskyAreas: '', nightlyWindow: { enabled: false, time: '02:00', timezone: 'Europe/Lisbon' }, refill: { enabled: true, minIntervalMinutes: 30 } });
   expect(() => defaultProjectWorkSettings('../escape')).toThrow();
   expect(ThreadReportSchema.parse(without(report, 'changedFiles')).changedFiles).toEqual([]);
   expect(ProjectDecisionSchema.parse(without(decision, 'options')).options).toEqual([]);

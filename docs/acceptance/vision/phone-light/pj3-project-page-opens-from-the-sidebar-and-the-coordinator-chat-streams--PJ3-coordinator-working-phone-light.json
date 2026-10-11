@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "PJ3 project page opens from the sidebar and the coordinator chat streams",
   "layout": "phone-light",
-  "screenshot": "docs/acceptance/screenshots/PJ3-coordinator-working-phone-light.png",
+  "screenshot": "screenshots/PJ3-coordinator-working-phone-light.png",
   "expected": "the Jevellan web app \"coordinator working\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PJ3 project page opens from the sidebar and the coordinator chat streams\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The composer placeholder is cut off at 'Tell the coordinator what you nee' because the stop and send buttons take up the input width; it's a placeholder hint only, and the input stays usable.",
-      "The 'Working…' status pill and the 'Claude Code Fable · high' subtitle use small monospace text, which is readable but a bit cramped at phone width.",
-      "The two working indicators (the header 'Working…' pill and the 'Coordinator is working…' footer) say the same thing twice."
+      "The tab row is cut off at the right edge ('Pull requests' is clipped). It looks like a horizontally scrollable strip.",
+      "The composer placeholder 'Tell the coordinator what you nee…' is truncated by the stop and send buttons.",
+      "The 'Working…' status pill text is truncated with an ellipsis."
     ]
   }
 }

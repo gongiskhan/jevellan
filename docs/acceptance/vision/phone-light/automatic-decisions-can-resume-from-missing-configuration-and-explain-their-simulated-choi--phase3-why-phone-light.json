@@ -4,15 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
   "layout": "phone-light",
-  "screenshot": "docs/acceptance/screenshots/phase3-why-phone-light.png",
+  "screenshot": "screenshots/phase3-why-phone-light.png",
   "expected": "the Jevellan web app \"why\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"automatic decisions can resume from missing configuration and explain their simulated choices\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Adversarial Revi…' label in the Next Step list is cut off with an ellipsis. The full option name doesn't show at phone width.",
-      "The last 'Corrections used' entry ('implement in Browser fixture, small change, no risky areas…') is clipped at the bottom of the screen. This looks like the page continuing past the visible area rather than a layout break, but you'd need to scroll to confirm.",
-      "The 'Jev' attribution label at the top right of the Next Step and Effort sections is terse and its meaning isn't obvious."
+      "The 'Adversarial Rev...' label in the NEXT STEP list is shortened with an ellipsis, so the full option name isn't visible.",
+      "The bottom of the viewport cuts off the last correction entry ('implement in Browser fixture, small change, no risky areas') partway through. It looks like normal scrollable overflow, not clipped content.",
+      "'Override and undo' is in the accent color and the action text is in a serif italic font. The mixed typography looks a bit inconsistent but is still readable.",
+      "The model 'Automatic Fable' and the effort 'high' are shown in the same accent color as the bar fills. This is fine, though the 'medium → high' line puts several emphasis styles close together."
     ]
   }
 }

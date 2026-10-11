@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "PJ3 a running thread shows its transcript, report card and accepts an interrupting message",
   "layout": "phone-light",
-  "screenshot": "docs/acceptance/screenshots/PJ3-thread-report-phone-light.png",
+  "screenshot": "screenshots/PJ3-thread-report-phone-light.png",
   "expected": "the Jevellan web app \"thread report\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PJ3 a running thread shows its transcript, report card and accepts an interrupting message\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis (\"Read through the project an...\"). The full prompt appears in the transcript below, so nothing is lost.",
-      "The terminal attach command at the bottom (\"jevellan thread attach thread_01M4GF20DKXQBS4N...\") is cut off with an ellipsis. A copy button sits next to it, so the full command is still available.",
-      "The worktree branch name in the metadata line wraps across lines (\"jv/read-through-the-project-and-list-what-e-mxthsx\"). It is still readable."
+      "The header title is cut off with an ellipsis ('Read through the project an...'). This looks intentional for a single-line header.",
+      "The terminal attach command is cut off with an ellipsis ('jevellan thread attach thread_01M4PAJRRZDB8WT...'). The copy button next to it still gives the full value.",
+      "The status chip says 'Idle', which doesn't match a running thread. This is a content/state question, not a rendering problem."
     ]
   }
 }

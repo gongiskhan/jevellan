@@ -4,14 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "PJ4b the Why panel explains placement and overrides apply",
   "layout": "desktop-light",
-  "screenshot": "docs/acceptance/screenshots/PJ4b-fallback-chip-desktop-light.png",
+  "screenshot": "screenshots/PJ4b-fallback-chip-desktop-light.png",
   "expected": "the Jevellan web app \"fallback chip\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PJ4b the Why panel explains placement and overrides apply\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar shortens long session titles and subtitles with ellipses (e.g. 'Context · Mesh journey fix…', 'Done · Improver sandbox · Mac.l…'). This is intended and doesn't affect this screen.",
-      "The main area below the Report card is mostly empty, which is expected for an idle thread with one turn."
+      "Sidebar session titles and metadata lines get truncated with ellipses (e.g. 'Context · J11 memory journ…', 'Done · J11 memory journey · dev-…'). The full text is presumably reachable on hover or when the session is opened.",
+      "The 'Placed without Jev: authentication failed' chip is small amber monospace text on a pale background. It is readable but low-contrast."
     ]
   }
 }

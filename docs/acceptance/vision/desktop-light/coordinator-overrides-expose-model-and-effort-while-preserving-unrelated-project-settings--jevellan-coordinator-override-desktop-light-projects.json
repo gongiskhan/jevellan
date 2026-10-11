@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background page behind the modal is blurred, so its text can't be read. That's expected while a modal is open.",
-      "In the background timeline, the cards behind the modal are covered, so their text is partly hidden ('Checks failing', 'Pull request #...'). That's expected when a modal is in front."
+      "Background page is blurred behind the modal overlay, as intended; the modal's title, explanation, Model and Effort selects, fresh-session checkbox, helper text and the Cancel and Apply buttons are all fully visible and readable",
+      "The background text shows 'Noted.' twice in a row in several places, a possible duplicate-entry rendering quirk"
     ]
   }
 }

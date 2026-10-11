@@ -4,15 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "composer choices apply once, keep conversation pins and explain corrections after reload",
   "layout": "phone-light",
-  "screenshot": "docs/acceptance/screenshots/phase3-composer-why-phone-light.png",
+  "screenshot": "screenshots/phase3-composer-why-phone-light.png",
   "expected": "the Jevellan web app \"composer why\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"composer choices apply once, keep conversation pins and explain corrections after reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Adversarial Revi...' label is truncated with an ellipsis in the score list.",
-      "The panel is scrolled, so score rows above 'Test' sit out of view under the header. The last correction ('Just override · effort: high → max') is cut off at the bottom edge, though the content looks scrollable.",
-      "Every score bar shows 0.00 with an empty track, so the score section carries little visual information."
+      "The 'Adversarial Rev…' label in the step list is cut short with an ellipsis, so the full step name can't be read.",
+      "The panel looks scrolled partway down. The step list starts right under the header divider with no top padding, and earlier rows are probably above the visible area.",
+      "The last visible correction item ('Just override · effort: high → max') runs past the bottom of the viewport. Its description line is partly cut off and needs scrolling to read.",
+      "All the bars in the step list are empty and every value is 0.00, so that section shows no useful data in this state."
     ]
   }
 }

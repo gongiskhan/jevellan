@@ -4,11 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "undo from the last closed work includes newer work and preserves both requests after reload",
   "layout": "desktop-light",
-  "screenshot": "docs/acceptance/screenshots/phase2-undo-following-confirm-desktop-light.png",
+  "screenshot": "screenshots/phase2-undo-following-confirm-desktop-light.png",
   "expected": "the Jevellan web app \"undo following confirm\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"undo from the last closed work includes newer work and preserves both requests after reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": []
+    "cosmetic": [
+      "The background behind the modal is blurred on purpose. The page underneath can't be read, but the dialog is in front, so this is expected.",
+      "The dialog's secondary explanation text is light gray. It is still readable but has lower contrast than the main paragraph."
+    ]
   }
 }

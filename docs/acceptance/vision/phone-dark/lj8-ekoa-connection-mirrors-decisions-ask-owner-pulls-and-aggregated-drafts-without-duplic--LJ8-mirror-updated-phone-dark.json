@@ -4,16 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "LJ8 Ekoa connection mirrors decisions, ask-owner pulls and aggregated drafts without duplicates",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/LJ8-mirror-updated-phone-dark.png",
+  "screenshot": "screenshots/LJ8-mirror-updated-phone-dark.png",
   "expected": "the Jevellan web app \"LJ8 mirror updated\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"LJ8 Ekoa connection mirrors decisions, ask-owner pulls and aggregated drafts without duplicates\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The first tab label ('Projects') fades out at the left edge of the scrollable tab strip. It can still be reached with the scroll chevron.",
-      "The 'Mirror tasks to Ekoa' checkbox sits on its own line above its label instead of next to it.",
-      "The 'Connected' card shows only a collapsed 'Available tools' disclosure, so the card looks sparse.",
-      "One mirrored task is labelled 'Projects fixture' while the others say 'Projects mirror'. This is inconsistent naming, not a layout problem."
+      "The 'Projects' tab label is partly hidden behind the left scroll arrow in the horizontally scrolling tab bar. The arrows can still be tapped to scroll, so it stays reachable.",
+      "The 'Mirror tasks to Ekoa' label sits below its checkbox instead of next to it, so it looks loosely tied to the control.",
+      "Much of the 'Saved · enter a replacement' placeholder and the helper text is low-contrast grey on the dark background, though it is still readable.",
+      "The 'Connected' card only has a collapsed 'Available tools' disclosure and shows no other connection details."
     ]
   }
 }

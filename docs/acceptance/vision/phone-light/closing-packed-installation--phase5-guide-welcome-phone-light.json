@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "Closing packed installation",
+  "layout": "phone-light",
+  "screenshot": "screenshots/phase5-guide-welcome-phone-light.png",
+  "expected": "the passphrase welcome screen with readable text and reachable setup controls",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The footer tagline 'AUTONOMOUS DEVELOPMENT, COORDINATED.' is small, widely letter-spaced gray text with fairly low contrast against the light background.",
+      "The helper text 'At least 8 characters.' is small and low contrast.",
+      "The passphrase field has no show/hide toggle and there is no confirm-passphrase field, so typing mistakes are easy to miss.",
+      "The brand icon next to 'Jevellan' looks like the Portuguese flag, which may not be the intended logo."
+    ]
+  }
+}

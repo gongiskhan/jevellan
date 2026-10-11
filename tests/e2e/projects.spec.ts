@@ -220,9 +220,18 @@ async function coordinatorSettled(page: Page, after = -1) {
  */
 async function tap(page: Page, control: Locator) {
   await expect(control).toBeVisible();
-  const box = (await control.boundingBox())!; const point = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  let point = { x: 0, y: 0 };
   // As Playwright's own click does, wait until nothing (a closing drawer, a toast) covers the control at that point.
-  await expect.poll(() => control.evaluate((element, { x, y }) => element.contains(document.elementFromPoint(x, y)), point)).toBe(true);
+  await expect.poll(async () => {
+    let box = await control.boundingBox(); if (!box) return false;
+    const viewport = page.viewportSize()!;
+    // Keep visible sticky controls put; scroll a lower card or a horizontally hidden phone tab into reach.
+    if (box.x < 0 || box.y < 0 || box.x + box.width > viewport.width || box.y + box.height > viewport.height) {
+      await control.scrollIntoViewIfNeeded(); box = await control.boundingBox(); if (!box) return false;
+    }
+    point = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    return control.evaluate((element, { x, y }) => element.contains(document.elementFromPoint(x, y)), point);
+  }).toBe(true);
   await page.mouse.click(point.x, point.y);
 }
 
@@ -701,7 +710,7 @@ test('PJ4b the Why panel explains placement and overrides apply', async ({ page 
   await tap(page, why); await expect(why).toHaveAttribute('aria-pressed', 'true');
   const panel = page.getByRole('dialog', { name: 'Why this placement', exact: true });
   await expect(panel.locator('.panel-eyebrow')).toHaveText('Tidy the README wording');
-  const section = (name: string) => panel.locator('.why-section').filter({ has: page.locator('h3', { hasText: new RegExp(`^${name}`) }) });
+  const section = (name: string) => panel.locator('.why-section').filter({ has: page.locator('h3', { hasText: new RegExp(`^${name}(?:\\s|$)`) }) });
   await expect(section('Placement').locator('h3')).toHaveText('Placement Jev');
   await expect(section('Placement').locator('.why-line')).toHaveText('Fixed: none');
   // Main is allowed on this project since phase 6, so Jev was asked the isolation too and kept the worktree.
@@ -1202,7 +1211,9 @@ test('LJ4 owner goals refill into a draft, approve on phone, obey daily caps and
   expect((await queue()).filter(task => task.source === 'refill')).toHaveLength(1);
   if (phone(info)) await tap(page, page.getByRole('tab', { name: /^Queue/ }));
   const card = page.locator('.pw-goal').filter({ hasText: 'Hardening through automated tests' });
-  await expect(card).toContainText('1 refilled today'); await tap(page, card.getByRole('button', { name: 'Pause', exact: true })); await expect(card).toContainText('Paused');
+  await expect(card).toContainText('1 refilled today');
+  // Goal actions scroll with the side column; normal click brings the lower card into view on desktop.
+  await card.getByRole('button', { name: 'Pause', exact: true }).click(); await expect(card).toContainText('Paused');
   await tap(page, page.getByRole('button', { name: 'New task', exact: true }));
   const taskDialog = page.getByRole('dialog', { name: 'New task', exact: true });
   await taskDialog.getByRole('textbox', { name: 'Title', exact: true }).fill('Paused goal task');
@@ -1277,9 +1288,11 @@ test('LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and ga
   await step('prepare'); await step('open'); await expect.poll(async () => (await tasks()).filter(task => task.nightlyFixFor && ['queued', 'active', 'in-review'].includes(task.state)).length, LONG).toBe(0);
   await step('fail'); await expect.poll(async () => (await view()).window?.state, LONG).toBe('finished');
   const failed = await view(); expect(failed.window?.failed).toBe(true); expect(failed.runs.find(run => run.jobId === deploy.id && failed.window!.taskIds.includes(run.taskId))?.conclusion).toBe('skipped');
-  await control('/projects/ekoa', { schema: 'fixture-ekoa-loop-v1', action: 'tick' });
-  const mirrored = await control('/projects/ekoa', { schema: 'fixture-ekoa-loop-v1', action: 'list' }) as { tasks: Array<{ title: string; status: string }> };
-  expect(mirrored.tasks.filter(row => row.title === 'Jevellan · Projects daily: night report')).toHaveLength(1);
+  await expect.poll(async () => {
+    await control('/projects/ekoa', { schema: 'fixture-ekoa-loop-v1', action: 'tick' });
+    const mirrored = await control('/projects/ekoa', { schema: 'fixture-ekoa-loop-v1', action: 'list' }) as { tasks: Array<{ title: string; status: string }> };
+    return mirrored.tasks.filter(row => row.title === 'Jevellan · Projects daily: night report').length;
+  }, LONG).toBe(1);
   await shot(page, 'nightly-failed-night-report'); expect(errors).toEqual([]);
 });
 
@@ -1348,6 +1361,9 @@ test('LJ7 two fix effort corrections appear first in the next fix Why panel', as
       const panel = page.getByRole('dialog', { name: 'Why this placement', exact: true });
       await expect(panel.getByRole('heading', { name: 'Corrections shown to Jev', exact: true })).toBeVisible();
       await expect(panel.locator('ol li')).toHaveText(sentences);
+      await panel.locator('ol').scrollIntoViewIfNeeded();
+      await expect(panel.locator('ol')).toBeInViewport();
+      await expect(panel.getByRole('heading', { name: 'Corrections shown to Jev', exact: true })).toBeInViewport();
       await shot(page, 'typed-corrections', false);
     }
   }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background chat is blurred behind the modal overlay. That's expected for a modal, but none of the background content can be read.",
-      "The modal sits partway down a very tall full-page capture (about 815–1185px of 2000px displayed), so most of the screenshot is the blurred background."
+      "The background is blurred and dimmed behind the modal, which is expected for an open dialog.",
+      "The modal sits low in a very tall page capture (around y≈1000–1450 of 2449), but it is fully visible and all of its controls can be reached."
     ]
   }
 }

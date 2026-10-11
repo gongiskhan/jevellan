@@ -3,6 +3,15 @@ import { lstatSync, mkdirSync, readFileSync, realpathSync, statSync } from 'node
 import { join } from 'node:path';
 import { inside } from '@jevellan/core';
 
+/** Pass secret references through Codex's stdio allow list, never their values. */
+export function codexMcpServers(servers: Record<string, { command: string; args: string[] }>) {
+  return Object.fromEntries(Object.entries(servers).map(([name, server]) => [name, {
+    command: server.command, args: server.args,
+    env_vars: ['JEVELLAN_STRETCH_TOKEN', 'JEVELLAN_DAEMON_URL', ...server.args.filter(arg => /^JEVELLAN_NATIVE_MCP_[a-f0-9]{16}$/u.test(arg))],
+    default_tools_approval_mode: 'approve',
+  }]));
+}
+
 /** Preserve the project path as one TOML key, including dots and symlinks. */
 export function projectTrustOverride(cwd: string): string {
   return `projects={${JSON.stringify(realpathSync(cwd))}={trust_level="untrusted"}}`;

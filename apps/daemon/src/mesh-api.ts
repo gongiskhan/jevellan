@@ -11,7 +11,7 @@ import { AgentAccessHubRequestSchema } from '@jevellan/core';
 import { DeviceTagsInputSchema, DeviceTagsRequestSchema } from '@jevellan/core';
 
 /** Project hub collections; `handleApi` leaves them to this route's own lifecycle gate (D247). */
-export const PROJECT_HUB_ROUTE = /^\/hub\/mesh\/projects\/([a-z]+)$/;
+export const PROJECT_HUB_ROUTE = /^\/hub\/mesh\/projects\/([a-z-]+)$/;
 export async function handleMeshDeviceApi(app: Application, request: IncomingMessage, response: ServerResponse, url: URL): Promise<boolean> {
   const path = url.pathname; if (!path.startsWith('/hub/mesh/')) return false;
   if (app.device.role !== 'hub') throw Object.assign(new Error('This endpoint belongs to the hub.'), { status: 404 });

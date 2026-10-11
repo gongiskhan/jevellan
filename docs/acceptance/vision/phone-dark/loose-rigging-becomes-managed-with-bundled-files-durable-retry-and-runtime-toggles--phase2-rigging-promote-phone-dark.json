@@ -4,15 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "loose Rigging becomes managed with bundled files, durable retry and runtime toggles",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/phase2-rigging-promote-phone-dark.png",
+  "screenshot": "screenshots/phase2-rigging-promote-phone-dark.png",
   "expected": "the Jevellan web app \"rigging promote\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"loose Rigging becomes managed with bundled files, durable retry and runtime toggles\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The disabled 'Claude Code · Current account' checkbox and its label are low-contrast grey on the dark background. They can still be read but are noticeably dimmer than the active 'Codex' option.",
-      "The helper text 'Instructions stay editable. Bundled files are retained when the instructions change.' is small and muted, so it reads with slightly reduced contrast.",
-      "Dimmed background content (the 'Make managed', 'Park' and 'Restore locally' buttons and the list rows) shows faintly around the modal edges. The modal fully covers the important area, so nothing overlaps its content."
+      "The 'Claude Code · Current account' checkbox and label are dimmed grey with low contrast. They are still readable, and the dimming probably shows the option is locked or disabled on purpose.",
+      "The background page shows faintly through the modal overlay near the bottom ('Make managed', 'browser-package' rows). This is normal behaviour for a modal backdrop."
     ]
   }
 }

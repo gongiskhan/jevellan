@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
   "layout": "desktop-dark",
-  "screenshot": "docs/acceptance/screenshots/phase3-automatic-desktop-dark.png",
+  "screenshot": "screenshots/phase3-automatic-desktop-dark.png",
   "expected": "the Jevellan web app \"automatic\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"automatic decisions can resume from missing configuration and explain their simulated choices\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The scrollable conversation list in the sidebar cuts off a fourth row partway through, just above the 'Some native sessions are unavailable' notice. Only part of its title shows. This is normal overflow in a scroll area, but the cut-off text looks slightly messy.",
-      "Conversation titles and subtitles in the sidebar are cut short with ellipses (e.g. 'Exercise automatic decisi…', 'Done · Automatic fixture · Mac…'). This truncation looks intentional.",
-      "The 'completed' status label in the 'Read project' tool card sits on its own line under the title instead of beside it, which leaves an awkward gap."
+      "In the sidebar conversation list, the fourth item is cut off halfway at the bottom of the scroll area, just above the 'Some native sessions are unavailable' note. It reads as clipped text rather than a clear scroll edge.",
+      "Sidebar conversation titles and subtitles are shortened with ellipses (e.g. 'Exercise automatic decisi…', 'Explain the memorybrows…'). This is expected for the narrow column but hides the full names.",
+      "There is a large empty gap between the step content and the input box at the bottom of the main pane."
     ]
   }
 }

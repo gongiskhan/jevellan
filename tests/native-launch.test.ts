@@ -12,6 +12,7 @@ import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { afterEach, expect, test } from 'vitest';
 import { nativePreToolUse } from '../packages/runtime-contract/dist/index.js';
 import type { NativeLaunchSetup } from '../packages/core/dist/index.js';
+import { codexMcpServers } from '../runtimes/codex/dist/configuration.js';
 
 let root = '';
 afterEach(() => { if (root) rmSync(root, { recursive: true, force: true }); root = ''; });
@@ -41,7 +42,11 @@ test('HTTP native MCP discovers and calls tools with ephemeral header authentica
   });
   await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve)); const port = (server.address() as AddressInfo).port;
   const key = 'JEVELLAN_NATIVE_MCP_0123456789abcdef', input = { schema: 'native-mcp-launch-v1', args: [], env: {}, url: `http://127.0.0.1:${port}/mcp`, headers: { Authorization: 'Bearer private-fixture' } };
-  const transport = new StdioClientTransport({ command: process.execPath, args: [fileURLToPath(new URL('../packages/runtime-contract/dist/native-mcp.js', import.meta.url)), key], env: { PATH: process.env.PATH ?? '', HOME: tmpdir(), [key]: JSON.stringify(input) }, stderr: 'pipe' });
+  const settings = codexMcpServers({ native: { command: process.execPath, args: [fileURLToPath(new URL('../packages/runtime-contract/dist/native-mcp.js', import.meta.url)), key] } });
+  const configured = settings.native!, inherited: Record<string, string> = { PATH: process.env.PATH ?? '', HOME: tmpdir(), [key]: JSON.stringify(input), UNRELATED_PRIVATE_TOKEN: 'must-not-forward' };
+  const forwarded = Object.fromEntries(['PATH', 'HOME', ...configured.env_vars].flatMap(name => inherited[name] === undefined ? [] : [[name, inherited[name]!]]));
+  const transport = new StdioClientTransport({ command: configured.command, args: configured.args, env: forwarded, stderr: 'pipe' });
+  expect(JSON.stringify(settings)).not.toContain('private-fixture'); expect(forwarded).not.toHaveProperty('UNRELATED_PRIVATE_TOKEN');
   const client = new Client({ name: 'fixture', version: '1' });
   try {
     await client.connect(transport); expect((await client.listTools()).tools.map(tool => tool.name)).toEqual(['say-hello']);

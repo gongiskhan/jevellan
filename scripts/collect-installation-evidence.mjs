@@ -18,13 +18,17 @@ const Checks = z.strictObject({
 const Receipt = z.object({ schema: z.literal('installation-command-check-v8'), at: z.iso.datetime(), passed: z.literal(true), firstRun: FirstRun,
   package: z.literal('real-packed-application'), work: z.literal('real-conversation-simulated-providers'), dependencies: z.literal('live'),
   serviceManager: z.literal('fake-owned-processes'), updateRelease: z.literal('simulated-version-0.2.0'), devices: z.literal('local-simulated-devices'), checks: Checks });
-const Evidence = z.strictObject({ schema: z.literal('j9-guided-v1'), runs: z.array(Receipt.extend({ screenshots: z.array(z.string().regex(/^screenshots\/phase5-guide-[a-z-]+\.png$/)) })).length(4) });
+const Version = z.string().regex(/^\d+\.\d+\.\d+$/);
+const ReceiptV9 = Receipt.extend({ schema: z.literal('installation-command-check-v9'), updateRelease: z.string().regex(/^simulated-version-\d+\.\d+\.\d+$/),
+  checks: Checks.extend({ updateVersion: Version, rollbackVersion: Version }) });
+const Receipts = z.union([Receipt, ReceiptV9]);
+const Evidence = z.strictObject({ schema: z.literal('j9-guided-v2'), runs: z.array(z.union([Receipt, ReceiptV9].map(schema => schema.extend({ screenshots: z.array(z.string().regex(/^screenshots\/phase5-guide-[a-z-]+\.png$/)) })))).length(4) });
 const NoticesEvidence = z.strictObject({ schema: z.literal('j9-installed-notices-v1'), files: InstallationNotices.shape.files,
   runs: z.array(InstallationNotices.omit({ files: true }).extend({ layout: FirstRun.shape.layout, theme: FirstRun.shape.theme })).length(4) });
 
 const roots = process.argv.slice(2).map(root => resolve(root));
 if (roots.length !== 4) throw new Error('Provide the four completed guided installation fixture directories.');
-const sources = roots.map(root => ({ root, receipt: Receipt.parse(JSON.parse(readFileSync(join(root, 'result.json'), 'utf8'))),
+const sources = roots.map(root => ({ root, receipt: Receipts.parse(JSON.parse(readFileSync(join(root, 'result.json'), 'utf8'))),
   notices: InstallationNotices.parse(JSON.parse(readFileSync(join(root, 'installation-notices.json'), 'utf8'))) }));
 if (new Set(sources.map(({ receipt }) => `${receipt.firstRun.layout}-${receipt.firstRun.theme}`)).size !== 4) throw new Error('Provide one result for each desktop/phone and light/dark layout.');
 if (new Set(sources.map(({ notices }) => JSON.stringify(notices.files))).size !== 1) throw new Error('The four installations contain different notice inventories.');
@@ -44,7 +48,7 @@ const runs = sources.map(({ root, receipt }) => {
   });
   return { ...receipt, screenshots };
 });
-const evidence = Evidence.parse({ schema: 'j9-guided-v1', runs });
+const evidence = Evidence.parse({ schema: 'j9-guided-v2', runs });
 for (const { source, destination } of copies) copyFileSync(source, resolve('docs/acceptance', destination));
 writeFileSync(resolve('docs/acceptance/J9-guided.json'), `${JSON.stringify(evidence, null, 2)}\n`);
 writeFileSync(resolve('docs/acceptance/J9-installed-notices.json'), `${JSON.stringify(noticeEvidence, null, 2)}\n`);

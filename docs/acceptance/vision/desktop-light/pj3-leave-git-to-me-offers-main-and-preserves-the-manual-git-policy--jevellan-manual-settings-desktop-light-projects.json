@@ -10,7 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background page under the modal scrim is dimmed and blurred on purpose, so its text (sidebar items, the coordinator panel) is hard to read. That's expected for a modal."
+      "The Time and Time zone fields look editable even though Nightly window is unchecked. They could be dimmed to show they don't apply.",
+      "The dialog body seems to scroll past the Time/Time zone row, but there is no clear scroll cue above the footer."
     ]
   }
 }

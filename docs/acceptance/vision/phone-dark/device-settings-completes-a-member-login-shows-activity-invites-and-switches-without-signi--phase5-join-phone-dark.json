@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "device Settings completes a member login, shows activity, invites and switches without signing in again",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/phase5-join-phone-dark.png",
+  "screenshot": "screenshots/phase5-join-phone-dark.png",
   "expected": "the Jevellan web app \"join\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"device Settings completes a member login, shows activity, invites and switches without signing in again\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The join code field and the end of the command show solid light-gray boxes instead of text. These look like intentional redaction masks for the screenshot, but if they aren't, the join code is unreadable.",
-      "The command breaks mid-word across lines ('htt' / 'p://127.0.0.1:31874'), which makes it harder to read and copy by eye on a narrow screen.",
-      "The light-gray join code box stands out sharply against the dark theme."
+      "The join code field is a solid light-gray box with no visible text, and the end of the command is covered by a white box. This looks like the capture tool hiding the changing join code, not a rendering failure. If it isn't a deliberate mask, the join code is unreadable.",
+      "The URL in the command block wraps in the middle of a word ('htt' / 'p://127.0.0.1:28774'), which makes it harder to read and copy by eye.",
+      "The device list behind the modal shows through the dim overlay; this is expected for a dialog."
     ]
   }
 }

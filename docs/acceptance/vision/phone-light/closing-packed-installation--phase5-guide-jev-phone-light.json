@@ -1,0 +1,21 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "Closing packed installation",
+  "layout": "phone-light",
+  "screenshot": "screenshots/phase5-guide-jev-phone-light.png",
+  "expected": "the Connect Jev setup step with readable text and reachable controls",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The disabled Continue button has low-contrast text (light grey on pale blue). That's normal for a disabled button, but it's hard to read.",
+      "The stepper wraps into a 2x2 grid. Progress bars appear only above steps 1 and 2, so steps 3 and 4 look different and the order is less clear.",
+      "The warning says to add the Jev key in Settings → Decisions, but there's a Jev key field right below it. The message is confusing on this screen.",
+      "The Jev key input has no placeholder or hint text.",
+      "The Test connection button doesn't look disabled even though the key field is empty.",
+      "There's a large empty area below the content on this mobile viewport."
+    ]
+  }
+}

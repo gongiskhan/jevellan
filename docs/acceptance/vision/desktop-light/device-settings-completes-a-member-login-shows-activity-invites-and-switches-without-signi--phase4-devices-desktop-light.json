@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "device Settings completes a member login, shows activity, invites and switches without signing in again",
   "layout": "desktop-light",
-  "screenshot": "docs/acceptance/screenshots/phase4-devices-desktop-light.png",
+  "screenshot": "screenshots/phase4-devices-desktop-light.png",
   "expected": "the Jevellan web app \"devices\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"device Settings completes a member login, shows activity, invites and switches without signing in again\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar, the fourth conversation row is clipped by the scroll area just above 'Some native sessions are unavailable'. Only a sliver of its title shows. This looks like normal scroll overflow.",
-      "In the sidebar, conversation titles and subtitles are cut off with ellipses (for example 'Context · Outside context …' and 'Exercise external activity g…'). This is intended single-line truncation.",
-      "The device cards in the two-column grid have different heights. The 'Browser member' card is shorter than the 'Mac.lan' card, which leaves empty space under it."
+      "Sidebar conversation titles and subtitles are cut off with ellipses (for example, 'Context · Outside context…', 'Exercise external activity…'). This is intentional truncation.",
+      "In the 'Offline fixture' card, the 'Inspect worktrees' and 'Open' buttons look faded or disabled even though the device is offline. Their state is unclear but they are still legible.",
+      "The 'Automatic device choice' checkbox and its 'Coming later.' label are low-contrast grey."
     ]
   }
 }
