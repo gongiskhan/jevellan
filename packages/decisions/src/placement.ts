@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { rankAccounts, type RankedAccount } from '@jevellan/accounts';
-import { EffortSchema, IsolationSchema, mapEffort, PlacementRecordSchema, type Account, type AccountStatus, type Configuration, type DevicePresence, type Effort, type ExclusionReason, type Isolation, type JevCall, type ModelOption, type PlacementField, type PlacementOverride, type PlacementRecord, type Project, type SecretRedactor } from '@jevellan/core';
+import { DeviceFactsSchema, DeviceTagsSchema, deviceResourceRefusal, EffortSchema, IsolationSchema, mapEffort, PlacementRecordSchema, type DeviceFacts, type Account, type AccountStatus, type Configuration, type DevicePresence, type Effort, type ExclusionReason, type Isolation, type JevCall, type ModelOption, type PlacementField, type PlacementOverride, type PlacementRecord, type Project, type SecretRedactor } from '@jevellan/core';
 import { JevError, type JevQuestions, type JevResponse } from './contract.js';
 import { askJev, type DecisionClient } from './engine.js';
 import type { RuntimeSupport } from './selection.js';
@@ -43,6 +43,7 @@ export const ACCOUNT_REASON_TEXT: Record<ExclusionReason, string> = {
 export type PlacementDevice = {
   id: string; name: string; status: DevicePresence; revoked: boolean; hasPath: boolean; allowed: boolean; running: number;
   isCoordinator: boolean; checkoutBranch?: string | undefined;
+  tags?: string[] | undefined; facts?: DeviceFacts | undefined;
   /** Title of the running main thread or conversation owner holding this device's checkout. */
   mainBlockedBy?: string | undefined;
 };
@@ -54,6 +55,7 @@ export type PlacementInput = {
   settings: Configuration['x-jevellan']; project: Project; defaultIsolation: Isolation;
   runtimes: ReadonlyMap<string, PlacementRuntime>; accounts: Account[]; statuses: AccountStatus[]; devices: PlacementDevice[];
   maxRunningPerDevice: number;
+  perDeviceLimits?: Record<string, number> | undefined; needs?: string[] | undefined;
   /** True when the thread will queue anyway (project limit), so full devices stay candidates (D9). */
   ignoreRunningLimit: boolean;
   /** The device placing the thread; it always counts as online (D8). */
@@ -89,7 +91,12 @@ function deviceReason(input: PlacementInput, device: PlacementDevice, main: bool
   if (!input.gates.remoteDevices && device.id !== input.deviceId) return REMOTE_GATE_REASON;
   if (device.revoked || (device.id !== input.deviceId && device.status !== 'online')) return 'offline';
   if (!device.hasPath || !device.allowed) return 'not set up for this project';
-  if (limits && device.running >= input.maxRunningPerDevice) return `at its running limit (${input.maxRunningPerDevice})`;
+  const missing = (input.needs ?? []).filter(tag => !device.tags?.includes(tag));
+  if (missing.length) return `missing tags: ${missing.join(', ')}`;
+  const resource = deviceResourceRefusal(device.name, device.facts);
+  if (resource) return resource;
+  const limit = input.perDeviceLimits?.[device.id] ?? input.maxRunningPerDevice;
+  if (limits && device.running >= limit) return `at its running limit (${limit})`;
   if (main && device.mainBlockedBy) return `main checkout busy: ${device.mainBlockedBy}`;
   if (main && device.checkoutBranch && device.checkoutBranch !== 'main') return `checkout is on ${device.checkoutBranch}, not main`;
   return undefined;
@@ -160,7 +167,14 @@ export function placementCandidates(input: PlacementInput): PlacementCandidates 
   };
   const limited = assess(!input.ignoreRunningLimit);
   const chosen = limited.top.models.length ? limited : input.ignoreRunningLimit ? undefined : assess(false);
-  if (!chosen?.top.models.length) return { refused: refusal(input, (chosen ?? limited).top), retryable: true };
+  if (!chosen?.top.models.length) {
+    const available = input.devices.filter(device => device.allowed && device.hasPath && !device.revoked && (device.id === input.deviceId || device.status === 'online') && (!fixed.deviceId || device.id === fixed.deviceId));
+    const resources = available.map(device => deviceResourceRefusal(device.name, device.facts));
+    if (available.length && resources.every(Boolean)) return { refused: resources.join(' '), retryable: true };
+    if (available.length && input.needs?.length && available.every(device => input.needs!.some(tag => !device.tags?.includes(tag)))) return { refused: refusal(input, (chosen ?? limited).top), retryable: false };
+    if (fixed.deviceId && !input.devices.find(device => device.id === fixed.deviceId)?.allowed) return { refused: refusal(input, (chosen ?? limited).top), retryable: false };
+    return { refused: refusal(input, (chosen ?? limited).top), retryable: true };
+  }
   const isolations: Isolation[] = [...(fixed.isolation === 'main' ? [] : ['worktree' as const]), ...(chosen.main ? ['main' as const] : [])];
   return { ...options(chosen.top), isolations, atLimit: chosen !== limited, ...(chosen.main ? { main: options(chosen.main) } : {}) };
 }
@@ -214,6 +228,7 @@ function placementRecord(input: PlacementInput, { isolation, options, entry, dev
     ...(outcome.probabilities ? { probabilities: outcome.probabilities } : {}),
     eligibleModels: options.models.map((model) => model.model.id), excludedModels: options.excludedModels,
     eligibleDevices: choice.devices.map((candidate) => candidate.id), excludedDevices: choice.excluded,
+    ...(input.devices.some(device => device.facts) ? { deviceFacts: input.devices.map(device => ({ deviceId: device.id, name: device.name, running: device.running, tags: device.tags ?? [], ...(device.facts ? { facts: device.facts } : {}) })) } : {}),
     ...(outcome.error ? { error: { kind: outcome.error.kind, message: outcome.error.message.slice(0, 300) } } : {}),
     jevCalls: [...outcome.calls], decidedAt: new Date(input.now).toISOString(),
   });
@@ -248,6 +263,7 @@ export const PlacementStateSchema = z.strictObject({
   project: z.strictObject({ name: text, defaultIsolation: IsolationSchema, gitPolicy: z.enum(['main', 'external']).optional() }),
   thread: z.strictObject({ title: text, task: text.max(TASK_CHARS), coordinatorNote: text.max(600).optional() }),
   activeThreads: z.array(z.strictObject({ title: text, isolation: IsolationSchema, device: text, model: text, effort: EffortSchema, reservedPaths: z.array(text) })).max(50),
+  devices: z.array(z.strictObject({ name: text, running: z.number().int().nonnegative(), tags: DeviceTagsSchema, facts: DeviceFactsSchema.optional() })).max(200).optional(),
 });
 export type PlacementState = z.infer<typeof PlacementStateSchema>;
 /** A non-terminal thread of the project as the packet shows it: device name and model label, not ids. */
@@ -282,6 +298,7 @@ export function buildPlacementState(input: PlacementStateInput): { state: string
     project: { name: input.project.name, defaultIsolation: input.defaultIsolation === 'main' && !mainAllowed ? 'worktree' : input.defaultIsolation, gitPolicy: input.project.branchPolicy },
     thread: { title: packet.title, task: packet.task, ...(note ? { coordinatorNote: note } : {}) },
     activeThreads: packet.activeThreads.slice(-50).map((thread) => ({ title: thread.title, isolation: thread.isolation, device: thread.device, model: thread.model, effort: thread.effort, reservedPaths: [...thread.reservedPaths] })),
+    ...(input.devices.some(device => device.facts) ? { devices: input.devices.map(device => ({ name: device.name, running: device.running, tags: device.tags ?? [], ...(device.facts ? { facts: device.facts } : {}) })) } : {}),
   } satisfies PlacementState);
   const { task, coordinatorNote } = redacted.thread;
   const packed = PlacementStateSchema.parse({ ...redacted, task: { ...redacted.task, goal: redacted.task.goal ? { ...redacted.task.goal, motivation: redacted.task.goal.motivation.slice(0, 600) } : null }, thread: { ...redacted.thread,
@@ -311,7 +328,9 @@ export function preparePlacementA(input: PlacementInput, candidates: PlacementCa
   return questions;
 }
 
-const deviceCriterion = (device: PlacementDevice) => `${device.name}: ${device.running} threads running here${device.isCoordinator ? ", this is the coordinator's device" : ''}${device.checkoutBranch ? `, project checkout is on ${device.checkoutBranch}` : ''}`;
+const deviceCriterion = (device: PlacementDevice) => device.facts
+  ? `${device.name}: ${device.running} running, load ${Number(device.facts.load5.toFixed(1))} on ${device.facts.cores} cores, ${Math.floor(device.facts.freeDiskBytes / 1e9)} GB free, ${Number((device.facts.freeMemoryBytes / 1e9).toFixed(1))} GB memory free, tags ${(device.tags ?? []).join(', ') || 'none'}`
+  : `${device.name}: ${device.running} threads running here${device.isCoordinator ? ", this is the coordinator's device" : ''}${device.checkoutBranch ? `, project checkout is on ${device.checkoutBranch}` : ''}${device.tags ? `, tags ${device.tags.join(', ') || 'none'}` : ''}`;
 /** Call B (brief 10): one option per candidate device with an eligible account for the chosen model under the chosen isolation. */
 export function preparePlacementB(input: PlacementInput, candidates: PlacementCandidates, chosen: { isolation: Isolation; model: ModelOption }): JevQuestions {
   const options = placementOptions(candidates, chosen.isolation);

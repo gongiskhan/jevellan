@@ -13,6 +13,10 @@ The Mac mini keeps serving its existing apps at their existing URLs, from their 
 
 dev-madrid is a working member with dedicated project clones. Placement considers only allowed, available devices. Device facts include cores, load, memory, free disk and active work. Owner-editable tags describe requirements such as `mac`, `linux`, `residential`, `datacenter` and `browser-automation`. Tasks' required tags are a hard eligibility filter. Devices refuse new work below 20 GB free disk or above a five-minute load of twice their core count. Per-device limits also apply. Settings shows worktree disk use and offers confirmed cleanup of orphaned worktrees older than seven days.
 
+Heartbeat facts inform placement; each receiving worker checks fresh local resources before preparation. Fixed devices and owner overrides obey the same hard tags and apps-only exclusions. Settings defaults old documents to no per-device overrides and preserves existing overrides on ordinary settings saves. Placement records retain device facts for Why. Tags are owner-only, persist through heartbeats and cannot change apps-only policy.
+
+Worktree usage counts allocated bytes inside Jevellan's home, without following symlinks. Cleanup confirms an explicit fingerprinted selection older than seven days, then rechecks ownership, process receipts, live process working directories and registered checkouts under the daemon's maintenance lock. It removes only those trees and their own Git registrations. Active work, uncertain process state or a changed tree refuses removal. `lsof` is needed for the live process check; an unavailable check blocks cleanup.
+
 ## Sessions and instructions
 
 Claude threads and coordinators run through the Claude Agent SDK; Codex threads run through the Codex SDK. Each uses an isolated account home. The runtime reads the owner's supported native instructions, skills, prompts, agents, commands, styles, plugins, hooks and MCP configuration on its device. A change applies on the next turn, including resumed sessions.

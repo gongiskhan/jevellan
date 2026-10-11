@@ -94,10 +94,18 @@ export const AccountStatusSchema = z.preprocess((value) => value && typeof value
 export type AccountStatus = z.infer<typeof AccountStatusSchema>;
 
 export const DeviceWorkPolicySchema = z.strictObject({ schema: z.literal('device-work-policy-v1'), mode: z.enum(['work', 'apps-only']) });
+export const DeviceTagsSchema = z.array(z.string().regex(/^[a-z0-9-]{1,32}$/u)).max(32).refine(value => new Set(value).size === value.length, 'Tags must be distinct.');
+/** Installation defaults; the owner can replace these, including with an empty list. */
+export function seedDeviceTags(os: string, role: string): string[] {
+  return os === 'darwin' ? ['mac', 'residential', ...(role === 'hub' ? ['browser-automation'] : [])] : ['linux', 'datacenter'];
+}
+export const DeviceFactsSchema = z.strictObject({ schema: z.literal('device-facts-v1'), cores: z.number().int().positive(), load1: z.number().nonnegative(), load5: z.number().nonnegative(),
+  totalMemoryBytes: z.number().nonnegative(), freeMemoryBytes: z.number().nonnegative(), freeDiskBytes: z.number().nonnegative(), os: z.enum(['darwin', 'linux']), runningThreads: z.array(IdSchema), runningJobRuns: z.array(IdSchema) });
+export type DeviceFacts = z.infer<typeof DeviceFactsSchema>;
 export const DeviceSchema = z.strictObject({
   schema: z.literal('device-v1'), id: IdSchema, name: text, role: z.enum(['hub', 'member']), url: z.url(),
   os: z.enum(['darwin', 'linux']), version: text, joinedAt: TimestampSchema, lastHeartbeatAt: TimestampSchema.optional(),
-  workPolicy: DeviceWorkPolicySchema.optional(),
+  workPolicy: DeviceWorkPolicySchema.optional(), tags: DeviceTagsSchema.optional(),
 });
 export type Device = z.infer<typeof DeviceSchema>;
 export const DeviceConfigSchema = z.strictObject({
@@ -129,6 +137,7 @@ export const HeartbeatSchema = z.strictObject({
   runningConversations: z.array(IdSchema), projects: z.array(z.strictObject({ projectId: IdSchema, path: text, branch: text, head: text, dirty: z.boolean(), ahead: count, behind: count })),
   externalSessions: z.array(ExternalSessionSchema), load: z.strictObject({ cpuPct: percentage, memFreeMb: z.number().nonnegative() }),
   workPolicy: DeviceWorkPolicySchema.optional(),
+  facts: DeviceFactsSchema.optional(),
 });
 export type Heartbeat = z.infer<typeof HeartbeatSchema>;
 

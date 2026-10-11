@@ -7,6 +7,7 @@ import { HubProtocolError, type MemberHubClient } from './client.js';
 import { HubRigging } from './rigging.js';
 import { settingsMutation } from './settings-mutation.js';
 import { createHash } from 'node:crypto';
+import { DeviceSchema, parseGitHubRemote } from '@jevellan/core';
 
 export class HubState {
   readonly configuration: SharedConfiguration;
@@ -28,6 +29,9 @@ export class HubState {
       list: () => hub.list('projects', ProjectSchema).map(projectView),
       put: (raw, revision, clientRequestId) => {
         const project = ProjectSchema.parse(raw); clean(project);
+        const repository = parseGitHubRemote(project.remoteUrl ?? '');
+        if (repository?.owner === 'gongiskhan' && repository.repo === 'ekoa-code' && project.allowedDevices?.some(id => hub.get('devices', id, DeviceSchema)?.document.workPolicy?.mode === 'apps-only'))
+          throw Object.assign(new Error('Ekoa Code cannot run on an apps-only device.'), { status: 409 });
         return settingsMutation(hub, deviceId, 'project-put', { project, revision }, clientRequestId, ProjectViewSchema, () => {
           const previous = hub.get('projects', project.id, ProjectSchema)?.document;
           if (previous && hub.list('checkout-ownership', CheckoutClaimSchema).some(({ document: claim }) => claim.held && (previous.paths[claim.deviceId] === claim.path || hub.get('conversations', claim.conversationId, ConversationIndexSchema)?.document.projectId === project.id))) throw Object.assign(new Error('This project is in use. Finish its open work before changing its settings.'), { status: 409 });

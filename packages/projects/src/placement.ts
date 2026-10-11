@@ -3,7 +3,7 @@ import type { z } from 'zod';
 import type { AccountService } from '@jevellan/accounts';
 import {
   HubUnavailable, ProjectDeviceSetupSchema, isTerminal, type AccountView, type Configuration, type DeviceRosterSchema, type PlacementRecord, type Project, type ProjectDeviceSetup, type ProjectHub,
-  type ProjectWorkSettings, type SecretRedactor, type ThreadIndex,
+  type DeviceFacts, type ProjectWorkSettings, type SecretRedactor, type ThreadIndex,
 } from '@jevellan/core';
 import {
   JevError, decidePlacement, fixedPlacementFields, placementCandidates, placementDeviceSetup, type DecisionClient, type PlacementActiveThread, type PlacementDevice, type PlacementFixed,
@@ -44,6 +44,7 @@ export type PlacementOptions = {
   decisionClient?(): Promise<DecisionClient>;
   redactor: Pick<SecretRedactor, 'document'>;
   now?(): number; gates?: PlacementGates;
+  facts?(): DeviceFacts;
 };
 const NO_KEY: DecisionClient = { decide: async () => { throw new JevError('no-key'); } };
 /** Packet reads are best effort: during a hub outage Jev still places the thread with what this device knows. */
@@ -74,6 +75,7 @@ export class Placement {
       settings, project, defaultIsolation: workSettings.defaultIsolation, runtimes: this.#runtimes(),
       accounts: accounts.map((view) => view.account), statuses: accounts.flatMap((view) => view.statuses), devices: this.#devices(project, roster, input.coordinatorDeviceId, counts.devices, held),
       maxRunningPerDevice: workSettings.maxRunningPerDevice, ignoreRunningLimit: input.ignoreRunningLimit,
+      perDeviceLimits: workSettings.perDeviceLimits, needs: input.taskContext?.needs,
       deviceId: this.#o.deviceId, coordinatorDeviceId: input.coordinatorDeviceId, gates: { ...this.#o.gates, mainIsolation: this.#o.gates.mainIsolation && workSettings.allowMainIsolation }, fixed: input.fixed, now: this.#o.now(),
     };
   }
@@ -100,9 +102,10 @@ export class Placement {
     const device = (id: string, name: string) => ({ id, name, hasPath: !!project.paths[id], allowed: roster.devices.find(view => view.device.id === id)?.device.workPolicy?.mode !== 'apps-only' && (!project.allowedDevices || project.allowedDevices.includes(id)),
       running: counts?.get(id) ?? 0, isCoordinator: id === coordinatorDeviceId, ...(held?.has(id) ? { mainBlockedBy: held.get(id)! } : {}) });
     const devices: PlacementDevice[] = roster.devices.map((view) => ({ ...device(view.device.id, view.device.name), status: view.status, revoked: view.revoked,
+      tags: view.device.tags, facts: view.device.id === this.#o.deviceId ? this.#o.facts?.() ?? view.heartbeat?.facts : view.heartbeat?.facts,
       checkoutBranch: view.heartbeat?.projects.find((entry) => entry.projectId === project.id)?.branch }));
     // The placing device is always a candidate device row, even before its first heartbeat reached the roster (D8).
-    if (!devices.some((entry) => entry.id === this.#o.deviceId)) devices.unshift({ ...device(this.#o.deviceId, this.#o.deviceName), status: 'online', revoked: false });
+    if (!devices.some((entry) => entry.id === this.#o.deviceId)) devices.unshift({ ...device(this.#o.deviceId, this.#o.deviceName), status: 'online', revoked: false, facts: this.#o.facts?.() });
     return devices;
   }
   /**
@@ -141,7 +144,7 @@ export class Placement {
     const type = input.taskContext?.type ?? 'feature';
     const [remote, same, other, reservations] = await Promise.all([bestEffort(this.#indexes(projectId), []), bestEffort(this.#o.hub.recentOverrides(projectId, 8, { type, match: 'same' }), []),
       bestEffort(this.#o.hub.recentOverrides(projectId, 4, { type, match: 'other' }), []), bestEffort(this.#o.hub.reservations(projectId), [])]);
-    const overrides = [...same, ...other];
+    const overrides = [...new Map([...same, ...other].map(entry => [entry.id, entry])).values()];
     const indexes = new Map(remote.map((index) => [index.id, index]));
     for (const index of this.#o.local(projectId)) indexes.set(index.id, index);
     const device = (deviceId: string) => devices.find((entry) => entry.id === deviceId)?.name ?? deviceId;

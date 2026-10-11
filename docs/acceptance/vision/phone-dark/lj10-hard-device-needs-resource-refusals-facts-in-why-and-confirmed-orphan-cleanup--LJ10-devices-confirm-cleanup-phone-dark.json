@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ10 hard device needs, resource refusals, facts in Why and confirmed orphan cleanup",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/LJ10-devices-confirm-cleanup-phone-dark.png",
+  "expected": "the Jevellan web app \"LJ10 devices confirm cleanup\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"LJ10 hard device needs, resource refusals, facts in Why and confirmed orphan cleanup\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Background content behind the modal is heavily dimmed and blurred. That's normal for a confirm dialog.",
+      "The device tags text 'mac, residential, browser-automation, phone-reach' runs past the right edge of its input behind the overlay.",
+      "The 'Remove 1 worktree … using 0 GB?' sentence pairs a positive count with 0 GB, which may look odd for a fixture."
+    ]
+  }
+}

@@ -6,6 +6,7 @@ export * from './stores.js';
 export * from './git.js';
 export * from './verification.js';
 export * from './worktree.js';
+export * from './worktree-disk.js';
 export * from './transcript.js';
 export * from './admission.js';
 export * from './placement.js';

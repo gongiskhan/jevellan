@@ -1,5 +1,5 @@
 import { startEkoaFixture } from '../tests/fixtures/ekoa-server.mjs';
-import { ProjectDecisionSchema, ProjectWorkTaskSchema, ThreadIndexSchema } from '../packages/core/dist/index.js';
+import { DeviceSchema, DeviceFactsSchema, ProjectDecisionSchema, ProjectWorkTaskSchema, ThreadIndexSchema } from '../packages/core/dist/index.js';
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { execFileSync, spawn } from 'node:child_process';
@@ -76,6 +76,9 @@ const githubFetch = async (url, init) => {
 let projectClockOffset = 0;
 let frozenProjectClock;
 let nightlyLateFix = false;
+const simulatedFacts = (os = 'darwin') => DeviceFactsSchema.parse({ schema: 'device-facts-v1', cores: 8, load1: 1, load5: 2, totalMemoryBytes: 32e9, freeMemoryBytes: 12e9, freeDiskBytes: 80e9, os, runningThreads: [], runningJobRuns: [] });
+let hubFacts = simulatedFacts(), memberFacts = simulatedFacts('linux');
+const devicePlacementPackets = [];
 const projectOptions = github ? { githubBaseUrl: github.url, githubFetch, projectTimers: { now: () => frozenProjectClock ?? Date.now() + projectClockOffset, prPollMs: 2_000, coordinatorStartMs: 100, inboxPollMs: 500, queueSweepMs: 1_000, outboxRetryMs: 500, outboxMaxMs: 2_000 } } : {};
 const memberProjectOptions = github ? { ...projectOptions, projectTimers: { ...projectOptions.projectTimers, periodic: true } } : {};
 const projectPause = (ms, signal) => new Promise((resolve) => {
@@ -145,6 +148,7 @@ const LONG_TOOLS = [['Read', { file_path: 'README.md' }, '# Projects app\n\nA sm
 const longThreads = new Set();
 function threadStep(input) {
   const report = (status, summary, extra = {}) => async (turn) => { await projectPause(350, turn.signal); turn.say(summary); await projectTool(turn, 'jevellan_thread_report', { status, summary, ...extra }); return { status: 'completed' }; };
+  if (input.prompt.includes('LJ10 device:')) return report('done', 'Checked the device placement without changing files.');
   if (input.prompt.includes('LJ5 nightly fix:')) return async turn => {
     if (nightlyLateFix && await hold('LJ5 late fix', turn.signal) === 'aborted') return { status: 'interrupted' };
     writeFileSync(join(turn.input.cwd, 'nightly-fix.txt'), `${frozenProjectClock}\n`);
@@ -295,6 +299,7 @@ async function improverDraft(input) {
 // that thread is placed without Jev. The device is this hub's own key (the member's for PJ5 tasks), found by id or name, never
 // by position: criteria order is not a contract.
 function placementAnswers(body, state) {
+  if (state.thread.task.includes('LJ10 device:')) devicePlacementPackets.push(state);
   if (state.thread.task.includes('PJ4b fallback')) return new Response(null, { status: 401 });
   const answers = Object.fromEntries(Object.entries(body.questions).map(([id, question]) => {
     const keys = Object.keys(question.criteria);
@@ -332,7 +337,7 @@ const nativeSkill = join(root, 'user', '.claude', 'skills', 'say-hello'); mkdirS
 writeFileSync(join(nativeSkill, 'SKILL.md'), '---\nname: say-hello\ndescription: Say hello\n---\nHello from the fixture.\n');
 writeFileSync(join(root, 'user', '.claude', 'CLAUDE.md'), 'Use the project rules.\n');
 writeFileSync(join(root, 'user', '.claude.json'), JSON.stringify({ mcpServers: { fixture_hello: { command: process.execPath, args: ['fixture-hello.mjs'] } } }));
-const application = new Application({ homes: new Homes(join(root, 'user', '.jevellan'), join(root, 'user')), port, decisionFetch, ...projectOptions, repositoryVisibility: async (path) => path === join(root, 'memory-project') ? 'PUBLIC' : 'UNKNOWN', runtimes: (context) => {
+const application = new Application({ homes: new Homes(join(root, 'user', '.jevellan'), join(root, 'user')), port, decisionFetch, deviceFacts: () => hubFacts, ...projectOptions, repositoryVisibility: async (path) => path === join(root, 'memory-project') ? 'PUBLIC' : 'UNKNOWN', runtimes: (context) => {
   const claude = createClaude(context); const codex = createCodex(context);
   for (const runtime of [claude, codex]) {
     const fake = new FakeRuntime(); fake.capabilities.readOnlyEnforced = true;
@@ -506,7 +511,7 @@ await new Promise(resolve => server.listen(port, '127.0.0.1', resolve));
 const memberHomes = new Homes(join(root, 'member-home'), join(root, 'user'));
 const FixtureAuthSchema = z.strictObject({ schema: z.literal('fixture-auth-v1'), fixture_login: z.literal(true) });
 await joinMember(memberHomes, { schema: 'member-join-input-v1', hubUrl: `http://127.0.0.1:${port}`, code: application.mesh.invite().code, device: { name: 'Browser member', url: `http://127.0.0.1:${port + 100}`, os: 'linux', version: '0.1.0' } }, { redactor: new SecretRedactor() });
-member = new Application({ homes: memberHomes, port: port + 100, timers: false, decisionFetch, ...memberProjectOptions, runtimes: context => {
+member = new Application({ homes: memberHomes, port: port + 100, timers: false, decisionFetch, deviceFacts: () => memberFacts, ...memberProjectOptions, runtimes: context => {
   const runtime = createCodex(context);
   const fake = new FakeRuntime(); fake.capabilities.readOnlyEnforced = true;
   const turns = new FakeRuntime(); runtime.startTurn = projectsMode ? scriptedTurns(turns) : input => turns.startTurn(input);
@@ -657,6 +662,7 @@ const ControlReleaseSchema = z.strictObject({ schema: z.literal('fixture-release
 const ControlNotebookSchema = z.strictObject({ schema: z.literal('fixture-notebook-v1'), content: z.string().max(65536) });
 const ControlTokenSchema = z.strictObject({ schema: z.literal('fixture-github-token-v1'), saved: z.boolean() });
 const ControlAttachSchema = z.strictObject({ schema: z.literal('fixture-attach-v1'), threadId: z.string().min(1).max(200) });
+const ControlDevicesSchema = z.strictObject({ schema: z.literal('fixture-devices-v1'), action: z.enum(['prepare', 'low-disk', 'busy', 'healthy', 'orphan', 'reset']) });
 async function projectControl(request, response) {
   const send = (status, value) => { response.writeHead(status, { 'Content-Type': 'application/json' }).end(JSON.stringify(value)); };
   const chunks = []; for await (const chunk of request) chunks.push(chunk);
@@ -665,7 +671,27 @@ async function projectControl(request, response) {
   const parse = (schema) => { const parsed = schema.safeParse(body); if (!parsed.success) send(400, { message: parsed.error.issues.map((issue) => issue.message).join(' ') }); return parsed.success ? parsed.data : undefined; };
   const pull = /^\/projects\/github\/(\d+)$/.exec(request.url);
   let input;
-  if (pull && (input = parse(ControlPullSchema))) {
+  if (request.url === '/projects/devices' && (input = parse(ControlDevicesSchema))) {
+    if (input.action === 'prepare') {
+      for (const app of [application, member]) application.devices.updateTags({ schema: 'device-tags-input-v1', deviceId: app.device.deviceId, tags: app === application ? ['mac', 'residential', 'browser-automation'] : ['linux', 'datacenter'] });
+      for (const { project } of await application.state.projects.list()) {
+        const settings = await application.projectWork.admission.settings(project.id);
+        await application.projectHub.putSettings({ ...settings, nightlyWindow: { ...settings.nightlyWindow, enabled: false }, refill: { ...settings.refill, enabled: false } }, settings.revision);
+      }
+      const mini = application.devices.join({ schema: 'join-device-v1', code: application.mesh.invite().code, requestId: `mini_${randomUUID()}`, device: { id: 'dev_mini_apps', name: 'Mini apps only', url: `http://127.0.0.1:${port + 150}`, os: 'darwin', version: '0.1.0' } }).device;
+      const row = application.hub.get('devices', mini.id, DeviceSchema);
+      application.hub.put('devices', mini.id, DeviceSchema, { ...row.document, workPolicy: { schema: 'device-work-policy-v1', mode: 'apps-only' } }, row.revision);
+      application.devices.heartbeat(mini.id, { schema: 'heartbeat-v1', deviceId: mini.id, at: new Date().toISOString(), version: '0.1.0', runningConversations: [], projects: [], externalSessions: [], load: { cpuPct: 0, memFreeMb: 10000 }, facts: simulatedFacts(), workPolicy: { schema: 'device-work-policy-v1', mode: 'work' } });
+    } else if (input.action === 'low-disk') hubFacts = { ...simulatedFacts(), freeDiskBytes: 19e9 };
+    else if (input.action === 'busy') hubFacts = { ...simulatedFacts(), load5: 17 };
+    else if (input.action === 'healthy' || input.action === 'reset') { hubFacts = simulatedFacts(); memberFacts = simulatedFacts('linux'); }
+    else {
+      const path = application.homes.ensure('worktrees', 'projects_fixture', 'orphan_fixture'); writeFileSync(join(path, 'fixture.txt'), 'Disposable worktree fixture.');
+      frozenProjectClock = Date.now() + 8 * 24 * 3_600_000;
+    }
+    await application.presence.pulse(); await member.presence.pulse();
+    send(200, { schema: 'fixture-devices-result-v1', hubId: application.device.deviceId, memberId: member.device.deviceId, miniId: 'dev_mini_apps', packets: devicePlacementPackets });
+  } else if (pull && (input = parse(ControlPullSchema))) {
     // The fake GitHub's own control route applies the change; its pull request view is the answer.
     const { checks, mergeable, merged, closed } = input;
     const answer = await fetch(`${github.url}/_control/pulls/${pull[1]}`, { method: 'POST', headers: { Authorization: `Bearer ${githubToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ checks, mergeable, merged, closed, repo: PROJECTS_REPOSITORY }) });

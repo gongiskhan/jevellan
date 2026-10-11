@@ -11,12 +11,13 @@ const failure = (message: string, status: number) => Object.assign(new Error(mes
 export const OWNER_REQUEST_TIMEOUT_MS = 20_000;
 export const OWNER_STREAM_CONNECT_TIMEOUT_MS = 125_000;
 /** What a proxied request is for: the texts a failure shows (the Projects pages never say conversation, D266). */
-export type ProxyPurpose = 'conversation' | 'login' | 'thread' | 'coordinator';
+export type ProxyPurpose = 'conversation' | 'login' | 'thread' | 'coordinator' | 'device';
 const proxyCopy: Record<ProxyPurpose, { redirect: string; unreachable(name: string): string }> = {
   conversation: { redirect: 'The conversation owner returned an unexpected redirect.', unreachable: (name) => `Can't reach the conversation owner (${name}). Its work remains on that device.` },
   login: { redirect: 'The login device returned an unexpected redirect.', unreachable: (name) => `Can't reach the login device (${name}). The login remains on that device.` },
   thread: { redirect: THREAD_DEVICE_REDIRECT, unreachable: threadDeviceUnreachable },
   coordinator: { redirect: COORDINATOR_DEVICE_REDIRECT, unreachable: coordinatorUnreachable },
+  device: { redirect: 'The device returned an unexpected redirect.', unreachable: name => `Can't reach ${name}. Worktrees remain on that device.` },
 };
 
 export async function handleOwnerRequest(app: Application, request: IncomingMessage, response: ServerResponse, url: URL): Promise<boolean> {

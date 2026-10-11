@@ -12,7 +12,7 @@ import { join } from 'node:path';
 import {
   AccountSchema, CoordinatorStateSchema, DeviceSchema, Homes, ProjectSchema, ProjectWorkListViewSchema, ProjectWorkSettingsSchema, ProjectWorkViewSchema, SecretRedactor, ThreadLocalSchema,
   ThreadSchema, ThreadViewSchema, defaultProjectWorkSettings, readDocument, type CoordinatorState, type DocumentSchema, type ModelOption, type Project, type Thread, type ThreadIndex,
-  type ThreadLocal,
+  type ThreadLocal, type DeviceFacts,
 } from '../../packages/core/dist/index.js';
 import { joinMember } from '../../packages/mesh/dist/index.js';
 import { FakeRuntime, type FakeTurn, type FakeTurnStep, type RuntimeAdapter } from '../../packages/runtime-contract/dist/index.js';
@@ -49,6 +49,7 @@ export type ProjectFixtureOptions = {
    * installation control file the local control routes (`/api/local/*`, phase 7) need.
    */
   control?: boolean;
+  deviceFacts?(): DeviceFacts;
 };
 
 export const FIXTURE_MENU: ModelOption[] = [{ id: 'fixture', runtime: 'fake', model: 'scripted-model', label: 'Fixture', description: 'Simulated model.', efforts: ['high'], enabled: true }];
@@ -119,6 +120,7 @@ export async function projectFixture(options: ProjectFixtureOptions = {}): Promi
     Object.defineProperty(coordinator, 'id', { value: 'fake2' }); coordinator.capabilities.readOnlyEnforced = true;
   }
   const appOptions = { homes, timers: false, repositoryVisibility: async () => 'PUBLIC' as const, runtimes: () => new Map(Object.entries(runtimes)), githubBaseUrl: github.url,
+    ...(options.deviceFacts ? { deviceFacts: options.deviceFacts } : {}),
     ...(options.decisionFetch ? { decisionFetch: options.decisionFetch } : {}), projectTimers: { periodic: false, coordinatorStartMs: 0, coordinatorRetryMs: 50, ...options.projectTimers } };
   // With `control`, `startDaemon` listens at once and owns the listener; otherwise the application listens after the setup below.
   let daemon: Awaited<ReturnType<typeof startDaemon>> | undefined;

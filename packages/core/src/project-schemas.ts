@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { ProjectReviewReportSchema } from './project-review-schemas.js';
 import { CursorTranscriptSchema } from './cursor-schemas.js';
-import { EffortSchema, IdSchema, JevCallSchema, TimestampSchema } from './schemas.js';
+import { DeviceFactsSchema, DeviceTagsSchema, EffortSchema, IdSchema, JevCallSchema, TimestampSchema } from './schemas.js';
 import { TaskPlacementContextSchema, TaskTypeSchema } from './task-types.js';
 
 // Browser-safe: zod and shared schemas only. Every stored, sent or received Projects document lives here.
@@ -37,7 +37,8 @@ export const ProjectWorkSettingsSchemaV2 = ProjectWorkSettingsSchemaV1.extend({
     .default({ enabled: false, time: '02:00', timezone: 'Europe/Lisbon' }),
   refill: z.strictObject({ enabled: z.boolean(), minIntervalMinutes: z.number().int().min(10).max(1440) }).default({ enabled: true, minIntervalMinutes: 30 }),
 });
-export const ProjectWorkSettingsSchema = ProjectWorkSettingsSchemaV2.omit({ coordinatorReview: true }).extend({ schema: z.literal('project-work-settings-v3'), autoMerge: z.boolean().default(false), riskyAreas: z.string().max(2000).default('') });
+export const ProjectWorkSettingsSchema = ProjectWorkSettingsSchemaV2.omit({ coordinatorReview: true }).extend({ schema: z.literal('project-work-settings-v3'), autoMerge: z.boolean().default(false), riskyAreas: z.string().max(2000).default(''),
+  perDeviceLimits: z.record(IdSchema, z.number().int().min(1).max(10)).default({}) });
 export type ProjectWorkSettings = z.infer<typeof ProjectWorkSettingsSchema>;
 export const StoredProjectWorkSettingsSchema = z.union([ProjectWorkSettingsSchemaV1, ProjectWorkSettingsSchemaV2, ProjectWorkSettingsSchema])
   .transform(value => { const { coordinatorReview: _retired, ...fields } = { coordinatorReview: undefined, ...value }; void _retired; return ProjectWorkSettingsSchema.parse({ ...fields, schema: 'project-work-settings-v3' }); });
@@ -144,6 +145,7 @@ export const PlacementRecordSchema = z.strictObject({ schema: z.literal('placeme
   probabilities: z.record(z.string(), z.record(z.string(), z.number())).optional(),
   eligibleModels: z.array(IdSchema), excludedModels: z.array(z.strictObject({ modelId: IdSchema, reason: z.string() })),
   eligibleDevices: z.array(IdSchema), excludedDevices: z.array(z.strictObject({ deviceId: IdSchema, reason: z.string() })),
+  deviceFacts: z.array(z.strictObject({ deviceId: IdSchema, name: text, running: count, tags: DeviceTagsSchema, facts: DeviceFactsSchema.optional() })).max(200).optional(),
   error: z.strictObject({ kind: z.string(), message: z.string().max(300) }).optional(),
   taskContext: TaskPlacementContextSchema.optional(), correctionsShown: z.array(z.string().max(12000)).max(72).optional(),
   jevCalls: z.array(JevCallSchema), decidedAt: TimestampSchema });
@@ -406,6 +408,7 @@ export const ProjectWorkSettingsRequestSchema = z.strictObject({ schema: z.liter
   settings: ProjectWorkSettingsSchema.omit({ schema: true, projectId: true, revision: true }).extend({
     allowMainIsolation: z.boolean().optional(), threadRules: z.string().max(4000).optional(), autoMerge: z.boolean().optional(), riskyAreas: z.string().max(2000).optional(),
     nightlyWindow: ProjectWorkSettingsSchema.shape.nightlyWindow.removeDefault().optional(), refill: ProjectWorkSettingsSchema.shape.refill.removeDefault().optional(),
+    perDeviceLimits: ProjectWorkSettingsSchema.shape.perDeviceLimits.removeDefault().optional(),
   }), clientRequestId: IdSchema.optional() });
 export const NotebookRequestSchema = z.strictObject({ schema: z.literal('notebook-request-v1'), expectedRevision: revision,
   content: z.string().max(65536) });

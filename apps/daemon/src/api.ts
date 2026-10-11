@@ -18,6 +18,7 @@ import { handleLoginApi } from './login-api.js';
 import { ImproverRequestSchema } from '@jevellan/core';
 import { handleAgentAccessApi } from './agent-access-api.js';
 import { handleAgentPeer } from './agent-mcp-api.js';
+import { DEVICE_WORKTREES_ROUTE, handleDeviceWorktrees } from './device-worktrees-api.js';
 
 export { json } from './http.js';
 function failure(message: string, status: number) { return Object.assign(new Error(message), { status }); }
@@ -56,7 +57,8 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     const secureCookies = options.secureCookies ?? secureRequest;
     const path = url.pathname; const method = request.method ?? 'GET'; const token = sessionFromCookie(request.headers.cookie);
     // Project hub requests enter the gate in their route once the operation is known: reads are admitted like GET (D247).
-    if (!['GET', 'HEAD'].includes(method) && !PROJECT_HUB_ROUTE.test(path) && path !== '/hub/mesh/agent-access' && path !== '/api/agent-peer') release = app.lifecycle.enter({ kind: 'request' });
+    if (!['GET', 'HEAD'].includes(method) && !PROJECT_HUB_ROUTE.test(path) && !DEVICE_WORKTREES_ROUTE.test(path) && path !== '/hub/mesh/agent-access' && path !== '/api/agent-peer') release = app.lifecycle.enter({ kind: 'request' });
+    if (path.startsWith('/api/mesh/devices/') && await handleDeviceWorktrees(app, request, response, url)) return;
     if (path === '/api/agent-peer') { await handleAgentPeer(app, request, response); return; }
     if (await handleOwnerRequest(app, request, response, url)) return;
     if (path.startsWith('/api/mesh/projects/') && await handleProjectWorkPeer(app, request, response, url, () => { retryable = true; })) return;
@@ -78,9 +80,10 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     }
     retryable = true; // No UI operation has been admitted before authentication succeeds.
     if (!await app.auth.verify(token)) throw failure('Sign in to Jevellan.', 401);
+    if (await handleDeviceWorktrees(app, request, response, url, token)) return;
     retryable = method === 'GET' && !path.startsWith('/api/logins/');
     if (method === 'POST' && ['/hub/devices/invitations', '/api/devices/switch'].includes(path)) retryable = true;
-    if (await handleMeshUiApi(app, request, response, url, secureCookies)) return;
+    if (await handleMeshUiApi(app, request, response, url, secureCookies, token)) return;
     if (path === '/api/agent-access' || /^\/api\/agent-access\/[A-Za-z0-9_-]+\/revoke$/.test(path)) retryable = true;
     if (await handleAgentAccessApi(app, request, response, url, token!)) return;
     if (await handleLoginApi(app, request, response, url, token)) return;

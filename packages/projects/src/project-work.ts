@@ -1,6 +1,7 @@
 import { NightlyReview } from './nightly-review.js';
+import { WorktreeDiskService } from './worktree-disk.js';
 import { applyEkoaCodeSetup, EKOA_FAST_CHECKS } from './ekoa-code.js';
-import { EkoaCodeSetupRequestSchema, parseGitHubRemote } from '@jevellan/core';
+import { EkoaCodeSetupRequestSchema, collectDeviceFacts, deviceResourceRefusal, parseGitHubRemote, liveWork, resolveProjectPath, type DeviceFacts } from '@jevellan/core';
 import { ProjectDailyWork } from './daily.js';
 import { ProjectJobRunner } from './job-runner.js';
 import { join } from 'node:path';
@@ -71,6 +72,7 @@ export const DEFAULT_PROJECT_TIMERS: ProjectTimers = {
 };
 export type ProjectWorkOptions = {
   homes: Homes; deviceId: string; deviceName: string; redactor: SecretRedactor;
+  facts?(): DeviceFacts;
   projects: SharedProjects; hub: ProjectHub;
   github: { credential(projectId?: string): Promise<string | undefined>; fetch?: typeof fetch | undefined; baseUrl?: string | undefined };
   accounts: Pick<AccountService, 'list' | 'resolve' | 'markUsed' | 'recordUsage' | 'recordError'>;
@@ -107,6 +109,7 @@ export class ProjectWork {
   readonly reviews: NightlyReview; readonly daily: ProjectDailyWork; readonly jobs: ProjectJobRunner;
   readonly goals: ProjectGoals; readonly tasks: ProjectTasks; readonly dispatcher: ProjectDispatcher;
   readonly mergeGate: ProjectMergeGate;
+  readonly disk: WorktreeDiskService;
   /** Mail and reservations between main threads (brief 5.11, 7.2). */
   readonly mail: MailService;
   /** The hub relay (D40): durable sends to other devices, and this device's pending envelopes. */
@@ -124,6 +127,7 @@ export class ProjectWork {
     this.apps = new ProjectApps(o.homes, tailnetAppPublisher(async () => (await o.roster()).devices.find(view => view.device.id === o.deviceId)?.device.url ?? this.daemonUrl), o.redactor);
     const timers = this.#timers = { ...DEFAULT_PROJECT_TIMERS, ...o.timers };
     const now = () => timers.now();
+    const facts = () => o.facts?.() ?? collectDeviceFacts(o.homes);
     this.paths = new ProjectPaths(o.homes);
     this.ledgers = new ProjectLedgers(this.paths, { redactor: o.redactor, now: () => new Date(now()).toISOString() });
     this.#publisher = new ThreadIndexPublisher(o.hub, timers.indexRetryMs);
@@ -136,8 +140,19 @@ export class ProjectWork {
     const launcher = new TurnLauncher({ accounts: o.accounts, runtimes: o.runtimes, accountRuns: o.accountRuns, riggingItems: o.riggingItems, bridges: o.bridges, homes: o.homes,
       deviceId: o.deviceId, deviceName: o.deviceName, daemonUrl: () => this.daemonUrl, redactor: o.redactor, held, useOwnSetup: async runtime => (await o.settings()).runtimes[runtime]?.useOwnSetup !== false });
     this.admission = new Admission({ hub: o.hub, deviceId: o.deviceId, deviceName: o.deviceName, localLive: (projectId) => this.threads.liveThreads(projectId),
+      facts,
+      guard: async (_projectId, deviceId, threadId) => {
+        if (deviceId === o.deviceId && !deviceAllowsWork(o.homes)) return 'This device serves apps only; project work runs on a working device.';
+        const roster = await o.roster().catch((error: unknown) => { if (error instanceof HubUnavailable) return undefined; throw error; });
+        const view = roster?.devices.find(row => row.device.id === deviceId);
+        if (view?.device.workPolicy?.mode === 'apps-only') return 'This device serves apps only; project work runs on a working device.';
+        const needs = this.store.get(threadId)?.taskContext?.needs ?? [], missing = needs.filter(tag => !view?.device.tags?.includes(tag));
+        if (missing.length) return `Missing device tags: ${missing.join(', ')}.`;
+        return deviceId !== o.deviceId ? deviceResourceRefusal(view?.device.name ?? deviceId, view?.heartbeat?.facts) : undefined;
+      },
       nameOf: async (deviceId) => (await o.roster()).devices.find((view) => view.device.id === deviceId)?.device.name, now });
     const placement = new Placement({ settings: o.settings, accounts: o.accounts, runtimes: o.runtimes, roster: o.roster, admission: this.admission, deviceId: o.deviceId,
+      facts,
       deviceName: o.deviceName, hub: o.hub, redactor: o.redactor, now, ...(o.decisionClient ? { decisionClient: o.decisionClient } : {}),
       local: (projectId) => this.store.list(projectId).map((thread) => threadIndex(thread, this.store.labels(thread.id), thread.createdAt)),
       pendingMain: (projectId) => this.threads.pendingMain(projectId) });
@@ -148,6 +163,18 @@ export class ProjectWork {
       message: (projectId, threadId, text, messageId) => this.threads.message(projectId, threadId, 'owner', text, false, messageId),
     }) });
     const git = new ThreadGit({ homes: o.homes, redactor: o.redactor });
+    this.disk = new WorktreeDiskService({ homes: o.homes, git, deviceId: o.deviceId, now, ownership: async () => {
+      const owners = [];
+      for (const { project } of await o.projects.list()) {
+        if (!project.paths[o.deviceId]) continue;
+        const retained = new Set(this.store.list(project.id).filter(thread => thread.state !== 'done' || this.store.local(thread.id).process).map(thread => `thread:${thread.id}`));
+        for (const run of await this.jobs.runs(project.id)) if (!run.conclusion) retained.add(`job:${run.id}`);
+        for (const task of await this.tasks.list(project.id)) if (task.nightlyReview && !['done', 'failed', 'cancelled'].includes(task.state)) retained.add(`review:${task.id}`);
+        for (const run of await this.mergeGate.documents(project.id)) if (run.schema === 'verification-run-v1' && !['passed', 'failed', 'cancelled'].includes(run.state)) retained.add(`verification:${run.id}`);
+        owners.push({ project, repository: resolveProjectPath(project, o.deviceId, o.deviceName), retained });
+      }
+      return owners;
+    } });
     const worktrees = new ThreadWorktree({ git, homes: o.homes, paths: this.paths, redactor: o.redactor, deviceId: o.deviceId, deviceName: o.deviceName });
     const publication = new ThreadPublication({ git, homes: o.homes, redactor: o.redactor, github, deviceId: o.deviceId, deviceName: o.deviceName, testTimeoutMs: timers.testTimeoutMs,
       leaseRetryMs: timers.mainLeaseRetryMs, now, ...(o.leases ? { leases: o.leases } : {}), ...(o.ownership ? { ownership: o.ownership } : {}) });
@@ -213,12 +240,12 @@ export class ProjectWork {
         },
         runtimeName: (runtime) => o.runtimes.get(runtime)?.displayName ?? runtime, enterOperation: o.enterOperation,
         timers: { threadTurnTimeoutMs: timers.threadTurnTimeoutMs, setupTimeoutMs: timers.setupTimeoutMs }, now } });
-    this.jobs = new ProjectJobRunner({ homes: o.homes, hub: o.hub, tasks: this.tasks, git, github, deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, now,
+    this.jobs = new ProjectJobRunner({ homes: o.homes, hub: o.hub, tasks: this.tasks, git, github, deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, now, facts,
       project: id => this.#project(id), settings: id => this.admission.settings(id), baseBranch: repo => worktrees.baseBranch(repo), event: (id, event) => delivery.toCoordinator(id, event),
       windowOpened: async id => (await this.daily.window(id))?.openedAt, day: id => this.daily.day(id), dayStart: (id, day) => this.daily.dayStart(id, day), changed: () => { void this.#sweepTasks().catch(() => undefined); } });
     this.daily = new ProjectDailyWork({ hub: o.hub, tasks: this.tasks, runner: this.jobs, redactor: o.redactor, now, deviceId: o.deviceId, settings: id => this.admission.settings(id),
       validateGoal: async (id, goalId) => { if (goalId) await this.goals.read(id, goalId); }, event: (id, event) => delivery.toCoordinator(id, event), changed: () => { void this.#sweepTasks().catch(() => undefined); } });
-    this.reviews = new NightlyReview({ hub: o.hub, tasks: this.tasks, homes: o.homes, git, launcher, deviceId: o.deviceId, redactor: o.redactor, now,
+    this.reviews = new NightlyReview({ hub: o.hub, tasks: this.tasks, homes: o.homes, git, launcher, deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, now, facts,
       settings: o.settings, accounts: o.accounts, runtimes: o.runtimes, project: id => this.#project(id), repository: project => worktrees.repository(project), baseBranch: repo => worktrees.baseBranch(repo), timeoutMs: timers.threadTurnTimeoutMs,
       event: (id, event) => delivery.toCoordinator(id, event), changed: () => { void this.#sweepTasks().catch(() => undefined); } });
     this.dispatcher = new ProjectDispatcher({ tasks: this.tasks, threads: this.threads, deviceId: o.deviceId,
@@ -232,7 +259,7 @@ export class ProjectWork {
       transition: async (threadId, apply) => { const runner = this.threads.runner(threadId); if (runner) await runner.transition(apply); else await apply(); },
       hub: o.hub, deviceId: o.deviceId, assertMerge: (id, tid) => this.daily.assertMerge(id, tid),
       redactor: o.redactor, now, pollMs: timers.prPollMs, periodic: timers.periodic });
-    const verification = new PullRequestVerification({ hub: o.hub, homes: o.homes, git, launcher, deviceId: o.deviceId, redactor: o.redactor, now, settings: o.settings, accounts: o.accounts, runtimes: o.runtimes, timeoutMs: timers.testTimeoutMs });
+    const verification = new PullRequestVerification({ hub: o.hub, homes: o.homes, git, launcher, deviceId: o.deviceId, deviceName: o.deviceName, facts, redactor: o.redactor, now, settings: o.settings, accounts: o.accounts, runtimes: o.runtimes, timeoutMs: timers.testTimeoutMs });
     this.mergeGate = new ProjectMergeGate({ hub: o.hub, store: this.store, tracker: this.tracker, github, verification, deviceId: o.deviceId, redactor: o.redactor, now,
       settings: id => this.admission.settings(id), configuration: o.settings, ...(o.decisionClient ? { decisionClient: o.decisionClient } : {}), project: id => this.#project(id), repository: project => worktrees.repository(project),
       event: (id, event) => delivery.toCoordinator(id, event), assertMerge: (id, tid) => this.daily.assertMerge(id, tid), message: (id, tid, text, messageId) => this.threads.message(id, tid, 'coordinator', text, false, messageId) });
@@ -390,6 +417,7 @@ export class ProjectWork {
   // Browser and API operations. Refusals throw Error(sentence) with a status.
   list(): Promise<ProjectWorkListView> { return this.views.list(); }
   async goalList(projectId: string) { await this.#project(projectId); return this.goals.view(projectId); }
+  runningThreads(): string[] { return this.store.all().filter(thread => liveWork(thread.state)).map(thread => thread.id); }
   async prepareDailyWork(projectId: string): Promise<void> { await this.#coordinatorHere(projectId); }
   async setupEkoaCode(projectId: string, raw: unknown) {
     const input = EkoaCodeSetupRequestSchema.parse(raw), project = await this.#project(projectId), repository = parseGitHubRemote(project.remoteUrl ?? '');

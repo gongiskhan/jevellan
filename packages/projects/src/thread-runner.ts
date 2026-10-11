@@ -266,6 +266,12 @@ export class ThreadRunner {
     return this.#work(async () => {
       let thread = this.#thread();
       if (this.#halted() || (thread.state !== 'queued' && thread.state !== 'preparing')) return;
+      // The receiving worker checks its current resources and tags too; a relayed dispatch is not an admission override.
+      const admitted = await this.#c.admission.admit(thread.projectId, thread.ownerDeviceId, thread.id);
+      if (!admitted.ok) {
+        this.#set(current => ({ ...withState(current, 'queued'), stateReason: admitted.queued })); return;
+      }
+      this.#releaseHold(); this.#hold = admitted.release;
       if (thread.state === 'queued') thread = this.#set((current) => withState(current, 'preparing'));
       if (await this.#prepare()) await this.#loop({ reason: 'task', body: taskPrompt(thread.title, thread.task), messages: [] });
     }, hold);

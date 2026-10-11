@@ -2,6 +2,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import { DeviceMembershipSchema, DeviceSchema, DeviceSwitchInputSchema, DeviceSwitchReceiptSchema, DeviceSwitchSchema, DeviceTokenSchema, DeviceViewSchema, HeartbeatSchema, IdSchema, JoinDeviceInputSchema, JoinInvitationSchema, TimestampSchema, newId, stableJson, type Device, type DeviceMembership, type DevicePresence, type DeviceView } from '@jevellan/core';
 import type { HubDatabase } from './database.js';
+import { DeviceTagsInputSchema, seedDeviceTags } from '@jevellan/core';
 
 export const HEARTBEAT_INTERVAL_MS = 30_000;
 export const DEVICE_ONLINE_MS = 90_000;
@@ -35,6 +36,8 @@ export function devicePresence(lastHeartbeatAt: string | null | undefined, now =
 export class DeviceRegistry {
   constructor(private readonly hub: HubDatabase, readonly hubId: string, private readonly now = Date.now) {
     if (this.#device(hubId).role !== 'hub') throw new Error('The registry must belong to the hub device.');
+    for (const row of this.hub.list('devices', DeviceSchema)) if (!row.document.tags) this.hub.put('devices', row.document.id, DeviceSchema,
+      { ...row.document, tags: seedDeviceTags(row.document.os, row.document.role) }, row.revision);
   }
   #device(id: string): Device {
     return this.hub.get('devices', IdSchema.parse(id), DeviceSchema)?.document ?? fail('This device is not registered.', 404);
@@ -73,7 +76,7 @@ export class DeviceRegistry {
         return DeviceMembershipSchema.parse({ schema: 'device-membership-v1', device, hub: this.#device(this.hubId), token: this.hub.vault.forLaunch(consumed.tokenRef) });
       }
       if (this.hub.get('devices', request.device.id, DeviceSchema)) return fail('This device identity is already registered.', 409);
-      const device = DeviceSchema.parse({ schema: 'device-v1', ...request.device, role: 'member', joinedAt: new Date(at).toISOString() });
+      const device = DeviceSchema.parse({ schema: 'device-v1', ...request.device, tags: seedDeviceTags(request.device.os, 'member'), role: 'member', joinedAt: new Date(at).toISOString() });
       const token = randomBytes(32).toString('base64url'); const tokenRef = newId('devicekey');
       this.hub.vault.put(tokenRef, token);
       this.hub.put('devices', device.id, DeviceSchema, device, 0);
@@ -108,7 +111,7 @@ export class DeviceRegistry {
       this.hub.put('heartbeats', deviceId, StoredHeartbeatSchema, { schema: 'stored-heartbeat-v1', receivedAt: at, heartbeat }, previous?.revision ?? 0);
       const stored = this.hub.get('devices', deviceId, DeviceSchema)!;
       this.hub.put('devices', deviceId, DeviceSchema, { ...device, version: heartbeat.version, lastHeartbeatAt: at,
-        ...(heartbeat.workPolicy ? { workPolicy: heartbeat.workPolicy } : {}) }, stored.revision);
+        ...(heartbeat.workPolicy && device.workPolicy?.mode !== 'apps-only' ? { workPolicy: heartbeat.workPolicy } : {}) }, stored.revision);
       return this.view(deviceId);
     });
   }
@@ -119,6 +122,13 @@ export class DeviceRegistry {
     return DeviceViewSchema.parse({ schema: 'device-view-v1', device, status: revoked ? 'offline' : devicePresence(device.lastHeartbeatAt, this.now()), heartbeat, revoked });
   }
   list(): DeviceView[] { return this.hub.list('devices', DeviceSchema).map(({ document }) => this.view(document.id)); }
+  /** Called only by authenticated owner operations, never heartbeat fields. */
+  updateTags(raw: unknown): DeviceView {
+    const input = DeviceTagsInputSchema.parse(raw); const device = this.#active(input.deviceId);
+    const stored = this.hub.get('devices', device.id, DeviceSchema)!;
+    this.hub.put('devices', device.id, DeviceSchema, { ...device, tags: input.tags }, stored.revision);
+    return this.view(device.id);
+  }
   issueSwitch(sourceDeviceId: string, input: unknown) {
     const request = DeviceSwitchInputSchema.parse(input);
     return this.hub.transaction(() => {

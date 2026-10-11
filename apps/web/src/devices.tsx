@@ -1,10 +1,49 @@
 import { useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
-import { DeviceSwitchSchema, JoinInvitationSchema, type DeviceView } from '@jevellan/core/client';
+import { DeviceSwitchSchema, DeviceViewSchema, JoinInvitationSchema, WorktreeDiskSchema, type WorktreeDisk, type DeviceView } from '@jevellan/core/client';
 import { api, empty } from './api.js';
 import { Modal, SectionHeading, dateTime, useTask, type PageProps } from './components.js';
 import { Icon } from './icons.js';
 import { CursorConnections } from './cursor-connections.js';
+const gb = (bytes: number) => `${Number((bytes / 1e9).toFixed(1))} GB`;
+function DeviceControls({ row, props }: { row: DeviceView; props: PageProps }) {
+  const task = useTask(props.onError), [tags, setTags] = useState((row.device.tags ?? []).join(', '));
+  const [disk, setDisk] = useState<WorktreeDisk>(), [error, setError] = useState(''), [confirm, setConfirm] = useState(false);
+  const endpoint = `/api/devices/${row.device.id}/worktrees`;
+  const available = deviceAvailable(row, props.data.roster.currentDeviceId);
+  useEffect(() => setTags((row.device.tags ?? []).join(', ')), [row.device.tags]);
+  useEffect(() => {
+    if (!available) return;
+    const controller = new AbortController();
+    api(endpoint, WorktreeDiskSchema, 'GET', undefined, { signal: controller.signal }).then(setDisk).catch(() => { if (!controller.signal.aborted) setError('Worktree usage is unavailable.'); });
+    return () => controller.abort();
+  }, [endpoint, available]);
+  const orphans = disk?.entries.filter(entry => entry.orphan) ?? [], facts = row.heartbeat?.facts;
+  return <>
+    {row.device.workPolicy?.mode === 'apps-only' && <p className="chip">Apps only</p>}
+    {facts && <p className="muted small-text">{facts.cores} cores · Load {Number(facts.load5.toFixed(1))} · {gb(facts.freeMemoryBytes)} memory free · {gb(facts.freeDiskBytes)} disk free<br />{facts.runningThreads.length} threads · {facts.runningJobRuns.length} job runs</p>}
+    <form onSubmit={event => { event.preventDefault(); void task.run(async signal => {
+      await api('/hub/devices/tags', DeviceViewSchema, 'POST', { schema: 'device-tags-input-v1', deviceId: row.device.id, tags: [...new Set(tags.split(/[\s,]+/u).filter(Boolean))] }, { signal, waitForHub: true });
+      await props.reload(signal);
+    }); }}>
+      <label>Device tags<input value={tags} maxLength={1055} onChange={event => setTags(event.target.value)} placeholder="mac, residential" disabled={task.busy || row.revoked} /></label>
+      <button type="submit" className="secondary" disabled={task.busy || row.revoked}>Save tags</button>
+    </form>
+    {disk && <p className="muted small-text">Thread worktrees: {gb(disk.threadBytes)} · Job and verification worktrees: {gb(disk.jobBytes)}</p>}
+    {error && <p className="muted small-text">{error}</p>}
+    <button className="secondary" disabled={task.busy || !available} onClick={() => void task.run(async signal => {
+      setDisk(await api(endpoint, WorktreeDiskSchema, 'GET', undefined, { signal })); setError('');
+    })}>Inspect worktrees</button>
+    {orphans.length > 0 && <button className="secondary" disabled={task.busy || !available} onClick={() => setConfirm(true)}>Remove orphaned worktrees</button>}
+    {confirm && <Modal title="Remove orphaned worktrees" close={() => setConfirm(false)}>
+      <p>Remove {orphans.length} worktree{orphans.length === 1 ? '' : 's'} on {row.device.name}, using {gb(orphans.reduce((n, row) => n + row.bytes, 0))}? Each is older than seven days and has no retained work or process receipt.</p>
+      <ul>{orphans.map(entry => <li key={`${entry.kind}:${entry.id}`}>{entry.kind} · {entry.id} · {gb(entry.bytes)}</li>)}</ul>
+      <div className="form-actions"><button className="secondary" onClick={() => setConfirm(false)}>Cancel</button><button disabled={task.busy} onClick={() => void task.run(async signal => {
+        setDisk(await api(endpoint, WorktreeDiskSchema, 'POST', { schema: 'worktree-cleanup-input-v1', confirmed: true, entries: orphans.map(({ projectId, id, kind, fingerprint }) => ({ projectId, id, kind, fingerprint })) }, { signal })); setConfirm(false);
+      })}>Remove worktrees</button></div>
+    </Modal>}
+  </>;
+}
 
 export function deviceAvailable(row: DeviceView, currentDeviceId: string) {
   return !row.revoked && (row.device.id === currentDeviceId || row.status !== 'offline');
@@ -148,6 +187,7 @@ export function DevicesPage(props: PageProps) {
               {row.device.os === 'darwin' ? 'macOS' : 'Linux'} · Version {row.device.version}
             </p>
             <DeviceActivity row={row} currentDeviceId={roster.currentDeviceId} />
+            <DeviceControls row={row} props={props} />
             <button
               className="secondary"
               disabled={

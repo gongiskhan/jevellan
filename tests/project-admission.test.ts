@@ -234,8 +234,8 @@ test('placement asks Jev with the packet: active threads oldest first with this 
   expect(packet.thread).toEqual({ title: 'Fix login', task: 'The redirect loops.', coordinatorNote: 'The owner asked for speed.' });
   expect(packet.activeThreads).toEqual([{ title: 'Auth', isolation: 'worktree', device: 'Mac mini', model: 'Swift', effort: 'high', reservedPaths: [] },
     { title: 'Billing', isolation: 'worktree', device: 'Studio', model: 'Swift', effort: 'medium', reservedPaths: ['src/billing/', 'docs/'] }]);
-  expect(packet.rules.recentOverrides).toEqual(["model changed from deep to swift for 'Old' (restart)", "effort changed from max to low for '(unknown thread)' (next-turn)"]);
-  expect(reads.overrides).toBe(1);
+  expect(packet.rules.recentOverrides).toEqual(["model changed from deep to swift for a feature task 'Old' (restart)", "effort changed from max to low for a feature task '(unknown thread)' (next-turn)"]);
+  expect(reads.overrides).toBe(2);
   // During a hub outage the packet keeps what this device knows.
   stub.state.down = true;
   expect((await place(value)).kind).toBe('placed');
@@ -245,7 +245,7 @@ test('placement asks Jev with the packet: active threads oldest first with this 
   stub.state.down = false;
   const fixed = await place(value, { fixed: { isolation: 'worktree', modelId: 'swift', effort: 'low', deviceId: 'dev_mini' } });
   expect(fixed.kind === 'placed' && fixed.record).toMatchObject({ source: 'fixed', effortRequested: 'low', jevCalls: [] });
-  expect(requests).toHaveLength(2); expect(reads.overrides).toBe(2);
+  expect(requests).toHaveLength(2); expect(reads.overrides).toBe(4);
   // A fixed isolation and effort with one model and one device asks nothing either (D30b).
   expect((await place(value, { fixed: { isolation: 'worktree', effort: 'low' } }))).toMatchObject({ kind: 'placed', record: { source: 'fixed', fixed: ['isolation', 'effort'] } });
   expect(requests).toHaveLength(2);

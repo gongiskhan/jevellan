@@ -1,4 +1,5 @@
 import { expect, test, vi } from 'vitest';
+import { DeviceFactsSchema } from '../packages/core/dist/index.js';
 import { AccountSchema, AccountStatusSchema, JevCallSchema, PlacementRecordSchema, ProjectSchema, SecretRedactor, seedConfiguration, type Account, type AccountStatus, type ModelOption } from '../packages/core/dist/index.js';
 import { approximateTokens, buildPlacementState, decidePlacement, JevClient, JevError, MAIN_NOT_AVAILABLE, NO_PLACEMENT, NO_THREAD_MODEL, overrideSentence, parseJevResponse, PLACEMENT_INCOMPATIBLE, PLACEMENT_INSTRUCTIONS,
   PLACEMENT_ISOLATION_CRITERIA, PLACEMENT_QUESTION_SET, placementCandidates, placementDevices, placementDeviceSetup, placementFallback, placementOptions, PlacementStateSchema, preparePlacementA, preparePlacementB, REMOTE_NOT_AVAILABLE,
@@ -39,6 +40,22 @@ const NO_KEY = { kind: 'no-key', message: 'no key configured' };
 const fallback = (value: PlacementInput, fixedOnly = false) => placementFallback(value, candidates(value), NO_KEY, [], fixedOnly);
 const ids = (devices: PlacementDevice[]) => devices.map((entry) => entry.id);
 const sorted = (values: string[]) => [...values].sort();
+test('LJ10 needs, resource guards and per-device overrides are hard filters and facts enter Call B and its packet', () => {
+  const facts = DeviceFactsSchema.parse({ schema: 'device-facts-v1', cores: 8, load1: 1, load5: 2.3, totalMemoryBytes: 32e9, freeMemoryBytes: 12e9, freeDiskBytes: 80e9, os: 'darwin', runningThreads: [], runningJobRuns: [] });
+  const pro = { ...mini, name: 'Pro', tags: ['mac', 'residential'], facts }, madrid = { ...studio, name: 'Madrid', tags: ['linux', 'datacenter'], facts: { ...facts, os: 'linux' as const } };
+  const needed = input({ devices: [pro, madrid], needs: ['residential'] }), chosen = candidates(needed);
+  expect(chosen.devices.map(row => row.name)).toEqual(['Pro']); expect(chosen.excludedDevices).toContainEqual({ deviceId: madrid.id, reason: 'missing tags: residential' });
+  expect(refusal({ ...needed, fixed: { deviceId: madrid.id } })).toContain('missing tags: residential');
+  expect(refusal(input({ devices: [{ ...pro, allowed: false }], fixed: { deviceId: pro.id }, ignoreRunningLimit: true }))).toContain('not set up for this project');
+  expect(refusal(input({ devices: [{ ...pro, facts: { ...facts, freeDiskBytes: 19e9 } }], ignoreRunningLimit: true }))).toBe('Pro has 19 GB free; Jevellan needs at least 20 GB to start work there.');
+  expect(refusal(input({ devices: [{ ...pro, facts: { ...facts, load5: 16.1 } }], fixed: { deviceId: pro.id } }))).toBe('Pro is busy (load 16.1 on 8 cores).');
+  const limited = candidates(input({ devices: [{ ...pro, running: 1 }, madrid], perDeviceLimits: { [pro.id]: 1 } }));
+  expect(limited.devices.map(row => row.name)).toEqual(['Madrid']);
+  const both = input({ devices: [pro, madrid], fixed: { isolation: 'worktree' } }), all = candidates(both), option = placementOptions(all, 'worktree');
+  expect(preparePlacementB(both, all, { isolation: 'worktree', model: option.models[0]!.model }).device).toMatchObject({ criteria: { [pro.id]: 'Pro: 0 running, load 2.3 on 8 cores, 80 GB free, 12 GB memory free, tags mac, residential' } });
+  const packet = buildPlacementState({ ...both, packet: { title: 'Device work', task: 'Do it.', activeThreads: [], overrides: [] }, redactor: new SecretRedactor() });
+  expect(JSON.parse(packet.state).devices[0]).toMatchObject({ name: 'Pro', tags: ['mac', 'residential'], facts });
+});
 function expectPartition(value: PlacementInput, options: Pick<PlacementCandidates, 'models' | 'devices' | 'excludedModels' | 'excludedDevices'>) {
   const models = [...options.models.map((entry) => entry.model.id), ...options.excludedModels.map((entry) => entry.modelId)];
   const devices = [...ids(options.devices), ...options.excludedDevices.map((entry) => entry.deviceId)];

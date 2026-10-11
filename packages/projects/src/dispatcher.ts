@@ -53,7 +53,7 @@ export class ProjectDispatcher {
       if (this.o.eligible && !await this.o.eligible(task, tasks)) continue;
       if (task.kind === 'job' || task.nightlyReview) {
         try { if (task.nightlyReview) await this.o.review?.(task); else await this.o.job?.(task); tasks = await this.o.tasks.list(projectId); }
-        catch (error) { if ((error as { status?: number }).status === undefined) throw error; const reason = this.o.tasks.o.redactor.text(error instanceof Error ? error.message : 'Job could not start.').slice(0, 400); await this.o.tasks.save({ ...task, state: 'failed', endNote: reason, endedAt: this.o.tasks.at() }); }
+        catch (error) { if ((error as { status?: number }).status === undefined) throw error; if ((error as { resourceRefusal?: boolean }).resourceRefusal) break; const reason = this.o.tasks.o.redactor.text(error instanceof Error ? error.message : 'Job could not start.').slice(0, 400); await this.o.tasks.save({ ...task, state: 'failed', endNote: reason, endedAt: this.o.tasks.at() }); }
         continue;
       }
       if (task.threadId) {

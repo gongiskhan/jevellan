@@ -934,6 +934,7 @@ const settingsForm = (from: SettingsBase) => ({
   defaultIsolation: from.settings.defaultIsolation, isolationChanged: false, modelId: from.settings.coordinator.modelId ?? '',
   effort: from.settings.coordinator.effort, setupCommand: from.settings.setupCommand ?? '', maxRunningThreads: String(from.settings.maxRunningThreads),
   maxRunningPerDevice: String(from.settings.maxRunningPerDevice), threadTurnCap: String(from.settings.threadTurnCap),
+  perDeviceLimits: from.settings.perDeviceLimits,
   refill: from.settings.refill, nightlyWindow: from.settings.nightlyWindow, autoMerge: from.settings.autoMerge, riskyAreas: from.settings.riskyAreas, threadRules: from.settings.threadRules, allowMainIsolation: from.settings.allowMainIsolation,
 });
 /**
@@ -1034,6 +1035,18 @@ function SettingsDialog({ props, view, close }: { props: PageProps; view: Projec
               <input type="number" required min={5} max={200} step={1} inputMode="numeric" value={form.threadTurnCap}
                 onChange={(event) => change({ threadTurnCap: event.target.value })} />
             </label>
+          </div>
+          <div className="form-grid pw-limits">
+            {data.roster.devices.filter(row => !row.revoked && row.device.workPolicy?.mode !== 'apps-only').map(row => (
+              <label key={row.device.id}>Limit on {row.device.name}
+                <input type="number" min={1} max={10} step={1} inputMode="numeric" placeholder={`Default: ${form.maxRunningPerDevice}`}
+                  value={form.perDeviceLimits[row.device.id] ?? ''} onChange={event => {
+                    const limits = { ...form.perDeviceLimits };
+                    if (event.target.value) limits[row.device.id] = Number(event.target.value); else delete limits[row.device.id];
+                    change({ perDeviceLimits: limits });
+                  }} />
+              </label>
+            ))}
           </div>
         </fieldset>
         {error && (
@@ -1149,7 +1162,7 @@ function CoordinatorOverrideDialog({ props, view, close }: { props: PageProps; v
       void task.run(async signal => {
         setError('');
         const kept = { defaultIsolation: base.defaultIsolation, setupCommand: base.setupCommand, maxRunningThreads: base.maxRunningThreads,
-          maxRunningPerDevice: base.maxRunningPerDevice, threadTurnCap: base.threadTurnCap, allowMainIsolation: base.allowMainIsolation,
+          maxRunningPerDevice: base.maxRunningPerDevice, perDeviceLimits: base.perDeviceLimits, threadTurnCap: base.threadTurnCap, allowMainIsolation: base.allowMainIsolation,
           threadRules: base.threadRules, autoMerge: base.autoMerge, riskyAreas: base.riskyAreas, nightlyWindow: base.nightlyWindow, refill: base.refill };
         await save(path, ProjectWorkSettingsViewSchema, 'PUT', { schema: 'project-work-settings-request-v1', revision: base.revision,
           settings: { ...kept, coordinator: { ...base.coordinator, modelId: modelId || null, effort } } }, signal);

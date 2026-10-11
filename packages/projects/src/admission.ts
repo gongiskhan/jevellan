@@ -1,4 +1,4 @@
-import { HubUnavailable, defaultProjectWorkSettings, liveWork, type ProjectHub, type ProjectWorkSettings } from '@jevellan/core';
+import { HubUnavailable, defaultProjectWorkSettings, deviceResourceRefusal, liveWork, type DeviceFacts, type ProjectHub, type ProjectWorkSettings } from '@jevellan/core';
 import { queuedReason, waitingForSlotReason } from './copy.js';
 
 export type AdmissionCounts = {
@@ -6,7 +6,7 @@ export type AdmissionCounts = {
   project: number;
   /** The same work per owner device. */
   devices: Map<string, number>;
-  limits: { project: number; device: number };
+  limits: { project: number; device: number; perDevice?: Record<string, number> };
 };
 export type AdmissionRefusal = {
   ok: false; scope: 'project' | 'device'; limit: number;
@@ -40,12 +40,17 @@ export class Admission {
   readonly #localLive: (projectId: string) => Iterable<string>;
   readonly #names: ((deviceId: string) => Promise<string | undefined>) | undefined;
   readonly #now: () => number;
+  readonly #facts: (() => DeviceFacts) | undefined;
+  readonly #guard: ((projectId: string, deviceId: string, threadId: string) => Promise<string | undefined>) | undefined;
   constructor(o: { hub: Pick<ProjectHub, 'threads' | 'settings'>; deviceId: string; deviceName: string;
     /** Local threads of the project in a live step, from the runners' memory. */
     localLive(projectId: string): Iterable<string>;
     /** Names for the device-limit text; this device's name is known. */
-    nameOf?(deviceId: string): Promise<string | undefined>; now?(): number }) {
+    nameOf?(deviceId: string): Promise<string | undefined>; now?(): number; facts?(): DeviceFacts;
+    guard?(projectId: string, deviceId: string, threadId: string): Promise<string | undefined> }) {
     this.#hub = o.hub; this.#deviceId = o.deviceId; this.#deviceName = o.deviceName; this.#localLive = o.localLive; this.#names = o.nameOf; this.#now = o.now ?? Date.now;
+    this.#facts = o.facts;
+    this.#guard = o.guard;
   }
   async #read<T>(cache: Map<string, T>, projectId: string, load: () => Promise<T>, fallback: () => T): Promise<T> {
     try { const value = await load(); cache.set(projectId, value); return value; }
@@ -83,7 +88,7 @@ export class Admission {
     if (exclude !== undefined) work.delete(exclude);
     const devices = new Map<string, number>();
     for (const deviceId of work.values()) devices.set(deviceId, (devices.get(deviceId) ?? 0) + 1);
-    return { project: work.size, devices, limits: { project: settings.maxRunningThreads, device: settings.maxRunningPerDevice } };
+    return { project: work.size, devices, limits: { project: settings.maxRunningThreads, device: settings.maxRunningPerDevice, ...(Object.keys(settings.perDeviceLimits).length ? { perDevice: settings.perDeviceLimits } : {}) } };
   }
   /** Counts a dispatch that is not live yet (a start or a turn about to begin) until `release`. */
   hold(projectId: string, deviceId: string, threadId: string): () => void {
@@ -118,13 +123,16 @@ export class Admission {
     return result;
   }
   async #admit(projectId: string, deviceId: string, threadId: string): Promise<AdmissionResult> {
+    const resource = (deviceId === this.#deviceId ? deviceResourceRefusal(this.#deviceName, this.#facts?.()) : undefined) ?? await this.#guard?.(projectId, deviceId, threadId);
+    if (resource) return { ok: false, scope: 'device', limit: 0, device: this.#deviceName, reason: resource, queued: resource };
     const counts = await this.counts(projectId, threadId);
     const refuse = async (scope: 'project' | 'device', limit: number): Promise<AdmissionRefusal> => {
       const device = scope === 'project' ? null : await this.#name(deviceId);
       return { ok: false, scope, limit, device, reason: waitingForSlotReason(limit, device), queued: queuedReason(limit, device) };
     };
     if (counts.project >= counts.limits.project) return refuse('project', counts.limits.project);
-    if ((counts.devices.get(deviceId) ?? 0) >= counts.limits.device) return refuse('device', counts.limits.device);
+    const deviceLimit = counts.limits.perDevice?.[deviceId] ?? counts.limits.device;
+    if ((counts.devices.get(deviceId) ?? 0) >= deviceLimit) return refuse('device', deviceLimit);
     return { ok: true, release: this.hold(projectId, deviceId, threadId) };
   }
 }

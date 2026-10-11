@@ -9,16 +9,18 @@ import { outputTail, runThreadCommand, SETUP_TIMEOUT_MS } from './verification.j
 import { parseWorktrees } from './worktree.js';
 import { readDocument, writeDocument, TurnProcessSchema, type NativeProcess } from '@jevellan/core';
 import { z } from 'zod';
+import { collectDeviceFacts, deviceResourceRefusal, type DeviceFacts } from '@jevellan/core';
 import { endTurnProcess } from './recovery.js';
 const JobProcessSchema = TurnProcessSchema.extend({ schema: z.literal('project-job-process-v1') });
 
 export class ProjectJobRunner {
-  readonly #running = new Map<string, { controller: AbortController; promise: Promise<void> }>();
+  readonly #running = new Map<string, { id: string; controller: AbortController; promise: Promise<void> }>();
   readonly #starting = new Set<string>();
   #closed = false;
   constructor(readonly o: { homes: Homes; hub: ProjectHub; tasks: ProjectTasks; git: ThreadGit; github: GitHubAccess; deviceId: string; deviceName: string; redactor: SecretRedactor;
     now(): number; settings(projectId: string): Promise<ProjectWorkSettings>; project(projectId: string): Promise<Project>; baseBranch(repo: string): Promise<string>; event(projectId: string, event: CoordinatorEvent): Promise<void>;
-    windowOpened(projectId: string): Promise<string | undefined>; day(projectId: string): Promise<string>; dayStart(projectId: string, day: string): Promise<number>; changed(): void }) {}
+    windowOpened(projectId: string): Promise<string | undefined>; day(projectId: string): Promise<string>; dayStart(projectId: string, day: string): Promise<number>; changed(): void; facts?(): DeviceFacts }) {}
+  runningIds(): string[] { return [...this.#running.values()].map(row => row.id); }
   busy(projectId?: string): boolean { return projectId ? this.#running.has(projectId) || this.#starting.has(projectId) : this.#running.size > 0 || this.#starting.size > 0; }
   async handoff(projectId: string, job: ProjectJob): Promise<WorkflowHandoffState | undefined> {
     if (job.run.kind !== 'github-workflow' || !job.run.dispatchAfterMerge) return undefined;
@@ -61,6 +63,8 @@ export class ProjectJobRunner {
   }
   async #start(task: ProjectWorkTask): Promise<void> {
     if (!deviceAllowsWork(this.o.homes)) throw Object.assign(new Error('This device serves apps only; project work runs on a working device.'), { status: 409 });
+    const resource = deviceResourceRefusal(this.o.deviceName, this.o.facts?.() ?? collectDeviceFacts(this.o.homes));
+    if (resource) throw Object.assign(new Error(resource), { status: 409, resourceRefusal: true });
     const job = task.jobId ? (await this.o.hub.job(task.jobId))?.document : null;
     if (!job || job.projectId !== task.projectId || !job.enabled) throw Object.assign(new Error('This job is unavailable or disabled.'), { status: 409 });
     const id = derivedId('jrun', task.id); let run = (await this.o.hub.jobRun(id))?.document;
@@ -94,7 +98,7 @@ export class ProjectJobRunner {
     // Deferral ensures the dispatch lock is released before receipt synchronization.
     let completed = false;
     const promise = Promise.resolve().then(() => operation(controller)).then(() => { completed = true; }).catch(() => undefined).finally(() => { this.#running.delete(run.projectId); if (completed) this.o.changed(); });
-    this.#running.set(run.projectId, { controller, promise });
+    this.#running.set(run.projectId, { id: run.id, controller, promise });
   }
   async #execute(initial: ProjectJobRun, _job: ProjectJob, signal: AbortSignal): Promise<void> {
     let run = (await this.o.hub.jobRun(initial.id))?.document ?? initial;

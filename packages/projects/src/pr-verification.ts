@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { z } from 'zod';
+import { collectDeviceFacts, deviceResourceRefusal, deviceAllowsWork, type DeviceFacts } from '@jevellan/core';
 import { rankAccounts, type AccountService } from '@jevellan/accounts';
 import { BridgeResultSchema, TurnProcessSchema, VerificationReportSchema, VerificationRunSchema, bridgeTools, readDocument, stableJson, writeDocument,
   type BridgeTool, type Configuration, type Homes, type Project, type ProjectHub, type SecretRedactor, type Thread, type VerificationReport, type VerificationRun } from '@jevellan/core';
@@ -42,7 +43,7 @@ export class VerificationTools implements BridgeScopeTools {
 export class PullRequestVerification {
   readonly #active = new Map<string, { execution?: TurnExecution; controller: AbortController; promise: Promise<VerificationRun | null> }>();
   #closed = false;
-  constructor(readonly o: { hub: ProjectHub; homes: Homes; git: ThreadGit; launcher: TurnLauncher; deviceId: string; redactor: SecretRedactor; now(): number;
+  constructor(readonly o: { hub: ProjectHub; homes: Homes; git: ThreadGit; launcher: TurnLauncher; deviceId: string; deviceName?: string; facts?(): DeviceFacts; redactor: SecretRedactor; now(): number;
     settings(): Promise<Configuration['x-jevellan']>; accounts: Pick<AccountService, 'list' | 'recordUsage' | 'recordError'>; runtimes: ReadonlyMap<string, RuntimeAdapter>; timeoutMs: number }) {}
   busy() { return this.#active.size > 0; }
   #path(run: VerificationRun) { return this.o.homes.at('worktrees', run.projectId, 'pr-verification', run.id); }
@@ -66,6 +67,7 @@ export class PullRequestVerification {
   execute(run: VerificationRun, thread: Thread, project: Project, repo: string, setupCommand: string): Promise<VerificationRun | null> {
     const existing = this.#active.get(run.id); if (existing) return existing.promise;
     if (this.#closed) return Promise.resolve(null);
+    if (!deviceAllowsWork(this.o.homes) || deviceResourceRefusal(this.o.deviceName ?? this.o.deviceId, this.o.facts?.() ?? collectDeviceFacts(this.o.homes))) return Promise.resolve(null);
     const active: { execution?: TurnExecution; controller: AbortController; promise: Promise<VerificationRun | null> } = { controller: new AbortController(), promise: Promise.resolve(null) };
     active.promise = this.#execute(run, thread, project, repo, setupCommand, active).finally(() => this.#active.delete(run.id));
     this.#active.set(run.id, active); return active.promise;

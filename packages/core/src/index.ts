@@ -79,3 +79,5 @@ export * from './merge-schemas.js';
 export * from './project-review-schemas.js';
 export * from './workflow-schemas.js';
 export * from './ekoa-code-schemas.js';
+export * from './device-facts.js';
+export * from './worktree-disk-schemas.js';

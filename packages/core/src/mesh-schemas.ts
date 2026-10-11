@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { DeviceSchema, HeartbeatSchema, IdSchema, TimestampSchema } from './schemas.js';
+import { DeviceSchema, DeviceTagsSchema, HeartbeatSchema, IdSchema, TimestampSchema } from './schemas.js';
 
 export function deviceOrigin(value: string): string | null {
   try {
@@ -72,6 +72,8 @@ export const UiSessionSchema = z.strictObject({
 });
 export type UiSession = z.infer<typeof UiSessionSchema>;
 export const UiSessionTokenSchema = z.string().max(4096).regex(/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/);
+export const DeviceTagsInputSchema = z.strictObject({ schema: z.literal('device-tags-input-v1'), deviceId: IdSchema, tags: DeviceTagsSchema });
+export const DeviceTagsRequestSchema = z.strictObject({ schema: z.literal('device-tags-request-v1'), ownerSession: UiSessionTokenSchema, input: DeviceTagsInputSchema });
 export const UiSigningMaterialSchema = z.strictObject({
   schema: z.literal('ui-signing-material-v1'), key: z.string().regex(/^[A-Za-z0-9+/]{43}=$/), generation: z.number().int().positive(),
 });

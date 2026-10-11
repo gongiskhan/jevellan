@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ10 hard device needs, resource refusals, facts in Why and confirmed orphan cleanup",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/screenshots/LJ10-devices-confirm-cleanup-desktop-dark.png",
+  "expected": "the Jevellan web app \"LJ10 devices confirm cleanup\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"LJ10 hard device needs, resource refusals, facts in Why and confirmed orphan cleanup\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The confirm dialog says '0 GB' for the total and for the single worktree, which reads like an unknown or empty size. A finer unit such as MB would be clearer.",
+      "The dialog's right edge overlaps the edge of the 'Inline fixture' device card behind it, cutting off the card title. The backdrop is blurred, so this doesn't block anything."
+    ]
+  }
+}

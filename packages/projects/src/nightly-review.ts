@@ -12,6 +12,7 @@ import type { TurnLauncher } from './launch.js';
 import { endTurnProcess } from './recovery.js';
 import { TurnExecution } from './turn-execution.js';
 import { derivedId } from './decision-items.js';
+import { collectDeviceFacts, deviceResourceRefusal, deviceAllowsWork, type DeviceFacts } from '@jevellan/core';
 const ProcessSchema = TurnProcessSchema.extend({ schema: z.literal('project-review-process-v1') });
 const refuse = (message: string, status = 409) => Object.assign(new Error(message), { status });
 export const REVIEW_APPEND = 'You are reviewing every commit that reached main since this project’s last completed review, including direct pushes. This session is read-only: do not change, commit or push anything. Read the complete supplied commit range and repository rules. Report worthwhile findings together, with concrete locations and explanations, or report none. End with exactly one jevellan_project_review_report. The coordinator chooses at most one combined finding task from your report.';
@@ -35,7 +36,7 @@ export class ReviewTools implements BridgeScopeTools {
 /** Reviews have no coding thread or publishing path. The final checked report and watermark share one task CAS write. */
 export class NightlyReview {
   readonly #active = new Map<string, { promise: Promise<void>; execution?: TurnExecution }>(); #closed = false;
-  constructor(readonly o: { hub: ProjectHub; tasks: ProjectTasks; homes: Homes; git: ThreadGit; launcher: TurnLauncher; deviceId: string; redactor: SecretRedactor; now(): number;
+  constructor(readonly o: { hub: ProjectHub; tasks: ProjectTasks; homes: Homes; git: ThreadGit; launcher: TurnLauncher; deviceId: string; deviceName?: string; facts?(): DeviceFacts; redactor: SecretRedactor; now(): number;
     settings(): Promise<Configuration['x-jevellan']>; accounts: Pick<AccountService, 'list' | 'recordUsage' | 'recordError'>; runtimes: ReadonlyMap<string, RuntimeAdapter>;
     project(id: string): Promise<Project>; repository(project: Project): string; baseBranch(repo: string): Promise<string>; timeoutMs: number;
     event(projectId: string, event: CoordinatorEvent): Promise<void>; changed(): void }) {}
@@ -50,6 +51,9 @@ export class NightlyReview {
   }
   async start(task: ProjectWorkTask) {
     if (this.#closed || this.busy(task.projectId)) return;
+    if (!deviceAllowsWork(this.o.homes)) throw refuse('This device serves apps only; project work runs on a working device.');
+    const reason = deviceResourceRefusal(this.o.deviceName ?? this.o.deviceId, this.o.facts?.() ?? collectDeviceFacts(this.o.homes));
+    if (reason) throw Object.assign(refuse(reason), { resourceRefusal: true });
     const project = await this.o.project(task.projectId), repo = this.o.repository(project), base = await this.o.baseBranch(repo), ref = `refs/jevellan/threads/${task.id}/base`;
     const head = await this.o.git.fetchPrivate(repo, base, ref) ?? await this.o.git.resolve(repo, `refs/heads/${base}`);
     if (!head) throw refuse('The project has no published main commit for review.');

@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ10 hard device needs, resource refusals, facts in Why and confirmed orphan cleanup",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/LJ10-device-facts-why-phone-light.png",
+  "expected": "the Jevellan web app \"LJ10 device facts why\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"LJ10 hard device needs, resource refusals, facts in Why and confirmed orphan cleanup\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The header label 'LJ10 choose from facts' is in a small monospace font next to the larger 'Why this placement' title. It reads like a debug or fixture prefix.",
+      "The section labels and the right-side annotations ('Jev', 'fixed', 'only option') use small, light-gray monospace text. It's readable, but the contrast is low."
+    ]
+  }
+}

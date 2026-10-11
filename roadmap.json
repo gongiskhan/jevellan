@@ -368,8 +368,8 @@
   {
     "id": "loop-machines",
     "title": "Working devices and resource guards",
-    "why": "Use Pro and dev-madrid for Ekoa while the mini stays apps-only.",
-    "status": "planned"
+    "why": "Versioned facts, owner tags, hard needs/resources, receiving-worker guards, per-device limits and confirmed orphan cleanup are implemented. Focused backend 67/67 and four-layout LJ10 pass with 12 live vision verdicts. Madrid clone/tooling ready. Pro import, live join/sign-in and activation remain blocked; mini stays apps-only.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "loop-merge-gate",

@@ -8,6 +8,7 @@ import { SharedStateRequestSchema, boundedRedaction } from '@jevellan/core';
 import { HubProjectStore, HubState } from '@jevellan/mesh';
 import { ImproverDeviceRequestSchema, ImproverRequestSchema, PeerLoginSessionInputSchema } from '@jevellan/core';
 import { AgentAccessHubRequestSchema } from '@jevellan/core';
+import { DeviceTagsInputSchema, DeviceTagsRequestSchema } from '@jevellan/core';
 
 /** Project hub collections; `handleApi` leaves them to this route's own lifecycle gate (D247). */
 export const PROJECT_HUB_ROUTE = /^\/hub\/mesh\/projects\/([a-z]+)$/;
@@ -23,6 +24,11 @@ export async function handleMeshDeviceApi(app: Application, request: IncomingMes
   const authorization = request.headers.authorization;
   const device = app.devices.authenticate(authorization?.startsWith('Bearer ') ? authorization.slice(7) : undefined);
   const send = (value: unknown) => json(response, app.hub.redactor.document(value));
+  if (path === '/hub/mesh/device-tags' && method === 'POST') {
+    const input = DeviceTagsRequestSchema.parse(await requestBody(request)); app.redactor.add(input.ownerSession);
+    if (!app.hubAuth.verify(input.ownerSession, device.id)) throw Object.assign(new Error('Sign in to Jevellan.'), { status: 401 });
+    send(app.devices.updateTags(input.input)); return true;
+  }
   if (path === '/hub/mesh/ekoa' && method === 'POST') {
     const input = EkoaRequestSchema.parse(await requestBody(request)); app.redactor.add(input.ownerSession);
     if (input.operation === 'save' && input.input.token) app.redactor.add(input.input.token);
@@ -129,9 +135,10 @@ export async function handleMeshDeviceApi(app: Application, request: IncomingMes
 }
 
 /** Called after browser authentication, except for the expiring switch-token exchange. */
-export async function handleMeshUiApi(app: Application, request: IncomingMessage, response: ServerResponse, url: URL, secureCookies = false): Promise<boolean> {
+export async function handleMeshUiApi(app: Application, request: IncomingMessage, response: ServerResponse, url: URL, secureCookies = false, ownerSession?: string): Promise<boolean> {
   const method = request.method ?? 'GET'; const path = url.pathname;
   if (path === '/hub/devices/roster' && method === 'GET') { json(response, app.redactor.document(await app.roster())); return true; }
+  if (path === '/hub/devices/tags' && method === 'POST' && ownerSession) { json(response, await app.updateDeviceTags(DeviceTagsInputSchema.parse(await requestBody(request)), ownerSession)); return true; }
   if (path === '/hub/devices/invitations' && method === 'POST') { EmptySchema.parse(await requestBody(request)); json(response, await app.inviteDevice()); return true; }
   if (path === '/api/devices/switch' && method === 'POST') { json(response, await app.switchDevice(await requestBody(request))); return true; }
   if (path === '/switch' && method === 'GET') {

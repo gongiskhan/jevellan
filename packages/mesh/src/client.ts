@@ -1,4 +1,5 @@
 import { EkoaRequestSchema, EkoaStateSchema } from '@jevellan/core';
+import { DeviceTagsRequestSchema } from '@jevellan/core';
 import { AuthStateSchema, ConsumeSwitchSchema, DeviceOriginSchema, DeviceRosterSchema, DeviceSwitchInputSchema, DeviceSwitchSchema, DeviceTokenSchema, DeviceViewSchema, EmptySchema, ErrorDocumentSchema, HeartbeatSchema, IdSchema, JoinedDeviceSchema, JoinDeviceInputSchema, JoinInvitationSchema, MeshSessionInputSchema, MeshSessionResultSchema, MeshSessionStateSchema, PassphraseInputSchema, SwitchedSessionSchema, UiSigningMaterialSchema, stableJson, type DocumentSchema, type SecretRedactor, type UiSigningMaterial } from '@jevellan/core';
 import { verifySharedSession } from './auth.js';
 import { AccountHubRequestSchema, AccountHubResultSchema } from '@jevellan/core';
@@ -97,6 +98,12 @@ export class MemberHubClient {
   async devices() {
     const result = await this.#request('devices', DeviceRosterSchema);
     if (result.currentDeviceId !== this.deviceId) throw new HubProtocolError();
+    return result;
+  }
+  async updateDeviceTags(raw: unknown) {
+    const input = DeviceTagsRequestSchema.parse(raw); this.options.redactor.add(input.ownerSession);
+    const result = await this.#request('device-tags', DeviceViewSchema, input);
+    if (result.device.id !== input.input.deviceId) throw new HubProtocolError();
     return result;
   }
   async heartbeat(input: unknown) {

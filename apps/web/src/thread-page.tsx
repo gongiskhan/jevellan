@@ -510,6 +510,12 @@ function WhyPanel({ view, data, close }: { view: ThreadView; data: PageProps['da
           <h3>{copy.ACCOUNT}</h3>
           <p className="why-line"><b>{account}</b></p>
         </section>}
+        {!!placement.deviceFacts?.length && <section className="why-section">
+          <h3>Devices when placed</h3>
+          {placement.deviceFacts.map(device => <p key={device.deviceId}><b>{device.name}</b>: {device.running} running
+            {device.facts && <>, load {Number(device.facts.load5.toFixed(1))} on {device.facts.cores} cores, {Math.floor(device.facts.freeDiskBytes / 1e9)} GB free, {Number((device.facts.freeMemoryBytes / 1e9).toFixed(1))} GB memory free</>}
+            , tags {device.tags.join(', ') || 'none'}</p>)}
+        </section>}
         {placement.taskContext && <section className="why-section">
           <h3>Task</h3><p>{placement.taskContext.type}{placement.taskContext.goal ? ` · ${placement.taskContext.goal.name}` : ''}</p>
           {placement.taskContext.needs.length > 0 && <p>Needs: {placement.taskContext.needs.join(', ')}</p>}

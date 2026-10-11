@@ -4,8 +4,8 @@ import { rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { randomBytes } from 'node:crypto';
-import { DeviceSchema, Homes, deviceOrigin, localDeviceRoute, type Heartbeat, type JoinDeviceInput } from '../packages/core/dist/index.js';
-import { DeviceRegistry, HubDatabase, devicePresence } from '../packages/mesh/dist/index.js';
+import { DeviceSchema, Homes, ProjectSchema, deviceOrigin, localDeviceRoute, type Heartbeat, type JoinDeviceInput } from '../packages/core/dist/index.js';
+import { DeviceRegistry, HubDatabase, HubState, devicePresence } from '../packages/mesh/dist/index.js';
 
 let root: string; let homes: Homes; let hub: HubDatabase; let registry: DeviceRegistry; let now: number;
 beforeEach(() => {
@@ -22,6 +22,22 @@ function request(id = 'member', code = registry.invite().code): JoinDeviceInput 
 function heartbeat(deviceId = 'member', at = new Date(now).toISOString()): Heartbeat {
   return { schema: 'heartbeat-v1', deviceId, at, version: '0.2.0', runningConversations: ['conversation'], projects: [], externalSessions: [], load: { cpuPct: 15, memFreeMb: 1024 } };
 }
+test('apps-only is sticky authority and owner tags are never replaced by heartbeats', () => {
+  registry.join(request());
+  const row = hub.get('devices', 'member', DeviceSchema)!;
+  hub.put('devices', 'member', DeviceSchema, { ...row.document, workPolicy: { schema: 'device-work-policy-v1', mode: 'apps-only' } }, row.revision);
+  registry.updateTags({ schema: 'device-tags-input-v1', deviceId: 'member', tags: ['residential'] });
+  registry.heartbeat('member', { ...heartbeat(), workPolicy: { schema: 'device-work-policy-v1', mode: 'work' } });
+  expect(registry.view('member').device).toMatchObject({ workPolicy: { mode: 'apps-only' }, tags: ['residential'] });
+  expect(registry.view('hub').device.tags).toEqual(['mac', 'residential', 'browser-automation']);
+});
+test('an apps-only member cannot be an allowed Ekoa device through project registration', async () => {
+  registry.join(request()); const row = hub.get('devices', 'member', DeviceSchema)!;
+  hub.put('devices', 'member', DeviceSchema, { ...row.document, workPolicy: { schema: 'device-work-policy-v1', mode: 'apps-only' } }, row.revision);
+  const state = new HubState(hub, 'hub', ['codex']), project = ProjectSchema.parse({ schema: 'project-v1', id: 'ekoa', name: 'Ekoa Code', remoteUrl: 'https://github.com/gongiskhan/ekoa-code.git', paths: { hub: root }, allowedDevices: ['hub', 'member'], branchPolicy: 'external', memory: { mode: 'device', dir: '.jevellan/memory' }, context: { state: 'none' } });
+  expect(() => state.projects.put(project, 0, 'bad')).toThrow('Ekoa Code cannot run on an apps-only device');
+  expect((await state.projects.put({ ...project, allowedDevices: ['hub'] }, 0, 'good')).project.allowedDevices).toEqual(['hub']);
+});
 
 test('joining consumes one expiring code, returns a stable retry credential, and survives reopening', () => {
   const input = request(); const joined = registry.join(input);

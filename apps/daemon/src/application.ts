@@ -1,6 +1,6 @@
 import { EkoaMirrorService } from './ekoa-mirror.js';
 import type { EkoaConnector } from './ekoa-client.js';
-import { EkoaRequestSchema } from '@jevellan/core';
+import { collectDeviceFacts, EkoaRequestSchema, DeviceTagsInputSchema, type DeviceFacts } from '@jevellan/core';
 import { existsSync } from 'node:fs';
 import { hostname } from 'node:os';
 import { z } from 'zod';
@@ -25,7 +25,7 @@ import { LifecycleGate } from '@jevellan/core';
 import { AgentAccess, HubAgentAccess } from '@jevellan/mesh';
 import { assertHubNotMoved, deviceAllowsWork } from '@jevellan/core';
 
-export type ApplicationOptions = { homes?: Homes; port?: number; url?: string; runtimes?: (context: RuntimeContext) => ReadonlyMap<string, RuntimeAdapter>; timers?: boolean; repositoryVisibility?: VisibilityProbe; decisionFetch?: typeof fetch; hubFetch?: typeof fetch; nativeSessions?: Omit<SessionSensorOptions, 'homes'>;
+export type ApplicationOptions = { homes?: Homes; port?: number; url?: string; runtimes?: (context: RuntimeContext) => ReadonlyMap<string, RuntimeAdapter>; timers?: boolean; repositoryVisibility?: VisibilityProbe; decisionFetch?: typeof fetch; hubFetch?: typeof fetch; nativeSessions?: Omit<SessionSensorOptions, 'homes'>; deviceFacts?(): DeviceFacts;
   /** Test seam for the improver's memory index; production uses the isolated Basic Memory. */ projectMemory?: (project: Project) => MemoryPort;
   /** Projects test seams: the GitHub transport and API base (a fake server in tests), and Projects timers (periodic loops follow `timers`). */
   githubFetch?: typeof fetch; githubBaseUrl?: string; projectTimers?: Partial<ProjectTimers>; ekoaConnector?: EkoaConnector; forceHub?: boolean };
@@ -136,6 +136,7 @@ export class Application {
       // Projects share the account serialization, checkout ownership, leases, bridge registry and memory with conversations.
       this.projectHub = this.member ? new MemberProjectStore(this.member) : new HubProjectAccess(this.hub, this.device.deviceId, undefined, () => this.devices.list());
       this.projectWork = new ProjectWork({ homes: this.homes, deviceId: this.device.deviceId, deviceName: this.device.name, redactor: this.redactor,
+        ...(options.deviceFacts ? { facts: options.deviceFacts } : {}),
         projects: this.state.projects, hub: this.projectHub,
         github: { credential: async (projectId) => this.state.github.credential(projectId), ...(options.githubFetch ? { fetch: options.githubFetch } : {}), ...(options.githubBaseUrl ? { baseUrl: options.githubBaseUrl } : {}) },
         accounts: this.accounts, runtimes: this.runtimes, accountRuns, ownership: this.conversations.ownership, leases: this.conversations.leases,
@@ -165,6 +166,7 @@ export class Application {
         draft: (request, signal) => this.backgroundDrafts.run(request, signal), handoffs: projectId => this.conversations.recentHandoffSummaries(projectId),
         enterOperation: (id, title) => this.lifecycle.enter({ kind: 'settings', id, title }), pollMs: this.member ? 15_000 : 60_000 });
       this.presence = new DevicePresence({ deviceId: this.device.deviceId, version: VERSION, sensor: this.sessions,
+        facts: () => options.deviceFacts?.() ?? collectDeviceFacts(this.homes, this.projectWork.runningThreads(), this.projectWork.jobs.runningIds()),
         workPolicy: () => ({ schema: 'device-work-policy-v1', mode: deviceAllowsWork(this.homes) ? 'work' : 'apps-only' }),
         projects: async () => (await this.state.projects.list()).map(row => row.project), running: () => this.conversations.localRunning(),
         report: async heartbeat => {
@@ -203,6 +205,10 @@ export class Application {
     throw Object.assign(new Error('Settings changed while loading. Reload the latest version.'), { status: 409 });
   }
   async roster() { return this.member ? this.member.devices() : this.mesh.roster(this.device.deviceId); }
+  async updateDeviceTags(input: unknown, ownerSession: string) {
+    const value = DeviceTagsInputSchema.parse(input);
+    return this.member ? this.member.updateDeviceTags({ schema: 'device-tags-request-v1', input: value, ownerSession }) : this.devices.updateTags(value);
+  }
   async inviteDevice() { return this.member ? this.member.invite() : this.mesh.invite(); }
   async switchDevice(input: unknown) { return this.member ? this.member.issueSwitch(input) : this.devices.issueSwitch(this.device.deviceId, DeviceSwitchInputSchema.parse(input)); }
   async consumeSwitch(input: unknown) { return this.auth instanceof MemberUiAuth ? this.auth.consumeSwitch(input) : this.mesh.consumeSwitch(this.device.deviceId, ConsumeSwitchSchema.parse(input).token); }

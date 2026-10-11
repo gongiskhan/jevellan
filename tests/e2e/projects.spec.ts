@@ -1,6 +1,6 @@
 import type { Locator, Page, TestInfo } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
-import { DeviceRosterSchema, ProjectDailyListViewSchema, ProjectWorkViewSchema, RuntimeListSchema, TaskListViewSchema, TaskReceiptSchema, ThreadViewSchema, type ThreadView } from '../../packages/core/dist/client.js';
+import { DeviceRosterSchema, ProjectDailyListViewSchema, ProjectWorkViewSchema, RuntimeListSchema, TaskListViewSchema, TaskReceiptSchema, ThreadViewSchema, WorktreeDiskSchema, type ThreadView } from '../../packages/core/dist/client.js';
 import { threadDeviceOffline } from '../../packages/projects/dist/copy.js';
 import { expect, test } from './fixtures.js';
 import { expectClearOfComposer, expectNoStaleJump, openSidebar } from './navigation.js';
@@ -329,6 +329,8 @@ test('PJ3 project page opens from the sidebar and the coordinator chat streams',
   await shot(page, 'chat-reply');
   expect(errors).toEqual([]);
 });
+
+
 
 test('PJ3 a decision is answered from the Waiting tab', async ({ page }, info) => {
   const errors = await begin(page);
@@ -1374,4 +1376,43 @@ test('LJ8 Ekoa connection mirrors decisions, ask-owner pulls and aggregated draf
   await page.reload(); await expect(page.getByText('Jevellan · Projects mirror: 2 proposed tasks', { exact: true })).toBeVisible(LONG);
   expect(await page.content()).not.toContain(prepared.token); await shot(page, 'mirror-updated');
   expect(errors).toEqual([]);
+});
+
+test('LJ10 hard device needs, resource refusals, facts in Why and confirmed orphan cleanup', async ({ page }, info) => {
+  const errors = await begin(page), step = (action: string) => control('/projects/devices', { schema: 'fixture-devices-v1', action });
+  const devices = await step('prepare') as { hubId: string; memberId: string; miniId: string };
+  const start = async (name: string, needs: string[] = [], fixedDevice?: string) => {
+    const response = await page.request.post(`${PROJECT}/threads`, { data: { schema: 'thread-create-request-v1', clientRequestId: randomUUID(), title: name,
+      task: 'LJ10 device: inspect without changing files.', isolation: 'worktree', taskContext: { type: 'analysis', goal: null, needs }, ...(fixedDevice ? { deviceId: fixedDevice } : {}) } });
+    return { response, body: await response.json() };
+  };
+  const residential = await start('LJ10 residential task', ['residential']); expect(residential.response.ok()).toBe(true);
+  const pro = await threadView(page, residential.body.threadId); expect(pro.thread.ownerDeviceId).toBe(devices.hubId);
+  expect(pro.placement.excludedDevices).toContainEqual({ deviceId: devices.memberId, reason: 'missing tags: residential' });
+  await expect.poll(async () => (await threadView(page, pro.thread.id)).thread.state, LONG).toBe('done');
+  const datacenter = await start('LJ10 datacenter task', ['datacenter']); expect(datacenter.response.ok()).toBe(true);
+  await expect.poll(async () => (await work(page)).threads.find(thread => thread.id === datacenter.body.threadId)?.state, LONG).toBe('done');
+  expect((await threadView(page, datacenter.body.threadId)).thread.ownerDeviceId).toBe(devices.memberId);
+  const any = await start('LJ10 choose from facts'); expect(any.response.ok()).toBe(true);
+  const selected = await threadView(page, any.body.threadId); expect(selected.placement.deviceFacts?.find(row => row.deviceId === devices.hubId)?.facts?.cores).toBe(8);
+  const packets = await step('healthy') as { packets: Array<{ schema: string; devices: Array<{ facts?: { cores: number } }> }> };
+  expect(packets.packets.some(packet => packet.schema === 'placement-state-v2' && packet.devices.some(device => device.facts?.cores === 8))).toBe(true);
+  await expect.poll(async () => (await threadView(page, any.body.threadId)).thread.state, LONG).toBe('done');
+  const mini = await start('LJ10 mini exclusion', ['residential'], devices.miniId); expect(mini.response.status()).toBe(409);
+  await step('low-disk'); const low = await start('LJ10 low disk', [], devices.hubId); expect(low.response.status()).toBe(409); expect(low.body.message).toContain('has 19 GB free; Jevellan needs at least 20 GB');
+  await step('busy'); const busy = await start('LJ10 busy', [], devices.hubId); expect(busy.response.status()).toBe(409); expect(busy.body.message).toContain('is busy (load 17 on 8 cores)'); await step('healthy');
+  await page.goto(`/projects/projects_fixture/threads/${any.body.threadId}`); await tap(page, page.getByRole('button', { name: 'Why', exact: true }));
+  const why = page.getByRole('dialog', { name: 'Why this placement', exact: true }); await expect(why).toContainText('Devices when placed'); await expect(why).toContainText('80 GB free'); await shot(page, 'device-facts-why', false);
+  await why.getByRole('button', { name: 'Close panel', exact: true }).click();
+  await step('orphan'); await page.goto('/settings/devices');
+  const roster = DeviceRosterSchema.parse(await read(page, '/hub/devices/roster')), here = roster.devices.find(row => row.device.id === devices.hubId)!.device.name;
+  const card = page.locator('.device-card').filter({ has: page.getByRole('heading', { name: here, exact: true }) });
+  await expect(card).toContainText('Thread worktrees:'); await expect(page.getByText('Apps only', { exact: true })).toBeVisible();
+  await card.getByRole('textbox', { name: 'Device tags', exact: true }).fill('mac, residential, browser-automation, phone-testing'); await card.getByRole('button', { name: 'Save tags', exact: true }).click();
+  await expect.poll(async () => DeviceRosterSchema.parse(await read(page, '/hub/devices/roster')).devices.find(row => row.device.id === devices.hubId)?.device.tags).toContain('phone-testing');
+  await card.getByRole('button', { name: 'Remove orphaned worktrees', exact: true }).click();
+  const confirmation = page.getByRole('dialog', { name: 'Remove orphaned worktrees', exact: true }); await expect(confirmation).toContainText('older than seven days');
+  await shot(page, 'devices-confirm-cleanup', true); await confirmation.getByRole('button', { name: 'Remove worktrees', exact: true }).click(); await expect(confirmation).toBeHidden(LONG);
+  expect(WorktreeDiskSchema.parse(await read(page, `/api/devices/${devices.hubId}/worktrees`)).entries.some(entry => entry.id === 'orphan_fixture')).toBe(false);
+  await shot(page, 'devices-cleaned', true); expect(errors).toEqual([]); expect(layout(info)).toBeTruthy();
 });
