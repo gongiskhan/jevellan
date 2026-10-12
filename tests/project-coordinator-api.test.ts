@@ -138,7 +138,7 @@ test('streamLedger: refusals before headers, exact frames in 64-event batches, d
     expect(heads).toEqual([]); expect(writes).toEqual([]);
     // The header wins over the query; 140 events arrive in three batches without any append.
     open({ 'last-event-id': '10' }, '?after=0');
-    expect(heads).toEqual([{ status: 200, headers: { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no', 'X-Content-Type-Options': 'nosniff' } }]);
+    expect(heads).toEqual([{ status: 200, headers: { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no', 'X-Content-Type-Options': 'nosniff', 'X-Jevellan-Ledger-Head': '150' } }]);
     await vi.waitFor(() => expect(writes).toHaveLength(140));
     expect(writes[0]).toBe('id: 11\nevent: project\ndata: {"n":11}\n\n');
     expect(writes.map((chunk) => Number(/^id: (\d+)\n/.exec(chunk)![1]))).toEqual(Array.from({ length: 140 }, (_, n) => n + 11));
@@ -214,7 +214,8 @@ test('coordinator routes: session required, assignment by the first message, ide
   const native = f.coordinatorState().session!.nativeSessionId!; expect(native).toBeTruthy();
   const after = ProjectWorkViewSchema.parse(await call(f, route('/work'), 'GET', undefined, 200));
   expect(after.coordinator).toEqual({ state: 'idle', deviceId: f.app.device.deviceId, deviceName: f.deviceName, online: true,
-    session: { runtime: 'fake', modelLabel: 'Fixture', effort: 'high', accountLabel: 'Fixture', turns: 1 }, planned, canMoveHere: false });
+    session: { runtime: 'fake', modelLabel: 'Fixture', effort: 'high', accountLabel: 'Fixture', turns: 1,
+      context: expect.objectContaining({ schema: 'project-session-context-v1', thresholdPercent: 70, compactions: [], lastCompactionAt: null, needsFreshContext: false }) }, planned, canMoveHere: false });
   expect(after.lastEventId).toBe(lastOne);
   expect(ProjectWorkListViewSchema.parse(await call(f, '/api/project-work', 'GET', undefined, 200)).projects)
     .toEqual([{ projectId: pid, name: 'Shop', waiting: 0, running: 0, inReview: 0, coordinator: { deviceId: f.app.device.deviceId, state: 'idle' } }]);
@@ -272,26 +273,27 @@ test('coordinator routes: session required, assignment by the first message, ide
 test('work settings, notebook and answers: revision checks, the main default coerced with its reason, idempotent answers, counts and retryable outages', { timeout: 120_000 }, async () => {
   const f = fixture = await projectFixture();
   const pid = f.project.id; const route = (suffix: string) => `/api/projects/${pid}${suffix}`;
-  const base = defaultProjectWorkSettings(pid);
+  const initial = defaultProjectWorkSettings(pid);
+  const base = { ...initial, memory: { ...initial.memory, mode: 'repo' as const } };
   const defaults = { defaultIsolation: base.defaultIsolation, coordinator: base.coordinator, setupCommand: base.setupCommand, maxRunningThreads: base.maxRunningThreads,
     maxRunningPerDevice: base.maxRunningPerDevice, threadTurnCap: base.threadTurnCap };
   const put = (revision: number, over: object = {}, clientRequestId?: string) =>
     ({ schema: 'project-work-settings-request-v1', revision, settings: { ...defaults, ...over }, ...(clientRequestId ? { clientRequestId } : {}) });
 
   // Settings: defaults first, then a compare-and-swap on the revision; the body is checked before the revision.
-  expect(ProjectWorkSettingsViewSchema.parse(await call(f, route('/work-settings'), 'GET', undefined, 200))).toEqual({ schema: 'project-work-settings-view-v1', settings: defaultProjectWorkSettings(pid) });
+  expect(ProjectWorkSettingsViewSchema.parse(await call(f, route('/work-settings'), 'GET', undefined, 200))).toEqual({ schema: 'project-work-settings-view-v1', settings: base });
   expect(await call(f, route('/work-settings'), 'PUT', put(0, { maxRunningThreads: 3 }), 200)).toEqual({ schema: 'project-work-settings-view-v1',
-    settings: { ...defaultProjectWorkSettings(pid), revision: 1, maxRunningThreads: 3 } });
+    settings: { ...base, revision: 1, maxRunningThreads: 3 } });
   expect(await call(f, route('/work-settings'), 'PUT', put(0, { maxRunningThreads: 4 }), 409)).toEqual(refused('conflict', SETTINGS_CHANGED));
   expect(await call(f, route('/work-settings'), 'PUT', put(0, { maxRunningThreads: 21 }), 400)).toEqual(refused('request-failed', CHECK));
   expect(await call(f, route('/work-settings'), 'PUT', { ...put(1), settings: { ...defaults, setupCommand: 'x'.repeat(501) } }, 400)).toEqual(refused('request-failed', CHECK));
   expect(await call(f, '/api/projects/missing/work-settings', 'GET', undefined, 404)).toEqual(refused('not-found', PROJECT_NOT_FOUND));
   // A main default is stored and read as main now that main isolation exists (D88, phase 6), without a notice.
   expect(await call(f, route('/work-settings'), 'PUT', put(1, { maxRunningThreads: 3, defaultIsolation: 'main' }), 200)).toEqual({ schema: 'project-work-settings-view-v1',
-    settings: { ...defaultProjectWorkSettings(pid), revision: 2, maxRunningThreads: 3, defaultIsolation: 'main' } });
+    settings: { ...base, revision: 2, maxRunningThreads: 3, defaultIsolation: 'main' } });
   expect((await f.app.projectHub.settings(pid))?.document).toMatchObject({ revision: 2, defaultIsolation: 'main' });
   expect(await call(f, route('/work-settings'), 'GET', undefined, 200)).toEqual({ schema: 'project-work-settings-view-v1',
-    settings: { ...defaultProjectWorkSettings(pid), revision: 2, maxRunningThreads: 3, defaultIsolation: 'main' } });
+    settings: { ...base, revision: 2, maxRunningThreads: 3, defaultIsolation: 'main' } });
   const opened = ProjectWorkViewSchema.parse(await call(f, route('/work'), 'GET', undefined, 200));
   expect(opened).toMatchObject({ settings: { defaultIsolation: 'main', revision: 2 }, gates: { mainIsolation: true } }); expect(opened.settingsNotice).toBeUndefined();
   // On a Leave git project the brief's text wins over the phase text (5.1, D88).
@@ -302,7 +304,7 @@ test('work settings, notebook and answers: revision checks, the main default coe
   // A retried save with its client request id repeats instead of conflicting (D101).
   const retried = put(2, { maxRunningThreads: 5 }, 'set_retry');
   const saved = await call(f, route('/work-settings'), 'PUT', retried, 200);
-  expect(saved).toEqual({ schema: 'project-work-settings-view-v1', settings: { ...defaultProjectWorkSettings(pid), revision: 3, maxRunningThreads: 5 } });
+  expect(saved).toEqual({ schema: 'project-work-settings-view-v1', settings: { ...base, revision: 3, maxRunningThreads: 5 } });
   expect(await call(f, route('/work-settings'), 'PUT', retried, 200)).toEqual(saved);
   expect(ProjectWorkSettingsSchema.parse((await f.app.projectHub.settings(pid))!.document)).toMatchObject({ revision: 3, maxRunningThreads: 5 });
 
@@ -337,7 +339,7 @@ test('work settings, notebook and answers: revision checks, the main default coe
   expect(await call(f, route(`/decisions/${asked}/answer`), 'POST', answer('ans_2', { optionLabel: 'SQLite', text: 'Keep it simple.' }), 202)).toEqual({ schema: 'decision-answered-view-v1', repeated: true });
   expect(await call(f, route(`/decisions/${asked}/answer`), 'POST', answer('ans_3', { optionLabel: 'Postgres' }), 409)).toMatchObject({ code: 'conflict' });
   const answers = f.coordinatorState().queue.filter((event) => event.kind === 'decision-answer');
-  expect(answers).toEqual([expect.objectContaining({ decisionId: asked, question: 'Which database?', answer: { optionLabel: 'SQLite', text: 'Keep it simple.' } })]);
+  expect(answers).toEqual([expect.objectContaining({ decisionId: asked, question: 'Which database?', answer: { optionLabel: 'SQLite', text: 'Keep it simple.', source: 'panel' } })]);
   // Waiting shows open items plus the last 10 answered, newest first (D52).
   for (let n = 0; n < 11; n += 1) {
     const id = await decisions.ask(pid, { question: `Question ${n}?`, options: [] }, 'coordinator');

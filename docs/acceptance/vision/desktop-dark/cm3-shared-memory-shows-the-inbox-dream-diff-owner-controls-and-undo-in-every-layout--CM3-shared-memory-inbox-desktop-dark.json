@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Vertical spacing is tight between the 'Capture durable knowledge from sessions' checkbox and the 'Nightly dream' label, and between the 'Add an owner note' disclosure and the 'Search memory' label",
-      "The 'Add an owner note' disclosure is larger than the nearby labels and sits slightly out of alignment with them",
-      "Inbox and note entries look like full-width outlined buttons with centered text, so they're harder to scan than list rows"
+      "'Add an owner note' disclosure sits tight against the 'Search memory' label with almost no vertical spacing",
+      "Inbox and project note items are full-width outlined buttons with centered text, so they look like action buttons instead of list entries",
+      "Gap between the 'Capture durable knowledge' checkbox and the 'Nightly dream' label is tight compared with the other sections"
     ]
   }
 }

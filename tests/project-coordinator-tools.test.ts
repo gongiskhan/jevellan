@@ -79,10 +79,14 @@ function acknowledge(f: ProjectFixture, count: number): string[] {
 type ToolLine = ProjectLedgerData<'coordinator-tool'>;
 function toolLines(f: ProjectFixture): ToolLine[] {
   const ledger = f.app.projectWork.coordinatorLedger(f.project.id);
-  return ledger.events().filter((event) => event.type === 'coordinator-tool').map((event) => ledger.payload(event as ProjectLedgerEvent & { type: 'coordinator-tool' }));
+  return ledger.events().filter((event) => event.type === 'coordinator-tool').map((event) => {
+    const line = ledger.payload(event as ProjectLedgerEvent & { type: 'coordinator-tool' });
+    if (line.inputTruncated) expect(line.input?.length).toBe(32768);
+    else expect(() => JSON.parse(line.input!)).not.toThrow(); return line;
+  });
 }
 const line = (tool: string, ok: boolean, summary: string | RegExp, ids: Partial<Pick<ToolLine, 'threadId' | 'decisionId' | 'reason'>> = {}) =>
-  ({ schema: 'coordinator-tool-v1', tool, ok, summary: typeof summary === 'string' ? summary : expect.stringMatching(summary), ...ids });
+  ({ schema: 'coordinator-tool-v1', tool, ok, input: expect.any(String), inputTruncated: expect.any(Boolean), summary: typeof summary === 'string' ? summary : expect.stringMatching(summary), ...ids });
 const fieldSentence = (field: string) => new RegExp(`^${field}: .+\\. Check the tool input\\.$`);
 async function index(f: ProjectFixture, threadId: string, accept: (value: ThreadIndex | undefined) => boolean): Promise<ThreadIndex> {
   return (await f.waitFor(() => f.index(threadId), accept))!;

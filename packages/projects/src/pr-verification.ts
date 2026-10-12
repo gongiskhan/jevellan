@@ -1,3 +1,4 @@
+import type { SessionEvidence } from './ledger.js';
 import { existsSync, mkdirSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { z } from 'zod';
@@ -48,7 +49,7 @@ export class VerificationTools implements BridgeScopeTools {
 export class PullRequestVerification {
   readonly #active = new Map<string, { execution?: TurnExecution; controller: AbortController; promise: Promise<VerificationRun | null> }>();
   #closed = false;
-  constructor(readonly o: { hub: ProjectHub; homes: Homes; git: ThreadGit; launcher: TurnLauncher; deviceId: string; deviceName?: string; facts?(): DeviceFacts; redactor: SecretRedactor; now(): number;
+  constructor(readonly o: { sessionEnd?(evidence: SessionEvidence): void; hub: ProjectHub; homes: Homes; git: ThreadGit; launcher: TurnLauncher; deviceId: string; deviceName?: string; facts?(): DeviceFacts; redactor: SecretRedactor; now(): number;
     settings(): Promise<Configuration['x-jevellan']>; accounts: Pick<AccountService, 'list' | 'recordUsage' | 'recordError'>; runtimes: ReadonlyMap<string, RuntimeAdapter>; timeoutMs: number; memory?(project: Project): ProjectMemoryPort }) {}
   busy() { return this.#active.size > 0; }
   #path(run: VerificationRun) { return this.o.homes.at('worktrees', run.projectId, 'pr-verification', run.id); }
@@ -119,6 +120,7 @@ export class PullRequestVerification {
             active.execution = new TurnExecution({ run: launched.run, accountId: launched.accountId, secretRef: launched.secretRef, model: run.model, deviceId: this.o.deviceId, accounts: this.o.accounts, initialUsage: launched.usage,
               onSession: () => {}, onProcess: native => writeDocument(processPath, ProcessSchema, { schema: 'verification-process-v1', turn: 1, startedAt: new Date(this.o.now()).toISOString(), ...native }), redactor: this.o.redactor });
             const outcome = await active.execution.done;
+            this.o.sessionEnd?.({ projectId: run.projectId, owner: { kind: 'verification', id: run.id }, runtime: run.runtime, model: run.model, startedAt: run.at, endedAt: new Date(this.o.now()).toISOString(), outcome });
             // TurnExecution only resolves after the entire owned process group is gone.
             rmSync(processPath, { force: true });
             const report = tools.report;

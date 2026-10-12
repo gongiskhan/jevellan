@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal body cuts off at the bottom: the 'Minutes between refills' input is only partly visible above the footer, and there's no visible scroll cue showing more settings below.",
-      "Above the modal, the 'Override coordinator' and 'New task' header buttons have no gap between them (their outlines touch)."
+      "The modal body scrolls, so the 'Minutes between refills' field is cut off at the bottom edge until you scroll down. The compaction setting is unaffected: 'Compact at percent' (65) is fully visible and readable.",
+      "The 'Worktree setup command' placeholder 'npm ci' is in light grey and has fairly low contrast."
     ]
   }
 }

@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The diff panel is cut off at the bottom by the sticky Apply/Discard footer. The dialog body seems to scroll, so the rest of the diff should still be reachable.",
-      "The status text appears twice: the line 'Memory dream: suggested — Kept the test conventions and consolidated the inbox.' is followed by separate 'suggested' and 'Kept the test conventions...' lines.",
-      "In the diff, the long header 'diff --git a/Project brief.md b/Project brief.md' wraps onto a second line at this narrow width.",
-      "The counts row uses raw camelCase keys ('inboxPromoted', 'inboxDropped') instead of readable labels."
+      "The dream outcome appears twice: once in the summary line ('Memory dream: suggested — Kept the test conventions and consolidated the inbox.') and again as separate 'suggested' and 'Kept the test conventions…' lines.",
+      "The diff block is clipped at the bottom edge above the Apply/Discard footer. The content looks like it continues by scrolling, but nothing on screen shows that more of the diff is below.",
+      "The stats line uses raw camelCase keys (inboxPromoted, inboxDropped) instead of readable labels.",
+      "The diff header 'diff --git a/Project brief.md b/Project brief.md' wraps onto two lines because the filename has a space, which makes it slightly harder to read."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The host and path in the terminal header are cut off with an ellipsis ('/private/var/fo...'). This looks like intentional truncation.",
-      "The left edge of the key row cuts off the first button ('→') and the right edge cuts off the last ('⋯'). This looks like a horizontally scrollable strip, so all keys should still be reachable.",
-      "There is a blank gap with a horizontal rule under the last prompt line in the terminal output. The cursor/input line is not clearly visible."
+      "The header path is cut off with an ellipsis ('/private/var/fo...'), so the full working directory isn't visible on a phone-width screen.",
+      "In the scrollable key row, the leftmost key ('→') and the rightmost key ('⋯') are partly clipped at the screen edges. This seems to be a sideways-scrolling strip, so the keys can still be reached.",
+      "The disabled 'Run' button has low-contrast text, though it is still readable."
     ]
   }
 }

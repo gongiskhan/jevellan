@@ -11,6 +11,14 @@ import { ProjectLedger, ProjectLedgers, ProjectPaths, publicProjectData } from '
 
 let root: string; let homes: Homes; let paths: ProjectPaths;
 beforeEach(() => { root = realpathSync(mkdtempSync(join(tmpdir(), 'jevellan-project-ledger-'))); mkdirSync(join(root, 'user')); homes = new Homes(join(root, 'data'), join(root, 'user')); paths = new ProjectPaths(homes); });
+test('auxiliary runtime usage is recorded in the existing project ledger without leaking the native identity', () => {
+  const ledgers = new ProjectLedgers(paths);
+  ledgers.sessionEnd({ projectId: 'project', owner: { kind: 'memory', id: 'dream' }, runtime: 'codex', model: 'fixture', startedAt: '2026-10-12T12:00:00.000Z', endedAt: '2026-10-12T12:00:02.000Z',
+    outcome: { status: 'completed', sessionId: 'private-native-identity', finalText: '', usage: { inputTokens: 120, outputTokens: 30, costSource: 'unknown' } } });
+  const ledger = ledgers.coordinator('project'), event = ledger.events(0)[0]!; expect(event.type).toBe('project-session-end'); const data = ledger.data(event);
+  expect(data).toMatchObject({ owner: { kind: 'memory', id: 'dream' }, usage: { inputTokens: 120, outputTokens: 30, costSource: 'unknown' }, sessionKey: expect.stringMatching(/^[a-f0-9]{64}$/u) });
+  expect(JSON.stringify(data)).not.toContain('private-native-identity'); expect(publicProjectData(data)).not.toHaveProperty('sessionId');
+});
 afterEach(() => rmSync(root, { recursive: true, force: true }));
 const said = (text: string) => ({ schema: 'coordinator-text-v1', text });
 const notice = (text: string) => ({ type: 'notice' as const, data: { schema: 'project-notice-v1', text, kind: 'info' } });

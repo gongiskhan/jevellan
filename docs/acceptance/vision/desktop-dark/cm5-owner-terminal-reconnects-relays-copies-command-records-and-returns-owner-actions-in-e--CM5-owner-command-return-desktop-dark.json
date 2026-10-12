@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top of the first message card is clipped by the header at the scroll position, so its heading isn't visible.",
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Shared memory …').",
-      "The long worktree path in the prompt output wraps in the middle of the path, which makes it harder to read."
+      "The top of the conversation is partly hidden under the sticky header: the line 'The owner runs the reserved script.' is half cut off. It's normal scroll clipping and doesn't hide any controls.",
+      "The disabled 'Run in Terminal' button in the Prompt card has low-contrast text on a dark background, but it's still readable.",
+      "Sidebar session titles and subtitles end in ellipses (for example 'Context · J11 memory journ…' and 'Shared memory fi…'). The truncation is intentional."
     ]
   }
 }

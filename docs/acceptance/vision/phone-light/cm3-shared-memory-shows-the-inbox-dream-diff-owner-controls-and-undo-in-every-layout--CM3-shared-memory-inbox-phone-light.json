@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Add an owner note' disclosure sits tight against the 'Search memory' label, with less vertical spacing than other sections have.",
-      "The inbox and project-note entries look like full-width outlined buttons, with no preview or metadata. They are readable, but the layout is plain.",
-      "The modal's bottom edge partly covers the background page's 'Open / Browse memory / Context' buttons. These are behind the dialog, so this is expected."
+      "The 'Add an owner note' toggle sits very close to the 'Search memory' label, so the bottom of the dialog looks cramped.",
+      "Inbox and project-note items are plain full-width bold buttons with no metadata or preview text, so they look more like actions than list entries.",
+      "Page content behind the dimmed overlay (such as the 'Open', 'Browse memory' and 'Context' buttons) shows faintly around the dialog. This is expected for a modal and does not overlap the dialog."
     ]
   }
 }

@@ -16,6 +16,14 @@ export function compactPercent(configured: number, homes: Homes, environment: No
   }
   return percent;
 }
+/** A short sandbox night uses the same explicit uninstalled-test fence as compaction. */
+export function nightlyFixMinutes(homes: Homes, environment: NodeJS.ProcessEnv = process.env): number {
+  const override = environment.JEVELLAN_TEST_NIGHTLY_FIX_MINUTES;
+  if (override === undefined) return 150;
+  if (environment.NODE_ENV !== 'test' || existsSync(homes.at('install.json'))) throw new Error('JEVELLAN_TEST_NIGHTLY_FIX_MINUTES is refused in production installations.');
+  if (override !== '30') throw new Error('JEVELLAN_TEST_NIGHTLY_FIX_MINUTES must be 30.');
+  return 30;
+}
 
 export function sessionContext(previous: ProjectSessionContext | undefined, percent: number, notice?: string): ProjectSessionContext {
   const context = ProjectSessionContextSchema.parse(previous ?? { schema: 'project-session-context-v1', tokens: null, contextWindow: null,

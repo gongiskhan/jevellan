@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The \"QUEUE 0\" heading at the bottom of the right panel is clipped by the viewport. It looks like the panel scrolls, so the heading is still reachable.",
-      "Sidebar session titles and subtitles are cut off with ellipses (\"Context · J11 memory jour...\", \"Context · Mesh journey fix...\", \"Goncalo...\")."
+      "The 'QUEUE 0' heading at the bottom of the right panel is cut off by the edge of the screen. The panel appears to scroll, so it can still be reached.",
+      "Sidebar session titles and subtitles are shortened with ellipses (e.g. 'Context · J11 memory journ…'). This looks intended, but the full names can't be read.",
+      "There is a lot of empty space in the chat area between the 'Asked you' entries and the 'Coordinator is working…' indicator."
     ]
   }
 }

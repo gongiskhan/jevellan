@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The terminal header path is cut short with an ellipsis ('.../projects...'), so the full working directory isn't shown in the header. The full path does appear in the terminal output from `pwd`.",
-      "Sidebar session titles and subtitles are cut short with ellipses (e.g. 'Context · J11 memory journ...', 'Context · Shared memory fi...').",
-      "The terminal output panel has a lot of empty space below the last prompt line, and the phone-controls key row sits only at the bottom. Nothing overlaps."
+      "Terminal header path is cut off with an ellipsis ('.../projects...'); the full working directory isn't visible but the last line of the output shows it",
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ...', 'Context · Shared memory fi...'), which is expected for a sidebar list",
+      "Large empty area below the output in the terminal pane"
     ]
   }
 }

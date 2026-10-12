@@ -10,8 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are truncated with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…', 'Gonca…'), but you can still read and use them",
-      "The large empty area in the conversation pane between the assistant reply and the composer looks sparse"
+      "The sidebar session titles and subtitles are cut off with ellipses (for example \"Context · J11 memory journ…\" and \"Done · Shared memory fixture · …\"). This looks like intended truncation.",
+      "The coordinator label \"Claude Code Fable · high\" in the header is set in small, low-contrast monospace text.",
+      "The 'Order' and 'Goals' queue toggles are slightly out of line with the left edge of the right column's section headings.",
+      "Spacing in the Nightly section is uneven: there's a big gap between 'Project day' and the buttons, and the caption is offset."
     ]
   }
 }

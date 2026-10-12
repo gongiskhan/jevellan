@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'jevellan thread attach thread_01M4S2SONCANEXTP…' command in the footer is cut off with an ellipsis. The copy button next to it is still visible and reachable.",
-      "The report shows 'scripts/owner-only.sh' twice, each with its own Copy and Run in Terminal buttons: once in the report body and again in the nested owner-step card.",
-      "The header metadata line wraps across three lines on the narrow screen."
+      "The command `scripts/owner-only.sh` appears twice, each with its own Copy and Run in Terminal buttons: once in the report body and again in the nested owner-reserved card.",
+      "The bottom take-over command (`jevellan thread attach thread_01M4S55VM7GBNYX8…`) is cut off with an ellipsis. Its copy button is still visible and reachable.",
+      "The metadata line (`Claude Code · Fable · high effort · Projects Claude · Worktree on jv/reserved-owner-step-yb7jmg · Goncalos-MacBook-Pro.local`) wraps to three lines of small, low-contrast monospace text."
     ]
   }
 }

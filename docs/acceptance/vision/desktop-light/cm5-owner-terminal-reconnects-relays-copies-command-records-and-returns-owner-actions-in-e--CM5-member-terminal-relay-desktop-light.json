@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Shared memory fi…'), but they stay readable and you can still click them",
-      "'Send to…' button is greyed out, so it looks disabled; this seems intentional",
-      "The terminal output panel has a lot of empty space below the last prompt line"
+      "The sidebar session titles and subtitles are cut off with ellipses (e.g., 'Context · J11 memory journ…', 'Context · Shared memory fi…'). This is intended truncation.",
+      "The 'Send to…' button looks disabled or low-contrast, but it is still legible.",
+      "Most of the terminal output area is empty whitespace."
     ]
   }
 }

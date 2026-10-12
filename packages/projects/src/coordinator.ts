@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import type { AccountService } from '@jevellan/accounts';
 import {
   CoordinatorEventSchema, CoordinatorStateSchema, HubUnavailable, ProjectCoordinatorStatusSchema, boundedRedaction, coordinatorMovable, isTerminal, mapEffort, openQuestions, resolveProjectPath, type Account,
@@ -561,6 +562,7 @@ export class Coordinator {
       this.c.store.update(projectId, (state) => ({ ...withoutReason(state), state: 'running', session: generation === this.#generation ? record : state.session }));
       if (started.accountChanged) this.#notice(coordinatorAccountMovedNotice(started.accountLabel), 'info');
       this.#ledger.append({ type: 'coordinator-turn-start', turn, data: { schema: 'coordinator-turn-v1', turn, fresh: !started.resumed, runtime: model.runtime,
+        ...(started.prompt ? { prompt: this.c.redactor.text(started.prompt).slice(0, 200000), promptTruncated: this.c.redactor.text(started.prompt).length > 200000 } : {}),
         modelLabel: model.label, effort, accountLabel: started.accountLabel, eventIds: events.map((event) => event.id) } });
       this.#publish();
       const execution = new TurnExecution({ run: started.run, accountId: started.accountId, secretRef: started.secretRef, model: model.model, deviceId: this.c.deviceId,
@@ -600,7 +602,7 @@ export class Coordinator {
     if (outcome.status === 'failed' || outcome.status === 'timed-out') {
       // The runtime no longer has the session (the CLI's transcript retention, P8 review R-T1): the retry starts a fresh one with the fresh context.
       if (outcome.error?.message === SESSION_NOT_FOUND) this.c.store.update(this.projectId, (state) => ours(state) ? { ...state, session: null } : state);
-      return this.#failed(turn, outcome.error?.message || (outcome.status === 'timed-out' ? coordinatorTurnTimedOut(this.c.timers.turnTimeoutMs) : TURN_FAILED), outcome.status);
+      return this.#failed(turn, outcome.error?.message || (outcome.status === 'timed-out' ? coordinatorTurnTimedOut(this.c.timers.turnTimeoutMs) : TURN_FAILED), outcome.status, true, outcome);
     }
     // Completed, or stopped by the owner (D33): the batch was delivered. `steered` cannot happen here; it reads as completed.
     const completed = outcome.status !== 'stopped'; const delivered = new Set(events.map((event) => event.id));
@@ -609,7 +611,8 @@ export class Coordinator {
       session: ours(state) && state.session ? { ...state.session, turns: state.session.turns + 1, ...(outcome.sessionId ? { nativeSessionId: outcome.sessionId } : {}) } : state.session }));
     this.c.store.updateLocal(this.projectId, (local) => ({ ...local, fallbackEventIds: local.fallbackEventIds.filter((id) => !delivered.has(id)) }));
     if (completed && outcome.finalText) this.#ledger.append({ type: 'coordinator-text', turn, data: { schema: 'coordinator-text-v1', text: outcome.finalText } });
-    this.#ledger.append({ type: 'coordinator-turn-end', turn, data: { schema: 'coordinator-turn-end-v1', turn, status: completed ? 'completed' : 'interrupted' } });
+    this.#ledger.append({ type: 'coordinator-turn-end', turn, data: { schema: 'coordinator-turn-end-v1', turn, status: completed ? 'completed' : 'interrupted', usage: outcome.usage,
+      ...(outcome.sessionId ? { sessionKey: createHash('sha256').update(outcome.sessionId).digest('hex') } : {}) } });
     this.#publish();
     return 'continue';
   }
@@ -618,10 +621,10 @@ export class Coordinator {
    * failure in a row sets the coordinator idle with the notice and turns queued needs-decision reports into owner questions.
    * A turn whose process cleanup was not confirmed is not retried, so its process record stays until the next event's turn.
    */
-  #failed(turn: number, error: string, status: 'failed' | 'timed-out', retry = true): TurnEnd {
+  #failed(turn: number, error: string, status: 'failed' | 'timed-out', retry = true, outcome?: TurnOutcome): TurnEnd {
     const text = this.c.redactor.text(error).replace(/\s+/g, ' ').trim().slice(0, 1000) || TURN_FAILED;
     const state = this.c.store.update(this.projectId, (current) => ({ ...withoutReason(current), state: 'idle', failedTurnsInARow: current.failedTurnsInARow + 1 }));
-    this.#ledger.append({ type: 'coordinator-turn-end', turn, data: { schema: 'coordinator-turn-end-v1', turn, status, error: text } });
+    this.#ledger.append({ type: 'coordinator-turn-end', turn, data: { schema: 'coordinator-turn-end-v1', turn, status, error: text, ...(outcome ? { usage: outcome.usage, ...(outcome.sessionId ? { sessionKey: createHash('sha256').update(outcome.sessionId).digest('hex') } : {}) } : {}) } });
     this.#publish();
     if (state.failedTurnsInARow % 2 === 1) {
       if (retry) return 'retry';

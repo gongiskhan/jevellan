@@ -10,11 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dream summary shows raw camelCase keys (\"inboxPromoted: 1 · inboxDropped: 0 · merged: 0 · corrected: 1 · archived: 0 · created: 0\") instead of user-friendly labels",
-      "The status \"undone\" is shown as plain lowercase body text with no badge or styling, so it doesn't stand out as a state label",
-      "The inbox card \"Customer test environment\" is clipped at the bottom of the modal; it is reachable by scrolling, but nothing shows that more content is below",
-      "The diff block is cut off mid-content (at the \"-updated:\" line) and needs an inner scroll, with no visible scroll hint",
-      "The disabled \"Capture durable knowledge from sessions\" checkbox and the \"Suggest only\" select are low-contrast grey, which makes them look faint"
+      "The status is repeated: the summary line already says 'Memory dream: undone — Kept the test conventions and consolidated the inbox.', and the next two lines show 'undone' and the same sentence again.",
+      "The counts line shows raw camelCase keys ('inboxPromoted: 1 · inboxDropped: 0 · …') instead of readable labels.",
+      "The diff panel cuts off at '-updated: …' and needs scrolling inside the panel to see the rest of the diff.",
+      "The 'INBOX (FROM TODAY)' heading is cut off at the bottom of the dialog, so you have to scroll to see the inbox section.",
+      "There's no visible sign that the dream was undone, such as a badge or a disabled 'Undo' state. Only the word 'undone' in plain text shows it."
     ]
   }
 }

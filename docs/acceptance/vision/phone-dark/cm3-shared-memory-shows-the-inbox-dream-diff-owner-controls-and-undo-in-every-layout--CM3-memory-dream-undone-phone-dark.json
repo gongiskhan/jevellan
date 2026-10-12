@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The diff block is cut off after the 'created:' line, so the full diff isn't visible in this capture. It looks like a scrollable code area and the 'Run now' button below it is fully visible.",
-      "The 'diff --git a/Project brief.md b/Project brief.md' header wraps onto two lines, which looks slightly awkward.",
-      "The undone status and summary appear twice: once in the muted 'Memory dream: undone — …' line and again as separate 'undone' and summary lines below it.",
-      "The stats line shows raw camelCase keys (inboxPromoted, inboxDropped) instead of readable labels."
+      "The dream summary appears twice: once in the line 'Memory dream: undone — Kept the test conventions…' and again as the separate 'undone' and 'Kept the test conventions…' lines.",
+      "The status 'undone' is shown as a bare lowercase word with no label or badge.",
+      "Stats use raw camelCase keys (inboxPromoted, inboxDropped) instead of readable labels.",
+      "The diff block's long 'diff --git a/Project brief.md b/Project brief.md' line wraps awkwardly, and the diff is cut off at the bottom of its box. It looks like a scroll area, but nothing shows that more lines are hidden."
     ]
   }
 }

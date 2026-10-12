@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top of the message card is scrolled under the header, so the first line starts mid-sentence ('MacBook-Pro.local): idle; ...'). This is normal scrolling, not clipping.",
-      "The attach command in the footer ('jevellan thread attach thread_01M4S2SXMCKKTX8D...') is cut off with an ellipsis. The copy button next to it still gives you the full command.",
-      "The long worktree path in the owner result breaks mid-token ('mzwgj / hw0000gn'), which is a little hard to read but still legible."
+      "The thread message is cut off at the top because the view is scrolled, starting mid-sentence at \"MacBook-Pro.local): idle…\". This is normal scrolling, not a layout defect.",
+      "The attach command in the footer is shortened with an ellipsis (\"jevellan thread attach thread_01M4S56VP8K4K518…\"). The copy button next to it still gives you the full command.",
+      "The long worktree path in the owner-command result wraps in the middle of tokens. It is still readable."
     ]
   }
 }

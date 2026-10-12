@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The host/path subtitle in the header is cut off with an ellipsis ('/private/var/fo...'), so the full working directory isn't visible there. The pwd output in the terminal does show the full path.",
-      "The shortcut key row (Esc, Tab, Ctrl, Alt, arrows) is cut off at the right edge with a partly visible extra button. It looks like a horizontally scrolling strip, so the remaining keys can probably be scrolled to, but there's no clear sign that it scrolls.",
-      "The terminal wraps long lines mid-word (e.g. 'sup / port.apple.com', 'jevellan-browser-L8lb1r/pro / jects-app'). This is expected at the narrow width but slightly harder to read."
+      "The row of special keys (Esc, Tab, Ctrl, Alt, arrows) runs past the right edge, so the last key is only partly visible. It looks like a row you can scroll sideways, but nothing on screen shows that it scrolls.",
+      "The host/path text in the header is cut off with an ellipsis ('/private/var/fo…'). That is expected given the width, but you can't see the full working directory in the header.",
+      "There is a large empty gap between 'Connected' and the 'Project' label, which makes the status row look unbalanced."
     ]
   }
 }

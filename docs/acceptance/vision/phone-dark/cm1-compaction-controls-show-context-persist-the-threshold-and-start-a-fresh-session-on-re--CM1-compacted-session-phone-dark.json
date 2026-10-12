@@ -10,8 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row is cut off at the right edge. 'Pull requests' is partly clipped, which is probably meant as a cue that the row scrolls sideways.",
-      "The context/compaction status line wraps to two lines next to the 'Fresh session' button. 'today · Last compaction 07:12 PM' sits on its own line, which looks a little crowded."
+      "The 'Pull requests' tab is cut off at the right edge, though the tab row looks horizontally scrollable",
+      "The composer placeholder 'Tell the coordinator what you nee…' is cut off by the stop button",
+      "The 'Working…' status chip text is cut off with an ellipsis",
+      "The context line wraps awkwardly ('today · Last compaction 11:52 PM' on the second line)"
     ]
   }
 }

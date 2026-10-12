@@ -33,6 +33,8 @@ export type LaunchRequest = {
   isolation?: 'worktree' | 'main';
 };
 export type LaunchStarted = {
+  /** Effective user input after account/session resolution; safe owner evidence uses the ledger redactor. */
+  prompt?: string;
   kind: 'started'; run: StretchRun; accountId: string; accountLabel: string; accountChanged: boolean; resumed: boolean; secretRef: string | null;
   /** This device's last known usage of the account, the base for streamed rate limits. */
   usage?: AccountStatus['usage'] | undefined;
@@ -172,7 +174,7 @@ export class TurnLauncher {
         interrupt: reason => nativeRun.interrupt(reason), continue: (message, timeout) => nativeRun.continue(message, timeout), terminate: () => nativeRun.terminate(),
       } : nativeRun;
       const usage = accounts.find((view) => view.account.id === account.id)?.statuses.find((status) => status.deviceId === this.#o.deviceId)?.usage;
-      return { kind: 'started', run, accountId: account.id, accountLabel: account.label, accountChanged, resumed, secretRef: account.secretRef ?? null,
+      return { kind: 'started', run, prompt: input.prompt, accountId: account.id, accountLabel: account.label, accountChanged, resumed, secretRef: account.secretRef ?? null,
         compactionPercent: percent, ...(compactionNotice ? { compactionNotice } : {}), ...(usage ? { usage } : {}), ...(gitIdentity ? { gitIdentity } : {}), release };
     } catch (error) {
       await release().catch(() => undefined);

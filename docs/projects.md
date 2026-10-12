@@ -274,3 +274,10 @@ The owner API issues a sixty-second one-use ticket bound to the terminal and the
 Temporary startup files source the owner's shell files without changing them. Zsh uses a login shell. Bash ignores rcfile for login shells, so its interactive rcfile explicitly loads the normal login profiles before adding semantic hooks. Unsupported shells and inner SSH commands have approximate boundaries. OSC command records retain folder, timing, output and exit status. Older bash without bracketed paste receives multiline owner actions as one visible compound command, retaining their final status.
 
 Run in Terminal preserves a durable receipt on its report or question and opens the selected device/folder once per request. Exact completion returns the exit code and last eight thousand characters to the requester using the existing durable message path. Unknown boundaries use ten seconds of output inactivity; quiet commands with exact boundaries keep waiting. An interrupted daemon records an unknown result with its reason. Agents receive only scoped list, command and tail reads; they cannot type into owner terminals. Secrets are redacted before output enters agent context or memory.
+
+
+## Scenario evidence
+
+The owner API exposes each thread's existing ledger at GET /api/projects/:projectId/threads/:threadId/events with the same authenticated SSE/cursor behavior as coordinator events. It follows device routing, validates project ownership and removes native identities. Prompt/tool records are bounded and show whether they were clipped. Runtime-reported outcome usage and hashed continuity support diagnosis without committing native session IDs. Auxiliary review/verification/memory outcomes use the coordinator ledger; unknown cost is preserved.
+
+The four real scenario flows and their unchanged assertions live in scripts/live. Missing owner sign-ins, joins or scoped Settings inputs stay blocked. Simulated fixture checks and desktop/phone browser layouts remain separate from real provider work and physical-phone acceptance.

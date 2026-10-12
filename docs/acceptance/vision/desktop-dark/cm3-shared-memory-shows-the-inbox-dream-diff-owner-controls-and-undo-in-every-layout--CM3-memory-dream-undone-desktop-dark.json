@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dream status and summary appear twice: once in the combined line 'Memory dream: undone — Kept the test conventions…', then again as separate 'undone' and summary lines.",
-      "The diff block is cut off at its bottom edge and the INBOX section is cut off at the bottom of the modal. Both look like normal scroll overflow, not clipping.",
-      "The value 'Suggest only' in the Nightly dream field is low-contrast, so it looks like placeholder text.",
-      "The stats line uses raw camelCase keys (inboxPromoted, inboxDropped) instead of readable labels."
+      "The dream status and summary appear twice: once in the line 'Memory dream: undone — Kept the test conventions and consolidated the inbox.' and again as separate 'undone' and summary lines.",
+      "The stats line shows raw camelCase keys ('inboxPromoted: 1 · inboxDropped: 0 · …') rather than readable labels.",
+      "The diff box and the 'INBOX (FROM TODAY)' section are cut off at the bottom edges of their scroll areas. This looks like normal scrolling, but nothing on screen shows that more content is below."
     ]
   }
 }

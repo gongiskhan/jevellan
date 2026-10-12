@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Open terminals' label is centered in pink text on its own line between the Terminal button and the device stats. It looks detached from the button it belongs to.",
-      "The tab strip cuts off the first tab label (only 's' shows) and the 'Projects' tab at the edges. Scroll arrows are there, so this is expected for a scrolling tab bar.",
-      "A button at the bottom is cut off by the viewport. This looks like normal page scrolling.",
-      "'Job and verification worktrees: 0 GB' wraps so that 'GB' sits alone on the next line."
+      "The tab strip clips the left tab to a lone 's'. Scroll arrows are there, so this is expected horizontal scrolling.",
+      "'Open terminals' is a centered magenta link under a left-aligned 'Terminal' button. It looks out of place next to the rest of the card's left alignment.",
+      "The line 'Thread worktrees: 0 GB · Job and verification worktrees: 0 GB' wraps so that 'GB' sits alone on the second line.",
+      "A button below 'Inspect worktrees' is cut off at the bottom of the viewport. This is just the page scrolling, and the content can be reached by scrolling."
     ]
   }
 }

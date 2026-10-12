@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip is clipped at the right edge, so 'Pull requ…' is cut off. It is probably a horizontally scrollable row, but nothing on screen shows that more tabs are available.",
-      "The status text 'Context unavailable · Compacted 0 times today' wraps onto two lines in small grey monospace type, which looks cramped next to the 'Fresh session' button.",
-      "The 'Send' buttons are pale grey and low contrast, so they look disabled. That is expected while the input is empty, but they are hard to see."
+      "The tab row is cut off at the right edge ('Pull requ…'). It looks like a horizontally scrollable tab strip, but there is no visible scroll hint.",
+      "The 'Working…' status chip and the 'Claude Code Fable · high' label are small, low-contrast monospace text. They are still readable."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The thread is scrolled, so the top message is clipped at the scroll edge right under the header. This is normal scroll behavior, not overlap.",
-      "The 'Run in Terminal' button looks disabled (greyed out) next to 'Copy'. This may be intended once the owner command has run.",
-      "The long temporary worktree path wraps across several lines in the owner-run message. It is still readable but dense."
+      "The attach command in the footer ('jevellan thread attach thread_01M4S56MC78HZKD4...') is cut off with an ellipsis. The copy button next to it still gives access to the full command.",
+      "The scrolled thread content is partly cut off at the top, under the sticky header ('MacBook-Pro.local): idle; working on (none)...'). This is expected scroll clipping and not a layout defect.",
+      "The long temporary worktree path in the owner command result wraps over several lines and is hard to read, though all of it is visible."
     ]
   }
 }

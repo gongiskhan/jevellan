@@ -10,11 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Dream status and summary appear twice: once in the line 'Memory dream: suggested — Kept the test conventions…' and again as separate 'suggested' and 'Kept the test conventions and consolidated the inbox.' lines.",
-      "The 'diff --git a/Project brief.md b/Project brief.md' header line wraps onto a second line inside the narrow diff block.",
-      "The diff block ends abruptly at 'created: …' with no fade or visible scrollbar to show there is more content to scroll.",
-      "There is little vertical space between the bottom of the diff block and the Apply / Discard suggestion buttons.",
-      "The stats line ('inboxPromoted: 1 · inboxDropped: 0 · …') shows raw camelCase keys instead of readable labels."
+      "The dream status and summary appear twice: once in the muted line 'Memory dream: suggested — Kept the test conventions…' and again as separate 'suggested' and 'Kept the test conventions and consolidated the inbox.' lines.",
+      "The stats line shows raw camelCase keys (inboxPromoted, inboxDropped) instead of readable labels.",
+      "The diff block is cut off at the bottom edge above the sticky Apply/Discard footer. This looks like a scrollable area, but there is no visible fade or scroll hint.",
+      "The long 'diff --git a/Project brief.md b/Project brief.md' header wraps onto a second line in the narrow monospace panel."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The take-over command at the bottom ('jevellan thread attach thread_01M4S2RRZ9X27Y44…') is cut off with an ellipsis. A copy button next to it still gives access to the full command.",
-      "The report shows the same command 'scripts/owner-only.sh' twice, each with its own Copy and Run in Terminal buttons: once in the report body and again in the nested owner-step card. This repeats information but doesn't stop either control from working.",
-      "The header and metadata text ('Claude Code · Fable · high effort · ...' and the path/host line) is small, light gray monospace on a white background. It's low contrast but still readable."
+      "The command 'jevellan thread attach thread_01M4S55JZZ96C8HJ…' in the footer is cut off with an ellipsis. A copy button sits next to it, so the full command can still be copied.",
+      "The command 'scripts/owner-only.sh' and its Copy and Run in Terminal buttons appear twice: once in the report body and again in the nested owner-reserved card. The repeat looks redundant.",
+      "The metadata line ('Claude Code · Fable · high effort · Projects Claude · Worktree on jv/reserved-owner-step-7y28t0 · Goncalos-MacBook-Pro.local') wraps across three lines in small monospace text. It is dense but still readable."
     ]
   }
 }

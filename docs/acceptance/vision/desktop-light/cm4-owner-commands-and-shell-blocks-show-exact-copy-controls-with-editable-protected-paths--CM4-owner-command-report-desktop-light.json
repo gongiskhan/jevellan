@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The command scripts/owner-only.sh appears twice in the report, once in the turn body and again in the reserved-step card, each with its own Copy and Run in Terminal buttons. This is redundant but both copies are legible and usable.",
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Shared memory …'). This is intentional truncation in the sidebar, not in the report under review."
+      "The report card shows the same command block 'scripts/owner-only.sh' twice, each with its own Copy and Run in Terminal buttons: once in the report body and again in the nested owner-step card. The repetition looks redundant.",
+      "Sidebar session titles and subtitles are cut short with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · Gonca…'). This looks like intentional overflow handling for the narrow sidebar."
     ]
   }
 }

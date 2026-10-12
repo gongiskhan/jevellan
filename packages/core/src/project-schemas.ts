@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { OwnerCommandsSchema } from './owner-command-schemas.js';
 import { ProjectReviewReportSchema } from './project-review-schemas.js';
 import { CursorTranscriptSchema } from './cursor-schemas.js';
-import { DeviceFactsSchema, DeviceTagsSchema, EffortSchema, IdSchema, JevCallSchema, TimestampSchema } from './schemas.js';
+import { DeviceFactsSchema, DeviceTagsSchema, EffortSchema, IdSchema, JevCallSchema, TimestampSchema, UsageSchema } from './schemas.js';
 import { TaskPlacementContextSchema, TaskTypeSchema } from './task-types.js';
 import { ProjectMemorySettingsSchema, MemoryRecallSchema } from './memory-note-schemas.js';
 
@@ -325,7 +325,7 @@ export type InboxSeen = z.infer<typeof InboxSeenSchema>;
 // Project ledger (brief 5.13, D2). data stays unknown in the envelope: payloads over 64 KiB spill to a blob-ref.
 export const ProjectLedgerEventTypeSchema = z.enum(['coordinator-turn-start', 'coordinator-text', 'coordinator-tool',
   'coordinator-turn-end', 'coordinator-event', 'thread-turn-start', 'thread-turn-end', 'thread-report',
-  'thread-placement', 'thread-state', 'thread-verification', 'thread-publication', 'session-compacted', 'notice']);
+  'thread-placement', 'thread-state', 'thread-verification', 'thread-publication', 'session-compacted', 'project-session-end', 'notice']);
 export type ProjectLedgerEventType = z.infer<typeof ProjectLedgerEventTypeSchema>;
 export const ProjectLedgerEventSchema = z.strictObject({ schema: z.literal('project-ledger-event-v1'), t: TimestampSchema,
   id: positive, type: ProjectLedgerEventTypeSchema, turn: positive.optional(), data: z.unknown() });
@@ -334,17 +334,26 @@ export const ProjectEventFrameSchema = z.strictObject({ schema: z.literal('proje
 export type ProjectEventFrame = z.infer<typeof ProjectEventFrameSchema>;
 
 export const CoordinatorTurnStartSchema = z.strictObject({ schema: z.literal('coordinator-turn-v1'), turn: positive, fresh: z.boolean(),
+  prompt: z.string().max(200000).optional(), promptTruncated: z.boolean().optional(),
   runtime: IdSchema, modelLabel: text, effort: EffortSchema, accountLabel: text, eventIds: z.array(IdSchema) });
 export const CoordinatorTextSchema = z.strictObject({ schema: z.literal('coordinator-text-v1'), text });
 // tool is any bridge tool name; the ledger writer checks it against the bridge registry (bridge-schemas imports this module).
 export const CoordinatorToolSchema = z.strictObject({ schema: z.literal('coordinator-tool-v1'), tool: IdSchema, ok: z.boolean(),
+  input: z.string().max(32768).optional(), inputTruncated: z.boolean().optional(),
   summary: z.string().min(1).max(400), threadId: IdSchema.optional(), decisionId: IdSchema.optional(), reason: z.string().max(400).optional() });
 export const CoordinatorTurnEndSchema = z.strictObject({ schema: z.literal('coordinator-turn-end-v1'), turn: positive,
+  sessionKey: z.string().regex(/^[a-f0-9]{64}$/u).optional(), usage: UsageSchema.optional(),
   status: z.enum(['completed', 'failed', 'timed-out', 'interrupted', 'dropped']), error: z.string().max(1000).optional() });
 export const ThreadTurnStartSchema = z.strictObject({ schema: z.literal('thread-turn-v1'), turn: positive, resumed: z.boolean(),
+  prompt: z.string().max(200000).optional(), promptTruncated: z.boolean().optional(),
   runtime: IdSchema, modelId: IdSchema, model: text, effort: EffortSchema, accountId: IdSchema });
 export const ThreadTurnEndSchema = z.strictObject({ schema: z.literal('thread-turn-end-v1'), turn: positive,
+  sessionKey: z.string().regex(/^[a-f0-9]{64}$/u).optional(), usage: UsageSchema.optional(),
   status: z.enum(['completed', 'failed', 'timed-out', 'interrupted', 'steered', 'stopped']), error: z.string().optional() });
+export const ProjectSessionEndSchema = z.strictObject({ schema: z.literal('project-session-end-v1'),
+  owner: z.strictObject({ kind: z.enum(['review', 'verification', 'memory']), id: IdSchema }), runtime: IdSchema, model: text,
+  startedAt: TimestampSchema, endedAt: TimestampSchema, status: z.string().min(1).max(30), usage: UsageSchema,
+  sessionKey: z.string().regex(/^[a-f0-9]{64}$/u).optional() });
 export const ThreadStateChangeSchema = z.strictObject({ schema: z.literal('thread-state-v1'), from: ThreadStateSchema.nullable(),
   to: ThreadStateSchema, reason: z.string().optional(), changed: z.array(z.string()) });
 export const ThreadVerificationSchema = z.strictObject({ schema: z.literal('thread-verification-v1'), attempt: positive,
@@ -361,6 +370,7 @@ export const ProjectLedgerDataSchemas = {
   'coordinator-event': CoordinatorEventSchema, 'thread-turn-start': ThreadTurnStartSchema, 'thread-turn-end': ThreadTurnEndSchema,
   'thread-report': ThreadReportSchema, 'thread-placement': PlacementRecordSchema, 'thread-state': ThreadStateChangeSchema,
   'session-compacted': SessionCompactedSchema,
+  'project-session-end': ProjectSessionEndSchema,
   'thread-verification': ThreadVerificationSchema, 'thread-publication': ThreadPublicationSchema, notice: ProjectNoticeSchema,
 } as const satisfies Record<ProjectLedgerEventType, z.ZodType>;
 export type ProjectLedgerData<T extends ProjectLedgerEventType> = z.output<(typeof ProjectLedgerDataSchemas)[T]>;

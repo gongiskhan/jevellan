@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The right panel's last line ('Project day: 2026-10-12' under NIGHTLY) is cut off at the bottom edge. It sits in a scrollable panel, so it can still be reached by scrolling.",
-      "Sidebar session titles and subtitles are shortened with ellipses (e.g. 'Context · J11 memory jour…', 'Gonca…').",
-      "The 'Waiting for you 0' header has little space between the label and the count, so it reads like 'YOU 0'."
+      "The sidebar shell-session titles and subtitles are cut off with ellipses (for example 'Context · J11 memory jour…' and 'Context · Mesh journey fix…'). This is intended truncation, and the main details can still be read.",
+      "The 'Nightly' section at the bottom of the right panel ('Project day: 2026-10-12') is cut off at the edge of the screen. It is reachable by scrolling the panel.",
+      "The 'Working…' status badge is truncated with an ellipsis next to the 'Coordinator is working…' indicator."
     ]
   }
 }

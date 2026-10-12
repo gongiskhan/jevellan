@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Minutes between refills' label is cut off at the bottom of the scrollable area, just above the Cancel/Save footer. More fields continue below, so the modal scrolls, but there is no visible scroll hint.",
-      "The empty 'Worktree setup command' field shows placeholder text ('npm ci') in low-contrast grey, which could be mistaken for a real value."
+      "The 'Minutes between refills' label is cut off by the sticky Cancel/Save footer at the bottom of the scrollable modal. Its input is below the fold, but the content can be scrolled.",
+      "The placeholder text in the 'Worktree setup command' field ('npm ci') is low-contrast gray on the dark background."
     ]
   }
 }

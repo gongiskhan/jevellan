@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The row of shortcut keys runs past the right edge: the last key after '→' is cut off. This looks like a row you scroll sideways, but the cut-off key gives no clear hint that you can scroll.",
+      "The row of special keys (Esc, Tab, Ctrl, Alt, arrows) runs past the right edge, so the last key is only partly visible. It looks like a row you can swipe sideways, but nothing on screen shows that more keys are there.",
       "The working-directory path in the header is cut short with an ellipsis ('/private/var/folders/6k/3f…'), so the full path can't be read.",
-      "In the terminal output, the URL breaks in the middle ('https://sup' / 'port.apple.com/...') because of how the terminal wraps lines."
+      "The terminal wraps the long URL in the middle of the word ('https://sup' / 'port.apple.com…'), which makes it slightly harder to read.",
+      "The terminal output area is mostly empty because the output is short; this is not a defect."
     ]
   }
 }

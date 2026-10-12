@@ -3,7 +3,7 @@ import { appendFileSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmS
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Homes, ProjectWorkSettingsSchema, StoredProjectWorkSettingsSchema, defaultProjectWorkSettings } from '../packages/core/dist/index.js';
-import { compactPercent } from '../packages/projects/dist/session-context.js';
+import { compactPercent, nightlyFixMinutes } from '../packages/projects/dist/session-context.js';
 import { CodexContextMonitor, CodexContextRecords } from '../runtimes/codex/dist/context.js';
 import { discoveredContextWindow } from '../runtimes/codex/dist/control.js';
 import type { RuntimeEvent } from '../packages/runtime-contract/dist/index.js';
@@ -31,6 +31,14 @@ test('the low test threshold is accepted only by an uninstalled test daemon', ()
   expect(() => compactPercent(70, homes, { NODE_ENV: 'production', JEVELLAN_TEST_COMPACT_PERCENT: '20' })).toThrow('production');
   writeFileSync(homes.at('install.json'), '{}');
   expect(() => compactPercent(70, homes, { NODE_ENV: 'test', JEVELLAN_TEST_COMPACT_PERCENT: '20' })).toThrow('production');
+});
+test('the short live night cutoff is explicitly fenced and cannot affect an installed hub', () => {
+  expect(nightlyFixMinutes(homes, {})).toBe(150);
+  expect(nightlyFixMinutes(homes, { NODE_ENV: 'test', JEVELLAN_TEST_NIGHTLY_FIX_MINUTES: '30' })).toBe(30);
+  expect(() => nightlyFixMinutes(homes, { NODE_ENV: 'test', JEVELLAN_TEST_NIGHTLY_FIX_MINUTES: '20' })).toThrow('must be 30');
+  expect(() => nightlyFixMinutes(homes, { NODE_ENV: 'production', JEVELLAN_TEST_NIGHTLY_FIX_MINUTES: '30' })).toThrow('production');
+  writeFileSync(homes.at('install.json'), '{}');
+  expect(() => nightlyFixMinutes(homes, { NODE_ENV: 'test', JEVELLAN_TEST_NIGHTLY_FIX_MINUTES: '30' })).toThrow('production');
 });
 
 test('Codex context records recognise a boundary once, and use the context drop when there is no explicit boundary', () => {

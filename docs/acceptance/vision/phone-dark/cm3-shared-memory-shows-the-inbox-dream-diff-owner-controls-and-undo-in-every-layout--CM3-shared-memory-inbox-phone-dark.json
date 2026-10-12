@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Spacing is tight between the 'Public memory guide' button, the 'Add an owner note' toggle and the 'Search memory' label.",
-      "Page content behind the modal shows faintly at the top and bottom edges. This is expected for a dimmed overlay, but it adds a little visual noise."
+      "Background page text shows through above and below the modal (e.g. a partly hidden text line near the top and the 'Open / Browse memory / Context' buttons at the bottom), which looks slightly busy but doesn't block anything",
+      "Nothing separates the 'Add an owner note' disclosure from the 'Search memory' label below it, so they look crowded"
     ]
   }
 }

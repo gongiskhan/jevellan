@@ -146,7 +146,7 @@ export type ThreadRunnerContext = {
   timers: { threadTurnTimeoutMs: number; setupTimeoutMs: number };
   now(): number;
 };
-type Ran = { status: TurnOutcome['status'] | 'unavailable' | 'unconfirmed'; error?: string | undefined; finalText?: string; report?: ThreadReport | undefined };
+type Ran = { status: TurnOutcome['status'] | 'unavailable' | 'unconfirmed'; error?: string | undefined; finalText?: string; report?: ThreadReport | undefined; usage?: TurnOutcome['usage']; sessionKey?: string };
 
 /**
  * One local thread on its owner device (brief 8.2-8.4): preparation, turns, acting on reports, publication with the
@@ -364,7 +364,8 @@ export class ThreadRunner {
       await this.#fail(PROCESS_UNCONFIRMED); return null;
     }
     const ended = ran.status === 'unavailable' ? 'failed' : ran.status;
-    ledger.append({ type: 'thread-turn-end', turn, data: { schema: 'thread-turn-end-v1', turn, status: ended, ...(ran.error ? { error: ran.error } : {}) } });
+    ledger.append({ type: 'thread-turn-end', turn, data: { schema: 'thread-turn-end-v1', turn, status: ended, ...(ran.error ? { error: ran.error } : {}),
+      ...(ran.usage ? { usage: ran.usage } : {}), ...(ran.sessionKey ? { sessionKey: ran.sessionKey } : {}) } });
     if (ran.status === 'failed' && ran.error === SESSION_NOT_FOUND && thread.nativeSessionId) {
       // The runtime no longer has the session it resumed (the CLI's transcript retention, P8 review R-T1); the model never ran. The same
       // turn runs again at once in a new session, which starts with the task block; it can happen once, since the new turn resumes nothing.
@@ -450,6 +451,7 @@ export class ThreadRunner {
         const identity = started.gitIdentity; this.#c.store.updateLocal(thread.id, (local) => ({ ...local, gitIdentity: identity }));
       }
       ledger.append({ type: 'thread-turn-start', turn, data: { schema: 'thread-turn-v1', turn, resumed: started.resumed, runtime: placement.runtime, modelId: placement.modelId,
+        ...(started.prompt ? { prompt: this.#c.redactor.text(started.prompt).slice(0, 200000), promptTruncated: this.#c.redactor.text(started.prompt).length > 200000 } : {}),
         model: placement.model, effort: placement.effortEffective, accountId: started.accountId } });
       const execution = new TurnExecution({ run: started.run, accountId: started.accountId, secretRef: started.secretRef, model: placement.model, deviceId: this.#c.deviceId,
         accounts: this.#c.accounts, initialUsage: started.usage, redactor: this.#c.redactor,
@@ -475,7 +477,8 @@ export class ThreadRunner {
       try { outcome = await execution.done; } catch { return { status: 'unconfirmed' }; }
       await this.#c.captureTurn?.(project, this.#thread()).catch(error => this.#notice(thread, `Project memory capture will retry: ${this.#message(error)}`, 'error'));
       this.#c.store.updateLocal(thread.id, (local) => { const cleared = { ...local }; delete cleared.process; return cleared; });
-      return { status: outcome.status, finalText: outcome.finalText, report: tools.report, ...(outcome.error ? { error: outcome.error.message } : {}) };
+      return { status: outcome.status, finalText: outcome.finalText, report: tools.report, usage: outcome.usage,
+        ...(outcome.sessionId ? { sessionKey: createHash('sha256').update(outcome.sessionId).digest('hex') } : {}), ...(outcome.error ? { error: outcome.error.message } : {}) };
     } finally {
       this.#execution = undefined;
       await started.release();

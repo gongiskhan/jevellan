@@ -1,3 +1,4 @@
+import { nightlyFixMinutes } from './session-context.js';
 import { NightlyReview } from './nightly-review.js';
 import { ProjectGithub } from './github-awareness.js';
 import { coordinatorMemory, projectNow, projectRecall } from './shared-context.js';
@@ -290,14 +291,14 @@ export class ProjectWork {
     this.jobs = new ProjectJobRunner({ homes: o.homes, hub: o.hub, tasks: this.tasks, git, github, deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, now, facts,
       project: id => this.#project(id), settings: id => this.admission.settings(id), baseBranch: repo => worktrees.baseBranch(repo), event: (id, event) => delivery.toCoordinator(id, event),
       windowOpened: async id => (await this.daily.window(id))?.openedAt, day: id => this.daily.day(id), dayStart: (id, day) => this.daily.dayStart(id, day), changed: () => { void this.#sweepTasks().catch(() => undefined); } });
-    this.daily = new ProjectDailyWork({ hub: o.hub, tasks: this.tasks, runner: this.jobs, redactor: o.redactor, now, deviceId: o.deviceId, settings: id => this.admission.settings(id),
+    this.daily = new ProjectDailyWork({ fixCutoffMinutes: nightlyFixMinutes(o.homes), hub: o.hub, tasks: this.tasks, runner: this.jobs, redactor: o.redactor, now, deviceId: o.deviceId, settings: id => this.admission.settings(id),
       memoryDream: async (id, requestId) => { if (!this.memoryProgramme) throw new Error('The memory dream runs on the hub.'); return this.memoryProgramme.runNow(await this.#project(id), requestId); },
       memoryDreamLine: id => this.memoryProgramme?.line(id),
       validateGoal: async (id, goalId) => { if (goalId) await this.goals.read(id, goalId); }, event: (id, event) => delivery.toCoordinator(id, event), changed: () => { void this.#sweepTasks().catch(() => undefined); } });
-    this.memoryProgramme = o.hubMemory ? new ProjectMemoryProgramme({ store: o.hubMemory, captures: this.captures, hub: o.hub, launcher, placement, git, daily: this.daily,
+    this.memoryProgramme = o.hubMemory ? new ProjectMemoryProgramme({ sessionEnd: evidence => this.ledgers.sessionEnd(evidence), store: o.hubMemory, captures: this.captures, hub: o.hub, launcher, placement, git, daily: this.daily,
       deviceId: o.deviceId, redactor: o.redactor, accounts: o.accounts, settings: id => this.admission.settings(id), repository: project => worktrees.repository(project), baseBranch: repo => worktrees.baseBranch(repo),
       event: (id, event) => delivery.toCoordinator(id, event), enterOperation: o.enterOperation, now }) : undefined;
-    this.reviews = new NightlyReview({ hub: o.hub, tasks: this.tasks, homes: o.homes, git, launcher, deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, now, facts,
+    this.reviews = new NightlyReview({ sessionEnd: evidence => this.ledgers.sessionEnd(evidence), hub: o.hub, tasks: this.tasks, homes: o.homes, git, launcher, deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, now, facts,
       memory: async id => o.memory.project(await this.#project(id), o.deviceId, () => { throw new Error(THREAD_MEMORY_READ_ONLY); }, { kind: 'review' }),
       settings: o.settings, accounts: o.accounts, runtimes: o.runtimes, project: id => this.#project(id), repository: project => worktrees.repository(project), baseBranch: repo => worktrees.baseBranch(repo), timeoutMs: timers.threadTurnTimeoutMs,
       event: (id, event) => delivery.toCoordinator(id, event), changed: () => { void this.#sweepTasks().catch(() => undefined); } });
@@ -312,7 +313,7 @@ export class ProjectWork {
       transition: async (threadId, apply) => { const runner = this.threads.runner(threadId); if (runner) await runner.transition(apply); else await apply(); },
       hub: o.hub, deviceId: o.deviceId, assertMerge: (id, tid) => this.daily.assertMerge(id, tid),
       redactor: o.redactor, now, pollMs: timers.prPollMs, periodic: timers.periodic });
-    const verification = new PullRequestVerification({ hub: o.hub, homes: o.homes, git, launcher, deviceId: o.deviceId, deviceName: o.deviceName, facts, redactor: o.redactor, now, settings: o.settings, accounts: o.accounts, runtimes: o.runtimes, timeoutMs: timers.testTimeoutMs,
+    const verification = new PullRequestVerification({ sessionEnd: evidence => this.ledgers.sessionEnd(evidence), hub: o.hub, homes: o.homes, git, launcher, deviceId: o.deviceId, deviceName: o.deviceName, facts, redactor: o.redactor, now, settings: o.settings, accounts: o.accounts, runtimes: o.runtimes, timeoutMs: timers.testTimeoutMs,
       memory: project => o.memory.project(project, o.deviceId, () => { throw new Error(THREAD_MEMORY_READ_ONLY); }, { kind: 'verification' }) });
     this.mergeGate = new ProjectMergeGate({ hub: o.hub, store: this.store, tracker: this.tracker, github, verification, deviceId: o.deviceId, redactor: o.redactor, now,
       settings: id => this.admission.settings(id), configuration: o.settings, ...(o.decisionClient ? { decisionClient: o.decisionClient } : {}), project: id => this.#project(id), repository: project => worktrees.repository(project),

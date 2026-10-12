@@ -9,7 +9,7 @@ const refuse = (message: string, status = 409): never => { throw Object.assign(n
 export const NIGHTLY_MERGE_HOLD = 'Merges are held while the nightly window runs.';
 const ended = (task: ProjectWorkTask) => ['done', 'failed', 'cancelled', 'in-review'].includes(task.state);
 export class ProjectDailyWork {
-  constructor(readonly o: { hub: ProjectHub; tasks: ProjectTasks; runner: ProjectJobRunner; redactor: SecretRedactor; now(): number; deviceId: string;
+  constructor(readonly o: { hub: ProjectHub; tasks: ProjectTasks; runner: ProjectJobRunner; redactor: SecretRedactor; now(): number; deviceId: string; fixCutoffMinutes?: number;
     settings(projectId: string): Promise<ProjectWorkSettings>; validateGoal(projectId: string, goalId: string | null): Promise<void>;
     event(projectId: string, event: CoordinatorEvent): Promise<void>; changed(): void;
     memoryDream?(projectId: string, requestId: string): Promise<{ schema: 'memory-dream-run-receipt-v1'; id: string; accepted: true }>;
@@ -49,7 +49,7 @@ export class ProjectDailyWork {
     return this.o.now() >= boundary && !(await this.o.hub.window(derivedId('window', projectId, date))) && (await this.dailies(projectId)).some(row => row.enabled && Date.parse(row.enabledSince ?? row.createdAt) <= boundary);
   }
   async allowedMergeThreads(projectId: string, tasks?: readonly ProjectWorkTask[]): Promise<string[]> {
-    const window = await this.window(projectId); if (!window || this.o.now() >= Date.parse(window.openedAt) + 150 * 60_000) return [];
+    const window = await this.window(projectId); if (!window || this.o.now() >= Date.parse(window.openedAt) + (this.o.fixCutoffMinutes ?? 150) * 60_000) return [];
     const rows = tasks ?? await this.o.tasks.list(projectId), review = rows.find(row => window.taskIds.includes(row.id) && row.nightlyReview);
     const fix = review?.reviewRun?.fixTaskId ? rows.find(row => row.id === review.reviewRun!.fixTaskId && row.nightlyFixFor === review.id) : null;
     return fix?.threadId && await this.#next(window, rows) === fix.id ? [fix.threadId] : [];
@@ -60,7 +60,7 @@ export class ProjectDailyWork {
   async #next(window: ProjectWindow, tasks: readonly ProjectWorkTask[]): Promise<string | undefined> {
     for (const plan of window.plans) {
       const task = tasks.find(row => row.id === plan.id); if (!task || !ended(task)) return plan.id;
-      if (!window.jobPhaseStartedAt && task.nightlyReview && task.reviewRun?.state === 'completed' && this.o.now() < Date.parse(window.openedAt) + 150 * 60_000) {
+      if (!window.jobPhaseStartedAt && task.nightlyReview && task.reviewRun?.state === 'completed' && this.o.now() < Date.parse(window.openedAt) + (this.o.fixCutoffMinutes ?? 150) * 60_000) {
         if (!task.reviewRun.followupChosen) {
           if (this.o.now() < Date.parse(task.reviewRun.completedAt!) + 20 * 60_000) return 'awaiting-review-followup';
           continue;
@@ -85,7 +85,7 @@ export class ProjectDailyWork {
       if (!review.nightlyReview || !run || run.state !== 'completed') return refuse('Choose a follow-up only for a completed nightly review.');
       if (run.followupChosen) return { schema: 'review-followup-receipt-v1' as const, taskId: run.fixTaskId, repeated: true };
       const window = review.nightlyWindowId ? (await this.o.hub.window(review.nightlyWindowId))?.document : null;
-      const inWindow = window?.state === 'open' && this.o.now() < Date.parse(window.openedAt) + 150 * 60_000 && !window.jobPhaseStartedAt && this.o.now() < Date.parse(run.completedAt!) + 20 * 60_000;
+      const inWindow = window?.state === 'open' && this.o.now() < Date.parse(window.openedAt) + (this.o.fixCutoffMinutes ?? 150) * 60_000 && !window.jobPhaseStartedAt && this.o.now() < Date.parse(run.completedAt!) + 20 * 60_000;
       let fixTaskId: string | null = null;
       if (input.task) {
         const goal = review.goalId ? (await this.o.hub.goal(review.goalId))?.document : null;

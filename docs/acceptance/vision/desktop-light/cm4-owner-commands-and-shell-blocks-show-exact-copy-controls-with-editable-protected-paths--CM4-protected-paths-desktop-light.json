@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Offline fixture' card is cut off at the bottom of the viewport. This is normal scrolling and the card's protected paths are below the fold.",
-      "Sidebar conversation titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory jour…', 'Goncalos-…').",
-      "The 'Open terminals' links are centered on their own line rather than aligned with the Terminal button, which looks a bit disconnected.",
-      "The 'Open' button on the hub card is drawn in a lighter, disabled-looking style, while the member card's 'Open' button looks normal."
+      "On the Hub card (Goncalos-MacBook-Pro.local), the Device tags field, the Protected paths field and all the buttons ('Save tags', 'Save protected paths', 'Inspect worktrees', 'Open') have a grey fill and faded text. They look disabled or read-only, while the same controls on the Browser member card look active. If the hub's protected paths are meant to be editable, check this state separately.",
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ...', 'Done · Shared memory fixture · ...'). The full text is still available elsewhere, so this doesn't block the screen.",
+      "The 'Offline fixture' card is cut off at the bottom of the viewport. This is normal page scrolling, not a layout fault.",
+      "The pink 'Open terminals' links sit centred below the left-aligned 'Terminal' buttons, which looks a little out of line with the rest of the card."
     ]
   }
 }

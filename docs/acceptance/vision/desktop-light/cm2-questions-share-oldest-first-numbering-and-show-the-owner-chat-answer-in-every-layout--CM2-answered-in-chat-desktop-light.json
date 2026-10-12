@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Shell session titles and subtitles in the left sidebar are truncated with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · G…')",
-      "The right panel's 'NIGHTLY 0' section is clipped at the bottom of the viewport ('Project day: 2026-10-12' is partly cut off), though the panel can be scrolled to reach it",
-      "The 'Answered' list in the right panel shows the questions newest-first (customers per page, red/amber, archive), the reverse of the oldest-first order in the chat (1 Archive, 2 Red/amber, 3 customers per page)"
+      "Shell session titles and subtitles in the left sidebar are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Shared memory fixture · …'). This looks like intended truncation.",
+      "The right panel's NIGHTLY section is clipped at the bottom of the viewport ('Project day: 2026-10-12' is only partly visible). The panel appears to scroll, so the content can still be reached.",
+      "The 'Answered' list in the right panel is in newest-first order, while the chat numbers the questions oldest-first. Each entry still shows the full chat answer, so this doesn't block anything."
     ]
   }
 }

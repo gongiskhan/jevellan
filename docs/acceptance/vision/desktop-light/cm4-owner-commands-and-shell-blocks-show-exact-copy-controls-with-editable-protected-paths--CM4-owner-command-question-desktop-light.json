@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The owner command in the 'Waiting for you' card is clipped at its right edge. It scrolls sideways, there is a 'Scroll sideways to read the full command.' hint, and Copy and Run in Terminal are visible, so it can still be read and used.",
-      "The bottom of the right column cuts through the 'Write the welcome copy' row under Concluded, so its metadata line is only partly visible. It looks like normal scroll overflow.",
-      "Sidebar session titles and subtitles end in ellipses, for example 'Context · J11 memory jour...' and 'Context · Shared memory ...'.",
-      "The chat thread on the left only fills the top part of the column, leaving a lot of empty space above the composer."
+      "In the waiting-for-you card, the owner command (printf '%s\\n' 'owner-visible-text-owner-visible…) is clipped at the right edge of the code block. The 'Scroll sideways to read the full command' hint and the Copy button keep it reachable, but the clipped text has no fade or scrollbar to show there is more.",
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Shared memory fi…', 'Done · Improver sandbox · Gonca…').",
+      "The project name 'Projects fixture' in the header has a lot of empty space around the status row ('Idle', 'Context unavailable · Compacted 0 times today'), and the meta text is small and low-contrast.",
+      "The answers on the left are recorded in a long vertical stack ('Asked you: …' / 'Recorded your chat answer' rows), which repeats information; this affects density, not legibility."
     ]
   }
 }

@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour...', 'Done · Improver sandbox · Gonca...'), but they're intentionally truncated and still readable",
-      "The status line 'Context 15% · Compacted 1 times today · Last compaction 07:12 PM' is small, low-contrast monospace text; it's readable but faint",
-      "'Compacted 1 times' should be 'Compacted 1 time'",
-      "The right panel's content runs to the bottom edge of the viewport, so there may be more below that needs scrolling"
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Improver sandbox · Gonca…'). This is normal truncation, not a layout fault.",
+      "The 'Recently merged · last 7 days' line in the right panel uses a different font size and weight from the other section headings.",
+      "The 'Project day: 2026-10-12' text under NIGHTLY is indented differently from nearby panel content."
     ]
   }
 }

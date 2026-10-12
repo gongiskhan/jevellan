@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The terminal header path is cut off with an ellipsis ('.../jevellan-browser-WtYXTi/projects-...'), but the full path can still be read in the terminal output.",
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour...', 'Context · Shared memory ...'), which is expected in a narrow sidebar.",
-      "The terminal output fills only the top half of the panel, leaving a large empty dark area below the prompt.",
-      "The '…' overflow button at the end of the phone-control key row is small and easy to miss, but it can be seen and reached."
+      "The working-directory path in the terminal header is cut off with an ellipsis ('.../projects-…'), but the full path still shows in the terminal output.",
+      "The sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Shared memory fi…').",
+      "The empty terminal output area takes up a lot of vertical space below the prompt."
     ]
   }
 }

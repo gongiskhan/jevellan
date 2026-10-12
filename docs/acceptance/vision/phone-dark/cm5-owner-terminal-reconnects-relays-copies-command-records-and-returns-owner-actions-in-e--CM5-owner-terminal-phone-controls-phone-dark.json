@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The row of special-key buttons (→ | ~ / - Paste A- A+ …) runs past both edges of the screen. The first (→) and last (…) buttons are partly cut off. This looks like a strip you can scroll sideways, so the keys can still be reached, but nothing on screen shows that it scrolls.",
-      "The host/path text in the terminal header is shortened with an ellipsis ('/private/var/fo...'). This is expected for a long path.",
-      "The 'Project' label in the status row looks small and hard to tell apart from the 'Connected' status text next to it."
+      "The host/path subtitle in the terminal header ('Goncalos-MacBook-Pro.local · /private/var/fo…') is cut off with an ellipsis. The status, Project label and Close terminal button are still fully visible.",
+      "The leftmost key in the shortcut row ('→') is partly clipped at the left edge. The row looks horizontally scrollable, and the other keys (|, ~, /, -, Paste, A-, A+, …) are all reachable.",
+      "The 'Type straight into terminal' checkbox label is small and low-contrast, but it is still readable."
     ]
   }
 }

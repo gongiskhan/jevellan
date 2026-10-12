@@ -58,7 +58,8 @@ export function streamLedger<E extends { id: number }>(ledger: StreamedLedger<E>
   response.on('close', close); response.on('error', close); response.on('drain', drained);
   // Subscribe before replay. Each wake reads the journal from the accepted cursor.
   unsubscribe = ledger.subscribe(schedule);
-  response.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no', 'X-Content-Type-Options': 'nosniff' });
+  response.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no', 'X-Content-Type-Options': 'nosniff',
+    'X-Jevellan-Ledger-Head': String(ledger.events().at(-1)?.id ?? 0) });
   response.flushHeaders();
   const heartbeat = setInterval(() => {
     keepalive = true; schedule();

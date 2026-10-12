@@ -1,3 +1,4 @@
+import type { SessionEvidence } from './ledger.js';
 import { existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { MemorySessionSchema, MemoryDreamRequestSchema, IdSchema, atomicWrite, newId, readDocument, writeDocument, type CoordinatorEvent, type MemorySession,
@@ -24,7 +25,7 @@ Never edit notes whose source is owner; link to them instead. Never delete; arch
 /** Memory work uses Projects placement, launch, accounting, Git and sweep services. It never joins the ordered nightly tasks. */
 export class ProjectMemoryProgramme {
   readonly dream: MemoryDream; readonly #active = new Map<string, { promise: Promise<void>; execution?: TurnExecution }>(); #closed = false;
-  constructor(readonly o: { store: HubMemoryStore; captures: ProjectCaptureQueue; hub: ProjectHub; launcher: TurnLauncher; placement: Placement;
+  constructor(readonly o: { sessionEnd?(evidence: SessionEvidence): void; store: HubMemoryStore; captures: ProjectCaptureQueue; hub: ProjectHub; launcher: TurnLauncher; placement: Placement;
     git: ThreadGit; daily: ProjectDailyWork; deviceId: string; redactor: SecretRedactor; accounts: ConstructorParameters<typeof TurnExecution>[0]['accounts'];
     settings(projectId: string): Promise<import('@jevellan/core').ProjectWorkSettings>; repository(project: Project): string; baseBranch(repo: string): Promise<string>;
     event(projectId: string, event: CoordinatorEvent): Promise<void>; enterOperation(id: string, title: string): () => void; now(): number }) { this.dream = new MemoryDream(o.store); }
@@ -163,6 +164,7 @@ export class ProjectMemoryProgramme {
           accounts: this.o.accounts, redactor: this.o.redactor, initialUsage: launched.usage, onSession: () => {}, onProcess: native => { session = this.save({ ...session, process: { turn: 1, startedAt: session.startedAt, ...native } }); } });
         if (this.#closed) await active.execution.shutdown();
         const outcome = await active.execution.done; clean = true;
+        this.o.sessionEnd?.({ projectId: project.id, owner: { kind: 'memory', id }, runtime: placement.record.runtime, model: placement.record.model, startedAt: session.startedAt, endedAt: new Date(this.o.now()).toISOString(), outcome });
         const { process: _process, ...ended } = session; void _process; session = this.save({ ...ended, usage: outcome.usage });
         if (outcome.status !== 'completed') throw new Error(outcome.error?.message ?? `The memory session ended ${outcome.status}.`);
         if (kind === 'dream') {

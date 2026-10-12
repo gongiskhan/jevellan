@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The thread content scrolls under the sticky header, so the top line of the earlier card ('The owner runs the reserved script.') is cut in half at the header edge.",
-      "The sidebar footer is clipped at the bottom of the viewport: the theme toggle and version text are only partly visible, though they are probably reachable by scrolling the sidebar.",
-      "The 'Run in Terminal' button in the Prompt card is greyed out next to the dark one in the card above. It is still readable, but it looks inconsistent and a bit faint.",
-      "The long worktree path in the owner-result paragraph wraps mid-path, which makes it harder to read."
+      "Sidebar thread titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Mesh journey fixt…'). They're still readable, and hovering or widening the sidebar would show the full text.",
+      "The first owner-step card is scrolled partly out of view at the top of the thread, so its header is hidden. You can scroll up to see it.",
+      "The long worktree path in the owner-command return message wraps across lines in the middle of a word ('jevellan-browser-' / 'Ev0Qoc'). It's still legible.",
+      "The thread-attach command in the footer is set in small monospace type with low contrast. It's still readable."
     ]
   }
 }

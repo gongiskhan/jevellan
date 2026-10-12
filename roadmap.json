@@ -446,8 +446,8 @@
   {
     "id": "coordinator-memory-terminal-p6",
     "title": "Real coordinator and terminal scenarios",
-    "why": "Two consecutive Claude A→B and C passes, D four layouts, failing-night check and non-gating Codex A; pending owner inputs.",
-    "status": "blocked"
+    "why": "Owner-API A/B/C/D harness, real sandbox seed, private resumable clock, structured redacted ledger/usage evidence and test-only nightly cutoff implemented. Affected backend coverage passes through reruns; CM1–CM5 pass all twenty layout cases with 56 clear vision verdicts. Thirteen blocked receipts retain missing owner inputs; no real acceptance clock has started.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "coordinator-memory-terminal-closing",

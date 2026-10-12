@@ -1,0 +1,25 @@
+{
+  "schema": "live-scenario-receipt-v1",
+  "scenario": "C",
+  "run": "run_6bde998c7616462996effa51c6a4dfa7",
+  "coordinator": "claude",
+  "label": "blocked",
+  "passed": false,
+  "startedAt": null,
+  "endedAt": "2026-10-12T22:53:04.637Z",
+  "minutes": 0,
+  "clockStartedAt": null,
+  "timeBoxEnded": false,
+  "steps": [],
+  "messages": [],
+  "toolCalls": [],
+  "pullRequests": [],
+  "workflowRunIds": [],
+  "notes": [],
+  "sessions": [],
+  "providerTotals": {},
+  "blockedBy": [
+    "The private live configuration and owner browser sign-in are not ready. Owner reported some activation inputs pending; no real scenario started."
+  ],
+  "observations": []
+}

@@ -10,6 +10,7 @@ import { ZodError } from 'zod';
 import {
   AccountSchema, ContextPanelSchema, Homes, MergeResultViewSchema, ProjectSchema, ProjectVisibilitySchema, ProjectWorkListViewSchema, ProjectWorkViewSchema, ThreadCreatedViewSchema,
   ThreadIndexSchema, ThreadMessageReceiptSchema, ThreadViewSchema, type Project,
+  ProjectEventFrameSchema,
 } from '../packages/core/dist/index.js';
 import { HubProjectAccess, HubUnavailable } from '../packages/mesh/dist/index.js';
 import { FakeRuntime, forThread, type FakeTurnStep } from '../packages/runtime-contract/dist/index.js';
@@ -27,6 +28,7 @@ test('the Projects route table is closed: exact paths, ids validated, 405 for kn
   expect(projectWorkRoute('/api/projects/proj_a/work', 'GET')).toEqual({ name: 'view', target: 'any', projectId: 'proj_a' });
   expect(projectWorkRoute('/api/projects/proj_a/threads', 'POST')).toEqual({ name: 'thread-create', target: 'coordinator', projectId: 'proj_a' });
   expect(projectWorkRoute(thread(''), 'GET')).toEqual({ name: 'thread', target: 'owner', projectId: 'proj_a', threadId: 'thread_1' });
+  expect(projectWorkRoute(thread('/events'), 'GET')).toEqual({ name: 'thread-events', target: 'owner', stream: true, projectId: 'proj_a', threadId: 'thread_1' });
   for (const [suffix, name] of [['/messages', 'thread-message'], ['/stop', 'thread-stop'], ['/discard', 'thread-discard'], ['/allow-turns', 'thread-allow'], ['/override', 'thread-override'], ['/pr/merge', 'pr-merge'], ['/pr/refresh', 'pr-refresh']]) {
     expect(projectWorkRoute(thread(suffix!), 'POST')).toEqual({ name, target: 'owner', projectId: 'proj_a', threadId: 'thread_1' });
   }
@@ -97,6 +99,28 @@ beforeEach(async () => {
 afterEach(async () => {
   await new Promise<void>((resolve) => { server.close(() => resolve()); server.closeAllConnections(); }); await app.close(); await fake.close(); await github.close();
   rmSync(root, { recursive: true, force: true });
+});
+test('the owner thread ledger stream authenticates, checks project ownership and replays prompts and hashed usage evidence', { timeout: 60000 }, async () => {
+  fake.enqueueTurn(async turn => {
+    turn.emit({ type: 'usage', inputTokens: 90, outputTokens: 12, costUsd: 0.02, costSource: 'reported' });
+    await turn.bridge('jevellan_thread_report', { status: 'blocked', summary: 'Waiting for the owner.' }); return { status: 'completed' };
+  }, forThread());
+  const receipt = ThreadCreatedViewSchema.parse(await call('/api/projects/project/threads', 'POST', create('Ledger evidence', 'ledger_evidence'), 201));
+  const route = `/api/projects/project/threads/${receipt.threadId}/events`;
+  expect((await fetch(`${base}${route}`)).status).toBe(401);
+  expect((await request(`/api/projects/another/threads/${receipt.threadId}/events`)).status).toBe(404);
+  await expect.poll(() => app.projectWork.ledgers.thread('project', receipt.threadId).events(0).some(row => row.type === 'thread-turn-end'), { timeout: 15000 }).toBe(true);
+  const abort = new AbortController();
+  try {
+    const response = await fetch(`${base}${route}`, { headers: { Cookie: cookie }, signal: abort.signal }); expect(response.status).toBe(200);
+    const reader = response.body!.getReader(); let text = '';
+    while (!text.includes('thread-turn-end')) { const value = await reader.read(); expect(value.done).toBe(false); text += new TextDecoder().decode(value.value); }
+    const events = text.split('\n\n').flatMap(packet => packet.split('\n').filter(line => line.startsWith('data:')).map(line => ProjectEventFrameSchema.parse(JSON.parse(line.slice(5))).event));
+    const started = events.find(row => row.type === 'thread-turn-start')!, ended = events.find(row => row.type === 'thread-turn-end')!;
+    expect(started.data).toMatchObject({ prompt: expect.stringContaining('Do Ledger evidence.'), promptTruncated: false });
+    expect(ended.data).toMatchObject({ sessionKey: expect.stringMatching(/^[a-f0-9]{64}$/u), usage: { inputTokens: 90, outputTokens: 12, costUsd: 0.02 } });
+    expect(text).not.toContain('nativeSessionId');
+  } finally { abort.abort(); }
 });
 
 test('Projects routes need the session, answer versioned documents, run a thread to a merged pull request, and leave the other project routes working', { timeout: 120_000 }, async () => {

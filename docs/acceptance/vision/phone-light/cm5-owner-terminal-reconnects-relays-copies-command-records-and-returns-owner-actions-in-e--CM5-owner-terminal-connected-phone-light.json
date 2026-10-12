@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The host/path subtitle in the header is cut off with an ellipsis ('/private/var/fo...'). It looks deliberate, but the full path can't be read in the header.",
-      "The special-key row (Esc, Tab, Ctrl, Alt, arrows) runs past the right edge and the last key is only partly visible. This looks like a sideways-scrolling row, so the remaining keys are probably still reachable, but nothing else shows that the row scrolls.",
-      "Long lines in the terminal wrap mid-word (e.g. 'pro / jects-app', 'glm / zwgjhw...'), which makes them a little harder to read."
+      "The key row (Esc, Tab, Ctrl, Alt, arrows) runs past the right edge, so the last key is clipped. This is probably a row you can scroll sideways, but nothing on screen shows that more keys are hidden.",
+      "The host/path text in the header is cut off with an ellipsis ('/private/var/fo…'). That's acceptable on a phone, but the full working directory can't be seen there.",
+      "There are two hamburger menu buttons stacked (one by 'Conversations' and one by 'Terminal'), which is redundant.",
+      "The 'Project' label is pink/red and sits between 'Connected' and 'Close terminal'. It isn't clear whether it's a tab, a link or a status."
     ]
   }
 }

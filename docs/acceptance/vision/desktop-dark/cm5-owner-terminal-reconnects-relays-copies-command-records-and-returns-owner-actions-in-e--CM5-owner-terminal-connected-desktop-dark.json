@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Terminal header path is truncated with an ellipsis ('.../projects-…'), but the full path also appears in the terminal output",
-      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Shared memory …')",
-      "There is a lot of empty space below the terminal output inside the terminal panel"
+      "The working directory path in the terminal header is truncated with an ellipsis ('.../projects-...'). The full path still appears in the terminal output.",
+      "Session titles and subtitles in the sidebar are truncated with ellipses (e.g. 'Context · J11 memory journ...', 'Context · Shared memory fi...')."
     ]
   }
 }

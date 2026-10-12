@@ -1,10 +1,13 @@
 import { ZodError } from 'zod';
+import { createHash } from 'node:crypto';
 import {
   BridgeToolNameSchema, ProjectLedgerEventSchema, SecretRedactor, boundedRedaction, clipRedacted, parseProjectLedgerData, type ProjectLedgerData, type ProjectLedgerEvent,
   type ProjectLedgerEventType,
 } from '@jevellan/core';
 import { JsonlLedger, type LedgerAppend, type LedgerOptions, type LedgerSpec } from '@jevellan/conversations';
 import type { ProjectPaths } from './paths.js';
+import type { TurnOutcome } from './turn-execution.js';
+export type SessionEvidence = { projectId: string; owner: { kind: 'review' | 'verification' | 'memory'; id: string }; runtime: string; model: string; startedAt: string; endedAt: string; outcome: TurnOutcome };
 
 const projectLedger: LedgerSpec<ProjectLedgerEvent> = { schema: ProjectLedgerEventSchema, literal: 'project-ledger-event-v1', label: 'Project', folders: ['', 'ledger', 'blobs'] };
 
@@ -74,6 +77,11 @@ export class ProjectLedgers {
   constructor(readonly paths: ProjectPaths, private readonly options: LedgerOptions = {}) {}
   coordinator(projectId: string): ProjectLedger { return this.#get(projectId); }
   thread(projectId: string, threadId: string): ProjectLedger { return this.#get(projectId, threadId); }
+  sessionEnd(input: SessionEvidence): void {
+    const { outcome, projectId, ...identity } = input;
+    this.coordinator(projectId).append({ type: 'project-session-end', data: { schema: 'project-session-end-v1', ...identity, status: outcome.status, usage: outcome.usage,
+      ...(outcome.sessionId ? { sessionKey: createHash('sha256').update(outcome.sessionId).digest('hex') } : {}) } });
+  }
   #get(projectId: string, threadId?: string): ProjectLedger {
     const key = threadId === undefined ? projectId : `${projectId}/${threadId}`;
     let ledger = this.#ledgers.get(key);

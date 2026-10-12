@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The command scripts/owner-only.sh, with its Copy and Run in Terminal buttons, appears twice in the report card: once in the report body and again in the reserved-step box below it.",
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Shared memory …') at this width.",
-      "The 'Projects Claude' and 'Fable' labels in the thread metadata line are small, low-contrast monospace text, but still readable."
+      "The report repeats the command 'scripts/owner-only.sh' with Copy/Run in Terminal controls twice, once in the report body and again in the owner-reserved block",
+      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Shared memory fixture · …')",
+      "The 'Some native sessions are unavailable' text and the version label 'v0.2.1' are small and low-contrast",
+      "The 'Blocked' badge text is small"
     ]
   }
 }

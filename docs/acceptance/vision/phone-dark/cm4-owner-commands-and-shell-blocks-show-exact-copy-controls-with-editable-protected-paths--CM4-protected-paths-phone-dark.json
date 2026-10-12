@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The first tab in the top tab bar is cut off at the left edge and shows only 's'. The scroll arrows suggest this is a scrollable carousel, so it is still reachable.",
-      "The pink 'Open terminals' label floats on its own, centered below the Terminal button, and doesn't line up with the rest of the layout.",
-      "'Thread worktrees: 0 GB · Job and verification worktrees: 0 GB' wraps so that 'GB' sits alone on the second line.",
-      "A button below 'Inspect worktrees' is cut off at the bottom of the viewport. This looks like normal page scrolling, not clipping."
+      "The tab strip clips its first and last labels ('…s' and 'Projects') at the edges. This is the expected behavior of a horizontally scrolling strip, and the arrow buttons still reach both ends.",
+      "The pink 'Open terminals' text sits centered with no clear tie to the Terminal button above it, so it reads like a stray label rather than a link or status.",
+      "The 'Thread worktrees: 0 GB · Job and verification worktrees: 0 GB' line wraps so that 'GB' sits alone on the second line.",
+      "A button at the bottom is cut off by the viewport edge. This is normal for a page that scrolls."
     ]
   }
 }

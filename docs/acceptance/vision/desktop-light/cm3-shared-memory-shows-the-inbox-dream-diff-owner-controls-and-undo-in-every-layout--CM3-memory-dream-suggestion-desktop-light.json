@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Modal content runs past the bottom of the viewport. The 'INBOX (FROM TODAY)' section is cut off at the modal's lower edge, so the user has to scroll to reach it. This is expected for a scrollable modal.",
-      "The diff block is truncated at its own scroll boundary, mid-hunk at '-updated: ...'. It reads as a scrollable region, but there's no visible scrollbar to show that more content exists.",
-      "The 'Run now' button is smaller and styled differently from the Apply/Discard buttons, so the button sizes look inconsistent.",
-      "The dream status reads 'suggested' as plain lowercase body text instead of a badge or label, so it's easy to miss."
+      "The dream status is shown twice: the summary line 'Memory dream: suggested — Kept the test conventions…' is followed by separate 'suggested' and 'Kept the test conventions…' lines.",
+      "The stats line uses raw camelCase keys (inboxPromoted, inboxDropped) instead of readable labels.",
+      "The diff block cuts off mid-hunk at '-updated: …' with no visible scroll cue. Its content is presumably scrollable.",
+      "'Run now' sits on its own line below Apply / Discard suggestion, close to the modal's bottom edge, so the button grouping looks a little disconnected."
     ]
   }
 }

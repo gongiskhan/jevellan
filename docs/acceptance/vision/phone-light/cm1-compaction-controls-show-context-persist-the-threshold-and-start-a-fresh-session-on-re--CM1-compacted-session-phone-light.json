@@ -10,10 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row is clipped at the right edge: \"Pull requests\" is cut off and any tabs after it are hidden. It looks like a horizontally scrollable strip, but nothing on screen shows that more tabs are there.",
-      "The context/compaction status text (\"Context 15% · Compacted 1 times today · Last compaction 07:12 PM\") is small, low-contrast monospace that wraps onto two lines. It is still readable.",
-      "\"Compacted 1 times\" should be \"Compacted 1 time\".",
-      "The compaction time is shown in two formats: 07:12 PM in the status line and 19:12:52 on the message."
+      "The tab row is cut off at the right edge: 'Pull requests' runs past the viewport, and any tabs after it can't be seen without scrolling sideways.",
+      "The context status text wraps awkwardly: 'today · Last compaction 11:51 PM' breaks onto a second line next to the 'Fresh session' button."
     ]
   }
 }

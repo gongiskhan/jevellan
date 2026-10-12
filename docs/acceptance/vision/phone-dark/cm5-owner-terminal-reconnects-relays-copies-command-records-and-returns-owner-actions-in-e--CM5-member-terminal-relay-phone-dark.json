@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The row of special keys (Esc, Tab, Ctrl, Alt, arrows) runs past the right edge. The last key is cut off, which suggests the row scrolls sideways, but nothing on screen says so.",
-      "The working-directory path in the header is cut short with an ellipsis (/private/var/folders/6k/3f…), so the full path can't be read.",
-      "The URL in the terminal output breaks across two lines (\"https://sup\" / \"port.apple.com…\") because the terminal wraps at its column width."
+      "The row of special keys (Esc, Tab, Ctrl, Alt, arrows) is cut off at the right edge, with a partial key showing past →. It looks like a horizontally scrollable strip, but nothing on screen shows that more keys are there.",
+      "The session path in the header ('/private/var/folders/6k/3f…') is shortened with an ellipsis, so you can't see the full path.",
+      "The terminal wraps the URL in the middle ('https://sup' / 'port.apple.com'). This is normal terminal wrapping at this width."
     ]
   }
 }

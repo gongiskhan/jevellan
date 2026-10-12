@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal body cuts off at the bottom: the 'Minutes between refills' input is only partly visible above the Cancel/Save footer, and nothing shows that the dialog scrolls.",
-      "The 'Default isolation' group title sits on its fieldset border, so it looks a little different from the other field labels."
+      "The modal body is cut off at the bottom: the 'Minutes between refills' input is only partly visible above the footer. Scrolling inside the modal reaches it, and it is not part of the compaction controls.",
+      "The modal does not show any context-usage indicator or 'Fresh session' control. The 'Fresh session' button is visible behind the dimmed overlay, so those controls are probably judged in other steps."
     ]
   }
 }

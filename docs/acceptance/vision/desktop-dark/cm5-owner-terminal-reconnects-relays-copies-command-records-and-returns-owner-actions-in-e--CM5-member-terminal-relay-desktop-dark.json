@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Shell session titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory jour…'). This is intentional truncation and doesn't block anything.",
-      "The 'Send to…' and 'Run' buttons look low-contrast or disabled. That fits the empty command input, but they are faint on the dark background.",
-      "The terminal output panel has a lot of empty space below the short output."
+      "Session titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Gonca…'). This is intentional overflow handling, and the full titles are likely available on hover.",
+      "The 'Send to…' button and the 'Run' button look dimmed or disabled at low contrast. That is probably correct, since nothing is selected and the input is empty, but they are slightly harder to read than the other controls.",
+      "The long member path in the Terminal header ('/private/var/folders/…/user') takes up most of the header width. It fits at this size, but it could crowd the 'Connected' status at narrower widths."
     ]
   }
 }

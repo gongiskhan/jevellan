@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'QUEUE 0' heading at the bottom of the right panel is clipped at the viewport edge. It looks like the panel scrolls, so the heading is still reachable.",
-      "The disabled 'Send' buttons in the question cards have low contrast against the dark card background.",
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…'). This appears to be intentional."
+      "The 'QUEUE 0' heading at the bottom of the right panel is cut off by the viewport edge. The panel seems to scroll, so it can still be reached.",
+      "Some session titles and subtitles in the sidebar are cut short with an ellipsis (for example 'Context · J11 memory jour…' and 'Context · Shared memory …').",
+      "The disabled 'Send' buttons have low contrast against the dark question cards."
     ]
   }
 }

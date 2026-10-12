@@ -126,7 +126,7 @@ export class ProjectTools implements BridgeScopeTools {
     // The action already happened: a chat line that cannot be written must not turn it into an error the model retries.
     try {
       const line = await this.handlers.line(name, input, outcome, this.scope);
-      this.ledger.append({ type: 'coordinator-tool', turn: this.scope.turn, data: { schema: 'coordinator-tool-v1', tool: name, ok: outcome.ok, ...line } });
+      this.ledger.append({ type: 'coordinator-tool', turn: this.scope.turn, data: { schema: 'coordinator-tool-v1', tool: name, ok: outcome.ok, input: this.redactor.text(JSON.stringify(input)).slice(0, 32768), inputTruncated: this.redactor.text(JSON.stringify(input)).length > 32768, ...line } });
     } catch { /* The tool result stands without its one-liner. */ }
   }
 }

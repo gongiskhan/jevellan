@@ -1,3 +1,4 @@
+import type { SessionEvidence } from './ledger.js';
 import { existsSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod';
@@ -42,7 +43,7 @@ export class ReviewTools implements BridgeScopeTools {
 /** Reviews have no coding thread or publishing path. The final checked report and watermark share one task CAS write. */
 export class NightlyReview {
   readonly #active = new Map<string, { promise: Promise<void>; execution?: TurnExecution }>(); #closed = false;
-  constructor(readonly o: { hub: ProjectHub; tasks: ProjectTasks; homes: Homes; git: ThreadGit; launcher: TurnLauncher; deviceId: string; deviceName?: string; facts?(): DeviceFacts; redactor: SecretRedactor; now(): number;
+  constructor(readonly o: { sessionEnd?(evidence: SessionEvidence): void; hub: ProjectHub; tasks: ProjectTasks; homes: Homes; git: ThreadGit; launcher: TurnLauncher; deviceId: string; deviceName?: string; facts?(): DeviceFacts; redactor: SecretRedactor; now(): number;
     settings(): Promise<Configuration['x-jevellan']>; accounts: Pick<AccountService, 'list' | 'recordUsage' | 'recordError'>; runtimes: ReadonlyMap<string, RuntimeAdapter>;
     project(id: string): Promise<Project>; repository(project: Project): string; baseBranch(repo: string): Promise<string>; timeoutMs: number;
     memory?(projectId: string): Promise<ProjectMemoryPort>; event(projectId: string, event: CoordinatorEvent): Promise<void>; changed(): void }) {}
@@ -112,6 +113,7 @@ export class NightlyReview {
         active.execution = new TurnExecution({ run: launched.run, accountId: launched.accountId, secretRef: launched.secretRef, model: run.model, deviceId: this.o.deviceId, accounts: this.o.accounts, initialUsage: launched.usage, onSession: () => {},
           onProcess: native => writeDocument(processPath, ProcessSchema, { schema: 'project-review-process-v1', turn: 1, startedAt: new Date(this.o.now()).toISOString(), ...native }), redactor: this.o.redactor });
         const outcome = await active.execution.done; terminated = true;
+        this.o.sessionEnd?.({ projectId: task.projectId, owner: { kind: 'review', id: task.id }, runtime: run.runtime, model: run.model, startedAt: run.startedAt, endedAt: new Date(this.o.now()).toISOString(), outcome });
         rmSync(processPath, { force: true });
         if (outcome.status !== 'completed' || !tools.report) throw new Error(outcome.error?.message ?? 'The review ended without its required report.');
         if (await this.o.git.resolve(path, 'HEAD') !== run.commit || (await this.o.git.run(path, ['status', '--porcelain=v1', '-z', '--untracked-files=all'])).stdout) throw new Error('The read-only review changed its worktree or created a commit.');

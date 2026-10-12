@@ -124,3 +124,8 @@ Codex full access is scoped to Projects coding threads. Coordinator, review and 
 Browser takeover runs the existing attach command. Its isolated native session gets a scoped bridge for memory, GitHub and terminal reads while attached. Capture hooks can forward a changed native session only when it is in that account home and has the thread's working folder; detach captures the adopted session and expires the grant. No task control or report tool is exposed while the owner holds it. Hub memory permissions remain unchanged, and legacy memory remains read-only.
 
 Owner-terminal command records and two-megabyte scrollback are device state. Agents read redacted bounded snapshots through the hub's existing project scope. Exact owner-command results and explicitly sent output use ordinary session messages, so normal capture and extraction can retain durable learning from them. Terminal metadata and once-only result receipts are versioned and survive browser navigation; raw terminal output is not copied wholesale into shared notes.
+
+
+## Scenario verification
+
+The live working-day/night harness checks source-provider frontmatter, cross-provider first-turn recall, learned setup on the first push, notebook answers, Project now, dream changes and byte-identical owner notes. Dream input fixtures are imported as copies through owner operations; the harness never edits the native memory folder. Reports are checked against the notes commit and real current memory. Extraction/dream runtime usage is recorded in project-session-end-v1 in the existing project ledger. Capture content and native transcript paths are omitted from committed scenario receipts.
