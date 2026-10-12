@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Pull requests' tab is clipped at the right edge of the tab bar. The tab row probably scrolls sideways, so the tab is still reachable.",
-      "The header's '...' menu button sits very close to the right edge of the screen."
+      "The 'Pull requests' tab is clipped at the right edge of the tab bar. It looks like a horizontally scrollable row, so the tab can still be reached.",
+      "The 'Working…' status pill in the header is cut off with an ellipsis.",
+      "The 'Missing run' details are collapsed, so the only explanation shown is the summary line 'No run of missing.yml started today.'"
     ]
   }
 }

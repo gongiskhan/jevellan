@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The first tab in the horizontal tab strip is clipped at the left edge ('Chat' shows only partly). It looks like a scrollable strip, so the tab is still reachable.",
-      "The 'Run now' button on the queued Deploy item is greyed out with low contrast. It is still legible and the disabled state looks intended."
+      "The tab row is cut off at the left edge, so 'Chat' shows only partly. It looks like a horizontally scrolling tab bar, so the tab can still be reached.",
+      "The status badge in the header is shortened to 'Working…'.",
+      "The goal and nightly item cards leave a lot of empty space below their action buttons, which makes the page longer than it needs to be."
     ]
   }
 }

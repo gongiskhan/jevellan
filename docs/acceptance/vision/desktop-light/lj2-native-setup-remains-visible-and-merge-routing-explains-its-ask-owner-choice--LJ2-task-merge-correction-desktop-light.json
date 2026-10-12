@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Back to project' link sits flush against the top edge of the viewport and is centered instead of aligned with the page content, so it looks cramped and out of place.",
-      "The 'Open thread' button stretches across the whole content area, which looks heavy next to the compact controls above it.",
-      "The correction row ('Jev would: ask you', 'Why', 'Should have asked me', 'Didn't need asking', 'Saved for future merge decisions.') is crowded against the right edge with tight spacing between the links. It's still readable and clickable.",
-      "Most of the main content area is empty below the card. The page looks sparse but nothing is missing."
+      "The 'Back to project' link sits flush against the top edge of the viewport, centered over the content column, with almost no top padding.",
+      "The merge-correction controls ('Jev would: ask you', 'Why', 'Should have asked me', 'Didn't need asking') and the 'Saved for future merge decisions.' confirmation are packed tightly into one right-aligned row with little spacing, so the confirmation reads as part of the control group.",
+      "The 'Open thread' button spans the full content width, which looks oversized for a secondary action.",
+      "Most of the main content area below the card is empty."
     ]
   }
 }

@@ -4,14 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "step corrections survive reload and undo launches the requested redo with visible history",
   "layout": "phone-light",
-  "screenshot": "screenshots/phase2-undo-confirm-phone-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-undo-confirm-phone-light.png",
   "expected": "the Jevellan web app \"undo confirm\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"step corrections survive reload and undo launches the requested redo with visible history\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dialog says the step will be redone with effort 'low', but the Effort field in the form behind it shows 'high'. This may be a state mismatch rather than a layout issue, so it's worth checking.",
-      "The page title in the dimmed background is cut off with an ellipsis ('Change the value to three, then redo thi…'). It sits behind the modal overlay, so it's expected."
+      "The dialog says it will redo with effort 'low', but the Effort field behind the overlay shows 'high'. This may be a state mismatch rather than a layout problem.",
+      "The header title is cut off with an ellipsis ('Change the value to three, then redo thi...'), which is intended truncation behind the modal overlay.",
+      "The 'Undo and redo' and 'Back' buttons are on the left, leaving empty space on the right of the dialog footer."
     ]
   }
 }

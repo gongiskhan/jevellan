@@ -10,7 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab strip cuts off a fourth tab at the right edge (only a partial icon shows next to the scroll arrow). It can still be reached with the arrow or by scrolling, so it doesn't block anything."
+      "The top tab strip is clipped at the right edge: a partial icon shows after 'Decisions'. A scroll arrow is there, so the other tabs can still be reached.",
+      "The device lists under the Claude Code accounts say 'Codex sign-ins are kept per device for now.' This looks like copy-pasted text that should say Claude Code.",
+      "The 'Five hours' and 'Week' usage values all show 'Unknown', which adds little information but is still readable."
     ]
   }
 }

@@ -4,14 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "LJ10 hard device needs, resource refusals, facts in Why and confirmed orphan cleanup",
   "layout": "phone-dark",
-  "screenshot": "screenshots/LJ10-devices-confirm-cleanup-phone-dark.png",
+  "screenshot": "docs/acceptance/screenshots/LJ10-devices-confirm-cleanup-phone-dark.png",
   "expected": "the Jevellan web app \"LJ10 devices confirm cleanup\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"LJ10 hard device needs, resource refusals, facts in Why and confirmed orphan cleanup\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The confirmation dialog says the worktree uses \"0 GB\". A size that small would read better in MB or KB.",
-      "Background page content shows through blurred around the modal. This is expected for a dialog backdrop."
+      "The modal overlaps the 'Browser member' card behind it. This is normal for a modal over a blurred backdrop, so it isn't blocking.",
+      "The modal sits in the middle of a long page and doesn't stay pinned to the viewport. On a real phone it might open off-screen, depending on scroll position.",
+      "The modal text says '0 GB', which reads oddly for a worktree. The size probably got rounded down."
     ]
   }
 }

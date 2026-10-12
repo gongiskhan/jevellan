@@ -4,16 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "Consecutive tool calls share an open area and new live output appends to it",
   "layout": "desktop-dark",
-  "screenshot": "/tmp/jevellan-tool-groups-desktop-dark-projects.png",
+  "screenshot": "docs/acceptance/screenshots/matrix-jevellan-tool-groups-desktop-dark-projects.png",
   "expected": "the Jevellan web app \"jevellan tool groups projects\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"Consecutive tool calls share an open area and new live output appends to it\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Shell session titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'). This looks like intentional truncation, but the full names can't be read.",
-      "Only the first tool group shows a call count ('3 calls'). The single-call Read/Bash/Read groups have no count, so the group headers look inconsistent.",
-      "The 'Bash' tool card shows a file_path input ({\"file_path\":\"four.txt\"}). This looks like a fixture-data oddity, not a rendering problem.",
-      "The 'completed' status labels on the second and third calls in the first group sit alone on their own row above 'Input', which leaves extra space."
+      "The Bash tool call has file_path four.txt as its input. This looks like fixture data, not a layout problem.",
+      "The main thread header is crowded. The title is on the far left and the Why/Override/Stop buttons are on the far right, with nothing in between.",
+      "Sidebar session titles and subtitles are cut off with an ellipsis (e.g. 'Context · J11 memory jour...'). This is intentional truncation."
     ]
   }
 }

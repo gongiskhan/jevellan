@@ -4,14 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work",
   "layout": "desktop-light",
-  "screenshot": "screenshots/J8-proxy-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/J8-proxy-desktop-light.png",
   "expected": "the Jevellan web app \"proxy\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fourth conversation in the sidebar list (around y≈712) is cut off by the bottom edge of the scrollable list. Only the tops of its letters show, so it reads as a sliver of text above the 'Some native sessions are unavailable' row. A fade or a full-row snap would look cleaner.",
-      "Conversation titles and subtitles in the sidebar are cut short with ellipses, e.g. 'J8: run on device B while ...' and 'Waiting for you · Mesh journey f...'. This is expected, but it hides useful context."
+      "Sidebar conversation list cuts off a fourth item at the bottom edge, just above 'Some native sessions are unavailable'. Only the top sliver of its title shows. The list scrolls, so the item can still be reached.",
+      "Sidebar conversation titles and subtitles are cut short with ellipses (e.g. 'J8: run on device B while ...', 'Waiting for you · Mesh journey f...'). This looks intentional, and the full title shows in the main header."
     ]
   }
 }

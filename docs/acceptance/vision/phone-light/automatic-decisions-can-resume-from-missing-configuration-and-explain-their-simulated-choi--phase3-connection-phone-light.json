@@ -4,16 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
   "layout": "phone-light",
-  "screenshot": "screenshots/phase3-connection-phone-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase3-connection-phone-light.png",
   "expected": "the Jevellan web app \"connection\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"automatic decisions can resume from missing configuration and explain their simulated choices\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip clips the labels on both sides (\"…s\" on the left, \"Improve…\" on the right). The arrow buttons make it scrollable, so the other tabs can still be reached.",
-      "Most Effort guide text is cut off inside its single-line fields (low, medium, xhigh, max). The full text is only visible by scrolling inside each field.",
-      "The Routing profile text runs past the visible area of its box. It can be read by scrolling inside the box.",
-      "The \"Jev key saved.\" toast sits at the bottom edge and may cover part of the footer area under \"Saving creates a configuration revision.\""
+      "The tab strip is scrolled sideways, so the first tab shows only as a partial 's' and the 'Improve…' tab is cut off at the right edge. The scroll arrows keep them reachable.",
+      "The Routing profile text area cuts off its last line at the bottom edge. The field scrolls, so the text is still readable.",
+      "The 'Jev key saved.' toast sits close to the footer note 'Saving creates a configuration revision.' but does not cover it."
     ]
   }
 }

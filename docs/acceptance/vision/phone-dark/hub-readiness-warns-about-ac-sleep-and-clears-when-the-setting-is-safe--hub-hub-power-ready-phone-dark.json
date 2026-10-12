@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "hub readiness warns about AC sleep and clears when the setting is safe",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/hub-hub-power-ready-phone-dark.png",
+  "expected": "the Jevellan web app \"hub hub power ready\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"hub readiness warns about AC sleep and clears when the setting is safe\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The dev-madrid device tags input cuts off its value at 'phone-testi'. The field scrolls, so the rest of the text can still be reached, but it isn't all visible at once.",
+      "The settings tab strip clips the left tab to a lone 's' and the right tab to 'Projects'. The arrow buttons scroll the strip, so this is expected, but the partial labels look a bit untidy.",
+      "The 'Thread worktrees: 0 GB · Job and verification worktrees: 0 GB' line wraps so that 'GB' sits alone on the next line."
+    ]
+  }
+}

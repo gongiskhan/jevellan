@@ -4,15 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "PJ3 the notebook can be edited",
   "layout": "desktop-dark",
-  "screenshot": "screenshots/PJ3-notebook-panel-desktop-dark.png",
+  "screenshot": "docs/acceptance/screenshots/PJ3-notebook-panel-desktop-dark.png",
   "expected": "the Jevellan web app \"notebook panel\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PJ3 the notebook can be edited\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles get cut off with an ellipsis ('Context · J11 memory journ…', 'Context · Mesh journey fixt…'), and so do their subtitles ('dev-ma…', 'de…'). This looks like intended truncation.",
-      "The notebook panel has a lot of empty space below its two lines of content.",
-      "The 'Projects fixture' label in the notebook header uses a pink monospace font that doesn't match the bold 'Notebook' title next to it."
+      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Mesh journey fix…', 'dev-ma…'). The full text isn't visible, but the rows can still be told apart.",
+      "The chat column has a lot of empty space next to it because the notebook panel takes up the right third of the window."
     ]
   }
 }

@@ -4,17 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
   "layout": "phone-dark",
-  "screenshot": "screenshots/phase2-evidence-source-phone-dark.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-evidence-source-phone-dark.png",
   "expected": "the Jevellan web app \"evidence source\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"file and evidence links show recorded versions, source lines, Markdown, images and verification output\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Code line 3 (`export const label = '<b>plain text</b>';`) runs right up to the right edge of the code panel with almost no padding, so a slightly longer line would be clipped or need horizontal scrolling.",
-      "The checkpoint hash wraps onto its own line under 'Recorded checkpoint ·', leaving the separator hanging at the end of the first line.",
-      "The checkpoint hash is small, low-contrast monospace text. It can be read but it's faint against the dark background.",
-      "'Open recorded step' is muted grey next to the pink 'Open working copy', so it looks less clearly clickable.",
-      "There's a large empty area below the content."
+      "Code line 3 runs almost to the right edge of the code block and past the line-2 highlight's width, leaving no right padding. Longer lines would probably need horizontal scrolling or wrapping.",
+      "The checkpoint hash wraps onto its own line after 'Recorded checkpoint ·', so the dangling separator looks a little awkward.",
+      "The 'Open recorded step' link is low-contrast grey compared with the pink 'Open working copy' link.",
+      "The large empty area below the content is expected for short evidence."
     ]
   }
 }

@@ -4,17 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule",
   "layout": "phone-light",
-  "screenshot": "screenshots/phase6-j12-view-changes-phone-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase6-j12-view-changes-phone-light.png",
   "expected": "the Jevellan web app \"j12 view changes\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Only a 3x-downscaled copy (130px wide) was available, so I couldn't check small text at full size. Monospace diff lines and small labels look plausible but couldn't be confirmed sharp.",
-      "The top tab bar (Decisions / Improver) seems to run off the right edge, cutting off a further tab. It's probably a horizontally scrollable row.",
-      "The Memory care diff in View changes is very long and pushes Schedule and Last runs far down the page. Making it collapsible or giving it a max height would help.",
-      "The Trial log table's column headers (week, conversations in Jevellan, outside, why passing) wrap into tall, narrow stacks at phone width.",
-      "The Last runs list is long and repetitive. Each 'No working rules to suggest' row with its Open log link takes up a lot of vertical space."
+      "I could only check a downscaled copy of the image (130x2000 from 390x6008). Running scripts to crop it was blocked, so very small text, like the commit hash chip and the diff line numbers, couldn't be checked closely.",
+      "In the expanded 'View changes' diff, long lines wrap onto several lines instead of scrolling sideways, which makes the memory care card very tall and the diff harder to scan.",
+      "The page is very long (about 6000px) because the expanded diff and the full 'Last runs' list are stacked together, so a phone user has to scroll a lot to reach 'Schedule and jobs' and the controls below it.",
+      "The Routing suggestion cards at the bottom also contain long wrapped diff blocks that crowd the layout."
     ]
   }
 }

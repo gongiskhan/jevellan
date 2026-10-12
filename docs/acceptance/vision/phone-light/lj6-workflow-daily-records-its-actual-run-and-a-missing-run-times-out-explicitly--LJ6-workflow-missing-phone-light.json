@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row is clipped at the right edge, so 'Pull requests' is cut off. It is probably a horizontally scrollable tab strip.",
-      "The status badge in the header is truncated to 'Working…'.",
-      "The Run now/Edit buttons and the 'Enabled' checkbox are slightly out of line: the 'Enabled' label sits below the checkbox instead of beside it."
+      "The tab row runs past the right edge, so the 'Pull requests' tab is cut off. This looks like a horizontally scrollable tab strip, so the tab can still be reached.",
+      "In both nightly cards, the 'Enabled' checkbox sits above its label instead of beside it, which looks slightly out of line with the 'Run now' and 'Edit' buttons."
     ]
   }
 }

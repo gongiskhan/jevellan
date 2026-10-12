@@ -4,14 +4,11 @@
   "model": "claude-opus-5-5",
   "test": "PJ4b the Why panel explains placement and overrides apply",
   "layout": "desktop-light",
-  "screenshot": "screenshots/PJ4b-override-modal-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/PJ4b-override-modal-desktop-light.png",
   "expected": "the Jevellan web app \"override modal\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PJ4b the Why panel explains placement and overrides apply\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": [
-      "The background (thread header, report card, sidebar) sits behind a dim overlay and is hard to read. That's expected behind a modal and doesn't affect the modal itself.",
-      "The report card text behind the modal is cut off at \"Done for no…\" because the dialog covers it. This is expected modal overlap."
-    ]
+    "cosmetic": []
   }
 }

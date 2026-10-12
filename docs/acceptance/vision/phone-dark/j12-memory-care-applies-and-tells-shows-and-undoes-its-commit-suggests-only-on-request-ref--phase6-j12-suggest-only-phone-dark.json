@@ -4,15 +4,17 @@
   "model": "claude-opus-5-5",
   "test": "J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule",
   "layout": "phone-dark",
-  "screenshot": "screenshots/phase6-j12-suggest-only-phone-dark.png",
+  "screenshot": "docs/acceptance/screenshots/phase6-j12-suggest-only-phone-dark.png",
   "expected": "the Jevellan web app \"j12 suggest only\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "At this downscaled size I can't check the small monospace diff text in the suggestion cards and the Recently Decided cards character by character. It looks legible and wraps rather than being cut off.",
-      "The trial log table's columns are narrow on a phone, so the 'Why they finished elsewhere' header wraps onto several lines.",
-      "The page is very long (about 5900px). Run history and the Recently Decided cards push the Schedule and jobs controls far down, though they can still be reached by scrolling."
+      "The top tab strip (Decisions / Improver / ...) is cut off at the right edge. It looks like a horizontally scrollable tab bar rather than hidden controls.",
+      "The Trial log table is cramped at phone width. Its column headers ('WHY THEY FINISHED ELSEWHERE') wrap onto several lines and the columns are very narrow.",
+      "Long diff lines and file paths in the suggestion cards and the Recently decided cards wrap or break mid-token, which makes the diffs harder to scan.",
+      "The page is very long (about 5900px) and the Memory care 'Suggest only' selector sits mid-page. Several dense run-log rows have small secondary text that is only just legible at this scale.",
+      "I judged this from a downscaled view (132x2000) because cropping to full resolution was blocked. I saw no overlap or clipped controls, but I couldn't confirm fine text at full size."
     ]
   }
 }

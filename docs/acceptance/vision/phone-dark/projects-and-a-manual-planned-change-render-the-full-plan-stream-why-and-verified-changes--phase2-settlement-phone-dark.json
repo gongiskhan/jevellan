@@ -4,14 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "Projects and a manual planned change render the full plan, stream, Why and verified Changes",
   "layout": "phone-dark",
-  "screenshot": "screenshots/phase2-settlement-phone-dark.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-settlement-phone-dark.png",
   "expected": "the Jevellan web app \"settlement\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Background 'Conversation settings' sheet shows through the dimmed scrim. Its labels (Next step, Model, Effort) are faint, but this looks like the intended modal overlay.",
-      "The dialog sits in the upper-middle of the screen and leaves a large empty dark area below it."
+      "The 'Close this work' dialog covers a dimmed 'Conversation settings' panel. The panel's labels (Next step, Model, Effort) still show faintly behind the overlay, which is expected for a modal.",
+      "The dialog sits in the upper-middle of the screen and leaves a lot of empty dark space below it."
     ]
   }
 }

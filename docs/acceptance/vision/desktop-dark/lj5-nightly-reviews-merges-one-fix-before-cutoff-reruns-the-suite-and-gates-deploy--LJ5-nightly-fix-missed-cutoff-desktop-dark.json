@@ -10,13 +10,12 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar shell-session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · G…')",
-      "Metadata lines for the Running and Concluded items are cut off ('Worktree · Goncalos-MacBook…')",
-      "The task paths in the 'Nightly window finished' cards end in a separate '…' line, so the details are hidden",
-      "The PR card actions are spaced unevenly: 'Why' and 'Open thread' sit far from 'Open task', and 'Open task' is styled differently from the 'Open on GitHub' button next to it",
-      "The Enabled checkboxes sit above their 'Enabled' labels, not beside them",
-      "Many repeated 'Noted.' lines clutter the timeline",
-      "The right-panel Goals section continues below the fold; it scrolls, so nothing is clipped"
+      "The 'Working…' status badge in the header is clipped by its ellipsis, so the full label isn't visible.",
+      "In the pull request #3 card, the 'Why' and 'Open thread' links sit very close together and are spaced unevenly next to 'Open task'.",
+      "Long session titles in the sidebar ('Context · J11 memory jour…', 'Context · Mesh journey fix…') and their subtitles are cut off with ellipses.",
+      "The 'Nightly window finished' cards in the feed end with a lone '…' line, so their details are cut off without a visible way to expand them.",
+      "The Goals section at the bottom of the right panel runs past the bottom of the screen ('Propose tasks' is cut off); it is presumably reachable by scrolling.",
+      "The feed repeats many 'Noted.' lines, which adds visual noise."
     ]
   }
 }

@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "Projects and a manual planned change render the full plan, stream, Why and verified Changes",
   "layout": "phone-light",
-  "screenshot": "screenshots/phase2-conversation-phone-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-conversation-phone-light.png",
   "expected": "the Jevellan web app \"conversation\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The screen shows two closure banners one after the other: 'Work closed. Its changes are kept, and this checkout stays reserved for this conversation.' and 'Work closed and published.' They say slightly different things and look redundant.",
-      "Step 2 · Implement shows the Read project output 'The fixture starts with value 1.' right above 'The value is now 2'. Next to each other, these two lines read as contradictory.",
-      "The 'Approved' badge on the Proposed plan card is small and set in monospace, so it looks out of place next to the plan title."
+      "The Step 2 tool output still says 'The fixture starts with value 1.' even though the text below it says the value is now 2. That's probably fine since it's the read before the change, but it could confuse a reader.",
+      "Two closing banners sit back to back ('Work closed. Its changes are kept...' and 'Work closed and published.'), which looks repetitive.",
+      "The plan card's 'Approved' badge is small and low-contrast next to the large heading."
     ]
   }
 }

@@ -4,17 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "external activity waits, retries, requires Changes review and publishes after reviewed acceptance",
   "layout": "desktop-dark",
-  "screenshot": "screenshots/phase4-external-wait-desktop-dark.png",
+  "screenshot": "docs/acceptance/screenshots/phase4-external-wait-desktop-dark.png",
   "expected": "the Jevellan web app \"external wait\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"external activity waits, retries, requires Changes review and publishes after reviewed acceptance\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fourth conversation row at the bottom of the sidebar list is cut off halfway at the edge of the scroll area, so its text can't be read. It's normal scroll overflow, and the 'Some native sessions are unavailable' row below it is still readable.",
-      "Conversation titles in the sidebar are cut off with ellipses (e.g. 'Exercise external activity…', 'Exercise composer choic…'). This is expected truncation.",
-      "Two 'Retry' buttons are visible: one on the user message bubble and one under the blocked banner. Having both may be confusing.",
-      "'Retry' and 'Try automatic again' are stacked on separate rows instead of sitting side by side, which leaves a lot of empty space.",
-      "The blocked notice uses a red, error-style banner, while the 'Blocked' status badge is amber. The colours don't match for what is a wait state."
+      "In the sidebar, a fourth conversation row is partly clipped at the bottom edge of the scroll area, just above 'Some native sessions are unavailable'. The list scrolls, so this looks like ordinary scroll clipping, but the half-row is visually untidy.",
+      "Sidebar conversation titles and subtitles are shortened with ellipses (e.g. 'Exercise external activity…', 'External activity fixt…'). They are readable, but the full text can't be seen at this width.",
+      "The two recovery buttons, 'Retry' (filled) and 'Try automatic again' (outlined), are stacked vertically and look different from each other. They would read more consistently if placed side by side or styled the same way.",
+      "The blocked-reason banner uses a dark red background with light text. It is readable, but the contrast is a bit low."
     ]
   }
 }

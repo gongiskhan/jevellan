@@ -10,11 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Meta lines in the Concluded cards are truncated with ellipses (e.g. 'Goncalos-MacBook…'). The full value is in the header.",
-      "Shell session subtitles in the left sidebar are truncated (e.g. 'Done · Improver sandbox · Gonca…').",
-      "Task paths in the 'Nightly window finished' feed cards end with a stray '…' line.",
-      "The feed repeats many 'Noted.' lines, which makes the failed-night report harder to scan.",
-      "The Nightly item checkboxes are bright magenta and stand out against the dark theme."
+      "The sidebar shell session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour...'), but they are still readable.",
+      "Many 'Noted.' lines repeat in the conversation stream, which makes it visually noisy.",
+      "The 'Concluded 3' list shows three entries with the same title 'Fix the nightly review finding', so it's hard to tell them apart at a glance.",
+      "The Nightly window finished cards end in a lone '…' line after the task path, which looks unfinished.",
+      "The pull request #3 card has the 'Why' and 'Open thread' links crowded together with the 'Open task' link."
     ]
   }
 }

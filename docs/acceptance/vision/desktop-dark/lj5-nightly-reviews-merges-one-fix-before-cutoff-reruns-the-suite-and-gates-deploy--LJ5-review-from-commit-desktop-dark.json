@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Enabled' label sits below its checkbox instead of next to it, so the two look less clearly connected.",
-      "The Save and Cancel buttons are left-aligned and packed close together, rather than sitting in a separate right-aligned footer like most dialogs.",
-      "The helper text under 'Review from commit' is small and low-contrast. It's still readable, but it's the faintest text in the dialog."
+      "The 'Enabled' label sits under its checkbox instead of beside it, so the two don't line up the way a checkbox and label usually do",
+      "The helper text under 'Review from commit' is small and low-contrast against the dark background"
     ]
   }
 }

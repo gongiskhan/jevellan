@@ -4,14 +4,17 @@
   "model": "claude-opus-5-5",
   "test": "LJ3 one queue preserves dependency order, owner ordering and recovery without duplicate threads",
   "layout": "desktop-light",
-  "screenshot": "screenshots/LJ3-queue-dependency-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/LJ3-queue-dependency-desktop-light.png",
   "expected": "the Jevellan web app \"LJ3 queue dependency\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"LJ3 one queue preserves dependency order, owner ordering and recovery without duplicate threads\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Under Running, the task titles and progress lines are cut short with an ellipsis (e.g. 'Read through the project and list what each file is f...', 'Read the README on this device: a title and one line about th...'). They read as intentional single-line truncation.",
-      "In the left sidebar, shell session names and their details are cut short with an ellipsis (e.g. 'Context · J11 memory journ...', 'Context · Mesh journey fixt...')."
+      "In the Running list, the title \"Read through the project and list what each file is f...\" is cut off with an ellipsis. The full title is still shown in the Queue section.",
+      "In the left sidebar, shell session titles and subtitles are cut off with ellipses (\"Context · J11 memory jour...\", \"Context · Mesh journey fix...\").",
+      "The \"Read the README on the member\" summary line in the Running list is cut off with an ellipsis.",
+      "The conversation repeats \"Noted.\" many times in a row (for example, twice in a row after the progress update), which makes the page long and repetitive.",
+      "The \"Some native sessions are unavailable\" note at the bottom of the sidebar is small, low-contrast text."
     ]
   }
 }

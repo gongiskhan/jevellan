@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Jobs (1)' disclosure at the bottom of the right panel sits right at the viewport edge, so its lower part is clipped until you scroll.",
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · Gonca…').",
-      "The 'Enabled' checkbox sits above its label instead of beside it, so it doesn't line up with the 'Run now' and 'Edit' buttons.",
-      "The 'Nightly tests' card shows 'No output recorded.' even though the workflow passed, which looks sparse."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Mesh journey fix…'). The text is still readable and the sessions can still be clicked.",
+      "The 'Jobs (1)' expander sits at the very bottom edge of the right panel, so you only reach it by scrolling.",
+      "The page header still shows 'Working…' and 'Coordinator is working…' after the job passed, which reads a bit oddly next to the pass message.",
+      "The 'Enabled' checkbox sits above its label instead of beside it, so it lines up awkwardly with the 'Run now' and 'Edit' buttons."
     ]
   }
 }

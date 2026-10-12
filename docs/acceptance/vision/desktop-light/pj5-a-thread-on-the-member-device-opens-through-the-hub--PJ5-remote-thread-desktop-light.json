@@ -4,16 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "PJ5 a thread on the member device opens through the hub",
   "layout": "desktop-light",
-  "screenshot": "screenshots/PJ5-remote-thread-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/PJ5-remote-thread-desktop-light.png",
   "expected": "the Jevellan web app \"remote thread\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PJ5 a thread on the member device opens through the hub\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (for example, 'Context · J11 memory journ…' and 'Done · Mesh journey fixture · de…'), but this is ordinary truncation and the rows still work.",
-      "The 'completed' status label on the Read tool card sits by itself on a separate line, right-aligned above 'Input', so it looks detached from the 'Read' header.",
-      "The metadata line under the title ('Codex · GPT · high effort · …') is in small light-gray monospace and is fairly low-contrast, though still readable.",
-      "The status chip says 'Idle' while the 'Stop' button is still shown in the header. The two signals may not match, but this isn't a layout problem."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). These look like intentional overflow truncation.",
+      "The metadata line under the title is set in very small monospace text, which is hard to read but still legible.",
+      "The 'completed' status on the Read tool card sits on its own line with a large empty gap to the right of 'Read', so the header looks unbalanced.",
+      "There's a large empty area between the last report card and the message composer."
     ]
   }
 }

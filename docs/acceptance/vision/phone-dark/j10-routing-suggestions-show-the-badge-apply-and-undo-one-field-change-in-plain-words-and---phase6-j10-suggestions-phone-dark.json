@@ -4,16 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
   "layout": "phone-dark",
-  "screenshot": "screenshots/phase6-j10-suggestions-phone-dark.png",
+  "screenshot": "docs/acceptance/screenshots/phase6-j10-suggestions-phone-dark.png",
   "expected": "the Jevellan web app \"j10 suggestions\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip is cut off at the right edge (the 'Dev...' tab is clipped). The scroll arrow still reaches it, so it isn't blocking.",
-      "In both suggestion cards, the gray 'Simulated judge responses.' text has low contrast against the dark background.",
-      "The 'Save schedule and jobs' button has low contrast and looks disabled, which may be intended because nothing has changed.",
-      "The Trial log table headers ('WHY THEY FINISHED ELSEWHERE') wrap across several narrow lines."
+      "The third tab label in the top tab strip is cut off ('Dev…') under the right scroll arrow. The arrows show the strip scrolls sideways, so the tab can still be reached.",
+      "The 'Save schedule and jobs' button is low-contrast and looks disabled, which is probably expected when nothing has changed but is hard to read.",
+      "The grey 'Simulated judge responses.' text in the check summaries is low-contrast but still readable.",
+      "The diff blocks wrap long lines with no clear indent for the continuation lines, so the -/+ lines are a bit harder to scan."
     ]
   }
 }

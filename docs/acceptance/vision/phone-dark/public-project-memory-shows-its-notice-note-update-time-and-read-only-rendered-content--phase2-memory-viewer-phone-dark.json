@@ -4,14 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "public project memory shows its notice, note update time and read-only rendered content",
   "layout": "phone-dark",
-  "screenshot": "screenshots/phase2-memory-viewer-phone-dark.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-memory-viewer-phone-dark.png",
   "expected": "the Jevellan web app \"memory viewer\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"public project memory shows its notice, note update time and read-only rendered content\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The title and timestamp in the search-result row sit oddly indented and off-centre inside the button, instead of being left-aligned or fully centred.",
-      "Faint text from the page behind the modal shows through the dimmed backdrop above and below the dialog. This is expected, but it adds visual noise."
+      "The note entry 'Public memory guide / Updated Sep 20, 2026, 1:00 PM' is pushed to the right with a large empty gap on the left. The rest of the modal content is left-aligned.",
+      "The note entry has no visible marker showing it is the selected note.",
+      "The note's update time appears twice: in the list entry and in the note header below it."
     ]
   }
 }

@@ -4,16 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
   "layout": "phone-dark",
-  "screenshot": "screenshots/phase6-j10-undo-phone-dark.png",
+  "screenshot": "docs/acceptance/screenshots/phase6-j10-undo-phone-dark.png",
   "expected": "the Jevellan web app \"j10 undo\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab strip cuts off the third tab ('Dev…') at the right edge. Scroll arrows are visible, so it can still be reached.",
-      "Both diff code blocks have a large empty area below the last line.",
-      "'Last runs' says '2 routing suggestions ready', but only 1 is shown under 'Waiting for you'. This could confuse users, though it isn't a layout problem.",
-      "The 'Save schedule and jobs' button text is low-contrast and looks disabled, but it is still readable."
+      "The third tab in the top tab bar is clipped at the right edge ('Dev…'). The bar looks horizontally scrollable with a right arrow, so the tab can still be reached.",
+      "Both diff code blocks have a large empty gap at the bottom, below the last line of the diff.",
+      "The Trial log description ('Conversations finished in Jevellan and outside it, per week.') and the 'Simulated judge responses.' notes use small, low-contrast grey text on a dark background. They are readable but faint.",
+      "The 'Save schedule and jobs' button is dimmed (disabled-looking), with low contrast against its card."
     ]
   }
 }

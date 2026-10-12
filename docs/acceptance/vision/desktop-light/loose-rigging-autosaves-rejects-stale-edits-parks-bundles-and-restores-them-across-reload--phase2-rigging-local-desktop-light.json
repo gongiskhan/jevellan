@@ -4,14 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
   "layout": "desktop-light",
-  "screenshot": "screenshots/phase2-rigging-local-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-rigging-local-desktop-light.png",
   "expected": "the Jevellan web app \"rigging local\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The close button (×) on the 'Current file reloaded' notice is very small and faint next to the dialog's main close button.",
-      "The dialog has no visible way to switch from the rendered instructions to an editor; only the 'Source' link suggests one. This is not blocking because a link is still there."
+      "The close (×) button on the 'Current file reloaded' banner is very small and low-contrast, so it is easy to miss.",
+      "The rendered instructions preview ('Edited local instructions…') sits directly under the 'Saved'/'Source' row with no visible editor frame, so it's not obvious where the editable area starts and ends.",
+      "The modal's meta lines ('This bundle has 2 files…', 'Local edits save automatically on this account.') use small, light text that is readable but hard to see on the white background."
     ]
   }
 }

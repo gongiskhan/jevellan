@@ -4,16 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
   "layout": "desktop-dark",
-  "screenshot": "screenshots/phase6-j10-dismissed-desktop-dark.png",
+  "screenshot": "docs/acceptance/screenshots/phase6-j10-dismissed-desktop-dark.png",
   "expected": "the Jevellan web app \"j10 dismissed\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Exercise answer options: ...', 'Context · J11 memory jour...'). This is intentional truncation and the content can still be reached.",
-      "The 'Save schedule and jobs' button has low contrast and looks disabled.",
-      "The 'Apply and tell me' field in the Memory care row has low-contrast placeholder-style text.",
-      "The long diff lines in the 'Prefer GPT for implement steps' card wrap onto a second line instead of scrolling sideways, but they stay readable."
+      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Exercise answer options: ...', 'Context · J11 memory jour...'). This is normal truncation and the content is still identifiable.",
+      "In Schedule and jobs, the 'Memory care' row puts its mode in an input-styled box ('Apply and tell me'), while the other rows show plain 'Suggest' labels. The rows look inconsistent.",
+      "The 'Save schedule and jobs' button has low contrast against the card background, so it looks disabled.",
+      "The 'Simulated judge responses.' text after each 'Checked against 27 saved cases' line is dim and low contrast, but still readable."
     ]
   }
 }

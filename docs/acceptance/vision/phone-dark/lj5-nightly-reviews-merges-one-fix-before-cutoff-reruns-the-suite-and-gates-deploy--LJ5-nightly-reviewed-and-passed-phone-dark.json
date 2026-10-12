@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row is scrolled horizontally, so the first tab ('Chat') is clipped at the left edge. It still looks reachable by scrolling.",
-      "The 'Working…' status badge is shortened with an ellipsis.",
-      "The 'Enabled' checkbox labels sit lower than the Run now/Edit buttons on the same row."
+      "The tab row is scrolled horizontally, so the 'Chat' tab is clipped at the left edge. It can still be reached by scrolling the row.",
+      "The 'Working…' status badge in the header is shortened with an ellipsis."
     ]
   }
 }

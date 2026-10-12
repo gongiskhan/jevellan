@@ -4,14 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "PJ3 project page opens from the sidebar and the coordinator chat streams",
   "layout": "phone-light",
-  "screenshot": "screenshots/PJ3-empty-chat-phone-light.png",
+  "screenshot": "docs/acceptance/screenshots/PJ3-empty-chat-phone-light.png",
   "expected": "the Jevellan web app \"empty chat\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PJ3 project page opens from the sidebar and the coordinator chat streams\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row runs off the right edge, so the 'Pull requests' tab is clipped. It looks like a horizontally scrollable strip, so the tab can still be reached, but nothing else shows that more tabs exist.",
-      "The large empty area above the composer makes the placeholder text float in the middle of the screen. This is expected for an empty chat."
+      "The tab row overflows on the right: the 'Pull requests' tab is clipped at the screen edge, and any tabs after it can't be seen. It looks like a horizontally scrollable tab strip, so the tabs are probably still reachable, but there's no fade or arrow showing that more tabs exist.",
+      "The large empty area above and below the centered help text leaves the screen looking sparse. This is only visual balance, not a usability problem."
     ]
   }
 }

@@ -4,16 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "step corrections survive reload and undo launches the requested redo with visible history",
   "layout": "phone-dark",
-  "screenshot": "screenshots/phase2-undo-retry-phone-dark.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-undo-retry-phone-dark.png",
   "expected": "the Jevellan web app \"undo retry\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"step corrections survive reload and undo launches the requested redo with visible history\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Change the value to three, then redo this...'). The full text appears in the line just below it, so nothing is lost.",
-      "The same error appears twice: in the red banner and again in the 'Resume correction · step 1' card.",
-      "The error lists 'disabled' eight times without saying which model each one refers to, so the user can't tell what is wrong.",
-      "The top card is partly scrolled out of view, so the 'Input' label sits right at the top edge. This is just where the page was scrolled."
+      "The header title is cut off with an ellipsis ('Change the value to three, then redo this…'). The full text still appears in the subtitle line below it.",
+      "The step card is scrolled partway past the top edge, so the 'Input' label is clipped against the header. This is only the scroll position; the content can still be reached by scrolling.",
+      "The error text repeats 'disabled' eight times without naming the models. It is readable but noisy, and it appears twice: once in the red banner and again in the Resume correction card.",
+      "The 'Changes · 1 file' and 'Why' chips and the 'Step details' expander have low-contrast muted text against the dark background, but they are still legible."
     ]
   }
 }

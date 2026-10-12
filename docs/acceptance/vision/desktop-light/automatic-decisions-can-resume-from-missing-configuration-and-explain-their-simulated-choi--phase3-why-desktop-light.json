@@ -4,16 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
   "layout": "desktop-light",
-  "screenshot": "screenshots/phase3-why-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase3-why-desktop-light.png",
   "expected": "the Jevellan web app \"why\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"automatic decisions can resume from missing configuration and explain their simulated choices\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fourth conversation title in the left sidebar is cut off horizontally by the 'Some native sessions are unavailable' row. It looks like the edge of a scrollable list.",
-      "The right 'Why this step' panel ends mid-section at 'Account'. A row below 'Automatic account: eligible · selected' is partly visible at the bottom edge, so the panel probably scrolls.",
-      "The Effort section says 'medium → high', but the bar chart gives medium 1.00 and high 0.00. The text and the bars could be read as contradicting each other. This is a content issue, not a layout one.",
-      "Long conversation titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Exercise automatic decisi…'). They still read fine."
+      "Right 'Why this step' panel is cut off at the bottom: a line below 'Automatic account: eligible · selected' is only partly visible. It looks like a normal scrollable panel edge.",
+      "Sidebar conversation list shows a partly clipped fourth item above 'Some native sessions are unavailable'. This is scroll overflow with no fade or other hint that the list continues.",
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Exercise automatic decisi…', 'Done · Automatic fixture · dev-m…'). This looks intended for the narrow column.",
+      "The Effort section's text says 'medium → high', but the highlighted bar is 'medium' at 1.00 while 'high' shows 0.00. This may confuse readers but isn't a layout problem."
     ]
   }
 }

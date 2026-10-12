@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The commit hash in the 'Review from commit' field runs past the field's right edge ('3488b30149a1f560364b3e2d9eae0c4750df0a2…'). The input scrolls, but the full value isn't visible at phone width.",
-      "The 'Enabled' checkbox and its label are stacked on separate lines rather than side by side, which looks slightly loose."
+      "The 40-character commit hash fills the whole width of the 'Review from commit' field with almost no right padding. It still shows in full, ending in '…7bcbd2'.",
+      "The 'Enabled' checkbox sits on its own line above its label instead of next to it.",
+      "Text from the cards behind the dimmed overlay shows faintly above and below the modal. It doesn't block the modal."
     ]
   }
 }

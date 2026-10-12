@@ -4,16 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "PJ7 an attached thread disables its composer",
   "layout": "phone-light",
-  "screenshot": "screenshots/PJ7-copy-blocked-phone-light.png",
+  "screenshot": "docs/acceptance/screenshots/PJ7-copy-blocked-phone-light.png",
   "expected": "the Jevellan web app \"copy blocked\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PJ7 an attached thread disables its composer\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The selected command (jevellan thread attach thread_01M4PAQRRTNF9KEM98HTZXKHJT) wraps onto two lines inside the narrow code box, so the ID breaks away from the command.",
-      "The magenta selection highlight on the command looks heavy against the light theme, but the text is still readable.",
-      "There is a large empty gap between the report card and the attached-state notice at the bottom.",
-      "The disabled composer's send button blends into the dashed field and is hard to see as disabled (it is meant to be inactive while attached)."
+      "Large empty gap between the report card and the attached-state notice at the bottom",
+      "The highlighted command text uses a strong magenta selection color that makes the monospace command a little harder to read",
+      "The thread ID wraps mid-token in the header notice ('jevellan thread detach' / 'thread_01M4R0GJYKKRJ1TG6F29WMQZRZ.')"
     ]
   }
 }

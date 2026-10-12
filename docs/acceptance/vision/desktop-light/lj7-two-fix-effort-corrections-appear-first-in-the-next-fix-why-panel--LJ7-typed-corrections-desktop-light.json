@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "LJ7 two fix effort corrections appear first in the next fix Why panel",
   "layout": "desktop-light",
-  "screenshot": "screenshots/LJ7-typed-corrections-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/LJ7-typed-corrections-desktop-light.png",
   "expected": "the Jevellan web app \"LJ7 typed corrections\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"LJ7 two fix effort corrections appear first in the next fix Why panel\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · J11 memory journey · dev-…'). The full text isn't visible, but this is intentional truncation.",
-      "The 'Corrections shown to Jev' list sits at the very bottom edge of the Why panel. Both entries can be read, but more content may need scrolling.",
-      "Monospace labels in the Why panel are small and low-contrast (e.g. 'fixed', 'only option', the numeric values)."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Mesh journey fix…', 'dev-ma…'). The truncation looks intentional.",
+      "The corrections list sits at the very bottom of the Why panel, right against the edge of the window, with almost no padding below it.",
+      "The 'Devices when placed' section uses larger body text than the other panel sections, so the type sizes look inconsistent."
     ]
   }
 }

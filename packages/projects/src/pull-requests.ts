@@ -190,7 +190,7 @@ export class PullRequestTracker {
     this.#transitions.set(threadId, transition);
     return transition;
   }
-  /** Squash merge of the reviewed head from the UI (brief 8.5); success applies the merged transition before returning. */
+  /** Squash merge of the checked head; success applies the merged transition before returning. */
   merge(threadId: string, expectedHead?: string): Promise<MergeResultView> {
     return this.#serial(threadId, async () => {
       const thread = this.#o.threads.get(threadId); if (!thread) throw refuse(THREAD_NOT_FOUND, 404);

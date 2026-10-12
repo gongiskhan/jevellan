@@ -4,14 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "PJ3 Leave git to me offers Main and preserves the manual git policy",
   "layout": "desktop-light",
-  "screenshot": "/tmp/jevellan-manual-settings-desktop-light-projects.png",
+  "screenshot": "docs/acceptance/screenshots/matrix-jevellan-manual-settings-desktop-light-projects.png",
   "expected": "the Jevellan web app \"jevellan manual settings projects\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PJ3 Leave git to me offers Main and preserves the manual git policy\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Time and Time zone fields look editable even though Nightly window is unchecked. They could be dimmed to show they don't apply.",
-      "The dialog body seems to scroll past the Time/Time zone row, but there is no clear scroll cue above the footer."
+      "The modal body is a scroll area, so the 'Nightly window' checkbox at the bottom is cut off by the footer until you scroll. This is expected scrolling behaviour, but nothing on screen hints that more settings sit below.",
+      "The page behind the modal is blurred on purpose, so it can't be read. That is expected while a modal is open."
     ]
   }
 }

@@ -4,15 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "PJ3 a pull request merges through the modal and moves to Concluded",
   "layout": "desktop-light",
-  "screenshot": "screenshots/PJ3-pull-requests-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/PJ3-pull-requests-desktop-light.png",
   "expected": "the Jevellan web app \"pull requests\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PJ3 a pull request merges through the modal and moves to Concluded\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and metadata are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Mesh journey fixt…', 'Done · Mesh journey fixture · de…').",
-      "The Running item title is cut off ('Read through the project and list what each file is …'), though the full title appears in the Queue card.",
-      "The conversation shows many repeated 'Noted.' replies, which makes the thread noisy."
+      "In the pull request #1 card, the action row is uneven: 'Why' and 'Open thread' sit close together on the left, while 'Open task' has a larger font and floats apart from 'Open on GitHub'.",
+      "The Merge button sits alone on its own line, so it looks disconnected from the other pull request actions.",
+      "Some long titles are cut short with an ellipsis: sidebar session names like 'Context · J11 memory jour…' and the Running item 'Read through the project and list what each file is ...'. The Concluded and Queue sections show their full text.",
+      "The pull request card shows 'Checks passing', but the latest chat event says pull request #1 'has conflicts'. That's a possible state mismatch, not a rendering problem."
     ]
   }
 }

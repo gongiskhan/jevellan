@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
   "layout": "desktop-light",
-  "screenshot": "screenshots/phase2-evidence-image-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-evidence-image-desktop-light.png",
   "expected": "the Jevellan web app \"evidence image\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"file and evidence links show recorded versions, source lines, Markdown, images and verification output\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The evidence panel's image preview is a small thumbnail, so you can't make out details of the recorded image without opening it.",
-      "In the middle column, the 'Started / Ended / Duration' metadata line is partly clipped under the sticky conversation header because of where the page is scrolled.",
-      "In the sidebar, a conversation row behind 'Some native sessions are unavailable' is clipped, so only fragments of its text show."
+      "In the middle column, the 'Started Oct 12, 12:51:15 · Ended … · Duration 6s · Local time' line is partly hidden under the sticky conversation header, so the tops of its letters are clipped. This is just where the page happens to be scrolled; scrolling up shows the whole line.",
+      "In the sidebar, a fourth conversation item is cut off at the bottom of the scrollable list, above 'Some native sessions are unavailable'. Only fragments of its text show; scrolling the list reveals it.",
+      "The screen.png preview in the evidence panel is a small thumbnail (about 100px). Its content is visible, but the details are hard to make out at this size."
     ]
   }
 }

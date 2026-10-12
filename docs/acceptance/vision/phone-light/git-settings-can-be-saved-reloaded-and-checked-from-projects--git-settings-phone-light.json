@@ -4,16 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "Git settings can be saved, reloaded and checked from Projects",
   "layout": "phone-light",
-  "screenshot": "test-results/git-settings-phone-light.png",
+  "screenshot": "docs/acceptance/screenshots/matrix-git-settings-phone-light.png",
   "expected": "the Jevellan web app \"git settings\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"Git settings can be saved, reloaded and checked from Projects\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip clips its first and last labels ('…ices' on the left, a partial icon on the right). This is a normal horizontal scroller, and the arrow buttons can reach the hidden tabs.",
-      "The 'GitHub token scope' label and dropdown sit outside any card, between the 'GitHub connection' and 'GitHub token' cards, so they look visually separate from both.",
-      "The 'Save Git settings' button has low contrast (pale fill with muted text). It is probably meant to look disabled, but it reads as faint.",
-      "The remote path breaks in the middle, after 'activity-context-'. It is still readable."
+      "The settings tab strip is clipped at both edges: the first tab shows as \"...ices\" and the last tab is cut off behind the right scroll arrow. The strip can be scrolled with the arrow buttons, so nothing is out of reach.",
+      "The \"GitHub token scope\" label and dropdown sit outside any card, between the GitHub connection and GitHub token cards, so they look out of place.",
+      "The \"Save Git settings\" button is a pale, low-contrast fill and looks disabled. It is still readable.",
+      "The connected remote path wraps in the middle of a word (\"activity-context-\" / \"origin.git\"). It is still readable."
     ]
   }
 }

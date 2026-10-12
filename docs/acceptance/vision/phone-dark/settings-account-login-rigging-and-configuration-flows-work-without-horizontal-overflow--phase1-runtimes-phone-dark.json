@@ -4,15 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "Settings account, login, Rigging and configuration flows work without horizontal overflow",
   "layout": "phone-dark",
-  "screenshot": "screenshots/phase1-runtimes-phone-dark.png",
+  "screenshot": "docs/acceptance/screenshots/phase1-runtimes-phone-dark.png",
   "expected": "the Jevellan web app \"runtimes\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"Settings account, login, Rigging and configuration flows work without horizontal overflow\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fourth settings tab in the top tab strip is clipped at the right edge behind the scroll-arrow button. This is expected for a scrollable tab strip, and the arrow keeps the hidden tabs reachable.",
-      "The long 'Login recovery <uuid>' account names wrap onto two lines and break in the middle of the UUID, which looks a bit ragged.",
-      "The 'Unknown' values for the Five hours and Week usage rows are low-contrast grey on the dark background, but they can still be read."
+      "The settings tab strip cuts off the fourth tab label at the right edge (only a partial icon shows next to 'Decisions'). The scroll arrow keeps it reachable.",
+      "Under the Claude Code 'Rigging local fixture' account, the per-device note says 'Codex sign-ins are kept per device for now.' It looks like copy from the Codex section and should probably name Claude Code instead.",
+      "The 'Login recovery <uuid>' account names wrap across two lines. They are still readable but look awkward.",
+      "The Codex section's 'Applied from this device' disclosure shows only 'Models appear after an account is checked.' and no value chip, while the Claude Code section shows 'Fable'. This is a slight visual inconsistency."
     ]
   }
 }

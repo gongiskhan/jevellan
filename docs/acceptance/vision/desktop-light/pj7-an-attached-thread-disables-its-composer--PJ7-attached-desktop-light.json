@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "PJ7 an attached thread disables its composer",
   "layout": "desktop-light",
-  "screenshot": "screenshots/PJ7-attached-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/PJ7-attached-desktop-light.png",
   "expected": "the Jevellan web app \"attached\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PJ7 an attached thread disables its composer\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and metadata lines are cut off with ellipses ('Context · J11 memory journ…', 'Done · Improver sandbox · dev-ma…'). This is intentional truncation, but the full text can't be read.",
-      "The composer placeholder 'Message this thread' and the disabled send button are low-contrast. This is expected for a disabled control, but they are faint.",
-      "The large empty area between the report card and the composer makes the page look sparse."
+      "Sidebar session titles and metadata lines are truncated with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This is normal for a narrow sidebar.",
+      "The composer is disabled and its placeholder text is low-contrast. This is expected for an attached thread, and the text can still be read.",
+      "There is a large empty area between the report card and the composer."
     ]
   }
 }

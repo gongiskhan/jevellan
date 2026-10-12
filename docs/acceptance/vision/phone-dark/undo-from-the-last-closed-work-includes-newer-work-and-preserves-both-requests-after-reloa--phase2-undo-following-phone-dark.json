@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "undo from the last closed work includes newer work and preserves both requests after reload",
   "layout": "phone-dark",
-  "screenshot": "screenshots/phase2-undo-following-phone-dark.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-undo-following-phone-dark.png",
   "expected": "the Jevellan web app \"undo following\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"undo from the last closed work includes newer work and preserves both requests after reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Change the value to two and publish th…'). The full request is still readable in the first message bubble.",
-      "The step metadata lines ('Started … Ended … Duration') are dense at phone width but still readable.",
-      "The struck-through 'Step 1 · Implement' and 'Step 2 · Implement' titles are low-contrast on the dark background. They can still be read."
+      "The header title is cut off with an ellipsis ('Change the value to two and publish th...'). This is expected for a long title on a phone screen, but the full request can't be read in the header.",
+      "The muted grey 'Undone' labels and the struck-through 'Step 1 · Implement' and 'Step 2 · Implement' headings have low contrast on the dark background.",
+      "The small pink 'corrected: action → reply' label next to Step 1 is somewhat low-contrast and crowds the end of the step header line."
     ]
   }
 }

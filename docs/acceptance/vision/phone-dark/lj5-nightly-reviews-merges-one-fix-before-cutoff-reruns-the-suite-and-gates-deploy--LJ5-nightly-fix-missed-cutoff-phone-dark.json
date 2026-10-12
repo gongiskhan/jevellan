@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Chat' tab is cut off at the left edge of the tab bar. It looks like a horizontally scrolled tab strip, so the tab can still be reached.",
-      "The 'Working…' status pill in the header is truncated with an ellipsis.",
-      "Each nightly card repeats its title in grey right under it ('Review since last' / 'Review since last'), which is redundant."
+      "The first tab in the tab strip is clipped at the left edge (\"Chat\"). It looks like a horizontally scrolled strip, so the tab can still be reached.",
+      "The status pill in the header is cut short to \"Working…\" with an ellipsis.",
+      "On the Deploy nightly card, the disabled \"Run now\" button has low contrast against the dark background.",
+      "The section headers (\"QUEUE 3\", \"NIGHTLY 3\", \"GOALS 2\") use small, dim text that is a little hard to read."
     ]
   }
 }

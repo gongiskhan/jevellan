@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip is clipped at the left edge, so 'Chat' shows as 'hat'. The strip looks horizontally scrollable, so the tab can still be reached.",
-      "The 'Why', 'Open thread' and 'Open task' links are bright pink and don't match the rest of the theme. 'Open task' also uses a larger font than the other two links.",
-      "The 'Merge' button is dimmed and low-contrast. This fits merges being held during the nightly window, but the button is hard to see."
+      "The tab row is cut off at the left edge, so the 'Chat' tab is partly clipped. It looks like a row you can scroll sideways, and the label can still be read.",
+      "In the PR card, the 'Open task' link uses a larger font than 'Why' and 'Open thread', so the links look uneven and aren't evenly spaced.",
+      "The pink links ('Why', 'Open thread', 'Open task') don't match the outlined 'Open on GitHub' button.",
+      "The 'Merge' button has very low contrast. It looks disabled on purpose because merges are held, but it's hard to see."
     ]
   }
 }

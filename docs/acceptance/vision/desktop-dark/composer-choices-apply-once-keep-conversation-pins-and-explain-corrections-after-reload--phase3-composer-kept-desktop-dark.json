@@ -4,17 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "composer choices apply once, keep conversation pins and explain corrections after reload",
   "layout": "desktop-dark",
-  "screenshot": "screenshots/phase3-composer-kept-desktop-dark.png",
+  "screenshot": "docs/acceptance/screenshots/phase3-composer-kept-desktop-dark.png",
   "expected": "the Jevellan web app \"composer kept\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"composer choices apply once, keep conversation pins and explain corrections after reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Conversation titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Exercise composer choic…', 'Done · Automatic fixture · dev-m…'). This looks intentional, but the full text can't be read.",
-      "The 'completed' status label on each tool card sits on its own line under the 'Read project' title instead of on the same line, which leaves awkward empty space.",
-      "The pink 'Composer Fable' chip text on its pink-tinted background has fairly low contrast.",
-      "Small muted text like 'Local time', the step timing labels and 'Some native sessions are unavailable' has low contrast against the dark background.",
-      "Step 2 (Reply) repeats the same 'Read project' card and 'The plan has three steps.' text as Step 1, which looks redundant but doesn't affect the layout."
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Exercise composer choic…', 'Done · Automatic fixture · dev-m…'). This looks like intended truncation, and the full title of the active conversation shows in the header.",
+      "Step 2 (Reply) repeats Step 1's 'Read project' tool output and the line 'The plan has three steps.', which reads as fixture filler rather than reply content.",
+      "The muted labels 'Local time', 'completed' and 'Some native sessions are unavailable' are low-contrast against the dark background, but still readable."
     ]
   }
 }

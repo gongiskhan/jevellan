@@ -4,18 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "step corrections survive reload and undo launches the requested redo with visible history",
   "layout": "desktop-light",
-  "screenshot": "screenshots/phase2-undo-retry-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-undo-retry-desktop-light.png",
   "expected": "the Jevellan web app \"undo retry\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"step corrections survive reload and undo launches the requested redo with visible history\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The error message just repeats 'disabled' eight times and never names the models or says why they are disabled, so the user can't tell what went wrong.",
-      "The same error text appears twice: once in the red banner and again in the 'Resume correction · step 1' card.",
-      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Change the value to thre…', 'Browser fixtur…'). This is expected truncation, but the two 'Change the value to thre…' items look the same.",
-      "The step metadata row ('corrected: effort → max', 'corrected: action → reply, effort → low', 'Undone', 'Local time') uses small, light pink or grey text with low contrast.",
-      "The 'completed' status label in the Read project tool card is faint and sits far right on its own line, apart from the card title.",
-      "The struck-through 'Step 1 · Implement' label is light grey and a bit hard to read, though it is legible."
+      "The error message repeats 'disabled' eight times ('disabled, disabled, ... disabled.'). It's readable but noisy, and it's shown twice: once in the red banner and again in the Resume correction card.",
+      "The step header row has low-contrast pink/gray text ('Undone', 'corrected: effort → max', 'corrected: action → reply, effort → low'). It's small but still readable.",
+      "Some sidebar conversation titles and subtitles are cut off with ellipses ('Change the value to thre…', 'Blocked · Browser fixture · dev-…'). This is normal sidebar truncation."
     ]
   }
 }

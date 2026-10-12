@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab bar is clipped at the right edge: 'Pull requests' is cut off. It looks like a horizontally scrolling tab strip, so the tab is still reachable.",
-      "The 'Enabled' checkbox sits above its label instead of beside it, and it doesn't line up with the 'Run now' and 'Edit' buttons in each nightly card.",
-      "Three banners say almost the same thing about the nightly window and held merges (the top banner, 'GitHub runs the chain tonight' and 'Merges are held while the nightly window runs.'), which takes up vertical space.",
-      "The nightly cards have a lot of empty space below the action row."
+      "The 'Pull requests' tab is clipped at the right edge of the tab bar. It looks like a horizontally scrolling tab strip, but nothing on screen shows that more tabs are off to the right.",
+      "The 'Run now' buttons are low-contrast and dimmed. This looks like a deliberate disabled state while merges are held, but it's hard to read.",
+      "The checkbox and 'Enabled' label sit slightly higher than the 'Run now' and 'Edit' buttons, so the row is misaligned."
     ]
   }
 }

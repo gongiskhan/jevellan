@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "PJ4b the Why panel explains placement and overrides apply",
   "layout": "desktop-light",
-  "screenshot": "screenshots/PJ4b-why-panel-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/PJ4b-why-panel-desktop-light.png",
   "expected": "the Jevellan web app \"why panel\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PJ4b the Why panel explains placement and overrides apply\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar thread titles and their subtitles are cut short with ellipses (e.g. 'Context · J11 memory journ…', 'dev-…'). This looks like intended overflow handling.",
-      "The Why panel's content reaches the bottom of the screen ('Placed Oct 11, 21:29:38'), so more may continue below and need scrolling.",
-      "The Why panel header puts the task title in pink monospace next to the bold 'Why this placement' heading, which looks slightly inconsistent."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Mesh journey fix…'). This is intentional truncation, and the full text isn't needed on this screen.",
+      "The Why panel's JEV footer ('Placed Oct 12, 12:43:26') sits right at the bottom edge of the viewport, so there may be more content below that you have to scroll to see. Nothing that is visible is clipped.",
+      "The 'Jev' source labels on the right of each Why panel section header are small and low-contrast, but still readable."
     ]
   }
 }

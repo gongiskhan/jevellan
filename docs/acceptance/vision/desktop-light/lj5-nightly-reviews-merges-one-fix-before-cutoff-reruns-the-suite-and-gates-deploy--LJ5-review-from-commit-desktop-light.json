@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Enabled' label sits on its own line under the checkbox instead of next to it, so the two look less clearly connected.",
-      "The helper text 'Read-only, high effort, on the other provider…' sits close to the commit field. It reads fine but looks a little crowded."
+      "The Enabled checkbox sits on its own line above its 'Enabled' label instead of next to it",
+      "The background page behind the modal is dimmed and hard to read. That's expected for a modal overlay.",
+      "The 'Order' field shows 0 with no hint about what it means"
     ]
   }
 }

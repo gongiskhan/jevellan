@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Pull requests' tab is clipped at the right edge. The tab strip looks horizontally scrollable, so the tab can still be reached.",
-      "The 'Working…' status pill is shortened with an ellipsis next to the model label.",
-      "The 'Asks' and 'Daily' headings sit tightly against the content above them, with little vertical spacing compared with other sections."
+      "The top tab row clips the 'Pull requests' tab at the right edge. It looks like a horizontally scrollable row, but nothing on screen shows that more tabs are off to the side.",
+      "The 'Asks' and 'Daily' section headings sit very close to the 'Nothing open for this goal.' line above them, so the sections run together.",
+      "Section labels are inconsistent: some are monospace uppercase ('QUEUE 1', 'NIGHTLY 0', 'GOALS 1'), others are bold sentence case ('Asks', 'Daily'). Their left indent also differs slightly."
     ]
   }
 }

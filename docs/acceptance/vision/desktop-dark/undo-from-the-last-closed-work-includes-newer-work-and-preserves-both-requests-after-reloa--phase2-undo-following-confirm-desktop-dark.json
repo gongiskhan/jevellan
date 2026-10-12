@@ -4,13 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "undo from the last closed work includes newer work and preserves both requests after reload",
   "layout": "desktop-dark",
-  "screenshot": "screenshots/phase2-undo-following-confirm-desktop-dark.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-undo-following-confirm-desktop-dark.png",
   "expected": "the Jevellan web app \"undo following confirm\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"undo from the last closed work includes newer work and preserves both requests after reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Some background content behind the modal overlay looks a little misaligned or patchy (e.g., the gap around the 'Step 2' area), but it's dimmed and doesn't affect the dialog"
+      "The background page has no confirmation-type step labels visible besides blurred content; the modal itself is fully rendered and legible",
+      "Background conversation text overlaps the modal's backdrop blur, so the blurred card at top right ('Now change the value to three...') sits partly behind the modal edges. This is expected modal layering and not a defect."
     ]
   }
 }

@@ -4,15 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "conversation titles, expanded tools and outside outcomes survive updates and reload",
   "layout": "desktop-light",
-  "screenshot": "screenshots/phase2-controls-title-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-controls-title-desktop-light.png",
   "expected": "the Jevellan web app \"controls title\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"conversation titles, expanded tools and outside outcomes survive updates and reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The long conversation title in the header is cut off with an ellipsis. This looks like deliberate truncation of an unbroken string, and the overflow menu (…) is still visible.",
-      "Sidebar conversation titles and subtitles are cut off with ellipses, which is expected for a narrow list.",
-      "The long tool header wraps over three lines inside the tool card. It stays readable, but it looks cramped."
+      "The long unbroken conversation title in the header is cut off with an ellipsis. This looks like intended single-line truncation, but nothing on screen shows the full title (it may only be available in a tooltip).",
+      "Sidebar conversation names and subtitles are cut off with ellipses (e.g. 'A conversation with a lon…', 'Exercise reviewed checkp…'). This is expected for list items.",
+      "The long unbroken tool header name wraps across three lines inside the tool card, and the 'completed' status sits on its own line below it, leaving uneven spacing.",
+      "The light sidebar and the beige panel ('Jev is unavailable…') have fairly low contrast against the background, but the text is still readable."
     ]
   }
 }

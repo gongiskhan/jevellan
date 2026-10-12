@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "PJ7 an attached thread disables its composer",
   "layout": "desktop-light",
-  "screenshot": "screenshots/PJ7-copy-blocked-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/PJ7-copy-blocked-desktop-light.png",
   "expected": "the Jevellan web app \"copy blocked\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PJ7 an attached thread disables its composer\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'). That's normal truncation, and the full text is likely available elsewhere.",
-      "The selected command highlight (magenta background with dark text) has fairly low contrast, but it is still readable.",
-      "There is a large empty gap between the report card and the composer area."
+      "Two sidebar session titles end in an ellipsis (\"Context · J11 memory jour…\", \"Context · Mesh journey fix…\"), and so do their subtitle lines (\"dev-…\", \"de…\"). This looks like intended single-line truncation.",
+      "The selected copy command is shown in bright magenta on pink, which is loud next to the rest of the light theme. It is still readable.",
+      "The disabled composer has low-contrast placeholder text and a faint send button. That fits its disabled state."
     ]
   }
 }

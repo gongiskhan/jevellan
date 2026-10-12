@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "Claude sign-in shows pending progress and resumes polling after a connection error",
   "layout": "phone-light",
-  "screenshot": "screenshots/login-recovery-phone-light.png",
+  "screenshot": "docs/acceptance/screenshots/login-recovery-phone-light.png",
   "expected": "the Jevellan web app \"login recovery\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"Claude sign-in shows pending progress and resumes polling after a connection error\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dialog title includes the full login-recovery ID, so it wraps onto two lines. It reads correctly but looks crowded.",
-      "The dialog still says 'Paste the test authorization code.' even though no code input is shown and the status reads 'Code sent. Waiting for sign-in to finish…'. This instruction looks out of date for the pending state.",
-      "The background tab bar ('Decisions' and anything after it) is cut off at the right edge, but it is behind the modal overlay."
+      "Dialog title wraps the long recovery ID across two lines, which makes the header heavy but keeps it readable",
+      "Background page content shows through the blurred overlay around the dialog, which is expected for a modal",
+      "The 'Code sent. Waiting for sign-in to finish…' pending message and the connection-error alert appear together. This matches the step, but the two messages could look contradictory at a glance"
     ]
   }
 }

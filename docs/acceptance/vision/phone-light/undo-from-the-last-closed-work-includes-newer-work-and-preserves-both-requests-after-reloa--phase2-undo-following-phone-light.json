@@ -4,14 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "undo from the last closed work includes newer work and preserves both requests after reload",
   "layout": "phone-light",
-  "screenshot": "screenshots/phase2-undo-following-phone-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-undo-following-phone-light.png",
   "expected": "the Jevellan web app \"undo following\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"undo from the last closed work includes newer work and preserves both requests after reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Change the value to two and publish th…'). This looks like deliberate single-line truncation, and the full request text appears further down the conversation.",
-      "The code blocks in the undone Steps 1 and 2 are grey and low-contrast. They are still readable and the dimming seems meant to show they were undone, but the text inside is harder to read than in the active Step 3."
+      "The header title is cut off with an ellipsis ('Change the value to two and publish th…'). This is expected truncation on a phone screen, and the full requests appear below.",
+      "The struck-through 'Step 1 · Implement' and 'Step 2 · Implement' headings and the small pink 'corrected: action → reply' label are pale and low-contrast, but still readable.",
+      "The code blocks for the undone steps are dimmed grey while Step 3's are dark. This looks intentional but makes the undone steps' code somewhat less vivid."
     ]
   }
 }

@@ -4,16 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
   "layout": "phone-dark",
-  "screenshot": "screenshots/phase2-rigging-local-phone-dark.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-rigging-local-phone-dark.png",
   "expected": "the Jevellan web app \"rigging local\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Saved' status label is low-contrast gray on the dark modal background.",
-      "The 'Source' link in pink/magenta doesn't match the rest of the palette, though it's still readable.",
-      "In the dimmed background, the top tab bar is cut off at the right edge after 'Decisions'. The modal covers this page, so it doesn't block anything here.",
-      "The monospace path 'skills/browser-local' and the small helper text are fairly small on a phone screen, but they're still readable."
+      "The modal shows the heading 'Edited local instructions' and the note 'Local edits save automatically', but no instructions editor or text area is visible. It may simply be hidden while the reload notice is showing; worth checking that this is the intended state.",
+      "The tab row behind the dimmed overlay is cut off at the right edge (a partly visible tab and the scroll arrow). This looks like normal horizontal scrolling, and the overlay covers it anyway.",
+      "The pink 'Source' label is quite small compared with the 'Saved' label next to it."
     ]
   }
 }

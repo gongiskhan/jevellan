@@ -4,16 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "undo from the last closed work includes newer work and preserves both requests after reload",
   "layout": "desktop-light",
-  "screenshot": "screenshots/phase2-undo-following-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-undo-following-desktop-light.png",
   "expected": "the Jevellan web app \"undo following\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"undo from the last closed work includes newer work and preserves both requests after reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The code blocks in the undone Steps 1 and 2 are dimmed to gray, so they have lower contrast than Step 3. The text is still readable.",
-      "In each tool card, the 'completed' status sits on its own line under the 'Read project' title instead of on the same line.",
-      "Step 3 starts with 'Working on the requested change.' even though it is a Reply step, and its 'Changes' chip shows no file count while Steps 1 and 2 show '· 1 file'.",
-      "The strikethrough on the 'Step 1 · Implement' and 'Step 2 · Implement' headings makes them a bit harder to read."
+      "Code blocks in the undone Steps 1 and 2 are dimmed to a gray background with low-contrast light text. They are still readable, but noticeably harder to read than Step 3.",
+      "The step titles 'Step 1 · Implement' and 'Step 2 · Implement' are struck through and drawn in light gray, so they read weakly. This is probably intentional to mark them as undone.",
+      "The conversation title and subtitle are cut off with an ellipsis in the sidebar list (e.g. 'Change the value to two ...'). This is expected truncation; the full title appears in the main header.",
+      "The 'Waiting for you' filter count badge '6' is small and low-contrast."
     ]
   }
 }

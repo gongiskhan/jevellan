@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "context changes interrupted by outside activity require a fresh reviewed diff before publication",
   "layout": "desktop-light",
-  "screenshot": "screenshots/phase4-context-review-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase4-context-review-desktop-light.png",
   "expected": "the Jevellan web app \"context review\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"context changes interrupted by outside activity require a fresh reviewed diff before publication\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal body is scrolled to the bottom, so the start of the diff and any review heading above it are out of view. They can still be reached by scrolling.",
-      "The dismiss '×' on the red banner ('These files changed since your review. Review changes again.') is very small and faint.",
-      "Continue still looks fully active even though the banner says the files changed since the review. Nothing overlaps visually, but this could confuse users."
+      "The modal body is scrolled, so the top of the review card (heading, start of the diff) is above the visible area. It can be reached by scrolling and is clipped only by the scroll container.",
+      "The 'Current instruction files' disclosure uses a small monospace label with low contrast compared with the surrounding text.",
+      "The error banner's dismiss '×' is small and light, so it's a weak tap target, but it is visible and reachable."
     ]
   }
 }

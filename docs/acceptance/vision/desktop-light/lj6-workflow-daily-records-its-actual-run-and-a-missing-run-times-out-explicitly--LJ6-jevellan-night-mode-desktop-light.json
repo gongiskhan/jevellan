@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The right panel is scrolled, so the 'CONCLUDED 0' section heading is clipped at the top edge.",
-      "The last nightly item card ('Switch mode nightly') is cut off at the bottom of the right panel. It can be reached by scrolling.",
-      "The nightly tests line in the 'Nightly window finished' message ends in an ellipsis ('...before this item completed…'), so the full reason isn't shown.",
-      "Sidebar session titles and subtitles end in ellipses (e.g. 'Context · J11 memory journ…')."
+      "The right panel is scrolled partway down, so the top half of the 'CONCLUDED 0' heading is cut off just under the nightly-window banner. Scrolling up brings it back.",
+      "In the nightly item cards (Nightly tests, Missing run, Switch mode nightly), the 'Enabled' checkbox sits above its label instead of next to it, so it lines up awkwardly with the 'Run now' and 'Edit' buttons.",
+      "The nightly item cards have a lot of empty space at the bottom.",
+      "Two nightly-window notices are shown one after the other ('Jevellan runs the night' and 'Merges are held while the nightly window runs.'). The second one repeats the top banner.",
+      "Long session titles in the sidebar are cut short with an ellipsis (e.g. 'Context · J11 memory jour...'). This is expected truncation."
     ]
   }
 }

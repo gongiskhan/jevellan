@@ -4,15 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "LJ8 Ekoa connection mirrors decisions, ask-owner pulls and aggregated drafts without duplicates",
   "layout": "phone-dark",
-  "screenshot": "screenshots/LJ8-connected-drafts-phone-dark.png",
+  "screenshot": "docs/acceptance/screenshots/LJ8-connected-drafts-phone-dark.png",
   "expected": "the Jevellan web app \"LJ8 connected drafts\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"LJ8 Ekoa connection mirrors decisions, ask-owner pulls and aggregated drafts without duplicates\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the horizontally scrolling tab strip, the 'Projects' tab is partly clipped on the left by the scroll arrow. It is still reachable with the arrow buttons.",
-      "The 'Mirror tasks to Ekoa' label sits below its checkbox instead of next to it, so the two look loosely connected.",
-      "The 'Available tools' expander under 'Connected' shows no status detail, so the section looks sparse."
+      "The 'Projects' tab is cut off at the left edge of the scrolling tab strip. It can still be reached with the scroll arrows.",
+      "The 'Mirror tasks to Ekoa' label sits on its own line under the checkbox instead of beside it.",
+      "The 'Available tools' section is collapsed, so the Connected card shows no details at first glance.",
+      "Each mirrored task's 'open' status wraps onto a separate line."
     ]
   }
 }

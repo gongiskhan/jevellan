@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the '#1 Review loop' card, the 'Open task' link uses a bigger font than the nearby 'Open thread' and 'Open on GitHub' links.",
-      "In the '#1 Review loop' card, the 'Why / Should have asked me / Didn't need asking' row is right-aligned, but in the '#7' card the 'Why' link is left-aligned. The two cards don't match.",
-      "The NIGHTLY section at the bottom of the right panel is cut off at the edge of the window ('Project day: 2026-10-12'). The panel looks scrollable, so the content can still be reached.",
-      "Long session titles and subtitles in the sidebar are shortened with ellipses, for example 'Context · J11 memory jour…'."
+      "The 'NIGHTLY 0' section header in the right panel is partly cut off at the bottom edge of the window. The panel seems to scroll, so it can still be reached.",
+      "Several sidebar session titles and subtitles are cut short with ellipses ('Context · J11 memory jour…', 'Done · Mesh journey fixture · G…'). The concluded item's meta line 'Goncalos-MacBook…' is cut short the same way.",
+      "The '#1 Review loop' card lays out its links differently from the '#7' card: the 'Why / Should have asked me / Didn't need asking' row is right-aligned, and 'Open task' uses a larger font than the other links.",
+      "Sections show inconsistent counts: 'PULL REQUESTS 0' sits above the 'Recently merged' list with two items, which may confuse users but is not a rendering defect."
     ]
   }
 }

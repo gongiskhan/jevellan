@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "loose Rigging becomes managed with bundled files, durable retry and runtime toggles",
   "layout": "phone-dark",
-  "screenshot": "screenshots/phase2-rigging-managed-phone-dark.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-rigging-managed-phone-dark.png",
   "expected": "the Jevellan web app \"rigging managed\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"loose Rigging becomes managed with bundled files, durable retry and runtime toggles\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Content textarea is much taller than its two lines of text, which leaves a lot of empty space inside the modal",
-      "The page behind the modal is dimmed but still faintly visible, with fragments such as 'browser-package' and 'Restore locally' showing around the dialog edges",
-      "The top navigation tabs behind the overlay are cut off at the right edge ('Decisions' then a partially visible tab), but this sits under the modal and is not interactive in this state"
+      "The dark overlay behind the open edit dialog dims and hides most of the Rigging page, including the managed bundle card. Only its 'Restore locally' action is partly visible below the dialog.",
+      "The top tab bar is cut off at the right edge (a fourth tab is partly visible after 'Decisions'). It looks like a horizontally scrolling tab bar and sits behind the overlay.",
+      "The large Content textarea holds only two lines, so most of it is empty space on a phone screen."
     ]
   }
 }

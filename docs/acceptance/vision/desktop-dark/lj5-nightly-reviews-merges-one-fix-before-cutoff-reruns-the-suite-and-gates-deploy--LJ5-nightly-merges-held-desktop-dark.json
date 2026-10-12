@@ -10,11 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'New nightly item' and 'New job' buttons at the bottom of the right panel are cut off by the viewport edge. The panel probably scrolls to show them.",
-      "In the PR #2 card, 'Open task' is in a larger font than the other links ('Why', 'Open thread'), so the action row looks uneven.",
-      "The 'Merge' button has low contrast. This is probably on purpose because merges are held, but it is faint.",
-      "Sidebar session titles and subtitles are cut short with ellipses (e.g. 'Context · J11 memory journ…', 'Goncalos-MacBook…'). They are still readable.",
-      "In the concluded item 'Fix the nightly review finding', the metadata line is cut short ('Goncalos-MacBook…')."
+      "The right column ends at the bottom edge of the viewport. The 'Run now' and 'Edit' buttons and the checkbox label in the 'Review since last' nightly card are only partly visible. The column appears to scroll, so they can still be reached.",
+      "Long session titles in the sidebar are cut off with an ellipsis, e.g. 'Context · J11 memory jour…' and 'Context · Mesh journey fix…'. Their subtitles are cut off too ('dev-ma…', 'dev-…').",
+      "In the PR #3 card, the 'Open task' link uses a larger font than the 'Why' and 'Open thread' links next to it.",
+      "The 'Merge' button on PR #3 is greyed out with low contrast. This fits merges being held, but the label is faint."
     ]
   }
 }

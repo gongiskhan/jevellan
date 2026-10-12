@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "Git settings can be saved, reloaded and checked from Projects",
   "layout": "desktop-light",
-  "screenshot": "test-results/git-settings-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/matrix-git-settings-desktop-light.png",
   "expected": "the Jevellan web app \"git settings\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Git settings can be saved, reloaded and checked from Projects\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'GitHub token scope' label and dropdown sit outside any card, between the 'GitHub connection' and 'GitHub token' cards. This breaks the card layout used everywhere else on the page.",
-      "Session titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Cancelled · Browser fixture · de…'). This looks like intended truncation, not a layout fault.",
-      "'Save Git settings' looks disabled because it is low-contrast. That is expected when nothing has changed, but it is hard to read against the card background."
+      "The 'GitHub token scope' label and dropdown sit between the cards rather than inside one, and are wider than the card content, so they look misaligned with the rest of the page.",
+      "The 'Save Git settings' button is faint, likely because it's disabled with nothing to save. It's still readable, but contrast is low.",
+      "Sidebar session titles and subtitles (e.g. 'Context · J11 memory journ…', 'Browser fixtur…') are cut off with ellipses. This looks intentional, but the full text can't be read."
     ]
   }
 }

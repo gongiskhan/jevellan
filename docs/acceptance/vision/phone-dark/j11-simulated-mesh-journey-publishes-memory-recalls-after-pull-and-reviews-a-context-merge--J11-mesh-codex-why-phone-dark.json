@@ -4,15 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
   "layout": "phone-dark",
-  "screenshot": "screenshots/J11-mesh-codex-why-phone-dark.png",
+  "screenshot": "docs/acceptance/screenshots/J11-mesh-codex-why-phone-dark.png",
   "expected": "the Jevellan web app \"mesh codex why\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header label 'step 1 · reply' is in small pink monospace text on a dark background, which is fairly low-contrast but still readable.",
-      "The memory filenames under 'Chosen memory' use monospace, but the account rows use a sans-serif font, so the font styling is inconsistent.",
-      "There is a large empty area below the JEV footer section."
+      "The amber banner ends with 'Pick the next step:' but no options follow it in this panel, so it reads like an unfinished prompt.",
+      "Below the JEV section there is a lot of empty space at the bottom of the screen."
     ]
   }
 }

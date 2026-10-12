@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the pull request #1 card, the 'Jev would: ask you' chip and the feedback links ('Why', 'Should have asked me', 'Didn't need asking', 'Open thread', 'Open task') wrap unevenly across two rows, so the group looks messy, though every item is readable and clickable",
-      "In the sidebar, the session titles and subtitles (e.g. 'Context · J11 memory jour…', 'Done · Improver sandbox · Gonca…') are cut short with ellipses",
-      "The right panel ends at the 'GOALS 0' heading and the rest needs scrolling, which is expected for a scrolling panel",
-      "The 'Project day: 2026-10-12' text in the Nightly section sits slightly out of line with the left edge of the other section content"
+      "The pull request card's actions wrap untidily: 'Jev would: ask you', 'Why' and 'Should have asked me' sit on one row, and 'Didn't need asking', 'Open thread' and 'Open task' sit on the next, so the grouping looks cluttered and 'Open task' is on a different baseline from the links beside it.",
+      "Sidebar shell session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Gonca…'). This is expected truncation and doesn't block anything.",
+      "The right panel continues below the fold (the 'GOALS 0' section is only partly visible), but the panel scrolls, so it's still reachable."
     ]
   }
 }

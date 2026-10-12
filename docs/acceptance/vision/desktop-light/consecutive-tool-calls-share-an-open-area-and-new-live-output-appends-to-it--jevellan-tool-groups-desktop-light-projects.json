@@ -4,15 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "Consecutive tool calls share an open area and new live output appends to it",
   "layout": "desktop-light",
-  "screenshot": "/tmp/jevellan-tool-groups-desktop-light-projects.png",
+  "screenshot": "docs/acceptance/screenshots/matrix-jevellan-tool-groups-desktop-light-projects.png",
   "expected": "the Jevellan web app \"jevellan tool groups projects\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Consecutive tool calls share an open area and new live output appends to it\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and metadata are cut off with ellipses (e.g., 'Context · J11 memory journ...', 'Done · Mesh journey fixture · de...'). This is intentional truncation and the text stays readable.",
-      "The 'Bash' tool card shows the input {\"file_path\":\"four.txt\"}, which looks like Read-style fixture data. It renders fine.",
-      "The first grouped Read card shows '3 calls', but each item in the group repeats its own 'completed' label, which is slightly redundant."
+      "The sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · J11 memory journey · dev-…'). This truncation is intentional, and hovering or widening the sidebar would show the full text.",
+      "The 'Some native sessions are unavailable' footer is small, low-contrast text.",
+      "The metadata line under the title ('Claude Code · Fable · high effort · …') and the 'Take over in a terminal' hint use small monospace text that is a little hard to read, though still legible.",
+      "Only the first Read group shows a call count ('3 calls'). The later single-call groups (Read, Bash, Read) show no count, so the group headers look inconsistent."
     ]
   }
 }

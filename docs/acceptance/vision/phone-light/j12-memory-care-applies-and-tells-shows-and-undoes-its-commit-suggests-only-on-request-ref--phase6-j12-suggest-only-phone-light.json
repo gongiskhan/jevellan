@@ -4,15 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule",
   "layout": "phone-light",
-  "screenshot": "screenshots/phase6-j12-suggest-only-phone-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase6-j12-suggest-only-phone-light.png",
   "expected": "the Jevellan web app \"j12 suggest only\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The page is very long (5897px) and stacks many sections (diff blocks, the run list, the trial log, recently decided items), so the 'Suggest only' memory-care control sits well below the fold",
-      "The trial log table headers ('WEEK OF', 'IN JEVELLAN', 'OUTSIDE', 'WAY THEY FINISHED ELSEWHERE') are cramped and wrap over several lines at phone width",
-      "The tags on the suggestion cards (Memory care / Improver sandbox / Waiting for you) are dense but still readable"
+      "Long diff lines in the code blocks (for example, the deploy.md and test-conventions.md patches) wrap tightly or may run past the card edge at phone width. They look like they wrap or scroll rather than get clipped.",
+      "The page is very long (about 5900px): the 'Last runs' list repeats many 'No working rules to suggest' entries, which pushes the Trial log and Recently decided sections far down.",
+      "The small type in the routing cards ('Checked against 27 saved cases…') and the commit metadata is low-contrast grey on white. It is still readable.",
+      "Only part of the top tab row (Decisions, Improver) is visible, so other tabs may need a horizontal scroll to reach."
     ]
   }
 }

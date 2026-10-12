@@ -4,15 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "PJ5 an offline coordinator shows the notice and Move coordinator here",
   "layout": "phone-light",
-  "screenshot": "screenshots/PJ5-moved-phone-light.png",
+  "screenshot": "docs/acceptance/screenshots/PJ5-moved-phone-light.png",
   "expected": "the Jevellan web app \"moved\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PJ5 an offline coordinator shows the notice and Move coordinator here\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row is cut off at the right edge: \"Pull requests\" is clipped and any later tabs are hidden. This is likely a horizontally scrollable tab strip, but nothing shows that it scrolls.",
-      "The header title \"Projects offline\" sits alongside a notice saying the coordinator moved to dev-madrid. The two messages may confuse users about the coordinator's state.",
-      "Most of the chat area below the notice is empty."
+      "The tab row is cut off at the right edge: the 'Pull requests' pill is clipped and any tabs after it are off-screen. The row looks horizontally scrollable, so the tabs can still be reached, but nothing on screen shows that it scrolls.",
+      "The large empty area below the notice makes the 'moved' state look sparse, with nothing pointing to what to do next."
     ]
   }
 }

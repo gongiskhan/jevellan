@@ -4,16 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "context merge is drafted read-only, survives reload, cancels and applies through verified publication",
   "layout": "phone-light",
-  "screenshot": "screenshots/phase2-context-draft-phone-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-context-draft-phone-light.png",
   "expected": "the Jevellan web app \"context draft\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"context merge is drafted read-only, survives reload, cancels and applies through verified publication\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Background page content (the path text and the Open, Browse memory and Context buttons) shows through the dimmed overlay under the modal. It is legible, but it looks busy.",
-      "The header tab bar behind the modal is cut off at the edges (the left tab and the 'Git' tab). This is background content and doesn't affect the dialog.",
-      "The 'Current instruction files' disclosure at the bottom of the modal is collapsed. It is reachable but not shown expanded.",
-      "The diff blocks show bare '-' and '+' lines for blank lines. This is intended, but it adds visual noise."
+      "Diff lines that are just '-' or '+' (blank lines being removed or added) look like stray marks",
+      "The dimmed background page shows behind the modal, including the path text cut off at the bottom edge. That's expected for a dialog overlay."
     ]
   }
 }

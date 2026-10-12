@@ -4,17 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
   "layout": "desktop-dark",
-  "screenshot": "screenshots/J11-mesh-claude-why-desktop-dark.png",
+  "screenshot": "docs/acceptance/screenshots/J11-mesh-claude-why-desktop-dark.png",
   "expected": "the Jevellan web app \"mesh claude why\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar, the fourth conversation row is cut off halfway at the bottom of the scroll area, so its text shows only as a sliver just above the 'Some native sessions are unavailable' link. Scrolling reaches it.",
-      "The Account list in the right 'Why this step' panel runs past the bottom of the screen; the last 'Login recovery …' entry is cut off. The panel scrolls.",
-      "The right panel repeats the warning 'Jev is unavailable (authentication failed). Pick the next step:' but has no controls of its own. The controls are in the main pane's banner.",
-      "Long account IDs such as 'Login recovery 3b92b286-…: disabled' nearly fill the width of the right panel, which makes them dense to read.",
-      "Long conversation titles in the sidebar are shortened with an ellipsis (for example 'Remember that this proje…' and 'J8: run on device B while l…')."
+      "The Account list in the right 'Why this step' panel runs past the bottom of the viewport: the last entry ('Login recovery 82a3cf2b-…') is cut off mid-line. It looks like a scrollable panel, not a layout fault.",
+      "In the sidebar, a faint fourth conversation row is partly clipped between the 'J8: run on device B…' row and the 'Some native sessions are unavailable' notice. It looks like scroll overflow.",
+      "Conversation titles and subtitles in the sidebar are cut off with ellipses ('Remember that this proje…', 'Waiting for you · J11 memory jou…'). This is expected truncation.",
+      "The right panel repeats the warning 'Jev is unavailable (authentication failed). Pick the next step:', which also appears in the main column's action card. This is redundant but doesn't block anything."
     ]
   }
 }

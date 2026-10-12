@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
   "layout": "phone-dark",
-  "screenshot": "screenshots/J11-mesh-claude-why-phone-dark.png",
+  "screenshot": "docs/acceptance/screenshots/J11-mesh-claude-why-phone-dark.png",
   "expected": "the Jevellan web app \"mesh claude why\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The account list reaches the bottom of the viewport, and the last row ('Discard fixture: disabled') sits right at the edge. More rows may continue below; that looks like normal scrolling, not clipping.",
-      "The chosen memory title wraps awkwardly ('Vitest convention for mesh.md' / 'Existing.md'), so it reads like two separate entries.",
-      "In the 'Jev is unavailable (authentication failed). Pick the next step:' notice, the trailing colon isn't followed by any choices inside the box. The step pickers appear above it, so the prompt reads a little detached from them."
+      "The account list runs past the bottom of the viewport. The last visible row, 'Discard fixture: disabled', sits right at the edge, so the rest of the list is only reachable by scrolling, and nothing on screen shows that more is there.",
+      "The chosen memory name wraps awkwardly across two lines ('Vitest convention for mesh.md' / 'Existing.md'). It reads like two separate entries instead of one title.",
+      "The pink accent text on the dark navy background for the step, model and effort values is readable but lower in contrast than the white text."
     ]
   }
 }

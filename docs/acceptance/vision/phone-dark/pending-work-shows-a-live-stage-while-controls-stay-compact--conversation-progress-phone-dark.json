@@ -4,17 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "pending work shows a live stage while controls stay compact",
   "layout": "phone-dark",
-  "screenshot": "test-results/conversation-progress-phone-dark.png",
+  "screenshot": "docs/acceptance/screenshots/matrix-conversation-progress-phone-dark.png",
   "expected": "the Jevellan web app \"conversation progress\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"pending work shows a live stage while controls stay compact\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Large empty gap between the user message and the progress stage at the bottom; the live stage sits far from the conversation content",
-      "The progress stage spinner is on its own line above the title instead of next to it, which looks a little disconnected",
-      "The '0s' elapsed timer is very small and sits far right, away from the stage text",
-      "The send button looks dim/disabled against the composer background, so its contrast is low",
-      "The header status chip text ('Working') is small and pink on a dark background, so it's only just legible"
+      "The page is mostly empty space between the user message and the progress stage near the bottom, so the live stage sits far from the message it's working on.",
+      "The progress spinner icon sits by itself on a line above the 'Jev is choosing the next step' text instead of beside it.",
+      "The '0s' elapsed timer is small, pink and on its own line at the right edge, so it's easy to miss.",
+      "The send button is a dark circle with low contrast against the composer."
     ]
   }
 }

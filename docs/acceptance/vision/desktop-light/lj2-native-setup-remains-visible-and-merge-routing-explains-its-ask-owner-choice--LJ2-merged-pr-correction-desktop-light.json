@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'NIGHTLY 0' section header is clipped at the bottom edge of the right panel. It looks like scroll overflow, not a hidden control.",
-      "In the sidebar, session titles and metadata are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Gonca…').",
-      "In the Concluded list, the 'Review loop' metadata line is cut off with an ellipsis ('Goncalos-MacBook…').",
-      "The 'Why', 'Should have asked me' and 'Didn't need asking' links on the #1 Review loop card sit close together with little visual separation."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Goncalos-MacBook…'), but they are still identifiable",
+      "The 'NIGHTLY 0' section header is cut off at the bottom edge of the right panel; it is likely reachable by scrolling",
+      "The 'Recently merged · last 7 days' toggle starts further left than the other right-panel section headers",
+      "In the #1 Review loop card, the 'Why / Should have asked me / Didn't need asking' links are right-aligned, while the same links in the #7 card are left-aligned"
     ]
   }
 }

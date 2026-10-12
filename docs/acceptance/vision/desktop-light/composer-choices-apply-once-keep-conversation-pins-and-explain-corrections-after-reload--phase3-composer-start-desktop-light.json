@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "composer choices apply once, keep conversation pins and explain corrections after reload",
   "layout": "desktop-light",
-  "screenshot": "screenshots/phase3-composer-start-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase3-composer-start-desktop-light.png",
   "expected": "the Jevellan web app \"composer start\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"composer choices apply once, keep conversation pins and explain corrections after reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fourth conversation row in the sidebar list is cut off horizontally at the bottom edge of its scroll area, just above the 'Some native sessions are unavailable' line. Only the tops of its letters show. The list scrolls, so it is still reachable.",
-      "Sidebar conversation titles and subtitles are shortened with ellipses (e.g. 'Exercise automatic decisi…', 'Done · Automatic fixture · dev-m…'). This looks intended, but the full text can't be read at this width.",
-      "The theme switcher has its middle (system/auto) option selected rather than the explicit light option, though the page renders in the light theme."
+      "In the sidebar, the fourth conversation item is clipped at the bottom of the scrollable list, just above 'Some native sessions are unavailable'. Only the tops of its letters show, with no fade or scroll cue. The list can still be scrolled to reach it.",
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Exercise automatic decisi…', 'Explain the memorybrows…'). This looks like intended truncation.",
+      "The theme switcher has the middle (system/auto) option selected rather than the explicit light option. The page still renders in light mode."
     ]
   }
 }

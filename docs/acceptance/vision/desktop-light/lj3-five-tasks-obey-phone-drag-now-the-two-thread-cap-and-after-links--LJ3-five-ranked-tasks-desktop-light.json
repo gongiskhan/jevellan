@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "LJ3 five tasks obey phone drag, Now, the two-thread cap and after links",
   "layout": "desktop-light",
-  "screenshot": "screenshots/LJ3-five-ranked-tasks-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/LJ3-five-ranked-tasks-desktop-light.png",
   "expected": "the Jevellan web app \"LJ3 five ranked tasks\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"LJ3 five tasks obey phone drag, Now, the two-thread cap and after links\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The right panel's Running list is cut off at the bottom edge of the viewport: the 'Queue barrier 1' row is only partly visible. It looks like normal scroll overflow, not a hidden control.",
-      "Sidebar session titles and metadata are truncated with ellipses ('Context · J11 memory journ…', 'dev-ma…'). This is expected truncation, and the text that shows is readable.",
-      "Possible state inconsistency, not a layout problem: 'Loop task 4' and 'Loop task 1' show as 'Queued' in the Queue list and also appear under 'Running 4'. The sidebar also says '2 running' for Projects queue while the panel header says 'Running 4'."
+      "The Running list in the right panel runs past the bottom of the viewport. The 'Queue barrier 1' row is partly cut off at the edge, but the panel looks scrollable.",
+      "The counts disagree: the sidebar says 'Projects queue 2 running' while the right panel's Running section says 4. 'Loop task 4' and 'Loop task 1' also appear both as Queued and as Running.",
+      "Sidebar session titles and metadata are cut short with ellipses (e.g. 'Context · J11 memory jour…', 'dev-ma…'). This looks like intended truncation."
     ]
   }
 }

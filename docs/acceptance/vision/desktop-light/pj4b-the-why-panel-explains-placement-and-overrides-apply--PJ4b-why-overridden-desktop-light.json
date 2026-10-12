@@ -4,16 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "PJ4b the Why panel explains placement and overrides apply",
   "layout": "desktop-light",
-  "screenshot": "screenshots/PJ4b-why-overridden-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/PJ4b-why-overridden-desktop-light.png",
   "expected": "the Jevellan web app \"why overridden\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PJ4b the Why panel explains placement and overrides apply\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Thread titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · dev-ma…'). This looks like intentional ellipsis truncation.",
-      "In the MODEL section, 'Claude Code Sonnet' has no bar or score and starts with a '·' bullet, so it doesn't line up with the other rows.",
-      "The Why panel's JEV footer ('Placed Oct 11, 21:29:38') sits right at the bottom edge of the screen, so there may be more content below that needs scrolling.",
-      "Model and effort bars rank options the user didn't pick above the ones they picked (Fable 0.70 above Opus 0.15; high 0.60 above low 0.10). This fits the 'changed by you' override, but a reader could be confused at a glance."
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'dev-ma…'), but this is intentional truncation and hover/selection can still reach them.",
+      "The Why panel's last line ('Placed Oct 12, 12:43:26') sits right at the bottom edge of the viewport. There may be more content below that needs scrolling.",
+      "In the MODEL section, 'Claude Code Sonnet' has a bullet marker and no score bar, so it looks different from the other rows. It probably means the option was unavailable, but the screen doesn't say so.",
+      "The PLACEMENT row says 'Fixed: Model, Effort, Account', but MODEL and EFFORT are labelled 'changed by you' while ACCOUNT is labelled 'fixed'. Readers may find this mix of wording slightly inconsistent."
     ]
   }
 }

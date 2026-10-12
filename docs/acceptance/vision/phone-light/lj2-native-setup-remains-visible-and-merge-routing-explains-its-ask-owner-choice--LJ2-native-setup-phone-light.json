@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The settings tab strip is cut off on the right: the fourth tab shows only a partial icon. A scroll arrow is visible, so the hidden tabs can still be reached.",
-      "The usage meter bars are empty and every usage value reads \"Unknown\". This looks like fixture data, not a rendering problem.",
-      "\"Codex sign-ins are kept per device for now.\" also appears in the device lists under the Claude Code accounts, which looks like the wrong copy for those sections."
+      "The tab strip at the top cuts off a fourth tab after 'Decisions' (only its icon shows). It sits behind a scroll arrow, so it's still reachable.",
+      "The device lists under the Claude Code accounts say 'Codex sign-ins are kept per device for now.' This looks like the wrong product name copied over from the Codex section.",
+      "The usage bars for 'Five hours' and 'Week' are empty grey tracks marked 'Unknown', so they show no data."
     ]
   }
 }

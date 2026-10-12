@@ -4,14 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "Settings saves wait through hub loss, reconcile lost replies and abandon a closed editor",
   "layout": "desktop-light",
-  "screenshot": "screenshots/phase4-settings-save-wait-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase4-settings-save-wait-desktop-light.png",
   "expected": "the Jevellan web app \"settings save wait\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Settings saves wait through hub loss, reconcile lost replies and abandon a closed editor\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The \"Saving…\" button is greyed out and its text is a little low in contrast, but you can still read it and it looks deliberately disabled while the save waits",
-      "The background page is blurred under the modal overlay, as you'd expect, so the settings content behind it can't be read"
+      "Background sidebar text under the modal overlay is blurred and hard to read, which is expected for a modal backdrop",
+      "The 'Saving…' button is low-contrast in its disabled state but still readable"
     ]
   }
 }

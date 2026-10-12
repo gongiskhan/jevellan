@@ -21,6 +21,8 @@ function DeviceControls({ row, props }: { row: DeviceView; props: PageProps }) {
   const orphans = disk?.entries.filter(entry => entry.orphan) ?? [], facts = row.heartbeat?.facts;
   return <>
     {row.device.workPolicy?.mode === 'apps-only' && <p className="chip">Apps only</p>}
+    {row.device.role === 'hub' && facts?.power?.status === 'available' && facts.power.acSleepMinutes > 0 && <p className="notice">Hub readiness: this Mac can sleep on AC power after {facts.power.acSleepMinutes} minutes. Nightly work may stop. Run <code>sudo pmset -c sleep 0</code> on the hub, then check again.</p>}
+    {row.device.role === 'hub' && facts?.power?.status === 'unavailable' && <p className="notice">Hub readiness: AC power settings could not be read. Check them with <code>pmset -g custom</code> on the hub.</p>}
     {facts && <p className="muted small-text">{facts.cores} cores · Load {Number(facts.load5.toFixed(1))} · {gb(facts.freeMemoryBytes)} memory free · {gb(facts.freeDiskBytes)} disk free<br />{facts.runningThreads.length} threads · {facts.runningJobRuns.length} job runs</p>}
     <form onSubmit={event => { event.preventDefault(); void task.run(async signal => {
       await api('/hub/devices/tags', DeviceViewSchema, 'POST', { schema: 'device-tags-input-v1', deviceId: row.device.id, tags: [...new Set(tags.split(/[\s,]+/u).filter(Boolean))] }, { signal, waitForHub: true });

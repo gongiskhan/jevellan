@@ -4,16 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "PJ3 a running thread shows its transcript, report card and accepts an interrupting message",
   "layout": "phone-dark",
-  "screenshot": "screenshots/PJ3-new-thread-modal-phone-dark.png",
+  "screenshot": "docs/acceptance/screenshots/PJ3-new-thread-modal-phone-dark.png",
   "expected": "the Jevellan web app \"new thread modal\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PJ3 a running thread shows its transcript, report card and accepts an interrupting message\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Title input text is clipped at the right edge ('...list what each file is'). This is normal for a single-line input, which scrolls.",
-      "The 'Start now' label sits below its checkbox rather than beside it, so the two look loosely connected.",
-      "The modal body is cut off at 'Isolation' above the footer. The remaining fields are reachable only by scrolling, and nothing on screen shows that more content is below.",
-      "The Needs placeholder text ('residential, mac') is low-contrast against the dark input background."
+      "The Title input text is clipped at the right edge (\"...list what each file is\"). This is normal overflow for a single-line input, but the full title can't be seen.",
+      "The \"Start now\" label sits below its checkbox instead of next to it, so the checkbox looks separate from its label.",
+      "The modal body is cut off at \"Isolation\" just above the footer. The control is probably reachable by scrolling, but nothing on screen shows that more content exists below.",
+      "The \"After\" select is much taller than the other selects, leaving empty space under \"Add a greeting\"."
     ]
   }
 }

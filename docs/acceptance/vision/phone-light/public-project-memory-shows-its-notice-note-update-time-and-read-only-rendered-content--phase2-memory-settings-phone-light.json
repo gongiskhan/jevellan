@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "public project memory shows its notice, note update time and read-only rendered content",
   "layout": "phone-light",
-  "screenshot": "screenshots/phase2-memory-settings-phone-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-memory-settings-phone-light.png",
   "expected": "the Jevellan web app \"memory settings\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"public project memory shows its notice, note update time and read-only rendered content\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal body is scrolled, so the 'Path on Offline fixture' label sits right under the header divider with little top padding.",
-      "More form content may continue below the 'Memory folder' field. Nothing visible shows the dialog can scroll further.",
-      "Parts of the page behind the modal show through at its left and right edges at this phone width."
+      "The dialog body is scrolled, so the fields above 'Path on Offline fixture' are out of view and that label sits right under the header divider. The view seems scrolled on purpose to show the Memory section.",
+      "The 'Memory folder' field is the last item before the footer. It's unclear whether more settings sit below it, because the body has no visible scroll indicator.",
+      "The page behind the modal shows faint, partly cut-off elements at the top left and right edges. This is normal for a modal overlay."
     ]
   }
 }

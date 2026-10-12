@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip is clipped at both edges ('Chat' on the left, 'Pull reques' on the right). It looks like a horizontally scrollable tab bar, so the tabs can still be reached.",
-      "In the banner, the 'Dismiss' button sits tight against the end of the 'Last night: 1 of 3 nightly tasks passed.' text, with little spacing between them."
+      "The tab strip is clipped at both edges: 'Chat' is cut on the left and 'Pull reques' on the right. It looks like a horizontally scrollable tab row, so the tabs can still be reached.",
+      "The 'Enabled' checkbox is stacked above its label instead of sitting inline with it, which looks slightly off next to the Run now/Edit buttons.",
+      "The Deploy card's '· ba0be6c' commit hash wraps onto its own line."
     ]
   }
 }

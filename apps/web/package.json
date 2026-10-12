@@ -1,11 +1,11 @@
 {
   "name": "@jevellan/web",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "type": "module",
   "license": "MIT",
   "dependencies": {
-    "@jevellan/core": "0.2.0",
+    "@jevellan/core": "0.2.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-markdown": "10.1.0",

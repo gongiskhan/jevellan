@@ -4,16 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "Settings account, login, Rigging and configuration flows work without horizontal overflow",
   "layout": "desktop-light",
-  "screenshot": "screenshots/phase1-rigging-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase1-rigging-desktop-light.png",
   "expected": "the Jevellan web app \"rigging\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Settings account, login, Rigging and configuration flows work without horizontal overflow\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the warning banner, the 'Retry' button sits right against the end of the sentence ('...needs to finish.') with almost no gap.",
-      "In the Hooks section, the disabled Claude Code and Codex checkboxes for 'Safety' are very faint and low-contrast. This looks intentional for a locked built-in item, but their checked/unchecked state is hard to make out.",
-      "Conversation titles and subtitles in the left sidebar are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Waiting for you · Browser fixtur…'). The truncation is intentional, but some details are lost.",
-      "The Runtime select dropdown arrow is small and pink against a white field, so it's easy to miss."
+      "In the warning banner, the 'Retry' button sits right against the end of the message text ('...needs to finish.') with almost no space between them.",
+      "The disabled checkboxes on the 'Safety' hook are very pale against the white background, though their 'Claude Code' and 'Codex' labels can still be read.",
+      "Some conversation titles and subtitles in the sidebar are cut short with an ellipsis (e.g. 'Context · Mesh journey fixt…'). This looks intentional and doesn't hide any controls."
     ]
   }
 }

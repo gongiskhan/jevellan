@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The right panel is scrolled partway down, so the 'CONCLUDED 0' section heading is cut off at the top edge of the panel. This is normal scroll clipping, not an overlap.",
-      "On each job card, the 'Enabled' checkbox sits above its label instead of beside it, so it doesn't line up with the 'Run now' and 'Edit' buttons.",
-      "The 'Switch mode nightly' card is cut off at the bottom of the viewport. It can be reached by scrolling the panel.",
-      "The nightly-window notice appears twice: as the full-width top banner and again in the right panel ('Merges are held while the nightly window runs.')."
+      "The right panel is scrolled partway down, so a section heading (looks like 'CONCLUDED 0') is cut off at the top edge of the panel. It is normal scroll clipping, not an overlap.",
+      "The 'Switch mode nightly' card is cut off at the bottom of the viewport. The panel scrolls, so the card can still be reached.",
+      "In each job card the 'Enabled' checkbox sits above its label instead of next to it, so it lines up awkwardly with the 'Run now' and 'Edit' buttons."
     ]
   }
 }

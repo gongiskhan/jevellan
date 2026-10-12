@@ -4,15 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work",
   "layout": "desktop-dark",
-  "screenshot": "screenshots/J8-guard-desktop-dark.png",
+  "screenshot": "docs/acceptance/screenshots/J8-guard-desktop-dark.png",
   "expected": "the Jevellan web app \"guard\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fourth conversation row in the sidebar is cut off by the bottom edge of the scrollable list, just above 'Some native sessions are unavailable'. Only the tops of its letters show. The list can still be scrolled, so it reads as a clipped scroll edge with no fade or divider.",
-      "Long conversation titles and metadata in the sidebar are cut short with ellipses, for example 'J8: implement after the o…' and 'Blocked · Mesh journey fixture ·…'. This is intended, but the meta line is cut down to almost nothing.",
-      "The guard error banner is followed by two stacked actions with different styles: a filled 'Retry' pill and an outlined 'Try automatic again' pill. There is also a separate 'Retry' button on the user message bubble. Having two 'Retry' controls on one screen may be redundant or confusing."
+      "Sidebar conversation list cuts a row in half at the bottom of its scroll area (just above 'Some native sessions are unavailable'), which looks like a rendering glitch instead of a scrollable list.",
+      "There are two 'Retry' buttons: one on the user message bubble and one below the guard error. It isn't clear which one to use.",
+      "The 'Retry' and 'Try automatic again' buttons are stacked vertically with a large gap instead of grouped together, so the action area feels loosely connected to the error banner.",
+      "The conversation subtitle line under the title just repeats the title text ('J8: implement after the outside agent is quiet.')."
     ]
   }
 }

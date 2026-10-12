@@ -4,15 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
   "layout": "phone-light",
-  "screenshot": "screenshots/phase2-rigging-mcp-phone-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-rigging-mcp-phone-light.png",
   "expected": "the Jevellan web app \"rigging mcp\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The file label says config.toml, but the content shown is JSON. This may be fine for the fixture, but it reads as a mismatch.",
-      "Behind the modal, the tab row (Runtimes / Rigging / Decisions / …) is cut off at the right edge and needs the scroll arrow. That's expected on a phone, and the overlay dims it anyway.",
-      "The modal covers most of the Rigging MCP screen underneath, so the list items behind it are only partly visible. This is expected while an edit dialog is open."
+      "The file label reads 'config.toml', but the content is formatted as JSON. This may just be fixture data, but it could confuse users.",
+      "In the dimmed background, the tab bar is cut off at the right edge ('Decisions' and a partly hidden tab next to the scroll arrow). This is expected for a horizontally scrolling tab bar under a modal."
     ]
   }
 }

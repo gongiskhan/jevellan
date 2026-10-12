@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "Claude sign-in shows pending progress and resumes polling after a connection error",
   "layout": "phone-dark",
-  "screenshot": "screenshots/login-recovery-phone-dark.png",
+  "screenshot": "docs/acceptance/screenshots/login-recovery-phone-dark.png",
   "expected": "the Jevellan web app \"login recovery\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"Claude sign-in shows pending progress and resumes polling after a connection error\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The instruction 'Paste the test authorization code.' still shows, but there's no code input field because the code has already been sent. The leftover prompt could confuse users.",
-      "The dialog title includes the full UUID ('Login recovery 150798c0-…'), so it wraps to two lines and looks crowded.",
-      "The 'Open sign-in page ↗' button is styled as the primary action, even though the flow is now waiting or in an error state. 'Start again' is the more relevant action but looks secondary."
+      "The modal title includes the full recovery UUID, so it wraps onto two lines and looks heavy on a phone-width screen.",
+      "The prompt still says \"Paste the test authorization code.\" even though the status shows the code was already sent and no paste field is visible. This is a little confusing but doesn't block anything.",
+      "The \"Open sign-in page\" button is a light pill on a dark background, which stands out from the other outlined buttons. It's still readable."
     ]
   }
 }

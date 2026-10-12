@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "PJ3 a running thread shows its transcript, report card and accepts an interrupting message",
   "layout": "desktop-light",
-  "screenshot": "screenshots/PJ3-thread-running-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/PJ3-thread-running-desktop-light.png",
   "expected": "the Jevellan web app \"thread running\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PJ3 a running thread shows its transcript, report card and accepts an interrupting message\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Shell session titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · dev-ma…'). The full text isn't readable, but it's still recognisable.",
-      "The 'completed' status labels on the tool cards are right-aligned and sit on their own line, far from the tool names. This leaves a lot of empty space but doesn't block anything.",
-      "The 'Some native sessions are unavailable' note at the bottom of the sidebar is small and low-contrast, but still readable."
+      "Shell session titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Improver sandbox · dev-ma…'). The truncation looks intentional and the full text is probably available elsewhere.",
+      "The 'completed' status label on each tool card sits on its own line below the tool name, leaving extra vertical space.",
+      "The header metadata line ('Claude Code · Fable · high effort · … · dev-madrid') is small monospace text, but it is still readable."
     ]
   }
 }

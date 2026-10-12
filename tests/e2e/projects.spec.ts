@@ -1409,10 +1409,14 @@ test('LJ8 Ekoa connection mirrors decisions, ask-owner pulls and aggregated draf
   await shot(page, 'connected-drafts');
   const routed = await step('ask-owner') as { tasks: Array<{ title: string; status: string }> };
   expect(routed.tasks.filter(row => row.title === 'Jevellan · Projects mirror: merge #99 Handle empty input')).toHaveLength(1);
-  await step('tick'); await step('answer'); await step('approve'); const final = await step('merge') as { tasks: Array<{ title: string; status: string }> };
-  expect(final.tasks.find(row => row.title === 'Jevellan · Projects mirror: Which empty state?')?.status).toBe('done');
-  expect(final.tasks.find(row => row.title.includes('merge #99'))?.status).toBe('done');
-  expect(final.tasks.filter(row => row.title.includes('Projects mirror: 2 proposed tasks'))).toHaveLength(1);
+  await step('tick'); await step('answer'); await step('approve'); await step('merge');
+  // A periodic synchronization can already hold an earlier snapshot. Wait for the next completed pass.
+  await expect.poll(async () => {
+    const final = await step('tick') as { tasks: Array<{ title: string; status: string }> };
+    return { decision: final.tasks.find(row => row.title === 'Jevellan · Projects mirror: Which empty state?')?.status,
+      merge: final.tasks.find(row => row.title.includes('merge #99'))?.status,
+      drafts: final.tasks.filter(row => row.title.includes('Projects mirror: 2 proposed tasks')).length };
+  }, LONG).toEqual({ decision: 'done', merge: 'done', drafts: 1 });
   await page.reload(); await expect(page.getByText('Jevellan · Projects mirror: 2 proposed tasks', { exact: true })).toBeVisible(LONG);
   expect(await page.content()).not.toContain(prepared.token); await shot(page, 'mirror-updated');
   expect(errors).toEqual([]);
@@ -1455,4 +1459,19 @@ test('LJ10 hard device needs, resource refusals, facts in Why and confirmed orph
   await shot(page, 'devices-confirm-cleanup', true); await confirmation.getByRole('button', { name: 'Remove worktrees', exact: true }).click(); await expect(confirmation).toBeHidden(LONG);
   expect(WorktreeDiskSchema.parse(await read(page, `/api/devices/${devices.hubId}/worktrees`)).entries.some(entry => entry.id === 'orphan_fixture')).toBe(false);
   await shot(page, 'devices-cleaned', true); expect(errors).toEqual([]); expect(layout(info)).toBeTruthy();
+});
+
+test('hub readiness warns about AC sleep and clears when the setting is safe', async ({ page }) => {
+  const errors = await begin(page);
+  await control('/projects/devices', { schema: 'fixture-devices-v1', action: 'power-sleep' });
+  await page.goto('/settings/devices');
+  const warning = page.getByText(/Hub readiness: this Mac can sleep on AC power/);
+  await expect(warning).toHaveCount(1); await expect(warning).toBeVisible();
+  await expect(warning).toContainText('sudo pmset -c sleep 0');
+  await shot(page, 'hub-power-warning', true);
+  await control('/projects/devices', { schema: 'fixture-devices-v1', action: 'power-awake' }); await page.reload();
+  await expect(page.getByRole('heading', { name: 'Devices', exact: true })).toBeVisible();
+  await expect(page.locator('.device-card').filter({ has: page.getByText('Hub', { exact: true }) })).toBeVisible();
+  await expect(page.getByText(/Hub readiness: this Mac can sleep on AC power/)).toHaveCount(0);
+  await shot(page, 'hub-power-ready', true); expect(errors).toEqual([]);
 });

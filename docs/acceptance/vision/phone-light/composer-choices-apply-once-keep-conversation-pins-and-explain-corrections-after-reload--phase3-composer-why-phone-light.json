@@ -4,16 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "composer choices apply once, keep conversation pins and explain corrections after reload",
   "layout": "phone-light",
-  "screenshot": "screenshots/phase3-composer-why-phone-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase3-composer-why-phone-light.png",
   "expected": "the Jevellan web app \"composer why\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"composer choices apply once, keep conversation pins and explain corrections after reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Adversarial Rev…' label in the step list is cut short with an ellipsis, so the full step name can't be read.",
-      "The panel looks scrolled partway down. The step list starts right under the header divider with no top padding, and earlier rows are probably above the visible area.",
-      "The last visible correction item ('Just override · effort: high → max') runs past the bottom of the viewport. Its description line is partly cut off and needs scrolling to read.",
-      "All the bars in the step list are empty and every value is 0.00, so that section shows no useful data in this state."
+      "The 'Adversarial Rev...' row label is cut off with an ellipsis, so the full step name doesn't show in the phase bar list.",
+      "The phase bar list starts right under the header ('Test' is the first row you can see), which suggests the panel is scrolled and earlier rows may sit above the visible area.",
+      "The last correction entry ('Just override · effort: high → max') has its description line cut off at the bottom of the screen. This looks like normal scroll overflow, not a layout break.",
+      "All phase bars read 0.00 with empty tracks, so the bars carry no visual information in this state."
     ]
   }
 }

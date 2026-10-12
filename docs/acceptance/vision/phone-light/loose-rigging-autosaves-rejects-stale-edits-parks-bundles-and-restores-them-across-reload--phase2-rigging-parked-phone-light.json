@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
   "layout": "phone-light",
-  "screenshot": "screenshots/phase2-rigging-parked-phone-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-rigging-parked-phone-light.png",
   "expected": "the Jevellan web app \"rigging parked\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the top tab strip, the scroll arrow button partly covers the fourth tab's icon. The strip scrolls sideways and the arrow points that way, so the tab can still be reached.",
-      "The metadata lines under each item (e.g. 'Package · Parked · Rigging local fixture · Claude Code' and the date) are small and light grey. They are readable but low-contrast.",
-      "The metadata for 'browser-promote' wraps early because the 'Park' button takes up space, leaving 'Claude Code' alone on a second line."
+      "The fourth tab in the Settings tab strip is cut off behind the right scroll arrow. Only part of its icon shows. It can still be reached with the scroll button, so it isn't blocking.",
+      "The small grey monospace metadata lines (e.g. 'Package · Parked · Rigging local fixture · Claude Code') are small and low-contrast but still readable.",
+      "The 'browser-promote' metadata wraps 'Claude Code' onto a second line next to the Park button, which leaves the spacing a little uneven."
     ]
   }
 }

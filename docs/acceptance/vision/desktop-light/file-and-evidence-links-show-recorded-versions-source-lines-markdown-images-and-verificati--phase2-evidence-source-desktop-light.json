@@ -4,16 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
   "layout": "desktop-light",
-  "screenshot": "screenshots/phase2-evidence-source-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-evidence-source-desktop-light.png",
   "expected": "the Jevellan web app \"evidence source\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"file and evidence links show recorded versions, source lines, Markdown, images and verification output\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The recorded checkpoint hash appears in small, low-contrast monospace text on a pale chip, so it is hard to read at a glance.",
-      "The source preview shows an empty line 4, which adds a trailing blank row to the code block.",
-      "At the bottom of the sidebar list, a fourth conversation row is cut in half where the list scrolls. It is partly hidden behind the 'Some native sessions are unavailable' notice.",
-      "In the main timeline, the line 'Working on the requested change.' is partly hidden behind the 'Jump to latest' bar. This is normal clipping in a scrolling area."
+      "Sidebar conversation list cuts off a fourth item ('Context · Created i…') halfway at the bottom edge of its scroll area, just above the 'Some native sessions are unavailable' note.",
+      "Middle panel: the line 'Working on the requested change.' in Step 2 is partly hidden behind the 'Jump to latest' bar. It is normal scroll overflow, but it looks cramped.",
+      "Sidebar conversation titles and subtitles are truncated with ellipses (e.g. 'Exercise evidence naviga…', 'Waiting for you · Undo across wo…'). This is intentional, but it hides part of the context."
     ]
   }
 }

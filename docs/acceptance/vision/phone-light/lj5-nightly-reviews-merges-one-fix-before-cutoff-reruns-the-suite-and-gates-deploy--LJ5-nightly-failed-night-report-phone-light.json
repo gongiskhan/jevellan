@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip is clipped at both edges: 'Chat' is cut off on the left and 'Pull reques…' on the right. It looks like a horizontally scrollable row, so the tabs should still be reachable.",
-      "In the 'Last night: 1 of 3 nightly tasks passed.' banner, the 'Dismiss' button sits right against the end of the text with almost no gap.",
-      "Each 'Enabled' label sits under its checkbox instead of beside it, so the checkbox looks out of line with the 'Run now' and 'Edit' buttons."
+      "The top tab row is clipped at both edges: 'Chat' is cut off on the left and 'Pull reques…' on the right. It looks like a horizontally scrolling tab strip, so the tabs can still be reached, but nothing on screen shows that it scrolls.",
+      "The 'Enabled' checkbox sits with its label on a separate line below it, so it doesn't line up with the 'Run now' and 'Edit' buttons in the same row.",
+      "The 'Review since last' card repeats its title as the subtitle."
     ]
   }
 }

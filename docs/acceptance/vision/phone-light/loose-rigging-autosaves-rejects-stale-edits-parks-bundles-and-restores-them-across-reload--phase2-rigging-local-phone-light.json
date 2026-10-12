@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
   "layout": "phone-light",
-  "screenshot": "screenshots/phase2-rigging-local-phone-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-rigging-local-phone-light.png",
   "expected": "the Jevellan web app \"rigging local\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The last tab in the background tab strip is cut off under the scroll chevron at the right edge. It sits behind the dimmed overlay and can be reached by scrolling.",
-      "There is no visible padding between the dialog's bottom edge and the background list item ('browser-promote') behind it. The dimmed background makes that edge look slightly cramped.",
-      "The 'Source' toggle is a small pink text link and is less obvious as a control than the other buttons, but it is readable and can be tapped."
+      "The top tab bar in the background ends with a partly visible tab next to the scroll chevron. This is expected horizontal scrolling, and the dim overlay covers it anyway.",
+      "The 'Current file reloaded…' status message sits at the bottom of the modal with little space between it and the edge of the modal card.",
+      "The secondary text in the modal ('Local edits save automatically…', the bundle note) is small and low-contrast, but it is still readable."
     ]
   }
 }

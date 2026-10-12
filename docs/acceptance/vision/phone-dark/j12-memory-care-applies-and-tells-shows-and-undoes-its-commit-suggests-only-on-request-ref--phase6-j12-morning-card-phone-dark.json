@@ -4,16 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule",
   "layout": "phone-dark",
-  "screenshot": "screenshots/phase6-j12-morning-card-phone-dark.png",
+  "screenshot": "docs/acceptance/screenshots/phase6-j12-morning-card-phone-dark.png",
   "expected": "the Jevellan web app \"j12 morning card\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab strip is cut off at the right edge (the last tab shows only 'Dec…'). It looks like a horizontally scrollable tab bar, but nothing on screen shows that it scrolls.",
-      "The secondary text is small and low-contrast grey on the dark background: the note paths under 'Based on 3 notes', the run timestamps and the 'Checked against 27 saved cases' footers. It is readable, but faint.",
-      "Long lines in the Routing diff blocks wrap onto several lines, so the diffs are harder to scan, though no text is lost.",
-      "Under 'Schedule and jobs', the 'Save schedule and jobs' button looks greyed out and blends into the panel. It is probably disabled until something changes, which is fine, but it is easy to miss."
+      "The top tab strip cuts off the third tab label (\"Dev…\") at the right edge. It looks like a horizontally scrollable tab bar, but nothing shows that more tabs exist.",
+      "The commit hash in the applied memory-care card (\"af1f502c f8\") seems to break across lines or sit tight against the Commit label.",
+      "The long diff lines in the Recently decided cards wrap inside the code blocks, which makes the diffs harder to scan on a phone-width screen.",
+      "The \"Save schedule and jobs\" button is low-contrast and looks disabled against the dark background."
     ]
   }
 }

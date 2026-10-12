@@ -4,13 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "PJ4b the Why panel explains placement and overrides apply",
   "layout": "phone-dark",
-  "screenshot": "screenshots/PJ4b-override-modal-phone-dark.png",
+  "screenshot": "docs/acceptance/screenshots/PJ4b-override-modal-phone-dark.png",
   "expected": "the Jevellan web app \"override modal\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PJ4b the Why panel explains placement and overrides apply\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background thread content behind the dimmed overlay is cut off at the edges (for example 'Worktree on jv/tidy-the-readme-wording-based...' and the attach command), but it is not part of the modal and the overlay is meant to dim it"
+      "The background is dimmed, so the thread header text and the attach command behind the modal are hard to read. That's expected behind a modal.",
+      "The attach command at the bottom is cut off with an ellipsis ('thread_01HQ7TCMA6M5...'). It sits behind the modal, so it doesn't block this screen."
     ]
   }
 }

@@ -121,6 +121,20 @@ test('no eligible alternate provider or model asks the owner without starting a 
   const { f } = await setup('test-then-merge', false), thread = await published(f); await settings(f); await gate(f);
   expect((await routes(f, thread.id))[0]).toMatchObject({ route: 'ask-owner', source: 'guard', state: 'asked' }); expect(f.fake.turnStarts.some(input => input.owner.kind === 'verification')).toBe(false);
 }, 90_000);
+test('risky areas changed during verification require a new owner decision before merging', async () => {
+  const { f, second } = await setup('test-then-merge'), thread = await published(f);
+  second.enqueueTurn(async turn => {
+    await settings(f, { riskyAreas: 'Stored data; greeting behaviour.' });
+    await turn.bridge('jevellan_verification_report', { result: 'passed', commands: ['test -f greeting.txt'], failures: [] });
+    return { status: 'completed' };
+  }, input => input.owner.kind === 'verification');
+  await settings(f); await gate(f);
+  const route = (await routes(f, thread.id))[0]!;
+  expect(route).toMatchObject({ route: 'ask-owner', source: 'guard', state: 'asked', reason: 'The project’s risky areas changed after this routing decision.' });
+  expect((await f.app.projectHub.decision(route.decisionId!))?.document.merge?.commit).toBe(thread.pr!.headSha);
+  expect(f.thread(thread.id).pr?.state).toBe('open');
+  expect(f.github.requests.some(row => row.method === 'PUT' && row.path.endsWith('/merge'))).toBe(false);
+}, 90_000);
 test('a dirty verifier cannot merge, count a failed test, or send invented failures to the author', async () => {
   const { f, second } = await setup('test-then-merge'), thread = await published(f); let messages = 0;
   f.app.projectWork.mergeGate.o.message = async () => { messages++; };

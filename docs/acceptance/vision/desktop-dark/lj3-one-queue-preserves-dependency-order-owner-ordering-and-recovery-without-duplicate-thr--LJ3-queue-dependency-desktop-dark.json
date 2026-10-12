@@ -4,15 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "LJ3 one queue preserves dependency order, owner ordering and recovery without duplicate threads",
   "layout": "desktop-dark",
-  "screenshot": "screenshots/LJ3-queue-dependency-desktop-dark.png",
+  "screenshot": "docs/acceptance/screenshots/LJ3-queue-dependency-desktop-dark.png",
   "expected": "the Jevellan web app \"LJ3 queue dependency\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"LJ3 one queue preserves dependency order, owner ordering and recovery without duplicate threads\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the Running list on the right, long task titles and summaries are cut off with an ellipsis (e.g. \"Read through the project and list what each file is f…\", \"Read the README on this device: a title and one line about th…\"). The full text appears elsewhere on the page.",
-      "In the left sidebar, Shell session names and subtitles are cut off with an ellipsis (e.g. \"Context · J11 memory journ…\", \"Context · Mesh journey fixt…\").",
-      "The Notebook button at the top right sits close to the overflow (…) menu, but they don't overlap."
+      "In the Running list on the right, the title 'Read through the project and list what each file is f…' is cut off with an ellipsis. The full title appears in the Queue section.",
+      "In the Running list, the summary line 'Read the README on this device: a title and one line about th…' is cut off with an ellipsis.",
+      "In the left sidebar, shell session names ('Context · J11 memory jour…', 'Context · Mesh journey fix…') and their subtitles are cut off with ellipses.",
+      "In the conversation, almost every event card is followed by the same 'Noted.' reply, which makes the thread repetitive and long."
     ]
   }
 }

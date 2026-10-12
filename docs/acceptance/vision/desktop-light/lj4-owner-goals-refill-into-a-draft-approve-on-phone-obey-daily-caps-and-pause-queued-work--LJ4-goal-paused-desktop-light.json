@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'New goal' button in the right panel is cut off at the bottom of the viewport. The panel probably scrolls, so it can still be reached.",
-      "Sidebar session titles and metadata are cut short with ellipses ('Context · J11 memory journ…', 'Gonca…').",
-      "In the right panel, the Concluded item's metadata line is cut short ('Goncalos-MacBook…').",
-      "The 'Asks' and 'Daily' subsections sit tightly against the text above them, so the vertical spacing looks uneven."
+      "The right panel is cut off at the bottom of the screen: the 'GOALS 1' section and its 'New goal' button are only partly visible. The panel probably scrolls, so nothing is out of reach.",
+      "Session titles and metadata in the sidebar are shortened with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…').",
+      "The 'Asks' and 'Daily' sections in the goal's group sit very close together. The 'Daily' heading follows the 'Nothing open for this goal.' text with almost no gap, and spacing is uneven compared with the other sections.",
+      "The 'Project day: 2026-10-12' line under NIGHTLY is indented differently from the empty-state text in other sections."
     ]
   }
 }

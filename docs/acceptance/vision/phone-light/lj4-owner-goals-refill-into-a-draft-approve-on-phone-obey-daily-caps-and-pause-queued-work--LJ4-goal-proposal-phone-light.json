@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row clips the last tab ('Pull requ…') at the right edge. It looks like a horizontally scrollable tab bar, so the tab should still be reachable, but there's no visible scroll hint or fade.",
-      "The 'Working…' status pill and the 'Claude Code Fable · high' label are in small monospace type with fairly low contrast. They're still readable."
+      "The last tab label in the top tab row is cut off at the right edge ('Pull requ…'). The row probably scrolls sideways, but nothing on screen shows that it does.",
+      "There is a lot of empty space below the proposal card. The card holds 9 action buttons that wrap onto three uneven rows, which makes it look crowded."
     ]
   }
 }

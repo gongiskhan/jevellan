@@ -4,14 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "step corrections survive reload and undo launches the requested redo with visible history",
   "layout": "phone-dark",
-  "screenshot": "screenshots/phase2-undo-confirm-phone-dark.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-undo-confirm-phone-dark.png",
   "expected": "the Jevellan web app \"undo confirm\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"step corrections survive reload and undo launches the requested redo with visible history\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background behind the modal is dimmed and the page header ('Change the value to three, then redo thi...') is cut off with an ellipsis. Both are expected while a modal is open.",
-      "The modal says 'redoes it with Reply, Fable, low', but the form behind it shows Effort set to 'high'. This may be a state mismatch, or the dialog may be showing the requested redo values, which would be fine."
+      "The dialog says the redo will use 'low' effort, but the dimmed form behind it shows Effort 'high'. This may be a state mismatch, though it doesn't affect how the screen renders.",
+      "The dimmed background content (header title, step form) shows faintly around the dialog. This is expected for a modal backdrop."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip is scrolled so the first tab ('Chat') is cut off at the left edge. It looks like a horizontally scrollable tab bar, so the tab can still be reached.",
-      "In the #1 card, the 'Why', 'Should have asked me' and 'Didn't need asking' links fill the whole row with tight spacing. They are readable but close together for touch targets.",
-      "The 'Saved for future merge decisions.' confirmation and the 'Open thread' link sit on one line with little spacing, so the layout looks a bit crowded."
+      "The first tab ('Chat') is cut off at the left edge of the tab strip. The strip appears to be scrolled horizontally so the active 'Pull requests' tab is visible. There is no fade or scroll cue to show this.",
+      "In the #1 Review loop card, the 'Didn't need asking' action sits very close to the card's right edge, so the row looks crowded.",
+      "The pink text-link actions ('Why', 'Open thread', 'Open task') look different from the outlined 'Open on GitHub' button. 'Open task' is also bigger than the other links, so the action styling is inconsistent."
     ]
   }
 }

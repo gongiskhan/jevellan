@@ -10,11 +10,12 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Dismiss' button in the 'Last night' banner sits right against the end of the sentence with no gap.",
-      "In the pull request #2 card, the 'Open task' link uses a larger font than the 'Why' and 'Open thread' links next to it, so the row looks misaligned.",
-      "The right column ends partway through the Goals section: the 'Hardening through code review' goal card is clipped at the bottom edge, probably because the panel scrolls.",
-      "Long conversation titles and machine names in the sidebar and the Running/Concluded lists are shortened with an ellipsis (for example 'Goncalos-MacBook…'), so the full text isn't shown.",
-      "The thread repeats the line 'Noted.' many times, which makes the timeline long and harder to scan."
+      "The 'Dismiss' button in the 'Last night: 3 of 3 nightly tasks passed.' banner sits directly against the end of the text with no gap.",
+      "In the nightly item cards, the 'Enabled' checkboxes sit above their labels instead of beside them, so they look misaligned next to the 'Run now' and 'Edit' buttons.",
+      "The goals card at the bottom of the right column is cut off at the bottom edge of the capture ('Propose tasks' is partly shown). It looks like normal scrollable content, not a clipped control.",
+      "Long session names in the sidebar are shortened with ellipses (e.g. 'Context · J11 memory jour…'), so the full names can't be read there.",
+      "The 'Noted.' replies repeat many times and stretch the timeline, which adds visual noise.",
+      "The 'Nightly window finished' cards end with a stray '–' line."
     ]
   }
 }

@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "device Settings completes a member login, shows activity, invites and switches without signing in again",
   "layout": "phone-light",
-  "screenshot": "screenshots/phase5-join-phone-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase5-join-phone-light.png",
   "expected": "the Jevellan web app \"join\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"device Settings completes a member login, shows activity, invites and switches without signing in again\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The join command breaks mid-URL ('htt' / 'p://127.0.0.1:28772'). This makes it harder to read and copy by eye. Wrapping at spaces or allowing horizontal scroll would help.",
-      "The 'Join code' field and the end of the command show solid blocks instead of the code. This is probably masking of dynamic content in the screenshot, but if it isn't, the code itself isn't visible.",
-      "The 'Add a device' modal covers the device list behind it, which is expected for a modal."
+      "The 'Join code' field shows an empty grey box and the end of the command is a blank white rectangle. This looks like the screenshot tool hiding a changing value, but if it isn't, the join code isn't showing.",
+      "The URL in the command breaks in the middle of a word ('htt' / 'p://127.0.0.1:30772'), which makes it harder to read and copy by eye.",
+      "The dialog's padding is a bit uneven: there is more empty space below the 'Expires' line than above the body text."
     ]
   }
 }

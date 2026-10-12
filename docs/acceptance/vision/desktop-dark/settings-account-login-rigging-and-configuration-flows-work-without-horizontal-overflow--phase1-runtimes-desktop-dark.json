@@ -4,18 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "Settings account, login, Rigging and configuration flows work without horizontal overflow",
   "layout": "desktop-dark",
-  "screenshot": "screenshots/phase1-runtimes-desktop-dark.png",
+  "screenshot": "docs/acceptance/screenshots/phase1-runtimes-desktop-dark.png",
   "expected": "the Jevellan web app \"runtimes\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"Settings account, login, Rigging and configuration flows work without horizontal overflow\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Codex sign-in note ('Codex sign-ins are kept per device for now.') shows up under Claude Code's 'Rigging local fixture' account, which looks like copy from the wrong runtime",
-      "Long account names like 'Login recovery 3b92b286-87c9-43f9-930e-33b826535b7b' show raw UUIDs, which makes them hard to read even though they fit",
-      "'Five hours' and 'Week' usage bars all say 'Unknown' and the bars are very faint against the dark background",
-      "Low-contrast grey secondary text (for example 'Usage checked…', 'Never automatically', 'Read-only actions enforced') is readable but dim",
-      "Sidebar conversation subtitles are cut off with ellipses on purpose (for example 'Waiting for you · Browser fixtur…')",
-      "'Applied from this device' under Claude Code shows a single 'Fable' tag, while under Codex it shows a text message instead, so the two sections look inconsistent"
+      "The 'Rigging local fixture' account sits under Claude Code, but its device list says 'Codex sign-ins are kept per device for now.' This looks like the wrong runtime label.",
+      "Sidebar conversation titles and subtitles are cut off with an ellipsis (e.g. 'Context · J11 memory journ…'). The truncation looks intentional and they are still readable.",
+      "The usage meters for 'Five hours' and 'Week' are faint and almost invisible on the dark background. Each one says 'Unknown', so no information is lost.",
+      "'Log in on Offline fixture' is greyed out next to an Offline badge. This looks intentionally disabled, but it has low contrast."
     ]
   }
 }

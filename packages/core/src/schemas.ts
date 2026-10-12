@@ -99,8 +99,14 @@ export const DeviceTagsSchema = z.array(z.string().regex(/^[a-z0-9-]{1,32}$/u)).
 export function seedDeviceTags(os: string, role: string): string[] {
   return os === 'darwin' ? ['mac', 'residential', ...(role === 'hub' ? ['browser-automation'] : [])] : ['linux', 'datacenter'];
 }
+export const DevicePowerSchema = z.discriminatedUnion('status', [
+  z.strictObject({ schema: z.literal('device-power-v1'), status: z.literal('available'), observedAt: TimestampSchema, acSleepMinutes: z.number().int().nonnegative() }),
+  z.strictObject({ schema: z.literal('device-power-v1'), status: z.literal('unavailable'), observedAt: TimestampSchema }),
+  z.strictObject({ schema: z.literal('device-power-v1'), status: z.literal('not-applicable'), observedAt: TimestampSchema }),
+]);
+export type DevicePower = z.infer<typeof DevicePowerSchema>;
 export const DeviceFactsSchema = z.strictObject({ schema: z.literal('device-facts-v1'), cores: z.number().int().positive(), load1: z.number().nonnegative(), load5: z.number().nonnegative(),
-  totalMemoryBytes: z.number().nonnegative(), freeMemoryBytes: z.number().nonnegative(), freeDiskBytes: z.number().nonnegative(), os: z.enum(['darwin', 'linux']), runningThreads: z.array(IdSchema), runningJobRuns: z.array(IdSchema) });
+  totalMemoryBytes: z.number().nonnegative(), freeMemoryBytes: z.number().nonnegative(), freeDiskBytes: z.number().nonnegative(), os: z.enum(['darwin', 'linux']), runningThreads: z.array(IdSchema), runningJobRuns: z.array(IdSchema), power: DevicePowerSchema.optional() });
 export type DeviceFacts = z.infer<typeof DeviceFactsSchema>;
 export const DeviceSchema = z.strictObject({
   schema: z.literal('device-v1'), id: IdSchema, name: text, role: z.enum(['hub', 'member']), url: z.url(),

@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "Settings saves wait through hub loss, reconcile lost replies and abandon a closed editor",
   "layout": "phone-dark",
-  "screenshot": "screenshots/phase4-settings-save-wait-phone-dark.png",
+  "screenshot": "docs/acceptance/screenshots/phase4-settings-save-wait-phone-dark.png",
   "expected": "the Jevellan web app \"settings save wait\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"Settings saves wait through hub loss, reconcile lost replies and abandon a closed editor\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The disabled 'Saving…' button has very low contrast against the dark dialog. This is expected for a disabled state, but it is hard to read.",
-      "Page content behind the dimmed overlay shows through above and below the dialog (the tab bar and the 'Login recovery …' list item). The dialog itself is not obscured.",
-      "The secondary hub-loss text ('Stopping the wait does not undo a request already received.') is small and slightly dimmer than the main message, but still readable."
+      "The 'Saving…' button is greyed out and low-contrast. That fits a disabled in-progress state, but it's harder to read than the other text.",
+      "The tabs row at the top ('Runtimes', 'Pipping', 'Decisions') is cut off at the right edge behind the dialog's backdrop. It's background content.",
+      "In the background list behind the dialog, the 'Login recovery …' entry wraps onto two lines and sits partly under the dimmed overlay. This doesn't affect the dialog."
     ]
   }
 }

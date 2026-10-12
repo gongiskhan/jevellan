@@ -4,15 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "Projects and a manual planned change render the full plan, stream, Why and verified Changes",
   "layout": "desktop-light",
-  "screenshot": "screenshots/phase2-projects-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-projects-desktop-light.png",
   "expected": "the Jevellan web app \"projects\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar, long conversation titles and subtitles are cut off with an ellipsis (e.g. 'Context · J11 memory journ…', 'Context · Mesh journey fixt…', 'Waiting for you · Browser fixtur…'). The cut-off looks intentional, and the 'now'/'1m'/'2m' time labels and '…' menus are still visible.",
-      "The 'Manual conversation fixture' project card appears in the main grid, but that project is missing from the sidebar's PROJECTS list. The two lists don't match, though nothing is hidden or unreachable on this screen.",
-      "The two card columns don't line up at the bottom: 'Mesh journey fixture' is shorter than 'Public memory fixture', and 'Undo across works' sits alone in the left column, leaving a blank space on the right. This is just how a masonry/grid layout falls and doesn't hurt legibility."
+      "Several sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Mesh journey fixt…', 'Waiting for you · Browser fixtur…'). This looks like intentional truncation.",
+      "The 'Manual conversation fixture' card appears in the Projects grid, but that project is missing from the sidebar PROJECTS list.",
+      "Card heights don't match across each row (e.g. the Public memory fixture card is taller than the Mesh journey fixture card), so the bottom edges of the cards are uneven.",
+      "The long path and command text in the cards uses a small monospace font. It is readable but dense."
     ]
   }
 }

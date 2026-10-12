@@ -4,15 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "composer choices apply once, keep conversation pins and explain corrections after reload",
   "layout": "phone-light",
-  "screenshot": "screenshots/phase3-composer-start-phone-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase3-composer-start-phone-light.png",
   "expected": "the Jevellan web app \"composer start\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"composer choices apply once, keep conversation pins and explain corrections after reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The composer chip text 'Plan · Composer Fable · high' uses small monospace type in pink on a light pink background. It's readable but low-contrast.",
-      "The 'Coming later…' helper text under Device is small and light gray, so it's a bit faint.",
-      "There's a lot of empty space below the card. That's fine for a short form."
+      "The 'Coming later' helper text under Device is small and light grey, so it is hard to read, but you can still make it out.",
+      "The bottom ~40% of the screen below the card is empty."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip is scrolled, so the first tab ('Chat') is cut off at the left edge. The strip looks horizontally scrollable, so the tab can still be reached.",
-      "Each nightly card shows its title twice (for example 'Review since last' / 'Review since last'), which is redundant.",
-      "The 'Enabled' checkbox label sits below the checkbox instead of beside it, so it lines up awkwardly with the Run now/Edit buttons."
+      "The tab row is scrolled sideways, so the 'Chat' tab is clipped at the left edge. It reads as a scrollable tab strip and the tab can still be reached.",
+      "The 'Working…' status badge in the header is shortened with an ellipsis.",
+      "In each nightly card, the 'Enabled' checkbox label wraps under the checkbox instead of sitting beside it, which leaves the Run now/Edit row looking uneven."
     ]
   }
 }

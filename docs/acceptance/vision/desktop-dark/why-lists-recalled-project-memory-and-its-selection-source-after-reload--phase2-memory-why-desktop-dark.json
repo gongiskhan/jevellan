@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "Why lists recalled project memory and its selection source after reload",
   "layout": "desktop-dark",
-  "screenshot": "screenshots/phase2-memory-why-desktop-dark.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-memory-why-desktop-dark.png",
   "expected": "the Jevellan web app \"memory why\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"Why lists recalled project memory and its selection source after reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar conversation list cuts off a fourth item at about y≈710. Only the top of its text shows, just above the 'Some native sessions are unavailable' note. It looks like the scroll container is clipping it, but the partial row looks broken.",
-      "The same 'Jev is unavailable (no key configured). Pick the next step:' banner appears in both the Why panel and the main step picker.",
-      "Long conversation titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Explain the memorybrows…', 'Exercise evidence naviga…')."
+      "In the sidebar, the fourth conversation row is partly clipped at the bottom of the scrollable list, just above 'Some native sessions are unavailable'. It is a scroll cutoff and the row can still be reached.",
+      "The 'Why this step' panel ends right at the bottom of the viewport after the JEV section ('This step was picked manually.'). There is no bottom padding, so it is unclear whether more content follows below.",
+      "The banner 'Jev is unavailable (no key configured). Pick the next step:' appears in both the right panel and the main column. In the right panel it has no controls under it, so the colon leads nowhere."
     ]
   }
 }

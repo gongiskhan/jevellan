@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
   "layout": "desktop-dark",
-  "screenshot": "screenshots/phase2-rigging-mcp-desktop-dark.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-rigging-mcp-desktop-dark.png",
   "expected": "the Jevellan web app \"rigging mcp\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The file label says 'config.toml', but the editor shows JSON. The label and the content format don't match, which may confuse users.",
-      "The 'Saved' status text is low-contrast grey on the dark panel, though it is still readable.",
-      "The editor uses only about a third of its height, leaving a large empty area below the content."
+      "The file is labeled config.toml, but the Content field shows JSON. This doesn't affect the rendering, but it may be a mismatch in the fixture or the display.",
+      "The toast's close button is a very small, low-contrast '×' compared with the dialog's close icon.",
+      "The editor has a lot of empty space below short content. The textarea could fit the content more closely."
     ]
   }
 }

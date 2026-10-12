@@ -4,15 +4,17 @@
   "model": "claude-opus-5-5",
   "test": "J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule",
   "layout": "phone-dark",
-  "screenshot": "screenshots/phase6-j12-view-changes-phone-dark.png",
+  "screenshot": "docs/acceptance/screenshots/phase6-j12-view-changes-phone-dark.png",
   "expected": "the Jevellan web app \"j12 view changes\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The page is very tall (390x5987). The expanded 'View changes' diff in the Memory care card adds a lot of vertical scroll before you reach Schedule and jobs.",
-      "Long diff lines (file paths in the diff headers) wrap onto several lines, which makes the diff harder to scan on a phone-width screen.",
-      "At this resolution the diff and run-list text is small and thin against the dark background. It is readable, but only just."
+      "The screenshot was reviewed at 1/3 scale (130x2000 shown for a 390x6008 capture), so small text such as diff lines and table cells could only be checked roughly. It looks legible, but small-text clipping cannot be fully ruled out at this scale.",
+      "The Trial log table is cramped on a phone-width screen: the date value '2026-10-12' wraps across several lines, and the column headers ('IN JEVELLAN', 'OUTSIDE', 'HOW THEY FINISHED ELSEWHERE') wrap tightly.",
+      "Long diff lines in the expanded 'View changes' block wrap mid-path (for example, the .jevellan/memory/archive/... paths), which makes the diff harder to scan.",
+      "The Last runs list stacks long run titles next to the 'Open log' buttons, and some titles wrap onto two or three lines.",
+      "The page is very long (about 6000px). The expanded diff pushes the Schedule, Last runs and Trial log sections far down, though they can still be reached by scrolling."
     ]
   }
 }

@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "conversation titles, expanded tools and outside outcomes survive updates and reload",
   "layout": "desktop-dark",
-  "screenshot": "screenshots/phase2-controls-outcome-desktop-dark.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-controls-outcome-desktop-dark.png",
   "expected": "the Jevellan web app \"controls outcome\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"conversation titles, expanded tools and outside outcomes survive updates and reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The last conversation in the sidebar list ('Change the value to two a…') is cut off at the bottom edge of the scroll area. The list scrolls, so it can still be reached.",
-      "The long underscore-joined tool header wraps across three lines inside the tool card. It is readable but looks dense.",
-      "Conversation titles and subtitles in the sidebar are truncated with ellipses (e.g. 'Context · Created instruct…', 'Done · Undo across works · dev-m…')."
+      "The sidebar conversation titles and subtitles are shortened with ellipses (e.g. 'Context · Created instruct…', 'Done · Undo across works · dev-m…').",
+      "The last conversation row in the sidebar ('Change the value to two a…') is partly cut off at the bottom of the scrollable list, just above the 'Some native sessions are unavailable' note.",
+      "The long tool header 'long_tool_header_…' breaks across lines in the middle of a word ('long_tool_' / 'header_'). It is still readable, but it looks awkward."
     ]
   }
 }

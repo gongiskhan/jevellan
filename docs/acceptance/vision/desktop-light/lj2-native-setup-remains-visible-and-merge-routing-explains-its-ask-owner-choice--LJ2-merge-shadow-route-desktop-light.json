@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The pull request #1 card's action row wraps awkwardly. The 'Jev would: ask you' chip is indented with empty space to its left, 'Why' and 'Should have asked me' sit beside it, and 'Didn't need asking' and 'Open thread' drop to the next line. 'Open task' is pushed right, away from the other links, so the row looks uneven but is still readable and clickable.",
-      "The 'Should have asked me' and 'Didn't need asking' links look like plain inline text links rather than buttons, so they don't clearly read as a pair of choices.",
-      "The right panel is cut off at 'GOALS 0' at the bottom of the screen. The panel scrolls, so the content is still reachable.",
-      "The coordinator thread repeats 'Noted.' three times, which adds clutter."
+      "The pull request card's action row wraps awkwardly. The 'Jev would: ask you' badge is indented with empty space to its left, and the links ('Why', 'Should have asked me', 'Didn't need asking', 'Open thread', 'Open task') are split unevenly across two lines, so 'Open task' sits on the far right away from the rest.",
+      "Sidebar shell session titles and subtitles are cut short with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · Gonca…'). This looks intended, but the full names can't be read.",
+      "The right panel continues below the fold: the 'GOALS 0' section is cut off at the bottom edge and has to be scrolled to.",
+      "Inconsistent spacing in the Nightly section: there is a large gap between 'Project day: 2026-10-12' and the buttons, and the empty-state text sits below the buttons."
     ]
   }
 }

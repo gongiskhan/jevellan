@@ -4,15 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "PJ5 an offline coordinator shows the notice and Move coordinator here",
   "layout": "phone-dark",
-  "screenshot": "screenshots/PJ5-moved-phone-dark.png",
+  "screenshot": "docs/acceptance/screenshots/PJ5-moved-phone-dark.png",
   "expected": "the Jevellan web app \"moved\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PJ5 an offline coordinator shows the notice and Move coordinator here\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row is clipped at the right edge: 'Pull requests' runs past the viewport, and any tabs after it can't be seen. This looks like a horizontally scrollable tab strip, but nothing on screen shows that it scrolls.",
-      "The 'Idle' status chip and the 'Claude Code Fable · high' subtitle are in small, low-contrast monospace text. They can still be read.",
-      "The moved notice is the only content, so most of the screen below it is empty."
+      "The 'Pull requests' tab is clipped at the right edge of the tab row. This looks like a horizontally scrollable tab strip, but there's no scroll hint or fade to show more tabs are off-screen.",
+      "The 'Projects offline' title plus the 'Idle' status above a 'moved to dev-madrid' notice could confuse users about the coordinator's state, though the text is fully legible."
     ]
   }
 }

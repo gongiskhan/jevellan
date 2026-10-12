@@ -4,16 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule",
   "layout": "desktop-dark",
-  "screenshot": "screenshots/phase6-j12-suggest-only-desktop-dark.png",
+  "screenshot": "docs/acceptance/screenshots/phase6-j12-suggest-only-desktop-dark.png",
   "expected": "the Jevellan web app \"j12 suggest only\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar session titles are cut off with ellipses ('Exercise answer options: c…', 'Context · J11 memory jour…', 'Context · Mesh journey fix…'), but the full names are probably available on hover.",
-      "In the Last runs list, 'Open log' links sit on their own line under some long titles, so row alignment is inconsistent.",
-      "The 'Save schedule and jobs' button has low contrast and looks disabled.",
-      "The 'Waiting for you (2)' section label and the column headers in the Trial log table are small and low-contrast, which makes them harder to read."
+      "Shell session titles in the sidebar are cut off with ellipses (e.g. 'Exercise answer options: c...', 'Context · J11 memory jour...'). This is normal truncation in a narrow column.",
+      "The diff code blocks have long lines that wrap. In the 'Prefer GPT for implement steps' diff, the wrapped continuation lines lose their -/+ markers, so the change is a little harder to scan.",
+      "Many of the 'Last runs' entries repeat 'No working rules to suggest.', which makes the list long and visually repetitive."
     ]
   }
 }

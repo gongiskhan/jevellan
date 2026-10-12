@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip runs off the right edge, so 'Pull requests' is cut off. It looks like a horizontally scrolling tab bar, so the tab should still be reachable, but nothing on screen shows that it scrolls.",
-      "Section headings ('Asks', 'Daily') sit tight against the empty-state text above them, so the vertical spacing is uneven."
+      "The 'Pull requests' tab is clipped at the right edge of the tab bar. The bar looks horizontally scrollable, so the tab can still be reached, but nothing on screen shows that more tabs are available.",
+      "The 'Asks' and 'Daily' section headings sit very close to the content above them, with less vertical spacing than other sections.",
+      "Spacing is uneven: the 'NIGHTLY 0' and 'GOALS 1' labels are indented a little differently from the 'Hardening through automated tests' heading."
     ]
   }
 }

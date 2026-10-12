@@ -4,14 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "undo from the last closed work includes newer work and preserves both requests after reload",
   "layout": "phone-light",
-  "screenshot": "screenshots/phase2-undo-following-confirm-phone-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-undo-following-confirm-phone-light.png",
   "expected": "the Jevellan web app \"undo following confirm\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"undo from the last closed work includes newer work and preserves both requests after reload\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The page title in the background is cut off ('Change the value to two and publish th…'), but it sits behind the modal scrim and doesn't affect the confirm step.",
-      "The 'Jump to latest' link and the bottom composer show faintly through the scrim. This is expected for a modal and doesn't affect legibility."
+      "The page title behind the dialog (\"Change the value to two and publish th...\") ends in an ellipsis, which is normal for a narrow phone screen.",
+      "The page behind the dialog is dimmed and blurred, as expected while the dialog is open, so its content (step details, the \"Jump to latest\" link, the message box) is hard to read here."
     ]
   }
 }

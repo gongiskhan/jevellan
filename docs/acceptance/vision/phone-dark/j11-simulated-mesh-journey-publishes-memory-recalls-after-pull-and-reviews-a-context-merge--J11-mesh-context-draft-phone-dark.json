@@ -4,14 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
   "layout": "phone-dark",
-  "screenshot": "screenshots/J11-mesh-context-draft-phone-dark.png",
+  "screenshot": "docs/acceptance/screenshots/J11-mesh-context-draft-phone-dark.png",
   "expected": "the Jevellan web app \"mesh context draft\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The grey helper text ('The draft ran read-only…') and the 'Current instruction files' disclosure label have low contrast on the dark surface, but both are still readable",
-      "The background tab bar (Devices/Projects/Git) is clipped at the viewport edges behind the modal scrim. It is dimmed, non-interactive context, so it doesn't block anything"
+      "The page behind the modal still shows through the dim overlay (the top tabs, plus the 'This repository is public…' banner below the modal), which adds some visual noise.",
+      "The helper text 'The draft ran read-only…' is low-contrast gray on dark but still readable.",
+      "The empty '-' and '+' diff lines look like stray markers.",
+      "'Open work' sits close under the Cancel/Apply row without much spacing."
     ]
   }
 }

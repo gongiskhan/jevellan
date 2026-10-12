@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "hub readiness warns about AC sleep and clears when the setting is safe",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/hub-hub-power-warning-phone-light.png",
+  "expected": "the Jevellan web app \"hub hub power warning\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"hub readiness warns about AC sleep and clears when the setting is safe\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The hub readiness warning says 'this Mac', but the dev-madrid hub card lists the device as 'Linux', so the copy contradicts itself (likely fixture data)",
+      "Tab labels at both ends of the settings tab strip are clipped ('s' on the left, 'Projects' on the right), though the scroll arrows still reach them",
+      "The disabled 'Open' button on the hub card and the disabled 'Inspect worktrees' and 'Open' buttons on the offline card have low-contrast text"
+    ]
+  }
+}

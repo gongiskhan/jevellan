@@ -1,6 +1,6 @@
 {
   "name": "@jevellan/decisions",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "type": "module",
   "license": "MIT",
@@ -11,8 +11,8 @@
     }
   },
   "dependencies": {
-    "@jevellan/core": "0.2.0",
-    "@jevellan/accounts": "0.2.0",
+    "@jevellan/core": "0.2.1",
+    "@jevellan/accounts": "0.2.1",
     "zod": "4.6.5"
   }
 }

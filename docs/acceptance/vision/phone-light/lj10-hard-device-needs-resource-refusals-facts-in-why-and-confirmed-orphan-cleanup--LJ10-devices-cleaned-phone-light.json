@@ -4,15 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "LJ10 hard device needs, resource refusals, facts in Why and confirmed orphan cleanup",
   "layout": "phone-light",
-  "screenshot": "screenshots/LJ10-devices-cleaned-phone-light.png",
+  "screenshot": "docs/acceptance/screenshots/LJ10-devices-cleaned-phone-light.png",
   "expected": "the Jevellan web app \"LJ10 devices cleaned\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"LJ10 hard device needs, resource refusals, facts in Why and confirmed orphan cleanup\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dev-madrid 'Device tags' field cuts off its value at the right edge ('phone-testi…'). It's a single-line input, so the rest of the text can still be reached by scrolling inside it.",
-      "The top tab strip cuts off the first and last tab labels ('s' and 'Projects'). The scroll arrows on each side still reach the other tabs.",
-      "The 'Thread worktrees: 0 GB · Job and verification worktrees: 0 GB' line breaks awkwardly, leaving 'GB' alone on the next line."
+      "The device tags field on dev-madrid cuts off its value at 'phone-testi…'. It is an editable input, so the full value can still be reached.",
+      "The tab bar clips the tab before 'Improver' to 's' and cuts off the 'Projects' label. Scroll arrows are provided, so those tabs can still be reached.",
+      "The 'Inspect worktrees' and 'Open' buttons on Offline fixture look muted or disabled. This is probably intentional because the device is offline.",
+      "The 'Automatic device choice' checkbox is disabled and labelled 'Coming later', which is intentional."
     ]
   }
 }

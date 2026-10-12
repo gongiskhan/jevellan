@@ -4,17 +4,18 @@
   "model": "claude-opus-5-5",
   "test": "blocked files can be reviewed, refreshed and accepted before verified publication",
   "layout": "desktop-light",
-  "screenshot": "screenshots/phase2-adoption-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-adoption-desktop-light.png",
   "expected": "the Jevellan web app \"adoption\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"blocked files can be reviewed, refreshed and accepted before verified publication\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The conversation title in the middle column header is cut off with an ellipsis ('Exercise reviewed checkpoint recovery with a simulated read-only viola...').",
-      "Sidebar conversation titles are cut off with ellipses ('Exercise reviewed checkp...', 'Change the value to thre...').",
-      "The middle column is scrolled partway into a tool-call card, so the top of the card ('Input' label) sits flush against the header area.",
-      "The bottom of the right panel cuts the 'JEVELLAN VERIFICATION' text ('No verification receipt yet') off at the viewport edge; the panel scrolls, so it can be reached.",
-      "The bottom of the sidebar conversation list shows a partly clipped fourth item above the 'Some native sessions are unavailable' row; the list scrolls."
+      "Conversation title in the header is cut off with an ellipsis ('Exercise reviewed checkpoint recovery with a simulated read-only viola…').",
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Exercise reviewed checkp…', 'Change the value to thre…').",
+      "A fourth sidebar conversation item is only partly visible at the bottom of the scrollable list, above 'Some native sessions are unavailable'.",
+      "In the middle column, the 'Input' label sits right at the top edge of the scroll area and is slightly clipped under the header chips.",
+      "The right panel's 'No verification receipt yet' text under JEVELLAN VERIFICATION is cut off at the bottom of the viewport; the panel scrolls, so it can still be reached.",
+      "The 'Why' chip is pink/red while the other step chips are neutral, which is a small visual inconsistency."
     ]
   }
 }

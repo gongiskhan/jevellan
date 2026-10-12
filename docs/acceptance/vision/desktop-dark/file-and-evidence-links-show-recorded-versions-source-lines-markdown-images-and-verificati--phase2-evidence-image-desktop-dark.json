@@ -4,16 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
   "layout": "desktop-dark",
-  "screenshot": "screenshots/phase2-evidence-image-desktop-dark.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-evidence-image-desktop-dark.png",
   "expected": "the Jevellan web app \"evidence image\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"file and evidence links show recorded versions, source lines, Markdown, images and verification output\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The image preview in the evidence panel is a small thumbnail. It sits in a mostly empty panel and is hard to inspect at this size.",
-      "The 'Recorded checkpoint · ddcc32c…' line is small, low-contrast grey text on a dark background.",
-      "In the middle column, the 'Started / Ended / Duration / Local time' metadata line is partly hidden under the sticky conversation header. This happens at the scroll position, and the line can be reached by scrolling.",
-      "At the bottom of the sidebar conversation list, a partly scrolled row shows only dashes above 'Some native sessions are unavailable'. This happens at the scroll position."
+      "In the middle column, the metadata line (Started Oct 12, 12:52:14 · Ended Oct 12, 12:52:20 · Duration 5s · Local time) is cut off at the top where it scrolls under the sticky conversation header. There is no fade or separator, so it looks half-clipped.",
+      "The sidebar conversation list cuts off a partially visible row above 'Some native sessions are unavailable'. This is normal scroll overflow, but it looks like stray dashes.",
+      "The screen.png preview in the evidence panel is a very small thumbnail (about 100×60 px) in an otherwise empty panel, so the recorded image's content is hard to inspect at this size.",
+      "The 'Open working copy' and 'Open recorded step' links sit very close together with little visual separation."
     ]
   }
 }

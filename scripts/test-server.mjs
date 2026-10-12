@@ -662,7 +662,7 @@ const ControlReleaseSchema = z.strictObject({ schema: z.literal('fixture-release
 const ControlNotebookSchema = z.strictObject({ schema: z.literal('fixture-notebook-v1'), content: z.string().max(65536) });
 const ControlTokenSchema = z.strictObject({ schema: z.literal('fixture-github-token-v1'), saved: z.boolean() });
 const ControlAttachSchema = z.strictObject({ schema: z.literal('fixture-attach-v1'), threadId: z.string().min(1).max(200) });
-const ControlDevicesSchema = z.strictObject({ schema: z.literal('fixture-devices-v1'), action: z.enum(['prepare', 'low-disk', 'busy', 'healthy', 'orphan', 'reset']) });
+const ControlDevicesSchema = z.strictObject({ schema: z.literal('fixture-devices-v1'), action: z.enum(['prepare', 'low-disk', 'busy', 'healthy', 'orphan', 'reset', 'power-sleep', 'power-awake']) });
 async function projectControl(request, response) {
   const send = (status, value) => { response.writeHead(status, { 'Content-Type': 'application/json' }).end(JSON.stringify(value)); };
   const chunks = []; for await (const chunk of request) chunks.push(chunk);
@@ -684,6 +684,10 @@ async function projectControl(request, response) {
       application.devices.heartbeat(mini.id, { schema: 'heartbeat-v1', deviceId: mini.id, at: new Date().toISOString(), version: '0.1.0', runningConversations: [], projects: [], externalSessions: [], load: { cpuPct: 0, memFreeMb: 10000 }, facts: simulatedFacts(), workPolicy: { schema: 'device-work-policy-v1', mode: 'work' } });
     } else if (input.action === 'low-disk') hubFacts = { ...simulatedFacts(), freeDiskBytes: 19e9 };
     else if (input.action === 'busy') hubFacts = { ...simulatedFacts(), load5: 17 };
+    else if (input.action === 'power-sleep' || input.action === 'power-awake') {
+      const power = { schema: 'device-power-v1', status: 'available', observedAt: new Date().toISOString(), acSleepMinutes: input.action === 'power-sleep' ? 15 : 0 };
+      hubFacts = { ...simulatedFacts(), power }; memberFacts = { ...simulatedFacts('linux'), power };
+    }
     else if (input.action === 'healthy' || input.action === 'reset') { hubFacts = simulatedFacts(); memberFacts = simulatedFacts('linux'); }
     else {
       const path = application.homes.ensure('worktrees', 'projects_fixture', 'orphan_fixture'); writeFileSync(join(path, 'fixture.txt'), 'Disposable worktree fixture.');

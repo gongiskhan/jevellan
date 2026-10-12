@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule",
   "layout": "desktop-light",
-  "screenshot": "screenshots/phase6-j12-view-changes-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase6-j12-view-changes-desktop-light.png",
   "expected": "the Jevellan web app \"j12 view changes\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles end in ellipses ('Exercise answer options: c…', 'Context · J11 memory jour…', 'Context · Mesh journey fix…'). This looks like intentional single-line truncation.",
-      "The expanded Memory care diff makes the card very tall, which pushes Schedule and jobs and Last runs far down the page. The diff stays readable.",
-      "Some Last runs entries wrap onto two lines ('AGENTS.md · External activity fixture', 'AGENTS.md · Empty context fixture'), so the row heights are uneven."
+      "Sidebar session titles are cut off with an ellipsis (e.g. 'Context · J11 memory journ…', 'Context · Mesh journey fixt…'). This is intended truncation.",
+      "The expanded memory-care diff is long, so the 'Schedule and jobs' and 'Last runs' panels sit far down the page.",
+      "In the 'Prefer GPT for implement steps' card, the long diff lines run almost to the edge of the code block."
     ]
   }
 }

@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The merge-correction controls wrap unevenly: 'Why' and 'Should have asked me' sit on the first row, and 'Didn't need asking' drops to the next row next to the confirmation text, so the group looks ragged.",
-      "The 'Jev would: ask you' pill is indented oddly under the '#1 · merged' link and doesn't line up with anything else in the card.",
-      "The text-link controls ('Why', 'Should have asked me', 'Didn't need asking') are small and close together, so they may be hard to tap on a phone.",
-      "Most of the screen below the card is empty."
+      "The 'Back to project' link sits right against the top edge of the viewport with almost no top padding.",
+      "The 'Jev would: ask you' chip is indented from the left of the card for no clear reason, so it doesn't line up with the '#1 · merged' link above it.",
+      "The correction actions wrap unevenly. 'Why' and 'Should have asked me' share a row with the chip, while 'Didn't need asking' drops to the next row next to the confirmation text. This makes it harder to see which controls belong together.",
+      "The status text 'Saved for future merge decisions.' is styled like the buttons around it and has no clear separation from them.",
+      "The chip uses a monospace font while the rest of the screen uses the sans-serif UI font."
     ]
   }
 }

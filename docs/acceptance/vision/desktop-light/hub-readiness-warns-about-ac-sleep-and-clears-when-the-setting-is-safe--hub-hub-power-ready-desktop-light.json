@@ -1,0 +1,20 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "hub readiness warns about AC sleep and clears when the setting is safe",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/screenshots/hub-hub-power-ready-desktop-light.png",
+  "expected": "the Jevellan web app \"hub hub power ready\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"hub readiness warns about AC sleep and clears when the setting is safe\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Sidebar conversation titles and subtitles are cut off with ellipses ('Context · J11 memory journ…', 'Context · Mesh journey fixt…', 'dev-ma…'). This looks intentional, but the full names can't be read.",
+      "The 'Open' button on the dev-madrid card and the 'Inspect worktrees' and 'Open' buttons on the Offline fixture card are drawn in a faint, disabled-looking style, which makes them hard to read.",
+      "The 'Automatic device choice' checkbox and its 'Coming later.' text are very low contrast.",
+      "The page has no visible power or AC-sleep readiness text, so you can't see from the screen alone that the hub is power ready.",
+      "The Browser member card is much shorter than the dev-madrid card, which leaves a large empty area in the right column next to the Offline fixture card."
+    ]
+  }
+}

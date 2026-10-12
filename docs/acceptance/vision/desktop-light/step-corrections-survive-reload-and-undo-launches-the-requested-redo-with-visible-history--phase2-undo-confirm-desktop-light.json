@@ -4,14 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "step corrections survive reload and undo launches the requested redo with visible history",
   "layout": "desktop-light",
-  "screenshot": "screenshots/phase2-undo-confirm-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-undo-confirm-desktop-light.png",
   "expected": "the Jevellan web app \"undo confirm\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"step corrections survive reload and undo launches the requested redo with visible history\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal says the redo will use 'Reply, Fable, low', but the next-step selector behind it shows Effort 'high'. Worth checking that the confirmation reflects the requested effort.",
-      "The step 1 header in the background reads 'corrected effort → max', which also doesn't match the 'low' effort named in the modal."
+      "The modal says the step will be redone with 'Reply, Fable, low', but the blurred step picker behind it shows Effort 'high'. This may be intended (the modal could reflect a separate correction choice), but the two values should be checked against each other.",
+      "The background is heavily blurred and dimmed behind the modal, so the step history isn't readable. This is expected for a modal backdrop."
     ]
   }
 }

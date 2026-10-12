@@ -4,16 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "LJ3 five tasks obey phone drag, Now, the two-thread cap and after links",
   "layout": "desktop-light",
-  "screenshot": "screenshots/LJ3-priority-dispatched-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/LJ3-priority-dispatched-desktop-light.png",
   "expected": "the Jevellan web app \"LJ3 priority dispatched\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"LJ3 five tasks obey phone drag, Now, the two-thread cap and after links\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut short with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · dev-ma…'). This looks intentional and doesn't hurt usability.",
-      "In the Loop task 5 card, the long dev ID wraps onto its own line under 'Fable · high effort ·', leaving a dangling separator.",
-      "The header badge says 'Idle' while the sidebar says 'Projects queue 2 running' and two queue items are 'Active'. This is a status mismatch, not a layout problem.",
-      "The Loop task 3 action buttons wrap onto a second row ('Move to bottom', up and down arrows). They're all still visible and reachable."
+      "Sidebar session titles and metadata are cut off with ellipses ('Context · J11 memory jour…', 'dev-ma…', 'de…'). This appears to be intentional truncation.",
+      "The right queue panel's last card (Loop task 3) sits very close to the bottom of the viewport, so any content below it would need scrolling.",
+      "The 'Queue barrier' start and stop cards each repeat a mostly empty 'Open thread' row, which uses a lot of vertical space."
     ]
   }
 }

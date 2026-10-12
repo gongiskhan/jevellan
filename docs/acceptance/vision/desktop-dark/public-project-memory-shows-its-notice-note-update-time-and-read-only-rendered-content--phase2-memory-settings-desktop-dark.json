@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "public project memory shows its notice, note update time and read-only rendered content",
   "layout": "desktop-dark",
-  "screenshot": "screenshots/phase2-memory-settings-desktop-dark.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-memory-settings-desktop-dark.png",
   "expected": "the Jevellan web app \"memory settings\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"public project memory shows its notice, note update time and read-only rendered content\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Path on Offline fixture' label sits right against the modal header divider because the content is scrolled, so it looks slightly clipped at the top, but it is fully readable.",
-      "There is little space between the 'Browse folders on dev-madrid' button and the 'Git policy' label below it.",
-      "The dialog does not show whether there is more memory content below the 'Memory folder' field. No scroll indicator is visible."
+      "The modal body is scrolled, so the 'Path on Offline fixture' label sits right under the header divider with almost no top padding.",
+      "The 'Browse folders on dev-madrid' button has almost no space above the 'Git policy' label, so the two look crowded.",
+      "The '/absolute/path/to/project' placeholder text is low-contrast against the dark input background, though still readable."
     ]
   }
 }

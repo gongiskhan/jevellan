@@ -4,15 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
   "layout": "phone-dark",
-  "screenshot": "screenshots/phase3-why-phone-dark.png",
+  "screenshot": "docs/acceptance/screenshots/phase3-why-phone-dark.png",
   "expected": "the Jevellan web app \"why\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"automatic decisions can resume from missing configuration and explain their simulated choices\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Adversarial Rev...' label in the Next Step list is shortened with an ellipsis, but it can still be identified.",
-      "The last 'Override and undo' entry is cut off at the bottom of the viewport. This looks like content that continues below and can be scrolled to, not a clipped container.",
-      "Small low-contrast grey text, like section headers, 'Selected by search rank.' and 'only option', is a bit faint on the dark background but can still be read."
+      "The 'Adversarial Rev…' label in the next-step list is shortened with an ellipsis, so the full option name doesn't show.",
+      "The last 'Override and undo' entry is cut off at the bottom edge of the viewport. It looks like the panel continues and needs scrolling, but the bottom of the panel isn't visible in this capture.",
+      "The model and effort panels say 'medium → high (nearest effort this model supports)', but the bar chart shows medium at 1.00 and high at 0.00. The chosen value and the bars could confuse readers, though both are readable.",
+      "The secondary gray text, like the 'only option', 'Jev' and memory captions, has low contrast on the dark background but is still readable."
     ]
   }
 }

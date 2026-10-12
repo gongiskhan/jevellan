@@ -4,17 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule",
   "layout": "desktop-dark",
-  "screenshot": "screenshots/phase6-j12-morning-card-desktop-dark.png",
+  "screenshot": "docs/acceptance/screenshots/phase6-j12-morning-card-desktop-dark.png",
   "expected": "the Jevellan web app \"j12 morning card\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Last runs' column is much taller than the 'Schedule and jobs' card, which leaves a large empty area under the schedule card in the left column.",
-      "The 'Save schedule and jobs' button has low contrast on the dark background. It looks disabled, though it is still readable.",
-      "Sidebar shell session titles are cut short with an ellipsis (e.g. 'Exercise answer options: c…', 'Context · J11 memory jour…'). This is deliberate truncation and doesn't block anything.",
-      "The sidebar footer note 'Some native sessions are unavailable' is very faint grey text.",
-      "In the 'Prefer GPT for implement steps' diff, long lines wrap onto a second line inside the code block instead of scrolling sideways. They are still fully readable."
+      "The 'Last runs' column is much taller than the 'Schedule and jobs' card next to it, which leaves a large empty area below the schedule card.",
+      "The disabled 'Save schedule and jobs' button and the faint helper text ('Suggest', 'Simulated judge responses.') have low contrast on the dark background, but they can still be read.",
+      "Session titles and subtitles in the sidebar are cut off with ellipses (for example 'Exercise answer options: c…' and 'Context · J11 memory jour…'). This is the intended single-line truncation, not a layout fault."
     ]
   }
 }

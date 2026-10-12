@@ -4,14 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "external activity waits, retries, requires Changes review and publishes after reviewed acceptance",
   "layout": "phone-dark",
-  "screenshot": "screenshots/phase4-external-wait-phone-dark.png",
+  "screenshot": "docs/acceptance/screenshots/phase4-external-wait-phone-dark.png",
   "expected": "the Jevellan web app \"external wait\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"external activity waits, retries, requires Changes review and publishes after reviewed acceptance\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Header title is truncated with an ellipsis ('Exercise external activity guards befor…'), but the full text shows in the subtitle and the message bubble",
-      "The 'Retry' and 'Try automatic again' buttons sit far from the blocked-state banner, which leaves a large empty area above the composer"
+      "The header title is truncated with an ellipsis ('Exercise external activity guards befor…'). The full text still appears in the subtitle and the message bubble.",
+      "There's a large empty gap between the action buttons and the composer at the bottom.",
+      "The two buttons, 'Retry' (filled) and 'Try automatic again' (outlined), are stacked vertically and left-aligned, so the button layout looks a little uneven."
     ]
   }
 }

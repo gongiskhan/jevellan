@@ -4,15 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "PJ3 Leave git to me offers Main and preserves the manual git policy",
   "layout": "phone-dark",
-  "screenshot": "/tmp/jevellan-manual-settings-phone-dark-projects.png",
+  "screenshot": "docs/acceptance/screenshots/matrix-jevellan-manual-settings-phone-dark-projects.png",
   "expected": "the Jevellan web app \"jevellan manual settings projects\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PJ3 Leave git to me offers Main and preserves the manual git policy\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal body scrolls, so the footer cuts off the bottom of the 'Time' input (02:00 AM) and any fields below it are offscreen. They can still be reached by scrolling.",
-      "The 'Worktree and pull request' radio has no description line, while 'Main' does, so the two options look uneven.",
-      "The 'Default isolation' fieldset legend sits tight against the top border."
+      "The dialog body scrolls, and the 'Minutes between refills' input (value 30) is cut off at the bottom edge above the Cancel/Save footer. The value is still readable and the rest can be reached by scrolling.",
+      "Faint blurred background elements show at the left and right edges behind the modal."
     ]
   }
 }

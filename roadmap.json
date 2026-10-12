@@ -404,7 +404,7 @@
   {
     "id": "loop-release-021",
     "title": "Projects loop release 0.2.1 and activation",
-    "why": "Supersedes prepared 0.2.0 for activation. Live sandbox journeys, Ekoa shadow route, power readiness, 14-day hosted-minute report and closing gates precede owner-dependent activation.",
-    "status": "planned"
+    "why": "0.2.1 prepared with the shadow Ekoa preset, required result check, AC power warning and live hosted-minute report. Final complete backend 1,902/171 passes; all 272 unique four-layout browser cases have passing coverage through the full run and targeted reruns, with 488 clear live vision judgments and retained images. Typecheck/lint/build pass. The serious final risk-policy finding is corrected and the permitted second review finds no further serious issue. Mac/Linux packed commands and native terminal addons pass with no prohibited private paths; final documented payload checks and mandatory secret scans gate publication. Actual sandbox provider journeys, LJ9 and activation remain blocked on owner import/sign-in/Settings inputs and two clean watch nights.",
+    "status": "complete-with-blockers"
   }
 ]

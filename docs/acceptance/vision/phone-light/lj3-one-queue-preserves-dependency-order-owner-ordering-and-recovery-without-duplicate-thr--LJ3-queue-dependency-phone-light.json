@@ -4,14 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "LJ3 one queue preserves dependency order, owner ordering and recovery without duplicate threads",
   "layout": "phone-light",
-  "screenshot": "screenshots/LJ3-queue-dependency-phone-light.png",
+  "screenshot": "docs/acceptance/screenshots/LJ3-queue-dependency-phone-light.png",
   "expected": "the Jevellan web app \"LJ3 queue dependency\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"LJ3 one queue preserves dependency order, owner ordering and recovery without duplicate threads\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab strip is cut off at the right edge: 'Pull requ…' is clipped and any tabs after it are off-screen. It looks like a horizontally scrollable strip, so those tabs should still be reachable.",
-      "The Nightly and Goals empty-state sections below the queue take up a lot of vertical space on a phone screen."
+      "The 'Pull requests' tab is cut off at the right edge of the tab row. The row appears to scroll sideways, so the tab can still be reached.",
+      "The header's ellipsis menu sits very close to the right edge of the screen."
     ]
   }
 }

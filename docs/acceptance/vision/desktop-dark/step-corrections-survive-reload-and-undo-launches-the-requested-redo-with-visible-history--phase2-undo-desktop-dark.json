@@ -4,16 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "step corrections survive reload and undo launches the requested redo with visible history",
   "layout": "desktop-dark",
-  "screenshot": "screenshots/phase2-undo-desktop-dark.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-undo-desktop-dark.png",
   "expected": "the Jevellan web app \"undo\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"step corrections survive reload and undo launches the requested redo with visible history\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Two identical red 'No model can run this step right now' banners appear stacked, and each lists 'disabled' eight times. They are readable, but the repetition is noisy.",
-      "Conversation titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Change the value to thre…', 'Browser fixtur…'). This looks intentional and the full title shows in the main header.",
-      "The struck-through 'Step 1 · Implement' heading and the gray 'Undone' and 'Local time' labels have low contrast against the dark background, but they can still be read.",
-      "The pink correction labels ('corrected: effort → max', 'corrected: action → reply, effort → low') are small and dense, but they can still be read."
+      "Two identical error banners are stacked ('No model can run this step right now: disabled, disabled, …'), and each lists 'disabled' eight times. They are readable but look noisy and repeated.",
+      "Conversation titles and subtitles in the sidebar are cut short with ellipses (e.g. 'Change the value to thre…', 'Browser fixtur…'). This is normal width truncation and the full title is shown in the main header.",
+      "The struck-through 'Step 1 · Implement' heading and the muted 'Undone' label are low contrast on the dark background, but still readable.",
+      "The 'corrected: effort → max' and 'corrected: action → reply, effort → low' labels are small and pink-on-dark, so they are harder to read."
     ]
   }
 }

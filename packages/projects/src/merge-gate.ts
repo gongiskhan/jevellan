@@ -144,6 +144,10 @@ export class ProjectMergeGate {
     }
     const latest = this.o.store.get(threadId), currentSettings = await this.o.settings(route.projectId);
     if (this.#closed || !currentSettings.autoMerge || !latest || !this.#ready(latest, currentSettings) || ['stopped', 'failed'].includes(latest.state) || latest.pr!.headSha !== route.commit) return;
+    if (route.packet.riskyAreas !== currentSettings.riskyAreas) {
+      await this.#ask(await this.#save({ ...route, route: 'ask-owner', source: 'guard', reason: 'The project’s risky areas changed after this routing decision.' }), latest);
+      return;
+    }
     await this.o.assertMerge(route.projectId, threadId);
     if (route.state !== 'merging') route = await this.#save({ ...route, state: 'merging' });
     try { await this.o.tracker.merge(threadId, route.commit); }

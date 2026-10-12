@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "Projects and a manual planned change render the full plan, stream, Why and verified Changes",
   "layout": "desktop-light",
-  "screenshot": "screenshots/phase2-plan-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-plan-desktop-light.png",
   "expected": "the Jevellan web app \"plan\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The last visible sidebar conversation row ('Context · Mesh journey fi…') is cut off at the bottom of the scrollable list. The rest of the list can be reached by scrolling, but the half-cut row looks untidy.",
-      "Long conversation titles and subtitles in the sidebar end with an ellipsis ('Change the value to two …', 'Manual convers…'). This looks like intended truncation, but the full text can't be read without opening the item or hovering.",
-      "The 'Awaiting approval' badge and the 'Why' button use a light pink that has fairly low contrast on the white background."
+      "The last sidebar conversation row ('Context · Mesh journey fixt…') is cut off at the bottom of the scrollable list. It is a scroll edge, so the row can still be reached by scrolling.",
+      "Long conversation titles and subtitles in the sidebar are cut short with an ellipsis (e.g. 'Change the value to two …', 'Context · J11 memory journ…').",
+      "The 'completed' status in the Read project tool card sits on its own line, far right and below the title, which leaves odd empty space."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The two feedback buttons ('Should have asked me' and 'Didn't need asking') sit right-aligned and stacked. The top one almost touches the 'Changed files and context' row, so that area looks crowded.",
-      "'2 added and removed lines across 2 files' reads awkwardly and doesn't say how many lines were added versus removed.",
-      "The long commit hash wraps in the middle of the sentence, so the line breaks unevenly."
+      "The two feedback buttons ('Should have asked me' and 'Didn't need asking') are stacked and right-aligned, with uneven widths. They sit close under the 'Changed files and context' disclosure and look a little cramped.",
+      "The full commit hash chip nearly fills the line width, so the sentence wraps awkwardly ('. 2' is left at the end of the line).",
+      "The probability list ('merge: 0%', 'test-then-merge: 0%', 'ask-owner: 100%') uses raw internal route names instead of user-friendly labels."
     ]
   }
 }

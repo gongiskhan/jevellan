@@ -1,18 +1,19 @@
 # Projects loop activation handoff
 
-This handoff describes the remaining live work. It does not claim activation or owner acceptance. The implementation follows BRIEF-loop-amendment-2.md, and the evidence is in loop-2026-10-11.md and REPORT.md. Parts 1 and 2 are pushed (Ekoa 30dffb6c; Jevellan f916302). Part 3's affected backend/browser gates pass and its main publication is at the secret-scan checkpoint. The complete release gates and live owner inputs remain open; the activation target is 0.2.1.
-
 ## Remaining owner steps, in order
 
-1. Complete the hidden-passphrase Mini export and Pro import. Retain the pilot backup and original Mini app files/URLs; never put the passphrase in chat.
-2. Complete imported Codex sign-in in Jevellan UI on the Pro, and provide eligible isolated Claude/Codex accounts for the real cross-provider journeys.
-3. Enter sandbox and Ekoa GitHub tokens in project Settings and the Ekoa bearer token in Ekoa Settings. Ekoa GitHub permissions: Contents, Pull requests and Actions read/write; Checks, Commit statuses and Variables read.
-4. After the 0.2.1 release gates pass, activate its verified Mac archive on the Pro with the retained rollback; complete the readiness, HTTPS and migration checks. The current live AC setting is sleep=0, so no power command is needed (2026-10-12 read-only pmset check).
-5. Complete the isolated Madrid join/sign-in using its Linux 0.2.1 archive and dedicated Ekoa clone. Keep Mini apps-only; configure Pro/Madrid limits 6/8 and project limit 12.
-6. Apply the Ekoa preset with autoMerge off, requiredChecks [result], six goals/two active/Propose tasks and the 01:00 Lisbon window. Complete the sandbox owner decision/draft approval needed for real LJ9; its Ekoa PR records a shadow route.
-7. Review and merge Ekoa PR 208. Merging preserves the GitHub chain while NIGHTLY_SCHEDULER is unset/github. No runner hook reinstall is needed.
-8. Keep Ekoa in watch mode for two clean nights after merge, then set NIGHTLY_SCHEDULER=jevellan yourself. Setting it back to github restores the GitHub chain from the next night.
-9. Enable Ekoa automatic merging yourself when ready; confirm live activation separately from automated evidence. Credentials and missing owner actions remain blocked checks.
+1. Complete the hidden-passphrase [Mini export](/Users/ggomes/.jevellan-build/loop-owner-2026-10-11/1-Mini-export.command) and [Pro import](/Users/ggomes/.jevellan-build/loop-owner-2026-10-11/2-Pro-import.command). Retain the pilot backup and original Mini app files/URLs; never put the passphrase in chat. Their completion receipts are still absent at the 2026-10-12 checkpoint.
+2. After import, activate the verified 0.2.1 Mac archive on the Pro with the retained rollback; complete the readiness, HTTPS and migration checks before using its new Settings pages. The live AC setting is sleep=0, so no power command is needed (2026-10-12 read-only pmset checks). Settings → Devices warns if a hub's AC configuration allows sleep; Jevellan never changes power settings.
+3. Complete imported Codex sign-in in Jevellan UI on the Pro, and provide eligible isolated Claude/Codex accounts for the real cross-provider journeys.
+4. Enter sandbox and Ekoa GitHub tokens in project Settings and the Ekoa bearer token in Ekoa Settings. Ekoa GitHub permissions: Contents, Pull requests and Actions read/write; Checks, Commit statuses and Variables read.
+5. Join the Mini to the Pro as apps-only and verify its retained app URLs, files and former-hub fence. Complete the isolated Madrid join/sign-in using its Linux 0.2.1 archive and dedicated Ekoa clone; configure Pro/Madrid limits 6/8 and project limit 12. The Mini remains excluded from project work, including fixed-device requests.
+6. With isolated accounts and scoped tokens ready, complete the live sandbox gate journeys with autoMerge on: merge; other-provider verification pass; other-provider verification failure delivered to the author, followed by repair and a passing verification; ask-owner. Record actual routes/reasons and head commits. Their own sandbox PRs may merge. These are blocked until steps 1–4 are ready.
+7. Apply the Ekoa preset with autoMerge off, requiredChecks [result], six goals/two active/Propose tasks and the 01:00 Lisbon window. Approve one real proposed finding for LJ9; its real Ekoa PR must end with a recorded shadow route. Automatic merge remains your choice.
+8. Review and merge Ekoa PR 208. Merging preserves the GitHub chain while NIGHTLY_SCHEDULER is unset/github. No runner hook reinstall is needed. It remains open and mergeable at the 2026-10-12 checkpoint.
+9. Keep Ekoa in watch mode for two clean nights after merge, then set NIGHTLY_SCHEDULER=jevellan yourself. Setting it back to github restores the GitHub chain from the next night.
+10. Enable Ekoa automatic merging yourself when ready; confirm live activation separately from automated evidence. Credentials and missing owner actions remain blocked checks.
+
+This handoff does not claim activation or owner acceptance. Parts 1–3 are pushed (Ekoa 30dffb6c; Jevellan f916302/f11b6cd). The final complete backend passes 1,902 tests in 171 files; all 272 unique browser cases have passing coverage through the full run and targeted reruns, with 488 clear live vision judgments and retained screenshots. Typecheck, lint, build and the final review correction pass. The permitted second review found no additional serious issue. Both platform archives pass actual packaged command, terminal addon and private-path inspection checks; final documented payload checks and mandatory secret scans gate publication. Live owner inputs remain blocked. [Release 0.2.1](https://github.com/gongiskhan/jevellan/releases/tag/v0.2.1) is the activation target. Evidence is in REPORT.md. The [hosted-minute report](github-hosted-minutes-2026-10-12.md) records 19,469.68 observed hosted minutes, including 33.72 on macos-15, for the specified fourteen-day interval. No unrelated CI changed.
 
 ## Owner input checkpoint
 
@@ -22,7 +23,13 @@ After import, complete the imported Codex account sign-in in Jevellan Settings o
 
 ## Release and devices
 
-After the clean closing gates and import receipt are present, update the existing Pro installation using `jevellan update --from <verified 0.2.1 archive>`. The user LaunchAgent and HTTPS route are retained; verify the returned version and readiness before proceeding. `jevellan rollback` retains the preceding application. Application rollback does not undo an imported hub or erase its data; use the migration's recorded rollback procedure for that boundary.
+After the clean closing gates and import receipt are present, update the existing Pro installation using the verified Mac archive:
+
+```sh
+PATH="/Users/ggomes/.nvm/versions/node/v22.22.0/bin:/opt/homebrew/opt/git/bin:$PATH" /Users/ggomes/.local/bin/jevellan update --from /Users/ggomes/.jevellan-build/loop-owner-2026-10-11/jevellan-0.2.1-darwin-arm64.tgz
+```
+
+This selects Node22 and Homebrew Git2.55. Apple Git2.39.5 lacks the required merge-tree capabilities; the installer checks these capabilities before changing a service. The user LaunchAgent and HTTPS route are retained; verify the returned version and readiness before proceeding. `jevellan rollback` retains the preceding application. Application rollback does not undo an imported hub or erase its data; use the migration's recorded rollback procedure for that boundary.
 
 Packed archives contain native dependencies for the build platform. Use the verified Mac archive on the Pro; prepare the Madrid distribution on Madrid from its dedicated Jevellan source copy so the Linux terminal addon is built and included. Do not use a Mac-only archive for a Linux join.
 

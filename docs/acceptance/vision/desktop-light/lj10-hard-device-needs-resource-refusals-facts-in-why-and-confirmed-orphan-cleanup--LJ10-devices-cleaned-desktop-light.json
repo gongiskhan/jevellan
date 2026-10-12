@@ -4,16 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "LJ10 hard device needs, resource refusals, facts in Why and confirmed orphan cleanup",
   "layout": "desktop-light",
-  "screenshot": "screenshots/LJ10-devices-cleaned-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/LJ10-devices-cleaned-desktop-light.png",
   "expected": "the Jevellan web app \"LJ10 devices cleaned\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"LJ10 hard device needs, resource refusals, facts in Why and confirmed orphan cleanup\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Conversation titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Mesh journey fixt…'). This is expected truncation, and nothing is clipped mid-glyph.",
-      "The 'Apps only' badge on the Mini apps only card is a full-width outlined box. It looks like an empty input rather than a badge, which is inconsistent with the Hub/Member pills.",
-      "'Some native sessions are unavailable' at the bottom of the sidebar is small and low-contrast grey text, but still readable.",
-      "The 'Open' button on the current device (dev-madrid) and the 'Inspect worktrees'/'Open' buttons on the offline device are greyed out. This looks like an intentional disabled state, but the low contrast makes them faint."
+      "The sidebar conversation titles are truncated with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…'), and so are their metadata lines ('dev-…', 'de…'). This looks like intentional overflow handling.",
+      "The cards in the device grid are different heights. The two right-column cards (Browser member, Offline fixture) end well above the left-column cards, which leaves uneven gaps.",
+      "Some buttons are greyed out with no explanation (Open on dev-madrid, Inspect worktrees and Open on Offline fixture). This is probably intentional disabled styling, but the reason isn't shown.",
+      "The fine print (the 'Thread worktrees' line, the resource stats lines and the CSG SSH note) is small, low-contrast grey text but still readable."
     ]
   }
 }

@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Goncа…'). This is intentional overflow handling.",
-      "The 'Enabled' checkbox sits above its label instead of next to it, so it looks out of line with the 'Run now' and 'Edit' buttons.",
-      "The 'Jobs (1)' disclosure sits right at the bottom edge of the viewport, with almost no padding.",
-      "The 'Project day: 2026-10-14' text is larger and styled differently from the other section bodies."
+      "The 'Enabled' checkbox sits above its label instead of beside it, so it lines up awkwardly with the 'Run now' and 'Edit' buttons.",
+      "The 'Jobs (1)' disclosure is cut off by the bottom edge of the right panel, but the panel scrolls, so it can still be reached.",
+      "The 'Waiting for the coordinator' caption in the job card is small and low in contrast, though it can still be read."
     ]
   }
 }

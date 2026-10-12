@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Back to project' link sits right against the top edge of the viewport with almost no padding, and it is centered rather than lined up with the page content on the left.",
-      "The merge-correction controls ('Why', 'Should have asked me', 'Didn't need asking') look like plain pink text links, not buttons. They are packed tightly next to the 'Jev would: ask you' badge and the confirmation text.",
-      "The 'Open thread' button stretches across the full content width, which looks out of proportion.",
-      "The '#1 · merged' link is underlined pink text on a dark card. It is readable but low-emphasis."
+      "The 'Back to project' link sits flush against the top edge of the viewport with almost no top padding, and it is centred instead of lined up with the page content on the left.",
+      "The 'fix · done' metadata text is low-contrast grey on the dark background, but it is still readable.",
+      "The correction controls ('Why', 'Should have asked me', 'Didn't need asking') look like plain pink text links and are packed tightly against the 'Jev would: ask you' badge and the confirmation text, so they are hard to tell apart as separate controls.",
+      "The 'Open thread' button stretches the full width of the content area, which looks oversized next to the rest of the layout."
     ]
   }
 }

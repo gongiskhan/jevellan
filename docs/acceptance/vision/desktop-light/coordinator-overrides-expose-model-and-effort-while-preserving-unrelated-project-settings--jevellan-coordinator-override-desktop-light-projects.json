@@ -4,14 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "Coordinator overrides expose model and effort while preserving unrelated project settings",
   "layout": "desktop-light",
-  "screenshot": "/tmp/jevellan-coordinator-override-desktop-light-projects.png",
+  "screenshot": "docs/acceptance/screenshots/matrix-jevellan-coordinator-override-desktop-light-projects.png",
   "expected": "the Jevellan web app \"jevellan coordinator override projects\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Coordinator overrides expose model and effort while preserving unrelated project settings\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The page behind the modal is blurred, which is expected because the modal is open. Background text is unreadable, but the dialog is the focus of this step.",
-      "The blurred background header shows 'Claude Code Fable · high' while the dialog shows 'Claude Code Opus' / 'low'. This is likely a pending, unapplied override, so it is not a layout problem."
+      "The background page is blurred and dimmed behind the modal overlay, as expected, so its content can't be read. The modal itself is fully legible.",
+      "The modal covers part of the main thread and the right-hand panel's 'Nightly' section. This is normal for an overlay."
     ]
   }
 }

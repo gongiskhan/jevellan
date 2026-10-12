@@ -4,17 +4,17 @@
   "model": "claude-opus-5-5",
   "test": "step corrections survive reload and undo launches the requested redo with visible history",
   "layout": "desktop-dark",
-  "screenshot": "screenshots/phase2-undo-retry-desktop-dark.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-undo-retry-desktop-dark.png",
   "expected": "the Jevellan web app \"undo retry\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"step corrections survive reload and undo launches the requested redo with visible history\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The error text 'No model can run this step right now: disabled, disabled, disabled, ...' repeats 'disabled' eight times. It is hard to read and doesn't say which models are unavailable. The same message also appears twice, once in the red error banner and again in the Resume correction card.",
-      "The 'Step 1 · Implement' label is struck through and low-contrast. It is still readable but faint against the dark background.",
-      "The magenta 'corrected: effort → max' and 'corrected: action → reply, effort → low' labels are small and low-contrast.",
-      "Sidebar conversation titles and subtitles are cut off with ellipses ('Change the value to thre…', 'Blocked · Browser fixture · dev-…'). This is intended truncation, but it hides which conversation is which.",
-      "The page title 'Change the value to three, then redo this step.' sits very close to the top edge of the viewport."
+      "The error banner and the Resume correction card show the same message twice. The message says \"disabled\" eight times and gives no model names or reasons, so it doesn't help the user.",
+      "Sidebar conversation titles and subtitles are cut off with an ellipsis (e.g. \"Change the value to thre…\", \"Blocked · Browser fixture · dev-…\"). This looks intentional and the full text likely shows elsewhere, but similar titles are hard to tell apart.",
+      "Some metadata text is small and low-contrast on the dark background: 'Local time', 'completed', 'Undone', 'Input'/'Output' labels and 'Step details'.",
+      "The correction tags (e.g. 'corrected: action → reply, effort → low') use small pink text on dark, which is hard to read.",
+      "'Step 1 · Implement' is struck through. This probably marks the step as undone, but it makes the label harder to read."
     ]
   }
 }

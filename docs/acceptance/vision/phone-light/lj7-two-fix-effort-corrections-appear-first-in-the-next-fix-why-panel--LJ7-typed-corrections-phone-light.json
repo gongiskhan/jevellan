@@ -4,15 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "LJ7 two fix effort corrections appear first in the next fix Why panel",
   "layout": "phone-light",
-  "screenshot": "screenshots/LJ7-typed-corrections-phone-light.png",
+  "screenshot": "docs/acceptance/screenshots/LJ7-typed-corrections-phone-light.png",
   "expected": "the Jevellan web app \"LJ7 typed corrections\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"LJ7 two fix effort corrections appear first in the next fix Why panel\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The panel is scrolled, so the list above EFFORT ('Claude Code Opus', 'Claude Code Sonnet') runs under the sticky 'Small fix 3 · Why this placement' header and its first line is partly hidden. This looks like normal scroll behaviour, not a layout bug.",
-      "The two correction lines in 'CORRECTIONS SHOWN TO JEV' wrap, leaving '(next-turn)' alone on its own line. It's still readable.",
-      "The JEV footer metadata ('Placement · jev-browser-simulated · 60 tokens · 1 ms') wraps unevenly in small monospace text. It's still readable."
+      "The panel is scrolled, so the list above EFFORT is partly hidden under the sticky header ('Claude Code Opus' sits right at the header's edge). This is normal scroll clipping, not an overlap bug.",
+      "The effort bars for low, medium, xhigh and max all show the same 0.10 value, so they are hard to tell apart. They are still readable."
     ]
   }
 }

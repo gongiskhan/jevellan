@@ -4,14 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "public project memory shows its notice, note update time and read-only rendered content",
   "layout": "phone-light",
-  "screenshot": "screenshots/phase2-memory-viewer-phone-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-memory-viewer-phone-light.png",
   "expected": "the Jevellan web app \"memory viewer\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"public project memory shows its notice, note update time and read-only rendered content\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The title and date in the search result button sit off to the right instead of lining up with the other content on the left.",
-      "The note's update time appears twice: once in the search result and again in the header above the note."
+      "In the search result button, the title and date are indented unevenly, so they look roughly centered instead of left-aligned like the rest of the dialog.",
+      "The update time in the search result uses a monospace font, but the same time in the note heading uses the regular font."
     ]
   }
 }

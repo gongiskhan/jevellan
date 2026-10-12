@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "provider login recovers lost start and accepted-code replies inside its panel",
   "layout": "desktop-light",
-  "screenshot": "screenshots/phase4-login-wait-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase4-login-wait-desktop-light.png",
   "expected": "the Jevellan web app \"login wait\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"provider login recovers lost start and accepted-code replies inside its panel\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Authorization code' label sits almost directly under the 'Open sign-in page' button, with no vertical gap between them.",
-      "The 'Continue' button looks very pale (disabled/low contrast) next to the other controls, although its label is still readable.",
-      "The two lines of the hub-wait notice use different font sizes, so the box looks a little uneven."
+      "The 'Authorization code' label sits right under the 'Open sign-in page' button with almost no space between them",
+      "The 'Continue' button has low contrast, so it's unclear whether it's disabled or just styled lightly",
+      "The modal's right padding is uneven: there is extra empty space to the right of the 'Stop waiting' button inside the hub-wait notice"
     ]
   }
 }

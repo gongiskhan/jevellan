@@ -4,14 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "Projects and a manual planned change render the full plan, stream, Why and verified Changes",
   "layout": "desktop-light",
-  "screenshot": "screenshots/phase2-settlement-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase2-settlement-desktop-light.png",
   "expected": "the Jevellan web app \"settlement\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Projects and a manual planned change render the full plan, stream, Why and verified Changes\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dimmed backdrop makes the background content and the conversation settings panel hard to read. That is expected while a modal dialog is open.",
-      "The 'Discard...' button label ends in an ellipsis. It shows the full text and is not truncated."
+      "The settlement modal sits over a dimmed background, so the conversation, sidebar and settings panel behind it are hard to read. This is expected for a modal.",
+      "The sidebar's conversation list is cut off at the bottom where the 'Some native sessions are unavailable' row overlaps it. This is partly hidden behind the overlay."
     ]
   }
 }

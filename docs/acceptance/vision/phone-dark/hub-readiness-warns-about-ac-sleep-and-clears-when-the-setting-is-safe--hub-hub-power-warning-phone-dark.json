@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "hub readiness warns about AC sleep and clears when the setting is safe",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/hub-hub-power-warning-phone-dark.png",
+  "expected": "the Jevellan web app \"hub hub power warning\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"hub readiness warns about AC sleep and clears when the setting is safe\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The dev-madrid device tags field cuts off its value at the edge ('phone-testi…'). It looks like a single-line input that scrolls, so the text is still reachable.",
+      "The settings tab strip clips its labels at both ends (a stray 's' on the left, 'Projects' fading out on the right). Scroll arrows are shown, so the tabs are still reachable.",
+      "The hub readiness warning says 'this Mac', but the dev-madrid card is labelled Linux. The wording doesn't match the card, though the layout is fine.",
+      "The disabled 'Inspect worktrees' and 'Open' buttons on the Offline fixture and dev-madrid cards have low contrast, but they're still readable."
+    ]
+  }
+}

@@ -4,13 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "LJ10 hard device needs, resource refusals, facts in Why and confirmed orphan cleanup",
   "layout": "phone-light",
-  "screenshot": "screenshots/LJ10-devices-confirm-cleanup-phone-light.png",
+  "screenshot": "docs/acceptance/screenshots/LJ10-devices-confirm-cleanup-phone-light.png",
   "expected": "the Jevellan web app \"LJ10 devices confirm cleanup\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"LJ10 hard device needs, resource refusals, facts in Why and confirmed orphan cleanup\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The page header and tab bar behind the modal are blurred and slightly cut off on the right (the 'Projects' tab is truncated). That's normal for a scrolling tab bar under a modal backdrop."
+      "The dialog says 'using 0 GB' and 'thread · orphan_fixture · 0 GB'. For a small worktree, a rounded zero size looks odd; showing MB or '<1 GB' would be clearer.",
+      "The background tab strip cuts off the 'Projects' tab at the right edge. It's a horizontal scroller with arrows and sits behind the blurred modal, so this doesn't block anything."
     ]
   }
 }

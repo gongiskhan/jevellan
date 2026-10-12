@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The right panel is scrolled, so the 'CONCLUDED 0' section heading is cut off at the top, just under the nightly banner.",
-      "The 'Switch mode nightly' card is cut off at the bottom of the viewport. It can be reached by scrolling.",
-      "The 'Run now' buttons have low contrast compared with the 'Edit' buttons, but they are still readable."
+      "The right panel is scrolled slightly, so the top half of the 'CONCLUDED 0' section heading is cut off at the panel's upper edge, just under the banner. The panel scrolls, so the heading can still be reached.",
+      "The bottom of the 'Switch mode nightly' card is cut off at the bottom of the screen. Its controls (Run now, Edit, Enabled) are still visible, and the rest is reachable by scrolling.",
+      "Each 'Enabled' checkbox sits above and to the left of its label instead of in line with it, so the label lines up with the Run now/Edit buttons and the checkbox floats above.",
+      "Each job card has a lot of empty space below its controls."
     ]
   }
 }

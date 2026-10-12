@@ -4,14 +4,13 @@
   "model": "claude-opus-5-5",
   "test": "Coordinator overrides expose model and effort while preserving unrelated project settings",
   "layout": "phone-light",
-  "screenshot": "/tmp/jevellan-coordinator-override-phone-light-projects.png",
+  "screenshot": "docs/acceptance/screenshots/matrix-jevellan-coordinator-override-phone-light-projects.png",
   "expected": "the Jevellan web app \"jevellan coordinator override projects\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"Coordinator overrides expose model and effort while preserving unrelated project settings\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background page behind the modal is blurred and dimmed, so its header, tabs and composer are hard to read. This is expected while a modal is open.",
-      "The tab row behind the modal cuts off at the right edge ('Pull requests'). It's probably a horizontally scrollable tab strip."
+      "The page behind the modal is heavily blurred and dimmed, as you'd expect while a dialog is open. The chat history can't be read in this capture, but that's intended."
     ]
   }
 }

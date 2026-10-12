@@ -4,16 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
   "layout": "desktop-light",
-  "screenshot": "screenshots/phase6-j10-suggestions-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/phase6-j10-suggestions-desktop-light.png",
   "expected": "the Jevellan web app \"j10 suggestions\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles are cut off with ellipses ('Exercise answer options: ...', 'Context · J11 memory jour...', 'Context · Mesh journey fix...') and so are the meta lines ('dev-...', 'dev-ma...', 'de...'). This is ordinary truncation and the main content isn't affected.",
-      "In the first suggestion card, the long diff lines nearly reach the right edge of the dark code block. All the text still shows.",
-      "The 'Apply and tell me' control in the Memory care row looks pale and disabled, so it's low-contrast and hard to read.",
-      "The 'Save schedule and jobs' button is pale and low-contrast, probably because it's disabled when nothing has changed."
+      "Diff code blocks leave a large empty band below the last line, most visibly in the first card.",
+      "Sidebar session titles are shortened with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…'). That's expected in a narrow column.",
+      "The 'Last runs' card is much shorter than the 'Schedule and jobs' card next to it, which leaves an empty area under it.",
+      "The 'Apply and tell me' field next to the unchecked 'Memory care' looks greyed out, so its placeholder text has low contrast."
     ]
   }
 }
