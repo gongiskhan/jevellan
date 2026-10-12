@@ -144,3 +144,23 @@ test('Codex uses CLAUDE-only root instructions and refreshes them on resumed tur
   expect(precedence.prompt).toContain('# Project instructions: AGENTS.md\nAuthoritative Codex rules');
   expect(precedence.prompt).not.toContain('Changed project rules');
 }, 45_000);
+
+test.each(['claude', 'codex'] as const)('compaction settings apply to first and resumed Projects turns without changing native homes (%s)', async runtime => {
+  const { adapter, input } = setup(runtime); const native = join(homes.userHome, runtime === 'claude' ? '.claude' : '.codex'); mkdirSync(native);
+  const file = join(native, runtime === 'claude' ? 'settings.json' : 'config.toml'); const original = runtime === 'claude' ? '{"env":{}}\n' : 'model = "owner-model"\n'; writeFileSync(file, original);
+  for (const resume of [undefined, { sessionId: 'stored-session' }]) {
+    const result = await respond(adapter, { ...input, compaction: { thresholdPercent: 70, contextWindow: 10001 }, ...(resume ? { resume } : {}), prompt: directive('compaction-settings', []) });
+    expect(result).toEqual(runtime === 'claude' ? { percent: '70' } : { limit: 7000 });
+    expect((await import('node:fs')).readFileSync(file, 'utf8')).toBe(original);
+  }
+}, 45_000);
+
+test('Claude SDK compact boundaries and context use are forwarded independently of billed usage', async () => {
+  const { adapter, coordinator } = setup('claude'); const run = adapter.startTurn({ ...coordinator, compaction: { thresholdPercent: 70 }, prompt: directive('compaction-events', []) });
+  try {
+    const events = await collectEvents(run); expect((await run.done).status).toBe('completed');
+    expect(events.filter(event => ['context', 'compacted'].includes(event.type))).toEqual([
+      { type: 'context', tokens: 7500, contextWindow: 10000 }, { type: 'compacted', beforeTokens: 7500, afterTokens: 1500 }, { type: 'context', tokens: 1500, contextWindow: 10000 },
+    ]);
+  } finally { await run.terminate(); }
+}, 30_000);

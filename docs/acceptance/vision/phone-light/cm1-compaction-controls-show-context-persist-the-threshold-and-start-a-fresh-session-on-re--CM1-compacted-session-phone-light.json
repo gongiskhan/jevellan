@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CM1 compaction controls show context, persist the threshold and start a fresh session on request",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/CM1-compacted-session-phone-light.png",
+  "expected": "the Jevellan web app \"CM1 compacted session\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"CM1 compaction controls show context, persist the threshold and start a fresh session on request\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The tab row is clipped at the right edge: \"Pull requests\" is cut off and any tabs after it are hidden. It looks like a horizontally scrollable strip, but nothing on screen shows that more tabs are there.",
+      "The context/compaction status text (\"Context 15% · Compacted 1 times today · Last compaction 07:12 PM\") is small, low-contrast monospace that wraps onto two lines. It is still readable.",
+      "\"Compacted 1 times\" should be \"Compacted 1 time\".",
+      "The compaction time is shown in two formats: 07:12 PM in the status line and 19:12:52 on the message."
+    ]
+  }
+}

@@ -153,22 +153,21 @@ test('one turn at a time: events during a turn arrive batched in the next, which
   expect(turns()).toHaveLength(2);
 });
 
-test('sessions rotate at 40 turns, on Fresh, on an effort change and when the account changes; otherwise turns resume', { timeout: 60_000 }, async () => {
+test('sessions persist past forty turns, and rotate on Fresh, on an effort change and when the account changes; otherwise turns resume', { timeout: 60_000 }, async () => {
   const work = await started();
   const coordinator = work.coordinators.get('proj_a');
   const next = async (text: string) => { fake.enqueueTurn(say('ok'), forCoordinator); await message(work, text); await work.idle('proj_a'); return turns().at(-1)!; };
   expect((await next('one')).resume).toBeUndefined();
   const session = coordinator.state().session!;
   expect((await next('two')).resume).toEqual({ sessionId: session.nativeSessionId });
-  // At 40 turns the next turn starts a fresh session with the fresh context and counts from one again.
-  work.coordinators.store.update('proj_a', (state) => ({ ...state, session: { ...state.session!, turns: 40 } }));
-  const rotated = await next('three');
-  expect(rotated.resume).toBeUndefined();
-  expect(rotated.prompt).toMatch(/^Project notebook:\n\(empty\)\n\nActive threads:\n\(none\)\n\nOpen questions to the owner:\n\(none\)\n\nRecent conversation with the owner:\nOwner: one\n\nYou: ok\n\nOwner: two\n\nYou: ok\n\nEvents since your last turn:\n\[owner \d{2}:\d{2}\] three$/);
-  expect(coordinator.state().session).toMatchObject({ turns: 1 });
-  expect(coordinator.state().session!.nativeSessionId).not.toBe(session.nativeSessionId);
-  expect(payloads(work, 'coordinator-turn-start').at(-1)).toMatchObject({ turn: 3, fresh: true });
-  expect((await next('four')).resume).toEqual({ sessionId: coordinator.state().session!.nativeSessionId });
+  // Forty turns does not rotate the native session or replay the fresh context.
+  work.coordinators.store.update('proj_a', state => ({ ...state, session: { ...state.session!, turns: 40 } }));
+  const kept = await next('three');
+  expect(kept.resume).toEqual({ sessionId: session.nativeSessionId });
+  expect(kept.prompt).toMatch(/^Events since your last turn:/);
+  expect(coordinator.state().session).toMatchObject({ turns: 41, nativeSessionId: session.nativeSessionId });
+  expect(payloads(work, 'coordinator-turn-start').at(-1)).toMatchObject({ turn: 3, fresh: false });
+  expect((await next('four')).resume).toEqual({ sessionId: session.nativeSessionId });
   // Fresh coordinator session (D77).
   await work.freshCoordinator('proj_a');
   expect(coordinator.state().session).toBeNull();
@@ -436,4 +435,24 @@ test('coordinator memory tools read project memory through the bridge and leave 
     { schema: 'coordinator-tool-v1', tool: 'memory_search', ok: true, summary: 'Searched project memory' },
     { schema: 'coordinator-tool-v1', tool: 'memory_read', ok: false, summary: 'Could not read a project memory note: No note.' },
   ]);
+});
+
+
+test('compaction keeps the coordinator session and refreshes the next prompt across a daemon restart', { timeout: 60_000 }, async () => {
+  const work = await started();
+  fake.enqueueTurn(turn => { turn.emit({ type: 'context', tokens: 7500, contextWindow: 10000 });
+    turn.emit({ type: 'compacted', beforeTokens: 7500, afterTokens: 1500, contextWindow: 10000 }); turn.say('Saved the plan.'); return { status: 'completed' }; }, forCoordinator);
+  await message(work, 'Keep the release plan.'); await work.idle('proj_a');
+  const coordinator = work.coordinators.get('proj_a'); const session = coordinator.state().session!;
+  expect(session.context).toMatchObject({ needsFreshContext: true, tokens: 1500, contextWindow: 10000, thresholdPercent: 70 });
+  expect(payloads(work, 'session-compacted')).toHaveLength(1);
+  expect(payloads(work, 'session-compacted')[0]).toMatchObject({ schema: 'session-compacted-v1', beforeTokens: 7500, afterTokens: 1500, owner: { kind: 'coordinator', id: 'proj_a' } });
+  await work.close(); const restarted = await started();
+  fake.enqueueTurn(say('Still here.'), forCoordinator);
+  await message(restarted, 'Continue.'); await restarted.idle('proj_a');
+  const next = turns().at(-1)!;
+  expect(next.resume).toEqual({ sessionId: session.nativeSessionId });
+  expect(next.prompt.startsWith('Project notebook:')).toBe(true);
+  expect(restarted.coordinators.get('proj_a').state().session?.context?.needsFreshContext).toBe(false);
+  expect(payloads(restarted, 'coordinator-turn-start').at(-1)).toMatchObject({ fresh: false });
 });

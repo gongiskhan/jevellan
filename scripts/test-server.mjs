@@ -106,6 +106,11 @@ const EVENTS_HEADER = eventBlock([]);
 function coordinatorStep(input) {
   // Only delivered events count; the fresh-session recap repeats earlier messages.
   const at = input.prompt.lastIndexOf(EVENTS_HEADER); const events = at < 0 ? input.prompt : input.prompt.slice(at);
+  if (events.includes('CM1 compaction')) return async turn => {
+    turn.emit({ type: 'context', tokens: 7500, contextWindow: 10000 });
+    turn.emit({ type: 'compacted', beforeTokens: 7500, afterTokens: 1500, contextWindow: 10000 });
+    turn.say('The same session continues after compaction.'); return { status: 'completed' };
+  };
   // The greeting turn holds after its first words until the control route releases it (or the turn is stopped), so the
   // working state is on screen for as long as a journey needs to capture it, however loaded the machine is.
   if (events.includes('[nightly review at') && input.owner.projectId === 'projects_daily') return async turn => {

@@ -29,7 +29,7 @@ export const AccountViewSchema = z.strictObject({
 export type AccountView = z.infer<typeof AccountViewSchema>;
 export const OfferedModelsSchema = z.strictObject({
   schema: z.literal('offered-models-v1'), runtime: IdSchema, accountId: IdSchema, observedAt: TimestampSchema,
-  models: z.array(z.strictObject({ id: z.string().min(1), label: z.string().min(1), efforts: z.array(EffortSchema).min(1) })),
+  models: z.array(z.strictObject({ id: z.string().min(1), label: z.string().min(1), efforts: z.array(EffortSchema).min(1), contextWindow: z.number().int().positive().optional() })),
 });
 export const AccountProbeSchema = z.strictObject({ auth: AuthSchema, usage: AccountUsageSchema.optional(), identity: AccountSchema.shape.identity, error: z.string().optional() });
 export const LoginViewSchema = z.strictObject({

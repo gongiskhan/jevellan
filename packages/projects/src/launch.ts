@@ -2,11 +2,13 @@ import { join } from 'node:path';
 import { rankAccounts } from '@jevellan/accounts';
 import type { AccountService } from '@jevellan/accounts';
 import { ACCOUNT_REASON_TEXT } from '@jevellan/decisions';
-import { PROJECT_MEMORY_ID, applicationRoot, deviceAllowsWork, type AccountStatus, type Effort, type Homes, type RiggingItem, type SecretRedactor } from '@jevellan/core';
+import { PROJECT_MEMORY_ID, applicationRoot, deviceAllowsWork, type AccountStatus, type Effort, type Homes, type RiggingItem, type ProjectWorkSettings, type SecretRedactor } from '@jevellan/core';
 import type { BridgeScopeTools, StretchBridges } from '@jevellan/conversations';
 import { TurnInputSchema, type RuntimeAdapter, type StretchRun, type TurnInput } from '@jevellan/runtime-contract';
 import { ACCOUNT_BUSY, MEMORY_HOOKS_UNDELIVERED, accountInTerminal, cannotRunHere, noTurnAccount, waitingForAccountReason } from './copy.js';
 import { ThreadGit } from './git.js';
+import { compactPercent, contextEvent, sessionContext } from './session-context.js';
+import type { ProjectLedger } from './ledger.js';
 
 export type GitIdentity = { name: string; email: string };
 export type LaunchRequest = {
@@ -32,6 +34,7 @@ export type LaunchStarted = {
   kind: 'started'; run: StretchRun; accountId: string; accountLabel: string; accountChanged: boolean; resumed: boolean; secretRef: string | null;
   /** This device's last known usage of the account, the base for streamed rate limits. */
   usage?: AccountStatus['usage'] | undefined;
+  compactionPercent: number; compactionNotice?: string;
   gitIdentity?: GitIdentity | undefined;
   /** Closes the bridge grant and the serial account guard; idempotent. */
   release(): Promise<void>;
@@ -47,6 +50,9 @@ export type TurnLauncherOptions = {
    */
   held?(): ReadonlySet<string>;
   useOwnSetup?(runtime: string): Promise<boolean>;
+  projectSettings?(projectId: string): Promise<ProjectWorkSettings>;
+  sessionLedger?(projectId: string): ProjectLedger;
+  now?(): number;
 };
 type Ranked = ReturnType<typeof rankAccounts>[number];
 
@@ -59,6 +65,7 @@ type Ranked = ReturnType<typeof rankAccounts>[number];
 export class TurnLauncher {
   readonly #o: TurnLauncherOptions;
   readonly #git: ThreadGit;
+  readonly #modelWindows = new Map<string, { at: number; values: Promise<Map<string, number>> }>();
   readonly #identities = new Map<string, Promise<GitIdentity | undefined>>();
   constructor(o: TurnLauncherOptions) { this.#o = o; this.#git = new ThreadGit({ homes: o.homes, redactor: o.redactor }); }
   /** Read once per checkout per daemon; a failed read is retried next time. */
@@ -117,7 +124,18 @@ export class TurnLauncher {
       try { await grant?.close(); } finally { if (serial) this.#o.accountRuns.delete(account.id); }
     };
     try {
+      const percent = compactPercent((await this.#o.projectSettings?.(request.owner.projectId))?.compactAtPercent ?? 70, this.#o.homes);
       const resolved = await this.#o.accounts.resolve(account.id);
+      let contextWindow: number | undefined;
+      if (request.runtime === 'codex') {
+        let cached = this.#modelWindows.get(account.id);
+        if (!cached || cached.at + 15 * 60_000 < Date.now()) {
+          cached = { at: Date.now(), values: adapter.listModels(resolved).then(models => new Map(models.flatMap(model => model.contextWindow ? [[model.id, model.contextWindow] as const] : []))).catch(() => new Map<string, number>()) };
+          this.#modelWindows.set(account.id, cached);
+        }
+        contextWindow = (await cached.values).get(request.model);
+      }
+      const compactionNotice = request.runtime === 'codex' && !contextWindow ? 'Codex did not expose this model’s context window; native default auto-compaction is active until model discovery supplies it.' : undefined;
       const rigging = await this.#o.riggingItems(request.runtime);
       const delivered = await adapter.materialiseRigging(resolved.home, rigging);
       if (adapter.riggingKinds.includes('hook') && rigging.some((item) => item.id === PROJECT_MEMORY_ID && item.enabled && item.state !== 'parked')
@@ -132,12 +150,25 @@ export class TurnLauncher {
         schema: 'turn-input-v1', owner: request.owner, turn: request.turn, cwd: request.cwd, permissions: request.permissions, model: request.model, effort: request.effort,
         account: resolved, systemAppend: request.systemAppend, prompt: request.prompt(resumed), ...(resumed ? { resume: { sessionId: request.resume } } : {}),
         launch: { useOwnSetup: await this.#o.useOwnSetup?.(request.runtime) ?? true, env, mcpServers: { jevellan: { command: process.execPath, args: [join(applicationRoot(), 'bin', 'jevellan.mjs'), 'mcp-bridge'], env } } },
-        safetyProfile: request.safetyProfile, timeoutMs: request.timeoutMs,
+        safetyProfile: request.safetyProfile, timeoutMs: request.timeoutMs, compaction: { thresholdPercent: percent, ...(contextWindow ? { contextWindow } : {}) },
       });
-      const run = adapter.startTurn(input);
+      const nativeRun = adapter.startTurn(input);
+      const ledger = ['review', 'verification', 'memory'].includes(request.owner.kind) ? this.#o.sessionLedger?.(request.owner.projectId) : undefined;
+      const now = this.#o.now ?? Date.now;
+      let context = sessionContext(undefined, percent, compactionNotice);
+      const run: StretchRun = ledger ? {
+        get native() { return nativeRun.native; }, done: nativeRun.done,
+        events: (async function* () {
+          for await (const event of nativeRun.events) {
+            context = contextEvent(context, event, request.owner, request.runtime, request.model, ledger, request.turn, new Date(now()).toISOString());
+            yield event;
+          }
+        })(),
+        interrupt: reason => nativeRun.interrupt(reason), continue: (message, timeout) => nativeRun.continue(message, timeout), terminate: () => nativeRun.terminate(),
+      } : nativeRun;
       const usage = accounts.find((view) => view.account.id === account.id)?.statuses.find((status) => status.deviceId === this.#o.deviceId)?.usage;
       return { kind: 'started', run, accountId: account.id, accountLabel: account.label, accountChanged, resumed, secretRef: account.secretRef ?? null,
-        ...(usage ? { usage } : {}), ...(gitIdentity ? { gitIdentity } : {}), release };
+        compactionPercent: percent, ...(compactionNotice ? { compactionNotice } : {}), ...(usage ? { usage } : {}), ...(gitIdentity ? { gitIdentity } : {}), release };
     } catch (error) {
       await release().catch(() => undefined);
       throw error;

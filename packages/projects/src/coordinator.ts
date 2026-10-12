@@ -19,6 +19,7 @@ import type { LaunchResult, TurnLauncher } from './launch.js';
 import type { ProjectLedger, ProjectLedgers } from './ledger.js';
 import type { DeviceRoster } from './placement.js';
 import type { CoordinatorStore } from './stores.js';
+import { contextEvent, sessionContext } from './session-context.js';
 import { TurnExecution, type TurnOutcome } from './turn-execution.js';
 
 const refuse = (message: string, status: number) => Object.assign(new Error(message), { status });
@@ -51,16 +52,14 @@ export function coordinatorPlan(input: { work: Pick<ProjectWorkSettings, 'coordi
 }
 
 type CoordinatorSession = NonNullable<CoordinatorState['session']>;
-/** A coordinator session rotates after this many turns (brief 8.1). */
-export const COORDINATOR_SESSION_TURNS = 40;
 /**
  * Whether the stored session carries on (brief 8.1, D77). `current` is the plan with the session's own model pinned, so a
  * null settings model keeps a session whose model still runs here instead of following every eligibility change. The
- * session rotates at 40 turns, when a pinned model differs, when the settings effort maps to another effort on the session
+ * session continues across days and compactions; it changes when a pinned model differs, when the settings effort maps to another effort on the session
  * model, or when the session model cannot run here any more. An ineligible account is the launcher's rule (D16).
  */
 export function keepSession(session: CoordinatorSession, pinned: string | null, current: CoordinatorPlan): boolean {
-  return session.turns < COORDINATOR_SESSION_TURNS && (pinned === null || pinned === session.modelId) && current.kind === 'ready' && current.model.id === session.modelId
+  return (pinned === null || pinned === session.modelId) && current.kind === 'ready' && current.model.id === session.modelId
     && current.model.runtime === session.runtime && current.model.model === session.model && current.effort === session.effort;
 }
 
@@ -535,15 +534,17 @@ export class Coordinator {
     try {
       launched = await this.c.launcher.launch({ owner: { kind: 'coordinator', projectId, id: projectId }, turn, runtime: model.runtime, modelId: model.id, model: model.model,
         modelLabel: model.label, effort, pinnedAccountId: prepared.accountId, ...(prepared.requiredAccountId ? { requiredAccountId: prepared.requiredAccountId } : {}), permissions: 'read-only', cwd: prepared.cwd, systemAppend: coordinatorSystemAppend(project.name, project.branchPolicy),
-        prompt: (resumed) => coordinatorPrompt(prepared.prompt, resumed), ...(session?.nativeSessionId ? { resume: session.nativeSessionId } : {}),
+        prompt: (resumed) => coordinatorPrompt(prepared.prompt, resumed && !session?.context?.needsFreshContext), ...(session?.nativeSessionId ? { resume: session.nativeSessionId } : {}),
         safetyProfile: 'coordinator', timeoutMs: this.c.timers.turnTimeoutMs, tools });
     } catch (error) { this.#scope = undefined; await tools.close(); return this.#failed(turn, messageOf(error), 'failed'); }
     if (launched.kind === 'unavailable') { this.#scope = undefined; await tools.close(); return this.#failed(turn, launched.reason, 'failed'); }
     const started = launched; const release = this.c.enterOperation(projectId, `Coordinator: ${project.name}`);
     try {
       // Without a resumed session this is a new one, also when the account changed and the old session stayed in its home (D16).
-      const record: CoordinatorSession = started.resumed && session ? { ...session, accountId: started.accountId }
-        : { runtime: model.runtime, modelId: model.id, model: model.model, effort, accountId: started.accountId, startedAt: this.#at(), turns: 0 };
+      const context = sessionContext(started.resumed ? session?.context : undefined, started.compactionPercent, started.compactionNotice);
+      context.needsFreshContext = false;
+      const record: CoordinatorSession = started.resumed && session ? { ...session, context, accountId: started.accountId }
+        : { runtime: model.runtime, modelId: model.id, model: model.model, effort, accountId: started.accountId, startedAt: this.#at(), context, turns: 0 };
       const ours = (state: CoordinatorState) => generation === this.#generation && state.session?.startedAt === record.startedAt;
       this.#ownerRetry = false;
       this.c.store.update(projectId, (state) => ({ ...withoutReason(state), state: 'running', session: generation === this.#generation ? record : state.session }));
@@ -553,6 +554,13 @@ export class Coordinator {
       this.#publish();
       const execution = new TurnExecution({ run: started.run, accountId: started.accountId, secretRef: started.secretRef, model: model.model, deviceId: this.c.deviceId,
         accounts: this.c.accounts, initialUsage: started.usage, redactor: this.c.redactor,
+        onEvent: event => {
+          if (generation !== this.#generation || !ours(this.state()) || !['context', 'compacted'].includes(event.type)) return;
+          const before = this.state().session!.context!;
+          const context = contextEvent(before, event, { kind: 'coordinator', projectId, id: projectId }, model.runtime, model.model, this.#ledger, turn, this.#at());
+          this.c.store.update(projectId, state => state.session && ours(state) ? { ...state, session: { ...state.session, context } } : state);
+          this.#publish();
+        },
         onSession: (sessionId) => {
           if (generation !== this.#generation) return;
           this.c.store.update(projectId, (state) => ours(state) && state.session ? { ...state, session: { ...state.session, nativeSessionId: sessionId } } : state);
@@ -652,7 +660,7 @@ export class Coordinator {
       await this.c.hub.putCoordinatorStatus(ProjectCoordinatorStatusSchema.parse({ schema: 'project-coordinator-status-v1', revision: 0, projectId: this.projectId,
         deviceId: this.c.deviceId, state: state.state, ...(state.unavailableReason ? { unavailableReason: state.unavailableReason.slice(0, 400) } : {}),
         failedTurnsInARow: state.failedTurnsInARow, session: session && labels ? { runtime: session.runtime, modelLabel: labels.modelLabel, effort: session.effort,
-          accountLabel: labels.accountLabel, turns: session.turns } : null, lastEventId: this.#ledger.lastId(), updatedAt: this.#at() }));
+          accountLabel: labels.accountLabel, turns: session.turns, ...(session.context ? { context: session.context } : {}) } : null, lastEventId: this.#ledger.lastId(), updatedAt: this.#at() }));
     }).then(() => { this.#statusDirty = false; }, (error: unknown) => {
       // A refusal (this device no longer holds the assignment) is final; an outage leaves the write to the sweep.
       const code = status(error); if (!(typeof code === 'number' && code >= 400 && code < 500)) this.#statusDirty = true;

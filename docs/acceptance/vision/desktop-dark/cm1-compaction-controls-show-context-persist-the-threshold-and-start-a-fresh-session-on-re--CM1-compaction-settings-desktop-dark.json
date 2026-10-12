@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CM1 compaction controls show context, persist the threshold and start a fresh session on request",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/screenshots/CM1-compaction-settings-desktop-dark.png",
+  "expected": "the Jevellan web app \"CM1 compaction settings\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"CM1 compaction controls show context, persist the threshold and start a fresh session on request\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The modal body cuts off at the bottom: the 'Minutes between refills' input is only partly visible above the Cancel/Save footer, and nothing shows that the dialog scrolls.",
+      "The 'Default isolation' group title sits on its fieldset border, so it looks a little different from the other field labels."
+    ]
+  }
+}

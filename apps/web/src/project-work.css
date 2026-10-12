@@ -184,6 +184,9 @@
 .pw-chip-unavailable { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 50%, transparent); }
 .pw-chip-offline { color: var(--ink-3); background: transparent; }
 .pw-session { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
+.reading-conversation .conversation-heading.pw-heading > .conversation-meta.pw-context { grid-row: 3; gap: 8px; align-items: center; margin-top: 6px; }
+.pw-context > span { min-width: 0; flex: 1; white-space: normal; font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
+.pw-context > button { flex: none; margin-left: auto; }
 /* Page banners (notices and error lines) keep 10 px above; the tab bar's padding spaces them from what follows. */
 .pw-page > :is(.notice, .error) { margin: 10px 0 0; }
 /* 9.8: the offline coordinator notice with Move coordinator here at its end; on narrow pages the button wraps under the sentence. */

@@ -250,6 +250,8 @@ async function openProject(page: Page, name: string) {
   await expect(page.getByRole('heading', { level: 1, name, exact: true })).toBeVisible();
 }
 const composer = (page: Page) => page.getByRole('textbox', { name: 'Message the coordinator', exact: true });
+
+
 const tab = (page: Page, name: string) => page.getByRole('tablist', { name: 'Project sections', exact: true }).getByRole('tab', { name: new RegExp(`^${name}`) });
 const region = (page: Page, name: string) => page.getByRole('region', { name, exact: true });
 async function openSettings(page: Page) {
@@ -1474,4 +1476,24 @@ test('hub readiness warns about AC sleep and clears when the setting is safe', a
   await expect(page.locator('.device-card').filter({ has: page.getByText('Hub', { exact: true }) })).toBeVisible();
   await expect(page.getByText(/Hub readiness: this Mac can sleep on AC power/)).toHaveCount(0);
   await shot(page, 'hub-power-ready', true); expect(errors).toEqual([]);
+});
+
+test('CM1 compaction controls show context, persist the threshold and start a fresh session on request', async ({ page }) => {
+  const errors = await begin(page); await openProject(page, 'Projects fixture');
+  let dialog = await openSettings(page); const percent = dialog.getByRole('spinbutton', { name: 'Compact at percent', exact: true });
+  await expect(percent).toHaveValue('70'); await percent.fill('65'); await dialog.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(dialog).toHaveCount(0); dialog = await openSettings(page);
+  await expect(dialog.getByRole('spinbutton', { name: 'Compact at percent', exact: true })).toHaveValue('65');
+  await shot(page, 'compaction-settings', false); await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+  if (phone(test.info())) await tap(page, tab(page, 'Chat'));
+  await composer(page).fill('CM1 compaction'); await composer(page).press('Enter');
+  await expect(page.getByLabel('Coordinator context', { exact: true })).toContainText('Context 15%');
+  await expect(page.getByLabel('Coordinator context', { exact: true })).toContainText('Compacted 1 times today');
+  await expect(page.getByLabel('Coordinator context', { exact: true })).toContainText('Last compaction');
+  const statusBox = await page.locator('.pw-coordinator').boundingBox(), contextBox = await page.locator('.pw-context').boundingBox();
+  expect(statusBox).not.toBeNull(); expect(contextBox).not.toBeNull(); expect(contextBox!.y).toBeGreaterThanOrEqual(statusBox!.y + statusBox!.height);
+  await shot(page, 'compacted-session');
+  await tap(page, page.getByRole('button', { name: 'Fresh session', exact: true }));
+  await expect.poll(async () => (await work(page)).coordinator.session).toBeNull();
+  expect(errors).toEqual([]);
 });

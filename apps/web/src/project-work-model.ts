@@ -188,7 +188,7 @@ export function threadCreateRequest(clientRequestId: string, form: ThreadForm) {
 
 export type SettingsForm = { defaultIsolation: Isolation; isolationChanged: boolean; modelId: string; effort: Effort; setupCommand: string;
   refill?: ProjectWorkView['settings']['refill']; nightlyWindow?: ProjectWorkView['settings']['nightlyWindow']; autoMerge?: boolean; riskyAreas?: string; requiredChecks?: string[]; threadRules?: string; allowMainIsolation?: boolean;
-  maxRunningThreads: number; maxRunningPerDevice: number; perDeviceLimits?: Record<string, number>; threadTurnCap: number };
+  compactAtPercent?: number; maxRunningThreads: number; maxRunningPerDevice: number; perDeviceLimits?: Record<string, number>; threadTurnCap: number };
 /**
  * `PUT /api/projects/:id/work-settings`. Reads show a stored `main` default as worktree with a notice (D205); unless the
  * owner picked an isolation, a save keeps the stored `main` instead of silently replacing it (D223).
@@ -203,6 +203,7 @@ export function settingsRequest(view: Pick<ProjectWorkView, 'settings' | 'settin
     coordinator: { ...view.settings.coordinator, modelId: form.modelId || null, effort: form.effort }, setupCommand: form.setupCommand.trim() || null,
     autoMerge: form.autoMerge ?? view.settings.autoMerge, riskyAreas: form.riskyAreas ?? view.settings.riskyAreas, requiredChecks: form.requiredChecks ?? view.settings.requiredChecks, threadRules: form.threadRules ?? view.settings.threadRules,
     allowMainIsolation: form.allowMainIsolation ?? view.settings.allowMainIsolation,
+    compactAtPercent: form.compactAtPercent ?? view.settings.compactAtPercent,
     perDeviceLimits: form.perDeviceLimits ?? view.settings.perDeviceLimits,
     maxRunningThreads: form.maxRunningThreads, maxRunningPerDevice: form.maxRunningPerDevice, threadTurnCap: form.threadTurnCap } };
 }

@@ -416,8 +416,8 @@
   {
     "id": "coordinator-memory-terminal-p1",
     "title": "Persistent Projects sessions and compaction",
-    "why": "Keep native sessions across days; configure 70% compaction for all Projects sessions, record events and expose context.",
-    "status": "planned"
+    "why": "Persistent coordinator sessions, configurable 70% compaction on all Projects sessions, native context/compaction receipts and panel implemented. 107 targeted backend cases, four-layout CM1 and eight clear live vision judgments pass; typecheck/lint/build pass. Real provider scenario C remains blocked on pending owner activation inputs.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "coordinator-memory-terminal-p2",

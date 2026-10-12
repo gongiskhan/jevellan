@@ -23,6 +23,7 @@ import type { MailService } from './mail.js';
 import type { CheckoutSeen, CheckoutSettlement, ClaimKeptError, MainCheckout, StopRefusal } from './main-checkout.js';
 import type { PublicationResult, ThreadPublication } from './publication.js';
 import type { ThreadEvent, ThreadStore } from './stores.js';
+import { contextEvent, sessionContext } from './session-context.js';
 import { TurnExecution, type TurnOutcome } from './turn-execution.js';
 import type { ThreadWorktree } from './worktree.js';
 
@@ -413,11 +414,14 @@ export class ThreadRunner {
         ...(placement.fixed.includes('account') ? { requiredAccountId: placement.accountId } : {}), permissions: 'write', cwd: thread.cwd,
         systemAppend: threadSystemAppend({ projectName: project.name, cwd: thread.cwd, isolation: thread.isolation, branch: thread.branch, baseBranch: thread.baseBranch,
           deviceName: this.#c.deviceName, testCommand: project.testCommand, gitPolicy: thread.gitPolicy }),
-        prompt: (resumed) => threadPrompt(thread, next.body, resumed, next.reason), ...(thread.nativeSessionId ? { resume: thread.nativeSessionId } : {}),
+        prompt: (resumed) => threadPrompt(thread, next.body, resumed && !thread.sessionContext?.needsFreshContext, next.reason), ...(thread.nativeSessionId ? { resume: thread.nativeSessionId } : {}),
         safetyProfile: 'thread', timeoutMs: this.#c.timers.threadTurnTimeoutMs, tools, gitIdentityFrom: this.#c.worktrees.repository(project) });
     } catch (error) { await tools.close(); return { status: 'unavailable', error: this.#message(error) }; }
     if (launched.kind === 'unavailable') { await tools.close(); return { status: 'unavailable', error: launched.reason }; }
     const started = launched;
+    const context = sessionContext(started.resumed ? thread.sessionContext : undefined, started.compactionPercent, started.compactionNotice);
+    context.needsFreshContext = false;
+    this.#c.store.update(thread.id, current => ({ ...current, sessionContext: context }));
     try {
       if (started.accountChanged) {
         // The session lives in the old account's home (D16): drop it so no later turn tries to resume it here.
@@ -432,6 +436,12 @@ export class ThreadRunner {
         model: placement.model, effort: placement.effortEffective, accountId: started.accountId } });
       const execution = new TurnExecution({ run: started.run, accountId: started.accountId, secretRef: started.secretRef, model: placement.model, deviceId: this.#c.deviceId,
         accounts: this.#c.accounts, initialUsage: started.usage, redactor: this.#c.redactor,
+        onEvent: event => {
+          if (this.#thread().placement.accountId !== started.accountId || !['context', 'compacted'].includes(event.type)) return;
+          const previous = this.#thread().sessionContext!;
+          const context = contextEvent(previous, event, { kind: 'thread', projectId: thread.projectId, id: thread.id }, placement.runtime, placement.model, ledger, turn, this.#at());
+          this.#c.store.update(thread.id, current => ({ ...current, sessionContext: context }));
+        },
         onSession: (sessionId) => {
           // A next-turn account override may already have detached this turn from the session's home.
           if (this.#thread().placement.accountId === started.accountId) this.#c.store.update(thread.id, (current) => ({ ...current, nativeSessionId: sessionId }));

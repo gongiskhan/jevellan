@@ -3,9 +3,11 @@ import { minimalEnvironment, EffortSchema, AccountUsageSchema, type AccountStatu
 import { classifyRuntimeError, spawnGroup, terminateGroup, type NativeProcess, type ResolvedAccount } from '@jevellan/runtime-contract';
 import { spawnSync, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { z } from 'zod';
+import { lstatSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 const ReplySchema = z.object({ id: z.number().int().optional(), result: z.unknown().optional(), error: z.object({ code: z.number(), message: z.string() }).optional() });
-const ModelsSchema = z.object({ data: z.array(z.object({ id: z.string(), model: z.string(), displayName: z.string(), hidden: z.boolean(), isDefault: z.boolean(), supportedReasoningEfforts: z.array(z.object({ reasoningEffort: z.string() })) })), nextCursor: z.string().nullable() });
+const ModelsSchema = z.object({ data: z.array(z.object({ id: z.string(), model: z.string(), displayName: z.string(), hidden: z.boolean(), isDefault: z.boolean(), contextWindow: z.number().int().positive().optional(), supportedReasoningEfforts: z.array(z.object({ reasoningEffort: z.string() })) })), nextCursor: z.string().nullable() });
 const AccountReplySchema = z.object({ account: z.discriminatedUnion('type', [z.object({ type: z.literal('apiKey') }), z.object({ type: z.literal('chatgpt'), email: z.string().nullable(), planType: z.string() }), z.object({ type: z.literal('amazonBedrock'), usesCodexManagedCredentials: z.boolean() })]).nullable(), requiresOpenaiAuth: z.boolean() });
 const RateWindowSchema = z.object({ usedPercent: z.number().nonnegative(), windowDurationMins: z.number().int().positive().nullable(),
   resetsAt: z.number().int().nonnegative().max(253_402_300_799).nullable() });
@@ -70,6 +72,16 @@ export class CodexControl {
   async close(): Promise<void> { await terminateGroup(this.native); this.#fail(new Error('Codex control closed.')); }
 }
 
+/** The CLI's discovered catalog belongs to this isolated account, never the native user home. */
+export function discoveredContextWindow(home: string, model: string): number | undefined {
+  try {
+    const file = join(home, 'models_cache.json'); const stat = lstatSync(file);
+    if (!stat.isFile() || stat.size > 16 * 1024 * 1024) return;
+    const catalog = z.object({ models: z.array(z.object({ slug: z.string(), context_window: z.number().int().positive().optional() })) }).parse(JSON.parse(readFileSync(file, 'utf8')));
+    return catalog.models.find(entry => entry.slug === model)?.context_window;
+  } catch { return; }
+}
+
 export async function listCodexModels(account: ResolvedAccount, executable = 'codex'): Promise<OfferedModel[]> {
   const control = await CodexControl.open(account, executable);
   try {
@@ -79,10 +91,11 @@ export async function listCodexModels(account: ResolvedAccount, executable = 'co
       const response = ModelsSchema.parse(await control.request('model/list', { cursor, limit: 100, includeHidden: false }));
       for (const model of response.data) {
         const efforts = model.supportedReasoningEfforts.flatMap((entry) => { const value = EffortSchema.safeParse(entry.reasoningEffort); return value.success ? [value.data] : []; });
-        if (!model.hidden && efforts.length) models.push({ id: model.model, label: model.displayName, efforts, isDefault: model.isDefault });
+        const contextWindow = model.contextWindow ?? discoveredContextWindow(account.home, model.model);
+        if (!model.hidden && efforts.length) models.push({ id: model.model, label: model.displayName, efforts, isDefault: model.isDefault, ...(contextWindow ? { contextWindow } : {}) });
       }
       cursor = response.nextCursor;
-      if (!cursor) return models.sort((a, b) => Number(b.isDefault) - Number(a.isDefault)).map(({ id, label, efforts }) => ({ id, label, efforts }));
+      if (!cursor) return models.sort((a, b) => Number(b.isDefault) - Number(a.isDefault)).map(({ id, label, efforts, contextWindow }) => ({ id, label, efforts, ...(contextWindow ? { contextWindow } : {}) }));
     }
     throw new Error('Codex model pagination exceeded its limit.');
   } finally { await control.close(); }

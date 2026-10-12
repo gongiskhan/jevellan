@@ -138,7 +138,8 @@ export class ProjectWork {
     // A thread attached in a terminal holds its account for every turn on this device, read from the threads themselves (phase 8).
     const held = (): ReadonlySet<string> => new Set(this.store.all().filter((thread) => thread.state === 'attached').map((thread) => thread.placement.accountId));
     const launcher = new TurnLauncher({ accounts: o.accounts, runtimes: o.runtimes, accountRuns: o.accountRuns, riggingItems: o.riggingItems, bridges: o.bridges, homes: o.homes,
-      deviceId: o.deviceId, deviceName: o.deviceName, daemonUrl: () => this.daemonUrl, redactor: o.redactor, held, useOwnSetup: async runtime => (await o.settings()).runtimes[runtime]?.useOwnSetup !== false });
+      deviceId: o.deviceId, deviceName: o.deviceName, daemonUrl: () => this.daemonUrl, redactor: o.redactor, held, projectSettings: projectId => this.admission.settings(projectId),
+      sessionLedger: projectId => this.ledgers.coordinator(projectId), now, useOwnSetup: async runtime => (await o.settings()).runtimes[runtime]?.useOwnSetup !== false });
     this.admission = new Admission({ hub: o.hub, deviceId: o.deviceId, deviceName: o.deviceName, localLive: (projectId) => this.threads.liveThreads(projectId),
       facts,
       guard: async (_projectId, deviceId, threadId) => {

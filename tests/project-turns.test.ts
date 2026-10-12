@@ -4,12 +4,12 @@ import { mkdirSync, mkdtempSync, realpathSync } from 'node:fs';
 import { rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { AccountSchema, AccountStatusSchema, BridgeToolsSchema, Homes, SecretRedactor, projectToolNames, type Account, type AccountStatus } from '../packages/core/dist/index.js';
+import { AccountSchema, AccountStatusSchema, BridgeToolsSchema, Homes, SecretRedactor, defaultProjectWorkSettings, projectToolNames, type Account, type AccountStatus } from '../packages/core/dist/index.js';
 import { StretchBridges } from '../packages/conversations/dist/index.js';
 import { FakeRuntime, forThread, groupAlive, type FakeTurnStep, type NativeProcess } from '../packages/runtime-contract/dist/index.js';
 import {
   ACCOUNT_BUSY, ProjectLedgers, ProjectPaths, ProjectTools, REPORT_ALREADY_SENT, TOOL_NOT_IN_TURN, TURN_ENDED, TurnExecution, TurnLauncher, cannotRunHere, noTurnAccount,
-  type LaunchRequest, type ProjectScope, type ProjectToolHandlers,
+  type LaunchRequest, type ProjectScope, type ProjectToolHandlers, type TurnLauncherOptions,
 } from '../packages/projects/dist/index.js';
 
 let root: string; let homes: Homes; let redactor: SecretRedactor; let fake: FakeRuntime;
@@ -99,13 +99,13 @@ test('coordinator calls leave one ledger line each, ok or not, and a line that c
 
 const account = (id: string): Account => AccountSchema.parse({ schema: 'account-v1', id, runtime: 'fake', label: id === 'acc_work' ? 'Work' : 'Home', kind: 'subscription', enabled: true, credential: 'per-device' });
 const status = (id: string, over: Partial<AccountStatus> = {}): AccountStatus => AccountStatusSchema.parse({ schema: 'account-status-v2', accountId: id, deviceId: 'dev_a', auth: 'ready', observedAt: new Date().toISOString(), ...over });
-function launcher(statuses: AccountStatus[], url = 'http://127.0.0.1:4100') {
+function launcher(statuses: AccountStatus[], url = 'http://127.0.0.1:4100', extra: Partial<TurnLauncherOptions> = {}) {
   const used: string[] = []; const bridges = new StretchBridges(redactor); const accountRuns = new Set<string>();
   const value = new TurnLauncher({
     accounts: {
       list: async () => ['acc_work', 'acc_home'].map((id) => ({ schema: 'account-view-v1' as const, revision: 1, account: account(id), statuses: statuses.filter((entry) => entry.accountId === id) })),
       resolve: async (id) => ({ account: account(id), home: homes.ensure('homes', 'fake', id), env: {} }), markUsed: async (id) => { used.push(id); },
-    }, runtimes: new Map([['fake', fake]]), accountRuns, riggingItems: async () => [], bridges, homes, deviceId: 'dev_a', deviceName: 'Mac mini', daemonUrl: () => url, redactor,
+    }, runtimes: new Map([['fake', fake]]), accountRuns, riggingItems: async () => [], bridges, homes, deviceId: 'dev_a', deviceName: 'Mac mini', daemonUrl: () => url, redactor, ...extra,
   });
   return { launcher: value, used, bridges, accountRuns };
 }
@@ -115,6 +115,40 @@ function request(over: Partial<LaunchRequest> = {}): LaunchRequest {
     tools: tools(thread).tools, ...over };
 }
 const done: FakeTurnStep = () => ({ status: 'completed' });
+
+test.each([true, false])('Codex launch uses the discovered context window and reports an honest fallback when unknown (%s)', async known => {
+  Object.defineProperty(fake, 'id', { value: 'codex' }); let discoveryCalls = 0;
+  fake.listModels = async () => { discoveryCalls++; return [{ id: 'scripted-model', label: 'Model', efforts: ['high'], ...(known ? { contextWindow: 10001 } : {}) }]; };
+  const selected = { ...account('acc_work'), runtime: 'codex' };
+  const value = new TurnLauncher({ accounts: { list: async () => [{ schema: 'account-view-v1', revision: 1, account: selected, statuses: [status('acc_work')] }],
+    resolve: async () => ({ account: selected, home: homes.ensure('homes', 'codex', 'acc_work'), env: {} }), markUsed: async () => undefined },
+    runtimes: new Map([['codex', fake]]), accountRuns: new Set(), riggingItems: async () => [], bridges: new StretchBridges(redactor), homes, deviceId: 'dev_a', deviceName: 'Pro',
+    daemonUrl: () => 'http://127.0.0.1:4100', redactor, projectSettings: async () => ({ ...defaultProjectWorkSettings('proj_a'), compactAtPercent: 65 }) });
+  for (const resume of [undefined, 'stored-session']) {
+    fake.enqueueTurn(done); const result = await value.launch(request({ runtime: 'codex', ...(resume ? { resume } : {}) }));
+    if (result.kind !== 'started') throw new Error(result.reason);
+    expect(fake.turnStarts.at(-1)?.compaction).toEqual({ thresholdPercent: 65, ...(known ? { contextWindow: 10001 } : {}) });
+    expect(result.compactionNotice).toEqual(known ? undefined : expect.stringContaining('native default auto-compaction'));
+    await result.run.done; await result.run.terminate(); await result.release();
+  }
+  expect(discoveryCalls).toBe(1);
+});
+
+test.each(['review', 'verification', 'memory'] as const)('auxiliary %s sessions record compactions with their own owner and the project threshold', async kind => {
+  fake.capabilities.readOnlyEnforced = true;
+  const ledger = new ProjectLedgers(new ProjectPaths(homes)).coordinator('proj_a');
+  const { launcher: value } = launcher([status('acc_work')], undefined, { sessionLedger: () => ledger });
+  fake.enqueueTurn(turn => { turn.emit({ type: 'context', tokens: 7500, contextWindow: 10000 }); turn.emit({ type: 'compacted', beforeTokens: 7500, afterTokens: 1500 }); return { status: 'completed' }; });
+  const result = await value.launch(request({ owner: { kind, projectId: 'proj_a', id: 'session_auxiliary' }, safetyProfile: kind, permissions: kind === 'verification' ? 'write' : 'read-only' }));
+  if (result.kind !== 'started') throw new Error(result.reason);
+  try {
+    for await (const event of result.run.events) void event;
+    await result.run.done;
+    expect(fake.turnStarts[0]?.compaction).toEqual({ thresholdPercent: 70 });
+    const receipt = ledger.events().find(event => event.type === 'session-compacted'); expect(receipt).toBeDefined();
+    expect(ledger.payload(receipt!)).toMatchObject({ owner: { kind, id: 'session_auxiliary' }, beforeTokens: 7500, afterTokens: 1500, contextWindow: 10000, thresholdPercent: 70 });
+  } finally { await result.run.terminate(); await result.release(); }
+});
 
 test('a required account is rechecked at launch and never falls back to another account', async () => {
   const { launcher: value, used } = launcher([status('acc_work', { auth: 'expired' }), status('acc_home')]);

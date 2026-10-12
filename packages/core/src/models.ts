@@ -16,7 +16,7 @@ export function mapEffort(requested: Effort, supported: Effort[]): Effort {
   const target = order.indexOf(EffortSchema.parse(requested));
   return available.find((effort) => order.indexOf(effort) >= target) ?? available.at(-1)!;
 }
-export type OfferedModel = { id: string; label: string; efforts: Effort[] };
+export type OfferedModel = { id: string; label: string; efforts: Effort[]; contextWindow?: number | undefined };
 export function reconcileMenu(menu: ModelOption[], runtime: string, offered: OfferedModel[]): ModelOption[] {
   const reconciled = menu.map((raw) => {
     const entry = ModelOptionSchema.parse(raw);

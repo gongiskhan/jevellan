@@ -49,6 +49,25 @@ async function settings(f: ProjectFixture, over: Partial<ProjectWorkSettings>): 
   await f.app.projectHub.putSettings(ProjectWorkSettingsSchema.parse({ ...(current?.document ?? defaultProjectWorkSettings('project')), ...over }), current?.revision ?? 0);
 }
 
+test('a thread compaction keeps its native session and restores the task block on the next turn', { timeout: 60_000 }, async () => {
+  const f = await setup(); await settings(f, { compactAtPercent: 65 });
+  f.fake.enqueueTurn(async turn => {
+    turn.emit({ type: 'context', tokens: 6500, contextWindow: 10000 }); turn.emit({ type: 'compacted', beforeTokens: 6500, afterTokens: 1200, contextWindow: 10000 });
+    await turn.bridge('jevellan_thread_report', { status: 'progress', summary: 'Task saved.' }); return { status: 'completed' };
+  }, forThread());
+  const created = await start(f, 'Keep the task', 'Remember the complete task brief.');
+  await f.waitFor(() => f.thread(created.threadId), thread => thread.state === 'idle');
+  const session = f.thread(created.threadId).nativeSessionId;
+  expect(f.thread(created.threadId).sessionContext).toMatchObject({ tokens: 1200, thresholdPercent: 65, needsFreshContext: true });
+  expect(payloads(f, created.threadId, 'session-compacted')).toEqual([expect.objectContaining({ owner: { kind: 'thread', id: created.threadId }, beforeTokens: 6500, afterTokens: 1200 })]);
+  f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'Continued.' }), forThread());
+  await f.app.projectWork.threads.message(f.project.id, created.threadId, 'owner', 'Continue.', false, 'msg_after_compaction');
+  await f.waitFor(() => f.thread(created.threadId), thread => thread.state === 'idle' && thread.turns === 2);
+  expect(f.fake.turnStarts[1]).toMatchObject({ resume: { sessionId: session }, compaction: { thresholdPercent: 65 } });
+  expect(f.fake.turnStarts[1]!.prompt).toContain('Task: Keep the task'); expect(f.fake.turnStarts[1]!.prompt).toContain('Remember the complete task brief.');
+  expect(f.thread(created.threadId).sessionContext?.needsFreshContext).toBe(false);
+});
+
 test('PJ1 owner thread runs in a worktree, opens a pull request, follows checks and cleans up after merge', { timeout: 120_000 }, async () => {
   const f = await setup({ testCommand: 'test -f greeting.txt' });
   const upstream = advanceOrigin(f);

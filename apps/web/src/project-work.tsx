@@ -453,7 +453,6 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
             <summary aria-label={copy.PROJECT_MENU}><Icon name="more" /></summary>
             <div>
               <button type="button" onClick={() => { closeMenu(); setDialog('settings'); }}>{copy.PROJECT_SETTINGS}</button>
-              <button type="button" disabled={control.busy || offline} onClick={() => { closeMenu(); fresh(); }}>{copy.FRESH_COORDINATOR}</button>
               {coordinator.canMoveHere && (
                 <button type="button" disabled={moving.busy || !!coordinator.moveRefusal} aria-describedby={coordinator.moveRefusal ? menuMoveNote : undefined}
                   onClick={() => { closeMenu(); move(); }}>{copy.MOVE_COORDINATOR}</button>
@@ -468,8 +467,18 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
           </span>
           {chip.session && <span className="pw-session">{chip.session}</span>}
         </div>
+        <div className="conversation-meta pw-context">
+          {coordinator.session?.context && <span aria-label="Coordinator context">
+            {coordinator.session.context.tokens !== null && coordinator.session.context.contextWindow
+              ? `Context ${Math.round(coordinator.session.context.tokens / coordinator.session.context.contextWindow * 100)}%` : 'Context unavailable'}
+            {' · '}Compacted {coordinator.session.context.compactions.filter(at => new Date(at).toLocaleDateString() === new Date().toLocaleDateString()).length} times today
+            {coordinator.session.context.lastCompactionAt && <>{' · '}Last compaction {new Date(coordinator.session.context.lastCompactionAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</>}
+          </span>}
+          <button type="button" className="secondary" disabled={control.busy || offline} onClick={fresh}>{copy.FRESH_COORDINATOR}</button>
+        </div>
       </div>
       {loadError && <p className="notice" role="status">{loadError}</p>}
+      {coordinator.session?.context?.notice && <p className="notice" role="status">{coordinator.session.context.notice}</p>}
       {daily && <NightlyBanner view={daily} />}
       {coordinator.state === 'unavailable' && coordinator.unavailableReason && <p className="notice">{copy.coordinatorUnavailableNotice(coordinator.unavailableReason)}</p>}
       {offline && <OfflineNotice device={coordinatorDevice} canMove={coordinator.canMoveHere} refusal={coordinator.moveRefusal} moving={moving.busy} move={move} />}
@@ -937,7 +946,7 @@ type SettingsBase = Pick<ProjectWorkView, 'settings' | 'settingsNotice'>;
 const settingsForm = (from: SettingsBase) => ({
   defaultIsolation: from.settings.defaultIsolation, isolationChanged: false, modelId: from.settings.coordinator.modelId ?? '',
   effort: from.settings.coordinator.effort, setupCommand: from.settings.setupCommand ?? '', maxRunningThreads: String(from.settings.maxRunningThreads),
-  maxRunningPerDevice: String(from.settings.maxRunningPerDevice), threadTurnCap: String(from.settings.threadTurnCap),
+  compactAtPercent: String(from.settings.compactAtPercent), maxRunningPerDevice: String(from.settings.maxRunningPerDevice), threadTurnCap: String(from.settings.threadTurnCap),
   perDeviceLimits: from.settings.perDeviceLimits,
   refill: from.settings.refill, nightlyWindow: from.settings.nightlyWindow, autoMerge: from.settings.autoMerge, riskyAreas: from.settings.riskyAreas, requiredChecks: from.settings.requiredChecks, threadRules: from.settings.threadRules, allowMainIsolation: from.settings.allowMainIsolation,
 });
@@ -979,7 +988,7 @@ function SettingsDialog({ props, view, close }: { props: PageProps; view: Projec
         event.preventDefault();
         void task.run(async (signal) => {
           setError(''); setStale(false);
-          const request = settingsRequest(base, { ...form, maxRunningThreads: Number(form.maxRunningThreads),
+          const request = settingsRequest(base, { ...form, compactAtPercent: Number(form.compactAtPercent), maxRunningThreads: Number(form.maxRunningThreads),
             maxRunningPerDevice: Number(form.maxRunningPerDevice), threadTurnCap: Number(form.threadTurnCap) });
           try {
             await save(path, ProjectWorkSettingsViewSchema, 'PUT', request, signal);
@@ -1018,6 +1027,8 @@ function SettingsDialog({ props, view, close }: { props: PageProps; view: Projec
             <input value={form.setupCommand} maxLength={500} placeholder={copy.SETUP_COMMAND_PLACEHOLDER} spellCheck={false}
               onChange={(event) => change({ setupCommand: event.target.value })} />
           </label>
+          <label>Compact at percent<input type="number" required min={50} max={90} step={1} inputMode="numeric" value={form.compactAtPercent}
+            onChange={event => change({ compactAtPercent: event.target.value })} /></label>
           <label className="checkbox"><input type="checkbox" checked={form.autoMerge} onChange={event => change({ autoMerge: event.target.checked })} />Merge automatically after checks</label>
           <label>Required checks<textarea value={(form.requiredChecks ?? []).join('\n')} onChange={event => change({ requiredChecks: event.target.value.split('\n').map(line => line.trim()).filter(Boolean) })} /></label>
           <label>Risky areas<textarea maxLength={2000} value={form.riskyAreas} onChange={event => change({ riskyAreas: event.target.value })} /></label>

@@ -4,8 +4,8 @@ P0 records the target and decisions 703–715. Source delivery, simulated tests,
 
 | Phase | Current evidence |
 | --- | --- |
-| P0 | Documentation and roadmap complete; typecheck/lint/whitespace/working-tree secret scan pass; mandatory history scan during push |
-| P1 | Not run: session persistence, threshold configuration, compaction events/context/panel |
+| P0 | Documentation and roadmap complete; typecheck/lint/whitespace/working-tree secret scan pass; mandatory history scan passed at the P0 push |
+| P1 | Implemented: 107 simulated backend cases, 4/4 browser layouts, eight clear live vision verdicts, typecheck/lint/build; live C blocked |
 | P2 | Not run: numbered/chat answers, cached/scoped GitHub reads and four-layout vision |
 | P3 | Not run: hub store/relay, capture/extraction/inbox/recall/dream/Undo and owner-note guards |
 | P4 | Not run: Codex access, checkout/protected-path safety and owner command UI |
@@ -16,3 +16,11 @@ P0 records the target and decisions 703–715. Source delivery, simulated tests,
 The complete untracked specification is `/Users/ggomes/Downloads/BRIEF-coordinator-memory-terminal.md`. PLAN.md describes the phase order and exact pass rule. A→B runs twice consecutively and C twice on Claude Opus 5.5/high; D passes phone/desktop light/dark; an extra failing night and Codex GPT-6.1 Sol/high A are reported separately. Each real run writes sanitized step receipts under `docs/acceptance/scenarios/{date}/`, including assertions, ids/excerpts, tool calls and per-provider tokens/cost/time. No secrets, raw native session identifiers or complete transcripts enter evidence. No scenario hints or weakened assertions are allowed.
 
 The owner inputs were requested once, together. Continue independent implementation while waiting. Do not represent a fake provider, missing credential, skipped run or previous release evidence as new live acceptance. This run does not change Ekoa CI; amendment 2 activation keeps its separate handoff.
+
+## P1 evidence
+
+Simulated: 107 targeted backend cases in seven files pass in 69.35 seconds. They cover persistence after forty turns, explicit Fresh session/config/account changes, FakeRuntime compaction and daemon restart, thread task refresh, auxiliary session receipts, model-window discovery/fallback, settings migration/bounds, production refusal of low test thresholds, SDK per-launch configuration and byte-identical fixture native homes. Four CM1 browser cases pass at 1440×900 and 390×844, light/dark, in 58.3 seconds. Deterministic assertions cover saved thresholds, context/count/time, non-overlapping rows and Fresh session. Initial visual failures exposed clipped and overlapping header text; source fixes and a geometric regression keep the details readable.
+
+Live: eight dedicated Claude vision judgments for the final screenshots have no blocking findings. Typecheck, lint and build pass on Node22. This is automated visual evidence, not a real provider compaction or owner acceptance. Secret scans gate the P1 push.
+
+Blocked: real scenario C, sign-ins, joins and scoped owner Settings credentials. The live scenario clock has not started. Not run: P2–P6 behavior and the 0.3.0 closing suite/review/install. Production remains on the retained 0.2.1 release.

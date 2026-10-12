@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 import { AccountSchema, CoordinatorEventSchema, type CoordinatorEvent, type ProjectDecision, type ThreadIndex } from '../packages/core/dist/index.js';
 import {
-  COORDINATOR_SESSION_TURNS, coordinatorEventBlock, coordinatorFreshContext, coordinatorPrompt, keepSession, ownerStartedLine, type CoordinatorPlan, type CoordinatorPromptInput,
+  coordinatorEventBlock, coordinatorFreshContext, coordinatorPrompt, keepSession, ownerStartedLine, type CoordinatorPlan, type CoordinatorPromptInput,
 } from '../packages/projects/dist/index.js';
 
 // The coordinator's prompt assembly (brief 9.2, 9.3; D32, D35, D36, D93): which threads, questions and recap items are
@@ -164,15 +164,14 @@ test('the recap keeps the newest 8,000 characters, oldest first, and drops older
   expect(recap!.length).toBeLessThanOrEqual(8000);
 });
 
-test('sessions rotate at 40 turns, on a pinned model change, an effort change or a session model that cannot run here (brief 8.1, D77)', () => {
-  const session = { runtime: 'codex', modelId: 'gpt', model: 'gpt-5', effort: 'high' as const, accountId: 'acc_a', startedAt: at('08:00'), turns: COORDINATOR_SESSION_TURNS - 1 };
+test('sessions persist beyond forty turns and rotate on on a pinned model change, an effort change or a session model that cannot run here (brief 8.1, D77)', () => {
+  const session = { runtime: 'codex', modelId: 'gpt', model: 'gpt-5', effort: 'high' as const, accountId: 'acc_a', startedAt: at('08:00'), turns: 39 };
   const model = { id: 'gpt', runtime: 'codex', model: 'gpt-5', label: 'GPT-5', description: 'd', efforts: ['medium' as const, 'high' as const], enabled: true };
   const account = AccountSchema.parse({ schema: 'account-v1', id: 'acc_b', runtime: 'codex', label: 'Other', kind: 'subscription', enabled: true, credential: 'per-device' });
   const ready: Extract<CoordinatorPlan, { kind: 'ready' }> = { kind: 'ready', model, effort: 'high', account };
-  expect(COORDINATOR_SESSION_TURNS).toBe(40);
-  // 39 turns keep the session (another eligible account is the launcher's concern, D16); 40 rotate.
+  // Turn count never changes the session; another account remains the launcher's concern.
   expect(keepSession(session, null, ready)).toBe(true);
-  expect(keepSession({ ...session, turns: 40 }, null, ready)).toBe(false);
+  for (const turns of [40, 400, 4000]) expect(keepSession({ ...session, turns }, null, ready)).toBe(true);
   expect(keepSession(session, 'gpt', ready)).toBe(true);
   expect(keepSession(session, 'opus', ready)).toBe(false);
   expect(keepSession(session, null, { ...ready, effort: 'medium' })).toBe(false);

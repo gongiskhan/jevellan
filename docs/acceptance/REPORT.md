@@ -1619,3 +1619,15 @@ Live: source and Git state at 1a5da7cc are clean on main; prerequisite release 0
 Simulated: no runtime behavior is changed or newly exercised in P0. Documentation/type/lint/whitespace and mandatory secret checks gate its push; exact results are appended below. Blocked: new live scenarios, Madrid sign-in/join and optional Ekoa mirror assertions pending owner inputs. Not run: P1–P6 source behavior, full closing checks, final review or 0.3.0 installation. The previously passing 0.2.1 suites are not evidence for new code.
 
 P0 verification: typecheck, lint, whitespace checks and the working-tree secret scan pass. Documentation-only changes require no new behavior test. The mandatory history scan runs during push.
+
+### Decision 716 — Report native compaction metrics without inventing them
+
+Refines decision 703's telemetry and threshold requirement. Claude receives the installed SDK's supported environment override. Codex receives floor(discovered context window × percent / 100); an unavailable window retains native auto-compaction and displays its explicit fallback notice. Native compact boundaries or context-token drops produce session-compacted-v1, independently of billed usage. Missing before/after/window values are null, because native events do not always report them. No assumed model window or guessed token count enters evidence.
+
+### Decision 717 — Bound the test override to test-only installations
+
+Refines decision 703's test-only exception. JEVELLAN_TEST_COMPACT_PERCENT accepts integers 15–49 only when NODE_ENV is test and the home has no installation manifest. Production installations refuse it even if a caller changes NODE_ENV. Ordinary settings remain 50–90, default 70. Tests supply the override only in disposable homes; no production/native configuration is changed. Live C remains separately gated and cannot claim a simulated compaction.
+
+### P1 session implementation evidence
+
+Simulated: 107 backend cases in seven files pass (69.35 seconds), including coordinator/thread continuity, restart, settings and native-home regressions, auxiliary receipts and discovered-window fallback. CM1 passes all four layouts in 58.3 seconds; its saved-setting and geometric assertions catch the observed initial clipping/overlap defects. Live: eight final dedicated vision verdicts are clear; typecheck/lint/build pass on Node22. Working-tree and mandatory history secret scans gate this phase's main push. Blocked: actual provider compaction and scenario C on activated owner accounts. Not run: subsequent phases, full 0.3.0 closing checks/review/release. The 0.2.1 service and rollback remain unchanged; no owner acceptance is claimed.

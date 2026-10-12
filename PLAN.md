@@ -9,7 +9,7 @@ Prerequisite met: amendment 2 Parts 1–3 are pushed and 0.2.1 is published and 
 | Phase | Scope | Status and evidence |
 | --- | --- | --- |
 | P0 | Save the untracked brief; replacements, source inventory, plan, docs and roadmap | Complete; documentation only; decisions 703–715; typecheck/lint/whitespace/working-tree scan pass |
-| P1 | Persistent sessions, v3 settings, 70% compaction, runtime events and panel | Planned; unit and FakeRuntime integration; live C later |
+| P1 | Persistent sessions, v3 settings, 70% compaction, runtime events and panel | Implemented; 107 targeted backend cases pass; 4/4 browser cases and eight clear live vision verdicts pass; live C blocked |
 | P2 | Shared question numbering, owner-chat answers, bounded GitHub bridge | Planned; fake GitHub plus live sandbox calls; four-layout UI and vision |
 | P3 | Hub notes repository and relay; capture, extraction, inbox, recall, Project now, dream and Undo | Planned; real disposable Basic Memory, two local daemons and simulated runtime tests |
 | P4 | Codex full access with safety guards; protected paths and exact owner commands | Planned; safety regressions and UI; live Madrid session depends on sign-in/join |

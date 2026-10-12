@@ -38,6 +38,7 @@ export const ProjectWorkSettingsSchemaV2 = ProjectWorkSettingsSchemaV1.extend({
   refill: z.strictObject({ enabled: z.boolean(), minIntervalMinutes: z.number().int().min(10).max(1440) }).default({ enabled: true, minIntervalMinutes: 30 }),
 });
 export const ProjectWorkSettingsSchema = ProjectWorkSettingsSchemaV2.omit({ coordinatorReview: true }).extend({ schema: z.literal('project-work-settings-v3'), autoMerge: z.boolean().default(false), riskyAreas: z.string().max(2000).default(''), requiredChecks: z.array(z.string().min(1).max(200)).max(50).default([]),
+  compactAtPercent: z.number().int().min(50).max(90).default(70),
   perDeviceLimits: z.record(IdSchema, z.number().int().min(1).max(10)).default({}) });
 export type ProjectWorkSettings = z.infer<typeof ProjectWorkSettingsSchema>;
 export const StoredProjectWorkSettingsSchema = z.union([ProjectWorkSettingsSchemaV1, ProjectWorkSettingsSchemaV2, ProjectWorkSettingsSchema])
@@ -119,12 +120,23 @@ export const CoordinatorEventSchema = z.discriminatedUnion('kind', [
 export type CoordinatorEvent = z.infer<typeof CoordinatorEventSchema>;
 export type CoordinatorEventKind = CoordinatorEvent['kind'];
 
+export const ProjectSessionContextSchema = z.strictObject({ schema: z.literal('project-session-context-v1'),
+  tokens: count.nullable(), contextWindow: positive.nullable(), thresholdPercent: z.number().int().min(15).max(90),
+  compactions: z.array(TimestampSchema).max(500), lastCompactionAt: TimestampSchema.nullable(),
+  needsFreshContext: z.boolean(), notice: z.string().max(500).optional() });
+export type ProjectSessionContext = z.infer<typeof ProjectSessionContextSchema>;
+export const SessionCompactedSchema = z.strictObject({ schema: z.literal('session-compacted-v1'),
+  owner: z.strictObject({ kind: z.enum(['coordinator', 'thread', 'review', 'verification', 'memory']), id: IdSchema }),
+  runtime: IdSchema, model: text, at: TimestampSchema,
+  beforeTokens: count.nullable(), afterTokens: count.nullable(), contextWindow: positive.nullable(), thresholdPercent: z.number().int().min(15).max(90) });
+export type SessionCompacted = z.infer<typeof SessionCompactedSchema>;
+
 // 5.3 owner-local <home>/projects/<pid>/coordinator.json
 export const CoordinatorStateSchema = z.strictObject({
   schema: z.literal('coordinator-state-v1'), projectId: IdSchema,
   state: z.enum(['idle', 'running', 'unavailable']), unavailableReason: z.string().optional(),
   session: z.strictObject({ runtime: IdSchema, modelId: IdSchema, model: text, effort: EffortSchema, accountId: IdSchema,
-    nativeSessionId: z.string().optional(), startedAt: TimestampSchema, turns: count }).nullable(),
+    nativeSessionId: z.string().optional(), context: ProjectSessionContextSchema.optional(), startedAt: TimestampSchema, turns: count }).nullable(),
   queue: z.array(CoordinatorEventSchema), failedTurnsInARow: count, lastTurnAt: TimestampSchema.optional(),
 });
 export type CoordinatorState = z.infer<typeof CoordinatorStateSchema>;
@@ -164,7 +176,7 @@ export const ThreadSchema = z.strictObject({
   ownerDeviceId: IdSchema, coordinatorDeviceId: IdSchema,
   cwd: z.string(), branch: z.string().optional(), baseBranch: z.string(), baseCommit: z.string(),
   turns: count, turnAllowance: z.number().int(),
-  nativeSessionId: z.string().optional(), queuedMessages: z.array(QueuedMessageSchema),
+  nativeSessionId: z.string().optional(), sessionContext: ProjectSessionContextSchema.optional(), queuedMessages: z.array(QueuedMessageSchema),
   lastReport: ThreadReportSchema.optional(), verificationAttempts: count,
   pr: PullRequestStateSchema.optional(), publishedCommit: z.string().optional(),
   attach: z.strictObject({ startedAt: TimestampSchema }).optional(), endedAt: TimestampSchema.optional(),
@@ -249,7 +261,7 @@ export const ProjectCoordinatorStatusSchema = z.strictObject({ schema: z.literal
   revision, projectId: IdSchema, deviceId: IdSchema,
   state: z.enum(['idle', 'running', 'unavailable']), unavailableReason: z.string().max(400).optional(),
   failedTurnsInARow: count,
-  session: z.strictObject({ runtime: IdSchema, modelLabel: text, effort: EffortSchema, accountLabel: text, turns: count }).nullable(),
+  session: z.strictObject({ runtime: IdSchema, modelLabel: text, effort: EffortSchema, accountLabel: text, turns: count, context: ProjectSessionContextSchema.optional() }).nullable(),
   // phase 5: the coordinator ledger's last event id when published, so other devices' work views bound the chat history (D268)
   lastEventId: count.optional(),
   updatedAt: TimestampSchema });
@@ -302,7 +314,7 @@ export type InboxSeen = z.infer<typeof InboxSeenSchema>;
 // Project ledger (brief 5.13, D2). data stays unknown in the envelope: payloads over 64 KiB spill to a blob-ref.
 export const ProjectLedgerEventTypeSchema = z.enum(['coordinator-turn-start', 'coordinator-text', 'coordinator-tool',
   'coordinator-turn-end', 'coordinator-event', 'thread-turn-start', 'thread-turn-end', 'thread-report',
-  'thread-placement', 'thread-state', 'thread-verification', 'thread-publication', 'notice']);
+  'thread-placement', 'thread-state', 'thread-verification', 'thread-publication', 'session-compacted', 'notice']);
 export type ProjectLedgerEventType = z.infer<typeof ProjectLedgerEventTypeSchema>;
 export const ProjectLedgerEventSchema = z.strictObject({ schema: z.literal('project-ledger-event-v1'), t: TimestampSchema,
   id: positive, type: ProjectLedgerEventTypeSchema, turn: positive.optional(), data: z.unknown() });
@@ -337,6 +349,7 @@ export const ProjectLedgerDataSchemas = {
   'coordinator-tool': CoordinatorToolSchema, 'coordinator-turn-end': CoordinatorTurnEndSchema,
   'coordinator-event': CoordinatorEventSchema, 'thread-turn-start': ThreadTurnStartSchema, 'thread-turn-end': ThreadTurnEndSchema,
   'thread-report': ThreadReportSchema, 'thread-placement': PlacementRecordSchema, 'thread-state': ThreadStateChangeSchema,
+  'session-compacted': SessionCompactedSchema,
   'thread-verification': ThreadVerificationSchema, 'thread-publication': ThreadPublicationSchema, notice: ProjectNoticeSchema,
 } as const satisfies Record<ProjectLedgerEventType, z.ZodType>;
 export type ProjectLedgerData<T extends ProjectLedgerEventType> = z.output<(typeof ProjectLedgerDataSchemas)[T]>;
@@ -353,7 +366,7 @@ export const ProjectWorkListViewSchema = z.strictObject({ schema: z.literal('pro
 export type ProjectWorkListView = z.infer<typeof ProjectWorkListViewSchema>;
 export const CoordinatorViewSchema = z.strictObject({ state: CoordinatorStateNameSchema,
   unavailableReason: z.string().optional(), deviceId: IdSchema.nullable(), deviceName: z.string().nullable(), online: z.boolean(),
-  session: z.strictObject({ runtime: IdSchema, modelLabel: text, effort: EffortSchema, accountLabel: text, turns: count }).nullable(),
+  session: z.strictObject({ runtime: IdSchema, modelLabel: text, effort: EffortSchema, accountLabel: text, turns: count, context: ProjectSessionContextSchema.optional() }).nullable(),
   planned: z.strictObject({ runtime: IdSchema, modelLabel: text, effort: EffortSchema }).nullable(),
   canMoveHere: z.boolean(), offlineSince: TimestampSchema.optional(),
   // phase 5: why this device cannot take the coordinator although the move rule allows it (no model, account or checkout here, D282)
@@ -408,6 +421,7 @@ export const ProjectWorkSettingsRequestSchema = z.strictObject({ schema: z.liter
   settings: ProjectWorkSettingsSchema.omit({ schema: true, projectId: true, revision: true }).extend({
     allowMainIsolation: z.boolean().optional(), threadRules: z.string().max(4000).optional(), autoMerge: z.boolean().optional(), riskyAreas: z.string().max(2000).optional(), requiredChecks: z.array(z.string().min(1).max(200)).max(50).optional(),
     nightlyWindow: ProjectWorkSettingsSchema.shape.nightlyWindow.removeDefault().optional(), refill: ProjectWorkSettingsSchema.shape.refill.removeDefault().optional(),
+    compactAtPercent: ProjectWorkSettingsSchema.shape.compactAtPercent.removeDefault().optional(),
     perDeviceLimits: ProjectWorkSettingsSchema.shape.perDeviceLimits.removeDefault().optional(),
   }), clientRequestId: IdSchema.optional() });
 export const NotebookRequestSchema = z.strictObject({ schema: z.literal('notebook-request-v1'), expectedRevision: revision,

@@ -6,7 +6,7 @@ export const THREAD_SAFETY_REASON = 'Jevellan handles this. Report what you need
 export const COORDINATOR_SAFETY_REASON = 'Jevellan handles this. Ask a thread to do it with jevellan_thread_message.';
 export const COORDINATOR_READ_ONLY_REASON = 'The coordinator is read-only. Use the read tools and the Jevellan tools.';
 const READ_ONLY_REASON = 'This step is read-only. Use the read tools and return a handoff.';
-export type SafetyProfile = 'stretch' | 'coordinator' | 'thread' | 'verification' | 'review';
+export type SafetyProfile = 'stretch' | 'coordinator' | 'thread' | 'verification' | 'review' | 'memory';
 // No profile means a stretch. Turns carry a profile and no action.
 export type SafetyContext = { cwd: string; daemonPid: number; action?: string | undefined; profile?: SafetyProfile | undefined };
 export function safetyReason(context: Pick<SafetyContext, 'profile'>): string {

@@ -87,6 +87,15 @@ async function turn(prompt) {
   else send({ type: 'system', subtype: 'init', session_id: session });
   const directive = prompt.split('\n').find((line) => line.startsWith('CONTRACT:'));
   const test = directive ? JSON.parse(directive.slice('CONTRACT:'.length)) : { mode: 'events' };
+  if (test.mode === 'compaction-settings') {
+    result(JSON.stringify(codex ? { limit: configuration.model_auto_compact_token_limit ?? null } : { percent: process.env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE ?? null })); return;
+  }
+  if (test.mode === 'compaction-events' && !codex) {
+    send({ type: 'context_usage', session_id: session, context_usage: { total_tokens: 7500, raw_max_tokens: 10000 } });
+    send({ type: 'system', subtype: 'compact_boundary', session_id: session, compact_metadata: { trigger: 'auto', pre_tokens: 7500, post_tokens: 1500 } });
+    send({ type: 'context_usage', session_id: session, context_usage: { total_tokens: 1500, raw_max_tokens: 10000 } });
+    result('Compacted.'); return;
+  }
   if (test.mode === 'memory-hooks') {
     const captures = [];
     for (const event of ['PreCompact', 'Stop', 'SessionEnd']) captures.push(await lifecycle(event));

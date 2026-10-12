@@ -1,6 +1,7 @@
 import { Codex, type Thread, type ThreadOptions } from '@openai/codex-sdk';
 import { serveWorker, classifyRuntimeError, type RunResult, type RuntimeEvent, type StretchInput, type TurnInput, type WorkerSession } from '@jevellan/runtime-contract';
 import { z } from 'zod';
+import { CodexContextMonitor } from './context.js';
 import { fileURLToPath } from 'node:url';
 import { realpathSync } from 'node:fs';
 import { codexMcpServers, projectTrustOverride, projectInstructionPrompt, worktreeGitDirs } from './configuration.js';
@@ -15,7 +16,7 @@ const ItemSchema = z.discriminatedUnion('type', [
 const EventSchema = z.object({ type: z.string(), thread_id: z.string().optional(), item: z.unknown().optional(), message: z.string().optional(), error: z.object({ message: z.string() }).optional(), usage: z.object({ input_tokens: z.number().int().nonnegative(), output_tokens: z.number().int().nonnegative(), cached_input_tokens: z.number().int().nonnegative().optional(), cache_write_input_tokens: z.number().int().nonnegative().optional() }).optional() });
 
 // The bridge configuration and Safety hook wiring are identical for stretches and turns; only the hook's context differs.
-function codexRuntime(input: Pick<StretchInput | TurnInput, 'launch'>, cwd: string, safetyContext: object, executable?: string): Codex {
+function codexRuntime(input: Pick<StretchInput | TurnInput, 'launch'> & { compaction?: TurnInput['compaction'] }, cwd: string, safetyContext: object, executable?: string): Codex {
   const env = Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined));
   const mcp = codexMcpServers(input.launch.mcpServers);
   const quote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`;
@@ -24,7 +25,7 @@ function codexRuntime(input: Pick<StretchInput | TurnInput, 'launch'>, cwd: stri
   // Keep the path inside a TOML value so the native CLI receives one exact key.
   return new Codex({ codexPathOverride: fileURLToPath(new URL('../bin/launch.mjs', import.meta.url)), env,
     configOverrides: [projectTrustOverride(cwd)],
-    config: { ...input.launch.nativeSetup?.settings, jevellan_executable: executable ?? 'codex', features: { multi_agent: false, hooks: true }, mcp_servers: mcp, hooks: { PreToolUse: [{ matcher: '^Bash$', hooks: [{ type: 'command', command: safety, timeout: 10 }] }] } },
+    config: { ...input.launch.nativeSetup?.settings, ...(input.compaction?.contextWindow ? { model_auto_compact_token_limit: Math.floor(input.compaction.contextWindow * input.compaction.thresholdPercent / 100) } : {}), jevellan_executable: executable ?? 'codex', features: { multi_agent: false, hooks: true }, mcp_servers: mcp, hooks: { PreToolUse: [{ matcher: '^Bash$', hooks: [{ type: 'command', command: safety, timeout: 10 }] }] } },
   });
 }
 
@@ -121,12 +122,17 @@ const turnSession = (input: TurnInput, daemonPid: number, executable?: string): 
   const control: Control = { controller: new AbortController(), textEmitted: false };
   return {
     async interrupt() { control.controller.abort(); },
-    run: (message, timeoutMs, emit, session) => execute(control, timeoutMs, () => {
+    run: async (message, timeoutMs, emit, session) => {
+      const monitor = new CodexContextMonitor(input.account.home, emit, input.resume?.sessionId);
+      const poll = setInterval(() => monitor.poll(), 500);
+      try { return await execute(control, timeoutMs, () => {
       // A resumed exec may not announce its thread again; the stored session stays the turn's session.
       const prompt = `${input.launch.nativeSetup?.instructions ? '# Native Codex instructions\n' + input.launch.nativeSetup.instructions + '\n\n' : ''}${projectInstructionPrompt(cwd)}${input.systemAppend}\n\n${message}`;
       if (input.resume) { session(input.resume.sessionId); return { thread: runtime.resumeThread(input.resume.sessionId, options), prompt }; }
       return { thread: runtime.startThread(options), prompt };
-    }, emit, session),
+    }, emit, id => { monitor.track(id); session(id); }); }
+      finally { clearInterval(poll); monitor.poll(); }
+    },
   };
 };
 

@@ -26,7 +26,7 @@ export const NEW_THREAD = 'New task';
 export const NOTEBOOK = 'Notebook';
 export const PROJECT_MENU = 'Project menu';
 export const PROJECT_SETTINGS = 'Project settings';
-export const FRESH_COORDINATOR = 'Fresh coordinator session';
+export const FRESH_COORDINATOR = 'Fresh session';
 export const MOVE_COORDINATOR = 'Move coordinator here';
 /** Move coordinator here while its request runs. */
 export const MOVING_COORDINATOR = 'Moving…';

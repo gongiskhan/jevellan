@@ -15,6 +15,7 @@ export type TurnExecutionOptions = {
   initialUsage?: AccountStatus['usage'] | undefined;
   /** Called when the native session id first appears and whenever it changes (never with undefined). */
   onSession(sessionId: string): void;
+  onEvent?(event: RuntimeEvent): void;
   /** Called once with the worker's process identity, for restart recovery. */
   onProcess(native: NativeProcess): void;
   redactor: SecretRedactor;
@@ -65,6 +66,7 @@ export class TurnExecution {
     this.#accounting = this.#accounting.then(task).then(() => undefined, () => undefined);
   }
   #event(event: RuntimeEvent): void {
+    this.#o.onEvent?.(event);
     if (event.type === 'text') { this.#all = keep(this.#all + event.delta); this.#last = keep(this.#last + event.delta); }
     else if (event.type === 'tool-start' || event.type === 'tool-end') this.#last = '';
     else if (event.type === 'usage') this.#usage.push(event);

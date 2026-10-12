@@ -143,7 +143,7 @@ export class ProjectViews {
     return { deviceId: where.deviceId, deviceName: where.deviceName, planned, canMoveHere: where.movable, ...(moveRefusal ? { moveRefusal: moveRefusal.slice(0, 400) } : {}), state: where.state,
       ...(where.unavailableReason ? { unavailableReason: where.unavailableReason } : {}), online: where.online,
       session: session ? { runtime: session.runtime, modelLabel: label(session.modelId), effort: session.effort,
-        accountLabel: accounts.find((view) => view.account.id === session.accountId)?.account.label ?? session.accountId, turns: session.turns }
+        accountLabel: accounts.find((view) => view.account.id === session.accountId)?.account.label ?? session.accountId, turns: session.turns, ...(session.context ? { context: session.context } : {}) }
         : where.published ?? null };
   }
   async #work(projectId: string): Promise<ProjectWorkSettings> { return (await this.#o.hub.settings(projectId))?.document ?? defaultProjectWorkSettings(projectId); }

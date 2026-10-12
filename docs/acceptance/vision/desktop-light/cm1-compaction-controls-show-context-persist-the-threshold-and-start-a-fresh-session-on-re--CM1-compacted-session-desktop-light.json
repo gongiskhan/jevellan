@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CM1 compaction controls show context, persist the threshold and start a fresh session on request",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/screenshots/CM1-compacted-session-desktop-light.png",
+  "expected": "the Jevellan web app \"CM1 compacted session\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"CM1 compaction controls show context, persist the threshold and start a fresh session on request\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Sidebar session titles and subtitles are truncated with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…', 'Gonca…'), but you can still read and use them",
+      "The large empty area in the conversation pane between the assistant reply and the composer looks sparse"
+    ]
+  }
+}

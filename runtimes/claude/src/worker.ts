@@ -11,7 +11,10 @@ const ThinkingDelta = z.object({ type: z.literal('content_block_delta'), delta: 
 const ContentMessage = z.object({ message: z.object({ content: z.union([z.string(), z.array(z.unknown())]) }) });
 const ToolUse = z.object({ type: z.literal('tool_use'), id: z.string(), name: z.string(), input: z.unknown() });
 const ToolResult = z.object({ type: z.literal('tool_result'), tool_use_id: z.string(), content: z.unknown(), is_error: z.boolean().optional() });
-const ModelUsage = z.object({ inputTokens: z.number().nonnegative(), outputTokens: z.number().nonnegative(), cacheReadInputTokens: z.number().nonnegative(), cacheCreationInputTokens: z.number().nonnegative(), costUSD: z.number().nonnegative(), costBasis: z.enum(['list', 'managed', 'unknown']).optional() });
+const ModelUsage = z.object({ inputTokens: z.number().nonnegative(), outputTokens: z.number().nonnegative(), cacheReadInputTokens: z.number().nonnegative(), cacheCreationInputTokens: z.number().nonnegative(), costUSD: z.number().nonnegative(), contextWindow: z.number().int().positive().optional(), costBasis: z.enum(['list', 'managed', 'unknown']).optional() });
+const Compact = z.object({ type: z.literal('system'), subtype: z.literal('compact_boundary'), compact_metadata: z.object({ pre_tokens: z.number().int().nonnegative(), post_tokens: z.number().int().nonnegative().optional() }) });
+const ContextUsage = z.object({ context_usage: z.object({ total_tokens: z.number().int().nonnegative(), raw_max_tokens: z.number().int().positive() }) });
+const AssistantUsage = z.object({ message: z.object({ usage: z.object({ input_tokens: z.number().int().nonnegative(), cache_read_input_tokens: z.number().int().nonnegative().optional(), cache_creation_input_tokens: z.number().int().nonnegative().optional() }) }) });
 const Result = z.object({ is_error: z.boolean(), subtype: z.string(), result: z.string().optional(), errors: z.array(z.string()).optional(), modelUsage: z.record(z.string(), ModelUsage) });
 
 // One worker's native query state. previous: cumulative model usage already reported by earlier runs.
@@ -37,13 +40,21 @@ async function execute(control: Control, message: string, timeoutMs: number, lau
   const controller = new AbortController();
   const timer = setTimeout(() => { control.interrupted = true; void control.current?.interrupt(); }, timeoutMs);
   let succeeded = false; let failure: ReturnType<typeof classifyRuntimeError> | undefined; let rateLimited = false;
-  let textEmitted = false; let afterTool = false;
+  let textEmitted = false; let afterTool = false; let contextTokens: number | undefined;
   const started = new Set<string>(); const ended = new Set<string>();
   try {
     control.current = query({ prompt: message, options: { ...launch, abortController: controller } });
     for await (const raw of control.current) {
       const event = Envelope.parse(raw);
       if (event.session_id) session(event.session_id);
+      const compact = Compact.safeParse(event);
+      if (compact.success && separate) { contextTokens = compact.data.compact_metadata.post_tokens; emit({ type: 'compacted', beforeTokens: compact.data.compact_metadata.pre_tokens, afterTokens: contextTokens ?? null }); }
+      const context = ContextUsage.safeParse(event);
+      if (context.success && separate) { contextTokens = context.data.context_usage.total_tokens; emit({ type: 'context', tokens: contextTokens, contextWindow: context.data.context_usage.raw_max_tokens }); }
+      else if (event.type === 'assistant' && separate) {
+        const usage = AssistantUsage.safeParse(event);
+        if (usage.success) { contextTokens = usage.data.message.usage.input_tokens + (usage.data.message.usage.cache_read_input_tokens ?? 0) + (usage.data.message.usage.cache_creation_input_tokens ?? 0); emit({ type: 'context', tokens: contextTokens }); }
+      }
       if (event.type === 'stream_event') {
         const delta = TextDelta.safeParse(event.event);
         if (delta.success) { emit({ type: 'text', delta: `${separate && afterTool && textEmitted ? '\n\n' : ''}${delta.data.delta.text}` }); textEmitted = true; afterTool = false; }
@@ -63,6 +74,8 @@ async function execute(control: Control, message: string, timeoutMs: number, lau
       if (event.type === 'result') {
         const result = Result.parse(event);
         const values = Object.values(result.modelUsage);
+        const main = result.modelUsage[launch.model ?? ''] ?? (values.length === 1 ? values[0] : undefined);
+        if (separate && main?.contextWindow && contextTokens !== undefined) emit({ type: 'context', tokens: contextTokens, contextWindow: main.contextWindow });
         const totals = values.reduce((sum, usage) => ({ input: sum.input + usage.inputTokens, output: sum.output + usage.outputTokens, read: sum.read + usage.cacheReadInputTokens, write: sum.write + usage.cacheCreationInputTokens, cost: sum.cost + usage.costUSD }), { input: 0, output: 0, read: 0, write: 0, cost: 0 });
         const delta = (key: keyof typeof totals) => totals[key] >= control.previous[key] ? totals[key] - control.previous[key] : totals[key];
         emit({ type: 'usage', inputTokens: delta('input'), outputTokens: delta('output'), cacheReadTokens: delta('read'), cacheWriteTokens: delta('write'), ...(values.length && values.every((usage) => usage.costBasis !== 'unknown') ? { costUsd: delta('cost'), costSource: 'estimated' as const } : {}) });
@@ -116,6 +129,7 @@ const stretchSession = (input: StretchInput, daemonPid: number, executable?: str
 const turnSession = (input: TurnInput, daemonPid: number, executable?: string): WorkerSession => {
   const control: Control = { current: undefined, interrupted: false, previous: { input: 0, output: 0, read: 0, write: 0, cost: 0 } };
   const { env, mcpServers } = workerEnvironment(input);
+  if (input.compaction) env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE = String(input.compaction.thresholdPercent);
   // The coordinator is the read-only owner; its allow list is its scope's exact tool list, shared with the hook.
   const bridgeTools = input.owner.kind === 'coordinator' ? claudeBridgeToolNames(projectToolNames({ kind: 'coordinator' })) : input.owner.kind === 'review' ? claudeBridgeToolNames(['jevellan_project_review_report']) : undefined;
   const hook = claudePermissionHook({ cwd: input.cwd, daemonPid, profile: input.safetyProfile, permissions: input.permissions, ...(bridgeTools ? { bridgeTools } : {}) });

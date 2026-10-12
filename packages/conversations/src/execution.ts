@@ -78,6 +78,7 @@ export class StretchExecution {
       for await (const raw of run.events) {
         const event = RuntimeEventSchema.parse(raw);
         this.#persistNative(run);
+        if (event.type === 'context' || event.type === 'compacted') continue;
         if (event.type === 'usage') this.#usage.push(event);
         if (event.type === 'rate-limit') this.options.work.ledger.append({ type: 'notice', stretch: this.options.input.stretch, data: { schema: 'runtime-rate-limit-v1', ...event } });
         else this.options.work.runtimeEvent(event.type, event, this.options.input.stretch);
