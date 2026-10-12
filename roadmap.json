@@ -422,8 +422,8 @@
   {
     "id": "coordinator-memory-terminal-p2",
     "title": "Numbered owner questions and repository awareness",
-    "why": "Record batched owner-chat answers and expose scoped, cached GitHub reads.",
-    "status": "planned"
+    "why": "Numbered questions and owner-chat answers, current list receipts, individual delivery and mirror completion; scoped, cached GitHub reads from raw origin with shared budget. 135 affected backend cases, six workflow cases, four-layout CM2 and eight clear live vision judgments pass. Actual sandbox tool calls remain blocked on owner Settings credentials.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "coordinator-memory-terminal-p3",

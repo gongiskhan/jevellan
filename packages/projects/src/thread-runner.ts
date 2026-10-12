@@ -128,6 +128,7 @@ export type ThreadRunnerContext = {
   /** Mail and reservations, the main-isolation thread tools (brief 7.2). */
   mail: Pick<MailService, 'threadTool' | 'releaseThread'>;
   appTool?: ProjectToolHandlers['call'];
+  githubTool?: ProjectToolHandlers['call'];
   /** The runtime adapter's display name (D83). */
   runtimeName(runtime: string): string;
   enterOperation(id: string, title: string): () => void;
@@ -468,6 +469,10 @@ export class ThreadRunner {
       isCurrent: (scope) => scope.kind === 'thread' && scope.threadId === this.threadId && this.isCurrent(scope.turn),
       call: async (scope, name, input, signal) => {
         if (scope.kind !== 'thread') throw refuse(TOOL_NOT_IN_TURN, 403);
+        if (name === 'jevellan_github') {
+          if (!this.#c.githubTool) throw new Error('GitHub awareness is unavailable.');
+          return this.#c.githubTool(scope, name, input, signal);
+        }
         if (['jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list'].includes(name)) {
           if (!this.#c.appTool) throw new Error('App resources are unavailable on this device.');
           return this.#c.appTool(scope, name, input, signal);

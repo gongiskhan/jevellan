@@ -1631,3 +1631,23 @@ Refines decision 703's test-only exception. JEVELLAN_TEST_COMPACT_PERCENT accept
 ### P1 session implementation evidence
 
 Simulated: 107 backend cases in seven files pass (69.35 seconds), including coordinator/thread continuity, restart, settings and native-home regressions, auxiliary receipts and discovered-window fallback. CM1 passes all four layouts in 58.3 seconds; its saved-setting and geometric assertions catch the observed initial clipping/overlap defects. Live: eight final dedicated vision verdicts are clear; typecheck/lint/build pass on Node22. Working-tree and mandatory history secret scans gate this phase's main push. Blocked: actual provider compaction and scenario C on activated owner accounts. Not run: subsequent phases, full 0.3.0 closing checks/review/release. The 0.2.1 service and rollback remain unchanged; no owner acceptance is claimed.
+
+### Decision 718 — Keep one numbered question list through the whole turn
+
+Refines decision 707. Use created time then id for cards, context and event blocks; ask/answer receipts include the newly current numbered list. Owner-chat answers require an authenticated owner-message event in the current turn, persist the interpreted answer with source and quoted words, complete the existing mirror once and suppress the redundant coordinator echo. The coordinator sends the answer to its thread explicitly; panel answers keep their existing path.
+
+### Decision 719 — Resolve repository awareness from the registered checkout
+
+Refines decision 708. Use the raw Git origin and actual base branch, as publication already does, because registered projects need not store a remote URL. All read actions share GitHubClient's token budget. A per-project/repository/token cache lasts 60 seconds, coalesces concurrent reads, never caches errors and rechecks thread scope/current head on every read. Token changes cannot reuse earlier cached results. Threads have only their own pull, head runs and job logs; the coordinator can inspect all repository authors.
+
+### Decision 720 — Stream bounded log tails instead of buffering complete logs
+
+Refines decision 708's output bounds. Retain only the trailing download bytes, with the existing timeout and a 64 MB transfer ceiling, then redact before returning at most 8,000 characters. Versioned action results bound runs, jobs/steps, files, checks and total text, with explicit shortening where applicable. The official [workflow runs](https://docs.github.com/en/rest/actions/workflow-runs), [jobs](https://docs.github.com/en/rest/actions/workflow-jobs) and [commits](https://docs.github.com/en/rest/commits/commits) APIs ground the read-only actions.
+
+### Decision 721 — Preserve batched owner provenance and accept the specified CI logs
+
+Refines decisions 703 and 707. The original 20,000-character coordinator message limit cannot carry scenario C's approximately 30,000-token CI logs. Raise only owner coordinator messages/events to 200,000 characters. When a turn consumes several messages, quote all its authenticated owner words in arrival order instead of falsely attributing an answer to the newest follow-up. Code does not guess which message means which answer; the coordinator interprets them with the numbered context. Redaction still removes secrets before storage.
+
+### P2 implementation evidence
+
+Simulated: 135 affected backend cases in ten files, six additional workflow cases and CM2 in all four layouts pass. The last focused regression run covers batched-owner provenance, large messages and shared rate accounting. Initial product defects in MCP root schema and registered-checkout origin resolution are fixed with regressions. Live: eight final dedicated vision judgments have no blocking findings. Typecheck/lint/build and whitespace pass; mandatory working-tree/history secret scans gate the main push. Blocked: actual sandbox GitHub tool calls through the project Settings token and real provider scenarios. No live scenario clock, owner acceptance, production update or review pass is claimed. P3 shared memory is next.

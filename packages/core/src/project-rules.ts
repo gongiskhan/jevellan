@@ -4,6 +4,12 @@ import type { Stored } from './store.js';
 
 // Pure rules shared by the hub, the owner device and the browser.
 
+/** The owner and every coordinator prompt see the same oldest-first question order. Id breaks timestamp ties on every device. */
+export function openQuestions(decisions: readonly ProjectDecision[]): ProjectDecision[] {
+  return decisions.filter(decision => !decision.answer && !decision.withdrawnAt)
+    .sort((a, b) => a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+}
+
 /** Reservation overlap (brief 5.11): equal, or one is a directory prefix ending in '/' that the other starts with. No globbing. */
 export function pathsOverlap(a: string, b: string): boolean {
   return a === b || (a.endsWith('/') && b.startsWith(a)) || (b.endsWith('/') && a.startsWith(b));

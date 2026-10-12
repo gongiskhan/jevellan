@@ -11,7 +11,7 @@ const NOT_MERGEABLE = 'Pull Request is not mergeable';
 
 export async function startGitHubFixture({ token, repositories = {}, port = 0, onMerge }) {
   if (typeof token !== 'string' || !token) throw new Error('The GitHub fixture needs a token.');
-  const workflowView = value => { const { jobs, repo, workflow, ...run } = value; void jobs; void repo; void workflow; return run; };
+  const workflowView = value => { const { jobs, repo, workflow, ...run } = value; void jobs; void repo; return { name: workflow, ...run }; };
   const requests = []; const pulls = []; const failures = []; const workflows = []; const variables = new Map(); let loseDispatchReply = false;
   const origin = (repo) => repositories[repo];
   const headOf = (repo, ref) => {
@@ -27,6 +27,7 @@ export async function startGitHubFixture({ token, repositories = {}, port = 0, o
   const view = (pull, list = false) => {
     const [owner] = pull.repo.split('/');
     return { number: pull.number, html_url: `https://github.com/${pull.repo}/pull/${pull.number}`, state: pull.state, title: pull.title, body: pull.body,
+      user: { login: pull.author ?? owner }, draft: pull.draft ?? false, updated_at: pull.updatedAt ?? new Date().toISOString(),
       merged_at: pull.merged ? pull.mergedAt : null, head: { sha: pull.headSha, ref: pull.head, label: `${owner}:${pull.head}` }, base: { ref: pull.base },
       // List items carry no merge fields on GitHub.
       ...(list ? {} : { merged: pull.merged, mergeable: MERGEABLE[pull.mergeable] ?? null, mergeable_state: pull.mergeable }) };
@@ -86,9 +87,11 @@ export async function startGitHubFixture({ token, repositories = {}, port = 0, o
       if (loseDispatchReply) { loseDispatchReply = false; response.destroy(); return; }
       return send(response, 200, { workflow_run_id: id, html_url: `https://github.com/${repo}/actions/runs/${id}` });
     }
-    if ((match = /^\/actions\/workflows\/([^/]+)\/runs$/.exec(rest)) && method === 'GET') {
-      const runs = workflows.filter(run => run.repo === repo && run.workflow === decodeURIComponent(match[1]) && run.head_branch === url.searchParams.get('branch')).sort((a, b) => b.id - a.id);
-      const page = Number(url.searchParams.get('page') ?? '1'); return send(response, 200, { workflow_runs: runs.slice((page - 1) * 100, page * 100).map(workflowView) });
+    if (((match = /^\/actions\/workflows\/([^/]+)\/runs$/.exec(rest)) || rest === '/actions/runs') && method === 'GET') {
+      const runs = workflows.filter(run => run.repo === repo && (!match || run.workflow === decodeURIComponent(match[1]))
+        && ['branch', 'event', 'status'].every(key => !url.searchParams.has(key) || run[key === 'branch' ? 'head_branch' : key] === url.searchParams.get(key))).sort((a, b) => b.id - a.id);
+      const page = Number(url.searchParams.get('page') ?? '1'), size = Number(url.searchParams.get('per_page') ?? '100');
+      return send(response, 200, { workflow_runs: runs.slice((page - 1) * size, page * size).map(workflowView) });
     }
     if ((match = /^\/actions\/runs\/(\d+)(\/jobs)?$/.exec(rest)) && method === 'GET') {
       const run = workflows.find(run => run.repo === repo && run.id === Number(match[1])); if (!run) return send(response, 404, { message: 'Not Found' });
@@ -96,14 +99,19 @@ export async function startGitHubFixture({ token, repositories = {}, port = 0, o
       return send(response, 200, workflowView(run));
     }
     if ((match = /^\/actions\/jobs\/(\d+)\/logs$/.exec(rest)) && method === 'GET') {
-      const job = workflows.flatMap(run => run.jobs).find(job => job.id === Number(match[1])); if (!job || job.logs === undefined) return send(response, 403, { message: 'Logs not readable' });
+      const job = workflows.filter(run => run.repo === repo).flatMap(run => run.jobs).find(job => job.id === Number(match[1])); if (!job || job.logs === undefined) return send(response, 403, { message: 'Logs not readable' });
       response.writeHead(200, { 'content-type': 'text/plain' }); return response.end(job.logs);
+    }
+    if ((match = /^\/actions\/jobs\/(\d+)$/.exec(rest)) && method === 'GET') {
+      const run = workflows.find(run => run.repo === repo && run.jobs.some(job => job.id === Number(match[1])));
+      return run ? send(response, 200, { id: Number(match[1]), run_id: run.id }) : send(response, 404, { message: 'Not Found' });
     }
     if (rest === '/pulls' && method === 'GET') {
       const head = url.searchParams.get('head'); const state = url.searchParams.get('state') ?? 'open';
       const ref = head && (head.includes(':') ? (head.startsWith(`${owner}:`) ? head.slice(owner.length + 1) : null) : head);
       if (head && ref === null) return send(response, 200, []);
-      return send(response, 200, pulls.filter((pull) => pull.repo === repo && (state === 'all' || pull.state === state) && (!ref || pull.head === ref)).map((pull) => view(refresh(pull), true)));
+      return send(response, 200, pulls.filter((pull) => pull.repo === repo && (state === 'all' || pull.state === state) && (!ref || pull.head === ref))
+        .slice(0, Number(url.searchParams.get('per_page') ?? pulls.length)).map((pull) => view(refresh(pull), true)));
     }
     if (rest === '/pulls' && method === 'POST') {
       const { title, head, base, body: description = '' } = body ?? {};
@@ -151,6 +159,17 @@ export async function startGitHubFixture({ token, repositories = {}, port = 0, o
       return send(response, 200, { total_count: runs.length, check_runs: runs.map((run, index) => ({ id: index + 1, name: `fixture-${index + 1}`, head_sha: match[1], ...run })) });
     }
     if ((match = /^\/commits\/([^/]+)\/status$/.exec(rest)) && method === 'GET') return send(response, 200, { sha: match[1], ...checksOf(repo, match[1]).status });
+    if ((match = /^\/commits\/([^/]+)\/pulls$/.exec(rest)) && method === 'GET') return send(response, 200,
+      pulls.filter(pull => pull.repo === repo && (pull.headSha === match[1] || pull.mergeSha === match[1])).map(pull => view(pull, true)));
+    if (rest === '/commits' && method === 'GET') {
+      const args = ['--git-dir', origin(repo), 'rev-list', `--max-count=${Math.min(30, Number(url.searchParams.get('per_page') ?? '10'))}`];
+      if (url.searchParams.get('since')) args.push(`--since=${url.searchParams.get('since')}`);
+      const shas = execFileSync('git', [...args, '--end-of-options', url.searchParams.get('sha') ?? 'main'], { encoding: 'utf8' }).trim().split('\n').filter(Boolean);
+      return send(response, 200, shas.map(sha => {
+        const [name, date, ...message] = execFileSync('git', ['--git-dir', origin(repo), 'show', '-s', '--format=%an%n%aI%n%B', sha], { encoding: 'utf8' }).split('\n');
+        return { sha, commit: { message: message.join('\n'), author: { name, date: new Date(date).toISOString() } } };
+      }));
+    }
     return send(response, 404, { message: 'Not Found' });
   }
 

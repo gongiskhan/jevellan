@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CM2 questions share oldest-first numbering and show the owner chat answer in every layout",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/CM2-answered-in-chat-phone-dark.png",
+  "expected": "the Jevellan web app \"CM2 answered in chat\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"CM2 questions share oldest-first numbering and show the owner chat answer in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Pull requests' tab is cut off at the right edge of the tab strip. It looks like a horizontally scrollable strip, so the tab can still be reached by scrolling.",
+      "Each answered question shows the same combined chat reply ('1 Archive, 2 Amber, 3 25'), but the question rows have no visible numbers, so it's hard to tell which answer goes with which question.",
+      "Most of the lower half of the screen is empty."
+    ]
+  }
+}

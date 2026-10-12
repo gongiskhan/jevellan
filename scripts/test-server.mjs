@@ -106,6 +106,24 @@ const EVENTS_HEADER = eventBlock([]);
 function coordinatorStep(input) {
   // Only delivered events count; the fresh-session recap repeats earlier messages.
   const at = input.prompt.lastIndexOf(EVENTS_HEADER); const events = at < 0 ? input.prompt : input.prompt.slice(at);
+  // Simulated CM2 provider turns exercise real question storage, the bridge, numbering and owner-chat delivery.
+  if (events.includes('CM2 questions')) return async turn => {
+    const questions = [
+      { question: 'Archive or remove customers?', options: [{ label: 'Archive' }, { label: 'Remove' }] },
+      { question: 'Red or amber for overdue invoices?', options: [{ label: 'Red' }, { label: 'Amber' }] },
+      { question: 'How many customers per page?', options: [{ label: '10' }, { label: '25' }, { label: '50' }] },
+    ];
+    let result;
+    for (const question of questions) result = await projectTool(turn, 'jevellan_ask_user', question);
+    turn.say(result.openQuestions.questions.map(question => `${question.number}. [${question.threadTitle}] ${question.question} Options: ${question.options.join(', ')}.`).join('\n'));
+    return { status: 'completed' };
+  };
+  if (events.includes('1 Archive, 2 Amber, 3 25') && events.includes('Archive or remove customers?')) return async turn => {
+    const questions = [...events.matchAll(/^(\d+)\. \[[^\n]*\] [^\n]*\(questionId ([A-Za-z0-9_-]+)\)$/gmu)];
+    assert.equal(questions.length, 3);
+    for (const match of questions) await projectTool(turn, 'jevellan_answer_question', { questionId: match[2], optionLabel: ['Archive', 'Amber', '25'][Number(match[1]) - 1] });
+    turn.say('Recorded all three answers from your message.'); return { status: 'completed' };
+  };
   if (events.includes('CM1 compaction')) return async turn => {
     turn.emit({ type: 'context', tokens: 7500, contextWindow: 10000 });
     turn.emit({ type: 'compacted', beforeTokens: 7500, afterTokens: 1500, contextWindow: 10000 });

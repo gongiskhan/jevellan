@@ -25,6 +25,7 @@ export * from './attach.js';
 export * from './envelopes.js';
 export * from './recovery.js';
 export * from './views.js';
+export * from './github-awareness.js';
 export * from './project-work.js';
 export * from './tasks.js';
 export * from './dispatcher.js';

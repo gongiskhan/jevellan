@@ -114,7 +114,7 @@ test('PJ2 one owner message starts two threads and the publications arrive batch
   expect(first).toMatchObject({ owner: { kind: 'coordinator', projectId: pid, id: pid }, turn: 1, permissions: 'read-only', safetyProfile: 'coordinator', cwd: f.checkout,
     systemAppend: coordinatorSystemAppend('Shop') });
   expect(first!.resume).toBeUndefined();
-  expect(first!.prompt).toMatch(clocked('Project notebook:\n(empty)\n\nActive threads:\n(none)\n\nOpen questions to the owner:\n(none)\n\nRecent conversation with the owner:\n(none)\n\nEvents since your last turn:\n[owner HH:MM] add A and fix B'));
+  expect(first!.prompt).toMatch(clocked('Project notebook:\n(empty)\n\nActive threads:\n(none)\n\nOpen questions to the owner (numbered as the owner sees them):\n(none)\n\nRecent conversation with the owner:\n(none)\n\nEvents since your last turn:\n[owner HH:MM] add A and fix B'));
   expect(second!.resume).toEqual({ sessionId: sessionOf(f, first!).sessionId });
   const pr = async (id: string) => (await f.index(id))!.pr!.number;
   const [lineA, lineB] = [`[thread "Add A" (${idA})] Pull request #${await pr(idA)} opened.`, `[thread "Fix B" (${idB})] Pull request #${await pr(idB)} opened.`];
@@ -195,7 +195,7 @@ test('PJ2b a needs-decision report becomes an owner question and the answer reac
   expect(coordinatorTurns(f)[1]!.prompt).toBe(`Events since your last turn:\n[thread "Store data" (${threadId}) reported needs-decision] Need a database choice.\nQuestion: Which database?\nOptions: SQLite; Postgres`);
   const decisionId = asked[0]!.id;
   expect(asked[0]).toMatchObject({ from: 'coordinator', threadId, question, options: [{ label: 'SQLite', detail: 'Single file' }, { label: 'Postgres' }] });
-  expect(results[1]).toEqual({ schema: 'ask-user-result-v1', decisionId });
+  expect(results[1]).toMatchObject({ schema: 'ask-user-result-v1', decisionId, openQuestions: { schema: 'open-questions-v1', questions: [{ number: 1, questionId: decisionId, threadTitle: 'Store data' }] } });
 
   // The owner answers with an option; a retry repeats without a second event; another answer is refused.
   const path = route(f, `/decisions/${decisionId}/answer`);
@@ -214,14 +214,14 @@ test('PJ2b a needs-decision report becomes an owner question and the answer reac
   expect(turnTwo).toMatchObject({ prompt: 'Use SQLite.', resume: { sessionId: sessionOf(f, turnOne!).sessionId } });
   expect(f.thread(threadId)).toMatchObject({ state: 'in-review', lastReport: { status: 'done', summary: 'Stored the data in SQLite.', synthesized: false } });
   expect(received(f).filter((event) => event.kind === 'decision-answer')).toEqual([expect.objectContaining({ id: derivedId('cev', 'answer', decisionId), decisionId, threadId, question,
-    answer: { optionLabel: 'SQLite' } })]);
+    answer: { optionLabel: 'SQLite', source: 'panel' } })]);
   expect(received(f).filter((event) => event.kind === 'thread-published')).toEqual([expect.objectContaining({ threadId, result: 'pr-opened', prNumber: 1 })]);
   expect(coordinatorTurns(f)).toHaveLength(4);
   expect(coordinatorTurns(f)[3]!.prompt).toBe(`Events since your last turn:\n[thread "Store data" (${threadId})] Pull request #1 opened.`);
   expect(f.coordinatorState()).toMatchObject({ state: 'idle', queue: [], failedTurnsInARow: 0 });
   const view = await work(f);
   expect(view.decisions.open).toEqual([]);
-  expect(view.decisions.answered).toEqual([expect.objectContaining({ id: decisionId, answer: { optionLabel: 'SQLite' } })]);
+  expect(view.decisions.answered).toEqual([expect.objectContaining({ id: decisionId, answer: { optionLabel: 'SQLite', source: 'panel' } })]);
   expect(payloads(f, 'coordinator-tool').map((line) => [line.tool, line.ok])).toEqual([['jevellan_task_create', true], ['jevellan_ask_user', true], ['jevellan_thread_message', true]]);
   expect(payloads(f, 'coordinator-tool')[1]).toEqual({ schema: 'coordinator-tool-v1', tool: 'jevellan_ask_user', ok: true, summary: `Asked you: ${question}`, threadId, decisionId });
 });
@@ -295,7 +295,7 @@ test('PJ2c after two failed turns the coordinator waits for a message, and threa
   const prompt = coordinatorTurns(f)[2]!.prompt;
   for (const line of [/\[owner \d{2}:\d{2}\] Plan the release\.\n/, new RegExp(escape(`[owner started thread "Store data" (${threadId})] Store the data.`)),
     new RegExp(escape(`[thread "Store data" (${threadId}) reported needs-decision] Need a database choice.\nQuestion: Which database?\nOptions: SQLite; Postgres (Jevellan asked the owner directly.)`)),
-    /\[owner \d{2}:\d{2}\] Try again\.$/]) expect(prompt).toMatch(line);
+    /\[owner \d{2}:\d{2}\] Try again\.\n\nOpen questions to the owner \(numbered as the owner sees them\):\n1\. \[Store data\] Which database\? Options: SQLite, Postgres\. \(questionId pdec_[A-Za-z0-9_-]+\)$/]) expect(prompt).toMatch(line);
   expect(f.coordinatorState()).toMatchObject({ state: 'idle', failedTurnsInARow: 0, queue: [] });
   expect(payloads(f, 'coordinator-turn-end').map((data) => data.status)).toEqual(['failed', 'failed', 'completed']);
 });
@@ -310,12 +310,12 @@ test('PJ2c without a model that runs read-only turns the coordinator is unavaila
   expect(coordinatorTurns(f)).toEqual([]);
 });
 
-test('PJ2d the coordinator rotates its session at 40 turns and on Fresh coordinator session', { timeout: 120_000 }, async () => {
+test('PJ2d the coordinator keeps its session beyond 40 turns and rotates on Fresh session or model change', { timeout: 120_000 }, async () => {
   const menu = [...FIXTURE_MENU, { id: 'fixture-alt', runtime: 'fake', model: 'scripted-model', label: 'Fixture alt', description: 'Another simulated model.', efforts: ['high' as const], enabled: true }];
   const f = await setup({ coordinator: true, menu }); const pid = f.project.id;
-  let threadId = '';
+  let threadId = '', questionId = '';
   f.fake.enqueueTurn(async (turn) => {
-    await turn.bridge('jevellan_ask_user', { question: 'Which database?', options: [{ label: 'SQLite' }, { label: 'Postgres' }] });
+    questionId = (await turn.bridge('jevellan_ask_user', { question: 'Which database?', options: [{ label: 'SQLite' }, { label: 'Postgres' }] }) as { decisionId: string }).decisionId;
     threadId = (await queueThread(f, turn, { title: 'Store data', task: 'Draft the storage schema.' }) as { threadId: string }).threadId;
     turn.say('Started Store data and asked about the database.'); return { status: 'completed' };
   }, forCoordinator);
@@ -329,7 +329,7 @@ test('PJ2d the coordinator rotates its session at 40 turns and on Fresh coordina
   expect(ProjectNotebookViewSchema.parse(await call(f, route(f, '/notebook'), 'PUT', { schema: 'notebook-request-v1', expectedRevision: 0, content: 'Prefer SQLite.' }, 200)).revision).toBe(1);
   const old = f.coordinatorState().session!;
 
-  // 40 turns in the stored session: after a restart the next turn starts a fresh session with the fresh context.
+  // Forty stored turns survive restart; only an explicit fresh session or a model change rotates it.
   await f.restart(() => {
     writeDocument(f.app.projectWork.paths.coordinator(pid), CoordinatorStateSchema, { ...f.coordinatorState(), session: { ...old, turns: 40 } });
   });
@@ -339,24 +339,24 @@ test('PJ2d the coordinator rotates its session at 40 turns and on Fresh coordina
     return coordinatorTurns(f).at(-1)!;
   };
   // Notebook, active threads and open questions: the part of the fresh context that does not depend on the recap.
-  const context = `Project notebook:\nPrefer SQLite.\n\nActive threads:\n- Store data (${threadId}): idle, worktree, Scripted test runtime Fixture high on ${f.deviceName}. Last report: Schema drafted.\n\nOpen questions to the owner:\n- Which database?\n\nRecent conversation with the owner:\n`;
+  const context = `Project notebook:\nPrefer SQLite.\n\nActive threads:\n- Store data (${threadId}): idle, worktree, Scripted test runtime Fixture high on ${f.deviceName}. Last report: Schema drafted.\n\nOpen questions to the owner (numbered as the owner sees them):\n1. [Coordinator] Which database? Options: SQLite, Postgres. (questionId ${questionId})\n\nRecent conversation with the owner:\n`;
+  const questionsBlock = `Open questions to the owner (numbered as the owner sees them):\n1. [Coordinator] Which database? Options: SQLite, Postgres. (questionId ${questionId})`;
   const rotated = await next('msg_d2', 'What next?');
-  expect(rotated.resume).toBeUndefined();
-  expect(rotated.prompt).toMatch(clocked(`${context}Owner: Plan storage.\n\nYou: Started Store data and asked about the database.\n\nYou: Noted.\n\nEvents since your last turn:\n[owner HH:MM] What next?`));
-  expect(f.coordinatorState().session).toMatchObject({ turns: 1, modelId: 'fixture' });
-  expect(f.coordinatorState().session!.nativeSessionId).not.toBe(old.nativeSessionId);
-  expect(payloads(f, 'coordinator-turn-start').at(-1)).toMatchObject({ turn: 3, fresh: true, modelLabel: 'Fixture' });
+  expect(rotated.resume).toEqual({ sessionId: old.nativeSessionId });
+  expect(rotated.prompt).toMatch(clocked(`Events since your last turn:\n[owner HH:MM] What next?\n\n${questionsBlock}`));
+  expect(f.coordinatorState().session).toMatchObject({ turns: 41, modelId: 'fixture', nativeSessionId: old.nativeSessionId });
+  expect(payloads(f, 'coordinator-turn-start').at(-1)).toMatchObject({ turn: 3, fresh: false, modelLabel: 'Fixture' });
 
-  // A normal turn resumes the new session and sends only the events.
+  // A normal turn keeps that session and includes the numbered open questions with its events.
   const resumed = await next('msg_d3', 'Go on.');
   expect(resumed.resume).toEqual({ sessionId: sessionOf(f, rotated).sessionId });
-  expect(resumed.prompt).toMatch(clocked('Events since your last turn:\n[owner HH:MM] Go on.'));
+  expect(resumed.prompt).toMatch(clocked(`Events since your last turn:\n[owner HH:MM] Go on.\n\n${questionsBlock}`));
 
   // Fresh coordinator session: the next turn starts over with the fresh context.
   expect(ProjectWorkViewSchema.parse(await call(f, route(f, '/coordinator/fresh'), 'POST', { schema: 'empty-request-v1' }, 202)).coordinator.session).toBeNull();
   const fresh = await next('msg_d4', 'Start over.');
   expect(fresh.resume).toBeUndefined(); expect(fresh.prompt.startsWith(context)).toBe(true);
-  expect(fresh.prompt).toMatch(/\n\nEvents since your last turn:\n\[owner \d{2}:\d{2}\] Start over\.$/);
+  expect(fresh.prompt.slice(fresh.prompt.lastIndexOf('Events since your last turn:'))).toMatch(clocked(`Events since your last turn:\n[owner HH:MM] Start over.\n\n${questionsBlock}`));
   expect((await next('msg_d5', 'Carry on.')).resume).toEqual({ sessionId: sessionOf(f, fresh).sessionId });
 
   // Another coordinator model in the work settings: a fresh session on that model.
@@ -367,7 +367,7 @@ test('PJ2d the coordinator rotates its session at 40 turns and on Fresh coordina
   const switched = await next('msg_d6', 'Use the other model.');
   expect(switched.resume).toBeUndefined(); expect(switched.prompt.startsWith(context)).toBe(true);
   expect(f.coordinatorState().session).toMatchObject({ modelId: 'fixture-alt', turns: 1 });
-  expect(payloads(f, 'coordinator-turn-start').map((data) => [data.turn, data.fresh, data.modelLabel])).toEqual([[1, true, 'Fixture'], [2, false, 'Fixture'], [3, true, 'Fixture'],
+  expect(payloads(f, 'coordinator-turn-start').map((data) => [data.turn, data.fresh, data.modelLabel])).toEqual([[1, true, 'Fixture'], [2, false, 'Fixture'], [3, false, 'Fixture'],
     [4, false, 'Fixture'], [5, true, 'Fixture'], [6, false, 'Fixture'], [7, true, 'Fixture alt']]);
 });
 

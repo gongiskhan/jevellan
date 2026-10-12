@@ -1497,3 +1497,29 @@ test('CM1 compaction controls show context, persist the threshold and start a fr
   await expect.poll(async () => (await work(page)).coordinator.session).toBeNull();
   expect(errors).toEqual([]);
 });
+
+test('CM2 questions share oldest-first numbering and show the owner chat answer in every layout', async ({ page }) => {
+  const errors = await begin(page); await openProject(page, 'Projects fixture');
+  if (phone(test.info())) await tap(page, tab(page, 'Chat'));
+  await composer(page).fill('CM2 questions'); await composer(page).press('Enter');
+  await expect.poll(async () => (await work(page)).decisions.open.length, LONG).toBe(3);
+  const before = await work(page), questions = before.decisions.open;
+  expect(questions.map(question => question.question)).toEqual(['Archive or remove customers?', 'Red or amber for overdue invoices?', 'How many customers per page?']);
+  if (phone(test.info())) await tap(page, tab(page, 'Waiting'));
+  const cards = page.locator('.pw-decision'); await expect(cards).toHaveCount(3);
+  for (let index = 0; index < 3; index++) {
+    await expect(cards.nth(index).getByLabel(`Question ${index + 1}`, { exact: true })).toHaveText(String(index + 1));
+    await expect(cards.nth(index)).toContainText(questions[index]!.question);
+  }
+  await shot(page, 'numbered-questions');
+  if (phone(test.info())) await tap(page, tab(page, 'Chat'));
+  const answer = '1 Archive, 2 Amber, 3 25'; await composer(page).fill(answer); await composer(page).press('Enter');
+  await expect.poll(async () => (await work(page)).decisions.open.length, LONG).toBe(0);
+  const after = await work(page);
+  expect(after.decisions.answered.filter(question => questions.some(before => before.id === question.id)).map(question => question.answer))
+    .toEqual(expect.arrayContaining(['Archive', 'Amber', '25'].map(optionLabel => ({ optionLabel, source: 'owner-chat', ownerMessage: answer }))));
+  if (phone(test.info())) await tap(page, tab(page, 'Waiting'));
+  await page.locator('.pw-answered summary').click();
+  await expect(page.locator('.pw-answered-answer').filter({ hasText: `Answered in chat: ${answer}` })).toHaveCount(3);
+  await shot(page, 'answered-in-chat'); expect(errors).toEqual([]);
+});

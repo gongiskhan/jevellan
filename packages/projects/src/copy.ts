@@ -1,4 +1,4 @@
-import { NOT_ON_MAIN, OWNER_STARTED_PREFIX, OWNER_WORKED_PREFIX, RESTARTED_PREFIX, SAVED_COMMITS_SENTENCE, clipRedacted, splitSavedCommits, type CoordinatorEvent, type Isolation, type PlacementOverride, type ThreadReport, type ThreadState } from '@jevellan/core';
+import { NOT_ON_MAIN, OWNER_STARTED_PREFIX, OWNER_WORKED_PREFIX, RESTARTED_PREFIX, SAVED_COMMITS_SENTENCE, clipRedacted, splitSavedCommits, type CoordinatorEvent, type Isolation, type PlacementOverride, type ProjectDecision, type ThreadReport, type ThreadState } from '@jevellan/core';
 import { firstLine, tail } from './git.js';
 
 // Every brief-verbatim Projects string (brief 9) and the server copy of phase 1. Pure functions only.
@@ -32,6 +32,8 @@ How you work:
 - When checks fail or a pull request has conflicts, tell the responsible thread what to fix.
 - When a thread was interrupted by a restart or a failure, resume it with jevellan_thread_message if the work is still wanted.
 - Keep the notebook current with jevellan_notebook_write: the owner's standing instructions and preferences for this project, decisions taken, the current plan and open questions. Keep it concise. The notebook is your memory across sessions.
+- Questions for the owner: whenever you ask one, and whenever the owner asks for status, end your reply with every open question, oldest first, numbered exactly as in your context, each with its thread and options. The owner may answer on the cards or in chat, several at once, such as "1 B, 2 done". Match each answer to its question, record it with jevellan_answer_question, and send it to the thread that needs it with jevellan_thread_message. If one answer is unclear, ask about that one only.
+- GitHub: your threads' pull requests and Jevellan's jobs reach you as events. For anything else, such as workflow runs, pull requests from people or other tools, recent commits on main, or the log of a failed check, use jevellan_github. When a thread's checks fail, read the failed job's log and tell the thread exactly what failed.
 
 Replying to the owner: be brief and concrete. Say what you started, routed, asked or concluded, naming threads by title. Never paste long transcripts. Write in the owner's language.`;
 }
@@ -45,6 +47,10 @@ export function activeThreadLine(thread: ActiveThreadLine): string {
   return `- ${thread.title} (${thread.id}): ${thread.state}, ${thread.isolation}, ${thread.runtime} ${thread.modelLabel} ${thread.effort} on ${thread.deviceName}${pr}. Last report: ${oneLine(thread.lastSummary ?? '') || 'none'}`;
 }
 export const openQuestionLine = (question: string): string => `- ${oneLine(question)}`;
+export const OPEN_QUESTIONS = 'Open questions to the owner (numbered as the owner sees them):';
+export function numberedQuestionLine(decision: Pick<ProjectDecision, 'id' | 'question' | 'options'>, number: number, title: string): string {
+  return `${number}. [${oneLine(title)}] ${oneLine(decision.question)} Options: ${decision.options.map(option => oneLine(option.label)).join(', ') || '(none)'}. (questionId ${decision.id})`;
+}
 export const RECENT_CONVERSATION_CHARS = 8000;
 /**
  * Owner messages and coordinator replies, newest first until the budget is spent, emitted oldest first (D36). The
@@ -67,7 +73,7 @@ ${notebook || '(empty)'}
 Active threads:
 ${input.threads.length ? input.threads.join('\n') : '(none)'}
 
-Open questions to the owner:
+${OPEN_QUESTIONS}
 ${input.questions.length ? input.questions.join('\n') : '(none)'}
 
 Recent conversation with the owner:
@@ -149,6 +155,7 @@ ${isolation}
 - Keep the coordinator informed. End every turn with exactly one jevellan_thread_report: progress while you are still working, done when the task is complete, blocked when something outside your control stops you, and needs-decision with two to four options when a choice belongs to the owner.
 - ${manual ? "This project leaves git to the owner. Preserve unrelated work; do not commit, stage, stash, reset, switch branches, push or open a pull request. Leave the edits in place for the owner." : "Commit your work with the machine's git identity and no attribution. Jevellan pushes and opens the pull request; never push or open one yourself."}
 - Run only surgical tests: the ones that cover what you changed. Jevellan runs the project's checks and the full suite.
+- If your pull request's checks fail, read them with jevellan_github.
 - Don't review your own work beyond normal care. Tests run after you, and a nightly review covers everything that merges.`;
 }
 
@@ -394,6 +401,8 @@ export function coordinatorToolSummary(tool: string, input: unknown, outcome: To
     case 'jevellan_thread_read': return line(`Read ${thread}`, `read ${thread}`);
     case 'jevellan_thread_stop': return line(`Stopped ${thread}`, `stop ${thread}`);
     case 'jevellan_ask_user': return line(`Asked you: ${firstLine(rawField(input, 'question') ?? '').slice(0, 120)}`, 'ask you');
+    case 'jevellan_answer_question': return line('Recorded your chat answer', 'record your chat answer');
+    case 'jevellan_github': return line(`Read GitHub ${textField(input, 'action') ?? ''}`, 'read GitHub');
     case 'jevellan_withdraw_question':
       return line(field(result, 'withdrawn') === false ? 'The owner already answered that question' : `Withdrew a question: ${textField(input, 'reason') ?? ''}`, 'withdraw a question');
     case 'jevellan_notebook_read': return line('Read the notebook', 'read the notebook');

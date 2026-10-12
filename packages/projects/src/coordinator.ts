@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import type { AccountService } from '@jevellan/accounts';
 import {
-  CoordinatorEventSchema, CoordinatorStateSchema, HubUnavailable, ProjectCoordinatorStatusSchema, boundedRedaction, coordinatorMovable, isTerminal, mapEffort, resolveProjectPath, type Account,
+  CoordinatorEventSchema, CoordinatorStateSchema, HubUnavailable, ProjectCoordinatorStatusSchema, boundedRedaction, coordinatorMovable, isTerminal, mapEffort, openQuestions, resolveProjectPath, type Account,
   type AccountStatus, type Configuration, type CoordinatorEvent, type CoordinatorState, type Effort, type ModelOption, type Project, type ProjectDecision, type ProjectHub,
   type ProjectLedgerEvent, type ProjectRequestOutcome, type ProjectWorkSettings, type SecretRedactor, type ThreadIndex,
 } from '@jevellan/core';
@@ -10,7 +10,7 @@ import { SESSION_NOT_FOUND, type RuntimeAdapter } from '@jevellan/runtime-contra
 import { ProjectTools, type ProjectScope, type ProjectToolHandlers } from './bridge-tools.js';
 import {
   COORDINATOR_PROCESS_UNCONFIRMED, MESSAGE_ID_REUSED, TURN_FAILED, activeThreadLine, coordinatorAccountMovedNotice, coordinatorFailedTwiceNotice, coordinatorMovedNotice, coordinatorSystemAppend,
-  coordinatorTurnTimedOut, coordinatorUnavailableNotice, coordinatorWorking, eventBlock, eventLine, freshContext, coordinatorWaitsForAccount, noCoordinatorAccount, noCoordinatorModel, openQuestionLine,
+  coordinatorTurnTimedOut, coordinatorUnavailableNotice, coordinatorWorking, eventBlock, eventLine, freshContext, coordinatorWaitsForAccount, noCoordinatorAccount, noCoordinatorModel, numberedQuestionLine, OPEN_QUESTIONS,
   recentConversation,
 } from './copy.js';
 import { derivedId, type DecisionItems } from './decision-items.js';
@@ -93,7 +93,14 @@ export type CoordinatorPromptInput = {
 /** Brief 9.3: one line block per event; titles come from the indexes. */
 export function coordinatorEventBlock(input: CoordinatorPromptInput): string {
   const titles = new Map(input.threads.map((thread) => [thread.id, thread.title]));
-  return eventBlock(input.events.map((event) => eventLine(event, { title: (id) => titles.get(id), base: input.base, askedDirectly: input.askedDirectly.has(event.id), clock: input.clock })));
+  const questions = coordinatorQuestions(input);
+  return eventBlock(input.events.map((event) => eventLine(event, { title: (id) => titles.get(id), base: input.base, askedDirectly: input.askedDirectly.has(event.id), clock: input.clock })))
+    + (questions.length ? `\n\n${OPEN_QUESTIONS}\n${questions.join('\n')}` : '');
+}
+function coordinatorQuestions(input: CoordinatorPromptInput): string[] {
+  const titles = new Map(input.threads.map(thread => [thread.id, thread.title]));
+  return openQuestions(input.decisions).map((decision, index) => numberedQuestionLine(decision, index + 1,
+    decision.threadId ? titles.get(decision.threadId) ?? '(unknown thread)' : 'Coordinator'));
 }
 /** Brief 9.2 for a new session. The recap leaves out the batch being delivered, which follows as events (D36). */
 export function coordinatorFreshContext(input: CoordinatorPromptInput): string {
@@ -103,7 +110,7 @@ export function coordinatorFreshContext(input: CoordinatorPromptInput): string {
     threads: input.threads.filter((thread) => !isTerminal(thread.state)).map((thread) => activeThreadLine({ title: thread.title, id: thread.id, state: thread.state,
       isolation: thread.isolation, runtime: input.runtimeName(thread.runtime), modelLabel: thread.modelLabel, effort: thread.effort, deviceName: input.deviceName(thread.ownerDeviceId),
       pr: thread.pr ? { number: thread.pr.number, checks: thread.pr.checks } : undefined, lastSummary: thread.lastSummary })),
-    questions: input.decisions.filter((decision) => !decision.answer && !decision.withdrawnAt).map((decision) => openQuestionLine(decision.question)),
+    questions: coordinatorQuestions(input),
     recent: recentConversation(input.history.filter((item) => item.eventId === undefined || !batch.has(item.eventId))),
   });
 }

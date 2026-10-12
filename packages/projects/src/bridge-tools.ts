@@ -3,7 +3,7 @@ import type { ProjectJobRunner } from './job-runner.js';
 import { z } from 'zod';
 import {
   BridgeResultSchema, BridgeToolSchemas, IdSchema, MemoryNoteSchema, MemorySearchSchema, ProjectNotebookSchema, ProjectToolResultSchemas, ThreadReportSchema, bridgeTools,
-  projectToolNames, stableJson,
+  openQuestions, projectToolNames, stableJson,
   type BridgeTool, type BridgeToolsSchema, type MemoryNote, type ProjectHub, type ProjectLedgerEvent, type ProjectToolName, type SecretRedactor, type ThreadIndex, type ThreadReport,
 } from '@jevellan/core';
 import type { BridgeScopeTools } from '@jevellan/conversations';
@@ -18,6 +18,7 @@ import type { PullRequestTracker } from './pull-requests.js';
 import type { ThreadStore } from './stores.js';
 import type { ThreadService } from './threads.js';
 import type { ProjectGoals } from './goals.js';
+import type { ProjectGithub } from './github-awareness.js';
 import { taskOpen, type ProjectTasks } from './tasks.js';
 
 export type ProjectScope = { kind: 'coordinator'; projectId: string; turn: number }
@@ -121,10 +122,11 @@ export type CoordinatorToolsOptions = {
   deviceId: string; deviceName: string;
   threads: Pick<ThreadService, 'start' | 'message' | 'stop' | 'list' | 'read'>;
   tasks?: ProjectTasks; goals?: ProjectGoals; daily?: ProjectDailyWork; jobs?: ProjectJobRunner;
+  github?: ProjectGithub;
   store: Pick<ThreadStore, 'get'>;
-  decisions: Pick<DecisionItems, 'ask' | 'withdraw'>;
+  decisions: Pick<DecisionItems, 'ask' | 'withdraw'> & Partial<Pick<DecisionItems, 'answerChat'>>;
   pullRequests: Pick<PullRequestTracker, 'fresh'> & Partial<Pick<PullRequestTracker, 'diff'>>;
-  hub: Pick<ProjectHub, 'thread' | 'notebook' | 'putNotebook'>;
+  hub: Pick<ProjectHub, 'thread' | 'notebook' | 'putNotebook'> & Partial<Pick<ProjectHub, 'decisions'>>;
   ledgers: Pick<ProjectLedgers, 'coordinator'>;
   /** Mail to the threads that work on main (brief 7.1). */
   mail: Pick<MailService, 'coordinatorSend'>;
@@ -158,6 +160,12 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
   // The turn number is this device's (coordinator-local), so the coordinator device is part of every id: after a move the new device counts
   // from 1 again, and its deliveries never repeat the former device's ids (P8 review C-3).
   const turnId = (prefix: string, projectId: string, turn: number, input: unknown) => derivedId(prefix, 'coordinator', projectId, o.deviceId, String(turn), stableJson(input));
+  const questions = async (projectId: string) => {
+    if (!o.hub.decisions) return {};
+    const list = openQuestions(await o.hub.decisions(projectId));
+    return { openQuestions: { schema: 'open-questions-v1', questions: await Promise.all(list.slice(0, 1000).map(async (decision, index) => ({ number: index + 1,
+      questionId: decision.id, threadTitle: decision.threadId ? (await known(projectId, decision.threadId))?.title ?? '(unknown thread)' : 'Coordinator', question: decision.question, options: decision.options.map(option => option.label) }))) } };
+  };
   async function call(projectId: string, turn: number, name: ProjectToolName, raw: unknown, signal: AbortSignal): Promise<unknown> {
     signal.throwIfAborted();
     switch (name) {
@@ -227,11 +235,25 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
         const input = raw as Input<typeof name>;
         if (input.threadId !== undefined && !(await known(projectId, input.threadId))) throw failure(THREAD_NOT_FOUND, 404);
         // One question per call: a transport retry of the call returns the question it created (P8 review C-4, as D201 for starts).
-        return { schema: 'ask-user-result-v1', decisionId: await o.decisions.ask(projectId, input, 'coordinator', turnId('pdec', projectId, turn, input)) };
+        const decisionId = await o.decisions.ask(projectId, input, 'coordinator', turnId('pdec', projectId, turn, input));
+        return { schema: 'ask-user-result-v1', decisionId, ...await questions(projectId) };
       }
       case 'jevellan_withdraw_question': {
         const input = raw as Input<typeof name>;
         return { schema: 'withdraw-question-result-v1', decisionId: input.decisionId, withdrawn: await o.decisions.withdraw(projectId, input.decisionId) };
+      }
+      case 'jevellan_answer_question': {
+        const input = raw as Input<typeof name>, ledger = o.ledgers.coordinator(projectId), events = ledger.events();
+        const started = events.findLast(event => event.type === 'coordinator-turn-start' && event.turn === turn);
+        const ids = new Set(started ? ledger.payload(started as ProjectLedgerEvent & { type: 'coordinator-turn-start' }).eventIds : []);
+        const ownerWords = events.filter(event => event.type === 'coordinator-event').map(event => ledger.payload(event as ProjectLedgerEvent & { type: 'coordinator-event' }))
+          .flatMap(event => ids.has(event.id) && event.kind === 'user-message' ? [event.text] : []);
+        if (!ownerWords.length) throw failure('Only an owner message in this turn can answer a question in chat.', 403);
+        if (!o.decisions.answerChat) throw new Error('Chat answers are unavailable.');
+        // A turn can consume several owner messages. Preserve all its owner words, rather than misquote the
+        // latest follow-up as the answer. The coordinator interprets them; code records authenticated provenance.
+        const result = await o.decisions.answerChat(projectId, input.questionId, { ...input, clientRequestId: turnId('ans', projectId, turn, input) }, ownerWords.join('\n\n'));
+        return { schema: 'answer-question-result-v1', questionId: input.questionId, answered: true, repeated: result.repeated, ...await questions(projectId) };
       }
       case 'jevellan_notebook_read': {
         const stored = await o.hub.notebook(projectId);
@@ -267,7 +289,13 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
     }
   }
   return {
-    call: (scope, name, input, signal) => call(scope.projectId, scope.turn, name, input, signal),
+    call: (scope, name, input, signal) => {
+      if (name === 'jevellan_github') {
+        if (!o.github) throw new Error('GitHub awareness is unavailable.');
+        return o.github.read(scope, input, signal);
+      }
+      return call(scope.projectId, scope.turn, name, input, signal);
+    },
     memory: (scope) => o.memory(scope.projectId),
     line: async (name, input, outcome, scope) => {
       // Mail names its thread in `to` (`all` and `coordinator` are id-shaped but no thread).
@@ -275,7 +303,7 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
       const threadId = idField(input, 'threadId') ?? (recipient === 'all' || recipient === 'coordinator' ? undefined : recipient)
         ?? (outcome.ok ? idField(outcome.result, 'threadId') : undefined);
       const thread = threadId === undefined ? undefined : await known(scope.projectId, threadId).catch(() => undefined);
-      const decisionId = outcome.ok ? idField(input, 'decisionId') ?? idField(outcome.result, 'decisionId') : undefined;
+      const decisionId = outcome.ok ? idField(input, 'decisionId') ?? idField(input, 'questionId') ?? idField(outcome.result, 'decisionId') : undefined;
       // The withdrawn-question toast reads `reason` (D84): only a question this call withdrew carries one.
       const withdrawn = outcome.ok && name === 'jevellan_withdraw_question' && field(outcome.result, 'withdrawn') === true;
       return { summary: coordinatorToolSummary(name, input, outcome, thread?.title), ...(thread ? { threadId } : {}), ...(decisionId ? { decisionId } : {}),

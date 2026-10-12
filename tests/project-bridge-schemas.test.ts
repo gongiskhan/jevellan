@@ -23,12 +23,12 @@ const report = { schema: 'thread-report-v1', turn: 1, status: 'done', summary: '
 const issues = (result: { success: boolean; error?: { issues: Array<{ path: PropertyKey[]; message: string }> } }) => result.error?.issues.map((issue) => ({ path: issue.path.join('.'), message: issue.message }));
 
 test('scope lists: mail and reservations only for main threads, mail for the coordinator', () => {
-  expect(projectToolNames({ kind: 'thread', isolation: 'worktree' })).toEqual(['jevellan_thread_report', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read']);
-  expect(projectToolNames({ kind: 'thread', isolation: 'main' })).toEqual(['jevellan_thread_report', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read', ...mainTools]);
+  expect(projectToolNames({ kind: 'thread', isolation: 'worktree' })).toEqual(['jevellan_thread_report', 'jevellan_github', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read']);
+  expect(projectToolNames({ kind: 'thread', isolation: 'main' })).toEqual(['jevellan_thread_report', 'jevellan_github', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read', ...mainTools]);
   expect(projectToolNames({ kind: 'coordinator' })).toEqual([...COORDINATOR_TOOLS]);
   expect(COORDINATOR_TOOLS).toContain('jevellan_mail_send');
-  expect(threadTools('worktree')).toEqual(['jevellan_thread_report', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read']);
-  expect(threadTools('main')).toEqual(['jevellan_thread_report', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read', ...mainTools]);
+  expect(threadTools('worktree')).toEqual(['jevellan_thread_report', 'jevellan_github', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read']);
+  expect(threadTools('main')).toEqual(['jevellan_thread_report', 'jevellan_github', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read', ...mainTools]);
   // Each call returns a fresh array, so a caller cannot change another scope's list.
   const list = projectToolNames({ kind: 'coordinator' }); list.push('jevellan_handoff');
   expect(projectToolNames({ kind: 'coordinator' })).not.toContain('jevellan_handoff');

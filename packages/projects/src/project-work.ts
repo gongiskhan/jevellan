@@ -1,4 +1,5 @@
 import { NightlyReview } from './nightly-review.js';
+import { ProjectGithub } from './github-awareness.js';
 import { WorktreeDiskService } from './worktree-disk.js';
 import { applyEkoaCodeSetup, EKOA_FAST_CHECKS } from './ekoa-code.js';
 import { EkoaCodeSetupRequestSchema, collectDeviceFacts, deviceResourceRefusal, parseGitHubRemote, liveWork, resolveProjectPath, type DeviceFacts } from '@jevellan/core';
@@ -120,6 +121,7 @@ export class ProjectWork {
   readonly #attach: ThreadAttach;
   #sweepTimer: ReturnType<typeof setInterval> | undefined;
   #tools: CoordinatorToolHandlers | undefined;
+  readonly #github: ProjectGithub;
   #started = false;
   #closing: Promise<void> | undefined;
   constructor(options: ProjectWorkOptions) {
@@ -177,6 +179,9 @@ export class ProjectWork {
       return owners;
     } });
     const worktrees = new ThreadWorktree({ git, homes: o.homes, paths: this.paths, redactor: o.redactor, deviceId: o.deviceId, deviceName: o.deviceName });
+    this.#github = new ProjectGithub({ github, redactor: o.redactor, now, project: id => this.#project(id),
+      thread: async id => (await o.hub.thread(id))?.document, baseBranch: async project => worktrees.baseBranch(worktrees.repository(project)),
+      repository: async project => parseGitHubRemote(await git.remoteUrl(worktrees.repository(project)) ?? '') });
     const publication = new ThreadPublication({ git, homes: o.homes, redactor: o.redactor, github, deviceId: o.deviceId, deviceName: o.deviceName, testTimeoutMs: timers.testTimeoutMs,
       leaseRetryMs: timers.mainLeaseRetryMs, now, ...(o.leases ? { leases: o.leases } : {}), ...(o.ownership ? { ownership: o.ownership } : {}) });
     const main = new MainCheckout({ git, redactor: o.redactor, deviceId: o.deviceId, deviceName: o.deviceName, ownership: o.ownership, outside: o.outside });
@@ -229,6 +234,7 @@ export class ProjectWork {
           ...(thread.placement.fixed.includes('account') ? { requiredAccountId: thread.placement.accountId } : {}) }),
         decisions: this.decisions, toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event),
         memory: (project) => o.memory.project(project, o.deviceId, () => { throw new Error(THREAD_MEMORY_READ_ONLY); }), mail: this.mail,
+        githubTool: (scope, _name, input, signal) => this.#github.read(scope, input, signal),
         appTool: async (scope, name, input, signal) => {
           if (scope.kind !== 'thread' || signal.aborted) throw new Error('This app call is outside an active thread turn.');
           const thread = this.store.get(scope.threadId);
@@ -302,7 +308,7 @@ export class ProjectWork {
   /** Coordinator tool handlers (brief 7.1), built on first use because the thread service and the tracker come after the coordinators. Memory is read-only. */
   #coordinatorTools(): CoordinatorToolHandlers {
     return this.#tools ??= coordinatorToolHandlers({ deviceId: this.#o.deviceId, deviceName: this.#o.deviceName, threads: this.threads, tasks: this.tasks, goals: this.goals, daily: this.daily, jobs: this.jobs, store: this.store, decisions: this.decisions,
-      pullRequests: this.tracker, hub: this.#o.hub, ledgers: this.ledgers, mail: this.mail, roster: this.#o.roster, now: () => this.#timers.now(),
+      pullRequests: this.tracker, github: this.#github, hub: this.#o.hub, ledgers: this.ledgers, mail: this.mail, roster: this.#o.roster, now: () => this.#timers.now(),
       memory: async (projectId) => this.#o.memory.project(await this.#project(projectId), this.#o.deviceId, () => { throw new Error(COORDINATOR_MEMORY_READ_ONLY); }) });
   }
   #thread(projectId: string, threadId: string): void {

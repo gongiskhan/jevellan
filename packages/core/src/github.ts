@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 const budgets = new Map<string, { remaining: number; limit: number; resetAt: number }>();
 import { SecretRedactor } from './environment.js';
 import type { PullRequestState } from './project-schemas.js';
+import type { GithubInput } from './github-awareness-schemas.js';
 
 // GitHub REST access for thread pull requests (brief 8.5). Node only: exported from index.ts, never from client.ts.
 export const GITHUB_API_VERSION = '2022-11-28';
@@ -37,6 +38,9 @@ export const GitHubPullResponseSchema = z.object({
   head: z.object({ sha: z.string().regex(sha), ref: z.string().min(1) }), base: z.object({ ref: z.string().min(1) }),
 });
 export const GitHubPullListResponseSchema = z.array(GitHubPullResponseSchema);
+export const GitHubAwarenessPullResponseSchema = GitHubPullResponseSchema.extend({ title: z.string(), user: z.object({ login: z.string() }), draft: z.boolean(), updated_at: z.iso.datetime() });
+const GitHubCommitsResponseSchema = z.array(z.object({ sha: z.string().regex(sha), commit: z.object({ message: z.string(),
+  author: z.object({ name: z.string(), date: z.iso.datetime() }) }) })).max(30);
 export const GitHubCheckRunsResponseSchema = z.object({ total_count: z.number().int().nonnegative(),
   check_runs: z.array(z.object({ name: z.string().optional(), status: z.string(), conclusion: z.string().nullable().optional() })) });
 // The combined `state` is deliberately not read: it is `pending` with zero statuses when a repository uses only check runs.
@@ -91,13 +95,14 @@ export class GitHubClient {
   async closePull(repository: GitHubRepository, number: number): Promise<GitHubPull> {
     return pull(await this.#request('PATCH', `${repo(repository)}/pulls/${pullNumber(number)}`, GitHubPullResponseSchema, { state: 'closed' }));
   }
-  async pullFiles(repository: GitHubRepository, number: number): Promise<z.infer<typeof PullFiles>> {
+  async pullFiles(repository: GitHubRepository, number: number, limit = 3000): Promise<z.infer<typeof PullFiles>> {
+    if (!Number.isInteger(limit) || limit < 1 || limit > 3000) throw new Error('Invalid changed files limit.');
     const files: z.infer<typeof PullFiles> = [];
     for (let page = 1; page <= 30; page++) {
       const next = await this.#request('GET', `${repo(repository)}/pulls/${pullNumber(number)}/files?per_page=100&page=${page}`, PullFiles);
-      files.push(...next); if (next.length < 100) break;
+      files.push(...next); if (next.length < 100 || files.length >= limit) break;
     }
-    return files;
+    return files.slice(0, limit);
   }
   /** Check runs and commit statuses of a head commit (brief 8.5). Pages of 100, at most 10 pages each. */
   async checks(repository: GitHubRepository, commit: string): Promise<GitHubChecks> { return (await this.checkState(repository, commit)).checks; }
@@ -108,7 +113,36 @@ export class GitHubClient {
       this.#pages((page) => this.#request('GET', `${path}/check-runs?per_page=100&page=${page}`, GitHubCheckRunsResponseSchema), (result) => result.check_runs),
       this.#pages((page) => this.#request('GET', `${path}/status?per_page=100&page=${page}`, GitHubStatusResponseSchema), (result) => result.statuses),
     ]);
-    return { checks: mapChecks(runs, statuses), passedChecks: [...runs.filter(run => run.status === 'completed' && run.conclusion === 'success').flatMap(run => run.name ? [run.name] : []), ...statuses.filter(status => status.state === 'success').flatMap(status => status.context ? [status.context] : [])] };
+    return { checks: mapChecks(runs, statuses), passedChecks: [...runs.filter(run => run.status === 'completed' && run.conclusion === 'success').flatMap(run => run.name ? [run.name] : []), ...statuses.filter(status => status.state === 'success').flatMap(status => status.context ? [status.context] : [])],
+      details: [...runs.map(run => ({ name: run.name ?? '(unnamed check)', status: run.status, conclusion: run.conclusion ?? null })),
+        ...statuses.map(status => ({ name: status.context ?? '(unnamed status)', status: status.state, conclusion: status.state === 'pending' ? null : status.state }))] };
+  }
+  /** Read-only coordinator awareness. These use the same request path and per-token rate budget as publication and polling. */
+  async recentWorkflowRuns(repository: GitHubRepository, input: Extract<GithubInput, { action: 'runs' }>) {
+    const query = new URLSearchParams({ per_page: String(input.limit) });
+    for (const key of ['branch', 'event', 'status'] as const) if (input[key]) query.set(key, input[key]);
+    const path = input.workflow ? `/actions/workflows/${encodeURIComponent(input.workflow)}/runs` : '/actions/runs';
+    return (await this.#request('GET', `${repo(repository)}${path}?${query}`, GitHubWorkflowRunsSchema)).workflow_runs.slice(0, input.limit);
+  }
+  async awarenessPull(repository: GitHubRepository, number: number) {
+    return this.#request('GET', `${repo(repository)}/pulls/${pullNumber(number)}`, GitHubAwarenessPullResponseSchema);
+  }
+  async recentPulls(repository: GitHubRepository, state: 'open' | 'closed', limit: number) {
+    if (!Number.isInteger(limit) || limit < 1 || limit > 20) throw new Error('Invalid pull request limit.');
+    const query = new URLSearchParams({ state, sort: 'updated', direction: 'desc', per_page: String(limit) });
+    return (await this.#request('GET', `${repo(repository)}/pulls?${query}`, z.array(GitHubAwarenessPullResponseSchema).max(20))).slice(0, limit);
+  }
+  async workflowJob(repository: GitHubRepository, jobId: number) {
+    return this.#request('GET', `${repo(repository)}/actions/jobs/${pullNumber(jobId)}`, z.object({ id: z.number().int().positive(), run_id: z.number().int().positive() }));
+  }
+  async recentCommits(repository: GitHubRepository, branch: string, since: string | undefined, limit: number) {
+    if (!Number.isInteger(limit) || limit < 1 || limit > 30) throw new Error('Invalid commit limit.');
+    const query = new URLSearchParams({ sha: branch, per_page: String(limit) }); if (since) query.set('since', since);
+    return this.#request('GET', `${repo(repository)}/commits?${query}`, GitHubCommitsResponseSchema);
+  }
+  async commitPulls(repository: GitHubRepository, commit: string) {
+    if (!sha.test(commit)) throw new Error('Invalid commit id.');
+    return this.#request('GET', `${repo(repository)}/commits/${commit}/pulls?per_page=100`, GitHubPullListResponseSchema.max(100));
   }
   /** Squash merge, only while the head is still `commit` (GitHub answers 409 otherwise). */
   async merge(repository: GitHubRepository, number: number, commit: string): Promise<GitHubMergeResult> {
@@ -206,7 +240,7 @@ export class GitHubClient {
       }
       if (options.noContent && status === 204) { await response.body?.cancel(); return schema.parse(null); }
       let value: unknown;
-      try { const content = await read(response, BODY_LIMIT, controller.signal, true); value = options.text ? this.#redactor.text(content).slice(-8000) : JSON.parse(content); } catch (error) { if (error instanceof GitHubError) throw error; throw invalid(); }
+      try { const content = options.text ? await readTail(response, controller.signal) : await read(response, BODY_LIMIT, controller.signal, true); value = options.text ? this.#redactor.text(content).slice(-8000) : JSON.parse(content); } catch (error) { if (error instanceof GitHubError) throw error; throw invalid(); }
       const parsed = schema.safeParse(value); if (!parsed.success) throw invalid();
       return parsed.data;
     } finally { clearTimeout(timer); }
@@ -239,4 +273,21 @@ async function read(response: Response, limit: number, signal: AbortSignal, stri
     throw signal.aborted ? timedOut() : new GitHubError('network', 'GitHub could not be reached.');
   } finally { reader.releaseLock(); }
   return Buffer.concat(chunks).subarray(0, limit).toString('utf8');
+}
+/** Job logs can exceed the JSON body limit. Stream their tail with overlap for redaction, rather than buffering the whole log. */
+async function readTail(response: Response, signal: AbortSignal): Promise<string> {
+  const reader = response.body?.getReader(); if (!reader) return '';
+  let tail = Buffer.alloc(0), total = 0;
+  try {
+    for (;;) {
+      const part = await reader.read(); if (part.done) break;
+      total += part.value.length;
+      if (total > 64 * 1024 * 1024) { await reader.cancel(); throw new GitHubError('invalid-response', 'The job log exceeds the supported download size.'); }
+      tail = Buffer.concat([tail, part.value]).subarray(-32_000);
+    }
+    return tail.toString('utf8');
+  } catch (error) {
+    if (error instanceof GitHubError) throw error;
+    throw signal.aborted ? timedOut() : new GitHubError('network', 'GitHub could not be reached.');
+  } finally { reader.releaseLock(); }
 }

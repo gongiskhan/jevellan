@@ -36,6 +36,17 @@ const decisions: ProjectDecision[] = [
 ];
 const names: Record<string, string> = { codex: 'Codex', claude: 'Claude Code', fake: 'Scripted test runtime' };
 const devices: Record<string, string> = { dev_a: 'Mac mini', dev_b: 'Studio' };
+
+test('question numbers share stable oldest-first order in fresh and resumed prompts, excluding answered and withdrawn items', () => {
+  const items = [decision('pdec_late', 'Later?', { createdAt: at('09:00') }), decision('pdec_b', 'Tie B?', { threadId: 'thread_c' }),
+    decision('pdec_a', 'Tie A?', { threadId: 'thread_b' }), decision('pdec_hidden', 'Settled?', { answer: { text: 'Done.' } })];
+  const expected = '1. [Store data] Tie A? Options: (none). (questionId pdec_a)\n2. [Docs] Tie B? Options: (none). (questionId pdec_b)\n3. [Coordinator] Later? Options: (none). (questionId pdec_late)';
+  expect(coordinatorFreshContext(input([], { decisions: items }))).toContain(expected);
+  expect(coordinatorPrompt(input([], { decisions: items }), true)).toContain(expected);
+  expect(coordinatorFreshContext(input([], { decisions: items }))).not.toContain('Settled?');
+  items[2]!.withdrawnAt = at('08:05');
+  expect(coordinatorPrompt(input([], { decisions: items }), true)).toContain('1. [Docs] Tie B?');
+});
 const input = (events: CoordinatorEvent[], over: Partial<CoordinatorPromptInput> = {}): CoordinatorPromptInput => ({
   events, notebook: 'Prefer SQLite.\nShip small pull requests.\n', threads, decisions,
   history: [
@@ -106,7 +117,11 @@ Please rebase.
 [owner started thread "Add search" (thread_g)] Add a search box.
 [owner worked on thread "Fix login" in a terminal]
 [owner changed thread "Fix login" (thread_a)] Model changed from GPT-5 to Opus.
-[thread "(unknown thread)" (thread_zzz) interrupted: failed] This step failed: boom`);
+[thread "(unknown thread)" (thread_zzz) interrupted: failed] This step failed: boom
+
+Open questions to the owner (numbered as the owner sees them):
+1. [Store data] Which database should Store data use? Options: SQLite, Postgres. (questionId pdec_1)
+2. [Docs] "Docs" reached its turn limit of 30 turns. Allow 10 more turns or stop it? Options: Allow 10 more turns, Stop the thread. (questionId pdec_4)`);
   // A resumed session reads only the event block.
   expect(coordinatorPrompt(input(events), true)).toBe(coordinatorEventBlock(input(events)));
 });
@@ -123,9 +138,9 @@ Active threads:
 - Store data (thread_b): waiting-for-you, main, Claude Code Opus medium on Studio. Last report: none
 - Docs (thread_c): idle, worktree, Scripted test runtime Fixture low on Mac mini. Last report: Wrote the outline.
 
-Open questions to the owner:
-- Which database should Store data use?
-- "Docs" reached its turn limit of 30 turns. Allow 10 more turns or stop it?
+Open questions to the owner (numbered as the owner sees them):
+1. [Store data] Which database should Store data use? Options: SQLite, Postgres. (questionId pdec_1)
+2. [Docs] "Docs" reached its turn limit of 30 turns. Allow 10 more turns or stop it? Options: Allow 10 more turns, Stop the thread. (questionId pdec_4)
 
 Recent conversation with the owner:
 Owner: Fix login and store data.
@@ -136,7 +151,11 @@ You: Started "Fix login" and "Store data".`;
 
 Events since your last turn:
 [owner 09:05] Also write docs.
-[PR #42 "Fix login"] checks failing`);
+[PR #42 "Fix login"] checks failing
+
+Open questions to the owner (numbered as the owner sees them):
+1. [Store data] Which database should Store data use? Options: SQLite, Postgres. (questionId pdec_1)
+2. [Docs] "Docs" reached its turn limit of 30 turns. Allow 10 more turns or stop it? Options: Allow 10 more turns, Stop the thread. (questionId pdec_4)`);
   // Once delivered, the same owner message is part of the next fresh session's recap.
   expect(coordinatorFreshContext(input([]))).toContain('You: Started "Fix login" and "Store data".\n\nOwner: Also write docs.');
 });
@@ -144,12 +163,12 @@ Events since your last turn:
 test('a first turn with nothing known yet reads (empty) and (none), the PJ2 opening prompt', () => {
   const events = [event({ kind: 'user-message', id: 'cev_1', at: at('09:05'), text: 'add A and fix B', clientMessageId: 'msg_pj2' })];
   const first = input(events, { notebook: null, threads: [], decisions: [], history: [{ from: 'owner', text: 'add A and fix B', eventId: 'cev_1' }] });
-  expect(coordinatorPrompt(first, false)).toBe('Project notebook:\n(empty)\n\nActive threads:\n(none)\n\nOpen questions to the owner:\n(none)\n\nRecent conversation with the owner:\n(none)\n\nEvents since your last turn:\n[owner 09:05] add A and fix B');
+  expect(coordinatorPrompt(first, false)).toBe('Project notebook:\n(empty)\n\nActive threads:\n(none)\n\nOpen questions to the owner (numbered as the owner sees them):\n(none)\n\nRecent conversation with the owner:\n(none)\n\nEvents since your last turn:\n[owner 09:05] add A and fix B');
   // Only concluded threads and settled questions: still (none); a blank notebook is (empty).
   expect(coordinatorFreshContext(input([], { notebook: '  \n', threads: threads.slice(3), decisions: decisions.slice(1, 3), history: [] })))
-    .toBe('Project notebook:\n(empty)\n\nActive threads:\n(none)\n\nOpen questions to the owner:\n(none)\n\nRecent conversation with the owner:\n(none)');
+    .toBe('Project notebook:\n(empty)\n\nActive threads:\n(none)\n\nOpen questions to the owner (numbered as the owner sees them):\n(none)\n\nRecent conversation with the owner:\n(none)');
   // Without an injected clock the time is the coordinator device's local 24-hour time (D36).
-  const local = new Date(2026, 9, 3, 7, 4); const plain = coordinatorEventBlock(input([event({ kind: 'user-message', id: 'cev_2', at: local.toISOString(), text: 'Hi', clientMessageId: 'msg_2' })], { clock: undefined }));
+  const local = new Date(2026, 9, 3, 7, 4); const plain = coordinatorEventBlock(input([event({ kind: 'user-message', id: 'cev_2', at: local.toISOString(), text: 'Hi', clientMessageId: 'msg_2' })], { clock: undefined, decisions: [] }));
   expect(plain).toBe('Events since your last turn:\n[owner 07:04] Hi');
 });
 

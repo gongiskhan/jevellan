@@ -44,6 +44,14 @@ test('lost create receipts recover the owned task after backoff and restart with
   service = new EkoaMirrorService(hub, () => 'https://fixture.example', undefined, () => clock); await service.tick();
   expect(creates()).toBe(1); expect(service.state().mirrors[0]).toMatchObject({ state: 'open', attempts: 0 }); expect(service.state().mirrors[0]!.error).toBeUndefined();
 });
+test('a decision answered in owner chat completes its existing Ekoa item once', async () => {
+  decision(); await service.tick(); const task = [...remote.tasks.values()][0]!;
+  const choice = hub.get('project-decisions', 'choice', ProjectDecisionSchema)!;
+  hub.put('project-decisions', 'choice', ProjectDecisionSchema, { ...choice.document, answeredAt: at,
+    answer: { optionLabel: 'Short', source: 'owner-chat', ownerMessage: '1 Short' } }, choice.revision);
+  await service.tick(); await service.tick(); expect(task.status).toBe('done'); expect(remote.tasks.size).toBe(1);
+  expect(remote.calls.filter(call => call.name === 'task_complete')).toHaveLength(1);
+});
 test('an ownership marker removed by the owner prevents completion or modification', async () => {
   decision(); await service.tick(); const task = [...remote.tasks.values()][0]!; task.notes = 'The owner replaced this task.';
   const row = hub.get('project-decisions', 'choice', ProjectDecisionSchema)!; hub.put('project-decisions', 'choice', ProjectDecisionSchema, { ...row.document, withdrawnAt: at }, row.revision);

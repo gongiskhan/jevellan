@@ -12,6 +12,7 @@ export type GitHubFixtureRequest = {
 export type GitHubFixturePull = {
   repo: string; number: number; title: string; body: string; head: string; base: string; state: 'open' | 'closed'; merged: boolean; mergedAt: string | null;
   mergeable: GitHubFixtureMergeable; checks: GitHubFixtureChecks; headSha: string; mergeSha: string | null;
+  author?: string; draft?: boolean; updatedAt?: string;
 };
 export type GitHubFixture = {
   url: string;

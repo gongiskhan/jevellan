@@ -119,8 +119,16 @@ export class DecisionItems {
    * owner message. Every route is safe to repeat, because `repeated` is also reported to the retry of a lost reply.
    */
   async answer(projectId: string, decisionId: string, request: { clientRequestId: string; optionLabel?: string | undefined; text?: string | undefined }): Promise<{ repeated: boolean }> {
+    return this.#answer(projectId, decisionId, request);
+  }
+  /** The coordinator already has the owner message and distributes ordinary answers itself; no echo event or duplicate thread message. */
+  async answerChat(projectId: string, decisionId: string, request: { clientRequestId: string; optionLabel?: string | undefined; text?: string | undefined }, ownerMessage: string): Promise<{ repeated: boolean }> {
+    return this.#answer(projectId, decisionId, request, ownerMessage);
+  }
+  async #answer(projectId: string, decisionId: string, request: { clientRequestId: string; optionLabel?: string | undefined; text?: string | undefined }, ownerMessage?: string): Promise<{ repeated: boolean }> {
     const asked = await this.#decision(projectId, decisionId);
-    const answer: DecisionAnswer = DecisionAnswerSchema.parse({ ...(request.optionLabel ? { optionLabel: request.optionLabel } : {}), ...(request.text ? { text: request.text } : {}) });
+    const answer: DecisionAnswer = DecisionAnswerSchema.parse({ ...(request.optionLabel ? { optionLabel: request.optionLabel } : {}), ...(request.text ? { text: request.text } : {}),
+      source: ownerMessage === undefined ? 'panel' : 'owner-chat', ...(ownerMessage === undefined ? {} : { ownerMessage }) });
     if (answer.optionLabel !== undefined && !asked.options.some((option) => option.label === answer.optionLabel)) throw refuse(UNKNOWN_OPTION, 400);
     if (asked.merge) await this.#o.mergeAnswer?.(asked, answer, true);
     // The hub keeps the first answer, so a Stop the thread cannot take now is refused before it is recorded: the question stays open (phase 8).
@@ -131,7 +139,7 @@ export class DecisionItems {
     const { decision: stored, repeated } = await this.#o.hub.answerDecision(decisionId, answer, this.#at(), request.clientRequestId);
     const decision = stored.document; const given = decision.answer ?? answer;
     if (decision.merge && await this.#o.mergeAnswer?.(decision, given, false)) return { repeated };
-    if (decision.from === 'coordinator') {
+    if (decision.from === 'coordinator' && given.source !== 'owner-chat') {
       const at = this.#o.now();
       await this.#o.toCoordinator(projectId, { schema: 'coordinator-event-v1', kind: 'decision-answer', id: derivedId('cev', 'answer', decisionId), at: new Date(at).toISOString(),
         decisionId, ...(decision.threadId === undefined ? {} : { threadId: decision.threadId }), question: decision.question, answer: given });
@@ -143,9 +151,10 @@ export class DecisionItems {
     if (isTurnLimitItem(decision) && given.optionLabel === STOP_THE_THREAD) { await threads.stop(projectId, decision.threadId, STOPPED_AT_TURN_LIMIT, commandId); return { repeated }; }
     if (isTurnLimitItem(decision) && given.optionLabel === ALLOW_MORE_TURNS) {
       await threads.allowTurns(projectId, decision.threadId, commandId);
-      if (given.text) await threads.message(projectId, decision.threadId, given.text, derivedId('tmsg', 'answer', decisionId));
+      if (given.text && given.source !== 'owner-chat') await threads.message(projectId, decision.threadId, given.text, derivedId('tmsg', 'answer', decisionId));
       return { repeated };
     }
+    if (given.source === 'owner-chat') return { repeated };
     const text = isTurnLimitItem(decision) ? given.text : [given.optionLabel, given.text].filter(Boolean).join('\n\n');
     if (text) await threads.message(projectId, decision.threadId, text, derivedId('tmsg', 'answer', decisionId));
     return { repeated };

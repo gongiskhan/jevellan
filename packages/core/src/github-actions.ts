@@ -1,5 +1,6 @@
 import { z } from 'zod';
 export const GitHubWorkflowRunSchema = z.object({ id: z.number().int().positive(), html_url: z.url(), head_sha: z.string().regex(/^[0-9a-f]{40}$/u),
+  name: z.string().optional(), workflow_id: z.number().int().positive().optional(),
   display_title: z.string().max(1000).optional(), updated_at: z.iso.datetime().optional(), head_branch: z.string().nullable(), event: z.string(), status: z.string(), conclusion: z.string().nullable(), created_at: z.iso.datetime(), run_started_at: z.iso.datetime().nullable().optional() });
 export type GitHubWorkflowRun = z.infer<typeof GitHubWorkflowRunSchema>;
 export const GitHubWorkflowRunsSchema = z.object({ workflow_runs: z.array(GitHubWorkflowRunSchema).max(100) });

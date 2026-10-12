@@ -4,7 +4,7 @@ import { ProjectDailyListViewSchema } from '@jevellan/core/client';
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { z } from 'zod';
 import {
-  EkoaCodeSetupReceiptSchema,
+  EkoaCodeSetupReceiptSchema, openQuestions,
   CoordinatorMessageReceiptSchema, DecisionAnsweredViewSchema, EffortSchema, MergeResultViewSchema, ProjectEventFrameSchema, ProjectNotebookViewSchema,
   GoalListViewSchema, ProjectWorkListViewSchema, ProjectWorkSettingsViewSchema, ProjectWorkViewSchema, TaskListViewSchema, TaskReceiptSchema, TaskTypeSchema, ThreadViewSchema,
   type Effort, type Isolation, type ProjectDecision, type ProjectLedgerEvent, type ProjectWorkListView, type ProjectWorkView, type PullRequestEntry,
@@ -404,7 +404,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   const offline = coordinator.state === 'offline';
   const coordinatorDevice = coordinator.deviceName ?? (coordinator.deviceId ? deviceName(coordinator.deviceId) : '');
   const drafts = tasks.filter(task => task.state === 'draft');
-  const open = view.decisions.open.filter((decision) => !answered.has(decision.id));
+  const open = openQuestions(view.decisions.open).filter((decision) => !answered.has(decision.id));
   const sections = threadSections(view.threads, now);
   const pulls = openPullRequests(view.pullRequests), recentPulls = view.pullRequests.filter(entry => entry.pr?.state === 'merged' && Date.parse(entry.pr.updatedAt) >= now - 7 * 24 * 3_600_000);
   const stop = () => void control.run(async (signal) => {
@@ -515,8 +515,8 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
             {sectionHeading(`${sideId}-waiting`, copy.WAITING_FOR_YOU, open.length + drafts.length)}
             {sent && showSent(sent, open) && <p className="pw-sent" role="status"><Icon name="check" size={14} />{sent.text}</p>}
             {drafts.length > 0 && <div className="pw-proposed"><h4>Proposed tasks</h4><TaskQueue projectId={id} tasks={drafts} goals={goals} threads={view.threads} navigate={navigate} changed={updated} onError={onError} /></div>}
-            {open.length ? open.map((decision) => (
-              <DecisionCard key={decision.id} projectId={id} decision={decision} titles={titles} now={now} answered={answeredQuestion} onError={onError} />
+            {open.length ? open.map((decision, index) => (
+              <DecisionCard key={decision.id} number={index + 1} projectId={id} decision={decision} titles={titles} now={now} answered={answeredQuestion} onError={onError} />
             )) : drafts.length === 0 && <p className="pw-empty">{copy.NOTHING_WAITING}</p>}
             {view.decisions.answered.length > 0 && <AnsweredList decisions={view.decisions.answered} titles={titles} now={now} />}
           </section>
@@ -679,8 +679,8 @@ function Composer({ projectId, busy, offline, offlineText, behind, jump, stoppin
  * A question for the owner (12.2): its source and age, the question as Markdown, the options with their details, and an
  * answer in the owner's own words. Every answer is idempotent by its client id.
  */
-function DecisionCard({ projectId, decision, titles, now, answered, onError }: {
-  projectId: string; decision: ProjectDecision; titles: ThreadTitles; now: number; answered(decision: ProjectDecision): void; onError(error: unknown): void;
+function DecisionCard({ projectId, decision, number, titles, now, answered, onError }: {
+  projectId: string; decision: ProjectDecision; number: number; titles: ThreadTitles; now: number; answered(decision: ProjectDecision): void; onError(error: unknown): void;
 }) {
   const { error, setError, fail } = useLocalError(onError);
   const task = useTask(fail);
@@ -696,7 +696,7 @@ function DecisionCard({ projectId, decision, titles, now, answered, onError }: {
   });
   return (
     <section className="answer-card pw-decision" aria-labelledby={questionId}>
-      <p className="pw-source">{decisionSource(decision, titles)} · <Stamp at={decision.createdAt} label={shortTime(decision.createdAt, now)} /></p>
+      <p className="pw-source"><span className="pw-question-number" aria-label={`Question ${number}`}>{number}</span> {decisionSource(decision, titles)} · <Stamp at={decision.createdAt} label={shortTime(decision.createdAt, now)} /></p>
       <div className="pw-question" id={questionId}><Markdown>{decision.question}</Markdown></div>
       {decision.merge?.reason && <p>{decision.merge.reason}</p>}{decision.merge?.failures?.map((failure, index) => <details key={index}><summary>{failure.what}</summary><pre>{failure.output}</pre></details>)}
       {decision.options.length > 0 && (
@@ -735,7 +735,7 @@ function AnsweredList({ decisions, titles, now }: { decisions: readonly ProjectD
             </p>
             <p className="pw-answered-question">{decision.question}</p>
             {decision.answer && (
-              <p className="pw-answered-answer"><Icon name="check" size={13} />{copy.eventCopy.answer(decision.answer.optionLabel, decision.answer.text)}</p>
+              <p className="pw-answered-answer"><Icon name="check" size={13} />{decision.answer.source === 'owner-chat' ? `Answered in chat: ${decision.answer.ownerMessage}` : copy.eventCopy.answer(decision.answer.optionLabel, decision.answer.text)}</p>
             )}
           </li>
         ))}

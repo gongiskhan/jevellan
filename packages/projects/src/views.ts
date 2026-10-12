@@ -1,6 +1,6 @@
 import type { AccountService } from '@jevellan/accounts';
 import {
-  ProjectWorkListViewSchema, ProjectWorkViewSchema, ThreadViewSchema, defaultProjectWorkSettings, deviceAway, isTerminal, projectPathProblem, type AccountView, type Configuration, type CoordinatorState,
+  ProjectWorkListViewSchema, ProjectWorkViewSchema, ThreadViewSchema, defaultProjectWorkSettings, deviceAway, isTerminal, openQuestions, projectPathProblem, type AccountView, type Configuration, type CoordinatorState,
   type CoordinatorView, type Project,
   type ProjectDecision, type ProjectHub, type ProjectLedgerEvent, type ProjectWorkListView, type ProjectWorkSettings, type ProjectWorkSummary, type ProjectWorkView,
   type PullRequestEntry, type SharedProjects, type ThreadIndex, type ThreadReport, type ThreadView,
@@ -31,7 +31,7 @@ const BRANCH_ONLY = [BRANCH_PUSHED_NO_TOKEN, NOT_GITHUB];
 /** Open questions and the last answered ones, newest answer first (brief 11, 12.2). */
 export function decisionLists(decisions: readonly ProjectDecision[]): { open: ProjectDecision[]; answered: ProjectDecision[] } {
   return {
-    open: decisions.filter((decision) => !decision.answer && !decision.withdrawnAt),
+    open: openQuestions(decisions),
     answered: decisions.filter((decision) => decision.answer).sort((a, b) => (b.answeredAt ?? '').localeCompare(a.answeredAt ?? '')).slice(0, ANSWERED_SHOWN),
   };
 }

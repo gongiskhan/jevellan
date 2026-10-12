@@ -81,3 +81,4 @@ export * from './workflow-schemas.js';
 export * from './ekoa-code-schemas.js';
 export * from './device-facts.js';
 export * from './worktree-disk-schemas.js';
+export * from './github-awareness-schemas.js';

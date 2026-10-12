@@ -313,6 +313,7 @@ a.pw-tool:hover > span { text-decoration: underline; text-underline-offset: 2px;
 /* Decision cards: the existing magenta answer card with the source line, the options stacked with their details. */
 .answer-card.pw-decision { gap: 10px; margin: 0; padding: 12px; }
 .pw-source { margin: 0; font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-2); }
+.pw-question-number { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; margin-right: 5px; padding: 0 4px; border: 1px solid var(--ink-3); border-radius: 50%; font-size: 12px; font-weight: 700; color: var(--ink-1); }
 .pw-question .markdown { font-size: 13.5px; }
 .pw-question .markdown > p:first-child { font-weight: 600; }
 .pw-options { display: grid; gap: 6px; }

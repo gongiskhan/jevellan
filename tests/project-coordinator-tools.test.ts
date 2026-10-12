@@ -5,7 +5,7 @@ import { afterEach, expect, test } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import {
-  CONCLUDED_WINDOW_MS, CoordinatorEventSchema, ProjectToolResultSchemas, ProjectWorkSettingsSchema, ThreadIndexSchema, concludedRecently, defaultProjectWorkSettings, projectToolNames,
+  CONCLUDED_WINDOW_MS, CoordinatorEventSchema, CoordinatorMessageRequestSchema, ProjectToolResultSchemas, ProjectWorkSettingsSchema, ThreadIndexSchema, concludedRecently, defaultProjectWorkSettings, projectToolNames,
   type ProjectLedgerData, type ProjectLedgerEvent, type ThreadIndex,
 } from '../packages/core/dist/index.js';
 import { HubProjectAccess } from '../packages/mesh/dist/index.js';
@@ -88,6 +88,103 @@ async function index(f: ProjectFixture, threadId: string, accept: (value: Thread
   return (await f.waitFor(() => f.index(threadId), accept))!;
 }
 const state = (f: ProjectFixture, threadId: string, wanted: string) => f.waitFor(() => f.thread(threadId).state, (value) => value === wanted);
+
+test('chat answers quote the owner, answer numbered questions once without echo events, and the coordinator distributes each answer to its thread', { timeout: 120_000 }, async () => {
+  const f = fixture = await projectFixture({ coordinator: true });
+  f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'Waiting for the choice.' }), forThread());
+  f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'Waiting for the colour.' }), forThread());
+  const ownerText = 'Start deletion and highlighting. My answers are: 1 archive, 2 amber.';
+  const c = await hold(f, ownerText);
+  const deletion = await c.start({ title: 'Delete customers', task: 'Add a delete button.' });
+  const highlight = await c.start({ title: 'Highlight invoices', task: 'Highlight overdue invoices.' });
+  await state(f, deletion.threadId, 'idle'); await state(f, highlight.threadId, 'idle');
+  const first = await c.call('jevellan_ask_user', { question: 'Archive or remove?', options: [{ label: 'Archive' }, { label: 'Remove' }], threadId: deletion.threadId });
+  const second = await c.call('jevellan_ask_user', { question: 'Red or amber?', options: [{ label: 'Red' }, { label: 'Amber' }], threadId: highlight.threadId });
+  expect(second.openQuestions?.questions).toEqual([{ number: 1, questionId: first.decisionId, threadTitle: 'Delete customers', question: 'Archive or remove?', options: ['Archive', 'Remove'] },
+    { number: 2, questionId: second.decisionId, threadTitle: 'Highlight invoices', question: 'Red or amber?', options: ['Red', 'Amber'] }]);
+  expect(await c.refused('jevellan_answer_question', { questionId: first.decisionId, optionLabel: 'Missing' })).toMatchObject({ status: 400 });
+  expect(await c.refused('jevellan_answer_question', { questionId: first.decisionId })).toMatchObject({ status: 400 });
+  expect(await c.refused('jevellan_answer_question', { questionId: first.decisionId, text: 'x'.repeat(2001) })).toMatchObject({ status: 400 });
+  const given = await c.call('jevellan_answer_question', { questionId: first.decisionId, optionLabel: 'Archive' });
+  expect(given).toMatchObject({ schema: 'answer-question-result-v1', answered: true, repeated: false, openQuestions: { questions: [{ number: 1, questionId: second.decisionId }] } });
+  expect(await c.call('jevellan_answer_question', { questionId: first.decisionId, optionLabel: 'Archive' })).toMatchObject({ repeated: true });
+  await c.call('jevellan_answer_question', { questionId: second.decisionId, optionLabel: 'Amber' });
+  for (const [id, optionLabel] of [[first.decisionId, 'Archive'], [second.decisionId, 'Amber']]) expect((await f.app.projectHub.decision(id!))?.document.answer)
+    .toEqual({ optionLabel, source: 'owner-chat', ownerMessage: ownerText });
+  expect(f.thread(deletion.threadId).turns).toBe(1); expect(f.thread(highlight.threadId).turns).toBe(1);
+  const resumed: string[] = [];
+  for (let n = 0; n < 2; n++) f.fake.enqueueTurn(async turn => { resumed.push(turn.input.prompt); return reportStep({ status: 'progress', summary: 'Choice received.' })(turn); }, forThread());
+  await c.call('jevellan_thread_message', { threadId: deletion.threadId, message: 'Archive.' });
+  await c.call('jevellan_thread_message', { threadId: highlight.threadId, message: 'Amber.' });
+  await f.waitFor(() => resumed.length, count => count === 2);
+  expect(resumed.sort()).toEqual(['Amber.', 'Archive.']);
+  acknowledge(f, 2); c.release(); await f.app.projectWork.idle(f.project.id);
+  const ledger = f.app.projectWork.coordinatorLedger(f.project.id);
+  expect(ledger.events().filter(event => event.type === 'coordinator-event').map(event => ledger.payload(event as ProjectLedgerEvent & { type: 'coordinator-event' }))
+    .filter(event => event.kind === 'decision-answer')).toEqual([]);
+});
+
+test('batched owner messages retain their actual words, including large CI logs, instead of quoting only the latest follow-up', { timeout: 120_000 }, async () => {
+  const f = fixture = await projectFixture({ coordinator: true });
+  const initial = await hold(f, 'Hello.');
+  const question = await initial.call('jevellan_ask_user', { question: 'Pick a colour.', options: [{ label: 'Red' }, { label: 'Amber' }] });
+  const ownerWords = ['Here is the CI log.\n' + 'Test passed: date mismatch inspected.\n'.repeat(3500), '1 amber. Also drop the pagination one.'];
+  let nextPrompt = '';
+  f.fake.enqueueTurn(async turn => {
+    nextPrompt = turn.input.prompt;
+    await turn.bridge('jevellan_answer_question', { questionId: question.decisionId, optionLabel: 'Amber' });
+    turn.say('Recorded.'); return { status: 'completed' };
+  }, forCoordinator);
+  await Promise.all(ownerWords.map(text => f.app.projectWork.postMessage(f.project.id, CoordinatorMessageRequestSchema.parse({
+    schema: 'coordinator-message-request-v1', clientMessageId: `msg_${randomUUID()}`, text }))));
+  initial.release(); await f.app.projectWork.idle(f.project.id);
+  for (const text of ownerWords) expect(nextPrompt).toContain(text);
+  expect((await f.app.projectHub.decision(question.decisionId))?.document.answer)
+    .toEqual({ optionLabel: 'Amber', source: 'owner-chat', ownerMessage: ownerWords.join('\n\n') });
+  expect(CoordinatorMessageRequestSchema.safeParse({ schema: 'coordinator-message-request-v1', clientMessageId: 'msg_large', text: 'x'.repeat(200001) }).success).toBe(false);
+});
+
+test('event-only coordinator turns and threads cannot record owner chat answers', { timeout: 120_000 }, async () => {
+  const f = fixture = await projectFixture({ coordinator: true });
+  const opened = deferred<FakeTurn>(), gate = deferred();
+  const initial = await hold(f, 'Hello.'); initial.release(); await f.app.projectWork.idle(f.project.id);
+  const decisionId = await f.app.projectWork.decisions.ask(f.project.id, { question: 'Pick a colour.', options: [{ label: 'Red' }, { label: 'Amber' }] }, 'coordinator');
+  f.fake.enqueueTurn(async turn => { opened.resolve(turn); await Promise.race([gate.promise, aborted(turn.signal)]); turn.say('Waiting.'); return { status: 'completed' }; }, forCoordinator);
+  await f.app.projectWork.coordinators.get(f.project.id).enqueue(CoordinatorEventSchema.parse({ schema: 'coordinator-event-v1', kind: 'placement-override', id: `cev_${randomUUID()}`,
+    at: new Date().toISOString(), threadId: 'thread_other', summary: 'Effort changed.' }));
+  const turn = await opened.promise;
+  const response = await bridge(turn.input, { operation: 'call', name: 'jevellan_answer_question', arguments: { questionId: decisionId, optionLabel: 'Red' } });
+  expect(response.status).toBe(403); expect((await f.app.projectHub.decision(decisionId))?.document.answer).toBeUndefined();
+  expect(projectToolNames({ kind: 'thread', isolation: 'worktree' })).not.toContain('jevellan_answer_question');
+  gate.resolve(); await f.app.projectWork.idle(f.project.id);
+});
+test('the booted project exposes repository GitHub reads to its coordinator and only the current pull and checks to its thread', { timeout: 120_000 }, async () => {
+  const f = fixture = await projectFixture({ coordinator: true });
+  f.fake.enqueueTurn(commitStep({ 'value.txt': 'new value\n' }, { status: 'done', summary: 'Value changed.' }), forThread());
+  const c = await hold(f, 'Improve the value and look at its checks.');
+  const started = await c.start({ title: 'Improve value', task: 'Change the value.' });
+  const entry = await index(f, started.threadId, value => value?.state === 'in-review');
+  const run = f.github.addWorkflow({ workflow: 'checks.yml', event: 'pull_request', head_sha: entry.pr!.headSha,
+    jobs: [{ id: 188, name: 'result', status: 'completed', conclusion: 'failure', logs: 'CHANGELOG.md has no entry for this change' }] });
+  const result = await c.call('jevellan_github', { action: 'pulls', state: 'open' });
+  expect(result).toMatchObject({ schema: 'github-pulls-v1', pulls: [{ number: entry.pr!.number, title: 'Improve value' }] });
+  const calls: unknown[] = [];
+  f.fake.enqueueTurn(async turn => {
+    calls.push(await turn.bridge('jevellan_github', { action: 'pull', number: entry.pr!.number }));
+    calls.push(await turn.bridge('jevellan_github', { action: 'run', runId: run.id }));
+    calls.push(await turn.bridge('jevellan_github', { action: 'job_log', jobId: 188 }));
+    const refused = await bridge(turn.input, { operation: 'call', name: 'jevellan_github', arguments: { action: 'pulls', state: 'open' } });
+    expect(refused.status).toBe(403);
+    return reportStep({ status: 'progress', summary: 'Checks read.' })(turn);
+  }, forThread());
+  await c.call('jevellan_thread_message', { threadId: started.threadId, message: 'Read the failed checks.' });
+  await f.waitFor(() => calls.length, count => count === 3);
+  await f.waitFor(() => f.thread(started.threadId).lastReport?.summary, summary => summary === 'Checks read.');
+  expect(calls).toEqual([expect.objectContaining({ schema: 'github-pull-v1' }), expect.objectContaining({ schema: 'github-run-v1' }),
+    { schema: 'github-job-log-v1', jobId: 188, output: 'CHANGELOG.md has no entry for this change' }]);
+  expect(toolLines(f)).toContainEqual(line('jevellan_github', true, 'Read GitHub pulls'));
+  acknowledge(f, 2); c.release(); await f.app.projectWork.idle(f.project.id);
+});
 function remoteIndex(over: Partial<ThreadIndex>): ThreadIndex {
   const at = new Date().toISOString();
   return ThreadIndexSchema.parse({ schema: 'project-thread-index-v1', revision: 0, id: 'thread_remote', projectId: 'project', title: 'Remote work', state: 'idle', isolation: 'worktree',
@@ -255,7 +352,7 @@ test('questions, the notebook with its revision conflict, pull request status, q
   // Questions: 0 or 2-4 options; the answer arrives later as an event; withdrawing an answered question does nothing.
   const question = 'Which database?\nPick one for the cache.';
   const asked = await c.call('jevellan_ask_user', { question, options: [{ label: 'SQLite' }, { label: 'Postgres', detail: 'Needs a server.' }], threadId: added.threadId });
-  expect(asked).toEqual({ schema: 'ask-user-result-v1', decisionId: expect.stringMatching(/^pdec_/) });
+  expect(asked).toMatchObject({ schema: 'ask-user-result-v1', decisionId: expect.stringMatching(/^pdec_/), openQuestions: { schema: 'open-questions-v1', questions: [{ number: 1, threadTitle: 'Add cache' }] } });
   expect((await f.app.projectHub.decision(asked.decisionId))?.document).toMatchObject({ from: 'coordinator', threadId: added.threadId, question,
     options: [{ label: 'SQLite' }, { label: 'Postgres', detail: 'Needs a server.' }] });
   const options = (count: number) => Array.from({ length: count }, (_, n) => ({ label: `Option ${n + 1}` }));

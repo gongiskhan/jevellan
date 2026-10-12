@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CM2 questions share oldest-first numbering and show the owner chat answer in every layout",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/CM2-numbered-questions-phone-light.png",
+  "expected": "the Jevellan web app \"CM2 numbered questions\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"CM2 questions share oldest-first numbering and show the owner chat answer in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The tab strip is clipped at the right edge, so 'Pull requ…' is cut off. It is probably a horizontally scrollable row, but nothing on screen shows that more tabs are available.",
+      "The status text 'Context unavailable · Compacted 0 times today' wraps onto two lines in small grey monospace type, which looks cramped next to the 'Fresh session' button.",
+      "The 'Send' buttons are pale grey and low contrast, so they look disabled. That is expected while the input is empty, but they are hard to see."
+    ]
+  }
+}

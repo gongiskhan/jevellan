@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CM2 questions share oldest-first numbering and show the owner chat answer in every layout",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/screenshots/CM2-answered-in-chat-desktop-light.png",
+  "expected": "the Jevellan web app \"CM2 answered in chat\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"CM2 questions share oldest-first numbering and show the owner chat answer in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Shell session titles and subtitles in the left sidebar are truncated with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · G…')",
+      "The right panel's 'NIGHTLY 0' section is clipped at the bottom of the viewport ('Project day: 2026-10-12' is partly cut off), though the panel can be scrolled to reach it",
+      "The 'Answered' list in the right panel shows the questions newest-first (customers per page, red/amber, archive), the reverse of the oldest-first order in the chat (1 Archive, 2 Red/amber, 3 customers per page)"
+    ]
+  }
+}

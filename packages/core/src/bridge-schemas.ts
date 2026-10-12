@@ -1,4 +1,5 @@
 import { VerificationReportSchema } from './merge-schemas.js';
+import { GithubInputSchema, GithubResultSchema } from './github-awareness-schemas.js';
 import { ProjectDailyListViewSchema, ProjectJobListViewSchema, ProjectJobRunListViewSchema } from './project-daily-schemas.js';
 import { GoalListViewSchema } from './project-goal-schemas.js';
 import { z } from 'zod';
@@ -44,6 +45,8 @@ export const ThreadStopInputSchema = z.strictObject({ threadId: IdSchema, reason
 export const AskUserInputSchema = z.strictObject({ question: text.max(2000), options: z.array(OptionSchema).max(4, ASK_USER_OPTIONS).optional(), threadId: IdSchema.optional() })
   .refine((input) => input.options?.length !== 1, { message: ASK_USER_OPTIONS, path: ['options'] });
 export const WithdrawQuestionInputSchema = z.strictObject({ decisionId: IdSchema, reason });
+export const AnswerQuestionInputSchema = z.strictObject({ questionId: IdSchema, optionLabel: text.max(120).optional(), text: text.max(2000).optional() })
+  .refine(input => !!input.optionLabel || !!input.text, 'Choose an option or write an answer.');
 export const NotebookReadInputSchema = z.strictObject({});
 export const NotebookWriteInputSchema = z.strictObject({ content: z.string().max(65536), expectedRevision: count });
 export const PrStatusInputSchema = z.strictObject({ threadId: IdSchema });
@@ -70,7 +73,9 @@ export const ThreadReadResultSchema = z.strictObject({ schema: z.literal('thread
   stateReason: z.string().max(400).optional(), reports: z.array(ThreadReportSchema).max(3), pr: PullRequestStateSchema.optional(),
   transcript: z.string().max(8000).nullable().optional(), transcriptNote: z.string().max(400).optional() });
 export const ThreadStopResultSchema = z.strictObject({ schema: z.literal('thread-stop-result-v1'), threadId: IdSchema, state: ThreadStateSchema });
-export const AskUserResultSchema = z.strictObject({ schema: z.literal('ask-user-result-v1'), decisionId: IdSchema });
+export const OpenQuestionsResultSchema = z.strictObject({ schema: z.literal('open-questions-v1'), questions: z.array(z.strictObject({
+  number: z.number().int().positive(), questionId: IdSchema, threadTitle: text.max(160), question: text.max(2000), options: z.array(text.max(120)).max(4) })).max(1000) });
+export const AskUserResultSchema = z.strictObject({ schema: z.literal('ask-user-result-v1'), decisionId: IdSchema, openQuestions: OpenQuestionsResultSchema.optional() });
 export const WithdrawQuestionResultSchema = z.strictObject({ schema: z.literal('withdraw-question-result-v1'), decisionId: IdSchema, withdrawn: z.boolean() });
 export const NotebookReadResultSchema = z.strictObject({ schema: z.literal('notebook-read-result-v1'), content: z.string().max(65536), revision: count });
 export const NotebookWriteResultSchema = z.strictObject({ schema: z.literal('notebook-write-result-v1'), revision: count });
@@ -114,6 +119,8 @@ export const BridgeToolSchemas = {
   jevellan_thread_read: ThreadReadInputSchema,
   jevellan_thread_stop: ThreadStopInputSchema,
   jevellan_ask_user: AskUserInputSchema,
+  jevellan_answer_question: AnswerQuestionInputSchema,
+  jevellan_github: GithubInputSchema,
   jevellan_withdraw_question: WithdrawQuestionInputSchema,
   jevellan_notebook_read: NotebookReadInputSchema,
   jevellan_notebook_write: NotebookWriteInputSchema,
@@ -177,6 +184,8 @@ export function bridgeTools(names: BridgeTool[]): z.infer<typeof BridgeToolsSche
     jevellan_thread_read: 'Read a thread’s state, its last three reports and its pull request. detail: transcript adds the end of its assistant text.',
     jevellan_thread_stop: 'Stop a thread: end any running turn and mark it stopped. Its worktree and branch stay until the owner discards them.',
     jevellan_ask_user: 'Ask the owner a question. Give no options or two to four short options, and name the thread when the question comes from one. The answer arrives later as an event.',
+    jevellan_answer_question: 'Record an answer the owner gave in chat, only during a turn carrying an owner message. Match the numbered question and its exact option label. Then send the answer to the responsible thread with jevellan_thread_message.',
+    jevellan_github: 'Read this project’s GitHub workflows, runs and failed job logs, pull requests from any author, or recent commits. Results are cached for 60 seconds. Threads may read only their own pull request and runs and job logs on its current head commit.',
     jevellan_withdraw_question: 'Withdraw an unanswered question, for example after a thread solved it.',
     jevellan_notebook_read: 'Read the project notebook: your durable record of decisions, conventions, owner preferences and the current plan.',
     jevellan_notebook_write: 'Replace the whole notebook, at most 64 KiB. Pass the revision you read; if it changed meanwhile, the error carries the current content.',
@@ -187,17 +196,23 @@ export function bridgeTools(names: BridgeTool[]): z.infer<typeof BridgeToolsSche
     jevellan_release: 'Release one reservation by id, or every reservation of this thread when no id is given.',
     jevellan_thread_report: 'Report this turn’s outcome exactly once, at the end of the turn. needs-decision requires a question; options are two to four short choices. Include the tests you ran and the files you changed.',
   };
-  return BridgeToolsSchema.parse({ schema: 'bridge-tools-v1', tools: names.map((name) => ({ name, description: descriptions[name], inputSchema: z.toJSONSchema(BridgeToolSchemas[name], { io: 'input' }) })) });
+  return BridgeToolsSchema.parse({ schema: 'bridge-tools-v1', tools: names.map((name) => {
+    const schema = z.toJSONSchema(BridgeToolSchemas[name], { io: 'input' });
+    // MCP runtimes require an object at the root. Preserve the action union's validation and declare its properties at the root too.
+    const inputSchema = name === 'jevellan_github' ? { ...schema, type: 'object', required: ['action'], additionalProperties: false,
+      properties: Object.assign({}, ...(schema.anyOf ?? schema.oneOf ?? []).map(variant => variant.properties ?? {})) } : schema;
+    return { name, description: descriptions[name], inputSchema };
+  }) });
 }
 
 // Project scopes (D104). The coordinator's read-only Claude allow list and the bridge's scope lists both derive from
 // projectToolNames, never a copy.
 export const COORDINATOR_TOOLS = ['jevellan_review_followup', 'jevellan_jobs_list', 'jevellan_job_run', 'jevellan_job_runs', 'jevellan_daily_list', 'jevellan_goals_list', 'jevellan_tasks_list', 'jevellan_task_create', 'jevellan_task_update', 'jevellan_task_cancel', 'jevellan_threads_list', 'jevellan_thread_message', 'jevellan_thread_read', 'jevellan_thread_stop',
-  'jevellan_ask_user', 'jevellan_withdraw_question', 'jevellan_notebook_read', 'jevellan_notebook_write', 'jevellan_pr_status', 'jevellan_pr_diff', 'jevellan_mail_send', 'memory_search', 'memory_read'] as const satisfies readonly BridgeTool[];
+  'jevellan_ask_user', 'jevellan_answer_question', 'jevellan_github', 'jevellan_withdraw_question', 'jevellan_notebook_read', 'jevellan_notebook_write', 'jevellan_pr_status', 'jevellan_pr_diff', 'jevellan_mail_send', 'memory_search', 'memory_read'] as const satisfies readonly BridgeTool[];
 const MAIN_THREAD_TOOLS = ['jevellan_mail_send', 'jevellan_mail_inbox', 'jevellan_reserve', 'jevellan_release'] as const satisfies readonly BridgeTool[];
 export type ProjectToolName = typeof COORDINATOR_TOOLS[number] | typeof MAIN_THREAD_TOOLS[number] | 'jevellan_thread_report' | 'jevellan_app_start' | 'jevellan_app_stop' | 'jevellan_apps_list';
 export function threadTools(isolation: 'worktree' | 'main'): BridgeTool[] {
-  return ['jevellan_thread_report', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read', ...(isolation === 'main' ? MAIN_THREAD_TOOLS : [])];
+  return ['jevellan_thread_report', 'jevellan_github', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read', ...(isolation === 'main' ? MAIN_THREAD_TOOLS : [])];
 }
 /** The tools a scope lists: the coordinator's, or a thread's by isolation (mail and reservations only on main, brief 7.2). A fresh array each call. */
 export function projectToolNames(scope: { kind: 'coordinator' } | { kind: 'thread'; isolation: 'worktree' | 'main' }): BridgeTool[] {
@@ -221,6 +236,8 @@ export const ProjectToolResultSchemas = {
   jevellan_threads_list: ThreadsListResultSchema, jevellan_thread_message: ThreadMessageResultSchema,
   jevellan_thread_read: ThreadReadResultSchema, jevellan_thread_stop: ThreadStopResultSchema, jevellan_ask_user: AskUserResultSchema,
   jevellan_withdraw_question: WithdrawQuestionResultSchema, jevellan_notebook_read: NotebookReadResultSchema, jevellan_notebook_write: NotebookWriteResultSchema,
+  jevellan_answer_question: z.strictObject({ schema: z.literal('answer-question-result-v1'), questionId: IdSchema, answered: z.literal(true), repeated: z.boolean(), openQuestions: OpenQuestionsResultSchema.optional() }),
+  jevellan_github: GithubResultSchema,
   jevellan_pr_status: PrStatusResultSchema, jevellan_mail_send: MailSendResultSchema, jevellan_mail_inbox: MailInboxResultSchema,
   jevellan_pr_diff: PrDiffResultSchema,
   jevellan_reserve: ReserveResultSchema, jevellan_release: ReleaseResultSchema, jevellan_thread_report: ThreadReportResultSchema,

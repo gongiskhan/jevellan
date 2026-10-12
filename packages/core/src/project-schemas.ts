@@ -89,14 +89,18 @@ export const DECISION_ANSWER_REQUIRED = 'Choose an option or write an answer.';
 export function answerPresent(answer: { optionLabel?: string | undefined; text?: string | undefined }): boolean {
   return !!answer.optionLabel || !!answer.text;
 }
-export const DecisionAnswerSchema = DecisionAnswerFieldsSchema.refine(answerPresent, DECISION_ANSWER_REQUIRED);
+export const DecisionAnswerSchema = DecisionAnswerFieldsSchema.extend({
+  // Missing on historical answers; all new answers name their source.
+  source: z.enum(['panel', 'owner-chat']).optional(), ownerMessage: z.string().min(1).optional(),
+}).refine(answerPresent, DECISION_ANSWER_REQUIRED)
+  .refine(answer => answer.source !== 'owner-chat' || !!answer.ownerMessage, 'A chat answer needs the owner message.');
 export type DecisionAnswer = z.infer<typeof DecisionAnswerSchema>;
 
 // 5.4 every variant carries schema, kind, id and at.
 const ev = <K extends string, S extends z.ZodRawShape>(kind: K, fields: S) => z.strictObject({
   schema: z.literal('coordinator-event-v1'), kind: z.literal(kind), id: IdSchema, at: TimestampSchema, ...fields });
 export const CoordinatorEventSchema = z.discriminatedUnion('kind', [
-  ev('user-message', { text: z.string().min(1).max(20000), clientMessageId: IdSchema }),
+  ev('user-message', { text: z.string().min(1).max(200000), clientMessageId: IdSchema }),
   ev('thread-report', { threadId: IdSchema, report: ThreadReportSchema }),
   ev('thread-published', { threadId: IdSchema, result: z.enum(['pr-opened', 'pr-updated', 'main-published', 'no-changes', 'checkout-completed']),
     prNumber: positive.optional(), commit: z.string().optional() }),
@@ -402,7 +406,7 @@ export type ThreadView = z.infer<typeof ThreadViewSchema>;
 
 // HTTP requests. No-argument POSTs send EmptySchema.
 export const CoordinatorMessageRequestSchema = z.strictObject({ schema: z.literal('coordinator-message-request-v1'),
-  clientMessageId: IdSchema, text: z.string().min(1).max(20000) });
+  clientMessageId: IdSchema, text: z.string().min(1).max(200000) });
 export const ThreadCreateRequestSchema = z.strictObject({ schema: z.literal('thread-create-request-v1'), clientRequestId: IdSchema,
   title: z.string().min(1).max(120), task: z.string().min(1).max(32768),
   taskContext: TaskPlacementContextSchema.optional(),
