@@ -19,6 +19,7 @@ import { ImproverRequestSchema } from '@jevellan/core';
 import { handleAgentAccessApi } from './agent-access-api.js';
 import { handleAgentPeer } from './agent-mcp-api.js';
 import { DEVICE_WORKTREES_ROUTE, handleDeviceWorktrees } from './device-worktrees-api.js';
+import { handleTerminalApi, handleTerminalPeer } from './terminal-api.js';
 
 export { json } from './http.js';
 function failure(message: string, status: number) { return Object.assign(new Error(message), { status }); }
@@ -32,7 +33,7 @@ export function requireOrigin(request: IncomingMessage, allowedOrigins: readonly
   const local = new URL(origin);
   const isLocal = ['127.0.0.1', 'localhost', '[::1]'].includes(local.hostname) && Number(local.port || (secure ? 443 : 80)) === request.socket.localPort;
   if (!isLocal && !allowedOrigins.includes(origin)) throw failure('Unknown request host.', 403);
-  if (!['GET', 'HEAD'].includes(request.method ?? '')) {
+  if (!['GET', 'HEAD'].includes(request.method ?? '') || request.headers.upgrade?.toLowerCase() === 'websocket') {
     // Browser mutations always send Origin. JSON requests without it are local CLI clients.
     if (request.headers.origin && request.headers.origin !== origin) throw failure('Open Jevellan directly before changing settings.', 403);
     if (request.headers['sec-fetch-site'] === 'cross-site') throw failure('Open Jevellan directly before changing settings.', 403);
@@ -61,6 +62,7 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     if (path.startsWith('/api/mesh/devices/') && await handleDeviceWorktrees(app, request, response, url)) return;
     if (path === '/api/agent-peer') { await handleAgentPeer(app, request, response); return; }
     if (await handleOwnerRequest(app, request, response, url)) return;
+    if (await handleTerminalPeer(app, request, response, url)) return;
     if (path.startsWith('/api/mesh/projects/') && await handleProjectWorkPeer(app, request, response, url, () => { retryable = true; })) return;
     if (path.startsWith('/api/mesh/cursor') && await handleCursorApi(app, request, response, url)) return;
     if (path.startsWith('/api/mesh/login/') && await handleLoginApi(app, request, response, url)) return;
@@ -80,6 +82,7 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     }
     retryable = true; // No UI operation has been admitted before authentication succeeds.
     if (!await app.auth.verify(token)) throw failure('Sign in to Jevellan.', 401);
+    if (await handleTerminalApi(app, request, response, url, token!)) return;
     if (await handleDeviceWorktrees(app, request, response, url, token)) return;
     retryable = method === 'GET' && !path.startsWith('/api/logins/');
     if (method === 'POST' && ['/hub/devices/invitations', '/api/devices/switch'].includes(path)) retryable = true;

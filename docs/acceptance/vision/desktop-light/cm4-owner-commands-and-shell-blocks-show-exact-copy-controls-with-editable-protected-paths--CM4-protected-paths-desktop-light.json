@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The hub card's 'Device tags' and 'Protected paths' fields have a grey background, so they look disabled or read-only, while the Member card's matching fields are white. This makes it unclear whether the hub's protected paths can be edited.",
-      "The 'Offline fixture' card is cut off at the bottom of the viewport. Scrolling should reach the rest, but its protected paths controls aren't visible in this capture.",
-      "Sidebar conversation titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory jour…'). This looks like intended truncation."
+      "The 'Offline fixture' card is cut off at the bottom of the viewport. This is normal scrolling and the card's protected paths are below the fold.",
+      "Sidebar conversation titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory jour…', 'Goncalos-…').",
+      "The 'Open terminals' links are centered on their own line rather than aligned with the Terminal button, which looks a bit disconnected.",
+      "The 'Open' button on the hub card is drawn in a lighter, disabled-looking style, while the member card's 'Open' button looks normal."
     ]
   }
 }

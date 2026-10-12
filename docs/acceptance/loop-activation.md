@@ -47,3 +47,8 @@ Complete live rollback, retained Mini URL, membership, resource-heartbeat, scope
 ## 0.3.0 source checkpoint: P4
 
 P3 is pushed at b7dc61b. P4 implements unattended Codex coding, refreshed checkout/protected-path guards and exact owner-command data/controls, with 141 affected backend passes and four-layout CM4/twelve clear vision verdicts. Terminal execution and automatic return are P5 work; these source changes are not installed on the active 0.2.1 hub. The existing grouped owner inputs remain pending, and no live scenario clock or owner acceptance has started. Keep the ordered owner steps above; no repeat export/import, AppArmor change or Ekoa CI edit is needed for this phase.
+
+
+## 0.3.0 source checkpoint: P5
+
+P5 implements device-owned owner PTYs, phone controls, existing authenticated mesh/websocket relay, reconnectable output, semantic/approximate records, copy/send/read, scoped native takeover and durable command-result return. Ninety distinct affected backend cases have passing coverage, and CM4/CM5 pass all eight four-layout cases with 28 clear dedicated vision judgments. Real provider/Pro/Madrid/physical-phone scenarios remain blocked on the already requested owner inputs; no live clock has started. Closing checks and 0.3.0 installation follow. Keep the ordered steps at the top; the hub still runs the retained 0.2.1 release.

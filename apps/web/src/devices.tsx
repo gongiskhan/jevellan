@@ -5,11 +5,13 @@ import { api, empty } from './api.js';
 import { Modal, SectionHeading, dateTime, useTask, type PageProps } from './components.js';
 import { Icon } from './icons.js';
 import { CursorConnections } from './cursor-connections.js';
+import { OpenTerminalButton, TerminalLauncher } from './terminal.js';
 const gb = (bytes: number) => `${Number((bytes / 1e9).toFixed(1))} GB`;
 function DeviceControls({ row, props }: { row: DeviceView; props: PageProps }) {
   const task = useTask(props.onError), [tags, setTags] = useState((row.device.tags ?? []).join(', '));
   const [protectedPaths, setProtectedPaths] = useState((row.device.protectedPaths ?? []).join('\n'));
   const [disk, setDisk] = useState<WorktreeDisk>(), [error, setError] = useState(''), [confirm, setConfirm] = useState(false);
+  const [terminalsShown, setTerminalsShown] = useState(false);
   const endpoint = `/api/devices/${row.device.id}/worktrees`;
   const available = deviceAvailable(row, props.data.roster.currentDeviceId);
   useEffect(() => setTags((row.device.tags ?? []).join(', ')), [row.device.tags]);
@@ -24,6 +26,9 @@ function DeviceControls({ row, props }: { row: DeviceView; props: PageProps }) {
   const orphans = disk?.entries.filter(entry => entry.orphan) ?? [], facts = row.heartbeat?.facts;
   return <>
     {row.device.workPolicy?.mode === 'apps-only' && <p className="chip">Apps only</p>}
+    {available && <OpenTerminalButton props={props} deviceId={row.device.id} cwd="home" label="Terminal" />}
+    {available && <button className="text-button" aria-expanded={terminalsShown} onClick={() => setTerminalsShown(!terminalsShown)}>Open terminals</button>}
+    {terminalsShown && <TerminalLauncher props={props} deviceId={row.device.id} />}
     {row.device.role === 'hub' && facts?.power?.status === 'available' && facts.power.acSleepMinutes > 0 && <p className="notice">Hub readiness: this Mac can sleep on AC power after {facts.power.acSleepMinutes} minutes. Nightly work may stop. Run <code>sudo pmset -c sleep 0</code> on the hub, then check again.</p>}
     {row.device.role === 'hub' && facts?.power?.status === 'unavailable' && <p className="notice">Hub readiness: AC power settings could not be read. Check them with <code>pmset -g custom</code> on the hub.</p>}
     {facts && <p className="muted small-text">{facts.cores} cores · Load {Number(facts.load5.toFixed(1))} · {gb(facts.freeMemoryBytes)} memory free · {gb(facts.freeDiskBytes)} disk free<br />{facts.runningThreads.length} threads · {facts.runningJobRuns.length} job runs</p>}

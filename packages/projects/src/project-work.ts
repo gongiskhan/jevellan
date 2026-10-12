@@ -23,7 +23,9 @@ import {
   type RiggingItem, type SecretRedactor, type SharedProjects, type ThreadCreateRequestSchema, type ThreadMessageRequestSchema, type ThreadOverrideRequestSchema,
   type ThreadStopRequestSchema, type ThreadView, type UnreadableEnvelope, type ProjectMemoryRequest, type MemoryCapture,
 } from '@jevellan/core';
-import type { StretchBridges } from '@jevellan/conversations';
+import type { StretchBridges, BridgeScopeTools } from '@jevellan/conversations';
+import { bridgeTools, applicationRoot, minimalEnvironment, resolvedPath, stableJson } from '@jevellan/core';
+import { ProjectTools } from './bridge-tools.js';
 import { decideProjectOutcome, type DecisionClient } from '@jevellan/decisions';
 import type { BasicMemory } from '@jevellan/memory';
 import type { RuntimeAdapter } from '@jevellan/runtime-contract';
@@ -77,6 +79,7 @@ export const DEFAULT_PROJECT_TIMERS: ProjectTimers = {
   mainLeaseRetryMs: 20_000, fallbackCheckMs: 60_000, now: Date.now,
 };
 export type ProjectWorkOptions = {
+  terminalRead?(scope: import('./bridge-tools.js').ProjectScope, input: unknown): Promise<unknown>;
   homes: Homes; deviceId: string; deviceName: string; redactor: SecretRedactor;
   facts?(): DeviceFacts;
   projects: SharedProjects; hub: ProjectHub;
@@ -129,6 +132,7 @@ export class ProjectWork {
   readonly #timers: ProjectTimers;
   readonly #publisher: ThreadIndexPublisher;
   readonly #attach: ThreadAttach;
+  readonly #attachedGrants = new Map<string, { token: string; close(): Promise<void> }>();
   #sweepTimer: ReturnType<typeof setInterval> | undefined;
   #tools: CoordinatorToolHandlers | undefined;
   readonly #github: ProjectGithub;
@@ -260,6 +264,7 @@ export class ProjectWork {
             ...(scope?.provenance ? { provenance: { ...scope.provenance, ...(task ? { taskId: task.id } : {}) } } : {}) });
         }, mail: this.mail,
         githubTool: (scope, _name, input, signal) => this.#github.read(scope, input, signal),
+        terminalRead: (scope, input) => { if (!o.terminalRead) throw new Error('Owner terminals are unavailable.'); return o.terminalRead(scope, input); },
         captureTurn: (project, thread) => this.#capture(project, { scope: thread.state === 'attached' ? 'attached' : 'thread', threadId: thread.id, runtime: thread.placement.runtime,
           model: thread.placement.model, accountId: thread.placement.accountId, sessionId: thread.nativeSessionId }),
         recall: async (project, thread) => projectRecall(() => o.memory.project(project, o.deviceId, () => {}, { kind: 'viewer' }), { title: thread.title, brief: thread.task },
@@ -365,7 +370,7 @@ export class ProjectWork {
   /** Coordinator tool handlers (brief 7.1), built on first use because the thread service and the tracker come after the coordinators. Memory is read-only. */
   #coordinatorTools(): CoordinatorToolHandlers {
     return this.#tools ??= { ...coordinatorToolHandlers({ deviceId: this.#o.deviceId, deviceName: this.#o.deviceName, threads: this.threads, tasks: this.tasks, goals: this.goals, daily: this.daily, jobs: this.jobs, store: this.store, decisions: this.decisions,
-      pullRequests: this.tracker, github: this.#github, hub: this.#o.hub, ledgers: this.ledgers, mail: this.mail, roster: this.#o.roster, now: () => this.#timers.now(),
+      pullRequests: this.tracker, github: this.#github, terminalRead: this.#o.terminalRead, hub: this.#o.hub, ledgers: this.ledgers, mail: this.mail, roster: this.#o.roster, now: () => this.#timers.now(),
       memory: async (projectId, scope) => this.#o.memory.project(await this.#project(projectId), this.#o.deviceId, () => { throw new Error(COORDINATOR_MEMORY_READ_ONLY); },
         { kind: 'coordinator', ...(scope?.provenance ? { provenance: scope.provenance } : {}) }) }),
       capture: async (scope, payload) => {
@@ -471,6 +476,7 @@ export class ProjectWork {
     return this.#closing ??= (async () => {
       if (this.#sweepTimer) clearInterval(this.#sweepTimer);
       await this.ready.catch(() => undefined);
+      for (const grant of this.#attachedGrants.values()) await grant.close(); this.#attachedGrants.clear();
       // No new envelope is handled while turns stop; the outbox closes last, its entries stay on disk for the next start.
       await this.inbox.close();
       // Coordinator turns first (their tools start and message threads), then runners: tracker transitions wait on runner chains (2.6.14).
@@ -546,6 +552,16 @@ export class ProjectWork {
     await this.#coordinatorHere(projectId); const at = this.#timers.now();
     return this.coordinators.get(projectId).enqueue({ schema: 'coordinator-event-v1', kind: 'user-message', id: newId('cev', at), at: new Date(at).toISOString(),
       text: input.text, clientMessageId: input.clientMessageId });
+  }
+  /** Owner-terminal results and Send to use the existing durable message delivery, with a stable id for retry. */
+  async terminalMessage(projectId: string, target: { threadId?: string | undefined; coordinator?: true | undefined }, text: string, messageId: string): Promise<void> {
+    await this.ready;
+    if (target.threadId && !target.coordinator) { await this.threads.message(projectId, target.threadId, 'owner', text, false, messageId); return; }
+    const at = this.#timers.now(), event = { schema: 'coordinator-event-v1' as const, kind: 'user-message' as const, id: `cev_${messageId}`.slice(0, 128),
+      at: new Date(at).toISOString(), text, clientMessageId: messageId };
+    const device = await this.coordinators.deviceOf(projectId);
+    if (device !== null && device !== this.#o.deviceId) this.outbox.enqueue(projectId, 'coordinator', { kind: 'coordinator-event', event });
+    else { await this.coordinators.ensureAssigned(projectId); this.coordinators.get(projectId).enqueue(event); }
   }
   /** The assigned coordinator when it runs here; null before any assignment. The routes proxy another device's coordinator there. */
   async #assignedHere(projectId: string): Promise<Coordinator | null> {
@@ -655,14 +671,60 @@ export class ProjectWork {
    * Terminal takeover (brief phase 7), for the local control routes only: the answer carries the native session id and the account's
    * credentials, so it never goes through the redactor and never leaves the loopback socket.
    */
-  async attach(threadId: string): Promise<ThreadAttachView> { await this.ready; return this.#attach.attach(threadId); }
+  async attach(threadId: string): Promise<ThreadAttachView> {
+    await this.ready; const view = await this.#attach.attach(threadId), thread = this.store.get(threadId)!;
+    try {
+      const project = await this.#project(thread.projectId), settings = await this.admission.settings(project.id);
+      const allowed = ['memory_search', 'memory_read', ...(project.memory.mode === 'hub' ? ['memory_write', 'memory_edit'] as const : []), 'jevellan_github', 'jevellan_terminal_read'] as const;
+      const tools = new ProjectTools({ kind: 'thread', projectId: project.id, threadId, turn: thread.turns, isolation: thread.isolation, memoryMode: project.memory.mode,
+        provenance: { source: 'thread', runtime: thread.placement.runtime, model: thread.placement.model, threadId } }, {
+        isCurrent: () => this.store.get(threadId)?.state === 'attached',
+        memory: scope => this.#o.memory.project(project, this.#o.deviceId, () => { throw new Error(THREAD_MEMORY_READ_ONLY); }, { kind: 'thread', id: threadId, provenance: scope.provenance }),
+        call: (scope, name, input, signal) => {
+          if (name === 'jevellan_github') return this.#github.read(scope, input, signal);
+          if (name === 'jevellan_terminal_read' && this.#o.terminalRead) return this.#o.terminalRead(scope, input);
+          throw refuse('This tool is not available during terminal takeover.', 403);
+        },
+        capture: async (_scope, payload) => {
+          const current = this.store.get(threadId); if (current?.state !== 'attached') throw refuse('The terminal takeover has ended.', 401);
+          const sessionId = payload?.sessionId ?? current.nativeSessionId;
+          const home = this.#o.homes.account(view.runtime, current.placement.accountId);
+          const journal = (await listNativeSessions({ runtime: nativeFormat(view.runtime), root: home })).find(row => row.nativeId === sessionId);
+          if (!journal || journal.cwd === null || resolvedPath(journal.cwd) !== resolvedPath(current.cwd)) throw refuse('Capture needs this thread’s isolated session.', 403);
+          await this.#capture(project, { scope: 'attached', threadId, runtime: view.runtime, model: current.placement.model, accountId: current.placement.accountId, sessionId });
+        },
+      }, this.#o.redactor);
+      const scoped: BridgeScopeTools = { list: () => { tools.list(); return bridgeTools([...allowed]); },
+        call: (name, input) => { if (!(allowed as readonly string[]).includes(name)) throw refuse('This tool is not available during terminal takeover.', 403); return tools.call(name, input); },
+        capture: payload => tools.capture(payload), close: () => tools.close() };
+      const grant = this.#o.bridges.issueTools(scoped); this.#attachedGrants.set(threadId, grant);
+      const account = await this.#o.accounts.resolve(thread.placement.accountId), models = await this.#o.runtimes.get(view.runtime)?.listModels(account).catch(() => []);
+      const contextWindow = models?.find(model => model.id === thread.placement.model)?.contextWindow;
+      const roster = await this.#o.roster(), protectedPaths = thread.isolation === 'worktree' ? [...new Set([
+        ...(await this.#o.projects.list()).flatMap(row => row.project.paths[this.#o.deviceId] ? [row.project.paths[this.#o.deviceId]!] : []),
+        ...(roster.devices.find(row => row.device.id === this.#o.deviceId)?.device.protectedPaths ?? [])])] : [];
+      const quote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`;
+      const safetyCommand = [process.execPath, join(applicationRoot(), 'runtimes', 'codex', 'dist', 'safety-hook.js'), stableJson({ cwd: thread.cwd, daemonPid: process.pid, profile: 'thread', protectedPaths })].map(quote).join(' ');
+      return { ...view, env: minimalEnvironment(view.runtime, account.home, view.runtime === 'claude' ? Object.fromEntries(Object.entries(view.env).filter(([key]) => ['CLAUDE_CODE_OAUTH_TOKEN', 'ANTHROPIC_API_KEY'].includes(key))) : {},
+        { JEVELLAN_STRETCH_TOKEN: grant.token, JEVELLAN_DAEMON_URL: this.daemonUrl, JEVELLAN_PROJECT_MEMORY_MODE: project.memory.mode }, {}),
+        integration: { bridgeCommand: process.execPath, bridgeArgs: [join(applicationRoot(), 'bin', 'jevellan.mjs'), 'mcp-bridge'], safetyCommand,
+          compactAtPercent: settings.compactAtPercent, ...(contextWindow ? { contextWindow } : {}) } };
+    } catch (error) { await this.#attachedGrants.get(threadId)?.close(); this.#attachedGrants.delete(threadId); await this.#attach.detach(threadId); throw error; }
+  }
   /**
    * Detach also frees the thread's account (phase 8): threads waiting for it and coordinators waiting as `Unavailable` are checked now,
    * not at the next sweep.
    */
   async detach(threadId: string): Promise<ThreadDetachView> {
     await this.ready;
+    const attached = this.store.get(threadId);
+    if (attached?.state === 'attached') await this.#capture(await this.#project(attached.projectId), { scope: 'attached', threadId, runtime: attached.placement.runtime,
+      model: attached.placement.model, accountId: attached.placement.accountId, sessionId: attached.nativeSessionId });
+    await this.#attachedGrants.get(threadId)?.close(); this.#attachedGrants.delete(threadId);
     const detached = await this.#attach.detach(threadId);
+    const adopted = this.store.get(threadId);
+    if (detached.adopted && adopted?.nativeSessionId !== attached?.nativeSessionId && adopted) await this.#capture(await this.#project(adopted.projectId), { scope: 'attached', threadId,
+      runtime: adopted.placement.runtime, model: adopted.placement.model, accountId: adopted.placement.accountId, sessionId: adopted.nativeSessionId });
     const projectId = this.store.get(threadId)?.projectId;
     if (projectId) this.threads.freed(projectId);
     this.coordinators.sweep();

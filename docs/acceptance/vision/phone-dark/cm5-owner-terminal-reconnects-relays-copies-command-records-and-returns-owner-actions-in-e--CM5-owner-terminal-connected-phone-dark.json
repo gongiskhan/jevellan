@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CM5 owner terminal reconnects, relays, copies command records and returns owner actions in every layout",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/CM5-owner-terminal-connected-phone-dark.png",
+  "expected": "the Jevellan web app \"CM5 owner terminal connected\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"CM5 owner terminal reconnects, relays, copies command records and returns owner actions in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The host/path subtitle in the header is cut off with an ellipsis ('/private/var/fo...'), so the full working directory isn't visible there. The pwd output in the terminal does show the full path.",
+      "The shortcut key row (Esc, Tab, Ctrl, Alt, arrows) is cut off at the right edge with a partly visible extra button. It looks like a horizontally scrolling strip, so the remaining keys can probably be scrolled to, but there's no clear sign that it scrolls.",
+      "The terminal wraps long lines mid-word (e.g. 'sup / port.apple.com', 'jevellan-browser-L8lb1r/pro / jects-app'). This is expected at the narrow width but slightly harder to read."
+    ]
+  }
+}

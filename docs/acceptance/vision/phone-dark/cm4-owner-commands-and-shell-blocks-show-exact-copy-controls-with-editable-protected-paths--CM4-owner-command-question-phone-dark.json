@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The command line is clipped at the right edge ('owner-visible-text-owner-vi…'). This is intended: it scrolls sideways, the 'Scroll sideways to read the full command.' hint is shown, and Copy and Run in Terminal are visible.",
-      "The tab bar is clipped at the right edge ('Pull requ…'). It looks like a tab bar you can scroll sideways, but nothing on screen shows that more tabs are off to the right.",
-      "There is a lot of empty space below the question card."
+      "The command block cuts off the command at the right edge ('owner-visible-text-owner-vi…'). The 'Scroll sideways to read the full command' hint and the Copy button cover this, so it is not blocking.",
+      "The 'Pull requ…' tab is cut off at the right edge of the tab bar. The bar looks scrollable, but nothing else shows that more tabs are there.",
+      "The 'Answer in your own words' input placeholder is slightly larger and brighter than the text around it."
     ]
   }
 }

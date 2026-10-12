@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CM5 owner terminal reconnects, relays, copies command records and returns owner actions in every layout",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/screenshots/CM5-owner-terminal-phone-controls-desktop-dark.png",
+  "expected": "the Jevellan web app \"CM5 owner terminal phone controls\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"CM5 owner terminal reconnects, relays, copies command records and returns owner actions in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The terminal header path is cut off with an ellipsis ('.../jevellan-browser-WtYXTi/projects-...'), but the full path can still be read in the terminal output.",
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour...', 'Context · Shared memory ...'), which is expected in a narrow sidebar.",
+      "The terminal output fills only the top half of the panel, leaving a large empty dark area below the prompt.",
+      "The '…' overflow button at the end of the phone-control key row is small and easy to miss, but it can be seen and reached."
+    ]
+  }
+}

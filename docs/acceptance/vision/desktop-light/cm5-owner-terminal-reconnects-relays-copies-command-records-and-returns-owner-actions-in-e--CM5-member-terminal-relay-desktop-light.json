@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CM5 owner terminal reconnects, relays, copies command records and returns owner actions in every layout",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/screenshots/CM5-member-terminal-relay-desktop-light.png",
+  "expected": "the Jevellan web app \"CM5 member terminal relay\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"CM5 owner terminal reconnects, relays, copies command records and returns owner actions in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Shared memory fi…'), but they stay readable and you can still click them",
+      "'Send to…' button is greyed out, so it looks disabled; this seems intentional",
+      "The terminal output panel has a lot of empty space below the last prompt line"
+    ]
+  }
+}

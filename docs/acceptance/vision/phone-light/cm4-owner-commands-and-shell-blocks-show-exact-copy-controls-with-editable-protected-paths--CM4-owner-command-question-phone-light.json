@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The command text is cut off at the right edge of the code block ('owner-visible-text-owner-vi…'). This looks intended: the block scrolls sideways, the 'Scroll sideways to read the full command' hint says so, and there's a Copy button.",
-      "The last tab ('Pull requ…') is cut off at the right edge of the tab row, which looks like a sideways-scrolling tab strip.",
-      "The 'Context unavailable · Compacted 0 times today' status wraps onto two lines next to the 'Fresh session' button."
+      "The command text is cut off at the right edge of its block, but it's meant to scroll sideways: a 'Scroll sideways to read the full command.' hint is shown, and Copy and Run in Terminal are both visible.",
+      "The last tab in the tab row is cut off at the right edge ('Pull requ…'). This looks like a sideways-scrolling tab strip, but nothing on screen shows that more tabs are there.",
+      "The header subtitle 'Context unavailable · Compacted 0 times today' wraps onto two lines next to the Fresh session button."
     ]
   }
 }

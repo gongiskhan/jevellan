@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CM5 owner terminal reconnects, relays, copies command records and returns owner actions in every layout",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/screenshots/CM5-owner-terminal-connected-desktop-light.png",
+  "expected": "the Jevellan web app \"CM5 owner terminal connected\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"CM5 owner terminal reconnects, relays, copies command records and returns owner actions in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The terminal path in the header is cut off with an ellipsis ('.../projects...'). The full path is still visible in the terminal output.",
+      "Shell session titles and subtitles in the sidebar are cut off with ellipses (e.g. 'J11 memory journ...', 'Shared memory fi...').",
+      "The terminal output starts with a blank line at the top.",
+      "The terminal output area has a lot of empty space below the last prompt."
+    ]
+  }
+}

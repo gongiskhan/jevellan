@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The command `scripts/owner-only.sh` appears twice: once in the report body and again in the reserved-step card, each with its own Copy and Run in Terminal buttons.",
-      "The attach command at the bottom (`jevellan thread attach thread_01M4RYY4RXW4NMWM…`) is cut off with an ellipsis. The copy button next to it is still visible and reachable."
+      "The take-over command at the bottom ('jevellan thread attach thread_01M4S2RRZ9X27Y44…') is cut off with an ellipsis. A copy button next to it still gives access to the full command.",
+      "The report shows the same command 'scripts/owner-only.sh' twice, each with its own Copy and Run in Terminal buttons: once in the report body and again in the nested owner-step card. This repeats information but doesn't stop either control from working.",
+      "The header and metadata text ('Claude Code · Fable · high effort · ...' and the path/host line) is small, light gray monospace on a white background. It's low contrast but still readable."
     ]
   }
 }

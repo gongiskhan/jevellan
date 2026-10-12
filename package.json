@@ -4,15 +4,38 @@
   "description": "Autonomous development, coordinated.",
   "type": "module",
   "license": "MIT",
-  "engines": { "node": "^22.13.0 || >=23.4.0" },
-  "bin": { "jevellan": "bin/jevellan.mjs" },
-  "workspaces": ["apps/*", "packages/*", "runtimes/*"],
-  "files": ["bin", "apps", "packages", "runtimes", "scripts", "docs", "LICENSE", "NOTICE", "README.md", "roadmap.json", "tsconfig*.json"],
+  "engines": {
+    "node": "^22.13.0 || >=23.4.0"
+  },
+  "bin": {
+    "jevellan": "bin/jevellan.mjs"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "runtimes/*"
+  ],
+  "files": [
+    "bin",
+    "apps",
+    "packages",
+    "runtimes",
+    "scripts",
+    "docs",
+    "LICENSE",
+    "NOTICE",
+    "README.md",
+    "roadmap.json",
+    "tsconfig*.json"
+  ],
   "dependencies": {
     "@jevellan/cli": "0.2.1",
     "@jevellan/web": "0.2.1"
   },
-  "bundleDependencies": ["@jevellan/cli", "@jevellan/web"],
+  "bundleDependencies": [
+    "@jevellan/cli",
+    "@jevellan/web"
+  ],
   "scripts": {
     "prepare": "node scripts/prepare.mjs",
     "build": "tsc -b && vite build --config apps/web/vite.config.ts && node scripts/build-pwa.mjs && node scripts/build-cursor-bridge.mjs",
@@ -31,10 +54,11 @@
     "@types/node": "^22.19.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
+    "@types/ws": "8.18.2",
     "eslint": "^9.39.0",
-    "typescript-eslint": "^8.46.0",
     "tsx": "4.23.15",
     "typescript": "5.9.3",
+    "typescript-eslint": "^8.46.0",
     "vite": "8.3.0",
     "vitest": "5.0.1"
   }

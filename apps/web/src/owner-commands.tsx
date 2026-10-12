@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
-import { OwnerCommandRunReceiptSchema, type OwnerCommand } from '@jevellan/core/client';
+import { OwnerCommandReceiptViewSchema, OwnerCommandRunReceiptSchema, type OwnerCommand } from '@jevellan/core/client';
 import { api } from './api.js';
 import { clientId } from './client-id.js';
 import { copyText, selectText } from './clipboard.js';
@@ -31,9 +31,21 @@ export function OwnerCommandButtons({ command }: { command: OwnerCommand }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [receipt, setReceipt] = useState<ReturnType<typeof OwnerCommandRunReceiptSchema.parse>>();
+  const [checking, setChecking] = useState(true);
+  const projectId = scope?.projectId, threadId = scope?.threadId, decisionId = scope?.decisionId;
+  const commandKey = JSON.stringify(command);
+  useEffect(() => {
+    if (!projectId) { setChecking(false); return; }
+    const controller = new AbortController(); setChecking(true); setReceipt(undefined);
+    void api('/api/terminals/owner-command/receipt', OwnerCommandReceiptViewSchema, 'POST', {
+      schema: 'owner-command-receipt-request-v1', projectId, ...(threadId ? { threadId } : {}), ...(decisionId ? { decisionId } : {}), command: JSON.parse(commandKey),
+    }, { signal: controller.signal }).then(view => { if (!controller.signal.aborted) setReceipt(view.receipt ?? undefined); })
+      .catch(() => { /* A fresh or offline card can still try its normal run path. */ }).finally(() => { if (!controller.signal.aborted) setChecking(false); });
+    return () => controller.abort();
+  }, [projectId, threadId, decisionId, commandKey]);
   if (!scope) return null;
   const run = async () => {
-    if (busy) return;
+    if (busy || checking) return;
     if (receipt) { scope.navigate(`/terminals/${receipt.terminalId}`); return; }
     setBusy(true); setError('');
     try {
@@ -47,7 +59,7 @@ export function OwnerCommandButtons({ command }: { command: OwnerCommand }) {
   };
   return <div className="owner-command-actions">
     <div className="actions"><button type="button" className="secondary" onClick={async event => { const pre = event.currentTarget.closest('.owner-command, .shell-command')?.querySelector('pre'); if (!await copyText(command.command) && pre) selectText(pre); }}>Copy</button>
-      <button type="button" disabled={busy} onClick={() => void run()}>Run in Terminal</button></div>
+      <button type="button" disabled={busy || checking} onClick={() => void run()}>Run in Terminal</button></div>
     {receipt && <p role="status">Ran in terminal at {new Date(receipt.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} on {receipt.deviceName}{' '}
       <button type="button" className="text-button" onClick={() => scope.navigate(`/terminals/${receipt.terminalId}`)}>Open terminal</button></p>}
     {error && <p className="error" role="alert">{error}</p>}

@@ -34,6 +34,7 @@ import { ProjectWorkPage, ProjectsSidebar } from './project-work.js';
 import { projectRoute } from './project-work-model.js';
 import { TaskPage } from './task-page.js';
 import { ThreadPage } from './thread-page.js';
+import { TerminalPage } from './terminal.js';
 import { SetupPage } from './setup.js';
 import { ImproverPage, useImprover } from './improver.js';
 import { BrandFlag, Icon, type IconName } from './icons.js';
@@ -527,6 +528,8 @@ function App() {
               {settingsNav}
               <div className="settings-content">{settingsPage}</div>
             </div>
+          ) : /^\/terminals\/[A-Za-z0-9_-]+$/u.test(path) ? (
+            <TerminalPage {...props} id={path.split('/')[2]!} navigation={navigation} key={path} />
           ) : project?.taskId ? (
             <TaskPage {...props} projectId={project.projectId} taskId={project.taskId} key={path} />
           ) : project?.threadId ? (

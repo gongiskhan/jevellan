@@ -1,6 +1,6 @@
 import type { Locator, Page, TestInfo } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
-import { DeviceRosterSchema, MergeDocumentsViewSchema, ProjectDailyListViewSchema, ProjectWorkViewSchema, RuntimeListSchema, TaskListViewSchema, TaskReceiptSchema, ThreadViewSchema, WorktreeDiskSchema, type ThreadView } from '../../packages/core/dist/client.js';
+import { DeviceRosterSchema, MergeDocumentsViewSchema, ProjectDailyListViewSchema, ProjectWorkViewSchema, RuntimeListSchema, TaskListViewSchema, TaskReceiptSchema, TerminalSnapshotSchema, ThreadViewSchema, WorktreeDiskSchema, type ThreadView } from '../../packages/core/dist/client.js';
 import { threadDeviceOffline } from '../../packages/projects/dist/copy.js';
 import { expect, test } from './fixtures.js';
 import { expectClearOfComposer, expectNoStaleJump, openSidebar } from './navigation.js';
@@ -1576,4 +1576,55 @@ test('CM4 owner commands and shell blocks show exact copy controls, with editabl
   await device.getByRole('button', { name: 'Save protected paths', exact: true }).click();
   await expect.poll(async () => DeviceRosterSchema.parse(await read(page, '/hub/devices/roster')).devices.find(row => row.device.id === ownerDeviceId)?.device.protectedPaths).toEqual(['/srv/owner-checkout', '/srv/credentials']);
   await shot(page, 'protected-paths', false); expect(errors).toEqual([]);
+});
+
+test('CM5 owner terminal reconnects, relays, copies command records and returns owner actions in every layout', async ({ page }) => {
+  const errors = await begin(page); await page.context().grantPermissions(['clipboard-read', 'clipboard-write']); await openProject(page, 'Projects fixture');
+  await page.getByRole('button', { name: 'Terminal', exact: true }).click();
+  const launcher = page.getByLabel('Project terminals'); await launcher.getByRole('button', { name: 'Open terminal', exact: true }).click();
+  await expect(page).toHaveURL(/\/terminals\//u); const id = page.url().split('/').at(-1)!;
+  const snapshot = async () => TerminalSnapshotSchema.parse(await read(page, `/api/terminals/${id}`));
+  await expect(page.getByRole('status').filter({ hasText: 'Connected' })).toBeVisible(LONG);
+  const run = async (command: string) => { await page.getByRole('textbox', { name: 'Type or dictate a command' }).fill(command); await page.locator('.terminal-commandline').getByRole('button', { name: 'Run', exact: true }).click();
+    await expect.poll(async () => (await snapshot()).commands.some(row => row.command === command && row.endedAt !== null), LONG).toBe(true); };
+  await run('pwd'); expect((await snapshot()).commands.at(-1)!.output).toContain((await snapshot()).session.cwd);
+  await run('echo hello'); const session = (await snapshot()).session;
+  await page.getByRole('textbox', { name: 'Type or dictate a command' }).fill('sleep 100'); await page.locator('.terminal-commandline').getByRole('button', { name: 'Run', exact: true }).click();
+  await expect.poll(async () => (await snapshot()).commands.at(-1)?.command, LONG).toBe('sleep 100');
+  await page.getByRole('button', { name: 'Ctrl', exact: true }).click(); await expect(page.getByRole('button', { name: 'Ctrl', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'C', exact: true }).click(); await expect.poll(async () => (await snapshot()).commands.at(-1)?.endedAt, { timeout: 2000 }).not.toBeNull();
+  expect((await snapshot()).commands.at(-1)!.exitCode).not.toBe(0);
+  await page.reload(); await expect(page.getByRole('status').filter({ hasText: 'Connected' })).toBeVisible(LONG); expect((await snapshot()).session.id).toBe(session.id);
+  await expect(page.locator('.xterm-screen')).toBeVisible();
+  for (let number = 1; number <= 6; number++) await run(`echo record-${number}`);
+  await shot(page, 'owner-terminal-connected', false);
+  if (phone(test.info())) await page.getByRole('button', { name: 'Terminal menu', exact: true }).click();
+  await page.getByRole('button', { name: 'Copy last command', exact: true }).filter({ visible: true }).click(); await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toContain('$ echo record-6'); let copied = await page.evaluate(() => navigator.clipboard.readText()); expect(copied).not.toContain('record-5');
+  await page.getByRole('button', { name: 'Copy last 5 commands', exact: true }).filter({ visible: true }).click(); await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toContain('$ echo record-2'); copied = await page.evaluate(() => navigator.clipboard.readText()); for (let number = 2; number <= 6; number++) expect(copied).toContain(`$ echo record-${number}`); expect(copied).not.toContain('record-1');
+  await page.getByRole('button', { name: 'Copy all', exact: true }).filter({ visible: true }).click(); await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toContain('hello'); copied = await page.evaluate(() => navigator.clipboard.readText()); expect(copied).not.toContain(String.fromCharCode(27));
+  await page.getByRole('button', { name: 'Send to…', exact: true }).filter({ visible: true }).click(); const dialog = page.getByRole('dialog'); await dialog.getByRole('button', { name: 'Send', exact: true }).click();
+  await page.goto('/projects/projects_fixture'); if (phone(test.info())) await tap(page, tab(page, 'Chat'));
+  await expect(page.getByText('The owner sent output from the terminal on', { exact: false }).first()).toContainText('echo record-6', LONG);
+  await page.goto(`/terminals/${id}`); await expect(page.getByRole('status').filter({ hasText: 'Connected' })).toBeVisible(LONG);
+  if (phone(test.info())) await page.getByRole('button', { name: 'Terminal menu', exact: true }).click();
+  await shot(page, 'owner-terminal-phone-controls', false);
+  const roster = DeviceRosterSchema.parse(await read(page, '/hub/devices/roster')), member = roster.devices.find(row => row.device.name === 'Browser member')!;
+  const remote = await page.request.post('/api/terminals', { data: { schema: 'terminal-create-request-v1', clientRequestId: randomUUID(), deviceId: member.device.id, cwd: 'home' } }); expect(remote.ok()).toBe(true); const receipt = await remote.json();
+  await page.goto(`/terminals/${receipt.session.id}`); await expect(page.getByRole('status').filter({ hasText: 'Connected' })).toBeVisible(LONG);
+  await page.getByRole('textbox', { name: 'Type or dictate a command' }).fill('hostname'); await page.locator('.terminal-commandline').getByRole('button', { name: 'Run', exact: true }).click();
+  await expect.poll(async () => TerminalSnapshotSchema.parse(await read(page, `/api/terminals/${receipt.session.id}`)).commands.some(row => row.command === 'hostname' && row.exitCode === 0), LONG).toBe(true);
+  await shot(page, 'member-terminal-relay', false);
+  const created = await page.request.post(`${PROJECT}/threads`, { data: { schema: 'thread-create-request-v1', clientRequestId: randomUUID(), title: 'Terminal owner setup', task: 'CM5 owner command thread', isolation: 'worktree', modelId: 'claude-fable', effort: 'high' } }); expect(created.ok()).toBe(true); const started = await created.json();
+  await expect.poll(async () => (await threadView(page, started.threadId)).reports.some(row => row.ownerCommands?.length), LONG).toBe(true);
+  await page.goto(`/projects/projects_fixture/threads/${started.threadId}`); const commandCard = page.locator('.owner-command').first(); await expect(commandCard.locator('pre')).toHaveText('scripts/owner-only.sh'); await commandCard.getByRole('button', { name: 'Run in Terminal', exact: true }).click();
+  await expect(page).toHaveURL(/\/terminals\//u); await expect.poll(async () => (await threadView(page, started.threadId)).reports.some(row => row.summary.includes('owner command finished with exit code 0')), LONG).toBe(true);
+  await page.goto(`/projects/projects_fixture/threads/${started.threadId}`); await expect(page.locator('.owner-command').first()).toContainText('Ran in terminal at', LONG); await shot(page, 'owner-command-return', false);
+  if ((page.viewportSize()?.width ?? 1440) <= 600) {
+    const actions = await page.locator('.pw-thread-heading > .actions').boundingBox(), meta = await page.locator('.pw-thread-heading > .conversation-meta').boundingBox();
+    expect(actions).not.toBeNull(); expect(meta).not.toBeNull(); expect(meta!.y).toBeGreaterThanOrEqual(actions!.y + actions!.height);
+  }
+  await page.getByRole('button', { name: 'Take over in browser', exact: true }).click(); await expect(page).toHaveURL(/\/terminals\//u);
+  await expect.poll(async () => (await threadView(page, started.threadId)).thread.state, LONG).toBe('attached');
+  await page.getByRole('textbox', { name: 'Type or dictate a command' }).fill('exit 0'); await page.locator('.terminal-commandline').getByRole('button', { name: 'Run', exact: true }).click();
+  await expect.poll(async () => (await threadView(page, started.threadId)).thread.state, LONG).toBe('idle'); expect(errors).toEqual([]);
 });

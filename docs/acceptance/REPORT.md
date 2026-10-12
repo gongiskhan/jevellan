@@ -1697,3 +1697,28 @@ Simulated: 141 affected backend cases pass in eight files (19.33 seconds), inclu
 ### P4 browser and closing checks
 
 CM4 passes 4/4 layouts in 1.3 minutes with twelve clear dedicated live vision judgments. The long-command overflow and absent scrolling cue were fixed in product code, with scrolling/width/cue assertions retained. Typecheck, lint and build pass; working-tree and mandatory history scans gate this main push. The live Madrid Codex session is blocked on owner sign-in/join; terminal execution remains P5 work. No review pass or owner acceptance was claimed.
+
+
+### Decision 731 — Reconnect to the device-owned PTY
+
+Implements decision 712, replacing the CLI-only terminal boundary. The Application owns each node-pty process; browser disconnects only end a stream. Existing owner authentication, session-bound one-use tickets and the established mesh authorize local/member operations and websocket relay. Metadata is versioned and recoverable; a daemon restart closes its former shells with a reason. Agents receive bounded, scoped terminal reads and never terminal input. Sessions retain two-megabyte raw replay and command buffers, with eight per device and twelve-hour idle close.
+
+### Decision 732 — Preserve shell setup and actual command completion
+
+Refines decision 712's login-shell integration. Zsh uses a temporary ZDOTDIR and sources the owner's files, preserving custom prompt hooks. Bash login mode ignores --rcfile, so use an interactive rcfile that loads the normal login profiles before adding integration. This is a necessary deviation; no owner file is edited. Detect bracketed-paste support instead of assuming newer Readline. On older bash, a multiline owner action is visibly wrapped as one compound command so its final exit status is returned once. Unsupported shells and inner SSH sessions explicitly mark approximate command boundaries, including while connected. Unknown is never interpreted as success.
+
+### Decision 733 — Persist the owner action before returning its result
+
+Implements decision 711. A stable request and command/source fingerprint create one shell action and a durable card receipt. The existing thread/coordinator message path receives its redacted completion once, including device, folder, exact command, exit status and bounded output. A restart records an unfinished sent command as unknown with its reason; it does not rerun it or claim success. The ten-second idle fallback applies only to approximate records; quiet commands with semantic boundaries keep waiting. Card reloads recover the same terminal link.
+
+### Decision 734 — Keep takeover within the existing isolated session
+
+Refines decisions 703, 705, 706 and 712 for CLI/browser takeover. Native resume retains the selected model/effort, isolated account environment, compaction threshold, both-provider safety hook and scoped read/GitHub/terminal/memory tools. Hub mode permits its existing memory writes; legacy modes retain read-only guards. Attached capture accepts only account-home sessions matching the thread worktree, including a native fork, and detach expires the grant. Secret values stay in environment references, not native command arguments. The Codex hook override is valid TOML.
+
+### Decision 735 — Start asynchronous clipboard copying inside the tap
+
+Refines decision 712's phone copy controls. Safari requires clipboard initiation during the owner gesture; start a promised ClipboardItem immediately, then resolve command-record text from the API. Retain the existing copy fallback and selectable plain output. Copy all joins wrapped xterm lines, while last command/last five use semantic records; all remove escape sequences and preserve Unicode. [WebKit's Async Clipboard API](https://webkit.org/blog/10855/async-clipboard-api/) grounds the gesture requirement. The client uses pinned xterm 6.0.0, fit 0.11.0, web-links 0.12.0 and unicode11 0.9.0; node-pty 1.1.0 and ws 8.22.0 provide device/transport support.
+
+### P5 implementation evidence
+
+Simulated: 90 distinct affected backend cases have passing coverage: the 22-case targeted run and all 68 broader cases through the passing six files and final 14-case bridge rerun. A final stream correction passes 16/16 in 8.63 seconds. Real disposable shell/HTTP/PTY/websocket/mesh processes exercise the product with simulated providers. CM4/CM5 pass 8/8 across desktop/phone light/dark in 2.2 minutes. Live: all 28 final dedicated vision verdicts are clear. Typecheck/lint/build, whitespace and working-tree secret checks gate this main commit; mandatory history scanning gates its push. No review pass ran. Blocked: actual provider/owner-device scenarios and physical-phone acceptance, pending the already grouped sign-in/join/Settings inputs. The live clock has not started; 0.2.1 remains active and 0.3.0 closing checks/install are not yet complete. Detailed coverage and observed product fixes are in acceptance/coordinator-memory-terminal.md.

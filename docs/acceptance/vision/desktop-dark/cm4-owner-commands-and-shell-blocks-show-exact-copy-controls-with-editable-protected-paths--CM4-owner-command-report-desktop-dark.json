@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The command scripts/owner-only.sh, with its Copy and Run in Terminal buttons, shows up twice in the same report card: once in the main report body and again in the nested 'The project reserves this step for the owner' block.",
-      "Several sidebar thread titles and subtitles are cut off with an ellipsis (e.g. 'Context · J11 memory jour…', 'Context · Shared memory …'). This is expected sidebar truncation and doesn't affect the screen being checked.",
-      "The 'Goncalos-MacBook-Pro.local · worktree' label in the nested block is low-contrast muted blue-grey text on a dark background, but it's still readable."
+      "The command scripts/owner-only.sh, with its Copy and Run in Terminal buttons, appears twice in the report card: once in the report body and again in the reserved-step box below it.",
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Shared memory …') at this width.",
+      "The 'Projects Claude' and 'Fable' labels in the thread metadata line are small, low-contrast monospace text, but still readable."
     ]
   }
 }

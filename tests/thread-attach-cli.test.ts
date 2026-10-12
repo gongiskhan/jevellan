@@ -7,16 +7,32 @@ import { createHash, randomUUID } from 'node:crypto';
 import { mkdirSync, mkdtempSync, realpathSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { parse as parseToml } from 'smol-toml';
 import { AccountSchema, DeviceSchema, DoctorControlSchema, Homes, ThreadIndexSchema, doctorControlPath, writeDocument } from '../packages/core/dist/index.js';
 import { HubProjectAccess } from '../packages/mesh/dist/index.js';
-import { FakeRuntime, fakeNativeSessionFile, forThread } from '../packages/runtime-contract/dist/index.js';
+import { FakeRuntime, fakeNativeSessionFile, forThread, writeFakeNativeSession } from '../packages/runtime-contract/dist/index.js';
 import { THREAD_NOT_FOUND, THREAD_WORKING, ownerWorkedLine, threadRunsOn } from '../packages/projects/dist/index.js';
 import { attachThread, detachThread, staysAttached } from '../packages/cli/dist/thread-attach.js';
 import { runningDiagnostics } from '../packages/cli/dist/doctor.js';
 import { holdStep, projectFixture, reportStep, type ProjectFixture, type ProjectFixtureOptions } from './helpers/project-fixture.js';
-import { ATTACH_MENU, BACK, BACK_ADOPTED, CANARY, agents, claudeAccount, finished, jevellan, named, rest, start, stopCommands, worked } from './helpers/attach-cli.js';
+import { ATTACH_MENU, BACK, BACK_ADOPTED, CANARY, agents, claudeAccount, finished, jevellan, named, rest, start, stopCommands, worked, type AgentRecord } from './helpers/attach-cli.js';
 
 const STACK = /^\s+at /mu;
+function claudeIntegration(run: AgentRecord, session: string, effort = true) {
+  expect(run.argv!.slice(0, effort ? 6 : 4)).toEqual(['--resume', session, '--model', 'scripted-model', ...(effort ? ['--effort', 'high'] : [])]);
+  const settings = JSON.parse(run.argv![run.argv!.indexOf('--settings') + 1]!);
+  expect(settings.cleanupPeriodDays).toBe(36500); expect(settings.hooks.PreToolUse[0].hooks[0].command).toContain('safety-hook.js');
+  const servers = JSON.parse(run.argv![run.argv!.indexOf('--mcp-config') + 1]!);
+  expect(servers.mcpServers.jevellan.args.at(-1)).toBe('mcp-bridge'); expect(run.argv!.slice(-2)).toEqual(['--permission-mode', 'bypassPermissions']);
+}
+function codexIntegration(run: AgentRecord, session: string) {
+  expect(run.argv!.slice(0, 4)).toEqual(['resume', session, '-m', 'scripted-model']);
+  const overrides = run.argv!.filter((_value, index, args) => args[index - 1] === '-c').join('\n');
+  const config = parseToml(overrides);
+  expect(config).toMatchObject({ model_reasoning_effort: 'high', approval_policy: 'never', sandbox_mode: 'danger-full-access', features: { hooks: true },
+    mcp_servers: { jevellan: { env_vars: ['JEVELLAN_STRETCH_TOKEN', 'JEVELLAN_DAEMON_URL', 'JEVELLAN_PROJECT_MEMORY_MODE'], default_tools_approval_mode: 'approve' } } });
+  expect((config.hooks as { PreToolUse: Array<{ hooks: Array<{ command: string }> }> }).PreToolUse[0]!.hooks[0]!.command).toContain('safety-hook.js');
+}
 
 let fixture: ProjectFixture | undefined; const roots: string[] = [];
 afterEach(async () => {
@@ -29,6 +45,23 @@ async function setup(options: ProjectFixtureOptions = {}): Promise<ProjectFixtur
   fixture = await projectFixture({ control: true, menu: ATTACH_MENU, ...options });
   return fixture;
 }
+
+test('an attached owner session retains scoped read tools and capture, then expires on detach', async () => {
+  const claude = named('claude'), f = await setup({ runtimes: { fake: new FakeRuntime(), claude } }); const { home } = await claudeAccount(f);
+  claude.enqueueTurn(reportStep({ status: 'progress', summary: 'Ready for the owner.' }), forThread());
+  const threadId = await start(f, 'Terminal memory', 'Keep durable knowledge from takeover.', 'claude_fixture'); await rest(f, threadId);
+  const view = await f.app.projectWork.attach(threadId), token = view.env.JEVELLAN_STRETCH_TOKEN!;
+  const post = (body: unknown) => fetch(`${f.base}/api/bridge`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
+  expect((await (await post({ schema: 'bridge-request-v1', operation: 'list' })).json()).tools.map((tool: { name: string }) => tool.name))
+    .toEqual(['memory_search', 'memory_read', 'jevellan_github', 'jevellan_terminal_read']);
+  expect((await post({ schema: 'bridge-request-v1', operation: 'call', name: 'jevellan_thread_report', arguments: { status: 'done', summary: 'Forbidden while attached.' } })).status).toBe(403);
+  const fork = randomUUID(); writeFakeNativeSession({ format: 'claude', home, sessionId: fork, cwd: view.cwd, append: false, rows: [{ role: 'assistant', text: 'Terminal convention: use the UTC test environment.' }] });
+  expect((await post({ schema: 'bridge-request-v1', operation: 'memory-capture', event: 'Stop', sessionId: fork, transcriptPath: fakeNativeSessionFile('claude', home, fork) })).status).toBe(200);
+  const slices = f.app.projectWork.captures.slices(f.project.id).filter(row => row.capture.scope === 'attached'); expect(slices.some(row => row.text.includes('Terminal convention'))).toBe(true);
+  const outsider = randomUUID(); writeFakeNativeSession({ format: 'claude', home, sessionId: outsider, cwd: f.homes.userHome, append: false, rows: [{ role: 'assistant', text: 'Outside the project.' }] });
+  expect((await post({ schema: 'bridge-request-v1', operation: 'memory-capture', event: 'Stop', sessionId: outsider })).status).toBe(403);
+  await f.app.projectWork.detach(threadId); expect((await post({ schema: 'bridge-request-v1', operation: 'list' })).status).toBe(401);
+});
 
 test('a Claude thread is refused while it works, then resumes in the terminal with only its account environment and hands the new session back', { timeout: 120_000 }, async () => {
   const claude = named('claude');
@@ -51,9 +84,9 @@ test('a Claude thread is refused while it works, then resumes in the terminal wi
   const run = await cli.started(1);
   expect(cli.records().map((record) => record.kind)).toEqual(['help', 'run']);
   // The flag settings keep the account home's transcripts past the CLI's 30-day retention (P8 review R-T1).
-  expect(run.argv).toEqual(['--resume', stored, '--model', 'scripted-model', '--effort', 'high', '--settings', '{"cleanupPeriodDays":36500}']);
+  claudeIntegration(run, stored);
   expect(run.cwd).toBe(realpathSync(f.thread(threadId).cwd));
-  expect(run.envKeys).toEqual(['CLAUDE_CODE_OAUTH_TOKEN', 'CLAUDE_CONFIG_DIR', 'HOME', 'LANG', 'PATH', 'TERM', 'TMPDIR']);
+  expect(run.envKeys).toEqual(['CLAUDE_AUTOCOMPACT_PCT_OVERRIDE', 'CLAUDE_CODE_OAUTH_TOKEN', 'CLAUDE_CONFIG_DIR', 'HOME', 'JEVELLAN_DAEMON_URL', 'JEVELLAN_PROJECT_MEMORY_MODE', 'JEVELLAN_STRETCH_TOKEN', 'LANG', 'PATH', 'TERM', 'TMPDIR']);
   expect(run.authDigest).toBe(createHash('sha256').update(secret).digest('hex'));
   expect(run.argv!.some((arg) => arg.includes(secret) || arg.includes(CANARY))).toBe(false);
   // HOME and CLAUDE_CONFIG_DIR are the account home: the terminal's session is written there.
@@ -79,7 +112,8 @@ test('a Claude thread is refused while it works, then resumes in the terminal wi
   expect(worked(f, threadId).map((event) => event.kind === 'thread-user-message' && event.text)).toEqual([ownerWorkedLine('Rename button')]);
   // The waiting message runs next, on the adopted session.
   await f.waitFor(() => claude.turnStarts.length, (count) => count === 2); await rest(f, threadId);
-  expect(claude.turnStarts[1]!.resume).toEqual({ sessionId: run.sessionId }); expect(claude.turnStarts[1]!.prompt).toBe('Also rename the cancel button.');
+  expect(claude.turnStarts[1]!.resume).toEqual({ sessionId: run.sessionId }); expect(claude.turnStarts[1]!.prompt).toMatch(/^Project now \([\d:]+\):/u);
+  expect(claude.turnStarts[1]!.prompt.endsWith('Also rename the cancel button.')).toBe(true);
   expect(`${result.output}${result.errors}`).not.toContain(secret); expect(`${result.output}${result.errors}`).not.toContain(CANARY);
 });
 
@@ -98,8 +132,8 @@ test('a Codex thread resumes with its effort as a configuration override, and SI
   // 1. `codex resume <id> -m <model> -c model_reasoning_effort="<effort>"` with the account home only; no help probe for Codex.
   const first = jevellan(f, ['thread', 'attach', threadId], { path });
   const run = await cli.started(1);
-  expect(run.argv).toEqual(['resume', stored, '-m', 'scripted-model', '-c', 'model_reasoning_effort="high"']);
-  expect(run.envKeys).toEqual(['CODEX_HOME', 'HOME', 'LANG', 'PATH', 'TERM', 'TMPDIR']); expect(run.authDigest).toBeUndefined();
+  codexIntegration(run, stored);
+  expect(run.envKeys).toEqual(['CODEX_HOME', 'HOME', 'JEVELLAN_DAEMON_URL', 'JEVELLAN_PROJECT_MEMORY_MODE', 'JEVELLAN_STRETCH_TOKEN', 'LANG', 'PATH', 'TERM', 'TMPDIR']); expect(run.authDigest).toBeUndefined();
   expect(cli.records().some((record) => record.kind === 'help')).toBe(false);
   expect(fakeNativeSessionFile('codex', f.homes.at('homes', 'codex', 'acc_codex'), run.sessionId!)).toBeTruthy();
   // SIGTERM to the command alone is forwarded once; the native CLI ends by it, so the command exits 128 + 15 after detaching.
@@ -115,7 +149,7 @@ test('a Codex thread resumes with its effort as a configuration override, and SI
   if (process.platform === 'darwin') {
     const second = jevellan(f, ['thread', 'attach', threadId], { path, terminal: true });
     const tty = await cli.started(runs += 1);
-    expect(tty.tty).toBe(true); expect(tty.argv).toEqual(['resume', adopted, '-m', 'scripted-model', '-c', 'model_reasoning_effort="high"']);
+    expect(tty.tty).toBe(true); codexIntegration(tty, adopted);
     await f.waitFor(() => second.output(), (text) => text.includes('agent-cli codex started'));
     second.send('\u0003'); second.end();
     const interrupted = await finished(second);
@@ -172,7 +206,7 @@ test('the command prints the daemon refusals, hands back a thread it cannot resu
   // 3. A `claude` whose help lists no effort flag gets none.
   const command = jevellan(f, ['thread', 'attach', threadId], { path });
   const run = await cli.started(1);
-  expect(run.argv).toEqual(['--resume', stored, '--model', 'scripted-model', '--settings', '{"cleanupPeriodDays":36500}']);
+  claudeIntegration(run, stored, false);
 
   // 4. Jevellan stops while the owner works: the native CLI's exit cannot detach, so the thread stays attached across the restart,
   // and `jevellan thread detach` hands it back later with the terminal's session.

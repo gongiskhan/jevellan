@@ -137,6 +137,7 @@ export type CoordinatorToolsOptions = {
   threads: Pick<ThreadService, 'start' | 'message' | 'stop' | 'list' | 'read'>;
   tasks?: ProjectTasks; goals?: ProjectGoals; daily?: ProjectDailyWork; jobs?: ProjectJobRunner;
   github?: ProjectGithub;
+  terminalRead?: ((scope: ProjectScope, input: unknown) => Promise<unknown>) | undefined;
   store: Pick<ThreadStore, 'get'>;
   decisions: Pick<DecisionItems, 'ask' | 'withdraw'> & Partial<Pick<DecisionItems, 'answerChat'>>;
   pullRequests: Pick<PullRequestTracker, 'fresh'> & Partial<Pick<PullRequestTracker, 'diff'>>;
@@ -304,6 +305,7 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
   }
   return {
     call: (scope, name, input, signal) => {
+      if (name === 'jevellan_terminal_read') { if (!o.terminalRead) throw new Error('Owner terminals are unavailable.'); return o.terminalRead(scope, input); }
       if (name === 'jevellan_github') {
         if (!o.github) throw new Error('GitHub awareness is unavailable.');
         return o.github.read(scope, input, signal);

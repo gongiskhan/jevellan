@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CM5 owner terminal reconnects, relays, copies command records and returns owner actions in every layout",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/screenshots/CM5-owner-terminal-connected-desktop-dark.png",
+  "expected": "the Jevellan web app \"CM5 owner terminal connected\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"CM5 owner terminal reconnects, relays, copies command records and returns owner actions in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Terminal header path is truncated with an ellipsis ('.../projects-…'), but the full path also appears in the terminal output",
+      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Shared memory …')",
+      "There is a lot of empty space below the terminal output inside the terminal panel"
+    ]
+  }
+}

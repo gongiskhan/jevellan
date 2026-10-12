@@ -10,11 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Tab strip clips the edge labels ('…s' on the left, 'Projects' on the right); the scroll arrows still reach them",
-      "'Hub' badge is small and low-contrast",
-      "The 'Thread worktrees: 0 GB · Job and verification worktrees: 0 GB' line breaks awkwardly, leaving 'GB' alone on the second line",
-      "'Open' button looks disabled and has low contrast",
-      "A second device card is cut off at the bottom of the viewport; it is reachable by scrolling"
+      "The first tab in the top tab bar is cut off at the left edge and shows only 's'. The scroll arrows suggest this is a scrollable carousel, so it is still reachable.",
+      "The pink 'Open terminals' label floats on its own, centered below the Terminal button, and doesn't line up with the rest of the layout.",
+      "'Thread worktrees: 0 GB · Job and verification worktrees: 0 GB' wraps so that 'GB' sits alone on the second line.",
+      "A button below 'Inspect worktrees' is cut off at the bottom of the viewport. This looks like normal page scrolling, not clipping."
     ]
   }
 }

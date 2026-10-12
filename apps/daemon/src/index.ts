@@ -3,7 +3,8 @@ import { readFile } from 'node:fs/promises';
 import { extname, join, resolve, sep } from 'node:path';
 import { applicationRoot, DEFAULT_PORT, HealthSchema, VERSION } from '@jevellan/core';
 import { Application, type ApplicationOptions } from './application.js';
-import { handleApi } from './api.js';
+import { handleApi, requireOrigin } from './api.js';
+import { installTerminalStreams } from './terminal-api.js';
 import { closeListeners, detectTailscaleIpv4, listenOnInterfaces } from './network.js';
 import { LocalDiagnostics } from './diagnostics.js';
 import { handleLocalApi } from './local-api.js';
@@ -58,6 +59,7 @@ export function createDaemon(options: { application?: Application; diagnostics?:
     const address = server.address();
     if (options.application && address && typeof address !== 'string') options.application.bindDaemonUrl(`http://127.0.0.1:${address.port}`);
   });
+  installTerminalStreams(server, () => options.application, request => { requireOrigin(request, options.allowedOrigins ?? [], options.proxyOrigin); });
   return server;
 }
 

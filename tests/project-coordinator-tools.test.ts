@@ -117,7 +117,8 @@ test('chat answers quote the owner, answer numbered questions once without echo 
   await c.call('jevellan_thread_message', { threadId: deletion.threadId, message: 'Archive.' });
   await c.call('jevellan_thread_message', { threadId: highlight.threadId, message: 'Amber.' });
   await f.waitFor(() => resumed.length, count => count === 2);
-  expect(resumed.sort()).toEqual(['Amber.', 'Archive.']);
+  for (const prompt of resumed) expect(prompt).toMatch(/^Project now \([\d:]+\):/u);
+  expect(resumed.map(prompt => prompt.split('\n\n').at(-1)).sort()).toEqual(['Amber.', 'Archive.']);
   acknowledge(f, 2); c.release(); await f.app.projectWork.idle(f.project.id);
   const ledger = f.app.projectWork.coordinatorLedger(f.project.id);
   expect(ledger.events().filter(event => event.type === 'coordinator-event').map(event => ledger.payload(event as ProjectLedgerEvent & { type: 'coordinator-event' }))
@@ -246,7 +247,9 @@ test('thread tools start, list, read, message and stop as brief 7.1 says, refuse
     .toEqual({ schema: 'thread-message-result-v1', threadId: login.threadId, state: 'running', delivery: 'interrupting' });
   await f.waitFor(() => f.thread(login.threadId), (thread) => thread.state === 'idle' && thread.turns === 2);
   const loginTurns = () => f.fake.turnStarts.filter((input) => input.owner.kind === 'thread' && input.owner.id === login.threadId);
-  expect(loginTurns()[1]).toMatchObject({ turn: 2, resume: { sessionId: expect.any(String) }, prompt: 'From the coordinator:\nCheck the cookie path.\n\n---\n\nFrom the coordinator:\nUse the session cookie.' });
+  expect(loginTurns()[1]).toMatchObject({ turn: 2, resume: { sessionId: expect.any(String) } });
+  expect(loginTurns()[1]!.prompt).toMatch(/^Project now \([\d:]+\):/u);
+  expect(loginTurns()[1]!.prompt.endsWith('From the coordinator:\nCheck the cookie path.\n\n---\n\nFrom the coordinator:\nUse the session cookie.')).toBe(true);
   const turnEnds = () => { const ledger = f.app.projectWork.ledgers.thread(f.project.id, login.threadId);
     return ledger.events().filter((event) => event.type === 'thread-turn-end').map((event) => ledger.payload(event as ProjectLedgerEvent & { type: 'thread-turn-end' }).status); };
   expect(turnEnds()).toEqual(['steered', 'completed']);

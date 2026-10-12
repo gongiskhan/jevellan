@@ -13,6 +13,7 @@ import { ImproverDeviceRequestSchema, ImproverDeviceResultSchema, ImproverReques
 import { ProjectHubCollectionSchema, ProjectHubRequestSchema, ProjectHubResultSchema, collectionOf, type ProjectHubCollection, type ProjectHubResult } from '@jevellan/core';
 import { ProjectEnvelopeSchema, type ProjectEnvelope, type UnreadableEnvelope } from '@jevellan/core';
 import { z } from 'zod';
+import { TerminalHubRequestSchema, TerminalHubResultSchema } from '@jevellan/core';
 import { AgentAccessHubRequestSchema, AgentAccessHubResultSchema } from '@jevellan/core';
 
 import { HubUnavailable } from '@jevellan/core';
@@ -84,6 +85,7 @@ function unreadableEnvelope(raw: unknown): UnreadableEnvelope {
   return { id: id(record.id), projectId: id(record.projectId), sourceDeviceId: id(record.sourceDeviceId), kind: kind.success ? kind.data : null };
 }
 export class MemberHubClient {
+  terminals(input: unknown) { return this.#request('terminals', TerminalHubResultSchema, TerminalHubRequestSchema.parse(input), 20_000); }
   readonly #transport: HubTransport;
   readonly deviceId: string;
   constructor(private readonly options: MemberHubOptions) { this.deviceId = IdSchema.parse(options.deviceId); this.#transport = new HubTransport(options); }

@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The owner command in the 'Waiting for you' card is clipped at the right edge ('owner-visible-text-owner-visibl…'). It sits in a horizontally scrollable block, and the 'Scroll sideways to read the full command' hint and the Copy button keep it usable.",
-      "Several sidebar session titles and subtitles are cut short with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Shared memory …').",
-      "The bottom of the right panel's 'Concluded' item (its metadata line) is cut off at the viewport edge; scrolling should reach it.",
-      "The 'Context unavailable · Compacted 0 times today' status line is low-contrast monospace text."
+      "The owner command in the 'Waiting for you' card is clipped at its right edge. It scrolls sideways, there is a 'Scroll sideways to read the full command.' hint, and Copy and Run in Terminal are visible, so it can still be read and used.",
+      "The bottom of the right column cuts through the 'Write the welcome copy' row under Concluded, so its metadata line is only partly visible. It looks like normal scroll overflow.",
+      "Sidebar session titles and subtitles end in ellipses, for example 'Context · J11 memory jour...' and 'Context · Shared memory ...'.",
+      "The chat thread on the left only fills the top part of the column, leaving a lot of empty space above the composer."
     ]
   }
 }

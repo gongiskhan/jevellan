@@ -132,6 +132,7 @@ export type ThreadRunnerContext = {
   mail: Pick<MailService, 'threadTool' | 'releaseThread'>;
   appTool?: ProjectToolHandlers['call'];
   githubTool?: ProjectToolHandlers['call'];
+  terminalRead?(scope: import('./bridge-tools.js').ProjectScope, input: unknown): Promise<unknown>;
   /** The runtime adapter's display name (D83). */
   runtimeName(runtime: string): string;
   enterOperation(id: string, title: string): () => void;
@@ -490,6 +491,7 @@ export class ThreadRunner {
       isCurrent: (scope) => scope.kind === 'thread' && scope.threadId === this.threadId && this.isCurrent(scope.turn),
       call: async (scope, name, input, signal) => {
         if (scope.kind !== 'thread') throw refuse(TOOL_NOT_IN_TURN, 403);
+        if (name === 'jevellan_terminal_read') { if (!this.#c.terminalRead) throw new Error('Owner terminals are unavailable.'); return this.#c.terminalRead(scope, input); }
         if (name === 'jevellan_github') {
           if (!this.#c.githubTool) throw new Error('GitHub awareness is unavailable.');
           return this.#c.githubTool(scope, name, input, signal);

@@ -13,7 +13,7 @@ Prerequisite met: amendment 2 Parts 1–3 are pushed and 0.2.1 is published and 
 | P2 | Shared question numbering, owner-chat answers, bounded GitHub bridge | Implemented; 135 affected backend cases and six workflow cases pass; CM2 4/4 layouts, eight clear live vision verdicts; live sandbox tool calls blocked on Settings token |
 | P3 | Hub notes repository and relay; capture, extraction, inbox, recall, Project now, dream and Undo | Implemented; 129 distinct affected backend cases pass after focused fixes; real disposable Basic Memory/Git/mesh with simulated sessions; CM3 4/4 layouts and twelve clear vision verdicts; live sharing/dream scenarios blocked |
 | P4 | Codex full access with safety guards; protected paths and exact owner commands | Implemented; 141 affected backend cases and a 28-case final protection rerun; CM4 4/4 layouts, twelve clear vision verdicts; live Madrid session blocked on sign-in/join |
-| P5 | Owner PTY terminals, mesh websocket relay, shell records, mobile client, copy/send/read and command return | Planned; real zsh/bash integration, relay/reconnect tests and four layouts with vision |
+| P5 | Owner PTY terminals, mesh websocket relay, shell records, mobile client, copy/send/read and command return | Implemented; 90 distinct affected backend cases pass, final stream rerun 16/16; CM4/CM5 pass all eight four-layout cases and 28 clear dedicated vision verdicts. Real owner/provider scenarios remain blocked |
 | P6 | A→B twice consecutively, C twice, D in four layouts; extra failing B and non-gating Codex A | Blocked on owner inputs; live acceptance clock has not started |
 | Closing | Full checks, one crucial-issues review, 0.3.0 Mac/Linux, Pro/member update retaining rollback and handoff | Planned |
 

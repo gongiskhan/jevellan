@@ -8,6 +8,7 @@ import { copyText, selectText } from './clipboard.js';
 import { Confirm, Markdown, Modal, Panel, composerClearance, followOnScroll, repinAtEnd, useTask, type PageProps } from './components.js';
 import { MergeWhy } from './merge-route.js';
 import { OwnerCommands, OwnerCommandScope } from './owner-commands.js';
+import { OpenTerminalButton } from './terminal.js';
 import { Icon } from './icons.js';
 import { MessageInput } from './message-delivery.js';
 import * as copy from './project-work-copy.js';
@@ -166,6 +167,8 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
       <div className="section-heading conversation-heading pw-heading pw-thread-heading">
         <h1 aria-labelledby={titleId}>{navigation}<span id={titleId} className="session-title" title={thread.title}>{thread.title}</span></h1>
         <div className="actions">
+          <OpenTerminalButton props={props} projectId={projectId} threadId={threadId} deviceId={thread.ownerDeviceId} />
+          {!['done', 'stopped', 'failed', 'running', 'attached'].includes(thread.state) && <OpenTerminalButton props={props} projectId={projectId} threadId={threadId} deviceId={thread.ownerDeviceId} takeover label="Take over in browser" />}
           <button type="button" className="secondary pw-head-button" aria-pressed={why} onClick={() => setWhy(!why)}>
             <Icon name="why" size={15} /><span className="pw-head-label">{copy.WHY}</span>
           </button>

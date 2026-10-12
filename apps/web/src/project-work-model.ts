@@ -55,7 +55,7 @@ export function projectRoute(path: string): ProjectRoute | null {
   return parts.length === 3 ? { projectId: parts[2] } : null;
 }
 
-export type ProjectTab = 'chat' | 'queue' | 'waiting' | 'threads' | 'pull-requests';
+export type ProjectTab = 'chat' | 'queue' | 'waiting' | 'threads' | 'pull-requests' | 'terminal';
 /** The tab below 1180 px: Waiting when a question is open, else Chat. Computed once, after the first view load. */
 export function defaultTab(view: Pick<ProjectWorkView, 'decisions'>): ProjectTab {
   return view.decisions.open.length ? 'waiting' : 'chat';
@@ -230,7 +230,7 @@ export function showSent(sent: { known: readonly string[] } | undefined, open: r
 const TOOL_ICONS: Record<string, IconName> = {
   jevellan_review_followup: 'pull-request',
   jevellan_jobs_list: 'search', jevellan_job_runs: 'search', jevellan_daily_list: 'search', jevellan_job_run: 'plus', jevellan_goals_list: 'search', jevellan_tasks_list: 'thread', jevellan_task_create: 'plus', jevellan_task_update: 'settings', jevellan_task_cancel: 'stop', jevellan_threads_list: 'thread', jevellan_thread_start: 'plus', jevellan_thread_message: 'message', jevellan_thread_read: 'search',
-  jevellan_thread_stop: 'stop', jevellan_ask_user: 'why', jevellan_answer_question: 'check', jevellan_github: 'search', jevellan_withdraw_question: 'close', jevellan_notebook_read: 'file',
+  jevellan_thread_stop: 'stop', jevellan_ask_user: 'why', jevellan_answer_question: 'check', jevellan_github: 'search', jevellan_terminal_read: 'file', jevellan_withdraw_question: 'close', jevellan_notebook_read: 'file',
   jevellan_notebook_write: 'file', jevellan_pr_status: 'pull-request', jevellan_pr_diff: 'file', jevellan_pr_review: 'pull-request', jevellan_mail_send: 'message', memory_search: 'search', memory_read: 'file',
 };
 /** The icon of a chat one-liner, by tool. */

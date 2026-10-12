@@ -10,6 +10,7 @@ import { HubProjectStore, HubState } from '@jevellan/mesh';
 import { ImproverDeviceRequestSchema, ImproverRequestSchema, PeerLoginSessionInputSchema } from '@jevellan/core';
 import { AgentAccessHubRequestSchema } from '@jevellan/core';
 import { DeviceTagsInputSchema, DeviceTagsRequestSchema } from '@jevellan/core';
+import { TerminalHubRequestSchema } from '@jevellan/core';
 
 /** Project hub collections; `handleApi` leaves them to this route's own lifecycle gate (D247). */
 export const PROJECT_HUB_ROUTE = /^\/hub\/mesh\/projects\/([a-z-]+)$/;
@@ -25,6 +26,10 @@ export async function handleMeshDeviceApi(app: Application, request: IncomingMes
   const authorization = request.headers.authorization;
   const device = app.devices.authenticate(authorization?.startsWith('Bearer ') ? authorization.slice(7) : undefined);
   const send = (value: unknown) => json(response, app.hub.redactor.document(value));
+  if (path === '/hub/mesh/terminals' && method === 'POST') {
+    const input = TerminalHubRequestSchema.parse(await requestBody(request));
+    const result = await app.terminals.hubRequest(input, device.id); app.devices.authenticate(authorization!.slice(7)); send(result); return true;
+  }
   if (path === '/hub/mesh/memory' && method === 'POST') {
     const input = ProjectMemoryRequestSchema.parse(await requestBody(request));
     const result = await app.projectMemoryRequest(input, device.id);

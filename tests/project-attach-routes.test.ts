@@ -171,7 +171,8 @@ test('a Claude thread attaches at rest with its session and account, queues owne
   expect(attachedResponse.status).toBe(200); expect(attachedResponse.headers.get('cache-control')).toBe('no-store');
   const view = ThreadAttachViewSchema.parse(await attachedResponse.json());
   expect(view).toEqual({ schema: 'thread-attach-v1', cwd: thread.cwd, runtime: 'claude', nativeSessionId: thread.nativeSessionId, model: 'scripted-model', effort: 'high',
-    env: { HOME: home, CLAUDE_CONFIG_DIR: home, CLAUDE_CODE_OAUTH_TOKEN: secret }, deviceName: f.deviceName });
+    env: { HOME: home, CLAUDE_CONFIG_DIR: home, CLAUDE_CODE_OAUTH_TOKEN: secret, JEVELLAN_STRETCH_TOKEN: expect.stringMatching(/^[A-Za-z0-9_-]{43}$/u), JEVELLAN_DAEMON_URL: f.base, JEVELLAN_PROJECT_MEMORY_MODE: 'repo' },
+    integration: { bridgeCommand: process.execPath, bridgeArgs: expect.arrayContaining(['mcp-bridge']), safetyCommand: expect.stringContaining('safety-hook.js'), compactAtPercent: 70 }, deviceName: f.deviceName });
   expect(f.app.redactor.text(secret)).not.toContain(secret);
   const attached = f.thread(threadId); const startedAt = attached.attach!.startedAt;
   expect(attached.state).toBe('attached'); expect(Date.parse(startedAt)).toBeLessThanOrEqual(Date.now());
@@ -206,7 +207,7 @@ test('a Claude thread attaches at rest with its session and account, queues owne
   expect(worked(f, threadId).map((event) => event.kind === 'thread-user-message' && event.text)).toEqual([ownerWorkedLine('Rename button')]);
   await f.waitFor(() => claude.turnStarts.length, (count) => count === 3); await rest(f, threadId);
   expect(claude.turnStarts[2]!.resume).toEqual({ sessionId: adopted });
-  expect(claude.turnStarts[2]!.prompt).toBe('Also rename the cancel button.');
+  expect(claude.turnStarts[2]!.prompt).toMatch(/^Project now \([\d:]+\):/u); expect(claude.turnStarts[2]!.prompt.endsWith('Also rename the cancel button.')).toBe(true);
   expect(states(f, threadId).slice(-4)).toEqual(['attached', 'idle', 'running', 'idle']);
   expect(f.thread(threadId).queuedMessages).toEqual([]);
 
@@ -232,7 +233,8 @@ test('a Codex thread in review attaches with its home only, keeps its session wh
 
   const view = ThreadAttachViewSchema.parse(await (await local(f, `/api/local/threads/${threadId}/attach`, ATTACH)).json());
   expect(view).toEqual({ schema: 'thread-attach-v1', cwd: thread.cwd, runtime: 'codex', nativeSessionId: thread.nativeSessionId, model: 'scripted-model', effort: 'high',
-    env: { HOME: home, CODEX_HOME: home }, deviceName: f.deviceName });
+    env: { HOME: home, CODEX_HOME: home, JEVELLAN_STRETCH_TOKEN: expect.stringMatching(/^[A-Za-z0-9_-]{43}$/u), JEVELLAN_DAEMON_URL: f.base, JEVELLAN_PROJECT_MEMORY_MODE: 'repo' },
+    integration: { bridgeCommand: process.execPath, bridgeArgs: expect.arrayContaining(['mcp-bridge']), safetyCommand: expect.stringContaining('safety-hook.js'), compactAtPercent: 70 }, deviceName: f.deviceName });
   const startedAt = f.thread(threadId).attach!.startedAt;
   // A restart keeps the thread attached (brief 8.6); detach reaches the new daemon through its new control file.
   await f.restart();

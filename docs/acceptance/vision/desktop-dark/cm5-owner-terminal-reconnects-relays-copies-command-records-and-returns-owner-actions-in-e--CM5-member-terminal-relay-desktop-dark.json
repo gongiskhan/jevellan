@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CM5 owner terminal reconnects, relays, copies command records and returns owner actions in every layout",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/screenshots/CM5-member-terminal-relay-desktop-dark.png",
+  "expected": "the Jevellan web app \"CM5 member terminal relay\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"CM5 owner terminal reconnects, relays, copies command records and returns owner actions in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Shell session titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory jour…'). This is intentional truncation and doesn't block anything.",
+      "The 'Send to…' and 'Run' buttons look low-contrast or disabled. That fits the empty command input, but they are faint on the dark background.",
+      "The terminal output panel has a lot of empty space below the short output."
+    ]
+  }
+}

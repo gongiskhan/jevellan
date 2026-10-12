@@ -117,4 +117,10 @@ The Memory panel shows capture, Apply and tell me or Suggest only, Inbox (from t
 
 ## P4 runtime scope
 
-Codex full access is scoped to Projects coding threads. Coordinator, review and memory sessions retain their read-only runtime requirements, and hub memory tools retain their separate note permissions. The refreshed checkout/protected-path guard and structured owner-command handoff do not change capture, recall, owner-note protection or native homes. Terminal reads and returned owner-command output are P5 work and will redact secrets before entering agent context.
+Codex full access is scoped to Projects coding threads. Coordinator, review and memory sessions retain their read-only runtime requirements, and hub memory tools retain their separate note permissions. The refreshed checkout/protected-path guard and structured owner-command handoff do not change capture, recall, owner-note protection or native homes. Terminal reads and returned owner-command output redact secrets before entering agent context.
+
+## P5 terminal continuity
+
+Browser takeover runs the existing attach command. Its isolated native session gets a scoped bridge for memory, GitHub and terminal reads while attached. Capture hooks can forward a changed native session only when it is in that account home and has the thread's working folder; detach captures the adopted session and expires the grant. No task control or report tool is exposed while the owner holds it. Hub memory permissions remain unchanged, and legacy memory remains read-only.
+
+Owner-terminal command records and two-megabyte scrollback are device state. Agents read redacted bounded snapshots through the hub's existing project scope. Exact owner-command results and explicitly sent output use ordinary session messages, so normal capture and extraction can retain durable learning from them. Terminal metadata and once-only result receipts are versioned and survive browser navigation; raw terminal output is not copied wholesale into shared notes.

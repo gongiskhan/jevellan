@@ -15,6 +15,7 @@ import { HubProjectAccess, joinMember } from '../packages/mesh/dist/index.js';
 import { FakeRuntime, nativeFormat, writeFakeNativeSession } from '../packages/runtime-contract/dist/index.js';
 import { eventBlock } from '../packages/projects/dist/index.js';
 import { Application, closeListeners, createDaemon } from '../apps/daemon/dist/index.js';
+import { LocalDiagnostics } from '../apps/daemon/dist/diagnostics.js';
 import { createRuntime as createClaude } from '../runtimes/claude/dist/index.js';
 import { createRuntime as createCodex } from '../runtimes/codex/dist/index.js';
 import { startGitHubFixture } from '../tests/fixtures/github-server.mjs';
@@ -38,6 +39,11 @@ const port = index === -1 ? 19771 : Number(process.argv[index + 1]);
 if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Invalid test port.');
 const root = realpathSync(mkdtempSync(join(tmpdir(), 'jevellan-browser-')));
 mkdirSync(join(root, 'user'));
+const terminalBin = join(root, 'terminal-bin'); mkdirSync(terminalBin);
+for (const name of ['claude', 'codex']) writeFileSync(join(terminalBin, name), `#!${process.execPath}\nimport(${JSON.stringify(new URL('../tests/fixtures/agent-cli.mjs', import.meta.url).href)}).then(cli => cli.run(${JSON.stringify({ name, log: join(root, 'terminal-agents.log') })}));\n`, { mode: 0o755 });
+const terminalPath = `${terminalBin}:${join(process.execPath, '..')}:/usr/bin:/bin`;
+writeFileSync(join(root, 'user', '.bash_profile'), `export PATH=${JSON.stringify(terminalPath)}\n`);
+const terminalOptions = { env: { PATH: terminalPath, SHELL: '/bin/bash', LANG: 'en_US.UTF-8' } };
 // A signal or a lost launcher closes the server, once it is ready: closing an application that is still starting would fail
 // the startup and leave the root. Whatever happens next, the server ends and its root goes, since no group SIGKILL reaches it.
 let ready = false; let closing = false;
@@ -175,6 +181,15 @@ const LONG_TOOLS = [['Read', { file_path: 'README.md' }, '# Projects app\n\nA sm
 const longThreads = new Set();
 function threadStep(input) {
   const report = (status, summary, extra = {}) => async (turn) => { await projectPause(350, turn.signal); turn.say(summary); await projectTool(turn, 'jevellan_thread_report', { status, summary, ...extra }); return { status: 'completed' }; };
+  if (input.prompt.includes('CM5 owner command thread')) return async turn => {
+    mkdirSync(join(turn.input.cwd, 'scripts'), { recursive: true });
+    writeFileSync(join(turn.input.cwd, 'scripts/owner-only.sh'), '#!/bin/sh\nprintf "owner result\\n"\ndate > owner-ran.txt\n', { mode: 0o755 });
+    return report('blocked', 'The owner runs the reserved script.', { ownerCommands: [{ command: 'scripts/owner-only.sh', why: 'The project reserves this step for the owner.', cwd: 'worktree' }] })(turn);
+  };
+  if (input.prompt.includes('The owner ran your command')) return async turn => {
+    assert.ok(existsSync(join(turn.input.cwd, 'owner-ran.txt'))); assert.match(input.prompt, /Exit code: 0/u); assert.match(input.prompt, /owner result/u);
+    return report('progress', 'The owner command finished with exit code 0.')(turn);
+  };
   if (input.prompt.includes('CM4 owner command thread')) return report('blocked', 'The owner runs the reserved script.\n\n```sh\nscripts/owner-only.sh\n```', { ownerCommands: [{ command: 'scripts/owner-only.sh', why: 'The project reserves this step for the owner.', cwd: 'worktree' }] });
   if (input.prompt.includes('LJ10 device:')) return report('done', 'Checked the device placement without changing files.');
   if (input.prompt.includes('LJ5 nightly fix:')) return async turn => {
@@ -365,7 +380,7 @@ const nativeSkill = join(root, 'user', '.claude', 'skills', 'say-hello'); mkdirS
 writeFileSync(join(nativeSkill, 'SKILL.md'), '---\nname: say-hello\ndescription: Say hello\n---\nHello from the fixture.\n');
 writeFileSync(join(root, 'user', '.claude', 'CLAUDE.md'), 'Use the project rules.\n');
 writeFileSync(join(root, 'user', '.claude.json'), JSON.stringify({ mcpServers: { fixture_hello: { command: process.execPath, args: ['fixture-hello.mjs'] } } }));
-const application = new Application({ homes: new Homes(join(root, 'user', '.jevellan'), join(root, 'user')), port, decisionFetch, deviceFacts: () => hubFacts, ...projectOptions, repositoryVisibility: async (path) => path === join(root, 'memory-project') ? 'PUBLIC' : 'UNKNOWN', runtimes: (context) => {
+const application = new Application({ homes: new Homes(join(root, 'user', '.jevellan'), join(root, 'user')), terminalOptions, port, decisionFetch, deviceFacts: () => hubFacts, ...projectOptions, repositoryVisibility: async (path) => path === join(root, 'memory-project') ? 'PUBLIC' : 'UNKNOWN', runtimes: (context) => {
   const claude = createClaude(context); const codex = createCodex(context);
   for (const runtime of [claude, codex]) {
     const fake = new FakeRuntime(); fake.capabilities.readOnlyEnforced = true;
@@ -513,9 +528,10 @@ const retryPath = application.homes.at('rigging/operations/claude/acc_rigging_cl
 const packageArchive = application.homes.ensure('rigging/parked/claude/acc_rigging_claude', 'b'.repeat(64), 'skills/browser-package'); writeFileSync(join(packageArchive, 'SKILL.md'), '# Parked package instructions\nRead-only package snapshot.\n');
 writeFileSync(join(application.homes.account('codex', 'acc_rigging_codex'), 'config.toml'), 'model_reasoning_effort = "high"\n[mcp_servers.fixture_tools]\ncommand = "fixture-tools"\nargs = []\n');
 await application.auth.setup({ schema: 'passphrase-input-v1', passphrase: 'jevellan-browser-fixture' });
-const server = createDaemon({ application });
+const diagnostics = new LocalDiagnostics(application, `http://127.0.0.1:${port}`);
+const server = createDaemon({ application, diagnostics });
 const ekoaFixture = projectsMode ? await startEkoaFixture() : undefined;
-let member; let memberServer; let memberHeartbeat; let improverControl;
+let member; let memberServer; let memberDiagnostics; let memberHeartbeat; let improverControl;
 // Fixture control requests in flight: their routes call both applications, so they finish before either closes.
 const controlWork = new Set();
 async function close() {
@@ -526,8 +542,10 @@ async function close() {
     // a lifecycle gate that is closing. The fixture control listener goes first; the hub keeps listening until the member has closed.
     await closeListeners([improverControl].filter(Boolean)); await Promise.allSettled([...controlWork]);
     await closeListeners([memberServer].filter(Boolean));
+    memberDiagnostics?.close();
     await member?.close();
     await closeListeners([server]);
+    diagnostics.close();
     await application.close();
     await github?.close(); await ekoaFixture?.close();
   } catch (error) {
@@ -541,7 +559,7 @@ await new Promise(resolve => server.listen(port, '127.0.0.1', resolve));
 const memberHomes = new Homes(join(root, 'member-home'), join(root, 'user'));
 const FixtureAuthSchema = z.strictObject({ schema: z.literal('fixture-auth-v1'), fixture_login: z.literal(true) });
 await joinMember(memberHomes, { schema: 'member-join-input-v1', hubUrl: `http://127.0.0.1:${port}`, code: application.mesh.invite().code, device: { name: 'Browser member', url: `http://127.0.0.1:${port + 100}`, os: 'linux', version: '0.1.0' } }, { redactor: new SecretRedactor() });
-member = new Application({ homes: memberHomes, port: port + 100, timers: false, decisionFetch, deviceFacts: () => memberFacts, ...memberProjectOptions, runtimes: context => {
+member = new Application({ homes: memberHomes, terminalOptions, port: port + 100, timers: false, decisionFetch, deviceFacts: () => memberFacts, ...memberProjectOptions, runtimes: context => {
   const runtime = createCodex(context);
   const fake = new FakeRuntime(); fake.capabilities.readOnlyEnforced = true;
   const turns = new FakeRuntime(); runtime.startTurn = projectsMode ? scriptedTurns(turns) : input => turns.startTurn(input);
@@ -571,7 +589,8 @@ member = new Application({ homes: memberHomes, port: port + 100, timers: false, 
   return new Map([['codex', runtime]]);
 } });
 await member.conversations.ready;
-memberServer = createDaemon({ application: member }); await new Promise(resolve => memberServer.listen(port + 100, '127.0.0.1', resolve));
+memberDiagnostics = new LocalDiagnostics(member, `http://127.0.0.1:${port + 100}`);
+memberServer = createDaemon({ application: member, diagnostics: memberDiagnostics }); await new Promise(resolve => memberServer.listen(port + 100, '127.0.0.1', resolve));
 const reportMember = () => member.member.heartbeat({ schema: 'heartbeat-v1', deviceId: member.device.deviceId, at: new Date().toISOString(), version: '0.1.0', runningConversations: ['fixture_remote_work'], projects: [], externalSessions: [{ runtime: 'codex', cwd: '/fixture/remote-project', lastActivityAt: new Date().toISOString(), source: 'simulated' }], load: { cpuPct: 0, memFreeMb: 1024 } });
 await reportMember(); memberHeartbeat = globalThis.setInterval(() => { void reportMember().catch(() => {}); }, 30_000);
 application.mesh.join({ schema: 'join-device-v1', code: application.mesh.invite().code, requestId: 'offline_browser_fixture', device: { id: 'offline_browser_fixture', name: 'Offline fixture', url: 'http://127.0.0.1:1', os: 'linux', version: '0.1.0' } }, 'fixture');

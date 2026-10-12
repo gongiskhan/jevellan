@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The owner command in the 'Waiting for you' card is cut off at the right edge. It can be scrolled sideways, and the 'Scroll sideways to read the full command' hint says so.",
-      "Sidebar session titles and subtitles are shortened with ellipses (e.g. 'Context · J11 memory jour...', 'Context · Shared memory ...').",
-      "The metadata line under 'Write the welcome copy' in the Concluded section is cut off at the bottom of the window. The right panel scrolls, so it can still be reached."
+      "The owner command in the right-hand 'Waiting for you' card is clipped at the card's right edge. It scrolls sideways, and the 'Scroll sideways to read the full command' hint says so.",
+      "The 'Concluded' list item at the bottom of the right panel is partly cut off by the bottom edge of the window. Scrolling the panel should reveal it.",
+      "Session titles and subtitles in the sidebar are shortened with ellipses (e.g. 'Context · J11 memory jour…')."
     ]
   }
 }

@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation titles and subtitles end in ellipses (e.g. 'Context · J11 memory jour...', 'Goncalos...'). That is expected in a narrow sidebar, but the full names can't be read.",
-      "The 'Offline fixture' card runs past the bottom edge of the viewport. The page scrolls, so its protected paths and buttons should still be reachable.",
-      "The 'Save tags', 'Save protected paths', 'Inspect worktrees' and 'Open' buttons on the Hub card use dimmer text than the same buttons on the Member card. They are still readable, but they look somewhat disabled.",
-      "The buttons on the 'Browser member' card are tightly stacked, and the card's height doesn't match the Hub card beside it."
+      "In the Hub card, the 'Save tags', 'Save protected paths', 'Inspect worktrees' and 'Open' buttons look dimmed, as if disabled, while the same buttons in the Member card look fully active.",
+      "The 'Open terminals' link is centered under the left-aligned 'Terminal' button, so it looks out of place.",
+      "The 'Offline fixture' card is cut off at the bottom of the viewport. It can be reached by scrolling.",
+      "Session titles in the sidebar are cut short with ellipses, which is expected truncation."
     ]
   }
 }

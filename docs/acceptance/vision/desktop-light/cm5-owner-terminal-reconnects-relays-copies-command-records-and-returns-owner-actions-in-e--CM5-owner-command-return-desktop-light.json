@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CM5 owner terminal reconnects, relays, copies command records and returns owner actions in every layout",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/screenshots/CM5-owner-command-return-desktop-light.png",
+  "expected": "the Jevellan web app \"CM5 owner command return\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"CM5 owner terminal reconnects, relays, copies command records and returns owner actions in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The thread content scrolls under the sticky header, so the top line of the earlier card ('The owner runs the reserved script.') is cut in half at the header edge.",
+      "The sidebar footer is clipped at the bottom of the viewport: the theme toggle and version text are only partly visible, though they are probably reachable by scrolling the sidebar.",
+      "The 'Run in Terminal' button in the Prompt card is greyed out next to the dark one in the card above. It is still readable, but it looks inconsistent and a bit faint.",
+      "The long worktree path in the owner-result paragraph wraps mid-path, which makes it harder to read."
+    ]
+  }
+}

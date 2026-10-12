@@ -26,11 +26,13 @@ import { SettingsSync } from './settings-sync.js';
 import { LifecycleGate } from '@jevellan/core';
 import { AgentAccess, HubAgentAccess } from '@jevellan/mesh';
 import { assertHubNotMoved, deviceAllowsWork } from '@jevellan/core';
+import { TerminalService } from './terminal-service.js';
 
 export type ApplicationOptions = { homes?: Homes; port?: number; url?: string; runtimes?: (context: RuntimeContext) => ReadonlyMap<string, RuntimeAdapter>; timers?: boolean; repositoryVisibility?: VisibilityProbe; decisionFetch?: typeof fetch; hubFetch?: typeof fetch; nativeSessions?: Omit<SessionSensorOptions, 'homes'>; deviceFacts?(): DeviceFacts;
   /** Test seam for the improver's memory index; production uses the isolated Basic Memory. */ projectMemory?: (project: Project) => MemoryPort;
   /** Projects test seams: the GitHub transport and API base (a fake server in tests), and Projects timers (periodic loops follow `timers`). */
-  githubFetch?: typeof fetch; githubBaseUrl?: string; projectTimers?: Partial<ProjectTimers>; ekoaConnector?: EkoaConnector; forceHub?: boolean };
+  githubFetch?: typeof fetch; githubBaseUrl?: string; projectTimers?: Partial<ProjectTimers>; ekoaConnector?: EkoaConnector; forceHub?: boolean;
+  terminalOptions?: ConstructorParameters<typeof TerminalService>[1] };
 
 export class Application {
   #closing: Promise<void> | undefined;
@@ -53,6 +55,7 @@ export class Application {
   /** Projects on this device (brief 8): threads, their turns and pull requests, beside the conversations. */
   readonly ekoa: EkoaMirrorService | undefined;
   readonly projectWork: ProjectWork; readonly projectHub: ProjectHub;
+  readonly terminals: TerminalService;
   readonly projectVisibility: ProjectVisibility;
   readonly state: HubState | MemberState;
   readonly riggingDisk: RiggingDisk;
@@ -150,6 +153,8 @@ export class Application {
       // Projects share the account serialization, checkout ownership, leases, bridge registry and memory with conversations.
       this.projectHub = this.member ? new MemberProjectStore(this.member) : new HubProjectAccess(this.hub, this.device.deviceId, undefined, () => this.devices.list());
       this.projectWork = new ProjectWork({ homes: this.homes, deviceId: this.device.deviceId, deviceName: this.device.name, redactor: this.redactor,
+        terminalRead: (scope, input) => this.terminals.read(scope.kind === 'thread' ? { kind: 'thread', projectId: scope.projectId, threadId: scope.threadId }
+          : { kind: 'coordinator', projectId: scope.projectId }, input),
         switchMemory: async (projectId, mode, requestId) => {
           const current = await this.state.projects.get(projectId); if (!current) throw new Error('Project not found.');
           return (await this.conversations.saveProject({ schema: 'project-write-v1', revision: current.revision, clientRequestId: `memory_${requestId}`, project: { ...current.project, memory: { ...current.project.memory, mode } } })).project;
@@ -165,6 +170,7 @@ export class Application {
         decisionClient: this.decisionClient, roster: () => this.roster(),
         enterOperation: (id, title) => this.lifecycle.enter({ kind: 'conversation', id, title }),
         timers: { periodic: options.timers !== false, ...options.projectTimers } });
+      this.terminals = new TerminalService(this, { ...options.terminalOptions, timers: options.timers !== false });
       this.ekoa = this.#hub ? new EkoaMirrorService(this.hub, () => this.device.url, options.ekoaConnector) : undefined;
       const improverReady = Promise.all([this.conversations.ready, this.backgroundDrafts.ready]).then(() => undefined);
       const hub = this.#hub; const mesh = this.#mesh;
@@ -317,6 +323,7 @@ export class Application {
     try { await this.routingImprover?.close(); } catch (error) { failures.push(error); }
     try { await this.backgroundDrafts.close(); } catch (error) { failures.push(error); }
     // Projects close first: they share ownership, leases, accounts, bridges, memory and the hub with conversations.
+    try { await this.terminals.close(); } catch (error) { failures.push(error); }
     try { await this.projectWork.close(); } catch (error) { failures.push(error); }
     try { await this.conversations.close(); } catch (error) { failures.push(error); }
     const cleanup = await Promise.allSettled([this.accounts.close(), this.bridges.close(), this.memory.close()]);

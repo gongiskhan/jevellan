@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip is horizontally scrolled, so the first tab label is clipped to a trailing \"s\" next to the left scroll arrow and \"Projects\" is cut off at the right arrow. Both scroll arrows are visible, so those tabs can still be reached.",
-      "The helper text \"Thread worktrees: 0 GB · Job and verification worktrees: 0 GB\" wraps so that \"GB\" sits alone on the second line.",
-      "A second device card is cut off at the bottom edge of the viewport. This is normal scroll content."
+      "The 'Open terminals' label is centered in pink text on its own line between the Terminal button and the device stats. It looks detached from the button it belongs to.",
+      "The tab strip cuts off the first tab label (only 's' shows) and the 'Projects' tab at the edges. Scroll arrows are there, so this is expected for a scrolling tab bar.",
+      "A button at the bottom is cut off by the viewport. This looks like normal page scrolling.",
+      "'Job and verification worktrees: 0 GB' wraps so that 'GB' sits alone on the next line."
     ]
   }
 }

@@ -44,10 +44,12 @@ test('PJ7 terminal takeover adopts the new session and delivers waiting messages
   const command = jevellan(f, ['thread', 'attach', threadId], { path });
   const run = await cli.started(1);
   // The flag settings keep the account home's transcripts past the CLI's 30-day retention (P8 review R-T1).
-  expect(run.argv).toEqual(['--resume', stored, '--model', 'scripted-model', '--effort', 'high', '--settings', '{"cleanupPeriodDays":36500}']);
+  expect(run.argv!.slice(0, 6)).toEqual(['--resume', stored, '--model', 'scripted-model', '--effort', 'high']);
+  expect(JSON.parse(run.argv![run.argv!.indexOf('--settings') + 1]!)).toMatchObject({ cleanupPeriodDays: 36500, hooks: { PreToolUse: expect.any(Array) } });
+  expect(JSON.parse(run.argv![run.argv!.indexOf('--mcp-config') + 1]!).mcpServers.jevellan.args.at(-1)).toBe('mcp-bridge');
   expect(run.cwd).toBe(realpathSync(f.thread(threadId).cwd));
   expect(run.envKeys).toEqual(expect.arrayContaining(['HOME', 'CLAUDE_CONFIG_DIR', 'CLAUDE_CODE_OAUTH_TOKEN', 'PATH']));
-  expect(run.envKeys).not.toContain('JEVELLAN_STRETCH_TOKEN'); expect(run.envKeys).not.toContain('OPENAI_API_KEY');
+  expect(run.envKeys).toContain('JEVELLAN_STRETCH_TOKEN'); expect(run.envKeys).not.toContain('OPENAI_API_KEY');
   expect(run.authDigest).toBe(createHash('sha256').update(secret).digest('hex'));
   expect(run.argv!.some((arg) => arg.includes(secret) || arg.includes(CANARY))).toBe(false);
   // The simulated CLI forks the session on resume, as a real one may: its new session file is in the account home.
@@ -81,7 +83,7 @@ test('PJ7 terminal takeover adopts the new session and delivers waiting messages
 
   // 6. The waiting message is the next turn, on the adopted session, and the thread is back to taking messages.
   await f.waitFor(() => claude.turnStarts.length, (count) => count === 2); await rest(f, threadId);
-  expect(claude.turnStarts[1]!.resume).toEqual({ sessionId: run.sessionId }); expect(claude.turnStarts[1]!.prompt).toBe('Also rename the cancel button.');
+  expect(claude.turnStarts[1]!.resume).toEqual({ sessionId: run.sessionId }); expect(claude.turnStarts[1]!.prompt).toMatch(/^Project now \([\d:]+\):/u); expect(claude.turnStarts[1]!.prompt.endsWith('Also rename the cancel button.')).toBe(true);
   const after = await f.json(thread, ThreadViewSchema);
   expect(after).toMatchObject({ canMessage: true, queuedMessages: [], thread: { state: 'idle', turns: 2 } }); expect(after.attach).toBeUndefined();
   expect(composerBlock(after)).toBeNull();

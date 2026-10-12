@@ -459,6 +459,8 @@ export const DecisionAnsweredViewSchema = z.strictObject({ schema: z.literal('de
 export const ThreadAttachRequestSchema = z.strictObject({ schema: z.literal('thread-attach-request-v1') });
 export const ThreadAttachViewSchema = z.strictObject({ schema: z.literal('thread-attach-v1'), cwd: text,
   runtime: z.enum(['claude', 'codex']), nativeSessionId: text, model: text, effort: EffortSchema,
-  env: z.record(z.string(), z.string()), deviceName: z.string() });
+  env: z.record(z.string(), z.string()), deviceName: z.string(),
+  integration: z.strictObject({ bridgeCommand: text, bridgeArgs: z.array(z.string()), safetyCommand: text,
+    compactAtPercent: z.number().int().min(50).max(90), contextWindow: z.number().int().positive().optional() }).optional() });
 export const ThreadDetachRequestSchema = z.strictObject({ schema: z.literal('thread-detach-request-v1'), exitCode: z.number().int().nullable() });
 export const ThreadDetachViewSchema = z.strictObject({ schema: z.literal('thread-detach-v1'), adopted: z.boolean(), state: ThreadStateSchema });

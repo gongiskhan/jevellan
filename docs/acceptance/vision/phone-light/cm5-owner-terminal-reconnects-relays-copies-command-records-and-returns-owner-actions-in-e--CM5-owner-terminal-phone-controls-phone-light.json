@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CM5 owner terminal reconnects, relays, copies command records and returns owner actions in every layout",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/CM5-owner-terminal-phone-controls-phone-light.png",
+  "expected": "the Jevellan web app \"CM5 owner terminal phone controls\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"CM5 owner terminal reconnects, relays, copies command records and returns owner actions in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The host and path in the terminal header are cut off with an ellipsis ('/private/var/fo...'). This looks like intentional truncation.",
+      "The left edge of the key row cuts off the first button ('→') and the right edge cuts off the last ('⋯'). This looks like a horizontally scrollable strip, so all keys should still be reachable.",
+      "There is a blank gap with a horizontal rule under the last prompt line in the terminal output. The cursor/input line is not clearly visible."
+    ]
+  }
+}

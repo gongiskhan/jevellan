@@ -1,6 +1,7 @@
 import { NightlyBanner, ProjectDailyPanel, type DailyView } from './project-daily.js';
 import { MergeWhy } from './merge-route.js';
 import { OwnerCommands, OwnerCommandScope } from './owner-commands.js';
+import { TerminalLauncher } from './terminal.js';
 import { ProjectDailyListViewSchema } from '@jevellan/core/client';
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { z } from 'zod';
@@ -222,7 +223,7 @@ export function Stamp({ at, label }: { at: string; label?: string }) {
 
 export const runtimeNames = (data: PageProps['data']) => (runtime: string) => data.runtimes.find((entry) => entry.id === runtime)?.displayName ?? runtime;
 export const deviceNames = (data: PageProps['data']) => (deviceId: string) => data.devices.devices.find((entry) => entry.id === deviceId)?.name ?? deviceId;
-const TABS: readonly ProjectTab[] = ['chat', 'waiting', 'queue', 'threads', 'pull-requests'];
+const TABS: readonly ProjectTab[] = ['chat', 'waiting', 'queue', 'threads', 'pull-requests', 'terminal'];
 
 /**
  * The project page (12.2): the coordinator chat with Waiting for you, Running, Pull requests and Concluded beside it from
@@ -444,6 +445,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
       <div className="section-heading conversation-heading pw-heading" ref={heading}>
         <h1 aria-labelledby={titleId}>{navigation}<span id={titleId} className="session-title" title={view.project.name}>{view.project.name}</span></h1>
         <div className="actions">
+          <button type="button" className="secondary pw-head-button" aria-pressed={current === 'terminal'} onClick={() => choose(current === 'terminal' ? 'chat' : 'terminal')}><Icon name="runtimes" size={15} /><span className="pw-head-label">Terminal</span></button>
           <button type="button" className="secondary pw-head-button" onClick={() => setDialog('coordinator')}><Icon name="tune" size={15} /><span className="pw-head-label">Override coordinator</span></button>
           <button type="button" className="pw-head-button" onClick={() => setDialog('new-thread')}>
             <Icon name="plus" size={15} /><span className="pw-head-label">{copy.NEW_THREAD}</span>
@@ -501,6 +503,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
           </button>
         ))}
       </div>
+      {current === 'terminal' && <div className="pw-terminal-tab"><TerminalLauncher props={props} projectId={id} threads={view.threads} {...(coordinator.deviceId ? { coordinatorDeviceId: coordinator.deviceId } : {})} /></div>}
       <div className="pw-layout" data-tab={current}>
         <div className="pw-chat" id={chatId} ref={chat} {...chatPanel}>
           {items.length ? (

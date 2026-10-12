@@ -78,7 +78,7 @@ beforeEach(async () => {
   git(checkout, 'remote', 'set-url', 'origin', 'https://github.com/fixture/repo.git'); git(checkout, 'config', `url.${origin}.insteadOf`, 'https://github.com/fixture/repo.git');
   const token = `fixture-${randomUUID()}`; github = await startGitHubFixture({ token, repositories: { 'fixture/repo': origin } }); githubCalls = 0;
   fake = new FakeRuntime();
-  app = new Application({ homes, timers: false, repositoryVisibility: async () => 'PUBLIC', runtimes: () => new Map([['fake', fake]]), githubBaseUrl: github.url,
+  app = new Application({ homes, timers: false, repositoryVisibility: async () => 'PUBLIC', deviceFacts: () => ({ schema: 'device-facts-v1', cores: 8, load1: 1, load5: 2, totalMemoryBytes: 32e9, freeMemoryBytes: 12e9, freeDiskBytes: 80e9, os: 'darwin', runningThreads: [], runningJobRuns: [] }), runtimes: () => new Map([['fake', fake]]), githubBaseUrl: github.url,
     githubFetch: (input, init) => { githubCalls += 1; return fetch(input, init); } });
   await app.started;
   const config = app.hub.configuration.current()!; config.configuration['x-jevellan'].runtimes.fake = { enabled: true };

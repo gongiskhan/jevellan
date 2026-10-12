@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { MemoryNoteSchema, MemorySearchSchema, MemoryWriteSchema, MemoryEditSchema } from './memory-note-schemas.js';
 import { MemoryInboxInputSchema, MemoryArchiveInputSchema, MemoryDreamBodySchema } from './project-memory-schemas.js';
 import { OwnerCommandsSchema } from './owner-command-schemas.js';
+import { TerminalReadInputSchema, TerminalReadResultSchema } from './terminal-schemas.js';
 export { MemoryNoteSchema, MemorySearchSchema, MemoryWriteSchema, MemoryEditSchema, type MemoryNote } from './memory-note-schemas.js';
 import { ProjectReviewBodySchema, ReviewFollowupInputSchema } from './project-review-schemas.js';
 import { ProjectWorkTaskSchema, TaskCreateRequestSchema, TaskReceiptSchema, TaskUpdateRequestSchema } from './project-loop-schemas.js';
@@ -123,6 +124,7 @@ export const BridgeToolSchemas = {
   jevellan_ask_user: AskUserInputSchema,
   jevellan_answer_question: AnswerQuestionInputSchema,
   jevellan_github: GithubInputSchema,
+  jevellan_terminal_read: TerminalReadInputSchema,
   jevellan_withdraw_question: WithdrawQuestionInputSchema,
   jevellan_notebook_read: NotebookReadInputSchema,
   jevellan_notebook_write: NotebookWriteInputSchema,
@@ -192,6 +194,7 @@ export function bridgeTools(names: BridgeTool[]): z.infer<typeof BridgeToolsSche
     jevellan_ask_user: 'Ask the owner a question. Give no options or two to four short options, and name the thread when the question comes from one. The answer arrives later as an event.',
     jevellan_answer_question: 'Record an answer the owner gave in chat, only during a turn carrying an owner message. Match the numbered question and its exact option label. Then send the answer to the responsible thread with jevellan_thread_message.',
     jevellan_github: 'Read this project’s GitHub workflows, runs and failed job logs, pull requests from any author, or recent commits. Results are cached for 60 seconds. Threads may read only their own pull request and runs and job logs on its current head commit.',
+    jevellan_terminal_read: 'Read the owner’s open terminals and their recent commands or output when the owner refers to a terminal. Read-only: never type or run commands in an owner terminal.',
     jevellan_withdraw_question: 'Withdraw an unanswered question, for example after a thread solved it.',
     jevellan_notebook_read: 'Read the project notebook: your durable record of decisions, conventions, owner preferences and the current plan.',
     jevellan_notebook_write: 'Replace the whole notebook, at most 64 KiB. Pass the revision you read; if it changed meanwhile, the error carries the current content.',
@@ -205,7 +208,7 @@ export function bridgeTools(names: BridgeTool[]): z.infer<typeof BridgeToolsSche
   return BridgeToolsSchema.parse({ schema: 'bridge-tools-v1', tools: names.map((name) => {
     const schema = z.toJSONSchema(BridgeToolSchemas[name], { io: 'input' });
     // MCP runtimes require an object at the root. Preserve the action union's validation and declare its properties at the root too.
-    const inputSchema = name === 'jevellan_github' ? { ...schema, type: 'object', required: ['action'], additionalProperties: false,
+    const inputSchema = name === 'jevellan_github' || name === 'jevellan_terminal_read' ? { ...schema, type: 'object', required: ['action'], additionalProperties: false,
       properties: Object.assign({}, ...(schema.anyOf ?? schema.oneOf ?? []).map(variant => variant.properties ?? {})) } : schema;
     return { name, description: descriptions[name], inputSchema };
   }) });
@@ -214,11 +217,11 @@ export function bridgeTools(names: BridgeTool[]): z.infer<typeof BridgeToolsSche
 // Project scopes (D104). The coordinator's read-only Claude allow list and the bridge's scope lists both derive from
 // projectToolNames, never a copy.
 export const COORDINATOR_TOOLS = ['jevellan_review_followup', 'jevellan_jobs_list', 'jevellan_job_run', 'jevellan_job_runs', 'jevellan_daily_list', 'jevellan_goals_list', 'jevellan_tasks_list', 'jevellan_task_create', 'jevellan_task_update', 'jevellan_task_cancel', 'jevellan_threads_list', 'jevellan_thread_message', 'jevellan_thread_read', 'jevellan_thread_stop',
-  'jevellan_ask_user', 'jevellan_answer_question', 'jevellan_github', 'jevellan_withdraw_question', 'jevellan_notebook_read', 'jevellan_notebook_write', 'jevellan_pr_status', 'jevellan_pr_diff', 'jevellan_mail_send', 'memory_search', 'memory_read'] as const satisfies readonly BridgeTool[];
+  'jevellan_ask_user', 'jevellan_answer_question', 'jevellan_github', 'jevellan_terminal_read', 'jevellan_withdraw_question', 'jevellan_notebook_read', 'jevellan_notebook_write', 'jevellan_pr_status', 'jevellan_pr_diff', 'jevellan_mail_send', 'memory_search', 'memory_read'] as const satisfies readonly BridgeTool[];
 const MAIN_THREAD_TOOLS = ['jevellan_mail_send', 'jevellan_mail_inbox', 'jevellan_reserve', 'jevellan_release'] as const satisfies readonly BridgeTool[];
 export type ProjectToolName = typeof COORDINATOR_TOOLS[number] | typeof MAIN_THREAD_TOOLS[number] | 'jevellan_thread_report' | 'jevellan_app_start' | 'jevellan_app_stop' | 'jevellan_apps_list' | 'memory_write' | 'memory_edit';
 export function threadTools(isolation: 'worktree' | 'main'): BridgeTool[] {
-  return ['jevellan_thread_report', 'jevellan_github', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read', ...(isolation === 'main' ? MAIN_THREAD_TOOLS : [])];
+  return ['jevellan_thread_report', 'jevellan_github', 'jevellan_terminal_read', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read', ...(isolation === 'main' ? MAIN_THREAD_TOOLS : [])];
 }
 /** The tools a scope lists: the coordinator's, or a thread's by isolation (mail and reservations only on main, brief 7.2). A fresh array each call. */
 export function projectToolNames(scope: ({ kind: 'coordinator' } | { kind: 'thread'; isolation: 'worktree' | 'main' }) & { memoryMode?: 'hub' | 'repo' | 'device' }): BridgeTool[] {
@@ -244,6 +247,7 @@ export const ProjectToolResultSchemas = {
   jevellan_withdraw_question: WithdrawQuestionResultSchema, jevellan_notebook_read: NotebookReadResultSchema, jevellan_notebook_write: NotebookWriteResultSchema,
   jevellan_answer_question: z.strictObject({ schema: z.literal('answer-question-result-v1'), questionId: IdSchema, answered: z.literal(true), repeated: z.boolean(), openQuestions: OpenQuestionsResultSchema.optional() }),
   jevellan_github: GithubResultSchema,
+  jevellan_terminal_read: TerminalReadResultSchema,
   jevellan_pr_status: PrStatusResultSchema, jevellan_mail_send: MailSendResultSchema, jevellan_mail_inbox: MailInboxResultSchema,
   jevellan_pr_diff: PrDiffResultSchema,
   jevellan_reserve: ReserveResultSchema, jevellan_release: ReleaseResultSchema, jevellan_thread_report: ThreadReportResultSchema,

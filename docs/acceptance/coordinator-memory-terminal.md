@@ -9,7 +9,7 @@ P0 records the target and decisions 703–715. Source delivery, simulated tests,
 | P2 | Implemented: 135 simulated backend cases, six workflow cases, 4/4 CM2 layouts, eight clear live vision verdicts; live sandbox calls blocked |
 | P3 | Implemented: 129 distinct affected backend cases pass after focused reruns; CM3 4/4 layouts and twelve clear live vision verdicts; real provider scenarios blocked |
 | P4 | Implemented: 141 affected backend cases, final 28-case protection rerun, CM4 4/4 layouts and twelve clear live vision verdicts; actual Madrid session blocked |
-| P5 | Not run: PTY relay, reconnect, semantic records, copy/send/read and automatic results |
+| P5 | Implemented: 90 distinct affected backend passes, final 16-case stream rerun; CM4/CM5 eight four-layout cases and 28 clear live vision verdicts; real scenarios blocked |
 | P6 | Blocked: owner reported some sign-in/join/token inputs pending; no live scenario clock started |
 | Closing | Not run: full new suite, final crucial-issues review, 0.3.0 builds/install/member updates |
 
@@ -49,3 +49,12 @@ Simulated: all 141 affected backend cases pass in eight files in 19.33 seconds. 
 CM4 passes all four phone/desktop light/dark layouts in 1.3 minutes. It verifies complete command text/copy, scrolling to the last character without page overflow, a visible scrolling cue, structured reports and fenced-shell controls, and persisted device protections. Live: twelve dedicated Claude vision judgments for the final screenshots have no blocking findings. Earlier browser/vision checks caught the grid overflow and missing cue; both product defects were fixed and asserted. Typecheck, lint and build pass; working-tree and mandatory history scans gate the phase push. There was no review pass.
 
 Blocked: the real Codex session on Madrid, pending the already requested sign-in/join. Not run: actual Run in Terminal and automatic result delivery; those depend on P5. Real A/B/C/D and owner acceptance remain unclaimed, the live clock has not started, and the production service stays on 0.2.1 with rollback retained.
+
+
+## P5 evidence
+
+Simulated: 22 targeted backend cases in four files pass in 23.98 seconds. The seven-file affected suite has passing coverage for all 68 cases through its six passing files and the final 14-case bridge rerun; it was not one clean complete run. A final 16-case real-PTY/HTTP/websocket rerun passes in 8.63 seconds after the live approximate-boundary notice fix. The resulting distinct affected coverage is 90 cases. Providers/native takeover executables are simulated; shells, Git, owner HTTP, node-pty, one-use tickets, two local daemons and mesh/websocket relay are real disposable processes. Assertions cover bash/zsh dotfile canaries and owner prompt hooks, cwd encoding, exact and approximate records, Unicode/escape stripping and bounded buffers, Ctrl-C/nonzero/multiline exits, browser reconnect, remote relay, authentication/ticket boundaries, eight-session/idle limits, restart recovery, once-only command delivery, durable receipts, scoped attached tools/capture, valid Codex TOML overrides and Safari's immediate clipboard gesture.
+
+CM4 and CM5 pass all eight cases at 1440×900 and 390×844, light/dark, in 2.2 minutes. They cover command cards, protected paths, actual shell command results returning to a thread, takeover/detach, replay, copy all/one/five, Send to… and member-device terminals. Earlier runs caught and fixed prompt/output leakage, older Readline paste handling, header overflow/overlap and the project Terminal label collision; assertions were retained and geometric protection was added. Live: 28 final dedicated Claude vision verdicts have no blocking findings. These are automated visual judgments, not real provider/physical-phone acceptance. Typecheck, lint, build and working-tree scan gate the phase push; the mandatory history scan runs at push. No review pass occurred.
+
+Blocked: real A/B/C/D and Madrid sign-in/join/owner Settings inputs, already requested together. The owner reported some pending. The ten-hour live clock has not started. Not run: the closing full suite/review, 0.3.0 installation or owner acceptance. Production remains 0.2.1 with rollback retained.

@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CM5 owner terminal reconnects, relays, copies command records and returns owner actions in every layout",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/CM5-owner-terminal-connected-phone-light.png",
+  "expected": "the Jevellan web app \"CM5 owner terminal connected\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"CM5 owner terminal reconnects, relays, copies command records and returns owner actions in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The host/path subtitle in the header is cut off with an ellipsis ('/private/var/fo...'). It looks deliberate, but the full path can't be read in the header.",
+      "The special-key row (Esc, Tab, Ctrl, Alt, arrows) runs past the right edge and the last key is only partly visible. This looks like a sideways-scrolling row, so the remaining keys are probably still reachable, but nothing else shows that the row scrolls.",
+      "Long lines in the terminal wrap mid-word (e.g. 'pro / jects-app', 'glm / zwgjhw...'), which makes them a little harder to read."
+    ]
+  }
+}

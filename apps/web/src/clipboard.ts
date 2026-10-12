@@ -21,6 +21,15 @@ export async function copyText(text: string): Promise<boolean> {
   }
 }
 
+/** Start within the click gesture, while the server is still supplying the text (Safari requires this). */
+export async function copyPendingText(text: Promise<string>): Promise<boolean> {
+  if (window.isSecureContext && typeof navigator.clipboard?.write === 'function' && typeof ClipboardItem === 'function') {
+    try { await navigator.clipboard.write([new ClipboardItem({ 'text/plain': text.then(value => new Blob([value], { type: 'text/plain' })) })]); return true; }
+    catch { /* Older browsers can still copy plain text or offer selection. */ }
+  }
+  return copyText(await text);
+}
+
 /** Selects an element's text on the page, so a person can copy it from the browser's own menu. */
 export function selectText(element: Element): void {
   const range = document.createRange(); range.selectNodeContents(element);

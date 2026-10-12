@@ -586,6 +586,10 @@ a.pw-pr-chip:hover { border-color: var(--jev); color: var(--jev-ink); }
   .pw-thread-heading:has(> .actions .pw-keep-label) > .actions { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; }
   .pw-thread-heading:has(> .actions .pw-keep-label) > .conversation-meta { grid-row: 3; }
   .pw-thread-heading:has(> .actions .pw-keep-label) > .pw-thread-details { grid-row: 4; }
+  .pw-thread-page .conversation-heading.pw-thread-heading:has(> .actions .terminal-launch-button) > h1 { grid-column: 1 / -1; }
+  .pw-thread-page .conversation-heading.pw-thread-heading:has(> .actions .terminal-launch-button) > .actions { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; flex-wrap: wrap; min-width: 0; max-width: 100%; }
+  .pw-thread-page .conversation-heading.pw-thread-heading:has(> .actions .terminal-launch-button) > .conversation-meta { grid-row: 3; }
+  .pw-thread-page .conversation-heading.pw-thread-heading:has(> .actions .terminal-launch-button) > .pw-thread-details { grid-row: 4; }
 }
 @media (max-width: 760px) {
   .pw-report { padding: 11px 12px; }
