@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ6 workflow daily records its actual run and a missing run times out explicitly",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/LJ6-github-night-mode-phone-light.png",
+  "expected": "the Jevellan web app \"LJ6 github night mode\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"LJ6 workflow daily records its actual run and a missing run times out explicitly\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The tab row is clipped at the right edge, so 'Pull requests' is cut off mid-word. This looks like a horizontally scrolling tab strip, so the tab is still reachable.",
+      "There are three nightly or merge-hold banners that say almost the same thing: 'Nightly window · merges held until the nightly tasks finish', 'GitHub runs the chain tonight' and 'Merges are held while the nightly window runs'.",
+      "The 'Enabled' checkbox label wraps under the checkbox instead of sitting beside it.",
+      "'Nightly tests' shows 'No output recorded.' in a large dark block, which takes up a lot of space for an empty state."
+    ]
+  }
+}

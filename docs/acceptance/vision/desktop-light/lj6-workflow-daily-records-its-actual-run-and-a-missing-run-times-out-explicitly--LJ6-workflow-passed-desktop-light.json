@@ -4,16 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "LJ6 workflow daily records its actual run and a missing run times out explicitly",
   "layout": "desktop-light",
-  "screenshot": "screenshots/LJ6-workflow-passed-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/LJ6-workflow-passed-desktop-light.png",
   "expected": "the Jevellan web app \"LJ6 workflow passed\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"LJ6 workflow daily records its actual run and a missing run times out explicitly\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses ('Context · J11 memory journ…', 'Context · Mesh journey fixt…', 'Done · Improver sandbox · dev-ma…').",
-      "The 'Enabled' checkbox sits above its label instead of beside it, so it lines up awkwardly with the 'Run now' and 'Edit' buttons.",
-      "The 'Jobs (1)' expander at the bottom of the right panel is partly below the visible area, so you have to scroll to see it.",
-      "The 'No output recorded.' block is a large dark box that stands out from the light theme around it."
+      "The 'Enabled' checkbox sits above its label instead of next to it, so it looks out of line with the 'Run now' and 'Edit' buttons.",
+      "Session titles and metadata in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Gonca…'). This is expected truncation.",
+      "The 'Jobs (1)' disclosure at the bottom of the right panel sits right against the viewport edge and is only partly visible. It looks like the panel scrolls to it.",
+      "The 'Waiting for the coordinator' line in the job card in the main area is small, low-contrast text."
     ]
   }
 }

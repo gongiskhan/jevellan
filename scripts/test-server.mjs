@@ -654,7 +654,7 @@ for (const n of [1, 2, 3]) { correction('implement', n, 'implement', 'claude-fab
 // Projects control (design 5.5 item 9), on the same listener: POST routes; every body is a versioned fixture document (pulse has none).
 const ControlClockSchema = z.strictObject({ schema: z.literal('fixture-project-clock-v1'), advanceMinutes: z.number().int().min(0).max(1440) });
 const ControlEkoaSchema = z.strictObject({ schema: z.literal('fixture-ekoa-loop-v1'), action: z.enum(['prepare', 'answer', 'approve', 'ask-owner', 'merge', 'tick', 'list']) });
-const ControlDailySchema = z.strictObject({ schema: z.literal('fixture-daily-control-v1'), action: z.enum(['prepare', 'prepare-late', 'reset', 'open', 'pass', 'fail', 'workflow']) });
+const ControlDailySchema = z.strictObject({ schema: z.literal('fixture-daily-control-v1'), action: z.enum(['prepare', 'prepare-late', 'reset', 'open', 'pass', 'fail', 'workflow', 'scheduler-watch', 'scheduler-dispatch']) });
 const dailyMarker = join(root, 'daily-result');
 const ControlPullSchema = z.strictObject({ schema: z.literal('fixture-pull-change-v1'), checks: z.enum(['none', 'pending', 'passing', 'passing-status', 'failing']).optional(),
   mergeable: z.enum(['clean', 'dirty', 'unknown', 'unstable']).optional(), merged: z.literal(true).optional(), closed: z.literal(true).optional() });
@@ -716,7 +716,14 @@ async function projectControl(request, response) {
     if (frozenProjectClock === undefined) projectClockOffset += input.advanceMinutes * 60_000; else frozenProjectClock += input.advanceMinutes * 60_000;
     await application.projectWork.pulse(); send(200, { schema: 'fixture-project-clock-result-v1', advancedMinutes: input.advanceMinutes });
   } else if (request.url === '/projects/daily' && (input = parse(ControlDailySchema))) {
-    if (['prepare', 'prepare-late'].includes(input.action)) {
+    if (input.action.startsWith('scheduler-')) {
+      github.setVariable('NIGHTLY_SCHEDULER', input.action === 'scheduler-dispatch' ? 'jevellan' : 'github');
+      frozenProjectClock = frozenProjectClock === undefined ? Date.parse('2026-10-12T00:00:00Z') : Date.parse(`${new Date(frozenProjectClock + 24 * 3_600_000).toISOString().slice(0, 10)}T00:00:00Z`);
+      await application.projectWork.prepareDailyWork('projects_workflows');
+      const settings = await application.projectWork.admission.settings('projects_workflows');
+      await application.projectHub.putSettings({ ...settings, nightlyWindow: { enabled: true, time: '01:00', timezone: 'Europe/Lisbon' } }, settings.revision);
+      await application.projectWork.pulse(); send(200, { schema: 'fixture-scheduler-opened-v1' });
+    } else if (['prepare', 'prepare-late'].includes(input.action)) {
       nightlyLateFix = input.action === 'prepare-late';
       frozenProjectClock = frozenProjectClock === undefined ? Date.parse('2026-10-12T00:59:00Z') : Date.parse(`${new Date(frozenProjectClock + 24 * 3_600_000).toISOString().slice(0, 10)}T00:59:00Z`);
       rmSync(dailyMarker, { force: true });

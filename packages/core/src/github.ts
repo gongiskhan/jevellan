@@ -139,6 +139,21 @@ export class GitHubClient {
   async workflowJobLog(repository: GitHubRepository, jobId: number): Promise<string> {
     return this.#request('GET', `${repo(repository)}/actions/jobs/${pullNumber(jobId)}/logs`, z.string(), undefined, { text: true, download: true });
   }
+  async actionsVariable(repository: GitHubRepository, variable: string): Promise<string> {
+    if (!/^[A-Za-z0-9_]{1,64}$/u.test(variable)) throw new Error('Invalid Actions variable name.');
+    return (await this.#request('GET', `${repo(repository)}/actions/variables/${encodeURIComponent(variable)}`, z.object({ name: z.string(), value: z.string().max(48000) }))).value;
+  }
+  async workflowRefs(repository: GitHubRepository) {
+    return this.#request('GET', `${repo(repository)}/git/matching-refs/heads/jv/jobs/`, z.array(z.object({ ref: z.string(), object: z.object({ sha: z.string().regex(sha) }) })).max(1000));
+  }
+  async deleteWorkflowRef(repository: GitHubRepository, branch: string): Promise<void> {
+    if (!/^jv\/jobs\/[A-Za-z0-9_-]+$/u.test(branch)) throw new Error('Invalid workflow dispatch ref.');
+    try { await this.#request('DELETE', `${repo(repository)}/git/refs/heads/${branch}`, z.null(), undefined, { noContent: true }); }
+    catch (error) {
+      // Recover a crash between successful deletion and its local receipt. Never hide permissions or validation failures on an existing ref.
+      if (!(error instanceof GitHubError) || ![404, 422].includes(error.status ?? 0) || (await this.workflowRefs(repository)).some(ref => ref.ref === `refs/heads/${branch}`)) throw error;
+    }
+  }
 
   async #pages<T extends { total_count: number }, E>(load: (page: number) => Promise<T>, entries: (result: T) => E[]): Promise<E[]> {
     const all: E[] = [];
@@ -149,7 +164,7 @@ export class GitHubClient {
     return all;
   }
   #text(value: string): string { return this.#redactor.text(value).replace(/[\p{Cc}\s]+/gu, ' ').trim().slice(0, 300); }
-  async #request<T>(method: 'GET' | 'POST' | 'PUT' | 'PATCH', path: string, schema: z.ZodType<T>, body?: unknown, options: { version?: string; text?: boolean; download?: boolean } = {}): Promise<T> {
+  async #request<T>(method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE', path: string, schema: z.ZodType<T>, body?: unknown, options: { version?: string; text?: boolean; download?: boolean; noContent?: boolean } = {}): Promise<T> {
     const token = (await this.#token())?.trim();
     if (!token) throw new GitHubError('no-token', 'No GitHub token is saved.');
     this.#redactor.add(token);
@@ -183,6 +198,7 @@ export class GitHubClient {
         let message = ''; try { message = this.#text(GitHubErrorBodySchema.parse(JSON.parse(text)).message); } catch { /* a body without a message */ }
         throw new GitHubError(errorKind(status), message || `GitHub answered with HTTP ${status}.`, status);
       }
+      if (options.noContent && status === 204) { await response.body?.cancel(); return schema.parse(null); }
       let value: unknown;
       try { const content = await read(response, BODY_LIMIT, controller.signal, true); value = options.text ? this.#redactor.text(content).slice(-8000) : JSON.parse(content); } catch (error) { if (error instanceof GitHubError) throw error; throw invalid(); }
       const parsed = schema.safeParse(value); if (!parsed.success) throw invalid();

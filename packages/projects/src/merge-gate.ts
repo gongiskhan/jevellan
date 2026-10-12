@@ -83,7 +83,7 @@ export class ProjectMergeGate {
       const old = (await this.o.hub.decision(row.decisionId))?.document; if (old && !old.answer && !old.withdrawnAt) await this.o.hub.withdrawDecision(old.id, new Date(this.o.now()).toISOString());
     }
     let handoff = false, after: string | undefined;
-    do { const page = await this.o.hub.jobs(thread.projectId, after); handoff ||= page.records.some(job => job.run.kind === 'github-workflow' && job.run.dispatchAfterMerge?.pull === thread!.pr!.number); after = page.next ?? undefined; } while (after);
+    do { const page = await this.o.hub.jobs(thread.projectId, after); handoff ||= page.records.some(job => job.run.kind === 'github-workflow' && (job.run.dispatchAfterMerge?.pull === thread!.pr!.number || job.run.schedulerSwitch?.ownerMergePull === thread!.pr!.number)); after = page.next ?? undefined; } while (after);
     let route = (await this.o.hub.mergeDocument(id))?.document;
     if (route && route.schema !== 'merge-route-v1') throw refuse('Invalid merge route receipt.');
     if (!route) {

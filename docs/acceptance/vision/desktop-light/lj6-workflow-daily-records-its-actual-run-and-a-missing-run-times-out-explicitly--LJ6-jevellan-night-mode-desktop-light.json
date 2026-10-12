@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ6 workflow daily records its actual run and a missing run times out explicitly",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/screenshots/LJ6-jevellan-night-mode-desktop-light.png",
+  "expected": "the Jevellan web app \"LJ6 jevellan night mode\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"LJ6 workflow daily records its actual run and a missing run times out explicitly\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Right panel is scrolled so the 'CONCLUDED 0' section heading is cut off at the top edge, just under the nightly banner. It is still reachable by scrolling.",
+      "Right panel's last card ('Switch mode nightly') is cut off at the bottom of the viewport. Scrolling reaches it.",
+      "Nightly cards have a lot of empty space below the 'Enabled' checkbox row."
+    ]
+  }
+}

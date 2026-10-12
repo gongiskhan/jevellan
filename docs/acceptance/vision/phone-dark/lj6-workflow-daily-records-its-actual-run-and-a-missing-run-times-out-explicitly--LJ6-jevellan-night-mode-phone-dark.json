@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ6 workflow daily records its actual run and a missing run times out explicitly",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/LJ6-jevellan-night-mode-phone-dark.png",
+  "expected": "the Jevellan web app \"LJ6 jevellan night mode\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"LJ6 workflow daily records its actual run and a missing run times out explicitly\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The tab bar is clipped on the right edge: 'Pull requests' is cut off, and any later tabs are hidden. It looks like a horizontally scrollable strip, so the tabs can still be reached.",
+      "The 'Run now' buttons have low contrast against the dark card background. They are dimmed, probably on purpose, because merges are held during the nightly window.",
+      "The 'Enabled' checkbox sits above its label instead of beside it, which looks slightly misaligned next to the Run now/Edit buttons.",
+      "The Queue section and the Nightly section list the same three items, so the information is repeated."
+    ]
+  }
+}

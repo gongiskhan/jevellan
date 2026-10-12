@@ -12,7 +12,7 @@ const NOT_MERGEABLE = 'Pull Request is not mergeable';
 export async function startGitHubFixture({ token, repositories = {}, port = 0, onMerge }) {
   if (typeof token !== 'string' || !token) throw new Error('The GitHub fixture needs a token.');
   const workflowView = value => { const { jobs, repo, workflow, ...run } = value; void jobs; void repo; void workflow; return run; };
-  const requests = []; const pulls = []; const failures = []; const workflows = []; let loseDispatchReply = false;
+  const requests = []; const pulls = []; const failures = []; const workflows = []; const variables = new Map(); let loseDispatchReply = false;
   const origin = (repo) => repositories[repo];
   const headOf = (repo, ref) => {
     try { return execFileSync('git', ['--git-dir', origin(repo), 'rev-parse', '--verify', '--quiet', `refs/heads/${ref}`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() || null; } catch { return null; }
@@ -68,6 +68,12 @@ export async function startGitHubFixture({ token, repositories = {}, port = 0, o
     const repo = route && `${decodeURIComponent(route[1])}/${decodeURIComponent(route[2])}`;
     if (!route || !origin(repo)) return send(response, 404, { message: 'Not Found' });
     const rest = route[3]; const [owner] = repo.split('/'); let match;
+    if ((match = /^\/actions\/variables\/([^/]+)$/.exec(rest)) && method === 'GET') return variables.has(match[1]) ? send(response, 200, { name: match[1], value: variables.get(match[1]) }) : send(response, 404, { message: 'Variable not found' });
+    if (rest === '/git/matching-refs/heads/jv/jobs/' && method === 'GET') {
+      const refs = execFileSync('git', ['--git-dir', origin(repo), 'for-each-ref', '--format=%(refname) %(objectname)', 'refs/heads/jv/jobs/'], { encoding: 'utf8' }).trim().split('\n').filter(Boolean).map(line => { const [ref, sha] = line.split(' '); return { ref, object: { sha } }; });
+      return send(response, 200, refs);
+    }
+    if ((match = /^\/git\/refs\/heads\/(jv\/jobs\/[A-Za-z0-9_-]+)$/.exec(rest)) && method === 'DELETE') { execFileSync('git', ['--git-dir', origin(repo), 'update-ref', '-d', `refs/heads/${match[1]}`]); response.writeHead(204); return response.end(); }
     if (rest === '/git/refs' && method === 'POST') {
       if (!/^refs\/heads\/jv\/jobs\/[A-Za-z0-9_-]+$/.test(body?.ref ?? '') || !/^[a-f0-9]{40}$/.test(body?.sha ?? '')) return send(response, 422, { message: 'Invalid ref' });
       try { execFileSync('git', ['--git-dir', origin(repo), 'update-ref', body.ref, body.sha, ''], { stdio: 'ignore' }); } catch { return send(response, 422, { message: 'Reference already exists' }); }
@@ -76,7 +82,7 @@ export async function startGitHubFixture({ token, repositories = {}, port = 0, o
     if ((match = /^\/actions\/workflows\/([^/]+)\/dispatches$/.exec(rest)) && method === 'POST') {
       const head = headOf(repo, body?.ref); if (!head) return send(response, 422, { message: 'Invalid ref' });
       const id = workflows.length + 1, at = new Date().toISOString();
-      workflows.push({ repo, workflow: decodeURIComponent(match[1]), id, html_url: `https://github.com/${repo}/actions/runs/${id}`, head_sha: head, head_branch: body.ref, event: 'workflow_dispatch', status: 'queued', conclusion: null, created_at: at, run_started_at: at, jobs: [] });
+      workflows.push({ repo, workflow: decodeURIComponent(match[1]), id, html_url: `https://github.com/${repo}/actions/runs/${id}`, display_title: `${decodeURIComponent(match[1])} ${body?.inputs?.sha ?? ''}`, head_sha: head, head_branch: body.ref, event: 'workflow_dispatch', status: 'queued', conclusion: null, created_at: at, run_started_at: at, jobs: [] });
       if (loseDispatchReply) { loseDispatchReply = false; response.destroy(); return; }
       return send(response, 200, { workflow_run_id: id, html_url: `https://github.com/${repo}/actions/runs/${id}` });
     }
@@ -153,6 +159,7 @@ export async function startGitHubFixture({ token, repositories = {}, port = 0, o
   return {
     url: `http://127.0.0.1:${server.address().port}`, requests, pulls, workflows,
     loseNextDispatchReply: () => { loseDispatchReply = true; },
+    setVariable: (name, value) => { if (value === undefined) variables.delete(name); else variables.set(name, value); },
     addWorkflow: value => { const id = workflows.length + 1; const run = { repo: Object.keys(repositories)[0], workflow: 'nightly.yml', id, html_url: `https://github.com/fixture/repo/actions/runs/${id}`, head_sha: headOf(Object.keys(repositories)[0], 'main'), head_branch: 'main', event: 'schedule', status: 'completed', conclusion: 'success', created_at: new Date().toISOString(), jobs: [], ...value }; workflows.push(run); return run; },
     changeWorkflow: (id, patch) => { const run = workflows.find(row => row.id === id); if (!run) throw new Error('Workflow missing.'); Object.assign(run, patch); return run; },
     setChecks: (number, checks, repo) => { apply(find(number, repo), { checks }); },

@@ -392,14 +392,14 @@
   {
     "id": "loop-amendment-2-part-2",
     "title": "Follow the scheduler switch and real chain",
-    "why": "Variable-based window mode, SHA/run-name evidence, strict watch-chain binding and optional ref cleanup. Ordered next under amendment 2.",
-    "status": "in-progress"
+    "why": "Actions-variable snapshots, actual-chain watch filtering, main-plus-SHA dispatch/run-name and job evidence, optional pin lifecycle and mode UI implemented. Affected backend 34 cases plus overlapping storage/cleanup 39 cases pass; LJ6 passes four layouts with 16 clear live vision judgments. Typecheck/lint/build pass. Live owner-account workflows and activation remain blocked.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "loop-amendment-2-part-3",
     "title": "Nightly and merge-gate regression fixes",
     "why": "Thirty numbered amendment decisions include bounded review, normal overnight dispatch, late-open timing, complete night reports, polling budget, CI grace, shadow routing and ended-thread/message/verification recovery.",
-    "status": "planned"
+    "status": "in-progress"
   },
   {
     "id": "loop-release-021",

@@ -108,8 +108,11 @@ export class HubProjectStore {
     const task = this.task(document.taskId)?.document;
     if (!task || task.projectId !== document.projectId || task.jobId !== document.jobId) refuse('The job run must belong to its task.', 400);
     if (previous && stableJson(previous.workflowHandoff) !== stableJson(document.workflowHandoff)) refuse('The workflow handoff receipt cannot change.', 409);
+    if (previous && (stableJson(previous.workflowScheduler) !== stableJson(document.workflowScheduler) || previous.nightlyWindowId !== document.nightlyWindowId)) refuse('The workflow scheduler receipt cannot change.', 409);
     if (previous && (previous.taskId !== document.taskId || previous.jobId !== document.jobId || previous.projectDay !== document.projectDay || previous.startedAt !== document.startedAt || previous.deviceId !== document.deviceId || previous.setupCommand !== document.setupCommand || stableJson(previous.spec) !== stableJson(document.spec))) refuse('Job run identity cannot change.', 400);
-    if (previous?.conclusion && stableJson({ ...previous, revision: 0 }) !== stableJson({ ...document, revision: 0 })) refuse('A finished job receipt cannot change.', 409);
+    // Ref cleanup is metadata after completion; the execution result remains immutable.
+    if (previous?.conclusion && stableJson({ ...previous, revision: 0, dispatchRefDeletedAt: undefined }) !== stableJson({ ...document, revision: 0, dispatchRefDeletedAt: undefined })) refuse('A finished job receipt cannot change.', 409);
+    if (previous?.dispatchRefDeletedAt && previous.dispatchRefDeletedAt !== document.dispatchRefDeletedAt) refuse('The ref cleanup receipt cannot change.', 409);
     return this.#put('project-job-runs', document.id, ProjectJobRunSchema, document, expectedRevision);
   }
   windows(projectId: string, after?: string): Page<ProjectWindow> { return this.#page('project-windows', ProjectWindowSchema, projectId, after, () => true); }

@@ -4,16 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "LJ6 workflow daily records its actual run and a missing run times out explicitly",
   "layout": "desktop-dark",
-  "screenshot": "screenshots/LJ6-workflow-missing-desktop-dark.png",
+  "screenshot": "docs/acceptance/screenshots/LJ6-workflow-missing-desktop-dark.png",
   "expected": "the Jevellan web app \"LJ6 workflow missing\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"LJ6 workflow daily records its actual run and a missing run times out explicitly\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the right panel, the 'CONCLUDED 0' section heading is cut off at the top edge under the header. This looks like the panel's scroll position, not a layout bug.",
-      "Sidebar session titles and subtitles are cut off with ellipses ('Context · J11 memory journ…', 'Context · Mesh journey fixt…'). The full text is still available elsewhere.",
-      "On the job cards, the 'Enabled' checkbox sits above its label instead of beside it, and it doesn't line up with the 'Run now'/'Edit' buttons.",
-      "The heading over the job list says 'NIGHTLY 2', but the collapsed section below says 'Jobs (2)'. This repetition is slightly confusing."
+      "Right panel is scrolled, so the top section heading (\"CONCLUDED 0\") is partly clipped under the header; it can be reached by scrolling up",
+      "The \"Enabled\" checkbox labels sit above and offset from their text instead of inline with it",
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. \"Context · Mesh journey fix…\"), which is expected for long names",
+      "The right panel's bottom text (\"propose useful work.\") meets the viewport edge, but it can be reached by scrolling"
     ]
   }
 }

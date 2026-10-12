@@ -21,6 +21,7 @@ export function ProjectDailyPanel({ view, goals, changed, onError }: { view: Dai
     await api(`/api/projects/${view.projectId}/dailies/${item.id}/edit`, ProjectDailySchema, 'POST', { schema: 'daily-update-request-v1', expectedRevision: item.revision, name: item.name, goalId: item.goalId, order: item.order, target: item.target, enabled: !item.enabled }, { signal, waitForHub: true }); changed();
   });
   return <>
+    {view.jobs.some(job => job.run.kind === 'github-workflow' && job.run.schedulerSwitch) && <p className="notice" role="status">{view.window?.workflowScheduler?.mode === 'dispatch' ? 'Jevellan runs the night' : 'GitHub runs the chain tonight'}{view.window?.workflowScheduler?.reason && <span className="muted"> · {view.window.workflowScheduler.reason}</span>}</p>}
     {view.mergesHeld && <p className="notice">Merges are held while the nightly window runs.</p>}
     <p className="muted">{view.window?.state === 'open' ? 'Closing project day' : 'Project day'}: {displayDay}</p>
     <div className="actions"><button className="secondary small" onClick={() => setDaily('new')}>New nightly item</button><button className="secondary small" onClick={() => setJob('new')}>New job</button></div>
@@ -54,11 +55,14 @@ function JobEditor({ projectId, item, jobs, goals, changed, onError, close }: Ed
     [mode, setMode] = useState(item?.run.kind === 'github-workflow' ? item.run.mode : 'watch'), [timeout, setTimeout] = useState(item?.run.timeoutMinutes ?? 30),
     [requiredJobs, setRequiredJobs] = useState(item?.run.kind === 'github-workflow' ? item.run.requiredJobs?.join('\n') ?? '' : ''), [requiredSteps, setRequiredSteps] = useState(item?.run.kind === 'github-workflow' ? item.run.requiredSteps?.join('\n') ?? '' : ''),
     [inputs, setInputs] = useState(item?.run.kind === 'github-workflow' ? JSON.stringify(item.run.inputs ?? {}, null, 2) : '{}'), [commitInput, setCommitInput] = useState(item?.run.kind === 'github-workflow' ? item.run.commitInput ?? '' : ''),
-    [handoffPull, setHandoffPull] = useState(item?.run.kind === 'github-workflow' ? item.run.dispatchAfterMerge?.pull ?? 0 : 0), [watchOrder, setWatchOrder] = useState(item?.run.kind === 'github-workflow' ? item.run.dispatchAfterMerge?.watchOrder ?? 0 : 0);
+    [handoffPull, setHandoffPull] = useState(item?.run.kind === 'github-workflow' ? item.run.dispatchAfterMerge?.pull ?? 0 : 0), [watchOrder, setWatchOrder] = useState(item?.run.kind === 'github-workflow' ? item.run.schedulerSwitch?.watchOrder ?? item.run.dispatchAfterMerge?.watchOrder ?? 0 : 0),
+    [schedulerVariable, setSchedulerVariable] = useState(item?.run.kind === 'github-workflow' ? item.run.schedulerSwitch?.variable ?? '' : ''), [pinCommitRef, setPinCommitRef] = useState(item?.run.kind === 'github-workflow' ? item.run.pinCommitRef ?? false : false);
   const operation = useTask(onError), names = (value: string) => value.split('\n').map(name => name.trim()).filter(Boolean);
   return <Modal title={item ? 'Edit job' : 'New job'} close={close}><form onSubmit={event => { event.preventDefault(); void operation.run(async signal => {
     const run = kind === 'command' ? { kind, command, timeoutMinutes: timeout } : { kind, workflow, mode, timeoutMinutes: timeout, requiredJobs: names(requiredJobs), requiredSteps: names(requiredSteps), inputs: JSON.parse(inputs) as unknown,
-      ...(commitInput ? { commitInput } : {}), ...(handoffPull ? { dispatchAfterMerge: { schema: 'workflow-dispatch-handoff-v1', pull: handoffPull, watchOrder } } : {}) };
+      ...(commitInput ? { commitInput } : {}), pinCommitRef: !commitInput && pinCommitRef,
+      ...(schedulerVariable ? { schedulerSwitch: { schema: 'workflow-scheduler-switch-v1', variable: schedulerVariable, dispatchValue: item?.run.kind === 'github-workflow' ? item.run.schedulerSwitch?.dispatchValue ?? 'jevellan' : 'jevellan', watchOrder, ...(item?.run.kind === 'github-workflow' && item.run.schedulerSwitch?.ownerMergePull ? { ownerMergePull: item.run.schedulerSwitch.ownerMergePull } : {}) } } : handoffPull ? { dispatchAfterMerge: { schema: 'workflow-dispatch-handoff-v1', pull: handoffPull, watchOrder } } : {}),
+      ...(item?.run.kind === 'github-workflow' && item.run.watchChain ? { watchChain: item.run.watchChain } : {}) };
     const fields = { name, goalId: goalId || null, enabled, gate: gate ? { jobId: gate } : null, run };
     await api(item ? `/api/projects/${projectId}/jobs/${item.id}/edit` : `/api/projects/${projectId}/jobs`, ProjectJobSchema, 'POST', { ...fields, schema: item ? 'job-update-request-v1' : 'job-create-request-v1', ...(item ? { expectedRevision: item.revision } : { clientRequestId: request }) }, { signal, waitForHub: true }); changed(); close();
   }); }}>
@@ -70,8 +74,10 @@ function JobEditor({ projectId, item, jobs, goals, changed, onError, close }: Ed
       <label>Mode<select value={mode} onChange={event => setMode(event.target.value as typeof mode)}><option value="watch">Watch an existing run</option><option value="dispatch">Dispatch a run</option></select></label>
       <label>Workflow inputs (JSON)<textarea maxLength={50000} value={inputs} onChange={event => setInputs(event.target.value)} /></label>
       <label>Commit input name<input maxLength={64} placeholder="sha" value={commitInput} onChange={event => setCommitInput(event.target.value)} /></label><p className="pw-field-note">Sends the recorded commit to this input. Use a workflow that deploys or tests that exact commit.</p>
-      <label>Dispatch after pull request merges<input type="number" min={0} value={handoffPull} onChange={event => setHandoffPull(Number(event.target.value))} /></label><p className="pw-field-note">Zero means no handoff. Until this pull request merges, watch existing runs.</p>
-      {handoffPull > 0 && <label>Order while watching<input type="number" min={0} max={100} value={watchOrder} onChange={event => setWatchOrder(Number(event.target.value))} /></label>}
+      <label>Scheduler variable<input maxLength={64} placeholder="NIGHTLY_SCHEDULER" value={schedulerVariable} onChange={event => setSchedulerVariable(event.target.value)} /></label><p className="pw-field-note">Read at window open. jevellan dispatches; anything else or a failed read watches GitHub. Change the variable in GitHub.</p>
+      {item?.run.kind === 'github-workflow' && item.run.dispatchAfterMerge && !schedulerVariable && <label>Dispatch after pull request merges<input type="number" min={0} value={handoffPull} onChange={event => setHandoffPull(Number(event.target.value))} /></label>}
+      {(schedulerVariable || handoffPull > 0) && <label>Order while watching<input type="number" min={0} max={100} value={watchOrder} onChange={event => setWatchOrder(Number(event.target.value))} /></label>}
+      {!commitInput && <label className="check"><input type="checkbox" checked={pinCommitRef} onChange={event => setPinCommitRef(event.target.checked)} />Pin a temporary ref to the recorded commit</label>}
       <label>Required job names<textarea value={requiredJobs} onChange={event => setRequiredJobs(event.target.value)} /></label><label>Required step names<textarea value={requiredSteps} onChange={event => setRequiredSteps(event.target.value)} /></label><p className="pw-field-note">One exact name per line. These must run successfully; skipped tests do not pass.</p>
     </>}
     <label>Timeout in minutes<input required type="number" min={kind === 'command' ? 1 : 5} max={kind === 'command' ? 240 : 600} value={timeout} onChange={event => setTimeout(Number(event.target.value))} /></label>

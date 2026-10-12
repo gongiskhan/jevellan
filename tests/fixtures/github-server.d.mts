@@ -1,5 +1,5 @@
 export type GitHubFixtureWorkflow = {
-  repo: string; workflow: string; id: number; html_url: string; head_sha: string; head_branch: string; event: string; status: string; conclusion: string | null; created_at: string; run_started_at?: string;
+  repo: string; workflow: string; id: number; html_url: string; display_title?: string; updated_at?: string; head_sha: string; head_branch: string; event: string; status: string; conclusion: string | null; created_at: string; run_started_at?: string;
   jobs: { id: number; name: string; status: string; conclusion: string | null; logs?: string; steps?: { name: string; status: string; conclusion: string | null }[] }[];
 };
 export type GitHubFixtureChecks = 'pending' | 'passing' | 'passing-status' | 'failing' | 'none'
@@ -19,6 +19,7 @@ export type GitHubFixture = {
   requests: GitHubFixtureRequest[];
   pulls: GitHubFixturePull[];
   workflows: GitHubFixtureWorkflow[];
+  setVariable(name: string, value: string | undefined): void;
   loseNextDispatchReply(): void;
   addWorkflow(value: Partial<GitHubFixtureWorkflow>): GitHubFixtureWorkflow;
   changeWorkflow(id: number, patch: Partial<GitHubFixtureWorkflow>): GitHubFixtureWorkflow;

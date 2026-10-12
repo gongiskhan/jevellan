@@ -1,13 +1,13 @@
 import { z } from 'zod';
 import { ProjectReviewReportSchema } from './project-review-schemas.js';
-import { WorkflowDispatchHandoffSchema, WorkflowHandoffStateSchema, WorkflowInputNameSchema, WorkflowInputsSchema } from './workflow-schemas.js';
+import { WorkflowDispatchHandoffSchema, WorkflowHandoffStateSchema, WorkflowInputNameSchema, WorkflowInputsSchema, WorkflowSchedulerSwitchSchema, WorkflowSchedulerStateSchema, WorkflowWatchChainSchema } from './workflow-schemas.js';
 import { IdSchema, TimestampSchema } from './schemas.js';
 import { ProjectWorkTaskSchema, TaskTypeSchema } from './project-loop-schemas.js';
 const revision = z.number().int().nonnegative(), date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/u), text = z.string().trim().min(1);
 export const JobRunSpecSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('command'), command: text.max(2000), timeoutMinutes: z.number().int().min(1).max(240) }),
   z.strictObject({ kind: z.literal('github-workflow'), workflow: text.max(200), mode: z.enum(['watch', 'dispatch']), timeoutMinutes: z.number().int().min(5).max(600),
-    inputs: WorkflowInputsSchema.optional(), commitInput: WorkflowInputNameSchema.optional(), dispatchAfterMerge: WorkflowDispatchHandoffSchema.optional(),
+    inputs: WorkflowInputsSchema.optional(), commitInput: WorkflowInputNameSchema.optional(), dispatchAfterMerge: WorkflowDispatchHandoffSchema.optional(), schedulerSwitch: WorkflowSchedulerSwitchSchema.optional(), watchChain: WorkflowWatchChainSchema.optional(), pinCommitRef: z.boolean().optional(),
     // Explicit evidence requirements, for workflows whose successful scheduling jobs can skip the suite.
     requiredJobs: z.array(text.max(200)).max(20).optional(), requiredSteps: z.array(text.max(200)).max(20).optional() }),
 ]);
@@ -20,7 +20,7 @@ export const ProjectJobRunSchema = z.strictObject({ schema: z.literal('project-j
   startedAt: TimestampSchema, endedAt: TimestampSchema.optional(), conclusion: z.enum(['passed', 'failed', 'timed-out', 'cancelled', 'skipped']).nullable(),
   summary: z.string().max(1200), logTail: z.string().max(8000), url: z.url().optional(), workflowRunId: z.number().int().positive().optional(), workflowHeadBound: z.boolean().optional(),
   dispatchRef: z.string().max(200).optional(), gateRunId: IdSchema.optional(), phase: z.enum(['reserved', 'executing', 'watching', 'finished']), pollAfter: TimestampSchema.optional(),
-  workflowHandoff: WorkflowHandoffStateSchema.optional(),
+  workflowHandoff: WorkflowHandoffStateSchema.optional(), workflowScheduler: WorkflowSchedulerStateSchema.optional(), nightlyWindowId: IdSchema.optional(), workflowCompletedAt: TimestampSchema.optional(), dispatchRefDeletedAt: TimestampSchema.optional(),
   // Snapshot before execution: an edit never changes an already reserved job.
   spec: JobRunSpecSchema, setupCommand: z.string().max(500).nullable().default(null), baseBranch: z.string().min(1).max(200), watchAfter: TimestampSchema });
 export type ProjectJobRun = z.infer<typeof ProjectJobRunSchema>;
@@ -31,7 +31,7 @@ export const ProjectDailySchema = z.strictObject({ schema: z.literal('project-da
 export type ProjectDaily = z.infer<typeof ProjectDailySchema>;
 export const ProjectWindowSchema = z.strictObject({ schema: z.literal('project-window-v1'), id: IdSchema, projectId: IdSchema, revision, date, closingProjectDay: date,
   state: z.enum(['open', 'finished']), mergesHeld: z.boolean(), openedAt: TimestampSchema, finishedAt: TimestampSchema.optional(), taskIds: z.array(IdSchema).max(50),
-  plans: z.array(ProjectWorkTaskSchema).max(50), outcome: z.string().max(8000).optional(), failed: z.boolean().optional() });
+  plans: z.array(ProjectWorkTaskSchema).max(50), workflowScheduler: WorkflowSchedulerStateSchema.optional(), outcome: z.string().max(8000).optional(), failed: z.boolean().optional() });
 export type ProjectWindow = z.infer<typeof ProjectWindowSchema>;
 const jobFields = ProjectJobSchema.omit({ schema: true, id: true, projectId: true, revision: true, createdAt: true, updatedAt: true, requestDigest: true }).shape;
 const dailyFields = ProjectDailySchema.omit({ schema: true, id: true, projectId: true, revision: true, createdAt: true, updatedAt: true, requestDigest: true }).shape;

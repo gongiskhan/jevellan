@@ -4,16 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "LJ6 workflow daily records its actual run and a missing run times out explicitly",
   "layout": "desktop-dark",
-  "screenshot": "screenshots/LJ6-workflow-passed-desktop-dark.png",
+  "screenshot": "docs/acceptance/screenshots/LJ6-workflow-passed-desktop-dark.png",
   "expected": "the Jevellan web app \"LJ6 workflow passed\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"LJ6 workflow daily records its actual run and a missing run times out explicitly\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Mesh journey fixt…'), which is expected for a narrow sidebar.",
-      "The 'Jobs (1)' disclosure sits flush against the bottom edge of the right panel; it looks like a scrollable panel, so it is still reachable.",
-      "The 'Enabled' checkbox sits above its label rather than inline, which looks slightly out of line next to the Run now and Edit buttons.",
-      "The right panel's 'NIGHTLY 1' section and 'Project day' line are slightly misaligned with the other section headers."
+      "The 'Enabled' checkbox sits above its label instead of next to the 'Run now' and 'Edit' buttons, so that row looks misaligned.",
+      "'Jobs (1)' at the bottom of the right panel sits right against the bottom edge of the viewport (the panel appears to scroll).",
+      "Shell session titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · Mesh journey fix…'), which looks like intentional truncation."
     ]
   }
 }

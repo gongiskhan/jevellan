@@ -1330,6 +1330,15 @@ test('LJ6 workflow daily records its actual run and a missing run times out expl
   await expect.poll(async () => (await view()).runs.some(run => run.jobId === definition.id && run.phase === 'watching'), LONG).toBe(true);
   await control('/projects/clock', { schema: 'fixture-project-clock-v1', advanceMinutes: 5 });
   await expect.poll(async () => (await view()).runs.find(run => run.jobId === definition.id)?.conclusion, LONG).toBe('timed-out'); await expect(absent).toContainText('No run of missing.yml started today.'); await shot(page, 'workflow-missing');
+  const scheduler = await page.request.post(`${route}/jobs`, { data: { schema: 'job-create-request-v1', clientRequestId: 'scheduler_job', name: 'Owner scheduler switch', goalId: null, enabled: true, gate: null,
+    run: { kind: 'github-workflow', workflow: 'scheduler.yml', mode: 'dispatch', timeoutMinutes: 5, schedulerSwitch: { schema: 'workflow-scheduler-switch-v1', variable: 'NIGHTLY_SCHEDULER', dispatchValue: 'jevellan', watchOrder: 2 } } } }); expect(scheduler.ok()).toBe(true);
+  const switched = await scheduler.json();
+  const nightly = await page.request.post(`${route}/dailies`, { data: { schema: 'daily-create-request-v1', clientRequestId: 'scheduler_daily', name: 'Switch mode nightly', goalId: null, enabled: true, order: 3, target: { kind: 'job', jobId: switched.id } } }); expect(nightly.ok()).toBe(true);
+  await control('/projects/daily', { schema: 'fixture-daily-control-v1', action: 'scheduler-watch' });
+  await expect(page.getByText('GitHub runs the chain tonight', { exact: true })).toBeVisible(); await shot(page, 'github-night-mode');
+  await control('/projects/clock', { schema: 'fixture-project-clock-v1', advanceMinutes: 421 });
+  await control('/projects/daily', { schema: 'fixture-daily-control-v1', action: 'scheduler-dispatch' });
+  await expect(page.getByText('Jevellan runs the night', { exact: true })).toBeVisible(); await shot(page, 'jevellan-night-mode');
   expect(errors).toEqual([]);
 });
 

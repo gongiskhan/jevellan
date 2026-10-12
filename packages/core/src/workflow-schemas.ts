@@ -5,3 +5,7 @@ export const WorkflowInputsSchema = z.record(WorkflowInputNameSchema, z.string()
 export const WorkflowDispatchHandoffSchema = z.strictObject({ schema: z.literal('workflow-dispatch-handoff-v1'), pull: z.number().int().positive(), watchOrder: z.number().int().min(0).max(100) });
 export const WorkflowHandoffStateSchema = z.strictObject({ schema: z.literal('workflow-handoff-state-v1'), pull: z.number().int().positive(), state: z.enum(['waiting', 'merged', 'blocked']), checkedAt: TimestampSchema, reason: z.string().max(300).optional() });
 export type WorkflowHandoffState = z.infer<typeof WorkflowHandoffStateSchema>;
+export const WorkflowSchedulerSwitchSchema = z.strictObject({ schema: z.literal('workflow-scheduler-switch-v1'), variable: WorkflowInputNameSchema, dispatchValue: z.string().min(1).max(100), watchOrder: z.number().int().min(0).max(100), ownerMergePull: z.number().int().positive().optional() });
+export const WorkflowSchedulerStateSchema = z.strictObject({ schema: z.literal('workflow-scheduler-state-v1'), variable: WorkflowInputNameSchema, mode: z.enum(['watch', 'dispatch']), checkedAt: TimestampSchema, reason: z.string().max(300).optional() });
+export type WorkflowSchedulerState = z.infer<typeof WorkflowSchedulerStateSchema>;
+export const WorkflowWatchChainSchema = z.strictObject({ schema: z.literal('workflow-watch-chain-v1'), event: z.enum(['schedule', 'workflow_run']), titleSuffix: z.string().max(100).optional(), afterWorkflow: z.string().min(1).max(200).optional(), excludeTitle: z.string().min(1).max(100) });

@@ -30,7 +30,7 @@ test('dispatch records its returned run ID and uses a dedicated passing-commit r
   const deploy = await define(f, 'Deploy', 'dispatch', gate.id), receipt = await f.app.projectWork.daily.runJob('project', deploy.id, request('deploy'));
   const run = await f.waitFor(async () => (await f.app.projectWork.jobs.runs('project')).find(run => run.taskId === receipt.taskId), run => !!run?.pollAfter);
   if (!run) throw new Error('The dispatched workflow has no receipt.');
-  expect(run.workflowRunId).toBe(2); expect(run.dispatchRef).toBe(`jv/jobs/${run.id}`); expect(f.git(f.origin, 'rev-parse', `refs/heads/${run.dispatchRef}`)).toBe(pass.commit);
+  expect(run.workflowRunId).toBe(2); expect(run.dispatchRef).toBe(`jv/jobs/${now}-${run.id}`); expect(f.git(f.origin, 'rev-parse', `refs/heads/${run.dispatchRef}`)).toBe(pass.commit);
   const dispatch = f.github.requests.find(row => row.path.endsWith('/dispatches'))!; expect(dispatch.body).toEqual({ ref: run.dispatchRef, return_run_details: true }); expect(dispatch.headers.apiVersion).toBe('2026-03-10');
   // A newer unrelated run must not steal this receipt.
   f.github.addWorkflow({ conclusion: 'success' }); f.github.changeWorkflow(2, { status: 'completed', conclusion: 'failure', jobs: [{ id: 40, name: 'Deploy', status: 'completed', conclusion: 'failure' }] });
@@ -50,7 +50,7 @@ test('missing runs time out, dispatch errors are explicit and a lost dispatch re
   await expect(client.dispatchWorkflow({ owner: 'fixture', repo: 'repo' }, 'nightly.yml', 'main')).rejects.toThrow('unexpected response');
 });
 
-test('a handoff watches without effects before owner merge, then dispatches pinned inputs and refuses a moved run head', { timeout: 60_000 }, async () => {
+test('a legacy handoff watches before owner merge, then dispatches inputs on main and refuses a missing SHA title', { timeout: 60_000 }, async () => {
   let now = Date.now(); const f = fixture = await projectFixture({ projectTimers: { now: () => now } }), work = f.app.projectWork;
   f.git(f.checkout, 'push', 'origin', 'HEAD:handoff');
   const client = new GitHubClient({ token: async () => f.token, baseUrl: f.github.url });
@@ -64,10 +64,10 @@ test('a handoff watches without effects before owner merge, then dispatches pinn
   const dispatched = await work.daily.runJob('project', definition.id, request('dispatch_handoff'));
   const run = await f.waitFor(async () => (await work.jobs.runs('project')).find(row => row.taskId === dispatched.taskId), run => !!run?.pollAfter); if (!run) throw new Error('No run receipt');
   expect((await work.tasks.read('project', dispatched.taskId)).workflowHandoff?.state).toBe('merged');
-  expect(f.github.requests.find(row => row.path.endsWith('/dispatches'))?.body).toEqual({ ref: `jv/jobs/${run.id}`, return_run_details: true, inputs: { expensive: 'true', sha: run.commit } });
-  expect(f.git(f.origin, 'rev-parse', `refs/heads/jv/jobs/${run.id}`)).toBe(run.commit);
-  f.github.changeWorkflow(run.workflowRunId!, { head_sha: 'f'.repeat(40), status: 'completed', conclusion: 'success' }); now += 61_000; await work.pulse();
-  expect(await completed(f, dispatched.taskId)).toMatchObject({ conclusion: 'failed', commit: run.commit, summary: 'The workflow run does not match its recorded commit.' });
+  expect(f.github.requests.find(row => row.path.endsWith('/dispatches'))?.body).toEqual({ ref: 'main', return_run_details: true, inputs: { expensive: 'true', sha: run.commit } });
+  expect(run.dispatchRef).toBe('main');
+  f.github.changeWorkflow(run.workflowRunId!, { display_title: 'missing SHA', head_sha: 'f'.repeat(40), status: 'completed', conclusion: 'success' }); now += 61_000; await work.pulse();
+  expect(await completed(f, dispatched.taskId)).toMatchObject({ conclusion: 'failed', commit: run.commit, summary: 'The workflow run does not match its recorded commit or chain.' });
 });
 
 test('the nightly handoff decision freezes current watch order through restart and changes only in the next window', { timeout: 60_000 }, async () => {

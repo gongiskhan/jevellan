@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ6 workflow daily records its actual run and a missing run times out explicitly",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/screenshots/LJ6-jevellan-night-mode-desktop-dark.png",
+  "expected": "the Jevellan web app \"LJ6 jevellan night mode\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"LJ6 workflow daily records its actual run and a missing run times out explicitly\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'CONCLUDED 0' heading at the top of the right panel is cut off under the nightly-window banner. The panel looks scrolled, so this is most likely a scroll position or clipping issue and not a layout overlap.",
+      "In the right panel, the last card ('Switch mode nightly') is cut off at the bottom of the viewport. The panel can scroll, so its controls are still reachable.",
+      "On the nightly item cards, each 'Enabled' checkbox sits above its label instead of beside it, so the label lines up below the 'Run now' and 'Edit' buttons.",
+      "A large empty gap separates the last timeline card from the 'Coordinator is working…' status line."
+    ]
+  }
+}

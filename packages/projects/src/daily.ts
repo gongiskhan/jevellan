@@ -125,14 +125,15 @@ export class ProjectDailyWork {
     if (daily.target.kind === 'review-since-last' && daily.goalId && (await this.o.hub.goal(daily.goalId))?.document.name !== 'Hardening through code review') return refuse('Review since last uses the Hardening through code review goal.', 400);
     if (daily.target.kind === 'job' && (await this.o.hub.job(daily.target.jobId))?.document.projectId !== projectId) return refuse('A daily job must belong to this project.', 400);
   }
-  async #plan(projectId: string, id: string, day: string, daily: ProjectDaily | null, job: ProjectJob | null, rank: string, handoff?: ProjectWorkTask['workflowHandoff']): Promise<ProjectWorkTask> {
+  async #plan(projectId: string, id: string, day: string, daily: ProjectDaily | null, job: ProjectJob | null, rank: string, handoff?: ProjectWorkTask['workflowHandoff'], scheduler?: ProjectWorkTask['workflowScheduler']): Promise<ProjectWorkTask> {
     const target = daily?.target, at = this.o.tasks.at(), review = target?.kind === 'review-since-last', session = target?.kind === 'session' ? target : null;
-    const workflowHandoff = handoff ?? (job ? await this.o.runner.handoff(projectId, job) : undefined);
+    const workflowScheduler = scheduler ?? (job ? await this.o.runner.scheduler(projectId, job) : undefined);
+    const workflowHandoff = workflowScheduler ? undefined : handoff ?? (job ? await this.o.runner.handoff(projectId, job) : undefined);
     return ProjectWorkTaskSchema.parse({ schema: 'project-work-task-v1', id, projectId, revision: 0, title: session?.title ?? daily?.name ?? job!.name,
       brief: session?.brief ?? (review ? 'Review every commit reaching main since the last completed review, including direct pushes.' : `Run the configured job "${job!.name}" and record its result.`), ...(review ? { nightlyReview: true } : {}), kind: session || review ? 'session' : 'job', type: session?.type ?? (review ? 'review' : 'ops'), goalId: daily?.goalId ?? job?.goalId ?? null,
       source: daily ? 'daily' : 'owner', state: 'queued', rank, ownerRanked: false, now: false, after: [], needs: [], dailyId: daily?.id ?? null,
       jobId: target?.kind === 'job' ? target.jobId : job?.id ?? null, threadId: null, jobRunId: null, fixed: {}, projectDay: day, createdAt: at, updatedAt: at,
-      ...(workflowHandoff ? { workflowHandoff } : {}) });
+      ...(workflowHandoff ? { workflowHandoff } : {}), ...(workflowScheduler ? { workflowScheduler } : {}) });
   }
   async runDaily(projectId: string, id: string, raw: unknown) {
     const { clientRequestId } = ProjectRunRequestSchema.parse(raw);
@@ -205,13 +206,16 @@ export class ProjectDailyWork {
       }
       const closingProjectDay = shiftProjectDate(date, -1), pending = (await this.dailies(projectId)).filter(daily => daily.enabled);
       if (!pending.length) return;
-      const jobs = new Map((await this.jobs(projectId)).map(job => [job.id, job])), handoffs = new Map<number, ProjectWorkTask['workflowHandoff']>();
+      const jobs = new Map((await this.jobs(projectId)).map(job => [job.id, job])), handoffs = new Map<number, ProjectWorkTask['workflowHandoff']>(), schedulers = new Map<string, ProjectWorkTask['workflowScheduler']>();
       for (const daily of pending) {
         const job = daily.target.kind === 'job' ? jobs.get(daily.target.jobId) : null, spec = job?.run;
-        if (spec?.kind === 'github-workflow' && spec.dispatchAfterMerge && !handoffs.has(spec.dispatchAfterMerge.pull)) handoffs.set(spec.dispatchAfterMerge.pull, await this.o.runner.handoff(projectId, job!));
+        if (spec?.kind === 'github-workflow' && spec.schedulerSwitch && !schedulers.has(spec.schedulerSwitch.variable)) schedulers.set(spec.schedulerSwitch.variable, await this.o.runner.scheduler(projectId, job!));
+        else if (spec?.kind === 'github-workflow' && !spec.schedulerSwitch && spec.dispatchAfterMerge && !handoffs.has(spec.dispatchAfterMerge.pull)) handoffs.set(spec.dispatchAfterMerge.pull, await this.o.runner.handoff(projectId, job!));
       }
+      if (pending.some(daily => daily.target.kind === 'job' && jobs.get(daily.target.jobId)?.run.kind === 'github-workflow')) await this.o.runner.cleanupWorkflowRefs(projectId).catch(() => undefined);
       const order = (daily: ProjectDaily) => {
         const spec = daily.target.kind === 'job' ? jobs.get(daily.target.jobId)?.run : null;
+        if (spec?.kind === 'github-workflow' && spec.schedulerSwitch) return schedulers.get(spec.schedulerSwitch.variable)?.mode === 'watch' ? spec.schedulerSwitch.watchOrder : daily.order;
         return spec?.kind === 'github-workflow' && spec.dispatchAfterMerge && handoffs.get(spec.dispatchAfterMerge.pull)?.state !== 'merged' ? spec.dispatchAfterMerge.watchOrder : daily.order;
       };
       pending.sort((a, b) => Number(b.target.kind === 'review-since-last') - Number(a.target.kind === 'review-since-last') || order(a) - order(b) || a.id.localeCompare(b.id));
@@ -221,10 +225,12 @@ export class ProjectDailyWork {
         const job = daily.target.kind === 'job' ? jobs.get(daily.target.jobId) ?? null : null;
         if (daily.target.kind === 'job' && !job) return refuse('A daily job definition is missing.');
         const spec = job?.run, handoff = spec?.kind === 'github-workflow' && spec.dispatchAfterMerge ? handoffs.get(spec.dispatchAfterMerge.pull) : undefined;
-        plans.unshift({ ...await this.#plan(projectId, derivedId('task', 'window', id, daily.id), closingProjectDay, daily, job, rank, handoff), nightlyWindowId: id }); rank = taskRankBetween(null, rank);
+        const scheduler = spec?.kind === 'github-workflow' && spec.schedulerSwitch ? schedulers.get(spec.schedulerSwitch.variable) : undefined;
+        plans.unshift({ ...await this.#plan(projectId, derivedId('task', 'window', id, daily.id), closingProjectDay, daily, job, rank, handoff, scheduler), nightlyWindowId: id }); rank = taskRankBetween(null, rank);
       }
       const openedAt = new Date(boundary).toISOString();
-      window = (await this.o.hub.putWindow(ProjectWindowSchema.parse({ schema: 'project-window-v1', id, projectId, revision: 0, date, closingProjectDay, state: 'open', mergesHeld: true, openedAt, taskIds: plans.map(plan => plan.id), plans }), 0)).document;
+      const scheduler = [...schedulers.values()][0];
+      window = (await this.o.hub.putWindow(ProjectWindowSchema.parse({ schema: 'project-window-v1', id, projectId, revision: 0, date, closingProjectDay, state: 'open', mergesHeld: true, openedAt, taskIds: plans.map(plan => plan.id), plans, ...(scheduler ? { workflowScheduler: scheduler } : {}) }), 0)).document;
       for (const plan of plans) await this.o.tasks.save(plan);
       await this.o.event(projectId, { schema: 'coordinator-event-v1', kind: 'window-opened', id: derivedId('cev', 'window-opened', id), at: openedAt, pending: plans.length }); this.o.changed();
     });

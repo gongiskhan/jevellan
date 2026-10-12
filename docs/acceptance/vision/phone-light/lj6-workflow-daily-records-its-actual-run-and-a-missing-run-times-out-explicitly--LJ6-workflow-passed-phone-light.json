@@ -4,14 +4,14 @@
   "model": "claude-opus-5-5",
   "test": "LJ6 workflow daily records its actual run and a missing run times out explicitly",
   "layout": "phone-light",
-  "screenshot": "screenshots/LJ6-workflow-passed-phone-light.png",
+  "screenshot": "docs/acceptance/screenshots/LJ6-workflow-passed-phone-light.png",
   "expected": "the Jevellan web app \"LJ6 workflow passed\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"LJ6 workflow daily records its actual run and a missing run times out explicitly\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab row runs off the right edge, so the 'Pull requests' tab is cut off. It looks like a scrollable tab strip, so the tab can still be reached by scrolling.",
-      "The 'Enabled' checkbox sits above its label instead of beside it, so it doesn't line up with the 'Run now' and 'Edit' buttons."
+      "The 'Pull requests' tab is clipped at the right edge of the tab strip. It is probably a horizontally scrollable row, so the tab can still be reached.",
+      "The workflow output box says 'No output recorded.' even though the workflow succeeded. This may be expected, but the panel gives no useful detail."
     ]
   }
 }

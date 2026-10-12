@@ -4,16 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "LJ6 workflow daily records its actual run and a missing run times out explicitly",
   "layout": "desktop-light",
-  "screenshot": "screenshots/LJ6-workflow-missing-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/LJ6-workflow-missing-desktop-light.png",
   "expected": "the Jevellan web app \"LJ6 workflow missing\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"LJ6 workflow daily records its actual run and a missing run times out explicitly\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The right panel is scrolled so its top section header (\"CONCLUDED 0\") is partly cut off under the page header bar; the content below it is readable",
-      "The right panel's section headers are inconsistent: \"NIGHTLY 2\" is out of line with the indented \"Project day\" text below it, while \"CONCLUDED\" and \"GOALS\" are indented",
-      "Sidebar session titles and subtitles are shortened with ellipses (e.g. \"Context · J11 memory journ…\", \"dev-ma…\")",
-      "The \"Enabled\" checkbox sits above its label instead of beside it, leaving uneven vertical alignment with the \"Run now\" and \"Edit\" buttons"
+      "The right panel is scrolled, so the 'CONCLUDED 0' section heading at the top is cut off under the header divider. The content underneath it is still readable.",
+      "Session titles and metadata in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Improver sandbox · Gonca…').",
+      "The 'Missing run' card's status badge says 'Failed at 10:16 AM', but the conversation entry says 'timed-out'. The wording doesn't match, but both are readable.",
+      "The 'Nightly tests' card's dark output box says 'No output recorded.', so the expanded success row shows an empty-looking block."
     ]
   }
 }
