@@ -30,6 +30,7 @@ export type LaunchRequest = {
   /** Thread turns: the project checkout whose git identity the agent commits with (D15). */
   gitIdentityFrom?: string | undefined;
   memoryMode?: 'hub' | 'repo' | 'device';
+  isolation?: 'worktree' | 'main';
 };
 export type LaunchStarted = {
   kind: 'started'; run: StretchRun; accountId: string; accountLabel: string; accountChanged: boolean; resumed: boolean; secretRef: string | null;
@@ -54,6 +55,7 @@ export type TurnLauncherOptions = {
   projectSettings?(projectId: string): Promise<ProjectWorkSettings>;
   sessionLedger?(projectId: string): ProjectLedger;
   now?(): number;
+  protectedPaths?(): Promise<string[]>;
 };
 type Ranked = ReturnType<typeof rankAccounts>[number];
 
@@ -153,6 +155,7 @@ export class TurnLauncher {
         account: resolved, systemAppend: request.systemAppend, prompt: await request.prompt(resumed), ...(resumed ? { resume: { sessionId: request.resume } } : {}),
         launch: { useOwnSetup: await this.#o.useOwnSetup?.(request.runtime) ?? true, env, mcpServers: { jevellan: { command: process.execPath, args: [join(applicationRoot(), 'bin', 'jevellan.mjs'), 'mcp-bridge'], env } } },
         safetyProfile: request.safetyProfile, timeoutMs: request.timeoutMs, compaction: { thresholdPercent: percent, ...(contextWindow ? { contextWindow } : {}) },
+        ...(request.owner.kind === 'thread' && request.isolation === 'worktree' ? { protectedPaths: await this.#o.protectedPaths?.() ?? [] } : {}),
       });
       const nativeRun = adapter.startTurn(input);
       const ledger = ['review', 'verification', 'memory'].includes(request.owner.kind) ? this.#o.sessionLedger?.(request.owner.projectId) : undefined;

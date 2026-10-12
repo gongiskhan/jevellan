@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CM4 owner commands and shell blocks show exact copy controls, with editable protected paths in every layout",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/screenshots/CM4-owner-command-report-desktop-light.png",
+  "expected": "the Jevellan web app \"CM4 owner command report\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"CM4 owner commands and shell blocks show exact copy controls, with editable protected paths in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The owner command (scripts/owner-only.sh) shows up twice, once in the report body and again in the reserved-step card, each with its own Copy and Run in Terminal buttons",
+      "Session names and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Shared memory …'); this is normal truncation for a narrow sidebar",
+      "No editable protected-path control is visible on this screen; that may be checked in another step"
+    ]
+  }
+}

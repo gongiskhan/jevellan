@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { OwnerCommandsSchema } from './owner-command-schemas.js';
 import { ProjectReviewReportSchema } from './project-review-schemas.js';
 import { CursorTranscriptSchema } from './cursor-schemas.js';
 import { DeviceFactsSchema, DeviceTagsSchema, EffortSchema, IdSchema, JevCallSchema, TimestampSchema } from './schemas.js';
@@ -77,6 +78,7 @@ export const ThreadReportFieldsSchema = z.strictObject({
   options: z.array(OptionSchema).min(2).max(4).optional(),
   testsRun: z.strictObject({ command: z.string(), passed: z.boolean(), summary: z.string().max(600) }).optional(),
   changedFiles: z.array(z.string()).max(200).default([]), synthesized: z.boolean(),
+  ownerCommands: OwnerCommandsSchema.optional(),
 });
 export const NEEDS_DECISION_QUESTION = 'A needs-decision report needs a question.';
 export function reportHasQuestion(report: { status: string; question?: string | undefined }): boolean {
@@ -203,6 +205,7 @@ export type ThreadIndex = z.infer<typeof ThreadIndexSchema>;
 export const ProjectDecisionSchema = z.strictObject({ schema: z.literal('project-decision-v1'), revision,
   id: IdSchema, projectId: IdSchema, threadId: IdSchema.optional(), from: z.enum(['coordinator', 'thread']),
   question: z.string().min(1).max(2000), options: z.array(OptionSchema).max(4).default([]),
+  ownerCommands: OwnerCommandsSchema.optional(),
   createdAt: TimestampSchema, answeredAt: TimestampSchema.optional(), answer: DecisionAnswerSchema.optional(),
   merge: z.strictObject({ commit: z.string().regex(/^[a-f0-9]{40,64}$/u), prNumber: positive, reason: z.string().max(1200).optional(), failures: z.array(z.strictObject({ what: z.string().max(500), output: z.string().max(2000) })).max(50).optional() }).optional(),
   withdrawnAt: TimestampSchema.optional() });

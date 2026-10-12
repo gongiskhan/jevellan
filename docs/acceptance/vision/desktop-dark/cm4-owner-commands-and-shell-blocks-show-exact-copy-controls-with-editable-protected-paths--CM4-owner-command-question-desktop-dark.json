@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CM4 owner commands and shell blocks show exact copy controls, with editable protected paths in every layout",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/screenshots/CM4-owner-command-question-desktop-dark.png",
+  "expected": "the Jevellan web app \"CM4 owner command question\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"CM4 owner commands and shell blocks show exact copy controls, with editable protected paths in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The owner command in the 'Waiting for you' card is cut off at the right edge. It can be scrolled sideways, and the 'Scroll sideways to read the full command' hint says so.",
+      "Sidebar session titles and subtitles are shortened with ellipses (e.g. 'Context · J11 memory jour...', 'Context · Shared memory ...').",
+      "The metadata line under 'Write the welcome copy' in the Concluded section is cut off at the bottom of the window. The right panel scrolls, so it can still be reached."
+    ]
+  }
+}

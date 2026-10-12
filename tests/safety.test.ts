@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { claudeBridgeToolNames, claudePermissionHook, claudeReadOnlyBridgeTools, safetyDenial, safetyReason, SAFETY_REASON, THREAD_SAFETY_REASON, COORDINATOR_SAFETY_REASON, COORDINATOR_READ_ONLY_REASON } from '../packages/runtime-contract/dist/index.js';
+import { claudeBridgeToolNames, ownerCommandDenial, claudePermissionHook, claudeReadOnlyBridgeTools, safetyDenial, safetyReason, SAFETY_REASON, THREAD_SAFETY_REASON, COORDINATOR_SAFETY_REASON, COORDINATOR_READ_ONLY_REASON } from '../packages/runtime-contract/dist/index.js';
 import { projectToolNames } from '../packages/core/dist/index.js';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -68,7 +68,7 @@ test('the writing hook still enforces Safety', async () => {
 test('Codex hook executable refuses reordered commands and permits rebase only in integration', () => {
   const hook = fileURLToPath(new URL('../runtimes/codex/dist/safety-hook.js', import.meta.url));
   const call = (command: string, action = 'implement') => JSON.parse(execFileSync(process.execPath, [hook, JSON.stringify({ ...context, action })], { input: JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command } }), encoding: 'utf8' }));
-  for (const command of ['git -C . push origin main', 'git reset HEAD --hard', 'git branch old -D', 'rm -r -f /outside', 'gh repo edit owner/repo --visibility public', 'jevellan restart', 'kill -9 41999', 'git rebase origin/main']) expect(call(command)).toMatchObject({ hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: SAFETY_REASON } });
+  for (const command of ['git -C . push origin main', 'git reset HEAD --hard', 'git branch old -D', 'rm -r -f /outside', 'gh repo edit owner/repo --visibility public', 'jevellan restart', 'kill -9 41999', 'git rebase origin/main']) expect(call(command)).toMatchObject({ hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: ownerCommandDenial(SAFETY_REASON) } });
   expect(call('git rebase origin/main', 'integrate')).toEqual({});
   expect(call('git push', 'integrate')).toMatchObject({ hookSpecificOutput: { permissionDecision: 'deny' } });
 });
@@ -79,7 +79,7 @@ const codexHook = (event: string, hookContext: object) => {
   return result.status === 0 ? { status: 0, output: JSON.parse(result.stdout) as unknown } : { status: result.status, stderr: result.stderr.split('\n').filter((line) => line && !/ExperimentalWarning|--trace-warnings/.test(line)).join('\n') };
 };
 const bash = (command: string) => JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command } });
-const denied = (reason: string) => ({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason } });
+const denied = (reason: string) => ({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: ownerCommandDenial(reason) } });
 
 test('PJ1f thread profile allows rebase and keeps every other denial', async () => {
   for (const command of ['git rebase origin/main', 'git rebase --continue', 'git rebase --abort', 'git -C . rebase -i HEAD~2']) expect(safetyDenial(command, thread)).toBeNull();
@@ -95,12 +95,12 @@ test('PJ1f thread profile allows rebase and keeps every other denial', async () 
   expect(await hook({ tool_name: 'Write' })).toEqual({});
   expect(codexHook(bash('git push'), thread)).toEqual({ status: 0, output: denied(THREAD_SAFETY_REASON) });
   expect(codexHook(bash('git rebase origin/main'), thread)).toEqual({ status: 0, output: {} });
-  expect(codexHook('not an event', thread)).toEqual({ status: 2, stderr: THREAD_SAFETY_REASON });
+  expect(codexHook('not an event', thread)).toEqual({ status: 2, stderr: ownerCommandDenial(THREAD_SAFETY_REASON) });
   const coordinator = { ...thread, profile: 'coordinator' };
   for (const command of ['git push', 'git rebase origin/main']) expect(codexHook(bash(command), coordinator)).toEqual({ status: 0, output: denied(COORDINATOR_SAFETY_REASON) });
   // A stretch context without its action still fails closed with the stretch reason.
   expect(codexHook(bash('git push'), { cwd: context.cwd, daemonPid: context.daemonPid })).toEqual({ status: 0, output: denied(SAFETY_REASON) });
-  expect(codexHook(bash('git push'), { cwd: context.cwd })).toEqual({ status: 2, stderr: SAFETY_REASON });
+  expect(codexHook(bash('git push'), { cwd: context.cwd })).toEqual({ status: 2, stderr: ownerCommandDenial(SAFETY_REASON) });
 });
 
 test('the coordinator hook is read-only and allows exactly its scope tools', async () => {

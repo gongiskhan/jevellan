@@ -1545,3 +1545,35 @@ test('CM3 shared memory shows the inbox, dream diff, owner controls and Undo in 
   await dialog.getByRole('button', { name: 'Undo', exact: true }).click(); await expect(dialog.getByRole('button', { name: 'Customer test environment', exact: true })).toBeVisible(LONG);
   await shot(page, 'memory-dream-undone', false); expect(errors).toEqual([]);
 });
+
+test('CM4 owner commands and shell blocks show exact copy controls, with editable protected paths in every layout', async ({ page }) => {
+  const errors = await begin(page); await openProject(page, 'Projects fixture');
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  if (phone(test.info())) await tap(page, tab(page, 'Chat'));
+  await composer(page).fill('CM4 owner commands'); await composer(page).press('Enter');
+  await expect.poll(async () => (await work(page)).decisions.open.some(question => !!question.ownerCommands?.length), LONG).toBe(true);
+  await expect(page.locator('.shell-command').filter({ hasText: 'codex login' }).getByRole('button', { name: 'Run in Terminal', exact: true })).toBeVisible(LONG);
+  if (phone(test.info())) await tap(page, tab(page, 'Waiting'));
+  const card = page.locator('.owner-command').first(); const command = (await work(page)).decisions.open.find(question => question.ownerCommands?.length)?.ownerCommands?.[0]?.command;
+  expect(command).toBeTruthy(); await expect(card.locator('pre')).toHaveText(command!); await expect(card).toContainText('checkout');
+  expect(await card.locator('pre').evaluate(pre => pre.scrollWidth > pre.clientWidth && pre.getBoundingClientRect().right <= innerWidth)).toBe(true);
+  await expect(card.getByText('Scroll sideways to read the full command.', { exact: true })).toBeVisible();
+  expect(await card.locator('pre').evaluate(pre => { pre.scrollLeft = pre.scrollWidth; const reached = pre.scrollLeft + pre.clientWidth >= pre.scrollWidth - 1; pre.scrollLeft = 0; return reached; })).toBe(true);
+  await card.getByRole('button', { name: 'Copy', exact: true }).click(); expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(command);
+  await expect(card.getByRole('button', { name: 'Run in Terminal', exact: true })).toBeVisible();
+  await shot(page, 'owner-command-question');
+  const created = await page.request.post(`${PROJECT}/threads`, { data: { schema: 'thread-create-request-v1', clientRequestId: randomUUID(), title: 'Reserved owner step', task: 'CM4 owner command thread', isolation: 'worktree', modelId: 'claude-fable', effort: 'high' } });
+  expect(created.ok()).toBe(true); const started = await created.json();
+  await expect.poll(async () => (await threadView(page, started.threadId)).reports.some(report => report.ownerCommands?.length), LONG).toBe(true);
+  const ownerDeviceId = (await threadView(page, started.threadId)).thread.ownerDeviceId;
+  await page.goto(`/projects/projects_fixture/threads/${started.threadId}`);
+  const report = page.locator('.pw-report').first(); await expect(report.locator('.owner-command pre')).toHaveText('scripts/owner-only.sh');
+  await expect(report.getByRole('button', { name: 'Copy', exact: true })).toHaveCount(2);
+  await expect(report.getByRole('button', { name: 'Run in Terminal', exact: true })).toHaveCount(2);
+  await shot(page, 'owner-command-report');
+  await page.goto('/settings/devices'); const device = page.locator('.card').filter({ hasText: 'This device · Online' });
+  await device.getByLabel('Protected paths', { exact: true }).fill('/srv/owner-checkout\n/srv/credentials');
+  await device.getByRole('button', { name: 'Save protected paths', exact: true }).click();
+  await expect.poll(async () => DeviceRosterSchema.parse(await read(page, '/hub/devices/roster')).devices.find(row => row.device.id === ownerDeviceId)?.device.protectedPaths).toEqual(['/srv/owner-checkout', '/srv/credentials']);
+  await shot(page, 'protected-paths', false); expect(errors).toEqual([]);
+});

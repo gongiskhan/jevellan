@@ -113,3 +113,8 @@ Capture redacts complete native records before transport. Oversized records are 
 Memory sessions run on the hub, with Jev choosing an eligible provider/account. The dream uses a read-only main worktree and private notes copy. Nonconflicting concurrent notes merge on another disposable copy; conflicts leave current notes intact. One applicable commit supplies the actual diff and counts, and Undo reverts it while preserving later knowledge. The code watermark starts at current main, advances after Apply and returns to its prior value after Undo. A dream finishing after ordered jobs still updates the night report and coordinator. Run now persists its request before launch and recovers its receipt across restarts.
 
 The Memory panel shows capture, Apply and tell me or Suggest only, Inbox (from today), Last night's dream, actual changes and Undo. Note lists are bounded previews; opening a note reads its full content. Explicitly reapplying the old Ekoa preset updates only hub memory and the enabled independent dream, preserving owner edits to the loop. Real provider acceptance remains blocked on the already requested owner activation inputs.
+
+
+## P4 runtime scope
+
+Codex full access is scoped to Projects coding threads. Coordinator, review and memory sessions retain their read-only runtime requirements, and hub memory tools retain their separate note permissions. The refreshed checkout/protected-path guard and structured owner-command handoff do not change capture, recall, owner-note protection or native homes. Terminal reads and returned owner-command output are P5 work and will redact secrets before entering agent context.

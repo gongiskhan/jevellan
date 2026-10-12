@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CM4 owner commands and shell blocks show exact copy controls, with editable protected paths in every layout",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/CM4-owner-command-question-phone-dark.png",
+  "expected": "the Jevellan web app \"CM4 owner command question\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"CM4 owner commands and shell blocks show exact copy controls, with editable protected paths in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The command line is clipped at the right edge ('owner-visible-text-owner-vi…'). This is intended: it scrolls sideways, the 'Scroll sideways to read the full command.' hint is shown, and Copy and Run in Terminal are visible.",
+      "The tab bar is clipped at the right edge ('Pull requ…'). It looks like a tab bar you can scroll sideways, but nothing on screen shows that more tabs are off to the right.",
+      "There is a lot of empty space below the question card."
+    ]
+  }
+}

@@ -1,6 +1,6 @@
 import { EkoaMirrorService } from './ekoa-mirror.js';
 import type { EkoaConnector } from './ekoa-client.js';
-import { collectDeviceFacts, EkoaRequestSchema, DeviceTagsInputSchema, type DeviceFacts } from '@jevellan/core';
+import { collectDeviceFacts, EkoaRequestSchema, DeviceSettingsInputSchema, DeviceTagsInputSchema, type DeviceFacts } from '@jevellan/core';
 import { existsSync } from 'node:fs';
 import { hostname } from 'node:os';
 import { z } from 'zod';
@@ -264,6 +264,10 @@ export class Application {
   async updateDeviceTags(input: unknown, ownerSession: string) {
     const value = DeviceTagsInputSchema.parse(input);
     return this.member ? this.member.updateDeviceTags({ schema: 'device-tags-request-v1', input: value, ownerSession }) : this.devices.updateTags(value);
+  }
+  async updateDeviceSettings(input: unknown, ownerSession: string) {
+    const value = DeviceSettingsInputSchema.parse(input);
+    return this.member ? this.member.updateDeviceSettings({ schema: 'device-settings-request-v1', input: value, ownerSession }) : this.devices.updateSettings(value);
   }
   async inviteDevice() { return this.member ? this.member.invite() : this.mesh.invite(); }
   async switchDevice(input: unknown) { return this.member ? this.member.issueSwitch(input) : this.devices.issueSwitch(this.device.deviceId, DeviceSwitchInputSchema.parse(input)); }

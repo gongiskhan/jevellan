@@ -431,7 +431,7 @@ export class ThreadRunner {
           const context = [recall?.section, now].filter(Boolean).join('\n\n');
           return continuing ? `${now ?? ''}\n\n${next.body}` : `${taskPrompt(thread.title, thread.task)}\n\n${context}${next.reason === 'task' ? '' : `\n\n${next.body}`}`;
         }, ...(thread.nativeSessionId ? { resume: thread.nativeSessionId } : {}),
-        safetyProfile: 'thread', timeoutMs: this.#c.timers.threadTurnTimeoutMs, tools, gitIdentityFrom: this.#c.worktrees.repository(project), memoryMode: project.memory.mode });
+        safetyProfile: 'thread', timeoutMs: this.#c.timers.threadTurnTimeoutMs, tools, gitIdentityFrom: this.#c.worktrees.repository(project), memoryMode: project.memory.mode, isolation: thread.isolation });
     } catch (error) { await tools.close(); return { status: 'unavailable', error: this.#message(error) }; }
     if (launched.kind === 'unavailable') { await tools.close(); return { status: 'unavailable', error: launched.reason }; }
     const started = launched;

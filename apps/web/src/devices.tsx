@@ -8,10 +8,13 @@ import { CursorConnections } from './cursor-connections.js';
 const gb = (bytes: number) => `${Number((bytes / 1e9).toFixed(1))} GB`;
 function DeviceControls({ row, props }: { row: DeviceView; props: PageProps }) {
   const task = useTask(props.onError), [tags, setTags] = useState((row.device.tags ?? []).join(', '));
+  const [protectedPaths, setProtectedPaths] = useState((row.device.protectedPaths ?? []).join('\n'));
   const [disk, setDisk] = useState<WorktreeDisk>(), [error, setError] = useState(''), [confirm, setConfirm] = useState(false);
   const endpoint = `/api/devices/${row.device.id}/worktrees`;
   const available = deviceAvailable(row, props.data.roster.currentDeviceId);
   useEffect(() => setTags((row.device.tags ?? []).join(', ')), [row.device.tags]);
+  const savedProtectedPaths = (row.device.protectedPaths ?? []).join('\n');
+  useEffect(() => setProtectedPaths(savedProtectedPaths), [savedProtectedPaths]);
   useEffect(() => {
     if (!available) return;
     const controller = new AbortController();
@@ -30,6 +33,13 @@ function DeviceControls({ row, props }: { row: DeviceView; props: PageProps }) {
     }); }}>
       <label>Device tags<input value={tags} maxLength={1055} onChange={event => setTags(event.target.value)} placeholder="mac, residential" disabled={task.busy || row.revoked} /></label>
       <button type="submit" className="secondary" disabled={task.busy || row.revoked}>Save tags</button>
+    </form>
+    <form onSubmit={event => { event.preventDefault(); void task.run(async signal => {
+      await api('/hub/devices/settings', DeviceViewSchema, 'POST', { schema: 'device-settings-input-v1', deviceId: row.device.id,
+        protectedPaths: [...new Set(protectedPaths.split('\n').map(path => path.trim()).filter(Boolean))] }, { signal, waitForHub: true }); await props.reload(signal);
+    }); }}>
+      <label>Protected paths<textarea value={protectedPaths} maxLength={20500} rows={3} disabled={task.busy || row.revoked} placeholder="One absolute folder per line" onChange={event => setProtectedPaths(event.target.value)} /></label>
+      <p className="muted small-text">Worktree threads cannot write or run git here. Up to 20 folders.</p><button className="secondary" disabled={task.busy || row.revoked}>Save protected paths</button>
     </form>
     {disk && <p className="muted small-text">Thread worktrees: {gb(disk.threadBytes)} · Job and verification worktrees: {gb(disk.jobBytes)}</p>}
     {error && <p className="muted small-text">{error}</p>}

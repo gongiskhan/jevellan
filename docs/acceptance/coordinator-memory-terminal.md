@@ -8,7 +8,7 @@ P0 records the target and decisions 703–715. Source delivery, simulated tests,
 | P1 | Implemented: 107 simulated backend cases, 4/4 browser layouts, eight clear live vision verdicts, typecheck/lint/build; live C blocked |
 | P2 | Implemented: 135 simulated backend cases, six workflow cases, 4/4 CM2 layouts, eight clear live vision verdicts; live sandbox calls blocked |
 | P3 | Implemented: 129 distinct affected backend cases pass after focused reruns; CM3 4/4 layouts and twelve clear live vision verdicts; real provider scenarios blocked |
-| P4 | Not run: Codex access, checkout/protected-path safety and owner command UI |
+| P4 | Implemented: 141 affected backend cases, final 28-case protection rerun, CM4 4/4 layouts and twelve clear live vision verdicts; actual Madrid session blocked |
 | P5 | Not run: PTY relay, reconnect, semantic records, copy/send/read and automatic results |
 | P6 | Blocked: owner reported some sign-in/join/token inputs pending; no live scenario clock started |
 | Closing | Not run: full new suite, final crucial-issues review, 0.3.0 builds/install/member updates |
@@ -40,3 +40,12 @@ Simulated: 129 distinct affected backend cases pass, combining the 104-case affe
 CM3 passes at 1440×900 and 390×844, light/dark, in 3.0 minutes. Twelve final screenshots cover inbox/settings, suggested diff and Undo. Live: twelve dedicated Claude vision judgments have no blocking findings. This is automated visual evidence, not real coordinator/thread/dream acceptance. Typecheck, lint, build and working-tree secret scan pass; mandatory history scanning gates the push. The tests exposed and fixed hub/legacy registry collision, sweep private-ref confinement, and a stripped runtime memory setting. A fixture-only missing captured HEAD was corrected without weakening its assertions. No review pass was run.
 
 Blocked: real A/B cross-provider memory and dream, pending owner sign-ins/join/Settings token. The 10-hour live clock has not started. Not run: P4/P5 terminal and owner-command behavior, P6 real scenarios, final closing review and 0.3.0 installation.
+
+
+## P4 evidence
+
+Simulated: all 141 affected backend cases pass in eight files in 19.33 seconds. A final 28-case rerun in 7.50 seconds covers the added atomic Ekoa protection overflow refusal. The real disposable hook subprocesses and HTTP/mesh prove both providers' protected git/file targets, existing symlinks/new files, ordinary allowed worktree commands, refreshed resumed launches, owner-only settings, stored report/question commands and retries. Native fixture homes remain byte-identical. Coding capability is independent of Linux's read-only sandbox; the account probe fixture now answers the real control protocol.
+
+CM4 passes all four phone/desktop light/dark layouts in 1.3 minutes. It verifies complete command text/copy, scrolling to the last character without page overflow, a visible scrolling cue, structured reports and fenced-shell controls, and persisted device protections. Live: twelve dedicated Claude vision judgments for the final screenshots have no blocking findings. Earlier browser/vision checks caught the grid overflow and missing cue; both product defects were fixed and asserted. Typecheck, lint and build pass; working-tree and mandatory history scans gate the phase push. There was no review pass.
+
+Blocked: the real Codex session on Madrid, pending the already requested sign-in/join. Not run: actual Run in Terminal and automatic result delivery; those depend on P5. Real A/B/C/D and owner acceptance remain unclaimed, the live clock has not started, and the production service stays on 0.2.1 with rollback retained.

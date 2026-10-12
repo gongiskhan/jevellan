@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CM4 owner commands and shell blocks show exact copy controls, with editable protected paths in every layout",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/screenshots/CM4-protected-paths-desktop-light.png",
+  "expected": "the Jevellan web app \"CM4 protected paths\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"CM4 owner commands and shell blocks show exact copy controls, with editable protected paths in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The hub card's 'Device tags' and 'Protected paths' fields have a grey background, so they look disabled or read-only, while the Member card's matching fields are white. This makes it unclear whether the hub's protected paths can be edited.",
+      "The 'Offline fixture' card is cut off at the bottom of the viewport. Scrolling should reach the rest, but its protected paths controls aren't visible in this capture.",
+      "Sidebar conversation titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory jour…'). This looks like intended truncation."
+    ]
+  }
+}

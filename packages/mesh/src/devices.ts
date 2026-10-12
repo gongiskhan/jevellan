@@ -2,7 +2,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import { DeviceMembershipSchema, DeviceSchema, DeviceSwitchInputSchema, DeviceSwitchReceiptSchema, DeviceSwitchSchema, DeviceTokenSchema, DeviceViewSchema, HeartbeatSchema, IdSchema, JoinDeviceInputSchema, JoinInvitationSchema, TimestampSchema, newId, stableJson, type Device, type DeviceMembership, type DevicePresence, type DeviceView } from '@jevellan/core';
 import type { HubDatabase } from './database.js';
-import { DeviceTagsInputSchema, seedDeviceTags } from '@jevellan/core';
+import { DeviceTagsInputSchema, DeviceSettingsInputSchema, seedDeviceTags } from '@jevellan/core';
 
 export const HEARTBEAT_INTERVAL_MS = 30_000;
 export const DEVICE_ONLINE_MS = 90_000;
@@ -128,6 +128,10 @@ export class DeviceRegistry {
     const stored = this.hub.get('devices', device.id, DeviceSchema)!;
     this.hub.put('devices', device.id, DeviceSchema, { ...device, tags: input.tags }, stored.revision);
     return this.view(device.id);
+  }
+  updateSettings(raw: unknown): DeviceView {
+    const input = DeviceSettingsInputSchema.parse(raw), device = this.#active(input.deviceId), stored = this.hub.get('devices', device.id, DeviceSchema)!;
+    this.hub.put('devices', device.id, DeviceSchema, { ...device, protectedPaths: input.protectedPaths }, stored.revision); return this.view(device.id);
   }
   issueSwitch(sourceDeviceId: string, input: unknown) {
     const request = DeviceSwitchInputSchema.parse(input);

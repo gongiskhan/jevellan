@@ -434,8 +434,8 @@
   {
     "id": "coordinator-memory-terminal-p4",
     "title": "Unattended threads and exact owner commands",
-    "why": "Codex danger-full-access with safety guards; protected paths and Copy/Run owner commands.",
-    "status": "planned"
+    "why": "Implemented Codex danger-full-access for coding, per-turn checkout/protected-path guards, authenticated device settings and exact owner-command cards/shell controls. 141 affected backend cases pass plus the final 28-case protection rerun; CM4 passes four layouts and twelve clear vision verdicts. Actual Madrid session remains blocked on owner inputs; terminal launch/return land in P5.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "coordinator-memory-terminal-p5",

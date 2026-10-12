@@ -5,6 +5,7 @@ import { GoalListViewSchema } from './project-goal-schemas.js';
 import { z } from 'zod';
 import { MemoryNoteSchema, MemorySearchSchema, MemoryWriteSchema, MemoryEditSchema } from './memory-note-schemas.js';
 import { MemoryInboxInputSchema, MemoryArchiveInputSchema, MemoryDreamBodySchema } from './project-memory-schemas.js';
+import { OwnerCommandsSchema } from './owner-command-schemas.js';
 export { MemoryNoteSchema, MemorySearchSchema, MemoryWriteSchema, MemoryEditSchema, type MemoryNote } from './memory-note-schemas.js';
 import { ProjectReviewBodySchema, ReviewFollowupInputSchema } from './project-review-schemas.js';
 import { ProjectWorkTaskSchema, TaskCreateRequestSchema, TaskReceiptSchema, TaskUpdateRequestSchema } from './project-loop-schemas.js';
@@ -40,7 +41,7 @@ export const ThreadStartInputSchema = z.strictObject({
 export const ThreadMessageInputSchema = z.strictObject({ threadId: IdSchema, message: text.max(20000), interrupt: z.boolean().default(false) });
 export const ThreadReadInputSchema = z.strictObject({ threadId: IdSchema, detail: z.enum(['summary', 'transcript']).default('summary') });
 export const ThreadStopInputSchema = z.strictObject({ threadId: IdSchema, reason });
-export const AskUserInputSchema = z.strictObject({ question: text.max(2000), options: z.array(OptionSchema).max(4, ASK_USER_OPTIONS).optional(), threadId: IdSchema.optional() })
+export const AskUserInputSchema = z.strictObject({ question: text.max(2000), options: z.array(OptionSchema).max(4, ASK_USER_OPTIONS).optional(), threadId: IdSchema.optional(), ownerCommands: OwnerCommandsSchema.optional() })
   .refine((input) => input.options?.length !== 1, { message: ASK_USER_OPTIONS, path: ['options'] });
 export const WithdrawQuestionInputSchema = z.strictObject({ decisionId: IdSchema, reason });
 export const AnswerQuestionInputSchema = z.strictObject({ questionId: IdSchema, optionLabel: text.max(120).optional(), text: text.max(2000).optional() })

@@ -1,5 +1,6 @@
 import { NightlyBanner, ProjectDailyPanel, type DailyView } from './project-daily.js';
 import { MergeWhy } from './merge-route.js';
+import { OwnerCommands, OwnerCommandScope } from './owner-commands.js';
 import { ProjectDailyListViewSchema } from '@jevellan/core/client';
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { z } from 'zod';
@@ -438,6 +439,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   const chatPanel = !wide && current === 'chat' ? { role: 'tabpanel', 'aria-labelledby': `${tabsId}-chat` } : {};
 
   return (
+    <OwnerCommandScope value={{ projectId: id, deviceId: coordinator.deviceId ?? undefined, cwd: 'checkout', deviceName, deviceForThread: threadId => view.threads.find(thread => thread.id === threadId)?.ownerDeviceId, navigate, onError }}>
     <div className="conversation-page pw-page" ref={page}>
       <div className="section-heading conversation-heading pw-heading" ref={heading}>
         <h1 aria-labelledby={titleId}>{navigation}<span id={titleId} className="session-title" title={view.project.name}>{view.project.name}</span></h1>
@@ -567,6 +569,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
       )}
       {notebook && <NotebookPanel projectId={id} projectName={view.project.name} revision={view.notebookRevision} onError={onError} close={() => setNotebook(false)} />}
     </div>
+    </OwnerCommandScope>
   );
 }
 
@@ -695,9 +698,11 @@ function DecisionCard({ projectId, decision, number, titles, now, answered, onEr
     answered(decision);
   });
   return (
+    <OwnerCommandScope value={{ threadId: decision.threadId, decisionId: decision.id, ...(decision.from === 'thread' && decision.threadId ? { cwd: 'worktree' as const } : { deviceId: undefined, cwd: 'checkout' as const }) }}>
     <section className="answer-card pw-decision" aria-labelledby={questionId}>
       <p className="pw-source"><span className="pw-question-number" aria-label={`Question ${number}`}>{number}</span> {decisionSource(decision, titles)} · <Stamp at={decision.createdAt} label={shortTime(decision.createdAt, now)} /></p>
       <div className="pw-question" id={questionId}><Markdown>{decision.question}</Markdown></div>
+      <OwnerCommands commands={decision.ownerCommands} />
       {decision.merge?.reason && <p>{decision.merge.reason}</p>}{decision.merge?.failures?.map((failure, index) => <details key={index}><summary>{failure.what}</summary><pre>{failure.output}</pre></details>)}
       {decision.options.length > 0 && (
         <div className="answer-options pw-options">
@@ -718,6 +723,7 @@ function DecisionCard({ projectId, decision, number, titles, now, answered, onEr
       </form>
       {error && <p className="error">{error}</p>}
     </section>
+    </OwnerCommandScope>
   );
 }
 

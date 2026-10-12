@@ -1,0 +1,20 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CM4 owner commands and shell blocks show exact copy controls, with editable protected paths in every layout",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/CM4-protected-paths-phone-dark.png",
+  "expected": "the Jevellan web app \"CM4 protected paths\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"CM4 owner commands and shell blocks show exact copy controls, with editable protected paths in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Tab strip clips the edge labels ('…s' on the left, 'Projects' on the right); the scroll arrows still reach them",
+      "'Hub' badge is small and low-contrast",
+      "The 'Thread worktrees: 0 GB · Job and verification worktrees: 0 GB' line breaks awkwardly, leaving 'GB' alone on the second line",
+      "'Open' button looks disabled and has low contrast",
+      "A second device card is cut off at the bottom of the viewport; it is reachable by scrolling"
+    ]
+  }
+}

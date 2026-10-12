@@ -35,7 +35,7 @@ const rejects = (promise: Promise<unknown>) => promise.then(() => { throw new Er
 
 test('thread tools accept exactly one report per turn, an identical retry repeats its receipt, and inputs fail with one field sentence (brief 7.2, D19)', async () => {
   const { tools: scope } = tools(thread);
-  expect(scope.list().tools.map((tool) => tool.name)).toEqual(['jevellan_thread_report', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read']);
+  expect(scope.list().tools.map((tool) => tool.name)).toEqual(['jevellan_thread_report', 'jevellan_github', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read']);
   const report = { status: 'done', summary: 'Added greeting.txt.', testsRun: { command: 'npm test', passed: true, summary: 'ok' } };
   expect(await scope.call('jevellan_thread_report', report)).toEqual({ schema: 'bridge-result-v1', result: { schema: 'thread-report-result-v1', turn: 2, status: 'done', accepted: true, repeated: false } });
   // The retry with the defaults spelled out is the same report.
@@ -115,6 +115,18 @@ function request(over: Partial<LaunchRequest> = {}): LaunchRequest {
     tools: tools(thread).tools, ...over };
 }
 const done: FakeTurnStep = () => ({ status: 'completed' });
+
+test('worktree turns refresh registered and protected targets on every resumed launch; main isolation retains its own controls', async () => {
+  let protectedPaths = [join(root, 'checkout')];
+  const { launcher: value } = launcher([status('acc_work')], undefined, { protectedPaths: async () => protectedPaths });
+  for (const [turn, isolation] of [[1, 'worktree'], [2, 'worktree'], [3, 'main']] as const) {
+    if (turn === 2) protectedPaths = [...protectedPaths, join(root, 'new-owner-folder')];
+    fake.enqueueTurn(done); const result = await value.launch(request({ turn, isolation, ...(turn > 1 ? { resume: 'stored-session' } : {}) }));
+    if (result.kind !== 'started') throw new Error(result.reason);
+    expect(fake.turnStarts.at(-1)?.protectedPaths).toEqual(isolation === 'worktree' ? protectedPaths : undefined);
+    await result.run.done; await result.run.terminate(); await result.release();
+  }
+});
 
 test.each([true, false])('Codex launch uses the discovered context window and reports an honest fallback when unknown (%s)', async known => {
   Object.defineProperty(fake, 'id', { value: 'codex' }); let discoveryCalls = 0;

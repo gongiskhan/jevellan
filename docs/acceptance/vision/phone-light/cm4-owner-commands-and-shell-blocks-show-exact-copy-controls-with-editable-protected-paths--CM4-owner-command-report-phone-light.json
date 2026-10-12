@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CM4 owner commands and shell blocks show exact copy controls, with editable protected paths in every layout",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/CM4-owner-command-report-phone-light.png",
+  "expected": "the Jevellan web app \"CM4 owner command report\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"CM4 owner commands and shell blocks show exact copy controls, with editable protected paths in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The command `scripts/owner-only.sh` appears twice: once in the report body and again in the reserved-step card, each with its own Copy and Run in Terminal buttons.",
+      "The attach command at the bottom (`jevellan thread attach thread_01M4RYY4RXW4NMWM…`) is cut off with an ellipsis. The copy button next to it is still visible and reachable."
+    ]
+  }
+}

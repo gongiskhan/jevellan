@@ -152,7 +152,9 @@ export class ProjectWork {
     const held = (): ReadonlySet<string> => new Set(this.store.all().filter((thread) => thread.state === 'attached').map((thread) => thread.placement.accountId));
     const launcher = new TurnLauncher({ accounts: o.accounts, runtimes: o.runtimes, accountRuns: o.accountRuns, riggingItems: o.riggingItems, bridges: o.bridges, homes: o.homes,
       deviceId: o.deviceId, deviceName: o.deviceName, daemonUrl: () => this.daemonUrl, redactor: o.redactor, held, projectSettings: projectId => this.admission.settings(projectId),
-      sessionLedger: projectId => this.ledgers.coordinator(projectId), now, useOwnSetup: async runtime => (await o.settings()).runtimes[runtime]?.useOwnSetup !== false });
+      sessionLedger: projectId => this.ledgers.coordinator(projectId), now, useOwnSetup: async runtime => (await o.settings()).runtimes[runtime]?.useOwnSetup !== false,
+      protectedPaths: async () => { const [projects, roster] = await Promise.all([o.projects.list(), o.roster()]); return [...new Set([
+        ...projects.flatMap(row => row.project.paths[o.deviceId] ? [row.project.paths[o.deviceId]!] : []), ...(roster.devices.find(row => row.device.id === o.deviceId)?.device.protectedPaths ?? [])])]; } });
     this.admission = new Admission({ hub: o.hub, deviceId: o.deviceId, deviceName: o.deviceName, localLive: (projectId) => this.threads.liveThreads(projectId),
       facts,
       guard: async (_projectId, deviceId, threadId) => {

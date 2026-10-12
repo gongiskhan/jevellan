@@ -108,10 +108,11 @@ export type DevicePower = z.infer<typeof DevicePowerSchema>;
 export const DeviceFactsSchema = z.strictObject({ schema: z.literal('device-facts-v1'), cores: z.number().int().positive(), load1: z.number().nonnegative(), load5: z.number().nonnegative(),
   totalMemoryBytes: z.number().nonnegative(), freeMemoryBytes: z.number().nonnegative(), freeDiskBytes: z.number().nonnegative(), os: z.enum(['darwin', 'linux']), runningThreads: z.array(IdSchema), runningJobRuns: z.array(IdSchema), power: DevicePowerSchema.optional() });
 export type DeviceFacts = z.infer<typeof DeviceFactsSchema>;
+export const ProtectedPathsSchema = z.array(z.string().min(1).max(1024).refine(value => value.startsWith('/') && !/[\0\r\n]/u.test(value), 'Use an absolute folder.')).max(20);
 export const DeviceSchema = z.strictObject({
   schema: z.literal('device-v1'), id: IdSchema, name: text, role: z.enum(['hub', 'member']), url: z.url(),
   os: z.enum(['darwin', 'linux']), version: text, joinedAt: TimestampSchema, lastHeartbeatAt: TimestampSchema.optional(),
-  workPolicy: DeviceWorkPolicySchema.optional(), tags: DeviceTagsSchema.optional(),
+  workPolicy: DeviceWorkPolicySchema.optional(), tags: DeviceTagsSchema.optional(), protectedPaths: ProtectedPathsSchema.optional(),
 });
 export type Device = z.infer<typeof DeviceSchema>;
 export const DeviceConfigSchema = z.strictObject({

@@ -8,6 +8,7 @@ export * from './mesh-schemas.js';
 export * from './worktree-disk-schemas.js';
 export * from './github-awareness-schemas.js';
 export * from './project-memory-schemas.js';
+export * from './owner-command-schemas.js';
 export * from './project-memory-session-schemas.js';
 export * from './client-schemas.js';
 export * from './account-store.js';

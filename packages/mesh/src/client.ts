@@ -1,6 +1,6 @@
 import { EkoaRequestSchema, EkoaStateSchema } from '@jevellan/core';
 import { ProjectMemoryRequestSchema, ProjectMemoryResultSchema } from '@jevellan/core';
-import { DeviceTagsRequestSchema } from '@jevellan/core';
+import { DeviceTagsRequestSchema, DeviceSettingsRequestSchema } from '@jevellan/core';
 import { AuthStateSchema, ConsumeSwitchSchema, DeviceOriginSchema, DeviceRosterSchema, DeviceSwitchInputSchema, DeviceSwitchSchema, DeviceTokenSchema, DeviceViewSchema, EmptySchema, ErrorDocumentSchema, HeartbeatSchema, IdSchema, JoinedDeviceSchema, JoinDeviceInputSchema, JoinInvitationSchema, MeshSessionInputSchema, MeshSessionResultSchema, MeshSessionStateSchema, PassphraseInputSchema, SwitchedSessionSchema, UiSigningMaterialSchema, stableJson, type DocumentSchema, type SecretRedactor, type UiSigningMaterial } from '@jevellan/core';
 import { verifySharedSession } from './auth.js';
 import { AccountHubRequestSchema, AccountHubResultSchema } from '@jevellan/core';
@@ -110,6 +110,11 @@ export class MemberHubClient {
     const result = await this.#request('device-tags', DeviceViewSchema, input);
     if (result.device.id !== input.input.deviceId) throw new HubProtocolError();
     return result;
+  }
+  async updateDeviceSettings(raw: unknown) {
+    const input = DeviceSettingsRequestSchema.parse(raw); this.options.redactor.add(input.ownerSession);
+    const result = await this.#request('device-settings', DeviceViewSchema, input);
+    if (result.device.id !== input.input.deviceId) throw new HubProtocolError(); return result;
   }
   async heartbeat(input: unknown) {
     const heartbeat = HeartbeatSchema.parse(input);

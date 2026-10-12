@@ -7,6 +7,7 @@ import { ApiError, api, empty } from './api.js';
 import { copyText, selectText } from './clipboard.js';
 import { Confirm, Markdown, Modal, Panel, composerClearance, followOnScroll, repinAtEnd, useTask, type PageProps } from './components.js';
 import { MergeWhy } from './merge-route.js';
+import { OwnerCommands, OwnerCommandScope } from './owner-commands.js';
 import { Icon } from './icons.js';
 import { MessageInput } from './message-delivery.js';
 import * as copy from './project-work-copy.js';
@@ -160,6 +161,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
   });
 
   return (
+    <OwnerCommandScope value={{ projectId, threadId, deviceId: thread.ownerDeviceId, cwd: 'worktree', deviceName: deviceNames(data), navigate, onError }}>
     <div className="conversation-page pw-page pw-thread-page" ref={page}>
       <div className="section-heading conversation-heading pw-heading pw-thread-heading">
         <h1 aria-labelledby={titleId}>{navigation}<span id={titleId} className="session-title" title={thread.title}>{thread.title}</span></h1>
@@ -254,6 +256,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
           }} />
       )}
     </div>
+    </OwnerCommandScope>
   );
 }
 
@@ -301,6 +304,7 @@ function ReportCard({ report }: { report: ThreadReport }) {
         <span className={`chip pw-badge pw-tone-${badge.tone}`}>{badge.text}</span>
       </div>
       <Markdown>{report.summary}</Markdown>
+      <OwnerCommands commands={report.ownerCommands} />
       {(report.question || options.length > 0) && (
         <div className="pw-report-question">
           {report.question && <Markdown>{report.question}</Markdown>}

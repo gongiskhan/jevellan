@@ -25,7 +25,7 @@ function codexRuntime(input: Pick<StretchInput | TurnInput, 'launch'> & { compac
   // Keep the path inside a TOML value so the native CLI receives one exact key.
   return new Codex({ codexPathOverride: fileURLToPath(new URL('../bin/launch.mjs', import.meta.url)), env,
     configOverrides: [projectTrustOverride(cwd)],
-    config: { ...input.launch.nativeSetup?.settings, ...(input.compaction?.contextWindow ? { model_auto_compact_token_limit: Math.floor(input.compaction.contextWindow * input.compaction.thresholdPercent / 100) } : {}), jevellan_executable: executable ?? 'codex', features: { multi_agent: false, hooks: true }, mcp_servers: mcp, hooks: { PreToolUse: [{ matcher: '^Bash$', hooks: [{ type: 'command', command: safety, timeout: 10 }] }] } },
+    config: { ...input.launch.nativeSetup?.settings, ...(input.compaction?.contextWindow ? { model_auto_compact_token_limit: Math.floor(input.compaction.contextWindow * input.compaction.thresholdPercent / 100) } : {}), jevellan_executable: executable ?? 'codex', features: { multi_agent: false, hooks: true }, mcp_servers: mcp, hooks: { PreToolUse: [{ matcher: '.*', hooks: [{ type: 'command', command: safety, timeout: 10 }] }] } },
   });
 }
 
@@ -116,9 +116,9 @@ const stretchSession = (input: StretchInput, daemonPid: number, executable?: str
 // root instructions are read again on each new or resumed turn.
 const turnSession = (input: TurnInput, daemonPid: number, executable?: string): WorkerSession => {
   const cwd = realpathSync(input.cwd);
-  const runtime = codexRuntime(input, cwd, { cwd: input.cwd, daemonPid, profile: input.safetyProfile }, executable);
-  const writable = input.permissions === 'write' ? worktreeGitDirs(cwd) : undefined;
-  const options: ThreadOptions = { workingDirectory: cwd, model: input.model, modelReasoningEffort: input.effort, sandboxMode: input.permissions === 'read-only' ? 'read-only' : 'workspace-write', approvalPolicy: 'never', networkAccessEnabled: input.permissions === 'write', ...(writable ? { additionalDirectories: writable } : {}) };
+  const runtime = codexRuntime(input, cwd, { cwd: input.cwd, daemonPid, profile: input.safetyProfile, ...(input.protectedPaths ? { protectedPaths: input.protectedPaths } : {}) }, executable);
+  const fullAccess = input.owner.kind === 'thread' && input.permissions === 'write', writable = input.permissions === 'write' && !fullAccess ? worktreeGitDirs(cwd) : undefined;
+  const options: ThreadOptions = { workingDirectory: cwd, model: input.model, modelReasoningEffort: input.effort, sandboxMode: input.permissions === 'read-only' ? 'read-only' : fullAccess ? 'danger-full-access' : 'workspace-write', approvalPolicy: 'never', networkAccessEnabled: input.permissions === 'write', ...(writable ? { additionalDirectories: writable } : {}) };
   const control: Control = { controller: new AbortController(), textEmitted: false };
   return {
     async interrupt() { control.controller.abort(); },

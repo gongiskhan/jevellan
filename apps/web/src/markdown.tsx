@@ -1,6 +1,14 @@
 import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { decodeReference, filePointer, remarkFilePaths } from './evidence-refs.js';
+import { Children, isValidElement, type ReactNode } from 'react';
+import { ShellCommand } from './owner-commands.js';
+function ShellPre({ children }: { children?: ReactNode }) {
+  const child = Children.toArray(children)[0];
+  if (isValidElement<{ className?: string; children?: ReactNode }>(child) && /^language-(?:bash|sh|zsh|shell|console)$/u.test(child.props.className ?? '') && typeof child.props.children === 'string')
+    return <ShellCommand command={child.props.children}><pre>{children}</pre></ShellCommand>;
+  return <pre>{children}</pre>;
+}
 export default function Markdown({ children, onOpen }: { children: string; onOpen?(ref: string): void }) {
   return (
     <div className="markdown">
@@ -9,6 +17,7 @@ export default function Markdown({ children, onOpen }: { children: string; onOpe
         urlTransform={(value) => (onOpen && filePointer(value) ? value : defaultUrlTransform(value))}
         skipHtml
         components={{
+          pre: ShellPre,
           a: ({ href, children }) =>
             onOpen && href && !/^(?:https?:|mailto:|#)/i.test(href) ? (
               <button className="text-button evidence-link" onClick={() => onOpen(decodeReference(href))}>

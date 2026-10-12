@@ -8,13 +8,13 @@ import { fileURLToPath } from 'node:url';
 import { AccountSchema, Homes, SecretRedactor, projectToolNames } from '../packages/core/dist/index.js';
 import { createRuntime as claude } from '../runtimes/claude/dist/index.js';
 import { createRuntime as codex } from '../runtimes/codex/dist/index.js';
-import { checkTurnResume, collectEvents, groupAlive, COORDINATOR_READ_ONLY_REASON, THREAD_SAFETY_REASON, type RuntimeAdapter, type TurnInput } from '../packages/runtime-contract/dist/index.js';
+import { checkTurnResume, collectEvents, groupAlive, ownerCommandDenial, COORDINATOR_READ_ONLY_REASON, THREAD_SAFETY_REASON, type RuntimeAdapter, type TurnInput } from '../packages/runtime-contract/dist/index.js';
 
 let root: string; let homes: Homes;
 beforeEach(() => { root = realpathSync(mkdtempSync(join(tmpdir(), 'jevellan.turns-'))); mkdirSync(join(root, 'user')); homes = new Homes(join(root, 'jevellan'), join(root, 'user')); });
 afterEach(async () => { await rm(root, { recursive: true, force: true }); });
 const quote = (text: string) => `'${text.replaceAll("'", "'\\''")}'`;
-const denied = (reason: string) => ({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason } });
+const denied = (reason: string) => ({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: ownerCommandDenial(reason) } });
 const directive = (mode: string, requests: unknown[]) => `CONTRACT:${JSON.stringify({ mode, requests })}`;
 test.skipIf(process.platform !== 'darwin' && !existsSync('/usr/bin/bwrap'))('native hooks run after Safety and cannot replace its denial on resumed Claude turns', async () => {
   const { adapter, input } = setup('claude'), native = join(homes.userHome, '.claude'); mkdirSync(native);
@@ -51,7 +51,7 @@ test.each(['claude', 'codex'] as const)('PJ1e resumed turns pass the stored sess
   const prompt = directive('permissions', requests);
   const response = await respond(adapter, { ...input, resume: { sessionId: 'stored-session' }, prompt });
   if (runtime === 'claude') expect(response).toEqual({ replies: [denied(THREAD_SAFETY_REASON), {}, {}], permissionMode: 'bypassPermissions', bypassAllowed: true, resume: 'stored-session', model: 'fixture-model', effort: 'low', allowedTools: null, append: 'FIXTURE_APPEND', prompt });
-  else expect(response).toEqual({ sandbox: 'workspace-write', network: true, approval: 'never', cwd: root, projectTrust: 'untrusted', resume: 'stored-session', effort: 'low', addDirs: [], prompt: `FIXTURE_APPEND\n\n${prompt}` });
+  else expect(response).toEqual({ sandbox: 'danger-full-access', network: true, approval: 'never', cwd: root, projectTrust: 'untrusted', resume: 'stored-session', effort: 'low', addDirs: [], prompt: `FIXTURE_APPEND\n\n${prompt}` });
   // The per-launch Safety hook receives the thread profile: rebase is allowed, push keeps the thread denial.
   expect(await respond(adapter, { ...input, resume: { sessionId: 'stored-session' }, prompt: directive('safety', requests.slice(0, 2)) })).toEqual([denied(THREAD_SAFETY_REASON), {}]);
 }, 45_000);
@@ -62,7 +62,7 @@ test.each(['claude', 'codex'] as const)('a first thread turn carries the system 
   const prompt = directive('permissions', []);
   const response = await respond(adapter, { ...input, turn: 1, prompt });
   if (runtime === 'claude') expect(response).toMatchObject({ permissionMode: 'bypassPermissions', resume: null, append: 'FIXTURE_APPEND', prompt });
-  else expect(response).toMatchObject({ sandbox: 'workspace-write', resume: null, prompt: `# Project instructions: AGENTS.md\n# Fixture rules\nKeep the tests.\n\n\nFIXTURE_APPEND\n\n${prompt}` });
+  else expect(response).toMatchObject({ sandbox: 'danger-full-access', resume: null, prompt: `# Project instructions: AGENTS.md\n# Fixture rules\nKeep the tests.\n\n\nFIXTURE_APPEND\n\n${prompt}` });
 }, 30_000);
 
 test.each(['claude', 'codex'] as const)('a resumed coordinator turn stays read-only with exactly its scope tools (%s)', async (runtime) => {
@@ -81,11 +81,18 @@ test('a Codex write turn in a linked worktree may write the shared objects, refs
   const git = (cwd: string, ...args: string[]) => execFileSync('git', ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', ...args], { cwd, stdio: 'ignore' });
   const checkout = join(root, 'checkout'); mkdirSync(checkout); git(checkout, 'init', '-b', 'main'); writeFileSync(join(checkout, 'value.txt'), '1\n'); git(checkout, 'add', '-A'); git(checkout, 'commit', '-m', 'Seed');
   const worktree = join(root, 'worktree'); git(checkout, 'worktree', 'add', '-b', 'jv/fixture-abc123', worktree);
-  const common = join(checkout, '.git');
-  const response = await respond(adapter, { ...input, cwd: worktree, prompt: directive('permissions', []) }) as { addDirs: string[]; sandbox: string };
-  expect(response.sandbox).toBe('workspace-write');
-  expect(response.addDirs).toEqual([join(common, 'objects'), join(common, 'refs'), join(common, 'logs'), join(common, 'worktrees', 'worktree')]);
-  expect(response.addDirs).not.toContain(common);
+  const guarded = { ...input, cwd: worktree, protectedPaths: [checkout] };
+  const response = await respond(adapter, { ...guarded, prompt: directive('permissions', []) }) as { addDirs: string[]; sandbox: string };
+  expect(response.sandbox).toBe('danger-full-access'); expect(response.addDirs).toEqual([]);
+  const replies = await respond(adapter, { ...guarded, prompt: directive('safety', [{ tool: 'Bash', input: { command: 'git status' } }, { tool: 'Bash', input: { command: `git -C ${checkout} status` } }]) });
+  expect(replies).toEqual([{}, denied(`A worktree thread cannot act inside a registered checkout or protected path. ${THREAD_SAFETY_REASON}`)]);
+}, 30_000);
+
+test.each(['claude', 'codex'] as const)('resumed file and shell hooks protect registered checkouts on %s', async runtime => {
+  const { adapter, input } = setup(runtime); const checkout = join(root, 'owner-checkout'); mkdirSync(checkout);
+  const prompt = directive('safety', [{ tool: 'Write', input: { file_path: join(checkout, 'new.txt'), content: 'blocked' } }, { tool: 'Bash', input: { command: `git -C ${checkout} status` } }, { tool: 'Write', input: { file_path: join(root, 'allowed.txt'), content: 'allowed' } }]);
+  const response = await respond(adapter, { ...input, protectedPaths: [checkout], resume: { sessionId: 'stored-session' }, prompt });
+  expect(response).toEqual([denied(`A worktree thread cannot act inside a registered checkout or protected path. ${THREAD_SAFETY_REASON}`), denied(`A worktree thread cannot act inside a registered checkout or protected path. ${THREAD_SAFETY_REASON}`), {}]);
 }, 30_000);
 
 test.each(['claude', 'codex'] as const)('a later turn resumes the native session in a new worker (%s)', async (runtime) => {

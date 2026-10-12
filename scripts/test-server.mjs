@@ -106,6 +106,10 @@ const EVENTS_HEADER = eventBlock([]);
 function coordinatorStep(input) {
   // Only delivered events count; the fresh-session recap repeats earlier messages.
   const at = input.prompt.lastIndexOf(EVENTS_HEADER); const events = at < 0 ? input.prompt : input.prompt.slice(at);
+  if (events.includes('CM4 owner commands')) return async turn => {
+    await projectTool(turn, 'jevellan_ask_user', { question: 'Run the owner-only setup?', ownerCommands: [{ command: `printf '%s\\n' '${'owner-visible-text-'.repeat(36)}'`, why: 'The owner needs to run this setup.', cwd: 'checkout' }] });
+    turn.say('Sign in from the project terminal:\n\n```bash\ncodex login\n```'); return { status: 'completed' };
+  };
   // Simulated CM2 provider turns exercise real question storage, the bridge, numbering and owner-chat delivery.
   if (events.includes('CM2 questions')) return async turn => {
     const questions = [
@@ -171,6 +175,7 @@ const LONG_TOOLS = [['Read', { file_path: 'README.md' }, '# Projects app\n\nA sm
 const longThreads = new Set();
 function threadStep(input) {
   const report = (status, summary, extra = {}) => async (turn) => { await projectPause(350, turn.signal); turn.say(summary); await projectTool(turn, 'jevellan_thread_report', { status, summary, ...extra }); return { status: 'completed' }; };
+  if (input.prompt.includes('CM4 owner command thread')) return report('blocked', 'The owner runs the reserved script.\n\n```sh\nscripts/owner-only.sh\n```', { ownerCommands: [{ command: 'scripts/owner-only.sh', why: 'The project reserves this step for the owner.', cwd: 'worktree' }] });
   if (input.prompt.includes('LJ10 device:')) return report('done', 'Checked the device placement without changing files.');
   if (input.prompt.includes('LJ5 nightly fix:')) return async turn => {
     if (nightlyLateFix && await hold('LJ5 late fix', turn.signal) === 'aborted') return { status: 'interrupted' };

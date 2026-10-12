@@ -96,18 +96,20 @@ test('runtime errors say whether a limit belongs to one model or to the whole ac
   expect(classifyRuntimeError('Invalid API key · Please run /login')).toMatchObject({ kind: 'other' });
   expect(classifyRuntimeError('401 authentication failed')).toEqual({ kind: 'auth', message: '401 authentication failed' });
 });
-test('Codex declares no read-only or shell capability when its Linux sandbox cannot start', async () => {
+test('Codex coding remains available when Linux cannot enforce a read-only sandbox', async () => {
   // The shape seen on Ubuntu 24.04 with AppArmor restricting unprivileged user namespaces.
-  const broken = join(root, 'codex-no-sandbox'); writeFileSync(broken, '#!/bin/sh\nif [ "$1" = sandbox ]; then echo "bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted" >&2; exit 1; fi\nexit 0\n', { mode: 0o700 });
+  const broken = join(root, 'codex-no-sandbox');
+  writeFileSync(broken, `#!${process.execPath}\nif(process.argv[2]==='sandbox'){console.error('bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted');process.exit(1);}require('node:readline').createInterface({input:process.stdin}).on('line',line=>{const request=JSON.parse(line);if(!request.id)return;const result=request.method==='initialize'?{}:{account:{type:'apiKey'},requiresOpenaiAuth:true};console.log(JSON.stringify({id:request.id,result}));});\n`, { mode: 0o700 });
   const working = join(root, 'codex-sandbox'); writeFileSync(working, '#!/bin/sh\nexit 0\n', { mode: 0o700 });
   const home = homes.ensure('runtime-checks', 'codex');
   const failed = codexSandboxCheck(broken, home, 'linux');
   expect(failed).toMatchObject({ available: false, reason: expect.stringContaining('bwrap: loopback: Failed RTM_NEWADDR') });
-  expect(codex({ homes, executable: broken }).capabilities).toMatchObject(process.platform === 'linux' ? { readOnlyEnforced: false, shell: false, edit: true } : { readOnlyEnforced: true, shell: true });
+  expect(codex({ homes, executable: broken }).capabilities).toMatchObject(process.platform === 'linux' ? { readOnlyEnforced: false, shell: true, edit: true } : { readOnlyEnforced: true, shell: true });
   expect(codexSandboxCheck(working, home, 'linux')).toEqual({ available: true });
   expect(codex({ homes, executable: working }).capabilities).toMatchObject({ readOnlyEnforced: true, shell: true });
-  // The account check carries the reason, so Settings → Runtimes shows it on the Codex account.
-  if (process.platform === 'linux') expect((await codex({ homes, executable: broken }).probe(setup('codex').input.account)).error).toContain("Codex's sandbox can't start on this device");
+  // Authentication is probed independently; a sandbox failure does not sign the coding account out.
+  const resolved = setup('codex').input.account; mkdirSync(resolved.home, { recursive: true });
+  expect(await codex({ homes, executable: broken }).probe(resolved)).toMatchObject({ auth: 'ready' });
   expect(codexSandboxCheck(broken, home, 'darwin')).toEqual({ available: true });
   expect(codexSandboxCheck(join(root, 'missing-codex'), home, 'linux')).toEqual({ available: true });
 });

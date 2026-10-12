@@ -1675,3 +1675,25 @@ Refines decisions 709–710. First turns and post-compaction prompts receive Pro
 ### Decision 727 — Carry hub memory scope through the filtered launch environment
 
 Refines decision 722 and replaces the legacy read-only Projects memory allowance from decision 712 for hub mode. Claude's worker receives the mode through the existing ephemeral launch environment, after secrets are removed from its serialized input. Its exact bridge allowlist permits scoped memory writes while native code edits and shell remain refused for the coordinator. Codex's safety context accepts the memory profile. Owner Apply publishes an idempotent dream event with the actual applied commit/counts and updates its night report. A queued or failed memory session exposes its reason in the Memory panel.
+
+
+### Decision 728 — Coding capability is independent of the Linux read-only sandbox
+
+Refines decision 706 and replaces docs/runtimes.md's blanket Linux sandbox exclusion. Codex Projects coding turns use danger-full-access and approval never on first and resumed turns. Failure to start the sandbox removes read-only capability, not shell/edit capability or authentication. Claude bypassPermissions and the coordinator's read-only role remain. Conversation and verification permissions retain their existing paths. Native account homes and host AppArmor settings are not changed.
+
+### Decision 729 — Refresh checkout protections for every worktree turn
+
+Implements decision 706's protectedPaths guard. The launcher reads registered project checkouts on its device and owner-edited protectedPaths at each turn, including resumed sessions. Both hooks resolve existing ancestors/symlinks and deny protected git targets, native file writes/patches and recognized shell writes. The owner Settings field accepts at most 20 absolute folders and relays through the existing authenticated mesh. Registering Ekoa's dedicated Linux binding adds /home/ggomes/dev/ekoa-code without replacing existing protections; a full list refuses activation atomically. No owner checkout is edited. Ordinary worktree commits/tests and reads remain available. The command guard does not claim confinement of arbitrary programs.
+
+### Decision 730 — Structured owner commands survive reports, questions and rendered shell blocks
+
+Implements decision 711 and replaces the old unstructured operational handoff. Versioned reports and questions carry up to five exact commands with reason, device and folder. Questions, report cards and shell-language fenced blocks show full scrolling command text with Copy and Run in Terminal. Safety refusals append the exact report guidance; the coordinator/thread prompts explain when to hand work to the owner. Shared card components retain their request identity across rerenders. P4 implements data, controls and copying; actual terminal launch and automatic result delivery are P5 work. No owner command was executed in this checkpoint's browser tests.
+
+### P4 backend checkpoint
+
+Simulated: 141 affected backend cases pass in eight files (19.33 seconds), including actual hook subprocesses, refreshed resumed launch protection, Linux capability/authentication separation, schemas and retry-safe question propagation, member HTTP settings, Ekoa binding protections and byte-identical native homes. The final 28-case protection rerun adds atomic overflow refusal. Initial failures were obsolete denial/tool-list expectations and an incomplete probe fixture; they were corrected without weakening behavior assertions. Browser checks exposed a long-command grid overflow; the command container now constrains its grid track while retaining internal horizontal scrolling. Final browser/vision results follow. Live Madrid provider work remains blocked on the already requested sign-in/join; no review pass or owner acceptance is claimed.
+
+
+### P4 browser and closing checks
+
+CM4 passes 4/4 layouts in 1.3 minutes with twelve clear dedicated live vision judgments. The long-command overflow and absent scrolling cue were fixed in product code, with scrolling/width/cue assertions retained. Typecheck, lint and build pass; working-tree and mandatory history scans gate this main push. The live Madrid Codex session is blocked on owner sign-in/join; terminal execution remains P5 work. No review pass or owner acceptance was claimed.

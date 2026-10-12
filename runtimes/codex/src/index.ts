@@ -30,20 +30,15 @@ export function createRuntime(context: RuntimeContext): RuntimeAdapter {
     if (account.account.runtime !== 'codex' || account.home !== context.homes.account('codex', account.account.id)) throw new Error('Codex requires an account home owned by Jevellan.');
     return account;
   };
-  // Without a working sandbox Codex can't enforce read-only or contain shell commands, so it declares neither.
+  // Coding turns use full access. The native sandbox remains a capability gate for read-only work.
   const sandbox = codexSandboxCheck(context.executable, context.homes.ensure('runtime-checks', 'codex'));
   const worker = fileURLToPath(new URL('./worker.js', import.meta.url));
   return {
     id: 'codex', displayName: 'Codex', accountKinds: ['subscription', 'api-key'], riggingKinds: supportedRigging('codex'),
-    capabilities: { edit: true, shell: sandbox.available, mcp: true, images: true, interrupt: true, usage: true, continueSession: true, perLaunchConfig: true, readOnlyEnforced: sandbox.available, turns: true },
+    capabilities: { edit: true, shell: true, mcp: true, images: true, interrupt: true, usage: true, continueSession: true, perLaunchConfig: true, readOnlyEnforced: sandbox.available, turns: true },
     listModels: (account) => listCodexModels(checked(account), context.executable),
     beginLogin: (account, home) => beginTerminalLogin('codex', account, home, context),
-    probe: async (account) => {
-      if (sandbox.available) return probeCodex(checked(account), context.executable);
-      // The sandbox reason is the one Settings must show, even when the login check itself cannot complete.
-      const result = await probeCodex(checked(account), context.executable).catch(() => ({ auth: 'unknown' as const }));
-      return { ...result, error: sandbox.reason };
-    },
+    probe: (account) => probeCodex(checked(account), context.executable),
     materialiseRigging: (home, items) => delivery.materialise('codex', home, items),
     startStretch: (input) => new WorkerRun('codex', worker, input, context),
     startTurn: (input) => WorkerRun.turn('codex', worker, input, context),

@@ -28,26 +28,14 @@ The Claude hook uses PreToolUse denials, including in bypass mode, as specified 
 
 Project memory adds stable PreCompact, Stop and SessionEnd commands through APM into each isolated account. The commands queue owner-derived metadata with the launch's scoped token, return empty JSON and have a bounded two-second input/request deadline. Account hooks coexist with the per-launch Safety callback/configuration. Both actual SDKs exercise this through simulated provider CLIs, and installed Codex discovers the three account events alongside per-launch hooks without loading untrusted project hooks. Native lifecycle dispatch remains a separate live-journey check; see [hook evidence](acceptance/phase2-hooks.md).
 
-The installed Codex [rules language](https://learn.chatgpt.com/docs/agent-configuration/rules) matches literal argument prefixes. The phase 0 probe missed four common reordered forms. The production adapter now supplies the same command guard through a per-launch PreToolUse hook. A CLI shim supplies the [documented hook automation flag](https://learn.chatgpt.com/docs/hooks); the SDK still controls execution, continuation and sandbox permissions. Project configuration is marked untrusted, while account Rigging remains available. A live inert `git -C <project> push` attempt received the hook's denial and did not execute. The executable hook tests include the integration-only rebase exception. Native config and live project probes now confirm project-hook exclusion. Jevellan supplies the root AGENTS.md explicitly on the first Codex turn because the untrusted project layer prevented its native loading. Context is limited to 32 KiB and links must resolve inside the project. Hooks are not a general sandbox: arbitrary programs, native tool paths outside the matcher, and native hook startup failures remain limitations. Direct git-state changes must be checked after each stretch regardless of runtime.
+The installed Codex [rules language](https://learn.chatgpt.com/docs/agent-configuration/rules) matches literal argument prefixes. The phase 0 probe missed four common reordered forms. The production adapter now supplies the same command guard through a per-launch PreToolUse hook. A CLI shim supplies the [documented hook automation flag](https://learn.chatgpt.com/docs/hooks); the SDK still controls execution, continuation and sandbox permissions. Project configuration is marked untrusted, while account Rigging remains available. A live inert `git -C <project> push` attempt received the hook's denial and did not execute. The executable hook tests include the integration-only rebase exception. Native config and live project probes now confirm project-hook exclusion. Jevellan supplies root AGENTS.md, or root CLAUDE.md when AGENTS.md is absent, explicitly on every Codex turn because the untrusted project layer prevented its native loading. Context is limited to 32 KiB and links must resolve inside the project. Hooks are not a general sandbox: arbitrary programs and native hook startup failures remain limitations. Direct git-state changes must be checked after each stretch regardless of runtime.
 
-### Codex sandbox on Linux
+### Codex permissions on Linux
 
-Codex runs every read-only and workspace-write shell command inside bubblewrap. Ubuntu 24.04 and later set `kernel.apparmor_restrict_unprivileged_userns=1`, which stops bubblewrap from creating the user namespace it needs ("bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted"). The Codex adapter runs `codex sandbox -- true` once at startup. When the sandbox cannot start, Codex declares no read-only or shell capability, model selection stops offering it, and the Codex account in Settings → Runtimes shows the reason. There is deliberately no fallback to running without a sandbox.
+Projects coding threads use danger-full-access with approval never on first and resumed turns. They do not require bubblewrap or an AppArmor change. The startup sandbox probe now gates only read-only capability; account authentication is probed independently and shell/edit capability remains available for coding. Coordinator, nightly review, memory and verification keep their respective permission controls; Conversations retain their existing workspace-write behavior.
 
-To allow it on such a host, add an AppArmor profile that grants user namespaces to bubblewrap only. Codex uses `/usr/bin/bwrap` when it exists and its bundled `codex-resources/bwrap` otherwise, so the profile covers both:
+Worktree turns refresh all registered checkout paths on their device and its owner-edited protected paths before launching. Both provider hooks deny git operations and ordinary file writes into those targets, including paths through existing symlinks. Native file tools and recognized shell writes share the guard. Safety denials end with the ownerCommands guidance. This command guard is not a general sandbox for arbitrary programs.
 
-```
-abi <abi/4.0>,
-include <tunables/global>
-
-profile codex-bwrap /{usr/bin/bwrap,home/*/**/codex-resources/bwrap} flags=(unconfined) {
-  userns,
-
-  include if exists <local/codex-bwrap>
-}
-```
-
-Install it as `/etc/apparmor.d/codex-bwrap`, load it with `sudo apparmor_parser -r /etc/apparmor.d/codex-bwrap`, then restart Jevellan. Setting `kernel.apparmor_restrict_unprivileged_userns=0` also works but weakens the host for every program.
 
 ## Turns
 
