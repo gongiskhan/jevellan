@@ -1316,3 +1316,136 @@ Final affected-file preparation first picked Node20 from the default login PATH 
 The final merge-gate file passes **18/18** in **84.09 seconds**, including the late-added publication regression, after the clean **1,861-case/168-file** backend run. Final typecheck, lint and build pass with Node22.22.0 and modern Git. The full browser matrix has passing coverage for **268 unique cases across the full run and affected reruns**, including all four settled packed journeys; it was not one clean full browser run. Final **494 live vision verdicts** are clear, with **470 retained screenshots** and **24 identified temporary captures**. The inspected Mac 0.2.0 distribution contains **10,567 entries**, **44 macOS Codex runtime files** and **zero prohibited private paths**. The working-tree secret scan and mandatory pre-push history scan gate the publication checkpoint. The closing review and its permitted second review are complete with both native MCP findings corrected; publication/busy merge races are also covered. No third review is performed.
 
 Live evidence comprises actual Jev placement/merge-routing HTTP calls against synthetic resources, dedicated vision judgments, read-only device/tooling inventory, dedicated clones and Ekoa PR #208. Provider/device/GitHub/Ekoa execution in automated journeys remains simulated. Live migration/rollback, retained Mini URLs after the move, imported Codex sign-in, scoped GitHub/Ekoa token operations, Madrid join/sign-in, sandbox/LJ9, actual Nightly workflows/mirror and release activation remain **blocked**, not passed. The grouped hidden-terminal/UI request remains pending. Installed 0.1.0, the pilot backup, owner checkouts and native homes are preserved. PR #208 remains open for owner merge; no release activation or owner acceptance is claimed. See loop-activation.md for the concrete remaining handoff.
+
+
+## Amendment 2 authority — 2026-10-12
+
+Owner amendment 2 supersedes the brief, amendment 1 and prior conflicting choices. Parts 1/2 precede Part 3 and activation. The source is untracked in Downloads. The following decisions are implementation requirements; their checks are initially **not run**, and live credential-dependent operations remain **blocked** until owner setup. Tests catch problems during work; one crucial-issues review at the end, no intermediate review passes.
+
+### Decision 661 — P1.1: Restore GitHub nightly scheduling
+
+Preserve current main, including the 02:00 Lisbon legal schedule, both workflow_run links and all Mac deployment additions. Unset/github scheduler keeps existing behavior.
+
+### Decision 662 — P1.2: Gate every scheduled chain path
+
+NIGHTLY_SCHEDULER=jevellan disables scheduled-night and workflow_run work, including deploy after skipped legal, with the exact owner summary. Weekly measurement and repository_dispatch remain available.
+
+### Decision 663 — P1.3: Dispatch Ekoa on main with commit input
+
+Remove pinned Ekoa refs and the runner-hook change. Tests require/validate a main-ancestry SHA in Jevellan mode and use it in every job/run-name; deploy passes its required SHA unchanged; legal uses mode=night,dry_run=false without SHA.
+
+### Decision 664 — P1.4: Detect a missing night
+
+Add 07:00 Lisbon GitHub-hosted nightly-missed, in both modes, checking completed full-suite runs since 00:30 local and deduplicating one urgent Ekoa task through the existing user triage key.
+
+### Decision 665 — P1.5: Test and document both schedulers
+
+Extend nightly tooling regressions for disabled chain paths, SHA ancestry and missed-night presence/absence; update D-CI-6, runbook, testing and affected diagrams.
+
+### Decision 666 — P1.6: Keep owner control of the switch
+
+PR 208 always asks the owner. Merge preserves the existing chain until the owner sets jevellan; github restores it from the next night.
+
+### Decision 667 — P2.1: Snapshot the scheduler variable
+
+Read Actions variable NIGHTLY_SCHEDULER at window open. Exact jevellan dispatches; all other values/read failures watch. Never write it or use PR merge state. Show the two prescribed mode sentences.
+
+### Decision 668 — P2.2: Bind commit-input runs and clean optional refs
+
+Ekoa dispatches main with SHA and binds by run-name plus required jobs/steps rather than head_sha. Optional pins remain only for workflows without commit input; delete after run end and remove pins older than two days at window open.
+
+### Decision 669 — P2.3: Watch only the actual GitHub chain
+
+Bind scheduled legal title ending night, then following workflow_run deploy and tests. Exclude manual, repository_dispatch and not-in-chain runs.
+
+### Decision 670 — P2.4: Document full scoped token permissions
+
+Ekoa token: Contents, Pull requests and Actions read/write; Checks, Commit statuses and Variables read.
+
+### Decision 671 — P3.1: Bound first and large nightly reviews
+
+Seed lastReviewedCommit at creation/first enable from current main; expose Review from commit. Stream patches with large-range timeout and 8MB cap, then messages/stats and instructions for remaining patches. Failed review records reason and continues; cover 3000+ commits.
+
+### Decision 672 — P3.2: Queue the combined nightly fix directly
+
+Ignore goal draft autonomy for this one finding. Jobs start on merged/no fix/20-minute coordinator wait/ask-owner/cutoff, whichever arrives first. A missed fix becomes ordinary work and merges after the window.
+
+### Decision 673 — P3.3: Hold merges without blocking dispatch
+
+Keep normal overnight queue placement, limits and load admission. Ordinary PR merges wait for hold release.
+
+### Decision 674 — P3.4: Use real late-open deadlines
+
+Anchor cutoff and seven-hour cap to actual open time, and include lateness and cause in the night report.
+
+### Decision 675 — P3.5: Report item evidence and fix route
+
+Night report contains result, failure reason, run URL and tested/deployed commit per item, review summary and fix task/route; mirror as before.
+
+### Decision 676 — P3.6: Bound GitHub polling and index gate records
+
+Reuse 60-second PR polling, refresh routing only on head/check changes, avoid waiting/ended PR requests, stop finished threads and index records by thread. Track token rate limits, slow below 20% and show notice; five PRs/hour below 1000 requests.
+
+### Decision 677 — P3.7: Require configured checks and CI grace
+
+Add requiredChecks; all named checks must exist and pass at head. Without names, no-checks becomes eligible only five minutes after first seeing the head.
+
+### Decision 678 — P3.8: Escalate ended authors safely
+
+Stopped/failed thread PRs ask owner. If a failed verifier cannot deliver to author, ask once with failures attached.
+
+### Decision 679 — P3.9: Send back once per head
+
+Deliver owner note once and wait for a new head, without re-asking the returned head.
+
+### Decision 680 — P3.10: Separate test failure from interrupted verification
+
+Only an explicit failed report increments the three-failure cap or messages author. Restart/timeout/setup/head movement retry once, then ask owner with reason.
+
+### Decision 681 — P3.11: Wait for coordinator mail delivery
+
+Refuse automatic merge while a coordinator message for that thread remains undelivered.
+
+### Decision 682 — P3.12: Route and explain in shadow mode
+
+autoMerge=false still calls Jev and records/illustrates route/Why/corrections, but never merges or verifies.
+
+### Decision 683 — P3.13: Allow corrections after merge
+
+Expose corrections on recently merged PRs for seven days and on the task page.
+
+### Decision 684 — P3.14: Remove stale review paths and correct edge cases
+
+Parse packet inside failure fallback, suppress automatic event after owner merged same head, remove active coordinator-review reads/hub operations/agent-api setting and diff review wording.
+
+### Decision 685 — P4.1: Prove the live sandbox merge journeys
+
+Run authorized sandbox merge, real cross-provider verification pass/fail-repair-pass, and ask-owner with route/reason evidence.
+
+### Decision 686 — P4.2: Start Ekoa in shadow mode
+
+Preset autoMerge=false, requiredChecks=[result]; only owner enables merging. LJ9 ends at a real Ekoa PR with recorded shadow route.
+
+### Decision 687 — P4.3: Switch only after two clean watch nights
+
+Start watch; after PR 208 owner merge and two clean watch nights, owner sets jevellan. Jevellan never sets it.
+
+### Decision 688 — P4.4: Warn when the hub may sleep on AC
+
+Inspect pmset; give exact owner command only if AC sleep enabled. Add readiness warning without changing power settings.
+
+### Decision 689 — P4.5: Report GitHub-hosted usage
+
+Read last 14 days runs/jobs and report workflow/job/runner minutes, including macos-15 and PR checks. Do not alter unrelated CI.
+
+### Decision 690 — P4.6: Order owner activation steps and use 0.2.1
+
+Put all owner steps in one ordered list at the handoff top; build 0.2.1 for activation, preserving rollback and unaffected finished work.
+
+### Amendment 2 Part 1 checkpoint — 2026-10-12
+
+Live: Ekoa PR 208 branch includes main 40fc0042 and is pushed at 30dffb6c. Current main’s deploy.yml, runner install hook and runner README are byte-identical. PR description states that merge changes nothing until the owner sets NIGHTLY_SCHEDULER=jevellan, and rollback restores the GitHub chain from the next night. No production dispatch or owner acceptance is claimed.
+
+Simulated: 26 scoped nightly-triage regressions pass, covering unset/github/jevellan, every scheduled legal completion state, exact SHA ancestry/checkout and unchanged deploy input, completed/skipped/missing suite, daily alert deduplication and Lisbon DST. Ekoa CI lane gates, typecheck and builds pass after npm ci refreshed the clone for upstream Mac app dependencies. Configured gitleaks history scan passes (2 commits, 19.72 KB). An additional generic Jevellan whole-tree scanner reports existing Ekoa token-shaped fixtures; it is not Ekoa’s configured scan or new secret evidence. The broad directory scan was stopped; it is not passing evidence.
+
+Blocked: production mode switch, real missed-night alert and two clean watch nights await owner merge/setup and actual nights. Part 2 will replace Jevellan’s PR-merge probe and Ekoa pins.

@@ -1,8 +1,17 @@
 # Projects loop implementation plan
 
-Authority: the owner's approved plan, BRIEF-loop.md and BRIEF-loop-amendment-1.md in Downloads. Amendment 1 wins on conflicts. Main only; phase checkpoints update roadmap and acceptance evidence before commit/push. Preserve completed work outside the amendment.
+Authority: the owner's approved plan, BRIEF-loop.md and BRIEF-loop-amendment-1.md and BRIEF-loop-amendment-2.md in Downloads. Amendment 2 wins on conflicts. Main only; phase checkpoints update roadmap and acceptance evidence before commit/push. Preserve completed work outside the amendment.
 
-## Checkpoints and remaining work
+## Amendment 2 work order
+
+1. Part 1 (pushed: Ekoa 30dffb6c): refresh Ekoa PR 208 onto current main and implement the reversible scheduler switch, exact SHA inputs and missed-night alert; update tests/docs and PR description. Commit/push its branch and the Jevellan part checkpoint.
+2. Part 2: variable-based watch/dispatch, actual chain/run identity, optional pin cleanup and Nightly mode UI. Verify and commit/push on main.
+3. Part 3: reproduce each specified nightly/gate defect with a failing regression, fix it, then verify affected backend/browser paths and commit/push on main.
+4. Part 4: real sandbox verification journeys, shadow Ekoa preset/LJ9, power readiness and GitHub minutes report; cut 0.2.1, run closing gates and one crucial-issues review, then activate after the required owner inputs. Two clean watch nights precede the owner setting jevellan.
+
+Decisions 661–690 in REPORT record each change. Existing unaffected work stays built. No native-home/owner-checkout changes or attribution.
+
+## Earlier checkpoints and retained evidence
 
 - Phases 0–2: design/inventory, migration machinery, native setup and root instruction fallback committed. Live hub import, owner UI sign-in and credentials remain pending through hidden prompts/Settings.
 - Phase 3: live sandbox journeys remain blocked on those owner inputs; simulated journeys exist.

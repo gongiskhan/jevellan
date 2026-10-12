@@ -138,3 +138,10 @@ Codex native stdio bridges forward their generated secret-reference variable thr
 
 
 Automatic merge routing waits for running, preparing, publishing and attached turns, and checks that state again after verification. A passed verification is retained while publication settles; a new head goes through the gate again. Acceptance decision 659 records the concurrency regressions.
+
+
+## Amendment 2 — authoritative follow-up
+
+The untracked BRIEF-loop-amendment-2.md in Downloads wins over conflicting earlier design. Decisions 661–690 record its thirty changes. PR 208 becomes a reversible NIGHTLY_SCHEDULER switch preserving current main and the existing GitHub chain; Ekoa dispatch uses main plus sha input without a runner-hook reinstall. Jevellan snapshots the variable at window open and otherwise watches only the actual scheduled chain. Nightly reviews start from a bounded owner-editable watermark, jobs advance independently of stuck fixes, and overnight holds affect merges only. The merge gate gains bounded polling, required checks/CI grace, ended-thread and retry handling, pending-mail fences, shadow routes and post-merge corrections. Ekoa starts with autoMerge off and requiredChecks [result]. Release 0.2.1 replaces the staged 0.2.0 as the activation target. The owner alone switches scheduler after PR merge and two clean watch nights. Earlier conflicting paragraphs describe the 0.2.0 checkpoint and are superseded by this section; implementation/evidence updates follow per part.
+
+Amendment 2 Part 1 is pushed as Ekoa 30dffb6c on PR 208. The workflow change is a reversible scheduler switch: main’s GitHub chain is preserved until the owner changes the repository variable. Ekoa dispatch uses main and SHA inputs, with no runner-hook reinstall. Twenty-six simulated nightly regressions and the Ekoa CI lane pass; actual switching/alerts/watch nights remain blocked.
