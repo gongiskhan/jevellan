@@ -45,6 +45,8 @@ export class PullRequestTracker {
   readonly #chains = new Map<string, Promise<unknown>>();
   readonly #transitions = new Map<string, Promise<void>>();
   readonly #errors = new Map<string, string>();
+  readonly #lastPoll = new Map<string, number>();
+  readonly #budgetNotices = new Set<string>();
   #timer: ReturnType<typeof setTimeout> | undefined;
   #polling: Promise<void> | undefined;
   #closed = false;
@@ -77,7 +79,12 @@ export class PullRequestTracker {
     this.#polling ??= (async () => {
       for (const thread of this.#o.threads.all()) {
         if (this.#closed) break;
-        if (thread.pr?.state === 'open') await this.#read(thread.id, false).catch(() => undefined);
+        if (thread.pr?.state === 'open') {
+          const budget = await (await this.#o.github.open(thread.projectId)).rateLimit(), slow = budget && budget.remaining / budget.limit < 0.2 && budget.resetAt > this.#o.now();
+          if (slow && !this.#budgetNotices.has(thread.projectId)) { this.#budgetNotices.add(thread.projectId); this.#notice(thread, 'GitHub has less than 20% of its request budget remaining. Pull requests refresh every five minutes until it resets.'); }
+          if (!slow) this.#budgetNotices.delete(thread.projectId);
+          if (!slow || this.#o.now() - (this.#lastPoll.get(thread.id) ?? 0) >= 300_000) { this.#lastPoll.set(thread.id, this.#o.now()); await this.#read(thread.id, false).catch(() => undefined); }
+        }
       }
       await Promise.allSettled([...this.#transitions.values()]);
     })().finally(() => { this.#polling = undefined; });
@@ -97,7 +104,8 @@ export class PullRequestTracker {
     const repository = (fromUrl ? parseGitHubPullUrl(pr.url) : null) ?? await this.#repository(projectId); const client = await this.#o.github.open(projectId);
     const pull = await client.getPull(repository, pr.number);
     const open = !pull.merged && pull.state === 'open';
-    const next = pullRequestState(pull, open ? await client.checks(repository, pull.headSha) : pr.checks, this.#at());
+    const checked = open ? await client.checkState(repository, pull.headSha) : { checks: pr.checks, passedChecks: pr.passedChecks };
+    const next = { ...pullRequestState(pull, checked.checks, this.#at()), headFirstSeenAt: pull.headSha === pr.headSha ? pr.headFirstSeenAt ?? pr.updatedAt : this.#at(), ...(checked.passedChecks ? { passedChecks: checked.passedChecks } : {}) };
     return next;
   }
   #notice(thread: Thread, text: string): void {
@@ -199,7 +207,7 @@ export class PullRequestTracker {
         if (!result.merged) throw refuse(result.message, 409);
         message = result.message;
       } catch (error) {
-        if (error instanceof GitHubError || (error instanceof Error && error.message === NOT_GITHUB)) throw refuse(error.message, 409);
+        if (error instanceof GitHubError || (error instanceof Error && error.message === NOT_GITHUB)) throw Object.assign(refuse(error.message, 409), { headMoved: error instanceof GitHubError && error.status === 409 });
         throw error;
       }
       await this.#conclude(threadId, { ...pr, state: 'merged', updatedAt: this.#at() });
@@ -223,12 +231,12 @@ export class PullRequestTracker {
     }
     catch (error) { return { pr: index.pr, reason: this.#o.redactor.text(error instanceof Error ? error.message : String(error)) }; }
   }
-  async diff(projectId: string, threadId: string): Promise<z.infer<typeof PrDiffResultSchema>> {
-    const read = await this.fresh(projectId, threadId); if (read.reason) throw refuse(read.reason, 409);
+  async diff(projectId: string, threadId: string, cached = false): Promise<z.infer<typeof PrDiffResultSchema>> {
+    const read = cached ? { pr: this.#o.threads.get(threadId)?.pr ?? null } as Read : await this.fresh(projectId, threadId); if (read.reason) throw refuse(read.reason, 409);
     const pr = read.pr; if (!pr || pr.state !== 'open') throw refuse(PR_NOT_OPEN, 409);
     const repository = parseGitHubPullUrl(pr.url); if (!repository) throw refuse(NOT_GITHUB, 409);
     const client = await this.#o.github.open(projectId), files = await client.pullFiles(repository, pr.number);
-    if ((await client.getPull(repository, pr.number)).headSha !== pr.headSha) throw refuse('The pull request head changed. Read its diff again.', 409);
+    if (!cached && (await client.getPull(repository, pr.number)).headSha !== pr.headSha) throw refuse('The pull request head changed. Read its diff again.', 409);
     const diff = this.#o.redactor.text(files.map(file => `diff --git a/${file.filename} b/${file.filename}\n${file.patch ?? '[Patch unavailable: binary or oversized file.]'}`).join('\n\n'));
     const shortened = diff.length > 80_000, suffix = '\n[Diff shortened.]';
     return PrDiffResultSchema.parse({ schema: 'pr-diff-result-v1', threadId, commit: pr.headSha, files: files.map(file => ({ path: file.filename, additions: file.additions, deletions: file.deletions, status: file.status })), diff: shortened ? diff.slice(0, 80_000 - suffix.length) + suffix : diff, shortened });

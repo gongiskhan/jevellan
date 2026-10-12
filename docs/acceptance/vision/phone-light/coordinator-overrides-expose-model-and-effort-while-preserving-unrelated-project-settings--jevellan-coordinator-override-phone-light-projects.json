@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background is blurred and dimmed behind the modal, which is expected for an open dialog.",
-      "The modal sits low in a very tall page capture (around y≈1000–1450 of 2449), but it is fully visible and all of its controls can be reached."
+      "The background page behind the modal is blurred and dimmed, so its header, tabs and composer are hard to read. This is expected while a modal is open.",
+      "The tab row behind the modal cuts off at the right edge ('Pull requests'). It's probably a horizontally scrollable tab strip."
     ]
   }
 }

@@ -59,12 +59,12 @@ export function effectiveSettings(settings: ProjectWorkSettings, project: Pick<P
 
 export type ProjectViewsOptions = {
   deviceId: string; deviceName: string;
-  hub: Pick<ProjectHub, 'threads' | 'decisions' | 'settings' | 'coordinator' | 'coordinatorStatus' | 'notebook' | 'workSummaries' | 'review'>;
+  hub: Pick<ProjectHub, 'threads' | 'decisions' | 'settings' | 'coordinator' | 'coordinatorStatus' | 'notebook' | 'workSummaries'>;
   projects: Pick<SharedProjects, 'get' | 'list'>;
   store: Pick<ThreadStore, 'get' | 'labels' | 'local'>; ledgers: ProjectLedgers; coordinators: Pick<CoordinatorService, 'get'>;
   transcripts: Pick<ThreadTranscripts, 'read'>; worktrees: Pick<ThreadWorktree, 'repository' | 'baseBranch'>;
   accounts: Pick<AccountService, 'list'>; runtimes: ReadonlyMap<string, RuntimeAdapter>;
-  settings(): Promise<Configuration['x-jevellan']>; roster(): Promise<DeviceRoster>;
+  githubNotice?(projectId: string): Promise<string | undefined>; settings(): Promise<Configuration['x-jevellan']>; roster(): Promise<DeviceRoster>;
   /** The per-device setup of New thread and Override (D281). */
   placement: Pick<Placement, 'deviceSetup'>;
 };
@@ -81,11 +81,7 @@ export class ProjectViews {
   async #threads(projectId: string): Promise<ThreadIndex[]> {
     const threads: ThreadIndex[] = []; let after: string | undefined;
     do { const page = await this.#o.hub.threads(projectId, after); threads.push(...page.records.filter((index) => index.projectId === projectId)); after = page.next ?? undefined; } while (after !== undefined);
-    await Promise.all(threads.map(async thread => {
-      if (!thread.pr) return;
-      const review = (await this.#o.hub.review(thread.id))?.document;
-      delete thread.pr.review; if (review?.commit === thread.pr.headSha) thread.pr.review = review;
-    }));
+    for (const thread of threads) if (thread.pr) delete thread.pr.review;
     return threads;
   }
   /** The base branch of the project checkout here (D93), detected once per project; null without a checkout. */
@@ -166,6 +162,7 @@ export class ProjectViews {
     const project = await this.#project(projectId);
     const [threads, decisions, work, notebook, roster, baseBranch, config, accounts] = await Promise.all([this.#threads(projectId), this.#o.hub.decisions(projectId),
       this.#work(projectId), this.#o.hub.notebook(projectId), this.#o.roster(), this.#base(project), this.#o.settings(), this.#o.accounts.list()]);
+    const githubNotice = await this.#o.githubNotice?.(projectId);
     const shown = effectiveSettings(work, project); const where = await this.#coordinatorState(projectId, roster);
     // The chat history bound the page opens with (D268): this device's ledger, or the last event id a coordinator elsewhere published.
     const lastEventId = where.deviceId === null || where.deviceId === this.#o.deviceId ? this.#o.ledgers.coordinator(projectId).lastId() : where.lastEventId ?? 0;
@@ -174,7 +171,7 @@ export class ProjectViews {
     const coordinator = this.#coordinator(where, work, project, config, accounts);
     const devices = this.#o.placement.deviceSetup(project, work, roster, placing, { settings: config, accounts });
     return ProjectWorkViewSchema.parse({ schema: 'project-work-view-v1', project: { id: project.id, name: project.name, branchPolicy: project.branchPolicy, baseBranch },
-      settings: shown.settings, ...(shown.notice ? { settingsNotice: shown.notice } : {}), coordinator, threads,
+      settings: shown.settings, ...(githubNotice ? { githubNotice } : {}), ...(shown.notice ? { settingsNotice: shown.notice } : {}), coordinator, threads,
       decisions: decisionLists(decisions), pullRequests: pullRequestEntries(threads), notebookRevision: notebook?.revision ?? 0, lastEventId, gates: PHASE_GATES, devices });
   }
   /** `GET /api/projects/:id/threads/:tid` for a thread this device owns (D81 `canMessage`; overrides as the API allows them, D252). */

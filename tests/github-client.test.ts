@@ -223,3 +223,11 @@ test('ref cleanup recovers a deletion whose receipt was lost without hiding fail
   present = true; await expect(cleanup.deleteWorkflowRef(repository, ref)).rejects.toMatchObject({ status: 422 });
   await expect(cleanup.deleteWorkflowRef(repository, 'main')).rejects.toThrow('Invalid workflow dispatch ref');
 });
+
+test('request budgets follow the token across clients and remain isolated from other tokens', async () => {
+  const fetcher: typeof fetch = async () => Response.json({ total_count: 0, check_runs: [] }, { headers: { 'x-ratelimit-remaining': '900', 'x-ratelimit-limit': '5000', 'x-ratelimit-reset': '2000000000' } });
+  const first = new GitHubClient({ token: async () => 'fixture-budget-a', fetch: fetcher });
+  await first.checks({ owner: 'owner', repo: 'repo' }, 'a'.repeat(40)).catch(() => undefined);
+  expect(await new GitHubClient({ token: async () => 'fixture-budget-a' }).rateLimit()).toMatchObject({ remaining: 900, limit: 5000 });
+  expect(await new GitHubClient({ token: async () => 'fixture-budget-b' }).rateLimit()).toBeNull();
+});

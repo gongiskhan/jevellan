@@ -39,7 +39,7 @@ test('scope lists: mail and reservations only for main threads, mail for the coo
 
 test('every project tool joins the closed name enum after the unchanged stretch tools and serializes to an object schema', () => {
   expect(BridgeToolNameSchema.options.slice(0, stretchTools.length)).toEqual(stretchTools);
-  expect([...BridgeToolNameSchema.options].sort()).toEqual([...new Set([...stretchTools, ...projectTools, 'jevellan_thread_start', 'jevellan_pr_review', 'jevellan_verification_report', 'jevellan_project_review_report'])].sort());
+  expect([...BridgeToolNameSchema.options].sort()).toEqual([...new Set([...stretchTools, ...projectTools, 'jevellan_thread_start', 'jevellan_verification_report', 'jevellan_project_review_report'])].sort());
   for (const name of ['jevellan_pr_review', 'jevellan_verification_report', 'jevellan_project_review_report']) expect(COORDINATOR_TOOLS).not.toContain(name);
   expect(Object.keys(BridgeToolSchemas)).toEqual(BridgeToolNameSchema.options);
   for (const scope of [{ kind: 'coordinator' }, { kind: 'thread', isolation: 'worktree' }, { kind: 'thread', isolation: 'main' }] as const) {
@@ -118,7 +118,7 @@ test('asking the owner takes no options or two to four', () => {
 });
 
 test('tool results are versioned documents and every project tool names its result schema', () => {
-  expect(Object.keys(ProjectToolResultSchemas).sort()).toEqual([...projectTools, 'jevellan_pr_review'].sort());
+  expect(Object.keys(ProjectToolResultSchemas).sort()).toEqual([...projectTools].sort());
   expect(ProjectToolResultSchemas.memory_search).toBe(MemorySearchSchema); expect(ProjectToolResultSchemas.memory_read).toBe(MemoryNoteSchema);
   const thread = { id: threadId, title: 'Add a greeting', state: 'in-review', isolation: 'worktree', device: 'Studio', runtime: 'claude', modelLabel: 'Opus', effort: 'high', turns: 2 };
   expect(ThreadsListResultSchema.parse({ schema: 'threads-list-result-v1', threads: [thread, { ...thread, branch: 'jv/add-a-greeting-ABCDEF', pr: { number: 7, state: 'open', checks: 'passing' }, lastSummary: 'Added it.' }] }).threads).toHaveLength(2);

@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ2 native setup remains visible and merge routing explains its ask-owner choice",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/LJ2-merged-pr-correction-phone-light.png",
+  "expected": "the Jevellan web app \"LJ2 merged pr correction\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"LJ2 native setup remains visible and merge routing explains its ask-owner choice\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The tab strip is scrolled, so the 'Chat' tab is cut off at the left edge. It looks like a horizontally scrollable tab bar, so the tab can still be reached by scrolling.",
+      "In the #1 Review loop card, the action links ('Why', 'Should have asked me', 'Didn't need asking') sit right-aligned on their own row. The 'Open task' link and the 'Open on GitHub' button wrap onto another row, so the card's layout is uneven compared with the #7 card.",
+      "The 'Open thread' link sits inline after the 'Saved for future merge decisions.' confirmation text, so it reads a little crowded.",
+      "There is a large empty area below the list (fine for a fixture)."
+    ]
+  }
+}

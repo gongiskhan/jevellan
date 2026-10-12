@@ -34,6 +34,7 @@ export function TaskQueue({ projectId, tasks, goals = [], threads = [], grouped 
         {task.after.some(id => !['done', 'cancelled'].includes(tasks.find(row => row.id === id)?.state ?? 'queued')) && <p>Waiting on: {task.after.filter(id => !['done', 'cancelled'].includes(tasks.find(row => row.id === id)?.state ?? 'queued')).map(id => tasks.find(row => row.id === id)?.title ?? id).join(', ')}</p>}
         {task.endNote && <p>{task.endNote}</p>}
         <div className="actions">
+          <button type="button" className="secondary small" onClick={() => navigate(`/projects/${projectId}/tasks/${task.id}`)}>Open task</button>
           {task.threadId && <button type="button" className="secondary small" onClick={() => navigate(`/projects/${projectId}/threads/${task.threadId}`)}>Open thread</button>}
           {task.state === 'draft' && <><button type="button" className="small" disabled={operation.busy} onClick={() => action(task, 'approve')}>Approve</button><button type="button" className="secondary small" disabled={operation.busy} onClick={() => setRejecting(task)}>Reject</button></>}
           {['draft', 'queued'].includes(task.state) && <>

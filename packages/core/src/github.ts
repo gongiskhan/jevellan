@@ -1,5 +1,7 @@
 import { GitHubWorkflowRunSchema, GitHubWorkflowRunsSchema, GitHubWorkflowJobsSchema, GitHubWorkflowDispatchSchema } from './github-actions.js';
 import { z } from 'zod';
+import { createHash } from 'node:crypto';
+const budgets = new Map<string, { remaining: number; limit: number; resetAt: number }>();
 import { SecretRedactor } from './environment.js';
 import type { PullRequestState } from './project-schemas.js';
 
@@ -36,9 +38,9 @@ export const GitHubPullResponseSchema = z.object({
 });
 export const GitHubPullListResponseSchema = z.array(GitHubPullResponseSchema);
 export const GitHubCheckRunsResponseSchema = z.object({ total_count: z.number().int().nonnegative(),
-  check_runs: z.array(z.object({ status: z.string(), conclusion: z.string().nullable().optional() })) });
+  check_runs: z.array(z.object({ name: z.string().optional(), status: z.string(), conclusion: z.string().nullable().optional() })) });
 // The combined `state` is deliberately not read: it is `pending` with zero statuses when a repository uses only check runs.
-export const GitHubStatusResponseSchema = z.object({ total_count: z.number().int().nonnegative(), statuses: z.array(z.object({ state: z.string() })) });
+export const GitHubStatusResponseSchema = z.object({ total_count: z.number().int().nonnegative(), statuses: z.array(z.object({ context: z.string().optional(), state: z.string() })) });
 export const GitHubMergeResponseSchema = z.object({ merged: z.boolean(), sha: z.string().optional(), message: z.string() });
 const GitHubErrorBodySchema = z.object({ message: z.string() });
 
@@ -73,6 +75,7 @@ export class GitHubClient {
     this.#redactor = options.redactor ?? new SecretRedactor(); this.#timeoutMs = timeoutMs;
   }
 
+  async rateLimit() { const token = (await this.#token())?.trim(); return token ? budgets.get(createHash('sha256').update(`${this.#base}\0${token}`).digest('hex')) ?? null : null; }
   async findOpenPull(repository: GitHubRepository, branch: string): Promise<GitHubPull | null> {
     const query = new URLSearchParams({ head: `${repository.owner}:${branch}`, state: 'open' });
     const pulls = await this.#request('GET', `${repo(repository)}/pulls?${query}`, GitHubPullListResponseSchema);
@@ -97,14 +100,15 @@ export class GitHubClient {
     return files;
   }
   /** Check runs and commit statuses of a head commit (brief 8.5). Pages of 100, at most 10 pages each. */
-  async checks(repository: GitHubRepository, commit: string): Promise<GitHubChecks> {
+  async checks(repository: GitHubRepository, commit: string): Promise<GitHubChecks> { return (await this.checkState(repository, commit)).checks; }
+  async checkState(repository: GitHubRepository, commit: string) {
     if (!sha.test(commit)) throw new Error('Invalid commit id.');
     const path = `${repo(repository)}/commits/${commit}`;
     const [runs, statuses] = await Promise.all([
       this.#pages((page) => this.#request('GET', `${path}/check-runs?per_page=100&page=${page}`, GitHubCheckRunsResponseSchema), (result) => result.check_runs),
       this.#pages((page) => this.#request('GET', `${path}/status?per_page=100&page=${page}`, GitHubStatusResponseSchema), (result) => result.statuses),
     ]);
-    return mapChecks(runs, statuses);
+    return { checks: mapChecks(runs, statuses), passedChecks: [...runs.filter(run => run.status === 'completed' && run.conclusion === 'success').flatMap(run => run.name ? [run.name] : []), ...statuses.filter(status => status.state === 'success').flatMap(status => status.context ? [status.context] : [])] };
   }
   /** Squash merge, only while the head is still `commit` (GitHub answers 409 otherwise). */
   async merge(repository: GitHubRepository, number: number, commit: string): Promise<GitHubMergeResult> {
@@ -181,6 +185,8 @@ export class GitHubClient {
           ...(body === undefined ? {} : { body: JSON.stringify(body) }),
         });
       } catch { throw controller.signal.aborted ? timedOut() : new GitHubError('network', 'GitHub could not be reached.'); }
+      const remaining = Number(response.headers.get('x-ratelimit-remaining')), limit = Number(response.headers.get('x-ratelimit-limit')), resetAt = Number(response.headers.get('x-ratelimit-reset')) * 1000;
+      if (response.headers.has('x-ratelimit-remaining') && limit > 0 && Number.isFinite(remaining) && Number.isFinite(resetAt)) budgets.set(createHash('sha256').update(`${this.#base}\0${token}`).digest('hex'), { remaining, limit, resetAt });
       if (options.download && response.status === 302) {
         const location = response.headers.get('location'); await response.body?.cancel();
         let target: URL; try { target = new URL(location ?? ''); } catch { throw invalid(); }

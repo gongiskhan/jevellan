@@ -23,6 +23,13 @@ export class ProjectJobRunner {
     windowOpened(projectId: string): Promise<string | undefined>; day(projectId: string): Promise<string>; dayStart(projectId: string, day: string): Promise<number>; changed(): void; facts?(): DeviceFacts }) {}
   runningIds(): string[] { return [...this.#running.values()].map(row => row.id); }
   busy(projectId?: string): boolean { return projectId ? this.#running.has(projectId) || this.#starting.has(projectId) : this.#running.size > 0 || this.#starting.size > 0; }
+  async mainHead(projectId: string): Promise<string> {
+    const project = await this.o.project(projectId), repo = resolveProjectPath(project, this.o.deviceId, this.o.deviceName), branch = await this.o.baseBranch(repo), ref = threadBaseRef(derivedId('review_baseline', projectId));
+    try {
+      const head = await this.o.git.remoteUrl(repo) ? await this.o.git.fetchPrivate(repo, branch, ref) : await this.o.git.resolve(repo, `refs/heads/${branch}`);
+      if (!head) throw new Error('The project has no main commit for its review baseline.'); return head;
+    } finally { await this.o.git.run(repo, ['update-ref', '-d', ref]); }
+  }
   async scheduler(projectId: string, job: ProjectJob): Promise<WorkflowSchedulerState | undefined> {
     if (job.run.kind !== 'github-workflow' || !job.run.schedulerSwitch) return undefined;
     const { variable, dispatchValue } = job.run.schedulerSwitch, checkedAt = new Date(this.o.now()).toISOString();

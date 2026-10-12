@@ -69,7 +69,13 @@ export class PullRequestVerification {
     if (this.#closed) return Promise.resolve(null);
     if (!deviceAllowsWork(this.o.homes) || deviceResourceRefusal(this.o.deviceName ?? this.o.deviceId, this.o.facts?.() ?? collectDeviceFacts(this.o.homes))) return Promise.resolve(null);
     const active: { execution?: TurnExecution; controller: AbortController; promise: Promise<VerificationRun | null> } = { controller: new AbortController(), promise: Promise.resolve(null) };
-    active.promise = this.#execute(run, thread, project, repo, setupCommand, active).finally(() => this.#active.delete(run.id));
+    active.promise = this.#execute(run, thread, project, repo, setupCommand, active).catch(async error => {
+      const saved = (await this.o.hub.mergeDocument(run.id))?.document; if (saved?.schema !== 'verification-run-v1') throw error;
+      const processPath = this.#process(saved); if (existsSync(processPath)) { await endTurnProcess(readDocument(processPath, ProcessSchema)); rmSync(processPath); }
+      if (existsSync(this.#path(saved))) await this.o.git.run(repo, ['worktree', 'remove', '--force', this.#path(saved)]);
+      await this.o.git.run(repo, ['update-ref', '-d', `refs/jevellan/verification/${saved.id}`]);
+      return this.#save({ ...saved, state: 'failed', note: this.o.redactor.text(error instanceof Error ? error.message : 'Verification setup failed.').slice(0, 1200), endedAt: new Date(this.o.now()).toISOString() });
+    }).finally(() => this.#active.delete(run.id));
     this.#active.set(run.id, active); return active.promise;
   }
   async #execute(initial: VerificationRun, thread: Thread, project: Project, repo: string, setupCommand: string, active: { execution?: TurnExecution; controller: AbortController }): Promise<VerificationRun | null> {
@@ -79,22 +85,21 @@ export class PullRequestVerification {
       if (existsSync(path)) await this.o.git.run(repo, ['worktree', 'remove', '--force', path]);
       await this.o.git.run(repo, ['update-ref', '-d', ref]); return run;
     }
-    const failed = (what: string, output = ''): VerificationReport => ({ result: 'failed', commands: run.report?.commands ?? [], failures: [{ what, output: this.o.redactor.text(output).slice(-2000) }] });
     if (run.state === 'running') {
       // A lost worker is never repeated. Keep its worktree while process termination is uncertain.
       if (existsSync(processPath)) { await endTurnProcess(readDocument(processPath, ProcessSchema)); rmSync(processPath); }
-      run = await this.#save({ ...run, state: 'failed', report: failed('Verification was interrupted by a restart.'), endedAt: new Date(this.o.now()).toISOString() });
+      run = await this.#save({ ...run, state: 'failed', note: 'Verification was interrupted by a restart.', endedAt: new Date(this.o.now()).toISOString() });
     } else {
       run = await this.#save({ ...run, state: 'running' });
       await this.o.git.run(repo, ['fetch', '--refmap=', '--no-write-fetch-head', '--no-tags', 'origin', `+refs/pull/${thread.pr!.number}/head:${ref}`], { timeoutMs: 120_000, signal: active.controller.signal });
-      if (await this.o.git.resolve(repo, ref) !== run.commit) return this.#save({ ...run, state: 'failed', report: failed('The pull request head changed before verification.'), endedAt: new Date(this.o.now()).toISOString() });
+      if (await this.o.git.resolve(repo, ref) !== run.commit) { run = await this.#save({ ...run, state: 'failed', headMoved: true, note: 'The pull request head changed before verification.', endedAt: new Date(this.o.now()).toISOString() }); await this.o.git.run(repo, ['update-ref', '-d', ref]); return run; }
       mkdirSync(dirname(path), { recursive: true });
       await this.o.git.run(repo, ['-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', 'worktree', 'add', '--detach', path, run.commit]);
       if (setupCommand) {
         const result = await runThreadCommand(path, setupCommand, { homes: this.o.homes, workId: run.id, timeoutMs: SETUP_TIMEOUT_MS, redactor: this.o.redactor, minimal: true, signal: active.controller.signal,
           onProcess: native => { writeDocument(processPath, ProcessSchema, { schema: 'verification-process-v1', turn: 1, startedAt: new Date(this.o.now()).toISOString(), ...native }); } });
         rmSync(processPath, { force: true });
-        if (result.code !== 0 || result.timedOut) run = await this.#save({ ...run, state: 'failed', report: failed('Verification setup failed.', outputTail(result, 2000)), endedAt: new Date(this.o.now()).toISOString() });
+        if (result.code !== 0 || result.timedOut) run = await this.#save({ ...run, state: 'failed', note: `Verification setup failed. ${outputTail(result, 1000)}`.slice(0, 1200), endedAt: new Date(this.o.now()).toISOString() });
       }
       if (run.state === 'running') {
         if (this.#closed) return null;
@@ -102,7 +107,7 @@ export class PullRequestVerification {
         const launched = await this.o.launcher.launch({ owner: { kind: 'verification', projectId: project.id, id: run.id }, turn: 1, runtime: run.runtime, modelId: run.modelId, model: run.model, modelLabel: run.modelLabel,
           effort: 'medium', permissions: 'write', cwd: path, safetyProfile: 'verification', systemAppend: VERIFICATION_APPEND,
           prompt: () => `Verify pull request #${thread.pr!.number}: ${thread.title}\nCommit: ${run.commit}\n\n${thread.lastReport?.summary ?? thread.task}`, tools, timeoutMs: this.o.timeoutMs });
-        if (launched.kind === 'unavailable') { await tools.close(); run = await this.#save({ ...run, state: 'failed', note: launched.reason, report: failed('No verification account is available.', launched.reason), endedAt: new Date(this.o.now()).toISOString() }); }
+        if (launched.kind === 'unavailable') { await tools.close(); run = await this.#save({ ...run, state: 'failed', note: launched.reason, endedAt: new Date(this.o.now()).toISOString() }); }
         else {
           if (this.#closed) { await launched.run.terminate(); await launched.release(); return null; }
           try {
@@ -111,11 +116,11 @@ export class PullRequestVerification {
             const outcome = await active.execution.done;
             // TurnExecution only resolves after the entire owned process group is gone.
             rmSync(processPath, { force: true });
-            let report = tools.report ?? failed('Verification ended without its required report.');
-            if (outcome.status !== 'completed') report = failed(`Verification ${outcome.status}.`, outcome.error?.message);
+            const report = tools.report;
+            let note = outcome.status !== 'completed' ? `Verification ${outcome.status}: ${outcome.error?.message ?? 'The session did not complete.'}` : !report ? 'Verification ended without its required report.' : undefined;
             const head = await this.o.git.resolve(path, 'HEAD'), dirty = (await this.o.git.run(path, ['status', '--porcelain=v1', '-z', '--untracked-files=all'])).stdout;
-            if (head !== run.commit || dirty) report = failed('Verification changed its worktree or created a commit.', dirty);
-            run = await this.#save({ ...run, state: report.result, report, endedAt: new Date(this.o.now()).toISOString() });
+            if (head !== run.commit || dirty) note = 'Verification changed its worktree or created a commit.';
+            run = await this.#save({ ...run, state: note ? 'failed' : report!.result, report, ...(note ? { note: this.o.redactor.text(note).slice(0, 1200) } : {}), endedAt: new Date(this.o.now()).toISOString() });
           } finally { await launched.release(); }
         }
       }

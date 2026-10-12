@@ -4,16 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "LJ4 owner goals refill into a draft, approve on phone, obey daily caps and pause queued work",
   "layout": "desktop-light",
-  "screenshot": "screenshots/LJ4-goal-proposal-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/LJ4-goal-proposal-desktop-light.png",
   "expected": "the Jevellan web app \"LJ4 goal proposal\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"LJ4 owner goals refill into a draft, approve on phone, obey daily caps and pause queued work\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Mesh journey fix…', 'dev-ma…'). The full text isn't visible, but the rows can still be read and used.",
-      "The 'GOALS 1' section header at the bottom of the right panel is clipped at the window edge. The panel looks scrollable, so it's not blocking.",
-      "In the 'Proposed tasks' card the full list of buttons (Approve/Reject/Start now/Edit/Cancel/Move to top/Move to bottom/arrows) is crowded and wraps onto two rows. It's still legible and every button can be reached.",
-      "The same 'Exercise an important path' draft appears both under Proposed tasks and under Queue. This may look redundant, but it doesn't break the layout."
+      "The right panel's last line ('Add checks or a review to run every night') is cut off at the bottom of the screen, but the panel looks scrollable, so the text is still reachable",
+      "Session titles and subtitles in the sidebar are shortened with ellipses (e.g. 'Context · J11 memory journ…'), which is the normal way long names are handled",
+      "The proposed task appears twice, once under 'Waiting for you' and again under 'Queue' (collapsed). That's expected for a draft, but it looks a bit repetitive"
     ]
   }
 }

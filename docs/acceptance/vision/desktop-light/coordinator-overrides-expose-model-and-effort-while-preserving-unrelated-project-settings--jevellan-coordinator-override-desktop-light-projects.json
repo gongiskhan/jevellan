@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Background page is blurred behind the modal overlay, as intended; the modal's title, explanation, Model and Effort selects, fresh-session checkbox, helper text and the Cancel and Apply buttons are all fully visible and readable",
-      "The background text shows 'Noted.' twice in a row in several places, a possible duplicate-entry rendering quirk"
+      "The page behind the modal is blurred, which is expected because the modal is open. Background text is unreadable, but the dialog is the focus of this step.",
+      "The blurred background header shows 'Claude Code Fable · high' while the dialog shows 'Claude Code Opus' / 'low'. This is likely a pending, unapplied override, so it is not a layout problem."
     ]
   }
 }

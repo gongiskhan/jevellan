@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/screenshots/LJ5-review-from-commit-desktop-dark.png",
+  "expected": "the Jevellan web app \"LJ5 review from commit\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Enabled' label sits below its checkbox instead of next to it, so the two look less clearly connected.",
+      "The Save and Cancel buttons are left-aligned and packed close together, rather than sitting in a separate right-aligned footer like most dialogs.",
+      "The helper text under 'Review from commit' is small and low-contrast. It's still readable, but it's the faintest text in the dialog."
+    ]
+  }
+}

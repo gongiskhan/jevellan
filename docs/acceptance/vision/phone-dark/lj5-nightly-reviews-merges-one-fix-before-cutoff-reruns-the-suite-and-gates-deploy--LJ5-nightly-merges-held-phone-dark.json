@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy",
   "layout": "phone-dark",
-  "screenshot": "screenshots/LJ5-nightly-merges-held-phone-dark.png",
+  "screenshot": "docs/acceptance/screenshots/LJ5-nightly-merges-held-phone-dark.png",
   "expected": "the Jevellan web app \"LJ5 nightly merges held\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip is scrolled so the leftmost tab ('Chat') is partly cut off at the left edge. It still reads as a horizontally scrollable strip, with the active 'Pull requests' tab fully visible.",
-      "The 'Merge' button has low contrast, which fits a disabled or held state but is a bit faint against the dark card.",
-      "The 'Why' and 'Open thread' links are pink and sit very close together, so they're slightly hard to tell apart as two separate controls."
+      "The tab strip is clipped at the left edge, so 'Chat' shows as 'hat'. The strip looks horizontally scrollable, so the tab can still be reached.",
+      "The 'Why', 'Open thread' and 'Open task' links are bright pink and don't match the rest of the theme. 'Open task' also uses a larger font than the other two links.",
+      "The 'Merge' button is dimmed and low-contrast. This fits merges being held during the nightly window, but the button is hard to see."
     ]
   }
 }

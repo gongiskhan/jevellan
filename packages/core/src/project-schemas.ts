@@ -37,7 +37,7 @@ export const ProjectWorkSettingsSchemaV2 = ProjectWorkSettingsSchemaV1.extend({
     .default({ enabled: false, time: '02:00', timezone: 'Europe/Lisbon' }),
   refill: z.strictObject({ enabled: z.boolean(), minIntervalMinutes: z.number().int().min(10).max(1440) }).default({ enabled: true, minIntervalMinutes: 30 }),
 });
-export const ProjectWorkSettingsSchema = ProjectWorkSettingsSchemaV2.omit({ coordinatorReview: true }).extend({ schema: z.literal('project-work-settings-v3'), autoMerge: z.boolean().default(false), riskyAreas: z.string().max(2000).default(''),
+export const ProjectWorkSettingsSchema = ProjectWorkSettingsSchemaV2.omit({ coordinatorReview: true }).extend({ schema: z.literal('project-work-settings-v3'), autoMerge: z.boolean().default(false), riskyAreas: z.string().max(2000).default(''), requiredChecks: z.array(z.string().min(1).max(200)).max(50).default([]),
   perDeviceLimits: z.record(IdSchema, z.number().int().min(1).max(10)).default({}) });
 export type ProjectWorkSettings = z.infer<typeof ProjectWorkSettingsSchema>;
 export const StoredProjectWorkSettingsSchema = z.union([ProjectWorkSettingsSchemaV1, ProjectWorkSettingsSchemaV2, ProjectWorkSettingsSchema])
@@ -135,7 +135,7 @@ export const PullRequestReviewSchema = z.strictObject({ schema: z.literal('pull-
 export type PullRequestReview = z.infer<typeof PullRequestReviewSchema>;
 export const PullRequestStateSchema = z.strictObject({ number: positive, url: z.url(),
   state: z.enum(['open', 'merged', 'closed']), headSha: z.string(), checks: z.enum(['pending', 'passing', 'failing', 'none']),
-  mergeable: z.enum(['clean', 'conflict', 'unknown']), updatedAt: TimestampSchema, review: PullRequestReviewSchema.optional() });
+  headFirstSeenAt: TimestampSchema.optional(), passedChecks: z.array(z.string().max(200)).max(2000).optional(), mergeable: z.enum(['clean', 'conflict', 'unknown']), updatedAt: TimestampSchema, review: PullRequestReviewSchema.optional() });
 export type PullRequestState = z.infer<typeof PullRequestStateSchema>;
 // 5.8
 export const PlacementRecordSchema = z.strictObject({ schema: z.literal('placement-v1'), questionSet: z.literal('p-v1'),
@@ -185,7 +185,7 @@ export const ProjectDecisionSchema = z.strictObject({ schema: z.literal('project
   id: IdSchema, projectId: IdSchema, threadId: IdSchema.optional(), from: z.enum(['coordinator', 'thread']),
   question: z.string().min(1).max(2000), options: z.array(OptionSchema).max(4).default([]),
   createdAt: TimestampSchema, answeredAt: TimestampSchema.optional(), answer: DecisionAnswerSchema.optional(),
-  merge: z.strictObject({ commit: z.string().regex(/^[a-f0-9]{40,64}$/u), prNumber: positive }).optional(),
+  merge: z.strictObject({ commit: z.string().regex(/^[a-f0-9]{40,64}$/u), prNumber: positive, reason: z.string().max(1200).optional(), failures: z.array(z.strictObject({ what: z.string().max(500), output: z.string().max(2000) })).max(50).optional() }).optional(),
   withdrawnAt: TimestampSchema.optional() });
 export type ProjectDecision = z.infer<typeof ProjectDecisionSchema>;
 // 5.10 hub namespace project-notebooks, key projectId
@@ -367,7 +367,7 @@ export const ProjectDeviceSetupSchema = z.strictObject({ schema: z.literal('proj
 export type ProjectDeviceSetup = z.infer<typeof ProjectDeviceSetupSchema>;
 export const ProjectWorkViewSchema = z.strictObject({ schema: z.literal('project-work-view-v1'),
   project: z.strictObject({ id: IdSchema, name: text, branchPolicy: z.enum(['main', 'external']), baseBranch: z.string().nullable() }),
-  settings: ProjectWorkSettingsSchema, settingsNotice: z.string().optional(),
+  settings: ProjectWorkSettingsSchema, settingsNotice: z.string().optional(), githubNotice: z.string().max(500).optional(),
   coordinator: CoordinatorViewSchema, threads: z.array(ThreadIndexSchema),
   decisions: z.strictObject({ open: z.array(ProjectDecisionSchema), answered: z.array(ProjectDecisionSchema).max(10) }),
   pullRequests: z.array(PullRequestEntrySchema), notebookRevision: count, lastEventId: count,
@@ -406,7 +406,7 @@ export const DecisionAnswerRequestSchema = z.strictObject({ schema: z.literal('d
   ...DecisionAnswerFieldsSchema.shape }).refine(answerPresent, DECISION_ANSWER_REQUIRED);
 export const ProjectWorkSettingsRequestSchema = z.strictObject({ schema: z.literal('project-work-settings-request-v1'), revision,
   settings: ProjectWorkSettingsSchema.omit({ schema: true, projectId: true, revision: true }).extend({
-    allowMainIsolation: z.boolean().optional(), threadRules: z.string().max(4000).optional(), autoMerge: z.boolean().optional(), riskyAreas: z.string().max(2000).optional(),
+    allowMainIsolation: z.boolean().optional(), threadRules: z.string().max(4000).optional(), autoMerge: z.boolean().optional(), riskyAreas: z.string().max(2000).optional(), requiredChecks: z.array(z.string().min(1).max(200)).max(50).optional(),
     nightlyWindow: ProjectWorkSettingsSchema.shape.nightlyWindow.removeDefault().optional(), refill: ProjectWorkSettingsSchema.shape.refill.removeDefault().optional(),
     perDeviceLimits: ProjectWorkSettingsSchema.shape.perDeviceLimits.removeDefault().optional(),
   }), clientRequestId: IdSchema.optional() });

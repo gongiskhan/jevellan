@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Enabled' checkbox sits above its label instead of next to it, so it looks out of line with the 'Run now' and 'Edit' buttons.",
-      "Session titles and metadata in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Gonca…'). This is expected truncation.",
-      "The 'Jobs (1)' disclosure at the bottom of the right panel sits right against the viewport edge and is only partly visible. It looks like the panel scrolls to it.",
-      "The 'Waiting for the coordinator' line in the job card in the main area is small, low-contrast text."
+      "The 'Jobs (1)' disclosure at the bottom of the right panel sits right at the viewport edge, so its lower part is clipped until you scroll.",
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · Gonca…').",
+      "The 'Enabled' checkbox sits above its label instead of beside it, so it doesn't line up with the 'Run now' and 'Edit' buttons.",
+      "The 'Nightly tests' card shows 'No output recorded.' even though the workflow passed, which looks sparse."
     ]
   }
 }

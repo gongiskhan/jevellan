@@ -10,10 +10,12 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'CONCLUDED 0' heading at the top of the right panel is cut off under the nightly-window banner. The panel looks scrolled, so this is most likely a scroll position or clipping issue and not a layout overlap.",
-      "In the right panel, the last card ('Switch mode nightly') is cut off at the bottom of the viewport. The panel can scroll, so its controls are still reachable.",
-      "On the nightly item cards, each 'Enabled' checkbox sits above its label instead of beside it, so the label lines up below the 'Run now' and 'Edit' buttons.",
-      "A large empty gap separates the last timeline card from the 'Coordinator is working…' status line."
+      "The right panel looks scrolled: the top section heading (\"CONCLUDED 0\") is clipped at the top edge of its scroll area, just below the nightly banner.",
+      "The last nightly card (\"Switch mode nightly\") is cut off at the bottom of the viewport, but it appears reachable by scrolling the right panel.",
+      "In each nightly card, the \"Enabled\" checkbox sits above its label instead of next to it, and there is extra empty space at the bottom of the card.",
+      "Sidebar session titles and subtitles are truncated with ellipses (e.g. \"Context · J11 memory journ…\").",
+      "The \"Nightly window finished\" event body is truncated with an ellipsis (\"No run of nightly.yml started today.…\").",
+      "The nightly cards show a \"Queued\" status while the timeline reports these jobs as timed-out. This may be a data or state mismatch, not a rendering problem."
     ]
   }
 }

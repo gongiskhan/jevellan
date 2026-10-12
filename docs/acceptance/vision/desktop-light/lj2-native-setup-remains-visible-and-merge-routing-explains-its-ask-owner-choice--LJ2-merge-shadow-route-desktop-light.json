@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ2 native setup remains visible and merge routing explains its ask-owner choice",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/screenshots/LJ2-merge-shadow-route-desktop-light.png",
+  "expected": "the Jevellan web app \"LJ2 merge shadow route\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"LJ2 native setup remains visible and merge routing explains its ask-owner choice\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The pull request #1 card's action row wraps awkwardly. The 'Jev would: ask you' chip is indented with empty space to its left, 'Why' and 'Should have asked me' sit beside it, and 'Didn't need asking' and 'Open thread' drop to the next line. 'Open task' is pushed right, away from the other links, so the row looks uneven but is still readable and clickable.",
+      "The 'Should have asked me' and 'Didn't need asking' links look like plain inline text links rather than buttons, so they don't clearly read as a pair of choices.",
+      "The right panel is cut off at 'GOALS 0' at the bottom of the screen. The panel scrolls, so the content is still reachable.",
+      "The coordinator thread repeats 'Noted.' three times, which adds clutter."
+    ]
+  }
+}

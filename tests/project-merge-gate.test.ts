@@ -1,7 +1,7 @@
 import { afterEach, expect, test } from 'vitest';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { AccountSchema, MergeDocumentsViewSchema, ProjectWorkSettingsSchema, SecretRedactor, VerificationReportSchema, defaultProjectWorkSettings, type MergeRoute, type ModelOption } from '../packages/core/dist/index.js';
+import { AccountSchema, GitHubClient, MergeDocumentsViewSchema, ProjectWorkSettingsSchema, SecretRedactor, VerificationReportSchema, defaultProjectWorkSettings, type MergeRoute, type ModelOption } from '../packages/core/dist/index.js';
 import { decideMergeRoute, type DecisionClient, type JevQuestions } from '../packages/decisions/dist/index.js';
 import { FakeRuntime, forThread } from '../packages/runtime-contract/dist/index.js';
 import { VERIFICATION_APPEND, VerificationTools, derivedId } from '../packages/projects/dist/index.js';
@@ -26,10 +26,11 @@ function transport(route: string) {
   };
   return { state, fetch: fetcher };
 }
-async function setup(route = 'merge', twoProviders = true) {
+async function setup(route = 'merge', twoProviders = true, clock?: () => number) {
   const jev = transport(route), second = new FakeRuntime(); Object.defineProperty(second, 'id', { value: 'fake2' });
-  const f = fixture = await projectFixture({ menu: twoProviders ? [author, verifier] : [author], runtimes: twoProviders ? { fake: new FakeRuntime(), fake2: second } : { fake: new FakeRuntime() }, jevKey: true, decisionFetch: jev.fetch });
+  const f = fixture = await projectFixture({ menu: twoProviders ? [author, verifier] : [author], runtimes: twoProviders ? { fake: new FakeRuntime(), fake2: second } : { fake: new FakeRuntime() }, jevKey: true, decisionFetch: jev.fetch, ...(clock ? { projectTimers: { now: clock } } : {}) });
   if (twoProviders) { f.app.hub.put('accounts', 'verify_account', AccountSchema, { schema: 'account-v1', id: 'verify_account', runtime: 'fake2', label: 'Verification account', kind: 'subscription', enabled: true, ceilingPct: 90, credential: 'per-device' }, 0); await f.app.accounts.check('verify_account'); }
+  await settings(f, { autoMerge: false });
   return { f, jev, second };
 }
 async function settings(f: ProjectFixture, over: object = {}) {
@@ -43,6 +44,7 @@ async function published(f: ProjectFixture) {
   commitStep(f, 'hello\n');
   const started = await f.app.projectWork.createThread(f.project.id, { schema: 'thread-create-request-v1', clientRequestId: 'create_gate', title: 'Fix greeting', task: 'Handle empty names.', isolation: 'worktree', modelId: author.id, effort: 'medium', deviceId: f.app.device.deviceId, taskContext: packet.task });
   await f.waitFor(() => f.thread(started.threadId), thread => thread.state === 'in-review' && !!thread.pr); await f.app.projectWork.idle();
+  f.github.setChecks(f.thread(started.threadId).pr!.number, 'passing');
   return f.thread(started.threadId);
 }
 async function routes(f: ProjectFixture, id: string) { const view = await f.app.projectWork.mergeRoute(f.project.id, id); return view.records.filter((row): row is MergeRoute => row.schema === 'merge-route-v1'); }
@@ -64,7 +66,7 @@ test('verification accepts one durable report and identical retries, rejects a s
 });
 test('automatic merging is opt-in and squash-merges only the routed head, with durable recovery', async () => {
   const { f, jev } = await setup(), thread = await published(f), before = git(f.checkout, 'rev-parse', 'HEAD');
-  await gate(f); expect(jev.state.calls).toHaveLength(0); expect(await routes(f, thread.id)).toHaveLength(0);
+  await gate(f); expect(jev.state.calls).toHaveLength(1); expect(await routes(f, thread.id)).toHaveLength(1); expect(f.thread(thread.id).pr?.state).toBe('open');
   await settings(f); await gate(f); expect(f.thread(thread.id).pr?.state).toBe('merged'); expect((await routes(f, thread.id))[0]).toMatchObject({ route: 'merge', state: 'merged', commit: thread.pr!.headSha });
   const merges = f.github.requests.filter(row => row.method === 'PUT' && row.path.endsWith('/merge')); expect(merges).toHaveLength(1); expect(merges[0]?.body).toMatchObject({ merge_method: 'squash', sha: thread.pr!.headSha });
   expect(git(f.checkout, 'rev-parse', 'HEAD')).toBe(before); await f.restart(); await gate(f); expect(f.github.requests.filter(row => row.method === 'PUT' && row.path.endsWith('/merge'))).toHaveLength(1);
@@ -119,13 +121,12 @@ test('no eligible alternate provider or model asks the owner without starting a 
   const { f } = await setup('test-then-merge', false), thread = await published(f); await settings(f); await gate(f);
   expect((await routes(f, thread.id))[0]).toMatchObject({ route: 'ask-owner', source: 'guard', state: 'asked' }); expect(f.fake.turnStarts.some(input => input.owner.kind === 'verification')).toBe(false);
 }, 90_000);
-test('verification rejects a dirty worktree, sends failures to the original thread, and reroutes its next push', async () => {
-  const { f, second, jev } = await setup('test-then-merge'), thread = await published(f);
-  second.enqueueTurn(async turn => { writeFileSync(join(turn.input.cwd, 'illegal.txt'), 'changed'); await turn.bridge('jevellan_verification_report', { result: 'passed', commands: ['npm test'], failures: [] }); return { status: 'completed' }; }, input => input.owner.kind === 'verification');
-  commitStep(f, 'fixed after verification\n'); await settings(f); await gate(f);
-  const first = (await routes(f, thread.id)).find(row => row.commit === thread.pr!.headSha)!; expect(first).toMatchObject({ state: 'failed', failures: 1 });
-  expect(f.fake.turnStarts.at(-1)?.prompt).toContain('Verification changed its worktree');
-  jev.state.route = 'ask-owner'; await f.waitFor(() => f.thread(thread.id).pr?.headSha, sha => !!sha && sha !== thread.pr!.headSha); await gate(f); expect(await routes(f, thread.id)).toHaveLength(2);
+test('a dirty verifier cannot merge, count a failed test, or send invented failures to the author', async () => {
+  const { f, second } = await setup('test-then-merge'), thread = await published(f); let messages = 0;
+  f.app.projectWork.mergeGate.o.message = async () => { messages++; };
+  for (let n = 0; n < 2; n++) second.enqueueTurn(async turn => { writeFileSync(join(turn.input.cwd, 'illegal.txt'), 'changed'); await turn.bridge('jevellan_verification_report', { result: 'passed', commands: ['npm test'], failures: [] }); return { status: 'completed' }; }, input => input.owner.kind === 'verification');
+  await settings(f); await gate(f); await gate(f);
+  expect((await routes(f, thread.id))[0]).toMatchObject({ state: 'asked', route: 'ask-owner', failures: 0 }); expect(messages).toBe(0); expect(f.thread(thread.id).pr?.state).toBe('open');
 }, 90_000);
 test('the newest eight owner corrections are retained in the next m-v1 packet', async () => {
   const { f, jev } = await setup('ask-owner'), thread = await published(f); await settings(f); await gate(f);
@@ -163,7 +164,7 @@ test('a verification that commits fails even when its worktree ends clean', asyn
   second.enqueueTurn(async turn => { writeFileSync(join(turn.input.cwd, 'greeting.txt'), 'Illegal commit\n'); git(turn.input.cwd, 'add', '-A'); git(turn.input.cwd, 'commit', '-m', 'Not allowed'); await turn.bridge('jevellan_verification_report', { result: 'passed', commands: ['npm test'], failures: [] }); return { status: 'completed' }; }, input => input.owner.kind === 'verification');
   f.fake.enqueueTurn(async turn => { await turn.bridge('jevellan_thread_report', { status: 'blocked', summary: 'Waiting for the owner.' }); return { status: 'completed' }; }, forThread());
   await settings(f); await gate(f); const view = await f.app.projectWork.mergeRoute('project', thread.id);
-  expect(view.records.find(row => row.schema === 'verification-run-v1')).toMatchObject({ state: 'failed', report: { result: 'failed', failures: [{ what: 'Verification changed its worktree or created a commit.' }] } }); expect(f.thread(thread.id).pr?.state).toBe('open');
+  expect(view.records.find(row => row.schema === 'verification-run-v1')).toMatchObject({ state: 'failed', note: 'Verification changed its worktree or created a commit.', report: { result: 'passed', failures: [] } }); expect(f.thread(thread.id).pr?.state).toBe('open');
 }, 90_000);
 test('an interrupted verification receipt is not replayed after a daemon restart', async () => {
   const { f, second } = await setup('test-then-merge'), thread = await published(f);
@@ -171,10 +172,10 @@ test('an interrupted verification receipt is not replayed after a daemon restart
   // Lost execution evidence: the worker is gone; the hub receipt still says running.
   const commit = thread.pr!.headSha, id = derivedId('mroute', thread.id, commit), verificationId = derivedId('pver', thread.id, commit, '1'), at = new Date().toISOString();
   await f.app.projectHub.putMergeDocument({ schema: 'verification-run-v1', id: verificationId, projectId: 'project', threadId: thread.id, revision: 0, deviceId: f.app.device.deviceId, commit, at, runtime: 'fake2', modelId: 'verify', model: 'scripted-model', modelLabel: 'Verifier', providerChoice: 'other-provider', state: 'running', report: null }, 0);
-  await f.app.projectHub.putMergeDocument({ schema: 'merge-route-v1', id, projectId: 'project', threadId: thread.id, revision: 0, deviceId: f.app.device.deviceId, commit, at, prNumber: thread.pr!.number, route: 'test-then-merge', source: 'jev', questionSet: 'm-v1', packet, calls: [], state: 'verifying', failures: 0, decisionId: null, verificationId, notified: [] }, 0);
+  await f.app.projectHub.putMergeDocument({ schema: 'merge-route-v1', id, projectId: 'project', threadId: thread.id, revision: 0, deviceId: f.app.device.deviceId, commit, at, prNumber: thread.pr!.number, route: 'test-then-merge', source: 'jev', questionSet: 'm-v1', packet, calls: [], state: 'verifying', failures: 0, decisionId: null, verificationId, notified: [], verificationRetries: 0 }, 0);
   f.fake.enqueueTurn(async turn => { await turn.bridge('jevellan_thread_report', { status: 'blocked', summary: 'Waiting after interrupted verification.' }); return { status: 'completed' }; }, forThread());
   await f.restart(); await gate(f); expect(second.turnStarts.filter(input => input.owner.kind === 'verification')).toHaveLength(0);
-  expect((await f.app.projectWork.mergeRoute('project', thread.id)).records.find(row => row.schema === 'verification-run-v1')).toMatchObject({ state: 'failed', report: { failures: [{ what: 'Verification was interrupted by a restart.' }] } }); expect(f.thread(thread.id).pr?.state).toBe('open');
+  expect((await f.app.projectWork.mergeRoute('project', thread.id)).records.find(row => row.schema === 'verification-run-v1')).toMatchObject({ state: 'failed', note: 'Verification was interrupted by a restart.', report: null }); expect(f.thread(thread.id).pr?.state).toBe('open');
 }, 90_000);
 
 test('when the other provider is ineligible verification records a different model on the author provider', async () => {
@@ -195,3 +196,116 @@ test('the owner Merge button retires its unanswered merge item without an automa
   expect((await f.app.projectHub.decision(route.decisionId!))?.document.withdrawnAt).toBeDefined();
   expect((await routes(f, thread.id))[0]).toMatchObject({ state: 'merged', notified: ['ask-owner:0'] });
 }, 90_000);
+test('a malformed routing packet falls back to ask-owner instead of throwing', async () => {
+  const jev = transport('merge');
+  void jev;
+  await expect(decideMergeRoute(undefined, { ...packet, summary: 'x'.repeat(4001) }, 'jev-latest', new SecretRedactor(), new AbortController().signal)).resolves.toMatchObject({ route: 'ask-owner', source: 'unavailable' });
+});
+test.each(['merge', 'test-then-merge', 'ask-owner'])('shadow mode records %s without merging or verifying', async choice => {
+  const { f, jev, second } = await setup(choice), thread = await published(f); await settings(f, { autoMerge: false });
+  f.github.setChecks(thread.pr!.number, 'passing'); await gate(f);
+  expect((await routes(f, thread.id))[0]?.route).toBe(choice); expect(jev.state.calls).toHaveLength(1);
+  expect(second.turnStarts).toHaveLength(0); expect(f.github.requests.some(row => row.method === 'PUT' && row.path.endsWith('/merge'))).toBe(false);
+});
+test('required checks must exist at the current head and no-checks has a five-minute grace', async () => {
+  const { f, jev } = await setup(), thread = await published(f);
+  await settings(f, { requiredChecks: ['result'] }); f.github.setChecks(thread.pr!.number, 'passing'); await gate(f);
+  expect(jev.state.calls).toHaveLength(0); expect(f.thread(thread.id).pr?.state).toBe('open');
+  f.github.setChecks(thread.pr!.number, { runs: [{ status: 'completed', conclusion: 'success', name: 'result' }], statuses: [] }); await gate(f);
+  expect(f.thread(thread.id).pr?.state).toBe('merged');
+});
+test.each(['stopped', 'failed'] as const)('an author thread that is %s asks the owner even when Jev chooses merge', async state => {
+  const { f } = await setup(), thread = await published(f); f.app.projectWork.store.update(thread.id, current => ({ ...current, state, endedAt: new Date().toISOString() }));
+  await settings(f); f.github.setChecks(thread.pr!.number, 'passing'); await gate(f);
+  expect((await routes(f, thread.id))[0]).toMatchObject({ route: 'ask-owner', state: 'asked' }); expect(f.thread(thread.id).pr?.state).toBe('open');
+});
+test('send back delivers once and never re-asks the returned head', async () => {
+  const { f } = await setup('ask-owner'), thread = await published(f); await settings(f); f.github.setChecks(thread.pr!.number, 'passing'); await gate(f);
+  const row = (await routes(f, thread.id))[0]!; let messages = 0;
+  f.app.projectWork.mergeGate.o.message = async () => { messages++; };
+  const answer = await f.request(`/api/projects/project/decisions/${row.decisionId}/answer`, 'POST', { schema: 'decision-answer-request-v1', clientRequestId: 'send_back_once', optionLabel: 'Send back with a note', text: 'Handle the empty name.' }); expect(answer.status).toBe(202);
+  for (let n = 0; n < 5; n++) await gate(f);
+  expect(messages).toBe(1); expect((await routes(f, thread.id))[0]?.state).toBe('failed');
+});
+test('an interrupted verifier retries once without counting a test failure or messaging the author', async () => {
+  const { f, second } = await setup('test-then-merge'), thread = await published(f);
+  let messages = 0; f.app.projectWork.mergeGate.o.message = async () => { messages++; };
+  second.enqueueTurn(async () => ({ status: 'failed', error: { kind: 'other', message: 'Temporary provider failure.' } }), input => input.owner.kind === 'verification');
+  second.enqueueTurn(async () => ({ status: 'failed', error: { kind: 'other', message: 'Temporary provider failure again.' } }), input => input.owner.kind === 'verification');
+  await settings(f); f.github.setChecks(thread.pr!.number, 'passing'); await gate(f); await gate(f); await gate(f);
+  expect(second.turnStarts.filter(input => input.owner.kind === 'verification')).toHaveLength(2);
+  expect((await routes(f, thread.id))[0]).toMatchObject({ failures: 0, route: 'ask-owner', state: 'asked' }); expect(messages).toBe(0);
+});
+test('verification failures that cannot reach the author ask once with attached failures', async () => {
+  const { f, second } = await setup('test-then-merge'), thread = await published(f);
+  second.enqueueTurn(async turn => { await turn.bridge('jevellan_verification_report', { result: 'failed', commands: ['npm test'], failures: [{ what: 'Broken greeting', output: 'Expected a default.' }] }); return { status: 'completed' }; }, input => input.owner.kind === 'verification');
+  let messages = 0; f.app.projectWork.mergeGate.o.message = async () => { messages++; throw new Error('The thread cannot take a message.'); };
+  await settings(f); f.github.setChecks(thread.pr!.number, 'passing'); await gate(f); await gate(f); await gate(f);
+  expect(messages).toBe(1); expect((await routes(f, thread.id))[0]).toMatchObject({ route: 'ask-owner', state: 'asked' });
+  const decision = (await f.app.projectHub.decisions('project')).find(row => row.merge)!;
+  expect(JSON.stringify(decision)).toContain('Broken greeting');
+});
+test('without required checks, an empty check list waits five minutes from first seeing the head', async () => {
+  const { f, jev } = await setup(), thread = await published(f); let now = Date.now();
+  f.github.setChecks(thread.pr!.number, 'none'); f.app.projectWork.mergeGate.o.now = () => now; await settings(f); await gate(f);
+  expect(jev.state.calls).toHaveLength(0); expect(f.thread(thread.id).pr?.state).toBe('open');
+  now += 5 * 60_000; await gate(f); expect(f.thread(thread.id).pr?.state).toBe('merged');
+});
+test('an undelivered coordinator message fences the merge until its turn takes it', async () => {
+  const { f } = await setup(), thread = await published(f), at = new Date().toISOString();
+  f.app.projectWork.store.update(thread.id, current => ({ ...current, queuedMessages: [{ id: 'pending_coordinator', from: 'coordinator', at, interrupt: false, text: 'Fix the nearby empty case before merging.' }] }));
+  await settings(f); f.github.setChecks(thread.pr!.number, 'passing');
+  f.app.projectWork.mergeGate.sweep(); await f.app.projectWork.idle();
+  expect(f.thread(thread.id).pr?.state).toBe('open');
+});
+test('five owner-waiting PRs over a simulated hour use fewer than 1000 GitHub requests', { timeout: 300_000 }, async () => {
+  let now = Date.now(); const { f } = await setup('ask-owner', true, () => now);
+  for (let n = 0; n < 5; n++) {
+    commitStep(f, `PR ${n}\n`);
+    const started = await f.app.projectWork.createThread('project', { schema: 'thread-create-request-v1', clientRequestId: `budget_${n}`, title: `Budget PR ${n}`, task: 'Small tested fix.', isolation: 'worktree', modelId: author.id, deviceId: f.app.device.deviceId });
+    await f.waitFor(() => f.thread(started.threadId), thread => thread.state === 'in-review' && !!thread.pr); f.github.setChecks(f.thread(started.threadId).pr!.number, 'passing');
+  }
+  await settings(f); await gate(f); const before = f.github.requests.length;
+  for (let minute = 0; minute < 60; minute++) {
+    now += 60_000; await f.app.projectWork.tracker.poll();
+    for (let sweep = 0; sweep < 6; sweep++) { f.app.projectWork.mergeGate.sweep(); await f.app.projectWork.idle(); }
+  }
+  expect(f.github.requests.length - before).toBe(900);
+});
+
+test('an owner merge after an unfinished automatic attempt emits no automatic-merge event, and concluded gates stop sweeping', async () => {
+  const { f } = await setup(), thread = await published(f); await gate(f);
+  const route = (await routes(f, thread.id))[0]!;
+  await f.app.projectHub.putMergeDocument({ ...route, state: 'merging' }, route.revision);
+  const events: string[] = []; f.app.projectWork.mergeGate.o.event = async (_project, event) => { if (event.kind === 'merge-gate') events.push(event.outcome); };
+  await f.app.projectWork.tracker.merge(thread.id, thread.pr!.headSha); await gate(f);
+  expect(events).not.toContain('automatically-merged');
+  const documents = f.app.projectHub.mergeDocuments.bind(f.app.projectHub); let reads = 0;
+  f.app.projectHub.mergeDocuments = async (...args) => { reads++; return documents(...args); };
+  for (let n = 0; n < 3; n++) { f.app.projectWork.mergeGate.sweep(); await f.app.projectWork.idle(); }
+  expect(reads).toBe(0);
+  const correction = await f.app.projectWork.mergeCorrection('project', thread.id, { schema: 'merge-correction-input-v1', clientRequestId: 'merged_correction', commit: thread.pr!.headSha, correction: 'should-have-asked' });
+  expect(correction.records.some(row => row.schema === 'merge-correction-v1')).toBe(true);
+});
+
+test('a low token budget slows PR polling to five minutes and shows a project notice', async () => {
+  let now = Date.now(); const { f } = await setup('ask-owner', true, () => now), thread = await published(f); await gate(f);
+  const token = await f.app.projectWork.mergeGate.o.github.token('project');
+  const probe = new GitHubClient({ token: async () => token, baseUrl: f.github.url, fetch: async url => Response.json(String(url).includes('check-runs') ? { total_count: 0, check_runs: [] } : { total_count: 0, statuses: [] }, { headers: { 'x-ratelimit-remaining': '900', 'x-ratelimit-limit': '5000', 'x-ratelimit-reset': String((now + 3600_000) / 1000) } }) });
+  await probe.checks({ owner: 'fixture', repo: 'repo' }, thread.pr!.headSha);
+  const before = f.github.requests.length; now += 60_000; await f.app.projectWork.tracker.poll();
+  expect(f.github.requests.length).toBe(before); expect((await f.app.projectWork.views.project('project')).githubNotice).toContain('less than 20%');
+  now += 240_000; await f.app.projectWork.tracker.poll(); expect(f.github.requests.length - before).toBe(3);
+});
+
+test('verification retries one moved head and asks the owner after a second head move', async () => {
+  const { f, second } = await setup('test-then-merge'), thread = await published(f);
+  for (let n = 0; n < 2; n++) second.enqueueTurn(async turn => {
+    writeFileSync(join(thread.cwd, 'greeting.txt'), `Head moved ${n}\n`); git(thread.cwd, 'add', '-A'); git(thread.cwd, 'commit', '-m', `Head moved ${n}`); git(thread.cwd, 'push', 'origin', thread.branch!);
+    await turn.bridge('jevellan_verification_report', { result: 'passed', commands: ['test -f greeting.txt'], failures: [] }); return { status: 'completed' };
+  }, input => input.owner.kind === 'verification');
+  second.enqueueTurn(async turn => { await turn.bridge('jevellan_verification_report', { result: 'passed', commands: ['test -f greeting.txt'], failures: [] }); return { status: 'completed' }; }, input => input.owner.kind === 'verification');
+  await settings(f); await gate(f); await gate(f); await gate(f);
+  expect(second.turnStarts.filter(input => input.owner.kind === 'verification')).toHaveLength(2);
+  expect((await routes(f, thread.id)).some(row => row.state === 'asked' && row.failures === 0)).toBe(true); expect(f.thread(thread.id).pr?.state).toBe('open');
+});

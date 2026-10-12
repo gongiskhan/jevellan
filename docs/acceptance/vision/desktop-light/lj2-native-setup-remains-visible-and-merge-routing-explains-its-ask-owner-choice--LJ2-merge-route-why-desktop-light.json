@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "LJ2 native setup remains visible and merge routing explains its ask-owner choice",
   "layout": "desktop-light",
-  "screenshot": "screenshots/LJ2-merge-route-why-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/LJ2-merge-route-why-desktop-light.png",
   "expected": "the Jevellan web app \"LJ2 merge route why\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"LJ2 native setup remains visible and merge routing explains its ask-owner choice\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Should have asked me' and 'Didn't need asking' buttons sit on the same row as the 'Changed files and context' toggle and hug the right edge. They look crowded, and they may get pushed around when the toggle is opened.",
-      "The line '2 added and removed lines across 2 files' reads awkwardly and is unclear: it doesn't say how many lines were added and how many were removed.",
-      "The full 40-character commit hash takes up a lot of the sentence. A shortened hash would read better."
+      "The 'Should have asked me' and 'Didn't need asking' buttons share a row with the 'Changed files and context' disclosure, which makes the layout look cramped and the grouping unclear.",
+      "The feedback buttons are still shown after the 'Saved for future merge decisions.' confirmation, so it's unclear whether the choice was already recorded.",
+      "The full commit hash is long and makes the 'Checked commit' line wrap awkwardly."
     ]
   }
 }

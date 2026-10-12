@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Pull requests' tab is clipped at the right edge of the tab bar. It looks like a horizontally scrollable tab row, so it can still be reached.",
-      "The 'Enabled' checkbox sits above its label and isn't lined up with the 'Run now' and 'Edit' buttons.",
-      "The workflow result shows 'No output recorded.', so the screen has no run output to back up the success status."
+      "The last tab, 'Pull requests', is cut off at the right edge of the tab bar. The bar probably scrolls sideways, so the tab can still be reached.",
+      "The 'Working…' status badge in the header is shortened with an ellipsis.",
+      "The passed run shows 'No output recorded.', so the expanded panel has no useful details.",
+      "The 'Enabled' checkbox sits above its label instead of beside it, which doesn't line up with the 'Run now' and 'Edit' buttons."
     ]
   }
 }

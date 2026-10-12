@@ -10,7 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background behind the modal is heavily dimmed and blurred, so the page underneath is hard to read. This is expected while the dialog is open."
+      "The background behind the modal is dimmed heavily, so the sidebar and right panel are hard to read. That is expected while a modal is open.",
+      "The model select reads 'Claude Code Opus' and the effort select reads 'low', which is a lowercase value next to title-case labels."
     ]
   }
 }

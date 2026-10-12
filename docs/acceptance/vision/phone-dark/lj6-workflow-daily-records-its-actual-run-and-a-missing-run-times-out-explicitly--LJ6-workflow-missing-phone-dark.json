@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab row runs off the right edge, so 'Pull requests' is cut off. It looks like a tab bar you can scroll sideways, but there's no visible scroll hint.",
-      "The 'Enabled' checkbox and its label sit stacked under the Run now/Edit buttons instead of in line with them, which looks a little uneven."
+      "The 'Pull requests' tab is clipped at the right edge of the tab bar. The tab row probably scrolls sideways, so the tab is still reachable.",
+      "The header's '...' menu button sits very close to the right edge of the screen."
     ]
   }
 }

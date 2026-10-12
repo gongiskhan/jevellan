@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Right panel is scrolled so the 'CONCLUDED 0' section heading is cut off at the top edge, just under the nightly banner. It is still reachable by scrolling.",
-      "Right panel's last card ('Switch mode nightly') is cut off at the bottom of the viewport. Scrolling reaches it.",
-      "Nightly cards have a lot of empty space below the 'Enabled' checkbox row."
+      "The right panel is scrolled, so the 'CONCLUDED 0' section heading is clipped at the top edge.",
+      "The last nightly item card ('Switch mode nightly') is cut off at the bottom of the right panel. It can be reached by scrolling.",
+      "The nightly tests line in the 'Nightly window finished' message ends in an ellipsis ('...before this item completed…'), so the full reason isn't shown.",
+      "Sidebar session titles and subtitles end in ellipses (e.g. 'Context · J11 memory journ…')."
     ]
   }
 }

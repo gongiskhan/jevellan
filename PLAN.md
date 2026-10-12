@@ -5,8 +5,8 @@ Authority: the owner's approved plan, BRIEF-loop.md and BRIEF-loop-amendment-1.m
 ## Amendment 2 work order
 
 1. Part 1 (pushed: Ekoa 30dffb6c): refresh Ekoa PR 208 onto current main and implement the reversible scheduler switch, exact SHA inputs and missed-night alert; update tests/docs and PR description. Commit/push its branch and the Jevellan part checkpoint.
-2. Part 2 (implemented and verified; publication checkpoint): variable-based watch/dispatch, actual chain/run identity, optional pin cleanup and Nightly mode UI. Verify and commit/push on main.
-3. Part 3 (next): reproduce each specified nightly/gate defect with a failing regression, fix it, then verify affected backend/browser paths and commit/push on main.
+2. Part 2 (pushed: f916302): variable-based watch/dispatch, actual chain/run identity, optional pin cleanup and Nightly mode UI; affected backend and four-layout LJ6 verified.
+3. Part 3 (verified; publication checkpoint): regressions reproduce the specified nightly/gate defects against Part 2. Bounded review input, direct queued fixes, normal overnight dispatch, actual-open deadlines, complete reports, required checks, bounded polling, recovery, shadow routes and post-merge corrections are implemented. The complete affected run passes 214 cases in eleven files, with a final 21-case nightly/daily/stream rerun for replacement-baseline handling. Four-layout browsers pass 20/20 with 68 clear live vision verdicts; typecheck/lint/build pass. Commit/push on main; the complete backend suite also runs as a closing 0.2.1 gate.
 4. Part 4: real sandbox verification journeys, shadow Ekoa preset/LJ9, power readiness and GitHub minutes report; cut 0.2.1, run closing gates and one crucial-issues review, then activate after the required owner inputs. Two clean watch nights precede the owner setting jevellan.
 
 Decisions 661–690 in REPORT record each change. Existing unaffected work stays built. No native-home/owner-checkout changes or attribution.

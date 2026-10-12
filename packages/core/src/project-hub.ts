@@ -1,7 +1,7 @@
 import type { MergeDocument } from './merge-schemas.js';
 import type { ProjectJob, ProjectDaily, ProjectJobRun, ProjectWindow } from './project-daily-schemas.js';
 import type {
-  DecisionAnswer, FileReservation, PlacementOverride, ProjectCoordinator, ProjectCoordinatorStatus, ProjectDecision, ProjectEnvelope, ProjectMail, ProjectNotebook, ProjectWorkSettings, PullRequestReview, ThreadIndex,
+  DecisionAnswer, FileReservation, PlacementOverride, ProjectCoordinator, ProjectCoordinatorStatus, ProjectDecision, ProjectEnvelope, ProjectMail, ProjectNotebook, ProjectWorkSettings, ThreadIndex,
 } from './project-schemas.js';
 import type { HeldCheckout, ProjectWorkSummary, ReservationConflict, ReservationRequest } from './project-hub-schemas.js';
 import type { Stored } from './store.js';
@@ -23,7 +23,7 @@ export type ReserveOutcome = { granted: true; reservation: Stored<FileReservatio
  * Phase 6 adds mail, reservations and held checkouts.
  */
 export interface ProjectHub {
-  mergeDocuments(projectId: string, after?: string): Promise<{ records: MergeDocument[]; next: string | null }>;
+  mergeDocuments(projectId: string, after?: string, threadId?: string): Promise<{ records: MergeDocument[]; next: string | null }>;
   mergeDocument(id: string): Promise<Stored<MergeDocument> | null>;
   putMergeDocument(document: MergeDocument, expectedRevision: number): Promise<Stored<MergeDocument>>;
   jobs(projectId: string, after?: string): Promise<{ records: ProjectJob[]; next: string | null }>;
@@ -59,8 +59,6 @@ export interface ProjectHub {
   threads(projectId: string, after?: string): Promise<{ records: ThreadIndex[]; next: string | null }>;
   thread(threadId: string): Promise<Stored<ThreadIndex> | null>;
   publishThread(index: ThreadIndex, eventId: number): Promise<{ eventId: number }>;
-  review(threadId: string): Promise<Stored<PullRequestReview> | null>;
-  putReview(review: PullRequestReview, expectedRevision: number): Promise<Stored<PullRequestReview>>;
   // decisions: open plus answered in the last 14 days, ordered by id
   decisions(projectId: string): Promise<ProjectDecision[]>;
   decision(id: string): Promise<Stored<ProjectDecision> | null>;

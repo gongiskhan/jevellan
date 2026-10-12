@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/screenshots/LJ5-review-from-commit-desktop-light.png",
+  "expected": "the Jevellan web app \"LJ5 review from commit\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Enabled' label sits on its own line under the checkbox instead of next to it, so the two look less clearly connected.",
+      "The helper text 'Read-only, high effort, on the other provider…' sits close to the commit field. It reads fine but looks a little crowded."
+    ]
+  }
+}

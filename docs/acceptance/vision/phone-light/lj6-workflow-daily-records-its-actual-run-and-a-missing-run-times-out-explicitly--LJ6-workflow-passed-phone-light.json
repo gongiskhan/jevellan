@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Pull requests' tab is clipped at the right edge of the tab strip. It is probably a horizontally scrollable row, so the tab can still be reached.",
-      "The workflow output box says 'No output recorded.' even though the workflow succeeded. This may be expected, but the panel gives no useful detail."
+      "The top tab row is clipped at the right edge: 'Pull requests' is partly cut off. It looks like a tab bar you can scroll sideways, so you can still reach it.",
+      "The status pill is cut short to 'Working…'.",
+      "The 'Enabled' label sits under its checkbox instead of beside it, which looks slightly out of line with the Run now and Edit buttons."
     ]
   }
 }

@@ -7,16 +7,19 @@ export const MERGE_CRITERIA = {
   'ask-owner': 'Touches a risky area, changes stored data or production behaviour, or is large or hard to undo.',
 };
 export async function decideMergeRoute(client: DecisionClient | undefined, input: z.infer<typeof MergeRouteStateSchema>, model: string, redactor: Pick<SecretRedactor, 'document' | 'text'>, signal: AbortSignal) {
-  const packet = MergeRouteStateSchema.parse(redactor.document(input)), calls: JevCall[] = [];
+  const calls: JevCall[] = []; let packet: z.infer<typeof MergeRouteStateSchema>;
   try {
+    packet = MergeRouteStateSchema.parse(redactor.document(input));
     if (!client) throw new Error('Jev is unavailable.');
     if (JSON.stringify(packet).length > 100_000) throw new Error('This pull request is too large for a complete merge-routing packet.');
     const answer = (await askJev(client, { model, state: JSON.stringify(packet), questions: { merge_route: { type: 'choice', instructions: 'Choose how this checked pull request reaches main.', criteria: MERGE_CRITERIA } }, kind: 'merge', calls }, signal))?.answers.merge_route;
     if (answer?.type !== 'choice') throw new Error('Jev did not return a merge route.');
     const choices = Object.keys(MERGE_CRITERIA), score = (key: string) => answer.probabilities[key] ?? 0, max = Math.max(...choices.map(score));
     const route = MergeRouteNameSchema.parse(score(answer.choice) === max ? answer.choice : choices.find(key => score(key) === max));
-    return { route, source: 'jev' as const, packet, calls, probabilities: answer.probabilities };
+    return { route, source: 'jev' as const, reason: MERGE_CRITERIA[route], packet, calls, probabilities: answer.probabilities };
   } catch (error) {
+    const fallback = MergeRouteStateSchema.safeParse(redactor.document(input));
+    packet = fallback.success ? fallback.data : { schema: 'merge-route-state-v1', title: String(input.title).slice(0, 120), task: { type: 'feature', needs: [], goal: null }, summary: '', riskyAreas: '', files: [], totalSize: 0, corrections: [] };
     return { route: 'ask-owner' as const, source: 'unavailable' as const, packet, calls, reason: redactor.text(error instanceof Error ? error.message : 'Jev is unavailable.').slice(0, 1200) };
   }
 }

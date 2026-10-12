@@ -32,6 +32,7 @@ import { ConversationPage, ConversationSidebar, NewConversation } from './conver
 import { CursorConversationPage } from './cursor-sessions.js';
 import { ProjectWorkPage, ProjectsSidebar } from './project-work.js';
 import { projectRoute } from './project-work-model.js';
+import { TaskPage } from './task-page.js';
 import { ThreadPage } from './thread-page.js';
 import { SetupPage } from './setup.js';
 import { ImproverPage, useImprover } from './improver.js';
@@ -526,6 +527,8 @@ function App() {
               {settingsNav}
               <div className="settings-content">{settingsPage}</div>
             </div>
+          ) : project?.taskId ? (
+            <TaskPage {...props} projectId={project.projectId} taskId={project.taskId} key={path} />
           ) : project?.threadId ? (
             <ThreadPage {...props} navigation={navigation} projectId={project.projectId} threadId={project.threadId} key={path} />
           ) : project ? (

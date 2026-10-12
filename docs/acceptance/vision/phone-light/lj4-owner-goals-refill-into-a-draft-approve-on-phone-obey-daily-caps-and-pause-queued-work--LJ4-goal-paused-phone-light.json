@@ -4,14 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "LJ4 owner goals refill into a draft, approve on phone, obey daily caps and pause queued work",
   "layout": "phone-light",
-  "screenshot": "screenshots/LJ4-goal-paused-phone-light.png",
+  "screenshot": "docs/acceptance/screenshots/LJ4-goal-paused-phone-light.png",
   "expected": "the Jevellan web app \"LJ4 goal paused\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"LJ4 owner goals refill into a draft, approve on phone, obey daily caps and pause queued work\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Pull requests' tab is cut off at the right edge of the tab strip. It looks like a horizontally scrolling tab row, so the tab can still be reached.",
-      "The 'Asks' and 'Daily' headings sit right up against the content above them, with less spacing than the other sections."
+      "The 'Pull requests' tab is clipped at the right edge. The tab strip looks horizontally scrollable, so the tab can still be reached.",
+      "The 'Working…' status pill is shortened with an ellipsis next to the model label.",
+      "The 'Asks' and 'Daily' headings sit tightly against the content above them, with little vertical spacing compared with other sections."
     ]
   }
 }

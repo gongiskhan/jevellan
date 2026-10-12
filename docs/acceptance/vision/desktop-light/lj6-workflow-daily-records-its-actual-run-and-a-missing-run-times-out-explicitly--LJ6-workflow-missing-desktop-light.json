@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The right panel is scrolled, so the 'CONCLUDED 0' section heading at the top is cut off under the header divider. The content underneath it is still readable.",
-      "Session titles and metadata in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Improver sandbox · Gonca…').",
-      "The 'Missing run' card's status badge says 'Failed at 10:16 AM', but the conversation entry says 'timed-out'. The wording doesn't match, but both are readable.",
-      "The 'Nightly tests' card's dark output box says 'No output recorded.', so the expanded success row shows an empty-looking block."
+      "The right panel is scrolled, so the 'CONCLUDED 0' section header is clipped at the top edge. The content is still reachable by scrolling up.",
+      "Each job card's 'Enabled' checkbox sits above its label instead of beside it, which looks out of line with the 'Run now' and 'Edit' buttons.",
+      "The right panel's section headers are misaligned: 'NIGHTLY 2' and 'GOALS 0' are indented differently from the 'Project day' text and the buttons."
     ]
   }
 }

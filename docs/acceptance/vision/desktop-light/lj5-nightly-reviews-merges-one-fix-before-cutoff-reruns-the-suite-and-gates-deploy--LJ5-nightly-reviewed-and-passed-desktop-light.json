@@ -4,17 +4,18 @@
   "model": "claude-opus-5-5",
   "test": "LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy",
   "layout": "desktop-light",
-  "screenshot": "screenshots/LJ5-nightly-reviewed-and-passed-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/LJ5-nightly-reviewed-and-passed-desktop-light.png",
   "expected": "the Jevellan web app \"LJ5 nightly reviewed and passed\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Last night's review · bfd27e4' text in the right panel is clipped at the bottom of the viewport. It looks like the panel scrolls there, so it isn't truncated.",
-      "The 'Nightly window finished' card shows 'Deploy: done…' with an ellipsis, so the deploy status line looks cut short.",
-      "Session titles and subtitles in the left sidebar are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Mesh journey fixt…').",
-      "The 'Enabled' checkbox in each nightly item card sits slightly above its label instead of lining up with it.",
-      "The coordinator thread repeats 'Noted.' many times, which adds visual noise."
+      "In the pull request #2 card, the 'Open task' link uses a bigger font than the 'Why' and 'Open thread' links next to it, so the action row looks uneven.",
+      "In the nightly item cards (Review since last, Full suite, Deploy), each 'Enabled' checkbox sits above its label instead of beside it, out of line with the Run now and Edit buttons.",
+      "The 'Review since last' card repeats its title as its subtitle.",
+      "The 'Jobs (2)' section header is partly cut off at the bottom of the right column. It looks like normal scroll overflow.",
+      "The coordinator's repeated 'Noted.' replies make the timeline cluttered.",
+      "Sidebar session titles and metadata are cut short with ellipses ('Context · J11 memory journ…', 'Goncalos-MacBook…'). This is expected, but the full text can't be read here."
     ]
   }
 }

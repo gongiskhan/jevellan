@@ -1,5 +1,6 @@
 import { afterEach, expect, test } from 'vitest';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, statSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { AccountSchema, ProjectWorkSettingsSchema, type ModelOption } from '../packages/core/dist/index.js';
 import { FakeRuntime } from '../packages/runtime-contract/dist/index.js';
@@ -31,11 +32,11 @@ test('read-only high-effort review includes direct pushes, advances its durable 
   const { f, second, daily } = await setup(), work = f.app.projectWork, checkout = f.git(f.checkout, 'status', '--porcelain=v1');
   second.enqueueTurn(async turn => {
     expect(turn.input.permissions).toBe('read-only'); expect(turn.input.effort).toBe('high'); expect(turn.input.owner.kind).toBe('review');
-    const input = turn.input.prompt.match(/Read every commit and patch in (.*), then inspect/)!; const diff = readFileSync(input[1]!, 'utf8'); expect(diff).toContain('    Seed\n');
+    const input = turn.input.prompt.match(/Read every commit and patch in (.*), then inspect/)!; const diff = readFileSync(input[1]!, 'utf8'); expect(diff).not.toContain('    Seed\n');
     await turn.bridge('jevellan_project_review_report', body); return { status: 'completed' };
   }, input => input.owner.kind === 'review');
   const run = await work.daily.runDaily('project', daily.id, { schema: 'project-run-request-v1', clientRequestId: 'first' }); await f.waitFor(() => work.tasks.read('project', run.taskId), task => task.state === 'done'); await work.idle();
-  const first = (await work.daily.view('project')).lastReview!; expect(first).toMatchObject({ schema: 'project-review-report-v1', runtime: 'fake2', fromCommit: null, findings: body.findings }); expect((await work.daily.view('project')).lastReviewedCommit).toBe(first.commit);
+  const first = (await work.daily.view('project')).lastReview!; expect(first).toMatchObject({ schema: 'project-review-report-v1', runtime: 'fake2', fromCommit: f.git(f.checkout, 'rev-parse', 'HEAD'), findings: body.findings }); expect((await work.daily.view('project')).lastReviewedCommit).toBe(first.commit);
   const chosen = await work.daily.followup('project', { reviewTaskId: run.taskId, task: { title: 'Fix all review findings', brief: 'Add the empty-name default.' } });
   expect(await work.daily.followup('project', { reviewTaskId: run.taskId, task: { title: 'Second fix', brief: 'Must not create another.' } })).toMatchObject({ repeated: true, taskId: chosen.taskId });
   expect((await work.tasks.list('project')).filter(task => task.nightlyFixFor === run.taskId)).toHaveLength(1);
@@ -62,7 +63,7 @@ test('a reviewer changing its worktree cannot advance the watermark', async () =
   const { f, second, daily } = await setup(), work = f.app.projectWork;
   second.enqueueTurn(async turn => { writeFileSync(join(turn.input.cwd, 'illegal.txt'), 'changed'); await turn.bridge('jevellan_project_review_report', body); return { status: 'completed' }; }, input => input.owner.kind === 'review');
   const run = await work.daily.runDaily('project', daily.id, { schema: 'project-run-request-v1', clientRequestId: 'dirty' }); await f.waitFor(() => work.tasks.read('project', run.taskId), task => task.state === 'failed');
-  expect((await work.daily.view('project')).lastReviewedCommit).toBeNull(); expect((await work.tasks.read('project', run.taskId)).endNote).toContain('read-only review changed');
+  expect((await work.daily.view('project')).lastReviewedCommit).toBe(f.git(f.checkout, 'rev-parse', 'HEAD')); expect((await work.tasks.read('project', run.taskId)).endNote).toContain('read-only review changed');
 }, 90_000);
 
 
@@ -73,5 +74,93 @@ test('restart never replays an interrupted review or advances its watermark', as
   const task = await work.tasks.read('project', receipt.taskId), commit = f.git(f.checkout, 'rev-parse', 'HEAD');
   await work.tasks.save({ ...task, state: 'active', reviewRun: { schema: 'project-review-run-v1', sequence: 1, state: 'running', commit, fromCommit: null, deviceId: f.app.device.deviceId, runtime: 'fake2', modelId: 'reviewer', model: 'review-model', modelLabel: 'Reviewer', majorityProvider: 'fake', selectionBasis: 'Other provider.', startedAt: work.tasks.at(), report: null, followupChosen: false, fixTaskId: null } });
   await f.restart(); await f.waitFor(() => f.app.projectWork.tasks.read('project', task.id), row => row.state === 'failed');
-  expect(second.turnStarts.some(input => input.owner.kind === 'review')).toBe(false); expect((await f.app.projectWork.daily.view('project')).lastReviewedCommit).toBeNull();
+  expect(second.turnStarts.some(input => input.owner.kind === 'review')).toBe(false); expect((await f.app.projectWork.daily.view('project')).lastReviewedCommit).toBe(f.git(f.checkout, 'rev-parse', 'HEAD'));
+});
+test('creating and first enabling a review starts at current main, with an owner-editable baseline', async () => {
+  const { f, daily } = await setup(), work = f.app.projectWork, initial = f.git(f.checkout, 'rev-parse', 'HEAD');
+  expect(daily.target).toMatchObject({ reviewFromCommit: initial });
+  const disabled = await work.daily.updateDaily('project', daily.id, { schema: 'daily-update-request-v1', expectedRevision: daily.revision, name: daily.name, goalId: daily.goalId, order: 0, target: daily.target, enabled: false });
+  writeFileSync(join(f.checkout, 'new-main.txt'), 'owner push'); f.git(f.checkout, 'add', '-A'); f.git(f.checkout, 'commit', '-m', 'New main before enabling'); f.git(f.checkout, 'push', 'origin', 'main');
+  const enabled = await work.daily.updateDaily('project', daily.id, { schema: 'daily-update-request-v1', expectedRevision: disabled.revision, name: daily.name, goalId: daily.goalId, order: 0, target: disabled.target, enabled: true });
+  expect(enabled.target).toMatchObject({ reviewFromCommit: f.git(f.checkout, 'rev-parse', 'HEAD') });
+  const selected = await work.daily.updateDaily('project', daily.id, { schema: 'daily-update-request-v1', expectedRevision: enabled.revision, name: daily.name, goalId: daily.goalId, order: 0, target: { kind: 'review-since-last', reviewFromCommit: initial }, enabled: false });
+  const kept = await work.daily.updateDaily('project', daily.id, { schema: 'daily-update-request-v1', expectedRevision: selected.revision, name: daily.name, goalId: daily.goalId, order: 0, target: selected.target, enabled: true });
+  expect(kept.target).toMatchObject({ reviewFromCommit: initial });
+});
+test('a newly created review definition uses its captured baseline rather than an older definition watermark', async () => {
+  const { f, second, daily } = await setup(), work = f.app.projectWork;
+  second.enqueueTurn(async turn => { await turn.bridge('jevellan_project_review_report', { summary: 'Initial baseline reviewed.', findings: [] }); return { status: 'completed' }; }, input => input.owner.kind === 'review');
+  const first = await work.daily.runDaily('project', daily.id, { schema: 'project-run-request-v1', clientRequestId: 'old_definition' });
+  await f.waitFor(() => work.tasks.read('project', first.taskId), row => row.state === 'done');
+  await work.daily.updateDaily('project', daily.id, { schema: 'daily-update-request-v1', expectedRevision: daily.revision, name: daily.name, goalId: daily.goalId, order: 0, target: { kind: 'session', title: 'Previous nightly item', brief: 'Park the previous review definition.', type: 'review' }, enabled: false });
+  writeFileSync(join(f.checkout, 'later.txt'), 'Before new review definition'); f.git(f.checkout, 'add', '-A'); f.git(f.checkout, 'commit', '-m', 'Main before replacement review'); f.git(f.checkout, 'push', 'origin', 'main');
+  const head = f.git(f.checkout, 'rev-parse', 'HEAD'), replacement = await work.daily.createDaily('project', { schema: 'daily-create-request-v1', clientRequestId: 'replacement_review', name: 'Replacement review', goalId: daily.goalId, order: 0, enabled: true, target: { kind: 'review-since-last' } });
+  expect((await work.daily.view('project')).lastReviewedCommit).toBe(head);
+  second.enqueueTurn(async turn => { expect(turn.input.prompt).toContain(`review from commit ${head}`); await turn.bridge('jevellan_project_review_report', { summary: 'Replacement baseline reviewed.', findings: [] }); return { status: 'completed' }; }, input => input.owner.kind === 'review');
+  const next = await work.daily.runDaily('project', replacement.id, { schema: 'project-run-request-v1', clientRequestId: 'new_definition' });
+  await f.waitFor(() => work.tasks.read('project', next.taskId), row => ['done', 'failed'].includes(row.state));
+  expect((await work.tasks.read('project', next.taskId)).reviewRun?.fromCommit).toBe(head);
+  expect((await work.tasks.read('project', next.taskId)).state).toBe('done');
+});
+test('a 3000-commit review streams a bounded input with every message/stat and a remaining-patch instruction', { timeout: 180_000 }, async () => {
+  const { f, second, daily } = await setup(), work = f.app.projectWork, base = f.git(f.checkout, 'rev-parse', 'HEAD');
+  let imported = '';
+  for (let i = 1; i <= 3000; i++) {
+    const content = `${i} ${'x'.repeat(4096)}\n`, message = `Night change ${i}\n`;
+    imported += `blob\nmark :${i}\ndata ${Buffer.byteLength(content)}\n${content}\ncommit refs/heads/main\ncommitter Fixture <fixture@example.invalid> ${1791790000 + i} +0000\ndata ${Buffer.byteLength(message)}\n${message}${i === 1 ? `from ${base}\n` : ''}M 100644 :${i} range.txt\n\n`;
+  }
+  execFileSync('git', ['fast-import', '--quiet'], { cwd: f.checkout, input: imported, stdio: ['pipe', 'ignore', 'pipe'], maxBuffer: 1024 * 1024 });
+  f.git(f.checkout, 'reset', '--hard', 'main'); f.git(f.checkout, 'push', 'origin', 'main');
+  expect(Number(f.git(f.checkout, 'rev-list', '--count', 'main'))).toBeGreaterThanOrEqual(3000);
+  second.enqueueTurn(async turn => {
+    const input = turn.input.prompt.match(/Read every commit and patch in (.*), then inspect/)!;
+    expect(statSync(input[1]!).size).toBeLessThanOrEqual(8 * 1024 * 1024);
+    const content = readFileSync(input[1]!, 'utf8'); expect(content).toContain('Night change 1'); expect(content).toContain('Night change 3000'); expect(content).not.toContain('    Seed\n'); expect(content).toContain('remaining patches');
+    await turn.bridge('jevellan_project_review_report', { summary: 'Range reviewed.', findings: [] }); return { status: 'completed' };
+  }, input => input.owner.kind === 'review');
+  const receipt = await work.daily.runDaily('project', daily.id, { schema: 'project-run-request-v1', clientRequestId: 'large_range' });
+  await f.waitFor(() => work.tasks.read('project', receipt.taskId), row => ['done', 'failed'].includes(row.state), 150_000);
+  const completed = await work.tasks.read('project', receipt.taskId);
+  expect(completed.state, completed.endNote ?? undefined).toBe('done');
+});
+test('ordinary queued work remains eligible overnight and a late opening uses the actual open clock', async () => {
+  const { f, clock } = await setup(), work = f.app.projectWork;
+  const queued = await work.tasks.create('project', { schema: 'task-create-request-v1', clientRequestId: 'ordinary_night', title: 'Ordinary overnight task', brief: 'Run normal placement overnight.', type: 'fix', goalId: null, now: false, after: [], needs: [], fixed: {} });
+  clock(91); await work.daily.sweep('project');
+  const window = (await work.daily.window('project'))!;
+  expect(window.openedAt).toBe(work.tasks.at());
+  expect(await work.daily.eligible(await work.tasks.read('project', queued.taskId), await work.tasks.list('project'))).toBe(true);
+});
+test('jobs continue after a failed review and its reason appears in the night report', async () => {
+  const { f, second, clock } = await setup(), work = f.app.projectWork;
+  const job = await work.daily.createJob('project', { schema: 'job-create-request-v1', clientRequestId: 'post_review', name: 'After failed review', goalId: null, enabled: true, gate: null, run: { kind: 'command', command: 'true', timeoutMinutes: 1 } });
+  await work.daily.createDaily('project', { schema: 'daily-create-request-v1', clientRequestId: 'post_review_daily', name: job.name, goalId: null, order: 1, enabled: true, target: { kind: 'job', jobId: job.id } });
+  second.enqueueTurn(async () => ({ status: 'failed', error: { kind: 'other', message: 'Provider temporarily refused the review.' } }), input => input.owner.kind === 'review');
+  clock(1); await work.pulse(); await f.waitFor(() => work.daily.view('project'), view => view.window?.state === 'finished');
+  const view = await work.daily.view('project'); expect(view.runs[0]?.conclusion).toBe('passed'); expect(view.window?.outcome).toContain('Provider temporarily refused');
+});
+
+test('the job phase starts twenty minutes after a report without a chosen fix, with a queued Propose-tasks fix continuing normally', async () => {
+  const { f, second, daily, clock } = await setup(), work = f.app.projectWork;
+  const job = await work.daily.createJob('project', { schema: 'job-create-request-v1', clientRequestId: 'wait_job', name: 'Full suite', goalId: null, enabled: true, gate: null, run: { kind: 'command', command: 'true', timeoutMinutes: 1 } });
+  await work.daily.createDaily('project', { schema: 'daily-create-request-v1', clientRequestId: 'wait_job_daily', name: 'Full suite', goalId: null, order: 1, enabled: true, target: { kind: 'job', jobId: job.id } });
+  second.enqueueTurn(async turn => { await turn.bridge('jevellan_project_review_report', body); return { status: 'completed' }; }, input => input.owner.kind === 'review');
+  clock(1); await work.pulse(); const window = (await work.daily.window('project'))!, review = window.plans.find(row => row.dailyId === daily.id)!, suite = window.plans.find(row => row.jobId === job.id)!;
+  await f.waitFor(() => work.tasks.read('project', review.id), row => row.state === 'done');
+  expect(await work.daily.eligible(suite, await work.tasks.list('project'))).toBe(false);
+  clock(20); expect(await work.daily.eligible(suite, await work.tasks.list('project'))).toBe(true);
+  const changed = work.daily.o.changed; work.daily.o.changed = () => {};
+  const chosen = await work.daily.followup('project', { reviewTaskId: review.id, task: { title: 'Combined review finding', brief: 'Fix every worthwhile finding.' } }); work.daily.o.changed = changed;
+  expect((await work.tasks.read('project', chosen.taskId!)).state).toBe('queued');
+  // Once the twenty-minute waiting phase ended, a late coordinator response cannot re-hold the job phase.
+  expect(await work.daily.eligible(suite, await work.tasks.list('project'))).toBe(true);
+});
+
+test('a hub returning more than seven hours late still opens a seven-hour window from its real clock', async () => {
+  const { f, clock } = await setup(), work = f.app.projectWork;
+  clock(8 * 60 + 1); await work.daily.sweep('project'); const window = (await work.daily.window('project'))!;
+  expect(window.openedAt).toBe(work.tasks.at()); expect(window.openedLateReason).toContain('480 minutes late');
+  clock(6 * 60); expect(await work.daily.mergesHeld('project')).toBe(true);
+  clock(60); await work.daily.sweep('project'); const ended = (await work.daily.view('project')).window!;
+  expect(ended.state).toBe('finished'); expect(ended.outcome).toContain('Opened late'); expect(ended.outcome).toContain('seven-hour');
 });

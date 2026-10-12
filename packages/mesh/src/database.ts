@@ -22,6 +22,7 @@ export class HubDatabase {
     if (version !== 0 && version !== 1) { this.db.close(); throw new Error('Unsupported hub database version.'); }
     this.db.exec('PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;');
     this.db.exec('CREATE TABLE IF NOT EXISTS documents (namespace TEXT NOT NULL, id TEXT NOT NULL, revision INTEGER NOT NULL, document TEXT NOT NULL, PRIMARY KEY(namespace,id)); PRAGMA user_version=1;');
+    this.db.exec("CREATE INDEX IF NOT EXISTS merge_thread_index ON documents(namespace,json_extract(document,'$.threadId'),id);");
     this.redactor = redactor;
     try {
       this.configuration = new ConfigurationStore(this.db, operation => this.transaction(operation));
@@ -43,8 +44,8 @@ export class HubDatabase {
     if (options.order && options.after !== undefined) throw new Error('Insertion order cannot use an id cursor.');
     const after = options.after === undefined ? null : IdSchema.parse(options.after);
     const order = options.order === 'insertion-desc' ? 'rowid DESC' : 'id';
-    return this.db.prepare(`SELECT revision,document FROM documents WHERE namespace=? AND json_extract(document, '$.' || ?)=? AND (? IS NULL OR id>?) ORDER BY ${order} LIMIT ?`)
-      .all(IdSchema.parse(namespace), field, value, after, after, options.limit ?? -1)
+    return this.db.prepare(`SELECT revision,document FROM documents WHERE namespace=? AND json_extract(document, '$.${field}')=? AND (? IS NULL OR id>?) ORDER BY ${order} LIMIT ?`)
+      .all(IdSchema.parse(namespace), value, after, after, options.limit ?? -1)
       .map((row) => ({ revision: Number(row.revision), document: schema.parse(JSON.parse(String(row.document))) }));
   }
   put<T>(namespace: string, id: string, schema: DocumentSchema<T>, document: unknown, expectedRevision: number): { revision: number; document: T } {

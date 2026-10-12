@@ -1,4 +1,4 @@
-import { existsSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod';
 import { rankAccounts, type AccountService } from '@jevellan/accounts';
@@ -13,6 +13,7 @@ import { endTurnProcess } from './recovery.js';
 import { TurnExecution } from './turn-execution.js';
 import { derivedId } from './decision-items.js';
 import { collectDeviceFacts, deviceResourceRefusal, deviceAllowsWork, type DeviceFacts } from '@jevellan/core';
+import { writeReviewInput } from './review-input.js';
 const ProcessSchema = TurnProcessSchema.extend({ schema: z.literal('project-review-process-v1') });
 const refuse = (message: string, status = 409) => Object.assign(new Error(message), { status });
 export const REVIEW_APPEND = 'You are reviewing every commit that reached main since this project’s last completed review, including direct pushes. This session is read-only: do not change, commit or push anything. Read the complete supplied commit range and repository rules. Report worthwhile findings together, with concrete locations and explanations, or report none. End with exactly one jevellan_project_review_report. The coordinator chooses at most one combined finding task from your report.';
@@ -57,8 +58,10 @@ export class NightlyReview {
     const project = await this.o.project(task.projectId), repo = this.o.repository(project), base = await this.o.baseBranch(repo), ref = `refs/jevellan/threads/${task.id}/base`;
     const head = await this.o.git.fetchPrivate(repo, base, ref) ?? await this.o.git.resolve(repo, `refs/heads/${base}`);
     if (!head) throw refuse('The project has no published main commit for review.');
-    const tasks = await this.o.tasks.list(task.projectId), prior = tasks.filter(row => row.reviewRun?.state === 'completed').sort((a, b) => b.reviewRun!.sequence - a.reviewRun!.sequence || b.reviewRun!.completedAt!.localeCompare(a.reviewRun!.completedAt!))[0]?.reviewRun;
-    const fromCommit = prior?.commit ?? null;
+    const tasks = await this.o.tasks.list(task.projectId), priorTask = tasks.filter(row => row.reviewRun?.state === 'completed').sort((a, b) => b.reviewRun!.sequence - a.reviewRun!.sequence || b.reviewRun!.completedAt!.localeCompare(a.reviewRun!.completedAt!))[0], prior = priorTask?.reviewRun;
+    const daily = task.dailyId ? (await this.o.hub.daily(task.dailyId))?.document : null;
+    const baseline = daily?.target.kind === 'review-since-last' ? daily.target.reviewFromCommit : undefined;
+    const fromCommit = prior && priorTask?.dailyId === task.dailyId && (daily?.reviewFromVersion ?? 0) === (prior.reviewFromVersion ?? 0) ? prior.commit : baseline ?? prior?.commit ?? head;
     if (fromCommit && (await this.o.git.run(repo, ['merge-base', '--is-ancestor', fromCommit, head], { permitted: [1] })).code !== 0) throw refuse('Main no longer contains the last reviewed commit. The owner must reconcile its history.');
     const [config, accounts] = await Promise.all([this.o.settings(), this.o.accounts.list()]);
     const weights = new Map<string, number>(); let after: string | undefined;
@@ -70,13 +73,13 @@ export class NightlyReview {
     } while (after);
     const majorityProvider = [...weights].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0] ?? null;
     const coordinator = (await this.o.hub.settings(task.projectId))?.document.coordinator;
-    const baseline = majorityProvider ?? coordinator?.runtimeId ?? config.menu.find(model => model.id === coordinator?.modelId)?.runtime ?? config.menu.find(model => model.enabled)?.runtime;
-    const model = config.menu.find(model => model.runtime !== baseline && model.enabled && model.efforts.includes('high') && config.runtimes[model.runtime]?.enabled && this.o.runtimes.get(model.runtime)?.capabilities.readOnlyEnforced &&
+    const baselineProvider = majorityProvider ?? coordinator?.runtimeId ?? config.menu.find(model => model.id === coordinator?.modelId)?.runtime ?? config.menu.find(model => model.enabled)?.runtime;
+    const model = config.menu.find(model => model.runtime !== baselineProvider && model.enabled && model.efforts.includes('high') && config.runtimes[model.runtime]?.enabled && this.o.runtimes.get(model.runtime)?.capabilities.readOnlyEnforced &&
       rankAccounts({ accounts: accounts.map(view => view.account), statuses: accounts.flatMap(view => view.statuses), runtime: model.runtime, model: model.model, deviceId: this.o.deviceId }).some(entry => entry.eligible && entry.account.runtime === model.runtime));
     if (!model) { await this.o.git.run(repo, ['update-ref', '-d', ref]); throw refuse('No other provider with read-only sessions and high effort is eligible for the nightly review.'); }
     const run: ProjectReviewRun = { schema: 'project-review-run-v1', sequence: (prior?.sequence ?? 0) + 1, state: 'reserved', commit: head, fromCommit, deviceId: this.o.deviceId, runtime: model.runtime, modelId: model.id, model: model.model, modelLabel: model.label,
       majorityProvider, selectionBasis: majorityProvider ? 'Other provider from the largest attributed merged change volume since the last review; direct pushes remain in the reviewed range.' : 'No attributed merged changes: use the other provider from the configured coordinator. Direct pushes remain in the reviewed range.',
-      startedAt: new Date(this.o.now()).toISOString(), report: null, followupChosen: false, fixTaskId: null };
+      reviewFromVersion: daily?.reviewFromVersion ?? 0, startedAt: new Date(this.o.now()).toISOString(), report: null, followupChosen: false, fixTaskId: null };
     task = await this.o.tasks.save({ ...task, state: 'active', dispatchedAt: this.o.tasks.at(), reviewRun: run });
     const active: { promise: Promise<void>; execution?: TurnExecution } = { promise: Promise.resolve() };
     active.promise = Promise.resolve().then(() => this.#execute(task, repo, ref, active)).catch(() => undefined).finally(() => { this.#active.delete(task.projectId); this.o.changed(); });
@@ -90,14 +93,13 @@ export class NightlyReview {
       this.o.homes.ensure('worktrees', task.projectId, 'nightly-reviews');
       if (existsSync(path)) throw new Error('A previous review worktree needs confirmed cleanup.');
       await this.o.git.run(repo, ['-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', 'worktree', 'add', '--detach', path, run.commit]);
-      const range = run.fromCommit ? `${run.fromCommit}..${run.commit}` : run.commit;
-      const changes = await this.o.git.run(repo, ['log', '--reverse', '-m', '--format=fuller', '-p', range]);
+      const range = `${run.fromCommit ?? run.commit}..${run.commit}`;
       const input = join(this.o.homes.ensure('project-work', task.projectId, 'reviews', task.id), 'changes.diff');
-      writeFileSync(input, this.o.redactor.text(changes.stdout), { mode: 0o600 });
+      await writeReviewInput(this.o.homes, this.o.redactor, repo, range, input);
       const tools = new ReviewTools(async body => { task = await this.#update(task, current => ({ ...current, reviewRun: { ...current.reviewRun!, report: ProjectReviewReportSchema.parse({ ...body, schema: 'project-review-report-v1', projectId: task.projectId, taskId: task.id,
         fromCommit: run.fromCommit, commit: run.commit, reviewedAt: new Date(this.o.now()).toISOString(), runtime: run.runtime, model: run.model }) } })); }, this.o.redactor);
       const launched = await this.o.launcher.launch({ owner: { kind: 'review', projectId: task.projectId, id: task.id }, turn: 1, runtime: run.runtime, modelId: run.modelId, model: run.model, modelLabel: run.modelLabel, effort: 'high', permissions: 'read-only', cwd: path, safetyProfile: 'review',
-        systemAppend: REVIEW_APPEND, prompt: () => `Review since last\nMain at ${run.commit}; previous reviewed commit ${run.fromCommit ?? 'none: review the complete history'}.\nRead every commit and patch in ${input}, then inspect the affected source in this fresh worktree.\n${run.selectionBasis}`, tools, timeoutMs: this.o.timeoutMs });
+        systemAppend: REVIEW_APPEND, prompt: () => `Review since last\nMain at ${run.commit}; review from commit ${run.fromCommit ?? run.commit}.\nRead every commit and patch in ${input}, then inspect the affected source in this fresh worktree. If that file says patches exceed its cap, read the remaining patches with git in this worktree.\n${run.selectionBasis}`, tools, timeoutMs: this.o.timeoutMs });
       if (launched.kind === 'unavailable') { await tools.close(); throw new Error(launched.reason); }
       terminated = false;
       try {

@@ -4,16 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "LJ4 owner goals refill into a draft, approve on phone, obey daily caps and pause queued work",
   "layout": "desktop-dark",
-  "screenshot": "screenshots/LJ4-goal-proposal-desktop-dark.png",
+  "screenshot": "docs/acceptance/screenshots/LJ4-goal-proposal-desktop-dark.png",
   "expected": "the Jevellan web app \"LJ4 goal proposal\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"LJ4 owner goals refill into a draft, approve on phone, obey daily caps and pause queued work\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Right panel cuts off a section heading at the bottom edge (looks like 'GOALS 1'). It is clipped by the scroll viewport and can be reached by scrolling.",
-      "Sidebar session titles are truncated with ellipses ('Context · J11 memory jour…', 'Mesh journey fix…'), and so are their subtitles.",
-      "The draft task 'Exercise an important path' appears twice, once under Proposed tasks and again under Queue. This may be intended but looks redundant.",
-      "Small monospace labels (section headers, 'Idle · Claude Code Fable · high', 'v0.2.0') have low contrast but are still readable."
+      "The right-hand panel's last line ('Add checks or a review to run every night') is cut off by the bottom of the viewport. The column probably scrolls, but this capture doesn't show that.",
+      "In the Nightly section, 'Project day: 2026-10-12' and the 'New nightly item' and 'New job' buttons sit further left than the other section contents.",
+      "Sidebar session titles and subtitles are shortened with ellipses (e.g. 'Context · J11 memory journ…', 'Gonca…')."
     ]
   }
 }

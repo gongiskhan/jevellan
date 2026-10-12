@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ2 native setup remains visible and merge routing explains its ask-owner choice",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/screenshots/LJ2-merge-shadow-route-desktop-dark.png",
+  "expected": "the Jevellan web app \"LJ2 merge shadow route\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"LJ2 native setup remains visible and merge routing explains its ask-owner choice\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "In the pull request #1 card, the 'Jev would: ask you' chip and the feedback links ('Why', 'Should have asked me', 'Didn't need asking', 'Open thread', 'Open task') wrap unevenly across two rows, so the group looks messy, though every item is readable and clickable",
+      "In the sidebar, the session titles and subtitles (e.g. 'Context · J11 memory jour…', 'Done · Improver sandbox · Gonca…') are cut short with ellipses",
+      "The right panel ends at the 'GOALS 0' heading and the rest needs scrolling, which is expected for a scrolling panel",
+      "The 'Project day: 2026-10-12' text in the Nightly section sits slightly out of line with the left edge of the other section content"
+    ]
+  }
+}

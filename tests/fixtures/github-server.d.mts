@@ -3,7 +3,7 @@ export type GitHubFixtureWorkflow = {
   jobs: { id: number; name: string; status: string; conclusion: string | null; logs?: string; steps?: { name: string; status: string; conclusion: string | null }[] }[];
 };
 export type GitHubFixtureChecks = 'pending' | 'passing' | 'passing-status' | 'failing' | 'none'
-  | { runs?: { status: string; conclusion: string | null }[]; statuses?: { state: string }[] };
+  | { runs?: { name?: string; status: string; conclusion: string | null }[]; statuses?: { state: string }[] };
 export type GitHubFixtureMergeable = 'clean' | 'dirty' | 'unknown' | 'unstable';
 export type GitHubFixtureRequest = {
   method: string; path: string; query: Record<string, string>; body: unknown;

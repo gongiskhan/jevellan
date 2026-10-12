@@ -1,6 +1,6 @@
 import type { Locator, Page, TestInfo } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
-import { DeviceRosterSchema, ProjectDailyListViewSchema, ProjectWorkViewSchema, RuntimeListSchema, TaskListViewSchema, TaskReceiptSchema, ThreadViewSchema, WorktreeDiskSchema, type ThreadView } from '../../packages/core/dist/client.js';
+import { DeviceRosterSchema, MergeDocumentsViewSchema, ProjectDailyListViewSchema, ProjectWorkViewSchema, RuntimeListSchema, TaskListViewSchema, TaskReceiptSchema, ThreadViewSchema, WorktreeDiskSchema, type ThreadView } from '../../packages/core/dist/client.js';
 import { threadDeviceOffline } from '../../packages/projects/dist/copy.js';
 import { expect, test } from './fixtures.js';
 import { expectClearOfComposer, expectNoStaleJump, openSidebar } from './navigation.js';
@@ -1085,20 +1085,30 @@ test('LJ2 native setup remains visible and merge routing explains its ask-owner 
   await page.goto('/projects/projects_fixture');
   const settingsResponse = await page.request.get(`${PROJECT}/work-settings`), settings = await settingsResponse.json();
   expect(settings.settings.autoMerge).toBe(false);
-  const saved = await page.request.put(`${PROJECT}/work-settings`, { data: { schema: 'project-work-settings-request-v1', revision: settings.settings.revision, clientRequestId: `merge_settings_${info.project.name}`, settings: { ...Object.fromEntries(Object.entries(settings.settings).filter(([key]) => !['schema', 'projectId', 'revision'].includes(key))), autoMerge: true, riskyAreas: 'Stored data and deploy files.' } } });
+  const saved = await page.request.put(`${PROJECT}/work-settings`, { data: { schema: 'project-work-settings-request-v1', revision: settings.settings.revision, clientRequestId: `merge_settings_${info.project.name}`, settings: { ...Object.fromEntries(Object.entries(settings.settings).filter(([key]) => !['schema', 'projectId', 'revision'].includes(key))), autoMerge: false, riskyAreas: 'Stored data and deploy files.' } } });
   expect(saved.ok(), await saved.text()).toBe(true);
-  const created = await page.request.post(`${PROJECT}/threads`, { data: { schema: 'thread-create-request-v1', clientRequestId: `request_gate_${info.project.name}`, title: 'Review loop', task: 'LJ2 review loop: add a greeting example.', isolation: 'worktree', modelId: 'claude-fable', effort: 'high' } });
-  expect(created.ok(), await created.text()).toBe(true); const started = await created.json();
+  const created = await page.request.post(`${PROJECT}/tasks`, { data: { schema: 'task-create-request-v1', clientRequestId: `request_gate_${info.project.name}`, title: 'Review loop', brief: 'LJ2 review loop: add a greeting example.', type: 'fix', fixed: { isolation: 'worktree', modelId: 'claude-fable', effort: 'high' } } });
+  expect(created.ok(), await created.text()).toBe(true); const receipt = TaskReceiptSchema.parse(await created.json());
+  await expect.poll(async () => TaskListViewSchema.parse(await read(page, `${PROJECT}/tasks`)).tasks.find(task => task.id === receipt.taskId)?.threadId, LONG).toBeTruthy();
+  const started = { threadId: TaskListViewSchema.parse(await read(page, `${PROJECT}/tasks`)).tasks.find(task => task.id === receipt.taskId)!.threadId! };
   await expect.poll(async () => (await work(page)).pullRequests.find(entry => entry.threadId === started.threadId)?.pr?.number, LONG).toBeGreaterThan(0);
   const number = (await work(page)).pullRequests.find(entry => entry.threadId === started.threadId)!.pr!.number;
   await control(`/projects/github/${number}`, { schema: 'fixture-pull-change-v1', checks: 'passing', mergeable: 'clean' });
-  await expect.poll(async () => (await work(page)).decisions.open.some(item => item.question.startsWith(`Merge #${number} `)), LONG).toBe(true);
+  await expect.poll(async () => MergeDocumentsViewSchema.parse(await read(page, `${PROJECT}/threads/${started.threadId}/pr/route`)).records.some(row => row.schema === 'merge-route-v1' && row.route === 'ask-owner'), LONG).toBe(true);
+  expect((await work(page)).decisions.open.some(item => item.merge?.prNumber === number)).toBe(false); await page.reload();
   if (phone(info)) await tap(page, tab(page, 'Pull requests'));
   const row = page.locator('.pw-pr').filter({ hasText: 'Review loop' }); await expect(row).toBeVisible(LONG);
+  await expect(row).toContainText('Jev would: ask you'); await shot(page, 'merge-shadow-route');
   await row.getByRole('button', { name: 'Why', exact: true }).click();
   const drawer = page.getByRole('dialog', { name: 'Why this merge route' }); await expect(drawer).toContainText('Ask owner'); await expect(drawer).toContainText('Stored data and deploy files.');
   await drawer.getByRole('button', { name: "Didn't need asking", exact: true }).click(); await expect(drawer.getByRole('status')).toContainText('Saved');
-  await shot(page, 'merge-route-why', true); expect(errors).toEqual([]);
+  await shot(page, 'merge-route-why', true); await drawer.getByRole('button', { name: 'Close panel', exact: true }).click();
+  await row.getByRole('button', { name: 'Merge', exact: true }).click(); const mergeDialog = page.getByRole('dialog', { name: /Squash and merge/ });
+  await mergeDialog.getByRole('button', { name: 'Merge', exact: true }).click(); await expect.poll(async () => (await work(page)).pullRequests.find(entry => entry.threadId === started.threadId)?.pr?.state, LONG).toBe('merged');
+  await page.getByText('Recently merged · last 7 days', { exact: true }).click();
+  await expect(row.getByRole('button', { name: 'Should have asked me', exact: true })).toBeVisible(); await row.getByRole('button', { name: 'Should have asked me', exact: true }).click(); await shot(page, 'merged-pr-correction');
+  await page.goto(`/projects/projects_fixture/tasks/${receipt.taskId}`); await expect(page.getByRole('heading', { name: 'Review loop', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: "Didn't need asking", exact: true })).toBeVisible(); await page.getByRole('button', { name: "Didn't need asking", exact: true }).click(); await shot(page, 'task-merge-correction'); expect(errors).toEqual([]);
 });
 
 
@@ -1252,6 +1262,11 @@ test('LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and ga
   const deploy = await post('/jobs', { schema: 'job-create-request-v1', clientRequestId: 'daily_deploy', name: 'Deploy', goalId: testsGoal.id, enabled: true, gate: { jobId: full.id }, run: { kind: 'command', command: 'test -f nightly-fix.txt', timeoutMinutes: 1 } });
   for (const [name, jobId, order] of [['Full suite', full.id, 1], ['Deploy', deploy.id, 2]] as const) await post('/dailies', { schema: 'daily-create-request-v1', clientRequestId: `daily_${order}`, name, goalId: testsGoal.id, order, enabled: true, target: { kind: 'job', jobId } });
   await post('/dailies', { schema: 'daily-create-request-v1', clientRequestId: 'daily_review', name: 'Review since last', goalId: reviewGoal.id, order: 0, enabled: true, target: { kind: 'review-since-last' } });
+  await expect.poll(async () => (await view()).dailies.some(item => item.target.kind === 'review-since-last'), LONG).toBe(true);
+  const reviewDaily = (await view()).dailies.find(item => item.target.kind === 'review-since-last')!;
+  const reviewRow = page.locator(`[data-daily-id="${reviewDaily.id}"]`); await reviewRow.getByRole('button', { name: 'Edit', exact: true }).click();
+  const reviewEditor = page.getByRole('dialog', { name: 'Edit nightly item', exact: true }); await expect(reviewEditor.getByRole('textbox', { name: 'Review from commit', exact: true })).toHaveValue(/^[a-f0-9]{40}$/);
+  await shot(page, 'review-from-commit', true); await reviewEditor.getByRole('button', { name: 'Cancel', exact: true }).click();
   await step('pass');
   const dayRun = TaskReceiptSchema.parse(await post(`/jobs/${full.id}/run`, { schema: 'project-run-request-v1', clientRequestId: 'full_in_day' }));
   await expect.poll(async () => (await tasks()).find(task => task.id === dayRun.taskId)?.state, LONG).toBe('done'); await step('reset');

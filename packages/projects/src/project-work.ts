@@ -280,6 +280,7 @@ export class ProjectWork {
     this.#attach = new ThreadAttach({ deviceId: o.deviceId, deviceName: o.deviceName, store: this.store, coordinators: coordinatorStore, hub: o.hub, roster: o.roster,
       runner: (threadId) => this.threads.runner(threadId), project: (projectId) => this.#project(projectId), main, accounts: o.accounts, transcripts: this.transcripts });
     this.views = new ProjectViews({ deviceId: o.deviceId, deviceName: o.deviceName, hub: o.hub, projects: o.projects, store: this.store, ledgers: this.ledgers,
+      githubNotice: async projectId => { const budget = await (await github.open(projectId)).rateLimit(); return budget && budget.remaining / budget.limit < 0.2 && budget.resetAt > now() ? 'GitHub has less than 20% of its request budget remaining. Pull requests refresh every five minutes until it resets.' : undefined; },
       coordinators: this.coordinators, transcripts: this.transcripts, worktrees, accounts: o.accounts, runtimes: o.runtimes, settings: o.settings, roster: o.roster, placement });
     this.ready = Promise.all([this.apps.ready, recoverProjects({ paths: this.paths, ledgers: this.ledgers, store: this.store, coordinators: this.coordinators,
       toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event), redactor: o.redactor, now })]).then(() => undefined);

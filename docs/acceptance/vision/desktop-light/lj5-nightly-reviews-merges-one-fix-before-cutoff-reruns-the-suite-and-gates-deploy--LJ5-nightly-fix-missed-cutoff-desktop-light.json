@@ -4,17 +4,17 @@
   "model": "claude-opus-5-5",
   "test": "LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy",
   "layout": "desktop-light",
-  "screenshot": "screenshots/LJ5-nightly-fix-missed-cutoff-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/LJ5-nightly-fix-missed-cutoff-desktop-light.png",
   "expected": "the Jevellan web app \"LJ5 nightly fix missed cutoff\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Working…' status pill in the header is truncated with an ellipsis.",
-      "Sidebar session titles are truncated ('Context · J11 memory journ…', 'Context · Mesh journey fixt…') and so are their subtitles.",
-      "The 'Nightly window finished' cards cut the last line off as 'Deploy: done…'.",
-      "The 'Dismiss' button in the top banner sits right against the banner text with almost no gap.",
-      "The Goals card at the bottom of the right column ends at the viewport edge, so the Pause/Edit/Mark done buttons are only just visible. They can presumably be reached by scrolling."
+      "The 'Dismiss' button in the 'Last night' banner sits right against the end of the sentence with no gap.",
+      "In the pull request #2 card, the 'Open task' link uses a larger font than the 'Why' and 'Open thread' links next to it, so the row looks misaligned.",
+      "The right column ends partway through the Goals section: the 'Hardening through code review' goal card is clipped at the bottom edge, probably because the panel scrolls.",
+      "Long conversation titles and machine names in the sidebar and the Running/Concluded lists are shortened with an ellipsis (for example 'Goncalos-MacBook…'), so the full text isn't shown.",
+      "The thread repeats the line 'Noted.' many times, which makes the timeline long and harder to scan."
     ]
   }
 }

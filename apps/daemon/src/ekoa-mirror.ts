@@ -68,7 +68,7 @@ export class EkoaMirrorService {
         if (decision.merge && (thread?.projectId !== project.id || thread.pr?.state !== 'open' || thread.pr.headSha !== decision.merge.commit)) continue;
         const title = decision.merge ? decision.question.replace(/^Merge /u, 'merge ').replace(/\?$/u, '') : decision.question;
         add({ kind: 'decision', id: decision.id, projectId: project.id, title: `Jevellan · ${project.name}: ${title.slice(0, 80)}`,
-          notes: `${decision.question}\n${decision.merge ? `Checked commit: ${decision.merge.commit}\n${thread?.pr?.url ?? ''}\n` : ''}${decision.options.map(option => `- ${option.label}${option.detail ? `: ${option.detail}` : ''}`).join('\n')}\n\nAnswer in Jevellan: ${link}`, allowCreate: true });
+          notes: `${decision.question}\n${decision.merge ? `Checked commit: ${decision.merge.commit}\n${thread?.pr?.url ?? ''}\n${decision.merge.reason ?? ''}\n${decision.merge.failures?.map(failure => `${failure.what}\n${failure.output}`).join('\n\n') ?? ''}\n` : ''}${decision.options.map(option => `- ${option.label}${option.detail ? `: ${option.detail}` : ''}`).join('\n')}\n\nAnswer in Jevellan: ${link}`, allowCreate: true });
       }
       for (const { document: window } of this.hub.listByField('project-windows', 'projectId', project.id, ProjectWindowSchema)) if (window.state === 'finished' && window.failed) {
         add({ kind: 'night-report', id: window.id, projectId: project.id, title: `Jevellan · ${project.name}: night report`, notes: `${window.date}\n${window.outcome ?? 'Nightly items failed.'}\n\nOpen Jevellan: ${link}`, allowCreate: true });

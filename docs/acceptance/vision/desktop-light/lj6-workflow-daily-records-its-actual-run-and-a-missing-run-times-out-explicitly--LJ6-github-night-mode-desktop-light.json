@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The right panel is scrolled, so the top half of the 'CONCLUDED 0' section heading is clipped at the panel's top edge. This is a normal scroll position, not overlapping content.",
-      "The bottom border of the 'Missing run' card is cut off at the bottom of the viewport. The card's content and controls (Run now, Edit, Enabled) are still visible and reachable.",
-      "The nightly-window banner appears twice: in the main column ('Nightly window · merges held until the nightly tasks finish') and again in the right panel ('Merges are held while the nightly window runs.')."
+      "The right panel is scrolled partway down, so the 'CONCLUDED 0' section heading is cut off at the top edge of the panel. This is normal scroll clipping, not an overlap.",
+      "On each job card, the 'Enabled' checkbox sits above its label instead of beside it, so it doesn't line up with the 'Run now' and 'Edit' buttons.",
+      "The 'Switch mode nightly' card is cut off at the bottom of the viewport. It can be reached by scrolling the panel.",
+      "The nightly-window notice appears twice: as the full-width top banner and again in the right panel ('Merges are held while the nightly window runs.')."
     ]
   }
 }

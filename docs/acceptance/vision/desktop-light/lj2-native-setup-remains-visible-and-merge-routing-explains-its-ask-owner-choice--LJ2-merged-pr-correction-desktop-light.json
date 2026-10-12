@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ2 native setup remains visible and merge routing explains its ask-owner choice",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/screenshots/LJ2-merged-pr-correction-desktop-light.png",
+  "expected": "the Jevellan web app \"LJ2 merged pr correction\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"LJ2 native setup remains visible and merge routing explains its ask-owner choice\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'NIGHTLY 0' section header is clipped at the bottom edge of the right panel. It looks like scroll overflow, not a hidden control.",
+      "In the sidebar, session titles and metadata are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Gonca…').",
+      "In the Concluded list, the 'Review loop' metadata line is cut off with an ellipsis ('Goncalos-MacBook…').",
+      "The 'Why', 'Should have asked me' and 'Didn't need asking' links on the #1 Review loop card sit close together with little visual separation."
+    ]
+  }
+}

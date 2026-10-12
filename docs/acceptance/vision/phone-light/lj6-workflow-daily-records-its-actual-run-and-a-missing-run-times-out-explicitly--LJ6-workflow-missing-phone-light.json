@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab bar at the top cuts off the 'Pull requests' tab at the right edge. It looks like a horizontally scrollable row, so it is still reachable.",
-      "The 'Failed at 10:16 AM' badge uses the same neutral style as the 'Done' badge, so the failed state doesn't stand out.",
-      "The 'Enabled' checkbox label sits slightly below the checkbox, so the two don't line up neatly."
+      "The tab row is clipped at the right edge, so 'Pull requests' is cut off. It is probably a horizontally scrollable tab strip.",
+      "The status badge in the header is truncated to 'Working…'.",
+      "The Run now/Edit buttons and the 'Enabled' checkbox are slightly out of line: the 'Enabled' label sits below the checkbox instead of beside it."
     ]
   }
 }

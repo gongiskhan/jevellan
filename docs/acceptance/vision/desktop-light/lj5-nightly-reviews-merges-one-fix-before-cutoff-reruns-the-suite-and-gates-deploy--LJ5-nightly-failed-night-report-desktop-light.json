@@ -4,16 +4,17 @@
   "model": "claude-opus-5-5",
   "test": "LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy",
   "layout": "desktop-light",
-  "screenshot": "screenshots/LJ5-nightly-failed-night-report-desktop-light.png",
+  "screenshot": "docs/acceptance/screenshots/LJ5-nightly-failed-night-report-desktop-light.png",
   "expected": "the Jevellan web app \"LJ5 nightly failed night report\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar shell session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · dev-ma…'); this looks like intentional truncation.",
-      "The 'Nightly window finished' summary cards end with 'Deploy: done…' / 'Deploy: failed…', so the summary is cut off inside the card.",
-      "The timeline repeats many 'Noted.' lines between events, which makes it long and visually noisy.",
-      "The 'Proposed tasks' card and the Queue list both show a 'Fix the full suite finding' Draft item, which looks redundant."
+      "Many standalone 'Noted.' coordinator replies repeat throughout the activity feed. They add visual noise.",
+      "Concluded task rows cut off the machine name with an ellipsis ('Goncalos-MacBook...'). The sidebar shell sessions are truncated the same way.",
+      "In the right column, the 'Why' label and the 'Open thread' link in the pull request #2 card sit close together. The 'Open task' link wraps awkwardly next to the 'Open on GitHub' button.",
+      "The 'Enabled' checkboxes on the nightly job cards sit lower than the 'Run now' and 'Edit' buttons, so the row looks slightly misaligned.",
+      "Most of the feed text and metadata is small and low-contrast grey, which makes it harder to read, though it's still legible."
     ]
   }
 }

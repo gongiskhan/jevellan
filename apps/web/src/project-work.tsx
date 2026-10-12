@@ -406,7 +406,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   const drafts = tasks.filter(task => task.state === 'draft');
   const open = view.decisions.open.filter((decision) => !answered.has(decision.id));
   const sections = threadSections(view.threads, now);
-  const pulls = openPullRequests(view.pullRequests);
+  const pulls = openPullRequests(view.pullRequests), recentPulls = view.pullRequests.filter(entry => entry.pr?.state === 'merged' && Date.parse(entry.pr.updatedAt) >= now - 7 * 24 * 3_600_000);
   const stop = () => void control.run(async (signal) => {
     setView(await api(`/api/projects/${id}/coordinator/stop`, ProjectWorkViewSchema, 'POST', empty, { signal })); updated();
   });
@@ -525,9 +525,11 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
           </section>
           <section className="pw-section" data-tab="pull-requests" aria-labelledby={`${sideId}-pulls`}>
             {sectionHeading(`${sideId}-pulls`, copy.PULL_REQUESTS, pulls.length)}
+            {view.githubNotice && <p role="status" className="notice">{view.githubNotice}</p>}
             {pulls.length ? pulls.map((entry) => (
-              <PullRequestRow key={entry.threadId} projectId={id} entry={entry} navigate={navigate} hold={daily?.mergesHeld === true && !daily.mergeAllowedThreads.includes(entry.threadId)} merge={() => setMerging(entry)} />
+              <PullRequestRow key={entry.threadId} projectId={id} entry={entry} navigate={navigate} taskId={tasks.find(task => task.threadId === entry.threadId)?.id} shadow={!view.settings.autoMerge} hold={daily?.mergesHeld === true && !daily.mergeAllowedThreads.includes(entry.threadId)} merge={() => setMerging(entry)} />
             )) : <p className="pw-empty">{copy.NO_OPEN_PULL_REQUESTS}</p>}
+            {recentPulls.length > 0 && <details><summary>Recently merged · last 7 days</summary>{recentPulls.map(entry => <PullRequestRow key={entry.threadId} projectId={id} entry={entry} navigate={navigate} taskId={tasks.find(task => task.threadId === entry.threadId)?.id} merge={() => undefined} />)}</details>}
           </section>
           <section className="pw-section" data-tab="threads" aria-labelledby={`${sideId}-concluded`}>
             {sectionHeading(`${sideId}-concluded`, copy.CONCLUDED, sections.concluded.length)}
@@ -687,6 +689,7 @@ function DecisionCard({ projectId, decision, titles, now, answered, onError }: {
     <section className="answer-card pw-decision" aria-labelledby={questionId}>
       <p className="pw-source">{decisionSource(decision, titles)} · <Stamp at={decision.createdAt} label={shortTime(decision.createdAt, now)} /></p>
       <div className="pw-question" id={questionId}><Markdown>{decision.question}</Markdown></div>
+      {decision.merge?.reason && <p>{decision.merge.reason}</p>}{decision.merge?.failures?.map((failure, index) => <details key={index}><summary>{failure.what}</summary><pre>{failure.output}</pre></details>)}
       {decision.options.length > 0 && (
         <div className="answer-options pw-options">
           {decision.options.map((option) => (
@@ -757,7 +760,7 @@ function ThreadRow({ projectId, thread, meta, now, navigate }: { projectId: stri
  * A pull request (12.2): the GitHub link, the checks and conflict badges, Merge (disabled with its reason on conflicts or
  * failing checks, allowed while checks run) and Open on GitHub; a branch-only thread shows its branch and reason (D58).
  */
-function PullRequestRow({ projectId, entry, navigate, merge, hold }: { projectId: string; entry: PullRequestEntry; navigate(path: string): void; merge(): void; hold?: boolean }) {
+function PullRequestRow({ projectId, entry, navigate, merge, hold, shadow, taskId }: { projectId: string; entry: PullRequestEntry; navigate(path: string): void; merge(): void; hold?: boolean; shadow?: boolean; taskId?: string | undefined }) {
   const blockId = useId();
   const thread = `/projects/${projectId}/threads/${entry.threadId}`;
   const pr = entry.pr;
@@ -780,15 +783,16 @@ function PullRequestRow({ projectId, entry, navigate, merge, hold }: { projectId
       </div>
       {hold && <p className="pw-pr-reason">Merges are held while the nightly window runs.</p>}
       <div className="pw-pr-actions">
-        <MergeWhy projectId={projectId} threadId={entry.threadId} commit={pr.headSha} />
+        <MergeWhy projectId={projectId} threadId={entry.threadId} commit={pr.headSha} shadow={shadow} />
         <RouteLink className="text-button pw-open-thread" href={thread} navigate={navigate}>{copy.OPEN_THREAD}</RouteLink>
+        {taskId && <RouteLink className="text-button" href={`/projects/${projectId}/tasks/${taskId}`} navigate={navigate}>Open task</RouteLink>}
         <a className="button-link secondary small" href={pr.url} target="_blank" rel="noopener noreferrer"><Icon name="external" size={14} />{copy.OPEN_ON_GITHUB}</a>
-        <span className="pw-merge" title={block ?? undefined}>
+        {pr.state === 'open' && <span className="pw-merge" title={block ?? undefined}>
           <button type="button" className="small" disabled={!!block} title={block ?? undefined} aria-describedby={block ? blockId : undefined} onClick={merge}>
             {copy.MERGE}
           </button>
           {block && <span className="sr-only" id={blockId}>{block}</span>}
-        </span>
+        </span>}
       </div>
     </article>
   );
@@ -935,7 +939,7 @@ const settingsForm = (from: SettingsBase) => ({
   effort: from.settings.coordinator.effort, setupCommand: from.settings.setupCommand ?? '', maxRunningThreads: String(from.settings.maxRunningThreads),
   maxRunningPerDevice: String(from.settings.maxRunningPerDevice), threadTurnCap: String(from.settings.threadTurnCap),
   perDeviceLimits: from.settings.perDeviceLimits,
-  refill: from.settings.refill, nightlyWindow: from.settings.nightlyWindow, autoMerge: from.settings.autoMerge, riskyAreas: from.settings.riskyAreas, threadRules: from.settings.threadRules, allowMainIsolation: from.settings.allowMainIsolation,
+  refill: from.settings.refill, nightlyWindow: from.settings.nightlyWindow, autoMerge: from.settings.autoMerge, riskyAreas: from.settings.riskyAreas, requiredChecks: from.settings.requiredChecks, threadRules: from.settings.threadRules, allowMainIsolation: from.settings.allowMainIsolation,
 });
 /**
  * Project settings (12.2). The dialog reads the settings when it opens (the page view may predate a save made a moment
@@ -1015,6 +1019,7 @@ function SettingsDialog({ props, view, close }: { props: PageProps; view: Projec
               onChange={(event) => change({ setupCommand: event.target.value })} />
           </label>
           <label className="checkbox"><input type="checkbox" checked={form.autoMerge} onChange={event => change({ autoMerge: event.target.checked })} />Merge automatically after checks</label>
+          <label>Required checks<textarea value={(form.requiredChecks ?? []).join('\n')} onChange={event => change({ requiredChecks: event.target.value.split('\n').map(line => line.trim()).filter(Boolean) })} /></label>
           <label>Risky areas<textarea maxLength={2000} value={form.riskyAreas} onChange={event => change({ riskyAreas: event.target.value })} /></label>
           <label className="checkbox"><input type="checkbox" checked={form.allowMainIsolation} onChange={event => change({ allowMainIsolation: event.target.checked })} />Allow work directly on main</label>
           <label className="checkbox"><input type="checkbox" checked={form.refill.enabled} onChange={event => change({ refill: { ...form.refill, enabled: event.target.checked } })} />Refill goals automatically</label>
@@ -1163,7 +1168,7 @@ function CoordinatorOverrideDialog({ props, view, close }: { props: PageProps; v
         setError('');
         const kept = { defaultIsolation: base.defaultIsolation, setupCommand: base.setupCommand, maxRunningThreads: base.maxRunningThreads,
           maxRunningPerDevice: base.maxRunningPerDevice, perDeviceLimits: base.perDeviceLimits, threadTurnCap: base.threadTurnCap, allowMainIsolation: base.allowMainIsolation,
-          threadRules: base.threadRules, autoMerge: base.autoMerge, riskyAreas: base.riskyAreas, nightlyWindow: base.nightlyWindow, refill: base.refill };
+          threadRules: base.threadRules, autoMerge: base.autoMerge, riskyAreas: base.riskyAreas, requiredChecks: base.requiredChecks, nightlyWindow: base.nightlyWindow, refill: base.refill };
         await save(path, ProjectWorkSettingsViewSchema, 'PUT', { schema: 'project-work-settings-request-v1', revision: base.revision,
           settings: { ...kept, coordinator: { ...base.coordinator, modelId: modelId || null, effort } } }, signal);
         if (fresh) await api(`/api/projects/${view.project.id}/coordinator/fresh`, ProjectWorkViewSchema, 'POST', empty, { signal });

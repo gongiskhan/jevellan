@@ -17,13 +17,13 @@ export const MergeRouteSchema = z.strictObject({ schema: z.literal('merge-route-
   calls: z.array(JevCallSchema), probabilities: z.record(z.string(), z.number().min(0).max(1)).optional(),
   state: z.enum(['waiting', 'verifying', 'asked', 'merging', 'merged', 'failed']), failures: z.number().int().min(0).max(3),
   notified: z.array(z.string().max(80)).max(12).default([]),
-  mergedAt: TimestampSchema.optional(), decisionId: IdSchema.nullable(), verificationId: IdSchema.nullable(), nextAttemptAt: TimestampSchema.optional() });
+  headMoved: z.boolean().optional(), verificationRetries: z.number().int().min(0).max(1).default(0), failureDeliveredAt: TimestampSchema.optional(), mergedAt: TimestampSchema.optional(), decisionId: IdSchema.nullable(), verificationId: IdSchema.nullable(), nextAttemptAt: TimestampSchema.optional() });
 export type MergeRoute = z.infer<typeof MergeRouteSchema>;
 export const MergeCorrectionSchema = z.strictObject({ schema: z.literal('merge-correction-v1'), ...identity, title: z.string().max(120),
   correction: z.enum(['should-have-asked', 'did-not-need-asking']), receivedOrder: z.number().int().positive().max(Number.MAX_SAFE_INTEGER).optional() });
 export const VerificationRunSchema = z.strictObject({ schema: z.literal('verification-run-v1'), ...identity,
   runtime: IdSchema, modelId: IdSchema, model: z.string().min(1), modelLabel: z.string().min(1), providerChoice: z.enum(['other-provider', 'different-model']),
-  state: z.enum(['reserved', 'running', 'passed', 'failed']), report: VerificationReportSchema.nullable(), endedAt: TimestampSchema.optional(), note: z.string().max(1200).optional() });
+  headMoved: z.boolean().optional(), state: z.enum(['reserved', 'running', 'passed', 'failed']), report: VerificationReportSchema.nullable(), endedAt: TimestampSchema.optional(), note: z.string().max(1200).optional() });
 export type VerificationRun = z.infer<typeof VerificationRunSchema>;
 export const MergeDocumentSchema = z.discriminatedUnion('schema', [MergeRouteSchema, MergeCorrectionSchema, VerificationRunSchema]);
 export type MergeDocument = z.infer<typeof MergeDocumentSchema>;

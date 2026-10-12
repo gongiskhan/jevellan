@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "LJ2 native setup remains visible and merge routing explains its ask-owner choice",
   "layout": "phone-light",
-  "screenshot": "screenshots/LJ2-merge-route-why-phone-light.png",
+  "screenshot": "docs/acceptance/screenshots/LJ2-merge-route-why-phone-light.png",
   "expected": "the Jevellan web app \"LJ2 merge route why\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"LJ2 native setup remains visible and merge routing explains its ask-owner choice\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Should have asked me' and 'Didn't need asking' buttons are stacked and right-aligned with little space below the 'Changed files and context' row, so they look crowded and out of line with the left-aligned content.",
-      "The long commit hash fills the line inside its code chip and pushes '. 2 added and removed lines' awkwardly onto the end of the line.",
-      "'2 added and removed lines' is unclear wording because it doesn't split additions from deletions."
+      "The two feedback buttons ('Should have asked me' and 'Didn't need asking') sit right-aligned and stacked. The top one almost touches the 'Changed files and context' row, so that area looks crowded.",
+      "'2 added and removed lines across 2 files' reads awkwardly and doesn't say how many lines were added versus removed.",
+      "The long commit hash wraps in the middle of the sentence, so the line breaks unevenly."
     ]
   }
 }

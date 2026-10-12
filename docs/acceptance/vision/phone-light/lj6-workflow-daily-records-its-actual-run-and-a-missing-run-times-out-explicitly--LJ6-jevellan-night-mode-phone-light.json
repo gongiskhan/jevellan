@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row is clipped at the right edge: 'Pull requests' is cut off mid-word. It looks like a horizontally scrollable tab strip, so the tab can still be reached.",
-      "In each nightly card, the 'Enabled' checkbox and its label sit stacked and offset from the 'Run now'/'Edit' buttons, so the control row looks misaligned.",
-      "The 'Run now' buttons are grey with low-contrast text, so they look disabled. That's probably intentional while the nightly window is running.",
-      "The banners 'Nightly window · merges held until the nightly tasks finish' and 'Merges are held while the nightly window runs.' say the same thing twice."
+      "The tab strip clips 'Pull requests' at the right edge. It looks like a horizontally scrollable row, so the tab can still be reached, but nothing on screen shows that more tabs are there.",
+      "The 'merges held' message appears twice: in the top banner ('Nightly window · merges held until the nightly tasks finish') and again in the Nightly section ('Merges are held while the nightly window runs.').",
+      "On each nightly card, the 'Enabled' checkbox and its label are stacked vertically and sit slightly out of line with the Run now and Edit buttons.",
+      "The 'Run now' buttons look greyed out (possibly disabled because merges are held). The text is low-contrast but still readable."
     ]
   }
 }

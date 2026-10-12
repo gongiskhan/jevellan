@@ -4,15 +4,13 @@
   "model": "claude-opus-5-5",
   "test": "LJ2 native setup remains visible and merge routing explains its ask-owner choice",
   "layout": "phone-dark",
-  "screenshot": "screenshots/LJ2-native-setup-phone-dark.png",
+  "screenshot": "docs/acceptance/screenshots/LJ2-native-setup-phone-dark.png",
   "expected": "the Jevellan web app \"LJ2 native setup\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"LJ2 native setup remains visible and merge routing explains its ask-owner choice\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab strip is cut off on the right: a fourth tab icon shows only partly behind the scroll-arrow button. The arrow keeps it reachable, but the clipping looks unfinished.",
-      "The 'Fable' and 'Opus' chips under 'Applied from this device' are small and low-contrast. They are still readable.",
-      "The muted grey 'Disabled' and 'Offline' status labels have low contrast on the dark background. They are still readable."
+      "The top tab strip cuts off a fourth tab at the right edge (only a partial icon shows next to the scroll arrow). It can still be reached with the arrow or by scrolling, so it doesn't block anything."
     ]
   }
 }

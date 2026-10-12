@@ -26,15 +26,16 @@ export const ProjectJobRunSchema = z.strictObject({ schema: z.literal('project-j
 export type ProjectJobRun = z.infer<typeof ProjectJobRunSchema>;
 export const ProjectDailySchema = z.strictObject({ schema: z.literal('project-daily-v1'), id: IdSchema, projectId: IdSchema, revision,
   name: text.max(80), goalId: IdSchema.nullable(), order: z.number().int().min(0).max(100),
-  target: z.discriminatedUnion('kind', [z.strictObject({ kind: z.literal('job'), jobId: IdSchema }), z.strictObject({ kind: z.literal('review-since-last') }), z.strictObject({ kind: z.literal('session'), title: text.max(120), brief: text.max(20000), type: TaskTypeSchema })]),
+  target: z.discriminatedUnion('kind', [z.strictObject({ kind: z.literal('job'), jobId: IdSchema }), z.strictObject({ kind: z.literal('review-since-last'), reviewFromCommit: z.string().regex(/^[0-9a-f]{40}$/u).optional() }), z.strictObject({ kind: z.literal('session'), title: text.max(120), brief: text.max(20000), type: TaskTypeSchema })]),
+  reviewFromVersion: revision.default(0), reviewFromOwner: z.boolean().default(false), enabledSince: TimestampSchema.optional(),
   enabled: z.boolean(), requestDigest: z.string().regex(/^[0-9a-f]{64}$/u).optional(), createdAt: TimestampSchema, updatedAt: TimestampSchema });
 export type ProjectDaily = z.infer<typeof ProjectDailySchema>;
 export const ProjectWindowSchema = z.strictObject({ schema: z.literal('project-window-v1'), id: IdSchema, projectId: IdSchema, revision, date, closingProjectDay: date,
-  state: z.enum(['open', 'finished']), mergesHeld: z.boolean(), openedAt: TimestampSchema, finishedAt: TimestampSchema.optional(), taskIds: z.array(IdSchema).max(50),
+  state: z.enum(['open', 'finished']), mergesHeld: z.boolean(), openedAt: TimestampSchema, jobPhaseStartedAt: TimestampSchema.optional(), scheduledAt: TimestampSchema.optional(), openedLateReason: z.string().max(400).optional(), finishedAt: TimestampSchema.optional(), taskIds: z.array(IdSchema).max(50),
   plans: z.array(ProjectWorkTaskSchema).max(50), workflowScheduler: WorkflowSchedulerStateSchema.optional(), outcome: z.string().max(8000).optional(), failed: z.boolean().optional() });
 export type ProjectWindow = z.infer<typeof ProjectWindowSchema>;
 const jobFields = ProjectJobSchema.omit({ schema: true, id: true, projectId: true, revision: true, createdAt: true, updatedAt: true, requestDigest: true }).shape;
-const dailyFields = ProjectDailySchema.omit({ schema: true, id: true, projectId: true, revision: true, createdAt: true, updatedAt: true, requestDigest: true }).shape;
+const dailyFields = ProjectDailySchema.omit({ schema: true, id: true, projectId: true, revision: true, createdAt: true, updatedAt: true, requestDigest: true, reviewFromVersion: true, reviewFromOwner: true, enabledSince: true }).shape;
 export const JobCreateRequestSchema = z.strictObject({ schema: z.literal('job-create-request-v1'), clientRequestId: IdSchema, ...jobFields });
 export const JobUpdateRequestSchema = z.strictObject({ schema: z.literal('job-update-request-v1'), expectedRevision: z.number().int().positive(), ...jobFields });
 export const DailyCreateRequestSchema = z.strictObject({ schema: z.literal('daily-create-request-v1'), clientRequestId: IdSchema, ...dailyFields });

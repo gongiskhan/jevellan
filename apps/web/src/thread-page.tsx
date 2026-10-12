@@ -6,6 +6,7 @@ import {
 import { ApiError, api, empty } from './api.js';
 import { copyText, selectText } from './clipboard.js';
 import { Confirm, Markdown, Modal, Panel, composerClearance, followOnScroll, repinAtEnd, useTask, type PageProps } from './components.js';
+import { MergeWhy } from './merge-route.js';
 import { Icon } from './icons.js';
 import { MessageInput } from './message-delivery.js';
 import * as copy from './project-work-copy.js';
@@ -198,6 +199,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
               <a className="chip pw-pr-chip" href={thread.pr.url} target="_blank" rel="noopener noreferrer" title={copy.OPEN_PULL_REQUEST}>
                 <Icon name="pull-request" size={13} />{copy.pullRequestNumber(thread.pr.number)}
               </a>
+              <MergeWhy projectId={projectId} threadId={thread.id} commit={thread.pr.headSha} buttonLabel="Why this merge" />
               {pullRequestBadges(thread.pr).map((badge) => <span key={badge.text} className={`chip pw-badge pw-tone-${badge.tone}`}>{badge.text}</span>)}
             </>
           )}

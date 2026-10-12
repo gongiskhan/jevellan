@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'CONCLUDED 0' heading at the top of the right panel is cut in half by the edge of the scroll area, just under the nightly-window banner. This looks like normal scroll clipping, not an overlap.",
-      "The 'Enabled' checkboxes on the Nightly tests and Missing run cards sit above their labels instead of beside them, so they don't line up with the Run now / Edit buttons.",
-      "The bottom of the 'Missing run' card is cut off by the edge of the viewport. The right panel can be scrolled to reach it.",
-      "The 'merges held' message appears three times: in the top banner, in the right panel's 'Merges are held…' card, and in the 'Nightly window opened' card in the conversation."
+      "The right panel is scrolled, so the 'CONCLUDED 0' section heading is cut off at the top, just under the nightly banner.",
+      "The 'Switch mode nightly' card is cut off at the bottom of the viewport. It can be reached by scrolling.",
+      "The 'Run now' buttons have low contrast compared with the 'Edit' buttons, but they are still readable."
     ]
   }
 }

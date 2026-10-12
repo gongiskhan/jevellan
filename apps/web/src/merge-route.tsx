@@ -4,9 +4,24 @@ import { api, isCancelled } from './api.js';
 import { clientId } from './client-id.js';
 import { Modal } from './components.js';
 
-export function MergeWhy({ projectId, threadId, commit }: { projectId: string; threadId: string; commit: string }) {
-  const [open, setOpen] = useState(false);
-  return <><button type="button" className="text-button" onClick={() => setOpen(true)}>Why</button>
+export function MergeWhy({ projectId, threadId, commit, shadow, buttonLabel = 'Why' }: { projectId: string; threadId: string; commit: string; shadow?: boolean | undefined; buttonLabel?: string }) {
+  const [open, setOpen] = useState(false), [records, setRecords] = useState<MergeDocument[]>([]), [notice, setNotice] = useState(''), [busy, setBusy] = useState(false);
+  const path = `/api/projects/${projectId}/threads/${threadId}/pr`;
+  useEffect(() => {
+    const controller = new AbortController();
+    const refresh = () => { void api(`${path}/route`, MergeDocumentsViewSchema, 'GET', undefined, { signal: controller.signal, waitForHub: true }).then(view => setRecords(view.records), () => undefined); };
+    refresh(); const timer = setInterval(refresh, 60_000);
+    return () => { controller.abort(); clearInterval(timer); };
+  }, [path, commit]);
+  const route = records.find(row => row.schema === 'merge-route-v1' && row.commit === commit);
+  const correct = async (correction: 'should-have-asked' | 'did-not-need-asking') => {
+    setBusy(true); try { const view = await api(`${path}/correction`, MergeDocumentsViewSchema, 'POST', { schema: 'merge-correction-input-v1', clientRequestId: clientId(), commit, correction }, { waitForHub: true }); setRecords(view.records); setNotice('Saved for future merge decisions.'); }
+    catch (error) { setNotice(error instanceof Error ? error.message : 'The correction could not be saved.'); } finally { setBusy(false); }
+  };
+  return <>{shadow && route?.schema === 'merge-route-v1' && <span className="chip">Jev would: {route.route === 'merge' ? 'merge' : route.route === 'test-then-merge' ? 'test then merge' : 'ask you'}</span>}
+    <button type="button" className="text-button" onClick={() => setOpen(true)}>{buttonLabel}</button>
+    {route && <><button type="button" className="text-button" disabled={busy} onClick={() => { void correct('should-have-asked'); }}>Should have asked me</button><button type="button" className="text-button" disabled={busy} onClick={() => { void correct('did-not-need-asking'); }}>Didn't need asking</button></>}
+    {notice && <span role="status">{notice}</span>}
     {open && <MergeRouteDrawer projectId={projectId} threadId={threadId} commit={commit} close={() => setOpen(false)} />}</>;
 }
 function MergeRouteDrawer({ projectId, threadId, commit, close }: { projectId: string; threadId: string; commit: string; close(): void }) {

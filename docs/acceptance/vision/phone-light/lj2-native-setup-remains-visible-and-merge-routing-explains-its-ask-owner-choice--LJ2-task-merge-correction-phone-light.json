@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ2 native setup remains visible and merge routing explains its ask-owner choice",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/LJ2-task-merge-correction-phone-light.png",
+  "expected": "the Jevellan web app \"LJ2 task merge correction\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"LJ2 native setup remains visible and merge routing explains its ask-owner choice\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The merge-correction controls wrap unevenly: 'Why' and 'Should have asked me' sit on the first row, and 'Didn't need asking' drops to the next row next to the confirmation text, so the group looks ragged.",
+      "The 'Jev would: ask you' pill is indented oddly under the '#1 · merged' link and doesn't line up with anything else in the card.",
+      "The text-link controls ('Why', 'Should have asked me', 'Didn't need asking') are small and close together, so they may be hard to tap on a phone.",
+      "Most of the screen below the card is empty."
+    ]
+  }
+}

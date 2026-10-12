@@ -1,6 +1,6 @@
 # Projects loop activation handoff
 
-This handoff describes the remaining live work. It does not claim activation or owner acceptance. The implementation follows BRIEF-loop-amendment-2.md, and the evidence is in loop-2026-10-11.md and REPORT.md.
+This handoff describes the remaining live work. It does not claim activation or owner acceptance. The implementation follows BRIEF-loop-amendment-2.md, and the evidence is in loop-2026-10-11.md and REPORT.md. Parts 1 and 2 are pushed (Ekoa 30dffb6c; Jevellan f916302). Part 3's affected backend/browser gates pass and its main publication is at the secret-scan checkpoint. The complete release gates and live owner inputs remain open; the activation target is 0.2.1.
 
 ## Remaining owner steps, in order
 

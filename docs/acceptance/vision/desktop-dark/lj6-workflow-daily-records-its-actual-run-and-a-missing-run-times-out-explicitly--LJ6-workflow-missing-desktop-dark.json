@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Right panel is scrolled, so the top section heading (\"CONCLUDED 0\") is partly clipped under the header; it can be reached by scrolling up",
-      "The \"Enabled\" checkbox labels sit above and offset from their text instead of inline with it",
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. \"Context · Mesh journey fix…\"), which is expected for long names",
-      "The right panel's bottom text (\"propose useful work.\") meets the viewport edge, but it can be reached by scrolling"
+      "The \"CONCLUDED 0\" heading at the top of the right panel is half cut off by the panel's scroll position. It is only a scroll offset, and the content is still reachable.",
+      "The chat says the job \"timed-out\", but the Missing run card's badge says \"Failed at 02:05 AM\". The wording doesn't match, though both are readable.",
+      "\"No output recorded.\" shows in the expanded result of a successful run. This reads as placeholder text, not a layout problem."
     ]
   }
 }

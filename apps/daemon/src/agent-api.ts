@@ -145,7 +145,7 @@ export class AgentApiAdapter implements AgentApi {
           const view = await work.settingsView(projectId!); const choices = { ...view.settings.coordinator };
           for (const key of ['runtimeId', 'accountId', 'modelId'] as const) if (parsed[key] !== undefined || key === 'runtimeId' && parsed.providerId !== undefined) choices[key] = input[key] as string | undefined ?? null;
           if (parsed.effort !== undefined) choices.effort = input.effort as C.Effort | undefined ?? 'medium';
-          const settings = pick(view.settings, ['defaultIsolation', 'placement', 'coordinator', 'setupCommand', 'maxRunningThreads', 'maxRunningPerDevice', 'threadTurnCap', 'allowMainIsolation', 'threadRules', 'coordinatorReview', 'nightlyWindow', 'refill']);
+          const settings = pick(view.settings, ['defaultIsolation', 'placement', 'coordinator', 'setupCommand', 'maxRunningThreads', 'maxRunningPerDevice', 'threadTurnCap', 'allowMainIsolation', 'threadRules', 'autoMerge', 'riskyAreas', 'requiredChecks', 'nightlyWindow', 'refill']);
           result = await work.putSettings(projectId!, C.ProjectWorkSettingsRequestSchema.parse({ schema: 'project-work-settings-request-v1', revision: input.revision, clientRequestId: input.clientRequestId, settings: { ...settings, coordinator: choices } })); break;
         }
         case 'threads_list': result = { schema: 'agent-threads-v1', projectId, threads: (await work.view(projectId!)).threads }; break;

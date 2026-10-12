@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "LJ2 native setup remains visible and merge routing explains its ask-owner choice",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/LJ2-merge-shadow-route-phone-dark.png",
+  "expected": "the Jevellan web app \"LJ2 merge shadow route\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"LJ2 native setup remains visible and merge routing explains its ask-owner choice\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The feedback controls ('Why', 'Should have asked me', 'Didn't need asking', 'Open thread', 'Open task') look like bare pink text links rather than styled buttons. They don't match the 'Open on GitHub' and 'Merge' buttons and look like their styles didn't load. They are still readable and tappable.",
+      "The 'Jev would: ask you' chip is indented oddly, and the action rows wrap unevenly ('Open task' is pushed to the far right on its own), so the card looks cramped and unaligned.",
+      "The tab strip is scrolled so the 'Chat' tab is cut off at the left edge. This looks like normal horizontal scrolling, but the strip doesn't show that it can scroll.",
+      "There is a lot of empty space below the 'Recently merged · last 7 days' row."
+    ]
+  }
+}

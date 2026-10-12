@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row is clipped at the right edge, so 'Pull requests' is cut off mid-word. This looks like a horizontally scrolling tab strip, so the tab is still reachable.",
-      "There are three nightly or merge-hold banners that say almost the same thing: 'Nightly window · merges held until the nightly tasks finish', 'GitHub runs the chain tonight' and 'Merges are held while the nightly window runs'.",
-      "The 'Enabled' checkbox label wraps under the checkbox instead of sitting beside it.",
-      "'Nightly tests' shows 'No output recorded.' in a large dark block, which takes up a lot of space for an empty state."
+      "The tab row is cut off at the right edge ('Pull requests' is partly hidden). It looks like a horizontally scrollable row, so the tab can still be reached.",
+      "Three nightly-window banners say nearly the same thing ('merges held until the nightly tasks finish', 'GitHub runs the chain tonight', 'Merges are held while the nightly window runs'), which adds clutter.",
+      "On each card the 'Enabled' checkbox and its label are stacked and sit a little below the Run now/Edit buttons instead of lining up with them.",
+      "Each nightly card has extra empty space at the bottom."
     ]
   }
 }

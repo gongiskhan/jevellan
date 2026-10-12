@@ -4,17 +4,19 @@
   "model": "claude-opus-5-5",
   "test": "LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy",
   "layout": "desktop-dark",
-  "screenshot": "screenshots/LJ5-nightly-reviewed-and-passed-desktop-dark.png",
+  "screenshot": "docs/acceptance/screenshots/LJ5-nightly-reviewed-and-passed-desktop-dark.png",
   "expected": "the Jevellan web app \"LJ5 nightly reviewed and passed\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Nightly window finished' card ends its summary with 'Deploy: done…', so the rest of that line is hidden. This looks like an intentional line clamp, but the full status can't be read in the card.",
-      "In the right panel, the text under 'Last night's review · cefd7ec' runs past the bottom of the viewport ('Keep the regression path current' is clipped). The panel can still scroll, so nothing is unreachable.",
-      "In the nightly item cards, the 'Enabled' checkboxes sit above their labels instead of beside them, and they don't line up with the Run now / Edit buttons.",
-      "The 'Review since last' card shows the same text as both title and subtitle.",
-      "In the top banner, the 'Dismiss' button sits right against the end of the message text."
+      "Shell session titles and metadata in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Gonca…')",
+      "In the pull request #2 card, the 'Why', 'Open thread' and 'Open task' links are spaced unevenly, and 'Open task' uses a larger font than the other links",
+      "The 'Nightly window finished' event card ends with '…', so its full details are hidden in the feed",
+      "The long squash-merge commit hash and the task path in the feed make those lines very long and dense",
+      "The Enabled checkboxes in the nightly job cards sit above their labels instead of next to them",
+      "The 'Recently merged · last 7 days' row is styled differently from the other section headers in the right column",
+      "The Deploy card in the right column is cut off at the bottom of the screenshot, but the panel scrolls to show it"
     ]
   }
 }

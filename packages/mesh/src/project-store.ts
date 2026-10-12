@@ -6,13 +6,13 @@ import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import {
   CheckoutClaimSchema, ConversationIndexSchema, DecisionAnswerSchema, ENVELOPE_PAGE_BYTES, FileReservationSchema, IdSchema, MAIL_PAGE_BYTES, PROJECT_HUB_PAGE, PlacementOverrideSchema, ProjectCoordinatorSchema, ProjectCoordinatorStatusSchema,
-  ProjectDecisionSchema, ProjectEnvelopeSchema, ProjectHubRequestSchema, ProjectHubResultSchema, ProjectMailSchema, ProjectNotebookSchema, ProjectSchema, ProjectWorkSettingsSchema, StoredProjectWorkSettingsSchema, PullRequestReviewSchema,
+  ProjectDecisionSchema, ProjectEnvelopeSchema, ProjectHubRequestSchema, ProjectHubResultSchema, ProjectMailSchema, ProjectNotebookSchema, ProjectSchema, ProjectWorkSettingsSchema, StoredProjectWorkSettingsSchema,
   ProjectWorkSummarySchema, ReservationRequestSchema, ThreadIndexCursorSchema, ThreadIndexSchema, TimestampSchema, checkHubRevision, collectionOf, compareEnvelopes, coordinatorMovable,
   ProjectWorkTaskSchema, TaskHistoryEventSchema, type ProjectWorkTask,
   coordinatorWorking, isTerminal, mailReaches, pathsOverlap, reservationActive, stableJson, withHubRevision, workCounts,
   type DecisionAnswer, type DeviceView, type DocumentSchema, type FileReservation, type HeldCheckout, type PlacementOverride, type ProjectCoordinator, type ProjectCoordinatorStatus, type ProjectDecision,
   type ProjectEnvelope, type ProjectHub, type ProjectHubOperation, type ProjectHubResult, type ProjectHubResultOf, type ProjectMail, type ProjectNotebook, type ProjectWorkSettings,
-  type ProjectWorkSummary, type ReservationConflict, type ReservationRequest, type ReserveOutcome, type Stored, type ThreadIndex, type PullRequestReview,
+  type ProjectWorkSummary, type ReservationConflict, type ReservationRequest, type ReserveOutcome, type Stored, type ThreadIndex,
 } from '@jevellan/core';
 import type { HubDatabase } from './database.js';
 import { HubProtocolError, type MemberHubClient } from './client.js';
@@ -261,7 +261,12 @@ export class HubProjectStore {
     });
   }
 
-  mergeDocuments(projectId: string, after?: string) { return this.#page('project-merge-documents', MergeDocumentSchema, projectId, after, () => true); }
+  mergeDocuments(projectId: string, after?: string, threadId?: string) {
+    if (!threadId) return this.#page('project-merge-documents', MergeDocumentSchema, projectId, after, () => true);
+    this.#project(projectId); const thread = this.thread(threadId)?.document; if (!thread || thread.projectId !== projectId) refuse('Thread not found.', 404);
+    const rows = this.hub.listByField('project-merge-documents', 'threadId', IdSchema.parse(threadId), MergeDocumentSchema, { limit: PROJECT_HUB_PAGE + 1, ...(after ? { after } : {}) }).map(row => checkHubRevision(row).document);
+    return { records: rows.slice(0, PROJECT_HUB_PAGE), next: rows.length > PROJECT_HUB_PAGE ? rows[PROJECT_HUB_PAGE - 1]!.id : null };
+  }
   mergeDocument(id: string) { return this.#get('project-merge-documents', id, MergeDocumentSchema); }
   putMergeDocument(raw: MergeDocument, expectedRevision: number) {
     const document = MergeDocumentSchema.parse(raw);
@@ -281,11 +286,6 @@ export class HubProjectStore {
         .reduce((last, row) => row.document.schema === 'merge-correction-v1' ? Math.max(last, row.document.receivedOrder ?? 0) : last, 0) + 1 : undefined;
       return this.#put('project-merge-documents', document.id, MergeDocumentSchema, receivedOrder === undefined ? document : { ...document, receivedOrder }, expectedRevision);
     });
-  }
-  review(threadId: string): Stored<PullRequestReview> | null { return this.#get('project-pr-reviews', threadId, PullRequestReviewSchema); }
-  putReview(raw: PullRequestReview, expectedRevision: number): Stored<PullRequestReview> {
-    void raw; void expectedRevision;
-    return refuse('Coordinator pull request review has been retired.', 410);
   }
   /** Open questions plus those answered in the last 14 days by the hub clock; withdrawn ones leave the list. */
   decisions(projectId: string, after?: string): Page<ProjectDecision> {
@@ -616,11 +616,9 @@ export class HubProjectStore {
       case 'threads-list': result = { ...base, ...this.threads(request.projectId, request.after) }; break;
       case 'thread-get': result = { ...base, record: this.thread(request.threadId) }; break;
       case 'thread-publish': result = { ...base, threadId: request.index.id, ...this.publishThread(request.index, request.eventId) }; break;
-      case 'merge-documents': result = { ...base, ...this.mergeDocuments(request.projectId, request.after) }; break;
+      case 'merge-documents': result = { ...base, ...this.mergeDocuments(request.projectId, request.after, request.threadId) }; break;
       case 'merge-document-get': result = { ...base, record: this.mergeDocument(request.id) }; break;
       case 'merge-document-put': result = { ...base, record: this.putMergeDocument(request.document, request.expectedRevision) }; break;
-      case 'review-get': result = { ...base, record: this.review(request.threadId) }; break;
-      case 'review-put': result = { ...base, record: this.putReview(request.review, request.expectedRevision) }; break;
       case 'decisions-list': result = { ...base, ...this.decisions(request.projectId, request.after) }; break;
       case 'decision-get': result = { ...base, record: this.decision(request.id) }; break;
       case 'decision-create': result = { ...base, record: this.createDecision(request.decision) }; break;
@@ -683,11 +681,9 @@ export class HubProjectAccess implements ProjectHub {
   async threads(projectId: string, after?: string) { return this.#store.threads(projectId, after); }
   async thread(threadId: string) { return this.#store.thread(threadId); }
   async publishThread(index: ThreadIndex, eventId: number) { return this.#store.publishThread(index, eventId); }
-  async mergeDocuments(projectId: string, after?: string) { return this.#store.mergeDocuments(projectId, after); }
+  async mergeDocuments(projectId: string, after?: string, threadId?: string) { return this.#store.mergeDocuments(projectId, after, threadId); }
   async mergeDocument(id: string) { return this.#store.mergeDocument(id); }
   async putMergeDocument(document: MergeDocument, expectedRevision: number) { return this.#store.putMergeDocument(document, expectedRevision); }
-  async review(threadId: string) { return this.#store.review(threadId); }
-  async putReview(review: PullRequestReview, expectedRevision: number) { return this.#store.putReview(review, expectedRevision); }
   async decisions(projectId: string) {
     const records: ProjectDecision[] = []; let after: string | undefined;
     for (;;) { const page = this.#store.decisions(projectId, after); records.push(...page.records); if (page.next === null) return records; after = page.next; }
@@ -773,11 +769,9 @@ export class MemberProjectStore implements ProjectHub {
   }
   async threads(projectId: string, after?: string) { return this.#page((await this.#call('threads-list', { projectId, ...(after === undefined ? {} : { after }) })), projectId, after); }
   async thread(threadId: string) { return this.#check((await this.#call('thread-get', { threadId })).record, (row) => !row || row.document.id === threadId); }
-  async mergeDocuments(projectId: string, after?: string) { return this.#page(await this.#call('merge-documents', { projectId, ...(after ? { after } : {}) }), projectId, after); }
+  async mergeDocuments(projectId: string, after?: string, threadId?: string) { const page = this.#page(await this.#call('merge-documents', { projectId, ...(after ? { after } : {}), ...(threadId ? { threadId } : {}) }), projectId, after); if (threadId && page.records.some(row => row.threadId !== threadId)) throw new HubProtocolError(); return page; }
   async mergeDocument(id: string) { return this.#check((await this.#call('merge-document-get', { id })).record, row => !row || row.document.id === id); }
   async putMergeDocument(document: MergeDocument, expectedRevision: number) { return this.#check((await this.#call('merge-document-put', { document, expectedRevision })).record, row => row.document.id === document.id && (row.revision === expectedRevision + 1 || document.schema === 'merge-correction-v1' && stableJson({ ...row.document, revision: 0, at: '', receivedOrder: 0 }) === stableJson({ ...document, revision: 0, at: '', receivedOrder: 0 }))); }
-  async review(threadId: string) { return this.#check((await this.#call('review-get', { threadId })).record, row => !row || row.document.threadId === threadId); }
-  async putReview(review: PullRequestReview, expectedRevision: number) { return this.#check((await this.#call('review-put', { review, expectedRevision })).record, row => row.document.threadId === review.threadId && row.document.commit === review.commit); }
   async publishThread(index: ThreadIndex, eventId: number) {
     const result = this.#check(await this.#call('thread-publish', { index, eventId }), (value) => value.threadId === index.id && value.eventId >= eventId);
     return { eventId: result.eventId };
