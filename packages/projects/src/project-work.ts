@@ -1,5 +1,10 @@
 import { NightlyReview } from './nightly-review.js';
 import { ProjectGithub } from './github-awareness.js';
+import { coordinatorMemory, projectNow, projectRecall } from './shared-context.js';
+import { HUB_MEMORY_OFFLINE, ProjectCaptureQueue } from '@jevellan/memory';
+import { ProjectMemoryProgramme } from './memory-programme.js';
+import { listNativeSessions } from '@jevellan/mesh';
+import { nativeFormat } from '@jevellan/runtime-contract';
 import { WorktreeDiskService } from './worktree-disk.js';
 import { applyEkoaCodeSetup, EKOA_FAST_CHECKS } from './ekoa-code.js';
 import { EkoaCodeSetupRequestSchema, collectDeviceFacts, deviceResourceRefusal, parseGitHubRemote, liveWork, resolveProjectPath, type DeviceFacts } from '@jevellan/core';
@@ -16,7 +21,7 @@ import {
   type CheckoutOwnership, type Configuration, type CoordinatorMessageRequestSchema, type DecisionAnswerRequestSchema, type Homes, type NotebookRequestSchema, type Project,
   type ProjectHub, type ProjectWorkListView, type ProjectWorkSettings, type ProjectWorkSettingsRequestSchema, type ProjectWorkView, type PublicationLeaseService,
   type RiggingItem, type SecretRedactor, type SharedProjects, type ThreadCreateRequestSchema, type ThreadMessageRequestSchema, type ThreadOverrideRequestSchema,
-  type ThreadStopRequestSchema, type ThreadView, type UnreadableEnvelope,
+  type ThreadStopRequestSchema, type ThreadView, type UnreadableEnvelope, type ProjectMemoryRequest, type MemoryCapture,
 } from '@jevellan/core';
 import type { StretchBridges } from '@jevellan/conversations';
 import { decideProjectOutcome, type DecisionClient } from '@jevellan/decisions';
@@ -82,6 +87,9 @@ export type ProjectWorkOptions = {
   ownership?: CheckoutOwnership | undefined; leases?: PublicationLeaseService | undefined;
   outside?: { assertIdle(project: Project, path: string): Promise<void> } | undefined;
   bridges: Pick<StretchBridges, 'issueTools'>; memory: Pick<BasicMemory, 'project'>;
+  sendCapture?(request: ProjectMemoryRequest): Promise<void>;
+  hubMemory?: import('@jevellan/memory').HubMemoryStore;
+  switchMemory?(projectId: string, mode: Project['memory']['mode'], requestId: string): Promise<Project>;
   settings(): Promise<Configuration['x-jevellan']>; riggingItems(runtime: string): Promise<RiggingItem[]>;
   /** Jev placement (phase 4). */
   decisionClient?(): Promise<DecisionClient>;
@@ -107,6 +115,8 @@ export class ProjectWork {
   readonly threads: ThreadService; readonly decisions: DecisionItems; readonly tracker: PullRequestTracker; readonly views: ProjectViews;
   readonly admission: Admission; readonly transcripts: ThreadTranscripts;
   readonly apps: ProjectApps;
+  readonly captures: ProjectCaptureQueue;
+  readonly memoryProgramme: ProjectMemoryProgramme | undefined;
   readonly reviews: NightlyReview; readonly daily: ProjectDailyWork; readonly jobs: ProjectJobRunner;
   readonly goals: ProjectGoals; readonly tasks: ProjectTasks; readonly dispatcher: ProjectDispatcher;
   readonly mergeGate: ProjectMergeGate;
@@ -129,6 +139,7 @@ export class ProjectWork {
     this.apps = new ProjectApps(o.homes, tailnetAppPublisher(async () => (await o.roster()).devices.find(view => view.device.id === o.deviceId)?.device.url ?? this.daemonUrl), o.redactor);
     const timers = this.#timers = { ...DEFAULT_PROJECT_TIMERS, ...o.timers };
     const now = () => timers.now();
+    this.captures = new ProjectCaptureQueue(o.homes, o.redactor, now);
     const facts = () => o.facts?.() ?? collectDeviceFacts(o.homes);
     this.paths = new ProjectPaths(o.homes);
     this.ledgers = new ProjectLedgers(this.paths, { redactor: o.redactor, now: () => new Date(now()).toISOString() });
@@ -186,6 +197,14 @@ export class ProjectWork {
       leaseRetryMs: timers.mainLeaseRetryMs, now, ...(o.leases ? { leases: o.leases } : {}), ...(o.ownership ? { ownership: o.ownership } : {}) });
     const main = new MainCheckout({ git, redactor: o.redactor, deviceId: o.deviceId, deviceName: o.deviceName, ownership: o.ownership, outside: o.outside });
     this.coordinators = new CoordinatorService({ deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, store: coordinatorStore, ledgers: this.ledgers, hub: o.hub,
+      captureTurn: (project, session) => this.#capture(project, { scope: 'coordinator', runtime: session.runtime, model: session.model, accountId: session.accountId, sessionId: session.nativeSessionId }),
+      memoryContext: async project => {
+        try { const port = o.memory.project(project, o.deviceId, () => {}, { kind: 'viewer' }), signal = AbortSignal.timeout(150_000);
+          const notes = port.list ? await port.list(signal) : (await port.search('Project OR build OR test OR convention OR decision', signal)).notes;
+          const brief = await port.findTitle('Project brief', signal);
+          return coordinatorMemory(brief ? [brief, ...notes.filter(note => note.permalink !== brief.permalink)] : notes);
+        } catch (error) { return `Project memory:\n${error instanceof Error && error.message === HUB_MEMORY_OFFLINE ? HUB_MEMORY_OFFLINE : 'Project memory is unavailable for this turn.'}`; }
+      },
       project: (projectId) => this.#project(projectId), workSettings: (projectId) => this.admission.settings(projectId), settings: o.settings, accounts: o.accounts,
       runtimes: o.runtimes, launcher, heldAccounts: held, decisions: this.decisions, tools: () => this.#coordinatorTools(), roster: o.roster,
       outcome: async (projectId, event, history, signal) => {
@@ -233,8 +252,22 @@ export class ProjectWork {
         accountWait: (thread) => launcher.accountWait({ runtime: thread.placement.runtime, model: thread.placement.model,
           ...(thread.placement.fixed.includes('account') ? { requiredAccountId: thread.placement.accountId } : {}) }),
         decisions: this.decisions, toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event),
-        memory: (project) => o.memory.project(project, o.deviceId, () => { throw new Error(THREAD_MEMORY_READ_ONLY); }), mail: this.mail,
+        memory: async (project, scope) => {
+          const task = scope?.kind === 'thread' ? (await this.tasks.list(project.id)).find(task => task.threadId === scope.threadId) : undefined;
+          return o.memory.project(project, o.deviceId, () => { throw new Error(THREAD_MEMORY_READ_ONLY); }, { kind: 'thread', ...(scope?.kind === 'thread' ? { id: scope.threadId } : {}),
+            ...(scope?.provenance ? { provenance: { ...scope.provenance, ...(task ? { taskId: task.id } : {}) } } : {}) });
+        }, mail: this.mail,
         githubTool: (scope, _name, input, signal) => this.#github.read(scope, input, signal),
+        captureTurn: (project, thread) => this.#capture(project, { scope: thread.state === 'attached' ? 'attached' : 'thread', threadId: thread.id, runtime: thread.placement.runtime,
+          model: thread.placement.model, accountId: thread.placement.accountId, sessionId: thread.nativeSessionId }),
+        recall: async (project, thread) => projectRecall(() => o.memory.project(project, o.deviceId, () => {}, { kind: 'viewer' }), { title: thread.title, brief: thread.task },
+          { ...(o.decisionClient ? { client: o.decisionClient } : {}), model: (await o.settings()).decisions.model }, AbortSignal.timeout(150_000)),
+        projectNow: async (project, thread) => {
+          const threads = []; let after: string | undefined;
+          do { const page = await o.hub.threads(project.id, after); threads.push(...page.records); after = page.next ?? undefined; } while (after);
+          const roster = await o.roster(), names = new Map(roster.devices.map(view => [view.device.id, view.device.name]));
+          return projectNow(threads, thread.id, thread.baseBranch, id => names.get(id) ?? id, now());
+        },
         appTool: async (scope, name, input, signal) => {
           if (scope.kind !== 'thread' || signal.aborted) throw new Error('This app call is outside an active thread turn.');
           const thread = this.store.get(scope.threadId);
@@ -251,8 +284,14 @@ export class ProjectWork {
       project: id => this.#project(id), settings: id => this.admission.settings(id), baseBranch: repo => worktrees.baseBranch(repo), event: (id, event) => delivery.toCoordinator(id, event),
       windowOpened: async id => (await this.daily.window(id))?.openedAt, day: id => this.daily.day(id), dayStart: (id, day) => this.daily.dayStart(id, day), changed: () => { void this.#sweepTasks().catch(() => undefined); } });
     this.daily = new ProjectDailyWork({ hub: o.hub, tasks: this.tasks, runner: this.jobs, redactor: o.redactor, now, deviceId: o.deviceId, settings: id => this.admission.settings(id),
+      memoryDream: async (id, requestId) => { if (!this.memoryProgramme) throw new Error('The memory dream runs on the hub.'); return this.memoryProgramme.runNow(await this.#project(id), requestId); },
+      memoryDreamLine: id => this.memoryProgramme?.line(id),
       validateGoal: async (id, goalId) => { if (goalId) await this.goals.read(id, goalId); }, event: (id, event) => delivery.toCoordinator(id, event), changed: () => { void this.#sweepTasks().catch(() => undefined); } });
+    this.memoryProgramme = o.hubMemory ? new ProjectMemoryProgramme({ store: o.hubMemory, captures: this.captures, hub: o.hub, launcher, placement, git, daily: this.daily,
+      deviceId: o.deviceId, redactor: o.redactor, accounts: o.accounts, settings: id => this.admission.settings(id), repository: project => worktrees.repository(project), baseBranch: repo => worktrees.baseBranch(repo),
+      event: (id, event) => delivery.toCoordinator(id, event), enterOperation: o.enterOperation, now }) : undefined;
     this.reviews = new NightlyReview({ hub: o.hub, tasks: this.tasks, homes: o.homes, git, launcher, deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, now, facts,
+      memory: async id => o.memory.project(await this.#project(id), o.deviceId, () => { throw new Error(THREAD_MEMORY_READ_ONLY); }, { kind: 'review' }),
       settings: o.settings, accounts: o.accounts, runtimes: o.runtimes, project: id => this.#project(id), repository: project => worktrees.repository(project), baseBranch: repo => worktrees.baseBranch(repo), timeoutMs: timers.threadTurnTimeoutMs,
       event: (id, event) => delivery.toCoordinator(id, event), changed: () => { void this.#sweepTasks().catch(() => undefined); } });
     this.dispatcher = new ProjectDispatcher({ tasks: this.tasks, threads: this.threads, deviceId: o.deviceId,
@@ -266,7 +305,8 @@ export class ProjectWork {
       transition: async (threadId, apply) => { const runner = this.threads.runner(threadId); if (runner) await runner.transition(apply); else await apply(); },
       hub: o.hub, deviceId: o.deviceId, assertMerge: (id, tid) => this.daily.assertMerge(id, tid),
       redactor: o.redactor, now, pollMs: timers.prPollMs, periodic: timers.periodic });
-    const verification = new PullRequestVerification({ hub: o.hub, homes: o.homes, git, launcher, deviceId: o.deviceId, deviceName: o.deviceName, facts, redactor: o.redactor, now, settings: o.settings, accounts: o.accounts, runtimes: o.runtimes, timeoutMs: timers.testTimeoutMs });
+    const verification = new PullRequestVerification({ hub: o.hub, homes: o.homes, git, launcher, deviceId: o.deviceId, deviceName: o.deviceName, facts, redactor: o.redactor, now, settings: o.settings, accounts: o.accounts, runtimes: o.runtimes, timeoutMs: timers.testTimeoutMs,
+      memory: project => o.memory.project(project, o.deviceId, () => { throw new Error(THREAD_MEMORY_READ_ONLY); }, { kind: 'verification' }) });
     this.mergeGate = new ProjectMergeGate({ hub: o.hub, store: this.store, tracker: this.tracker, github, verification, deviceId: o.deviceId, redactor: o.redactor, now,
       settings: id => this.admission.settings(id), configuration: o.settings, ...(o.decisionClient ? { decisionClient: o.decisionClient } : {}), project: id => this.#project(id), repository: project => worktrees.repository(project),
       event: (id, event) => delivery.toCoordinator(id, event), assertMerge: (id, tid) => this.daily.assertMerge(id, tid), message: (id, tid, text, messageId) => this.threads.message(id, tid, 'coordinator', text, false, messageId) });
@@ -305,11 +345,32 @@ export class ProjectWork {
     const project = (await this.#o.projects.get(projectId))?.project; if (!project) throw refuse(PROJECT_NOT_FOUND, 404);
     return project;
   }
+  async #capture(project: Project, source: { scope: MemoryCapture['scope']; runtime: string; model: string; accountId: string; sessionId?: string | undefined; threadId?: string }): Promise<void> {
+    if (!source.sessionId || !(await this.admission.settings(project.id)).memory.capture) return;
+    if (!['claude', 'codex'].includes(source.runtime)) return;
+    const accountHome = this.#o.homes.at('homes', source.runtime, source.accountId);
+    const journal = (await listNativeSessions({ runtime: nativeFormat(source.runtime), root: accountHome })).find(journal => journal.nativeId === source.sessionId);
+    if (!journal) return;
+    const task = source.threadId ? (await this.tasks.list(project.id)).find(task => task.threadId === source.threadId) : undefined;
+    const context = { projectId: project.id, scope: source.scope, runtime: source.runtime, model: source.model, sessionId: source.sessionId, transcriptPath: journal.file,
+      ...(source.threadId ? { threadId: source.threadId } : {}), ...(task ? { taskId: task.id } : {}) };
+    await this.captures.capture(context, accountHome, async (capture, text) => {
+      if (this.#o.sendCapture) await this.#o.sendCapture({ schema: 'project-memory-request-v1', projectId: project.id,
+        scope: { kind: source.threadId ? 'thread' : 'coordinator', id: source.threadId ?? project.id }, operation: 'capture', capture, text });
+      else this.captures.accept(capture, text);
+    });
+  }
   /** Coordinator tool handlers (brief 7.1), built on first use because the thread service and the tracker come after the coordinators. Memory is read-only. */
   #coordinatorTools(): CoordinatorToolHandlers {
-    return this.#tools ??= coordinatorToolHandlers({ deviceId: this.#o.deviceId, deviceName: this.#o.deviceName, threads: this.threads, tasks: this.tasks, goals: this.goals, daily: this.daily, jobs: this.jobs, store: this.store, decisions: this.decisions,
+    return this.#tools ??= { ...coordinatorToolHandlers({ deviceId: this.#o.deviceId, deviceName: this.#o.deviceName, threads: this.threads, tasks: this.tasks, goals: this.goals, daily: this.daily, jobs: this.jobs, store: this.store, decisions: this.decisions,
       pullRequests: this.tracker, github: this.#github, hub: this.#o.hub, ledgers: this.ledgers, mail: this.mail, roster: this.#o.roster, now: () => this.#timers.now(),
-      memory: async (projectId) => this.#o.memory.project(await this.#project(projectId), this.#o.deviceId, () => { throw new Error(COORDINATOR_MEMORY_READ_ONLY); }) });
+      memory: async (projectId, scope) => this.#o.memory.project(await this.#project(projectId), this.#o.deviceId, () => { throw new Error(COORDINATOR_MEMORY_READ_ONLY); },
+        { kind: 'coordinator', ...(scope?.provenance ? { provenance: scope.provenance } : {}) }) }),
+      capture: async (scope, payload) => {
+        const session = this.coordinators.get(scope.projectId).state().session;
+        if (scope.kind !== 'coordinator' || !session || payload?.sessionId && payload.sessionId !== session.nativeSessionId) throw new Error('Capture needs this coordinator’s current session.');
+        await this.#capture(await this.#project(scope.projectId), { scope: 'coordinator', runtime: session.runtime, model: session.model, accountId: session.accountId, sessionId: session.nativeSessionId });
+      } };
   }
   #thread(projectId: string, threadId: string): void {
     if (this.store.get(threadId)?.projectId !== projectId) throw refuse(THREAD_NOT_FOUND, 404);
@@ -389,7 +450,9 @@ export class ProjectWork {
     if (!this.#started || this.#closing || !deviceAllowsWork(this.#o.homes)) return;
     try {
       for (const { project } of await this.#o.projects.list()) {
+        await this.memoryProgramme?.sweep(project);
         if ((await this.#o.hub.coordinator(project.id))?.document.deviceId === this.#o.deviceId) { await this.reviews.sweep(project.id); await this.daily.sweep(project.id); await this.dispatcher.sweep(project.id); await this.goals.sweep(project.id); }
+        await this.memoryProgramme?.sweep(project);
       }
       this.mergeGate.sweep();
     } catch (error) { if (!(error instanceof HubUnavailable)) throw error; }
@@ -410,6 +473,8 @@ export class ProjectWork {
       await this.inbox.close();
       // Coordinator turns first (their tools start and message threads), then runners: tracker transitions wait on runner chains (2.6.14).
       await this.coordinators.close();
+      await this.memoryProgramme?.close();
+      await this.captures.close();
       await this.mergeGate.close();
       await this.reviews.close();
       await this.threads.close();
@@ -514,10 +579,14 @@ export class ProjectWork {
   }
   /** Settings 5.1 with a revision check; a conflict is the owner's reload sentence. */
   async putSettings(projectId: string, input: z.infer<typeof ProjectWorkSettingsRequestSchema>, clientRequestId?: string): Promise<z.infer<typeof ProjectWorkSettingsViewSchema>> {
-    const project = await this.#project(projectId);
+    let project = await this.#project(projectId);
     const current = (await this.#o.hub.settings(projectId))?.document ?? defaultProjectWorkSettings(projectId);
     const settings = ProjectWorkSettingsSchema.parse({ ...current, ...input.settings, schema: 'project-work-settings-v3', projectId, revision: input.revision });
     const requestId = input.clientRequestId ?? clientRequestId;
+    if (input.settings.memory && input.settings.memory.mode !== project.memory.mode && this.#o.switchMemory) {
+      if (current.revision !== input.revision) throw refuse(SETTINGS_CHANGED, 409);
+      project = await this.#o.switchMemory(projectId, input.settings.memory.mode, requestId ?? newId('memory_mode'));
+    }
     try { return this.#settingsView(project, (await this.#o.hub.putSettings(settings, input.revision, ...(requestId === undefined ? [] : [requestId]))).document); }
     catch (error) { if (statusOf(error) === 409) throw refuse(SETTINGS_CHANGED, 409); throw error; }
   }

@@ -50,7 +50,8 @@ export function pullRequestEntries(threads: readonly ThreadIndex[]): PullRequest
  * Settings as threads apply them (brief 5.1, 3.1 step 2b): a main default shows as worktree with the reason, the Leave git
  * notice on a project that leaves git to the owner, else the phase text while main isolation is gated (D88).
  */
-export function effectiveSettings(settings: ProjectWorkSettings, project: Pick<Project, 'branchPolicy'>, gates: Pick<PlacementGates, 'mainIsolation'> = PHASE_GATES): { settings: ProjectWorkSettings; notice?: string } {
+export function effectiveSettings(settings: ProjectWorkSettings, project: Pick<Project, 'branchPolicy'> & Partial<Pick<Project, 'memory'>>, gates: Pick<PlacementGates, 'mainIsolation'> = PHASE_GATES): { settings: ProjectWorkSettings; notice?: string } {
+  if (project.memory && project.memory.mode !== settings.memory.mode) settings = { ...settings, memory: { ...settings.memory, mode: project.memory.mode } };
   if (settings.defaultIsolation !== 'main') return { settings };
   const worktree: ProjectWorkSettings = { ...settings, defaultIsolation: 'worktree' };
   if (project.branchPolicy !== 'main' && gates.mainIsolation) return { settings, notice: LEAVE_GIT_SETTING };
@@ -186,6 +187,7 @@ export class ProjectViews {
     // An ended main thread whose claim the sweeps are still settling says why the checkout stays held (phase 8, D291).
     const kept = isTerminal(thread.state) ? this.#o.store.local(threadId).unsettledCheckout?.message : undefined;
     return ThreadViewSchema.parse({ schema: 'project-thread-view-v1', thread: threadIndex(thread, this.#o.store.labels(threadId), events.at(-1)?.t ?? thread.createdAt),
+      ...(this.#o.store.local(threadId).memoryRecall ? { memoryRecall: this.#o.store.local(threadId).memoryRecall } : {}),
       placement: thread.placement, reports, transcript, queuedMessages: thread.queuedMessages,
       canMessage: !['attached', 'done', 'stopped', 'failed'].includes(thread.state), turnAllowance: thread.turnAllowance, deviceName: this.#o.deviceName,
       baseBranch: thread.baseBranch, ...(thread.attach ? { attach: thread.attach } : {}), attachCommand: attachCommand(threadId),

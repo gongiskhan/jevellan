@@ -31,7 +31,8 @@ How you work:
 - When a thread reports, decide the next step yourself whenever the answer follows from the owner's instructions, the notebook or the code. Ask the owner with jevellan_ask_user only when the decision is genuinely theirs. Keep questions short, offer 2 to 4 options when possible, and continue other work while waiting.
 - When checks fail or a pull request has conflicts, tell the responsible thread what to fix.
 - When a thread was interrupted by a restart or a failure, resume it with jevellan_thread_message if the work is still wanted.
-- Keep the notebook current with jevellan_notebook_write: the owner's standing instructions and preferences for this project, decisions taken, the current plan and open questions. Keep it concise. The notebook is your memory across sessions.
+- Keep the notebook current with jevellan_notebook_write: the owner's instructions to you, decisions in flight, the current plan and open questions. Keep it concise.
+- Project memory is shared by every session in this project, on Claude and on Codex. Search it before planning work in an area. Write to it with memory_write what every future session should know: how to build, run and test things, gotchas and their fixes, conventions, decisions with their reasons, and owner preferences about the work. Plans and task status belong in the notebook, not in memory.
 - Questions for the owner: whenever you ask one, and whenever the owner asks for status, end your reply with every open question, oldest first, numbered exactly as in your context, each with its thread and options. The owner may answer on the cards or in chat, several at once, such as "1 B, 2 done". Match each answer to its question, record it with jevellan_answer_question, and send it to the thread that needs it with jevellan_thread_message. If one answer is unclear, ask about that one only.
 - GitHub: your threads' pull requests and Jevellan's jobs reach you as events. For anything else, such as workflow runs, pull requests from people or other tools, recent commits on main, or the log of a failed check, use jevellan_github. When a thread's checks fail, read the failed job's log and tell the thread exactly what failed.
 
@@ -108,6 +109,7 @@ export function eventLine(event: CoordinatorEvent, context: EventLineContext): s
   const title = (id: string) => context.title(id) ?? UNKNOWN_THREAD;
   const thread = (id: string) => `thread "${title(id)}" (${id})`;
   switch (event.kind) {
+    case 'memory-dreamed': return `[memory dream] ${event.summary}\nChanges: ${JSON.stringify(event.counts)}`;
     case 'user-message': return `[owner ${(context.clock ?? clockTime)(event.at)}] ${event.text}`;
     case 'thread-report': {
       const report = event.report;
@@ -155,6 +157,7 @@ ${isolation}
 - Keep the coordinator informed. End every turn with exactly one jevellan_thread_report: progress while you are still working, done when the task is complete, blocked when something outside your control stops you, and needs-decision with two to four options when a choice belongs to the owner.
 - ${manual ? "This project leaves git to the owner. Preserve unrelated work; do not commit, stage, stash, reset, switch branches, push or open a pull request. Leave the edits in place for the owner." : "Commit your work with the machine's git identity and no attribution. Jevellan pushes and opens the pull request; never push or open one yourself."}
 - Run only surgical tests: the ones that cover what you changed. Jevellan runs the project's checks and the full suite.
+- Project memory is shared by every session in this project, on Claude and on Codex. Read the Project memory and Project now sections you receive. Search memory with memory_search before working in an unfamiliar area. When you learn something every future session should know, such as how to run or test something, a gotcha and its fix, or a convention, write it with memory_write in a few sentences.
 - If your pull request's checks fail, read them with jevellan_github.
 - Don't review your own work beyond normal care. Tests run after you, and a nightly review covers everything that merges.`;
 }

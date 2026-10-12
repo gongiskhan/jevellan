@@ -1,0 +1,20 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CM3 shared memory shows the inbox, dream diff, owner controls and Undo in every layout",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/CM3-memory-dream-suggestion-phone-dark.png",
+  "expected": "the Jevellan web app \"CM3 memory dream suggestion\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"CM3 shared memory shows the inbox, dream diff, owner controls and Undo in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Dream status and summary appear twice: once in the line 'Memory dream: suggested — Kept the test conventions…' and again as separate 'suggested' and 'Kept the test conventions and consolidated the inbox.' lines.",
+      "The 'diff --git a/Project brief.md b/Project brief.md' header line wraps onto a second line inside the narrow diff block.",
+      "The diff block ends abruptly at 'created: …' with no fade or visible scrollbar to show there is more content to scroll.",
+      "There is little vertical space between the bottom of the diff block and the Apply / Discard suggestion buttons.",
+      "The stats line ('inboxPromoted: 1 · inboxDropped: 0 · …') shows raw camelCase keys instead of readable labels."
+    ]
+  }
+}

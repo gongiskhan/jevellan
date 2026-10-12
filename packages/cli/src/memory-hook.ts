@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import { BridgeRequestSchema, BridgeResultSchema, MemoryHookEventSchema } from '@jevellan/core/client';
 
-const PayloadSchema = z.object({ hook_event_name: MemoryHookEventSchema });
+const PayloadSchema = z.object({ hook_event_name: MemoryHookEventSchema, session_id: z.string().min(1).max(256).optional(), transcript_path: z.string().min(1).max(4096).optional() });
 
-/** Bounded, advisory hook. It sends no provider-authored content and writes no files. */
+/** Bounded, advisory hook. The scoped daemon reads the isolated account's journal. */
 export async function serveMemoryHook(): Promise<void> {
   const abort = new AbortController();
   const timer = setTimeout(() => { abort.abort(); process.stdin.destroy(); }, 2000);
@@ -20,7 +20,8 @@ export async function serveMemoryHook(): Promise<void> {
     }
     abort.signal.throwIfAborted();
     const payload = PayloadSchema.parse(JSON.parse(Buffer.concat(chunks).toString('utf8')));
-    const request = BridgeRequestSchema.parse({ schema: 'bridge-request-v1', operation: 'memory-capture', event: payload.hook_event_name });
+    const request = BridgeRequestSchema.parse({ schema: 'bridge-request-v1', operation: 'memory-capture', event: payload.hook_event_name,
+      ...(payload.session_id ? { sessionId: payload.session_id } : {}), ...(payload.transcript_path ? { transcriptPath: payload.transcript_path } : {}) });
     const response = await fetch(new URL('/api/bridge', base), { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(request), redirect: 'error', signal: abort.signal });
     if (!response.ok) throw new Error('Queue refused');
     BridgeResultSchema.parse(await response.json());

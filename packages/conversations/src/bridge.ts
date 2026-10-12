@@ -23,7 +23,7 @@ const failure = (message: string, status = 403) => Object.assign(new Error(messa
 export interface BridgeScopeTools {
   list(): z.infer<typeof BridgeToolsSchema>;
   call(name: BridgeTool, args: unknown): Promise<z.infer<typeof BridgeResultSchema>>;
-  capture(): Promise<z.infer<typeof BridgeResultSchema>>;
+  capture(payload?: { sessionId?: string; transcriptPath?: string }): Promise<z.infer<typeof BridgeResultSchema>>;
   close(): Promise<void>;
 }
 
@@ -131,7 +131,7 @@ export class StretchBridges {
     const tools = token && token.length < 256 ? this.#scopes.get(this.#key(token)) : undefined;
     if (!tools) throw failure('Invalid or expired stretch token.', 401);
     const request = BridgeRequestSchema.parse(raw);
-    return request.operation === 'list' ? tools.list() : request.operation === 'memory-capture' ? tools.capture() : tools.call(request.name, request.arguments);
+    return request.operation === 'list' ? tools.list() : request.operation === 'memory-capture' ? tools.capture({ ...(request.sessionId ? { sessionId: request.sessionId } : {}), ...(request.transcriptPath ? { transcriptPath: request.transcriptPath } : {}) }) : tools.call(request.name, request.arguments);
   }
   async close(): Promise<void> { const tools = [...this.#scopes.values()]; this.#scopes.clear(); await Promise.all(tools.map((scope) => scope.close())); }
 }

@@ -1,4 +1,5 @@
 import { EkoaRequestSchema } from '@jevellan/core';
+import { ProjectMemoryRequestSchema } from '@jevellan/core';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { AccountHubRequestSchema, ConsumeSwitchSchema, DeviceSwitchInputSchema, EmptySchema, MeshSessionInputSchema, MeshSessionResultSchema, PassphraseInputSchema, PeerSessionInputSchema, ProjectHubCollectionSchema, ProjectHubRequestSchema, collectionOf, isProjectHubRead } from '@jevellan/core';
 import { HubAccounts, HubCheckoutStore, HubIndexes, HubPublicationLeases, sessionCookie } from '@jevellan/mesh';
@@ -24,6 +25,11 @@ export async function handleMeshDeviceApi(app: Application, request: IncomingMes
   const authorization = request.headers.authorization;
   const device = app.devices.authenticate(authorization?.startsWith('Bearer ') ? authorization.slice(7) : undefined);
   const send = (value: unknown) => json(response, app.hub.redactor.document(value));
+  if (path === '/hub/mesh/memory' && method === 'POST') {
+    const input = ProjectMemoryRequestSchema.parse(await requestBody(request));
+    const result = await app.projectMemoryRequest(input, device.id);
+    app.devices.authenticate(authorization!.slice(7)); send(result); return true;
+  }
   if (path === '/hub/mesh/device-tags' && method === 'POST') {
     const input = DeviceTagsRequestSchema.parse(await requestBody(request)); app.redactor.add(input.ownerSession);
     if (!app.hubAuth.verify(input.ownerSession, device.id)) throw Object.assign(new Error('Sign in to Jevellan.'), { status: 401 });

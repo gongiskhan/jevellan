@@ -11,7 +11,9 @@ const ended = (task: ProjectWorkTask) => ['done', 'failed', 'cancelled', 'in-rev
 export class ProjectDailyWork {
   constructor(readonly o: { hub: ProjectHub; tasks: ProjectTasks; runner: ProjectJobRunner; redactor: SecretRedactor; now(): number; deviceId: string;
     settings(projectId: string): Promise<ProjectWorkSettings>; validateGoal(projectId: string, goalId: string | null): Promise<void>;
-    event(projectId: string, event: CoordinatorEvent): Promise<void>; changed(): void }) {}
+    event(projectId: string, event: CoordinatorEvent): Promise<void>; changed(): void;
+    memoryDream?(projectId: string, requestId: string): Promise<{ schema: 'memory-dream-run-receipt-v1'; id: string; accepted: true }>;
+    memoryDreamLine?(projectId: string): string | undefined }) {}
   async jobs(projectId: string): Promise<ProjectJob[]> {
     const rows: ProjectJob[] = []; let after: string | undefined;
     do { const page = await this.o.hub.jobs(projectId, after); rows.push(...page.records); after = page.next ?? undefined; } while (after); return rows;
@@ -27,6 +29,18 @@ export class ProjectDailyWork {
     return rows.sort((a, b) => b.openedAt.localeCompare(a.openedAt));
   }
   async window(projectId: string): Promise<ProjectWindow | null> { return (await this.windows(projectId)).find(row => row.state === 'open') ?? null; }
+  async memoryFinished(projectId: string, windowId: string, line: string, failed: boolean): Promise<void> {
+    await this.o.tasks.exclusive(projectId, async () => {
+      const window = (await this.o.hub.window(windowId))?.document;
+      if (!window || window.projectId !== projectId) return;
+      const before = (window.outcome ?? '').replace(/(?:\n\n)?Memory dream:[\s\S]*$/u, '');
+      const outcome = `${before.slice(0, Math.max(0, 7998 - line.length))}${before ? '\n\n' : ''}${line.slice(0, 8000)}`;
+      if (outcome === window.outcome && (!failed || window.failed)) return;
+      const saved = (await this.o.hub.putWindow({ ...window, outcome, failed: failed || window.failed }, window.revision)).document;
+      if (saved.state === 'finished') await this.o.event(projectId, { schema: 'coordinator-event-v1', kind: 'window-finished', id: derivedId('cev', windowId, 'memory', outcome), at: this.o.tasks.at(), outcome });
+      this.o.changed();
+    });
+  }
   async mergesHeld(projectId: string): Promise<boolean> {
     const window = await this.window(projectId); if (window) return window.mergesHeld && this.o.now() < Date.parse(window.openedAt) + 7 * 3_600_000;
     // Fence merges at the configured time even while the coordinator is creating its durable window.
@@ -155,6 +169,11 @@ export class ProjectDailyWork {
   }
   async runDaily(projectId: string, id: string, raw: unknown) {
     const { clientRequestId } = ProjectRunRequestSchema.parse(raw);
+    const definition = (await this.o.hub.daily(id))?.document;
+    if (definition?.projectId === projectId && definition.target.kind === 'memory-dream') {
+      if (!definition.enabled || !this.o.memoryDream) throw new Error('This memory dream is unavailable or disabled.');
+      return this.o.memoryDream(projectId, clientRequestId);
+    }
     return this.o.tasks.exclusive(projectId, async () => {
       await this.o.tasks.assertWriter(projectId); const taskId = derivedId('task', 'daily-now', projectId, id, clientRequestId), existing = (await this.o.hub.task(taskId))?.document;
       if (existing) return { schema: 'task-receipt-v1' as const, taskId, state: existing.state, repeated: true };
@@ -203,7 +222,7 @@ export class ProjectDailyWork {
           }
           if (expired) this.o.runner.cancel(projectId);
           const review = tasks.find(row => window!.taskIds.includes(row.id) && row.nightlyReview), fix = tasks.find(row => row.id === review?.reviewRun?.fixTaskId);
-          const failed = expired || window.taskIds.some(id => tasks.some(row => row.id === id && ['failed', 'cancelled'].includes(row.state))) || !!fix && ['failed', 'cancelled'].includes(fix.state);
+          const failed = expired || !!window.failed || window.taskIds.some(id => tasks.some(row => row.id === id && ['failed', 'cancelled'].includes(row.state))) || !!fix && ['failed', 'cancelled'].includes(fix.state);
           const runs = await this.o.runner.runs(projectId), lines = [];
           if (expired) lines.push('The seven-hour nightly deadline ended this window. Unfinished fix work continues as a normal task.');
           if (window.openedLateReason) lines.push(`Opened late at ${window.openedAt}, scheduled ${window.scheduledAt}: ${window.openedLateReason}`);
@@ -219,6 +238,7 @@ export class ProjectDailyWork {
               lines.push(`Fix task: ${task.id}${thread?.pr ? `\nPull request: ${thread.pr.url}\nCommit: ${thread.pr.headSha}` : ''}${route?.schema === 'merge-route-v1' ? `\nRoute: ${route.route}${route.reason ? ` — ${route.reason}` : ''}` : '\nRoute: not recorded'}`);
             }
           }
+          const dream = this.o.memoryDreamLine?.(projectId), previousDream = window.outcome?.match(/Memory dream:[\s\S]*$/u)?.[0]; if (dream || previousDream) lines.push(dream === 'Memory dream: not run.' && previousDream ? previousDream : dream ?? previousDream!);
           const outcome = lines.join('\n\n').slice(0, 8000), finishedAt = this.o.tasks.at();
           window = (await this.o.hub.putWindow({ ...window, state: 'finished', mergesHeld: false, finishedAt, outcome, failed }, window.revision)).document;
           await this.o.event(projectId, { schema: 'coordinator-event-v1', kind: 'window-finished', id: derivedId('cev', 'window-finished', window.id), at: finishedAt, outcome }); this.o.changed();
@@ -239,8 +259,9 @@ export class ProjectDailyWork {
         if (previous.state === 'finished') await this.o.event(projectId, { schema: 'coordinator-event-v1', kind: 'window-finished', id: derivedId('cev', 'window-finished', previous.id), at: previous.finishedAt!, outcome: previous.outcome ?? '' });
         return;
       }
-      const closingProjectDay = shiftProjectDate(date, -1), pending = (await this.dailies(projectId)).filter(daily => daily.enabled && Date.parse(daily.enabledSince ?? daily.createdAt) <= boundary);
-      if (!pending.length) return;
+      const closingProjectDay = shiftProjectDate(date, -1), enabled = (await this.dailies(projectId)).filter(daily => daily.enabled && Date.parse(daily.enabledSince ?? daily.createdAt) <= boundary);
+      if (!enabled.length) return;
+      const pending = enabled.filter(daily => daily.target.kind !== 'memory-dream');
       const jobs = new Map((await this.jobs(projectId)).map(job => [job.id, job])), handoffs = new Map<number, ProjectWorkTask['workflowHandoff']>(), schedulers = new Map<string, ProjectWorkTask['workflowScheduler']>();
       for (const daily of pending) {
         const job = daily.target.kind === 'job' ? jobs.get(daily.target.jobId) : null, spec = job?.run;

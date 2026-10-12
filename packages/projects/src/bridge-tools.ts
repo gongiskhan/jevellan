@@ -4,7 +4,7 @@ import { z } from 'zod';
 import {
   BridgeResultSchema, BridgeToolSchemas, IdSchema, MemoryNoteSchema, MemorySearchSchema, ProjectNotebookSchema, ProjectToolResultSchemas, ThreadReportSchema, bridgeTools,
   openQuestions, projectToolNames, stableJson,
-  type BridgeTool, type BridgeToolsSchema, type MemoryNote, type ProjectHub, type ProjectLedgerEvent, type ProjectToolName, type SecretRedactor, type ThreadIndex, type ThreadReport,
+  type BridgeTool, type BridgeToolsSchema, type MemoryNote, type MemoryProvenance, type ProjectHub, type ProjectLedgerEvent, type ProjectToolName, type SecretRedactor, type ThreadIndex, type ThreadReport,
 } from '@jevellan/core';
 import type { BridgeScopeTools } from '@jevellan/conversations';
 import {
@@ -21,17 +21,20 @@ import type { ProjectGoals } from './goals.js';
 import type { ProjectGithub } from './github-awareness.js';
 import { taskOpen, type ProjectTasks } from './tasks.js';
 
-export type ProjectScope = { kind: 'coordinator'; projectId: string; turn: number }
-  | { kind: 'thread'; projectId: string; threadId: string; turn: number; isolation: 'worktree' | 'main' };
+export type ProjectScope = ({ kind: 'coordinator'; projectId: string; turn: number }
+  | { kind: 'thread'; projectId: string; threadId: string; turn: number; isolation: 'worktree' | 'main' }) & { memoryMode?: 'hub' | 'repo' | 'device'; provenance?: MemoryProvenance };
 /** Read-only project memory: the project checkout's notes on the device that runs the turn. */
 export type ProjectMemoryReader = {
   search(query: string, signal: AbortSignal): Promise<z.infer<typeof MemorySearchSchema>>;
   read(permalink: string, signal: AbortSignal): Promise<MemoryNote>;
+  write?(input: z.infer<typeof BridgeToolSchemas.memory_write>, signal: AbortSignal): Promise<MemoryNote>;
+  edit?(input: z.infer<typeof BridgeToolSchemas.memory_edit>, signal: AbortSignal): Promise<MemoryNote>;
 };
 /** One coordinator tool line in the coordinator ledger (brief 8.1, 2.6.5). */
 export type ToolLine = { summary: string; threadId?: string | undefined; decisionId?: string | undefined; reason?: string | undefined };
 export type ToolOutcome = { ok: true; result: unknown } | { ok: false; error: string };
 export type ProjectToolHandlers = {
+  capture?(scope: ProjectScope, payload?: { sessionId?: string; transcriptPath?: string }): Promise<void>;
   /** The scope's turn is the running turn of its owner. */
   isCurrent(scope: ProjectScope): boolean;
   /** Every tool except the thread report and memory; returns the tool's versioned result document. */
@@ -54,6 +57,7 @@ export class ProjectTools implements BridgeScopeTools {
   #pending: Promise<unknown> = Promise.resolve();
   readonly #abort = new AbortController();
   #report: ThreadReport | undefined;
+  #memory: Promise<ProjectMemoryReader> | undefined;
   constructor(readonly scope: ProjectScope, private readonly handlers: ProjectToolHandlers, private readonly redactor: SecretRedactor, private readonly ledger?: ProjectLedger) {}
   #check(): void {
     if (!this.#active || !this.handlers.isCurrent(this.scope)) throw failure(TURN_ENDED, 401);
@@ -62,8 +66,12 @@ export class ProjectTools implements BridgeScopeTools {
   list(): z.infer<typeof BridgeToolsSchema> { this.#check(); return bridgeTools(this.#names()); }
   /** Thread scopes: the report accepted in this turn. */
   get report(): ThreadReport | undefined { return this.#report && structuredClone(this.#report); }
-  /** The project memory hook fires in account homes during turns too; project scopes queue nothing. */
-  async capture(): Promise<z.infer<typeof BridgeResultSchema>> { return BridgeResultSchema.parse({ schema: 'bridge-result-v1', result: { queued: false, reason: 'disabled' } }); }
+  async capture(payload?: { sessionId?: string; transcriptPath?: string }): Promise<z.infer<typeof BridgeResultSchema>> {
+    this.#check();
+    if (!this.handlers.capture) return BridgeResultSchema.parse({ schema: 'bridge-result-v1', result: { queued: false, reason: 'disabled' } });
+    await this.handlers.capture(this.scope, payload);
+    return BridgeResultSchema.parse({ schema: 'bridge-result-v1', result: { queued: true } });
+  }
   async close(): Promise<void> { this.#active = false; this.#abort.abort(); await this.#pending; }
   call(name: BridgeTool, args: unknown): Promise<z.infer<typeof BridgeResultSchema>> {
     const result = this.#pending.then(() => this.#call(name, args));
@@ -91,8 +99,14 @@ export class ProjectTools implements BridgeScopeTools {
   async #handle(name: ProjectToolName, input: unknown): Promise<unknown> {
     const signal = this.#abort.signal;
     if (name === 'jevellan_thread_report') return this.#accept(input as z.infer<typeof BridgeToolSchemas.jevellan_thread_report>);
-    if (name === 'memory_search') return MemorySearchSchema.parse(await (await this.handlers.memory(this.scope)).search((input as { query: string }).query, signal));
-    if (name === 'memory_read') return MemoryNoteSchema.parse(await (await this.handlers.memory(this.scope)).read((input as { permalink: string }).permalink, signal));
+    if (name.startsWith('memory_')) {
+      const memory = await (this.#memory ??= Promise.resolve(this.handlers.memory(this.scope)));
+      if (name === 'memory_search') return MemorySearchSchema.parse(await memory.search((input as { query: string }).query, signal));
+      if (name === 'memory_read') return MemoryNoteSchema.parse(await memory.read((input as { permalink: string }).permalink, signal));
+      if (name === 'memory_write' && memory.write) return memory.write(input as z.infer<typeof BridgeToolSchemas.memory_write>, signal);
+      if (name === 'memory_edit' && memory.edit) return memory.edit(input as z.infer<typeof BridgeToolSchemas.memory_edit>, signal);
+      throw failure('This session can only read project memory.', 403);
+    }
     return this.handlers.call(this.scope, name, input, signal);
   }
   /**
@@ -132,7 +146,7 @@ export type CoordinatorToolsOptions = {
   mail: Pick<MailService, 'coordinatorSend'>;
   roster(): Promise<DeviceRoster>;
   /** Read-only project memory on this device. */
-  memory(projectId: string): Promise<ProjectMemoryReader>;
+  memory(projectId: string, scope?: ProjectScope): Promise<ProjectMemoryReader>;
   now(): number;
 };
 type Input<T extends ProjectToolName> = z.output<(typeof BridgeToolSchemas)[T]>;
@@ -145,7 +159,7 @@ const idField = (value: unknown, key: string): string | undefined => { const fou
  * call past the bridge budget; a retried start or message of the same turn (an MCP transport retry) is recognized by an id
  * derived from the turn and the input. Every call leaves one line in the coordinator chat (D200).
  */
-export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Omit<ProjectToolHandlers, 'isCurrent'>> {
+export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Omit<ProjectToolHandlers, 'isCurrent' | 'capture'>> {
   const heads = new Map<string, string>();
   const deviceNames = async () => {
     const names = new Map(((await o.roster().catch(() => null))?.devices ?? []).map((view) => [view.device.id, view.device.name]));
@@ -296,7 +310,7 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
       }
       return call(scope.projectId, scope.turn, name, input, signal);
     },
-    memory: (scope) => o.memory(scope.projectId),
+    memory: (scope) => o.memory(scope.projectId, scope),
     line: async (name, input, outcome, scope) => {
       // Mail names its thread in `to` (`all` and `coordinator` are id-shaped but no thread).
       const recipient = name === 'jevellan_mail_send' ? idField(input, 'to') : undefined;

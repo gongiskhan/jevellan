@@ -1523,3 +1523,25 @@ test('CM2 questions share oldest-first numbering and show the owner chat answer 
   await expect(page.locator('.pw-answered-answer').filter({ hasText: `Answered in chat: ${answer}` })).toHaveCount(3);
   await shot(page, 'answered-in-chat'); expect(errors).toEqual([]);
 });
+
+test('CM3 shared memory shows the inbox, dream diff, owner controls and Undo in every layout', async ({ page }) => {
+  const errors = await begin(page); await control('/projects/memory', { schema: 'fixture-shared-memory-v1', action: 'prepare' });
+  await page.goto('/settings/projects'); const card = page.locator('.card').filter({ has: page.getByRole('heading', { name: 'Shared memory fixture', exact: true }) });
+  await card.getByRole('button', { name: 'Browse memory', exact: true }).click(); let dialog = page.getByRole('dialog');
+  await expect(dialog.getByRole('heading', { name: 'Inbox (from today)', exact: true })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Customer test environment', exact: true })).toBeVisible(LONG);
+  await expect(dialog.getByLabel('Capture durable knowledge from sessions')).toBeChecked();
+  await dialog.getByLabel('Nightly dream', { exact: true }).selectOption('suggest');
+  await expect.poll(async () => (await (await page.request.get('/api/projects/shared_memory_fixture/work-settings')).json()).settings.memory.dreamMode).toBe('suggest');
+  await shot(page, 'shared-memory-inbox', false);
+  await dialog.getByRole('button', { name: 'Close panel', exact: true }).click();
+  await control('/projects/memory', { schema: 'fixture-shared-memory-v1', action: 'suggest' });
+  await card.getByRole('button', { name: 'Browse memory', exact: true }).click(); dialog = page.getByRole('dialog');
+  await expect(dialog).toContainText('Kept the test conventions'); await dialog.locator('summary').filter({ hasText: 'Memory changes' }).click();
+  await expect(dialog.locator('.pw-job-log')).toContainText('SANDBOX_DATA_DIR');
+  await shot(page, 'memory-dream-suggestion', false);
+  await dialog.getByRole('button', { name: 'Apply', exact: true }).click(); await expect(dialog.getByRole('button', { name: 'Undo', exact: true })).toBeVisible(LONG);
+  await expect(dialog.getByText('No inbox notes.', { exact: true })).toBeVisible();
+  await dialog.getByRole('button', { name: 'Undo', exact: true }).click(); await expect(dialog.getByRole('button', { name: 'Customer test environment', exact: true })).toBeVisible(LONG);
+  await shot(page, 'memory-dream-undone', false); expect(errors).toEqual([]);
+});

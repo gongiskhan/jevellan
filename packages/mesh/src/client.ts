@@ -1,4 +1,5 @@
 import { EkoaRequestSchema, EkoaStateSchema } from '@jevellan/core';
+import { ProjectMemoryRequestSchema, ProjectMemoryResultSchema } from '@jevellan/core';
 import { DeviceTagsRequestSchema } from '@jevellan/core';
 import { AuthStateSchema, ConsumeSwitchSchema, DeviceOriginSchema, DeviceRosterSchema, DeviceSwitchInputSchema, DeviceSwitchSchema, DeviceTokenSchema, DeviceViewSchema, EmptySchema, ErrorDocumentSchema, HeartbeatSchema, IdSchema, JoinedDeviceSchema, JoinDeviceInputSchema, JoinInvitationSchema, MeshSessionInputSchema, MeshSessionResultSchema, MeshSessionStateSchema, PassphraseInputSchema, SwitchedSessionSchema, UiSigningMaterialSchema, stableJson, type DocumentSchema, type SecretRedactor, type UiSigningMaterial } from '@jevellan/core';
 import { verifySharedSession } from './auth.js';
@@ -94,6 +95,10 @@ export class MemberHubClient {
     const request = EkoaRequestSchema.parse(input); this.options.redactor.add(request.ownerSession);
     if (request.operation === 'save' && request.input.token) this.options.redactor.add(request.input.token);
     return this.#request('ekoa', EkoaStateSchema, request, 65_000);
+  }
+  async projectMemory(input: unknown) {
+    const request = ProjectMemoryRequestSchema.parse(input);
+    return this.#request('memory', ProjectMemoryResultSchema, request, 120_000);
   }
   async devices() {
     const result = await this.#request('devices', DeviceRosterSchema);

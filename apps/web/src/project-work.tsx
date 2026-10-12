@@ -851,7 +851,7 @@ function NewThreadDialog({ props, view, tasks, goals, move, close }: { props: Pa
   const moving = useTask(fail);
   const ids = useClientIds('thread_req');
   const [form, setForm] = useState<ThreadForm>({ title: '', task: '', isolation: '', modelId: '', effort: '', deviceId: '' });
-  const [type, setType] = useState<'feature' | 'fix' | 'finding' | 'refactor' | 'docs' | 'analysis' | 'review' | 'ops'>('feature');
+  const [type, setType] = useState<'feature' | 'fix' | 'finding' | 'refactor' | 'docs' | 'analysis' | 'review' | 'ops' | 'memory'>('feature');
   const [goalId, setGoalId] = useState('');
   const [now, setNow] = useState(false), [after, setAfter] = useState<string[]>([]), [needs, setNeeds] = useState('');
   const change = (fields: Partial<ThreadForm>) => setForm((previous) => ({ ...previous, ...fields }));

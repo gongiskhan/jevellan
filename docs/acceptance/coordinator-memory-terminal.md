@@ -7,7 +7,7 @@ P0 records the target and decisions 703–715. Source delivery, simulated tests,
 | P0 | Documentation and roadmap complete; typecheck/lint/whitespace/working-tree secret scan pass; mandatory history scan passed at the P0 push |
 | P1 | Implemented: 107 simulated backend cases, 4/4 browser layouts, eight clear live vision verdicts, typecheck/lint/build; live C blocked |
 | P2 | Implemented: 135 simulated backend cases, six workflow cases, 4/4 CM2 layouts, eight clear live vision verdicts; live sandbox calls blocked |
-| P3 | Not run: hub store/relay, capture/extraction/inbox/recall/dream/Undo and owner-note guards |
+| P3 | Implemented: 129 distinct affected backend cases pass after focused reruns; CM3 4/4 layouts and twelve clear live vision verdicts; real provider scenarios blocked |
 | P4 | Not run: Codex access, checkout/protected-path safety and owner command UI |
 | P5 | Not run: PTY relay, reconnect, semantic records, copy/send/read and automatic results |
 | P6 | Blocked: owner reported some sign-in/join/token inputs pending; no live scenario clock started |
@@ -32,3 +32,11 @@ Simulated: the affected backend run passes 134 cases in ten files (230.37 second
 CM2 passes desktop 1440×900 and phone 390×844 in light/dark in 1.1 minutes. It checks three numbered cards, a combined owner answer, source/quotes and the completed cards. Eight retained screenshots and corresponding dedicated Claude vision receipts have no blocking findings. These are simulated sessions and live automated visual judgments, not real provider acceptance. Typecheck, lint, build and whitespace checks pass; working-tree and mandatory history secret scans gate the push.
 
 Blocked: one actual sandbox set of calls using the project Settings token, and the requested live A/B/C/D scenarios, while owner inputs remain pending. The live scenario clock has not started. Production remains on the retained 0.2.1 release. No review pass occurred during this phase.
+
+## P3 evidence
+
+Simulated: 129 distinct affected backend cases pass, combining the 104-case affected run with the final 55-case focused rerun (including 22 core and three hook cases). The final focused run passes in 83.93 seconds. Provider sessions/device facts/Jev-unavailable fallback are simulated; Basic Memory 0.22.1, Git, two local daemons, owner HTTP and mesh transport are real and disposable. Coverage includes copy-only migration after an already-open legacy index, shared provider provenance, owner-note immutability, readonly scopes, retry-safe appends, full large transcript fragments, UTF-8 input limits, hook payload forwarding, low/high effort sessions, dream counts from actual changes, concurrent notes, Suggest/Apply/Undo, one Run now receipt, extraction retry/restart, current recalled notes after compaction and both bounded Project now lists.
+
+CM3 passes at 1440×900 and 390×844, light/dark, in 3.0 minutes. Twelve final screenshots cover inbox/settings, suggested diff and Undo. Live: twelve dedicated Claude vision judgments have no blocking findings. This is automated visual evidence, not real coordinator/thread/dream acceptance. Typecheck, lint, build and working-tree secret scan pass; mandatory history scanning gates the push. The tests exposed and fixed hub/legacy registry collision, sweep private-ref confinement, and a stripped runtime memory setting. A fixture-only missing captured HEAD was corrected without weakening its assertions. No review pass was run.
+
+Blocked: real A/B cross-provider memory and dream, pending owner sign-ins/join/Settings token. The 10-hour live clock has not started. Not run: P4/P5 terminal and owner-command behavior, P6 real scenarios, final closing review and 0.3.0 installation.

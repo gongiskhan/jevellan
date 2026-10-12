@@ -25,10 +25,18 @@ export async function applyEkoaCodeSetup(work: ProjectWork, projectId: string, r
   const input = EkoaCodeSetupRequestSchema.parse(raw);
   let receipt = existsSync(path) ? readDocument(path, EkoaCodeSetupReceiptSchema) : null;
   if (receipt && (receipt.projectId !== projectId || receipt.modelId !== input.modelId || receipt.workflowPull !== input.workflowPull)) throw Object.assign(new Error('Ekoa Code setup already has a different receipt.'), { status: 409 });
-  if (receipt?.completed) return receipt;
+  if (receipt?.completed) {
+    if (receipt.presetVersion === 1) {
+      const { schema: _schema, projectId: _project, revision, ...settings } = current; void _schema; void _project;
+      const saved = await work.putSettings(projectId, { schema: 'project-work-settings-request-v1', revision, clientRequestId: derivedId('ekoa_setup', projectId, 'hub_memory'), settings: { ...settings, memory: { mode: 'hub', capture: true, dreamMode: 'apply' } } });
+      await work.daily.createDaily(projectId, { schema: 'daily-create-request-v1', clientRequestId: 'shared_memory_dream', name: 'Memory dream', goalId: null, order: 0, enabled: true, target: { kind: 'memory-dream' } });
+      receipt = { ...receipt, presetVersion: 2, settings: saved.settings }; writeDocument(path, EkoaCodeSetupReceiptSchema, receipt);
+    }
+    return receipt;
+  }
   if (!receipt) {
-    receipt = EkoaCodeSetupReceiptSchema.parse({ ...input, schema: 'ekoa-code-setup-receipt-v1', projectId, completed: false, settings: ProjectWorkSettingsSchema.parse({ ...current,
-      defaultIsolation: 'worktree', allowMainIsolation: false, autoMerge: false, riskyAreas: EKOA_RISKY_AREAS, requiredChecks: ['result'], setupCommand: 'npm ci', threadRules: EKOA_THREAD_RULES,
+    receipt = EkoaCodeSetupReceiptSchema.parse({ ...input, schema: 'ekoa-code-setup-receipt-v1', projectId, completed: false, presetVersion: 2, settings: ProjectWorkSettingsSchema.parse({ ...current,
+      defaultIsolation: 'worktree', allowMainIsolation: false, autoMerge: false, riskyAreas: EKOA_RISKY_AREAS, requiredChecks: ['result'], setupCommand: 'npm ci', threadRules: EKOA_THREAD_RULES, memory: { mode: 'hub', capture: true, dreamMode: 'apply' },
       maxRunningThreads: 8, maxRunningPerDevice: 6, coordinator: { modelId: input.modelId, runtimeId: 'claude', accountId: null, effort: 'high' }, refill: { enabled: true, minIntervalMinutes: 30 }, nightlyWindow: { enabled: true, time: '01:00', timezone: 'Europe/Lisbon' } }) });
     writeDocument(path, EkoaCodeSetupReceiptSchema, receipt);
   }
@@ -43,6 +51,7 @@ export async function applyEkoaCodeSetup(work: ProjectWork, projectId: string, r
   const definitions = [{ name: 'Review since last', goalId: goals[1]!.id, enabled: true, target: { kind: 'review-since-last' } }, ...[legal, full, deploy].map(job => ({ name: job.name, goalId: job.goalId, enabled: job.enabled, target: { kind: 'job', jobId: job.id } })),
     { name: 'Security', goalId: goals[5]!.id, enabled: false, target: { kind: 'session', title: 'Security programme', brief: 'Security is parked until the owner provides the Ekoa Security programme. Report that this input is required.', type: 'ops' } }];
   for (const [order, definition] of definitions.entries()) await work.daily.createDaily(projectId, { schema: 'daily-create-request-v1', clientRequestId: `ekoa_setup_nightly_${order}`, order, ...definition });
+  await work.daily.createDaily(projectId, { schema: 'daily-create-request-v1', clientRequestId: 'shared_memory_dream', name: 'Memory dream', goalId: null, order: 0, enabled: true, target: { kind: 'memory-dream' } });
   const { schema: _schema, projectId: _project, revision, ...settings } = receipt.settings; void _schema; void _project;
   await work.putSettings(projectId, { schema: 'project-work-settings-request-v1', revision, clientRequestId: derivedId('ekoa_setup', projectId), settings });
   receipt = { ...receipt, completed: true }; writeDocument(path, EkoaCodeSetupReceiptSchema, receipt); return receipt;

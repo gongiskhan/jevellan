@@ -472,6 +472,10 @@ function WhyPanel({ view, data, close }: { view: ThreadView; data: PageProps['da
   return (
     <Panel title={copy.WHY_TITLE} eyebrow={thread.title} close={close}>
       <div className="pw-why">
+        {view.memoryRecall && <section className="why-section"><h3>Project memory</h3>
+          <p>{view.memoryRecall.source === 'unavailable' ? view.memoryRecall.section : 'Recalled for the first turn or after compaction.'}</p>
+          <ul>{view.memoryRecall.notes.map(note => <li key={note.permalink}><strong>{note.title}</strong>: {note.reason}</li>)}</ul>
+        </section>}
         <section className="why-section">
           <h3>{copy.WHY_PLACEMENT} <span className="why-source">{copy.PLACEMENT_SOURCES[placement.source]}</span></h3>
           <p className="why-line">{fixed ? copy.fixedFields(fixed) : copy.FIXED_NONE}</p>

@@ -124,7 +124,7 @@ export const ProjectSchema = z.strictObject({
   schema: z.literal('project-v1'), id: IdSchema, name: text, remoteUrl: text.optional(), paths: stringMap,
   branchPolicy: z.enum(['main', 'external']), testCommand: text.optional(), allowedDevices: z.array(IdSchema).optional(),
   githubTokenScope: z.enum(['shared', 'project']).optional(),
-  memory: z.strictObject({ mode: z.enum(['repo', 'device']), dir: RelativePathSchema }),
+  memory: z.strictObject({ mode: z.enum(['hub', 'repo', 'device']), dir: RelativePathSchema }),
   context: z.strictObject({ state: z.enum(['linked', 'needs-decision', 'none', 'left-as-is']), primary: z.enum(['AGENTS.md', 'CLAUDE.md']).optional() }),
 });
 export type Project = z.infer<typeof ProjectSchema>;

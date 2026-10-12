@@ -96,6 +96,11 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     if (path === '/hub/ekoa/test' && method === 'POST') { EkoaEmptySchema.parse(await body(request)); send(await app.ekoaRequest({ schema: 'ekoa-request-v1', operation: 'test' }, token!)); return; }
     if (await handleGitApi(app, request, response, url)) return;
     if (await handleProjectWorkApi(app, request, response, url, token!, () => { retryable = true; })) return;
+    const sharedMemory = path.match(/^\/api\/projects\/([A-Za-z0-9_-]+)\/memory\/shared$/);
+    if (sharedMemory && (method === 'GET' || method === 'POST')) {
+      retryable = true;
+      send(await app.ownerProjectMemory({ schema: 'project-memory-request-v1', projectId: sharedMemory[1], ...(method === 'GET' ? { operation: 'view' } : (await body(request) as object)) }, token!)); return;
+    }
     if (await handleSessionListApi(app, request, response, url)) return;
     if (await handleCursorApi(app, request, response, url, token)) return;
     if (path === '/api/project-folders' && method === 'GET') { send(await projectFolders(app.homes.userHome, url.searchParams.get('path') ?? undefined)); return; }

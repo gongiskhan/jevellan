@@ -449,6 +449,7 @@ function eventCard(event: Exclude<CoordinatorEvent, { kind: 'user-message' }>, t
   const name = (threadId: string) => { const title = titles(threadId); return title ? copy.quotedTitle(title) : copy.UNKNOWN_THREAD_NAME; };
   const text = copy.eventCopy;
   switch (event.kind) {
+    case 'memory-dreamed': return card('Memory dream completed', undefined, event.summary);
     case 'job-finished': return card(`Job "${event.name}" ${event.conclusion}`, undefined, `${event.commit.slice(0, 7)} · ${event.summary}`);
     case 'project-reviewed': return card('Nightly review completed', undefined, event.report.summary);
     case 'window-opened': return card('Nightly window opened', undefined, `${event.pending} nightly tasks pending. Merges are held.`);

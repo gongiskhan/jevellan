@@ -26,7 +26,7 @@ export const ProjectJobRunSchema = z.strictObject({ schema: z.literal('project-j
 export type ProjectJobRun = z.infer<typeof ProjectJobRunSchema>;
 export const ProjectDailySchema = z.strictObject({ schema: z.literal('project-daily-v1'), id: IdSchema, projectId: IdSchema, revision,
   name: text.max(80), goalId: IdSchema.nullable(), order: z.number().int().min(0).max(100),
-  target: z.discriminatedUnion('kind', [z.strictObject({ kind: z.literal('job'), jobId: IdSchema }), z.strictObject({ kind: z.literal('review-since-last'), reviewFromCommit: z.string().regex(/^[0-9a-f]{40}$/u).optional() }), z.strictObject({ kind: z.literal('session'), title: text.max(120), brief: text.max(20000), type: TaskTypeSchema })]),
+  target: z.discriminatedUnion('kind', [z.strictObject({ kind: z.literal('memory-dream') }), z.strictObject({ kind: z.literal('job'), jobId: IdSchema }), z.strictObject({ kind: z.literal('review-since-last'), reviewFromCommit: z.string().regex(/^[0-9a-f]{40}$/u).optional() }), z.strictObject({ kind: z.literal('session'), title: text.max(120), brief: text.max(20000), type: TaskTypeSchema })]),
   reviewFromVersion: revision.default(0), reviewFromOwner: z.boolean().default(false), enabledSince: TimestampSchema.optional(),
   enabled: z.boolean(), requestDigest: z.string().regex(/^[0-9a-f]{64}$/u).optional(), createdAt: TimestampSchema, updatedAt: TimestampSchema });
 export type ProjectDaily = z.infer<typeof ProjectDailySchema>;

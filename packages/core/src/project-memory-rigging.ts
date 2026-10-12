@@ -4,7 +4,7 @@ import { applicationRoot } from './app-paths.js';
 export const PROJECT_MEMORY_ID = 'builtin_project_memory';
 export const PROJECT_MEMORY_DESCRIPTION = JSON.stringify({
   schema: 'project-memory-hook-v1',
-  description: 'Queues a structural checkpoint for this project at compaction or step end. No transcripts are read. Answer-only replies and handoff repair do not create automatic notes. Recall comes from the stretch brief.',
+  description: 'Queues incremental, secret-redacted project transcript capture at compaction and session end. Projects sessions also capture at each turn end; extraction keeps durable knowledge in shared memory.',
 }, null, 2);
 
 /** Stable account configuration; the launch supplies the scoped token in its environment. */

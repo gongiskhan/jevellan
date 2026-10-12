@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { ProjectDailySchema, ProjectJobSchema, TaskReceiptSchema, TaskTypeSchema, type ProjectDaily, type ProjectJob, type ProjectDailyListViewSchema } from '@jevellan/core/client';
-import type { z } from 'zod';
+import { ProjectDailySchema, ProjectJobSchema, TaskReceiptSchema, MemoryDreamRunReceiptSchema, TaskTypeSchema, type ProjectDaily, type ProjectJob, type ProjectDailyListViewSchema } from '@jevellan/core/client';
+import { z } from 'zod';
 import { api } from './api.js';
 import { clientId } from './client-id.js';
 import { Modal, useTask } from './components.js';
@@ -16,7 +16,7 @@ export function NightlyBanner({ view }: { view: DailyView }) {
 export function ProjectDailyPanel({ view, goals, changed, onError }: { view: DailyView; goals: readonly GoalEntry[]; changed(): void; onError(error: unknown): void }) {
   const [daily, setDaily] = useState<ProjectDaily | 'new'>(), [job, setJob] = useState<ProjectJob | 'new'>(), operation = useTask(onError);
   const displayDay = view.window?.state === 'open' ? view.window.closingProjectDay : view.projectDay;
-  const run = (kind: 'jobs' | 'dailies', id: string) => void operation.run(async signal => { await api(`/api/projects/${view.projectId}/${kind}/${id}/run`, TaskReceiptSchema, 'POST', { schema: 'project-run-request-v1', clientRequestId: clientId() }, { signal, waitForHub: true }); changed(); });
+  const run = (kind: 'jobs' | 'dailies', id: string) => void operation.run(async signal => { await api(`/api/projects/${view.projectId}/${kind}/${id}/run`, z.union([TaskReceiptSchema, MemoryDreamRunReceiptSchema]), 'POST', { schema: 'project-run-request-v1', clientRequestId: clientId() }, { signal, waitForHub: true }); changed(); });
   const toggle = (item: ProjectDaily) => void operation.run(async signal => {
     await api(`/api/projects/${view.projectId}/dailies/${item.id}/edit`, ProjectDailySchema, 'POST', { schema: 'daily-update-request-v1', expectedRevision: item.revision, name: item.name, goalId: item.goalId, order: item.order, target: item.target, enabled: !item.enabled }, { signal, waitForHub: true }); changed();
   });
@@ -34,7 +34,7 @@ export function ProjectDailyPanel({ view, goals, changed, onError }: { view: Dai
       const time = end ? ` at ${new Date(end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : '';
       const target = item.target, definition = target.kind === 'job' ? view.jobs.find(job => job.id === target.jobId) : null;
       return <article className="pw-goal" key={item.id} data-daily-id={item.id}><header><h4>{item.name}</h4><span className="chip">{!item.enabled ? 'Disabled' : completed ? `Done today${time}` : pending?.state === 'active' ? 'Running' : pending ? 'Queued' : failed ? `Failed${time}` : 'Not run today'}</span></header>
-        <p className="muted">{item.target.kind === 'review-since-last' ? 'Review since last' : item.target.kind === 'session' ? 'Thread' : definition?.run.kind === 'command' ? 'Command' : 'GitHub workflow'}</p>
+        <p className="muted">{item.target.kind === 'memory-dream' ? 'Memory dream · runs independently' : item.target.kind === 'review-since-last' ? 'Review since last' : item.target.kind === 'session' ? 'Thread' : definition?.run.kind === 'command' ? 'Command' : 'GitHub workflow'}</p>
         {item.goalId && <p className="muted">{goals.find(entry => entry.goal.id === item.goalId)?.goal.name ?? 'Goal'}</p>}
         {receipt && <details><summary>{receipt.summary || 'Job running'} · {receipt.commit.slice(0, 7)}</summary><pre className="pw-job-log">{receipt.logTail || 'No output recorded.'}</pre>{receipt.url && <a href={receipt.url} target="_blank" rel="noopener noreferrer">Open workflow run</a>}</details>}
         {failed && !receipt && <p className="error">{failed.endNote}</p>}
@@ -92,11 +92,11 @@ function DailyEditor({ projectId, item, jobs, goals, changed, onError, close }: 
     [reviewFrom, setReviewFrom] = useState(item?.target.kind === 'review-since-last' ? item.target.reviewFromCommit ?? '' : ''), [brief, setBrief] = useState(item?.target.kind === 'session' ? item.target.brief : ''), [type, setType] = useState(item?.target.kind === 'session' ? item.target.type : 'review');
   const operation = useTask(onError);
   return <Modal title={item ? 'Edit nightly item' : 'New nightly item'} close={close}><form onSubmit={event => { event.preventDefault(); void operation.run(async signal => {
-    const fields = { name, goalId: goalId || null, order, enabled, target: kind === 'job' ? { kind, jobId } : kind === 'review-since-last' ? { kind, ...(reviewFrom ? { reviewFromCommit: reviewFrom } : {}) } : { kind, title, brief, type } };
+    const fields = { name, goalId: goalId || null, order, enabled, target: kind === 'memory-dream' ? { kind } : kind === 'job' ? { kind, jobId } : kind === 'review-since-last' ? { kind, ...(reviewFrom ? { reviewFromCommit: reviewFrom } : {}) } : { kind, title, brief, type } };
     await api(item ? `/api/projects/${projectId}/dailies/${item.id}/edit` : `/api/projects/${projectId}/dailies`, ProjectDailySchema, 'POST', { ...fields, schema: item ? 'daily-update-request-v1' : 'daily-create-request-v1', ...(item ? { expectedRevision: item.revision } : { clientRequestId: request }) }, { signal, waitForHub: true }); changed(); close();
   }); }}>
     <label>Name<input required maxLength={80} value={name} onChange={event => setName(event.target.value)} /></label><label>Goal<select value={goalId} onChange={event => setGoal(event.target.value)}><option value="">Asks</option>{goals.map(entry => <option key={entry.goal.id} value={entry.goal.id}>{entry.goal.name}</option>)}</select></label>
-    <label>Work<select value={kind} onChange={event => setKind(event.target.value as typeof kind)}><option value="job">Job</option><option value="session">Thread</option><option value="review-since-last">Review since last</option></select></label>
+    <label>Work<select value={kind} onChange={event => setKind(event.target.value as typeof kind)}><option value="job">Job</option><option value="session">Thread</option><option value="review-since-last">Review since last</option><option value="memory-dream">Memory dream</option></select></label>
     {kind === 'review-since-last' && <label>Review from commit<input pattern="[0-9a-f]{40}" maxLength={40} placeholder="Current main when first enabled" value={reviewFrom} onChange={event => setReviewFrom(event.target.value)} /></label>}
     {kind === 'job' ? <label>Job<select required value={jobId} onChange={event => setJob(event.target.value)}><option value="">Choose a job</option>{jobs.map(job => <option key={job.id} value={job.id}>{job.name}</option>)}</select></label> : kind === 'session' ? <>
       <label>Task title<input required maxLength={120} value={title} onChange={event => setTitle(event.target.value)} /></label><label>Brief<textarea required maxLength={20000} rows={5} value={brief} onChange={event => setBrief(event.target.value)} /></label>

@@ -1,0 +1,20 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CM3 shared memory shows the inbox, dream diff, owner controls and Undo in every layout",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/screenshots/CM3-memory-dream-undone-desktop-light.png",
+  "expected": "the Jevellan web app \"CM3 memory dream undone\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"CM3 shared memory shows the inbox, dream diff, owner controls and Undo in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The dream summary shows raw camelCase keys (\"inboxPromoted: 1 · inboxDropped: 0 · merged: 0 · corrected: 1 · archived: 0 · created: 0\") instead of user-friendly labels",
+      "The status \"undone\" is shown as plain lowercase body text with no badge or styling, so it doesn't stand out as a state label",
+      "The inbox card \"Customer test environment\" is clipped at the bottom of the modal; it is reachable by scrolling, but nothing shows that more content is below",
+      "The diff block is cut off mid-content (at the \"-updated:\" line) and needs an inner scroll, with no visible scroll hint",
+      "The disabled \"Capture durable knowledge from sessions\" checkbox and the \"Suggest only\" select are low-contrast grey, which makes them look faint"
+    ]
+  }
+}

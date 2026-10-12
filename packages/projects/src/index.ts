@@ -41,3 +41,6 @@ export * from './pr-verification.js';
 
 export * from './nightly-review.js';
 export * from './ekoa-code.js';
+export * from './shared-context.js';
+export * from './memory-tools.js';
+export * from './memory-programme.js';

@@ -131,7 +131,9 @@ const turnSession = (input: TurnInput, daemonPid: number, executable?: string): 
   const { env, mcpServers } = workerEnvironment(input);
   if (input.compaction) env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE = String(input.compaction.thresholdPercent);
   // The coordinator is the read-only owner; its allow list is its scope's exact tool list, shared with the hook.
-  const bridgeTools = input.owner.kind === 'coordinator' ? claudeBridgeToolNames(projectToolNames({ kind: 'coordinator' })) : input.owner.kind === 'review' ? claudeBridgeToolNames(['jevellan_project_review_report']) : undefined;
+  const bridgeTools = input.owner.kind === 'coordinator' ? claudeBridgeToolNames(projectToolNames({ kind: 'coordinator', ...(env.JEVELLAN_PROJECT_MEMORY_MODE === 'hub' ? { memoryMode: 'hub' } : {}) }))
+    : input.owner.kind === 'review' ? claudeBridgeToolNames(['jevellan_project_review_report', 'memory_search', 'memory_read'])
+    : input.owner.kind === 'memory' ? claudeBridgeToolNames(['memory_search', 'memory_read', 'memory_write', 'memory_edit', 'jevellan_memory_inbox_add', 'jevellan_memory_archive', 'jevellan_memory_dream_report']) : undefined;
   const hook = claudePermissionHook({ cwd: input.cwd, daemonPid, profile: input.safetyProfile, permissions: input.permissions, ...(bridgeTools ? { bridgeTools } : {}) });
   return {
     async interrupt() { control.interrupted = true; await control.current?.interrupt(); },

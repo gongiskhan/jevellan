@@ -3,7 +3,7 @@ import type { z } from 'zod';
 import type { AccountService } from '@jevellan/accounts';
 import {
   HubUnavailable, ProjectDeviceSetupSchema, isTerminal, type AccountView, type Configuration, type DeviceRosterSchema, type PlacementRecord, type Project, type ProjectDeviceSetup, type ProjectHub,
-  type DeviceFacts, type ProjectWorkSettings, type SecretRedactor, type ThreadIndex,
+  type DeviceFacts, type ProjectWorkSettings, type SecretRedactor, type ThreadIndex, type Effort,
 } from '@jevellan/core';
 import {
   JevError, decidePlacement, fixedPlacementFields, placementCandidates, placementDeviceSetup, type DecisionClient, type PlacementActiveThread, type PlacementDevice, type PlacementFixed,
@@ -26,6 +26,7 @@ export type PlaceInput = {
   /** The coordinator's one-line reason (`jevellan_thread_start`), or the owner's note of a restart (D252). */
   note?: string | undefined;
   fixed: PlacementFixed; coordinatorDeviceId: string; ignoreRunningLimit: boolean; signal?: AbortSignal | undefined;
+  requiredEffort?: Effort; readOnly?: boolean;
   /** A thread whose own checkout claim does not count against the main rule: a next-turn override checks the thread where it is (D292). */
   exclude?: string | undefined;
 };
@@ -72,7 +73,8 @@ export class Placement {
       main ? this.#held(project.id, input.exclude) : new Map<string, string>()]);
     input.signal?.throwIfAborted();
     return {
-      settings, project, defaultIsolation: workSettings.defaultIsolation, runtimes: this.#runtimes(),
+      settings: input.requiredEffort || input.readOnly ? { ...settings, menu: settings.menu.map(model => ({ ...model, enabled: model.enabled && (!input.requiredEffort || model.efforts.includes(input.requiredEffort)) && (!input.readOnly || this.#o.runtimes.get(model.runtime)?.capabilities.readOnlyEnforced === true) })) } : settings,
+      project, defaultIsolation: workSettings.defaultIsolation, runtimes: this.#runtimes(),
       accounts: accounts.map((view) => view.account), statuses: accounts.flatMap((view) => view.statuses), devices: this.#devices(project, roster, input.coordinatorDeviceId, counts.devices, held),
       maxRunningPerDevice: workSettings.maxRunningPerDevice, ignoreRunningLimit: input.ignoreRunningLimit,
       perDeviceLimits: workSettings.perDeviceLimits, needs: input.taskContext?.needs,

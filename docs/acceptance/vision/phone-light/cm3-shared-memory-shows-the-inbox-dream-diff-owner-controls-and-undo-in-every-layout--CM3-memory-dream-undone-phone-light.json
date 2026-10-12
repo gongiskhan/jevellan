@@ -1,0 +1,20 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CM3 shared memory shows the inbox, dream diff, owner controls and Undo in every layout",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/CM3-memory-dream-undone-phone-light.png",
+  "expected": "the Jevellan web app \"CM3 memory dream undone\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"CM3 shared memory shows the inbox, dream diff, owner controls and Undo in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The dream summary appears twice: once as the line 'Memory dream: undone — Kept the test conventions…' and again as the separate lines 'undone' and 'Kept the test conventions and consolidated the inbox.'",
+      "The stats line shows raw camelCase keys (inboxPromoted, inboxDropped) instead of readable labels.",
+      "The diff block is cut off at the bottom of its fixed-height box. It looks scrollable, but nothing shows that more content is below.",
+      "The 'Capture durable knowledge from sessions' checkbox looks greyed out or disabled, and its label contrast is low.",
+      "The diff header 'diff --git a/Project brief.md b/Project brief.md' wraps onto two lines, which makes it a little harder to read."
+    ]
+  }
+}

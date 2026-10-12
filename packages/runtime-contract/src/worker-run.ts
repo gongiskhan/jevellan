@@ -10,7 +10,7 @@ import { groupAlive, terminateGroup, terminateDescendants, rememberProcessTree, 
 import { StretchInputSchema, TurnInputSchema, WorkerCommandSchema, WorkerMessageSchema, type RuntimeContext, type RuntimeEvent, type RunResult, type StretchInput, type StretchRun, type TurnInput, type WorkerCommand } from './contract.js';
 
 // Git identity keys reach thread turns only (stretches never set them): agents commit with the owner's identity, not the account home's.
-const LAUNCH_KEYS = ['JEVELLAN_STRETCH_TOKEN', 'JEVELLAN_DAEMON_URL', 'GIT_AUTHOR_NAME', 'GIT_AUTHOR_EMAIL', 'GIT_COMMITTER_NAME', 'GIT_COMMITTER_EMAIL'];
+const LAUNCH_KEYS = ['JEVELLAN_STRETCH_TOKEN', 'JEVELLAN_DAEMON_URL', 'JEVELLAN_PROJECT_MEMORY_MODE', 'GIT_AUTHOR_NAME', 'GIT_AUTHOR_EMAIL', 'GIT_COMMITTER_NAME', 'GIT_COMMITTER_EMAIL'];
 const TURN = Symbol('turn');
 
 export function launchEnvironment(runtime: 'claude' | 'codex', input: Pick<StretchInput, 'account' | 'launch'>): Record<string, string> {

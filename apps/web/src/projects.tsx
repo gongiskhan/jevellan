@@ -7,6 +7,7 @@ import {
   ContextReviewSchema,
   MemoryNoteSchema,
   MemorySearchSchema,
+  ProjectMemoryViewSchema, ProjectMemoryResultSchema, ProjectWorkSettingsViewSchema,
   ProjectsListSchema,
   ProjectViewSchema,
   ProjectVisibilitySchema,
@@ -94,7 +95,7 @@ export function ProjectsPage(props: PageProps & { embedded?: boolean }) {
                   {row.project.branchPolicy === 'main' ? 'Work on main' : 'Leave git to me'}
                 </span>
                 <span className="chip">
-                  {row.project.memory.mode === 'repo' ? 'Memory in repository' : 'Memory on each device'}
+                  {row.project.memory.mode === 'hub' ? 'Shared hub memory' : row.project.memory.mode === 'repo' ? 'Memory in repository' : 'Memory on each device'}
                 </span>
                 {row.project.testCommand && <span className="chip dim">{row.project.testCommand}</span>}
                 {row.project.context.state === 'needs-decision' && (
@@ -183,7 +184,7 @@ export function ProjectForm({
         name: '',
         paths: { [props.data.devices.currentDeviceId]: '' },
         branchPolicy: 'main',
-        memory: { mode: 'repo', dir: '.jevellan/memory' },
+        memory: { mode: 'hub', dir: '.jevellan/memory' },
         context: { state: 'none' },
       },
   );
@@ -334,7 +335,7 @@ export function ProjectForm({
               const branchPolicy = event.target.value as Project['branchPolicy'];
               change({
                 branchPolicy,
-                memory: { ...project.memory, mode: branchPolicy === 'main' ? 'repo' : 'device' },
+                memory: { ...project.memory, mode: project.memory.mode === 'hub' ? 'hub' : branchPolicy === 'main' ? 'repo' : 'device' },
               });
             }}
           >
@@ -383,7 +384,7 @@ export function ProjectForm({
           </label>
         )}
         <h3>Memory</h3>
-        {knownPublic &&
+        {project.memory.mode !== 'hub' && knownPublic &&
           row &&
           project.paths[props.data.devices.currentDeviceId] ===
             row.project.paths[props.data.devices.currentDeviceId] &&
@@ -396,18 +397,19 @@ export function ProjectForm({
               change({ memory: { ...project.memory, mode: event.target.value as Project['memory']['mode'] } })
             }
           >
+            <option value="hub">Shared on the hub</option>
             <option value="repo">In the repository, synced through git</option>
             <option value="device">On each device only</option>
           </select>
         </label>
-        <label>
+        {project.memory.mode === 'hub' ? <p className="muted">Notes and their private history stay on the hub. Switching copies the current notes once and keeps the old folder.</p> : <label>
           Memory folder
           <input
             required
             value={project.memory.dir}
             onChange={(event) => change({ memory: { ...project.memory, dir: event.target.value } })}
           />
-        </label>
+        </label>}
         <div className="form-actions">
           <button type="button" className="secondary" onClick={close}>
             Cancel
@@ -718,10 +720,56 @@ function MemoryViewer({
   const [query, setQuery] = useState('');
   const [notes, setNotes] = useState<z.infer<typeof MemoryNoteSchema>[]>();
   const [selected, setSelected] = useState<z.infer<typeof MemoryNoteSchema>>();
+  const [shared, setShared] = useState<z.infer<typeof ProjectMemoryViewSchema>>();
+  const [settings, setSettings] = useState<z.infer<typeof ProjectWorkSettingsViewSchema>>();
+  const [newTitle, setNewTitle] = useState(''), [newBody, setNewBody] = useState('');
   const task = useTask(onError);
+  useEffect(() => {
+    if (project.memory.mode !== 'hub') return;
+    const abort = new AbortController();
+    const refresh = () => void Promise.all([api(`/api/projects/${project.id}/memory/shared`, ProjectMemoryViewSchema, 'GET', undefined, { signal: abort.signal }),
+      api(`/api/projects/${project.id}/work-settings`, ProjectWorkSettingsViewSchema, 'GET', undefined, { signal: abort.signal })])
+      .then(([view, work]) => { setShared(view); setSettings(work); }, error => { if (!abort.signal.aborted) onError(error); });
+    refresh(); const timer = setInterval(refresh, 10_000); return () => { clearInterval(timer); abort.abort(); };
+  }, [project.id, project.memory.mode, onError]);
+  const memoryAction = (operation: string) => void task.run(async () => {
+    await api(`/api/projects/${project.id}/memory/shared`, ProjectMemoryResultSchema, 'POST', { operation, requestId: clientId() });
+    setShared(await api(`/api/projects/${project.id}/memory/shared`, ProjectMemoryViewSchema));
+  });
+  const saveMemorySettings = (capture: boolean, dreamMode: 'apply' | 'suggest') => void task.run(async () => {
+    if (!settings) return;
+    const { schema: _schema, projectId: _id, revision, ...fields } = settings.settings; void _schema; void _id;
+    setSettings(await api(`/api/projects/${project.id}/work-settings`, ProjectWorkSettingsViewSchema, 'PUT', { schema: 'project-work-settings-request-v1', revision,
+      clientRequestId: clientId(), settings: { ...fields, memory: { mode: 'hub', capture, dreamMode } } }));
+  });
   return (
     <Modal title={`Memory · ${project.name}`} close={close}>
-      {isPublic && <PublicMemoryNotice />}
+      {isPublic && project.memory.mode !== 'hub' && <PublicMemoryNotice />}
+      {project.memory.mode === 'hub' && <section className="memory-shared">
+        <p className="muted">Shared by Claude and Codex on every project device. History stays on the hub.</p>
+        {settings && <div className="stack"><label className="toggle"><input type="checkbox" checked={settings.settings.memory.capture} disabled={task.busy}
+          onChange={event => saveMemorySettings(event.target.checked, settings.settings.memory.dreamMode)} />Capture durable knowledge from sessions</label>
+          <label>Nightly dream<select aria-label="Nightly dream" value={settings.settings.memory.dreamMode} disabled={task.busy} onChange={event => saveMemorySettings(settings.settings.memory.capture, event.target.value as 'apply' | 'suggest')}>
+            <option value="apply">Apply and tell me</option><option value="suggest">Suggest only</option></select></label></div>}
+        <h3>Last night's dream</h3>
+        {shared?.notice && shared.notice !== 'Memory dream: not run.' && <p className="muted">{shared.notice}</p>}
+        {shared?.dream ? <><p>{shared.dream.state}{shared.dream.reason ? `: ${shared.dream.reason}` : ''}</p>
+          {shared.dream.report && <><p>{shared.dream.report.summary}</p><p className="muted">{Object.entries(shared.dream.report.counts).map(([name, count]) => `${name}: ${count}`).join(' · ')}</p></>}
+          {shared.dream.diff && <details><summary>Memory changes</summary><pre className="pw-job-log">{shared.dream.diff}</pre></details>}
+          <div className="actions">{shared.dream.state === 'applied' && <button className="secondary small" disabled={task.busy} onClick={() => memoryAction('dream-undo')}>Undo</button>}
+            {shared.dream.state === 'suggested' && <><button disabled={task.busy} onClick={() => memoryAction('dream-apply')}>Apply</button><button className="secondary" disabled={task.busy} onClick={() => memoryAction('dream-discard')}>Discard suggestion</button></>}</div>
+        </> : <p className="muted">No dream recorded yet.</p>}
+        <button className="secondary small" disabled={task.busy || shared?.dream?.state === 'running'} onClick={() => memoryAction('dream-run')}>Run now</button>
+        <h3>Inbox (from today)</h3>
+        {shared?.inbox.length ? shared.inbox.map(note => <button className="memory-result secondary" key={note.permalink} onClick={() => void task.run(async () => setSelected(await api(`/api/projects/${project.id}/memory?permalink=${encodeURIComponent(note.permalink)}`, MemoryNoteSchema)))}>{note.title}</button>) : <p className="muted">No inbox notes.</p>}
+        <h3>Project notes</h3>{shared?.notes.map(note => <button className="memory-result secondary" key={note.permalink} onClick={() => void task.run(async () => setSelected(await api(`/api/projects/${project.id}/memory?permalink=${encodeURIComponent(note.permalink)}`, MemoryNoteSchema)))}>{note.title}</button>)}
+        {shared?.truncated && <p className="muted">More notes are available through Search memory.</p>}
+        <details><summary>Add an owner note</summary><form className="stack" onSubmit={event => { event.preventDefault(); void task.run(async () => {
+          await api(`/api/projects/${project.id}/memory/shared`, ProjectMemoryResultSchema, 'POST', { operation: 'write', requestId: clientId(), input: { title: newTitle, content: newBody } });
+          setNewTitle(''); setNewBody(''); setShared(await api(`/api/projects/${project.id}/memory/shared`, ProjectMemoryViewSchema));
+        }); }}><label>Title<input required maxLength={300} value={newTitle} onChange={event => setNewTitle(event.target.value)} /></label>
+          <label>Note<textarea required maxLength={256000} rows={4} value={newBody} onChange={event => setNewBody(event.target.value)} /></label><button disabled={task.busy}>Save owner note</button></form></details>
+      </section>}
       <form
         className="inline-form"
         onSubmit={(event) => {

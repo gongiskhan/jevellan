@@ -1,5 +1,5 @@
 import { z } from 'zod';
-export const TaskTypeSchema = z.enum(['feature', 'fix', 'finding', 'refactor', 'docs', 'analysis', 'review', 'ops']);
+export const TaskTypeSchema = z.enum(['feature', 'fix', 'finding', 'refactor', 'docs', 'analysis', 'review', 'ops', 'memory']);
 export type TaskType = z.infer<typeof TaskTypeSchema>;
 export const TaskPlacementContextSchema = z.strictObject({ type: TaskTypeSchema, needs: z.array(z.string().regex(/^[a-z0-9-]{1,32}$/u)).max(8),
   goal: z.strictObject({ name: z.string().max(80), motivation: z.string().max(600) }).nullable() });

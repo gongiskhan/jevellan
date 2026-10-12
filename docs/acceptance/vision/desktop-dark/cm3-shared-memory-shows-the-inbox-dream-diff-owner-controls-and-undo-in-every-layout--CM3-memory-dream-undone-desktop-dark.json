@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CM3 shared memory shows the inbox, dream diff, owner controls and Undo in every layout",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/screenshots/CM3-memory-dream-undone-desktop-dark.png",
+  "expected": "the Jevellan web app \"CM3 memory dream undone\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"CM3 shared memory shows the inbox, dream diff, owner controls and Undo in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The dream status and summary appear twice: once in the combined line 'Memory dream: undone — Kept the test conventions…', then again as separate 'undone' and summary lines.",
+      "The diff block is cut off at its bottom edge and the INBOX section is cut off at the bottom of the modal. Both look like normal scroll overflow, not clipping.",
+      "The value 'Suggest only' in the Nightly dream field is low-contrast, so it looks like placeholder text.",
+      "The stats line uses raw camelCase keys (inboxPromoted, inboxDropped) instead of readable labels."
+    ]
+  }
+}

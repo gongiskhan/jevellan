@@ -3,6 +3,9 @@ import { GithubInputSchema, GithubResultSchema } from './github-awareness-schema
 import { ProjectDailyListViewSchema, ProjectJobListViewSchema, ProjectJobRunListViewSchema } from './project-daily-schemas.js';
 import { GoalListViewSchema } from './project-goal-schemas.js';
 import { z } from 'zod';
+import { MemoryNoteSchema, MemorySearchSchema, MemoryWriteSchema, MemoryEditSchema } from './memory-note-schemas.js';
+import { MemoryInboxInputSchema, MemoryArchiveInputSchema, MemoryDreamBodySchema } from './project-memory-schemas.js';
+export { MemoryNoteSchema, MemorySearchSchema, MemoryWriteSchema, MemoryEditSchema, type MemoryNote } from './memory-note-schemas.js';
 import { ProjectReviewBodySchema, ReviewFollowupInputSchema } from './project-review-schemas.js';
 import { ProjectWorkTaskSchema, TaskCreateRequestSchema, TaskReceiptSchema, TaskUpdateRequestSchema } from './project-loop-schemas.js';
 import { EffortSchema, FindingSchema, HandoffSchema, IdSchema, ResultSchema, TimestampSchema } from './schemas.js';
@@ -12,11 +15,6 @@ import {
 } from './project-schemas.js';
 
 const text = z.string().min(1);
-export const MemoryNoteSchema = z.strictObject({ schema: z.literal('memory-note-v1'), title: text, permalink: text, content: z.string(), updatedAt: z.iso.datetime().optional(), unresolved: z.boolean().default(false) });
-export type MemoryNote = z.infer<typeof MemoryNoteSchema>;
-export const MemorySearchSchema = z.strictObject({ schema: z.literal('memory-search-v1'), notes: z.array(MemoryNoteSchema).max(20) });
-export const MemoryWriteSchema = z.strictObject({ title: text.max(300), content: text.max(256_000) });
-export const MemoryEditSchema = z.strictObject({ permalink: text, operation: z.enum(['append', 'prepend', 'replace']), content: text.max(256_000), find: text.optional() }).refine((value) => value.operation !== 'replace' || !!value.find, 'A replacement needs the exact text to replace.');
 export const MemoryProposalInputSchema = MemoryWriteSchema.extend({ reason: text.max(2000) });
 export const MemoryProposalSchema = MemoryProposalInputSchema.extend({ schema: z.literal('memory-proposal-v1'), id: IdSchema, conversationId: IdSchema, workId: IdSchema, projectId: IdSchema, stretch: z.number().int().positive(), source: z.enum(['agent', 'handoff', 'hook']).default('agent') });
 export const MemoryAppliedSchema = z.strictObject({
@@ -103,6 +101,9 @@ export const BridgeToolSchemas = {
   memory_read: z.strictObject({ permalink: text }),
   memory_write: MemoryWriteSchema,
   memory_edit: MemoryEditSchema,
+  jevellan_memory_inbox_add: MemoryInboxInputSchema,
+  jevellan_memory_archive: MemoryArchiveInputSchema,
+  jevellan_memory_dream_report: MemoryDreamBodySchema,
   memory_propose: MemoryProposalInputSchema,
   jevellan_threads_list: ThreadsListInputSchema,
   jevellan_tasks_list: z.strictObject({ include: z.enum(['open', 'all']).default('open'), goalId: IdSchema.nullable().optional() }),
@@ -145,12 +146,16 @@ export const MemoryHookEventSchema = z.enum(['PreCompact', 'Stop', 'SessionEnd']
 export const BridgeRequestSchema = z.discriminatedUnion('operation', [
   z.strictObject({ schema: z.literal('bridge-request-v1'), operation: z.literal('list') }),
   z.strictObject({ schema: z.literal('bridge-request-v1'), operation: z.literal('call'), name: BridgeToolNameSchema, arguments: z.json() }),
-  z.strictObject({ schema: z.literal('bridge-request-v1'), operation: z.literal('memory-capture'), event: MemoryHookEventSchema }),
+  z.strictObject({ schema: z.literal('bridge-request-v1'), operation: z.literal('memory-capture'), event: MemoryHookEventSchema,
+    sessionId: z.string().min(1).max(256).optional(), transcriptPath: z.string().min(1).max(4096).optional() }),
 ]);
 export const BridgeResultSchema = z.strictObject({ schema: z.literal('bridge-result-v1'), result: z.json() });
 export const BridgeToolsSchema = z.strictObject({ schema: z.literal('bridge-tools-v1'), tools: z.array(z.strictObject({ name: BridgeToolNameSchema, description: text, inputSchema: z.object({ type: z.literal('object') }).catchall(z.json()) })) });
 export function bridgeTools(names: BridgeTool[]): z.infer<typeof BridgeToolsSchema> {
   const descriptions: Record<BridgeTool, string> = {
+    jevellan_memory_inbox_add: 'Write one durable inbox note with a short evidence quote. At most eight per extraction. Code supplies its provenance.',
+    jevellan_memory_archive: 'Archive a memory note with a reason. Never deletes a note and never changes an owner note.',
+    jevellan_memory_dream_report: 'End the nightly dream exactly once with a concise summary. Code computes counts from its notes commit diff.',
     jevellan_jobs_list: 'Read the owner-defined deterministic jobs, gates and enabled state. You cannot define or edit jobs.',
     jevellan_job_run: 'Queue one enabled job on the coordinator device. No model runs in a job. Repeated calls in a turn return the same task.',
     jevellan_job_runs: 'Read durable job receipts with the exact commit, result and redacted log tail.',
@@ -170,7 +175,7 @@ export function bridgeTools(names: BridgeTool[]): z.infer<typeof BridgeToolsSche
     jevellan_integrate: 'Rebase this work onto its recorded upstream with tracked Git boundaries. Start the rebase, edit the reported conflicting files, then continue. Skip only when the current commit should contribute no change. Available only during integration.',
     memory_search: 'Search this project’s memory notes.',
     memory_read: 'Read one note from this project’s memory by permalink.',
-    memory_write: 'Write a project memory note under this work’s checkout ownership.',
+    memory_write: 'Write durable project knowledge. Jevellan supplies provenance; hub notes are shared by all project sessions and committed locally. Other memory modes require checkout ownership.',
     memory_edit: 'Edit a project memory note. For replace, provide the exact text in find.',
     memory_propose: 'Queue a proposed memory note. It does not change the checkout; Jevellan applies it later under ownership.',
     jevellan_threads_list: 'List this project’s threads with their state, isolation, device, model, branch, pull request and last report summary. include: all adds threads that ended in the last 14 days.',
@@ -210,13 +215,13 @@ export function bridgeTools(names: BridgeTool[]): z.infer<typeof BridgeToolsSche
 export const COORDINATOR_TOOLS = ['jevellan_review_followup', 'jevellan_jobs_list', 'jevellan_job_run', 'jevellan_job_runs', 'jevellan_daily_list', 'jevellan_goals_list', 'jevellan_tasks_list', 'jevellan_task_create', 'jevellan_task_update', 'jevellan_task_cancel', 'jevellan_threads_list', 'jevellan_thread_message', 'jevellan_thread_read', 'jevellan_thread_stop',
   'jevellan_ask_user', 'jevellan_answer_question', 'jevellan_github', 'jevellan_withdraw_question', 'jevellan_notebook_read', 'jevellan_notebook_write', 'jevellan_pr_status', 'jevellan_pr_diff', 'jevellan_mail_send', 'memory_search', 'memory_read'] as const satisfies readonly BridgeTool[];
 const MAIN_THREAD_TOOLS = ['jevellan_mail_send', 'jevellan_mail_inbox', 'jevellan_reserve', 'jevellan_release'] as const satisfies readonly BridgeTool[];
-export type ProjectToolName = typeof COORDINATOR_TOOLS[number] | typeof MAIN_THREAD_TOOLS[number] | 'jevellan_thread_report' | 'jevellan_app_start' | 'jevellan_app_stop' | 'jevellan_apps_list';
+export type ProjectToolName = typeof COORDINATOR_TOOLS[number] | typeof MAIN_THREAD_TOOLS[number] | 'jevellan_thread_report' | 'jevellan_app_start' | 'jevellan_app_stop' | 'jevellan_apps_list' | 'memory_write' | 'memory_edit';
 export function threadTools(isolation: 'worktree' | 'main'): BridgeTool[] {
   return ['jevellan_thread_report', 'jevellan_github', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read', ...(isolation === 'main' ? MAIN_THREAD_TOOLS : [])];
 }
 /** The tools a scope lists: the coordinator's, or a thread's by isolation (mail and reservations only on main, brief 7.2). A fresh array each call. */
-export function projectToolNames(scope: { kind: 'coordinator' } | { kind: 'thread'; isolation: 'worktree' | 'main' }): BridgeTool[] {
-  return scope.kind === 'coordinator' ? [...COORDINATOR_TOOLS] : threadTools(scope.isolation);
+export function projectToolNames(scope: ({ kind: 'coordinator' } | { kind: 'thread'; isolation: 'worktree' | 'main' }) & { memoryMode?: 'hub' | 'repo' | 'device' }): BridgeTool[] {
+  return [...(scope.kind === 'coordinator' ? COORDINATOR_TOOLS : threadTools(scope.isolation)), ...(scope.memoryMode === 'hub' ? ['memory_write', 'memory_edit'] as const : [])];
 }
 /** The result document each project tool returns inside bridge-result-v1. */
 export const ProjectToolResultSchemas = {
@@ -241,5 +246,5 @@ export const ProjectToolResultSchemas = {
   jevellan_pr_status: PrStatusResultSchema, jevellan_mail_send: MailSendResultSchema, jevellan_mail_inbox: MailInboxResultSchema,
   jevellan_pr_diff: PrDiffResultSchema,
   jevellan_reserve: ReserveResultSchema, jevellan_release: ReleaseResultSchema, jevellan_thread_report: ThreadReportResultSchema,
-  memory_search: MemorySearchSchema, memory_read: MemoryNoteSchema,
+  memory_search: MemorySearchSchema, memory_read: MemoryNoteSchema, memory_write: MemoryNoteSchema, memory_edit: MemoryNoteSchema,
 } as const satisfies Record<ProjectToolName, z.ZodType>;

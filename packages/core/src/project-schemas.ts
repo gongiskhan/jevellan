@@ -3,6 +3,7 @@ import { ProjectReviewReportSchema } from './project-review-schemas.js';
 import { CursorTranscriptSchema } from './cursor-schemas.js';
 import { DeviceFactsSchema, DeviceTagsSchema, EffortSchema, IdSchema, JevCallSchema, TimestampSchema } from './schemas.js';
 import { TaskPlacementContextSchema, TaskTypeSchema } from './task-types.js';
+import { ProjectMemorySettingsSchema, MemoryRecallSchema } from './memory-note-schemas.js';
 
 // Browser-safe: zod and shared schemas only. Every stored, sent or received Projects document lives here.
 const text = z.string().min(1);
@@ -39,6 +40,7 @@ export const ProjectWorkSettingsSchemaV2 = ProjectWorkSettingsSchemaV1.extend({
 });
 export const ProjectWorkSettingsSchema = ProjectWorkSettingsSchemaV2.omit({ coordinatorReview: true }).extend({ schema: z.literal('project-work-settings-v3'), autoMerge: z.boolean().default(false), riskyAreas: z.string().max(2000).default(''), requiredChecks: z.array(z.string().min(1).max(200)).max(50).default([]),
   compactAtPercent: z.number().int().min(50).max(90).default(70),
+  memory: ProjectMemorySettingsSchema.default({ mode: 'hub', capture: true, dreamMode: 'apply' }),
   perDeviceLimits: z.record(IdSchema, z.number().int().min(1).max(10)).default({}) });
 export type ProjectWorkSettings = z.infer<typeof ProjectWorkSettingsSchema>;
 export const StoredProjectWorkSettingsSchema = z.union([ProjectWorkSettingsSchemaV1, ProjectWorkSettingsSchemaV2, ProjectWorkSettingsSchema])
@@ -100,6 +102,7 @@ export type DecisionAnswer = z.infer<typeof DecisionAnswerSchema>;
 const ev = <K extends string, S extends z.ZodRawShape>(kind: K, fields: S) => z.strictObject({
   schema: z.literal('coordinator-event-v1'), kind: z.literal(kind), id: IdSchema, at: TimestampSchema, ...fields });
 export const CoordinatorEventSchema = z.discriminatedUnion('kind', [
+  ev('memory-dreamed', { summary: z.string().max(1500), counts: z.strictObject({ inboxPromoted: count, inboxDropped: count, merged: count, corrected: count, archived: count, created: count }) }),
   ev('user-message', { text: z.string().min(1).max(200000), clientMessageId: IdSchema }),
   ev('thread-report', { threadId: IdSchema, report: ThreadReportSchema }),
   ev('thread-published', { threadId: IdSchema, result: z.enum(['pr-opened', 'pr-updated', 'main-published', 'no-changes', 'checkout-completed']),
@@ -193,7 +196,7 @@ export const ThreadIndexSchema = z.strictObject({ schema: z.literal('project-thr
   id: IdSchema, projectId: IdSchema, title: z.string().min(1).max(120), state: ThreadStateSchema, stateReason: z.string().max(400).optional(),
   isolation: IsolationSchema, gitPolicy: z.enum(['main', 'external']).optional(), ownerDeviceId: IdSchema, runtime: IdSchema, modelLabel: text, effort: EffortSchema,
   accountLabel: text, branch: z.string().optional(), pr: PullRequestStateSchema.optional(),
-  lastSummary: z.string().max(400).optional(), turns: count, restartedAs: IdSchema.optional(),
+  lastSummary: z.string().max(400).optional(), changedPaths: z.array(z.string().max(1024)).max(8).optional(), turns: count, restartedAs: IdSchema.optional(),
   createdAt: TimestampSchema, updatedAt: TimestampSchema, endedAt: TimestampSchema.optional() });
 export type ThreadIndex = z.infer<typeof ThreadIndexSchema>;
 // 5.9 hub namespace project-decisions, key id
@@ -232,6 +235,7 @@ export const TurnProcessSchema = z.strictObject({ turn: positive, pid: z.number(
 export type TurnProcess = z.infer<typeof TurnProcessSchema>;
 // <home>/projects/<pid>/threads/<tid>/thread-local.json
 export const ThreadLocalSchema = z.strictObject({ schema: z.literal('thread-local-v1'),
+  memoryRecall: MemoryRecallSchema.optional(),
   process: TurnProcessSchema.optional(),
   pushedCommit: z.string().regex(/^[0-9a-f]{40,64}$/).optional(),
   gitIdentity: z.strictObject({ name: z.string(), email: z.string() }).optional(),
@@ -394,6 +398,7 @@ export const ProjectWorkViewSchema = z.strictObject({ schema: z.literal('project
   devices: z.array(ProjectDeviceSetupSchema).optional() });
 export type ProjectWorkView = z.infer<typeof ProjectWorkViewSchema>;
 export const ThreadViewSchema = z.strictObject({ schema: z.literal('project-thread-view-v1'),
+  memoryRecall: MemoryRecallSchema.optional(),
   thread: ThreadIndexSchema, placement: PlacementRecordSchema, reports: z.array(ThreadReportSchema),
   transcript: CursorTranscriptSchema.nullable(), queuedMessages: z.array(QueuedMessageSchema),
   canMessage: z.boolean(), turnAllowance: count,
@@ -426,6 +431,7 @@ export const ProjectWorkSettingsRequestSchema = z.strictObject({ schema: z.liter
     allowMainIsolation: z.boolean().optional(), threadRules: z.string().max(4000).optional(), autoMerge: z.boolean().optional(), riskyAreas: z.string().max(2000).optional(), requiredChecks: z.array(z.string().min(1).max(200)).max(50).optional(),
     nightlyWindow: ProjectWorkSettingsSchema.shape.nightlyWindow.removeDefault().optional(), refill: ProjectWorkSettingsSchema.shape.refill.removeDefault().optional(),
     compactAtPercent: ProjectWorkSettingsSchema.shape.compactAtPercent.removeDefault().optional(),
+    memory: ProjectWorkSettingsSchema.shape.memory.removeDefault().optional(),
     perDeviceLimits: ProjectWorkSettingsSchema.shape.perDeviceLimits.removeDefault().optional(),
   }), clientRequestId: IdSchema.optional() });
 export const NotebookRequestSchema = z.strictObject({ schema: z.literal('notebook-request-v1'), expectedRevision: revision,

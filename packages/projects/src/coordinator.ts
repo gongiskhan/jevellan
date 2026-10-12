@@ -75,6 +75,7 @@ export type CoordinatorPromptInput = {
   events: readonly CoordinatorEvent[];
   outcomes?: readonly ProjectRequestOutcome[];
   notebook: string | null;
+  memory?: string;
   /** The project's thread indexes; concluded ones are not listed as active. */
   threads: readonly ThreadIndex[];
   /** The project's questions; only unanswered, unwithdrawn ones are listed. */
@@ -112,7 +113,7 @@ export function coordinatorFreshContext(input: CoordinatorPromptInput): string {
       pr: thread.pr ? { number: thread.pr.number, checks: thread.pr.checks } : undefined, lastSummary: thread.lastSummary })),
     questions: coordinatorQuestions(input),
     recent: recentConversation(input.history.filter((item) => item.eventId === undefined || !batch.has(item.eventId))),
-  });
+  }) + (input.memory ? `\n\n${input.memory}` : '');
 }
 /** The turn prompt (brief 8.1): a session that is not resumed gets the fresh context first, then the event block. */
 export function coordinatorPrompt(input: CoordinatorPromptInput, resumed: boolean): string {
@@ -140,6 +141,8 @@ export type CoordinatorContext = {
   decisions: Pick<DecisionItems, 'fallbackFromReports'>;
   /** Bound after construction: the thread service is built later. */
   tools(): CoordinatorToolHandlers;
+  memoryContext?(project: Project): Promise<string>;
+  captureTurn?(project: Project, session: CoordinatorSession): Promise<void>;
   outcome?(projectId: string, event: Extract<CoordinatorEvent, { kind: 'user-message' }>, history: string, signal: AbortSignal): Promise<ProjectRequestOutcome>;
   /**
    * Bound after construction (the outbox is built later): sends events to the project's coordinator device through the hub relay,
@@ -487,8 +490,9 @@ export class Coordinator {
       this.c.roster().catch(() => null), this.#baseBranch(project)]);
     const names = new Map((roster?.devices ?? []).map((view) => [view.device.id, view.device.name]));
     const outcomes: ProjectRequestOutcome[] = [];
+    const memory = await this.c.memoryContext?.(project);
     if (this.c.outcome) for (const event of events) if (event.kind === 'user-message') outcomes.push(await this.c.outcome(projectId, event, recentConversation(this.#conversation()), this.#outcomeAbort.signal));
-    return { kind: 'ready', project, cwd, ...chosen, ...(work.coordinator.accountId ? { requiredAccountId: work.coordinator.accountId } : {}), session, prompt: { events, outcomes, notebook: notebook?.document.content ?? null, threads, decisions, history: this.#conversation(),
+    return { kind: 'ready', project, cwd, ...chosen, ...(work.coordinator.accountId ? { requiredAccountId: work.coordinator.accountId } : {}), session, prompt: { events, outcomes, ...(memory ? { memory } : {}), notebook: notebook?.document.content ?? null, threads, decisions, history: this.#conversation(),
       runtimeName: (runtime) => this.c.runtimes.get(runtime)?.displayName ?? runtime, deviceName: (id) => id === deviceId ? deviceName : names.get(id) ?? id, base,
       askedDirectly: this.#askedDirectly(events, decisions) } };
   }
@@ -533,7 +537,7 @@ export class Coordinator {
   async #launch(events: CoordinatorEvent[], prepared: Extract<Prepared, { kind: 'ready' }>, generation: number): Promise<TurnEnd> {
     const projectId = this.projectId; const { project, model, effort, session } = prepared;
     const turn = this.#nextTurn();
-    const scope: ProjectScope = { kind: 'coordinator', projectId, turn };
+    const scope: ProjectScope = { kind: 'coordinator', projectId, turn, memoryMode: project.memory.mode, provenance: { source: 'coordinator', runtime: model.runtime, model: model.model } };
     // Tokens are valid only while this exact scope is the running turn (D190).
     const tools = new ProjectTools(scope, { ...this.c.tools(), isCurrent: (candidate) => candidate === this.#scope }, this.c.redactor, this.#ledger);
     this.#scope = scope;
@@ -542,7 +546,7 @@ export class Coordinator {
       launched = await this.c.launcher.launch({ owner: { kind: 'coordinator', projectId, id: projectId }, turn, runtime: model.runtime, modelId: model.id, model: model.model,
         modelLabel: model.label, effort, pinnedAccountId: prepared.accountId, ...(prepared.requiredAccountId ? { requiredAccountId: prepared.requiredAccountId } : {}), permissions: 'read-only', cwd: prepared.cwd, systemAppend: coordinatorSystemAppend(project.name, project.branchPolicy),
         prompt: (resumed) => coordinatorPrompt(prepared.prompt, resumed && !session?.context?.needsFreshContext), ...(session?.nativeSessionId ? { resume: session.nativeSessionId } : {}),
-        safetyProfile: 'coordinator', timeoutMs: this.c.timers.turnTimeoutMs, tools });
+        safetyProfile: 'coordinator', timeoutMs: this.c.timers.turnTimeoutMs, tools, memoryMode: project.memory.mode });
     } catch (error) { this.#scope = undefined; await tools.close(); return this.#failed(turn, messageOf(error), 'failed'); }
     if (launched.kind === 'unavailable') { this.#scope = undefined; await tools.close(); return this.#failed(turn, launched.reason, 'failed'); }
     const started = launched; const release = this.c.enterOperation(projectId, `Coordinator: ${project.name}`);
@@ -584,6 +588,8 @@ export class Coordinator {
       try { outcome = await execution.done; } catch { outcome = undefined; } finally { this.#execution = undefined; this.#scope = undefined; await started.release().catch(() => undefined); }
       // A rejected outcome means the process cleanup was not confirmed: its record stays for recovery and the turn counts as failed.
       if (!outcome) return this.#failed(turn, COORDINATOR_PROCESS_UNCONFIRMED, 'failed', false);
+      const captured = this.state().session;
+      if (captured) await this.c.captureTurn?.(project, captured).catch(error => this.#notice(`Project memory capture will retry: ${error instanceof Error ? error.message : 'capture failed'}`, 'error'));
       if (outcome.status !== 'shutdown') this.c.store.updateLocal(projectId, (local) => { const cleared = { ...local }; delete cleared.process; return cleared; });
       return this.#outcome(turn, events, outcome, ours);
     } finally { release(); }

@@ -397,6 +397,7 @@ export class ConversationService {
     if (!prepared) {
       const project = structuredClone(input.project); const previous = await this.options.projects.get(project.id);
       if (previous?.project.paths[this.options.deviceId] && (await this.ownership.current(previous.project))?.held) throw conflict('This project is in use. Finish its open work before changing its settings.');
+      if (project.memory.mode === 'hub' && previous && previous.project.memory.mode !== 'hub') await this.options.memory.importHub(project, previous.project);
       let context;
       if (project.paths[this.options.deviceId]) {
         const local = { ...project, allowedDevices: undefined }; resolveProjectPath(local, this.options.deviceId);
@@ -1329,7 +1330,8 @@ export class ConversationService {
       if (adapter.riggingKinds.includes('hook') && rigging.some((item) => item.id === PROJECT_MEMORY_ID && item.enabled && item.state !== 'parked') && !delivered.some((item) => item.itemId === PROJECT_MEMORY_ID && item.applied)) throw new Error('Project memory hooks could not be delivered to this account.');
       const memoryWrite = permissions === 'write' || (action === 'reply' && choice.remember);
       if (memoryWrite) await this.#admit(work, workspace);
-      const memory = this.options.memory.project(workspace.project, this.options.deviceId, async () => { await this.ownership.assert(workspace.project, workspace.owner); await this.#outsideIdle(workspace); });
+      const memory = this.options.memory.project(workspace.project, this.options.deviceId, async () => { await this.ownership.assert(workspace.project, workspace.owner); await this.#outsideIdle(workspace); },
+        { kind: 'conversation', id: work.ledger.id, ...(memoryWrite ? { provenance: { source: 'thread', runtime: model.runtime, model: model.model } } : {}) });
       const context = new ProjectContext(workspace.project, this.options.deviceId, async () => { await this.ownership.assert(workspace.project, workspace.owner); await this.#outsideIdle(workspace); });
       const contextDraft = this.options.contexts.list().some(record => record.conversationId === work.ledger.id && record.workId === work.load().conversation.work?.id && record.request.choice === 'merge' && !record.applied);
       let state = context.inspect();
@@ -1469,7 +1471,7 @@ export class ConversationService {
     const outside = this.outside.watch(workspace.project, workspace.path, settings.guards.externalActivityWindowMin, reason => block(reason));
     const memory = this.options.memory.project(workspace.project, this.options.deviceId, () => this.#withCheckoutWait(work, workspace, operation, 'memory', async assertUnchanged => {
       await this.ownership.assert(workspace.project, workspace.owner); await this.#outsideIdle(workspace); this.#checkpointAllowed(work, workspace.owner.workId); await assertUnchanged();
-    }, { stretch, before }));
+    }, { stretch, before }), { kind: 'conversation', id: work.ledger.id, provenance: { source: 'capture', runtime: 'conversation', model: 'capture' } });
     try {
       await queue.apply(workspace.owner.workId, memory, async summary => {
         await outside.close();

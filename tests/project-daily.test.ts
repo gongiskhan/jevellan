@@ -70,7 +70,7 @@ test('nightly windows serialize closing-day tasks, recover missing plans and rel
   let daily = make();
   const create = (id: string, order: number) => daily.createDaily('project', { schema: 'daily-create-request-v1', clientRequestId: id.replaceAll(" ", "_"), name: id, goalId: null, order, enabled: true, target: { kind: 'session', title: id, brief: 'Review yesterday and conclude without edits.', type: 'review' } });
   const first = await create('First', 0), second = await create('Second', 1), already = await create('Already done', 2);
-  const done = await daily.runDaily('project', already.id, runInput('earlier')); await f.app.projectWork.tasks.save({ ...await f.app.projectWork.tasks.read('project', done.taskId), state: 'done' });
+  const done = TaskReceiptSchema.parse(await daily.runDaily('project', already.id, runInput('earlier'))); await f.app.projectWork.tasks.save({ ...await f.app.projectWork.tasks.read('project', done.taskId), state: 'done' });
   now += 60_000; await daily.sweep('project');
   const window = (await daily.window('project'))!; expect(window).toMatchObject({ closingProjectDay: '2026-10-24', mergesHeld: true }); expect(window.plans.map(plan => plan.dailyId)).toEqual([first.id, second.id, already.id]);
   expect(window.plans.every(plan => plan.projectDay === '2026-10-24')).toBe(true); await expect(daily.assertMerge('project')).rejects.toThrow('Merges are held');

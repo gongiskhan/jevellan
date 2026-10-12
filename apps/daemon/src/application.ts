@@ -13,7 +13,9 @@ import { RoutingImprover } from './routing-improver.js';
 import { Improver } from './improver.js';
 import { ProjectImprover, type MemoryPort } from './project-improver.js';
 import { migrateContextOperations } from './context-migration.js';
-import { BasicMemory } from '@jevellan/memory';
+import { BasicMemory, HubMemoryStore, remoteHubMemory } from '@jevellan/memory';
+import { ProjectMemoryRequestSchema, type ProjectMemoryRequest } from '@jevellan/core';
+import { memoryImportBatches } from '@jevellan/memory';
 import { JevClient, JevError } from '@jevellan/decisions';
 import { createRuntime as createClaude } from '@jevellan/runtime-claude';
 import { createRuntime as createCodex, prepareApiKey } from '@jevellan/runtime-codex';
@@ -47,6 +49,7 @@ export class Application {
   readonly accounts: AccountService; readonly auth: UiAuth | MemberUiAuth; readonly rigging: SharedRigging;
   readonly bridges: StretchBridges;
   readonly memory: BasicMemory; readonly conversations: ConversationService;
+  readonly hubMemory: HubMemoryStore | undefined;
   /** Projects on this device (brief 8): threads, their turns and pull requests, beside the conversations. */
   readonly ekoa: EkoaMirrorService | undefined;
   readonly projectWork: ProjectWork; readonly projectHub: ProjectHub;
@@ -115,6 +118,17 @@ export class Application {
       this.riggingDisk = new RiggingDisk(this.homes, this.redactor);
       this.bridges = new StretchBridges(this.redactor);
       this.memory = new BasicMemory(this.homes, 'basic-memory', this.redactor);
+      this.hubMemory = this.member ? undefined : new HubMemoryStore(this.memory, this.device.deviceId);
+      this.memory.configureHub((project, _deviceId, scope) => {
+        const context = scope ?? { kind: 'viewer' as const };
+        return this.member ? remoteHubMemory(this.homes, project, context, request => this.member!.projectMemory(request)) : this.hubMemory!.project(project, context);
+      }, async (project, old) => {
+        if (!this.member) { await this.hubMemory!.import(project, old); return; }
+        const sourcePath = this.memory.project(old, this.device.deviceId, () => {}).path;
+        for (const files of memoryImportBatches(sourcePath, text => this.redactor.text(text))) await this.member.projectMemory({ schema: 'project-memory-request-v1', projectId: project.id,
+          scope: { kind: 'viewer' }, operation: 'import', requestId: 'initial_memory_import', sourcePath, files, final: false });
+        await this.member.projectMemory({ schema: 'project-memory-request-v1', projectId: project.id, scope: { kind: 'viewer' }, operation: 'import', requestId: 'initial_memory_import', sourcePath, files: [], final: true });
+      });
       this.sessions = new ExternalSessionSensor({ ...options.nativeSessions, homes: this.homes });
       this.cursor = new CursorSessions(this.homes, this.device.deviceId, this.device.name);
       this.accounts = new AccountService({ store: this.member ? new MemberAccounts(this.member) : new HubAccounts(this.hub, this.device.deviceId), redactor: this.redactor, homes: this.homes, deviceId: this.device.deviceId, runtimes: this.runtimes,
@@ -136,6 +150,12 @@ export class Application {
       // Projects share the account serialization, checkout ownership, leases, bridge registry and memory with conversations.
       this.projectHub = this.member ? new MemberProjectStore(this.member) : new HubProjectAccess(this.hub, this.device.deviceId, undefined, () => this.devices.list());
       this.projectWork = new ProjectWork({ homes: this.homes, deviceId: this.device.deviceId, deviceName: this.device.name, redactor: this.redactor,
+        switchMemory: async (projectId, mode, requestId) => {
+          const current = await this.state.projects.get(projectId); if (!current) throw new Error('Project not found.');
+          return (await this.conversations.saveProject({ schema: 'project-write-v1', revision: current.revision, clientRequestId: `memory_${requestId}`, project: { ...current.project, memory: { ...current.project.memory, mode } } })).project;
+        },
+        ...(this.hubMemory ? { hubMemory: this.hubMemory } : {}),
+        sendCapture: async request => { if (this.member) await this.member.projectMemory(request); else if (request.operation === 'capture') this.projectWork.captures.accept(request.capture, request.text); },
         ...(options.deviceFacts ? { facts: options.deviceFacts } : {}),
         projects: this.state.projects, hub: this.projectHub,
         github: { credential: async (projectId) => this.state.github.credential(projectId), ...(options.githubFetch ? { fetch: options.githubFetch } : {}), ...(options.githubBaseUrl ? { baseUrl: options.githubBaseUrl } : {}) },
@@ -192,6 +212,42 @@ export class Application {
   async ekoaRequest(raw: unknown, ownerSession: string) {
     const request = EkoaRequestSchema.parse({ ...(raw as object), ownerSession });
     return this.member ? this.member.ekoa(request) : this.ekoa!.request(request, this.device.deviceId);
+  }
+  async projectMemoryRequest(raw: unknown, deviceId: string) {
+    const request = ProjectMemoryRequestSchema.parse(raw), project = (await this.state.projects.get(request.projectId))?.project;
+    if (!project) throw Object.assign(new Error('Project not found.'), { status: 404 });
+    if (!this.hubMemory) throw Object.assign(new Error('Project memory belongs to the hub.'), { status: 404 });
+    const scope = request.scope;
+    if (scope.kind === 'owner' && (!request.ownerSession || !(this.auth instanceof UiAuth) || !this.auth.verify(request.ownerSession, deviceId))) throw Object.assign(new Error('Owner note edits use the owner API.'), { status: 403 });
+    if (scope.kind === 'thread') {
+      const thread = scope.id ? (await this.projectHub.thread(scope.id))?.document : null;
+      if (!thread || thread.projectId !== project.id || thread.ownerDeviceId !== deviceId) throw Object.assign(new Error('This memory scope belongs to another thread.'), { status: 403 });
+    }
+    if (scope.kind === 'coordinator' && (await this.projectHub.coordinator(project.id))?.document.deviceId !== deviceId) throw Object.assign(new Error('This memory scope belongs to another coordinator.'), { status: 403 });
+    if (scope.stagingId) throw Object.assign(new Error('This memory staging session is unavailable.'), { status: 403 });
+    if (request.operation === 'import') {
+      await this.hubMemory.importBatch({ ...project, memory: { ...project.memory, mode: 'hub' } }, request);
+      return { schema: 'memory-operation-v1' as const, accepted: true as const };
+    }
+    if (['dream-run', 'dream-apply', 'dream-undo', 'dream-discard'].includes(request.operation)) {
+      if (scope.kind !== 'owner') throw Object.assign(new Error('Only the owner runs or applies a dream.'), { status: 403 });
+      const programme = this.projectWork.memoryProgramme; if (!programme || project.memory.mode !== 'hub') throw new Error('This project does not use hub memory.');
+      if (request.operation === 'dream-run') { programme.runNow(project, request.requestId ?? newId('dream_request')); return { schema: 'memory-operation-v1' as const, accepted: true as const }; }
+      if (request.operation === 'dream-apply') return programme.applyDream(project);
+      if (request.operation === 'dream-undo') return programme.dream.undo(project);
+      programme.dream.discard(project.id); return { schema: 'memory-operation-v1' as const, accepted: true as const };
+    }
+    if (request.operation === 'capture') {
+      if (request.capture.projectId !== project.id || request.capture.threadId !== (scope.kind === 'thread' ? scope.id : undefined)) throw Object.assign(new Error('The capture does not belong to this session scope.'), { status: 403 });
+      if ((await this.projectWork.admission.settings(project.id)).memory.capture) this.projectWork.captures.accept(request.capture, request.text);
+      return { schema: 'memory-operation-v1' as const, accepted: true as const };
+    }
+    const result = await this.hubMemory.request(project, request as ProjectMemoryRequest, AbortSignal.timeout(120_000));
+    return result.schema === 'project-memory-view-v1' ? { ...result, notice: this.projectWork.memoryProgramme?.line(project.id) ?? null } : result;
+  }
+  async ownerProjectMemory(raw: unknown, ownerSession: string) {
+    const request = ProjectMemoryRequestSchema.parse({ ...(raw as object), ownerSession, scope: { kind: 'owner', provenance: { source: 'owner', runtime: 'owner', model: 'owner' } } });
+    return this.member ? this.member.projectMemory(request) : this.projectMemoryRequest(request, this.device.deviceId);
   }
   async improverRequest(input: unknown) { return this.member ? this.member.improver(input) : this.routingImprover!.request(input, this.device.deviceId); }
   async configuration() {

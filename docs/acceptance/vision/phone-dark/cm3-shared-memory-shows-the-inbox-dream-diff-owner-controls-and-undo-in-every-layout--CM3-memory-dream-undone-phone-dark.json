@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CM3 shared memory shows the inbox, dream diff, owner controls and Undo in every layout",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/CM3-memory-dream-undone-phone-dark.png",
+  "expected": "the Jevellan web app \"CM3 memory dream undone\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"CM3 shared memory shows the inbox, dream diff, owner controls and Undo in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The diff block is cut off after the 'created:' line, so the full diff isn't visible in this capture. It looks like a scrollable code area and the 'Run now' button below it is fully visible.",
+      "The 'diff --git a/Project brief.md b/Project brief.md' header wraps onto two lines, which looks slightly awkward.",
+      "The undone status and summary appear twice: once in the muted 'Memory dream: undone — …' line and again as separate 'undone' and summary lines below it.",
+      "The stats line shows raw camelCase keys (inboxPromoted, inboxDropped) instead of readable labels."
+    ]
+  }
+}

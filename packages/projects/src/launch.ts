@@ -25,10 +25,11 @@ export type LaunchRequest = {
    * Built after account resolution: `resumed` is false when there is no stored session or D16 dropped it, and the caller
    * then includes its fresh preamble (the thread task block, D94; the coordinator's fresh context).
    */
-  prompt(resumed: boolean): string;
+  prompt(resumed: boolean): string | Promise<string>;
   resume?: string | undefined; safetyProfile: TurnInput['safetyProfile']; timeoutMs: number; tools: BridgeScopeTools;
   /** Thread turns: the project checkout whose git identity the agent commits with (D15). */
   gitIdentityFrom?: string | undefined;
+  memoryMode?: 'hub' | 'repo' | 'device';
 };
 export type LaunchStarted = {
   kind: 'started'; run: StretchRun; accountId: string; accountLabel: string; accountChanged: boolean; resumed: boolean; secretRef: string | null;
@@ -145,10 +146,11 @@ export class TurnLauncher {
       grant = this.#o.bridges.issueTools(request.tools);
       // Every value is non-empty: WorkerRun drops empty launch values, and the MCP server env must equal what it keeps.
       const env: Record<string, string> = { JEVELLAN_STRETCH_TOKEN: grant.token, JEVELLAN_DAEMON_URL: daemonUrl,
+        ...(request.memoryMode ? { JEVELLAN_PROJECT_MEMORY_MODE: request.memoryMode } : {}),
         ...(gitIdentity ? { GIT_AUTHOR_NAME: gitIdentity.name, GIT_AUTHOR_EMAIL: gitIdentity.email, GIT_COMMITTER_NAME: gitIdentity.name, GIT_COMMITTER_EMAIL: gitIdentity.email } : {}) };
       const input = TurnInputSchema.parse({
         schema: 'turn-input-v1', owner: request.owner, turn: request.turn, cwd: request.cwd, permissions: request.permissions, model: request.model, effort: request.effort,
-        account: resolved, systemAppend: request.systemAppend, prompt: request.prompt(resumed), ...(resumed ? { resume: { sessionId: request.resume } } : {}),
+        account: resolved, systemAppend: request.systemAppend, prompt: await request.prompt(resumed), ...(resumed ? { resume: { sessionId: request.resume } } : {}),
         launch: { useOwnSetup: await this.#o.useOwnSetup?.(request.runtime) ?? true, env, mcpServers: { jevellan: { command: process.execPath, args: [join(applicationRoot(), 'bin', 'jevellan.mjs'), 'mcp-bridge'], env } } },
         safetyProfile: request.safetyProfile, timeoutMs: request.timeoutMs, compaction: { thresholdPercent: percent, ...(contextWindow ? { contextWindow } : {}) },
       });

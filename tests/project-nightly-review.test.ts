@@ -1,3 +1,4 @@
+import { TaskReceiptSchema } from '../packages/core/dist/index.js';
 import { afterEach, expect, test } from 'vitest';
 import { readFileSync, statSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -35,14 +36,14 @@ test('read-only high-effort review includes direct pushes, advances its durable 
     const input = turn.input.prompt.match(/Read every commit and patch in (.*), then inspect/)!; const diff = readFileSync(input[1]!, 'utf8'); expect(diff).not.toContain('    Seed\n');
     await turn.bridge('jevellan_project_review_report', body); return { status: 'completed' };
   }, input => input.owner.kind === 'review');
-  const run = await work.daily.runDaily('project', daily.id, { schema: 'project-run-request-v1', clientRequestId: 'first' }); await f.waitFor(() => work.tasks.read('project', run.taskId), task => task.state === 'done'); await work.idle();
+  const run = TaskReceiptSchema.parse(await work.daily.runDaily('project', daily.id, { schema: 'project-run-request-v1', clientRequestId: 'first' })); await f.waitFor(() => work.tasks.read('project', run.taskId), task => task.state === 'done'); await work.idle();
   const first = (await work.daily.view('project')).lastReview!; expect(first).toMatchObject({ schema: 'project-review-report-v1', runtime: 'fake2', fromCommit: f.git(f.checkout, 'rev-parse', 'HEAD'), findings: body.findings }); expect((await work.daily.view('project')).lastReviewedCommit).toBe(first.commit);
   const chosen = await work.daily.followup('project', { reviewTaskId: run.taskId, task: { title: 'Fix all review findings', brief: 'Add the empty-name default.' } });
   expect(await work.daily.followup('project', { reviewTaskId: run.taskId, task: { title: 'Second fix', brief: 'Must not create another.' } })).toMatchObject({ repeated: true, taskId: chosen.taskId });
   expect((await work.tasks.list('project')).filter(task => task.nightlyFixFor === run.taskId)).toHaveLength(1);
   writeFileSync(join(f.checkout, 'direct.txt'), 'Direct push\n'); f.git(f.checkout, 'add', '-A'); f.git(f.checkout, 'commit', '-m', 'Direct owner push'); f.git(f.checkout, 'push', 'origin', 'main');
   second.enqueueTurn(async turn => { const input = turn.input.prompt.match(/Read every commit and patch in (.*), then inspect/)!; const diff = readFileSync(input[1]!, 'utf8'); expect(diff).toContain('Direct owner push'); expect(diff).not.toContain('    Seed\n'); await turn.bridge('jevellan_project_review_report', { summary: 'Direct push reviewed.', findings: [] }); return { status: 'completed' }; }, input => input.owner.kind === 'review');
-  const next = await work.daily.runDaily('project', daily.id, { schema: 'project-run-request-v1', clientRequestId: 'next' }); await f.waitFor(() => work.tasks.read('project', next.taskId), task => task.state === 'done');
+  const next = TaskReceiptSchema.parse(await work.daily.runDaily('project', daily.id, { schema: 'project-run-request-v1', clientRequestId: 'next' })); await f.waitFor(() => work.tasks.read('project', next.taskId), task => task.state === 'done');
   expect((await work.daily.view('project')).lastReview?.fromCommit).toBe(first.commit); expect(f.git(f.checkout, 'status', '--porcelain=v1')).toBe(checkout);
 }, 90_000);
 test('the window allows only its single fix before 150 minutes, then runs jobs and releases at seven hours', async () => {
@@ -62,7 +63,7 @@ test('the window allows only its single fix before 150 minutes, then runs jobs a
 test('a reviewer changing its worktree cannot advance the watermark', async () => {
   const { f, second, daily } = await setup(), work = f.app.projectWork;
   second.enqueueTurn(async turn => { writeFileSync(join(turn.input.cwd, 'illegal.txt'), 'changed'); await turn.bridge('jevellan_project_review_report', body); return { status: 'completed' }; }, input => input.owner.kind === 'review');
-  const run = await work.daily.runDaily('project', daily.id, { schema: 'project-run-request-v1', clientRequestId: 'dirty' }); await f.waitFor(() => work.tasks.read('project', run.taskId), task => task.state === 'failed');
+  const run = TaskReceiptSchema.parse(await work.daily.runDaily('project', daily.id, { schema: 'project-run-request-v1', clientRequestId: 'dirty' })); await f.waitFor(() => work.tasks.read('project', run.taskId), task => task.state === 'failed');
   expect((await work.daily.view('project')).lastReviewedCommit).toBe(f.git(f.checkout, 'rev-parse', 'HEAD')); expect((await work.tasks.read('project', run.taskId)).endNote).toContain('read-only review changed');
 }, 90_000);
 
@@ -70,7 +71,7 @@ test('a reviewer changing its worktree cannot advance the watermark', async () =
 test('restart never replays an interrupted review or advances its watermark', async () => {
   const { f, second, daily } = await setup(), work = f.app.projectWork;
   const changed = work.daily.o.changed; work.daily.o.changed = () => {};
-  const receipt = await work.daily.runDaily('project', daily.id, { schema: 'project-run-request-v1', clientRequestId: 'interrupted' }); work.daily.o.changed = changed;
+  const receipt = TaskReceiptSchema.parse(await work.daily.runDaily('project', daily.id, { schema: 'project-run-request-v1', clientRequestId: 'interrupted' })); work.daily.o.changed = changed;
   const task = await work.tasks.read('project', receipt.taskId), commit = f.git(f.checkout, 'rev-parse', 'HEAD');
   await work.tasks.save({ ...task, state: 'active', reviewRun: { schema: 'project-review-run-v1', sequence: 1, state: 'running', commit, fromCommit: null, deviceId: f.app.device.deviceId, runtime: 'fake2', modelId: 'reviewer', model: 'review-model', modelLabel: 'Reviewer', majorityProvider: 'fake', selectionBasis: 'Other provider.', startedAt: work.tasks.at(), report: null, followupChosen: false, fixTaskId: null } });
   await f.restart(); await f.waitFor(() => f.app.projectWork.tasks.read('project', task.id), row => row.state === 'failed');
@@ -90,14 +91,14 @@ test('creating and first enabling a review starts at current main, with an owner
 test('a newly created review definition uses its captured baseline rather than an older definition watermark', async () => {
   const { f, second, daily } = await setup(), work = f.app.projectWork;
   second.enqueueTurn(async turn => { await turn.bridge('jevellan_project_review_report', { summary: 'Initial baseline reviewed.', findings: [] }); return { status: 'completed' }; }, input => input.owner.kind === 'review');
-  const first = await work.daily.runDaily('project', daily.id, { schema: 'project-run-request-v1', clientRequestId: 'old_definition' });
+  const first = TaskReceiptSchema.parse(await work.daily.runDaily('project', daily.id, { schema: 'project-run-request-v1', clientRequestId: 'old_definition' }));
   await f.waitFor(() => work.tasks.read('project', first.taskId), row => row.state === 'done');
   await work.daily.updateDaily('project', daily.id, { schema: 'daily-update-request-v1', expectedRevision: daily.revision, name: daily.name, goalId: daily.goalId, order: 0, target: { kind: 'session', title: 'Previous nightly item', brief: 'Park the previous review definition.', type: 'review' }, enabled: false });
   writeFileSync(join(f.checkout, 'later.txt'), 'Before new review definition'); f.git(f.checkout, 'add', '-A'); f.git(f.checkout, 'commit', '-m', 'Main before replacement review'); f.git(f.checkout, 'push', 'origin', 'main');
   const head = f.git(f.checkout, 'rev-parse', 'HEAD'), replacement = await work.daily.createDaily('project', { schema: 'daily-create-request-v1', clientRequestId: 'replacement_review', name: 'Replacement review', goalId: daily.goalId, order: 0, enabled: true, target: { kind: 'review-since-last' } });
   expect((await work.daily.view('project')).lastReviewedCommit).toBe(head);
   second.enqueueTurn(async turn => { expect(turn.input.prompt).toContain(`review from commit ${head}`); await turn.bridge('jevellan_project_review_report', { summary: 'Replacement baseline reviewed.', findings: [] }); return { status: 'completed' }; }, input => input.owner.kind === 'review');
-  const next = await work.daily.runDaily('project', replacement.id, { schema: 'project-run-request-v1', clientRequestId: 'new_definition' });
+  const next = TaskReceiptSchema.parse(await work.daily.runDaily('project', replacement.id, { schema: 'project-run-request-v1', clientRequestId: 'new_definition' }));
   await f.waitFor(() => work.tasks.read('project', next.taskId), row => ['done', 'failed'].includes(row.state));
   expect((await work.tasks.read('project', next.taskId)).reviewRun?.fromCommit).toBe(head);
   expect((await work.tasks.read('project', next.taskId)).state).toBe('done');
@@ -118,7 +119,7 @@ test('a 3000-commit review streams a bounded input with every message/stat and a
     const content = readFileSync(input[1]!, 'utf8'); expect(content).toContain('Night change 1'); expect(content).toContain('Night change 3000'); expect(content).not.toContain('    Seed\n'); expect(content).toContain('remaining patches');
     await turn.bridge('jevellan_project_review_report', { summary: 'Range reviewed.', findings: [] }); return { status: 'completed' };
   }, input => input.owner.kind === 'review');
-  const receipt = await work.daily.runDaily('project', daily.id, { schema: 'project-run-request-v1', clientRequestId: 'large_range' });
+  const receipt = TaskReceiptSchema.parse(await work.daily.runDaily('project', daily.id, { schema: 'project-run-request-v1', clientRequestId: 'large_range' }));
   await f.waitFor(() => work.tasks.read('project', receipt.taskId), row => ['done', 'failed'].includes(row.state), 150_000);
   const completed = await work.tasks.read('project', receipt.taskId);
   expect(completed.state, completed.endNote ?? undefined).toBe('done');

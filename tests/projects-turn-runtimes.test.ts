@@ -164,3 +164,18 @@ test('Claude SDK compact boundaries and context use are forwarded independently 
     ]);
   } finally { await run.terminate(); }
 }, 30_000);
+
+test('the Claude coordinator can write scoped hub memory while native edits and shell remain refused', async () => {
+  const { adapter, coordinator } = setup('claude');
+  const response = await respond(adapter, { ...coordinator, launch: { ...coordinator.launch, env: { JEVELLAN_PROJECT_MEMORY_MODE: 'hub' } },
+    prompt: directive('permissions', [{ tool: 'mcp__jevellan__memory_write', input: { title: 'Test convention', content: 'Use TZ=UTC.' } },
+      { tool: 'Write', input: { file_path: join(root, 'refused'), content: 'no' } }, { tool: 'Bash', input: { command: 'git status' } }]) }) as { replies: unknown[] };
+  expect(response.replies).toEqual([{}, denied(COORDINATOR_READ_ONLY_REASON), denied(COORDINATOR_READ_ONLY_REASON)]);
+}, 30_000);
+
+test('a Codex memory session carries its safety profile without failing the hook schema', async () => {
+  const { adapter, input } = setup('codex');
+  const response = await respond(adapter, { ...input, owner: { kind: 'memory', projectId: 'proj_fixture', id: 'memory_fixture' }, permissions: 'read-only', safetyProfile: 'memory',
+    prompt: directive('safety', [{ tool: 'Bash', input: { command: 'git push' } }]) });
+  expect(response).toEqual([denied('Jevellan handles this. Say what you need in your handoff.')]);
+}, 30_000);

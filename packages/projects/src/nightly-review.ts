@@ -14,25 +14,30 @@ import { TurnExecution } from './turn-execution.js';
 import { derivedId } from './decision-items.js';
 import { collectDeviceFacts, deviceResourceRefusal, deviceAllowsWork, type DeviceFacts } from '@jevellan/core';
 import { writeReviewInput } from './review-input.js';
+import type { ProjectMemoryPort } from '@jevellan/memory';
+import { readSessionMemory } from './memory-tools.js';
 const ProcessSchema = TurnProcessSchema.extend({ schema: z.literal('project-review-process-v1') });
 const refuse = (message: string, status = 409) => Object.assign(new Error(message), { status });
 export const REVIEW_APPEND = 'You are reviewing every commit that reached main since this project’s last completed review, including direct pushes. This session is read-only: do not change, commit or push anything. Read the complete supplied commit range and repository rules. Report worthwhile findings together, with concrete locations and explanations, or report none. End with exactly one jevellan_project_review_report. The coordinator chooses at most one combined finding task from your report.';
 export class ReviewTools implements BridgeScopeTools {
   #active = true; #pending: Promise<unknown> = Promise.resolve(); #report: ProjectReviewBody | null = null;
-  constructor(readonly save: (body: ProjectReviewBody) => Promise<void>, readonly redactor: SecretRedactor) {}
+  readonly abort = new AbortController();
+  constructor(readonly save: (body: ProjectReviewBody) => Promise<void>, readonly redactor: SecretRedactor, readonly memory?: ProjectMemoryPort) {}
   get report() { return this.#report; }
-  list() { if (!this.#active) throw refuse('This review token has expired.', 401); return bridgeTools(['jevellan_project_review_report']); }
+  list() { if (!this.#active) throw refuse('This review token has expired.', 401); return bridgeTools(this.memory ? ['jevellan_project_review_report', 'memory_search', 'memory_read'] : ['jevellan_project_review_report']); }
   capture() { return Promise.resolve(BridgeResultSchema.parse({ schema: 'bridge-result-v1', result: { queued: false, reason: 'review' } })); }
   call(name: BridgeTool, raw: unknown) {
     const result = this.#pending.then(async () => {
-      this.list(); if (name !== 'jevellan_project_review_report') throw refuse('The nightly reviewer can only report its review.', 403);
+      this.list();
+      if (this.memory && (name === 'memory_search' || name === 'memory_read')) return BridgeResultSchema.parse({ schema: 'bridge-result-v1', result: this.redactor.document(await readSessionMemory(this.memory, name, raw, this.redactor, this.abort.signal)) });
+      if (name !== 'jevellan_project_review_report') throw refuse('The nightly reviewer can read memory and report its review.', 403);
       const body = ProjectReviewBodySchema.parse(this.redactor.document(raw));
       if (this.#report && stableJson(body) !== stableJson(this.#report)) throw refuse('This review already reported a different result.');
       if (!this.#report) { await this.save(body); this.#report = body; }
       return BridgeResultSchema.parse({ schema: 'bridge-result-v1', result: { schema: 'project-review-receipt-v1', accepted: true } });
     }); this.#pending = result.then(() => undefined, () => undefined); return result;
   }
-  async close() { this.#active = false; await this.#pending; }
+  async close() { this.#active = false; this.abort.abort(); await this.#pending; }
 }
 /** Reviews have no coding thread or publishing path. The final checked report and watermark share one task CAS write. */
 export class NightlyReview {
@@ -40,7 +45,7 @@ export class NightlyReview {
   constructor(readonly o: { hub: ProjectHub; tasks: ProjectTasks; homes: Homes; git: ThreadGit; launcher: TurnLauncher; deviceId: string; deviceName?: string; facts?(): DeviceFacts; redactor: SecretRedactor; now(): number;
     settings(): Promise<Configuration['x-jevellan']>; accounts: Pick<AccountService, 'list' | 'recordUsage' | 'recordError'>; runtimes: ReadonlyMap<string, RuntimeAdapter>;
     project(id: string): Promise<Project>; repository(project: Project): string; baseBranch(repo: string): Promise<string>; timeoutMs: number;
-    event(projectId: string, event: CoordinatorEvent): Promise<void>; changed(): void }) {}
+    memory?(projectId: string): Promise<ProjectMemoryPort>; event(projectId: string, event: CoordinatorEvent): Promise<void>; changed(): void }) {}
   busy(projectId?: string) { return projectId ? this.#active.has(projectId) : this.#active.size > 0; }
   #path(task: ProjectWorkTask) { return this.o.homes.at('worktrees', task.projectId, 'nightly-reviews', task.id); }
   #process(task: ProjectWorkTask) { return join(this.o.homes.ensure('project-work', task.projectId, 'review-processes'), `${task.id}.json`); }
@@ -97,7 +102,7 @@ export class NightlyReview {
       const input = join(this.o.homes.ensure('project-work', task.projectId, 'reviews', task.id), 'changes.diff');
       await writeReviewInput(this.o.homes, this.o.redactor, repo, range, input);
       const tools = new ReviewTools(async body => { task = await this.#update(task, current => ({ ...current, reviewRun: { ...current.reviewRun!, report: ProjectReviewReportSchema.parse({ ...body, schema: 'project-review-report-v1', projectId: task.projectId, taskId: task.id,
-        fromCommit: run.fromCommit, commit: run.commit, reviewedAt: new Date(this.o.now()).toISOString(), runtime: run.runtime, model: run.model }) } })); }, this.o.redactor);
+        fromCommit: run.fromCommit, commit: run.commit, reviewedAt: new Date(this.o.now()).toISOString(), runtime: run.runtime, model: run.model }) } })); }, this.o.redactor, await this.o.memory?.(task.projectId));
       const launched = await this.o.launcher.launch({ owner: { kind: 'review', projectId: task.projectId, id: task.id }, turn: 1, runtime: run.runtime, modelId: run.modelId, model: run.model, modelLabel: run.modelLabel, effort: 'high', permissions: 'read-only', cwd: path, safetyProfile: 'review',
         systemAppend: REVIEW_APPEND, prompt: () => `Review since last\nMain at ${run.commit}; review from commit ${run.fromCommit ?? run.commit}.\nRead every commit and patch in ${input}, then inspect the affected source in this fresh worktree. If that file says patches exceed its cap, read the remaining patches with git in this worktree.\n${run.selectionBasis}`, tools, timeoutMs: this.o.timeoutMs });
       if (launched.kind === 'unavailable') { await tools.close(); throw new Error(launched.reason); }

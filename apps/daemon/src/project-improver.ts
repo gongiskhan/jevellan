@@ -93,6 +93,7 @@ export class ProjectImprover {
     try {
       await note('started', job.scope.kind === 'memory' ? 'Checking project memory.' : 'Looking for working rules in project memory.');
       if (!project || !this.#path(project)) throw new Skip(`skipped: ${project?.name ?? 'this project'} is not checked out on ${this.options.deviceName}`);
+      if (job.scope.kind === 'memory' && project.memory.mode === 'hub') throw new Skip('Hub memory uses the nightly dream; memory care is included in its input.');
       const result = job.scope.kind === 'memory' ? await this.#memoryCare(job, project, work, state => { careState = state; }) : await this.#contextJob(job, project, work);
       await note('complete', result);
       await this.#device(ImproverJobSchema, { schema: 'improver-device-request-v1', operation: 'finish', job, status: 'complete', note: result, careState });

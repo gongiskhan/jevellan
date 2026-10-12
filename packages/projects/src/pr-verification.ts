@@ -13,6 +13,8 @@ import { endTurnProcess } from './recovery.js';
 import { TurnExecution } from './turn-execution.js';
 import { outputTail, runThreadCommand, SETUP_TIMEOUT_MS } from './verification.js';
 import { derivedId } from './decision-items.js';
+import type { ProjectMemoryPort } from '@jevellan/memory';
+import { readSessionMemory } from './memory-tools.js';
 
 export const VERIFICATION_APPEND = 'You are verifying a pull request for this project, in a fresh copy of its branch. Do not change, commit or push anything. Run the existing tests that cover the areas this pull request changed, and for user interface changes the browser specs of those screens at phone and desktop width. Keep it basic: you are checking that the change works and broke nothing nearby, not reviewing the code. End with exactly one jevellan_verification_report.';
 const ProcessSchema = TurnProcessSchema.extend({ schema: z.literal('verification-process-v1') });
@@ -23,13 +25,16 @@ export class VerificationTools implements BridgeScopeTools {
   #active = true;
   #pending: Promise<unknown> = Promise.resolve();
   #report: VerificationReport | null;
-  constructor(readonly save: (report: VerificationReport) => Promise<void>, readonly redactor: SecretRedactor, initial: VerificationReport | null = null) { this.#report = initial; }
+  readonly abort = new AbortController();
+  constructor(readonly save: (report: VerificationReport) => Promise<void>, readonly redactor: SecretRedactor, initial: VerificationReport | null = null, readonly memory?: ProjectMemoryPort) { this.#report = initial; }
   get report() { return this.#report; }
-  list() { if (!this.#active) throw refuse('This verification token has expired.', 401); return bridgeTools(['jevellan_verification_report']); }
+  list() { if (!this.#active) throw refuse('This verification token has expired.', 401); return bridgeTools(this.memory ? ['jevellan_verification_report', 'memory_search', 'memory_read'] : ['jevellan_verification_report']); }
   capture() { return Promise.resolve(BridgeResultSchema.parse({ schema: 'bridge-result-v1', result: { queued: false, reason: 'verification' } })); }
   call(name: BridgeTool, raw: unknown) {
     const result = this.#pending.then(async () => {
-      this.list(); if (name !== 'jevellan_verification_report') throw refuse('Verification can only report its result.');
+      this.list();
+      if (this.memory && (name === 'memory_search' || name === 'memory_read')) return BridgeResultSchema.parse({ schema: 'bridge-result-v1', result: this.redactor.document(await readSessionMemory(this.memory, name, raw, this.redactor, this.abort.signal)) });
+      if (name !== 'jevellan_verification_report') throw refuse('Verification can read memory and report its result.');
       const report = VerificationReportSchema.parse(this.redactor.document(raw));
       if (this.#report && stableJson(this.#report) !== stableJson(report)) throw refuse('This verification already reported a different result.', 409);
       if (!this.#report) { await this.save(report); this.#report = report; }
@@ -37,14 +42,14 @@ export class VerificationTools implements BridgeScopeTools {
     });
     this.#pending = result.then(() => undefined, () => undefined); return result;
   }
-  async close() { this.#active = false; await this.#pending; }
+  async close() { this.#active = false; this.abort.abort(); await this.#pending; }
 }
 
 export class PullRequestVerification {
   readonly #active = new Map<string, { execution?: TurnExecution; controller: AbortController; promise: Promise<VerificationRun | null> }>();
   #closed = false;
   constructor(readonly o: { hub: ProjectHub; homes: Homes; git: ThreadGit; launcher: TurnLauncher; deviceId: string; deviceName?: string; facts?(): DeviceFacts; redactor: SecretRedactor; now(): number;
-    settings(): Promise<Configuration['x-jevellan']>; accounts: Pick<AccountService, 'list' | 'recordUsage' | 'recordError'>; runtimes: ReadonlyMap<string, RuntimeAdapter>; timeoutMs: number }) {}
+    settings(): Promise<Configuration['x-jevellan']>; accounts: Pick<AccountService, 'list' | 'recordUsage' | 'recordError'>; runtimes: ReadonlyMap<string, RuntimeAdapter>; timeoutMs: number; memory?(project: Project): ProjectMemoryPort }) {}
   busy() { return this.#active.size > 0; }
   #path(run: VerificationRun) { return this.o.homes.at('worktrees', run.projectId, 'pr-verification', run.id); }
   #process(run: VerificationRun) { return join(this.o.homes.ensure('project-work', run.projectId, 'verification-processes'), `${run.id}.json`); }
@@ -103,7 +108,7 @@ export class PullRequestVerification {
       }
       if (run.state === 'running') {
         if (this.#closed) return null;
-        const tools = new VerificationTools(async report => { run = await this.#save({ ...run, report }); }, this.o.redactor);
+        const tools = new VerificationTools(async report => { run = await this.#save({ ...run, report }); }, this.o.redactor, null, this.o.memory?.(project));
         const launched = await this.o.launcher.launch({ owner: { kind: 'verification', projectId: project.id, id: run.id }, turn: 1, runtime: run.runtime, modelId: run.modelId, model: run.model, modelLabel: run.modelLabel,
           effort: 'medium', permissions: 'write', cwd: path, safetyProfile: 'verification', systemAppend: VERIFICATION_APPEND,
           prompt: () => `Verify pull request #${thread.pr!.number}: ${thread.title}\nCommit: ${run.commit}\n\n${thread.lastReport?.summary ?? thread.task}`, tools, timeoutMs: this.o.timeoutMs });

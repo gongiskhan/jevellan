@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import type { AccountService } from '@jevellan/accounts';
 import {
   HubUnavailable, MANUAL_CHECKOUT_COMPLETED, SecretRedactor, ThreadReportSchema, clipRedacted, isTerminal, liveWork, newId, redactWithin, stableJson, type CoordinatorEvent, type Project, type ProjectWorkSettings,
-  type QueuedMessage, type Thread, type ThreadLocal, type ThreadReport, type ThreadState, type TurnProcess,
+  type MemoryRecall, type QueuedMessage, type Thread, type ThreadLocal, type ThreadReport, type ThreadState, type TurnProcess,
 } from '@jevellan/core';
 import { SESSION_NOT_FOUND } from '@jevellan/runtime-contract';
 import type { Admission } from './admission.js';
@@ -124,7 +124,10 @@ export type ThreadRunnerContext = {
   decisions: Pick<DecisionItems, 'turnLimit' | 'withdrawTurnLimit'>;
   toCoordinator(projectId: string, event: CoordinatorEvent): Promise<void>;
   /** Read-only project memory for the thread's tools. */
-  memory(project: Project): ProjectMemoryReader;
+  memory(project: Project, scope?: import('./bridge-tools.js').ProjectScope): ProjectMemoryReader | Promise<ProjectMemoryReader>;
+  recall?(project: Project, thread: Thread): Promise<MemoryRecall>;
+  projectNow?(project: Project, thread: Thread): Promise<string>;
+  captureTurn?(project: Project, thread: Thread): Promise<void>;
   /** Mail and reservations, the main-isolation thread tools (brief 7.2). */
   mail: Pick<MailService, 'threadTool' | 'releaseThread'>;
   appTool?: ProjectToolHandlers['call'];
@@ -407,16 +410,28 @@ export class ThreadRunner {
   async #run(project: Project, thread: Thread, turn: number, next: NextTurn): Promise<Ran> {
     const placement = thread.placement; const labels = this.#c.store.labels(thread.id);
     const ledger = this.#c.ledgers.thread(thread.projectId, thread.id);
-    const tools = new ProjectTools({ kind: 'thread', projectId: thread.projectId, threadId: thread.id, turn, isolation: thread.isolation }, this.#handlers(), this.#c.redactor);
+    const tools = new ProjectTools({ kind: 'thread', projectId: thread.projectId, threadId: thread.id, turn, isolation: thread.isolation, memoryMode: project.memory.mode,
+      provenance: { source: 'thread', runtime: placement.runtime, model: placement.model, threadId: thread.id } }, this.#handlers(), this.#c.redactor);
     let launched: LaunchResult;
+    const now = await this.#c.projectNow?.(project, thread).catch(() => 'Project now:\nLive state is unavailable for this turn.');
+    let recall: MemoryRecall | undefined;
     try {
       launched = await this.#c.launcher.launch({ owner: { kind: 'thread', projectId: thread.projectId, id: thread.id }, turn, runtime: placement.runtime, modelId: placement.modelId,
         model: placement.model, modelLabel: labels.modelLabel, effort: placement.effortEffective, pinnedAccountId: placement.accountId,
         ...(placement.fixed.includes('account') ? { requiredAccountId: placement.accountId } : {}), permissions: 'write', cwd: thread.cwd,
         systemAppend: threadSystemAppend({ projectName: project.name, cwd: thread.cwd, isolation: thread.isolation, branch: thread.branch, baseBranch: thread.baseBranch,
           deviceName: this.#c.deviceName, testCommand: project.testCommand, gitPolicy: thread.gitPolicy }),
-        prompt: (resumed) => threadPrompt(thread, next.body, resumed && !thread.sessionContext?.needsFreshContext, next.reason), ...(thread.nativeSessionId ? { resume: thread.nativeSessionId } : {}),
-        safetyProfile: 'thread', timeoutMs: this.#c.timers.threadTurnTimeoutMs, tools, gitIdentityFrom: this.#c.worktrees.repository(project) });
+        prompt: async (resumed) => {
+          const continuing = resumed && !thread.sessionContext?.needsFreshContext;
+          if (!continuing && this.#c.recall) {
+            recall ??= await this.#c.recall(project, thread);
+            this.#c.store.updateLocal(thread.id, local => ({ ...local, memoryRecall: recall! }));
+          }
+          if (!now && !recall) return threadPrompt(thread, next.body, continuing, next.reason);
+          const context = [recall?.section, now].filter(Boolean).join('\n\n');
+          return continuing ? `${now ?? ''}\n\n${next.body}` : `${taskPrompt(thread.title, thread.task)}\n\n${context}${next.reason === 'task' ? '' : `\n\n${next.body}`}`;
+        }, ...(thread.nativeSessionId ? { resume: thread.nativeSessionId } : {}),
+        safetyProfile: 'thread', timeoutMs: this.#c.timers.threadTurnTimeoutMs, tools, gitIdentityFrom: this.#c.worktrees.repository(project), memoryMode: project.memory.mode });
     } catch (error) { await tools.close(); return { status: 'unavailable', error: this.#message(error) }; }
     if (launched.kind === 'unavailable') { await tools.close(); return { status: 'unavailable', error: launched.reason }; }
     const started = launched;
@@ -457,6 +472,7 @@ export class ThreadRunner {
       let outcome: TurnOutcome;
       // A rejected outcome means the process cleanup was not confirmed: its identity stays recorded for recovery.
       try { outcome = await execution.done; } catch { return { status: 'unconfirmed' }; }
+      await this.#c.captureTurn?.(project, this.#thread()).catch(error => this.#notice(thread, `Project memory capture will retry: ${this.#message(error)}`, 'error'));
       this.#c.store.updateLocal(thread.id, (local) => { const cleared = { ...local }; delete cleared.process; return cleared; });
       return { status: outcome.status, finalText: outcome.finalText, report: tools.report, ...(outcome.error ? { error: outcome.error.message } : {}) };
     } finally {
@@ -466,6 +482,11 @@ export class ThreadRunner {
   }
   #handlers(): ProjectToolHandlers {
     return {
+      capture: async (scope, payload) => {
+        if (scope.kind !== 'thread' || !this.isCurrent(scope.turn)) throw refuse(TOOL_NOT_IN_TURN, 403);
+        const thread = this.#thread(); if (payload?.sessionId && thread.nativeSessionId !== payload.sessionId) throw new Error('Capture needs this thread’s current session.');
+        await this.#c.captureTurn?.(await this.#c.project(scope.projectId), thread);
+      },
       isCurrent: (scope) => scope.kind === 'thread' && scope.threadId === this.threadId && this.isCurrent(scope.turn),
       call: async (scope, name, input, signal) => {
         if (scope.kind !== 'thread') throw refuse(TOOL_NOT_IN_TURN, 403);
@@ -479,7 +500,7 @@ export class ThreadRunner {
         }
         return this.#c.mail.threadTool(scope, name, input);
       },
-      memory: async (scope) => this.#c.memory(await this.#c.project(scope.projectId)),
+      memory: async (scope) => this.#c.memory(await this.#c.project(scope.projectId), scope),
     };
   }
   /** Step 9 in the D73 order. */

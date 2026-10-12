@@ -491,6 +491,8 @@ git(memoryPath, 'add', '-A'); git(memoryPath, 'commit', '-m', 'Seed memory brows
 writeFileSync(join(memoryPath, '.git/info/exclude'), '/CLAUDE.md\n'); symlinkSync('AGENTS.md', join(memoryPath, 'CLAUDE.md'));
 const noteTime = new Date('2026-09-20T12:00:00.000Z'); utimesSync(notePath, noteTime, noteTime);
 await application.conversations.saveProject({ schema: 'project-write-v1', revision: 0, project: ProjectSchema.parse({ schema: 'project-v1', id: 'memory_fixture', name: 'Public memory fixture', paths: { [application.device.deviceId]: memoryPath }, branchPolicy: 'main', testCommand: 'test -f AGENTS.md', memory: { mode: 'repo', dir: '.jevellan/memory' }, context: { state: 'none' } }) });
+const sharedMemoryPath = join(root, 'shared-memory-project'); git(root, 'clone', memoryOrigin, sharedMemoryPath);
+await application.conversations.saveProject({ schema: 'project-write-v1', revision: 0, project: ProjectSchema.parse({ schema: 'project-v1', id: 'shared_memory_fixture', name: 'Shared memory fixture', paths: { [application.device.deviceId]: sharedMemoryPath }, branchPolicy: 'main', testCommand: 'test -f AGENTS.md', memory: { mode: 'repo', dir: '.jevellan/memory' }, context: { state: 'none' } }) });
 for (const runtime of ['claude', 'codex']) {
   const id = `acc_rigging_${runtime}`;
   application.hub.put('accounts', id, AccountSchema, { schema: 'account-v1', id, runtime, label: runtime === 'claude' ? 'Rigging local fixture' : 'Rigging Codex fixture', kind: 'subscription', enabled: false, ceilingPct: 90, credential: 'per-device' }, 0);
@@ -686,6 +688,7 @@ const ControlNotebookSchema = z.strictObject({ schema: z.literal('fixture-notebo
 const ControlTokenSchema = z.strictObject({ schema: z.literal('fixture-github-token-v1'), saved: z.boolean() });
 const ControlAttachSchema = z.strictObject({ schema: z.literal('fixture-attach-v1'), threadId: z.string().min(1).max(200) });
 const ControlDevicesSchema = z.strictObject({ schema: z.literal('fixture-devices-v1'), action: z.enum(['prepare', 'low-disk', 'busy', 'healthy', 'orphan', 'reset', 'power-sleep', 'power-awake']) });
+const ControlMemorySchema = z.strictObject({ schema: z.literal('fixture-shared-memory-v1'), action: z.enum(['prepare', 'dream', 'suggest']) });
 async function projectControl(request, response) {
   const send = (status, value) => { response.writeHead(status, { 'Content-Type': 'application/json' }).end(JSON.stringify(value)); };
   const chunks = []; for await (const chunk of request) chunks.push(chunk);
@@ -694,7 +697,27 @@ async function projectControl(request, response) {
   const parse = (schema) => { const parsed = schema.safeParse(body); if (!parsed.success) send(400, { message: parsed.error.issues.map((issue) => issue.message).join(' ') }); return parsed.success ? parsed.data : undefined; };
   const pull = /^\/projects\/github\/(\d+)$/.exec(request.url);
   let input;
-  if (request.url === '/projects/devices' && (input = parse(ControlDevicesSchema))) {
+  if (request.url === '/projects/memory' && (input = parse(ControlMemorySchema))) {
+    const id = 'shared_memory_fixture', current = await application.state.projects.get(id), project = { ...current.project, memory: { ...current.project.memory, mode: 'hub' } };
+    if (current.project.memory.mode !== 'hub') await application.conversations.saveProject({ schema: 'project-write-v1', revision: current.revision, project });
+    const settings = await application.projectWork.admission.settings(id);
+    if (input.action === 'prepare') {
+      await application.projectHub.putSettings({ ...settings, memory: { mode: 'hub', capture: true, dreamMode: 'apply' }, nightlyWindow: { enabled: true, time: '23:59', timezone: 'Europe/Lisbon' } }, settings.revision);
+      const port = application.hubMemory.project(project, { kind: 'memory', provenance: { source: 'thread', runtime: 'codex', model: 'fixture' } });
+      if (!await port.findTitle('Project brief', AbortSignal.timeout(120000))) await port.write({ title: 'Project brief', content: 'Run npm test and include a CHANGELOG entry.' }, AbortSignal.timeout(120000));
+      const inbox = application.hubMemory.project(project, { kind: 'memory', provenance: { source: 'capture', runtime: 'claude', model: 'fixture' } }, undefined, undefined, 'inbox');
+      if (!await inbox.findTitle('Customer test environment', AbortSignal.timeout(120000))) await inbox.write({ title: 'Customer test environment', content: 'Set SANDBOX_DATA_DIR before running customer tests.' }, AbortSignal.timeout(120000));
+    } else {
+      const dream = application.projectWork.memoryProgramme.dream, commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: sharedMemoryPath, encoding: 'utf8' }).trim();
+      const state = await dream.begin(project, commit, { source: 'dream', runtime: 'codex', model: 'fixture' }, input.action === 'suggest' ? 'suggest' : 'apply');
+      const port = application.hubMemory.project(project, { kind: 'memory', provenance: state.provenance }, dream.staging(state));
+      const brief = await port.findTitle('Project brief', AbortSignal.timeout(120000)), inbox = application.hubMemory.list(id).find(note => note.permalink.startsWith('inbox/'));
+      await port.edit({ permalink: brief.permalink, operation: 'append', content: `Set SANDBOX_DATA_DIR for customer tests. Retained ${inbox.permalink}.` }, AbortSignal.timeout(120000));
+      await application.hubMemory.archive(project, { kind: 'memory', provenance: state.provenance }, { note: inbox.permalink, reason: 'Consolidated in Project brief.' }, AbortSignal.timeout(120000), dream.staging(state));
+      await dream.finish(project, 'Kept the test conventions and consolidated the inbox.');
+    }
+    send(200, { schema: 'fixture-memory-receipt-v1', ready: true });
+  } else if (request.url === '/projects/devices' && (input = parse(ControlDevicesSchema))) {
     if (input.action === 'prepare') {
       for (const app of [application, member]) application.devices.updateTags({ schema: 'device-tags-input-v1', deviceId: app.device.deviceId, tags: app === application ? ['mac', 'residential', 'browser-automation'] : ['linux', 'datacenter'] });
       for (const { project } of await application.state.projects.list()) {

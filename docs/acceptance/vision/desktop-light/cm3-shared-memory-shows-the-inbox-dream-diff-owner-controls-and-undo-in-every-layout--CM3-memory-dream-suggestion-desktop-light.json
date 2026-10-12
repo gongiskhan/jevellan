@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CM3 shared memory shows the inbox, dream diff, owner controls and Undo in every layout",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/screenshots/CM3-memory-dream-suggestion-desktop-light.png",
+  "expected": "the Jevellan web app \"CM3 memory dream suggestion\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"CM3 shared memory shows the inbox, dream diff, owner controls and Undo in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Modal content runs past the bottom of the viewport. The 'INBOX (FROM TODAY)' section is cut off at the modal's lower edge, so the user has to scroll to reach it. This is expected for a scrollable modal.",
+      "The diff block is truncated at its own scroll boundary, mid-hunk at '-updated: ...'. It reads as a scrollable region, but there's no visible scrollbar to show that more content exists.",
+      "The 'Run now' button is smaller and styled differently from the Apply/Discard buttons, so the button sizes look inconsistent.",
+      "The dream status reads 'suggested' as plain lowercase body text instead of a badge or label, so it's easy to miss."
+    ]
+  }
+}

@@ -428,8 +428,8 @@
   {
     "id": "coordinator-memory-terminal-p3",
     "title": "Shared hub memory, capture and nightly dream",
-    "why": "Relay a single notes store; capture/extract/recall across providers; consolidate with protected owner notes and Undo.",
-    "status": "planned"
+    "why": "Implemented hub notes Git history and one Basic Memory process, scoped mesh relay, incremental capture, extraction/inbox, recall/Project now, independent dream, actual counts and Undo. 129 affected backend cases pass after focused fixes; CM3 passes four layouts and twelve clear vision verdicts. Live provider acceptance remains blocked on owner activation inputs; see docs/acceptance/coordinator-memory-terminal.md.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "coordinator-memory-terminal-p4",
