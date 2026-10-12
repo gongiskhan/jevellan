@@ -314,7 +314,7 @@
   {
     "id": "hub-macbook-pro",
     "title": "Hub on the MacBook Pro",
-    "why": "Encrypted migration and apps-only guards implemented; Pro user service installed. Mini export is complete live, its copied archive matches and former authority is fenced. The first Pro import preserved background records and refused the destination; the corrected private helper retains the full Pro home and has eight passing recovery regressions plus eight existing migration tests. Pro retry, sign-in, Mini membership/retained URLs and LJ0 still require live completion; see docs/acceptance/hub-import-recovery-2026-10-12.md.",
+    "why": "Live Mini export, corrected Pro import and published 0.2.1 update are complete. The whole original Pro home and pilot backup are retained, old authority is fenced, update fingerprints/counts match and HTTPS readiness passes. Account sign-in/refresh, scoped Settings inputs, authenticated project bindings, Mini membership/retained URLs, Madrid join and complete LJ0 remain blocked; see docs/acceptance/pro-hub-021-live-2026-10-12.md.",
     "status": "in-progress"
   },
   {
@@ -404,7 +404,7 @@
   {
     "id": "loop-release-021",
     "title": "Projects loop release 0.2.1 and activation",
-    "why": "0.2.1 prepared with the shadow Ekoa preset, required result check, AC power warning and live hosted-minute report. Final complete backend 1,902/171 passes; all 272 unique four-layout browser cases have passing coverage through the full run and targeted reruns, with 488 clear live vision judgments and retained images. Typecheck/lint/build pass. The serious final risk-policy finding is corrected and the permitted second review finds no further serious issue. Mac/Linux packed commands and native terminal addons pass with no prohibited private paths; final documented payload checks and mandatory secret scans gate publication. Actual sandbox provider journeys, LJ9 and activation remain blocked on owner import/sign-in/Settings inputs and two clean watch nights.",
+    "why": "0.2.1 is published and active on the Pro after preserved import/update and healthy HTTPS checks. It ships shadow Ekoa, required result, AC power warning and the hosted-minute report. Final complete backend 1,902/171 and all 272 unique four-layout browser cases through full/targeted runs pass, with 488 clear live vision judgments; typecheck/lint/build, platform package checks and mandatory secret scans pass. The serious final risk-policy finding is corrected and the permitted second review finds no further serious issue. A private sandbox with real green CI and a separate Ekoa main runtime clone are ready; PR 208 is refreshed to 187ed029 with 26 nightly cases and CI lane passing. Actual provider journeys, LJ9 and full loop activation remain blocked on owner UI/account/Settings inputs, joins and two clean watch nights.",
     "status": "complete-with-blockers"
   }
 ]
