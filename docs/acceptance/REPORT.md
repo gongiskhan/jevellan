@@ -1555,3 +1555,67 @@ Live: prepare `/Users/ggomes/jevellan-projects/ekoa-code-runtime` on clean main,
 Live: PR 208 became conflicting after Ekoa main advanced to 3bf0e8e5, then advanced through the model and corpus updates to f3dcac65. Merge each main update into its authorized branch, preserving the legal-programme additions, model dependency/lockfile update and all other main work, and retain every journal section. Move D-CI-6 beside the prior CI entries so unrelated tail additions no longer conflict; all current-main journal bytes remain intact and the final merge is clean. Push 187ed029 without rewriting history; GitHub reports it mergeable. The diff still leaves deploy.yml and the runner hook identical to current main. Simulated: all 26 nightly regressions pass; CI lane lint/gates, typecheck and builds pass under Node 20.19.4. The configured commit-range secret scan passes before push. No production workflow, alert, hook reinstall or scheduler variable change occurs. PR 208 stays an owner merge item; merging changes nothing until the owner chooses jevellan, and github restores the chain from the next night.
 
 This checkpoint changes operational readiness and documentation, with no Jevellan runtime or UI source change and no release asset replacement. The previously completed full backend/browser/vision evidence belongs to the published 0.2.1 source. Documentation typecheck/lint, working-tree scan and mandatory history scan gate this main push. Real provider journeys, Ekoa shadow route and mirror effects remain blocked on owner inputs; no owner acceptance is claimed.
+
+## 2026-10-12 — Coordinator, shared memory and owner terminal P0
+
+The newest owner brief is saved outside Git at `/Users/ggomes/Downloads/BRIEF-coordinator-memory-terminal.md`, beside the loop brief and amendments. It wins on conflicts and preserves finished unaffected work. P0 changes documentation and roadmap only. Amendment 2 Parts 1–3 are pushed; 0.2.1 is published and running on the imported Pro hub. Activation continues alongside this new run. The owner inputs were requested together once and the owner replied "Some still pending". Live scenarios remain blocked; their ten-hour clock has not started. No owner acceptance is claimed.
+
+### Decision 703 — Persistent coordinator instead of forty-turn rotation
+
+Replaces the Projects brief 8.1 / coordinator session decision documented in docs/projects.md and COORDINATOR_SESSION_TURNS. Keep the session across turns, days and compactions. Fresh only for model/runtime/effort/account eligibility changes, missing session, device move or owner Fresh session. Add settings v3 compactAtPercent 50–90, default 70, to every Projects session, native threshold configuration, versioned compaction ledger receipts and next-turn fresh context. The test-only 15–49 override is refused in production; unsupported threshold behavior is explicitly recorded and visible.
+
+### Decision 704 — Transcript slices instead of metadata-only Projects capture
+
+Replaces docs/memory.md's "transcripts are never captured" decision and disabled Projects hook capture. Own end-of-turn signals and external-session lifecycle hooks record incremental transcript byte ranges on both providers. Capture defaults on, with per-project off. Redact secrets only. An extraction runs at most each 30 minutes plus window open when at least 4 KB waits, consumes up to 300 KB newest-first, writes zero to eight evidence-backed inbox notes and retries a failure once. Do not copy transcripts or native session identifiers into repository evidence or shared development handoffs.
+
+### Decision 705 — Writable shared hub memory instead of per-device read-only Projects memory
+
+Replaces docs/projects.md's read-only coordinator/thread memory and per-device Projects store decisions in hub mode. New projects default to hub; existing projects retain modes until an owner switch that imports copies once. Use one isolated Basic Memory process and private local notes Git repository per project on the hub, scoped mesh relay and the explicit offline line. Coordinator and threads can write/edit hub notes; reviews/verifications remain read-only; other modes keep their guards. Code supplies provenance and timestamps, and agents never edit owner notes. Conversations share the hub store without unrelated new features.
+
+### Decision 706 — Equivalent unattended coding access
+
+Replaces the workspace-write sandbox for Codex coding threads documented in docs/runtimes.md. Use danger-full-access with approval never, as the owner expressly requested; Claude bypassPermissions stays. Retain the Jevellan safety hook, deny git/file writes into another registered checkout or protected path, and add owner-editable protectedPaths (at most 20). Madrid's owner Ekoa checkout is protected and must remain on main. Coordinator stays read-only without shell/code-edit tools. This change is scoped to Projects coding threads, not unrelated Conversations.
+
+### Decision 707 — Shared numbered questions and owner-chat receipts
+
+Replaces unnumbered Waiting for you and panel-only answer recording. Cards, fresh context and every event block use identical oldest-first numbers. jevellan_answer_question requires an owner-message turn, validates option labels, quotes the owner's message and records owner-chat source; it completes the mirror without sending the coordinator a redundant decision-answer event. Card answers retain their existing path. The coordinator distributes chat answers only to the corresponding thread and lists open questions when asking or reporting status.
+
+### Decision 708 — Bounded repository-wide GitHub awareness
+
+Replaces the coordinator's own-thread-only GitHub visibility. Add jevellan_github read-only runs/run/job_log/pulls/pull/commits with versioned results, project token, 60-second request cache, secret redaction and output bounds, sharing amendment 2's request accounting. A thread gets only its own pull request and head-commit runs/logs. The coordinator diagnoses failed checks from actual job logs. No merge tool is added.
+
+### Decision 709 — Live context and recall instead of notebook-only knowledge
+
+Replaces Projects' absent recall and the notebook being described as session memory. Memory holds durable knowledge; the notebook holds coordinator instructions/plans/questions; computed Project now holds current state. First turns and post-compaction prompts recall Project brief and task-relevant notes with Jev/search-order fallback and Why evidence. Coordinator fresh context gets the brief and 30 recent titles. Every thread turn gets bounded other-thread and last-day merge state, never saved as memory.
+
+### Decision 710 — Independent nightly dream for hub memory
+
+Replaces hub-mode memory care's prior per-device checkout/publication behavior; repo/device care stays. Reuse its candidates in a Jev-placed high-effort read-only main worktree session that consolidates inbox, corrects knowledge, archives rather than deletes and preserves owner notes. Run independently at window open, or 03:00 hub time without a window, capped at two hours. Derive counts from the notes diff; one local dream commit carries the report and revert-based Undo. Apply and tell me defaults; Suggest only waits for Apply. Keep Project brief within 2,000 characters.
+
+### Decision 711 — Exact owner commands instead of pasted operational instructions
+
+Replaces the absence of structured owner-command handoff. Thread reports/questions accept up to five full commands with reason, device and folder. Copy and Run in Terminal also appear on shell-language fenced blocks. The owner tap runs without a second confirmation, records its terminal and returns completion/output once to the requester, starting the next turn. Unknown exit status uses the stated ten-second idle fallback; no success is inferred. Safety denials tell the session to put the exact necessary action in ownerCommands.
+
+### Decision 712 — Browser owner terminal instead of CLI-only takeover
+
+Replaces docs/projects.md's "There is no browser terminal" and the deferred owner-shell roadmap scope. Extend node-pty, existing owner authentication and mesh with session-bound one-time websocket tickets and the pinned xterm client. Preserve eight sessions/device, 2 MB replay, twelve-hour idle close, temporary shell integration, semantic command records and explicit approximate fallback. Project/device/thread entry points, mobile keys/dictation, copy/send and read-only agent terminal tools use the same sessions. Agents never send terminal input. Native dotfiles are not modified.
+
+### Decision 713 — Precise real scenarios instead of unresolved PJ-live acceptance
+
+Replaces the broad Projects live-journey plan for this extension. Build the specified real sandbox app and baseline; drive owner API and UI with structured A/B/C/D assertions. Gate two consecutive Claude Opus 5.5/high A→B and C passes, D four layouts, then report non-gating Codex GPT-6.1 Sol/high A and the extra failing B. Fix product failures without hints or weaker assertions. Start the ten-hour time box only at the first actual scenario, finish the current scenario when it expires, and hand off every failed assertion and evidence. Track time/tokens/cost by provider/scenario. Physical phone evidence remains separate.
+
+### Decision 714 — Release 0.3.0 while loop activation continues
+
+Replaces 0.2.1 as the next extension's release target, not its completed publication or installed rollback boundary. Build verified Mac/Linux 0.3.0 archives after full checks and the final review, install on the Pro retaining rollback and update joined members. Keep the ordered owner handoff first. Ekoa CI changes and Ekoa's scheduler switch remain amendment 2 work, outside this extension. Mini remains permanently apps-only.
+
+### Decision 715 — One owner and existing services
+
+Replaces any interpretation that this extension needs team privacy, per-person permissions or a parallel orchestration/memory system. Use the existing coordinator, bridge, memory, improver, relay and web app with the owner's existing authentication. Redact secrets; preserve other context. Retain the exact extraction/dream append copy, bounded schemas, isolated runtime homes and owner checkout guards. Build tests throughout, with no review passes before the single final crucial-issues review; only serious final findings are fixed, and a second review requires a serious first finding.
+
+### P0 evidence
+
+Live: source and Git state at 1a5da7cc are clean on main; prerequisite release 0.2.1 remains active; canonical AGENTS.md, current plans, shared Jevellan startup topic and peer observations were read. CLAUDE.md, PRD.md, PLANING.md and TASKS.md are absent locally. The original BRIEF.md is absent on the Pro and available read-only on Madrid; the new owner brief and existing phase decisions take precedence. CodeGraph confirms keepSession's forty-turn condition and Projects capture returning disabled. Shared memory observations are advisory; no overlapping tracked changes are present and no Madrid source is edited. The untracked brief, updated docs, source-grounded target and roadmap precede code changes.
+
+Simulated: no runtime behavior is changed or newly exercised in P0. Documentation/type/lint/whitespace and mandatory secret checks gate its push; exact results are appended below. Blocked: new live scenarios, Madrid sign-in/join and optional Ekoa mirror assertions pending owner inputs. Not run: P1–P6 source behavior, full closing checks, final review or 0.3.0 installation. The previously passing 0.2.1 suites are not evidence for new code.
+
+P0 verification: typecheck, lint, whitespace checks and the working-tree secret scan pass. Documentation-only changes require no new behavior test. The mandatory history scan runs during push.

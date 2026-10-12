@@ -1,4 +1,4 @@
-<!-- Owner amendment 2, 2026-10-12, takes precedence over the brief and amendment 1. Implementation evidence stays separate. -->
+<!-- Owner coordinator/memory/terminal brief, 2026-10-12, takes precedence over amendment 2 where it conflicts. Implementation evidence stays separate. -->
 # Goals, tasks and the daily loop
 
 Projects connects a coordinator, coding threads, pull requests and the owner's decisions. Its loop keeps useful work moving between owner messages: goals explain what matters, a visible task queue holds the work, nightly items run recurring review and checks before a gated deploy.
@@ -6,6 +6,18 @@ Projects connects a coordinator, coding threads, pull requests and the owner's d
 This document describes the intended complete product. Implementation and live evidence are tracked separately in the roadmap and acceptance report.
 
 Release 0.2.1 supersedes the prepared 0.2.0 for activation. The installed 0.1.0 remains available for installer rollback. Source and simulated verification do not activate the new hub: hidden migration input, isolated sign-ins, project/Ekoa Settings credentials and live device enrollment remain prerequisite owner actions. The closing activation handoff is in `docs/acceptance/loop-activation.md`.
+
+## Coordinator, memory and terminal extension
+
+The 12 October brief defines the next release, 0.3.0. P0 records the target; runtime implementation is not yet claimed. The phase table in PLAN.md and decisions 703–715 in the acceptance report distinguish planned, simulated, live and blocked evidence. Amendment 2 activation continues independently; 0.2.1 is already installed on the imported Pro hub with rollback retained.
+
+The coordinator keeps its session across days, including compactions, rather than rotating after 40 turns. All Projects sessions compact at a configurable 70% default, then receive fresh project context without losing their native session. The panel exposes context use, compactions and Fresh session. Open questions share oldest-first numbers across cards and prompts, and the coordinator can record and distribute several answers from one owner chat message. A scoped read-only GitHub tool covers runs, jobs/logs, any repository pull request and recent commits, with a 60-second cache and the existing request budget.
+
+New projects use one hub-hosted memory store shared by Claude and Codex, coordinators, threads and Conversations. Existing projects keep their mode until the owner switches. Durable knowledge belongs in memory; coordinator plans and pending questions belong in its notebook; Project now is computed live. Secret-redacted incremental transcript capture feeds a same-day inbox and nightly consolidation. The dream runs independently of ordered nightly items, protects owner notes, computes its counts from the notes diff, maintains Project brief and offers Undo.
+
+Coding threads have equivalent unattended access on both runtimes: Claude bypassPermissions and Codex danger-full-access with approval never. The safety hook remains and protects other registered checkouts and owner-configured paths. A refused or owner-reserved action is an exact owner command with Copy and Run in Terminal. Execution returns its command, exit status and output to the requesting session automatically.
+
+The owner terminal opens in project checkouts, thread worktrees or a device home, including member devices through the mesh. It supports phone keys and dictation, reconnectable scrollback, shell command records, plain-text copy and Send to… . Coordinator and threads can read project terminals but never type into them. See docs/projects.md and docs/memory.md for the target details. Live A/B/C/D scenarios, source checks and physical owner acceptance remain separate.
 
 ## The hub and devices
 

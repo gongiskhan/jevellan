@@ -1,6 +1,33 @@
 # Projects loop implementation plan
 
-Authority: the owner's approved plan, BRIEF-loop.md and BRIEF-loop-amendment-1.md and BRIEF-loop-amendment-2.md in Downloads. Amendment 2 wins on conflicts. Main only; phase checkpoints update roadmap and acceptance evidence before commit/push. Preserve completed work outside the amendment.
+Authority: the owner's 12 October coordinator, shared memory and terminal brief (Downloads/BRIEF-coordinator-memory-terminal.md), followed by amendment 2, amendment 1 and BRIEF-loop.md. The newest brief wins on conflicts. Main only; phase checkpoints update roadmap and acceptance evidence before commit/push. Preserve completed work outside the amendment.
+
+## Coordinator, shared memory and terminal run (0.3.0)
+
+Prerequisite met: amendment 2 Parts 1–3 are pushed and 0.2.1 is published and running on the Pro. Full loop activation continues in parallel; imported owner UI sign-in, isolated account sign-ins, Settings credentials and Madrid enrollment remain owner inputs. They were requested together once at the start. The owner replied that some remain pending. Build independent work while waiting; live scenarios stay blocked without their inputs.
+
+| Phase | Scope | Status and evidence |
+| --- | --- | --- |
+| P0 | Save the untracked brief; replacements, source inventory, plan, docs and roadmap | Complete; documentation only; decisions 703–715; typecheck/lint/whitespace/working-tree scan pass |
+| P1 | Persistent sessions, v3 settings, 70% compaction, runtime events and panel | Planned; unit and FakeRuntime integration; live C later |
+| P2 | Shared question numbering, owner-chat answers, bounded GitHub bridge | Planned; fake GitHub plus live sandbox calls; four-layout UI and vision |
+| P3 | Hub notes repository and relay; capture, extraction, inbox, recall, Project now, dream and Undo | Planned; real disposable Basic Memory, two local daemons and simulated runtime tests |
+| P4 | Codex full access with safety guards; protected paths and exact owner commands | Planned; safety regressions and UI; live Madrid session depends on sign-in/join |
+| P5 | Owner PTY terminals, mesh websocket relay, shell records, mobile client, copy/send/read and command return | Planned; real zsh/bash integration, relay/reconnect tests and four layouts with vision |
+| P6 | A→B twice consecutively, C twice, D in four layouts; extra failing B and non-gating Codex A | Blocked on owner inputs; live acceptance clock has not started |
+| Closing | Full checks, one crucial-issues review, 0.3.0 Mac/Linux, Pro/member update retaining rollback and handoff | Planned |
+
+Build on the existing coordinator, project bridge, memory, improver, mesh and web app. No parallel orchestrator or memory store; no coordinator shell or code-edit tools. Jev selects meaning and placement; code enforces scope, resource limits, timestamps and receipts. Keep Mini apps-only. Do not change Ekoa CI or its scheduler variable in this run.
+
+All Projects sessions get compactAtPercent 50–90 (default 70). Compaction keeps the native session and refreshes next-turn context. Production refuses the 15–49 test override. Questions use the same oldest-first numbering in cards and prompts; a coordinator can record chat answers only during an owner-message turn. GitHub reads share the existing token request budget and a 60-second cache.
+
+Hub mode is the default only for new projects; existing modes stay until explicitly switched. Copy prior notes once without modifying their source. Local note commits preserve history; owner notes remain immutable to agents. Capture records incremental native transcript ranges, redacting secrets only, and extracts durable notes at most every 30 minutes plus window open. The dream reuses memory care candidates, runs independently of ordered Nightly items, derives counts from actual changes, maintains Project brief and supports revert-based Undo. Repo/device behavior remains.
+
+The terminal uses the owner's existing login, daemon user and login shell, without editing dotfiles. It survives browser disconnects, retains 2 MB scrollback, records semantic command boundaries and falls back explicitly to approximate records. Agents receive read-only terminal tools; only the owner can send input. Owner commands show exact text and execute through the same terminal, with a completion message sent once to the requester.
+
+Acceptance uses the requested real Node 20 sandbox app, unadvertised test gotchas and baseline tag. Harness assertions inspect structured state before reply wording; never add hints to owner messages or weaken assertions. Fix a product failure and rerun the scenario from its start. Two consecutive Claude Opus 5.5/high A→B passes and C passes gate; D passes each phone/desktop light/dark layout. Codex GPT-6.1 Sol/high A is reported separately. The live clock starts only at the first scenario; stop new iterations after ten hours, finish the current scenario and hand off exact failures. Record tokens, cost and minutes by provider/scenario. Automated browser evidence does not claim the owner's phone acceptance.
+
+Every phase updates this plan, docs/loop.md, docs/memory.md, docs/projects.md, roadmap.json and acceptance evidence before its main commit/push. Run meaningful affected tests, typecheck and lint, browser/vision checks for affected UI, and secret scans before pushes. No review passes during implementation. The final crucial-issues review fixes serious findings only; a second is allowed only if the first found a serious issue. Native homes, owner checkouts and Garrison remain untouched. Save sanitized milestones to the shared Jevellan memory topic.
 
 ## Amendment 2 work order
 
