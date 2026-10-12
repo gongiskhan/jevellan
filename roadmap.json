@@ -314,7 +314,7 @@
   {
     "id": "hub-macbook-pro",
     "title": "Hub on the MacBook Pro",
-    "why": "Encrypted migration and apps-only guards implemented; Pro user service installed. Live import, sign-in, mini membership and LJ0 wait for owner input.",
+    "why": "Encrypted migration and apps-only guards implemented; Pro user service installed. Mini export is complete live, its copied archive matches and former authority is fenced. The first Pro import preserved background records and refused the destination; the corrected private helper retains the full Pro home and has eight passing recovery regressions plus eight existing migration tests. Pro retry, sign-in, Mini membership/retained URLs and LJ0 still require live completion; see docs/acceptance/hub-import-recovery-2026-10-12.md.",
     "status": "in-progress"
   },
   {

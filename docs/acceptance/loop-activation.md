@@ -2,7 +2,7 @@
 
 ## Remaining owner steps, in order
 
-1. Complete the hidden-passphrase [Mini export](/Users/ggomes/.jevellan-build/loop-owner-2026-10-11/1-Mini-export.command) and [Pro import](/Users/ggomes/.jevellan-build/loop-owner-2026-10-11/2-Pro-import.command). Retain the pilot backup and original Mini app files/URLs; never put the passphrase in chat. Their completion receipts are still absent at the 2026-10-12 checkpoint.
+1. Retry the corrected hidden-passphrase [Pro import](/Users/ggomes/.jevellan-build/loop-owner-2026-10-11/2-Pro-import.command) with the same migration passphrase. The Mini export is complete and its copied archive is verified; do not repeat it. The first Pro attempt preserved its data and refused background records from its initial daemon. The retry saves the entire original Pro home as a backup and creates a fresh destination without starting its daemon. Failed attempts restore that backup. Retain the pilot backup and original Mini app files/URLs; never put the passphrase in chat. [Recovery evidence](hub-import-recovery-2026-10-12.md) separates the completed export from the pending retry.
 2. After import, activate the verified 0.2.1 Mac archive on the Pro with the retained rollback; complete the readiness, HTTPS and migration checks before using its new Settings pages. The live AC setting is sleep=0, so no power command is needed (2026-10-12 read-only pmset checks). Settings → Devices warns if a hub's AC configuration allows sleep; Jevellan never changes power settings.
 3. Complete imported Codex sign-in in Jevellan UI on the Pro, and provide eligible isolated Claude/Codex accounts for the real cross-provider journeys.
 4. Enter sandbox and Ekoa GitHub tokens in project Settings and the Ekoa bearer token in Ekoa Settings. Ekoa GitHub permissions: Contents, Pull requests and Actions read/write; Checks, Commit statuses and Variables read.
@@ -17,7 +17,7 @@ This handoff does not claim activation or owner acceptance. Parts 1–3 are push
 
 ## Owner input checkpoint
 
-The prepared Mini export and Pro import terminals are waiting for hidden passphrase input. Enter the same migration passphrase in those terminals, never in chat or command arguments. The Mini must be stopped before export; its original app files, URLs and recoverable pilot backup are retained. Do not initialize an empty Pro hub over the pending import.
+The Mini export is complete; its encrypted archive has the same checksum on both Macs and its former-hub fence is present. The corrected Pro retry terminal awaits the same hidden migration passphrase, which was deliberately not saved. Enter it there, never in chat or command arguments. The retry retains the entire original Pro home and restores it if import fails. The original Mini app files and recoverable pilot backup remain retained; app URL and membership checks remain pending. Do not start the fresh destination daemon before import.
 
 After import, complete the imported Codex account sign-in in Jevellan Settings on the Pro. Enter the sandbox and Ekoa GitHub tokens in their project-scoped Settings pages and the Ekoa OAuth bearer token in Ekoa Settings. The Ekoa GitHub token needs Contents, Pull requests and Actions read/write; Checks, Commit statuses and Variables read. Ekoa MCP capability/authentication testing must pass before live mirroring; expired or unsupported authentication remains a blocker.
 

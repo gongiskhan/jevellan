@@ -1525,3 +1525,13 @@ Blocked live checks: hidden Mini export and Pro import receipts are still absent
 ### Decision 697 — Use the new Settings after updating the imported hub
 
 The owner-step order is import, update the Pro to 0.2.1 and check readiness/HTTPS, then isolated sign-in and scoped Settings entries. Project-scoped tokens and loop controls belong to the new application. Keep the existing installation and migration rollback boundaries separate; never start an empty hub over the pending import. Live journeys and owner acceptance follow readiness, rather than being inferred from archive checks.
+
+### Decision 698 — Preserve the Pro home before retrying import
+
+Live: the owner completed the encrypted Mini export. The 44,474,627-byte archive has matching checksums on both Macs; the former-hub fence and original service backup are present. The first Pro import preserved the destination and refused six background records created by the initial daemon, before any decryption or activation. No accounts, projects, conversations or stored secrets are present there. A running fresh installation was the wrong operational prerequisite.
+
+Repair the private owner helper without relaxing the product's freshness guard or changing the published 0.2.1 release. After hidden passphrase entry, stop the service, retain the entire original Pro home as a separate backup, prepare only its Pro identity and installation artifacts without starting the daemon, and call the unchanged atomic importer. Restore the original home after a failed attempt; retain a versioned recovery journal and all copies if recovery is uncertain. Do not repeat the completed Mini export. Native homes and owner checkouts remain untouched.
+
+Simulated: eight standalone recovery regressions pass, including the reproduced prior refusal, full-home retention, wrong-passphrase/damaged-archive rollback, both interrupted preparation boundaries and daemon exclusion. Fixture native homes remain byte-identical. The existing migration suite passes 8/8; typecheck and lint pass. No runtime source or browser behavior changed, so existing release browser evidence remains applicable. Private helpers and logs remain outside Git. See [recovery evidence](hub-import-recovery-2026-10-12.md).
+
+Blocked: the corrected Pro retry awaits the same hidden passphrase; no successful live import, migration rollback, retained app URL check, join or activation is claimed. The updated [activation handoff](loop-activation.md) begins with this retry. Working-tree and mandatory history secret scans gate the documentation checkpoint push.
