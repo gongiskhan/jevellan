@@ -1,0 +1,44 @@
+{
+  "schema": "scenario-usage-recovery-v1",
+  "label": "live",
+  "receipt": "docs/acceptance/scenarios/2026-10-13/C-run_508dab527f2f42c48b2987ce139ff9f7.json",
+  "accepted": false,
+  "throughAt": "2026-10-13T21:48:18.756Z",
+  "recoveredAt": "2026-10-13T21:52:20.137Z",
+  "sessions": [
+    {
+      "key": "a0329615c48df89b57b6998af843a537655210518d7668f2c9d090f1eb13e67f",
+      "runtime": "claude",
+      "model": "Claude Opus 5.5",
+      "inputTokens": 135282,
+      "outputTokens": 35103,
+      "costUsd": 6.947432399999999,
+      "costSource": "estimated",
+      "seconds": 173.009
+    },
+    {
+      "key": "56caab6f5a86be672a3ad9f7a70aee20a1867cfc252c1d7210f366907cbf4a18",
+      "runtime": "claude",
+      "model": "claude-opus-5-5",
+      "inputTokens": 1025,
+      "outputTokens": 2541,
+      "costUsd": 0.13065079999999998,
+      "costSource": "estimated",
+      "seconds": 45.91
+    },
+    {
+      "key": "974a9816f0764adbf3f132559907643ff614d547d16ea1504a0b923666152b8e",
+      "runtime": "claude",
+      "model": "claude-opus-5-5",
+      "inputTokens": 1010,
+      "outputTokens": 506,
+      "costUsd": 0.07262980000000001,
+      "costSource": "estimated",
+      "seconds": 9.347
+    }
+  ],
+  "observations": [
+    "Usage records come from runtime-reported turn outcomes. Missing tokens or cost remain unknown; minutes include concurrent sessions.",
+    "Read-only recovery of completed turns through the original failed receipt end. The original failure and incomplete collector are retained."
+  ]
+}

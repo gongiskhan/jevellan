@@ -10,7 +10,7 @@ import { ZodError } from 'zod';
 import {
   AccountSchema, ContextPanelSchema, Homes, MergeResultViewSchema, ProjectSchema, ProjectVisibilitySchema, ProjectWorkListViewSchema, ProjectWorkViewSchema, ThreadCreatedViewSchema,
   ThreadIndexSchema, ThreadMessageReceiptSchema, ThreadViewSchema, type Project,
-  ProjectEventFrameSchema,
+  ProjectEventFrameSchema, ProjectWorkTaskSchema,
 } from '../packages/core/dist/index.js';
 import { HubProjectAccess, HubUnavailable } from '../packages/mesh/dist/index.js';
 import { FakeRuntime, forThread, type FakeTurnStep } from '../packages/runtime-contract/dist/index.js';
@@ -100,6 +100,30 @@ afterEach(async () => {
   await new Promise<void>((resolve) => { server.close(() => resolve()); server.closeAllConnections(); }); await app.close(); await fake.close(); await github.close();
   rmSync(root, { recursive: true, force: true });
 });
+test('a known dispatched task stream waits for its thread index without changing unknown-thread refusals', { timeout: 60000 }, async () => {
+  const id = 'thread_index_pending', at = new Date().toISOString();
+  await app.projectWork.coordinators.ensureAssigned('project');
+  await app.projectWork.tasks.save(ProjectWorkTaskSchema.parse({ schema: 'project-work-task-v1', id: 'task_index_pending', projectId: 'project', revision: 0,
+    title: 'Arriving work', brief: 'Do the work.', kind: 'session', type: 'feature', goalId: null, source: 'owner', state: 'active', rank: '8', ownerRanked: false,
+    now: false, after: [], needs: [], dailyId: null, jobId: null, threadId: id, jobRunId: null, fixed: {}, createdAt: at, updatedAt: at }));
+  expect(await app.projectWork.threadOwner('project', id)).toBeNull();
+  expect((await request(`/api/projects/another/threads/${id}/events`)).status).toBe(404);
+  const arrival = (async () => {
+    await new Promise(resolve => setTimeout(resolve, 200));
+    await new HubProjectAccess(app.hub, app.device.deviceId).publishThread(ThreadIndexSchema.parse({ schema: 'project-thread-index-v1', revision: 0, id, projectId: 'project', title: 'Arriving work',
+      state: 'preparing', isolation: 'worktree', ownerDeviceId: app.device.deviceId, runtime: 'fake', modelLabel: 'Fixture', effort: 'high', accountLabel: 'Fixture', turns: 0, createdAt: at, updatedAt: at }), 1);
+  })();
+  const abort = new AbortController();
+  try {
+    const response = await fetch(`${base}/api/projects/project/threads/${id}/events`, { headers: { Cookie: cookie }, signal: abort.signal });
+    expect(response.status).toBe(200); await arrival;
+    const ledger = app.projectWork.ledgers.thread('project', id);
+    ledger.append({ type: 'notice', data: { schema: 'project-notice-v1', text: 'Arrived after dispatch.', kind: 'info' } });
+    const reader = response.body!.getReader(); let text = '';
+    while (!text.includes('Arrived after dispatch.')) { const value = await reader.read(); expect(value.done).toBe(false); text += new TextDecoder().decode(value.value); }
+  } finally { abort.abort(); await arrival; }
+});
+
 test('a dispatched thread stream opens from its owner index before the local thread arrives', { timeout: 60000 }, async () => {
   const id = 'thread_in_transit', at = new Date().toISOString();
   await new HubProjectAccess(app.hub, app.device.deviceId).publishThread(ThreadIndexSchema.parse({ schema: 'project-thread-index-v1', revision: 0, id, projectId: 'project', title: 'Arriving work',

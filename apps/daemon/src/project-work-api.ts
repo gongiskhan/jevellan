@@ -200,7 +200,7 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
     }
   }
   if (route.target === 'owner') {
-    const owner = await work.threadOwner(projectId, threadId);
+    const owner = await (route.name === 'thread-events' ? work.threadStreamOwner(projectId, threadId) : work.threadOwner(projectId, threadId));
     if (owner === null) throw failure(THREAD_NOT_FOUND, 404);
     if (owner !== app.device.deviceId) {
       if (caller.peer) throw failure(THREAD_NOT_FOUND, 404);

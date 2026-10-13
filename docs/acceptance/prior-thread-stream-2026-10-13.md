@@ -6,3 +6,10 @@ Decision 794 refines decision 737's authenticated thread stream. A remote thread
 - **Simulated:** API regression reproduces 404 before the repair and then receives the later event through the same open stream; unknown and other-project ids remain refused. Nineteen API/coordinator/harness cases and eight proxy cases pass. Typecheck, lint and build pass.
 - **Not run at this checkpoint:** exact C rerun and D layouts. Stage only the compiled API module in both owned uninstalled test copies after push; preserve immutable releases and installed services.
 - **Clock:** prior stop2026-10-14T04:15:59.903Z; cache/journal clocks unstarted and release0.3.4 remains queued.
+
+
+## Delayed index correction — decision795
+
+Decision795 completes decision794's remote stream repair. Second C passes C1–C3 again, then C4 returns404 before even the hub thread index arrives. A stream now waits up to ten seconds for the index only when an existing queued/active task in that project already names the thread. Unknown and other-project ids retain404; an unarrived known start gets an explicit409 instead of an unbounded wait. Once the owner index arrives, normal owner routing and the earlier ledger subscription apply. The new delayed-index regression fails before repair; all35 affected API/coordinator/harness/proxy/queue cases, typecheck/lint/build pass. Retain both failed C receipts and their bounded usage recoveries. Stage only the API and project-work modules in the private development copies after push, then rerun exact C. The original prior deadline and queued cache/journal clocks remain unchanged.
+
+The initial fix covers index-before-local-file; the second exact run exposes task-before-index. Both stages now have separate failing-before regressions. Completed-turn costs recovered through the original receipt end total USD7.150713 for the second C; missing/in-flight costs stay unknown. Current AC sleep is0. No extra review or acceptance waiver.

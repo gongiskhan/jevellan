@@ -549,6 +549,17 @@ export class ProjectWork {
     const index = (await this.#o.hub.thread(threadId))?.document;
     return index && index.projectId === projectId ? index.ownerDeviceId : null;
   }
+  /** A queued remote start can precede its index; an owner stream waits only for a known dispatched task. */
+  async threadStreamOwner(projectId: string, threadId: string): Promise<string | null> {
+    const owner = await this.threadOwner(projectId, threadId); if (owner !== null) return owner;
+    const pending = (await this.tasks.list(projectId)).some(task => task.threadId === threadId && ['queued', 'active'].includes(task.state));
+    if (!pending) return null;
+    for (let attempt = 0; attempt < 50; attempt++) {
+      await delay(200);
+      const arrived = await this.threadOwner(projectId, threadId); if (arrived !== null) return arrived;
+    }
+    throw refuse('This thread is still starting on its device. Try again shortly.', 409);
+  }
   /** Coordinators run on the device they are assigned to; the routes proxy another device's coordinator there (D266). */
   async #coordinatorHere(projectId: string): Promise<string> {
     await this.#project(projectId);
