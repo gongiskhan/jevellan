@@ -16,10 +16,10 @@ test('the GitHub CLI repository lookup uses the actual repository endpoint witho
     expect(github('actions/workflows')).toEqual(['api', 'repos/gongiskhan/jevellan-live-sandbox/actions/workflows', '--method', 'GET']);
   } finally { vi.unstubAllEnvs(); rmSync(bin, { recursive: true, force: true }); }
 });
-function client() {
+function client(codexModel = 'gpt-6.1-sol') {
   return { config: { proDeviceId: 'pro', madridDeviceId: 'madrid', projectId: 'sandbox_seed', githubTokenScope: 'project' },
     call: vi.fn(async (_method: string, path: string) => {
-      if (path === '/hub/config') return { configuration: { 'x-jevellan': { menu: ['claude', 'codex'].map(runtime => ({ runtime, model: runtime === 'claude' ? 'claude-opus-5-5' : 'gpt-6.1-sol', enabled: true, efforts: ['high'] })), decisions: { model: 'jev' } } } };
+      if (path === '/hub/config') return { configuration: { 'x-jevellan': { menu: ['claude', 'codex'].map(runtime => ({ runtime, model: runtime === 'claude' ? 'claude-opus-5-5' : codexModel, enabled: true, efforts: ['high'] })), decisions: { model: 'jev' } } } };
       if (path === '/hub/accounts') return { accounts: ['claude', 'codex'].map(runtime => ({ account: { runtime }, statuses: ['pro', 'madrid'].map(deviceId => ({ deviceId, auth: 'ready' })) })) };
       if (path === '/hub/devices/roster') return { devices: ['pro', 'madrid'].map(id => ({ device: { id }, status: 'online', revoked: false })) };
       if (path === '/hub/secrets/github?projectId=sandbox_seed') return { saved: true };
@@ -32,6 +32,13 @@ test('scoped live preflight reads only the explicitly selected project summary a
   expect(result.gaps).toEqual([]);
   expect(owner.call.mock.calls.every(([method]) => method === 'GET')).toBe(true);
   expect(owner.call.mock.calls.map(([, path]) => path)).not.toContain('/hub/secrets/github');
+});
+test('Claude gating needs an eligible Codex thread model; the non-gating Codex coordinator still requires Sol', async () => {
+  const owner = client('gpt-6-astra');
+  const secrets = { githubToken: token, jevKey: 'fixture-jev', visionToken: 'fixture-vision' };
+  const readGithub = () => ({ full_name: 'gongiskhan/jevellan-live-sandbox' });
+  expect((await setup.preflight(owner, 'claude', secrets, readGithub)).gaps).toEqual([]);
+  expect((await setup.preflight(owner, 'codex', secrets, readGithub)).gaps).toContain('The discovered codex menu must include gpt-6.1-sol with effort high.');
 });
 test('scoped reset readiness requires the ephemeral credential even when its source summary is saved', async () => {
   const owner = client();

@@ -10,9 +10,9 @@ import { assertSandbox, SANDBOX_FILES, SANDBOX_REPOSITORY, writeSandbox } from '
 export async function preflight(client, coordinator, secrets, readGithub = github) {
   const gaps = [], config = (await client.call('GET', '/hub/config')).configuration['x-jevellan'], accounts = (await client.call('GET', '/hub/accounts')).accounts;
   const models = {};
-  for (const [runtime, model] of [['claude', 'claude-opus-5-5'], ['codex', 'gpt-6.1-sol']]) {
-    models[runtime] = config.menu.find(row => row.runtime === runtime && row.model === model && row.enabled && row.efforts.includes('high'));
-    if (!models[runtime]) gaps.push(`The discovered ${runtime} menu must include ${model} with effort high.`);
+  for (const [runtime, model] of [['claude', 'claude-opus-5-5'], ['codex', coordinator === 'codex' ? 'gpt-6.1-sol' : null]]) {
+    models[runtime] = config.menu.find(row => row.runtime === runtime && (!model || row.model === model) && row.enabled && row.efforts.includes('high'));
+    if (!models[runtime]) gaps.push(model ? `The discovered ${runtime} menu must include ${model} with effort high.` : 'The discovered Codex menu must offer an enabled thread model with effort high.');
   }
   const roster = await client.call('GET', '/hub/devices/roster');
   for (const deviceId of [client.config.proDeviceId, client.config.madridDeviceId]) {
