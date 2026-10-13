@@ -1,0 +1,18 @@
+{
+  "schema": "managed-app-verification-v1",
+  "label": "live",
+  "at": "2026-10-13T23:21:49.562Z",
+  "scope": "same-device HTTP",
+  "ownerAcceptance": false,
+  "apps": [
+    {
+      "projectId": "live_day_5912107a8bbf4b4ab45414d7f270b371",
+      "threadId": "thread_01M4VR30JD1TFX950PYQV39X18",
+      "directory": "/home/ggomes/.jevellan-build/prior-scenarios-2026-10-13/member/worktrees/live_day_5912107a8bbf4b4ab45414d7f270b371/thread_01M4VR30JD1TFX950PYQV39X18",
+      "kind": "command",
+      "state": "running",
+      "access": "local",
+      "status": 200
+    }
+  ]
+}

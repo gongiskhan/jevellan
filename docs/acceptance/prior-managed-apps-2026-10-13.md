@@ -7,3 +7,6 @@ Decision796 refines the app-home confinement retained by decision626. A real san
 - **Not run:** real-provider preview retry on the fixed module and the new full backend result. Earlier unfinished full test exit130 is interrupted evidence, never a pass.
 
 The managed directory must be the calling project/thread path. Other runtime data, native agent folders, sibling threads and unsafe aliases gain no allowance. No new external command capability is exposed.
+
+
+Prior-P6 live checkpoint: the fourth exact C passes all four steps in13.6881minutes, with real Claude coordinator compaction, preserved invoice title rule, Codex compaction/same-session refreshed prompt and merged PR9/Done. State records consecutiveC1. Reported Claude totalUSD25.6181472; both Codex costs remain unknown. The separate owner-authorized post-scenario Merge-card action then squash-merges sandbox PR10 at888cfffbccb1e696f32c2b847d18a3bb99df1058 through its Madrid owner and confirms Done, proving decision797's real peer path; this is not owner acceptance. A same-device HTTP probe confirms a running managed-worktree command app returns200 on /invoices, proving decision796 without owner staging. The first probe mistakenly tried stopped historical app records and failed; the corrected read selects running apps, leaving the failed probe unclaimed. All original failed receipts remain.

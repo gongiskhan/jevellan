@@ -1,0 +1,248 @@
+{
+  "schema": "scenario-owner-action-v2",
+  "label": "live",
+  "accepted": false,
+  "scenario": "C",
+  "phase": "post-scenario peer verification",
+  "projectId": "live_day_5912107a8bbf4b4ab45414d7f270b371",
+  "threadId": "thread_01M4VR30JD1TFX950PYQV39X18",
+  "pullRequest": 10,
+  "checkedHead": "888cfffbccb1e696f32c2b847d18a3bb99df1058",
+  "at": "2026-10-13T23:19:42.663Z",
+  "action": "sandbox-ui-merge",
+  "authorization": "Existing owner authorization for live journeys to merge their own sandbox test pull requests; no Ekoa merge.",
+  "route": {
+    "schema": "merge-documents-view-v1",
+    "records": [
+      {
+        "schema": "merge-route-v1",
+        "id": "mroute_74dcc3862692f51cfe230d9b911e362a3eca73e4",
+        "projectId": "live_day_5912107a8bbf4b4ab45414d7f270b371",
+        "revision": 3,
+        "deviceId": "dev_01M4V38ABJAT5B8FEMBBD7KMC9",
+        "threadId": "thread_01M4VR30JD1TFX950PYQV39X18",
+        "commit": "2f92c1c6faf25526e3515f9022ea74aefbe9f2ff",
+        "at": "2026-10-13T23:12:22.792Z",
+        "prNumber": 10,
+        "questionSet": "m-v1",
+        "route": "ask-owner",
+        "source": "jev",
+        "reason": "Touches a risky area, changes stored data or production behaviour, or is large or hard to undo.",
+        "packet": {
+          "schema": "merge-route-state-v1",
+          "title": "Invoices: Add PDF download for invoices",
+          "task": {
+            "type": "feature",
+            "needs": [],
+            "goal": null
+          },
+          "summary": "Review revision complete in commit 0547144, clean worktree. PDF test now uses 1.25 and 7.50, with line totals 3.75/15.00 and invoice total 18.75; lineTotalCents unchanged. PDFKit is MIT licensed (verified installed LICENSE), chosen for Node streaming, tables and pagination. PDFs include invoice id, DD/MM/YYYY date, quantities, unit prices, line totals and shared invoice total. Called jevellan_app_start; verified returned browser link http://127.0.0.1:39097/invoices in real Chromium by clicking Download PDF and opening/parsing the downloaded invoice-1.pdf: 01/01/2026 and 25.00 match the row. Retained tests/setup.ts and UTC config because the existing baseline tests fail without TZ=UTC and SANDBOX_DATA_DIR; setup gives isolated disposable storage and restores the prior env. Parallel test work retains those baseline tests and relies on this setup. All local checks pass. Publication blocked: Jevellan PreToolUse rejected the requested git push because Jevellan handles it. Coordinator must publish 0547144, then verify CI on that head. Previous head 2f92c1c was green; no claim of green CI for this unpublished commit.",
+          "riskyAreas": "src/customers storage format",
+          "files": [
+            {
+              "path": "CHANGELOG.md",
+              "additions": 2,
+              "deletions": 0
+            },
+            {
+              "path": "package-lock.json",
+              "additions": 490,
+              "deletions": 0
+            },
+            {
+              "path": "package.json",
+              "additions": 5,
+              "deletions": 0
+            },
+            {
+              "path": "src/invoices/index.ts",
+              "additions": 1,
+              "deletions": 0
+            },
+            {
+              "path": "src/invoices/pdf.test.ts",
+              "additions": 36,
+              "deletions": 0
+            },
+            {
+              "path": "src/invoices/pdf.ts",
+              "additions": 30,
+              "deletions": 0
+            },
+            {
+              "path": "src/invoices/records.ts",
+              "additions": 6,
+              "deletions": 0
+            },
+            {
+              "path": "src/web/server.ts",
+              "additions": 23,
+              "deletions": 2
+            },
+            {
+              "path": "tests/browser/invoices.spec.ts",
+              "additions": 36,
+              "deletions": 0
+            },
+            {
+              "path": "tests/pdf-text.ts",
+              "additions": 17,
+              "deletions": 0
+            },
+            {
+              "path": "tests/setup.ts",
+              "additions": 15,
+              "deletions": 0
+            },
+            {
+              "path": "vitest.config.ts",
+              "additions": 7,
+              "deletions": 1
+            }
+          ],
+          "totalSize": 671,
+          "corrections": []
+        },
+        "calls": [
+          {
+            "schema": "jev-call-v1",
+            "kind": "merge",
+            "requestedModel": "jev-latest",
+            "returnedModel": "jev-1.13.0",
+            "usage": {
+              "input_tokens": 988,
+              "output_tokens": 45
+            },
+            "latencyMs": 258
+          }
+        ],
+        "probabilities": {
+          "merge": 0.13,
+          "test-then-merge": 0.36,
+          "ask-owner": 0.51
+        },
+        "state": "asked",
+        "failures": 0,
+        "notified": [
+          "ask-owner:0"
+        ],
+        "verificationRetries": 0,
+        "decisionId": "pdec_0c87698a39a5d22ca0a221b80d1b2d45c5f2c101",
+        "verificationId": null
+      },
+      {
+        "schema": "merge-route-v1",
+        "id": "mroute_f7f72fab9e3bee49d42c78cc80ed300425672c69",
+        "projectId": "live_day_5912107a8bbf4b4ab45414d7f270b371",
+        "revision": 3,
+        "deviceId": "dev_01M4V38ABJAT5B8FEMBBD7KMC9",
+        "threadId": "thread_01M4VR30JD1TFX950PYQV39X18",
+        "commit": "888cfffbccb1e696f32c2b847d18a3bb99df1058",
+        "at": "2026-10-13T23:17:13.224Z",
+        "prNumber": 10,
+        "questionSet": "m-v1",
+        "route": "ask-owner",
+        "source": "jev",
+        "reason": "Touches a risky area, changes stored data or production behaviour, or is large or hard to undo.",
+        "packet": {
+          "schema": "merge-route-state-v1",
+          "title": "Invoices: Add PDF download for invoices",
+          "task": {
+            "type": "feature",
+            "needs": [],
+            "goal": null
+          },
+          "summary": "Completed integration with PR #9. New head 888cfffbccb1e696f32c2b847d18a3bb99df1058 on jv/invoices-add-pdf-download-for-invoices-v39x18; clean worktree. Fetched origin/main (69620ad); merge was needed because CHANGELOG.md conflicted. Committed merge preserving both PRs' changelog entries. Main's tests/setup.ts, vitest.config.ts and all invoice/customer test files are unchanged, including test.fails cases. Full Vitest: 65 tests across 5 files, 56 passes plus 9 expected failures. Lint and check:changelog pass. Explicit Playwright invoices spec: all 3 tests pass. Managed app is still running at http://127.0.0.1:39097/invoices; confirmed page and PDF HTTP 200 with application/pdf for download. App left running. No push performed; ready for Jevellan publication to PR #10.",
+          "riskyAreas": "src/customers storage format",
+          "files": [
+            {
+              "path": "CHANGELOG.md",
+              "additions": 2,
+              "deletions": 0
+            },
+            {
+              "path": "package-lock.json",
+              "additions": 490,
+              "deletions": 0
+            },
+            {
+              "path": "package.json",
+              "additions": 5,
+              "deletions": 0
+            },
+            {
+              "path": "src/invoices/index.ts",
+              "additions": 1,
+              "deletions": 0
+            },
+            {
+              "path": "src/invoices/pdf.test.ts",
+              "additions": 36,
+              "deletions": 0
+            },
+            {
+              "path": "src/invoices/pdf.ts",
+              "additions": 30,
+              "deletions": 0
+            },
+            {
+              "path": "src/invoices/records.ts",
+              "additions": 6,
+              "deletions": 0
+            },
+            {
+              "path": "src/web/server.ts",
+              "additions": 23,
+              "deletions": 2
+            },
+            {
+              "path": "tests/browser/invoices.spec.ts",
+              "additions": 36,
+              "deletions": 0
+            },
+            {
+              "path": "tests/pdf-text.ts",
+              "additions": 17,
+              "deletions": 0
+            }
+          ],
+          "totalSize": 648,
+          "corrections": []
+        },
+        "calls": [
+          {
+            "schema": "jev-call-v1",
+            "kind": "merge",
+            "requestedModel": "jev-latest",
+            "returnedModel": "jev-1.13.0",
+            "usage": {
+              "input_tokens": 892,
+              "output_tokens": 45
+            },
+            "latencyMs": 254
+          }
+        ],
+        "probabilities": {
+          "merge": 0.32,
+          "test-then-merge": 0.16,
+          "ask-owner": 0.52
+        },
+        "state": "asked",
+        "failures": 0,
+        "notified": [
+          "ask-owner:0"
+        ],
+        "verificationRetries": 0,
+        "decisionId": "pdec_8b6ed42f7d80d75297142be464cb89a5cd6c8469",
+        "verificationId": null
+      }
+    ]
+  },
+  "observations": [
+    "Owner-authorized sandbox UI merge for thread_01M4VR30JD1TFX950PYQV39X18: Merge #10 Invoices: Add PDF download for invoices?"
+  ],
+  "after": {
+    "state": "done",
+    "prState": "merged"
+  }
+}
