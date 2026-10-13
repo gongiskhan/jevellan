@@ -514,5 +514,11 @@
     "title": "Prepare current-release provider profiles for live acceptance",
     "why": "Decisions 784\u2013786: retained rollback and reclaimed 7.7 GB; Pro disk guard passes. Actual uninstalled 0.3.3 Pro/0.3.2 Madrid profiles are joined with real Claude/Codex Ready, project-only tokens, protected paths, normal A/B compaction and test-only cutoff. Claude preflight passes. Sol 6.1 is not offered; non-gating Codex coordinator remains blocked. 22 affected cases/typecheck/lint pass. Formal clock and new cache/journal clocks unstarted.",
     "status": "complete-with-blockers"
+  },
+  {
+    "id": "activation-independent-worktree-tasks",
+    "title": "Queue independent worktree tasks concurrently",
+    "why": "Real A1 fails before repair: the old prompt serializes two independent tasks only because both edit the changelog. Keep exact assertions/messages. Use after only for required results; independent worktree tasks may share files, Main edits remain serialized. 32 affected backend cases/build/typecheck/lint pass. Private current-release guidance overlay verified; original modules/releases/production unchanged. Live rerun pending within the original ten-hour clock. Decision 787.",
+    "status": "complete-with-blockers"
   }
 ]
