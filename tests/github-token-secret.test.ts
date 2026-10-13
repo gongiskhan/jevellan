@@ -8,6 +8,7 @@ import type { AddressInfo } from 'node:net';
 import { DeviceSchema, ProjectSchema, GitHubTokenStateSchema, Homes, SecretRedactor } from '../packages/core/dist/index.js';
 import { HubUnavailable, MemberHubClient, MemberState, joinHub } from '../packages/mesh/dist/index.js';
 import { Application, createDaemon } from '../apps/daemon/dist/index.js';
+import { registerSandboxProject } from '../scripts/live/setup.mjs';
 
 let root: string; let app: Application; let server: Server; let base: string; let cookie: string;
 const empty = { schema: 'empty-request-v1' };
@@ -32,6 +33,18 @@ async function member(id: string, fetcher?: typeof fetch) {
   return { state: new MemberState(client, ['codex']), redactor, token: joined.membership.token };
 }
 const stored = () => JSON.stringify(app.hub.db.prepare('SELECT document FROM documents UNION ALL SELECT document FROM secrets').all());
+
+test('fresh live sandbox credentials use the real owner API and encrypted project vault without setting the default', async () => {
+  const value = githubToken();
+  const project = ProjectSchema.parse({ schema: 'project-v1', id: 'live_sandbox', name: 'Live sandbox', remoteUrl: 'https://github.com/gongiskhan/jevellan-live-sandbox.git', paths: {}, branchPolicy: 'external', githubTokenScope: 'project', memory: { mode: 'hub', dir: 'memory' }, context: { state: 'none' } });
+  await registerSandboxProject({ call: async (method: string, path: string, input: unknown) => {
+    const response = await request(path, method, input); expect(response.status).toBe(200); return response.json();
+  } }, project, { githubToken: value });
+  expect(await app.state.github.credential('live_sandbox')).toBe(value);
+  expect(await app.state.github.credential()).toBeUndefined();
+  expect(await (await request('/hub/secrets/github')).json()).toMatchObject({ saved: false });
+  expect(stored()).not.toContain(value);
+});
 
 test('project tokens stay independent across members, and a required scope never borrows the default credential', async () => {
   for (const id of ['sandbox', 'ekoa', 'legacy']) await app.state.projects.put(ProjectSchema.parse({ schema: 'project-v1', id, name: id, paths: {}, branchPolicy: 'external', memory: { mode: 'device', dir: 'memory' }, context: { state: 'none' }, ...(id !== 'legacy' ? { githubTokenScope: 'project' } : {}) }), 0);

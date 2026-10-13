@@ -8,7 +8,7 @@ const id = z.string().regex(/^[A-Za-z0-9_-]+$/u), absolute = z.string().refine(i
 export const LiveConfigSchema = z.strictObject({ schema: z.literal('live-scenarios-config-v1'),
   hub: z.url(), storageState: absolute, stateFile: absolute,
   repository: z.literal('gongiskhan/jevellan-live-sandbox'), projectPrefix: id.default('live_day'),
-  projectId: id.optional(), proDeviceId: id, madridDeviceId: id,
+  projectId: id.optional(), githubTokenScope: z.enum(['shared', 'project']).default('shared'), proDeviceId: id, madridDeviceId: id,
   proCheckout: absolute, madridCheckout: absolute,
   madridHost: z.string().regex(/^(?!-)[A-Za-z0-9._-]+$/u).default('dev-madrid'), madridNode: absolute,
   hubHome: absolute, output: z.string().default('docs/acceptance/scenarios'),

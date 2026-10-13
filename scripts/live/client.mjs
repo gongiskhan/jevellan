@@ -21,7 +21,7 @@ export function command(executable, args, options = {}) {
 }
 export function github(path, { method = 'GET', input } = {}) {
   // The owner's authorized CLI supplies its saved login; no token is extracted or written by the harness.
-  const args = ['api', `repos/${SANDBOX_REPOSITORY}/${path}`, '--method', method];
+  const args = ['api', `repos/${SANDBOX_REPOSITORY}${path ? `/${path}` : ''}`, '--method', method];
   if (input !== undefined) args.push('--input', '-');
   return JSON.parse(command('gh', args, input === undefined ? {} : { input: JSON.stringify(input) }) || 'null');
 }

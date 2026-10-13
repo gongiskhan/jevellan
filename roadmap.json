@@ -502,5 +502,11 @@
     "title": "Measure real cache windows and release",
     "why": "Queued; eight-hour build and three-hour L1\u2013L3 clocks unstarted. Existing 0.3.2/0.3.3 releases preserved; owner approves next unused 0.3.4 instead of the brief's older target. Decision 781.",
     "status": "planned"
+  },
+  {
+    "id": "activation-scoped-scenario-harness",
+    "title": "Keep live scenario resets project-scoped",
+    "why": "Prior P6 preparation under decisions 782\u2013783. Fresh sandbox projects save the existing ephemeral scoped token through the owner API, never the default. GitHub root lookup regression fixed; real repository/Actions/Variables reads pass. 21 affected cases, typecheck/lint/build pass. Requested Sol is disabled; uninstalled profile preparation and formal acceptance remain pending. New cache/journal clocks unstarted.",
+    "status": "complete-with-blockers"
   }
 ]

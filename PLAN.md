@@ -48,6 +48,8 @@ The P6 command is `node scripts/live/scenarios.mjs --scenario all --coordinator 
 
 Every phase updates this plan, docs/loop.md, docs/memory.md, docs/projects.md, roadmap.json and acceptance evidence before its main commit/push. Run meaningful affected tests, typecheck and lint, browser/vision checks for affected UI, and secret scans before pushes. No review passes during implementation. The final crucial-issues review fixes serious findings only; a second is allowed only if the first found a serious issue. Native homes, owner checkouts and Garrison remain untouched. Save sanitized milestones to the shared Jevellan memory topic.
 
+Prior live-scenario preparation (decisions 782–783): the harness now supports explicit project-only credentials across fresh logical sandbox resets through the existing owner API, with no default-token save. Real GitHub preflight access passes after correcting the repository root's trailing slash. Twenty-one affected backend cases, typecheck/lint/build pass. Dedicated test entries are available on Madrid; their validity is not inferred. The requested Sol menu choice is currently disabled and accelerated B/C need an uninstalled real-provider profile. Formal A–D and the subsequent cache/journal clocks remain unstarted. See docs/acceptance/prior-scenarios-preparation-2026-10-13.md.
+
 ## Amendment 2 work order
 
 1. Part 1 (pushed: Ekoa 30dffb6c, refreshed at 187ed029): refresh Ekoa PR 208 onto current main and implement the reversible scheduler switch, exact SHA inputs and missed-night alert. The follow-up retains main f3dcac65, the legal-programme, weekly model and corpus updates, and every journal addition; 26 nightly regressions and the CI lane pass. No deploy.yml or runner-hook changes; owner merge remains pending.

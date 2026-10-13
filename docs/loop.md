@@ -29,6 +29,8 @@ Coding threads have equivalent unattended access on both runtimes: Claude bypass
 
 The owner terminal opens in project checkouts, thread worktrees or a device home, including member devices through the mesh. It supports phone keys and dictation, reconnectable scrollback, shell command records, plain-text copy and Send to… . Coordinator and threads can read project terminals but never type into them. See docs/projects.md and docs/memory.md for the target details. Live A/B/C/D scenarios, source checks and physical owner acceptance remain separate.
 
+Prior live-scenario preparation (decisions 782–783): the harness now supports explicit project-only credentials across fresh logical sandbox resets through the existing owner API, with no default-token save. Real GitHub preflight access passes after correcting the repository root's trailing slash. Twenty-one affected backend cases, typecheck/lint/build pass. Dedicated test entries are available on Madrid; their validity is not inferred. The requested Sol menu choice is currently disabled and accelerated B/C need an uninstalled real-provider profile. Formal A–D and the subsequent cache/journal clocks remain unstarted. See docs/acceptance/prior-scenarios-preparation-2026-10-13.md.
+
 ## The hub and devices
 
 The MacBook Pro is the hub and primary working device. Supported encrypted hub export and import preserve accounts, the vault, configuration, Rigging, projects, notebooks, history and project work. Export requires a stopped daemon; import validates the manifest and activates atomically with rollback. The destination has its own device identity. Codex subscription authentication is not transferred: imported accounts need sign-in through Settings.

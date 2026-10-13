@@ -48,7 +48,7 @@ export async function runLive({ plan, config, state, secrets, output = 'docs/acc
         throw blocked('B continues a successful A on the same project and coordinator; no intervening reset or fabricated A state is allowed.');
       if (item.scenario !== 'B') prepareSandbox(config);
       if (item.scenario !== 'B') state.lastA = null;
-      const projectId = item.scenario === 'B' ? state.lastA.projectId : await setup(client, state, item.coordinator, available.models);
+      const projectId = item.scenario === 'B' ? state.lastA.projectId : await setup(client, state, item.coordinator, available.models, secrets);
       await client.watch(projectId); recorder.begin(projectId); saveState(config.stateFile, state);
       await implementations[item.scenario](client, projectId, recorder, { ...secrets, jevModel: available.jevModel, ...item });
     } catch (failure) { error = failure; if (!recorder.receipt.steps.length && !failure.blocked) recorder.receipt.observations.push(`Setup failed: ${failure.message}`); }
@@ -74,7 +74,7 @@ export async function main(argv = process.argv.slice(2)) {
   const plan = planFor(values.scenario, values.coordinator, values.layout, values['failing-suite']); let config;
   const path = values.config ?? process.env.JEVELLAN_LIVE_CONFIG; if (path) config = LiveConfigSchema.parse(JSON.parse(readFileSync(resolve(path), 'utf8')));
   const state = config ? loadState(config.stateFile) : LiveStateSchema.parse({ schema: 'live-scenarios-state-v1' });
-  const secrets = { jevKey: process.env.JEVELLAN_TEST_JEV_KEY, visionToken: process.env.JEVELLAN_TEST_CLAUDE_TOKEN };
+  const secrets = { jevKey: process.env.JEVELLAN_TEST_JEV_KEY, visionToken: process.env.JEVELLAN_TEST_CLAUDE_TOKEN, githubToken: process.env.JEVELLAN_TEST_GITHUB_TOKEN };
   if (values.prepare) { if (!config) throw blocked('Preparation needs the private live config.'); const client = await OwnerClient.connect(config); try { const available = await preflight(client, values.coordinator, secrets); if (available.gaps.length) throw blocked(available.gaps.join('\n')); state.baseline = prepareSandbox(config); saveState(config.stateFile, state); } finally { await client.close(); } }
   const results = await runLive({ plan, config, state, secrets }); if (results.some(result => !result.receipt.passed)) process.exitCode = 1; return results;
 }

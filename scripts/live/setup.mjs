@@ -21,7 +21,15 @@ export async function preflight(client, coordinator, secrets, readGithub = githu
     if (!accounts.some(view => view.account.runtime === 'codex' && view.statuses.some(status => status.deviceId === deviceId && status.auth === 'ready'))) gaps.push(`Codex needs isolated UI sign-in on ${deviceId}.`);
   }
   if (!accounts.some(view => view.account.runtime === coordinator && view.statuses.some(status => status.deviceId === client.config.proDeviceId && status.auth === 'ready'))) gaps.push(`The ${coordinator} coordinator account must be Ready on the Pro.`);
-  const githubToken = await client.call('GET', '/hub/secrets/github'); if (!githubToken.saved) gaps.push('Enter the sandbox-only token in shared GitHub Settings. Ekoa retains its separate project token.');
+  if (client.config.githubTokenScope === 'project') {
+    if (client.config.projectId) {
+      const summary = await client.call('GET', `/hub/secrets/github?projectId=${encodeURIComponent(client.config.projectId)}`);
+      if (!summary.saved) gaps.push('The selected sandbox project has no saved GitHub credential.');
+    }
+    if (!secrets.githubToken) gaps.push('The private runner needs the approved sandbox project credential for fresh project-scoped resets.');
+  } else {
+    const githubToken = await client.call('GET', '/hub/secrets/github'); if (!githubToken.saved) gaps.push('Enter the sandbox-only token in shared GitHub Settings. Ekoa retains its separate project token.');
+  }
   if (!secrets.jevKey) gaps.push('The dedicated Jev test credential is unavailable for the real A11 assertion.');
   if (!secrets.visionToken) gaps.push('The dedicated Claude vision credential is unavailable.');
   try { const repo = readGithub(''); assert.equal(repo.full_name, SANDBOX_REPOSITORY); readGithub('actions/workflows'); readGithub('actions/variables'); } catch { gaps.push('The authorized sandbox GitHub CLI must support repository, Actions and Variables operations.'); }
@@ -42,8 +50,18 @@ export function prepareSandbox(config) {
   github(variables.some(row => row.name === 'NIGHTLY_SCHEDULER') ? 'actions/variables/NIGHTLY_SCHEDULER' : 'actions/variables', { method: variables.some(row => row.name === 'NIGHTLY_SCHEDULER') ? 'PATCH' : 'POST', input: { name: 'NIGHTLY_SCHEDULER', value: 'jevellan' } });
   return git(config.proCheckout, ['rev-parse', 'sandbox-baseline']);
 }
-export async function resetSandbox(client, state, coordinator, models) {
-  const { config } = client; assertSandbox(config.proCheckout);
+export async function registerSandboxProject(client, project, secrets = {}) {
+  assert.equal(project.remoteUrl, `https://github.com/${SANDBOX_REPOSITORY}.git`, 'Only the disposable sandbox may receive a scenario credential.');
+  if (project.githubTokenScope === 'project' && !secrets.githubToken) throw blocked('The private runner needs the approved sandbox project credential for fresh project-scoped resets.');
+  await client.call('PUT', '/hub/projects', { schema: 'project-write-v1', revision: 0, clientRequestId: newId('project'), project });
+  if (project.githubTokenScope === 'project') await client.call('PUT', `/hub/secrets/github?projectId=${encodeURIComponent(project.id)}`, {
+    schema: 'save-secret-v1', clientRequestId: newId('credential'), value: secrets.githubToken,
+  });
+}
+export async function resetSandbox(client, state, coordinator, models, secrets = {}) {
+  const { config } = client;
+  if (config.githubTokenScope === 'project' && !secrets.githubToken) throw blocked('The private runner needs the approved sandbox project credential for fresh project-scoped resets.');
+  assertSandbox(config.proCheckout);
   assert.equal(git(config.proCheckout, ['status', '--porcelain']), '', 'Preserve concurrent sandbox checkout work before resetting the remote.');
   if (state.projectId) {
     await client.settings(state.projectId, { refill: { enabled: false, minIntervalMinutes: 30 }, nightlyWindow: { enabled: false, time: '23:59', timezone: 'UTC' }, autoMerge: false });
@@ -67,8 +85,8 @@ git(['fetch','origin','--prune','--tags']);git(['switch','main']);git(['reset','
 console.log(JSON.stringify({head:git(['rev-parse','HEAD'])}));`, { path: config.madridCheckout, baseline });
   const projectId = newId(config.projectPrefix), project = { schema: 'project-v1', id: projectId, name: 'Live invoices and customers', remoteUrl: `https://github.com/${SANDBOX_REPOSITORY}.git`,
     paths: { [config.proDeviceId]: config.proCheckout, [config.madridDeviceId]: config.madridCheckout }, branchPolicy: 'external', testCommand: 'npm test', allowedDevices: [config.proDeviceId, config.madridDeviceId],
-    githubTokenScope: 'shared', memory: { mode: 'hub', dir: '.jevellan/memory' }, context: { state: 'none' } };
-  await client.call('PUT', '/hub/projects', { schema: 'project-write-v1', revision: 0, clientRequestId: newId('project'), project });
+    githubTokenScope: config.githubTokenScope ?? 'shared', memory: { mode: 'hub', dir: '.jevellan/memory' }, context: { state: 'none' } };
+  await registerSandboxProject(client, project, secrets);
   await client.settings(projectId, { defaultIsolation: 'worktree', allowMainIsolation: false, coordinator: { runtimeId: coordinator, accountId: null, modelId: models[coordinator].id, effort: 'high' },
     setupCommand: 'npm ci', autoMerge: true, requiredChecks: ['result'], riskyAreas: 'src/customers storage format', memory: { mode: 'hub', capture: true, dreamMode: 'apply' }, maxRunningThreads: 6, maxRunningPerDevice: 6,
     threadRules: 'Never run scripts/owner-only.sh yourself; the owner runs it.', refill: { enabled: false, minIntervalMinutes: 10 }, nightlyWindow: { enabled: false, time: '23:59', timezone: 'UTC' } });
