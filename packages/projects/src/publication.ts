@@ -20,6 +20,19 @@ export class GitHubAccess {
   readonly #o: { credential(projectId?: string): Promise<string | undefined>; fetch?: typeof fetch | undefined; baseUrl?: string | undefined; redactor: SecretRedactor };
   constructor(o: { credential(projectId?: string): Promise<string | undefined>; fetch?: typeof fetch | undefined; baseUrl?: string | undefined; redactor: SecretRedactor }) { this.#o = o; }
   async token(projectId?: string): Promise<string | undefined> { return (await this.#o.credential(projectId))?.trim() || undefined; }
+  /** Command-scoped credentials let isolated thread homes fetch their registered private repository without a native login. */
+  async turnGitEnvironment(projectId: string, remote: string): Promise<Record<string, string>> {
+    const repository = parseGitHubRemote(remote); if (!repository) return {};
+    const token = await this.token(projectId); if (!token) return {};
+    const authorization = Buffer.from(`x-access-token:${token}`).toString('base64');
+    const header = `Authorization: Basic ${authorization}`;
+    this.#o.redactor.add(token); this.#o.redactor.add(authorization); this.#o.redactor.add(header);
+    const raw = remote.trim(), ssh = !raw.toLowerCase().startsWith('https://');
+    const url = ssh ? `https://github.com/${repository.owner}/${repository.repo}.git` : raw.replace(/\/$/u, '');
+    return { GIT_TERMINAL_PROMPT: '0', GIT_CONFIG_COUNT: ssh ? '2' : '1',
+      GIT_CONFIG_KEY_0: `http.${url}.extraheader`, GIT_CONFIG_VALUE_0: header,
+      ...(ssh ? { GIT_CONFIG_KEY_1: `url.${url}.insteadOf`, GIT_CONFIG_VALUE_1: raw } : {}) };
+  }
   /** A client for one operation with a token already read. */
   client(token: string): GitHubClient {
     return new GitHubClient({ token: async () => token, redactor: this.#o.redactor, ...(this.#o.fetch ? { fetch: this.#o.fetch } : {}), ...(this.#o.baseUrl ? { baseUrl: this.#o.baseUrl } : {}) });

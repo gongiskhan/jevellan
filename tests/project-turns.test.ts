@@ -116,6 +116,34 @@ function request(over: Partial<LaunchRequest> = {}): LaunchRequest {
 }
 const done: FakeTurnStep = () => ({ status: 'completed' });
 
+test('thread turns receive current project Git credentials without changing account homes or granting them to coordinators', async () => {
+  const calls: Array<{ projectId: string; cwd: string }> = [];
+  let credential = 'first-ephemeral-value';
+  const { launcher: value } = launcher([status('acc_work')], undefined, { ...{
+    threadGitEnvironment: async (projectId: string, cwd: string) => {
+      calls.push({ projectId, cwd });
+      return { GIT_CONFIG_COUNT: '1', GIT_CONFIG_KEY_0: 'http.https://github.com/owner/private.git.extraheader', GIT_CONFIG_VALUE_0: credential };
+    },
+  } });
+  for (const turn of [1, 2]) {
+    credential = turn === 1 ? 'first-ephemeral-value' : 'rotated-ephemeral-value';
+    fake.enqueueTurn(done);
+    const result = await value.launch(request({ turn, ...(turn > 1 ? { resume: 'stored-session' } : {}) }));
+    if (result.kind !== 'started') throw new Error(result.reason);
+    expect(fake.turnStarts.at(-1)?.launch?.env?.GIT_CONFIG_VALUE_0).toBe(credential);
+    expect(fake.turnStarts.at(-1)?.launch?.env?.HOME).toBeUndefined();
+    expect(fake.turnStarts.at(-1)?.launch?.mcpServers?.jevellan?.env?.GIT_CONFIG_VALUE_0).toBeUndefined();
+    await result.run.done; await result.run.terminate(); await result.release();
+  }
+  expect(calls).toEqual([{ projectId: 'proj_a', cwd: request().cwd }, { projectId: 'proj_a', cwd: request().cwd }]);
+  fake.capabilities.readOnlyEnforced = true; fake.enqueueTurn(done);
+  const result = await value.launch(request({ owner: { kind: 'coordinator', projectId: 'proj_a', id: 'proj_a' }, permissions: 'read-only', safetyProfile: 'coordinator' }));
+  if (result.kind !== 'started') throw new Error(result.reason);
+  expect(calls).toHaveLength(2);
+  expect(fake.turnStarts.at(-1)?.launch?.env?.GIT_CONFIG_VALUE_0).toBeUndefined();
+  await result.run.done; await result.run.terminate(); await result.release();
+});
+
 test('worktree turns refresh registered and protected targets on every resumed launch; main isolation retains its own controls', async () => {
   let protectedPaths = [join(root, 'checkout')];
   const { launcher: value } = launcher([status('acc_work')], undefined, { protectedPaths: async () => protectedPaths });

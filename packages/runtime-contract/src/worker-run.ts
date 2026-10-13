@@ -4,13 +4,13 @@ import { createInterface } from 'node:readline';
 import { realpathSync } from 'node:fs';
 import { isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { minimalEnvironment, nativeSetup, removeNativeGeneration, SecretRedactor } from '@jevellan/core';
+import { minimalEnvironment, nativeSetup, removeNativeGeneration, SecretRedactor, THREAD_GIT_ENV_KEYS } from '@jevellan/core';
 import { AsyncQueue } from './queue.js';
 import { groupAlive, terminateGroup, terminateDescendants, rememberProcessTree, identifySpawnedGroup, type NativeProcess } from './process-group.js';
 import { StretchInputSchema, TurnInputSchema, WorkerCommandSchema, WorkerMessageSchema, type RuntimeContext, type RuntimeEvent, type RunResult, type StretchInput, type StretchRun, type TurnInput, type WorkerCommand } from './contract.js';
 
 // Git identity keys reach thread turns only (stretches never set them): agents commit with the owner's identity, not the account home's.
-const LAUNCH_KEYS = ['JEVELLAN_STRETCH_TOKEN', 'JEVELLAN_DAEMON_URL', 'JEVELLAN_PROJECT_MEMORY_MODE', 'GIT_AUTHOR_NAME', 'GIT_AUTHOR_EMAIL', 'GIT_COMMITTER_NAME', 'GIT_COMMITTER_EMAIL'];
+const LAUNCH_KEYS = ['JEVELLAN_STRETCH_TOKEN', 'JEVELLAN_DAEMON_URL', 'JEVELLAN_PROJECT_MEMORY_MODE', 'GIT_AUTHOR_NAME', 'GIT_AUTHOR_EMAIL', 'GIT_COMMITTER_NAME', 'GIT_COMMITTER_EMAIL', ...THREAD_GIT_ENV_KEYS];
 const TURN = Symbol('turn');
 
 export function launchEnvironment(runtime: 'claude' | 'codex', input: Pick<StretchInput, 'account' | 'launch'>): Record<string, string> {
@@ -61,7 +61,11 @@ export class WorkerRun implements StretchRun {
       env[key] = value; this.#redactor.add(value);
       input.launch.mcpServers[server.name] = { command: process.execPath, args: [fileURLToPath(new URL('./native-mcp.js', import.meta.url)), key], env: {} };
     }
-    for (const [key, value] of Object.entries(env)) if (/TOKEN|KEY/.test(key)) this.#redactor.add(value);
+    for (const [key, value] of Object.entries(env)) {
+      if (/TOKEN|KEY/u.test(key) && !/^GIT_CONFIG_KEY_/u.test(key)) this.#redactor.add(value);
+      const authorization = /^GIT_CONFIG_VALUE_/u.test(key) && /^Authorization: Basic (\S+)$/u.exec(value);
+      if (authorization) { this.#redactor.add(value); this.#redactor.add(authorization[1]!); }
+    }
     for (const server of Object.values(input.launch.mcpServers)) {
       for (const [key, value] of Object.entries(server.env)) if (env[key] !== value) throw new Error('Per-launch MCP environment must use the scoped inherited environment.');
     }

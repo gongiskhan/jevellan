@@ -152,12 +152,21 @@ export class ProjectWork {
     this.store = new ThreadStore(this.paths, this.ledgers, this.#publisher);
     const coordinatorStore = new CoordinatorStore(this.paths); const receipts = new StartReceipts(this.paths, now);
     const github = new GitHubAccess({ credential: o.github.credential, fetch: o.github.fetch, baseUrl: o.github.baseUrl, redactor: o.redactor });
+    const git = new ThreadGit({ homes: o.homes, redactor: o.redactor });
     this.transcripts = new ThreadTranscripts({ homes: o.homes, deviceId: o.deviceId, deviceName: o.deviceName });
     // A thread attached in a terminal holds its account for every turn on this device, read from the threads themselves (phase 8).
     const held = (): ReadonlySet<string> => new Set(this.store.all().filter((thread) => thread.state === 'attached').map((thread) => thread.placement.accountId));
     const launcher = new TurnLauncher({ accounts: o.accounts, runtimes: o.runtimes, accountRuns: o.accountRuns, riggingItems: o.riggingItems, bridges: o.bridges, homes: o.homes,
       deviceId: o.deviceId, deviceName: o.deviceName, daemonUrl: () => this.daemonUrl, redactor: o.redactor, held, projectSettings: projectId => this.admission.settings(projectId),
       sessionLedger: projectId => this.ledgers.coordinator(projectId), now, useOwnSetup: async runtime => (await o.settings()).runtimes[runtime]?.useOwnSetup !== false,
+      threadGitEnvironment: async projectId => {
+        try {
+          const registered = await o.projects.get(projectId); if (!registered) throw new Error(PROJECT_NOT_FOUND);
+          const project = registered.project;
+          const remote = await git.remoteUrl(resolveProjectPath(project, o.deviceId));
+          return remote ? await github.turnGitEnvironment(projectId, remote) : {};
+        } catch (error) { if (error instanceof HubUnavailable) return {}; throw error; }
+      },
       protectedPaths: async () => { const [projects, roster] = await Promise.all([o.projects.list(), o.roster()]); return [...new Set([
         ...projects.flatMap(row => row.project.paths[o.deviceId] ? [row.project.paths[o.deviceId]!] : []), ...(roster.devices.find(row => row.device.id === o.deviceId)?.device.protectedPaths ?? [])])]; } });
     this.admission = new Admission({ hub: o.hub, deviceId: o.deviceId, deviceName: o.deviceName, localLive: (projectId) => this.threads.liveThreads(projectId),
@@ -183,7 +192,6 @@ export class ProjectWork {
       stopRefusal: (projectId, threadId) => this.threads.stopRefusal(projectId, threadId),
       message: (projectId, threadId, text, messageId) => this.threads.message(projectId, threadId, 'owner', text, false, messageId),
     }) });
-    const git = new ThreadGit({ homes: o.homes, redactor: o.redactor });
     this.disk = new WorktreeDiskService({ homes: o.homes, git, deviceId: o.deviceId, now, ownership: async () => {
       const owners = [];
       for (const { project } of await o.projects.list()) {

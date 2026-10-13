@@ -73,6 +73,18 @@ function turn(prompt = 'Report the environment.'): TurnInput {
 }
 function launchTurn(value = turn(), worker = fileURLToPath(new URL('./fixtures/runtime-worker.mjs', import.meta.url))) { const run = WorkerRun.turn('codex', worker, value, { homes }); runs.push(run); return run; }
 
+test('a native turn worker gets temporary Git authentication only in its environment and redacts it from output', async () => {
+  const value = turn(), header = 'Authorization: Basic ' + Buffer.from('x-access-token:ephemeral-test-value').toString('base64');
+  Object.assign(value.launch.env, { GIT_CONFIG_COUNT: '1', GIT_CONFIG_KEY_0: 'http.https://github.com/owner/private.git.extraheader', GIT_CONFIG_VALUE_0: header });
+  const run = launchTurn(value), events = await collect(run); expect((await run.done).status).toBe('completed');
+  const text = events.find(event => event.type === 'text'); if (text?.type !== 'text') throw new Error('Missing fixture event.');
+  const output = JSON.parse(text.delta);
+  expect(output.gitAuthPresent).toBe(true); expect(output.gitAuth).toBe('[redacted]');
+  expect(output.gitAuthKey).toBe('http.https://github.com/owner/private.git.extraheader');
+  expect(output.argv).toEqual([]); expect(output.launchEnv).toEqual({}); expect(output.mcp.jevellan.env).toEqual({});
+  expect(text.delta).not.toContain(header);
+});
+
 test('a turn worker receives its prompt verbatim and the owner identity, never secrets, and refuses continuation', async () => {
   const run = launchTurn(); const events = await collect(run);
   expect(await run.done).toEqual({ status: 'completed' });

@@ -58,6 +58,8 @@ export type TurnLauncherOptions = {
   sessionLedger?(projectId: string): ProjectLedger;
   now?(): number;
   protectedPaths?(): Promise<string[]>;
+  /** Fresh, repository-scoped Git authentication for a writable thread turn; never persisted in a home or MCP configuration. */
+  threadGitEnvironment?(projectId: string, cwd: string): Promise<Record<string, string>>;
 };
 type Ranked = ReturnType<typeof rankAccounts>[number];
 
@@ -152,10 +154,12 @@ export class TurnLauncher {
       const env: Record<string, string> = { JEVELLAN_STRETCH_TOKEN: grant.token, JEVELLAN_DAEMON_URL: daemonUrl,
         ...(request.memoryMode ? { JEVELLAN_PROJECT_MEMORY_MODE: request.memoryMode } : {}),
         ...(gitIdentity ? { GIT_AUTHOR_NAME: gitIdentity.name, GIT_AUTHOR_EMAIL: gitIdentity.email, GIT_COMMITTER_NAME: gitIdentity.name, GIT_COMMITTER_EMAIL: gitIdentity.email } : {}) };
+      const gitEnv = request.owner.kind === 'thread' && request.permissions === 'write'
+        ? await this.#o.threadGitEnvironment?.(request.owner.projectId, request.cwd) ?? {} : {};
       const input = TurnInputSchema.parse({
         schema: 'turn-input-v1', owner: request.owner, turn: request.turn, cwd: request.cwd, permissions: request.permissions, model: request.model, effort: request.effort,
         account: resolved, systemAppend: request.systemAppend, prompt: await request.prompt(resumed), ...(resumed ? { resume: { sessionId: request.resume } } : {}),
-        launch: { useOwnSetup: await this.#o.useOwnSetup?.(request.runtime) ?? true, env, mcpServers: { jevellan: { command: process.execPath, args: [join(applicationRoot(), 'bin', 'jevellan.mjs'), 'mcp-bridge'], env } } },
+        launch: { useOwnSetup: await this.#o.useOwnSetup?.(request.runtime) ?? true, env: { ...env, ...gitEnv }, mcpServers: { jevellan: { command: process.execPath, args: [join(applicationRoot(), 'bin', 'jevellan.mjs'), 'mcp-bridge'], env } } },
         safetyProfile: request.safetyProfile, timeoutMs: request.timeoutMs, compaction: { thresholdPercent: percent, ...(contextWindow ? { contextWindow } : {}) },
         ...(request.owner.kind === 'thread' && request.isolation === 'worktree' ? { protectedPaths: await this.#o.protectedPaths?.() ?? [] } : {}),
       });

@@ -526,5 +526,11 @@
     "title": "Connect Ekoa through its supported authentication",
     "why": "Decision 788: owner browser sign-in is complete. Live MCP metadata and source require OAuth/PKCE and rotating refresh tokens; the current static-token mirror cannot complete a durable connection. No temporary grant or repeated owner credential request. Authenticated discovery/mirrors blocked; outside cache/journal scope. Prior real A is in progress under the original ten-hour clock.",
     "status": "blocked"
+  },
+  {
+    "id": "activation-isolated-thread-git",
+    "title": "Let isolated threads fetch their private project",
+    "why": "Decision 789: real CSV conflict resolution cannot fetch despite the saved project token. Fresh writable turns get only registered-repository Git authentication through the existing vault, ephemeral/redacted and absent from other roles, native homes, argv and MCP input. 130 distinct affected cases pass through targeted rerun; typecheck/lint/build pass. Real isolated Git read passes; full provider rerun pending within original clock.",
+    "status": "complete-with-blockers"
   }
 ]
