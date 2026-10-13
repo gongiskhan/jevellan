@@ -32,7 +32,7 @@ export function remote(config, source, payload) {
     `${shellQuote(config.madridNode)} --input-type=module`], { input: script, timeout: 120000 });
 }
 export class OwnerClient {
-  constructor(config, browser, context, page, secrets) { Object.assign(this, { config, browser, context, page, secrets }); this.events = new Map(); this.readers = new Map(); this.stops = new Map(); }
+  constructor(config, browser, context, page, secrets) { Object.assign(this, { config, browser, context, page, secrets }); this.events = new Map(); this.readers = new Map(); this.stops = new Map(); this.streams = new Map(); }
   static async connect(config, layout = 'desktop-light') {
     if (!existsSync(config.storageState)) throw blocked('Owner browser sign-in state is missing. Sign in through the hub UI; never put the passphrase in chat or arguments.');
     if (statSync(config.storageState).mode & 0o077) throw blocked('The private owner browser state must have mode 600.');
@@ -71,14 +71,18 @@ export class OwnerClient {
       head = z.coerce.number().int().nonnegative().parse(response.headers.get('x-jevellan-ledger-head') ?? 0);
       connected = true;
       let pending = ''; const decoder = new TextDecoder();
-      for await (const chunk of response.body) {
-        pending += decoder.decode(chunk, { stream: true }); assert(pending.length <= 2_000_000, 'An owner ledger frame exceeded its limit.');
-        let end; while ((end = pending.indexOf('\n\n')) >= 0) {
-          const packet = pending.slice(0, end); pending = pending.slice(end + 2);
-          const data = packet.split('\n').filter(line => line.startsWith('data:')).map(line => line.slice(5).trimStart()).join('\n'); if (!data) continue;
-          const frame = ProjectEventFrameSchema.safeParse(JSON.parse(data)); if (frame.success && !rows.some(row => row.id === frame.data.event.id)) rows.push(frame.data.event);
+      const reader = response.body.getReader(); this.streams.set(key, reader);
+      try {
+        for (;;) {
+          const { value: chunk, done } = await reader.read(); if (done) break;
+          pending += decoder.decode(chunk, { stream: true }); assert(pending.length <= 2_000_000, 'An owner ledger frame exceeded its limit.');
+          let end; while ((end = pending.indexOf('\n\n')) >= 0) {
+            const packet = pending.slice(0, end); pending = pending.slice(end + 2);
+            const data = packet.split('\n').filter(line => line.startsWith('data:')).map(line => line.slice(5).trimStart()).join('\n'); if (!data) continue;
+            const frame = ProjectEventFrameSchema.safeParse(JSON.parse(data)); if (frame.success && !rows.some(row => row.id === frame.data.event.id)) rows.push(frame.data.event);
+          }
         }
-      }
+      } finally { this.streams.delete(key); reader.releaseLock(); }
     })(); this.readers.set(key, task); task.catch(error => { if (!controller.signal.aborted) this.streamError = error; });
     await until('the owner ledger stream to replay its initial history', () => this.streamError ? Promise.reject(this.streamError) : connected && (!head || rows.some(row => row.id >= head)), 30000, 100);
     return rows;
@@ -107,7 +111,14 @@ export class OwnerClient {
     await this.page.locator('.terminal-commandline').getByRole('button', { name: 'Run', exact: true }).click();
   }
   terminalSnapshot(id) { return this.call('GET', `/api/terminals/${id}`); }
-  async close() { for (const stop of this.stops.values()) stop.abort(); await Promise.allSettled([...this.readers.values()]); await this.browser.close(); }
+  async close() {
+    const cancellations = [...this.streams.values()].map(reader => reader.cancel().catch(() => undefined));
+    for (const stop of this.stops.values()) stop.abort();
+    await this.browser.close();
+    let timer;
+    try { await Promise.race([Promise.allSettled([...cancellations, ...this.readers.values()]), new Promise((_resolve, reject) => { timer = setTimeout(() => reject(new Error('Owner ledger cleanup exceeded five seconds.')), 5000); })]); }
+    finally { clearTimeout(timer); }
+  }
 }
 export const GithubObjectSchema = z.record(z.string(), z.unknown());
 export function publicTranscript(view) { return (view.transcript?.turns ?? []).map(turn => ({ role: turn.role, text: turn.blocks.filter(block => block.type === 'text').map(block => block.text).join('\n'), tools: turn.blocks.filter(block => block.type === 'tool') })); }

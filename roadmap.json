@@ -550,5 +550,11 @@
     "title": "Retry member PR polling when the hub returns",
     "why": "Decision 792: controlled test-hub stop exposes an uncaught budget-lookup HubUnavailable that ends the fixture member. Preserve PR state, deduplicate local error notices, continue polling and resume after recovery. Regression fails before repair; 14 publication/Git cases/build/typecheck/lint pass. Production unchanged; private recovery and full scenario rerun pending.",
     "status": "complete-with-blockers"
+  },
+  {
+    "id": "activation-owner-ledger-cleanup",
+    "title": "Close live ledger readers without losing results",
+    "why": "Decision793: third A records its strict A3 timeout but abort-only reader teardown stalls. Normal test-hub shutdown recovers the actual failed receipt. Explicit body cancellation, browser close and bounded settlement repair the lifecycle; regression fails before repair,20 affected harness cases/typecheck/lint pass. A1/A2 pass; A3 stays failed unless owner amends the criterion. Original clock and B prerequisite retained.",
+    "status": "complete-with-blockers"
   }
 ]

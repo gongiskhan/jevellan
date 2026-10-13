@@ -15,6 +15,20 @@ beforeEach(() => { root = mkdtempSync(join(tmpdir(), 'jevellan-live-harness-'));
 afterEach(() => rmSync(root, { recursive: true, force: true }));
 const state = () => LiveStateSchema.parse({ schema: 'live-scenarios-state-v1' });
 
+test('owner ledger cleanup cancels the body and closes the browser even when fetch ignores abort', async () => {
+  let controller: ReadableStreamDefaultController<Uint8Array> | undefined;
+  const cancel = vi.fn(), close = vi.fn(async () => undefined);
+  const body = new ReadableStream<Uint8Array>({ start(value) { controller = value; }, cancel });
+  vi.stubGlobal('fetch', vi.fn(async () => new Response(body, { headers: { 'x-jevellan-ledger-head': '0' } })));
+  const client = new OwnerClient({ hub: 'http://fixture' }, { close }, { cookies: async () => [] }, null, []);
+  let shutting: Promise<void> | undefined;
+  try {
+    await client.watch('project_a'); shutting = client.close();
+    const result = await Promise.race([shutting.then(() => true), new Promise<boolean>(resolve => setTimeout(() => resolve(false), 250))]);
+    expect(result).toBe(true); expect(cancel).toHaveBeenCalledOnce(); expect(close).toHaveBeenCalledOnce();
+  } finally { if (!cancel.mock.calls.length) controller?.close(); await shutting; vi.unstubAllGlobals(); }
+});
+
 test('the gated pairs are consecutive and B never gets silently reset between them; extra failing B has a fresh preceding A', () => {
   const plan = gatingPlan(); expect(plan.slice(0, 6).map(row => row.scenario)).toEqual(['A', 'B', 'A', 'B', 'C', 'C']);
   const failing = plan.findIndex(row => row.failingSuite); expect(plan[failing - 1]).toMatchObject({ scenario: 'A', gating: false });

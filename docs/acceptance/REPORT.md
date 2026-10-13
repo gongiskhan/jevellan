@@ -2050,3 +2050,12 @@ Simulated: the new outage/recovery regression fails before repair. All 14 affect
 
 
 Live recovery correction: the repaired private Pro/Madrid profiles are active on their verified 0.3.3 development copies, and both actual /api/health documents are healthy. Real provider preflight has no gaps. Third A passes its exact A1/A2 assertions; invoice PR4 merges and CSV PR5 reaches a clean green head after rebasing without the former owner-fetch question. A3 remains in progress, without a failed-check event; no full scenario pass or new cache/journal clock is claimed. See docs/acceptance/prior-profile-recovery-2026-10-13.md.
+
+
+### Decision 793 — Cancel owner ledger readers explicitly and retain failed receipts
+
+Replaces decision 713's abort-only reader teardown. Progress from decision 791 proves that the third A reaches its exact A3 deadline at21:14:34UTC, completes usage collection, then stalls awaiting stream-reader promises before closing the browser. A normal shutdown of only the owned test hub closes its sockets, allowing the original automated failed receipt to save. No diagnostic injection or fabricated step verdict is used for this recovery.
+
+Retain explicit WebStream readers, cancel them as well as aborting fetch, close the browser independently, and cap remaining reader settlement at five seconds. Record cleanup errors in the final receipt instead of losing it; a cleanup error never turns an incomplete run into a pass. A real-body regression with fetch ignoring abort fails before repair and closes correctly after it. All20 affected harness cases in two files/typecheck/lint pass. The source is a harness lifecycle repair, with no production runtime or browser flow change.
+
+Live result: A1/A2 pass; A3 fails because its required failed-check diagnosis never occurs. The observed initial checks pass, and CSV reaches a clean green head after authenticated rebase. Preserve strict failed acceptance and null successful-A prerequisites; do not start B or manufacture a CI failure. The optional owner question asks whether to amend this criterion; keep the original unless the owner changes it. Receipt scenarios/2026-10-13/A-run_5053b441bb2d4a0b8176008d5c88985d.json, duration47.9802minutes. Claude reports USD9.7079084; all four Codex costs are unknown, not free. Original firstScenarioAt/deadline remain unchanged, and cache/journal clocks stay unstarted.

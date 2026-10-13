@@ -1,0 +1,255 @@
+{
+  "schema": "live-scenario-receipt-v1",
+  "scenario": "A",
+  "run": "run_5053b441bb2d4a0b8176008d5c88985d",
+  "coordinator": "claude",
+  "label": "live",
+  "passed": false,
+  "startedAt": "2026-10-13T20:29:34.777Z",
+  "endedAt": "2026-10-13T21:17:33.587Z",
+  "minutes": 47.98016666666667,
+  "clockStartedAt": "2026-10-13T18:15:59.903Z",
+  "timeBoxEnded": false,
+  "projectId": "live_day_42bc3c01f7dd4d04ba064bac1f584f36",
+  "steps": [
+    {
+      "id": "A1",
+      "assertion": "Exactly two owner-request tasks, both named in the reply; both active with Jev placement within ten minutes.",
+      "verdict": "passed",
+      "startedAt": "2026-10-13T20:29:34.778Z",
+      "endedAt": "2026-10-13T20:30:22.771Z",
+      "seconds": 47.993,
+      "evidence": {
+        "tasks": [
+          {
+            "id": "task_49e04557aeed787d7122a0e409ac4d49b01d6574",
+            "title": "Fix invoice totals off by one cent",
+            "threadId": "thread_01M4VFAA9W4XA82SPKN41SZ3X8"
+          },
+          {
+            "id": "task_ec355d76b55632a97c315d59791b221eb0eace40",
+            "title": "Add CSV export to the customers page",
+            "threadId": "thread_01M4VFAJ74SN53QJ5XH0X686CJ"
+          }
+        ],
+        "reply": "I've queued two tasks, and they can run at the same time:\n\n1. **Fix invoice totals off by one cent.** This is most likely a rounding bug in `src/invoices/index.ts`. Prices are converted to cents by rounding down, so a price like 0.29 can come out a cent low, and that missing cent is then multiplied by the quantity. The thread will write a test that shows the bug before fixing it, then run all the checks.\n2. **Add CSV export to the customers page.** There will be an \"Export CSV\" button on /customers that downloads `customers.csv` with Name, VAT and Created columns. Created uses DD/MM/YYYY.\n\nWhen each report comes back, I'll check it against what you asked for. No questions open for you."
+      }
+    },
+    {
+      "id": "A2",
+      "assertion": "The VAT follow-up messages the active export thread and creates no task.",
+      "verdict": "passed",
+      "startedAt": "2026-10-13T20:30:22.773Z",
+      "endedAt": "2026-10-13T20:30:36.929Z",
+      "seconds": 14.156,
+      "evidence": {
+        "threadId": "thread_01M4VFAJ74SN53QJ5XH0X686CJ",
+        "tools": [
+          {
+            "schema": "coordinator-tool-v1",
+            "tool": "jevellan_tasks_list",
+            "ok": true,
+            "input": "{\"include\":\"open\"}",
+            "inputTruncated": false,
+            "summary": "Listed tasks"
+          },
+          {
+            "schema": "coordinator-tool-v1",
+            "tool": "jevellan_thread_message",
+            "ok": true,
+            "input": "{\"threadId\":\"thread_01M4VFAJ74SN53QJ5XH0X686CJ\",\"message\":\"Owner follow-up: the customers CSV export must include the VAT number. Your brief already lists a VAT column (Name, VAT, Created). Keep it, and make sure of three things:\\n- the VAT column is exported exactly as stored, with no number coercion and no loss of leading zeros or country prefix such as \\\"PT123456789\\\"\\n- the formula-injection guard does not change normal VAT values\\n- the unit test and the browser test both check the VAT values in the downloaded file\\nMention the VAT column with a sample row in your report.\",\"interrupt\":false}",
+            "inputTruncated": false,
+            "summary": "Sent a message to \"Add CSV export to the customers page\"",
+            "threadId": "thread_01M4VFAJ74SN53QJ5XH0X686CJ"
+          }
+        ]
+      }
+    },
+    {
+      "id": "A3",
+      "assertion": "A failed result check is diagnosed through its job log and CHANGELOG message; both PRs merge within 45 minutes; the rounding regression fails at baseline.",
+      "verdict": "failed",
+      "startedAt": "2026-10-13T20:30:36.930Z",
+      "endedAt": "2026-10-13T21:14:34.780Z",
+      "seconds": 2637.85,
+      "reason": "Timed out after 44 minutes: a failed check to be diagnosed on the next coordinator turn",
+      "evidence": {}
+    }
+  ],
+  "messages": [
+    {
+      "owner": "Add a CSV export to the customers page, and fix the invoice totals: some are off by a cent.",
+      "reply": "I've queued two tasks, and they can run at the same time:\n\n1. **Fix invoice totals off by one cent.** This is most likely a rounding bug in `src/invoices/index.ts`. Prices are converted to cents by rounding down, so a price like 0.29 can come out a cent low, and that missing cent is then multiplied by the quantity. The thread will write a test that shows the bug before fixing it, then run all the checks.\n2. **Add CSV export to the customers page.** There will be an \"Export CSV\" button on /customers that downloads `customers.csv` with Name, VAT and Created columns. Created uses DD/MM/YYYY.\n\nWhen each report comes back, I'll check it against what you asked for. No questions open for you.",
+      "turn": 1
+    },
+    {
+      "owner": "For the customers export, also include the VAT number.",
+      "reply": "I've sent this to the \"Add CSV export to the customers page\" thread. Its brief already had a VAT column, so the message just makes it explicit. VAT numbers will be exported exactly as stored, so leading zeros and country prefixes like \"PT\" are kept. The tests will check the VAT values in the downloaded file, and the thread will include a sample row in its report.\n\nThe invoice cents fix is still running separately. No questions open for you.",
+      "turn": 2
+    }
+  ],
+  "toolCalls": [
+    {
+      "schema": "coordinator-tool-v1",
+      "tool": "jevellan_tasks_list",
+      "ok": true,
+      "input": "{\"include\":\"open\"}",
+      "inputTruncated": false,
+      "summary": "Listed tasks"
+    },
+    {
+      "schema": "coordinator-tool-v1",
+      "tool": "memory_search",
+      "ok": true,
+      "input": "{\"query\":\"invoice totals rounding CSV export customers\"}",
+      "inputTruncated": false,
+      "summary": "Searched project memory"
+    },
+    {
+      "schema": "coordinator-tool-v1",
+      "tool": "jevellan_goals_list",
+      "ok": true,
+      "input": "{}",
+      "inputTruncated": false,
+      "summary": "Read goals"
+    },
+    {
+      "schema": "coordinator-tool-v1",
+      "tool": "jevellan_task_create",
+      "ok": true,
+      "input": "{\"title\":\"Fix invoice totals off by one cent\",\"brief\":\"Owner report: some invoice totals are off by a cent. Requested result: invoice totals are exact to the cent for every line, and the owner can trust the totals shown.\\n\\nLikely cause (verify first): src/invoices/index.ts `lineTotalCents` does `Math.floor(line.unitPrice * 100) * line.quantity`. Floating-point prices such as 0.29, 1.15, 4.35, 19.99 multiply to values like 28.999999..., so Math.floor drops a cent, and the error is then multiplied by quantity.\\n\\nWhat to do:\\n1. Reproduce first: add failing unit tests in src/invoices/index.test.ts with prices known to break floor (e.g. 0.29, 1.15, 4.35, 8.20, 19.99, 0.07) and quantities > 1, plus a multi-line invoice. Confirm they fail on the current code.\\n2. Fix the conversion to integer cents so it is exact (e.g. Math.round(unitPrice * 100), or convert via string/decimal parsing). Keep all arithmetic in integer cents after conversion. Check nothing else in src (e.g. src/web/server.ts invoice page) reintroduces float rounding errors on display.\\n3. Run the full checks: `npm run lint`, `npm test`, `npm run test:browser` (tests/browser/invoices.spec.ts). Fix any lint, test failure or flakiness you see.\\n4. Add an entry to CHANGELOG.md (CI runs `npm run check:changelog` and fails without it).\\n\\nConstraints: dates in the UI are always DD/MM/YYYY - do not change invoiceDate behaviour. Never run scripts/owner-only.sh; the owner runs it. Follow the project's git policy for this thread.\\n\\nReport back: root cause confirmed, the failing-then-passing test cases, and output summary of lint/unit/browser checks.\",\"type\":\"fix\",\"goalId\":\"goal_78776a45f1d2c050f91104118ed00b3d9d2f6c4c\",\"now\":false,\"after\":[],\"needs\":[],\"fixed\":{},\"source\":\"owner-request\"}",
+      "inputTruncated": false,
+      "summary": "Queued task \"Fix invoice totals off by one cent\""
+    },
+    {
+      "schema": "coordinator-tool-v1",
+      "tool": "jevellan_task_create",
+      "ok": true,
+      "input": "{\"title\":\"Add CSV export to the customers page\",\"brief\":\"Owner request: add a CSV export to the customers page. Requested result: on /customers the owner sees an export control and gets a downloaded CSV file of the customers that opens correctly in a spreadsheet.\\n\\nContext: src/web/server.ts serves /customers as an HTML table (Name, VAT) from the store in src/customers/index.ts (Customer = id, name, vat, createdAt ISO string). There is also /api/customers returning JSON.\\n\\nWhat to build:\\n1. A CSV endpoint (e.g. /customers.csv or /customers/export.csv - note `/customers` currently matches via startsWith, so route the CSV path before it) returning `Content-Type: text/csv; charset=utf-8` and `Content-Disposition: attachment; filename=\\\"customers.csv\\\"` (a dated filename is fine).\\n2. Columns: Name, VAT, Created. Created must be formatted DD/MM/YYYY (project rule: dates in the UI are always DD/MM/YYYY). Header row first.\\n3. Proper CSV escaping per RFC 4180: quote fields containing comma, quote, CR or LF; double embedded quotes. Guard against CSV/formula injection (cells starting with =, +, -, @, tab or CR get a leading apostrophe). Use CRLF line endings; consider a UTF-8 BOM so Excel reads accented names correctly.\\n4. A clearly visible \\\"Export CSV\\\" link/button on the customers page (text label, no emoji), styled consistently with the existing page. Check the page looks right at desktop and mobile widths.\\n5. Put the CSV building in a pure, unit-tested function (e.g. in src/customers) - tests for escaping, injection guard, empty list, date format. Add a browser test in tests/browser/customers.spec.ts that clicks the export control and verifies the downloaded file content.\\n6. Run `npm run lint`, `npm test`, `npm run test:browser`. Fix any lint, test failure or flakiness you see.\\n7. Add a CHANGELOG.md entry (CI `npm run check:changelog` requires it).\\n\\nConstraints: never run scripts/owner-only.sh; the owner runs it. Follow the project's git policy for this thread.\\n\\nReport back: endpoint path, sample of the CSV output, check results, and a screenshot or description of the page with the export control.\",\"type\":\"feature\",\"goalId\":\"goal_af6d33b02368eeaa04a576ad2ffb12fbb166bfb6\",\"now\":false,\"after\":[],\"needs\":[],\"fixed\":{},\"source\":\"owner-request\"}",
+      "inputTruncated": false,
+      "summary": "Queued task \"Add CSV export to the customers page\""
+    },
+    {
+      "schema": "coordinator-tool-v1",
+      "tool": "jevellan_notebook_read",
+      "ok": true,
+      "input": "{}",
+      "inputTruncated": false,
+      "summary": "Read the notebook"
+    },
+    {
+      "schema": "coordinator-tool-v1",
+      "tool": "jevellan_notebook_write",
+      "ok": true,
+      "input": "{\"content\":\"Dates in the UI are always DD/MM/YYYY.\\n\\n## Plan (2026-10-13)\\n- Fix invoice totals off by one cent (task_49e0...) - suspected cause: Math.floor(unitPrice*100) in src/invoices/index.ts lineTotalCents. Check the report for the root cause confirmed by a failing test that then passes, plus lint, unit and browser checks.\\n- Add CSV export to the customers page (task_ec35...) - check the report for: a visible export control on /customers, a downloaded customers.csv with Name, VAT, Created (DD/MM/YYYY), RFC 4180 escaping and a guard against formula injection.\\n- Both tasks touch CHANGELOG.md (CI requires an entry). Resolve any conflicts through the responsible thread.\\n\",\"expectedRevision\":1}",
+      "inputTruncated": false,
+      "summary": "Updated the notebook"
+    },
+    {
+      "schema": "coordinator-tool-v1",
+      "tool": "jevellan_tasks_list",
+      "ok": true,
+      "input": "{\"include\":\"open\"}",
+      "inputTruncated": false,
+      "summary": "Listed tasks"
+    },
+    {
+      "schema": "coordinator-tool-v1",
+      "tool": "jevellan_thread_message",
+      "ok": true,
+      "input": "{\"threadId\":\"thread_01M4VFAJ74SN53QJ5XH0X686CJ\",\"message\":\"Owner follow-up: the customers CSV export must include the VAT number. Your brief already lists a VAT column (Name, VAT, Created). Keep it, and make sure of three things:\\n- the VAT column is exported exactly as stored, with no number coercion and no loss of leading zeros or country prefix such as \\\"PT123456789\\\"\\n- the formula-injection guard does not change normal VAT values\\n- the unit test and the browser test both check the VAT values in the downloaded file\\nMention the VAT column with a sample row in your report.\",\"interrupt\":false}",
+      "inputTruncated": false,
+      "summary": "Sent a message to \"Add CSV export to the customers page\"",
+      "threadId": "thread_01M4VFAJ74SN53QJ5XH0X686CJ"
+    }
+  ],
+  "pullRequests": [],
+  "workflowRunIds": [],
+  "notes": [],
+  "sessions": [
+    {
+      "key": "204ae97fb867c6f70994f80dc274ae547227a6c240aa76a4ee2b9dce09732a27",
+      "runtime": "claude",
+      "model": "Claude Opus 5.5",
+      "inputTokens": 14582,
+      "outputTokens": 136953,
+      "costUsd": 9.388574000000002,
+      "costSource": "estimated",
+      "seconds": 239.405
+    },
+    {
+      "key": "22c6f32ce361c8186a17f90857e6af4fbb6d984567261105658872e2b823962d",
+      "runtime": "claude",
+      "model": "claude-opus-5-5",
+      "inputTokens": 1034,
+      "outputTokens": 6604,
+      "costUsd": 0.3193344,
+      "costSource": "estimated",
+      "seconds": 95.865
+    },
+    {
+      "key": "live_day_42bc3c01f7dd4d04ba064bac1f584f36:coordinator:19",
+      "runtime": "codex",
+      "model": "gpt-6-astra",
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "costUsd": null,
+      "costSource": "unknown",
+      "seconds": 0.897
+    },
+    {
+      "key": "live_day_42bc3c01f7dd4d04ba064bac1f584f36:coordinator:89",
+      "runtime": "codex",
+      "model": "gpt-6-astra",
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "costUsd": null,
+      "costSource": "unknown",
+      "seconds": 0.625
+    },
+    {
+      "key": "5d93d4391f77a3f2840db588d3041e08e6eb51f20e8641b4764319af4c0f022f",
+      "runtime": "codex",
+      "model": "gpt-6-astra",
+      "inputTokens": 382384,
+      "outputTokens": 3108,
+      "costUsd": null,
+      "costSource": "unknown",
+      "seconds": 121.226
+    },
+    {
+      "key": "750d4e9d0c4d3cf6bcae76699ffadc4e03ea65022c79d9b9a8b60ef19f5ce08d",
+      "runtime": "codex",
+      "model": "gpt-6-astra",
+      "inputTokens": 1184427,
+      "outputTokens": 10231,
+      "costUsd": null,
+      "costSource": "unknown",
+      "seconds": 374.634
+    }
+  ],
+  "providerTotals": {
+    "claude": {
+      "inputTokens": 15616,
+      "outputTokens": 143557,
+      "costUsd": 9.707908400000003,
+      "unknownTokenSessions": 0,
+      "unknownCostSessions": 0,
+      "minutes": 5.587833333333333
+    },
+    "codex": {
+      "inputTokens": 1566811,
+      "outputTokens": 13339,
+      "costUsd": 0,
+      "unknownTokenSessions": 0,
+      "unknownCostSessions": 4,
+      "minutes": 8.2897
+    }
+  },
+  "blockedBy": [
+    "A3: Timed out after 44 minutes: a failed check to be diagnosed on the next coordinator turn"
+  ],
+  "observations": [
+    "Usage records come from runtime-reported turn outcomes. Missing tokens or cost remain unknown; minutes include concurrent sessions."
+  ]
+}

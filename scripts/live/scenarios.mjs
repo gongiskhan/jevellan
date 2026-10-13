@@ -56,7 +56,7 @@ export async function runLive({ plan, config, state, secrets, output = 'docs/acc
       process.stdout.write(`${item.scenario}: collecting runtime usage\n`);
       if (client && recorder.receipt.startedAt) await collectUsage(client, recorder.receipt.projectId, recorder, Date.parse(recorder.receipt.startedAt)).catch(failure => recorder.receipt.observations.push(`Usage collection incomplete: ${failure.message}`));
       process.stdout.write(`${item.scenario}: closing owner readers\n`);
-      await client?.close();
+      await client?.close().catch(failure => { recorder.receipt.observations.push(`Owner reader cleanup incomplete: ${failure.message}`); error ??= failure; });
       process.stdout.write(`${item.scenario}: owner readers closed\n`);
     }
     const result = recorder.finish(error ? [error.message] : []); results.push(result);
