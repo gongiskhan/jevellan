@@ -77,6 +77,16 @@ test('Linux service preserves literal variable and specifier characters without 
   expect(ServiceSpecSchema.safeParse({ ...spec, entry: 'relative/path' }).success).toBe(false);
 });
 
+test.skipIf(process.platform !== 'linux').each(['ordinary', 'space "quotes" %h $HOME'])('systemd accepts the generated Linux unit in %s paths', directory => {
+  const { manager, spec, root } = fixture('linux', async () => { throw new Error('Verification must not start a service.'); });
+  const cwd = join(root, directory); mkdirSync(join(cwd, 'bin'), { recursive: true });
+  const definition = manager.definition({ ...spec, node: process.execPath, entry: join(cwd, 'bin', 'jevellan.mjs') });
+  writeFileSync(definition.path, serviceContents(definition));
+  const checked = spawnSync('systemd-analyze', ['--user', 'verify', definition.path], { encoding: 'utf8', timeout: 30000 });
+  expect(checked.error).toBeUndefined();
+  expect(checked.status, checked.stderr).toBe(0);
+});
+
 test('an already unloaded macOS service is accepted only when the user domain remains reachable', async () => {
   const calls: string[][] = []; let targetCode = 113;
   const { manager, definition } = fixture('darwin', async (_command, args) => {
@@ -88,4 +98,20 @@ test('an already unloaded macOS service is accepted only when the user domain re
   await manager.stop(definition);
   expect(calls).toEqual([['bootout', 'gui/502/dev.jevellan.daemon'], ['print', 'gui/502'], ['print', 'gui/502/dev.jevellan.daemon']]);
   targetCode = 0; await expect(manager.stop(definition)).rejects.toThrow('Could not stop');
+});
+
+test('an owned legacy Linux unit can be stopped for repair only with an inactive unit and reachable user manager', async () => {
+  let inactive = 3, reachable = 0;
+  const { manager, definition } = fixture('linux', async (_command, args) => {
+    if (args.includes('disable')) return 1;
+    if (args.includes('is-active')) return inactive;
+    if (args.includes('show-environment')) return reachable;
+    throw new Error('Unexpected service command.');
+  });
+  const legacy = serviceContents(definition).replace(/^WorkingDirectory=.*$/mu, `WorkingDirectory="${dirname(dirname(definition.spec.entry))}"`);
+  writeFileSync(definition.path, legacy);
+  await expect(manager.stop(definition)).resolves.toBeUndefined();
+  inactive = 0; await expect(manager.stop(definition)).rejects.toThrow('service manager failed');
+  inactive = 3; reachable = 1; await expect(manager.stop(definition)).rejects.toThrow('service manager failed');
+  writeFileSync(definition.path, legacy + '# changed\n'); await expect(manager.stop(definition)).rejects.toThrow('changed outside');
 });

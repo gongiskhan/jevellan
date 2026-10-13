@@ -82,3 +82,6 @@ Decision 766: the real invoices/customers sandbox is published at 61fc71abcf86d4
 
 
 Decision 767: approved scoped GitHub storage and live capability checks complete; shared default stays unset. Ekoa PR208 stays open and its scheduler stays unset/watch mode. Member enrollment, retained Ekoa work, MCP credentials and formal scenarios remain pending. See docs/acceptance/github-scoped-activation-2026-10-13.md.
+
+
+Decisions 768–769: the owner authorizes Madrid project work and Mini apps-only membership. The Mini is online on 0.3.1 at its retained 9444 HTTPS address, with both original 9600/9601 app URLs returning 200 and all fifty app files byte-identical. The pilot home/fence remain intact. Madrid uses a fresh /home/ggomes/.jevellan-member because the earlier .jevellan directory contains Cursor data; that directory stays untouched. Madrid joins, but its initial user service rejects the old quoted WorkingDirectory. The native regression fails on both ordinary and special-character paths before the fix, then 33 service/file cases pass on Linux. Accept only the exact known legacy unit for repair, retaining changed-file and live-service guards. Prepare corrective 0.3.2 without changing the immutable older releases or adding a review. Remaining activation, sign-in and scenario evidence follow after the patch. See docs/acceptance/member-activation-2026-10-13.md.

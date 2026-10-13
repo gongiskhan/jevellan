@@ -4,7 +4,7 @@ import { chmodSync, closeSync, cpSync, existsSync, linkSync, lstatSync, mkdirSyn
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { DeviceConfigSchema, DeviceOriginSchema, Homes, atomicWrite, inside, readDocument, resolvedPath, writeDocument } from '@jevellan/core';
 import { z } from 'zod';
-import { ServiceDefinitionSchema, serviceContents, type ServiceDefinition } from './service-manager.js';
+import { ServiceDefinitionSchema, serviceContents, serviceContentsVariants, type ServiceDefinition } from './service-manager.js';
 import { ToolchainPlanSchema, ToolchainSchema, toolchainDirectoryName, validateToolchain } from './toolchain.js';
 import { InstalledCommandSchema, PendingCommandSchema, validateCommands } from './installed-command.js';
 import { InstalledHttpsSchema } from './https-service.js';
@@ -119,7 +119,7 @@ export class InstallationFiles {
     for (const version of [value.activeVersion, value.previousVersion]) if (version && !value.applications.some(app => app.version === version)) throw new Error('The selected application version is not installed.');
     if (value.pendingSwitch && !value.applications.some(app => app.version === value.pendingSwitch!.targetVersion && join(app.path, 'bin', 'jevellan.mjs') === value.pendingSwitch!.definition.spec.entry)) throw new Error('The pending service version is not installed.');
     if (value.pendingCopy && (value.pendingCopy.target !== this.path('app', value.pendingCopy.version) || value.pendingCopy.staging !== this.path('staging', value.pendingCopy.id))) throw new Error('The pending application copy has an unexpected path.');
-    if (value.service && (value.service.definition.path !== this.servicePath || value.service.digest !== digestText(serviceContents(value.service.definition)))) throw new Error('The recorded service does not match this installation.');
+    if (value.service && (value.service.definition.path !== this.servicePath || !serviceContentsVariants(value.service.definition).some(content => value.service!.digest === digestText(content)))) throw new Error('The recorded service does not match this installation.');
     for (const definition of [value.service?.definition, value.pendingService?.definition, value.pendingSwitch?.definition]) if (definition && (definition.path !== this.servicePath || definition.spec.home !== this.homes.root || !value.applications.some(app => definition.spec.entry === join(app.path, 'bin', 'jevellan.mjs')))) throw new Error('The service must run a recorded installed application.');
     if (value.pendingService && value.pendingService.temporary !== join(dirname(this.servicePath), `.jevellan-service-${value.id}.tmp`)) throw new Error('The service staging file has an unexpected path.');
     for (const directory of value.serviceDirectories) if (directory === this.homes.userHome || !inside(this.homes.userHome, directory) || !inside(directory, this.servicePath) || directory === this.servicePath) throw new Error('A service directory does not belong to this installation.');

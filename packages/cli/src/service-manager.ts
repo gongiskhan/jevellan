@@ -60,7 +60,7 @@ After=network.target
 
 [Service]
 Type=exec
-WorkingDirectory=${unitValue(cwd)}
+WorkingDirectory=${cwd.replaceAll('%', '%%')}
 ExecStart=:${args.map(unitValue).join(' ')}
 Environment=${unitValue(`JEVELLAN_HOME=${spec.home}`)} ${unitValue(`PATH=${spec.path}`)}
 Restart=on-failure
@@ -70,6 +70,12 @@ UMask=0077
 [Install]
 WantedBy=default.target
 `;
+}
+
+/** The previous Linux formatter quoted a path directive that systemd does not unquote. Read it only to repair an owned installation. */
+export function serviceContentsVariants(input: ServiceDefinition): readonly string[] {
+  const definition = ServiceDefinitionSchema.parse(input), current = serviceContents(definition);
+  return definition.platform === 'linux' ? [current, current.replace(/^WorkingDirectory=.*$/mu, () => `WorkingDirectory=${unitValue(dirname(dirname(definition.spec.entry)))}`)] : [current];
 }
 
 export type ServiceCommand = (command: string, args: readonly string[]) => Promise<number>;
@@ -98,7 +104,7 @@ export class UserServiceManager implements ServiceManager {
   private verify(input: ServiceDefinition): ServiceDefinition {
     const definition = ServiceDefinitionSchema.parse(input);
     if (definition.platform !== this.options.platform || definition.path !== this.path || resolvedPath(this.path) !== this.path) throw new Error('The service path does not belong to this installation.');
-    if (readFileSync(this.path, 'utf8') !== serviceContents(definition)) throw new Error('The service definition has changed outside Jevellan.');
+    if (!serviceContentsVariants(definition).includes(readFileSync(this.path, 'utf8'))) throw new Error('The service definition has changed outside Jevellan.');
     return definition;
   }
   private async command(args: readonly string[]): Promise<void> {
@@ -118,7 +124,7 @@ export class UserServiceManager implements ServiceManager {
     }
   }
   async stop(input: ServiceDefinition): Promise<void> {
-    this.verify(input);
+    const definition = this.verify(input);
     if (this.options.platform === 'darwin') {
       const target = `${this.domain}/dev.jevellan.daemon`;
       const code = await this.options.run('/bin/launchctl', ['bootout', target]);
@@ -127,7 +133,16 @@ export class UserServiceManager implements ServiceManager {
         await this.command(['print', this.domain]);
         if (await this.options.run('/bin/launchctl', ['print', target]) !== 113) throw new Error(`Could not stop Jevellan's service (exit ${code}).`);
       }
-    } else await this.command(['--user', 'disable', '--now', 'jevellan.service']);
+    } else {
+      const legacy = readFileSync(this.path, 'utf8') !== serviceContents(definition);
+      const code = await this.options.run('systemctl', ['--user', 'disable', '--now', 'jevellan.service']);
+      if (code !== 0) {
+        // A known invalid legacy unit was never loaded. A live manager and an inactive unit are required before replacement.
+        const inactive = legacy ? await this.options.run('systemctl', ['--user', 'is-active', '--quiet', 'jevellan.service']) : 0;
+        if (!legacy || ![3, 4].includes(inactive) || await this.options.run('systemctl', ['--user', 'show-environment']) !== 0)
+          throw new Error(`Jevellan's service manager failed (systemctl, exit ${code}).`);
+      }
+    }
   }
   async removed(): Promise<void> {
     if (this.options.platform === 'linux') await this.command(['--user', 'daemon-reload']);

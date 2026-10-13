@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { createHash } from 'node:crypto';
 import { afterEach, expect, test, vi } from 'vitest';
 import { Homes } from '../packages/core/dist/index.js';
 import { InstallationFiles, applicationDigest } from '../packages/cli/dist/installation-files.js';
@@ -218,4 +219,14 @@ test('a first service write never replaces a service created after preparation',
   expect(() => files.writeService(definition)).toThrow();
   expect(readFileSync(definition.path, 'utf8')).toBe('A different installation claimed the service');
   expect(files.load().service).toBeUndefined(); expect(files.load().pendingService).toBeDefined();
+});
+
+test('an owned legacy Linux service receipt reopens and is replaced without accepting unrelated content', () => {
+  const { source, definition, open } = fixture('linux'); let files = open(); files.copyApplication(source); files.writeService(definition);
+  const legacy = serviceContents(definition).replace(/^WorkingDirectory=.*$/mu, `WorkingDirectory="${dirname(dirname(definition.spec.entry))}"`);
+  const manifest = files.load(); manifest.service!.digest = createHash('sha256').update(legacy).digest('hex');
+  writeFileSync(definition.path, legacy); files.save(manifest); files.close(); files = open();
+  files.writeService(definition); expect(readFileSync(definition.path, 'utf8')).toBe(serviceContents(definition));
+  expect(readFileSync(definition.path, 'utf8')).not.toContain('WorkingDirectory="');
+  writeFileSync(definition.path, legacy + '# changed\n'); expect(() => files.writeService(definition)).toThrow('changed outside');
 });
