@@ -1,5 +1,9 @@
 # Computer-driven activation checkpoint — 13 October 2026
 
+Current follow-up: the Pro is signed in. Gmail Claude is freshly Ready; Ekoa Claude reaches its usage ceiling. Jev-latest is discovered, saved and verified. Applying the browser's ready update resolves the stale v3 response. Original conversation replay then exposes a separate migration ownership bug that blocks Project Settings. The tested 0.3.1 repair preserves the old history entries and appends the matching import's owner-transfer record. Its source checks pass; publication/preserved installation follow. See [repair evidence](hub-history-rebinding-2026-10-13.md), decisions 754–758 and the current ordered handoff. OpenAI/1Password, GitHub passkey and member-grant confirmation remain pending; no real scenario clock has started.
+
+The following records the earlier preparation checkpoint before that sign-in.
+
 Live: the owner delegated activation through computer use on the Pro. The existing Chrome and in-app-browser hub tabs both show Welcome back. The ordinary HTTPS sign-in remains available for the existing passphrase. Chrome's 1Password helper is locked. The protected sign-in was requested through the UI handoff; no password was collected in chat, arguments or evidence.
 
 Computer-use policy refuses the native Terminal app. Browser policy refuses Chrome's internal password-manager URL and explicitly prohibits alternate routes around that refusal. No workaround was attempted. Ordinary Jevellan browser work can resume after sign-in; existing SSH tools performed independent device preparation.

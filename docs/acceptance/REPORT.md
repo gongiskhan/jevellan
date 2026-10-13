@@ -1833,3 +1833,25 @@ Updates decision 750's owner-action handoff after the owner's instruction to dri
 Updates decision 751's resource checkpoint. Live: four exact installation fixtures owned by this run contain the expected FakeRuntime marker and have zero live process references. Remove only their generated build/home/cache/archive entries, retaining the JSON/PNG evidence rule and all other acceptance evidence. This reclaimed 8,137,846,784 bytes (about 7.6 GiB). Madrid's final Linux asset and the Mini's final Mac asset match the published SHA-256 checksums; both are unpacked and their actual CLI reports 0.3.0. These are prepared sources, not joined/active members or new hubs. Madrid has about 8.7 GiB available after unpacking, below Ekoa's unchanged 20 GiB guard. The Mini's original pilot apps/projects and authority fence remain intact; its old HTTPS health returns 502, so original app URL acceptance remains blocked on the apps-only join/service. No owner checkout, native home, unrelated Claude scratch folder or recoverable backup was removed.
 
 Live: fresh GitHub browser state shows PR208 mergeable with result passing. A successful repository-variables listing is empty, confirming NIGHTLY_SCHEDULER unset; no merge, CI edit or switch occurred. Real journeys, member enrollment, two watch nights and physical-phone acceptance remain blocked. The live scenario clock is unstarted and costs are unknown. No source/test/release asset changed and no further review ran. Details: computer-activation-2026-10-13.md.
+
+### Decision 754 — Complete the delegated Pro sign-in
+
+Replaces decision 752's pending hub-login state. Live: normal HTTPS sign-in succeeds in the owner's browser and in the real UI harness. The harness state is private, mode 600, outside Git; no password is saved. A stale browser bundle rejects v3 responses until Jevellan's update-ready reload is applied; the updated project view then passes. Separate OpenAI sign-in, locked 1Password, GitHub passkey confirmation and the required member-access confirmation remain pending. These are concrete encountered challenges, not a repeated broad input request.
+
+### Decision 755 — Select the discovered stable Jev model
+
+Replaces decision 699's instruction to leave the unlisted selection intact while awaiting owner inspection. The owner delegated routine UI setup. Live discovery returns jev-latest/jev-preview; save jev-latest and verify it with the existing Test connection (278 ms). Preserve credentials, model menu and unrelated settings. Gmail Claude refreshes to Ready; Ekoa Claude reaches its configured 90% ceiling at 98% week use. Do not raise that ceiling or borrow native authentication.
+
+### Decision 756 — Rebind imported ownership in replay
+
+Refines decisions 699 and 750's preservation checks: retained identities/counts alone do not establish usable history. Live `/hub/projects` returns 400 because original ledgers reconstruct the Mini owner. Append conversation-owner-rebound-v1 through the existing control path only when the import receipt's source owns the conversation and its destination is this device. Preserve original history entries/blobs, work/request contents, timestamps and generation. Retry adds no duplicate; mismatched receipt identities stay refused; another transfer replays in order. No turn starts from bookkeeping.
+
+Simulated: the real encrypted-import/startup regression reproduces the failure before the fix. A broader run passes 131 affected cases in three files (1,481.07 seconds); the final migration/work run passes 39 cases in two files (24.10 seconds), including later-added guards. Overlapping totals are not added. Four browser layouts pass (16.4 seconds), with eight clear dedicated live judgments of fixture screens. Earlier fixture attempts retain their failures; setup/locator/teardown corrections preserve history/settings assertions. Typecheck/lint/build pass. These are separate from real-provider and phone acceptance.
+
+### Decision 757 — Ship a corrective patch without replacing 0.3.0
+
+Refines decision 750 and the extension's installation target after the live replay failure. Keep published 0.3.0 immutable and package 0.3.1 through the existing release/installer path. Take a complete cold 0.3.0 home before updating; its older replay cannot read the new control, so application-only rollback is insufficient. Earlier cold/import/Mini backups remain retained. Platform packaging, publication and the preserved Pro update follow this source checkpoint. Real scenarios remain blocked and their ten-hour clock is unstarted. The single closing review and permitted second are already complete; no extra review pass is introduced.
+
+### Decision 758 — Remove the old Ekoa review wording
+
+Completes decision 650/A2's interface copy replacement. Ekoa Settings describes decisions, merge questions and proposed tasks; it no longer promises reviewed pull requests. Backend mirror behavior and the owner's merge/scheduler choices remain unchanged. The routine activation continues after the replay repair and protected inputs. Details: hub-history-rebinding-2026-10-13.md.

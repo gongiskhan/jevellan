@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import {
   GitBranchChangeSchema, ActionSchema, AdoptChangesSchema, CheckpointAdoptionSchema, CheckpointBlockSchema, CheckpointReceiptSchema, CheckoutOwnership, ComposerChoiceSchema, ComposerInitialSchema, ConversationChangesSchema, ConversationListSchema, ConversationMessageSchema, ConversationNoticeSchema, ConversationOperationSchema, ConversationProgressSchema, ConversationPublicSchema, CorrectStepSchema,
-  ContextContinueSchema, ContextOperationSchema, ContextPanelSchema, ContextRequestSchema, ContextReviewSchema, DecisionRecordSchema, DecisionWaitSchema, FinishOutsideOperationSchema, FinishOutsideSchema, GitWorkspace, IdSchema, JevCallSchema, ManualStepSchema, PlanApprovalSchema, ProjectsListSchema, ProjectViewSchema, ProjectWriteSchema, RenameConversationSchema,
+  ContextContinueSchema, ContextOperationSchema, ContextPanelSchema, ContextRequestSchema, ContextReviewSchema, DecisionRecordSchema, DecisionWaitSchema, FinishOutsideOperationSchema, FinishOutsideSchema, GitWorkspace, HubImportReceiptSchema, IdSchema, JevCallSchema, ManualStepSchema, PlanApprovalSchema, ProjectsListSchema, ProjectViewSchema, ProjectWriteSchema, RenameConversationSchema, readDocument,
   OverrideRecordSchema, PROJECT_MEMORY_ID, PublicationEventSchema, RedoOperationSchema, ResumeDecisionSchema, RetryRedoSchema, SettleWorkSchema, StartComposerChoicesSchema, StartConversationSchema, StretchSchema, UndoAppliedSchema, VerificationSchema, WorkSettlementSchema, mapEffort, newId, resolveProjectPath, stableJson,
   type Action, type CheckpointAdoption, type Configuration, type ContextOperation, type CoordinationStore, type DecisionRecord, type DecisionWait, type GitSnapshot, type Homes, type HubWait, type JevCall, type ManualStep, type Project, type PublicationLease, type PublicationLeaseService, type RedoOperation, type RiggingItem, type SecretRedactor,
 } from '@jevellan/core';
@@ -85,9 +85,13 @@ export class ConversationService {
   }
   async #recover(): Promise<void> {
     const folder = this.options.homes.at('conversations'); if (!existsSync(folder)) return;
+    const receiptPath = this.options.homes.at('hub-import.json');
+    const migration = existsSync(receiptPath) ? readDocument(receiptPath, HubImportReceiptSchema) : null;
     for (const entry of readdirSync(folder, { withFileTypes: true })) {
       if (!entry.isDirectory() || !IdSchema.safeParse(entry.name).success) continue;
-      const work = this.#load(entry.name); const view = work.load();
+      const work = this.#load(entry.name); let view = work.load();
+      if (view.conversation.ownerDeviceId !== this.options.deviceId && migration?.destinationDeviceId === this.options.deviceId && view.conversation.ownerDeviceId === migration.sourceDeviceId)
+        view = work.rebindOwner({ schema: 'conversation-owner-rebound-v1', exportId: migration.exportId, sourceDeviceId: migration.sourceDeviceId, destinationDeviceId: migration.destinationDeviceId });
       if (view.conversation.ownerDeviceId !== this.options.deviceId) throw new Error('A conversation directory belongs to another device.');
       for (const n of (await recoverRunningWork(work)).recovered) await this.#blockInterrupted(work, n);
       recoverHubWaits(work); this.#index(work);

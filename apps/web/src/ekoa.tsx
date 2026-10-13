@@ -12,7 +12,7 @@ export function EkoaPage({ onError, message }: PageProps) {
     return () => abort.abort();
   }, [onError]);
   return <div className="settings-page"><SectionHeading title="Ekoa" />
-    <section className="card"><h2>Tasks that need you</h2><p>Decisions, reviewed pull requests and proposed tasks appear in your Ekoa account with the Jevellan label. Answer and approve them in Jevellan.</p>
+    <section className="card"><h2>Tasks that need you</h2><p>Decisions, merge questions and proposed tasks appear in your Ekoa account with the Jevellan label. Answer and approve them in Jevellan.</p>
       <form onSubmit={event => { event.preventDefault(); void task.run(async signal => {
         try { const next = await save('/hub/ekoa', EkoaStateSchema, 'PUT', { schema: 'ekoa-settings-input-v1', revision: state!.settings.revision, url, enabled, ...(token ? { token } : {}) }, signal); setState(next); message('Ekoa settings saved.'); }
         finally { setToken(''); }

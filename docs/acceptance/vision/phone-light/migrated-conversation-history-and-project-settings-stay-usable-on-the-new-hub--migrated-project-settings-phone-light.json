@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "migrated conversation history and Project Settings stay usable on the new hub",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/migrated-project-settings-phone-light.png",
+  "expected": "the Jevellan web app \"migrated project settings\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"migrated conversation history and Project Settings stay usable on the new hub\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The tab strip is cut off at both edges, so the left tab shows only \"er\" and the right one only \"D\". The scroll arrows still reach them, so this looks like normal horizontal scrolling.",
+      "The long checkout path wraps in the middle of a path segment, which is a bit awkward to read but nothing is lost."
+    ]
+  }
+}

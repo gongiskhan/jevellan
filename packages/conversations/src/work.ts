@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import {
-  AllowanceEventSchema, ComposerOverrideRecordSchema, ConversationControlSchema, ConversationCreatedSchema, ConversationOriginSchema, ConversationRenamedSchema, ConversationSchema, DecisionRecordSchema, FindingSchema, FinishOutsideOperationSchema, FinishOutsideSchema, HandoffSchema, OverrideRecordSchema, RenameConversationSchema, StretchFinishedSchema, StretchSchema,
+  AllowanceEventSchema, ComposerOverrideRecordSchema, ConversationControlSchema, ConversationCreatedSchema, ConversationOriginSchema, ConversationOwnerReboundSchema, ConversationRenamedSchema, ConversationSchema, DecisionRecordSchema, FindingSchema, FinishOutsideOperationSchema, FinishOutsideSchema, HandoffSchema, OverrideRecordSchema, RenameConversationSchema, StretchFinishedSchema, StretchSchema,
   SummarySchema, UndoAppliedSchema, VerificationSchema, WorkControlSchema, WorkMessageSchema, WorkSchema, stableJson,
   type Conversation, type FinishOutsideOperation, type Handoff, type LedgerEvent, type Stretch, type Summary, type UndoApplied, type Work, type WorkControl,
 } from '@jevellan/core';
@@ -22,6 +22,10 @@ function applyConversationControl(view: ConversationView, raw: unknown, at: stri
   if (value.schema === 'conversation-origin-v1') {
     if (conversation.origin && conversation.origin !== value.origin) throw new Error('This conversation already has another origin.');
     conversation.origin = value.origin; return;
+  }
+  if (value.schema === 'conversation-owner-rebound-v1') {
+    if (conversation.ownerDeviceId !== value.sourceDeviceId || value.sourceDeviceId === value.destinationDeviceId) throw new Error('The conversation does not belong to this migration source.');
+    conversation.ownerDeviceId = value.destinationDeviceId; return;
   }
   if (value.schema === 'conversation-renamed-v1') {
     if (value.request.previousTitle !== conversation.title) throw new Error('The title changed. Reload before renaming it.');
@@ -239,8 +243,8 @@ export function replayWork(ledger: ConversationLedger): ConversationView {
         }
       }
     }
-    // Recording a legacy conversation's origin is bookkeeping, not activity in the conversation.
-    if (!(event.type === 'conversation-control' && (data as { schema?: unknown }).schema === 'conversation-origin-v1')) conversation.updatedAt = event.t;
+    // Origin and hub migration are bookkeeping, not activity in the conversation.
+    if (!(event.type === 'conversation-control' && ['conversation-origin-v1', 'conversation-owner-rebound-v1'].includes(String((data as { schema?: unknown }).schema)))) conversation.updatedAt = event.t;
   }
   if (!view) throw new Error('Conversation does not exist.');
   ConversationSchema.parse(view.conversation); SummarySchema.parse(view.summary);
@@ -259,6 +263,17 @@ export class ConversationWork {
     return this.#materialise();
   }
   load(): ConversationView { return replayWork(this.ledger); }
+  rebindOwner(raw: unknown): ConversationView {
+    const value = ConversationOwnerReboundSchema.parse(raw);
+    const previous = this.ledger.events().filter(event => event.type === 'conversation-control').map(event => ConversationOwnerReboundSchema.safeParse(this.ledger.data(event)))
+      .find(result => result.success && result.data.exportId === value.exportId);
+    if (previous?.success) {
+      if (stableJson(previous.data) !== stableJson(value)) throw new Error('This migration already has a different owner transfer.');
+      return this.load();
+    }
+    applyConversationControl(this.load(), value, new Date().toISOString());
+    this.ledger.append({ type: 'conversation-control', data: value }); return this.#materialise();
+  }
   rename(raw: unknown): ConversationView {
     const parsed = RenameConversationSchema.parse(raw); const request = RenameConversationSchema.parse({ ...parsed, title: this.ledger.redact(parsed.title), previousTitle: this.ledger.redact(parsed.previousTitle) });
     const previous = this.ledger.events().filter((event) => event.type === 'conversation-control').map((event) => ConversationRenamedSchema.safeParse(this.ledger.data(event))).find((entry) => entry.success && entry.data.request.clientRequestId === request.clientRequestId);

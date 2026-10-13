@@ -6,6 +6,8 @@ Projects sits next to the existing conversations, which keep working exactly as 
 
 The 0.3.0 coordinator/memory/terminal source phases are pushed and the release is healthy on the Pro. Closing tests, packaged installation and blocked real-provider acceptance have separate evidence in [the extension report](acceptance/coordinator-memory-terminal.md), [the live Pro checkpoint](acceptance/pro-hub-030-live-2026-10-13.md) and [the ordered handoff](acceptance/loop-activation.md). Native Codex takeover revalidates root AGENTS.md/CLAUDE.md on each resume; capture outages never keep a thread attached after handback.
 
+The browser-driven activation found an imported conversation replay issue that also blocks checkout registration in Project Settings. The 0.3.1 repair uses the existing ledger's versioned ownership control, tied to the matching import source and destination. It preserves requests, work, timestamps and historical entries. This is a recovery repair; Projects placement and Mini exclusions stay in force. [Evidence and remaining activation](acceptance/hub-history-rebinding-2026-10-13.md) are separate from real-provider acceptance.
+
 ## Concepts
 
 | Term | Meaning |

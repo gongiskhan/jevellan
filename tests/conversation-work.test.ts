@@ -22,6 +22,19 @@ function finish(action: Action = 'plan', summary = 'Done', extra = {}) {
   ledger.acceptHandoff(HandoffSchema.parse({ schema: 'handoff-v2', stretch: n, action, status: 'done', summary, evidence: [], findings: [], blockers: [], failedApproaches: [], proposedNext: 'implement', changedFiles: [], ...extra }));
   return store.finish(n, { status: 'completed', usage: { inputTokens: 10, outputTokens: 5, costSource: 'reported', costUsd: 0.1 }, gitAfter: `commit_${n}` }, true);
 }
+test('migration owner records preserve work, replay in order, and retry without duplicate history', () => {
+  store.message('Keep my original request.', 'retained_request');
+  const before = store.load(); const count = ledger.events().length;
+  const input = { schema: 'conversation-owner-rebound-v1', exportId: 'export_first', sourceDeviceId: 'device', destinationDeviceId: 'device_pro' };
+  const rebound = store.rebindOwner(input);
+  expect(rebound).toEqual({ ...before, conversation: { ...before.conversation, ownerDeviceId: 'device_pro' } });
+  expect(store.rebindOwner(input)).toEqual(rebound); expect(ledger.events()).toHaveLength(count + 1);
+  expect(() => store.rebindOwner({ ...input, destinationDeviceId: 'device_other' })).toThrow('different owner transfer');
+  expect(() => store.rebindOwner({ ...input, exportId: 'export_wrong', sourceDeviceId: 'foreign' })).toThrow('migration source');
+  store.rebindOwner({ ...input, exportId: 'export_second', sourceDeviceId: 'device_pro', destinationDeviceId: 'device_next' });
+  expect(new ConversationWork(new ConversationLedger(homes, 'conversation')).load().conversation.ownerDeviceId).toBe('device_next');
+  expect(store.load().messages).toEqual(before.messages);
+});
 test('Garrison continuity regression: plan, approval, implementation, block and reply retain one exact work', () => {
   const request = '  Fix negative numbers.\nKeep mobile usable and all evidence.  ';
   store.message(request, 'first'); store.baseCommit('original-head'); const workId = store.load().conversation.work!.id;

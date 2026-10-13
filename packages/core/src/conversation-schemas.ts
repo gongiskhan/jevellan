@@ -19,7 +19,9 @@ export const FinishOutsideOperationSchema = z.strictObject({ schema: z.literal('
 export type FinishOutsideOperation = z.infer<typeof FinishOutsideOperationSchema>;
 /** Records who started a conversation when that was not known at creation (conversations from before the field existed). */
 export const ConversationOriginSchema = z.strictObject({ schema: z.literal('conversation-origin-v1'), origin: z.enum(['context-operation']) });
-export const ConversationControlSchema = z.union([ConversationRenamedSchema, FinishOutsideOperationSchema, ConversationOriginSchema]);
+export const ConversationOwnerReboundSchema = z.strictObject({ schema: z.literal('conversation-owner-rebound-v1'),
+  exportId: IdSchema, sourceDeviceId: IdSchema, destinationDeviceId: IdSchema });
+export const ConversationControlSchema = z.union([ConversationRenamedSchema, FinishOutsideOperationSchema, ConversationOriginSchema, ConversationOwnerReboundSchema]);
 export const ManualStepSchema = z.strictObject({ schema: z.literal('manual-step-v1'), generation: z.number().int().nonnegative(), action: ActionSchema.exclude(['integrate']), runtimeId: IdSchema.optional(), accountId: IdSchema.optional(), modelId: IdSchema.optional(), effort: EffortSchema.optional(), remember: z.boolean().default(false) });
 export type ManualStep = z.infer<typeof ManualStepSchema>;
 export const ExternalActivityWaitSchema = z.strictObject({ schema: z.literal('external-activity-wait-v1'), id: IdSchema, workId: IdSchema, generation: z.number().int().nonnegative(), choice: ManualStepSchema, source: z.enum(['manual', 'automatic']) });

@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "migrated conversation history and Project Settings stay usable on the new hub",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/migrated-conversation-history-desktop-light.png",
+  "expected": "the Jevellan web app \"migrated conversation history\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"migrated conversation history and Project Settings stay usable on the new hub\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The sidebar conversation item subtitle 'Done · Migration fixture · dev_…' is cut off with an ellipsis. The full value appears in the header chips, so nothing is lost.",
+      "The main conversation area is mostly empty because there's only one message. Expected for the fixture."
+    ]
+  }
+}

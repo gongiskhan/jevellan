@@ -137,3 +137,8 @@ The live working-day/night harness checks source-provider frontmatter, cross-pro
 
 
 Live activation checkpoint: the owner delegated browser driving, and the protected hub login is awaiting the existing passphrase/1Password unlock. Both member packages are verified/unpacked with actual 0.3.0 CLI checks. Confirmed abandoned installation builds reclaimed another 7.6 GiB on Madrid, whose Ekoa disk guard still fails. The Mini pilot/apps/fence remain retained; original URL acceptance is pending its apps-only service/join. Current diagnostics require account freshness and Jev model discovery in Settings. No real scenario clock, owner acceptance, source change or additional review started. See acceptance/computer-activation-2026-10-13.md and decisions 752–753.
+
+
+## Activation continuity — 13 October 2026
+
+The shared Jevellan handoff records the authenticated Pro, current account/model readiness, the imported-history replay blocker and its 0.3.1 repair. Source checks and fixture vision remain separate from real provider/memory scenarios, which have not started. Keep native homes and old note stores untouched. The repair changes only conversation ownership bookkeeping; capture, recall, hub notes and dream behavior are unchanged. See [the repair evidence](acceptance/hub-history-rebinding-2026-10-13.md).

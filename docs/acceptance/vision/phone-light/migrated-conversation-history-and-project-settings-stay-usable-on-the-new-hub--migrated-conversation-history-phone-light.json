@@ -1,0 +1,16 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "migrated conversation history and Project Settings stay usable on the new hub",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/migrated-conversation-history-phone-light.png",
+  "expected": "the Jevellan web app \"migrated conversation history\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"migrated conversation history and Project Settings stay usable on the new hub\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The user message bubble sits almost flush against the right edge of the viewport. It has less right margin than the header, so the right side of its border looks clipped, though all of its text and the Retry and Edit buttons are fully visible."
+    ]
+  }
+}

@@ -3,11 +3,13 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, s
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, expect, test, vi } from 'vitest';
-import { AccountSchema, AccountStatusSchema, DaemonOwnership, DeviceConfigSchema, DeviceSchema, Homes, HubImportActivationSchema,
+import { AccountSchema, AccountStatusSchema, DaemonOwnership, DeviceConfigSchema, DeviceSchema, Homes, HubImportActivationSchema, HubImportReceiptSchema,
   ProjectSchema, assertHubNotMoved, readDocument, seedConfiguration, writeDocument } from '../packages/core/dist/index.js';
 import { HubDatabase, UiAuth } from '../packages/mesh/dist/index.js';
 import { exportHub, importHub, recoverHubImport } from '../packages/cli/dist/hub-migration.js';
 import { hubCommand } from '../packages/cli/dist/hub-command.js';
+import { ConversationLedger, ConversationWork } from '../packages/conversations/dist/index.js';
+import { Application } from '../apps/daemon/dist/index.js';
 
 const roots: string[] = [];
 afterEach(() => { for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true }); vi.restoreAllMocks(); });
@@ -24,6 +26,42 @@ function fixture() {
   const archive = join(root, 'hub.enc');
   return { root, source, destination, hub, archive };
 }
+test('a migrated hub replays its real conversations on the new owner and opens Project Settings without rewriting history', async () => {
+  const f = fixture();
+  f.hub.put('projects', 'project_local', ProjectSchema, { schema: 'project-v1', id: 'project_local', name: 'Local', paths: { dev_mini: f.source.at('checkouts', 'local') },
+    branchPolicy: 'main', memory: { mode: 'device', dir: 'memory' }, context: { state: 'none' } }, 0);
+  const ledger = new ConversationLedger(f.source, 'con_real'), work = new ConversationWork(ledger);
+  work.create({ title: 'Retained history', projectId: 'project_local', ownerDeviceId: 'dev_mini' });
+  work.message('Keep this request exactly.', 'owner_request');
+  work.close('done');
+  const before = work.load(); const history = readFileSync(ledger.segments()[0]!);
+  const blob = ledger.putBlob({ preserved: 'historical content' }); const bytes = readFileSync(join(ledger.dir, blob.ref));
+  f.hub.close();
+  await exportHub({ homes: f.source, out: f.archive, destinationName: 'Pro', passphrase });
+  await importHub({ homes: f.destination, archive: f.archive, passphrase });
+  const app = new Application({ homes: f.destination, timers: false, runtimes: () => new Map() });
+  try {
+    await app.conversations.ready;
+    expect((await app.conversations.projects()).projects.map(row => row.project.id)).toEqual(['project_local']);
+    const after = new ConversationWork(new ConversationLedger(f.destination, 'con_real')).load();
+    expect(after).toEqual({ ...before, conversation: { ...before.conversation, ownerDeviceId: 'dev_pro' } });
+    expect(readFileSync(f.destination.at('conversations', 'con_real', 'ledger', '000001.jsonl')).subarray(0, history.length)).toEqual(history);
+    expect(readFileSync(f.destination.at('conversations', 'con_real', blob.ref))).toEqual(bytes);
+  } finally { await app.close(); }
+});
+test.each(['sourceDeviceId', 'destinationDeviceId'] as const)('a different migration %s cannot adopt a conversation', async field => {
+  const f = fixture(); const ledger = new ConversationLedger(f.source, 'con_guard');
+  new ConversationWork(ledger).create({ title: 'Keep ownership', projectId: 'project_local', ownerDeviceId: 'dev_mini' });
+  const history = readFileSync(ledger.segments()[0]!); f.hub.close();
+  await exportHub({ homes: f.source, out: f.archive, destinationName: 'Pro', passphrase });
+  const receipt = await importHub({ homes: f.destination, archive: f.archive, passphrase });
+  writeDocument(f.destination.at('hub-import.json'), HubImportReceiptSchema, { ...receipt, [field]: 'dev_other' });
+  const app = new Application({ homes: f.destination, timers: false, runtimes: () => new Map() });
+  try {
+    await expect(app.conversations.ready).rejects.toThrow('A conversation directory belongs to another device.');
+    expect(readFileSync(f.destination.at('conversations', 'con_guard', 'ledger', '000001.jsonl'))).toEqual(history);
+  } finally { await app.close(); }
+});
 test('encrypted migration preserves the vault, sign-in, history and settings, rebinds identity, and drops Codex auth and caches', async () => {
   const f = fixture(); const login = new UiAuth(f.hub, f.hub.vault, 'dev_mini'); await login.setup({ schema: 'passphrase-input-v1', passphrase: 'ui fixture phrase' });
   f.hub.vault.put('claude_credential', 'fixture-sensitive-value');
