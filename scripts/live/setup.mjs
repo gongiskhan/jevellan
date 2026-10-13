@@ -58,18 +58,20 @@ export async function registerSandboxProject(client, project, secrets = {}) {
     schema: 'save-secret-v1', clientRequestId: newId('credential'), value: secrets.githubToken,
   });
 }
+export async function stopSandboxWork(client, projectId) {
+  if ((await client.work(projectId)).threads.some(thread => thread.state === 'attached')) throw blocked('The sandbox has an owner-attached session. Detach it before resetting; no remote history was changed.');
+  await client.settings(projectId, { refill: { enabled: false, minIntervalMinutes: 30 }, nightlyWindow: { enabled: false, time: '23:59', timezone: 'UTC' }, autoMerge: false });
+  await client.call('POST', `/api/projects/${projectId}/coordinator/stop`, empty);
+  for (const task of await client.tasks(projectId)) if (['draft', 'queued'].includes(task.state) && !task.threadId) await client.action(projectId, task, 'cancel');
+  for (const thread of (await client.work(projectId)).threads) if (!['done', 'stopped', 'failed'].includes(thread.state)) await client.call('POST', `/api/projects/${projectId}/threads/${thread.id}/stop`, { schema: 'thread-stop-request-v1', reason: 'Sandbox reset.' });
+  await until('all former sandbox threads to stop before reset', async () => (await client.work(projectId)).threads.every(thread => ['done', 'stopped', 'failed'].includes(thread.state)), 120000);
+}
 export async function resetSandbox(client, state, coordinator, models, secrets = {}) {
   const { config } = client;
   if (config.githubTokenScope === 'project' && !secrets.githubToken) throw blocked('The private runner needs the approved sandbox project credential for fresh project-scoped resets.');
   assertSandbox(config.proCheckout);
   assert.equal(git(config.proCheckout, ['status', '--porcelain']), '', 'Preserve concurrent sandbox checkout work before resetting the remote.');
-  if (state.projectId) {
-    await client.settings(state.projectId, { refill: { enabled: false, minIntervalMinutes: 30 }, nightlyWindow: { enabled: false, time: '23:59', timezone: 'UTC' }, autoMerge: false });
-    await client.call('POST', `/api/projects/${state.projectId}/coordinator/stop`, empty);
-    for (const task of await client.tasks(state.projectId)) if (['draft', 'queued', 'active', 'in-review'].includes(task.state)) await client.action(state.projectId, task, 'cancel');
-    await until('all former sandbox threads to stop before reset', async () => (await client.work(state.projectId)).threads.every(row => !['preparing', 'running', 'publishing', 'attached'].includes(row.state)), 120000);
-    for (const thread of (await client.work(state.projectId)).threads) if (!['done', 'stopped', 'failed'].includes(thread.state)) await client.call('POST', `/api/projects/${state.projectId}/threads/${thread.id}/stop`, { schema: 'thread-stop-request-v1', reason: 'Sandbox reset.' });
-  }
+  if (state.projectId) await stopSandboxWork(client, state.projectId);
   for (const pull of github('pulls?state=open&per_page=100')) github(`pulls/${pull.number}`, { method: 'PATCH', input: { state: 'closed' } });
   for (const branch of github('branches?per_page=100')) if (branch.name !== 'main') github(`git/refs/heads/${encodeURIComponent(branch.name)}`, { method: 'DELETE' });
   git(config.proCheckout, ['fetch', 'origin', '--prune', '--tags']); const baseline = git(config.proCheckout, ['rev-parse', 'sandbox-baseline']);

@@ -4,6 +4,7 @@ import { github } from '../scripts/live/client.mjs';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join } from 'node:path';
+import { execFileSync } from 'node:child_process';
 
 const token = 'fixture-scoped-credential';
 const project = { id: 'sandbox_new', remoteUrl: 'https://github.com/gongiskhan/jevellan-live-sandbox.git', githubTokenScope: 'project' };
@@ -69,4 +70,32 @@ test('legacy shared registrations keep their existing credential choice and neve
   await setup.registerSandboxProject({ call }, { ...project, githubTokenScope: 'shared' }, {});
   expect(call).toHaveBeenCalledOnce();
   expect(call).toHaveBeenCalledWith('PUT', '/hub/projects', expect.objectContaining({ project: { ...project, githubTokenScope: 'shared' } }));
+});
+
+test('sandbox reset stops begun work through thread controls before touching remote history', async () => {
+  const checkout = mkdtempSync(join(tmpdir(), 'jevellan-reset-order-'));
+  execFileSync('git', ['init', '-q', '-b', 'main', checkout]);
+  execFileSync('git', ['-C', checkout, 'remote', 'add', 'origin', project.remoteUrl]);
+  let stopped = false;
+  const action = vi.fn(async (_id: string, task: { state: string; threadId?: string }) => {
+    if (task.threadId) throw new Error('Use the thread controls for a task that has started.');
+    task.state = 'cancelled';
+  });
+  const call = vi.fn(async (_method: string, path: string) => { if (path.endsWith('/threads/thread_started/stop')) stopped = true; return {}; });
+  const owner = { config: { proCheckout: checkout }, settings: async () => ({}), action, call,
+    tasks: async () => [{ id: 'started', state: 'active', threadId: 'thread_started' }, { id: 'queued', state: 'queued' }],
+    work: async () => { if (stopped) throw new Error('Safe stop boundary reached before remote reset.'); return { threads: [{ id: 'thread_started', state: 'running' }] }; },
+  };
+  try {
+    await expect(setup.resetSandbox(owner, { projectId: 'sandbox_old' }, 'claude', {}, {})).rejects.toThrow('Safe stop boundary reached before remote reset.');
+    expect(action.mock.calls).toHaveLength(1);
+    expect(action.mock.calls[0]?.[1]).not.toHaveProperty('threadId');
+    expect(call).toHaveBeenCalledWith('POST', '/api/projects/sandbox_old/threads/thread_started/stop', expect.objectContaining({ schema: 'thread-stop-request-v1' }));
+  } finally { rmSync(checkout, { recursive: true, force: true }); }
+});
+
+test('sandbox reset preserves an owner-attached session before changing settings or stopping work', async () => {
+  const call = vi.fn(), settings = vi.fn(), action = vi.fn();
+  await expect(setup.stopSandboxWork({ call, settings, action, work: async () => ({ threads: [{ state: 'attached' }] }) }, 'sandbox_old')).rejects.toMatchObject({ blocked: true });
+  expect(call).not.toHaveBeenCalled(); expect(settings).not.toHaveBeenCalled(); expect(action).not.toHaveBeenCalled();
 });

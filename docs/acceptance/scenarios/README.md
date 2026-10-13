@@ -23,3 +23,6 @@ Receipts are live-scenario-receipt-v1 under date/scenario-run.json. Every step i
 A5's page-size PR assertion and A6's immediate cancellation are both retained. If cancellation prevents publication, the harness records that exact failing assertion instead of waiving it. Phone-width Playwright and live vision evidence do not claim physical iOS acceptance.
 
 Current real runs are blocked on the owner's pending activation/sign-in/join/Settings inputs. Blocked receipts have no live start, no usage and no acceptance claim. Unit/integration harness checks use simulated fixtures.
+
+
+Decision 790 corrects the prior harness reset order. Cancel only unstarted drafts/queued tasks, stop begun work through the normal thread controls, then wait for terminal states before touching sandbox GitHub history. An owner-attached session blocks reset before settings or stop mutations. The regression fails before repair; all 19 affected harness cases in two files, typecheck and lint pass. Assertions, owner messages, prior logical project history and the original live clock are unchanged. Git authentication checkpoint 3ec6a03 is pushed after its mandatory secret scan; owned Pro and Madrid development copies are staged with verified packaged exports, without switching the running profiles or installed production.
