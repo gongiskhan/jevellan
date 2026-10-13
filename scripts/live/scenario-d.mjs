@@ -6,6 +6,18 @@ import { tsImport } from 'tsx/esm/api';
 import { until } from './client.mjs';
 
 const minutes = n => n * 60000;
+export async function terminalToolbarAction(page, label) {
+  const action = page.getByRole('button', { name: label, exact: true }).filter({ visible: true });
+  if (!await action.isVisible()) await page.getByRole('button', { name: 'Terminal menu', exact: true }).click();
+  await action.click();
+}
+export async function copyTerminalOutput(page, label, ready) {
+  await terminalToolbarAction(page, label);
+  return until(`${label} to finish writing the expected clipboard range`, async () => {
+    const text = await page.evaluate(() => globalThis.navigator.clipboard.readText());
+    return ready(text) ? text : undefined;
+  }, 30000, 100);
+}
 export async function scenarioD(client, projectId, recorder) {
   const page = client.page; let session, madrid;
   const last = async (id, text, timeout = minutes(2)) => until(`terminal command ${text} to end`, async () => (await client.terminalSnapshot(id)).commands.findLast(row => row.command === text && row.endedAt), timeout, 100);
@@ -27,11 +39,11 @@ export async function scenarioD(client, projectId, recorder) {
   await recorder.step('D5', 'Reload reconnects the same terminal and replays hello in its scrollback.', async () => { await page.reload(); await expect(page.getByRole('status').filter({ hasText: 'Connected' })).toBeVisible({ timeout: 30000 }); const snapshot = await client.terminalSnapshot(session.id); assert.equal(snapshot.session.id, session.id); assert(snapshot.tail.includes('hello')); await expect(page.locator('.xterm-screen')).toBeVisible(); return { sessionId: session.id, replayed: 'hello' }; });
   await recorder.step('D6', 'The copy buttons include exactly the requested command range and strip every escape code.', async () => {
     for (let n = 1; n <= 6; n++) { await client.run(`echo record-${n}`); await last(session.id, `echo record-${n}`); }
-    const copy = async label => { await page.getByRole('button', { name: label, exact: true }).filter({ visible: true }).click(); const text = await page.evaluate(() => globalThis.navigator.clipboard.readText()); assert(![...text].some(char => [27, 155].includes(char.charCodeAt(0)))); return text; };
-    const one = await copy('Copy last command'); assert(one.includes('$ echo record-6') && !one.includes('record-5')); const five = await copy('Copy last 5 commands'); for (let n = 2; n <= 6; n++) assert(five.includes(`$ echo record-${n}`)); assert(!five.includes('record-1')); const all = await copy('Copy all'); assert(all.includes('hello') && all.includes('record-1') && all.includes('record-6')); await shot('copy-controls', 'terminal copy and Send to controls reachable at this layout'); return { one, five, allChars: all.length };
+    const copy = async (label, ready) => { const text = await copyTerminalOutput(page, label, ready); assert(![...text].some(char => [27, 155].includes(char.charCodeAt(0)))); return text; };
+    const one = await copy('Copy last command', text => text.includes('$ echo record-6') && !text.includes('record-5')); assert(one.includes('$ echo record-6') && !one.includes('record-5')); const five = await copy('Copy last 5 commands', text => [2, 3, 4, 5, 6].every(n => text.includes(`$ echo record-${n}`)) && !text.includes('record-1')); for (let n = 2; n <= 6; n++) assert(five.includes(`$ echo record-${n}`)); assert(!five.includes('record-1')); const all = await copy('Copy all', text => text.includes('hello') && text.includes('record-1') && text.includes('record-6')); assert(all.includes('hello') && all.includes('record-1') && all.includes('record-6')); await shot('copy-controls', 'terminal copy and Send to controls reachable at this layout'); return { one, five, allChars: all.length };
   });
   await recorder.step('D7', 'Send to… delivers the last command to the coordinator and starts its next turn.', async () => {
-    const before = Date.now(); await page.getByRole('button', { name: 'Send to…', exact: true }).filter({ visible: true }).click(); await page.getByRole('dialog').getByRole('button', { name: 'Send', exact: true }).click();
+    const before = Date.now(); await terminalToolbarAction(page, 'Send to…'); await page.getByRole('dialog').getByRole('button', { name: 'Send', exact: true }).click();
     const event = await until('the coordinator to receive the sent terminal output', () => client.ledger(projectId).find(row => row.type === 'coordinator-event' && row.data.kind === 'user-message' && Date.parse(row.t) >= before && row.data.text.includes('echo record-6')), minutes(2)); const turn = await until('the coordinator turn with terminal output', () => client.ledger(projectId).find(row => row.type === 'coordinator-turn-start' && row.data.eventIds.includes(event.data.id)), minutes(2)); return { eventId: event.id, turn: turn.turn, text: event.data.text };
   });
   await recorder.step('D8', 'Take over in browser attaches a real native thread session; leaving detaches and returns it to Jevellan.', async () => {

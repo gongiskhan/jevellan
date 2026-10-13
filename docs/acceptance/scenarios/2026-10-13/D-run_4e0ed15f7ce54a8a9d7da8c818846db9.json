@@ -1,0 +1,40 @@
+{
+  "schema": "live-scenario-receipt-v1",
+  "scenario": "D",
+  "run": "run_4e0ed15f7ce54a8a9d7da8c818846db9",
+  "coordinator": "claude",
+  "layout": "phone-light",
+  "label": "live",
+  "passed": false,
+  "startedAt": "2026-10-13T23:43:40.018Z",
+  "endedAt": "2026-10-13T23:43:44.769Z",
+  "minutes": 0.07918333333333333,
+  "clockStartedAt": "2026-10-13T18:15:59.903Z",
+  "timeBoxEnded": false,
+  "projectId": "live_day_034ae7b5c4d6470c9811ec382bda73c1",
+  "steps": [
+    {
+      "id": "D1",
+      "assertion": "The Pro project terminal opens in its registered dedicated checkout.",
+      "verdict": "failed",
+      "startedAt": "2026-10-13T23:43:40.021Z",
+      "endedAt": "2026-10-13T23:43:44.707Z",
+      "seconds": 4.686,
+      "reason": "apiRequestContext.fetch: read ECONNRESET\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:19775/api/terminals/term_01M4VTD3F374C0M0BDN0E1TVG6\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\u001b[2m    - Origin: http://127.0.0.1:19775\u001b[22m\n\u001b[2m    - cookie: jevellan_session=[redacted]\u001b[22m\n",
+      "evidence": {}
+    }
+  ],
+  "messages": [],
+  "toolCalls": [],
+  "pullRequests": [],
+  "workflowRunIds": [],
+  "notes": [],
+  "sessions": [],
+  "providerTotals": {},
+  "blockedBy": [
+    "D1: apiRequestContext.fetch: read ECONNRESET\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:19775/api/terminals/term_01M4VTD3F374C0M0BDN0E1TVG6\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\u001b[2m    - Origin: http://127.0.0.1:19775\u001b[22m\n\u001b[2m    - cookie: jevellan_session=[redacted]\u001b[22m\n"
+  ],
+  "observations": [
+    "Usage records come from runtime-reported turn outcomes. Missing tokens or cost remain unknown; minutes include concurrent sessions."
+  ]
+}

@@ -416,7 +416,7 @@
   {
     "id": "coordinator-memory-terminal-p1",
     "title": "Persistent Projects sessions and compaction",
-    "why": "Persistent coordinator sessions, configurable 70% compaction on all Projects sessions, native context/compaction receipts and panel implemented. 107 targeted backend cases, four-layout CM1 and eight clear live vision judgments pass; typecheck/lint/build pass. Real provider scenario C remains blocked on pending owner activation inputs.",
+    "why": "Persistent coordinator sessions, configurable 70% compaction on all Projects sessions, native context/compaction receipts and panel implemented. 107 targeted backend cases, four-layout CM1 and eight clear live vision judgments pass; typecheck/lint/build pass. Real provider scenario C remains blocked on pending owner activation inputs. Live: two consecutive exact C passes on the owned real-provider development profiles, native session continuity and refreshed prompts retained; immutable-release/physical acceptance remain separate.",
     "status": "complete-with-blockers"
   },
   {
@@ -446,7 +446,7 @@
   {
     "id": "coordinator-memory-terminal-p6",
     "title": "Real coordinator and terminal scenarios",
-    "why": "Owner-API A/B/C/D harness, real sandbox seed, private resumable clock, structured redacted ledger/usage evidence and test-only nightly cutoff implemented. Affected backend coverage passes through reruns; CM1\u2013CM5 pass all twenty layout cases with 56 clear vision verdicts. Thirteen blocked receipts retain missing owner inputs; no real acceptance clock has started. The real Node 20 sandbox is now published at 61fc71a/sandbox-baseline, preserving the pilot tag. Vitest 4.1.11 corrects the Node 22-only pin; a failing-before/passing-after actual Node 20 integration test and nine harness cases pass. Actual app lint/three units/eight four-layout page cases pass; new fixture vision is blocked without its dedicated credential. Formal scenarios and clock remain unstarted.",
+    "why": "Owner-API A/B/C/D harness, real sandbox seed, private resumable clock, structured redacted ledger/usage evidence and test-only nightly cutoff implemented. Affected backend coverage passes through reruns; CM1\u2013CM5 pass all twenty layout cases with 56 clear vision verdicts. Thirteen blocked receipts retain missing owner inputs; no real acceptance clock has started. The real Node 20 sandbox is now published at 61fc71a/sandbox-baseline, preserving the pilot tag. Vitest 4.1.11 corrects the Node 22-only pin; a failing-before/passing-after actual Node 20 integration test and nine harness cases pass. Actual app lint/three units/eight four-layout page cases pass; new fixture vision is blocked without its dedicated credential. Formal scenarios and clock remain unstarted. Prior-P6 real C now passes twice consecutively (13.6881/17.32545 minutes); A/B and four-layout D remain incomplete under the original ten-hour stop.",
     "status": "complete-with-blockers"
   },
   {
@@ -598,5 +598,17 @@
     "title": "Read canonical coordinator follow-up inputs in live assertions",
     "why": "Decision800 refines736. Canonical bridge message fields replace owner-HTTP text in A3/A5; successful failed-check log/follow-up pairing remains required. Regression fails before repair;23 affected simulated cases/typecheck/lint pass. Strict real failed-check prerequisite and original clock unchanged; fifth C remains active.",
     "status": "complete"
+  },
+  {
+    "id": "activation-phone-terminal-driver",
+    "title": "Reach terminal copy and send actions through the phone menu",
+    "why": "Decision801 refines736. Retain first phone D6 timeout; open existing menu for hidden toolbar controls, preserve exact copy/send assertions. Regression fails before repair,25 affected simulated cases/typecheck/lint pass. Real four-layout D rerun in progress.",
+    "status": "complete-with-blockers"
+  },
+  {
+    "id": "activation-terminal-copy-settlement",
+    "title": "Await the requested terminal clipboard range",
+    "why": "Decision802 refines736. Real phone D6 reads the stale clipboard before Copy finishes; bounded settlement preserves all exact copy and escape-code assertions. Regression fails before repair;26 affected simulated cases/typecheck/lint pass. Original live deadline and native messages remain.",
+    "status": "complete-with-blockers"
   }
 ]

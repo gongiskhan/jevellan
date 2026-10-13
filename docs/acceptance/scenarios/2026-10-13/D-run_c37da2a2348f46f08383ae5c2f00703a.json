@@ -1,0 +1,104 @@
+{
+  "schema": "live-scenario-receipt-v1",
+  "scenario": "D",
+  "run": "run_c37da2a2348f46f08383ae5c2f00703a",
+  "coordinator": "claude",
+  "layout": "phone-light",
+  "label": "live",
+  "passed": false,
+  "startedAt": "2026-10-13T23:40:18.486Z",
+  "endedAt": "2026-10-13T23:41:02.207Z",
+  "minutes": 0.7286833333333333,
+  "clockStartedAt": "2026-10-13T18:15:59.903Z",
+  "timeBoxEnded": false,
+  "projectId": "live_day_75873375748e4009bbc16a74bf17c513",
+  "steps": [
+    {
+      "id": "D1",
+      "assertion": "The Pro project terminal opens in its registered dedicated checkout.",
+      "verdict": "passed",
+      "startedAt": "2026-10-13T23:40:18.487Z",
+      "endedAt": "2026-10-13T23:40:26.821Z",
+      "seconds": 8.334,
+      "evidence": {
+        "id": "term_01M4VT6WJKRVQTHMT0AKRPGG5V",
+        "device": "dev_01M4V2PFFJNAK1W6TGEFGB617S",
+        "cwd": "/Users/ggomes/jevellan-projects/jevellan-live-sandbox",
+        "output": "/Users/ggomes/jevellan-projects/jevellan-live-sandbox\n"
+      }
+    },
+    {
+      "id": "D2",
+      "assertion": "The dev-madrid device terminal uses the existing relay and prints the actual remote hostname.",
+      "verdict": "passed",
+      "startedAt": "2026-10-13T23:40:26.824Z",
+      "endedAt": "2026-10-13T23:40:30.393Z",
+      "seconds": 3.569,
+      "evidence": {
+        "id": "term_01M4VT72ZFSWG9VEF51GKWWTPR",
+        "device": "dev_01M4V38ABJAT5B8FEMBBD7KMC9",
+        "hostname": "dev-madrid",
+        "output": "dev-madrid\n"
+      }
+    },
+    {
+      "id": "D3",
+      "assertion": "Type or dictate a command and Run send echo hello through the real PTY.",
+      "verdict": "passed",
+      "startedAt": "2026-10-13T23:40:30.394Z",
+      "endedAt": "2026-10-13T23:40:30.752Z",
+      "seconds": 0.358,
+      "evidence": {
+        "command": "echo hello",
+        "output": "hello\n"
+      }
+    },
+    {
+      "id": "D4",
+      "assertion": "Sticky Ctrl and C interrupt sleep within two seconds and preserve its non-zero exit record.",
+      "verdict": "passed",
+      "startedAt": "2026-10-13T23:40:30.754Z",
+      "endedAt": "2026-10-13T23:40:30.981Z",
+      "seconds": 0.227,
+      "evidence": {
+        "exitCode": 130,
+        "elapsedMs": 74
+      }
+    },
+    {
+      "id": "D5",
+      "assertion": "Reload reconnects the same terminal and replays hello in its scrollback.",
+      "verdict": "passed",
+      "startedAt": "2026-10-13T23:40:30.981Z",
+      "endedAt": "2026-10-13T23:40:31.244Z",
+      "seconds": 0.263,
+      "evidence": {
+        "sessionId": "term_01M4VT6WJKRVQTHMT0AKRPGG5V",
+        "replayed": "hello"
+      }
+    },
+    {
+      "id": "D6",
+      "assertion": "The copy buttons include exactly the requested command range and strip every escape code.",
+      "verdict": "failed",
+      "startedAt": "2026-10-13T23:40:31.244Z",
+      "endedAt": "2026-10-13T23:41:02.140Z",
+      "seconds": 30.896,
+      "reason": "locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: 'Copy last command', exact: true }).visible()\u001b[22m\n",
+      "evidence": {}
+    }
+  ],
+  "messages": [],
+  "toolCalls": [],
+  "pullRequests": [],
+  "workflowRunIds": [],
+  "notes": [],
+  "sessions": [],
+  "providerTotals": {},
+  "blockedBy": [
+    "D6: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: 'Copy last command', exact: true }).visible()\u001b[22m\n"
+  ],
+  "observations": [
+    "Usage records come from runtime-reported turn outcomes. Missing tokens or cost remain unknown; minutes include concurrent sessions."
+  ]
+}

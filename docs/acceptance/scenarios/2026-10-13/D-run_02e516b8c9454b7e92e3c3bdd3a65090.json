@@ -1,0 +1,104 @@
+{
+  "schema": "live-scenario-receipt-v1",
+  "scenario": "D",
+  "run": "run_02e516b8c9454b7e92e3c3bdd3a65090",
+  "coordinator": "claude",
+  "layout": "phone-light",
+  "label": "live",
+  "passed": false,
+  "startedAt": "2026-10-13T23:45:09.420Z",
+  "endedAt": "2026-10-13T23:45:24.070Z",
+  "minutes": 0.24416666666666667,
+  "clockStartedAt": "2026-10-13T18:15:59.903Z",
+  "timeBoxEnded": false,
+  "projectId": "live_day_ae0f3ce155bd464788027d00f920fde7",
+  "steps": [
+    {
+      "id": "D1",
+      "assertion": "The Pro project terminal opens in its registered dedicated checkout.",
+      "verdict": "passed",
+      "startedAt": "2026-10-13T23:45:09.421Z",
+      "endedAt": "2026-10-13T23:45:17.063Z",
+      "seconds": 7.642,
+      "evidence": {
+        "id": "term_01M4VTFS12XDT02QX6NA75DZF7",
+        "device": "dev_01M4V2PFFJNAK1W6TGEFGB617S",
+        "cwd": "/Users/ggomes/jevellan-projects/jevellan-live-sandbox",
+        "output": "/Users/ggomes/jevellan-projects/jevellan-live-sandbox\n"
+      }
+    },
+    {
+      "id": "D2",
+      "assertion": "The dev-madrid device terminal uses the existing relay and prints the actual remote hostname.",
+      "verdict": "passed",
+      "startedAt": "2026-10-13T23:45:17.065Z",
+      "endedAt": "2026-10-13T23:45:20.589Z",
+      "seconds": 3.524,
+      "evidence": {
+        "id": "term_01M4VTFYWS1WTHD2XMW4EY1AQE",
+        "device": "dev_01M4V38ABJAT5B8FEMBBD7KMC9",
+        "hostname": "dev-madrid",
+        "output": "dev-madrid\n"
+      }
+    },
+    {
+      "id": "D3",
+      "assertion": "Type or dictate a command and Run send echo hello through the real PTY.",
+      "verdict": "passed",
+      "startedAt": "2026-10-13T23:45:20.595Z",
+      "endedAt": "2026-10-13T23:45:21.778Z",
+      "seconds": 1.183,
+      "evidence": {
+        "command": "echo hello",
+        "output": "hello\n"
+      }
+    },
+    {
+      "id": "D4",
+      "assertion": "Sticky Ctrl and C interrupt sleep within two seconds and preserve its non-zero exit record.",
+      "verdict": "passed",
+      "startedAt": "2026-10-13T23:45:21.782Z",
+      "endedAt": "2026-10-13T23:45:22.190Z",
+      "seconds": 0.408,
+      "evidence": {
+        "exitCode": 130,
+        "elapsedMs": 207
+      }
+    },
+    {
+      "id": "D5",
+      "assertion": "Reload reconnects the same terminal and replays hello in its scrollback.",
+      "verdict": "passed",
+      "startedAt": "2026-10-13T23:45:22.191Z",
+      "endedAt": "2026-10-13T23:45:22.635Z",
+      "seconds": 0.444,
+      "evidence": {
+        "sessionId": "term_01M4VTFS12XDT02QX6NA75DZF7",
+        "replayed": "hello"
+      }
+    },
+    {
+      "id": "D6",
+      "assertion": "The copy buttons include exactly the requested command range and strip every escape code.",
+      "verdict": "failed",
+      "startedAt": "2026-10-13T23:45:22.635Z",
+      "endedAt": "2026-10-13T23:45:23.933Z",
+      "seconds": 1.298,
+      "reason": "The expression evaluated to a falsy value:\n\n  assert(one.includes('$ echo record-6') && !one.includes('record-5'))\n",
+      "evidence": {}
+    }
+  ],
+  "messages": [],
+  "toolCalls": [],
+  "pullRequests": [],
+  "workflowRunIds": [],
+  "notes": [],
+  "sessions": [],
+  "providerTotals": {},
+  "blockedBy": [
+    "D6: The expression evaluated to a falsy value:\n\n  assert(one.includes('$ echo record-6') && !one.includes('record-5'))\n"
+  ],
+  "observations": [
+    "Usage records come from runtime-reported turn outcomes. Missing tokens or cost remain unknown; minutes include concurrent sessions."
+  ]
+}

@@ -9,6 +9,7 @@ import { LiveStateSchema, ScenarioReceiptSchema, ScenarioRecorder, canStart, evi
 import { planFor, runLive } from '../scripts/live/scenarios.mjs';
 import { OwnerClient, until } from '../scripts/live/client.mjs';
 import { failedCheckDiagnosis, mergeWhenAsked } from '../scripts/live/scenario-a.mjs';
+import { copyTerminalOutput, terminalToolbarAction } from '../scripts/live/scenario-d.mjs';
 import { ThreadMessageInputSchema } from '../packages/core/dist/index.js';
 import { preflight } from '../scripts/live/setup.mjs';
 import { SANDBOX_FILES, assertSandbox, writeSandbox } from '../scripts/live/sandbox.mjs';
@@ -16,6 +17,27 @@ let root: string;
 beforeEach(() => { root = mkdtempSync(join(tmpdir(), 'jevellan-live-harness-')); });
 afterEach(() => rmSync(root, { recursive: true, force: true }));
 const state = () => LiveStateSchema.parse({ schema: 'live-scenarios-state-v1' });
+
+test('terminal copy waits for the asynchronous clipboard write before checking its exact command range', async () => {
+  let text = 'previous clipboard'; let timer: ReturnType<typeof setTimeout> | undefined;
+  const expected = '$ echo record-6\nrecord-6\n';
+  const page = { getByRole: () => ({ filter: () => ({ isVisible: async () => true, click: async () => { timer = setTimeout(() => { text = expected; }, 10); } }) }), evaluate: async () => text };
+  try { expect(await copyTerminalOutput(page, 'Copy last command', (value: string) => value.includes('$ echo record-6'))).toBe(expected); }
+  finally { clearTimeout(timer); }
+});
+
+test.each(['phone', 'desktop'])('terminal toolbar actions use the reachable controls at %s width', async layout => {
+  let menu = false;
+  const menuClick = vi.fn(async () => { menu = true; });
+  const actionClick = vi.fn(async () => { if (layout === 'phone' && !menu) throw new Error('Phone toolbar is inside the closed menu.'); });
+  const page = { getByRole: (_role: string, { name }: { name: string }) => name === 'Terminal menu'
+    ? { click: menuClick }
+    : { filter: () => ({ isVisible: async () => layout === 'desktop' || menu, click: actionClick }) } };
+  await terminalToolbarAction(page, 'Copy last command');
+  await terminalToolbarAction(page, 'Send to…');
+  expect(actionClick).toHaveBeenCalledTimes(2);
+  expect(menuClick).toHaveBeenCalledTimes(layout === 'phone' ? 1 : 0);
+});
 
 test('CI diagnosis reads the canonical bridge message and requires the matching failed event, turn and log call', () => {
   const message = ThreadMessageInputSchema.parse({ threadId: 'thread_fixture', message: 'The failed result job says CHANGELOG.md needs an entry.' });

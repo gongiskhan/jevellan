@@ -1,0 +1,40 @@
+{
+  "schema": "live-scenario-receipt-v1",
+  "scenario": "D",
+  "run": "run_6bf3f9a768ba4aa4aa81ff77da7e13e9",
+  "coordinator": "claude",
+  "layout": "phone-light",
+  "label": "live",
+  "passed": false,
+  "startedAt": "2026-10-13T23:48:27.366Z",
+  "endedAt": "2026-10-13T23:48:32.248Z",
+  "minutes": 0.08136666666666667,
+  "clockStartedAt": "2026-10-13T18:15:59.903Z",
+  "timeBoxEnded": false,
+  "projectId": "live_day_806fc39536b94e39ae0be94f48654d14",
+  "steps": [
+    {
+      "id": "D1",
+      "assertion": "The Pro project terminal opens in its registered dedicated checkout.",
+      "verdict": "failed",
+      "startedAt": "2026-10-13T23:48:27.368Z",
+      "endedAt": "2026-10-13T23:48:32.122Z",
+      "seconds": 4.754,
+      "reason": "The expression evaluated to a falsy value:\n\n  assert(record.output.includes(client.config.proCheckout))\n",
+      "evidence": {}
+    }
+  ],
+  "messages": [],
+  "toolCalls": [],
+  "pullRequests": [],
+  "workflowRunIds": [],
+  "notes": [],
+  "sessions": [],
+  "providerTotals": {},
+  "blockedBy": [
+    "D1: The expression evaluated to a falsy value:\n\n  assert(record.output.includes(client.config.proCheckout))\n"
+  ],
+  "observations": [
+    "Usage records come from runtime-reported turn outcomes. Missing tokens or cost remain unknown; minutes include concurrent sessions."
+  ]
+}
