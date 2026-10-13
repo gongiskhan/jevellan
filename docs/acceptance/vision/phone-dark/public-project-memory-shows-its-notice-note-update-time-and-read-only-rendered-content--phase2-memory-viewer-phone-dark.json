@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The note entry 'Public memory guide / Updated Sep 20, 2026, 1:00 PM' is pushed to the right with a large empty gap on the left. The rest of the modal content is left-aligned.",
-      "The note entry has no visible marker showing it is the selected note.",
-      "The note's update time appears twice: in the list entry and in the note header below it."
+      "The search result card's title and timestamp sit slightly left of center, which leaves uneven empty space on the left.",
+      "The search input's border is low-contrast against the dark modal background."
     ]
   }
 }

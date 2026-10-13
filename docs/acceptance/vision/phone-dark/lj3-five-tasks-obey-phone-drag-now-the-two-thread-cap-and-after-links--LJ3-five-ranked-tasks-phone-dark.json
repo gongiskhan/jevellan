@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Pull requests' tab is clipped at the right edge of the tab strip. The strip probably scrolls sideways, but nothing on screen shows that more tabs are there.",
-      "The 'Now · Queued' badge on Loop task 5 is small, low-contrast monospace text, though it can still be read.",
-      "The up/down arrow buttons on the expanded task are icon-only and very low contrast compared with the other action buttons."
+      "The top tab row runs off the right edge: 'Pull requests' is clipped. It looks like a horizontally scrolling tab strip, but nothing on screen shows that more tabs are there.",
+      "The header line 'Context unavailable · Compacted 0 times today' wraps awkwardly next to the 'Fresh session' button."
     ]
   }
 }

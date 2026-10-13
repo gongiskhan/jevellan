@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Open sign-in page' button sits right on top of the 'Authorization code' label with almost no space between them.",
-      "The disabled 'Continue' button has low contrast against the dark modal background. That's expected for a disabled state, but it's hard to see.",
-      "Behind the dimmed backdrop, the sidebar and settings content are blurred and unreadable, which is expected behind a modal."
+      "The 'Authorization code' label sits right under the 'Open sign-in page' button with almost no space between them.",
+      "The disabled 'Continue' button has low contrast. That fits its disabled state while the login waits, but it's faint against the dark modal.",
+      "There's extra empty space to the right of the 'Stop waiting' button inside the hub-wait notice."
     ]
   }
 }

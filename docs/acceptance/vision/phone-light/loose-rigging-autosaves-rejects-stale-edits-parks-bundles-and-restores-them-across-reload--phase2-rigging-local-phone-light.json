@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab bar in the background ends with a partly visible tab next to the scroll chevron. This is expected horizontal scrolling, and the dim overlay covers it anyway.",
-      "The 'Current file reloaded…' status message sits at the bottom of the modal with little space between it and the edge of the modal card.",
-      "The secondary text in the modal ('Local edits save automatically…', the bundle note) is small and low-contrast, but it is still readable."
+      "The 'browser-local' modal covers most of the Rigging list on purpose, so the background items, the 'Add from package' and 'Add local item' buttons, and the tab strip are dimmed and only partly visible.",
+      "The modal shows no action buttons, such as Park or Close-and-save, apart from the × close button and the 'Source' link. They might sit below the reload toast or simply not be part of this step.",
+      "The pink 'Source' link and the 'Saved' status label share a line with a lot of empty space between them, and the link's small size makes it a slightly weak tap target on a phone."
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background tab strip is clipped at the left edge: the first tab shows as 'hat' instead of 'Chat'. It sits behind the modal overlay, so it doesn't affect the modal.",
-      "The modal sits a bit below vertical center and leaves a large empty dimmed area underneath it."
+      "The background page behind the modal scrim is dimmed and blurred, so its text is hard to read. This is expected for a modal overlay.",
+      "The modal sits in the upper-middle of the screen and leaves a large empty dimmed area below it."
     ]
   }
 }

@@ -10,10 +10,12 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar conversation titles are truncated with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…'), and so are their metadata lines ('dev-…', 'de…'). This looks like intentional overflow handling.",
-      "The cards in the device grid are different heights. The two right-column cards (Browser member, Offline fixture) end well above the left-column cards, which leaves uneven gaps.",
-      "Some buttons are greyed out with no explanation (Open on dev-madrid, Inspect worktrees and Open on Offline fixture). This is probably intentional disabled styling, but the reason isn't shown.",
-      "The fine print (the 'Thread worktrees' line, the resource stats lines and the CSG SSH note) is small, low-contrast grey text but still readable."
+      "The 'Open terminals' links are centred, while all other card content is left-aligned.",
+      "On the 'Mini apps only' card, the 'Apps only' label spans the full width inside a bordered box, so it looks like an empty input field rather than a badge.",
+      "The cards are different heights: 'Mini apps only' is much taller than 'Offline fixture', which leaves a large empty gap in the grid.",
+      "Long conversation titles in the sidebar are cut off with an ellipsis (e.g. 'Context · J11 memory jour…'). This is intentional and the full text is likely available on hover.",
+      "The 'Offline fixture' card has no 'Terminal' button and no resource or worktree usage line. This is probably intentional because the device is offline, but it makes the card layout inconsistent with the others.",
+      "The 'Automatic device choice' checkbox and its text are very low contrast. This is probably intentional because the feature is marked 'Coming later'."
     ]
   }
 }

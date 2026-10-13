@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip is scrolled sideways, so the first tab shows only as a partial 's' and the 'Improve…' tab is cut off at the right edge. The scroll arrows keep them reachable.",
-      "The Routing profile text area cuts off its last line at the bottom edge. The field scrolls, so the text is still readable.",
-      "The 'Jev key saved.' toast sits close to the footer note 'Saving creates a configuration revision.' but does not cover it."
+      "The tab strip is cut off at both edges (the first tab reads only \"s\" and \"Improve\" is clipped). It scrolls and has arrow buttons, so all tabs can still be reached.",
+      "The Routing profile text box cuts off its last visible line at the bottom edge. The box scrolls and can be resized, so the rest of the text is still reachable.",
+      "The \"Jev model\" box is slightly narrower than the other fields in that card.",
+      "The \"Jev key saved.\" message is pinned to the bottom of the screen and could cover content near the end of the page. It has a close button, and the \"Saving creates a configuration revision.\" note is still visible above it."
     ]
   }
 }

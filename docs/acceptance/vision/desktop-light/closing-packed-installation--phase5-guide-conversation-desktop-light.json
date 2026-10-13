@@ -5,14 +5,14 @@
   "test": "Closing packed installation",
   "layout": "desktop-light",
   "screenshot": "screenshots/phase5-guide-conversation-desktop-light.png",
-  "expected": "the first-conversation setup step with readable controls",
+  "expected": "the first-conversation setup step with readable controls Bright magenta rectangles are intentional screenshot masks over saved secret data, not product overlays or rendering faults.",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation title is cut off with an ellipsis ('Context · Installation fixtu…') and so is its subtitle ('Ready · Installation fixture · d…').",
-      "The Start button is low-contrast, most likely because it is disabled until a prompt is entered. It is still readable and reachable.",
-      "The 'Coming later' helper text under the Device field is small and light gray, so it has fairly low contrast."
+      "The sidebar conversation subtitle ('Ready · Installation fixture · …') is cut off with an ellipsis, which looks deliberate",
+      "The Start button looks disabled and has low contrast, which fits the empty prompt field",
+      "The 'Auto' options button label is small, light monospace text that's a bit hard to read"
     ]
   }
 }

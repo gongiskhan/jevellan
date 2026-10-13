@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles are cut off with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…') and so are their subtitles ('dev-ma…', 'de…'), so you can't read the full names.",
-      "The 'Working…' status pill in the header is very small and low-contrast.",
-      "The chat area has a large empty space between the single user message and the 'Coordinator is working…' indicator at the bottom.",
-      "The 'Project day: 2026-10-12' text under NIGHTLY is in a larger font than the other empty-state text in the right panel, so it looks out of place."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Shared memory …'). Hovering or opening the session still shows the full name.",
+      "The status pill in the header shows 'Working…' in a small box that looks tight.",
+      "The left inset of the right panel's empty-state text is uneven: 'Nothing in the queue…' and 'Project day: 2026-10-13' start further left than the section headings."
     ]
   }
 }

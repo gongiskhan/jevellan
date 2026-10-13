@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header path is cut off with an ellipsis ('/private/var/fo...'), so the full working directory isn't visible on a phone-width screen.",
-      "In the scrollable key row, the leftmost key ('→') and the rightmost key ('⋯') are partly clipped at the screen edges. This seems to be a sideways-scrolling strip, so the keys can still be reached.",
-      "The disabled 'Run' button has low-contrast text, though it is still readable."
+      "The row of quick keys (→, |, ~, /, -, Paste, A-, A+, …) is clipped at both screen edges. The → key on the left and the … button on the right are only partly visible. The row looks horizontally scrollable, but nothing on screen shows that it scrolls.",
+      "The project path in the header is cut short with an ellipsis ('/tmp/jevellan-browser-rlm3jp/...'). This appears intentional.",
+      "Long prompt lines in the terminal wrap partway through the path ('rlm3' / 'jp/projects-app$'), which makes them a little harder to read but still legible."
     ]
   }
 }

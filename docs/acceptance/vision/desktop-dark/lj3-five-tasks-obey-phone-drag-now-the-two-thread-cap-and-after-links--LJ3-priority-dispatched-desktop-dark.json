@@ -10,11 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'RUNNING' section heading at the bottom of the right queue panel is cut off by the viewport edge. The panel scrolls, so it can still be reached.",
-      "In the 'Loop task 5' card, the metadata line 'Fable · high effort ·' ends with a stray separator, and the dev ID wraps onto its own line.",
-      "Shell session titles and subtitles in the sidebar are cut short with ellipses (e.g. 'Context · J11 memory jour...', 'dev-ma...'). This looks intentional.",
-      "The chat has several bare 'Noted.' replies in a row, which looks repetitive.",
-      "Some small monospace labels have low contrast on the dark background ('Idle', 'Claude Code Fable · high', the 'Queued' badges), but they are still readable."
+      "The Loop task 3 card at the bottom of the right queue panel runs past the bottom edge of the viewport. Its action buttons are still visible, so this looks like normal panel scrolling.",
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Shared memory fi…'). This is intended truncation and doesn't stop the screen from being read.",
+      "The long run ID 'dev_01M4SD4X0DRKG5KMFHA4VP4ZAV' in the Loop task 5 card wraps onto its own line, which looks a little awkward but is fully readable."
     ]
   }
 }

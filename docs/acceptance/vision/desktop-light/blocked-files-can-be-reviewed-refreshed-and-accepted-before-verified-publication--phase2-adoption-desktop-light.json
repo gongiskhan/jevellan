@@ -10,12 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Conversation title in the header is cut off with an ellipsis ('Exercise reviewed checkpoint recovery with a simulated read-only viola…').",
-      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Exercise reviewed checkp…', 'Change the value to thre…').",
-      "A fourth sidebar conversation item is only partly visible at the bottom of the scrollable list, above 'Some native sessions are unavailable'.",
-      "In the middle column, the 'Input' label sits right at the top edge of the scroll area and is slightly clipped under the header chips.",
-      "The right panel's 'No verification receipt yet' text under JEVELLAN VERIFICATION is cut off at the bottom of the viewport; the panel scrolls, so it can still be reached.",
-      "The 'Why' chip is pink/red while the other step chips are neutral, which is a small visual inconsistency."
+      "The conversation title in the header is cut off with an ellipsis ('...simulated read-only viola…'). The full title isn't visible at this width.",
+      "In the sidebar, the conversation titles and subtitles are cut off with ellipses ('Exercise reviewed checkp…', 'Change the value to thre…'). A fourth list item is partly clipped at the bottom of the scroll area.",
+      "The right panel's 'JEVELLAN VERIFICATION' text ('No verification receipt yet') is cut off at the bottom edge of the viewport. It's in a scrollable panel, so it can still be reached.",
+      "The middle panel is scrolled so that the tool-call card's 'Input' label is partly clipped at the top edge."
     ]
   }
 }

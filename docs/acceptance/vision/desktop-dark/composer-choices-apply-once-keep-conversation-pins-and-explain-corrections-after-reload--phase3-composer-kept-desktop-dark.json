@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Exercise composer choic…', 'Done · Automatic fixture · dev-m…'). This looks like intended truncation, and the full title of the active conversation shows in the header.",
-      "Step 2 (Reply) repeats Step 1's 'Read project' tool output and the line 'The plan has three steps.', which reads as fixture filler rather than reply content.",
-      "The muted labels 'Local time', 'completed' and 'Some native sessions are unavailable' are low-contrast against the dark background, but still readable."
+      "Sidebar conversation titles and subtitles are cut off with ellipses (for example 'Exercise composer choic…' and 'Done · Automatic fixture · dev-m…'). This is normal truncation, but the full text is only available by opening each conversation.",
+      "The header repeats the conversation title as a subtitle directly under it ('Exercise composer choices: explain the value.'), which adds clutter.",
+      "The Step 2 Reply body repeats Step 1's 'Read project' output and the line 'The plan has three steps.', which looks like copied fixture content rather than a distinct reply.",
+      "Section labels such as 'Step details', 'Local time', 'Input' and 'Output', and the token/cost line, use low-contrast grey on the dark background. They are still readable but faint."
     ]
   }
 }

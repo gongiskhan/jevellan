@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Read the README on the mem…'). The full task name still shows in the Prompt card below.",
-      "The terminal attach command is cut off ('jevellan thread attach thread_01M4R0FDJ09QR8B…'). The copy button next to it is still visible and reachable.",
-      "The metadata line ('Codex · GPT · high effort · Projects Codex · Worktree on jv/…') wraps over four lines of small monospace text. It's dense but still readable."
+      "The take-over command at the bottom ('jevellan thread attach thread_01M4SDB5H94TQ2B…') is cut off with an ellipsis, so the full thread ID isn't visible. The copy button next to it still gives you the full command.",
+      "The header metadata line ('Codex · GPT · high effort · Projects Codex · Worktree on jv/read-the-readme-on-the-member-nke621 · Browser member') wraps over four lines of small monospace text. It's readable but dense."
     ]
   }
 }

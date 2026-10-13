@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The take-over command at the bottom ('jevellan thread attach thread_01M4R0JTD420QSX…') is cut short with an ellipsis. It still works because the copy button sits next to it and the full thread ID appears in the banner at the top.",
-      "The composer's dashed border and dimmed send button signal that it's disabled, but the placeholder still reads 'Message this thread', which could suggest you can type there. The note above it ('Messages wait until you exit') explains the state."
+      "The attach command chip at the bottom ('jevellan thread attach thread_01M4SDCBQDQ3FEJ…') is cut off with an ellipsis. It isn't blocking: the copy button sits next to it and the full thread ID appears in the banner at the top.",
+      "The disabled composer's placeholder ('Message this thread') and its send arrow are low-contrast. This fits the disabled state, but the text is fainter than the rest of the screen.",
+      "There is a large empty gap between the report card and the attached-state notice above the composer."
     ]
   }
 }

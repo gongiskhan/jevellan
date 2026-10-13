@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Read through the project an...'). The full task text is shown in the Prompt card below, so nothing is lost.",
-      "The terminal attach command is cut off ('jevellan thread attach thread_01M4R0B6J8CKPMK...'). The copy button next to it still gives you the full command.",
-      "The 'Working on turn 1...' status text ends in an ellipsis. It's still readable."
+      "The thread title in the header is cut off with an ellipsis ('Read through the project and list what each fil...'). The full task text still appears in the Prompt card.",
+      "The take-over command at the bottom ('jevellan thread attach thread_01M4SD7575E972N...') is cut off with an ellipsis. The copy button next to it is still visible and reachable.",
+      "The 'Working on turn 1...' status label is cut off with an ellipsis next to the 'Interrupt current turn' checkbox."
     ]
   }
 }

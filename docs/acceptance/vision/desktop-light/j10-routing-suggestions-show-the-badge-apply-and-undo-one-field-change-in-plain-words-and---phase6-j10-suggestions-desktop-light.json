@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Diff code blocks leave a large empty band below the last line, most visibly in the first card.",
-      "Sidebar session titles are shortened with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…'). That's expected in a narrow column.",
-      "The 'Last runs' card is much shorter than the 'Schedule and jobs' card next to it, which leaves an empty area under it.",
-      "The 'Apply and tell me' field next to the unchecked 'Memory care' looks greyed out, so its placeholder text has low contrast."
+      "Sidebar conversation titles and their metadata lines are cut short with ellipses (e.g. 'Exercise answer options: ...', 'Context · J11 memory jour...'). The truncation looks intentional and full titles are likely available on hover.",
+      "The 'Memory care' mode dropdown ('Apply and tell me') and the 'Save schedule and jobs' button have low-contrast, greyed-out styling. They read as disabled, which is probably correct because Memory care is unchecked and nothing has changed, but the contrast is weak.",
+      "There is a large empty gap in the left sidebar between the session list and the 'Some native sessions are unavailable' note."
     ]
   }
 }

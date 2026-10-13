@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The subtitle of the 'Context · Mesh journey fixture' session is cut off with an ellipsis ('dev-mad…'). The cut is intentional, but the full workspace name can't be read.",
-      "Parts of the main view behind the open drawer are cut off at its right edge (for example 'Pull requ' and partial timestamps). This is expected for an overlay drawer, but it looks a little busy.",
-      "The filter chips (All / Running / Waiting for you / Done) are small and closely spaced, so they're tight tap targets on a phone."
+      "The third shell session's subtitle is cut off with an ellipsis ('Done · Mesh journey fixture · dev-mad…'). The full title still shows, so the session can be identified.",
+      "The dimmed main view behind the sidebar is partly visible on the right edge. Its clipped content is expected because the drawer is covering it."
     ]
   }
 }

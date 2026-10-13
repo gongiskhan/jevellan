@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The last Running entry, 'Queue barrier 1', is cut off at the bottom of the viewport. Its title shows but its metadata line does not. The right panel probably scrolls, so it is still reachable.",
-      "The counts disagree: the sidebar shows 'Projects queue' with '2 running', but the right panel heading says 'RUNNING 4'.",
-      "'Loop task 4' and 'Loop task 1' appear under RUNNING (0s and 2s) while also being listed as 'Queued' in the QUEUE section. This is probably a mid-transition state.",
-      "The 'WAITING FOR YOU 0' and 'QUEUE 5' section labels are small and low-contrast but still readable."
+      "The 'Running 4' list is cut off at the bottom of the viewport. Only 3 entries show, and 'Queue barrier 2' sits on the bottom edge. The panel probably scrolls, so the rest should still be reachable.",
+      "Session titles and metadata in the left sidebar end in ellipses (e.g. 'Context · J11 memory journ…', 'Context · Shared memory fi…').",
+      "'Loop task 4' and 'Loop task 1' show as 'Queued' in the queue and also appear under 'Running' at the same time. The state looks inconsistent, though it is not a rendering defect."
     ]
   }
 }

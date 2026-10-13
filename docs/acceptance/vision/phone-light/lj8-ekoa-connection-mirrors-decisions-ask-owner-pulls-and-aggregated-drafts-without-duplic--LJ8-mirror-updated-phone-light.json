@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Projects' tab at the left edge of the scrollable tab strip is partly hidden behind the left scroll arrow. It can still be reached with the arrows.",
-      "The 'Mirror tasks to Ekoa' label sits below its checkbox instead of next to it, so the two look loosely connected.",
-      "The 'Available tools' expander under Connected leaves the card mostly empty, with no summary of the connection status."
+      "The left scroll button partly covers the 'Projects' tab label. The tab strip scrolls sideways, so the tab can still be reached.",
+      "The 'Mirror tasks to Ekoa' checkbox sits on its own line above its label instead of next to it.",
+      "Wrong plural in the title 'Jevellan · Projects daily: 1 proposed tasks'.",
+      "'Jevellan · Projects daily: night report · open' is listed twice. It's not a layout problem, but it may matter for the 'without duplicates' check in this step."
     ]
   }
 }

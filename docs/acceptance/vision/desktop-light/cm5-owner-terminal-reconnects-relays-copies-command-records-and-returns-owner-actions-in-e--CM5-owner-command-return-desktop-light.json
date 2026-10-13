@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar thread titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Mesh journey fixt…'). They're still readable, and hovering or widening the sidebar would show the full text.",
-      "The first owner-step card is scrolled partly out of view at the top of the thread, so its header is hidden. You can scroll up to see it.",
-      "The long worktree path in the owner-command return message wraps across lines in the middle of a word ('jevellan-browser-' / 'Ev0Qoc'). It's still legible.",
-      "The thread-attach command in the footer is set in small monospace type with low contrast. It's still readable."
+      "The first card at the top of the conversation is partly hidden under the sticky header. The view is scrolled, and its border shows just below the metadata line.",
+      "Thread titles and subtitles in the sidebar session list end in an ellipsis (e.g. 'Context · J11 memory jour…', 'Context · Shared memory …'). Full names are only available on hover or when opened.",
+      "The Turn 1 report card still shows a 'Blocked' badge next to the 'Ran in terminal' confirmation. Turn 2 shows 'Progress', so the two badges may look inconsistent."
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip clips the last tab at the right edge (\"Pull requ…\"). It looks like a horizontally scrollable tab row, but nothing shows that more tabs are off-screen.",
-      "The status line \"Context unavailable · Compacted 0 times today\" wraps onto two lines next to the \"Fresh session\" button, which looks slightly cramped."
+      "The tab strip cuts off the last tab at the right edge ('Pull requ…'). It looks like a horizontally scrolling tab bar, but nothing on screen shows that it scrolls.",
+      "The 'Answered 1' section is collapsed, so the owner's chat answer can't be seen in this capture."
     ]
   }
 }

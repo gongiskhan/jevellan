@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Change the value to three, then redo this...'). The full prompt still appears in the subtitle and in the user message.",
-      "The same 'No model can run this step right now' error banner shows twice in a row. Its text repeats 'disabled' eight times and gives no model names, so it reads as noise.",
-      "The 'Undone' label and the pink 'corrected:' tags next to the struck-through Step 1 title use small, low-contrast text, but they are still readable.",
-      "The text above the composer looks a little tight against the bottom of the screen, but nothing is clipped."
+      "The header title is cut off with an ellipsis ('Change the value to three, then redo this...'), but the full request text appears just below it and in the user message bubble.",
+      "The same red error banner ('No model can run this step right now: disabled, disabled, ...') appears twice in a row, and its list of eight 'disabled' entries doesn't say anything useful.",
+      "The struck-through 'Step 1 · Implement' heading is low-contrast gray, so it's harder to read than the other step headings, though it can still be read.",
+      "The magenta 'corrected: effort → max' and 'corrected: action → reply, effort → low' labels wrap onto two lines and look a little cramped next to the step heading."
     ]
   }
 }

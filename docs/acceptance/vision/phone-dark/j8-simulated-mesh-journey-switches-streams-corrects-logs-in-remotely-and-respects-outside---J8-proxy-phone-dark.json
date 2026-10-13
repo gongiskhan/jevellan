@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis (\"J8: run on device B while I steer from de...\"). The full text still appears in the first message below.",
-      "The Step 1 timing line wraps, leaving \"Local time\" alone on its own line.",
-      "The second user message bubble is indented further than the first, so the two are slightly misaligned."
+      "The header title is cut off with an ellipsis ('J8: run on device B while I steer from de...'). The full text still appears in the first user message below it.",
+      "'Local time' wraps onto its own line under the Started/Ended/Duration row, which looks a little awkward.",
+      "The 'Waiting for you' badge wraps onto the second badge row, so the header looks uneven."
     ]
   }
 }

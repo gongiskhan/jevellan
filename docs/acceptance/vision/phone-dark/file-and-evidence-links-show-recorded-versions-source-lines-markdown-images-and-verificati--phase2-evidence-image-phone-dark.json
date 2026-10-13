@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The image preview is a small thumbnail (about 96px wide) that leaves most of the screen empty. Showing it larger would make the evidence easier to inspect on a phone.",
-      "The checkpoint hash is in very small, low-contrast monospace text. It is readable but hard to scan.",
-      "The secondary 'Open recorded step' link is grey and has weaker contrast than the pink 'Open working copy' link next to it."
+      "The image preview thumbnail is very small (about 96px wide), so the evidence image's content is hard to inspect at this size.",
+      "The checkpoint hash is in small, low-contrast monospace text. It is readable but faint.",
+      "The image and links fill only the top quarter of the screen, leaving most of the panel empty."
     ]
   }
 }

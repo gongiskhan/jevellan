@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row is cut off at the left edge, so 'Chat' shows only partly. It looks like a horizontally scrolling tab bar, so the tab can still be reached.",
-      "The status badge in the header is shortened to 'Working…'.",
-      "The goal and nightly item cards leave a lot of empty space below their action buttons, which makes the page longer than it needs to be."
+      "The tab row is clipped at the left edge: 'Chat' is partly cut off. It looks like a horizontally scrolling tab strip, so the tab can still be reached.",
+      "The status badge is cut short to 'Working…'.",
+      "The header metadata ('Context unavailable · Compacted 0 times today') wraps awkwardly next to the 'Fresh session' button.",
+      "Each nightly card's 'Enabled' checkbox sits above its label, which looks slightly misaligned next to the 'Run now' and 'Edit' buttons."
     ]
   }
 }

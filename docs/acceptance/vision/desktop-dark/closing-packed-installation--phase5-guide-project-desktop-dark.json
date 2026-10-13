@@ -5,14 +5,14 @@
   "test": "Closing packed installation",
   "layout": "desktop-dark",
   "screenshot": "screenshots/phase5-guide-project-desktop-dark.png",
-  "expected": "the first-project setup step with readable project controls",
+  "expected": "the first-project setup step with readable project controls Bright magenta rectangles are intentional screenshot masks over saved secret data, not product overlays or rendering faults.",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Contrast is low on the secondary text: the subtitle, the helper line 'Add a checked-out project to start a conversation.', the inactive stepper labels and the sidebar empty-state text. It's still readable.",
-      "The 'Add project' button doesn't stand out much more than the 'Continue' button, so the main action on this step isn't obvious.",
-      "'Continue' looks enabled even though no project has been added yet, which may be unclear."
+      "The helper text 'Add a checked-out project to start a conversation.' sits between the Add project button and the Back/Continue row, so it reads like a validation hint. It might work better as a disabled-state hint on Continue.",
+      "The Continue button looks enabled even though no project has been added yet, so it doesn't clearly show whether the user can move on.",
+      "Most of the main area below the controls is empty, so the content feels top-heavy, but that's acceptable."
     ]
   }
 }

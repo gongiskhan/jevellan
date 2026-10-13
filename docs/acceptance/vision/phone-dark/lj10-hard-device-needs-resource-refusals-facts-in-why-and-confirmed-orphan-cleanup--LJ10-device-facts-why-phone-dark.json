@@ -10,7 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'dev-madrid' entry in 'Devices when placed' wraps across three lines. The word 'browser-automation' is split at its hyphen."
+      "The 'Devices when placed' list runs past the bottom of the viewport. The 'Mini apps only' entry is cut off mid-line ('...80 GB free, 12 GB memory free, tags mac, residential'). This looks like normal scrollable overflow, not a layout clip, but the full entry isn't visible in this capture.",
+      "The 'Isolation' section shows the label 'fixed' in its header row, while the 'Model' and 'Effort' rows show 'Jev'. That's a little inconsistent, but it may be intentional."
     ]
   }
 }

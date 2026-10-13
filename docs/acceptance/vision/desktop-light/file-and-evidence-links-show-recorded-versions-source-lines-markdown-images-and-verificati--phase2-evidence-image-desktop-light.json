@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the middle column, the 'Started Oct 12, 12:51:15 · Ended … · Duration 6s · Local time' line is partly hidden under the sticky conversation header, so the tops of its letters are clipped. This is just where the page happens to be scrolled; scrolling up shows the whole line.",
-      "In the sidebar, a fourth conversation item is cut off at the bottom of the scrollable list, above 'Some native sessions are unavailable'. Only fragments of its text show; scrolling the list reveals it.",
-      "The screen.png preview in the evidence panel is a small thumbnail (about 100px). Its content is visible, but the details are hard to make out at this size."
+      "The 'Started Oct 13, 02:09:10 · Ended … · Duration 5s · Local time' metadata row in the middle column is partly clipped under the sticky conversation header. This looks like normal scroll position, not a layout bug.",
+      "In the sidebar, a fourth conversation item is partly visible and clipped at the bottom of the scrollable list, above 'Some native sessions are unavailable'.",
+      "The screen.png preview in the evidence panel is a small thumbnail and leaves most of the right panel empty. The image could be shown larger.",
+      "Long conversation titles in the sidebar are cut off with an ellipsis ('Exercise evidence naviga…', 'Change the value to two a…'). This looks intentional."
     ]
   }
 }

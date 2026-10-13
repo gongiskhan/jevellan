@@ -10,11 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip is scrolled so the first tab, \"Chat\", is cut off at the left edge. It looks like a horizontally scrollable strip, so the tab can still be reached.",
-      "In the pull request card's action row, the links \"Why\", \"Open thread\" and \"Open task\" are not consistently sized or aligned: \"Open task\" has larger text and different spacing than the other two links, and the outlined \"Open on GitHub\" button sits next to them.",
-      "The \"Merge\" button looks disabled and has low contrast against the card. This is probably intended because of the conflict, but it is still faint.",
-      "The pink link text is bright against the dark card and clashes slightly with the rest of the muted palette.",
-      "There is a large empty area below the \"Recently merged\" section. This is expected given how little content there is."
+      "The tab bar is scrolled so the first tab ('Chat') is clipped at the left edge. It looks like a horizontally scrollable strip, so the tab can still be reached.",
+      "The Merge button is dimmed with low contrast. This is probably on purpose because of the conflict, but it's hard to see.",
+      "The pink text links ('Why', 'Open thread', 'Open task') don't line up with each other, and 'Open task' sits slightly lower than the other two."
     ]
   }
 }

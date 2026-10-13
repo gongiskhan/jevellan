@@ -10,7 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Close this work' modal is drawn over the Conversation settings sheet. The dimmed background is expected for a modal."
+      "The title of the background 'Conversation settings' panel is blurred behind the modal backdrop, so it reads like 'Converation settings'. This is expected under the overlay and doesn't affect the dialog.",
+      "There's a large empty area of dimmed backdrop below the dialog on the phone viewport."
     ]
   }
 }

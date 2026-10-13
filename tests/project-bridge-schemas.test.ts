@@ -23,12 +23,12 @@ const report = { schema: 'thread-report-v1', turn: 1, status: 'done', summary: '
 const issues = (result: { success: boolean; error?: { issues: Array<{ path: PropertyKey[]; message: string }> } }) => result.error?.issues.map((issue) => ({ path: issue.path.join('.'), message: issue.message }));
 
 test('scope lists: mail and reservations only for main threads, mail for the coordinator', () => {
-  expect(projectToolNames({ kind: 'thread', isolation: 'worktree' })).toEqual(['jevellan_thread_report', 'jevellan_github', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read']);
-  expect(projectToolNames({ kind: 'thread', isolation: 'main' })).toEqual(['jevellan_thread_report', 'jevellan_github', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read', ...mainTools]);
+  expect(projectToolNames({ kind: 'thread', isolation: 'worktree' })).toEqual(['jevellan_thread_report', 'jevellan_github', 'jevellan_terminal_read', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read']);
+  expect(projectToolNames({ kind: 'thread', isolation: 'main' })).toEqual(['jevellan_thread_report', 'jevellan_github', 'jevellan_terminal_read', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read', ...mainTools]);
   expect(projectToolNames({ kind: 'coordinator' })).toEqual([...COORDINATOR_TOOLS]);
   expect(COORDINATOR_TOOLS).toContain('jevellan_mail_send');
-  expect(threadTools('worktree')).toEqual(['jevellan_thread_report', 'jevellan_github', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read']);
-  expect(threadTools('main')).toEqual(['jevellan_thread_report', 'jevellan_github', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read', ...mainTools]);
+  expect(threadTools('worktree')).toEqual(['jevellan_thread_report', 'jevellan_github', 'jevellan_terminal_read', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read']);
+  expect(threadTools('main')).toEqual(['jevellan_thread_report', 'jevellan_github', 'jevellan_terminal_read', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read', ...mainTools]);
   // Each call returns a fresh array, so a caller cannot change another scope's list.
   const list = projectToolNames({ kind: 'coordinator' }); list.push('jevellan_handoff');
   expect(projectToolNames({ kind: 'coordinator' })).not.toContain('jevellan_handoff');
@@ -37,9 +37,10 @@ test('scope lists: mail and reservations only for main threads, mail for the coo
   expect(projectTools.filter((name) => stretchTools.includes(name))).toEqual(['memory_search', 'memory_read']);
 });
 
-test('every project tool joins the closed name enum after the unchanged stretch tools and serializes to an object schema', () => {
-  expect(BridgeToolNameSchema.options.slice(0, stretchTools.length)).toEqual(stretchTools);
-  expect([...BridgeToolNameSchema.options].sort()).toEqual([...new Set([...stretchTools, ...projectTools, 'jevellan_thread_start', 'jevellan_verification_report', 'jevellan_project_review_report'])].sort());
+test('project and memory tools extend the closed enum while preserving the stretch APIs and strict tool schemas', () => {
+  const memorySessions = ['jevellan_memory_inbox_add', 'jevellan_memory_archive', 'jevellan_memory_dream_report'];
+  expect(BridgeToolNameSchema.options.filter(name => stretchTools.includes(name))).toEqual(stretchTools);
+  expect([...BridgeToolNameSchema.options].sort()).toEqual([...new Set([...stretchTools, ...projectTools, ...memorySessions, 'jevellan_thread_start', 'jevellan_verification_report', 'jevellan_project_review_report'])].sort());
   for (const name of ['jevellan_pr_review', 'jevellan_verification_report', 'jevellan_project_review_report']) expect(COORDINATOR_TOOLS).not.toContain(name);
   expect(Object.keys(BridgeToolSchemas)).toEqual(BridgeToolNameSchema.options);
   for (const scope of [{ kind: 'coordinator' }, { kind: 'thread', isolation: 'worktree' }, { kind: 'thread', isolation: 'main' }] as const) {
@@ -54,7 +55,7 @@ test('every project tool joins the closed name enum after the unchanged stretch 
     expect(tool.description).not.toMatch(/conversation|stretch|handoff/i);
   }
   expect(tools.find((tool) => tool.name === 'jevellan_thread_report')!.inputSchema).toMatchObject({ required: ['status', 'summary'] });
-  expect(Object.keys(tools.find((tool) => tool.name === 'jevellan_thread_report')!.inputSchema.properties as object)).toEqual(['status', 'summary', 'question', 'options', 'testsRun', 'changedFiles']);
+  expect(Object.keys(tools.find((tool) => tool.name === 'jevellan_thread_report')!.inputSchema.properties as object)).toEqual(['status', 'summary', 'question', 'options', 'testsRun', 'changedFiles', 'ownerCommands']);
   // The stretch tool descriptions and schemas are untouched.
   expect(bridgeTools(['jevellan_handoff', 'memory_search']).tools.map((tool) => tool.description)).toEqual([
     'Finish this stretch exactly once with an honest handoff. Supply the full plan or other result as result.content; the daemon stores its blob. Identical retries return the original receipt.',
@@ -118,7 +119,7 @@ test('asking the owner takes no options or two to four', () => {
 });
 
 test('tool results are versioned documents and every project tool names its result schema', () => {
-  expect(Object.keys(ProjectToolResultSchemas).sort()).toEqual([...projectTools].sort());
+  expect(Object.keys(ProjectToolResultSchemas).sort()).toEqual([...projectTools, 'memory_write', 'memory_edit'].sort());
   expect(ProjectToolResultSchemas.memory_search).toBe(MemorySearchSchema); expect(ProjectToolResultSchemas.memory_read).toBe(MemoryNoteSchema);
   const thread = { id: threadId, title: 'Add a greeting', state: 'in-review', isolation: 'worktree', device: 'Studio', runtime: 'claude', modelLabel: 'Opus', effort: 'high', turns: 2 };
   expect(ThreadsListResultSchema.parse({ schema: 'threads-list-result-v1', threads: [thread, { ...thread, branch: 'jv/add-a-greeting-ABCDEF', pr: { number: 7, state: 'open', checks: 'passing' }, lastSummary: 'Added it.' }] }).threads).toHaveLength(2);

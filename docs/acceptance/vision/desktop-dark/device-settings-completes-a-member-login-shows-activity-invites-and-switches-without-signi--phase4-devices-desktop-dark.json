@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Context · Outside context…', 'Exercise automatic decisi…'), which is expected truncation",
-      "Disabled buttons ('Open' on dev-madrid, 'Inspect worktrees' and 'Open' on Offline fixture) are low contrast but still readable",
-      "Small helper text (e.g. 'CSG uses the SSH connection…', worktree size lines, 'Coming later.') is small and low contrast but readable",
-      "The dev-madrid card is taller than the Browser member card, so there is empty space under Browser member in the right column"
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Context · Outside context…', 'Exercise automatic decisi…'). This looks intentional, but the full names can't be read.",
+      "'Open terminals' is a centred pink link that sits apart from the left-aligned 'Terminal' button and the other actions, so it looks out of place.",
+      "The disabled buttons ('Open' on the dev-madrid and Offline fixture cards, 'Inspect worktrees' on the Offline fixture card) have low contrast against the dark card background.",
+      "Muted helper text (the 'Worktree threads cannot write…' notes, 'Thread worktrees: 0 GB…', the 'Coming later.' note and the textarea placeholders) is small and low-contrast in dark mode.",
+      "Cards of different heights leave a large empty area under the Browser member card in the right column."
     ]
   }
 }

@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Long conversation titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Change the value to two …', 'Context · J11 memory journ…'). This is intended truncation, and the full title still shows in the main header.",
-      "There is a large empty gap in the sidebar between the conversation list and the 'Some native sessions are unavailable' note.",
-      "The two close banners ('Work closed. Its changes are kept…' and 'Work closed and published.') are stacked and partly repeat each other.",
-      "Step 1's Changes button shows no file count, while step 2's shows '· 1 file', so the labels are inconsistent."
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Change the value to two ...', 'Context · J11 memory journ...'). This is expected list truncation, and the full title shows in the header.",
+      "In Step 2, the Read project output still says 'The fixture starts with value 1.' while the step summary says 'The value is now 2'. This reads correctly as the pre-change read, but it may confuse a reader.",
+      "Step 1 shows a plain 'Changes' chip, while Step 2 shows 'Changes · 1 file', so the chip labels are inconsistent.",
+      "Several labels are small, low-contrast muted text: 'Local time', the 'Step details' toggles and the 'Some native sessions are unavailable' footer. They are still readable."
     ]
   }
 }

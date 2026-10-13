@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip is clipped on the left, so 'Chat' shows only partly. It looks like a horizontally scrolling row, so the tab is still reachable.",
-      "The pink text actions ('Why', 'Should have asked me', 'Didn't need asking', 'Open thread', 'Open task') look unstyled. They have no button look and wrap unevenly, unlike the 'Open on GitHub' and 'Merge' buttons.",
-      "The 'Jev would: ask you' chip is indented oddly and doesn't line up with the card's left edge or the 'Checks passing' badge.",
-      "The 'Open task' link sits apart on the right with a different alignment and size from the other pink actions."
+      "The tab strip is scrolled sideways, so the 'Chat' tab is partly cut off at the left edge. It is probably still reachable by scrolling.",
+      "The 'Why', 'Should have asked me', 'Didn't need asking', 'Open thread' and 'Open task' actions show as bare pink text, unlike the styled buttons around them. They don't line up neatly ('Open task' sits on the right, away from the others), and the pink-on-dark color looks like a missing-style fallback.",
+      "The 'Jev would: ask you' label and the 'Why' action wrap unevenly onto separate rows. That leaves the card's action area looking cluttered.",
+      "The 'Why' explanation is collapsed, so the reason for the ask-owner choice isn't shown on this screen."
     ]
   }
 }

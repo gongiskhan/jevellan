@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal shows the heading 'Edited local instructions' and the note 'Local edits save automatically', but no instructions editor or text area is visible. It may simply be hidden while the reload notice is showing; worth checking that this is the intended state.",
-      "The tab row behind the dimmed overlay is cut off at the right edge (a partly visible tab and the scroll arrow). This looks like normal horizontal scrolling, and the overlay covers it anyway.",
-      "The pink 'Source' label is quite small compared with the 'Saved' label next to it."
+      "The × button that dismisses the 'Current file reloaded' banner is small and low-contrast, so it may be a tight touch target on a phone.",
+      "The pink 'Source' link at the right of the 'Saved' row doesn't match the rest of the modal's palette, and it's hard to tell it's clickable.",
+      "Rigging items behind the dimmed overlay (browser-promote, browser-package) still show through faintly below the modal. This is expected for a modal but looks a little busy."
     ]
   }
 }

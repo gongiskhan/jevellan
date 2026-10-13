@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The same warning banner ('Claude Code started working in External activity fixture while this step ran...') appears twice, one directly above the other.",
-      "In the sidebar list, a fourth conversation row is partly cut off at the bottom edge, just above 'Some native sessions are unavailable'. This looks like a normal scroll overflow.",
-      "The sidebar conversation titles are shortened with ellipses (e.g. 'Exercise external activity...').",
-      "'Working on the requested change.' sits right against the divider below the header, with almost no top spacing."
+      "The same 'Claude Code started working in External activity fixture…' warning banner appears twice in a row.",
+      "In the sidebar conversation list, a fourth item is partly cut off above 'Some native sessions are unavailable'. The list scrolls, so this looks like normal overflow.",
+      "The 'Working on the requested change.' line sits right against the divider above it, with almost no top padding.",
+      "The sidebar conversation titles are cut off with ellipses (e.g. 'Exercise external activity…'), which is expected truncation.",
+      "The checkpoint area shows '1 changed files', which should be '1 changed file'."
     ]
   }
 }

@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab strip is scrolled sideways, so the left tab is partly clipped ('< Decisions'). It reads as a scrollable tab row, but the first tab looks cut off.",
-      "Long diff lines in the suggestion cards wrap mid-path, for example 'a/.jevellan/memory/test-conventions-2.md'. That makes the patches harder to scan on a phone.",
-      "The page is very long (about 6000px), so the stacked suggestion cards, run log and recently-decided list need a lot of scrolling on a phone.",
-      "I checked the screenshot only at reduced size (130x2000 of 390x6021), so small text was hard to confirm. Section headings and controls looked readable, and nothing overlapped."
+      "The top tab bar runs past the right edge, so the third tab shows only as \"Ed…\". It is probably a horizontally scrolling tab strip, but nothing on screen shows it can scroll.",
+      "Long diff lines in the suggestion cards wrap in the middle of words and paths, which makes the patches harder to read on a phone.",
+      "The trial log table's column headers are very small and squeezed together.",
+      "The screenshot is very tall (6126px) and was judged at a reduced size, so fine text could not be checked pixel by pixel."
     ]
   }
 }

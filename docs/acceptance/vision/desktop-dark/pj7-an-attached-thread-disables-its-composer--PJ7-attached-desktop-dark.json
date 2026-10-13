@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Mesh journey fix…'). They still read as intentional overflow handling.",
-      "The 'Done for now.' report card in the main column is followed by a large empty area, so the page looks sparse.",
-      "The muted grey helper texts ('Attached in a terminal on dev-madrid. Messages wait until you exit.', 'Message this thread' placeholder) have fairly low contrast on the dark background, but they are still readable."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'dev-…'). This is intentional overflow handling, and the full text is presumably available elsewhere.",
+      "The dashed, disabled-looking composer and its placeholder 'Message this thread' have low contrast against the dark background. This is expected for the attached state, and the text is still readable.",
+      "Muted metadata text (the 'Claude Code · Fable · high effort…' line and the 'Some native sessions are unavailable' note) has fairly low contrast but is still readable."
     ]
   }
 }

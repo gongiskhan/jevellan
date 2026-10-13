@@ -4,14 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "Coordinator overrides expose model and effort while preserving unrelated project settings",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/matrix-jevellan-coordinator-override-phone-dark-projects.png",
+  "screenshot": "/tmp/jevellan-coordinator-override-phone-dark-projects.png",
   "expected": "the Jevellan web app \"jevellan coordinator override projects\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"Coordinator overrides expose model and effort while preserving unrelated project settings\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dark scrim behind the dialog makes the chat transcript barely visible. This is expected while a modal is open.",
-      "The 'Claude Code Opus' model value and the 'low' effort value are fully readable, but the select fields have fairly low contrast against the dialog background."
+      "Background chat content behind the modal scrim is blurred and low-contrast, which is expected for a modal overlay",
+      "The modal sits partway down a very tall full-page capture rather than in the viewport center, which is an artifact of the full-page screenshot",
+      "Header text such as the 'Projects fixture' title and subtitle is small and low-contrast under the dimmed overlay"
     ]
   }
 }

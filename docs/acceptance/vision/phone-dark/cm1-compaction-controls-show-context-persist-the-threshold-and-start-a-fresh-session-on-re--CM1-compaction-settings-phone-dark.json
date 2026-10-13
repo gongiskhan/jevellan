@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Minutes between refills' label is cut off by the sticky Cancel/Save footer at the bottom of the scrollable modal. Its input is below the fold, but the content can be scrolled.",
-      "The placeholder text in the 'Worktree setup command' field ('npm ci') is low-contrast gray on the dark background."
+      "The 'Minutes between refills' label is cut off at the bottom of the modal body. This is the normal edge of a scrollable area, and the field can be reached by scrolling.",
+      "Faint page content shows at the left and right edges behind the modal backdrop."
     ]
   }
 }

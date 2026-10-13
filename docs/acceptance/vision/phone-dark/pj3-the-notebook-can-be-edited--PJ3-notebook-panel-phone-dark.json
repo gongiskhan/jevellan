@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The secondary text is low-contrast gray on the dark background (the 'Updated by you · Oct 12, 13:12:58' timestamp and the pink 'Projects fixture' breadcrumb), but it's still readable.",
-      "Most of the panel below the content is empty dark space, which is expected for a short notebook."
+      "Most of the panel below the content is empty space, which is expected for a short notebook entry",
+      "The 'Projects fixture' breadcrumb uses small magenta monospace text on a dark background, so it's a bit low in contrast but still readable"
     ]
   }
 }

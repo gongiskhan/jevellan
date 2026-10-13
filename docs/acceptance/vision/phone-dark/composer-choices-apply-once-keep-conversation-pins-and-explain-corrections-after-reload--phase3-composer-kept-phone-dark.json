@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The page title in the header is cut off with an ellipsis (\"Exercise composer choices: explain the...\"). The full text is still readable in the conversation subtitle just below it.",
-      "Step 2's step details show the model and settings that were used, but the screen doesn't show a separate note saying the composer choice was kept. That makes the screen's purpose hard to confirm from the image alone.",
-      "The 'Local time' label wraps onto its own line under the Started/Ended/Duration row, which looks a little detached."
+      "Header title is cut off with an ellipsis (\"Exercise composer choices: explain the...\"), but the full text shows in the subtitle line below it",
+      "Both step cards show the same Read project input/output and the same 'The plan has three steps.' text, which looks like duplicated fixture content",
+      "The pink 'Composer Fable' chip text has fairly low contrast on the dark background but can still be read"
     ]
   }
 }

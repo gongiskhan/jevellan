@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Pull requests' tab is cut off at the right edge, though the tab row looks horizontally scrollable",
-      "The composer placeholder 'Tell the coordinator what you nee…' is cut off by the stop button",
-      "The 'Working…' status chip text is cut off with an ellipsis",
-      "The context line wraps awkwardly ('today · Last compaction 11:52 PM' on the second line)"
+      "The 'Pull requests' tab is clipped at the right edge of the tab row. It's probably a horizontally scrolling tab strip, but nothing shows that more tabs are off-screen.",
+      "The composer placeholder 'Tell the coordinator what you need…' is cut off by the stop and send buttons.",
+      "The header status line ('Context 15% · Compacted 1 times today · Last compaction 02:29 AM') is small and low-contrast, but still readable. 'Compacted 1 times' is also grammatically awkward."
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab strip cuts off its first tab (\"…ices\") and last tab (an icon at the right edge). The strip scrolls and has arrow buttons, so this is expected overflow, not lost content.",
-      "The disabled \"Save Git settings\" button has low contrast, but its label can still be read."
+      "The tab strip is clipped at both edges: the left tab shows only \"ices\" and the right one is faded behind the scroll arrow. The scroll arrows still reach them.",
+      "The \"Save Git settings\" button looks disabled and low-contrast, but the label can still be read."
     ]
   }
 }

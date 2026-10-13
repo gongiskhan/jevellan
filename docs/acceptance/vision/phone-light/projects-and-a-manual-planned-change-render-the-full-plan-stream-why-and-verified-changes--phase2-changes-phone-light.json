@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Header says '1 changed files'. Since there's only one file, it should say '1 changed file'.",
-      "Under the content, about the bottom third of the screen is empty."
+      "Header reads '1 changed files', which should be '1 changed file'",
+      "The lower half of the screen is empty, leaving a lot of unused whitespace below the verification card"
     ]
   }
 }

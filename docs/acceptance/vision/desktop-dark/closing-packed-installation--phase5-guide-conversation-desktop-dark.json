@@ -5,15 +5,14 @@
   "test": "Closing packed installation",
   "layout": "desktop-dark",
   "screenshot": "screenshots/phase5-guide-conversation-desktop-dark.png",
-  "expected": "the first-conversation setup step with readable controls",
+  "expected": "the first-conversation setup step with readable controls Bright magenta rectangles are intentional screenshot masks over saved secret data, not product overlays or rendering faults.",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation title ('Context · Installation fixtu…') and its subtitle ('Ready · Installation fixture · d…') are cut off with an ellipsis, so the full name isn't visible.",
-      "The Start button has low contrast. It looks disabled, probably because the prompt is empty, but it's hard to see against the card.",
-      "The 'Auto' mode chip has dim, small monospace text that is hard to read.",
-      "The placeholder text in the prompt box ('What should we build or fix?') and the Device helper text are low contrast."
+      "The Start button text has low contrast on its dark background. It looks disabled, which may be on purpose because the prompt field is empty.",
+      "The second line of the sidebar conversation ('Ready · Installation fixture · …') is cut short with an ellipsis.",
+      "The 'Auto' options control and the Device helper text are low-contrast but still readable."
     ]
   }
 }

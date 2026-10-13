@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dream summary appears twice: once in the line 'Memory dream: undone — Kept the test conventions…' and again as the separate 'undone' and 'Kept the test conventions…' lines.",
-      "The status 'undone' is shown as a bare lowercase word with no label or badge.",
-      "Stats use raw camelCase keys (inboxPromoted, inboxDropped) instead of readable labels.",
-      "The diff block's long 'diff --git a/Project brief.md b/Project brief.md' line wraps awkwardly, and the diff is cut off at the bottom of its box. It looks like a scroll area, but nothing shows that more lines are hidden."
+      "The status and summary appear twice: once in the 'Memory dream: undone — Kept the test conventions…' line and again as the separate 'undone' and 'Kept the test conventions and consolidated the inbox.' lines.",
+      "The 'Suggest only' value in the Nightly dream select has low contrast, so it reads like placeholder text.",
+      "The diff panel cuts off at the bottom (last visible line is 'created: …'). This looks like an internal scroll area, but there is no visible scroll cue.",
+      "The long 'diff --git a/Project brief.md b/Project brief.md' header wraps onto two lines in the narrow code block.",
+      "The 'undone' status shows as plain body text rather than a visually distinct status badge."
     ]
   }
 }

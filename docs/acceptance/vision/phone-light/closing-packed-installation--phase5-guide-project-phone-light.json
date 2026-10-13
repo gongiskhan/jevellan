@@ -5,15 +5,14 @@
   "test": "Closing packed installation",
   "layout": "phone-light",
   "screenshot": "screenshots/phase5-guide-project-phone-light.png",
-  "expected": "the first-project setup step with readable project controls",
+  "expected": "the first-project setup step with readable project controls Bright magenta rectangles are intentional screenshot masks over saved secret data, not product overlays or rendering faults.",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The pink active-step bar sits under '1 Jev key' and above '3 Project' in the 2x2 stepper grid, so it's unclear which step it marks; the pink '3 Project' label still shows the current step.",
-      "The 'Continue' button looks fully enabled even though no project has been added yet, and nothing shows whether this step is optional.",
-      "The helper text 'Add a checked-out project to start a conversation.' mostly repeats the subtitle.",
-      "Everything sits in the top half of the screen, leaving a large empty area below the Back/Continue buttons."
+      "Continue looks enabled even though no project has been added yet, so it's unclear whether the step can be skipped",
+      "The bars for completed steps 1 and 2 are the same grey as the bar for step 4, so they don't look completed",
+      "The lower two-thirds of the screen is empty"
     ]
   }
 }

@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fourth tab in the Settings tab strip is cut off behind the right scroll arrow. Only part of its icon shows. It can still be reached with the scroll button, so it isn't blocking.",
-      "The small grey monospace metadata lines (e.g. 'Package · Parked · Rigging local fixture · Claude Code') are small and low-contrast but still readable.",
-      "The 'browser-promote' metadata wraps 'Claude Code' onto a second line next to the Park button, which leaves the spacing a little uneven."
+      "The fourth settings tab is partly hidden behind the scroll arrow in the tab bar. This looks like intentional horizontal scrolling, and the arrow lets you reach the tab.",
+      "The metadata lines under each item (for example 'Package · Parked · Rigging local fixture · Claude Code Oct 13, 2026, 1:14 AM') use small monospace text that wraps across lines and is a little dense, but it is still readable."
     ]
   }
 }

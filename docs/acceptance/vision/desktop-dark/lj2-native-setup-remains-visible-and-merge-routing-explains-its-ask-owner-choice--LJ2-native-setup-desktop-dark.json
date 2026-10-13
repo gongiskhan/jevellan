@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Under the Claude Code accounts ('Projects Claude' and 'Rigging local fixture'), the device lists end with 'Codex sign-ins are kept per device for now.' That copy is wrong for Claude Code.",
-      "The 'Five hours' and 'Week' usage bars all read 'Unknown' and their tracks are very faint, so they are hard to see against the dark background.",
-      "The 'Log in on Offline fixture' links are greyed out but look almost the same as the active pink links, so it's not obvious they are disabled.",
-      "'Applied from this device' shows a disclosure chevron and is collapsed, so you can't see the full native setup details in this capture."
+      "Under the Claude Code accounts ('Projects Claude' and 'Rigging local fixture'), the footnote says 'Codex sign-ins are kept per device for now.' It should say Claude Code.",
+      "All usage bars show 'Unknown' with empty tracks. A wide gap sits between each bar and its label, so the rows look sparse.",
+      "The 'Log in on Offline fixture' links are greyed out, which reads as disabled. That fits the offline state but has low contrast.",
+      "The tiny 'Some native sessions are unavailable' text near the bottom of the sidebar has low contrast."
     ]
   }
 }

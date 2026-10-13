@@ -10,8 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory jour…', 'dev-ma…'). This is intentional overflow handling and the content stays reachable.",
-      "The 'Nightly 0' section lays out a little differently from the other sections: 'Project day: 2026-10-12' is larger, and there is extra space before the 'New nightly item'/'New job' buttons."
+      "The 'Project day: 2026-10-13' line under NIGHTLY is in a larger font than the other section text and sits further left than the other section bodies",
+      "Some helper text in the right panel ('Nothing in the queue...', 'Project day...') starts at a different indent from the other items",
+      "Sidebar session titles and subtitles are cut off with ellipses ('J11 memory journ…', 'dev-…'); this is intended truncation, not a layout fault",
+      "The main conversation area is mostly empty because the placeholder text is vertically centered"
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation list cuts off a fourth item ('Context · Created i…') halfway at the bottom edge of its scroll area, just above the 'Some native sessions are unavailable' note.",
-      "Middle panel: the line 'Working on the requested change.' in Step 2 is partly hidden behind the 'Jump to latest' bar. It is normal scroll overflow, but it looks cramped.",
-      "Sidebar conversation titles and subtitles are truncated with ellipses (e.g. 'Exercise evidence naviga…', 'Waiting for you · Undo across wo…'). This is intentional, but it hides part of the context."
+      "The fourth conversation item in the sidebar is cut off at the bottom edge of the scroll area, above the 'Some native sessions are unavailable' note. It is normal scroll clipping, but only a sliver of text is visible.",
+      "In the main conversation, the 'Working on the requested change.' line under Step 2 is partly hidden behind the 'Jump to latest' bar. This is expected scroll overflow.",
+      "The recorded checkpoint hash is shown in very small monospace text in a light pill, so it has low contrast but can still be read."
     ]
   }
 }

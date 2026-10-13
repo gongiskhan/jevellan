@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal title includes a raw UUID ('Login recovery 6d664495-f8d1-4a51-95c2-9734fa6bf152'). It fits on one line here, but it's long and hard to read. It's probably fixture data, but a shorter account label would read better.",
-      "There's very little space between the 'Open sign-in page' button and the 'Code sent. Waiting for sign-in to finish…' line below it, so they look crowded compared with the other spacing in the modal.",
-      "The text and buttons behind the modal are blurred and can't be read. That's expected for a modal backdrop, and the dialog itself is fully legible."
+      "The dialog title shows a raw UUID ('Login recovery fefed48f-bee9-47ad-9724-41a1224fa505'). It's long and doesn't help the user.",
+      "The prompt says 'Paste the test authorization code.' but there's no code input on screen. That's probably intended after the code was sent, but the instruction no longer fits the state.",
+      "'Code sent. Waiting for sign-in to finish…' and the 'Can't reach Jevellan' error appear together. That matches this scenario, but the two messages could seem to contradict each other."
     ]
   }
 }

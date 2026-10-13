@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Header title 'LJ10 choose from facts' in the small monospace pink label is a bit cramped next to 'Why this placement'",
-      "The 'Claude Code Sonnet: Not offered by this runtime right now' refusal line sits very close to the bar rows above it"
+      "The 'Mini apps only' device entry is cut off at the bottom of the viewport. This looks like normal scroll overflow in the panel, not a layout clip.",
+      "The bars in the model and effort rows are thin, and the labels (Jev, fixed, only option) are small, low-contrast monospace text. They are still readable."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the pull request card, the 'Open task' link uses a larger font and sits higher than the 'Why' and 'Open thread' links beside it, so the action row looks uneven.",
-      "The 'Recently merged · last 7 days' toggle uses a larger, non-monospace style that doesn't match the small uppercase section headers (QUEUE, RUNNING, CONCLUDED).",
-      "In the sidebar, session titles and subtitles are cut short with an ellipsis (e.g. 'Context · J11 memory jour…', 'Done · Improver sandbox · dev-ma…'). This looks like intended truncation."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Mesh journey fixt…', 'Shared memory fixture · d…'), but you can still tell which session each one is",
+      "In the pull request card, the 'Why' and 'Open thread' links sit very close together, and 'Open task' is set apart from them, so the row looks unevenly spaced",
+      "There is a large empty gap in the conversation area between the answered decision card and the message input"
     ]
   }
 }

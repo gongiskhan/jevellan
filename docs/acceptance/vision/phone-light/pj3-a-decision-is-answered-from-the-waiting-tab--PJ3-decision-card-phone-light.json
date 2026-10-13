@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip cuts off the last tab at the right edge ('Pull requ…'). It looks like a horizontally scrollable row, so the control should still be reachable.",
-      "The 'Send' button looks pale and low-contrast, probably because it is disabled while the answer field is empty.",
-      "There is a large empty area below the decision card."
+      "The tab row cuts off the last visible tab at the right edge ('Pull requ…'). This looks like a horizontally scrolling tab strip, but nothing on screen shows that it scrolls.",
+      "The 'Send' button is low-contrast (grey text on a pale blue background). It is probably the disabled state because the answer field is empty, but it is faint.",
+      "The context line ('Context unavailable · Compacted 0 times today') wraps to two lines next to the 'Fresh session' button, which looks slightly cramped."
     ]
   }
 }

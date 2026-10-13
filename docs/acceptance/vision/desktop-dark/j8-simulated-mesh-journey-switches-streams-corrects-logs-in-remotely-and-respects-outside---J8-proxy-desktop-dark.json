@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fourth conversation row in the sidebar is cut off at the bottom of the scroll area, just above 'Some native sessions are unavailable'. Only the tops of its letters show. It looks like ordinary scroll clipping, but no fade or scroll cue tells the user there are more rows.",
-      "Sidebar conversation titles and subtitles are cut short with ellipses ('J8: run on device B while …', 'Ready · Mesh journey fixture · B…'). This is intentional truncation, and the full title appears in the header.",
-      "The status labels disagree. The header badge says 'Working', the sidebar row says 'Ready', Step 1 says 'Interrupted', and the footer says 'Saving this step'. This doesn't break the layout, but it may confuse users.",
-      "The 'Mesh Codex' label and the 'Local time' text next to Step 1 are small and low-contrast, but still readable."
+      "Sidebar conversation list cuts a fourth row through the middle just above the 'Some native sessions are unavailable' note. Only the tops of its letters show, though the list can still scroll.",
+      "Sidebar row titles and subtitles are cut short with ellipses (e.g. 'J8: run on device B while …', 'Ready · Mesh journey fixture · B…'). The full text is shown in the main header.",
+      "The sidebar row for the active conversation says 'Ready', but the conversation header shows 'Waiting for you'. The two status labels don't match."
     ]
   }
 }

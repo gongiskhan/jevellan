@@ -10,9 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Why this step' panel's account list is cut off at the bottom of the window: the last 'Login recovery 996cc3e3-…' row is only half visible. The panel appears to scroll, so the content can still be reached.",
-      "In the sidebar's conversation list, a fourth row is cut off just above the 'Some native sessions are unavailable' link, leaving a sliver of unreadable text. This looks like scroll clipping without a fade or divider.",
-      "Sidebar conversation titles and subtitles are shortened with ellipses ('Remember that this proje…', 'J8: implement after the o…', 'Mesh journey fixture…'). This is expected but hides context."
+      "Right 'Why this step' panel: the banner ends with 'Pick the next step:' but has no controls after it. The picker is in the main column, so the prompt looks orphaned.",
+      "Right panel ACCOUNT list is cut off at the bottom edge (Login recovery rows). It appears to be a scrollable region, so this isn't blocking.",
+      "Sidebar conversation list: the row below 'J8: run on device B while I…' is faded and clipped by the scroll area above 'Some native sessions are unavailable'.",
+      "The Model/Next step values ('Automatic Fable', 'Review', 'high') are shown in an accent/red color, which could be mistaken for an error state.",
+      "Long login recovery account names with UUIDs make the account list dense and long."
     ]
   }
 }

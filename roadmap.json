@@ -452,7 +452,7 @@
   {
     "id": "coordinator-memory-terminal-closing",
     "title": "Release 0.3.0 and activation",
-    "why": "Full checks, one crucial-issues review, Mac/Linux archives, Pro/member updates retaining rollback and ordered handoff.",
-    "status": "planned"
+    "why": "Final complete backend passes 2,020 tests in 182 files in 3,028.51 seconds. All 292 unique browser cases have passing coverage through the matrix and affected reruns, with 582 clear dedicated vision verdicts. Typecheck/lint/build, both platforms' eighteen terminal cases and actual candidate CLI/native terminal checks pass. The single closing review and permitted second are finished. Final source-bound Mac/Linux publication and cold full-home Pro activation follow this push. Real scenarios and member enrollment remain blocked on the already requested owner inputs; no live clock has started.",
+    "status": "in-progress"
   }
 ]

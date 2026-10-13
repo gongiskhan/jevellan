@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row is cut off at the right edge: 'Pull requests' runs past the viewport, and any tabs after it can't be seen without scrolling sideways.",
-      "The context status text wraps awkwardly: 'today · Last compaction 11:51 PM' breaks onto a second line next to the 'Fresh session' button."
+      "The composer placeholder 'Tell the coordinator what you nee…' is cut off by the stop and send buttons at phone width.",
+      "The status badge in the header ('Working…') sits close to the subtitle text."
     ]
   }
 }

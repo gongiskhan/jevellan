@@ -10,10 +10,12 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab strip cuts off the third tab label (\"Dev…\") at the right edge. It looks like a horizontally scrollable tab bar, but nothing shows that more tabs exist.",
-      "The commit hash in the applied memory-care card (\"af1f502c f8\") seems to break across lines or sit tight against the Commit label.",
-      "The long diff lines in the Recently decided cards wrap inside the code blocks, which makes the diffs harder to scan on a phone-width screen.",
-      "The \"Save schedule and jobs\" button is low-contrast and looks disabled against the dark background."
+      "The top tab strip cuts off the third tab label ('Do…') at the right edge of the screen. It is probably a horizontal scroll strip, but nothing on screen shows it can scroll.",
+      "In the 'Waiting for you' card, the file paths under 'Based on 3 notes' (jevellan/memory/...) are small, low-contrast grey text on a dark background.",
+      "The 'Commit 262eb6f6bb' text on the applied memory-care card is very small and faint.",
+      "Long description lines in the 'Recently decided' diff blocks wrap tightly, which makes the diffs dense to read on a phone screen.",
+      "'Save schedule and jobs' is a low-contrast button that looks disabled, so it's unclear whether it can be tapped.",
+      "The page is very long (about 4800px), so Recently decided and the Trial log sit far below the main card."
     ]
   }
 }

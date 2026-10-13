@@ -5,13 +5,13 @@
   "test": "Closing packed installation",
   "layout": "phone-light",
   "screenshot": "screenshots/phase5-guide-account-phone-light.png",
-  "expected": "the first-account setup step with readable account controls",
+  "expected": "the first-account setup step with readable account controls Bright magenta rectangles are intentional screenshot masks over saved secret data, not product overlays or rendering faults.",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The disabled Continue button has low contrast (light grey on pale blue). That fits a disabled state, and the helper text below explains why it is disabled.",
-      "The 'Applied from this device' disclosure chevron is small and faint next to its label."
+      "The disabled Continue button has low contrast, though it is still readable",
+      "The 'Applied from this device' disclosure row has little spacing from the helper text below it"
     ]
   }
 }

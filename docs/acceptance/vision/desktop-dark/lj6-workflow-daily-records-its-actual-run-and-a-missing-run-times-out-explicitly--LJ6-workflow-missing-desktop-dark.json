@@ -10,11 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Concluded 0' heading at the top of the right panel is half cut off where the panel is scrolled under the header; this is ordinary scroll clipping.",
-      "Sidebar session titles and subtitles are cut short with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…').",
-      "The 'Enabled' checkbox sits above its label instead of beside it, so it doesn't line up with the 'Run now' and 'Edit' buttons in either job card.",
-      "The 'Project day: 2026-10-14' text is indented differently from the section headings around it.",
-      "The 'Missing run' card's status pill says 'Failed at 02:05 AM', but the conversation message says 'timed-out'. The two labels for the same result don't match."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…'), which is normal truncation.",
+      "The 'Missing run' card shows 'Failed at 02:05 AM', but the chat says 'timed-out'. The status wording doesn't match.",
+      "The 'Enabled' checkboxes sit above their labels instead of next to them, so the layout looks a little off.",
+      "The goals helper text at the bottom right is cut off by the viewport, but the panel can scroll.",
+      "The 'Context unavailable' and 'Compacted 0 times today' header metadata is low-contrast monospace text that's still readable."
     ]
   }
 }

@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal title includes the full recovery UUID, so it wraps onto two lines and looks heavy on a phone-width screen.",
-      "The prompt still says \"Paste the test authorization code.\" even though the status shows the code was already sent and no paste field is visible. This is a little confusing but doesn't block anything.",
-      "The \"Open sign-in page\" button is a light pill on a dark background, which stands out from the other outlined buttons. It's still readable."
+      "The dialog still says 'Paste the test authorization code.' but there's no code input field. This fits the 'Code sent' state but could confuse users.",
+      "The long login-recovery UUID wraps onto two lines in the dialog title. It's still fully readable."
     ]
   }
 }

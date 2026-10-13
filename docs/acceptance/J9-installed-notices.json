@@ -26,11 +26,7 @@
       "sha256": "b569f629d00f2626a8100df2a1798210535621e42164dfd426a6fe5aac7b0ccd"
     },
     {
-      "path": "node_modules/@anthropic-ai/claude-agent-sdk-linux-x64-musl/LICENSE.md",
-      "sha256": "8ce94b9478bb9868f9641f818e06cd722fbe55d4c22e2d2ed11971b20146173a"
-    },
-    {
-      "path": "node_modules/@anthropic-ai/claude-agent-sdk-linux-x64/LICENSE.md",
+      "path": "node_modules/@anthropic-ai/claude-agent-sdk-darwin-arm64/LICENSE.md",
       "sha256": "8ce94b9478bb9868f9641f818e06cd722fbe55d4c22e2d2ed11971b20146173a"
     },
     {
@@ -62,43 +58,43 @@
       "sha256": "7bf9b2de73a6b356761c948d0e9eeb4be6c1270bd04c79cd489c1e400ffdfc1a"
     },
     {
-      "path": "node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-resources/voice/NOTICE.md",
+      "path": "node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/codex-resources/voice/NOTICE.md",
       "sha256": "40097a1799441051aa0b6645cdc819cceb19be73cdd265eb602aa2b15e0b1f48"
     },
     {
-      "path": "node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-resources/voice/licenses/LGPL-2.1.txt",
+      "path": "node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/codex-resources/voice/licenses/LGPL-2.1.txt",
       "sha256": "ad2eec519ebd4b5df86ea84dff24ae3bfa2edea846a703b58902dd221ae375db"
     },
     {
-      "path": "node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-resources/voice/licenses/Opus.txt",
+      "path": "node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/codex-resources/voice/licenses/Opus.txt",
       "sha256": "01e1167d54a096d123cf6dfbbeb19587278845c6481d2d66d545669846079551"
     },
     {
-      "path": "node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-resources/voice/licenses/PCRE2.md",
+      "path": "node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/codex-resources/voice/licenses/PCRE2.md",
       "sha256": "197d8a73ffee0d6b09adba2f9c677b5f5aede24edf89258a68e48248d010d811"
     },
     {
-      "path": "node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-resources/voice/licenses/libffi.txt",
+      "path": "node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/codex-resources/voice/licenses/libffi.txt",
       "sha256": "17b64dc60f3b6897a60f971e288b973f655c2edcdf08b25f3c3dd5549857881c"
     },
     {
-      "path": "node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-resources/voice/licenses/proxy-libintl.txt",
+      "path": "node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/codex-resources/voice/licenses/proxy-libintl.txt",
       "sha256": "d245807f90032872d1438d741ed21e2490e1175dc8aa3afa5ddb6c8e529b58e5"
     },
     {
-      "path": "node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-resources/voice/licenses/sljit.txt",
+      "path": "node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/codex-resources/voice/licenses/sljit.txt",
       "sha256": "5f216505c0f6ea3273caec89e766eef93cdeb7bbb0c429f9360116d7c938feeb"
     },
     {
-      "path": "node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-resources/voice/licenses/zlib.txt",
+      "path": "node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/codex-resources/voice/licenses/zlib.txt",
       "sha256": "e32ff4e00d9d94930537635291da39e7e612703334bf6fde8c7f1686fe8a45a2"
     },
     {
-      "path": "node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-resources/voice/manifest.json",
-      "sha256": "e2df3a04efd5756a035b5792d35ca0da1049205c05b914c1992a4c97364f5782"
+      "path": "node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/codex-resources/voice/manifest.json",
+      "sha256": "7ead5f0a1fd5e805fdfbffec2c61ddcde8c2a8e59b5a305df3049cf58177654a"
     },
     {
-      "path": "node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-resources/voice/sources.json",
+      "path": "node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/codex-resources/voice/sources.json",
       "sha256": "e2f6b124f6277e7c3c4f5c7cc8830c66190f671ad65e972bb2cc9507dbfcb937"
     },
     {
@@ -136,6 +132,22 @@
     {
       "path": "node_modules/@ungap/structured-clone/LICENSE",
       "sha256": "dc6d4961d8b6ee747231582ae9c53ce1d66bf76bc9f5a28f554c0e97210953bf"
+    },
+    {
+      "path": "node_modules/@xterm/addon-fit/LICENSE",
+      "sha256": "e256f01188af527e4d06d21d06fbf785ae9c50d4b328bf03cbe0ba7f0aa4228f"
+    },
+    {
+      "path": "node_modules/@xterm/addon-unicode11/LICENSE",
+      "sha256": "e256f01188af527e4d06d21d06fbf785ae9c50d4b328bf03cbe0ba7f0aa4228f"
+    },
+    {
+      "path": "node_modules/@xterm/addon-web-links/LICENSE",
+      "sha256": "689ceb10716bd7a87a804c14951d7c2b818cbd60aab83d540902470ce3b13444"
+    },
+    {
+      "path": "node_modules/@xterm/xterm/LICENSE",
+      "sha256": "b569f629d00f2626a8100df2a1798210535621e42164dfd426a6fe5aac7b0ccd"
     },
     {
       "path": "node_modules/accepts/LICENSE",
@@ -898,6 +910,10 @@
       "sha256": "4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b"
     },
     {
+      "path": "node_modules/ws/LICENSE",
+      "sha256": "2b29dcfe0d6471f7e8c92c5fb38c9f93edee10330937055440192f1832b1ecef"
+    },
+    {
       "path": "node_modules/yallist/LICENSE.md",
       "sha256": "a49c9ba464796f65b59fca3f1e6ca40912df1e859f575383223f7ec6c5baae09"
     },
@@ -925,7 +941,7 @@
   "runs": [
     {
       "schema": "installation-notices-v1",
-      "at": "2026-10-11T22:05:30.581Z",
+      "at": "2026-10-13T00:31:51.394Z",
       "scope": "packed-application-and-installed-copy",
       "passed": true,
       "layout": "phone",
@@ -933,7 +949,7 @@
     },
     {
       "schema": "installation-notices-v1",
-      "at": "2026-10-11T21:56:37.697Z",
+      "at": "2026-10-13T00:22:28.218Z",
       "scope": "packed-application-and-installed-copy",
       "passed": true,
       "layout": "phone",
@@ -941,7 +957,7 @@
     },
     {
       "schema": "installation-notices-v1",
-      "at": "2026-10-11T21:52:13.379Z",
+      "at": "2026-10-13T00:17:35.006Z",
       "scope": "packed-application-and-installed-copy",
       "passed": true,
       "layout": "desktop",
@@ -949,7 +965,7 @@
     },
     {
       "schema": "installation-notices-v1",
-      "at": "2026-10-11T22:01:07.564Z",
+      "at": "2026-10-13T00:27:11.135Z",
       "scope": "packed-application-and-installed-copy",
       "passed": true,
       "layout": "desktop",

@@ -10,7 +10,7 @@ import type { AddressInfo } from 'node:net';
 import { AccountSchema, BridgeRequestSchema, Homes, RiggingItemSchema, SecretRedactor, projectMemoryHooks } from '../packages/core/dist/index.js';
 import { createRuntime as claude } from '../runtimes/claude/dist/index.js';
 import { createRuntime as codex } from '../runtimes/codex/dist/index.js';
-import { runContractTests, contractChecks, collectEvents, checkEventsAndContinuation, checkInterruption, checkConcurrentIsolation, checkGroupTermination, SAFETY_REASON, type RuntimeAdapter, type StretchInput } from '../packages/runtime-contract/dist/index.js';
+import { runContractTests, contractChecks, collectEvents, checkEventsAndContinuation, checkInterruption, checkConcurrentIsolation, checkGroupTermination, SAFETY_REASON, ownerCommandDenial, type RuntimeAdapter, type StretchInput } from '../packages/runtime-contract/dist/index.js';
 
 let root: string; let homes: Homes;
 beforeEach(() => { root = realpathSync(mkdtempSync(join(tmpdir(), 'jevellan.contracts-'))); mkdirSync(join(root, 'user')); homes = new Homes(join(root, 'jevellan'), join(root, 'user')); });
@@ -55,7 +55,7 @@ test.each(['claude', 'codex'] as const)('%s runs all seven contract cases throug
     safety: { evidence: 'simulated', run: async (adapter) => {
       const commands = ['git -C . push', 'git rebase origin/main', 'git reset HEAD --hard', 'git clean -fd', 'git branch old -D', 'gh repo edit owner/repo --visibility public', 'gh repo delete owner/repo', 'jevellan stop', 'jevellan restart', 'jevellan update', 'jevellan uninstall', 'jevellan install', 'jevellan rollback', 'npx github:gongiskhan/jevellan install', 'node /tmp/distribution/bin/jevellan.mjs rollback', 'launchctl kickstart gui/501/dev.jevellan.daemon', 'systemctl --user restart jevellan.service', `kill -9 ${process.pid}`, 'rm -rf ../outside'];
       const result: unknown = JSON.parse(await answer(adapter, { ...directive({ mode: 'safety', requests: commands.map((command) => ({ tool: 'Bash', input: { command } })) }), action: 'implement', permissions: 'write' }));
-      expect(result).toEqual(commands.map(() => ({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: SAFETY_REASON } })));
+      expect(result).toEqual(commands.map(() => ({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: ownerCommandDenial(SAFETY_REASON) } })));
     } },
     'terminate-group': { evidence: 'simulated', run: (adapter) => checkGroupTermination(adapter, directive({ mode: 'waiting' }), (event) => event.type === 'tool-start') },
   } });
@@ -112,7 +112,7 @@ test.each(['claude', 'codex'] as const)('%s keeps APM account capture and per-la
       const cwd = join(root, `project-${n}`); mkdirSync(cwd);
       return answer(adapter, { ...input, action: 'implement', permissions: 'write', memoryWrite: true, cwd, brief: 'CONTRACT:{"mode":"memory-hooks"}', timeoutMs: 20_000, launch: { mcpServers: {}, env: { JEVELLAN_STRETCH_TOKEN: token, JEVELLAN_DAEMON_URL: `http://127.0.0.1:${(server.address() as AddressInfo).port}` } } });
     }));
-    for (const result of results) expect(JSON.parse(result)).toEqual({ captures: [[{}], [{}], [{}]], safety: { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: SAFETY_REASON } } });
+    for (const result of results) expect(JSON.parse(result)).toEqual({ captures: [[{}], [{}], [{}]], safety: { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: ownerCommandDenial(SAFETY_REASON) } } });
     for (const scope of [0, 1]) expect(calls.filter((call) => call.scope === scope).map((call) => call.event)).toEqual(['PreCompact', 'Stop', 'SessionEnd']);
   } finally { await new Promise<void>((resolve) => { server.close(() => resolve()); server.closeAllConnections(); }); }
 }, 60_000);

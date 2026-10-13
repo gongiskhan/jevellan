@@ -10,10 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Read through the project an...'). It looks like intentional truncation, but the full thread name can't be read on phone width.",
-      "The 'jevellan thread attach thread_01M4R0B6J8CKPMK...' command at the bottom is cut off. The copy button next to it still gives access to the full command.",
-      "The metadata block (Claude Code · Fable · high effort · Projects Claude · Worktree on ... · dev-madrid) wraps unevenly, with mid-phrase breaks and a lone '·' at line ends.",
-      "The status chip says 'Idle', but this step is about a running thread. That is a state question rather than a rendering defect."
+      "The header title is cut off with an ellipsis ('Read through the project and list what each fil...'), but the full task text appears in the Prompt card below.",
+      "The terminal attach command at the bottom is cut off with an ellipsis ('thread_01M4SD7575E972N...'), but the copy button next to it is still visible and usable."
     ]
   }
 }

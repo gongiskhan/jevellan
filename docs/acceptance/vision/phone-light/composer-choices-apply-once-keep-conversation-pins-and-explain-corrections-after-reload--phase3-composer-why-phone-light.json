@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Adversarial Rev...' row label is cut off with an ellipsis, so the full step name doesn't show in the phase bar list.",
-      "The phase bar list starts right under the header ('Test' is the first row you can see), which suggests the panel is scrolled and earlier rows may sit above the visible area.",
-      "The last correction entry ('Just override · effort: high → max') has its description line cut off at the bottom of the screen. This looks like normal scroll overflow, not a layout break.",
-      "All phase bars read 0.00 with empty tracks, so the bars carry no visual information in this state."
+      "The 'Adversarial Rev…' label in the bar list is cut short with an ellipsis; the full step name can't be read at this width.",
+      "The list starts at 'Test' right under the header divider, so earlier rows (and possibly a section heading) seem to be scrolled out of view above. It's not clear whether the sheet opened scrolled or the top is clipped.",
+      "The last correction entry ('Just override · effort: high → max') is cut off at the bottom of the screen. It looks like normal scrollable overflow, but the full sheet isn't visible in this capture.",
+      "All the step bars show empty tracks with 0.00, so the bar chart carries no visual information here."
     ]
   }
 }

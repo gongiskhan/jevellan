@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The decision card's 'Send' button has low contrast against the dark card. It reads as disabled, which may be intended while the answer field is empty.",
-      "The pull request card's actions are spaced unevenly: 'Why' and 'Open thread' sit on the left, 'Open task' floats in the middle, and 'Merge' wraps onto its own line.",
-      "Sidebar session titles and subtitles are cut short with ellipses (e.g. 'Context · J11 memory jour…'), but this is intended truncation."
+      "The right column's bottom item ('Write the welcome copy' meta line) is clipped at the bottom edge of the viewport. It looks like scrollable overflow, not a layout defect.",
+      "The 'Send' button on the decision card's free-text answer has low contrast against the dark card background.",
+      "The 'Why' and 'Open thread' links on the PR card sit very close together, so they read as one phrase.",
+      "Sidebar session titles and meta lines are cut short with ellipses (e.g. 'Context · J11 memory jour…'). This is intended truncation."
     ]
   }
 }

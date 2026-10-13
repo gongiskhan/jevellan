@@ -5,14 +5,13 @@
   "test": "Closing packed installation",
   "layout": "desktop-dark",
   "screenshot": "screenshots/phase5-guide-why-desktop-dark.png",
-  "expected": "the Why panel with readable decision details and reachable controls",
+  "expected": "the Why panel with readable decision details and reachable controls Bright magenta rectangles are intentional screenshot masks over saved secret data, not product overlays or rendering faults.",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with an ellipsis ('Installation acceptance: ...', 'Done · Installation fixture · de...'), so the full title is not visible without hovering or opening the session.",
-      "In the Why panel, the 0.00 bars for unchosen options are very faint, close to the track color, so it is hard to tell that they are empty bars.",
-      "The JEV footer in the Why panel uses small, low-contrast monospace text, which is readable but faint."
+      "Sidebar conversation titles and subtitles are cut off with an ellipsis ('Installation acceptance: c…', 'Installation fixture · G…'). The full text is available elsewhere, so this does not block anything.",
+      "The bars for options scored 0.00 in the Why panel have very low contrast against the dark background."
     ]
   }
 }

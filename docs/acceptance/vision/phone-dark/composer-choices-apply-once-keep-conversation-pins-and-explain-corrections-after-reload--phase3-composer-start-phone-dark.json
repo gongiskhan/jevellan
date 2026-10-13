@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Large empty area below the form card on the dark background.",
-      "The helper text under Device ('Coming later: ...') is small and low-contrast but still readable."
+      "Large empty area below the form card on a phone viewport",
+      "'Coming later' helper text is small and low-contrast but readable"
     ]
   }
 }

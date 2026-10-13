@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Title input text is clipped at the right edge (\"...list what each file is\"). This is normal overflow for a single-line input, but the full title can't be seen.",
-      "The \"Start now\" label sits below its checkbox instead of next to it, so the checkbox looks separate from its label.",
-      "The modal body is cut off at \"Isolation\" just above the footer. The control is probably reachable by scrolling, but nothing on screen shows that more content exists below.",
-      "The \"After\" select is much taller than the other selects, leaving empty space under \"Add a greeting\"."
+      "Title input text is clipped at the right edge ('...what each file is'), which is normal for a single-line input that scrolls horizontally",
+      "The 'Isolation' section sits just above the sticky footer and its control is cut off; the modal body appears to scroll, so it can still be reached",
+      "The 'Start now' label sits below its checkbox instead of beside it, so they look slightly disconnected",
+      "The 'Needs' placeholder ('residential, mac') is low-contrast grey on the dark background but still readable"
     ]
   }
 }

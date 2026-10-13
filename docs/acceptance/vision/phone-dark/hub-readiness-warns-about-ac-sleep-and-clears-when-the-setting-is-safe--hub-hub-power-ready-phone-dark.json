@@ -10,9 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dev-madrid device tags input cuts off its value at 'phone-testi'. The field scrolls, so the rest of the text can still be reached, but it isn't all visible at once.",
-      "The settings tab strip clips the left tab to a lone 's' and the right tab to 'Projects'. The arrow buttons scroll the strip, so this is expected, but the partial labels look a bit untidy.",
-      "The 'Thread worktrees: 0 GB · Job and verification worktrees: 0 GB' line wraps so that 'GB' sits alone on the next line."
+      "The device tags input on the dev-madrid card cuts off its value at 'phone-testi…'. The field can be scrolled, but the whole tag list isn't visible at once.",
+      "The settings tab strip clips its first item and 'Projects' at the screen edges. Scroll arrows are there, so the tabs can still be reached.",
+      "The pink 'Open terminals' links sit centered and apart from the 'Terminal' buttons, so the alignment looks off.",
+      "The 'Open' and 'Inspect worktrees' buttons on the Offline fixture card look dimmed but still read as buttons. If they're meant to be disabled, that isn't obvious.",
+      "The page shows no explicit 'power ready' or AC sleep status on the hub card. That may be intended, since the warning should clear once the setting is safe, but nothing on screen confirms the ready state."
     ]
   }
 }

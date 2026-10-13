@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The device tags field for dev-madrid cuts off its value at 'phone-testi…'. The field can be scrolled, but the full list of tags is not visible at once.",
-      "The settings tab strip clips its labels at both edges (a stray 's' on the left and 'Projects' on the right). Arrow buttons are there to scroll it, so the tabs can still be reached.",
-      "'Thread worktrees: 0 GB · Job and verification worktrees: 0 GB' wraps so that only 'GB' lands on the second line.",
-      "The disabled 'Open' button on dev-madrid and the disabled 'Inspect worktrees' and 'Open' buttons on Offline fixture are low-contrast. This looks intentional for disabled controls, but they are hard to read."
+      "The device tags field for dev-madrid cuts off its value ('...phone-testi') at the edge of the input. The full text is still in the field and can be scrolled.",
+      "The top tab bar is cut off on both sides ('s', 'Projects'), but scroll arrows are shown.",
+      "The pink 'Open terminals' label is centered, which looks out of place next to the left-aligned content.",
+      "The 'Apps only' badge on 'Mini apps only' uses a monospace pill style that doesn't match the other badges.",
+      "The disabled 'Inspect worktrees' and 'Open' buttons for 'Offline fixture' have low contrast, but they're still readable."
     ]
   }
 }

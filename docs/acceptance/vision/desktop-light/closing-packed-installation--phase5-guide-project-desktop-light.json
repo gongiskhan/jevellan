@@ -5,14 +5,13 @@
   "test": "Closing packed installation",
   "layout": "desktop-light",
   "screenshot": "screenshots/phase5-guide-project-desktop-light.png",
-  "expected": "the first-project setup step with readable project controls",
+  "expected": "the first-project setup step with readable project controls Bright magenta rectangles are intentional screenshot masks over saved secret data, not product overlays or rendering faults.",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Continue looks enabled even though no project has been added, which may suggest the step can be skipped (or may be intentional)",
-      "The help line 'Add a checked-out project to start a conversation.' mostly repeats the subtitle above it",
-      "The labels on the inactive steps (Jev key, Account, Conversation) and the 'STEP 3 OF 4' text are small and low-contrast, but still readable"
+      "Continue button appears enabled even though no project has been added yet, while the helper text says a project is needed to start a conversation",
+      "There's a large empty area below the setup content"
     ]
   }
 }

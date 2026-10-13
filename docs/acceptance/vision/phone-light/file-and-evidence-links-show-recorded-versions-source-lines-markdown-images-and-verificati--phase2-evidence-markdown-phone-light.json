@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "There is almost no space between the 'Show source' toggle and the 'Evidence guide' heading, so they look crowded.",
-      "The checkpoint hash sits in a small monospace pill with low contrast. It is readable but faint.",
-      "The large empty area below the content is fine for a short document."
+      "The 'Show source' link sits right above the 'Evidence guide' heading with almost no space between them.",
+      "The 'Open recorded step' control is grey and lower-contrast than the 'Open working copy' link next to it, so it may look disabled.",
+      "The 'Source line' and 'Recorded pixel' links use a monospace font with underlines, which doesn't match the other links on the screen."
     ]
   }
 }

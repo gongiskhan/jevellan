@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The settings content behind the overlay is heavily dimmed and hard to read, which is expected with a modal backdrop.",
-      "The dialog is centred in the upper half of the screen, leaving a large empty dark area below it on the phone viewport.",
-      "The 'Back' secondary button has low contrast against the dark dialog background compared with the primary button."
+      "The 'Settle kept changes' button and the settings form behind the backdrop are faintly visible. This is expected for a modal overlay but adds a little visual noise.",
+      "The dialog sits in the upper-middle of the screen and leaves a large empty dark area below it."
     ]
   }
 }

@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Pull requests' tab is clipped at the right edge of the tab bar. The bar looks horizontally scrollable, so the tab can still be reached, but nothing on screen shows that more tabs are available.",
-      "The 'Asks' and 'Daily' section headings sit very close to the content above them, with less vertical spacing than other sections.",
-      "Spacing is uneven: the 'NIGHTLY 0' and 'GOALS 1' labels are indented a little differently from the 'Hardening through automated tests' heading."
+      "The tab bar runs past the right edge, so the 'Pull requests' tab is cut off and any later tabs are hidden. The row is probably meant to scroll sideways, but nothing on screen shows that it does.",
+      "The status pill shows 'Working…', which is ambiguous next to a paused goal.",
+      "The 'Paused goal task' row, its 'Queued' and 'Goal paused' badges, and the 'Paused' badge on the goal card all repeat the same information.",
+      "The 'QUEUE 1', 'NIGHTLY 0' and 'GOALS 1' section labels are small and low-contrast, but still readable."
     ]
   }
 }

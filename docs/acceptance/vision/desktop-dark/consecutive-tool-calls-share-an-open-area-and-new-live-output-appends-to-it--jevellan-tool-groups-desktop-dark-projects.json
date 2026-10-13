@@ -4,15 +4,15 @@
   "model": "claude-opus-5-5",
   "test": "Consecutive tool calls share an open area and new live output appends to it",
   "layout": "desktop-dark",
-  "screenshot": "docs/acceptance/screenshots/matrix-jevellan-tool-groups-desktop-dark-projects.png",
+  "screenshot": "/tmp/jevellan-tool-groups-desktop-dark-projects.png",
   "expected": "the Jevellan web app \"jevellan tool groups projects\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"Consecutive tool calls share an open area and new live output appends to it\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Bash tool call has file_path four.txt as its input. This looks like fixture data, not a layout problem.",
-      "The main thread header is crowded. The title is on the far left and the Why/Override/Stop buttons are on the far right, with nothing in between.",
-      "Sidebar session titles and subtitles are cut off with an ellipsis (e.g. 'Context · J11 memory jour...'). This is intentional truncation."
+      "Shell session titles and subtitles in the sidebar are truncated with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'). This looks intentional, and the full text is likely available on hover.",
+      "The Bash tool card shows a file_path input ({\"file_path\":\"four.txt\"}), which is unusual for Bash. This looks like fixture data, not a rendering problem.",
+      "The '3 calls' count and the 'completed' status in the grouped Read card's header are stacked at the top right, which makes the header a little crowded."
     ]
   }
 }

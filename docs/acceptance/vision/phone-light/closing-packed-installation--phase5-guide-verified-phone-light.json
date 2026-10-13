@@ -5,14 +5,13 @@
   "test": "Closing packed installation",
   "layout": "phone-light",
   "screenshot": "screenshots/phase5-guide-verified-phone-light.png",
-  "expected": "the finished conversation and verification result without overlap or clipping",
+  "expected": "the finished conversation and verification result without overlap or clipping Bright magenta rectangles are intentional screenshot masks over saved secret data, not product overlays or rendering faults.",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The summary reads \"1 changed files\" instead of \"1 changed file\".",
-      "There is a large empty area below the verification card.",
-      "This is the Changes drawer for step 1, so the conversation behind it isn't visible on this screen. The verification result (Passed, node --test value.test.mjs, commit hash, Read output) is fully visible."
+      "The file count label has a grammar error: it says '1 changed files' instead of '1 changed file'.",
+      "The bottom half of the panel is empty white space below the verification card."
     ]
   }
 }

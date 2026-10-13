@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Tab strip cuts off the last tab at the right edge (\"Pull requ…\"). It looks like a horizontally scrollable tab row, so it is still reachable.",
-      "The header shows the agent label \"Claude Code Fable · high\" in a small, low-contrast monospace font. It is readable but faint."
+      "The 'Pull requests' tab is clipped at the right edge ('Pull requ'). The tab row looks horizontally scrollable, but nothing on screen signals that more tabs exist.",
+      "The 'Context unavailable · Compacted 0 times today' status text wraps onto two lines next to the 'Fresh session' button, which makes the header feel slightly crowded.",
+      "The 'Idle' label and the model line ('Claude Code Fable · high') are small, low-contrast monospace text. They can still be read."
     ]
   }
 }

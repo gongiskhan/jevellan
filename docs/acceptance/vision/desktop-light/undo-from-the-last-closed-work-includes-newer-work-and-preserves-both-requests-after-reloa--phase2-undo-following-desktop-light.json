@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Code blocks in the undone Steps 1 and 2 are dimmed to a gray background with low-contrast light text. They are still readable, but noticeably harder to read than Step 3.",
-      "The step titles 'Step 1 · Implement' and 'Step 2 · Implement' are struck through and drawn in light gray, so they read weakly. This is probably intentional to mark them as undone.",
-      "The conversation title and subtitle are cut off with an ellipsis in the sidebar list (e.g. 'Change the value to two ...'). This is expected truncation; the full title appears in the main header.",
-      "The 'Waiting for you' filter count badge '6' is small and low-contrast."
+      "In desktop-light, the tool Input/Output code blocks in the undone steps 1 and 2 have a muted gray background. Their contrast is lower than the dark blocks in step 3, but they're still readable.",
+      "The struck-through 'Step 1 · Implement' and 'Step 2 · Implement' headings and the small gray 'Undone' and 'Local time' labels are faint, but still readable.",
+      "The sidebar truncates conversation titles and subtitles with ellipses ('Change the value to two ...', 'Context · J11 memory journ...'). This is expected truncation, and the full title is shown in the main header.",
+      "The 'Waiting for you' filter shows the count '1' in pink right after the label. It's a little cramped."
     ]
   }
 }

@@ -10,11 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip is scrolled so the 'Chat' tab is clipped at the left edge. It still looks reachable by scrolling, but nothing on screen hints that you can scroll.",
-      "The 'Why', 'Open thread' and 'Open task' links are in a bright pink/magenta that doesn't match the rest of the dark theme. It could be leftover unstyled or debug link colour.",
-      "'Why' and 'Open thread' sit very close together, so they read as one phrase. 'Open task' has a wider gap, so the spacing between the links is uneven.",
-      "The 'Merge' button wraps onto its own right-aligned row away from the other actions, leaving a lot of empty space in the card.",
-      "The 'Recently merged · last 7 days' disclosure text is larger and brighter than the 'PULL REQUESTS' section label, so the headings look inconsistent."
+      "The tab strip is scrolled so the 'Chat' tab is cut off at the left edge. It looks like a horizontally scrollable strip, so 'Chat' can still be reached.",
+      "The pink action links don't match: 'Open task' is larger and sits at a different baseline than 'Why' and 'Open thread'.",
+      "The pink action links are small and their styling doesn't match the outlined 'Open on GitHub' and 'Merge' buttons.",
+      "The 'Merge' button sits alone on a second row, and there's a lot of empty space below the card."
     ]
   }
 }

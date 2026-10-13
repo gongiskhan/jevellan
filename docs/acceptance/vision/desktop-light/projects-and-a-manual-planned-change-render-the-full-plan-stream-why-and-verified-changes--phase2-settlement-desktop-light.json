@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The settlement modal sits over a dimmed background, so the conversation, sidebar and settings panel behind it are hard to read. This is expected for a modal.",
-      "The sidebar's conversation list is cut off at the bottom where the 'Some native sessions are unavailable' row overlaps it. This is partly hidden behind the overlay."
+      "The 'Close this work' dialog still offers 'Keep them', but the page behind it already says the work is closed with its changes kept. When settling kept changes, that option looks redundant and the title may be wrong.",
+      "The dimmed background is hard to read, which is expected behind an open dialog. The dialog itself is fully legible and all three actions (Publish, Keep them, Discard…) can be reached.",
+      "The 'Discard…' button is a little wider than its label needs, so the ellipsis sits close to the right edge. The text is not cut off."
     ]
   }
 }

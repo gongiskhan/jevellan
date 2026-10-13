@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The summary row says \"1 changed files\"; it should say \"1 changed file\".",
-      "\"No checkpoint changes in this step.\" sits right above an uncommitted diff of value.txt, which may confuse users even though the two refer to different things.",
-      "The diff's metadata lines (index, ---/+++) are low-contrast gray on the dark background. They're readable but faint.",
-      "There is a lot of empty space below \"No verification receipt yet.\""
+      "Grammar: '1 changed files' should be '1 changed file'.",
+      "The diff gutter line numbers and the '--- a/' / '+++ b/' header lines have low contrast on the dark background, but they are still readable.",
+      "'No checkpoint changes in this step.' sits right above an uncommitted diff that has a change, which may confuse users.",
+      "The 'diff --git' header line is close to the panel width; it fits now but could be cut off on narrower screens unless 'Wrap lines' is on."
     ]
   }
 }

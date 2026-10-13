@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The report repeats the command 'scripts/owner-only.sh' with Copy/Run in Terminal controls twice, once in the report body and again in the owner-reserved block",
-      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Shared memory fixture · …')",
-      "The 'Some native sessions are unavailable' text and the version label 'v0.2.1' are small and low-contrast",
-      "The 'Blocked' badge text is small"
+      "The command block for scripts/owner-only.sh, with its Copy and Run in Terminal buttons, appears twice in the report card: once in the report body and again in the 'reserved for the owner' panel.",
+      "In the Project now section, the 'Merged to main' items (#1 Add a greeting, #2 Review loop) are formatted as top-level bullets. They look like separate threads instead of sub-items of the 'Inspect app files for grouping' thread.",
+      "Long session titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Shared memory …'). This is standard sidebar truncation, not lost content."
     ]
   }
 }

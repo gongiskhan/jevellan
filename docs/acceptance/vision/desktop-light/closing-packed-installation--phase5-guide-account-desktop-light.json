@@ -5,14 +5,13 @@
   "test": "Closing packed installation",
   "layout": "desktop-light",
   "screenshot": "screenshots/phase5-guide-account-desktop-light.png",
-  "expected": "the first-account setup step with readable account controls",
+  "expected": "the first-account setup step with readable account controls Bright magenta rectangles are intentional screenshot masks over saved secret data, not product overlays or rendering faults.",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The disabled Continue button is low-contrast (pale gray on light blue), but it is still readable and the hint below explains why it is disabled",
-      "\"Applied from this device\" uses the same plain text style as the body copy, so it is hard to tell that it is an expandable disclosure",
-      "The \"Read-only actions enforced\" subtitle is small and light gray, so it is less prominent than the rest of the card"
+      "The 'Continue' button looks disabled and has low contrast. That fits the hint 'Continue when an account is Ready on this device', since no account has been added yet.",
+      "The 'Applied from this device' disclosure text is a little larger and darker than the body text around it, so it looks slightly out of place."
     ]
   }
 }

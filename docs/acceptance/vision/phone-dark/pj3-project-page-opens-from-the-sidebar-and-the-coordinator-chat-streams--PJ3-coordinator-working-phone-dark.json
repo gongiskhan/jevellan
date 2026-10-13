@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip is cut off at the right edge ('Pull requests' is clipped). It looks like a horizontally scrollable row, so it's probably intentional, but nothing on screen shows that more tabs are available.",
-      "The composer placeholder is cut off ('Tell the coordinator what you nee') because the stop and send buttons take up space.",
-      "The status badge is shortened to 'Working…'. It's still readable, but it's tight next to the model label.",
-      "The send button looks dim or disabled next to the stop button. That's expected while the coordinator is working, but it has low contrast."
+      "The 'Pull requests' tab is clipped at the right edge of the tab strip. The strip probably scrolls sideways, but nothing on screen shows that more tabs are there.",
+      "The input placeholder is cut off ('Tell the coordinator what you nee') because the stop and send buttons take up width.",
+      "The stop and send buttons sit very close together at the right of the input. The stop button's bordered box nearly touches the send arrow."
     ]
   }
 }

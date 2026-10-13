@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip is clipped at both edges: 'Chat' is cut on the left and 'Pull reques' on the right. It looks like a horizontally scrollable tab row, so the tabs can still be reached.",
-      "The 'Enabled' checkbox is stacked above its label instead of sitting inline with it, which looks slightly off next to the Run now/Edit buttons.",
-      "The Deploy card's '· ba0be6c' commit hash wraps onto its own line."
+      "The tab strip is clipped at both edges: 'Chat' is cut off on the left and 'Pull reques…' on the right. This looks like a horizontally scrollable row, so the tabs can probably still be reached.",
+      "The 'Enabled' checkbox labels sit below their checkboxes instead of beside them, which looks slightly uneven next to the Run now and Edit buttons."
     ]
   }
 }

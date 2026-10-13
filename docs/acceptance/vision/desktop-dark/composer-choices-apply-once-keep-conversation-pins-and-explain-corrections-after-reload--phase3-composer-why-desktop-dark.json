@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The right 'Why this step' panel is scrolled, so the 'Plan' row is partly hidden under the sticky header and the Account list continues below the fold. This looks like normal scrolling.",
-      "The main column is scrolled, so the Step 1 badge and its summary card are partly hidden under the sticky conversation header.",
-      "Sidebar conversation titles are cut off with ellipses ('Exercise composer choic…', 'Explain the memorybrows…'), and one list item shows only partly above 'Some native sessions are unavailable'.",
-      "Correction rows in the right panel ('action: Auto → plan', etc.) use a small italic serif font that is less legible than the surrounding UI text."
+      "Right 'Why this step' panel is scrolled so the 'Plan' row is half-hidden under the sticky panel header. The 'Conversation controls fixture: disabled' row is cut off at the bottom of the viewport. Both can be reached by scrolling.",
+      "Middle column: the green badge from the step 1 card shows through just below the sticky conversation header, above 'A complete plan for the requested change.'",
+      "Left sidebar: a conversation row is partly clipped above 'Some native sessions are unavailable'. Long conversation titles are cut off with ellipses ('Exercise composer choic…', 'Explain the memorybrows…').",
+      "Correction details such as 'action: Auto → plan' use an italic serif font that doesn't match the rest of the UI's typography."
     ]
   }
 }

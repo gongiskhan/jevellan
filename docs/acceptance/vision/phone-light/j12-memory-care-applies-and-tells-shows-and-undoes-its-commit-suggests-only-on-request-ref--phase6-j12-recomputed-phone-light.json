@@ -10,10 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "I could only check the image at about one-third of its original resolution (130x2000 shown, 390x6021 original), so small text could not be read closely; at that scale I saw no overlap, cut-off text or hidden controls.",
-      "The top tab bar is cut off on the left (a partly visible tab before 'Decisions'), which suggests it scrolls sideways; the 'Improver' tab is still fully visible.",
-      "Long diff lines in the code blocks wrap onto several lines, which makes them harder to scan but leaves them readable.",
-      "The page is very long (about 6000px), so the trial log and 'Recently decided' sections are far below the pending suggestions."
+      "At this capture size the small text is hard to check closely: the diff code blocks, run log timestamps and trial log table have small type, but they still read as legible and complete.",
+      "The page is very long (6105px). The dense run log list could use grouping or collapsing to make scanning easier on a phone."
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Close this work' dialog covers a dimmed 'Conversation settings' panel. The panel's labels (Next step, Model, Effort) still show faintly behind the overlay, which is expected for a modal.",
-      "The dialog sits in the upper-middle of the screen and leaves a lot of empty dark space below it."
+      "The dialog sits a bit high, so a large empty dark area is left below it",
+      "The dimmed 'Conversation settings' page behind the dialog shows through the overlay; that's expected for a modal, but it adds slight visual noise"
     ]
   }
 }

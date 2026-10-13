@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In review-note.txt, the diff header 'diff --git a/review-note.txt b/review-note.txt' runs past the right edge of the code block. It is only a header line, and the 'Wrap lines' toggle or horizontal scrolling can show the rest.",
-      "Diff header lines (index/---/+++) are low-contrast gray on the dark background. They are still readable.",
-      "'AGENT EVIDENCE' is cut off at the bottom of the screen, but that is the page continuing below, not a layout problem."
+      "In the review-note.txt diff, the header lines ('diff --git a/review-note.txt b/review-note…' and 'index 0000000..fb48807') run past the right edge of the code block. The block appears to scroll sideways, and the 'Wrap lines' toggle can show the full text.",
+      "The 'Agent evidence' section starts at the bottom edge of the screen, so its content is below the fold. This looks like normal page scrolling.",
+      "The diff header text is a dim gray on a dark background, which gives it fairly low contrast, but it is still readable."
     ]
   }
 }

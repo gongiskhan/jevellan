@@ -4,6 +4,8 @@ Projects is the area of Jevellan where one coordinator per project plans the wor
 
 Projects sits next to the existing conversations, which keep working exactly as before. It reuses their pieces: the runtime adapters, isolated account homes and account ranking, Jev, the scoped bridge, project memory, the device mesh and the native transcript readers. The specification is `BRIEF-projects.md` (local and untracked, like `BRIEF.md`); where the build chose differently, the choice is a numbered decision in the [acceptance report](acceptance/REPORT.md).
 
+The 0.3.0 coordinator/memory/terminal source phases are pushed. Closing tests, packaged installation and real-provider activation have separate evidence in [the extension report](acceptance/coordinator-memory-terminal.md) and [the ordered handoff](acceptance/loop-activation.md). Native Codex takeover revalidates root AGENTS.md/CLAUDE.md on each resume; capture outages never keep a thread attached after handback.
+
 ## Concepts
 
 | Term | Meaning |
@@ -281,3 +283,9 @@ Run in Terminal preserves a durable receipt on its report or question and opens 
 The owner API exposes each thread's existing ledger at GET /api/projects/:projectId/threads/:threadId/events with the same authenticated SSE/cursor behavior as coordinator events. It follows device routing, validates project ownership and removes native identities. Prompt/tool records are bounded and show whether they were clipped. Runtime-reported outcome usage and hashed continuity support diagnosis without committing native session IDs. Auxiliary review/verification/memory outcomes use the coordinator ledger; unknown cost is preserved.
 
 The four real scenario flows and their unchanged assertions live in scripts/live. Missing owner sign-ins, joins or scoped Settings inputs stay blocked. Simulated fixture checks and desktop/phone browser layouts remain separate from real provider work and physical-phone acceptance.
+
+
+Closing shell integration: Jevellan PTYs disable competing WezTerm semantic hooks in their own environment, preserving the owner's startup files. The daemon records its own command boundaries and actual exit codes on Madrid Bash as well as Pro shells. Decision 747 and its failing-before/passing-after regression are recorded in acceptance/REPORT.md. Real owner-device scenarios remain blocked on the previously requested inputs.
+
+
+0.3.0 closing source gates pass: 2,020 backend tests in 182 files, all 292 unique browser cases through the complete matrix and affected reruns, 582 clear dedicated vision verdicts, typecheck/lint/build and both platform candidates. The single closing review and permitted second are finished. Source-bound publication and cold full-home Pro activation follow; real scenarios and member enrollment remain blocked, with no live clock or owner acceptance. See acceptance/release-030.md and the ordered activation handoff.

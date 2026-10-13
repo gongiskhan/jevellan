@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The long tool header 'Read project · long_tool_header_…' breaks mid-word over seven lines. It stays readable but takes up a lot of vertical space.",
-      "The 'completed' status label sits on its own line, right-aligned under the wrapped header, so it's a bit separated from the tool title."
+      "The long tool header 'Read project · long_tool_header_…' breaks in the middle of words across several lines. It stays inside its card and can still be read, but it looks rough",
+      "The 'completed' status label sits on its own line under the tool header, set apart from the rest of the header",
+      "The send arrow button in the composer is low-contrast against the dark input field"
     ]
   }
 }

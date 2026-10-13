@@ -10,9 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Enabled' checkbox sits above its label instead of beside it, so it lines up awkwardly with the 'Run now' and 'Edit' buttons.",
-      "The 'Jobs (1)' disclosure is cut off by the bottom edge of the right panel, but the panel scrolls, so it can still be reached.",
-      "The 'Waiting for the coordinator' caption in the job card is small and low in contrast, though it can still be read."
+      "The 'Enabled' checkbox sits above and to the left of its label instead of in line with it, next to the Run now / Edit buttons",
+      "The Nightly tests card in the right panel runs past the bottom of the viewport, so its lower border is cut off (the panel probably scrolls)",
+      "Sidebar session titles are cut short with ellipses (e.g. 'Context · J11 memory jour…')",
+      "The main-pane message names the job 'Nightly workflow', but the right-panel card is titled 'Nightly tests'",
+      "Right-panel content is indented inconsistently: the 'Nothing in the queue…' text and the 'Project day' line start further left than the other section text"
     ]
   }
 }

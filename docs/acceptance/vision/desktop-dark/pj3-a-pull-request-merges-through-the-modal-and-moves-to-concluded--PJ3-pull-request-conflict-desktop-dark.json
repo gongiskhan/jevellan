@@ -10,9 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The PR card's actions are unevenly spaced: 'Why' and 'Open thread' sit close together on the left, while 'Open task' floats in the middle, separated from 'Open on GitHub'.",
-      "The 'Merge' button is low-contrast and looks disabled. This fits the conflict state, but nothing next to it says why it's disabled.",
-      "Long titles are cut off with an ellipsis in the sidebar shell sessions ('Context · J11 memory jour…', 'Context · Mesh journey fix…') and in the Running item title. They are still readable."
+      "The 'Merge' button in the pull request #1 card has low contrast and looks faded, probably on purpose because of the conflicts. It is still legible.",
+      "The pull request card's action row has uneven spacing and inconsistent sizes. 'Why' and 'Open thread' sit close together, while 'Open task' uses a larger font and floats apart from the 'Open on GitHub' button.",
+      "The 'Recently merged · last 7 days' row and the 'Project day: 2026-10-13' text use a larger font and different indentation than the nearby section labels.",
+      "The running task title and the sidebar session titles are cut off with an ellipsis. This looks intentional, and the full task title appears elsewhere.",
+      "The conversation shows repeated 'Noted.' replies, including two in a row at the bottom."
     ]
   }
 }

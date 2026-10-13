@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Change the value to three, then redo this…'). The full text still appears in the subtitle line below it.",
-      "The step card is scrolled partway past the top edge, so the 'Input' label is clipped against the header. This is only the scroll position; the content can still be reached by scrolling.",
-      "The error text repeats 'disabled' eight times without naming the models. It is readable but noisy, and it appears twice: once in the red banner and again in the Resume correction card.",
-      "The 'Changes · 1 file' and 'Why' chips and the 'Step details' expander have low-contrast muted text against the dark background, but they are still legible."
+      "The header title is cut off with an ellipsis ('Change the value to three, then redo this...'). The full text appears in the line below it, so nothing is lost.",
+      "The top tool card is cut off at the top edge because the view is scrolled; the 'Input' label sits right against the edge.",
+      "The error text 'No model can run this step right now: disabled, disabled, ...' repeats 'disabled' eight times. It's readable but unhelpful, and the same message appears twice: once in the red banner and again in the Resume correction card.",
+      "The 'Why' chip's magenta text and border on the dark background are a bit low-contrast, but still readable."
     ]
   }
 }

@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal overlaps the 'Browser member' card behind it. This is normal for a modal over a blurred backdrop, so it isn't blocking.",
-      "The modal sits in the middle of a long page and doesn't stay pinned to the viewport. On a real phone it might open off-screen, depending on scroll position.",
-      "The modal text says '0 GB', which reads oddly for a worktree. The size probably got rounded down."
+      "The size shows as \"0 GB\" in both the dialog text and the list item. For a small worktree it would be more useful to show a smaller unit (MB or KB) or \"<1 GB\".",
+      "Behind the overlay, the top tab strip is clipped at both screen edges. It looks like it scrolls sideways, and it is dimmed behind the modal."
     ]
   }
 }

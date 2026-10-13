@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab row is clipped at the right edge: the 'Pull requests' chip is cut off. It looks like a horizontally scrollable tab strip, so it is still reachable.",
-      "Loop task 5 is last in the list, so its 'Move down' arrow appears greyed out. That is expected, but the low contrast makes it look faint."
+      "The last tab label, 'Pull requests', is cut off at the right edge of the tab strip. The strip looks like it scrolls sideways, so the tab can still be reached.",
+      "The 'Context unavailable · Compacted 0 times today' status line wraps onto two lines next to the 'Fresh session' button."
     ]
   }
 }

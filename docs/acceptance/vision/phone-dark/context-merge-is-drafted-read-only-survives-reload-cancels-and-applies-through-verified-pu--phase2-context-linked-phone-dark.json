@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background page behind the modal is dim and blurred, which is expected for an overlay.",
-      "The 'Open work' link is pink on a dark background. It's legible, but its contrast is a bit lower than the body text."
+      "The 'Current instruction files' disclosure row uses small monospace text in muted gray. It is readable, but it has less contrast than the rest of the dialog.",
+      "The pink 'Open work' link stands out from the muted blue-gray palette used everywhere else in the dialog."
     ]
   }
 }

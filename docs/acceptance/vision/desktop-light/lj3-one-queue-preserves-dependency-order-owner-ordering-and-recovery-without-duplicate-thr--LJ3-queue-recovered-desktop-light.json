@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the Running list, long task titles and descriptions are cut short with an ellipsis (for example \"Read through the project and list what each file is f...\" and \"Read the README on this device: a title and one line about th...\").",
-      "In the sidebar, shell session titles and subtitles are cut short with an ellipsis (for example \"Context · J11 memory jour...\" and \"Context · Mesh journey fix...\").",
-      "The conversation repeats a lot of \"Noted.\" lines, which makes the page very long."
+      "Long queue and running item titles in the right panel are cut off with ellipses (e.g. 'Read through the project and list what each file is f...'), but the queue cards show the full text",
+      "Many 'Noted.' replies repeat down the transcript, which makes the page very long",
+      "Shell session names and details in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory journ...')"
     ]
   }
 }

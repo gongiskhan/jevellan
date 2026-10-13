@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The last sidebar conversation row ('Context · Mesh journey fixt…') is cut off at the bottom of the scrollable list. It is a scroll edge, so the row can still be reached by scrolling.",
-      "Long conversation titles and subtitles in the sidebar are cut short with an ellipsis (e.g. 'Change the value to two …', 'Context · J11 memory journ…').",
-      "The 'completed' status in the Read project tool card sits on its own line, far right and below the title, which leaves odd empty space."
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Change the value to two …', 'Context · J11 memory journ…'). This is normal list truncation.",
+      "The last sidebar list item ('Context · Mesh journey fixt…') is clipped partway by the scroll area above 'Some native sessions are unavailable'. The list scrolls, so it can still be reached.",
+      "The 'completed' status label in the Read project tool card sits on its own line, apart from the title, so the card has extra empty space."
     ]
   }
 }

@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Waiting for you · Browser fixtur…'). This looks like intended truncation, and the time stamps and menu buttons can still be read and clicked.",
-      "The 'Manual conversation fixture' project has a card in the Projects grid but is missing from the sidebar PROJECTS list (14 projects in the sidebar, 15 cards in the grid). This may be a data or listing mismatch, not a rendering problem.",
-      "Cards in the same row have different heights because of extra elements like the 'Context needs a decision' badge and the public-repository warning, so the two-column grid looks a little uneven.",
-      "In the Outside context, Context, Empty context, Improver sandbox, J11 context and Public memory cards, the 'test -f AGENTS.md' text runs very close to the card's right edge, but it is not clipped."
+      "Some conversation titles and subtitles in the left sidebar are cut off with an ellipsis (e.g. 'Context · J11 memory journ…', 'Context · Shared memory fi…', 'Waiting for you · Browser fixtur…'). This looks like intended truncation, not broken layout.",
+      "The sidebar PROJECTS list shows 14 projects, but the main grid has 16 cards. 'Manual conversation fixture' and 'Undo across works' are not in the sidebar list.",
+      "The 'Browser fixture' and 'Manual conversation fixture' cards show the same path (/tmp/jevellan-browser-Jc4czu/project). This is a data detail, not a rendering problem.",
+      "The 'Git settings' button in the page header has a dark style that looks like low contrast next to the light 'Add project' button, but its label is still readable."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Top tab strip clips the 'Devices' tab label at the right edge; it is reachable via the scroll arrow, so it is not blocking.",
-      "The 'Memory care' select ('Apply and tell me') looks greyed out and faint next to the unchecked checkbox, so it is harder to read.",
-      "The diff code blocks wrap long lines mid-path (e.g. 'b/menu/claude-sonnet/description' goes onto a new line), which makes them slightly harder to scan."
+      "The 'Devices' tab is cut off at the right edge of the tab bar. Scroll arrows are there, so it can still be reached.",
+      "Long diff lines wrap inside the narrow code blocks, which makes the diffs a little harder to read.",
+      "Table column headers ('WHY THEY FINISHED ELSEWHERE', 'IN JEVELLAN') wrap onto several lines in small monospace text."
     ]
   }
 }

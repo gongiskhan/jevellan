@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The page title behind the dialog (\"Change the value to two and publish th...\") ends in an ellipsis, which is normal for a narrow phone screen.",
-      "The page behind the dialog is dimmed and blurred, as expected while the dialog is open, so its content (step details, the \"Jump to latest\" link, the message box) is hard to read here."
+      "The modal's backdrop blur makes the background content hard to read. That is normal for a dialog and doesn't block anything.",
+      "The header title is cut off with an ellipsis (\"Change the value to two and publish th...\"). It sits behind the modal and is acceptable truncation for a phone width.",
+      "\"Jump to latest\" in the background is in a low-contrast pink, but it is hidden behind the overlay while the modal is open."
     ]
   }
 }

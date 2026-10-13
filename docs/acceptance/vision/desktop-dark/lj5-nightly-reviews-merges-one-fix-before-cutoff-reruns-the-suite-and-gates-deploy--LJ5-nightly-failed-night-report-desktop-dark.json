@@ -10,11 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar shell session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour...'), but they are still readable.",
-      "Many 'Noted.' lines repeat in the conversation stream, which makes it visually noisy.",
-      "The 'Concluded 3' list shows three entries with the same title 'Fix the nightly review finding', so it's hard to tell them apart at a glance.",
-      "The Nightly window finished cards end in a lone '…' line after the task path, which looks unfinished.",
-      "The pull request #3 card has the 'Why' and 'Open thread' links crowded together with the 'Open task' link."
+      "Shell session names in the sidebar are cut off with an ellipsis (e.g. 'Context · J11 memory journ…', 'Context · Mesh journey fixt…', 'Context · Shared memory fi…'). The status lines under them are cut off too.",
+      "In the pull request #3 card, the 'Why', 'Open thread', 'Open task' and 'Open on GitHub' controls are packed onto one line with uneven spacing, and the Merge button sits alone on the next line.",
+      "The transcript is long and repetitive: 'Noted.' appears many times between event cards, which makes the failed-night events at the bottom slower to scan.",
+      "'Proposed a fix for the full suite finding.' appears twice at the end of the transcript.",
+      "The 'Fix the full suite finding' draft appears both under 'Proposed tasks' and in the Queue, which could look like a duplicate."
     ]
   }
 }

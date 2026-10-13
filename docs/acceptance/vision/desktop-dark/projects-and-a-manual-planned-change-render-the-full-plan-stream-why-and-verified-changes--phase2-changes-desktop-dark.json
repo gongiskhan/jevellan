@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar conversation list cuts off a fourth item partway (only a sliver of text shows below 'Message actions'). It looks like normal scroll overflow, but it reads as clipped text.",
-      "The top of the main column shows a stray card border just under the header prompt, which suggests the plan card has been scrolled behind the sticky header.",
-      "The 'Waiting for you 4' filter count badge is small and low-contrast."
+      "The sidebar conversation list cuts off a fourth row at its bottom edge. Only the tops of its letters show, just above the 'Some native sessions are unavailable' line. The list scrolls, so the row can still be reached.",
+      "In the main column, the plan card at the top is partly scrolled under the header, so its bottom border sits just under the 'Change the value to two and verify it.' prompt line. This is a scroll position, not an overlap.",
+      "The sidebar title 'Change the value to two …' and its subtitle 'Manual conversation fixtu…' end in an ellipsis because they are long. The full title is shown in the main header."
     ]
   }
 }

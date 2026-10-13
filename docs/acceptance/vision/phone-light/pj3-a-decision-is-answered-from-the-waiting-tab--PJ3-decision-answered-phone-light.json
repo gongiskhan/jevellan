@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row runs past the right edge of the screen, so the 'Pull requests' tab is clipped. The row is probably meant to scroll sideways, but nothing on screen shows that more tabs exist.",
-      "The 'WAITING FOR YOU 0' header and the 'Claude Code Fable · high' status line use small, light-gray monospace text with fairly low contrast. Both are still readable."
+      "The tab strip is cut off at the right edge, so 'Pull requests' is only partly visible. It looks like a scrollable tab row, so the tab can probably still be reached, but no scroll cue shows that more tabs exist.",
+      "The 'Answered 1' section is collapsed, so the answered decision only shows as a count unless the user expands it.",
+      "The header status line 'Context unavailable · Compacted 0 times today' wraps onto two lines next to the 'Fresh session' button. It is still readable."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Adversarial Rev…' label in the Next Step list is cut off with an ellipsis because the label column is narrow at phone width.",
-      "The last 'Corrections used' entry is cut off at the bottom of the screen. This looks like normal scrollable content continuing below the visible area, not a layout fault.",
-      "Some lines in 'Corrections used' look uneven: the italic serif 'action: …' text sits next to sans-serif text, and the arrow wraps onto its own line ('→ low')."
+      "The 'Adversarial Review' label in the Next Step list is shortened to 'Adversarial Rev...' with an ellipsis.",
+      "The last correction entry ('implement in Browser fixture, small change, no risky areas...') is cut off at the bottom of the screen. This looks like normal scrolling, not a layout fault.",
+      "The effort section says 'medium → high', but the bars show medium at 1.00 and high at 0.00. That could confuse readers, even if it's meant to show the requested effort rather than the one used."
     ]
   }
 }

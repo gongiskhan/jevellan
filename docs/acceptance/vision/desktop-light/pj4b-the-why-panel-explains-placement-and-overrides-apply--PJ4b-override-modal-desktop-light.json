@@ -9,6 +9,8 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": []
+    "cosmetic": [
+      "The modal is cut off a little early on the right, so the background row ending in '...ed to main in the last 24 hours (none)' shows past its edge. It sits under the dimmed overlay and is only background content."
+    ]
   }
 }

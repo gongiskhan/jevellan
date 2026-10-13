@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The key row (Esc, Tab, Ctrl, Alt, arrows) runs past the right edge, so the last key is clipped. This is probably a row you can scroll sideways, but nothing on screen shows that more keys are hidden.",
-      "The host/path text in the header is cut off with an ellipsis ('/private/var/fo…'). That's acceptable on a phone, but the full working directory can't be seen there.",
-      "There are two hamburger menu buttons stacked (one by 'Conversations' and one by 'Terminal'), which is redundant.",
-      "The 'Project' label is pink/red and sits between 'Connected' and 'Close terminal'. It isn't clear whether it's a tab, a link or a status."
+      "The key row (Esc, Tab, Ctrl, Alt, arrow keys) runs past the right edge, so the last key is only partly visible. It looks like a horizontally scrollable strip, so the remaining keys can likely be reached by scrolling, but nothing on screen clearly shows that.",
+      "The terminal wraps words mid-word at its column width (for example \"r oot\" and \"rl / m3jp\"). This is normal terminal wrapping but slightly harder to read on a narrow screen.",
+      "The connection path in the header is cut short with an ellipsis (\"/tmp/jevellan-browser-rlm3jp/...\"). This is an intentional truncation, and the full path also appears in the shell prompt."
     ]
   }
 }

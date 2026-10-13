@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal's descriptive text is small and low-contrast gray against the dark background, so it's a bit harder to read. It is still legible.",
-      "The CLAUDE.md diff box has less padding below its last line than the AGENTS.md box."
+      "The secondary helper text ('The draft ran read-only. Apply replaces AGENTS.md...') is low-contrast grey on the dark panel, but it is still readable",
+      "Lines holding only '-' or '+' in the diffs (blank-line changes) look like stray characters",
+      "The 'Open work' link sits alone below the Cancel/Apply row, which makes the action area a little unbalanced"
     ]
   }
 }

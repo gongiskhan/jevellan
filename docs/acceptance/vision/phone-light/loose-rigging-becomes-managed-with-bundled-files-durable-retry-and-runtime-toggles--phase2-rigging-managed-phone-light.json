@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal dialog covers most of the underlying Rigging screen. Only bits of the page behind it show: the tab bar, a partly hidden 'browser-package' card and a 'Restore locally' button. This is expected for an open edit dialog.",
-      "The tab bar is cut off at the right edge, with a scroll-arrow button to reach the rest. The tabs can still be reached by scrolling.",
-      "The content textarea has a lot of empty space below its two lines of text."
+      "The 'Edit Managed browser bundle' modal covers most of the Rigging screen, so the managed-state details behind it (the browser-package card and the 'Restore locally' button) are only partly visible under the dim overlay.",
+      "The Content textarea is much taller than its two lines of text, leaving a large empty area.",
+      "The background tab strip ('Runtimes', 'Rigging', 'Decisions', …) is cut off at the right edge, but it scrolls and has an arrow button, so it isn't blocking."
     ]
   }
 }

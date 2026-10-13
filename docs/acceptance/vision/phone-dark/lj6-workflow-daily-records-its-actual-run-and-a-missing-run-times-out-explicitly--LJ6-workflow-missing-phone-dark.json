@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Pull requests' tab is clipped at the right edge of the tab bar. It looks like a horizontally scrollable row, so the tab can still be reached.",
-      "The 'Working…' status pill in the header is cut off with an ellipsis.",
-      "The 'Missing run' details are collapsed, so the only explanation shown is the summary line 'No run of missing.yml started today.'"
+      "The header title is cut off with an ellipsis (\"Projects workflo...\"). This looks like intentional truncation on a narrow screen.",
+      "The tab row runs off the right edge at \"Pull requests\". It looks like a horizontally scrollable tab strip, but nothing on screen shows that it scrolls.",
+      "The \"Enabled\" checkbox labels sit a bit lower than the Run now and Edit buttons on both nightly cards."
     ]
   }
 }

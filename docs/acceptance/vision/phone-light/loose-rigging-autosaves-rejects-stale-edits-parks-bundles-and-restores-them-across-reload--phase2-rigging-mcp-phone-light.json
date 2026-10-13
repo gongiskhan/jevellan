@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The file label reads 'config.toml', but the content is formatted as JSON. This may just be fixture data, but it could confuse users.",
-      "In the dimmed background, the tab bar is cut off at the right edge ('Decisions' and a partly hidden tab next to the scroll arrow). This is expected for a horizontally scrolling tab bar under a modal."
+      "The file label says config.toml, but the editor shows JSON content, which may confuse users about the format.",
+      "The tab bar behind the modal is cut off on the right (a partial tab and a scroll arrow), but it is dimmed behind the overlay and does not block anything.",
+      "The success toast's dismiss '×' is small and sits close to the modal edge, but it can still be tapped."
     ]
   }
 }

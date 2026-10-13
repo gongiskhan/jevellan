@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Header title is truncated with an ellipsis ('J8: implement after the outside agent is…'), but the full text is shown in the subtitle and the message bubble.",
-      "'Retry' appears twice: once on the user message and once as a standalone button under the error banner. It's unclear which one to use.",
-      "The send button looks dimmed or low-contrast against the composer background."
+      "Header title is truncated with an ellipsis ('J8: implement after the outside agent is...'), but the full text shows in the subtitle and the message bubble",
+      "Two retry-style buttons in the blocked state ('Retry' on the message bubble and the standalone 'Retry' below the error) could confuse users",
+      "Large empty area between the actions and the composer"
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The terminal attach command 'jevellan thread attach thread_01M4QYTC864RRQZ…' is cut off with an ellipsis. The copy button next to it still gives you the full command.",
-      "The metadata lines ('Claude Code · Fable · high effort · / Projects Claude · / Worktree on jv/check-the-readme-links-dyve93 · / dev-madrid') wrap awkwardly, so lines end with a stray '·' separator.",
-      "The thread content ends partway down the screen, leaving a large empty area between the report card and the message box."
+      "The terminal attach command at the bottom ('jevellan thread attach thread_01M4SD5D9JN310H…') is cut off with an ellipsis. The copy button next to it still gives the full command.",
+      "There is a large empty gap between the report card and the message composer.",
+      "The 'Idle' status pill and the amber 'Placed without Jev: authentication failed' chip use small text with fairly low contrast. Both are still readable."
     ]
   }
 }

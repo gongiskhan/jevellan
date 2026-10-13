@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar, the fourth conversation row is partly clipped at the bottom of the scrollable list, just above 'Some native sessions are unavailable'. It is a scroll cutoff and the row can still be reached.",
-      "The 'Why this step' panel ends right at the bottom of the viewport after the JEV section ('This step was picked manually.'). There is no bottom padding, so it is unclear whether more content follows below.",
-      "The banner 'Jev is unavailable (no key configured). Pick the next step:' appears in both the right panel and the main column. In the right panel it has no controls under it, so the colon leads nowhere."
+      "In the sidebar, the fourth conversation entry is cut off at the bottom by the scroll edge and shows only a partial line above 'Some native sessions are unavailable'.",
+      "Sidebar conversation titles and subtitles end in ellipses ('Explain the memorybrows…', 'Exercise evidence navigat…', 'dev-m…'). This looks like intended truncation.",
+      "The Why panel repeats the 'Jev is unavailable (no key configured). Pick the next step:' banner without any controls next to it, which duplicates the main pane's prompt.",
+      "The Step 1 tool card shows the 'completed' status on its own line under the title, which leaves extra empty space."
     ]
   }
 }

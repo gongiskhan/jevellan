@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Conversation titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Change the value to thre…', 'Context · J11 memory journ…'). This is normal sidebar overflow, and the selected item is still identifiable.",
-      "The undone Step 1 is struck through, its code blocks are greyed out (grey background), and its label text is faint. This marks it as undone on purpose. The text is lighter but still readable.",
-      "The two red error banners repeat the word 'disabled' eight times ('No model can run this step right now: disabled, disabled, …'). This is a wording/content issue, not a layout problem.",
-      "The 'Step details' disclosure rows and the small labels such as 'Local time' and 'completed' are low-contrast grey but still readable."
+      "The error banner 'No model can run this step right now: disabled, disabled, …' appears twice in a row, and its text just repeats 'disabled' eight times. It reads like duplicated or broken state rather than a layout problem. It also suggests the requested redo may not have run as expected, which is worth checking in the functional assertions.",
+      "The undone Step 1 is dimmed: its input and output code blocks are muted grey and its heading is struck through. It is still readable, but the contrast is lower than in Step 2.",
+      "The pink 'corrected: effort → max' and 'corrected: action → reply, effort → low' labels are small and low-contrast against the light background.",
+      "Sidebar conversation titles and subtitles are cut short with an ellipsis (for example 'Change the value to thre…'). This is normal truncation for that list, not lost content.",
+      "Inside the undone step, the summary says 'The value is now 3' while the tool output shows 'The fixture starts with value 1.' That is a content mismatch, not a rendering defect."
     ]
   }
 }

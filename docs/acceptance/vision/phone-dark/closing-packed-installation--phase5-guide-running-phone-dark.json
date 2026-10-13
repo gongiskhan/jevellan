@@ -5,16 +5,15 @@
   "test": "Closing packed installation",
   "layout": "phone-dark",
   "screenshot": "screenshots/phase5-guide-running-phone-dark.png",
-  "expected": "the running conversation with readable transcript and reachable controls",
+  "expected": "the running conversation with readable transcript and reachable controls Bright magenta rectangles are intentional screenshot masks over saved secret data, not product overlays or rendering faults.",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Installation acceptance: ch...'). The full text still appears in the subtitle line and the message bubble.",
-      "There is a large empty area between the step divider and the 'Agent is working' indicator, so the status sits far from the step content.",
-      "The 'Agent is working' status is shown twice: once as the 'Running' step badge and once in the footer status block.",
-      "The '0s' elapsed counter sits alone at the far right above the composer and is loosely tied to the status text.",
-      "The 'Elapsed 0s' and 'Local time' labels are small and low-contrast, but still readable."
+      "The header title is cut off with an ellipsis (\"Installation acceptance: ch...\"), but the full text appears below it in the subtitle and the message bubble.",
+      "There is a large empty gap between the step section and the \"Agent is working\" indicator, which pushes the status far from the transcript content.",
+      "The \"Agent is working\" spinner and its \"0s\" timer sit far apart, on opposite sides and different rows, so they're hard to read together.",
+      "The send button in the steer input looks low-contrast or disabled while the field is empty."
     ]
   }
 }

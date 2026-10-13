@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Exercise answer options: ...', 'Context · J11 memory jour...'). This is normal truncation and the content is still identifiable.",
-      "In Schedule and jobs, the 'Memory care' row puts its mode in an input-styled box ('Apply and tell me'), while the other rows show plain 'Suggest' labels. The rows look inconsistent.",
-      "The 'Save schedule and jobs' button has low contrast against the card background, so it looks disabled.",
-      "The 'Simulated judge responses.' text after each 'Checked against 27 saved cases' line is dim and low contrast, but still readable."
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Exercise answer options: ...', 'Context · J11 memory jour...'). This is normal overflow handling.",
+      "On the Dismissed card, the user's note \"Plans stay on Fable.\" sits apart at the bottom in small, low-contrast text with no label saying it is the dismissal reason.",
+      "The 'Save schedule and jobs' button looks low-contrast or disabled against the dark card.",
+      "In the 'Run nightly at' field, the time '03:00 AM' is dim and looks like placeholder text."
     ]
   }
 }

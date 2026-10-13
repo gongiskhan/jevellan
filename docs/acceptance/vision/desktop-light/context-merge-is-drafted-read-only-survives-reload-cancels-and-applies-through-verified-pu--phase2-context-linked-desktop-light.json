@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal's 'Open work' link sits inside a bordered status box. It reads like secondary content instead of an obvious next action.",
-      "The 'Current instruction files' disclosure is shown in a small monospace font that doesn't match the rest of the modal."
+      "The background page is blurred under the modal backdrop, which is expected for a dialog.",
+      "The modal's content is sparse. 'Current instruction files' is collapsed, so the linked state is shown only by the one-line 'Linked: CLAUDE.md → AGENTS.md' summary."
     ]
   }
 }

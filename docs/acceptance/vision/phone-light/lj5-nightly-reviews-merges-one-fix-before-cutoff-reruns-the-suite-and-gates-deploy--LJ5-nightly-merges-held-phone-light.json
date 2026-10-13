@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip is clipped on the left: the 'Chat' pill is cut off at the screen edge. It looks like a horizontally scrolled tab row, so the tab can still be reached.",
-      "The PR card's action links don't match: 'Open task' uses a larger font than 'Why' and 'Open thread', and the spacing between the links is uneven.",
-      "The disabled 'Merge' button has low contrast (pale grey-blue). That fits the held state, but it is faint."
+      "The tab strip is scrolled so the 'Chat' tab is partly cut off at the left edge. It still looks reachable by scrolling the strip.",
+      "The status badge is cut short to 'Working…', which reads as an intentional status label.",
+      "Spacing is uneven in the PR card action row: 'Why' and 'Open thread' sit close together, while 'Open task' has a wider gap.",
+      "The disabled Merge button has low contrast. This fits the held state, but the button is faint."
     ]
   }
 }

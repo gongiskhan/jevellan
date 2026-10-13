@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dialog says 'using 0 GB' and 'thread · orphan_fixture · 0 GB'. For a small worktree, a rounded zero size looks odd; showing MB or '<1 GB' would be clearer.",
-      "The background tab strip cuts off the 'Projects' tab at the right edge. It's a horizontal scroller with arrows and sits behind the blurred modal, so this doesn't block anything."
+      "The size reads '0 GB' in both the summary and the list item ('thread · orphan_fixture · 0 GB'). This is probably rounding of a small fixture and doesn't tell the user much.",
+      "The dialog sits partway down a very long page and the page behind it is blurred. Nothing important is hidden, but the dialog isn't anchored to the top of the viewport."
     ]
   }
 }

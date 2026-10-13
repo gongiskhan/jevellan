@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip at the top cuts off a fourth tab after 'Decisions' (only its icon shows). It sits behind a scroll arrow, so it's still reachable.",
-      "The device lists under the Claude Code accounts say 'Codex sign-ins are kept per device for now.' This looks like the wrong product name copied over from the Codex section.",
-      "The usage bars for 'Five hours' and 'Week' are empty grey tracks marked 'Unknown', so they show no data."
+      "The fourth tab in the top settings tab bar is cut off behind the scroll arrow button. The tabs scroll horizontally and the arrow is there to reach it.",
+      "Long buttons like 'Log in on Browser member' and 'Log in on Offline fixture' take up most of the row width but don't wrap or get clipped.",
+      "The model chips ('Fable', 'Opus', 'GPT fixture') are small but still readable."
     ]
   }
 }

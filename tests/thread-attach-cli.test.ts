@@ -4,7 +4,7 @@
 // fixture directory and the system directories, and HOME is the fixture's user directory.
 import { afterEach, expect, test, vi } from 'vitest';
 import { createHash, randomUUID } from 'node:crypto';
-import { mkdirSync, mkdtempSync, realpathSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parse as parseToml } from 'smol-toml';
@@ -167,6 +167,44 @@ test('a Codex thread resumes with its effort as a configuration override, and SI
   expect((await finished(third)).code).toBe(130); expect(signals(piped.pid)).toEqual(['SIGINT']);
   expect(f.thread(threadId)).toMatchObject({ state: 'idle', nativeSessionId: piped.sessionId });
   expect(worked(f, threadId)).toHaveLength(runs); expect(codex.turnStarts).toHaveLength(1);
+});
+
+test('Codex takeover selects bounded root instructions again on each resume and hands back when AGENTS is invalid', { timeout: 120_000 }, async () => {
+  const codex = named('codex'), f = await setup({ runtimes: { fake: new FakeRuntime(), codex } });
+  f.app.hub.put('accounts', 'acc_codex', AccountSchema, { schema: 'account-v1', id: 'acc_codex', runtime: 'codex', label: 'Codex', kind: 'subscription', enabled: true, ceilingPct: 90, credential: 'per-device' }, 0);
+  await f.app.accounts.check('acc_codex'); codex.enqueueTurn(reportStep({ status: 'progress', summary: 'Ready.' }), forThread());
+  const id = await start(f, 'Instruction fallback', 'Follow project root instructions.', 'codex_fixture'); await rest(f, id);
+  const cwd = f.thread(id).cwd, cli = agents(f), path = `${cli.bin}:/usr/bin:/bin`;
+  writeFileSync(join(cwd, 'CLAUDE.md'), 'Keep the project convention.');
+  const first = jevellan(f, ['thread', 'attach', id], { path }), run = await cli.started(1);
+  const config = parseToml(run.argv!.filter((_v, i, args) => args[i - 1] === '-c').join('\n'));
+  expect(config.project_doc_fallback_filenames).toEqual(['CLAUDE.md']);
+  expect(run.argv!.at(-1)).toContain('# Project instructions: CLAUDE.md');
+  expect(run.argv!.at(-1)).toContain('Read the current root CLAUDE.md');
+  expect(run.argv!.join('\n')).not.toContain('Keep the project convention.');
+  first.send('exit 0\n'); expect((await finished(first)).code).toBe(0); await rest(f, id);
+  symlinkSync('CLAUDE.md', join(cwd, 'AGENTS.md'));
+  const second = jevellan(f, ['thread', 'attach', id], { path }), changed = await cli.started(2);
+  expect(changed.argv!.at(-1)).toContain('# Project instructions: AGENTS.md');
+  second.send('exit 0\n'); expect((await finished(second)).code).toBe(0); await rest(f, id);
+  rmSync(join(cwd, 'AGENTS.md')); writeFileSync(join(cwd, 'AGENTS.md'), 'x'.repeat(32769));
+  const refused = await finished(jevellan(f, ['thread', 'attach', id], { path }));
+  expect(refused.code).toBe(1); expect(refused.errors).toContain('AGENTS.md must be a file of at most 32768 bytes');
+  expect(refused.output).toBe(`${BACK}\n`); expect(cli.records().filter(row => row.kind === 'run')).toHaveLength(2);
+  expect(f.thread(id).state).toBe('idle');
+});
+
+test('a failed terminal capture never prevents handback, and the unprocessed journal stays retryable', async () => {
+  const claude = named('claude'), f = await setup({ runtimes: { fake: new FakeRuntime(), claude } }); await claudeAccount(f);
+  claude.enqueueTurn(reportStep({ status: 'progress', summary: 'Ready.' }), forThread());
+  const id = await start(f, 'Capture handback', 'Keep takeover available.', 'claude_fixture'); await rest(f, id);
+  const view = await f.app.projectWork.attach(id);
+  const capture = vi.spyOn(f.app.projectWork.captures, 'capture').mockRejectedValue(new Error('Project memory is unavailable: the hub is offline.'));
+  expect(await f.app.projectWork.detach(id)).toMatchObject({ schema: 'thread-detach-v1', adopted: false });
+  expect(f.thread(id).state).toBe('idle'); expect(capture).toHaveBeenCalledOnce(); capture.mockRestore();
+  const old = await fetch(`${f.base}/api/bridge`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${view.env.JEVELLAN_STRETCH_TOKEN}` },
+    body: JSON.stringify({ schema: 'bridge-request-v1', operation: 'list' }) });
+  expect(old.status).toBe(401);
 });
 
 test('the command prints the daemon refusals, hands back a thread it cannot resume, and a thread whose detach missed Jevellan stays attached until thread detach', { timeout: 120_000 }, async () => {

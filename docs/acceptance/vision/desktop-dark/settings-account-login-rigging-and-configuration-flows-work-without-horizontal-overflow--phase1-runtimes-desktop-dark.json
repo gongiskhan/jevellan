@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Rigging local fixture' account sits under Claude Code, but its device list says 'Codex sign-ins are kept per device for now.' This looks like the wrong runtime label.",
-      "Sidebar conversation titles and subtitles are cut off with an ellipsis (e.g. 'Context · J11 memory journ…'). The truncation looks intentional and they are still readable.",
-      "The usage meters for 'Five hours' and 'Week' are faint and almost invisible on the dark background. Each one says 'Unknown', so no information is lost.",
-      "'Log in on Offline fixture' is greyed out next to an Offline badge. This looks intentionally disabled, but it has low contrast."
+      "Conversation titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Shared memory fi…'). This is intended truncation, not a layout fault.",
+      "Every usage meter shows 'Unknown' next to an empty track, so the Five hours and Week rows have a lot of blank space.",
+      "The two 'Login recovery' account names include full UUIDs, which makes them long and hard to scan.",
+      "The 'Log in on Offline fixture' links are greyed out with low contrast, but they're still readable and consistent with an offline device.",
+      "Under Codex, 'Applied from this device' shows plain text ('Models appear after an account is checked.'), while Claude Code shows a model chip ('Fable'). The two sections look slightly inconsistent."
     ]
   }
 }

@@ -10,9 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the pull request card, the 'Why' and 'Open thread' links sit very close together and read almost as one label ('Why Open thread').",
-      "The 'Checks passing' and 'Conflicts' badges appear together, which can be confusing, though both are readable.",
-      "Long titles in the sidebar sessions and the Running item are cut off with an ellipsis ('Context · J11 memory jour…', 'Read through the project and list what each file is …'). This is expected truncation and does not hide any controls."
+      "The sidebar session titles and metadata are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · dev-ma…'). This is deliberate truncation, not overflow.",
+      "The running task title in the right panel is cut off with an ellipsis ('Read through the project and list what each file is …'). The full title appears in the Queue card above it.",
+      "Two 'Noted.' replies appear in a row at the end of the conversation thread, which looks redundant.",
+      "The Merge button on the PR card looks disabled or muted. That fits the 'Conflicts' state, but its contrast is low.",
+      "The PR card's 'Why' and 'Open thread' links sit very close together, with no separator between them."
     ]
   }
 }

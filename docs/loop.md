@@ -9,7 +9,7 @@ Release 0.2.1 supersedes the prepared 0.2.0 for activation. The installed 0.1.0 
 
 ## Coordinator, memory and terminal extension
 
-The 12 October brief defines the next release, 0.3.0. P0 records the target; runtime implementation is not yet claimed. The phase table in PLAN.md and decisions 703–715 in the acceptance report distinguish planned, simulated, live and blocked evidence. Amendment 2 activation continues independently; 0.2.1 is already installed on the imported Pro hub with rollback retained.
+The 12 October brief defines release 0.3.0. P0–P6 are pushed, including persistent sessions, questions/GitHub, shared memory, owner commands, terminals and the real-scenario harness. Closing verification and platform delivery are in progress. The phase table in PLAN.md and numbered acceptance decisions distinguish simulated, live and blocked evidence. Amendment 2 activation continues independently; 0.2.1 remains installed on the imported Pro hub until the verified update, with rollback retained.
 
 The coordinator keeps its session across days, including compactions, rather than rotating after 40 turns. All Projects sessions compact at a configurable 70% default, then receive fresh project context without losing their native session. The panel exposes context use, compactions and Fresh session. Open questions share oldest-first numbers across cards and prompts, and the coordinator can record and distribute several answers from one owner chat message. A scoped read-only GitHub tool covers runs, jobs/logs, any repository pull request and recent commits, with a 60-second cache and the existing request budget.
 
@@ -40,6 +40,8 @@ Claude threads and coordinators run through the Claude Agent SDK; Codex threads 
 Jevellan retains control of authentication, account and model selection, sandboxing and permissions. Its safety hook runs first and its denials cannot be overridden by native hooks. Native homes are never modified or linked into an isolated home. Native MCP secrets are supplied ephemerally, redacted and excluded from saved configuration, hub documents and evidence. Jevellan's reserved server and hook names take precedence; Settings explains clashes and unsupported items.
 
 Codex receives root `AGENTS.md` as project instructions. If that entry is absent, it receives root `CLAUDE.md`. The selected filename is displayed accurately in the prompt. Existing invalid or unreadable instructions are errors, not permission to select another file. Instruction files must resolve inside the project and satisfy the existing file and size checks. If neither file exists, no root instructions are injected. An internal `AGENTS.md` symlink to `CLAUDE.md` remains supported.
+
+The native terminal takeover uses the same root-file validation on every resume. Its Codex fallback setting names CLAUDE.md, and its initial instruction names the selected file and asks the session to read its current contents before acting; file contents stay out of command arguments. An invalid file refuses launch and hands the thread back. A failed memory capture also hands back, retaining the journal and unadvanced capture cursor for retry.
 
 Settings → Runtimes has **Use my own {runtime} setup**, enabled by default, with the included paths and excluded items with reasons. Sessions use short task instructions: report progress, completion, blockers or owner decisions through the bridge; commit with the machine identity; run surgical tests. Jevellan performs publication and project checks.
 
@@ -209,3 +211,9 @@ Temporary shell integration preserves dotfiles and owner hooks, recording comman
 The A/B/C/D harness is scripts/live/scenarios.mjs. It checks structured owner state and the redacted ledger before checking reply keywords. Turn starts record assembled prompts and explicit clipping; turn ends record reported usage and hashed native continuity. Review, verification and memory usage share the same project ledger. The owner-only thread events endpoint routes to the thread's device and reuses authentication, cursor replay and stream guards.
 
 Scenario resets stop earlier sandbox work and create a fresh logical project while retaining the earlier receipts; B never resets. Receipt files carry live, blocked, simulated or not run labels, timed assertions, sanitized excerpts, routes, run/PR/note identifiers and usage uncertainty. The ten-hour clock starts only with an eligible real scenario and survives harness restarts. Installed production refuses accelerated acceptance thresholds. See acceptance/scenarios/README.md for the private configuration and run commands.
+
+
+Closing shell integration: Jevellan PTYs disable competing WezTerm semantic hooks in their own environment, preserving the owner's startup files. The daemon records its own command boundaries and actual exit codes on Madrid Bash as well as Pro shells. Decision 747 and its failing-before/passing-after regression are recorded in acceptance/REPORT.md. Real owner-device scenarios remain blocked on the previously requested inputs.
+
+
+0.3.0 closing source gates pass: 2,020 backend tests in 182 files, all 292 unique browser cases through the complete matrix and affected reruns, 582 clear dedicated vision verdicts, typecheck/lint/build and both platform candidates. The single closing review and permitted second are finished. Source-bound publication and cold full-home Pro activation follow; real scenarios and member enrollment remain blocked, with no live clock or owner acceptance. See acceptance/release-030.md and the ordered activation handoff.

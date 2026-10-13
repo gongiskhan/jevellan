@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Projects' tab is cut off at the left edge of the scrolling tab strip. It can still be reached with the scroll arrows.",
-      "The 'Mirror tasks to Ekoa' label sits on its own line under the checkbox instead of beside it.",
-      "The 'Available tools' section is collapsed, so the Connected card shows no details at first glance.",
-      "Each mirrored task's 'open' status wraps onto a separate line."
+      "In the tab strip, the 'Projects' tab is partly hidden behind the left scroll arrow. It is still reachable by scrolling.",
+      "The 'Mirror tasks to Ekoa' checkbox sits above its label instead of beside it, and both look dimmed or disabled.",
+      "The plural is wrong in 'Projects daily: 1 proposed tasks'.",
+      "Two mirrored tasks have the same title, 'Jevellan · Projects daily: night report · open'. This scenario is meant to have no duplicates, so check whether these are really two separate tasks.",
+      "Two task rows ('Projects mirror: Which empty state?' and 'Projects mirror: 3 proposed tasks') wrap so that '· open' falls onto its own line."
     ]
   }
 }

@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Mirror tasks to Ekoa' checkbox sits on its own line above its label instead of next to it, so the two look disconnected.",
-      "The 'Ekoa' settings nav item uses the same folder icon as 'Projects'.",
-      "Sidebar session titles and subtitles are cut off with an ellipsis (e.g. 'Context · J11 memory jour…', 'dev-ma…'). This is deliberate truncation and doesn't affect this screen.",
-      "Large empty area below the 'Mirrored tasks' card."
+      "The 'Mirror tasks to Ekoa' checkbox is very faint, maybe disabled, and sits above its label instead of next to it, so its state is hard to read.",
+      "The disabled-looking 'Save' button has low contrast.",
+      "'Jevellan · Projects daily: night report · open' appears twice in the Mirrored tasks list. This could be two separate tasks, but it is worth checking against the scenario's no-duplicates expectation.",
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…'). This is intended truncation and doesn't block anything."
     ]
   }
 }

@@ -229,7 +229,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
       <div className="cursor-transcript pw-transcript" aria-label={copy.TRANSCRIPT_LABEL}>
         {notice && <p className="pw-transcript-note">{notice}</p>}
         {mergeThreadToolTurns(items).map((item) => item.kind === 'turn'
-          ? <TranscriptTurn key={item.turn.id} turn={item.turn} userLabel={copy.PROMPT} collapseLongUser={copy.PROMPT_COLLAPSE_CHARACTERS} />
+          ? <TranscriptTurn key={item.turn.id} turn={item.turn} userLabel={copy.PROMPT} collapseLongUser={thread.state === 'attached' ? 0 : copy.PROMPT_COLLAPSE_CHARACTERS} />
           : <ReportCard key={`report-${item.report.turn}-${item.report.synthesized ? 'synthesized' : 'recorded'}`} report={item.report} />)}
         {view.queuedMessages.length > 0 && (
           <section className="pw-queued" aria-labelledby={queuedId}>

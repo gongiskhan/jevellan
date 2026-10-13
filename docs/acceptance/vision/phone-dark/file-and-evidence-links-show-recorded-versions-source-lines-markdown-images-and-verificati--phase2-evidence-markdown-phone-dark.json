@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The \"Show source\" toggle sits right on top of the \"Evidence guide\" heading with almost no space between them, so they look crowded.",
-      "The \"Open recorded step\" link is low-contrast grey and looks disabled next to the pink \"Open working copy\" link.",
-      "The checkpoint hash is set in very small, dim text, so it's hard to read, though it is shown in full."
+      "The 'Recorded checkpoint' label and commit hash are small, low-contrast gray text on the dark background. They are readable but faint.",
+      "'Show source' sits right against the 'Evidence guide' heading with almost no space between them.",
+      "'Recorded pixel' shows as a text link, not an inline image. That may be intended, but no image preview appears on this screen.",
+      "'Open recorded step' is a muted gray next to the pink 'Open working copy', so it looks disabled or secondary, though it is still readable."
     ]
   }
 }

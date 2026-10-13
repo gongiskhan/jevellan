@@ -5,16 +5,14 @@
   "test": "Closing packed installation",
   "layout": "desktop-dark",
   "screenshot": "screenshots/phase5-guide-jev-desktop-dark.png",
-  "expected": "the Connect Jev setup step with readable text and reachable controls",
+  "expected": "the Connect Jev setup step with readable text and reachable controls Bright magenta rectangles are intentional screenshot masks over saved secret data, not product overlays or rendering faults.",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The yellow banner tells the user to add the Jev key in Settings → Decisions, but there is a Jev key field right below it on this screen. The two messages contradict each other.",
-      "'Test connection' sits on its own row under the input, while 'Save key' sits next to the input. The two buttons don't line up.",
-      "The disabled 'Continue' and 'Test connection' buttons have very low contrast against the dark background. They're readable but faint.",
-      "The Jev key input has no placeholder or helper text showing what format the key should be in.",
-      "The page content takes up only the top half of the screen, leaving a large empty area below."
+      "The warning banner says 'Add your Jev key in Settings → Decisions', but the Jev key field is on this same screen, so the message contradicts the page.",
+      "The disabled 'Test connection' and 'Continue' buttons have low contrast against the dark background. They are still readable and look disabled because the key field is empty.",
+      "'Test connection' sits on its own row under the key field instead of next to 'Save key', so the action row looks unbalanced."
     ]
   }
 }

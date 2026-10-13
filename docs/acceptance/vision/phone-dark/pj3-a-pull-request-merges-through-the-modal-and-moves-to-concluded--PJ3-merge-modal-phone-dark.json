@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Background content behind the modal scrim is dimmed and blurred, so it's hard to read. That's expected for a modal overlay.",
-      "The modal body text is a bit low-contrast against the dark surface but still legible."
+      "Dimmed background content behind the modal overlay is hard to read, which is expected for a modal backdrop",
+      "Large empty area below the modal on the phone viewport"
     ]
   }
 }

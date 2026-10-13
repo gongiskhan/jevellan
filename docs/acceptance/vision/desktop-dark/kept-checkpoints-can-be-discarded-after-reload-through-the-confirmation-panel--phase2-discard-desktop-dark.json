@@ -10,7 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background behind the modal is heavily dimmed and blurred. This is expected for a modal backdrop, but the conversation content behind it can't be read."
+      "The background is dimmed and blurred behind the modal, so the page underneath is hard to read. This is normal for a modal and doesn't block anything.",
+      "The 'Discard checkpoints' primary button is very light against the dark theme, so it stands out much more than the 'Back' button."
     ]
   }
 }

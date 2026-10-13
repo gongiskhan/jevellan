@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'QUEUE 0' heading at the bottom of the right panel is cut off by the edge of the screen. The panel appears to scroll, so it can still be reached.",
-      "Sidebar session titles and subtitles are shortened with ellipses (e.g. 'Context · J11 memory journ…'). This looks intended, but the full names can't be read.",
-      "There is a lot of empty space in the chat area between the 'Asked you' entries and the 'Coordinator is working…' indicator."
+      "Sidebar shell session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour...', 'Context · Mesh journey fix...').",
+      "In the Running panel, task summaries are cut off with ellipses (e.g. 'Read the README on this device: a title and one line about th...', 'Read through the project and list what each file is ...').",
+      "Every chat event card is followed by a repeated 'Noted.' line, which adds visual noise and makes the long transcript harder to scan.",
+      "The 'Context unavailable · Compacted 0 times today' header line shows 0 compactions even though the transcript includes a 'CM1 compaction' message."
     ]
   }
 }

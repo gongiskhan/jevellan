@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header status chip is shortened to \"Working…\" with an ellipsis, so the full status text isn't shown.",
-      "The tab row is cut off at the right edge after \"Pull requests\". It looks like a horizontally scrolling tab strip, but nothing on screen shows that more tabs are available.",
-      "The \"Enabled\" checkbox sits above its label instead of beside it, so it doesn't line up with the \"Run now\" and \"Edit\" buttons.",
-      "The terminal box reads \"No output recorded.\" even though the workflow passed. The success result is still clear from \"Workflow success. · ba0be6c\" and \"Done today at 02:00 AM\"."
+      "The header title is shortened with an ellipsis (\"Projects workflo...\"), so the full project name isn't visible.",
+      "The tab row runs past the right edge: \"Pull requests\" is clipped, which suggests it scrolls sideways and there may be more tabs off-screen.",
+      "The \"Enabled\" checkbox sits above its label and higher than the Run now/Edit buttons, so that row looks out of line.",
+      "The workflow run output box says only \"No output recorded.\"",
+      "The \"Done today at 02:00 AM\" badge says \"today\" while the project day shows 2026-10-14; this is worth checking for date consistency."
     ]
   }
 }

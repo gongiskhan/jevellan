@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Enabled checkbox sits on its own line above its 'Enabled' label instead of next to it",
-      "The background page behind the modal is dimmed and hard to read. That's expected for a modal overlay.",
-      "The 'Order' field shows 0 with no hint about what it means"
+      "The 'Enabled' checkbox sits above its label rather than inline beside it, which looks slightly detached.",
+      "The modal fits tightly at the bottom: the Save/Cancel buttons have little padding below them."
     ]
   }
 }

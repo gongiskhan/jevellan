@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Conversation titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Change the value to two ...', 'Waiting for you · Undo across wo...'). This is expected truncation, and the full title of the active conversation shows in the header.",
-      "The 'Undone' label and the 'corrected: action → reply' tag on the step 1 and step 2 headers are small, low-contrast text that is hard to read.",
-      "The 'completed' status in each 'Read project' card is pale grey and easy to miss.",
-      "The sidebar has a lot of empty space between the conversation list and the 'Some native sessions are unavailable' note."
+      "Sidebar conversation titles and subtitles get cut off with ellipses (e.g. 'Change the value to two ...', 'Context · J11 memory journ...'). This is intended truncation, and the full title appears in the header.",
+      "The struck-through 'Step 1 · Implement' and 'Step 2 · Implement' labels and the small gray 'Undone' badges have low contrast on the dark background, but they can still be read.",
+      "The 'corrected: action → reply' label is in small pink text and is a little hard to read.",
+      "Each step's 'Read project' output says 'The fixture starts with value 1.', while the step summaries say the value is now 2 and 3. This could confuse readers, but it is about content, not layout."
     ]
   }
 }

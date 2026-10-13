@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The title row mixes a pink monospace project label ('Projects fixture') with the 'Notebook' title, so the hierarchy looks a little inconsistent",
-      "Below the short note, most of the panel is empty space"
+      "The header label 'Projects fixture' is shown in small magenta monospace text, which doesn't match the rest of the header's style",
+      "The panel's content is short, so most of the screen below it is empty"
     ]
   }
 }

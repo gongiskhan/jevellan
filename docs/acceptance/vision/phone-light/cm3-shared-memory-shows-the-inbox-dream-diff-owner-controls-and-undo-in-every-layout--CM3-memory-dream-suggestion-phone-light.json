@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dream outcome appears twice: once in the summary line ('Memory dream: suggested — Kept the test conventions and consolidated the inbox.') and again as separate 'suggested' and 'Kept the test conventions…' lines.",
-      "The diff block is clipped at the bottom edge above the Apply/Discard footer. The content looks like it continues by scrolling, but nothing on screen shows that more of the diff is below.",
-      "The stats line uses raw camelCase keys (inboxPromoted, inboxDropped) instead of readable labels.",
-      "The diff header 'diff --git a/Project brief.md b/Project brief.md' wraps onto two lines because the filename has a space, which makes it slightly harder to read."
+      "The diff block is cut off at the bottom by the sticky Apply/Discard footer, so only the first lines of the diff show. It appears to be a scrollable region, so the content can still be reached.",
+      "The dream summary is shown twice: the line 'Memory dream: suggested — Kept the test conventions and consolidated the inbox.' is followed by separate 'suggested' and 'Kept the test conventions…' lines.",
+      "The stats line uses raw camelCase keys (inboxPromoted, inboxDropped) instead of human-readable labels.",
+      "The long 'diff --git a/Project brief.md b/Project brief.md' header wraps onto two lines inside the code block."
     ]
   }
 }

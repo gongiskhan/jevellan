@@ -10,10 +10,12 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Back to project' link sits flush against the top edge of the viewport with almost no top padding, and it is centred instead of lined up with the page content on the left.",
-      "The 'fix · done' metadata text is low-contrast grey on the dark background, but it is still readable.",
-      "The correction controls ('Why', 'Should have asked me', 'Didn't need asking') look like plain pink text links and are packed tightly against the 'Jev would: ask you' badge and the confirmation text, so they are hard to tell apart as separate controls.",
-      "The 'Open thread' button stretches the full width of the content area, which looks oversized next to the rest of the layout."
+      "The 'Back to project' link sits at the very top edge and is centered over the content area, away from the title.",
+      "The merge correction controls ('Why', 'Should have asked me', 'Didn't need asking') look like plain pink text with no button styling, sit close together, and are hard to tell apart from each other and from the 'Saved for future merge decisions.' status text.",
+      "The 'fix · done' subtitle is dim gray on a dark background, so its contrast is low.",
+      "The 'Jev would: ask you' chip uses very small monospace text.",
+      "Below the card, most of the main area is empty and the 'Open thread' button stretches across the full width.",
+      "Long session titles in the sidebar are cut off with an ellipsis (expected truncation)."
     ]
   }
 }

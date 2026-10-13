@@ -10,11 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation titles and subtitles are truncated with ellipses (e.g. 'Change the value to two …', 'Context · J11 memory journ…'), but the full title shows in the main header",
-      "Step 2's 'Read project' output still says 'The fixture starts with value 1.' while the step summary says the value is now 2. This reads oddly but doesn't break the layout",
-      "Two closure banners are stacked ('Work closed. Its changes are kept…' and 'Work closed and published.'), which looks redundant",
-      "Step 1's Changes button shows no file count, while Step 2's shows '· 1 file', so the two are inconsistent",
-      "The 'completed' status labels sit on their own line, right-aligned below the tool titles, which leaves extra empty space"
+      "Several sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Change the value to two ...', 'Context · J11 memory journ...'). This looks like intentional overflow handling.",
+      "In both steps, the 'completed' status label sits on its own line under the tool title 'Read project' rather than on the same line, which leaves extra vertical space.",
+      "Step 2's 'Read project' output says 'The fixture starts with value 1.' while the step text says the value is now 2. This is fixture content, not a rendering problem.",
+      "Two closing banners appear one after the other ('Work closed. Its changes are kept...' and 'Work closed and published.'), which is somewhat redundant."
     ]
   }
 }

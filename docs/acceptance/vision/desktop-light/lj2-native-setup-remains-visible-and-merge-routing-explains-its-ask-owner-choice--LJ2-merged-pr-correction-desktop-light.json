@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Goncalos-MacBook…'), but they are still identifiable",
-      "The 'NIGHTLY 0' section header is cut off at the bottom edge of the right panel; it is likely reachable by scrolling",
-      "The 'Recently merged · last 7 days' toggle starts further left than the other right-panel section headers",
-      "In the #1 Review loop card, the 'Why / Should have asked me / Didn't need asking' links are right-aligned, while the same links in the #7 card are left-aligned"
+      "Shell session titles in the left sidebar are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Mesh journey fixt…', 'Context · Shared memory fi…'), and so are their subtitles.",
+      "In the Running list, the 'Read through the project and list what each file is f…' title and the 'Read the README on this device: a title and one line about th…' summary are cut off with ellipses.",
+      "In the 'Recently merged' cards, the action links wrap unevenly. In #1, 'Why / Should have asked me / Didn't need asking' are pushed to the right, and 'Open thread' and 'Open task' wrap onto the next row. In #2, 'Open task' sits on its own line below 'Saved for future merge decisions. Open thread'. Spacing is inconsistent across cards.",
+      "The 'Noted.' lines repeat after almost every event card, which makes the long conversation column hard to scan.",
+      "Most of the page is a single very long scroll (~3075px), so the composer and the right panel's lower sections are far from the top."
     ]
   }
 }

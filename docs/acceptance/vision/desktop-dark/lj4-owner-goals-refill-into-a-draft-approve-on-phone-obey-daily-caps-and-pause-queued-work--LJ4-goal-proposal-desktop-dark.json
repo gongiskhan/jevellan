@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The right panel's last line, 'Add checks or a review to run every night', is clipped at the bottom of the viewport. It can probably be scrolled into view.",
-      "Sidebar session titles and subtitles are cut short with ellipses (e.g. 'Context · J11 memory jour…'), which is expected for the column width.",
-      "The 'Nightly' heading row and the 'Project day: 2026-10-12' text don't line up on the same left edge."
+      "The 'New nightly item' and 'New job' buttons at the bottom of the right panel are cut off by the bottom of the viewport. The panel probably scrolls, and these controls aren't part of the goal proposal step.",
+      "Session titles in the sidebar are shortened with an ellipsis (e.g. 'Context · J11 memory journ…', 'Context · Shared memory fi…'). This is expected, but the full titles can't be read.",
+      "The proposal card's action buttons wrap onto three rows (two rows of labeled buttons, then the up/down arrow buttons), which makes the card look crowded but still readable.",
+      "The 'NIGHTLY 0' section shows 'Project day: 2026-10-13' in larger text than the empty-state lines in the other sections, so the styling doesn't match."
     ]
   }
 }

@@ -10,7 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background is blurred under the modal overlay. This is expected for a modal, but it means the page underneath can't be read in this screenshot."
+      "The background blur makes the page behind the modal unreadable. This is expected while a modal is open."
     ]
   }
 }

@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Under the Claude Code accounts, the device lists end with \"Codex sign-ins are kept per device for now.\" It should probably name Claude Code instead.",
-      "The disabled accounts (Rigging local fixture, Rigging Codex fixture) still show \"Unknown\" usage bars and a \"Check now\" button, which adds visual noise.",
-      "The Five hours and Week usage bars only fill about half of the card's width, leaving empty space on the right."
+      "Under the Claude Code accounts (Projects Claude and Rigging local fixture), the device-list footnote says \"Codex sign-ins are kept per device for now.\" It looks like Codex text was reused in the Claude Code section.",
+      "Session titles in the left sidebar (e.g. \"Context · J11 memory journ…\", \"Context · Shared memory fi…\") and their subtitles are cut off with ellipses. This looks like intended truncation."
     ]
   }
 }

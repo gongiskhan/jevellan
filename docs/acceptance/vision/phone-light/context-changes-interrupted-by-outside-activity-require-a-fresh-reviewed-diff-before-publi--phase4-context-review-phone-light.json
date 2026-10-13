@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal is scrolled, so the sticky header cuts off the top of the intro text ('...context fixture on dev-maund. Review the current changes...'). That is expected scroll clipping, but the start of the explanation can't be seen in this capture.",
-      "The stale-review toast ('These files changed since your review. Review changes again.') sits at the bottom of the modal right under the collapsed 'Current instruction files' section. It may cover content when that section is expanded.",
-      "The longest diff line ('+A newer synthetic outside contribution.') runs almost to the right edge of the code block, leaving very little padding."
+      "The modal body is scrolled, so the top of the intro paragraph ('...context fixture on dev-maurid. Review the current changes...') is partly hidden under the sticky header. Scrolling up reveals it.",
+      "The last diff line ('+A newer synthetic outside contribution.') ends almost at the right edge of the code block, with very little padding.",
+      "The 'Current instruction files' disclosure and the stale-changes alert are squeezed into the bottom of the modal, which makes the end of the dialog feel tight."
     ]
   }
 }

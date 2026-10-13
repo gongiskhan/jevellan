@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Last runs' column is much taller than the 'Schedule and jobs' card next to it, which leaves a large empty area below the schedule card.",
-      "The disabled 'Save schedule and jobs' button and the faint helper text ('Suggest', 'Simulated judge responses.') have low contrast on the dark background, but they can still be read.",
-      "Session titles and subtitles in the sidebar are cut off with ellipses (for example 'Exercise answer options: c…' and 'Context · J11 memory jour…'). This is the intended single-line truncation, not a layout fault."
+      "Sidebar session titles are cut off with ellipses (e.g. 'Exercise answer options: c...', 'Context · J11 memory jour...'), which is normal for a narrow sidebar",
+      "Long project names in 'Last runs' wrap onto two lines (e.g. 'AGENTS.md · Checkpoint recovery fixture'), and the time and 'Open log' links sit off to the right",
+      "The 'Schedule and jobs' card is much shorter than the 'Last runs' column next to it, which leaves a large empty space below it",
+      "Diff code blocks have some unused vertical space at the bottom"
     ]
   }
 }

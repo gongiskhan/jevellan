@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Pull requests' tab is cut off at the right edge of the tab row. This looks like a horizontally scrollable tab bar, so the tab can still be reached.",
-      "The message about merges being held during the nightly window appears twice: once in the top banner and again in the nightly section ('Merges are held while the nightly window runs.').",
-      "Each 'Enabled' checkbox sits above its label instead of beside it, so the controls in that row don't line up with 'Run now' and 'Edit'.",
-      "The 'Run now' buttons have low-contrast styling and could be mistaken for disabled buttons."
+      "The header title is cut off with an ellipsis (\"Projects workflo...\"). This looks like intended truncation.",
+      "The last tab, \"Pull requests\", is clipped at the right edge. The tab row looks like it scrolls sideways, so the tab can still be reached.",
+      "The merge-hold message appears twice: in the top banner (\"Nightly window · merges held...\") and again in the Nightly section (\"Merges are held while the nightly window runs.\").",
+      "The \"Enabled\" label sits below its checkbox instead of beside it, so it lines up awkwardly with the Run now and Edit buttons.",
+      "The \"Run now\" buttons are very low contrast. They look disabled, which is probably intended while the jobs are running or queued."
     ]
   }
 }

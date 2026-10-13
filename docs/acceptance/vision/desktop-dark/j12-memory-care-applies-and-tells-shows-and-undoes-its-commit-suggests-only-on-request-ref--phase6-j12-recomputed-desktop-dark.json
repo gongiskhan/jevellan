@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Session titles in the left sidebar are cut off with ellipses (e.g. 'Exercise answer options: c…', 'Context · J11 memory jour…'). This is normal truncation, and the titles are still readable.",
-      "Some rows in the 'Last runs' panel wrap onto two lines (e.g. 'AGENTS.md · Checkpoint recovery fixture'), so the row heights are uneven.",
-      "The diff in the memory care suggestion shows the next file header ('diff --git ... test-conventions-2.md') right after the 'Deploy by hand from the release branch.' line with no blank line between them, which makes the boundary between files hard to see."
+      "Sidebar session titles are cut off with ellipses (e.g. 'Exercise answer options: c…', 'Context · J11 memory jour…'). The full title probably shows on hover.",
+      "The diff in the memory care suggestion is long and dense. It all fits inside the panel, but it's hard to scan.",
+      "Most of the page is empty space below the left sidebar's projects list. This comes from the tall full-page capture."
     ]
   }
 }

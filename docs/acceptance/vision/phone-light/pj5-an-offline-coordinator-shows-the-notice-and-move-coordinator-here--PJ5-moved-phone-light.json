@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row is cut off at the right edge: the 'Pull requests' pill is clipped and any tabs after it are off-screen. The row looks horizontally scrollable, so the tabs can still be reached, but nothing on screen shows that it scrolls.",
-      "The large empty area below the notice makes the 'moved' state look sparse, with nothing pointing to what to do next."
+      "The 'Pull requests' tab is cut off at the right edge of the tab row. It looks like a horizontally scrollable tab bar, but nothing on screen shows that more tabs exist past the edge.",
+      "Below the notice, most of the chat area is empty."
     ]
   }
 }

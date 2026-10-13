@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis (\"Exercise automatic decisions: change t…\"). The full text appears in the subtitle and the message, so nothing is lost.",
-      "The long list of 'Review … fixture' links makes the waiting screen cluttered and pushes the actions down. The links pack together unevenly, sometimes two per line and sometimes one.",
-      "The 'Review Login recovery' links contain raw UUIDs that wrap across lines, which is hard to read and looks unpolished.",
-      "The status message 'No model can run this step right now: Automatic Fable: disabled.' is worded awkwardly with two colons in a row."
+      "The header title is cut off with an ellipsis ('Exercise automatic decisions: change t…'). The full text still appears in the summary line and the message bubble below.",
+      "The long, densely packed list of 'Review … fixture' links is cluttered. Two of them wrap across lines because of long UUIDs ('Review Login recovery b53d6f2c-…', 'Review Login recovery e218cb9a-…').",
+      "The links are packed several to a line with no separators (e.g. 'Review Conversation fixture  Review Correction fixture'), which makes the list harder to scan."
     ]
   }
 }

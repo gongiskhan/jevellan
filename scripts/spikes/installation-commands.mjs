@@ -59,7 +59,14 @@ const before = digest(), neighbour = createServer((_request, response) => respon
 const serveStatus = () => ServeStatusSchema.parse({ schema: 'tailscale-serve-status-v1', config: JSON.parse(execFileSync('tailscale', ['serve', 'status', '--json'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })) });
 const serveBefore = liveHttps ? serveStatus() : undefined;
 if (serveBefore) writeFileSync(join(root, 'tailscale-before.json'), JSON.stringify(serveBefore, null, 2) + '\n', { mode: 0o600 });
-await new Promise((resolve, reject) => { neighbour.once('error', reject); neighbour.listen(9771, '127.0.0.1', resolve); });
+const listenNeighbour = port => new Promise((resolve, reject) => { neighbour.once('error', reject); neighbour.listen(port, '127.0.0.1', resolve); });
+try { await listenNeighbour(9771); }
+catch (error) {
+  if (error.code !== 'EADDRINUSE') throw error;
+  // An installed owner's hub already occupies the default. Preserve it and test our own neighbour separately.
+  await listenNeighbour(0);
+}
+const neighbourPort = neighbour.address().port;
 function ownedService(owner, data) {
   const definitions = new UserServiceManager({ platform: 'darwin', userHome: owner, uid: process.getuid(), run: async () => { throw new Error('Native services must not run in this check.'); } });
   let child, output, starts = 0, holding = false;
@@ -234,7 +241,7 @@ try {
   symlinkSync(join(user, '.claude'), join(homes.root, 'external-fixture'));
   await main(['uninstall', '--purge'], { installer, confirmPurge: async path => { if (path !== homes.root) throw new Error('Purge offered an unexpected path.'); return path; } });
   if (existsSync(homes.root) || readdirSync(user).some(name => name.startsWith('.jevellan.purge-')) || digest() !== before) throw new Error('Purge left owned files or changed external fixtures.');
-  if ((await (await fetch('http://127.0.0.1:9771')).text()) !== 'Fake Garrison') throw new Error('Removal disturbed the neighbouring service.');
+  if ((await (await fetch(`http://127.0.0.1:${neighbourPort}`)).text()) !== 'Fake Garrison') throw new Error('Removal disturbed the neighbouring service.');
   if (firstRun && (git(project, 'status', '--porcelain') || git(project, 'rev-parse', 'HEAD') !== git(projectOrigin, 'rev-parse', 'main'))) throw new Error('Removal changed the external project or its memory.');
   const serveAfter = liveHttps ? serveStatus() : undefined;
   if (serveAfter) writeFileSync(join(root, 'tailscale-after.json'), JSON.stringify(serveAfter, null, 2) + '\n', { mode: 0o600 });

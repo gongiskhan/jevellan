@@ -283,7 +283,7 @@ test('PJ3 project page opens from the sidebar and the coordinator chat streams',
   await expect(composer(page)).toHaveAttribute('placeholder', 'Tell the coordinator what you need');
   const tabs = page.getByRole('tablist', { name: 'Project sections', exact: true });
   if (phone(info)) {
-    await expect(tabs.getByRole('tab')).toHaveText(['Chat', 'Waiting', 'Queue', 'Threads', 'Pull requests']);
+    await expect(tabs.getByRole('tab')).toHaveText(['Chat', 'Waiting', 'Queue', 'Threads', 'Pull requests', 'Terminal']);
     await expect(tab(page, 'Chat')).toHaveAttribute('aria-selected', 'true');
     await tap(page, tab(page, 'Threads'));
     await expect(region(page, 'Running')).toContainText('No threads running.');
@@ -365,7 +365,7 @@ test('PJ3 a decision is answered from the Waiting tab', async ({ page }, info) =
     await expect(region(page, 'Waiting for you').locator('.pw-section-heading')).toHaveText('Waiting for you 1', LONG);
     await expect(projectRow(page.getByRole('navigation', { name: 'Projects', exact: true }), 'Projects fixture').locator('.suggestion-count')).toHaveText('1 waiting', LONG);
   }
-  await expect(card.locator('.pw-source')).toHaveText(/^From the coordinator · /);
+  await expect(card.locator('.pw-source')).toHaveText(/^1 From the coordinator · /);
   await expect(card.locator('.pw-question')).toHaveText(question);
   await expect(card.locator('.pw-option > span')).toHaveText(['Hello', 'Welcome']);
   await expect(card.locator('.pw-option > small')).toHaveText(['Short and friendly', 'More formal']);
@@ -977,6 +977,13 @@ test('PJ7 an attached thread disables its composer', async ({ page }) => {
   // This page fits the screen: nothing under the composer (the copy button's wider target included) may make it scroll.
   expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight)).toBe(true);
 
+  // The prompt folds during terminal ownership; its complete task and live context remain readable on request.
+  const prompt = page.locator('.pw-transcript .pw-prompt').first();
+  await expect(prompt).not.toHaveAttribute('open', ''); await prompt.locator('summary').click();
+  await expect(prompt).toHaveAttribute('open', '');
+  await expect(prompt).toContainText('PJ7: tidy the README wording, then wait for me to look at it in a terminal.');
+  await expect(prompt).toContainText('Project now'); await prompt.locator('summary').click();
+
   // Copying: the Clipboard API on this loopback page; the selection copy that a plain-HTTP Tailnet page falls back to; and, when the
   // browser refuses both, the command shown whole and selected on the page (D304, D305).
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
@@ -1479,6 +1486,7 @@ test('hub readiness warns about AC sleep and clears when the setting is safe', a
 });
 
 test('CM1 compaction controls show context, persist the threshold and start a fresh session on request', async ({ page }) => {
+  await control('/projects/clock', { schema: 'fixture-project-clock-v1', advanceMinutes: 0, reset: true });
   const errors = await begin(page); await openProject(page, 'Projects fixture');
   let dialog = await openSettings(page); const percent = dialog.getByRole('spinbutton', { name: 'Compact at percent', exact: true });
   await expect(percent).toHaveValue('70'); await percent.fill('65'); await dialog.getByRole('button', { name: 'Save', exact: true }).click();

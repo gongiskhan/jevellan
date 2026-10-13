@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal body is scrolled down, so the label of the first field (the task title) is out of view and its input is clipped at the top edge under the header. This is a normal scroll position and the field can still be reached.",
-      "The 'Start now' label sits below its checkbox instead of next to it, which makes the pairing look loose.",
-      "The 'After' multi-select is much taller than its single selected item ('Add a greeting'), leaving empty space and placing the dropdown arrow off-centre.",
-      "The 'Needs' placeholder text ('residential, mac') is low-contrast against the dark input but still readable."
+      "The modal body is scrolled a little, so the label above the first field (the task title, 'Read through the project…') is hidden under the header. The field itself is still fully visible and the label can be reached by scrolling.",
+      "The 'Start now' checkbox sits on its own line with the label below it, not next to it.",
+      "The 'After' field is much taller than the other single-line selects, which leaves a lot of empty space and puts its dropdown arrow lower than its text."
     ]
   }
 }

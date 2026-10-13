@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Improver sandbox · dev-ma…'), which is expected for a narrow sidebar.",
-      "The status badge says 'Idle' while the Stop button still shows, which is confusing for a step about a running thread.",
-      "Each tool card shows its 'completed' label on its own line, right-aligned below the tool name, which leaves extra empty space.",
-      "The 'Some native sessions are unavailable' note in the sidebar is in small, low-contrast grey text."
+      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory journ…', 'Done · J11 memory journey · dev-…'). This is intentional truncation, and the full names appear elsewhere.",
+      "The thread status chip says 'Idle', but the scenario describes a running thread and the report card shows 'Progress'. The status label may not match the actual thread state.",
+      "The page header gives the thread prompt as its title, and that title is long enough to crowd the action buttons ('Open terminal here', 'Take over in browser', etc.). Nothing overlaps or gets cut off."
     ]
   }
 }

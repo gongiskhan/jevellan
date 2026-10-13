@@ -4,16 +4,17 @@
   "model": "claude-opus-5-5",
   "test": "pending work shows a live stage while controls stay compact",
   "layout": "desktop-dark",
-  "screenshot": "docs/acceptance/screenshots/matrix-conversation-progress-desktop-dark.png",
+  "screenshot": "test-results/conversation-progress-desktop-dark.png",
   "expected": "the Jevellan web app \"conversation progress\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"pending work shows a live stage while controls stay compact\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar entry for the active 'Progress fixture' conversation says 'Waiting for you' (yellow dot), but the header badge says 'Working' and the live stage indicator is running. The two statuses look inconsistent.",
-      "Sidebar subtitles such as 'Waiting for you · Browser fixtur…' and 'Done · Improver sandbox · dev-ma…' are cut off with an ellipsis. This looks intentional, but the workspace name can't be read.",
-      "The large empty area between the user message and the bottom stage line makes the pending state feel sparse. A placeholder or inline progress near the message could help.",
-      "The '0s' elapsed timer in the bottom-right is small and low-contrast pink on dark, so it's easy to miss."
+      "Sidebar conversation list cuts off the fourth item (\"Context…\") mid-row above the \"Some native sessions are unavailable\" notice. It looks like a normal scroll boundary, but there is no visible fade or scroll cue.",
+      "Sidebar conversation subtitles are cut short with ellipses (e.g. \"Waiting for you · Browser fixtur…\"), so the project/host names aren't fully readable.",
+      "The sidebar shows Progress fixture as \"Waiting for you\" with an amber dot, while the header badge says \"Working\" and the progress bar says \"Jev is choosing the next step\". The two status labels don't match.",
+      "Most of the conversation pane is empty dark space between the single user message and the progress line at the bottom, so the live stage sits far from the message it belongs to.",
+      "The elapsed timer \"0s\" in pink at the far right of the progress line is small and easy to miss."
     ]
   }
 }

@@ -12,7 +12,7 @@ import {
 } from '../packages/core/dist/index.js';
 import { forThread, groupAlive, processIdentity, type FakeTurnStep } from '../packages/runtime-contract/dist/index.js';
 import { eventLine } from '../packages/projects/dist/index.js';
-import { commitStep, expectNoLeaks, holdStep, never, projectFixture, reportStep, type ProjectFixture, type ProjectFixtureOptions } from './helpers/project-fixture.js';
+import { commitStep, expectNoLeaks, holdStep, never, projectFixture, reportStep, threadRequestText, type ProjectFixture, type ProjectFixtureOptions } from './helpers/project-fixture.js';
 
 let fixture: ProjectFixture | undefined;
 afterEach(async () => {
@@ -97,7 +97,8 @@ test('PJ1 owner thread runs in a worktree, opens a pull request, follows checks 
   expect(f.fake.turnStarts).toHaveLength(1);
   const first = f.fake.turnStarts[0]!;
   expect(first).toMatchObject({ owner: { kind: 'thread', projectId: 'project', id: threadId }, turn: 1, permissions: 'write', safetyProfile: 'thread',
-    prompt: 'Task: Add greeting\n\nCreate greeting.txt.', cwd: f.homes.at('worktrees', 'project', threadId) });
+    cwd: f.homes.at('worktrees', 'project', threadId) });
+  expect(threadRequestText(first.prompt)).toBe('Task: Add greeting\n\nCreate greeting.txt.');
   expect(first.resume).toBeUndefined();
   expect(first.systemAppend).toContain('Isolation: your own git worktree on branch jv/add-greeting-');
   expect(first.systemAppend).toContain(', based on main.');
@@ -251,7 +252,7 @@ test('PJ1b verification failure prompts are exact and the three-attempt limit ho
   const { threadId } = await start(f, 'Count to three', 'Make value.txt read 3.');
   await f.waitFor(() => f.thread(threadId).state, (state) => state === 'in-review');
   await f.app.projectWork.idle('project');
-  expect(f.fake.turnStarts.map((input) => input.prompt)).toEqual([
+  expect(f.fake.turnStarts.map((input) => threadRequestText(input.prompt))).toEqual([
     'Task: Count to three\n\nMake value.txt read 3.',
     'Jevellan ran cat value.txt; test "$(cat value.txt)" = 3 after your report and it failed (attempt 1 of 3). Fix the cause, run the tests, commit, and report done again.\n\nLast output:\n1\n',
     'Jevellan ran cat value.txt; test "$(cat value.txt)" = 3 after your report and it failed (attempt 2 of 3). Fix the cause, run the tests, commit, and report done again.\n\nLast output:\n2\n',
@@ -374,7 +375,7 @@ test('PJ1d a restart during setup leaves the thread idle, and the next message p
   await f.waitFor(() => f.thread(threadId).turns, (turns) => turns === 1);
   await f.app.projectWork.idle('project');
   expect(f.fake.turnStarts).toHaveLength(1);
-  expect(f.fake.turnStarts[0]!.prompt).toBe('Task: Slow setup\n\nUse the prepared tools.\n\n---\n\nCarry on.');
+  expect(threadRequestText(f.fake.turnStarts[0]!.prompt)).toBe('Task: Slow setup\n\nUse the prepared tools.\n\n---\n\nCarry on.');
   expect(f.fake.turnStarts[0]!.resume).toBeUndefined();
   expect(readFileSync(started, 'utf8')).toBe('run\nrun\n');
   const thread = f.thread(threadId);
@@ -399,7 +400,7 @@ test('limits: a full device queues the start; an in-review fix turn waits for a 
   expect(queued.state).toBe('queued');
   expect(f.thread(queued.threadId).stateReason).toBe(`Queued: ${f.deviceName} is at its limit of 1 running threads.`);
   // A fix request for the reviewed thread waits too, and the thread keeps its pull request state.
-  f.fake.enqueueTurn(commitStep({ 'greeting.txt': 'hello again\n' }, { status: 'done', summary: 'Changed the greeting.' }), forThread((input) => input.prompt === 'Change the greeting.'));
+  f.fake.enqueueTurn(commitStep({ 'greeting.txt': 'hello again\n' }, { status: 'done', summary: 'Changed the greeting.' }), forThread((input) => threadRequestText(input.prompt) === 'Change the greeting.'));
   const receipt = await f.request(`/api/projects/project/threads/${reviewed}/messages`, 'POST', { schema: 'thread-message-request-v1', clientMessageId: 'msg_fix', text: 'Change the greeting.', interrupt: false });
   expect(receipt.status).toBe(202);
   expect(f.thread(reviewed)).toMatchObject({ state: 'in-review', stateReason: `Waiting for a free slot: ${f.deviceName} is at its limit of 1 running threads.`, turns: 1 });
@@ -412,7 +413,7 @@ test('limits: a full device queues the start; an in-review fix turn waits for a 
   release();
   await f.waitFor(() => f.thread(reviewed).turns, (turns) => turns === 2);
   await f.app.projectWork.idle('project'); await f.app.projectWork.pulse(); await f.app.projectWork.idle('project');
-  expect(f.fake.turnStarts.map((input) => input.prompt)).toEqual(['Task: Reviewed\n\nCreate greeting.txt.', 'Task: Busy\n\nHold the slot.', 'Task: Queued\n\nWait for a slot.', 'Change the greeting.']);
+  expect(f.fake.turnStarts.map((input) => threadRequestText(input.prompt))).toEqual(['Task: Reviewed\n\nCreate greeting.txt.', 'Task: Busy\n\nHold the slot.', 'Task: Queued\n\nWait for a slot.', 'Change the greeting.']);
   expect(f.thread(queued.threadId)).toMatchObject({ state: 'idle', lastReport: { summary: 'Queued work ran.' } });
   const updated = f.thread(reviewed);
   expect(updated).toMatchObject({ state: 'in-review', turns: 2, queuedMessages: [], pr: { number: 1, state: 'open' } }); expect(updated.stateReason).toBeUndefined();
@@ -434,14 +435,16 @@ test('account pinning: later turns resume on the placed account; an ineligible a
     await f.waitFor(() => f.thread(threadId).lastReport?.summary, (summary) => summary === text); await f.app.projectWork.idle('project');
   };
   await message('Second.');
-  expect(f.fake.turnStarts[1]).toMatchObject({ prompt: 'Second.', resume: { sessionId: session }, account: { account: { id: 'acc_fixture' } } });
+  expect(f.fake.turnStarts[1]).toMatchObject({ resume: { sessionId: session }, account: { account: { id: 'acc_fixture' } } });
+  expect(threadRequestText(f.fake.turnStarts[1]!.prompt)).toBe('Second.');
   // The placed account cools down; another account takes the next turn in a fresh session.
   f.app.hub.put('accounts', 'acc_second', AccountSchema, { schema: 'account-v1', id: 'acc_second', runtime: 'fake', label: 'Second', kind: 'subscription', enabled: true, ceilingPct: 90, credential: 'per-device' }, 0);
   await f.app.accounts.check('acc_second');
   await f.app.accounts.recordError('acc_fixture', 'rate-limit');
   await message('Third.');
   const third = f.fake.turnStarts[2]!;
-  expect(third).toMatchObject({ prompt: 'Task: Pinned\n\nDo the pinned work.\n\n---\n\nThird.', account: { account: { id: 'acc_second' } } });
+  expect(third).toMatchObject({ account: { account: { id: 'acc_second' } } });
+  expect(threadRequestText(third.prompt)).toBe('Task: Pinned\n\nDo the pinned work.\n\n---\n\nThird.');
   expect(third.resume).toBeUndefined();
   const thread = f.thread(threadId);
   expect(thread.placement.accountId).toBe('acc_second'); expect(thread.nativeSessionId).not.toBe(session);
@@ -450,7 +453,8 @@ test('account pinning: later turns resume on the placed account; an ineligible a
   expect(await f.index(threadId)).toMatchObject({ accountLabel: 'Second', turns: 3 });
   // The new account's session continues from there.
   await message('Fourth.');
-  expect(f.fake.turnStarts[3]).toMatchObject({ prompt: 'Fourth.', resume: { sessionId: thread.nativeSessionId }, account: { account: { id: 'acc_second' } } });
+  expect(f.fake.turnStarts[3]).toMatchObject({ resume: { sessionId: thread.nativeSessionId }, account: { account: { id: 'acc_second' } } });
+  expect(threadRequestText(f.fake.turnStarts[3]!.prompt)).toBe('Fourth.');
 });
 
 test('explicit account overrides stay strict and a next-turn account change starts in its own home without resuming the old session', { timeout: 120_000 }, async () => {

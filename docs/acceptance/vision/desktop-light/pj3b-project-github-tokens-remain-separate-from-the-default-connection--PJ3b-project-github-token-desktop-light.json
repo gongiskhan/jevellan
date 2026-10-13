@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar session titles and subtitles are cut off with ellipses ('Context · J11 memory jour…', 'dev-ma…'). This is expected sidebar behaviour.",
-      "The 'GitHub token scope' label and select sit outside any card, between the 'GitHub connection' and 'GitHub token' cards. This is slightly inconsistent with the card layout.",
-      "The project picker under 'Check a project' defaults to 'Outside context fixture', but the token scope is 'Projects fixture'. This could confuse users, but it doesn't block the screen.",
-      "The 'Save Git settings' button looks low-contrast and disabled. This is probably intentional because nothing has changed."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Improver sandbox · dev-ma…'). The full text is not visible, but the rows can still be identified.",
+      "The 'GitHub token scope' label and dropdown sit outside any card, so they look less clearly tied to the GitHub token card below them.",
+      "The 'Save Git settings' button is a low-contrast pale pill. It may look disabled, but it is still visible and reachable."
     ]
   }
 }

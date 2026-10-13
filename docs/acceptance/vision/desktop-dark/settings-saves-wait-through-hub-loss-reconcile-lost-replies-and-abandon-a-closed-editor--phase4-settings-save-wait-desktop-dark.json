@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Saving…' button is low-contrast while disabled, though it is still readable.",
-      "The hub-loss banner leaves a lot of empty space to the right of the 'Stop waiting' button, so it looks a little unbalanced."
+      "The hub-wait banner sits below the Cancel/Saving… footer, so the footer isn't the last thing in the dialog. The layout looks a bit odd, but everything stays readable and usable.",
+      "The secondary text in the banner ('Stopping the wait does not undo a request already received.') is small and low-contrast, but you can still read it."
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Header title is cut off with an ellipsis ('Exercise answer options: change the valu...'), but the full text is shown on the line below it",
-      "The 'Why' chip has a pink highlight that stands out from the neutral 'Changes' and 'Change step' chips"
+      "The header title 'Exercise answer options: change the valu…' is cut short with an ellipsis. The full text appears in the line below, so nothing is lost.",
+      "The 'Waiting for you' status badge has a yellow outline that doesn't stand out much against the dark header."
     ]
   }
 }

@@ -9,6 +9,9 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": []
+    "cosmetic": [
+      "The background behind the modal is blurred and dimmed, as expected while a dialog is open. The underlying conversation and composer can't be read, but the modal is the focus of this step.",
+      "The 'Optional' hint under the textarea is small, low-contrast grey text. It is still readable."
+    ]
   }
 }

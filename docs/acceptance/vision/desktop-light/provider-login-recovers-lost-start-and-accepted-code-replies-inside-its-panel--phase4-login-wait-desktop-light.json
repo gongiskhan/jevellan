@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Authorization code' label sits right under the 'Open sign-in page' button with almost no space between them",
-      "The 'Continue' button has low contrast, so it's unclear whether it's disabled or just styled lightly",
-      "The modal's right padding is uneven: there is extra empty space to the right of the 'Stop waiting' button inside the hub-wait notice"
+      "The 'Authorization code' label sits right under the 'Open sign-in page' button with almost no vertical gap, so the two look cramped.",
+      "The 'Stop waiting' button has extra empty space to its right inside the hub-status notice, so the notice's content looks off-balance."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The amber callout ends with 'Pick the next step:', but no options appear in or under it. This looks like a dangling prompt and may mean the step-picker controls weren't rendered here.",
-      "The chosen-memory name breaks across two lines ('Vitest convention for mesh.md' / 'Existing.md'), so it's unclear whether this is one memory or two.",
-      "The account list reaches the bottom edge of the viewport ('Discard fixture: disabled'), so more items probably need scrolling. The visible rows are complete and nothing is cut off."
+      "The amber callout says \"Jev is unavailable (authentication failed). Pick the next step:\" but nothing follows the colon inside it, so the prompt looks unfinished.",
+      "The chosen memory name is split across two lines (\"Vitest convention for mesh.md\" / \"Existing.md\"), so it's unclear whether this is one memory or two.",
+      "The account list runs to the bottom edge of the screenshot (last visible row: \"Discard fixture: disabled\"). It probably continues below by scrolling, but the screenshot can't confirm that."
     ]
   }
 }

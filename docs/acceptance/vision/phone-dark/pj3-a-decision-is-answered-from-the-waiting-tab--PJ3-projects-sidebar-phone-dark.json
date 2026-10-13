@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The subtitle of the 'Context · Mesh journey fixture' session row is cut off with an ellipsis ('dev-mad…'). This is normal overflow handling.",
-      "The main conversation view shows dimmed behind the sidebar drawer on the right. This is expected for a drawer overlay.",
-      "The 'Some native sessions are unavailable' note is in small, low-contrast text."
+      "The meta line under 'Context · Mesh journey fixture' is truncated with an ellipsis ('dev-mad…'). The other rows show the full text.",
+      "Behind the sidebar overlay, the right-hand content is clipped at the drawer edge ('ession', 'Pull requ', 'reeting'). This is expected for an off-canvas drawer.",
+      "The low-contrast muted text ('Some native sessions are unavailable', 'v0.3.0', session meta lines) is still readable but faint on the dark background."
     ]
   }
 }

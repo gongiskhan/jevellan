@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The right panel is scrolled so the 'CONCLUDED 0' section heading is partly clipped under the top header bar. It is still readable from context and goes away if you scroll up.",
-      "Content in the right panel reaches the bottom edge of the viewport (the goals help text). It can be reached by scrolling.",
-      "Sidebar session titles and subtitles are cut short with ellipses ('Context · J11 memory jour…', 'dev-ma…'). This is intended truncation."
+      "Shell session titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Shared memory …'). The ellipses look intentional, but the full names can't be read.",
+      "The goals section at the bottom of the right panel runs past the bottom edge of the viewport ('propose useful work.' sits at the edge). The panel looks scrollable, so nothing is lost.",
+      "The 'Enabled' checkbox labels sit lower than their checkboxes and aren't aligned with the Run now/Edit buttons.",
+      "The 'Done today at 02:00 AM' badge comes close to the 'Nightly tests' title in the card header."
     ]
   }
 }

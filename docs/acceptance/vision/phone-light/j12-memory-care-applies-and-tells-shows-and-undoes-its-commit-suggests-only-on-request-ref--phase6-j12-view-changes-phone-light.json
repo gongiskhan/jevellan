@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "I could only check a downscaled copy of the image (130x2000 from 390x6008). Running scripts to crop it was blocked, so very small text, like the commit hash chip and the diff line numbers, couldn't be checked closely.",
-      "In the expanded 'View changes' diff, long lines wrap onto several lines instead of scrolling sideways, which makes the memory care card very tall and the diff harder to scan.",
-      "The page is very long (about 6000px) because the expanded diff and the full 'Last runs' list are stacked together, so a phone user has to scroll a lot to reach 'Schedule and jobs' and the controls below it.",
-      "The Routing suggestion cards at the bottom also contain long wrapped diff blocks that crowd the layout."
+      "The page is very long (about 6100px). The 'View changes' diff for the memory care commit is expanded inline and pushes the schedule, last runs and trial log sections far down the page.",
+      "Long diff lines in the expanded commit wrap into dense monospace blocks that are hard to scan at phone width.",
+      "The trial log table's column headers are tightly packed at this width."
     ]
   }
 }

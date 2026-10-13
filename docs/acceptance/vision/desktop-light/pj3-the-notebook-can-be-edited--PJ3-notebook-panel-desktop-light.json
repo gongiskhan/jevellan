@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Session titles in the sidebar ('Context · J11 memory jour…', 'Context · Mesh journey fix…') and their subtitle lines are cut off with ellipses",
-      "The notebook panel has a lot of empty space below its two lines of content"
+      "The project title in the centre pane header is cut off to 'Pr…' because the header buttons crowd it when the notebook panel is open. The project name still shows in the notebook panel header ('Projects fixture') and in the highlighted sidebar item.",
+      "Session titles and subtitles in the sidebar are cut off with ellipses (for example 'Context · J11 memory journ…').",
+      "The first chat card is partly scrolled under the tab bar. This is normal scroll behaviour, but the top edge looks clipped."
     ]
   }
 }

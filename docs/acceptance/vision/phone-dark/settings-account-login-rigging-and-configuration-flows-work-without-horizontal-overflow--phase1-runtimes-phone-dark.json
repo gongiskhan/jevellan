@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The settings tab strip cuts off the fourth tab label at the right edge (only a partial icon shows next to 'Decisions'). The scroll arrow keeps it reachable.",
-      "Under the Claude Code 'Rigging local fixture' account, the per-device note says 'Codex sign-ins are kept per device for now.' It looks like copy from the Codex section and should probably name Claude Code instead.",
-      "The 'Login recovery <uuid>' account names wrap across two lines. They are still readable but look awkward.",
-      "The Codex section's 'Applied from this device' disclosure shows only 'Models appear after an account is checked.' and no value chip, while the Claude Code section shows 'Fable'. This is a slight visual inconsistency."
+      "The settings tab strip cuts off its fourth tab at the right edge. This looks like intended horizontal scrolling, since a scroll arrow button is shown.",
+      "The long login recovery account names (UUIDs) wrap across two lines in the account titles.",
+      "In the Claude Code section, the status labels (Ready/Disabled) sit in different places: inline below the title for the 'Login recovery' accounts, but right-aligned for the other accounts."
     ]
   }
 }

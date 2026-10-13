@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Large empty gap between the report card and the attached-state notice at the bottom",
-      "The highlighted command text uses a strong magenta selection color that makes the monospace command a little harder to read",
-      "The thread ID wraps mid-token in the header notice ('jevellan thread detach' / 'thread_01M4R0GJYKKRJ1TG6F29WMQZRZ.')"
+      "The selected command text has a bright magenta highlight that makes it a little harder to read, though it is still legible.",
+      "There is a large empty gap between the report card and the attached-terminal notice at the bottom.",
+      "The two-line thread ID in the top notice wraps a bit awkwardly."
     ]
   }
 }

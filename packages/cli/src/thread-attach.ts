@@ -4,7 +4,7 @@ import { constants } from 'node:os';
 import { isAbsolute } from 'node:path';
 import { isatty } from 'node:tty';
 import { z } from 'zod';
-import { CLAUDE_FLAG_SETTINGS, Homes, ThreadAttachViewSchema, ThreadDetachViewSchema, minimalEnvironment, runOwnedCommand } from '@jevellan/core';
+import { CLAUDE_FLAG_SETTINGS, Homes, ThreadAttachViewSchema, ThreadDetachViewSchema, minimalEnvironment, projectInstructionFile, runOwnedCommand } from '@jevellan/core';
 import { LocalRequestError, localRequest } from './local-request.js';
 import { findExecutable } from './toolchain.js';
 
@@ -74,6 +74,7 @@ async function prepare(answer: unknown, base: NodeJS.ProcessEnv): Promise<Launch
   if (!executable) return `${label} is not installed on this device: the ${view.runtime} command was not found on PATH.`;
   if (!existsSync(view.cwd)) return `The thread's folder no longer exists: ${view.cwd}`;
   const integration = view.integration;
+  const rootInstructions = view.runtime === 'codex' ? projectInstructionFile(view.cwd) : null;
   const hooks = integration ? { PreToolUse: [{ matcher: '.*', hooks: [{ type: 'command', command: integration.safetyCommand, timeout: 10 }] }] } : undefined;
   const mcp = integration ? { jevellan: { command: integration.bridgeCommand, args: integration.bridgeArgs } } : undefined;
   const args = view.runtime === 'claude'
@@ -82,7 +83,10 @@ async function prepare(answer: unknown, base: NodeJS.ProcessEnv): Promise<Launch
     : ['resume', view.nativeSessionId, '-m', view.model, '-c', `model_reasoning_effort="${view.effort}"`, ...(integration ? ['-c', 'approval_policy="never"', '-c', 'sandbox_mode="danger-full-access"',
       '-c', 'features.hooks=true', '-c', `hooks=${toml(hooks)}`, '-c', `mcp_servers.jevellan.command=${JSON.stringify(integration.bridgeCommand)}`, '-c', `mcp_servers.jevellan.args=${JSON.stringify(integration.bridgeArgs)}`,
       '-c', `mcp_servers.jevellan.env_vars=${JSON.stringify(launchKeys)}`, '-c', 'mcp_servers.jevellan.default_tools_approval_mode="approve"',
-      ...(integration.contextWindow ? ['-c', `model_auto_compact_token_limit=${Math.floor(integration.contextWindow * integration.compactAtPercent / 100)}`] : [])] : [])];
+      ...(integration.contextWindow ? ['-c', `model_auto_compact_token_limit=${Math.floor(integration.contextWindow * integration.compactAtPercent / 100)}`] : [])] : []),
+      '-c', 'project_doc_fallback_filenames=["CLAUDE.md"]', '-c', 'project_doc_max_bytes=32768',
+      // Keep instruction contents out of command arguments. The native session reads the freshly validated file.
+      ...(rootInstructions ? [`# Project instructions: ${rootInstructions.filename}\nRead the current root ${rootInstructions.filename} in this working folder before acting. It is this project's root instruction file; use it in preference to earlier copies in this resumed session. After reading, wait for the owner's next input.`] : [])];
   return { executable, args, env, cwd: view.cwd, label };
 }
 
@@ -135,7 +139,9 @@ export async function attachThread(threadId: string, options: ThreadCommandOptio
   try {
     const attached = await call(homes, options, threadId, 'attach', { schema: 'thread-attach-request-v1' });
     if (!attached.ok) { console.error(attached.message); return 1; }
-    const launch = await prepare(attached.value, options.env ?? process.env);
+    let launch: Launch | string;
+    try { launch = await prepare(attached.value, options.env ?? process.env); }
+    catch (error) { launch = sentence(error); }
     const early = hold.received();
     if (typeof launch === 'string' || early) {
       if (typeof launch === 'string') console.error(launch);

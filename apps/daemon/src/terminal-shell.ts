@@ -7,6 +7,9 @@ export const shellQuote = (text: string) => `'${text.replaceAll("'", "'\\''")}'`
 export function terminalShell(homes: Homes, sessionId: string, base: NodeJS.ProcessEnv = process.env) {
   const env = Object.fromEntries(Object.entries(base).filter((entry): entry is [string, string] => entry[1] !== undefined && !entry[0].startsWith('JEVELLAN_')));
   env.HOME = homes.userHome; env.JEVELLAN_HOME = homes.root; env.TERM = 'xterm-256color'; env.COLORTERM = 'truecolor';
+  // System WezTerm startup hooks otherwise replace Bash's DEBUG trap after the first prompt.
+  // This PTY supplies its own semantic boundaries; leave the owner's startup files unchanged.
+  env.WEZTERM_SHELL_SKIP_ALL = '1';
   const shell = base.SHELL && existsSync(base.SHELL) ? base.SHELL : process.platform === 'darwin' ? '/bin/zsh' : '/bin/bash';
   const directory = homes.ensure('terminals', sessionId, 'shell');
   const save = (name: string, content: string) => { const file = join(directory, name); writeFileSync(file, content, { mode: 0o600 }); return file; };

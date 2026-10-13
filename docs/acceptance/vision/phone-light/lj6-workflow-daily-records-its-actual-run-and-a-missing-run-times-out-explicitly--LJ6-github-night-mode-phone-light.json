@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Pull requests' tab is cut off at the right edge of the tab bar. The bar looks horizontally scrollable, so the tab can still be reached.",
-      "Each 'Enabled' checkbox sits above its label instead of beside it, which looks slightly misaligned next to the Run now and Edit buttons.",
-      "The nightly banner text ('Merges are held...') appears twice on screen: once in the top banner and again in the Nightly section."
+      "Header title is cut off with an ellipsis ('Projects workflo...'), so the full project name isn't visible.",
+      "The 'Pull requests' tab is clipped at the right edge of the tab strip, and nothing on screen shows that the strip scrolls sideways.",
+      "Two similar amber banners ('Nightly window · merges held until the nightly tasks finish' and 'Merges are held while the nightly window runs.') say much the same thing.",
+      "The 'Nightly tests', 'Missing run' and 'Switch mode nightly' cards each have extra empty space at the bottom below the Run now/Edit/Enabled row."
     ]
   }
 }

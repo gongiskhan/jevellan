@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'PUBLIC MEMORY GUIDE' heading, the 'Updated' line and the 'Public memory guide' title repeat what the search result card above already shows, which makes the dialog look cluttered.",
-      "The search result card centers its title and timestamp, while the note content below is left-aligned."
+      "The note's update time appears twice: once in the search result card and again in the note header. This is redundant.",
+      "The search result card centers its title and timestamp, but the note content below is left-aligned. The alignment doesn't match."
     ]
   }
 }

@@ -73,8 +73,8 @@ export class TerminalManager {
       if (local.session.status !== 'open') throw refuse('The terminal shell ended before the command could run.');
       live.sent = true;
       local.commandSent = true; this.#save(local);
-      // Old Readline has no bracketed paste. A compound command keeps a multiline owner action and its final status together.
-      const text = !buffer.bracketedPaste && buffer.integrated && input.command.includes('\n') ? `{\n${input.command}\n}` : input.command;
+      // A compound command keeps a multiline owner action, its history entry and final status together on every Readline version.
+      const text = buffer.integrated && input.command.includes('\n') ? `{\n${input.command}\n}` : input.command;
       live.expectedCommand = text.trim();
       if (!buffer.integrated) buffer.begin(input.command, true);
       this.input(id, buffer.bracketedPaste ? `\x1b[200~${text}\x1b[201~\r` : `${text}\r`);

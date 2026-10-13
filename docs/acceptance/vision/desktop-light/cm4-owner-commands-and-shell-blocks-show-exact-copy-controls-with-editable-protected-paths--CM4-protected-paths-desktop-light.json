@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "On the Hub card (Goncalos-MacBook-Pro.local), the Device tags field, the Protected paths field and all the buttons ('Save tags', 'Save protected paths', 'Inspect worktrees', 'Open') have a grey fill and faded text. They look disabled or read-only, while the same controls on the Browser member card look active. If the hub's protected paths are meant to be editable, check this state separately.",
-      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ...', 'Done · Shared memory fixture · ...'). The full text is still available elsewhere, so this doesn't block the screen.",
-      "The 'Offline fixture' card is cut off at the bottom of the viewport. This is normal page scrolling, not a layout fault.",
-      "The pink 'Open terminals' links sit centred below the left-aligned 'Terminal' buttons, which looks a little out of line with the rest of the card."
+      "The 'Open terminals' links sit centered and apart from the Terminal buttons, so it's unclear which control they belong to.",
+      "On the dev-madrid card, the Device tags input, Protected paths textarea and their Save buttons have a grey or muted fill, unlike the white fields on the Browser member card. They may look disabled even though they should be editable.",
+      "The Mini apps only and Offline fixture cards are cut off at the bottom of the viewport. This is normal page scrolling, not a layout fault."
     ]
   }
 }

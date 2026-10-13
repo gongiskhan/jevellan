@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Some multiline description fields are too short for their text, so the content is clipped inside the scrollable box: the Fable and GPT model descriptions and the Routing profile text. It's still reachable by scrolling, but the boxes could grow to fit or be taller.",
-      "The top tab strip cuts off its outer tabs ('Improve…' on the right and a partial tab on the left). The scroll arrows still make them reachable."
+      "Tab labels at the edges of the top tab strip are partly cut off ('Improv…' and the one before 'Rigging'), but they can still be reached with the scroll arrows.",
+      "The Fable model description and the Routing profile text run past the visible area of their text boxes. They scroll inside the box, so nothing is lost.",
+      "The bright green 'Connected to Jev' box takes up a lot of space but works fine."
     ]
   }
 }

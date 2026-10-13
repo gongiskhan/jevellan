@@ -10,10 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The page behind the modal still shows through the dim overlay (the top tabs, plus the 'This repository is public…' banner below the modal), which adds some visual noise.",
-      "The helper text 'The draft ran read-only…' is low-contrast gray on dark but still readable.",
-      "The empty '-' and '+' diff lines look like stray markers.",
-      "'Open work' sits close under the Cancel/Apply row without much spacing."
+      "The background content behind the modal ('This repository is public...') shows through dimmed at the bottom. This is expected behind a modal overlay.",
+      "The top navigation tabs behind the overlay are cut off at the right edge ('Git' and further items). They're behind the modal and not part of this dialog."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 40-character commit hash fills the whole width of the 'Review from commit' field with almost no right padding. It still shows in full, ending in '…7bcbd2'.",
-      "The 'Enabled' checkbox sits on its own line above its label instead of next to it.",
-      "Text from the cards behind the dimmed overlay shows faintly above and below the modal. It doesn't block the modal."
+      "The 'Enabled' label sits below its checkbox instead of next to it, so the pair looks a bit disconnected.",
+      "A pink checkbox from the page behind sits just above the modal's top edge and shows through the dimmed backdrop, which is a little distracting.",
+      "The 40-character commit hash fills the whole width of the 'Review from commit' input with almost no padding on the right. A longer value would probably get cut off."
     ]
   }
 }

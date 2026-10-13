@@ -10,9 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab strip cuts off the fourth tab behind the right chevron button. The strip looks like an intentional horizontal scroller, and the chevron makes it reachable.",
-      "Long account names like 'Login recovery cd768949-4a6a-4cd1-b3ce-05b4c6b99685' wrap onto two lines mid-ID. They're still readable but look cluttered.",
-      "In the Codex card, 'Models appear after an account is checked.' sits right under 'Applied from this device' with little spacing."
+      "The 'Rigging local fixture' device list in the Claude Code section says 'Codex sign-ins are kept per device for now'. It should probably name Claude Code.",
+      "The fourth settings tab is cut off behind the scroll arrow at the right of the tab bar. The arrow can still reach it.",
+      "The 'Ready' status is in a different place on different cards. On the two Login recovery cards it sits under the subtitle; on Browser fixture and Login fixture it is in the top-right corner.",
+      "The line 'Never automatically' on the Browser fixture card has no label, so it's unclear what it refers to.",
+      "The long Login recovery account names (UUIDs) wrap onto two lines. They stay readable but look crowded."
     ]
   }
 }

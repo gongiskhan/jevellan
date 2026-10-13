@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar conversation list cuts the last visible item ('Context · Mesh journey fixt…') in half at the bottom of its scroll area. The list still scrolls, so the item can be reached.",
-      "Long conversation titles and subtitles in the sidebar are cut short with ellipses (e.g. 'Change the value to two …', 'Waiting for you · Manual convers…'). This is expected truncation, but the full text isn't visible.",
-      "The 'Why' chip has a pink active outline while 'Changes' and 'Change step' are plain. The highlight looks slightly inconsistent but is still readable."
+      "The last visible sidebar conversation item ('Context · Mesh journey fixt…') is cut off partway by the scroll area above the 'Some native sessions are unavailable' row. This is normal scroll clipping, but it looks abrupt.",
+      "Long conversation titles and subtitles in the sidebar are truncated with an ellipsis (e.g. 'Change the value to two …', 'Waiting for you · Manual convers…'). This is expected, but it hides context.",
+      "The 'Awaiting approval' badge and the 'Why' chip use small pink text on a dark background, which has fairly low contrast.",
+      "The 'Local time' label and the 'Step details' toggle are small, muted text with low contrast."
     ]
   }
 }

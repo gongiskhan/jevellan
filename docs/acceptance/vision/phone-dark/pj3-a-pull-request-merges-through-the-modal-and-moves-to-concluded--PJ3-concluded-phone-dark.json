@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip is horizontally scrolled, so the 'Chat' tab is clipped at the left edge. It stays reachable by scrolling.",
-      "The running thread title 'Read through the project and list what each …' ends in an ellipsis on purpose.",
-      "The 'Add a greeting' summary ends in an ellipsis on purpose ('…and committed …'), so the full text isn't visible.",
-      "The 'Idle' status badge's border makes it look slightly taller than the agent text next to it."
+      "The tab strip is scrolled so the 'Chat' tab is clipped at the left edge. It looks like a horizontally scrollable row, so the tab can still be reached.",
+      "The running thread title ('Read through the project and list what each …') and the 'Add a greeting' summary are cut off with an ellipsis, which is the intended single-line style.",
+      "Below the thread list there is a lot of empty space."
     ]
   }
 }

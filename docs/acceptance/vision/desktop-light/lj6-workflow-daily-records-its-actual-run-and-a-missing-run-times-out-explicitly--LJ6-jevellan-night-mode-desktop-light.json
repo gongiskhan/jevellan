@@ -10,11 +10,12 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The right panel is scrolled partway down, so the top half of the 'CONCLUDED 0' heading is cut off just under the nightly-window banner. Scrolling up brings it back.",
-      "In the nightly item cards (Nightly tests, Missing run, Switch mode nightly), the 'Enabled' checkbox sits above its label instead of next to it, so it lines up awkwardly with the 'Run now' and 'Edit' buttons.",
-      "The nightly item cards have a lot of empty space at the bottom.",
-      "Two nightly-window notices are shown one after the other ('Jevellan runs the night' and 'Merges are held while the nightly window runs.'). The second one repeats the top banner.",
-      "Long session titles in the sidebar are cut short with an ellipsis (e.g. 'Context · J11 memory jour...'). This is expected truncation."
+      "The 'Nightly window finished' card cuts off the 'Nightly tests: timed-out — The seven-hour nightly deadline expired before this item completed…' line with an ellipsis, so the full reason isn't visible inline.",
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Shared memory …'). This looks intentional but hides part of each name.",
+      "On each nightly item card, the 'Enabled' checkbox sits above its label instead of beside it, which looks misaligned next to the 'Run now' and 'Edit' buttons.",
+      "The 'Run now' buttons have low-contrast text on a grey background, so they look disabled.",
+      "The right column's last card ('Switch mode nightly') is cut off at the bottom of the viewport. Its controls are still visible and the column presumably scrolls.",
+      "The timeline repeats 'Noted.' many times, including twice in a row, which is visual noise."
     ]
   }
 }

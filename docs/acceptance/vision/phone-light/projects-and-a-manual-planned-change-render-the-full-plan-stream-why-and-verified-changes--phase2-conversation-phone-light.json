@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Step 2 tool output still says 'The fixture starts with value 1.' even though the text below it says the value is now 2. That's probably fine since it's the read before the change, but it could confuse a reader.",
-      "Two closing banners sit back to back ('Work closed. Its changes are kept...' and 'Work closed and published.'), which looks repetitive.",
-      "The plan card's 'Approved' badge is small and low-contrast next to the large heading."
+      "There are two closure banners in a row ('Work closed. Its changes are kept…' and 'Work closed and published.'). They say nearly the same thing and could be merged into one.",
+      "In Step 2 (Implement), the only tool output shown is 'The fixture starts with value 1.' from reading the file before the change. Nothing on screen shows value.txt after it was changed to 2. That could confuse a reader, though it is content, not a layout problem.",
+      "The plan lists a test/verify step, but no verification step appears in the timeline. Only the 'ready for Jevellan verification' text hints at it. This is a content gap, not a rendering defect."
     ]
   }
 }

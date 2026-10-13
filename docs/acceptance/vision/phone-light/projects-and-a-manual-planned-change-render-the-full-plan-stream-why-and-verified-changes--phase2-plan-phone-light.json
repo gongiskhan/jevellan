@@ -10,8 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The narrow phone width wraps the header chips and the 'Read project' tool card tightly, but nothing overlaps or gets cut off.",
-      "The 'Awaiting approval' badge in pink and the 'Why' chip are low-contrast but still readable."
+      "The header title 'Change the value to two and verify it.' runs very close to the overflow (…) menu on the right.",
+      "The 'Waiting for you' chip text is faint orange on a light background, so contrast is low.",
+      "The 'Waiting for plan approval. Review plan ↑' status line and the orange notice box above it say much the same thing as the plan card, which adds some visual clutter.",
+      "The 'Why' chip is pink while the 'Changes' and 'Change step' chips are neutral, so the chip styling is inconsistent.",
+      "The meta line 'Started … Ended … Duration 2s' is small and dense, and 'Local time' wraps onto its own line."
     ]
   }
 }

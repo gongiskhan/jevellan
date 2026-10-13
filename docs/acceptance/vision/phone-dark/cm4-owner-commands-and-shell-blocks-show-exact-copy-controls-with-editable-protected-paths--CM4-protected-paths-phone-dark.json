@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip clips its first and last labels ('…s' and 'Projects') at the edges. This is the expected behavior of a horizontally scrolling strip, and the arrow buttons still reach both ends.",
-      "The pink 'Open terminals' text sits centered with no clear tie to the Terminal button above it, so it reads like a stray label rather than a link or status.",
-      "The 'Thread worktrees: 0 GB · Job and verification worktrees: 0 GB' line wraps so that 'GB' sits alone on the second line.",
-      "A button at the bottom is cut off by the viewport edge. This is normal for a page that scrolls."
+      "The leftmost tab in the settings tab strip is clipped to just 's'. The strip scrolls horizontally and has arrow buttons, so this looks intentional, but it reads as truncated.",
+      "The device tags field cuts its value off at the right edge ('phone-testi'). This is normal for a single-line input that scrolls, but the full tag list isn't visible at a glance.",
+      "The 'Open terminals' pink/magenta label sits centered on its own line, out of step with the left-aligned layout, and its color clashes with the rest of the palette.",
+      "The 'Save tags' and 'Save protected paths' buttons have low contrast. They look disabled, probably because nothing has changed yet, and are hard to read against the dark background.",
+      "The last control at the bottom of the viewport is partly cut off by the fold. It can be reached by scrolling."
     ]
   }
 }

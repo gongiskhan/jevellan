@@ -10,11 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab strip (Decisions / Improver / ...) is cut off at the right edge. It looks like a horizontally scrollable tab bar rather than hidden controls.",
-      "The Trial log table is cramped at phone width. Its column headers ('WHY THEY FINISHED ELSEWHERE') wrap onto several lines and the columns are very narrow.",
-      "Long diff lines and file paths in the suggestion cards and the Recently decided cards wrap or break mid-token, which makes the diffs harder to scan.",
-      "The page is very long (about 5900px) and the Memory care 'Suggest only' selector sits mid-page. Several dense run-log rows have small secondary text that is only just legible at this scale.",
-      "I judged this from a downscaled view (132x2000) because cropping to full resolution was blocked. I saw no overlap or clipped controls, but I couldn't confirm fine text at full size."
+      "The page is very long (about 6000px). Several waiting-for-you cards and the recently decided list make you scroll a lot to reach the Schedule and jobs controls, where Memory care is set to 'Suggest only'.",
+      "Long diff lines in the patch previews wrap onto several lines, which makes the code blocks dense on a phone screen.",
+      "The 'Last runs' list repeats many near-identical rows; it is legible but visually busy."
     ]
   }
 }

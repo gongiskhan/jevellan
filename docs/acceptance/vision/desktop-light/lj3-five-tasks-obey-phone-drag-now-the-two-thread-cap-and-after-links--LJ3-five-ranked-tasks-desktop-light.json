@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Running list in the right panel runs past the bottom of the viewport. The 'Queue barrier 1' row is partly cut off at the edge, but the panel looks scrollable.",
-      "The counts disagree: the sidebar says 'Projects queue 2 running' while the right panel's Running section says 4. 'Loop task 4' and 'Loop task 1' also appear both as Queued and as Running.",
-      "Sidebar session titles and metadata are cut short with ellipses (e.g. 'Context · J11 memory jour…', 'dev-ma…'). This looks like intended truncation."
+      "The RUNNING 4 list in the right panel runs past the bottom of the viewport. 'Queue barrier 2' sits at the edge and the fourth entry isn't visible, so the panel has to be scrolled to see it.",
+      "The right panel's state looks inconsistent: 'Loop task 4' and 'Loop task 1' are listed under RUNNING but also appear in QUEUE with a 'Queued' badge.",
+      "Sidebar session titles and subtitles are cut off with an ellipsis (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · dev-ma…'). This is intended truncation and the text is still readable.",
+      "The model/meta lines under the RUNNING items ('Claude Code · Fable · high · Worktree · dev-madrid') are in a very small monospace font with low contrast, but still readable."
     ]
   }
 }

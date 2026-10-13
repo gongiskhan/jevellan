@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The file is labeled config.toml, but the Content field shows JSON. This doesn't affect the rendering, but it may be a mismatch in the fixture or the display.",
-      "The toast's close button is a very small, low-contrast '×' compared with the dialog's close icon.",
-      "The editor has a lot of empty space below short content. The textarea could fit the content more closely."
+      "The file label says config.toml, but the content box shows JSON. This may be intended for the fixture, but it reads as a mismatch.",
+      "The 'Saved' status label is low-contrast grey on the dark background, though still readable.",
+      "The helper text 'Local edits save automatically on this account.' is small and dim."
     ]
   }
 }

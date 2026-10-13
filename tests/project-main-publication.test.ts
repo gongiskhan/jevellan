@@ -16,7 +16,7 @@ import { forThread } from '../packages/runtime-contract/dist/index.js';
 import {
   MAIN_LEASE_BUSY, MAIN_LEASE_RETRIES, commitsSavedReason, leftoverCommitSubject, mainCheckoutMessage, mainConflictPrompt, savedCommitsRef, threadSystemAppend,
 } from '../packages/projects/dist/index.js';
-import { commitStep, expectNoLeaks, holdStep, never, projectFixture, reportStep, type ProjectFixture, type ProjectFixtureOptions } from './helpers/project-fixture.js';
+import { commitStep, expectNoLeaks, holdStep, never, projectFixture, reportStep, threadRequestText, type ProjectFixture, type ProjectFixtureOptions } from './helpers/project-fixture.js';
 
 let fixture: ProjectFixture | undefined;
 afterEach(async () => {
@@ -62,7 +62,7 @@ test('a main thread claims the checkout, works on main, publishes to main and gi
   // The thread works in the project checkout on main, with the main parts of the system append and the mail and reservation tools.
   const input = f.fake.turnStarts[0]!;
   expect(input.cwd).toBe(f.checkout);
-  expect(input.prompt).toBe('Task: Add greeting\n\nCreate greeting.txt.');
+  expect(threadRequestText(input.prompt)).toBe('Task: Add greeting\n\nCreate greeting.txt.');
   expect(input.systemAppend).toBe(threadSystemAppend({ projectName: 'Shop', cwd: f.checkout, isolation: 'main', baseBranch: 'main', deviceName: f.deviceName, testCommand: 'test -f greeting.txt' }));
   expect(input.systemAppend).toContain(`Isolation: you work directly on main in the project checkout of ${f.deviceName}. Other main threads may work on other devices at the same time.`);
   expect(f.thread(threadId)).toMatchObject({ state: 'running', isolation: 'main', cwd: f.checkout, baseBranch: 'main', baseCommit: base });
@@ -126,8 +126,8 @@ test('a rebase conflict is aborted and the agent gets the exact main-conflict pr
 
   const done = await f.waitFor(() => f.thread(threadId), settled('done'));
   // The second turn's prompt is the brief's text with the conflicting file, word for word; the rebase was aborted before it.
-  expect(f.fake.turnStarts[1]!.prompt).toBe('Main moved while you worked and your commits conflict with it in: value.txt. Run git fetch origin main and git rebase origin/main, resolve the conflicts keeping both intents, run the tests, and report done again.');
-  expect(f.fake.turnStarts[1]!.prompt).toBe(mainConflictPrompt(['value.txt']));
+  expect(threadRequestText(f.fake.turnStarts[1]!.prompt)).toBe('Main moved while you worked and your commits conflict with it in: value.txt. Run git fetch origin main and git rebase origin/main, resolve the conflicts keeping both intents, run the tests, and report done again.');
+  expect(threadRequestText(f.fake.turnStarts[1]!.prompt)).toBe(mainConflictPrompt(['value.txt']));
   expect(during).toEqual({ state: 'running', rebasing: false, head: committed });
   expect(payloads(f, threadId, 'thread-publication')).toEqual([{ schema: 'thread-publication-v1', result: 'conflict', files: ['value.txt'] },
     { schema: 'thread-publication-v1', result: 'main-published', commit: done.publishedCommit }]);

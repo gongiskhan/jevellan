@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row is cut off at the left edge, so the 'Chat' tab is partly clipped. It looks like a row you can scroll sideways, and the label can still be read.",
-      "In the PR card, the 'Open task' link uses a larger font than 'Why' and 'Open thread', so the links look uneven and aren't evenly spaced.",
-      "The pink links ('Why', 'Open thread', 'Open task') don't match the outlined 'Open on GitHub' button.",
-      "The 'Merge' button has very low contrast. It looks disabled on purpose because merges are held, but it's hard to see."
+      "The tab strip is scrolled, so the left edge of the 'Chat' tab is clipped. The strip looks horizontally scrollable, so the tab can still be reached.",
+      "The 'Working…' status badge is truncated with an ellipsis.",
+      "The disabled 'Merge' button has low contrast. This is likely intentional because merges are held, but it is hard to read.",
+      "The pink text links 'Why', 'Open thread' and 'Open task' have uneven spacing and don't line up with the 'Open on GitHub' button."
     ]
   }
 }

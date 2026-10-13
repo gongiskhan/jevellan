@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal says the redo will use 'Reply, Fable, low', but the dimmed panel behind it shows Effort set to 'high'. This may just reflect the step-specific choice, but it's worth checking that the correct effort level is shown.",
-      "The background is heavily dimmed and blurred, so the conversation behind the modal is hard to read. This is expected for a modal backdrop."
+      "The dialog says the redo will use 'Reply, Fable, low', but the step header in the background shows 'Fable · corrected effort → max' and the next-step picker shows effort 'high'. The redo settings may not match the correction the user asked for. This is a functional concern, not a rendering problem.",
+      "The background content is heavily dimmed and blurred behind the modal. This is expected for a modal backdrop."
     ]
   }
 }

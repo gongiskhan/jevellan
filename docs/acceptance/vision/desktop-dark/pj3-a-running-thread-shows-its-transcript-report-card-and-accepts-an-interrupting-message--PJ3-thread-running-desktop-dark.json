@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Shell session titles and subtitles in the sidebar are cut off with ellipses ('Context · J11 memory jour…', 'Done · Improver sandbox · dev-ma…'). This looks like intentional truncation.",
-      "The 'Working on turn 1…' status and the 'Interrupt current turn' checkbox are small and low-contrast against the dark background.",
-      "Monospace metadata text (the breadcrumb line, '1 running', the version label) is small and dim, but still readable.",
-      "There is a large empty gap in the sidebar between the shell sessions list and the 'Some native sessions are unavailable' note."
+      "Sidebar shell-session titles and subtitles are cut short with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · dev-ma…'). They are still readable and the full text is presumably available on hover.",
+      "In the header, the metadata line (Claude Code · Fable · high effort · … · worktree branch · dev-madrid) is long, dense monospace text in low-contrast gray.",
+      "The tool-call cards all show the same 'completed' status label in muted gray. With several cards this repeats a lot and is low contrast against the dark background."
     ]
   }
 }

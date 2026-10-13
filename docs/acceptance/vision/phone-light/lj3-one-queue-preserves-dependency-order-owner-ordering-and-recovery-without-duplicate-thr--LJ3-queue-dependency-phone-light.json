@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Pull requests' tab is cut off at the right edge of the tab row. The row appears to scroll sideways, so the tab can still be reached.",
-      "The header's ellipsis menu sits very close to the right edge of the screen."
+      "The 'Pull requests' tab is cut off at the right edge of the tab strip. The strip looks horizontally scrollable, so the tab is still reachable.",
+      "The status badge is shortened to 'Working…' with an ellipsis.",
+      "The 'Context unavailable · Compacted 0 times today' line wraps onto two lines next to the 'Fresh session' button."
     ]
   }
 }

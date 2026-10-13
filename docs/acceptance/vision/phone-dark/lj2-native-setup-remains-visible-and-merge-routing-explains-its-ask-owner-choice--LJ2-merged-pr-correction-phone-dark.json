@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The first tab ('Chat') is cut off at the left edge of the tab strip. The strip appears to be scrolled horizontally so the active 'Pull requests' tab is visible. There is no fade or scroll cue to show this.",
-      "In the #1 Review loop card, the 'Didn't need asking' action sits very close to the card's right edge, so the row looks crowded.",
-      "The pink text-link actions ('Why', 'Open thread', 'Open task') look different from the outlined 'Open on GitHub' button. 'Open task' is also bigger than the other links, so the action styling is inconsistent."
+      "The tab strip is scrolled, so the 'Chat' tab is cut off at the left edge. It still looks reachable by scrolling the strip horizontally.",
+      "The action links in the merged PR cards wrap unevenly: 'Why / Should have asked me / Didn't need asking' are right-aligned on one row while 'Open thread' and 'Open task' sit on the next row at different alignments, so the layout looks ragged.",
+      "In PR #2, the 'Saved for future merge decisions.' message is on the same line as the 'Open thread' link, so the message and the action run together.",
+      "The pink link text on the dark navy background is readable but low-emphasis next to the bordered 'Open on GitHub' buttons."
     ]
   }
 }

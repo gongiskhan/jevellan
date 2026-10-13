@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Save Git settings' button has low contrast against the card. It looks disabled, which may be intended because nothing has changed.",
-      "The 'GitHub token scope' label and dropdown sit outside any card, unlike the sections around them, so the layout looks a little uneven.",
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…'). This looks like intended truncation."
+      "The 'Save Git settings' button has low contrast against the card background. It is probably meant to look disabled, but it is hard to read.",
+      "The session titles and subtitles in the sidebar are cut off with ellipses (for example, 'Context · J11 memory journ...' and 'dev-ma...'). This is intended truncation and doesn't affect the GitHub token screen.",
+      "The 'GitHub token scope' label and dropdown sit outside any card, between the 'GitHub connection' and 'GitHub token' cards. This makes the grouping a little uneven.",
+      "The 'Some native sessions are unavailable' notice in the sidebar is small, low-contrast text."
     ]
   }
 }

@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The hub readiness warning says \"this Mac can sleep on AC power\" and suggests a macOS `pmset` command, but the dev-madrid card reports the hub as Linux. The text doesn't match the platform.",
-      "In the dev-madrid warning, the inline code `sudo pmset -c sleep 0` wraps across two lines, leaving the trailing `0` alone on the second line.",
-      "Offline fixture shows \"Inspect worktrees\" and \"Open\" as low-contrast disabled buttons with no explanation, though the Offline status is visible nearby."
+      "The hub power warning says \"this Mac\", but the dev-madrid hub card says \"Linux · Version 0.3.0\". The platform labels don't match, which may confuse users. This is probably fixture data.",
+      "The inline code `sudo pmset -c sleep 0` breaks across two lines inside the warning: the trailing \"0\" lands at the start of the next line. It's still readable but looks awkward.",
+      "The \"Open terminals\" links are bright pink and centered, while the other controls are outlined buttons aligned left. They look inconsistent with the rest of the card.",
+      "In the Mini apps only card, the \"Apps only\" chip stretches to the full card width instead of fitting its text."
     ]
   }
 }

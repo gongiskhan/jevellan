@@ -40,9 +40,9 @@ test('9.2 fresh session context follows the brief layout', () => {
   ]);
   const recent = copy.recentConversation([{ from: 'owner', text: 'Fix login' }, { from: 'coordinator', text: 'Started "Fix login".' }]);
   expect(copy.freshContext({ notebook: 'Use pnpm.\n', threads, questions: [copy.openQuestionLine('Which\ndatabase?')], recent })).toBe(
-    `Project notebook:\nUse pnpm.\n\nActive threads:\n${threads.join('\n')}\n\nOpen questions to the owner:\n- Which database?\n\nRecent conversation with the owner:\nOwner: Fix login\n\nYou: Started "Fix login".`);
+    `Project notebook:\nUse pnpm.\n\nActive threads:\n${threads.join('\n')}\n\nOpen questions to the owner (numbered as the owner sees them):\n- Which database?\n\nRecent conversation with the owner:\nOwner: Fix login\n\nYou: Started "Fix login".`);
   expect(copy.freshContext({ notebook: null, threads: [], questions: [], recent: copy.recentConversation([]) })).toBe(
-    'Project notebook:\n(empty)\n\nActive threads:\n(none)\n\nOpen questions to the owner:\n(none)\n\nRecent conversation with the owner:\n(none)');
+    'Project notebook:\n(empty)\n\nActive threads:\n(none)\n\nOpen questions to the owner (numbered as the owner sees them):\n(none)\n\nRecent conversation with the owner:\n(none)');
   // Newest first within 8,000 characters, older items dropped first, emitted oldest first; an oversized newest item is cut.
   const items = [{ from: 'owner' as const, text: 'a'.repeat(5000) }, { from: 'coordinator' as const, text: 'b'.repeat(3000) }, { from: 'owner' as const, text: 'c'.repeat(4000) }];
   expect(copy.recentConversation(items)).toBe(`You: ${'b'.repeat(3000)}\n\nOwner: ${'c'.repeat(4000)}`);

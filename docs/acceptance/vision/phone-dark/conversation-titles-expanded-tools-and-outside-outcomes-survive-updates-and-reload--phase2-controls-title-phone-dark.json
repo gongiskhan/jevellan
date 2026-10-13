@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The conversation title in the header is shortened with an ellipsis ('A conversation with a long title · Unbro…'). This looks like intended truncation, but the full title can't be read on this screen.",
-      "The long tool header ('Read project · long_tool_header_…') breaks in the middle of words across several lines. It's still readable, but it looks rough.",
-      "The bottom edge of the 'Try automatic again' button sits close to the top border of the 'Jev is unavailable' panel. They don't overlap."
+      "The conversation title is cut off with an ellipsis ('A conversation with a long title · Unbro…'). This looks like intended truncation, but on this screen the full title can't be read.",
+      "The long tool header ('Read project · long_tool_header_…') breaks in the middle of words across several lines, which is hard to read but stays inside its card.",
+      "The 'Jev is unavailable (no key configured)' notice takes up much of the lower viewport, but every control in it (Action, Model, Effort, the checkbox and Continue) can still be seen and reached."
     ]
   }
 }

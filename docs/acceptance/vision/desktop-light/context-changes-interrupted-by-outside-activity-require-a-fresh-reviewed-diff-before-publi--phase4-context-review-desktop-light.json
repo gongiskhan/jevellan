@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal body is scrolled, so the top of the review card (heading, start of the diff) is above the visible area. It can be reached by scrolling and is clipped only by the scroll container.",
-      "The 'Current instruction files' disclosure uses a small monospace label with low contrast compared with the surrounding text.",
-      "The error banner's dismiss '×' is small and light, so it's a weak tap target, but it is visible and reachable."
+      "The modal body is scrolled partway down, so the top of the review card (its heading and the start of the diff block) is hidden under the modal header. You can scroll back to it, but on first view the reader has no context for the diff.",
+      "The error banner says 'Review changes again', but the button is labeled 'Refresh changes'. The wording doesn't match, so the next step isn't obvious.",
+      "The 'Continue' button still looks enabled and primary while the banner says the reviewed files are stale, which is visually confusing.",
+      "The 'Current instruction files' toggle uses small monospace text in light gray, so it's easy to miss."
     ]
   }
 }

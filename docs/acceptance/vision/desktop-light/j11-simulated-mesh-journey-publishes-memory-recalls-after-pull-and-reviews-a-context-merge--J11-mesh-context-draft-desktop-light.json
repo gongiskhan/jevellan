@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The diff shows a bare '-' line and a bare '+' line where blank lines were removed or added. These look like stray characters.",
-      "The CLAUDE.md diff shows '+ Symlink → AGENTS.md' as if it were an added line of file content. It reads as literal text instead of a description of the link change.",
-      "The modal's left and right edges sit over sidebar and card content in the background. The dim backdrop makes that content look faded, which is expected for a modal."
+      "Diff '+' and '-' lines are only marked by their prefix characters, with no red/green coloring, so additions and removals are harder to tell apart at a glance",
+      "Blank diff lines show a lone '-' or '+', which looks a bit odd",
+      "The 'Open work' link sits below the Cancel/Apply buttons, away from the main action row"
     ]
   }
 }

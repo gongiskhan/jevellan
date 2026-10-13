@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal covers the middle of the page behind it, and the blurred background is hard to read, but that's expected for a modal overlay.",
-      "The top tab strip cuts off the third tab label ('Do…') at the edge of the screen. It can still be reached with the scroll arrow."
+      "The 'Simulated judge responses' note shows up on the blurred card behind the modal but not in the modal's own 'Checked against 27 saved cases' line, so the two are inconsistent",
+      "The modal is long and covers most of the page. The Cancel and Apply this buttons are visible here, but on a shorter viewport they might fall below the fold"
     ]
   }
 }

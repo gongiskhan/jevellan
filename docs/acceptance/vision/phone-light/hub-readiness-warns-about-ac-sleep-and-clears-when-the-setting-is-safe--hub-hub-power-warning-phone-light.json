@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The hub readiness warning says 'this Mac', but the dev-madrid hub card lists the device as 'Linux', so the copy contradicts itself (likely fixture data)",
-      "Tab labels at both ends of the settings tab strip are clipped ('s' on the left, 'Projects' on the right), though the scroll arrows still reach them",
-      "The disabled 'Open' button on the hub card and the disabled 'Inspect worktrees' and 'Open' buttons on the offline card have low-contrast text"
+      "Hub readiness warning text says 'this Mac' even though the hub device is listed as Linux. This may be fixture data.",
+      "The 'Device tags' input on dev-madrid is clipped at the right edge ('phone-testi…'). That's normal for a single-line input that scrolls.",
+      "The top tab strip is cut off at both edges ('s' on the left, 'Projects' on the right). Scroll arrows are shown, so this is expected horizontal scrolling.",
+      "The 'Open terminals' link sits centered by itself between buttons, which looks a bit loose."
     ]
   }
 }

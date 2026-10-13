@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is truncated with an ellipsis ('Exercise external activity guards befor…'). The full text still appears in the subtitle and the message bubble.",
-      "There's a large empty gap between the action buttons and the composer at the bottom.",
-      "The two buttons, 'Retry' (filled) and 'Try automatic again' (outlined), are stacked vertically and left-aligned, so the button layout looks a little uneven."
+      "The header title is cut off with an ellipsis ('Exercise external activity guards befor…'), but the full text appears in the subtitle line below it.",
+      "The page has two retry buttons, 'Retry' and 'Try automatic again', and one is styled more strongly than the other. It's not clear how they differ.",
+      "There's a large empty area between the action buttons and the composer at the bottom."
     ]
   }
 }

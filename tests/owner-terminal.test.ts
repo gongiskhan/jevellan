@@ -21,6 +21,26 @@ function fixture(shell: string, options: { now?: () => number; idleMs?: number; 
 const create = (manager: TerminalManager, cwd: string, requestId = 'terminal_create') => manager.create({ requestId, fingerprint: requestId, cwd, title: 'Fixture terminal', projectId: 'project_terminal' });
 const osc = (text: string) => `\x1b]${text}\x07`;
 
+test('bash command records survive login setup with delayed WezTerm semantic hooks', async () => {
+  const f = fixture('/bin/bash');
+  const profile = `export OWNER_SHELL_FILE=loaded
+if [[ "$WEZTERM_SHELL_SKIP_ALL" != 1 ]]; then
+  __owner_terminal_install() {
+    trap 'printf "\\033]133;C\\007"' DEBUG
+    PROMPT_COMMAND='printf "\\033]133;D;0\\007\\033]133;A\\007"'
+  }
+  PROMPT_COMMAND=__owner_terminal_install
+fi
+`;
+  writeFileSync(join(f.user, '.bash_profile'), profile);
+  const session = await create(f.manager, f.user); await waitFor(() => !f.manager.snapshot(session.id).approximate);
+  f.manager.input(session.id, "printf 'owner=%s\\n' \"$OWNER_SHELL_FILE\"; false\r");
+  await waitFor(() => f.manager.snapshot(session.id).commands.some(row => row.command.includes('OWNER_SHELL_FILE') && row.endedAt !== null));
+  expect(f.manager.snapshot(session.id).commands.at(-1)).toMatchObject({ exitCode: 1, approximate: false });
+  expect(f.manager.snapshot(session.id).commands.at(-1)!.output).toContain('owner=loaded');
+  expect(readFileSync(join(f.user, '.bash_profile'), 'utf8')).toBe(profile);
+});
+
 test('semantic boundaries survive split escapes and keep command, folder, exit code and plain output', () => {
   const buffer = new TerminalBuffer('term_unit', '/tmp'), raw = osc('7;file://localhost/tmp/space%20folder') + osc(`133;C;${Buffer.from('printf hello').toString('base64')}`) + '\x1b[31mhello\x1b[0m\r\n' + osc('133;D;7');
   for (const char of raw) buffer.feed(char);

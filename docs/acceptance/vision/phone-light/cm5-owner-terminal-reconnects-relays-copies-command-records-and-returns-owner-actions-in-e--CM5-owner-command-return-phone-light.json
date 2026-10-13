@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The attach command in the footer ('jevellan thread attach thread_01M4S56MC78HZKD4...') is cut off with an ellipsis. The copy button next to it still gives access to the full command.",
-      "The scrolled thread content is partly cut off at the top, under the sticky header ('MacBook-Pro.local): idle; working on (none)...'). This is expected scroll clipping and not a layout defect.",
-      "The long temporary worktree path in the owner command result wraps over several lines and is hard to read, though all of it is visible."
+      "The command card at the top is cut off by scrolling, so its first line ('scripts/owner-only.sh') is only partly visible under the header. This is expected for a scrolled thread.",
+      "The attach command at the bottom ('jevellan thread attach thread_01M4SERNBFMSD6F…') is cut short with an ellipsis. The copy button next to it still gives you the full command.",
+      "The long worktree path in the prompt wraps across several lines with breaks in the middle of words. It is still readable."
     ]
   }
 }

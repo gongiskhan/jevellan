@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "On the Hub card, 'Save tags', 'Save protected paths', 'Inspect worktrees' and 'Open' look dimmed or low-contrast compared with the same buttons on the Member card. They are still readable.",
-      "The pink 'Open terminals' link sits centered and apart from the 'Terminal' button it belongs to, so the layout looks unbalanced.",
-      "The 'Offline fixture' card is cut off at the bottom of the screen. The page can scroll to it, so this is expected.",
-      "Conversation titles and subtitles in the sidebar are shortened with ellipses, which is intended."
+      "In the sidebar, conversation titles and their subtitle lines are cut off with an ellipsis (e.g. 'Context · J11 memory jour…', 'Done · J11 memory journey · dev-…'). This looks like intended truncation.",
+      "The dev-madrid card's 'Save tags', 'Save protected paths', 'Inspect worktrees' and 'Open' buttons look dimmed or disabled, but the same buttons on the Browser member card look fully enabled. The styling is inconsistent between the two cards.",
+      "The 'Open terminals' pink link is centered, while every other control in the cards is left-aligned.",
+      "The Mini apps only and Offline fixture cards are cut off at the bottom of the screen. The page scrolls, so they can still be reached."
     ]
   }
 }

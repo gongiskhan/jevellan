@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'dev-ma…'). This looks like intended overflow handling.",
-      "Most of the main pane below the report card is empty space, which is expected for a single-turn idle thread."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Shared memory fi…'). They still read as intended truncation.",
+      "In the prompt card, the 'Other active threads' bullet runs straight into 'Merged to main in the last 24 hours: (none)' with no line break, so two separate sections read as one sentence.",
+      "The fallback chip 'Placed without Jev: authentication failed' uses small monospace amber text on a dark background. It is legible but the contrast is lower than the surrounding text."
     ]
   }
 }

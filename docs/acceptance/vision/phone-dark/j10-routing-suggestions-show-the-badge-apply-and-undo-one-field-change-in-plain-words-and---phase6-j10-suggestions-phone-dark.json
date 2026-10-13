@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The third tab label in the top tab strip is cut off ('Dev…') under the right scroll arrow. The arrows show the strip scrolls sideways, so the tab can still be reached.",
-      "The 'Save schedule and jobs' button is low-contrast and looks disabled, which is probably expected when nothing has changed but is hard to read.",
-      "The grey 'Simulated judge responses.' text in the check summaries is low-contrast but still readable.",
-      "The diff blocks wrap long lines with no clear indent for the continuation lines, so the -/+ lines are a bit harder to scan."
+      "The tab strip clips the third tab at the right edge ('Dev…'). It can still be reached with the scroll arrow, but the label is cut off.",
+      "'Save schedule and jobs' has very low contrast against the card background. It looks disabled, which is probably intended since nothing has changed, but it is hard to read.",
+      "The diff blocks wrap long lines mid-sentence and leave blank space at the bottom of each block. Still readable.",
+      "The Trial log column headers wrap onto 3–4 lines ('WHY THEY FINISHED ELSEWHERE'), which makes the table header tall at this width."
     ]
   }
 }

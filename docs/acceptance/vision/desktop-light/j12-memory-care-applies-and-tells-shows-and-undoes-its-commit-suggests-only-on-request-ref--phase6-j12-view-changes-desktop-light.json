@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles are cut off with an ellipsis (e.g. 'Context · J11 memory journ…', 'Context · Mesh journey fixt…'). This is intended truncation.",
-      "The expanded memory-care diff is long, so the 'Schedule and jobs' and 'Last runs' panels sit far down the page.",
-      "In the 'Prefer GPT for implement steps' card, the long diff lines run almost to the edge of the code block."
+      "Sidebar shell session titles are cut off with ellipses (e.g. 'Exercise answer options: c...', 'Context · J11 memory jour...'), which is normal truncation for a narrow sidebar",
+      "The memory care diff fills a very long dark block with no scroll limit, which makes the page much longer",
+      "The 'Save schedule and jobs' button looks low-contrast or disabled, probably on purpose because nothing has changed",
+      "A large empty area sits below the left nav column and the Schedule and jobs card, next to the tall Last runs list"
     ]
   }
 }

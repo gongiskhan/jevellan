@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar, a fourth conversation row is partly clipped above the 'Some native sessions are unavailable' notice, so only fragments of its text show. This is the edge of a scrollable list, so it can still be reached.",
-      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Change the value to two …', 'Done · Manual conversation fixtu…'). The truncation is intentional, but the full text is not visible.",
-      "At the top of the center column, the first message card's bottom border sits just under the header area, so the card looks partly scrolled off with an empty strip below the prompt text.",
-      "The 'Read output' link in the Jevellan Verification card is centered while the rest of the card is left-aligned, which looks a little inconsistent."
+      "The sidebar conversation list is cut off at the bottom: part of a fourth conversation row shows above 'Some native sessions are unavailable', which looks like scroll clipping without a fade or separator.",
+      "Sidebar conversation titles and subtitles are cut short with ellipses (e.g. 'Change the value to two …', 'Blocked · picked-project · dev-m…'). This is expected, and the full titles are shown elsewhere.",
+      "In the middle column, the top of the conversation is scrolled so the first card's bottom edge shows just under the prompt text, which looks slightly odd.",
+      "The commit hash in the Jevellan verification card is in very small monospace type. It can still be read, but only just.",
+      "The middle column's step header shows 'Fable' next to 'Implement' with no label explaining what it is."
     ]
   }
 }

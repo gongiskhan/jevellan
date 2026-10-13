@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "'Add an owner note' disclosure sits tight against the 'Search memory' label with almost no vertical spacing",
-      "Inbox and project note items are full-width outlined buttons with centered text, so they look like action buttons instead of list entries",
-      "Gap between the 'Capture durable knowledge' checkbox and the 'Nightly dream' label is tight compared with the other sections"
+      "The 'Add an owner note' disclosure and the 'Search memory' label sit very close together with little vertical spacing.",
+      "The 'Nightly dream' label sits tight under the capture checkbox row.",
+      "The inbox and project note entries are full-width centered outline buttons, so they look more like actions than list items."
     ]
   }
 }

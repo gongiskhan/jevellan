@@ -5,14 +5,14 @@
   "test": "Closing packed installation",
   "layout": "phone-dark",
   "screenshot": "screenshots/phase5-guide-why-phone-dark.png",
-  "expected": "the Why panel with readable decision details and reachable controls",
+  "expected": "the Why panel with readable decision details and reachable controls Bright magenta rectangles are intentional screenshot masks over saved secret data, not product overlays or rendering faults.",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The label 'Adversarial Rev…' in the Next step list is cut short with an ellipsis; its full name isn't visible.",
-      "The last line of the Jev section (a timestamp like 'Oct 11, 2026, 11:25 PM') is clipped at the bottom edge of the panel. The panel likely scrolls, but this screenshot doesn't confirm it.",
-      "'Candidates (0)' can be expanded even though the list is empty."
+      "The step label 'Adversarial Revi…' is cut short with an ellipsis. It can still be identified, but the full name isn't shown.",
+      "The last line of the JEV section (the timestamp) is cut off at the bottom of the panel. It looks like the content just continues below, so it is probably reachable by scrolling.",
+      "The 'Next step' timing line wraps so that 'ms' ends up alone on the next line."
     ]
   }
 }

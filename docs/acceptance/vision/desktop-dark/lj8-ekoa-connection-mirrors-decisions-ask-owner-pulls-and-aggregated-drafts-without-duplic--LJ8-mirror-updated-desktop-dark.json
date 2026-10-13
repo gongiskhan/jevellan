@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Mirror tasks to Ekoa' label sits below its checkbox instead of next to it, so the two look loosely connected.",
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'dev-ma…'). This looks intentional and doesn't hurt this screen.",
-      "The breadcrumb 'Settings · Ekoa' is small and low-contrast, but it can still be read."
+      "Sidebar session titles and subtitles are cut short with ellipses (e.g. 'Context · J11 memory jour…', 'dev-ma…'). The cut-off looks intentional, and the full text is probably available on hover or wider widths.",
+      "The Mirrored tasks list shows 'Jevellan · Projects daily: night report · open' twice. This isn't a layout problem, but it may conflict with the scenario's 'without duplicates' expectation, so check the data.",
+      "The 'Mirror tasks to Ekoa' checkbox sits above its label instead of next to it, so the pairing reads a bit oddly."
     ]
   }
 }

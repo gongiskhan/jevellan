@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The panel is scrolled, so the line above 'high' is partly hidden under the sticky header. Content above it is out of view but can be reached by scrolling.",
-      "Long login recovery UUID labels wrap onto two lines, which makes the account list a little hard to scan."
+      "A sliver of clipped text shows just under the sticky header, above 'high'. The panel looks slightly scrolled, so the content above 'high' (likely a label) is hidden behind the header in this capture.",
+      "The long 'Login recovery <uuid>: eligible' rows wrap onto a second line. They are still readable but the list looks uneven.",
+      "The 'Jev is unavailable (no key configured). Pick the next step:' callout ends in a colon with nothing after it, so it reads as unfinished in this view."
     ]
   }
 }

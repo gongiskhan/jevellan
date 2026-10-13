@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The diff lines have no red or green coloring, so you can tell additions from removals only by the leading -/+ characters.",
-      "The diffs show bare '-' and '+' markers for trailing empty lines, which adds a little visual noise.",
-      "The 'Open work' link sits below the Cancel/Apply buttons, which makes the order of actions slightly unclear."
+      "CLAUDE.md diff shows the symlink line as '+ Symlink → AGENTS.md'. That works, but it looks different from the other text diff lines.",
+      "The 'Open work' link sits below the Cancel/Apply buttons and is not lined up with them.",
+      "Empty '-' and '+' diff lines (blank lines) look a little odd, but they are readable."
     ]
   }
 }

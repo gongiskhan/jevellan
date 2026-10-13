@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Shell session titles in the sidebar are cut off with ellipses (e.g. 'Exercise answer options: c...', 'Context · J11 memory jour...'). This is normal truncation in a narrow column.",
-      "The diff code blocks have long lines that wrap. In the 'Prefer GPT for implement steps' diff, the wrapped continuation lines lose their -/+ markers, so the change is a little harder to scan.",
-      "Many of the 'Last runs' entries repeat 'No working rules to suggest.', which makes the list long and visually repetitive."
+      "Sidebar session titles are cut off with ellipses (e.g. 'Exercise answer options: c...', 'Context · J11 memory jour...'). This is normal for a sidebar list but hides the full names.",
+      "The 'Last runs' column is much shorter than the 'Schedule and jobs' column next to it, which leaves an uneven empty area.",
+      "Some of the gray-on-dark helper text is small and low contrast (e.g. 'This change merged 1 note, archived 0, fixed 1 link.', the commit hashes, 'Simulated judge responses.'), but it is still readable."
     ]
   }
 }

@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip is cut off at both edges ('s' on the left, 'Projects' on the right). Scroll arrows are there, so this is expected horizontal scrolling.",
-      "'0 GB' wraps so that 'GB' sits alone on the next line in the worktree-size text.",
-      "The 'Claude Code active in activity-context-project · 11 minutes ago' line wraps awkwardly, breaking after the '·' separator.",
-      "The 'Automatic device choice' checkbox and its label are low-contrast gray (meant to show it's disabled, 'Coming later')."
+      "The settings tab strip cuts off its neighbouring tabs at both edges (\"s\" on the left, \"Projects\" on the right). The scroll arrows make them reachable, but the partial labels look rough.",
+      "The \"Open terminals\" label is centred and in a different colour from the left-aligned card content around it, so it looks out of place.",
+      "The \"Thread worktrees: 0 GB · Job and verification worktrees: 0 GB\" line wraps and leaves \"GB\" alone on its own line.",
+      "The \"Inspect worktrees\" button on the offline device is shown disabled with low contrast, so it's hard to see. That's acceptable for a disabled state."
     ]
   }
 }

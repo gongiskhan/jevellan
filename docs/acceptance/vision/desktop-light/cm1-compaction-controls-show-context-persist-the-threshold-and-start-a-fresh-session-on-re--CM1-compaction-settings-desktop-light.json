@@ -10,8 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal body scrolls, so the 'Minutes between refills' field is cut off at the bottom edge until you scroll down. The compaction setting is unaffected: 'Compact at percent' (65) is fully visible and readable.",
-      "The 'Worktree setup command' placeholder 'npm ci' is in light grey and has fairly low contrast."
+      "The 'Minutes between refills' input is partly hidden behind the footer at the bottom of the modal's scroll area. You can scroll to it, so this is normal overflow, not a problem."
     ]
   }
 }

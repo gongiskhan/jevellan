@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis (\"Exercise automatic decisions: change t...\"). The full text still appears in the subtitle line and in the user message, so nothing is lost.",
-      "The bottom composer partly covers the space under the 'Step details' row. The row is still visible and can be reached."
+      "The header title is cut off with an ellipsis (\"Exercise automatic decisions: change t...\"). The full text still shows in the subtitle line and the user message bubble, so nothing is lost.",
+      "The \"Read project\" tool card has a lot of empty space next to the \"completed\" status label, which makes the card look loose at phone width."
     ]
   }
 }

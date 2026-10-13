@@ -10,11 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "'Back to project' sits right against the top edge with almost no padding above it.",
-      "The action row wraps unevenly: the 'Jev would: ask you' chip is indented, and 'Didn't need asking' falls onto a second line next to the confirmation text, so it reads as one ragged cluster instead of a neat set of controls.",
-      "The 'Why', 'Should have asked me' and 'Didn't need asking' actions are plain pink text with no button styling, so they are harder to recognize as tappable and their touch targets look small.",
-      "The confirmation 'Saved for future merge decisions.' sits on the same line as 'Didn't need asking', so it isn't clear which choice was saved.",
-      "Low contrast on the muted 'fix · done' status text and the small monospace chip text, though both are still readable."
+      "The 'Back to project' link sits right against the top edge with almost no padding.",
+      "In the merge-correction row, 'Didn't need asking' wraps onto its own right-aligned line, so the button group looks uneven next to the 'Jev would: ask you' chip.",
+      "The 'Why', 'Should have asked me' and 'Didn't need asking' controls look like plain pink text rather than buttons, which makes them less obvious as tap targets.",
+      "The monospace chip text 'Jev would: ask you' is small and low-contrast compared with the rest of the screen.",
+      "Below 'Open thread', most of the screen is empty, so the layout feels top-heavy."
     ]
   }
 }

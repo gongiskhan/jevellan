@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The account list runs past the bottom of the viewport. The last visible row, 'Discard fixture: disabled', sits right at the edge, so the rest of the list is only reachable by scrolling, and nothing on screen shows that more is there.",
-      "The chosen memory name wraps awkwardly across two lines ('Vitest convention for mesh.md' / 'Existing.md'). It reads like two separate entries instead of one title.",
-      "The pink accent text on the dark navy background for the step, model and effort values is readable but lower in contrast than the white text."
+      "The account list reaches the bottom edge of the viewport, and the last visible row ('Discard fixture: disabled') sits right against it. There may be more rows below that need scrolling. Nothing is clipped mid-line, but the screenshot gives no scroll cue such as a fade or scrollbar.",
+      "The memory name 'Vitest convention for mesh.md Existing.md' wraps onto two lines in a monospace font, so it reads like two separate items.",
+      "Candidates (2) is collapsed, so the other memory candidates aren't shown in this capture."
     ]
   }
 }

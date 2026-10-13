@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Projects' tab is clipped and faded at the left edge of the scrollable tab strip. The arrow buttons still reach it.",
-      "The 'Mirror tasks to Ekoa' label sits under its checkbox instead of beside it, so the two look loosely connected.",
-      "The 'Connected' card shows only a collapsed 'Available tools' line, so the card looks sparse.",
-      "The mirrored task rows wrap so that '· open' lands alone on the next line."
+      "The first tab in the scrolling tab strip, 'Projects', is clipped at the left edge behind the scroll arrow. It is still reachable by scrolling.",
+      "The 'Mirror tasks to Ekoa' checkbox is very faint and looks disabled. It sits above its label instead of next to it, so it's hard to tell whether it's checked.",
+      "Grammar: '1 proposed tasks' should be '1 proposed task'.",
+      "'Jevellan · Projects daily: night report · open' is listed twice under Mirrored tasks. This may be worth checking against the 'without duplicates' expectation, but it isn't a rendering defect.",
+      "The empty space under 'Save' / 'Test connection' and the 'Remove token' button wrapping onto its own line make the button group look a little unbalanced."
     ]
   }
 }

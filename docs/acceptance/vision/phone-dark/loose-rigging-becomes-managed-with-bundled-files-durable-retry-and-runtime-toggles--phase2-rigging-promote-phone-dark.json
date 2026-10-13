@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Claude Code · Current account' option is greyed out, so its checkbox and label are low-contrast next to the bright pink Codex checkbox. It reads as disabled but is still legible.",
-      "The page behind the modal shows through the dim overlay faintly, around the 'Make managed' and 'Restore locally' buttons and the 'browser-package' row. It doesn't interfere with the dialog."
+      "The 'Claude Code · Current account' checkbox is a muted gray and has low contrast. It reads as disabled, which is likely intentional (current runtime locked on), but it is harder to read than the 'Codex' row.",
+      "Behind the scrim, the top tab strip (Runtimes / Rigging / Decisions) is clipped at the right edge. It looks like a horizontally scrolling tab bar and has no effect on the modal."
     ]
   }
 }

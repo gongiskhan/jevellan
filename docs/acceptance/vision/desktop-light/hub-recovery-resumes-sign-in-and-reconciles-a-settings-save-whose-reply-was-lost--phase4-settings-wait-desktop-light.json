@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Can't reach the hub' toast sits on top of the bottom edge of the Guards card and the left side of the save footer. It doesn't seem to hide any controls: 'Pause after a plan', the 'Saving…' button and 'Stop waiting' are all visible and reachable.",
-      "Because the page is scrolled, the label of the field above Routing profile (it reads 'Max…') is clipped at the top edge.",
-      "The Routing profile text area cuts its last visible line in half at the bottom; it scrolls, but the half-hidden line looks unpolished.",
-      "The last conversation row in the sidebar is cut off at the bottom of the list, which is ordinary scroll clipping."
+      "The hub-wait toast sits on top of the bottom edge of the Guards card and the left part of the save footer divider. It doesn't hide any controls: 'Pause after a plan', 'Stop waiting' and the 'Saving…' button are all visible.",
+      "The fourth conversation item in the sidebar is cut off at the bottom of its scroll area. This is normal scroll clipping.",
+      "The Routing profile textarea text is cut off at its bottom edge because the field scrolls. The textarea at the top of the page is only partly visible because the page is scrolled down."
     ]
   }
 }

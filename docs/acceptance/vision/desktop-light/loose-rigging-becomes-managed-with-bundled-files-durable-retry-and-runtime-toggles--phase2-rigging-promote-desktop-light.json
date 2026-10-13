@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The disabled 'Claude Code · Current account' checkbox is very faint against the white background, so it's hard to tell whether it is checked or just unavailable.",
-      "The 'Install for' options are tightly packed: there is little vertical space between the two checkbox rows, and the fieldset's bottom padding is uneven."
+      "The 'Claude Code · Current account' checkbox is disabled and very faint against the white background, and nothing in the dialog explains why it can't be changed",
+      "The two checkboxes under 'Install for' are packed closely together and sit tight against the top of the fieldset"
     ]
   }
 }

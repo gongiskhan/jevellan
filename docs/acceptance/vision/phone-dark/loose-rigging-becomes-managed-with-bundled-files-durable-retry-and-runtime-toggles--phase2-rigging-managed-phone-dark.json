@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dark overlay behind the open edit dialog dims and hides most of the Rigging page, including the managed bundle card. Only its 'Restore locally' action is partly visible below the dialog.",
-      "The top tab bar is cut off at the right edge (a fourth tab is partly visible after 'Decisions'). It looks like a horizontally scrolling tab bar and sits behind the overlay.",
-      "The large Content textarea holds only two lines, so most of it is empty space on a phone screen."
+      "The 'Edit Managed browser bundle' modal covers almost all of the Rigging page, so the managed bundle's card, its runtime toggles and the 'Restore locally' action show only dimly behind the overlay. The modal is open, so this is expected.",
+      "The 'Saved' status and the 'Edits save automatically…' helper text are low-contrast gray on the dark background, but both are still readable.",
+      "The Content textarea's resize handle in the bottom-right corner overlaps the pink focus border slightly."
     ]
   }
 }

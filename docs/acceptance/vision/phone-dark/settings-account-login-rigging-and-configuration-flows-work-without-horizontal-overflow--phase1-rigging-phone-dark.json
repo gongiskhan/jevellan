@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip clips the fourth tab label behind the scroll-arrow button. The arrow keeps it reachable, but the half-hidden icon looks rough.",
-      "In the parking warning banner, the inline 'Retry' pill sits right against 'finish.' with no space, and the banner text wraps unevenly around it.",
-      "Item metadata lines (e.g. 'Local · Loose · Rigging local fixture · Claude Code') wrap onto a second line in small monospace text. They are still readable but look dense.",
-      "The disabled checkboxes under 'Safety' have low contrast. This seems intended for a disabled state, but they're hard to make out."
+      "The settings tab strip cuts off the fourth tab behind the scroll arrow, so only its icon shows. This seems to be the intended scroll hint.",
+      "In the warning banner, the inline 'Retry' button sits tight against the end of the sentence and makes the line spacing uneven.",
+      "The Safety hook checkboxes for Claude Code and Codex look greyed out and have low contrast. They still read as disabled, which seems intended."
     ]
   }
 }

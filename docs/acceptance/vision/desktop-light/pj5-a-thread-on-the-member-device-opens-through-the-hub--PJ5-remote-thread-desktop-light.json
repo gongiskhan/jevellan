@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). These look like intentional overflow truncation.",
-      "The metadata line under the title is set in very small monospace text, which is hard to read but still legible.",
-      "The 'completed' status on the Read tool card sits on its own line with a large empty gap to the right of 'Read', so the header looks unbalanced.",
-      "There's a large empty area between the last report card and the message composer."
+      "Session titles in the sidebar list are truncated with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Shared memory fi…'), and so are their subtitle lines ('dev-ma…', 'd…').",
+      "The 'Progress' badge on the report card sits high in the top-right corner and doesn't line up with the 'REPORT · TURN 1' label.",
+      "The 'Projects now' prompt text runs straight into 'Merged to main in the last 24 hours:' inside the first bullet, so the list reads awkwardly."
     ]
   }
 }

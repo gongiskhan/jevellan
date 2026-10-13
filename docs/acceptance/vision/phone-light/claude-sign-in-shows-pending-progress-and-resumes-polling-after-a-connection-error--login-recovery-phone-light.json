@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Dialog title wraps the long recovery ID across two lines, which makes the header heavy but keeps it readable",
-      "Background page content shows through the blurred overlay around the dialog, which is expected for a modal",
-      "The 'Code sent. Waiting for sign-in to finish…' pending message and the connection-error alert appear together. This matches the step, but the two messages could look contradictory at a glance"
+      "The dialog says \"Paste the test authorization code.\" but no input field is shown. This fits the code-already-sent state, but the wording may confuse users.",
+      "The long recovery ID makes the dialog title wrap onto two lines. It is still fully readable and the close button stays reachable.",
+      "The page behind the open dialog (tab bar cut off at the right, cards) is blurred and dimmed, as expected for a modal backdrop."
     ]
   }
 }

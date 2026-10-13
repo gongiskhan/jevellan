@@ -10,11 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Back to project' link sits right against the top edge of the viewport with almost no top padding.",
-      "The 'Jev would: ask you' chip is indented from the left of the card for no clear reason, so it doesn't line up with the '#1 · merged' link above it.",
-      "The correction actions wrap unevenly. 'Why' and 'Should have asked me' share a row with the chip, while 'Didn't need asking' drops to the next row next to the confirmation text. This makes it harder to see which controls belong together.",
-      "The status text 'Saved for future merge decisions.' is styled like the buttons around it and has no clear separation from them.",
-      "The chip uses a monospace font while the rest of the screen uses the sans-serif UI font."
+      "The 'Back to project' link is centered while all other content is left-aligned.",
+      "The 'Why', 'Should have asked me' and 'Didn't need asking' controls are plain text links packed closely together, so they're harder to tell apart as separate tap targets.",
+      "The 'Jev would: ask you' chip uses a small monospace font that clashes with the rest of the UI.",
+      "The bottom two-thirds of the screen is empty below the 'Open thread' button."
     ]
   }
 }

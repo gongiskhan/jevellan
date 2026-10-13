@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Title input cuts off long text ('...list what each file is'). This is normal for a single-line input.",
-      "The modal body is cut off below 'Isolation' and the fields there need a scroll to reach. The footer buttons (Cancel, Add to queue) stay visible and usable.",
-      "The 'Start now' label sits below its checkbox, not beside it, which looks a little loose."
+      "The Title input text is clipped at the right edge ('...what each file is'). This is normal overflow for a single-line input.",
+      "The 'Isolation' field is cut off at the bottom of the modal and needs scrolling to see. The footer buttons stay visible.",
+      "The 'Start now' label sits below its checkbox instead of beside it, so the two look loosely connected."
     ]
   }
 }

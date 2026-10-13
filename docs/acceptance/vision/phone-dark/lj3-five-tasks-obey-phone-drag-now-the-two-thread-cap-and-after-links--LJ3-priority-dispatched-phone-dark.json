@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Pull requests' tab is cut off at the right edge of the tab bar. It looks like a tab strip you can scroll sideways, so it can still be reached.",
-      "The down-arrow button on Loop task 3 looks dimmed. That fits, since the task is last in the queue, but it has low contrast against the dark card.",
-      "The long ID 'dev_01M4QYT64E5XXGZ1QMBG42SSFG' wraps onto its own line under the model/effort label. It's still readable, but it makes the card denser."
+      "The 'Working…' status pill is shortened with an ellipsis.",
+      "The tab row runs off the right edge, so 'Pull requests' and any later tabs are only partly visible. It looks like a scrollable tab row, so they're probably still reachable.",
+      "The down-arrow button on Loop task 3 looks dimmed, probably because it's the last item, and it has less contrast than the other buttons."
     ]
   }
 }

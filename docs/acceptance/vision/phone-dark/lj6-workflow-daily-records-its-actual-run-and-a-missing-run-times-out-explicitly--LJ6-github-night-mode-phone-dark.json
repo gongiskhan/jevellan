@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Pull requests' tab is clipped at the right edge of the tab bar. It looks like a horizontally scrolling tab strip, but nothing on screen shows that more tabs are off to the right.",
-      "The 'Run now' buttons are low-contrast and dimmed. This looks like a deliberate disabled state while merges are held, but it's hard to read.",
-      "The checkbox and 'Enabled' label sit slightly higher than the 'Run now' and 'Edit' buttons, so the row is misaligned."
+      "Header title is truncated to \"Projects workflo...\" with an ellipsis",
+      "Tab row is clipped at the right edge, so \"Pull requests\" is cut off (it looks like a horizontally scrollable tab strip)",
+      "The message that merges are held appears twice: once in the top banner and again in the Nightly section",
+      "All three nightly items show \"Not run today\", so this screen does not show a recorded run or a timed-out missing run (the scenario may show those in other steps)"
     ]
   }
 }

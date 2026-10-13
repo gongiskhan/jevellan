@@ -10,8 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('J8: run on device B while I steer from de…'). The full text appears in the first message bubble, so nothing is lost.",
-      "The 'Waiting for you' status chip and the correction preview line under the header repeat content shown elsewhere and take up vertical space on the small screen."
+      "The header title 'J8: run on device B while I s...' is cut off with an ellipsis. This is intentional single-line truncation, and the full text is shown in the user message below it.",
+      "The pinned steering note under the header repeats the correction message shown further down the thread.",
+      "There is a large empty gap between the 'The user corrected this step.' banner and the 'Saving this step' spinner.",
+      "The '3s' timer at the bottom right is small and in a low-contrast pink."
     ]
   }
 }

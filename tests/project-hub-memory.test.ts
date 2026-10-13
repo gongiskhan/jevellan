@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, test } from 'vitest';
+import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { rm } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
@@ -20,6 +20,18 @@ beforeEach(() => {
   project = ProjectSchema.parse({ schema: 'project-v1', id: 'shared_project', name: 'Shared fixture', paths: {}, branchPolicy: 'external', memory: { mode: 'hub', dir: '.jevellan/memory' }, context: { state: 'none' } });
 });
 afterEach(async () => { await manager.close(); await rm(root, { recursive: true, force: true }); });
+
+test('an empty hub store answers search and recall without waiting for index startup', async () => {
+  const startup = vi.spyOn(manager, 'connection').mockRejectedValue(new Error('Index startup is unavailable'));
+  const port = store.project(project, thread);
+  expect(await port.search('fixture', signal())).toEqual({ schema: 'memory-search-v1', notes: [] });
+  expect(await port.findTitle('Project brief', signal())).toBeNull(); expect(startup).not.toHaveBeenCalled();
+  const abort = new AbortController(); abort.abort(new Error('Cancelled'));
+  await expect(port.search('fixture', abort.signal)).rejects.toThrow('Cancelled');
+  writeFileSync(join(port.path, 'New.md'), '# New knowledge\n');
+  await expect(port.search('knowledge', signal())).rejects.toThrow('Index startup is unavailable');
+  expect(startup).toHaveBeenCalled();
+});
 
 test('two providers share one real hub index and local note history without checkout ownership or native-home changes', async () => {
   const native = join(homes.userHome, '.basic-memory'); mkdirSync(native); writeFileSync(join(native, 'sentinel'), 'unchanged');

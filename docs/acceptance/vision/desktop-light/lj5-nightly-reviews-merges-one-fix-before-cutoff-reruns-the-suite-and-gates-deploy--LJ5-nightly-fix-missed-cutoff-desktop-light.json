@@ -10,12 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Dismiss' button in the 'Last night: 3 of 3 nightly tasks passed.' banner sits directly against the end of the text with no gap.",
-      "In the nightly item cards, the 'Enabled' checkboxes sit above their labels instead of beside them, so they look misaligned next to the 'Run now' and 'Edit' buttons.",
-      "The goals card at the bottom of the right column is cut off at the bottom edge of the capture ('Propose tasks' is partly shown). It looks like normal scrollable content, not a clipped control.",
-      "Long session names in the sidebar are shortened with ellipses (e.g. 'Context · J11 memory jour…'), so the full names can't be read there.",
-      "The 'Noted.' replies repeat many times and stretch the timeline, which adds visual noise.",
-      "The 'Nightly window finished' cards end with a stray '–' line."
+      "Sidebar shell session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · dev-ma…').",
+      "In the 'Nightly window finished' cards, the task lists end with a '…' line, so the full content isn't shown.",
+      "The right column runs past the bottom of the capture: the 'Hardening through code review' goal card is cut off at 'Propose tasks'. It is probably reachable by scrolling.",
+      "The 'Dismiss' button sits right against the end of the 'Last night: 3 of 3 nightly tasks passed.' banner text, with almost no gap.",
+      "In the pull request card, the 'Why' and 'Open thread' links are packed closely together, and 'Open task' is spaced apart from them unevenly."
     ]
   }
 }

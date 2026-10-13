@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab bar is cut off at the right edge (the last tab shows only 'Dev…'). It looks like a horizontally scrolling tab strip, so the tab can still be reached.",
-      "This is the Settings › Improver page, not a separate card. The morning card appears to be the 'Waiting for you' AGENTS.md proposal at the top. Its Apply / Change it / Dismiss buttons are visible and reachable.",
-      "The page is very long (about 4700px) and the 'Recently decided' diff blocks have long lines that wrap tightly. They still read fine at the full 390px width."
+      "The top tab bar is clipped at the right edge, so the last tab label is only partly visible. It is probably a horizontal-scroll tab strip.",
+      "The Schedule and jobs controls look washed out: the time input, the 'Apply and tell me' dropdown and the 'Save schedule and jobs' button have low contrast.",
+      "The diff code blocks wrap long lines, which makes the long description lines in the Routing cards harder to scan.",
+      "The 'Open log' links in Last runs are not aligned consistently, because they sit at different heights depending on how many lines the title takes."
     ]
   }
 }

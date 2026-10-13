@@ -10,7 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background is heavily dimmed and blurred behind the modal. That is expected for a modal backdrop, but it means the page behind can't be read in this screenshot."
+      "The background behind the modal is heavily blurred and dimmed, so you can't read it. That's expected behind a modal overlay.",
+      "The modal body text reads 'Add a greeting will be squashed into main', which is a little awkward because the PR title isn't quoted or set apart from the sentence."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The long tool header ('Read project · long_tool_header_…') breaks in the middle of words across six lines. It is still readable but looks cluttered.",
-      "The header chips ('Undo across works', 'dev-madrid', 'Done') are small and tightly packed.",
-      "The 'Step details' disclosure row has low contrast."
+      "The long tool header 'Read project · long_tool_header_…' wraps across six lines in the middle of underscore-joined words. It's still readable but takes up a lot of space.",
+      "The 'completed' status label sits alone on its own line, right-aligned under the wrapped header. It's a little detached from the tool card title.",
+      "The top bar title 'Finished in my editor' and the chips are cramped next to the hamburger button, but nothing is cut off."
     ]
   }
 }

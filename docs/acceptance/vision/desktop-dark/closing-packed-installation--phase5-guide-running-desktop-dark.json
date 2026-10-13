@@ -5,14 +5,13 @@
   "test": "Closing packed installation",
   "layout": "desktop-dark",
   "screenshot": "screenshots/phase5-guide-running-desktop-dark.png",
-  "expected": "the running conversation with readable transcript and reachable controls",
+  "expected": "the running conversation with readable transcript and reachable controls Bright magenta rectangles are intentional screenshot masks over saved secret data, not product overlays or rendering faults.",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation titles and subtitles are cut off with ellipses ('Installation acceptance: ...', 'Context · Installation fixtu...', 'Running · Installation fixture ·...'). The full title still shows in the main header.",
-      "There is a large empty gap between the step card and the composer, so the transcript looks sparse.",
-      "The title 'Installation acceptance: change the value to two.' appears three times: in the header, in the subtitle line and in the user message bubble."
+      "Sidebar conversation titles and subtitles are cut off with ellipses ('Installation acceptance: c…', 'Running · Installation fixture …', 'Done · Installation fixture · G…'); the full title still appears in the main header",
+      "There is a large empty area between the step card and the 'Agent is working' status line"
     ]
   }
 }

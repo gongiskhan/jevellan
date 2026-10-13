@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'New goal' button at the bottom of the right panel is cut off by the bottom edge of the viewport. The panel appears to scroll, so the button can still be reached.",
-      "Sidebar session titles and subtitles are cut short with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Mesh journey fix…').",
-      "Spacing in the goal detail is tight: the 'Nothing open for this goal.' line under Asks sits almost directly against the 'Daily' heading.",
-      "The 'Asks' and 'Daily' subsections are not indented to line up with the other uppercase section labels in the right panel."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Shared memory fi…'); this is expected truncation but hides the full names.",
+      "In the right panel, the 'Asks' and 'Daily' subsections have tight vertical spacing and no section-label styling, so they don't match the other uppercase mono section headers.",
+      "The 'GOALS 1' section header is cut off at the bottom of the right panel's scroll area. The rest of the section is reachable by scrolling.",
+      "The 'Goals' chip in the Queue selector uses a pink outline while 'Order' doesn't. It's readable, but the selected state is subtle.",
+      "The 'Context unavailable · Compacted 0 times today' line is low-contrast monospace text."
     ]
   }
 }

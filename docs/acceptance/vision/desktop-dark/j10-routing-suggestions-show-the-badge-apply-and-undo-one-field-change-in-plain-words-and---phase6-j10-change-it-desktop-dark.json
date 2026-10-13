@@ -9,9 +9,6 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": [
-      "The 'REVISED CHANGE' label and the 'Checked against 27 saved cases' line are small, low-contrast grey text on the dark modal, but they are still readable.",
-      "The left 'Edit the after text' box still shows 'Preferred for review steps.', while the revised diff uses the plain-words version ('Only for reviews of the improver fixture.'). The two boxes show different candidate texts side by side, which may confuse users, but nothing is broken."
-    ]
+    "cosmetic": []
   }
 }

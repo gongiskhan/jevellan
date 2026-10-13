@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar shell-session titles and subtitles are cut off with ellipses (for example 'Context · J11 memory jour…' and 'Context · Mesh journey fix…'). This is intended truncation, and the main details can still be read.",
-      "The 'Nightly' section at the bottom of the right panel ('Project day: 2026-10-12') is cut off at the edge of the screen. It is reachable by scrolling the panel.",
-      "The 'Working…' status badge is truncated with an ellipsis next to the 'Coordinator is working…' indicator."
+      "Sidebar session rows show truncated titles and subtitles with ellipses (e.g. 'Context - J11 memory jour...', 'Done · Improver sandbox · dev-ma...'). Truncation looks intentional.",
+      "Right-panel queue and running task titles are truncated with ellipses (e.g. 'Read through the project and list what each file is ...').",
+      "Header shows 'Context unavailable' in low-contrast muted text."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The section heading at the bottom edge (\"JEV…\") is cut off by the viewport. It looks like more content you reach by scrolling, not a layout clip.",
-      "The grey labels for unselected options and the small grey section headers have fairly low contrast against the dark background, but they can still be read.",
-      "The pink task title in the header (\"Tidy the README wording\") is very small next to the bold \"Why this placement\" heading."
+      "The TASK section heading sits at the bottom edge of the viewport and its content is below the fold. This is normal scrolling for a long panel, but a scroll cue would help.",
+      "The title 'Tidy the README wording' is in small pink monospace text in the header, so it reads less clearly than the 'Why this placement' heading next to it.",
+      "Muted gray labels and gray bars on the dark navy background have fairly low contrast, but they are still readable."
     ]
   }
 }

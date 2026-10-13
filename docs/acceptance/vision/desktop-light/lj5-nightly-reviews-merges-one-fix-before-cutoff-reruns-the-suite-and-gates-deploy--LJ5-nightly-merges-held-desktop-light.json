@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The right column is cut off at the bottom edge: the card below 'New nightly item' / 'New job' is only partly visible. The pane appears to scroll, so it stays reachable.",
-      "Sidebar session titles and metadata are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Improver sandbox · dev-ma…').",
-      "The NIGHTLY 3 section shows only the held-merges banner and the closing-day text. The 3 nightly items aren't visible without scrolling.",
-      "The 'Merge' button on PR #3 is greyed out. This matches the held state, but its contrast is low."
+      "Several sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Mesh journey fixt…', 'Context · Shared memory fi…', 'Done · Improver sandbox · dev-ma…'). This is normal truncation for a narrow sidebar.",
+      "The 'Review since last' nightly card in the right column is cut off at the bottom of the viewport. The column looks scrollable, so the card can still be reached.",
+      "The Merge button on PR #3 is greyed out and hard to see. This fits the 'merges held' state, but it has less contrast than the other controls."
     ]
   }
 }

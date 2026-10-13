@@ -11,8 +11,8 @@
     "blocking": [],
     "cosmetic": [
       "The 'Browse folders on dev-madrid' button sits right against the 'Git policy' label below it, with almost no vertical gap.",
-      "The amber Git policy warning is cut off mid-sentence at the bottom of the scrollable modal body ('…If main'). Scrolling likely reveals the rest, but the screenshot doesn't confirm a scroll cue.",
-      "The 'Saving…' button is very low contrast because it is disabled. That is expected while waiting, but it is faint."
+      "The amber Git policy notice is cut off mid-sentence ('If main…') at the bottom edge of the scrollable modal body. It can be reached by scrolling, but nothing on screen shows that more content is below.",
+      "The wait banner sits below the Cancel/Saving… footer as a separate block, so the footer area looks stacked and a little crowded."
     ]
   }
 }

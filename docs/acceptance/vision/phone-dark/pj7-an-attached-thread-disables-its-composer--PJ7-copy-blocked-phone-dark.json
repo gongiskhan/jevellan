@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "There is a large empty gap between the report card and the attached-state footer, so the composer and takeover command sit at the very bottom of the screen.",
-      "In the header notice, the long thread ID breaks onto its own line ('thread_01M4R0JTD420QSX8A5J2B0Y5Q9.'), which looks a little cramped.",
-      "The bright pink highlight on the selected command clashes with the dark theme, although the dark text on it is still readable.",
-      "The disabled composer's placeholder text is low-contrast, so it's hard to see at a glance that the composer is disabled. The 'Messages wait until you exit' note above it does explain this."
+      "Large empty gap between the Report card and the footer area leaves the middle of the screen blank",
+      "The attach command wraps across two lines inside the highlighted selection, and the highlight's ragged right edge looks slightly untidy",
+      "The note that the thread is attached in a terminal appears twice, once in the header and once above the composer"
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip clips the labels at both edges (\"…ices\" on the left and a partly hidden tab after \"Ekoa\" on the right). It scrolls sideways and has arrow buttons, so this is expected overflow, not missing content.",
-      "The \"GitHub token scope\" selector sits between the cards instead of inside the GitHub token card, so it looks a little detached from the token card.",
-      "The \"Saved · updated Oct 12, 2026\" status line uses a monospace font, which doesn't match the rest of the card text."
+      "The settings tab strip clips the first label ('…ices') and the last tab (an icon only, no visible label) at the edges. It scrolls sideways and has arrow buttons, so this is expected and those tabs can still be reached.",
+      "'GitHub token scope' and its dropdown sit outside a card, unlike the other sections, so this part looks a little inconsistent.",
+      "The 'Save Git settings' button is a pale disabled style with low contrast, but its text can still be read."
     ]
   }
 }

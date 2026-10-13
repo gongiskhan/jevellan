@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Adversarial Rev…' label in the next-step list is shortened with an ellipsis, so the full option name doesn't show.",
-      "The last 'Override and undo' entry is cut off at the bottom edge of the viewport. It looks like the panel continues and needs scrolling, but the bottom of the panel isn't visible in this capture.",
-      "The model and effort panels say 'medium → high (nearest effort this model supports)', but the bar chart shows medium at 1.00 and high at 0.00. The chosen value and the bars could confuse readers, though both are readable.",
-      "The secondary gray text, like the 'only option', 'Jev' and memory captions, has low contrast on the dark background but is still readable."
+      "The 'Adversarial Rev…' label in the Next Step list is shortened with an ellipsis. It is still recognizable.",
+      "The last line of the second correction entry ('implement in Browser fixture, small change, no risky areas') is clipped at the bottom of the viewport. This is probably just scrollable content below the fold, but it can't be confirmed from a single screenshot.",
+      "The italic serif font in Corrections Used ('action: implement → reply, effort: high → low') doesn't match the rest of the UI's typography.",
+      "The Effort section's header says 'medium → high' and the callout says it is using high, but the bars show medium at 1.00 and high at 0.00. That may confuse users, but it's a content issue, not a rendering one."
     ]
   }
 }

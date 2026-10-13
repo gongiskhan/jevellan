@@ -10,11 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The conversation title in the header is cut off with an ellipsis ('...simulated read-only viola...'), though the full title is likely available elsewhere.",
-      "The right panel cuts off its bottom text ('No verification receipt yet') at the viewport edge. It looks like the panel scrolls, so nothing is lost.",
-      "The middle column's scrolled content clips the 'Input' label at the top edge.",
-      "The sidebar's conversation list shows a partial fourth item that sits close to the 'Some native sessions are unavailable' line. It looks like scroll overflow.",
-      "Sidebar session subtitles are cut off with ellipses ('Checkpoint rec…', 'dev-mad…', 'Browser fixtur…')."
+      "Conversation title in the header is cut short with an ellipsis ('...simulated read-only viola...'); the full title isn't visible at this width",
+      "Right panel's 'JEVELLAN VERIFICATION' text ('No verification receipt yet') is cut off at the bottom of the viewport; it looks like it needs scrolling",
+      "Top of the chat scroll area cuts through a tool card, so the 'Input' label sits right under the header badges and comment line",
+      "Sidebar conversation list shows a partly clipped fourth item above the 'Some native sessions are unavailable' notice",
+      "Sidebar conversation titles and subtitles are cut short with ellipses ('Exercise reviewed checkp...', 'Waiting for you · Checkpoint rec...')"
     ]
   }
 }

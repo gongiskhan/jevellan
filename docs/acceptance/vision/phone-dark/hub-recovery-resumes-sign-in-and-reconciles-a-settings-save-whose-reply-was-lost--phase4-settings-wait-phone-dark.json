@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fixed 'Can't reach the hub' wait banner covers the bottom of the Guards card just below the 'Pause after a plan' checkbox. It looks like a sticky overlay over content you can scroll, but it's worth checking that the page has enough bottom padding so the last controls can scroll clear of it.",
-      "The tab strip cuts off its first and last labels at the screen edges ('es', 'Improve'). Scroll arrows are shown, so this is expected horizontal overflow.",
-      "The textarea above the Guards card is partly scrolled out of view at the top, so its helper text is cut off by the scroll position."
+      "The fixed 'Can't reach the hub' wait banner sits on top of the settings form. It hides everything below the 'Pause after a plan' checkbox, so I can't confirm from this screenshot that the page can scroll the last fields or a save control above the banner.",
+      "The tab strip cuts off its neighbouring tabs ('…es' on the left, 'Improve…' on the right). This looks like normal horizontal scrolling, and the scroll arrows are visible.",
+      "The textarea at the top of the form is partly hidden under the sticky header because the page is scrolled."
     ]
   }
 }

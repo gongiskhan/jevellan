@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation titles and metadata lines are cut off with ellipses (e.g. 'Exercise composer choic…', 'Done · Automatic fixture · dev-m…'). This looks like intentional truncation for the narrow sidebar.",
-      "Step 2 (Reply) repeats the same tool output as Step 1, including the text 'The plan has three steps.' The duplicated fixture content reads oddly but is still legible.",
-      "The 'Approved' badge on the Proposed plan card sits far to the right, away from the title, leaving a lot of empty space."
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Exercise composer choic…', 'Done · Automatic fixture · dev-m…'). This looks like intended truncation, and the full title is still readable in the main header.",
+      "In the Step 2 Reply block, the text after the tool call reads 'The plan has three steps.', which repeats Step 1. It may be fixture content, but it reads oddly under a reply step.",
+      "The 'Approved' badge on the Proposed plan card is small and low-contrast compared with the other status chips."
     ]
   }
 }

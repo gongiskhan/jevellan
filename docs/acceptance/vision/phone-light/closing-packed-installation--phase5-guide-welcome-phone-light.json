@@ -5,15 +5,12 @@
   "test": "Closing packed installation",
   "layout": "phone-light",
   "screenshot": "screenshots/phase5-guide-welcome-phone-light.png",
-  "expected": "the passphrase welcome screen with readable text and reachable setup controls",
+  "expected": "the passphrase welcome screen with readable text and reachable setup controls Bright magenta rectangles are intentional screenshot masks over saved secret data, not product overlays or rendering faults.",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The footer tagline 'AUTONOMOUS DEVELOPMENT, COORDINATED.' is small, widely letter-spaced gray text with fairly low contrast against the light background.",
-      "The helper text 'At least 8 characters.' is small and low contrast.",
-      "The passphrase field has no show/hide toggle and there is no confirm-passphrase field, so typing mistakes are easy to miss.",
-      "The brand icon next to 'Jevellan' looks like the Portuguese flag, which may not be the intended logo."
+      "The magenta outline on the passphrase field could be a screenshot mask or the field's focus ring. Either way it doesn't block anything: the field is visible, empty and reachable."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Improver sandbox · Gonca…'). This is normal truncation, not a layout fault.",
-      "The 'Recently merged · last 7 days' line in the right panel uses a different font size and weight from the other section headings.",
-      "The 'Project day: 2026-10-12' text under NIGHTLY is indented differently from nearby panel content."
+      "Many long titles in the right-hand panel and sidebar are cut off with ellipses (e.g. 'Read through the project and list what each file is fo...', 'Context · J11 memory jour...'). This is normal overflow handling.",
+      "The transcript repeats 'Noted.' after nearly every event card, which adds a lot of vertical noise.",
+      "The right-hand panel ends around the middle of the page and leaves a large empty dark area below it."
     ]
   }
 }

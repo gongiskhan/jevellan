@@ -10,8 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row is scrolled horizontally, so the 'Chat' tab is clipped at the left edge. It can still be reached by scrolling the row.",
-      "The 'Working…' status badge in the header is shortened with an ellipsis."
+      "The tab strip is scrolled so the 'Chat' tab sits against the left edge and is slightly clipped. The strip appears to scroll sideways, so the tab can still be reached.",
+      "The 'Working…' status badge in the header is cut short with an ellipsis.",
+      "The 'Enabled' checkbox sits above its label instead of beside it, which looks a little out of line with the 'Run now' and 'Edit' buttons.",
+      "The 'Context unavailable · Compacted 0 times today' line wraps onto two lines next to the 'Fresh session' button."
     ]
   }
 }

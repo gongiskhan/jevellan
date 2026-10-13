@@ -10,9 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The settings tab strip cuts off its edge labels (a lone 's' on the left and 'Projects' on the right). It scrolls and has arrow buttons, so the tabs can still be reached.",
-      "In the dev-madrid card, the worktree summary line wraps so that '0 GB' is split across two lines.",
-      "No hub power or AC sleep status text shows on screen. That fits the 'ready' state, where the warning has cleared, but this screenshot doesn't positively confirm the readiness state."
+      "The Device tags input on the dev-madrid card cuts off its value mid-word ('...phone-testi'). The field can still be scrolled, but the full tag list can't be read at a glance.",
+      "The top tab strip clips its labels at both edges (a partial label before 'Improver' and a partial 'Projects'). It's a horizontal scroller, but the clipped edges look unpolished.",
+      "The pink 'Open terminals' link sits centered on its own line, out of line with the left-aligned controls on each device card.",
+      "The hub card doesn't show a visible power/AC-sleep readiness indicator. That's acceptable for the 'ready' state, where the warning should be gone, but nothing positively confirms the hub is ready.",
+      "There's a lot of empty space below the 'Automatic device choice' card at the bottom of the page."
     ]
   }
 }

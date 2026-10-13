@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Coming later' helper text under Device is small and light grey, so it is hard to read, but you can still make it out.",
-      "The bottom ~40% of the screen below the card is empty."
+      "Large empty area below the composer card",
+      "Helper text under the Device field is very small and low-contrast"
     ]
   }
 }

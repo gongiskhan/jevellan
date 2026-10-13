@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip is scrolled so the first tab is cut off at the left edge and reads as \"Chat\". It looks like an intentional horizontal scroll that keeps the active \"Pull requests\" tab in view, and the tab can still be reached by scrolling.",
-      "The ask-owner action row wraps unevenly: the \"Jev would: ask you\" chip is indented, the text links (Why, Should have asked me, Didn't need asking, Open thread) have uneven spacing, and \"Open task\" is set in a larger font than the other links.",
-      "The magenta text links have a different visual weight from the outlined and filled buttons in the same card, so the action area looks inconsistent."
+      "The tab row is cut off at the left edge: the 'Chat' tab is partly hidden. It looks like a horizontal scroll strip, so the tab can still be reached.",
+      "In the PR card, the action links ('Why', 'Should have asked me', 'Didn't need asking', 'Open thread', 'Open task') wrap unevenly over two lines. 'Open task' uses a bigger font and is aligned differently from the other links.",
+      "The 'Jev would: ask you' chip sits indented and isn't aligned with the 'Checks passing' badge above it.",
+      "The header title 'Projects fixture' sits tight against the icon buttons next to it."
     ]
   }
 }

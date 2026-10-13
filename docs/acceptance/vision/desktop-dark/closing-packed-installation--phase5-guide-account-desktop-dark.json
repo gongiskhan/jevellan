@@ -5,15 +5,13 @@
   "test": "Closing packed installation",
   "layout": "desktop-dark",
   "screenshot": "screenshots/phase5-guide-account-desktop-dark.png",
-  "expected": "the first-account setup step with readable account controls",
+  "expected": "the first-account setup step with readable account controls Bright magenta rectangles are intentional screenshot masks over saved secret data, not product overlays or rendering faults.",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The disabled Continue button has low contrast against the background, so it's hard to tell it's a button",
-      "The helper text 'Continue when an account is Ready on this device.' is small and low-contrast",
-      "The muted grey text on the dark background is fairly low-contrast, for example 'Read-only actions enforced', 'No accounts added yet.' and 'Models appear after an account is checked.'",
-      "The 'Applied from this device' disclosure chevron is small and easy to miss"
+      "The disabled Continue button has low contrast against the background, but that's expected because no account is Ready yet and the hint below explains it.",
+      "The 'Applied from this device' disclosure row and the 'Models appear after an account is checked.' line below it sit very close together with little spacing."
     ]
   }
 }

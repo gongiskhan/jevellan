@@ -10,8 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The last tab label in the top tab row is cut off at the right edge ('Pull requ…'). The row probably scrolls sideways, but nothing on screen shows that it does.",
-      "There is a lot of empty space below the proposal card. The card holds 9 action buttons that wrap onto three uneven rows, which makes it look crowded."
+      "The tab strip is cut off at the right edge ('Pull requ…'). It looks like a horizontally scrollable tab row, but nothing on screen shows that it scrolls.",
+      "'Context unavailable · Compacted 0 times today' wraps onto two lines in small monospace text and is a bit cramped next to the 'Fresh session' button.",
+      "The 'WAITING FOR YOU 1' heading uses small, low-contrast letter-spaced text.",
+      "The up and down reorder buttons have icons but no text labels, so it's not obvious what they do."
     ]
   }
 }

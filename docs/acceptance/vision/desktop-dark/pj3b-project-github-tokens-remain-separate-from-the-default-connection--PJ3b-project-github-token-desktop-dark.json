@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Session titles in the sidebar are cut short with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…', 'dev-ma…'). This is intentional truncation and does not block the screen.",
-      "The 'Save Git settings' button has low contrast. It may be deliberately disabled because nothing has changed, but it is harder to read than the other buttons.",
-      "The 'Check a project' selector shows 'Outside context fixture', while the token scope above is 'Projects fixture'. The screen does not make it clear which token the connection check will use."
+      "The sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'dev-ma…'). This is intentional truncation, and the main content is unaffected.",
+      "The 'Save Git settings' button has low contrast against the card. It looks disabled, which is probably intended because nothing has changed.",
+      "The 'Check a project' selector defaults to 'Outside context fixture', not the scoped 'Projects fixture'. This is not a rendering problem, but it may confuse users."
     ]
   }
 }

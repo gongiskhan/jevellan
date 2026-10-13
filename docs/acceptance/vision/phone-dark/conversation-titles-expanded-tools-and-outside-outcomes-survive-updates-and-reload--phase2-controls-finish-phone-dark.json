@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background behind the modal is dimmed, so its content is hard to read, but that is expected while a modal is open",
-      "The textarea has a pink focus ring that clashes a little with the dark theme"
+      "Background content behind the modal scrim is dim and partly covered, which is expected for a modal",
+      "The textarea's pink focus border clashes slightly with the dark theme's accent colors"
     ]
   }
 }

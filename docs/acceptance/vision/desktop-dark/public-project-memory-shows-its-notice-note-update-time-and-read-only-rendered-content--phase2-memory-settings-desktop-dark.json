@@ -11,8 +11,8 @@
     "blocking": [],
     "cosmetic": [
       "The modal body is scrolled, so the 'Path on Offline fixture' label sits right under the header divider with almost no top padding.",
-      "The 'Browse folders on dev-madrid' button has almost no space above the 'Git policy' label, so the two look crowded.",
-      "The '/absolute/path/to/project' placeholder text is low-contrast against the dark input background, though still readable."
+      "The 'Browse folders on dev-madrid' button has almost no gap above the 'Git policy' label, so the spacing looks cramped compared with the other sections.",
+      "The 'Memory folder' field sits close to the footer divider, which suggests more content may be below the scroll area. Nothing that matters for this step looks hidden."
     ]
   }
 }

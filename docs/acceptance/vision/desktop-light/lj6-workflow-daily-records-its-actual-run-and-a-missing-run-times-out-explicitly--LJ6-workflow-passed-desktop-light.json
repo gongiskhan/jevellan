@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Mesh journey fix…'). The text is still readable and the sessions can still be clicked.",
-      "The 'Jobs (1)' expander sits at the very bottom edge of the right panel, so you only reach it by scrolling.",
-      "The page header still shows 'Working…' and 'Coordinator is working…' after the job passed, which reads a bit oddly next to the pass message.",
-      "The 'Enabled' checkbox sits above its label instead of beside it, so it lines up awkwardly with the 'Run now' and 'Edit' buttons."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Shared memory …'), but the rows are still identifiable",
+      "The 'Enabled' checkbox sits above its label instead of beside it, so it lines up awkwardly next to the 'Run now' and 'Edit' buttons",
+      "The Nightly tests card in the right panel runs past the bottom of the viewport; the panel looks scrollable and all the card's controls are visible",
+      "The Nightly section's 'Project day: 2026-10-14' and the 'Nothing in the queue' text are indented differently from the other section rows"
     ]
   }
 }

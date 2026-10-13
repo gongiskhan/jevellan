@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Header title is truncated with an ellipsis ('Exercise external activity guards befor…'), but the full text shows in the subtitle and the message below it",
-      "Large empty area between the action buttons and the composer at the bottom",
-      "The 'Blocked' badge doesn't say it's waiting on external activity; that information is only in the red banner"
+      "Header title is truncated with an ellipsis ('Exercise external activity guards befor...'), but the full text appears right below it and in the message bubble.",
+      "The large empty area between the action buttons and the composer makes the page feel sparse."
     ]
   }
 }

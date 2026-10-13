@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The file label says config.toml, but the editor shows JSON content. This may be expected fixture behavior, but it looks inconsistent.",
-      "The \"Preview\" link and the \"Saved\" status sit on the same line with a lot of empty space between them. They read as unrelated."
+      "The file label says 'config.toml' but the content shown is JSON, which may confuse users.",
+      "The 'Item restored to this account.' notice sits inside the edit dialog under the 'Local edits save automatically' helper text, which leaves a little extra empty space at the bottom of the dialog.",
+      "The dimmed and blurred background makes the Rigging page behind the dialog unreadable. This is expected while a modal is open."
     ]
   }
 }

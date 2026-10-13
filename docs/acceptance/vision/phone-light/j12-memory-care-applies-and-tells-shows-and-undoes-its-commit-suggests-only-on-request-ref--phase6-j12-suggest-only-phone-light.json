@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Long diff lines in the code blocks (for example, the deploy.md and test-conventions.md patches) wrap tightly or may run past the card edge at phone width. They look like they wrap or scroll rather than get clipped.",
-      "The page is very long (about 5900px): the 'Last runs' list repeats many 'No working rules to suggest' entries, which pushes the Trial log and Recently decided sections far down.",
-      "The small type in the routing cards ('Checked against 27 saved cases…') and the commit metadata is low-contrast grey on white. It is still readable.",
-      "Only part of the top tab row (Decisions, Improver) is visible, so other tabs may need a horizontal scroll to reach."
+      "The top tab bar runs off the right edge on the phone width. Later tabs are only reachable by scrolling sideways.",
+      "The Trial log table is cramped. Its column headers (e.g. 'Outside', 'Got they finished elsewhere') wrap onto several lines.",
+      "Some Last runs titles wrap onto two or three lines next to the timestamp and 'Open log' link, so the rows look uneven.",
+      "The diff code blocks use very small monospace text with long lines that wrap, which makes them hard to scan on a phone."
     ]
   }
 }

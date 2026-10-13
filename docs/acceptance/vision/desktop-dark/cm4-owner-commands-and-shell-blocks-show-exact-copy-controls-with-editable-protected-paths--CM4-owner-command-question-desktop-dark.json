@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The owner command in the 'Waiting for you' card runs past the visible edge of its code block. A 'Scroll sideways to read the full command' hint is shown, so the text can still be reached.",
-      "Shell session titles and subtitles in the sidebar are cut off with ellipses (for example, 'Context · J11 memory journ…' and 'Context · Shared memory fi…').",
-      "The 'Some native sessions are unavailable' note in the sidebar uses small, low-contrast text."
+      "In the right-hand 'Run the owner-only setup?' card, the printf command is cut off at the card edge. The 'Scroll sideways to read the full command' hint shows it can be scrolled, so the text is still reachable.",
+      "The header says 'Context unavailable' and the sidebar says 'Some native sessions are unavailable'. These are status notes, not layout problems.",
+      "Long queue and concluded task titles in the right panel are shortened with ellipses (for example 'Read through the project and list what each file is...').",
+      "The chat timeline is very long, with many repeated 'Noted.' replies, so the page is much taller than the viewport."
     ]
   }
 }

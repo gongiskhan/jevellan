@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles are truncated with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…'), and so are their subtitle lines ('dev-ma…', 'dev-…', 'de…'). The ⋯ menus are still reachable.",
-      "Large empty area between the last report card and the 'This thread has ended' footer",
-      "Some metadata text is small and low-contrast: the Claude Code/Opus/worktree line, the 'Some native sessions are unavailable' note and the v0.2.1 label"
+      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · dev-ma…'). This is expected sidebar truncation.",
+      "The 'Some native sessions are unavailable' disclosure text is small and low-contrast.",
+      "The prompt and report cards don't take up much of the height, so there's a lot of empty space above the footer note 'This thread has ended. Start a new thread for new work.'"
     ]
   }
 }

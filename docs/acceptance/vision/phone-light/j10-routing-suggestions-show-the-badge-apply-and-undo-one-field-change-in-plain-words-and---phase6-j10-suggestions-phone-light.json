@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The third tab label in the top tab strip is cut off (\"Devi…\") under the right scroll arrow. It is a scrollable strip with arrow controls, so the tab can still be reached.",
-      "The \"Memory care\" checkbox is unchecked, yet its \"Apply and tell me\" dropdown still looks like it can be used. It might be meant to look disabled.",
-      "The \"Save schedule and jobs\" button has low contrast. It may look disabled, which could be on purpose if nothing has changed."
+      "The right scroll arrow covers part of the third tab label in the top tab strip ('Dev…'). The strip scrolls sideways, so the tab can still be reached.",
+      "In the diff blocks, the long 'diff --git' header lines wrap onto a second line, which makes them a little harder to scan on a phone-width screen.",
+      "The 'Save schedule and jobs' button looks greyed out. That's probably intended because nothing has changed yet, but its contrast is low."
     ]
   }
 }

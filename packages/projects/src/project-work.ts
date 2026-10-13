@@ -719,13 +719,21 @@ export class ProjectWork {
   async detach(threadId: string): Promise<ThreadDetachView> {
     await this.ready;
     const attached = this.store.get(threadId);
-    if (attached?.state === 'attached') await this.#capture(await this.#project(attached.projectId), { scope: 'attached', threadId, runtime: attached.placement.runtime,
-      model: attached.placement.model, accountId: attached.placement.accountId, sessionId: attached.nativeSessionId });
+    const capture = async (thread: NonNullable<typeof attached>) => {
+      try { await this.#capture(await this.#project(thread.projectId), { scope: 'attached', threadId, runtime: thread.placement.runtime,
+        model: thread.placement.model, accountId: thread.placement.accountId, sessionId: thread.nativeSessionId }); }
+      catch (error) {
+        // Capture advances its cursor only after acknowledgement. An outage must not strand the owner in takeover.
+        try { this.ledgers.thread(thread.projectId, threadId).append({ type: 'notice', data: { schema: 'project-notice-v1', kind: 'error',
+          text: this.#o.redactor.text(`Terminal memory capture could not finish; its journal remains available to retry. ${error instanceof Error ? error.message : 'Capture failed.'}`).slice(0, 1000) } }); }
+        catch { /* Handback must still release the attachment if its ledger is unavailable. */ }
+      }
+    };
+    if (attached?.state === 'attached') await capture(attached);
     await this.#attachedGrants.get(threadId)?.close(); this.#attachedGrants.delete(threadId);
     const detached = await this.#attach.detach(threadId);
     const adopted = this.store.get(threadId);
-    if (detached.adopted && adopted?.nativeSessionId !== attached?.nativeSessionId && adopted) await this.#capture(await this.#project(adopted.projectId), { scope: 'attached', threadId,
-      runtime: adopted.placement.runtime, model: adopted.placement.model, accountId: adopted.placement.accountId, sessionId: adopted.nativeSessionId });
+    if (detached.adopted && adopted?.nativeSessionId !== attached?.nativeSessionId && adopted) await capture(adopted);
     const projectId = this.store.get(threadId)?.projectId;
     if (projectId) this.threads.freed(projectId);
     this.coordinators.sweep();

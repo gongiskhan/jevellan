@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Why panel's last section header (looks like 'JEV…') is cut off at the bottom edge of the screen. The panel looks scrollable, so this is overflow, not lost content.",
-      "Session titles and subtitles in the sidebar are cut short with an ellipsis (e.g. 'Context · J11 memory jour…', 'dev-ma…'). This looks intentional, but the full text isn't visible.",
-      "The Why panel's monospace labels and scores (e.g. 'only option', 'fixed', '0.10') are small and low contrast, but still readable."
+      "Sidebar thread titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour...', 'Context · Shared memory ...'). This is normal truncation.",
+      "The Why panel runs past the bottom of the screen: the 'TASK' section heading is visible but its content is not. The panel looks scrollable, so nothing is unreachable.",
+      "In the Why panel, 'Recalled for the first tum' looks like 'turn' with the 'rn' squeezed together by the font at this size."
     ]
   }
 }

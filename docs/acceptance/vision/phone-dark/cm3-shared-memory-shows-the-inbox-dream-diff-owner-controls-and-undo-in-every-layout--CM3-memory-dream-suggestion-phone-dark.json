@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dream status and summary appear twice: once in the muted line 'Memory dream: suggested — Kept the test conventions…' and again as separate 'suggested' and 'Kept the test conventions and consolidated the inbox.' lines.",
+      "The dream summary appears twice: once in the 'Memory dream: suggested — Kept the test conventions…' line, then again as the separate 'suggested' and 'Kept the test conventions…' lines.",
       "The stats line shows raw camelCase keys (inboxPromoted, inboxDropped) instead of readable labels.",
-      "The diff block is cut off at the bottom edge above the sticky Apply/Discard footer. This looks like a scrollable area, but there is no visible fade or scroll hint.",
-      "The long 'diff --git a/Project brief.md b/Project brief.md' header wraps onto a second line in the narrow monospace panel."
+      "The diff header line 'diff --git a/Project brief.md b/Project brief.md' wraps onto a second line, which makes the diff a little harder to read.",
+      "The diff box cuts off at 'created: …' just above the action buttons. It looks like an inner scroll area, but nothing shows that more content is below.",
+      "The section label 'LAST NIGHT'S DREAM' is low-contrast muted text on the dark background."
     ]
   }
 }

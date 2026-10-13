@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'dev-ma…'), but this is intentional truncation and hover/selection can still reach them.",
-      "The Why panel's last line ('Placed Oct 12, 12:43:26') sits right at the bottom edge of the viewport. There may be more content below that needs scrolling.",
-      "In the MODEL section, 'Claude Code Sonnet' has a bullet marker and no score bar, so it looks different from the other rows. It probably means the option was unavailable, but the screen doesn't say so.",
-      "The PLACEMENT row says 'Fixed: Model, Effort, Account', but MODEL and EFFORT are labelled 'changed by you' while ACCOUNT is labelled 'fixed'. Readers may find this mix of wording slightly inconsistent."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Mesh journey fi…'). This is expected in a narrow sidebar.",
+      "In the Why panel's MODEL section, 'Claude Code Sonnet' is indented with a bullet and has no bar or score, so it looks out of line with the other model rows.",
+      "The Why panel runs past the bottom of the viewport after TASK 'feature'. Further content needs scrolling, but the panel looks scrollable.",
+      "The toolbar buttons ('Stop' especially) sit tight against the Why panel's edge, with little right margin."
     ]
   }
 }

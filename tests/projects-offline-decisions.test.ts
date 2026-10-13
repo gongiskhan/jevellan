@@ -10,7 +10,7 @@ import {
 } from '../packages/core/dist/index.js';
 import { forCoordinator, forThread, type FakeRuntime, type FakeTurnStep, type TurnInput } from '../packages/runtime-contract/dist/index.js';
 import { ASKED_DIRECTLY_SUFFIX, derivedId } from '../packages/projects/dist/index.js';
-import { expectNoLeaks, projectFixture, projectMember, reportStep, type ProjectFixture, type ProjectMember } from './helpers/project-fixture.js';
+import { expectNoLeaks, projectFixture, projectMember, reportStep, threadRequestText, type ProjectFixture, type ProjectMember } from './helpers/project-fixture.js';
 
 let fixture: ProjectFixture | undefined;
 afterEach(async () => {
@@ -84,11 +84,11 @@ test('while the coordinator device is offline a thread asks the owner directly, 
   // 3. The member is back but has not read the relay. The owner answers on the hub: the answer reaches the thread directly as the
   // owner's message (brief 11), and its next turn asks again. With the coordinator device online that question goes to the coordinator.
   await m.heartbeat();
-  f.fake.enqueueTurn(reportStep(port), forThread((input) => input.prompt === 'Postgres'));
+  f.fake.enqueueTurn(reportStep(port), forThread((input) => threadRequestText(input.prompt) === 'Postgres'));
   const answered = await f.request(`/api/projects/${pid}/decisions/${asked[0]!.id}/answer`, 'POST', answer('Postgres'));
   expect(answered.status).toBe(202);
   await f.waitFor(() => f.thread(threadId), (thread) => thread.turns === 2 && thread.state === 'waiting-for-you'); await f.app.projectWork.idle();
-  expect(threadTurns(f.fake, threadId).map((input) => input.prompt)[1]).toBe('Postgres');
+  expect(threadRequestText(threadTurns(f.fake, threadId)[1]!.prompt)).toBe('Postgres');
   await f.app.projectWork.pulse(); await f.app.projectWork.idle();
   expect((await questions(f, threadId)).filter((decision) => !decision.answer)).toEqual([]);
 

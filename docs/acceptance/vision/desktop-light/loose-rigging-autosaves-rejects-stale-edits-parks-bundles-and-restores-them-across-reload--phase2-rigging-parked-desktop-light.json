@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar conversation list cuts off a partially visible item ('Context…') above 'Some native sessions are unavailable'. It's clipped by the scroll area, not overlapping.",
-      "Sidebar conversation titles and subtitles are truncated with ellipses ('Explain the memorybrows…', 'Exercise evidence navigat…', 'dev-m…').",
-      "The Hooks card is cut off at the bottom of the viewport. More content is reachable by scrolling.",
-      "The checkboxes on the Safety hook are greyed out (disabled). The Claude Code/Codex labels are lighter but still readable."
+      "In the sidebar, the fourth conversation row is half-cut at the bottom of the scroll area, just above 'Some native sessions are unavailable'. It's the normal edge of a scroll area, but it looks untidy.",
+      "Conversation titles and subtitles in the sidebar are truncated with ellipses (e.g. 'Explain the memorybrows…', 'Exercise evidence navigat…'). This is expected for narrow rows.",
+      "The 'Safety' hook's Claude Code and Codex checkboxes are very light grey and low-contrast. They look intentionally disabled for a built-in item, but they're faint.",
+      "The Hooks section continues past the bottom of the viewport. This is normal page scrolling, not clipping."
     ]
   }
 }

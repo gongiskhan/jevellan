@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are truncated with ellipses ('Context · J11 memory jour…', 'Done · Improver sandbox · dev-ma…'), but this is intended truncation and the full text isn't needed on this screen",
-      "The 'Mirror tasks to Ekoa' checkbox sits on its own line above its label instead of inline with it, which looks a bit off",
-      "The 'Connected' card shows only a collapsed 'Available tools' row, which leaves it mostly empty",
-      "There's a large empty area below the 'Mirrored tasks' card"
+      "The Mirrored tasks list shows 'Jevellan · Projects daily: night report · open' twice. That may be a duplicate, which the scenario says should not happen. It is a data/behaviour issue, not a rendering one, but worth checking.",
+      "The 'Mirror tasks to Ekoa' checkbox looks dimmed or disabled and has low contrast. Its label sits below the checkbox instead of beside it.",
+      "The 'Save' button text has lower contrast than the other buttons, so it looks disabled.",
+      "Session titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory jour...'). This looks intentional, but the full text isn't visible.",
+      "The 'Token saved in the hub vault…' helper text is fairly low contrast against the dark card background."
     ]
   }
 }

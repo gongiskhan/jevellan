@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row runs past the right edge, so 'Pull requests' is cut off and any tabs after it can't be seen. It looks like a horizontally scrolling tab strip, but nothing on screen shows it scrolls, such as a fade or arrow.",
-      "The header has very little room: the 'Projects fixture' title sits close to the action buttons on its right."
+      "The last tab, \"Pull requests\", is clipped at the right edge of the tab row. The row looks horizontally scrollable, but nothing (such as a fade or arrow) shows that more tabs are off-screen.",
+      "The 'Idle' status pill and the 'Claude Code Fable · high' subtitle are small and low-contrast, but they can still be read."
     ]
   }
 }

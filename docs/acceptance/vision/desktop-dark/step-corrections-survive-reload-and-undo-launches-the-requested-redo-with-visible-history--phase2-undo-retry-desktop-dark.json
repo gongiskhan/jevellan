@@ -10,11 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The error banner and the Resume correction card show the same message twice. The message says \"disabled\" eight times and gives no model names or reasons, so it doesn't help the user.",
-      "Sidebar conversation titles and subtitles are cut off with an ellipsis (e.g. \"Change the value to thre…\", \"Blocked · Browser fixture · dev-…\"). This looks intentional and the full text likely shows elsewhere, but similar titles are hard to tell apart.",
-      "Some metadata text is small and low-contrast on the dark background: 'Local time', 'completed', 'Undone', 'Input'/'Output' labels and 'Step details'.",
-      "The correction tags (e.g. 'corrected: action → reply, effort → low') use small pink text on dark, which is hard to read.",
-      "'Step 1 · Implement' is struck through. This probably marks the step as undone, but it makes the label harder to read."
+      "The error banner and the Resume correction card both say 'No model can run this step right now: disabled, disabled, …' eight times without naming any model, so the reason can't be told apart per model and reads like a placeholder.",
+      "The same error text appears twice: once in the red banner and again in the Resume correction card.",
+      "The fourth conversation in the sidebar is cut off at the bottom of the scroll area, so only the tops of its letters show above 'Some native sessions are unavailable'.",
+      "The 'completed' status in the Read project card sits alone on its own line at the right, away from the 'Read project' title, which leaves an odd gap.",
+      "The step header labels (Undone, corrected: effort → max, corrected: action → reply, effort → low, Local time) are small, low-contrast pink and grey text on the dark background, so they're harder to read."
     ]
   }
 }

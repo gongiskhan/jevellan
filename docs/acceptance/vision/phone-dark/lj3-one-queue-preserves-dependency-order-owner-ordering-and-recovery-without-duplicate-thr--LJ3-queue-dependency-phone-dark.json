@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Pull requests' tab is clipped at the right edge of the tab strip. It looks like a horizontally scrollable row, so the tab can still be reached.",
-      "In the expanded queued item, the move-up arrow button looks dimmed, probably disabled. Its contrast is low but it is still visible.",
-      "The page ends with empty space below the Goals section. Nothing is cut off."
+      "The 'Pull requests' tab is cut off at the right edge of the tab row. It looks like a horizontally scrollable tab strip, so the tab can probably still be reached.",
+      "The status line under the header is set in small monospace text ('Claude Code Fable · high', 'Context unavailable · Compacted 0 times today') with low contrast, but it is still readable."
     ]
   }
 }

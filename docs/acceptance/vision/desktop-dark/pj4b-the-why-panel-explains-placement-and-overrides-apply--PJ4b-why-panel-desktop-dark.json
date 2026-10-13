@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Why panel's content runs to the bottom edge of the window. 'Placed Oct 12, 12:43:46' is the last line visible, so any content below it needs scrolling.",
-      "Session titles and subtitles in the left sidebar are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Mesh journey fix…'). This is intended truncation, not an overlap.",
-      "The center thread column leaves a large empty area between the report card and the message box."
+      "The 'Stop' button in the top action row sits very close to the Why panel's left border, so the row looks cramped at this width.",
+      "In the Why panel, 'first turn' renders like 'first tum' because the letters are tightly spaced.",
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'dev-ma…'). This looks intentional, but the full names can't be read.",
+      "The Why panel content continues below the fold after 'TASK feature'. It appears to scroll, but nothing on screen shows that more content is there."
     ]
   }
 }

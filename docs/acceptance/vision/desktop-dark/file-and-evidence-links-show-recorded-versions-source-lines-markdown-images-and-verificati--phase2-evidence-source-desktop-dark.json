@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation list cuts off a fourth row partway through, just above 'Some native sessions are unavailable'. It looks like normal scroll overflow, but the half-visible text looks untidy.",
-      "The transcript cuts off 'Working on the requested change.' at the bottom edge behind the 'Jump to latest' bar. This is expected scroll behavior.",
-      "The recorded checkpoint hash in the evidence panel is small, low-contrast grey text."
+      "The fourth conversation row at the bottom of the sidebar list is cut off partway down where the scroll area ends. This is normal scroll clipping.",
+      "In the main transcript, the line 'Working on the requested change.' is partly hidden behind the 'Jump to latest' bar where the scroll area ends.",
+      "Sidebar conversation titles and subtitles are shortened with ellipses."
     ]
   }
 }

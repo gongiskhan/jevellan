@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top of the conversation is partly hidden under the sticky header: the line 'The owner runs the reserved script.' is half cut off. It's normal scroll clipping and doesn't hide any controls.",
-      "The disabled 'Run in Terminal' button in the Prompt card has low-contrast text on a dark background, but it's still readable.",
-      "Sidebar session titles and subtitles end in ellipses (for example 'Context · J11 memory journ…' and 'Shared memory fi…'). The truncation is intentional."
+      "The transcript is scrolled so the first card's top edge sits just under the header metadata line, and the 'Task: Terminal owner setup' line butts up against the header. This is ordinary scroll clipping and the text is still readable.",
+      "Sidebar session titles and subtitles are cut short with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Shared memory …'). This is intentional truncation."
     ]
   }
 }

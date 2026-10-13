@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Read through the project an...'). That is expected for a long title on a narrow screen.",
-      "The terminal attach command at the bottom is cut off ('jevellan thread attach thread_01M4R0DD33PM6G0...'), but the copy button next to it still works.",
-      "The status badge says 'Idle' even though the scenario describes a running thread. This is a state question, not a rendering problem."
+      "The thread title in the header is cut off with an ellipsis ('Read through the project and list what each fil...'). This is the expected single-line truncation.",
+      "The terminal attach command at the bottom is cut off ('jevellan thread attach thread_01M4SD7AT7QVGF0...'). The copy button next to it still gives access to the full command.",
+      "The worktree/branch metadata line wraps over several lines in small monospace text. It is still legible."
     ]
   }
 }

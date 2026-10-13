@@ -10,8 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The commit hash in the 'Review from commit' field runs past the right edge (ends at '...701ac33'), so the full hash isn't visible without scrolling inside the field. This is normal input behavior and the value is still editable.",
-      "Behind the modal, the page is blurred and dimmed, which is expected while a dialog is open."
+      "The 'Review from commit' field shows 39 hex characters, but a full commit hash has 40, so the last character is probably cut off at the right edge. It's an editable text input, so the full value can still be reached by scrolling inside the field."
     ]
   }
 }

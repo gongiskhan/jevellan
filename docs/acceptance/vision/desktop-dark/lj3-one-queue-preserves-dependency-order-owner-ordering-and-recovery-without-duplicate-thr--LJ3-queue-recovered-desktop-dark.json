@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Two running-task subtitles in the right sidebar ('Read the README on this device: a title and one line about th…' and 'Read through the project and list what each file is f…') are cut off with ellipses, but the full text appears elsewhere on the screen.",
-      "Shell session rows in the left sidebar ('Context · J11 memory jour…', 'Context · Mesh journey fix…') and their subtitles are cut off with ellipses.",
-      "The transcript repeats 'Noted.' after almost every event card, which makes it long and repetitive.",
-      "The very tall page puts the composer far below the first screen, so you have to scroll to reach it."
+      "The running item title 'Read through the project and list what each file is f…' is cut off with an ellipsis in the right panel. The full title still appears in the queue card above it.",
+      "The running item summary 'Read the README on this device: a title and one line about th…' is cut off with an ellipsis.",
+      "Some sidebar session titles and metadata, such as 'Context · J11 memory journ…' and 'Done · Improver sandbox · dev-ma…', are cut off with ellipses.",
+      "The timeline repeats the 'Noted.' acknowledgement many times, which makes it long and visually noisy."
     ]
   }
 }

@@ -10,11 +10,12 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The right-hand panel is scrolled, so the top of its 'CONCLUDED 0' heading is clipped just below the nightly window banner. Only the lower half of the letters shows.",
-      "The third nightly card in the right panel ('Switch mode nightly') is cut off at the bottom of the viewport. It is still reachable by scrolling.",
-      "The 'Nightly window finished' event cuts off its detail line with an ellipsis ('No run of nightly.yml started today....'), which also leaves a doubled period.",
-      "Session titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory jour...', 'Mesh journey fixture · de...').",
-      "The 'Run now' buttons on the nightly cards have low contrast against the card background."
+      "The 'Nightly window finished' card cuts off its summary line with an ellipsis ('No run of nightly.yml started today....'), so the per-task results are partly hidden. It looks like intentional clamping.",
+      "The sidebar truncates shell session titles and subtitles with ellipses ('J11 memory jour...', 'Mesh journey fix...', 'Shared memory ...').",
+      "The 'Run now' buttons in the nightly panel have low contrast against the card background next to the brighter 'Edit' buttons.",
+      "Two 'Noted.' replies appear back to back in the conversation, which looks repetitive.",
+      "The 'Switch mode nightly' card is cut off by the bottom of the viewport. The right column appears to scroll, so it is still reachable.",
+      "The 'Nightly window opened' card's '(Waiting for the coordinator)' caption is small, dim text."
     ]
   }
 }

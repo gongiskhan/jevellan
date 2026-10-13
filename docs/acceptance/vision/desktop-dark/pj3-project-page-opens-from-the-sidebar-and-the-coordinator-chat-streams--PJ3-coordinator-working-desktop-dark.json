@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Mesh journey fix…', 'dev-ma…'). This is expected for a narrow sidebar.",
-      "The 'Recently merged · last 7 days' toggle and the 'Project day: 2026-10-12' line use larger, differently styled text than the nearby section labels, so the right panel looks uneven.",
-      "Spacing in the right panel is inconsistent: some empty-state text is indented and some is not (e.g. 'Nothing in the queue…' vs 'No threads running.').",
-      "Most of the chat area is empty space between the single user message and the composer."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Mesh journey fix…'), but they are still identifiable.",
+      "The 'Working…' status badge in the header looks clipped with an ellipsis rather than showing the full label.",
+      "Left indentation in the right-hand panel is uneven: the section headings and chips (e.g. 'Order', 'New nightly item') start at a different x-offset than the body text (e.g. 'Nothing in the queue…', 'Project day: 2026-10-13').",
+      "The large empty area in the chat transcript under the single user message makes the streaming state look sparse; no assistant reply is visible yet, only the 'Coordinator is working…' indicator."
     ]
   }
 }

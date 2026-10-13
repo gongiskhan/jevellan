@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The lower ~20% of the viewport is empty dark space under the action buttons.",
-      "The conflict banner's thin red border and dark background have low contrast. The banner text itself is still readable."
+      "Lots of empty space under the action buttons and inside the tall textarea",
+      "The header's 'Projects fixture' label is small and in low-contrast pink monospace",
+      "The conflict banner's 'Reload' action is shown as inline text, not as a clear button"
     ]
   }
 }

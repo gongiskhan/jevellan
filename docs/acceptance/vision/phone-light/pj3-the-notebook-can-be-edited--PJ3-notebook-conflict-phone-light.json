@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The screen has a lot of empty white space below the Cancel/Save buttons.",
-      "The 'Projects fixture' breadcrumb in the header is small and pink, so it has less contrast than the other text."
+      "The textarea stays very tall even though the notebook has only four lines, so the conflict banner and buttons sit about halfway down the screen and leave a large empty area below.",
+      "The header shows both a 'Projects fixture' breadcrumb and a 'Notebook' title. They're readable, but the breadcrumb text is small."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The right panel is scrolled partway down, so a section heading (looks like 'CONCLUDED 0') is cut off at the top edge of the panel. It is normal scroll clipping, not an overlap.",
-      "The 'Switch mode nightly' card is cut off at the bottom of the viewport. The panel scrolls, so the card can still be reached.",
-      "In each job card the 'Enabled' checkbox sits above its label instead of next to it, so it lines up awkwardly with the 'Run now' and 'Edit' buttons."
+      "The right Nightly panel runs past the bottom of the viewport. The 'Switch mode nightly' card is cut off below the Run now / Edit / Enabled row, which is probably a scrollable overflow and not hidden content.",
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Shared memory …').",
+      "The amber 'Merges are held' message appears three times (top banner, panel banner, and 'Merges are held while the nightly window runs.'), which repeats the same information."
     ]
   }
 }

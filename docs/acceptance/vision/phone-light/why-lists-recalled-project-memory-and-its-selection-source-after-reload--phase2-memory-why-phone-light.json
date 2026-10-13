@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The page is scrolled down, so the sticky header hides the content above the 'high' label. Only a thin sliver of the row under the header shows, and the 'high' label appears without its context.",
-      "The long login recovery account names wrap onto a second line, so ': eligible' is pushed onto its own line. It is still readable."
+      "The sticky header partly covers scrolled content: a sliver of text shows just under the header line at the top right, and the label 'high' appears without its preceding context. This looks like the scroll position rather than a layout defect.",
+      "The 'Chosen memory' and 'Candidates (1)' sections both show 'Guide.md', so the same information appears twice.",
+      "Long login recovery entries containing UUIDs wrap onto a second line ('eligible'). They are still readable but look uneven next to the single-line items."
     ]
   }
 }

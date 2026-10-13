@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses ('J11 memory jour…', 'Mesh journey fix…', 'dev-ma…'). This looks like deliberate truncation.",
-      "In the right panel, 'Project day: 2026-10-12', the 'Nothing in the queue' text and the Order/Goals and New nightly item/New job buttons sit further left than the other text, and 'Project day' is in a larger font, so the alignment looks uneven.",
-      "The 'Some native sessions are unavailable' note in the sidebar is small, low-contrast text."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Mesh journey fixt…'). This is expected list truncation and nothing important is hidden.",
+      "In the right panel, 'Nothing in the queue. Ask the coordinator or add a task.' and 'Project day: 2026-10-13' start further left than the other section text.",
+      "The chat area under the 'The coordinator moved to dev-madrid.' notice is empty, which leaves a large blank space."
     ]
   }
 }

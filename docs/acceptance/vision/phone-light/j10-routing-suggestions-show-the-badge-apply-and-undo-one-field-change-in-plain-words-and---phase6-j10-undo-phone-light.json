@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip cuts off the third tab label ('Devi…') at the right edge. Scroll arrows are visible, so the tab can still be reached.",
-      "In the code blocks, long diff header lines ('diff --git a/menu/... b/menu/...') wrap onto a second line. This makes them a bit harder to scan but they stay readable.",
-      "The 'Save schedule and jobs' button looks disabled with low contrast. This is probably intended because nothing has changed.",
-      "The 'Apply and tell me' field next to Memory care is greyed out and low contrast. This is probably intended because Memory care is unchecked."
+      "The top tab strip cuts off the third tab ('Devi…') at the right edge. A scroll arrow is shown, so it can still be reached.",
+      "The 'Save schedule and jobs' button is greyed out. That looks intentional because nothing has changed, but the contrast is low.",
+      "The 'Memory care' dropdown placeholder 'Apply and tell me' is light grey and has low contrast."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar shell session titles are cut off with ellipses (e.g. 'Exercise answer options: c…', 'Context · J11 memory jour…', 'Context · Mesh journey fix…'), which is expected truncation.",
-      "The expanded 'View changes' diff in the Memory care card is long and makes the page very tall. The 'Undo' button and commit hash are still visible above it.",
-      "In the 'Last runs' list, the 'Memory care · Improver sandbox' row shows a commit hash (fb536a529a) where the other rows show 'Open log', so the right-hand column isn't consistent."
+      "Sidebar session titles are cut off with an ellipsis (e.g. 'Exercise answer options: c...', 'Context · Mesh journey fix...'). The full title is likely available elsewhere, so this doesn't block anything.",
+      "The page is very long: the expanded memory care diff and the routing diffs push the schedule panel, the run log and the trial log far down the page.",
+      "The diff and log text is small and low-contrast at desktop size, but it can still be read."
     ]
   }
 }

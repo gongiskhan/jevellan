@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The file is labeled config.toml, but the editor shows JSON content. This is a possible content or format mismatch, not a layout problem.",
-      "The dimmed page behind the modal (tabs, 'Project memory', 'Safety') is only partly visible. This is expected behind an open modal."
+      "The file is labeled config.toml, but the Content field shows JSON. The data may be wrong, but it does not affect rendering or legibility.",
+      "The Content textarea has a lot of empty space below the short content.",
+      "The modal bottom and the page behind it (Project memory, Safety sections) are both visible, which looks slightly busy. The page content stays dimmed and doesn't overlap any modal controls."
     ]
   }
 }

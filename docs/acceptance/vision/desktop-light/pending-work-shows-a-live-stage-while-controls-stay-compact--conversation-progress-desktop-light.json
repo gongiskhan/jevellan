@@ -4,15 +4,16 @@
   "model": "claude-opus-5-5",
   "test": "pending work shows a live stage while controls stay compact",
   "layout": "desktop-light",
-  "screenshot": "docs/acceptance/screenshots/matrix-conversation-progress-desktop-light.png",
+  "screenshot": "test-results/conversation-progress-desktop-light.png",
   "expected": "the Jevellan web app \"conversation progress\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"pending work shows a live stage while controls stay compact\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The subtitles in the sidebar session list are cut off with ellipses (e.g. 'Waiting for you · Browser fixtur…', 'Done · Improver sandbox · dev-ma…'). This is intentional single-line truncation.",
-      "The sidebar shows the 'Progress fixture' session as 'Waiting for you' while the conversation header badge says 'Working'. The two status labels don't match, but this isn't a layout problem.",
-      "The transcript area between the user message and the progress line is mostly empty because there's only one message so far."
+      "The sidebar conversation list cuts off a fourth item ('Context…') partway down at the bottom edge, above 'Some native sessions are unavailable'. It looks like a scrollable list, but the half-cut row looks untidy.",
+      "The subtitles of sidebar conversation items are truncated with ellipses (e.g. 'Waiting for you · Browser fixtur…', 'Cancelled · Browser fixture · de…').",
+      "The header chip says 'Working' and a live stage is shown, but the same 'Progress fixture' conversation is labelled 'Waiting for you' in the sidebar. The two status labels don't match.",
+      "The large empty area between the user message and the progress stage line makes the screen look sparse, though nothing is missing."
     ]
   }
 }

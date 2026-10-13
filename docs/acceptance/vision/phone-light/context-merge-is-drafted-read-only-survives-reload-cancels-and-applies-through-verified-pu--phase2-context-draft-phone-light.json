@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Diff lines that are just '-' or '+' (blank lines being removed or added) look like stray marks",
-      "The dimmed background page shows behind the modal, including the path text cut off at the bottom edge. That's expected for a dialog overlay."
+      "The background tab strip (Devices/Projects/Git) is clipped at both edges behind the modal overlay. It looks like a horizontal scroller with arrow controls, so this is expected.",
+      "The secondary explanation text ('The draft ran read-only…') and the monospace 'Current instruction files' disclosure are small and low-contrast, but still readable.",
+      "The diff blocks include bare '-' and '+' lines for blank lines. They're correct but add visual noise."
     ]
   }
 }

@@ -35,7 +35,7 @@ const rejects = (promise: Promise<unknown>) => promise.then(() => { throw new Er
 
 test('thread tools accept exactly one report per turn, an identical retry repeats its receipt, and inputs fail with one field sentence (brief 7.2, D19)', async () => {
   const { tools: scope } = tools(thread);
-  expect(scope.list().tools.map((tool) => tool.name)).toEqual(['jevellan_thread_report', 'jevellan_github', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read']);
+  expect(scope.list().tools.map((tool) => tool.name)).toEqual(['jevellan_thread_report', 'jevellan_github', 'jevellan_terminal_read', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read']);
   const report = { status: 'done', summary: 'Added greeting.txt.', testsRun: { command: 'npm test', passed: true, summary: 'ok' } };
   expect(await scope.call('jevellan_thread_report', report)).toEqual({ schema: 'bridge-result-v1', result: { schema: 'thread-report-result-v1', turn: 2, status: 'done', accepted: true, repeated: false } });
   // The retry with the defaults spelled out is the same report.
@@ -89,8 +89,8 @@ test('coordinator calls leave one ledger line each, ok or not, and a line that c
   await rejects(lead.call('jevellan_thread_stop', { threadId: 'thread_x', reason: 'Done.' }));
   await rejects(lead.call('jevellan_thread_stop', { threadId: 'bad id', reason: 'Done.' }));
   expect(ledger.events().map((event) => [event.type, event.turn, event.data])).toEqual([
-    ['coordinator-tool', 4, { schema: 'coordinator-tool-v1', tool: 'jevellan_notebook_read', ok: true, summary: 'Used jevellan_notebook_read' }],
-    ['coordinator-tool', 4, { schema: 'coordinator-tool-v1', tool: 'jevellan_thread_stop', ok: false, summary: 'Failed jevellan_thread_stop: This thread was not found.' }],
+    ['coordinator-tool', 4, { schema: 'coordinator-tool-v1', tool: 'jevellan_notebook_read', ok: true, summary: 'Used jevellan_notebook_read', input: '{}', inputTruncated: false }],
+    ['coordinator-tool', 4, { schema: 'coordinator-tool-v1', tool: 'jevellan_thread_stop', ok: false, summary: 'Failed jevellan_thread_stop: This thread was not found.', input: JSON.stringify({ threadId: 'thread_x', reason: 'Done.' }), inputTruncated: false }],
     ['coordinator-tool', 4, expect.objectContaining({ ok: false, summary: expect.stringMatching(/^Failed jevellan_thread_stop: threadId: .*Check the tool input\.$/) })],
   ]);
   const { tools: broken } = tools(coordinator, { line: () => { throw new Error('no line'); } }, ledger);

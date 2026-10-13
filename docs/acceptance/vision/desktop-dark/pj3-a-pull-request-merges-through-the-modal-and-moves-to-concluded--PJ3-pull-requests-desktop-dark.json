@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the pull request #1 card, the 'Open task' link is in a larger font than the 'Why' and 'Open thread' links next to it, and it sits apart from them, so the action row looks uneven",
-      "The title of the running task ('Read through the project and list what each file is ...') is cut off with an ellipsis in the Running section; the full title appears in the Queue card",
-      "Session names in the left sidebar ('Context · J11 memory jour...', 'Context · Mesh journey fix...') and their subtitles are cut off with ellipses",
-      "The 'Checks failing' event in the conversation sits next to the later 'Checks passing' and 'has conflicts' events, which is a bit noisy (this is content, not layout)"
+      "In the pull request card, the actions are spaced unevenly: 'Why' and 'Open thread' sit on the left, 'Open task' floats in the middle, and 'Merge' wraps onto its own line below 'Open on GitHub'.",
+      "The running task title 'Read through the project and list what each file is ...' is cut off with an ellipsis. The full title is shown in the Queue card above, so nothing is lost.",
+      "Sidebar session titles are cut off with an ellipsis (e.g. 'Context · J11 memory journ…', 'Context · Shared memory fi…') and so are their meta lines.",
+      "The thread ends with two 'Noted.' replies in a row, which looks repetitive.",
+      "The 'Some native sessions are unavailable' note in the sidebar is very small and low-contrast."
     ]
   }
 }

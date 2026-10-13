@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Running' task title in the right panel ('Read through the project and list what each file is ...') is cut off with an ellipsis. The full title is shown in the Queue card.",
-      "Shell session names and metadata in the sidebar (e.g. 'Context · J11 memory jour...', 'dev-ma...') are cut off with ellipses.",
-      "The 'Concluded' section and the 'Add a greeting' card ('Merged #1') are near the middle of the right panel, below Queue, Running and Pull requests, so they are less prominent on this screen."
+      "The running task title 'Read through the project and list what each file is…' is cut off with an ellipsis in the right panel. The full title shows in the queue card above it.",
+      "Sidebar session titles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Mesh journey fixt…', 'Context · Shared memory fi…'), and so are their metadata lines.",
+      "Several 'Noted.' replies repeat in the transcript, which adds visual noise."
     ]
   }
 }

@@ -10,10 +10,12 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'NIGHTLY 0' section header in the right panel is partly cut off at the bottom edge of the window. The panel seems to scroll, so it can still be reached.",
-      "Several sidebar session titles and subtitles are cut short with ellipses ('Context · J11 memory jour…', 'Done · Mesh journey fixture · G…'). The concluded item's meta line 'Goncalos-MacBook…' is cut short the same way.",
-      "The '#1 Review loop' card lays out its links differently from the '#7' card: the 'Why / Should have asked me / Didn't need asking' row is right-aligned, and 'Open task' uses a larger font than the other links.",
-      "Sections show inconsistent counts: 'PULL REQUESTS 0' sits above the 'Recently merged' list with two items, which may confuse users but is not a rendering defect."
+      "The 'Recently merged' cards (#7, #1, #2) sit right against each other with almost no space between them, so their borders nearly touch.",
+      "In the merged cards, the 'Open task' links use a larger font than the other links ('Why', 'Open thread', 'Should have asked me', 'Didn't need asking').",
+      "The action links in the merged cards are spread unevenly: 'Why / Should have asked me / Didn't need asking' are pushed to the right, and 'Open thread' and 'Open task' sit on a separate row.",
+      "In the Running list, long task titles and summaries are cut off with an ellipsis (e.g. 'Read through the project and list what each file is f…', 'Read the README on this device: a title and one line about th…').",
+      "In the sidebar, shell session names and subtitles are cut off with an ellipsis (e.g. 'Context · J11 memory journ…', 'Context · Shared memory fi…').",
+      "The conversation repeats many 'Noted.' lines, which adds a lot of vertical length."
     ]
   }
 }

@@ -10,12 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Working…' status badge in the header is clipped by its ellipsis, so the full label isn't visible.",
-      "In the pull request #3 card, the 'Why' and 'Open thread' links sit very close together and are spaced unevenly next to 'Open task'.",
-      "Long session titles in the sidebar ('Context · J11 memory jour…', 'Context · Mesh journey fix…') and their subtitles are cut off with ellipses.",
-      "The 'Nightly window finished' cards in the feed end with a lone '…' line, so their details are cut off without a visible way to expand them.",
-      "The Goals section at the bottom of the right panel runs past the bottom of the screen ('Propose tasks' is cut off); it is presumably reachable by scrolling.",
-      "The feed repeats many 'Noted.' lines, which adds visual noise."
+      "In the sidebar, the shell session titles and subtitles are cut off with an ellipsis (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…').",
+      "In the pull request #3 card, the 'Why' and 'Open thread' links sit very close together and are not lined up with 'Open task' and 'Open on GitHub'.",
+      "In the nightly item cards, each 'Enabled' checkbox sits above its label instead of beside it, so the row looks uneven next to the 'Run now' and 'Edit' buttons.",
+      "The 'Nightly window finished' feed cards end in a cut-off '…' line after the long task path."
     ]
   }
 }

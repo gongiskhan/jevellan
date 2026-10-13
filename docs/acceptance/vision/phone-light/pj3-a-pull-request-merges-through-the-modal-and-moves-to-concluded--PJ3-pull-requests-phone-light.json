@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip is cut off at the left edge: the 'Chat' pill is partly clipped. It looks like a horizontally scrolled tab bar, so the tab is still reachable.",
-      "The 'Why' and 'Open thread' links sit very close together and read almost as one phrase. 'Open task' has noticeably wider spacing.",
-      "The action row wraps unevenly: the 'Merge' button sits alone on its own line, aligned right."
+      "The tab row is scrolled so the left edge of the 'Chat' tab is clipped. The row looks horizontally scrollable, so the tab can still be reached.",
+      "The action links in the PR card are spaced unevenly: 'Why' and 'Open thread' sit close together, while 'Open task' has a wider gap and slightly larger text, so the row looks misaligned.",
+      "The 'Merge' button sits alone on its own line under the other actions, which looks a little detached from them.",
+      "The page header is cramped: the 'Context unavailable · Compacted 0 times today' text wraps onto two lines next to the 'Fresh session' button."
     ]
   }
 }

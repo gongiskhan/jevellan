@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The path value in 'Path on dev-madrid' is cut off at the right edge ('/tmp/jevellan-browser-8wRQED/settings-wait-p…'). This is expected for a long path in a single-line input.",
-      "The 'Browse folders on dev-madrid' button sits close to the 'Git policy' label below it, so the vertical spacing there is a little tight."
+      "The 'Path on dev-madrid' input cuts off its long value ('/tmp/jevellan-browser-dr3qPn/settings-wait-pro…'). Text inputs normally scroll, so the value can still be reached, but the end of the path isn't visible.",
+      "There is very little space between the 'Browse folders on dev-madrid' button and the 'Git policy' label below it.",
+      "The 'Saving…' button is greyed out and low-contrast. That is expected while a save is in progress, but it's harder to read than the other controls."
     ]
   }
 }

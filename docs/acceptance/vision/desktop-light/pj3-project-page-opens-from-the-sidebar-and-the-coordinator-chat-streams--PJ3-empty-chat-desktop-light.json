@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and metadata are truncated with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…', 'dev-ma…'). The truncation looks intentional, and the session rows are still identifiable and clickable.",
-      "In the right panel, some lines start further left than the section headings ('Nothing in the queue…', 'Project day: 2026-10-12', the Order/Goals and New nightly item/New job buttons, 'New goal').",
-      "'Project day: 2026-10-12' uses a larger font than the other text in the right panel.",
-      "The empty-chat placeholder sits in the vertical middle of a tall empty column, which leaves a lot of white space above and below it."
+      "Sidebar session titles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Mesh journey fix…', 'Context · Shared memory …'), and so are their subtitles ('dev-ma…', 'de…', 'd…'). This looks like intentional truncation, not a layout fault.",
+      "The empty-state prompt sits in the middle of the chat area, far from the composer at the bottom, which leaves a lot of empty space.",
+      "The right panel runs to the bottom edge of the viewport ('Add a goal to explain what matters…' is the last thing visible), so there may be more content below that you have to scroll to see."
     ]
   }
 }

@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip clips the fourth tab at the right edge, leaving only a partial icon behind the scroll-arrow button. It can still be reached with the arrow, so this looks like an intended scrolling tab strip.",
-      "In the orange warning banner, the 'Retry' button sits right against the text 'needs to finish.' with no space between them. 'Keep files as they are' wraps tightly next to it, so the banner looks cramped.",
-      "The Claude Code and Codex checkboxes under the Safety hook are disabled and pale grey, so their labels are low-contrast. They are still readable."
+      "The fourth tab in the top tab bar is cut off under the scroll-arrow button. The arrow keeps it reachable, but the partly hidden icon looks clipped.",
+      "In the warning banner, the 'Retry' button sits right against the word 'finish.' with no space between them.",
+      "The grey metadata lines (e.g. 'Local · Loose · Rigging local fixture · Claude Code') use very small monospace text with low contrast. It is readable but hard to read at a glance.",
+      "The greyed-out Claude Code and Codex checkboxes under the Safety hook have low contrast. They appear intentionally disabled."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar conversation list, the fourth item (around y≈712) is cut in half by the scroll container's edge, just above the 'Some native sessions are unavailable' line. Only its top part shows, which looks a bit untidy, but the list scrolls so the item can still be reached.",
-      "Conversation titles and subtitles in the sidebar are shortened with ellipses ('Explain how to write a Vit…', 'J11 memory jou…'). This looks intentional and the full title appears in the main header.",
-      "The message 'Jev is unavailable (authentication failed). Pick the next step:' appears twice, once in the Why panel and once in the main step picker. The repetition is a little redundant but nothing is hidden."
+      "In the left sidebar, the fourth conversation in the list is cut off part-way through its text at the bottom of the scrollable list, just above the 'Some native sessions are unavailable' line. The list scrolls, so it can still be reached, but the cut leaves a row of illegible half-letters.",
+      "Conversation titles and subtitles in the sidebar are shortened with ellipses (e.g. 'Explain how to write a Vit…', 'Waiting for you · J11 memory jou…'), as designed.",
+      "The same failure message, 'Jev is unavailable (authentication failed). Pick the next step:', appears in both the right-hand 'Why this step' panel and the main recovery box, so it shows twice on screen."
     ]
   }
 }

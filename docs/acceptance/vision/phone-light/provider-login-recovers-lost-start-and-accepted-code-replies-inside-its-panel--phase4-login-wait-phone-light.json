@@ -10,8 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Authorization code' label sits very close to the 'Open sign-in page' button above it, with almost no vertical spacing.",
-      "The hub-wait notice wraps into a narrow text column next to the 'Stop waiting' button, which leaves extra empty space on the right and makes the notice tall."
+      "The 'Open sign-in page' button sits almost directly on top of the 'Authorization code' label with little space between them.",
+      "The wait message is squeezed into a narrow column beside the 'Stop waiting' button, so it wraps onto many short lines.",
+      "The secondary note ('Stopping the wait does not undo a request already received.') is small and has fairly low contrast against the light panel background.",
+      "The disabled 'Continue' button is very faint, so it's hard to tell it's a control."
     ]
   }
 }

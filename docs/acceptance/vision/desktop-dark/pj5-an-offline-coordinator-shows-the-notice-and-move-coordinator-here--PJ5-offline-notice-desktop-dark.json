@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Some right-panel text is not indented to match its section ('Nothing in the queue. Ask the coordinator or add a task.' and 'Project day: 2026-10-12' start about 10px further left than the headings and other text)",
-      "Sidebar session titles and subtitles are cut short with an ellipsis (e.g. 'Context · J11 memory jour…', 'Mesh journey fixture · de…'). This is intended truncation and still readable.",
-      "The top-right overflow '…' menu button has low contrast against the dark background"
+      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory journ…'). This is expected sidebar truncation.",
+      "The empty main chat area leaves a large blank region next to the dense right-hand panel."
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Test connection' button sits right against the bottom of the Jev key input with almost no gap, so the area looks cramped. It does not overlap the input.",
-      "The 'Test connection' button sits on its own line under the input while 'Save key' sits beside it, so the two controls look unevenly placed."
+      "The 'Test connection' button sits right under the Jev key input with almost no vertical gap, so it looks cramped next to the evenly spaced rows elsewhere in the card",
+      "The 'Test connection' button is on its own line under the input, while 'Save key' sits inline beside it, so the two actions look unevenly grouped"
     ]
   }
 }

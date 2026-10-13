@@ -133,10 +133,15 @@ export class HubMemoryStore {
     });
     return { path: root, assertOwnership: () => this.assertEditable({}, scope), prepare, read, write, edit,
       list: async signal => { signal.throwIfAborted(); return this.list(project.id, staging?.path); },
-      search: async (query, signal) => { await prepare(signal); const result = await base.search(query, signal);
+      search: async (query, signal) => { signal.throwIfAborted();
+        // A new shared store has a notes directory, but nothing for the index to search yet.
+        if (!this.list(project.id, staging?.path).length) return { schema: 'memory-search-v1', notes: [] };
+        await prepare(signal); const result = await base.search(query, signal);
         const notes = await Promise.all(result.notes.map(note => read(note.permalink, signal)));
         return { schema: 'memory-search-v1', notes: notes.filter(note => splitMemoryText(note.content).meta.status !== 'archived') }; },
-      findTitle: async (title, signal) => { await prepare(signal); await base.sync(signal); const found = await base.findTitle(title, signal); return found ? read(found.permalink, signal) : null; },
+      findTitle: async (title, signal) => { signal.throwIfAborted();
+        if (!this.list(project.id, staging?.path).length) return null;
+        await prepare(signal); await base.sync(signal); const found = await base.findTitle(title, signal); return found ? read(found.permalink, signal) : null; },
       sync: async signal => { await prepare(signal); await base.sync(signal); } };
   }
   commit(root: string, message: string): string {

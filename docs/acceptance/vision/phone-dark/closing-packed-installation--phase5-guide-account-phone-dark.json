@@ -5,15 +5,14 @@
   "test": "Closing packed installation",
   "layout": "phone-dark",
   "screenshot": "screenshots/phase5-guide-account-phone-dark.png",
-  "expected": "the first-account setup step with readable account controls",
+  "expected": "the first-account setup step with readable account controls Bright magenta rectangles are intentional screenshot masks over saved secret data, not product overlays or rendering faults.",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The step 1 tab label reads 'Jev key', which looks like a truncated or abbreviated label",
-      "The Continue button is greyed out and has low contrast, but it's intentionally disabled and the hint text below explains why",
-      "The 'Applied from this device' disclosure and the 'Models appear after an account is checked' helper text are muted and a bit low-contrast",
-      "The pink 'STEP 2 OF 4' and 'Rigging for Claude Code →' text is small but still readable"
+      "The disabled Continue button has low contrast against the dark background. This is expected for a disabled control, and the helper text below it explains why it is disabled.",
+      "The step label '1 Jev key' is short and could be unclear, but it is fully visible and not cut off.",
+      "The 'Applied from this device' toggle and the 'Models appear after an account is checked.' line below it are close together vertically."
     ]
   }
 }

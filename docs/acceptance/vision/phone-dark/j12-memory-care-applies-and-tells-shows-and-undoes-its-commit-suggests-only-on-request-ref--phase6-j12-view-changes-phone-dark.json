@@ -10,11 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The screenshot was reviewed at 1/3 scale (130x2000 shown for a 390x6008 capture), so small text such as diff lines and table cells could only be checked roughly. It looks legible, but small-text clipping cannot be fully ruled out at this scale.",
-      "The Trial log table is cramped on a phone-width screen: the date value '2026-10-12' wraps across several lines, and the column headers ('IN JEVELLAN', 'OUTSIDE', 'HOW THEY FINISHED ELSEWHERE') wrap tightly.",
-      "Long diff lines in the expanded 'View changes' block wrap mid-path (for example, the .jevellan/memory/archive/... paths), which makes the diff harder to scan.",
-      "The Last runs list stacks long run titles next to the 'Open log' buttons, and some titles wrap onto two or three lines.",
-      "The page is very long (about 6000px). The expanded diff pushes the Schedule, Last runs and Trial log sections far down, though they can still be reached by scrolling."
+      "The top tab strip is cut off at the right edge (the third tab shows only 'Ru…'). It looks like a horizontally scrolling tab bar, not lost content.",
+      "The memory care diff is long and makes the page very tall (about 6100px). At this reduced view the small monospace diff text can only be checked roughly, though nothing looks overlapped or clipped.",
+      "The Run log rows and the Trial log table are dense on a 390px-wide screen. Labels wrap onto several lines but stay readable."
     ]
   }
 }

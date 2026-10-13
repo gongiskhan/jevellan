@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row is clipped at the right edge: 'Pull requests' runs into the screen edge, and any tabs after it are off-screen. It looks like a horizontally scrollable tab strip, so the tabs can still be reached.",
-      "The 'Run now' buttons are dim and low-contrast. This is probably the intended disabled look while the nightly items are queued, but the text is faint.",
-      "The 'Enabled' label sits below its checkbox instead of beside it, so the controls in each card line up unevenly.",
-      "The merge-hold message appears twice: once in the top banner ('merges held until the nightly tasks finish') and again in the Nightly section ('Merges are held while the nightly window runs')."
+      "Header title is truncated to 'Projects workflo…' with an ellipsis. This is expected on a narrow phone screen.",
+      "The tab bar is cut off at the right edge after 'Pull requests', which suggests the tabs scroll sideways.",
+      "'Run now' buttons have low contrast because they appear disabled while the nightly window runs. They are still readable.",
+      "The 'Enabled' label sits below its checkbox instead of beside it, so the item rows look slightly unbalanced."
     ]
   }
 }

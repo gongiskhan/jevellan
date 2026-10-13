@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Metadata line wraps over three lines and splits 'dev-madrid' onto its own line",
-      "Large empty area between the last report card and the footer"
+      "The worktree meta line wraps so that 'dev-madrid' sits alone on its own line",
+      "The 'Stopped' status chip has low contrast against the dark background",
+      "The '?' help button sits right next to 'Open terminal here', which makes it a small touch target"
     ]
   }
 }

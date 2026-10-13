@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar conversation list cuts off its fourth item partway, leaving only part of a text line visible above 'Some native sessions are unavailable'. This looks like normal scroll overflow.",
-      "Sidebar conversation titles and metadata are truncated with ellipses (for example 'Exercise automatic decisi…' and 'Done · Automatic fixture · dev-m…'), which is expected for a narrow sidebar.",
-      "There's a large empty area between the end of the step content and the message input."
+      "The sidebar conversation list cuts off its fourth item mid-row at the bottom of the scroll area, just above 'Some native sessions are unavailable'. It can still be reached by scrolling.",
+      "Sidebar conversation titles and metadata end in ellipses (e.g. 'Exercise automatic decisi…', 'Done · Automatic fixture · dev-m…'). This looks like intended truncation."
     ]
   }
 }

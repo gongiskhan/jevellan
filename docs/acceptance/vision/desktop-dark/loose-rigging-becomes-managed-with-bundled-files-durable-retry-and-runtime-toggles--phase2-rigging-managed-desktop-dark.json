@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Saved' status label is placed above the 'Content' label, apart from the field it describes, so it reads a little oddly",
-      "The dimmed backdrop behind the modal makes background content hard to read, which is expected while the modal is open"
+      "The modal covers the Rigging page's runtime toggles and Park/Make managed controls. That is expected while an edit dialog is open, but nothing on the managed list can be checked in this frame.",
+      "The \"Saved\" status label is grey on a dark background with fairly low contrast. It is still readable."
     ]
   }
 }

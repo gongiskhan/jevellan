@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Saving…' button is greyed out and low-contrast. That fits a disabled in-progress state, but it's harder to read than the other text.",
-      "The tabs row at the top ('Runtimes', 'Pipping', 'Decisions') is cut off at the right edge behind the dialog's backdrop. It's background content.",
-      "In the background list behind the dialog, the 'Login recovery …' entry wraps onto two lines and sits partly under the dimmed overlay. This doesn't affect the dialog."
+      "The disabled 'Saving…' button label is low-contrast on the dark background. It is still readable, and the low contrast is expected for a disabled state.",
+      "The background tab strip (Runtimes / Pipping / Decisions / …) is clipped at the right edge behind the modal overlay. It is not interactive while the modal is open.",
+      "The background 'Login recovery …' list item text is visible below the modal, dimmed by the overlay. It does not interfere with the dialog."
     ]
   }
 }

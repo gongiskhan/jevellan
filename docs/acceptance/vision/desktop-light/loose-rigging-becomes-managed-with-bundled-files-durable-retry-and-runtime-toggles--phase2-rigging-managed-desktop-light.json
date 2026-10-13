@@ -10,8 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Saved' status and 'Preview' link sit above the 'Content' label, so the label is separated from its textarea.",
-      "The Rigging page behind the modal is blurred, as expected for a modal, so you can't check its state (bundled files, runtime toggles) from this screenshot."
+      "The 'Saved' status label sits in a separate row above the 'Content' label, which makes it look slightly detached from the field it describes",
+      "The 'Preview' link is aligned with the 'Saved' status instead of the 'Content' label, so the header row reads a bit oddly",
+      "Most of the large content textarea is empty for two lines of text, leaving a lot of unused vertical space",
+      "In the background, some sidebar session titles are truncated with ellipses. This is expected and covered by the modal backdrop"
     ]
   }
 }

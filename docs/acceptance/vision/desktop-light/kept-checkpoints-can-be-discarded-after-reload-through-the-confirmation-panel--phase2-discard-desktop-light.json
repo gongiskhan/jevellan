@@ -10,8 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background behind the modal is blurred and dimmed, so the conversation and settings content is hard to read. This is the expected modal backdrop, and the dialog itself is fully legible.",
-      "The primary 'Discard checkpoints' button is styled as a dark neutral button. It isn't marked as destructive, even though this action resets work."
+      "Background content is blurred by the modal overlay as intended, so it can't be read; this is expected and doesn't block anything."
     ]
   }
 }

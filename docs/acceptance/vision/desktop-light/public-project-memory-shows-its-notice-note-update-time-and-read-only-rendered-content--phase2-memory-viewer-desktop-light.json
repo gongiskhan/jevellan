@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Public memory guide' result button centers its title and timestamp, which looks a bit odd next to the left-aligned content around it.",
-      "The 'Updated Sep 20, 2026, 1:00 PM' timestamp appears twice, once in monospace in the result button and once in the note header."
+      "The 'Public memory guide' search result button centers its title and timestamp, which doesn't match the left alignment used everywhere else in the modal.",
+      "The 'Updated Sep 20, 2026, 1:00 PM' timestamp shows up twice: once in monospace in the result button and again in the content header.",
+      "In the content area, the small uppercase 'PUBLIC MEMORY GUIDE' label repeats the 'Public memory guide' heading right below it."
     ]
   }
 }

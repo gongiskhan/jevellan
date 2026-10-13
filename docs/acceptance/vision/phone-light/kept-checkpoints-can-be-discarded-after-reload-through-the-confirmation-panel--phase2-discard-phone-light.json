@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dimmed settings panel behind the modal (title, Next step/Model/Effort fields and the 'Settle kept changes' button) is faintly visible. This is expected for a modal overlay and doesn't block anything.",
-      "The bottom ~40% of the viewport below the dialog is empty dimmed space, because the dialog is placed in the vertical middle rather than near the content."
+      "The background content behind the dimmed overlay (\"Conversation settings\" sheet, \"Settle kept changes\") is blurred, which is expected for a modal backdrop",
+      "There is a lot of empty dimmed space below the dialog on this tall phone viewport; the dialog sits slightly above center"
     ]
   }
 }

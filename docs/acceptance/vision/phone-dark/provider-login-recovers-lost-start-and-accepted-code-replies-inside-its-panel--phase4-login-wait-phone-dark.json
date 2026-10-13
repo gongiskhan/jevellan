@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "There is almost no space between the 'Open sign-in page' button and the 'Authorization code' label below it, so the two look cramped, though they do not overlap.",
-      "The disabled 'Continue' button has very low contrast against the dark panel. That is expected for a disabled control, but its label is hard to see.",
-      "The wait message is squeezed into a narrow column beside 'Stop waiting', so it breaks into many short lines and leaves empty space on the right.",
-      "Text from the page behind the dialog (for example 'Log in here' and 'Log in on Browser member') shows through the dimmed backdrop below the dialog. It is dimmed and does not get in the way of the dialog."
+      "There is almost no space between the 'Open sign-in page ↗' button and the 'Authorization code' label below it, so the label looks attached to the button.",
+      "The disabled 'Continue' button has very low contrast against the dark panel. It still reads as disabled, but it is hard to see.",
+      "The hub message and its 'Stop waiting' button take up a lot of the panel's height. The message wraps into narrow lines, leaving empty space to the right of the text."
     ]
   }
 }

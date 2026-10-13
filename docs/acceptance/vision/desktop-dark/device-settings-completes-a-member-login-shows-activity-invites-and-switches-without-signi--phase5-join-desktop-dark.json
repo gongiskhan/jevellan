@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The join code field and the token at the end of the npx command are solid light blocks with no visible text. This looks like deliberate masking of a secret by the capture tool. If it isn't masked, the join code can't be read and this would be blocking.",
-      "The light gray join code field stands out sharply against the dark theme."
+      "The join code field and the code at the end of the npx command show as solid light-gray blocks with no visible text. Both spots are covered the same way, so this looks like the screenshot tool hiding the secret code on purpose. If it isn't masking, the code would be unreadable, and that would be a blocking problem.",
+      "The expiry time 'Oct 13, 2026, 1:41 AM' is the same day the screenshot was taken, so the code may expire sooner than users expect. This is about wording only, not layout."
     ]
   }
 }

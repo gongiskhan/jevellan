@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Memory file names ('Vitest convention for mesh.md', 'Global test imports for mesh.md', 'Existing.md') use a monospace font with no list markers, so they look like plain text instead of items in a list",
-      "Below the content there is a lot of empty white space at the bottom of the panel",
-      "The warning banner says 'Pick the next step:' but nothing follows the colon, because the picker isn't shown in this view"
+      "The warning box ends with 'Pick the next step:', but no picker follows it. On this read-only 'Why this step' screen that already shows 'picked manually', the prompt looks out of place.",
+      "Mono and sans-serif fonts are mixed: memory filenames and the JEV footer are in mono, other body text is in sans-serif.",
+      "There is a large empty area below the footer timestamp."
     ]
   }
 }

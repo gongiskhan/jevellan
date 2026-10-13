@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The pull request card's actions wrap untidily: 'Jev would: ask you', 'Why' and 'Should have asked me' sit on one row, and 'Didn't need asking', 'Open thread' and 'Open task' sit on the next, so the grouping looks cluttered and 'Open task' is on a different baseline from the links beside it.",
-      "Sidebar shell session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Gonca…'). This is expected truncation and doesn't block anything.",
-      "The right panel continues below the fold (the 'GOALS 0' section is only partly visible), but the panel scrolls, so it's still reachable."
+      "In the #2 Review loop pull request card, the action links ('Why', 'Should have asked me', 'Didn't need asking', 'Open thread', 'Open task') sit tightly packed and wrap unevenly across two rows next to the 'Jev would: ask you' chip, so the layout looks crowded, though everything stays legible and clickable.",
+      "Long titles and progress lines in the Running list ('Read the README on this device: a title and one line about th…', 'Read through the project and list what each file is f…') and in the Shell sessions sidebar are cut off with ellipses; this is intentional truncation.",
+      "The conversation repeats many 'Noted.' lines, including two in a row, which adds visual noise."
     ]
   }
 }

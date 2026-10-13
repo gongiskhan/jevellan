@@ -10,7 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Test connection' button sits on its own line under the Jev key input, apart from 'Save key', so the row of controls looks a little uneven."
+      "The 'Test connection' button sits close under the Jev key input with very little vertical spacing, so the controls look a bit cramped.",
+      "The Jev key input looks empty even though a key is saved (the saved value is masked above it). This could confuse users, though it doesn't block anything."
     ]
   }
 }

@@ -10,11 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the nightly cards, the 'Enabled' checkbox sits above its label instead of next to it, so it looks misaligned beside the 'Run now' and 'Edit' buttons.",
-      "In the pull request #3 card, the 'Why', 'Open thread' and 'Open task' links are spaced unevenly, and 'Open task' is a different size from the other links.",
-      "The Deploy card is cut off at the bottom edge of the right column. The column appears to scroll, so it is still reachable.",
-      "Shell session names and their details in the sidebar are shortened with ellipses, for example 'Context · J11 memory jour…'.",
-      "The 'Nightly window finished' message ends with '…', so the rest of its text is hidden."
+      "The 'Last night: 3 of 3 nightly tasks passed.' text sits right up against the 'Dismiss' button with almost no gap",
+      "In the pull request #3 card, the 'Why' and 'Open thread' links are crowded together with uneven spacing next to 'Open task' / 'Open on GitHub'",
+      "Shell session titles and subtitles in the left sidebar are cut short with an ellipsis (e.g. 'Context · J11 memory journ…'), which looks like intended truncation",
+      "The Deploy nightly card at the bottom right is cut off by the edge of the screen, though it can be reached by scrolling and its controls are visible",
+      "The 'Nightly window finished' timeline entry is cut short with '…' after the task path"
     ]
   }
 }

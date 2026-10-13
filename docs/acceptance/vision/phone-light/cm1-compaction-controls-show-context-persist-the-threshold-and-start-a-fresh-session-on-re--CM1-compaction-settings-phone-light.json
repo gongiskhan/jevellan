@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Minutes between refills' label is cut off at the bottom of the dialog's scroll area, just above the Cancel/Save footer. The dialog scrolls, so this field can still be reached.",
-      "The 'Required checks' and 'Risky areas' text areas have no placeholder or helper text, so it isn't clear what format they expect."
+      "The modal body scrolls, and the last visible field ('Minutes between refills') is cut off by the sticky Cancel/Save footer. This looks like normal scroll overflow, not hidden or unreachable controls.",
+      "The dialog title is the generic 'Project settings', and no heading labels this as a compaction section. Only the 'Compact at percent' field (value 65) points to compaction settings."
     ]
   }
 }

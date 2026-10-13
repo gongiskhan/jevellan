@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Retry' button in the warning banner sits right against the end of the sentence 'Parking rules/retry.md on Rigging local fixture needs to finish.' with almost no gap.",
-      "Some conversation titles and subtitles in the left sidebar are cut short with an ellipsis (e.g. 'Context · J11 memory journ…', 'Context · Mesh journey fixt…'). This looks intentional, and the full text is likely available elsewhere.",
-      "The Claude Code and Codex checkboxes on the Safety hook are dimmed and low-contrast. They are probably disabled on purpose for a built-in item, but they're harder to read than the other rows."
+      "The 'Retry' button in the parking warning banner sits right against the end of the message text ('...needs to finish.'), with almost no space between them.",
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Shared memory fi…'). This is expected sidebar truncation, not a problem with the Rigging screen.",
+      "The disabled Claude Code and Codex checkboxes under the Safety hook are low-contrast gray, but they are still readable."
     ]
   }
 }

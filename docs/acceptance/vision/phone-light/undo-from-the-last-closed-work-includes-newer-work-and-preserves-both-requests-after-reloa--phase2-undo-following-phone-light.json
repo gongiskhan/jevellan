@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Change the value to two and publish th…'). This is expected truncation on a phone screen, and the full requests appear below.",
-      "The struck-through 'Step 1 · Implement' and 'Step 2 · Implement' headings and the small pink 'corrected: action → reply' label are pale and low-contrast, but still readable.",
-      "The code blocks for the undone steps are dimmed grey while Step 3's are dark. This looks intentional but makes the undone steps' code somewhat less vivid."
+      "The header title is cut off with an ellipsis ('Change the value to two and publish th...'). This is expected truncation, and the full request is shown in the conversation below it.",
+      "The code blocks in the undone steps 1 and 2 are greyed out, so they have lower contrast than the active step 3. They are still readable.",
+      "The pink 'corrected: action → reply' label next to Step 1 is small and low-contrast."
     ]
   }
 }

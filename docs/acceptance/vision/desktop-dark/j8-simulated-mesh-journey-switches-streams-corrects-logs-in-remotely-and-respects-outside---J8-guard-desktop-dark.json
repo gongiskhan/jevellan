@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation list cuts a row in half at the bottom of its scroll area (just above 'Some native sessions are unavailable'), which looks like a rendering glitch instead of a scrollable list.",
-      "There are two 'Retry' buttons: one on the user message bubble and one below the guard error. It isn't clear which one to use.",
-      "The 'Retry' and 'Try automatic again' buttons are stacked vertically with a large gap instead of grouped together, so the action area feels loosely connected to the error banner.",
-      "The conversation subtitle line under the title just repeats the title text ('J8: implement after the outside agent is quiet.')."
+      "In the sidebar conversation list, the fourth item is cut off halfway at the bottom of the scroll area, just above 'Some native sessions are unavailable'. It is a scroll overflow and the item can still be reached by scrolling.",
+      "There are two 'Retry' buttons: one on the user message bubble and one under the error banner. Their styles differ (one is filled white, the other is outlined), which could confuse users about which one to use.",
+      "The 'Retry' and 'Try automatic again' buttons are stacked vertically with a large gap and different widths and styles, so the button group looks unbalanced.",
+      "Conversation titles and subtitles in the sidebar are cut short with '…'. This is intentional, but the full text isn't visible."
     ]
   }
 }

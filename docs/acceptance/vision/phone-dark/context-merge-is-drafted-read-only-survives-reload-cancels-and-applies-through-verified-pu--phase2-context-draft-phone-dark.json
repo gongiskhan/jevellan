@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The page behind the modal (Devices/Projects tabs, Open/Browse memory/Context buttons) shows through the dim overlay above and below the dialog. It's readable but a little distracting.",
-      "In the diff, the '-' and '+' lines are both plain monospace text with no red/green colouring, so removals and additions are harder to tell apart at a glance.",
-      "The pink 'Open work' link stands out from the rest of the dialog's colours."
+      "The background page shows through the overlay below the modal and is faintly readable (the 'Open', 'Browse memory' and 'Context' buttons, plus a partly hidden line of text), which looks a little busy.",
+      "Some diff lines contain only '-' or '+' because they mark blank lines. This is easy to misread as stray characters.",
+      "The 'Current instruction files' disclosure at the bottom of the modal is collapsed and in small monospace text, so it is easy to miss."
     ]
   }
 }

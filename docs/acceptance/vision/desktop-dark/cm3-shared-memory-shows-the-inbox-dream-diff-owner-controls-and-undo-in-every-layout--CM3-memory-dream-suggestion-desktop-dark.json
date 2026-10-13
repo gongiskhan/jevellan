@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dream summary repeats itself: 'Memory dream: suggested — Kept the test conventions…' is followed by separate 'suggested' and 'Kept the test conventions and consolidated the inbox.' lines.",
-      "The stats line shows raw camelCase keys (inboxPromoted, inboxDropped) instead of readable labels.",
-      "The diff is cut off at the bottom of its box. It appears to scroll inside the box, so the rest of the changes are still reachable, but nothing on screen shows that more content is there.",
-      "The 'Run now' button sits very close to the modal's bottom edge, with almost no padding, and its spacing and alignment don't match the Apply and Discard buttons above it."
+      "The dream summary appears twice: once as 'Memory dream: suggested — Kept the test conventions…' and again as the separate lines 'suggested' and 'Kept the test conventions and consolidated the inbox.'",
+      "The diff block cuts off at '-updated: …' with no visible scroll cue. The rest of the diff is presumably reachable by scrolling inside the block.",
+      "The 'Run now' button sits very close to the modal's bottom edge, so there is little padding there. It may hint that more modal content lies below the fold."
     ]
   }
 }

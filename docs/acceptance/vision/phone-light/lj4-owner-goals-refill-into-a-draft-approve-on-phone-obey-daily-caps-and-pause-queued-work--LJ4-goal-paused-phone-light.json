@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab row clips the 'Pull requests' tab at the right edge. It looks like a horizontally scrollable row, but nothing on screen shows that more tabs are off to the side.",
-      "The 'Asks' and 'Daily' section headings sit very close to the 'Nothing open for this goal.' line above them, so the sections run together.",
-      "Section labels are inconsistent: some are monospace uppercase ('QUEUE 1', 'NIGHTLY 0', 'GOALS 1'), others are bold sentence case ('Asks', 'Daily'). Their left indent also differs slightly."
+      "The tab row cuts off the last tab ('Pull requests') at the right edge. It looks like a tab bar that scrolls sideways, but nothing on screen shows that more tabs are off to the right.",
+      "The 'Asks' and 'Daily' headings sit close to the content above them and have very little space between them and their empty-state text."
     ]
   }
 }

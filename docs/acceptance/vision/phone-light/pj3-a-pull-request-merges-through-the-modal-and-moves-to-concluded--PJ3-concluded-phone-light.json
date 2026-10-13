@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Tab strip is clipped at both edges ('Chat' cut on the left, 'Pull requests' at the right edge). It looks like a horizontally scrollable strip, so the tabs can still be reached.",
-      "Long thread titles and summaries are truncated with ellipses ('Read through the project and list what each …', 'Added greeting.txt with a short greeting and committed …'). This is intended single-line truncation.",
-      "Metadata text (e.g. 'Claude Code · Fable · high · Worktree · dev-madrid') is small and low-contrast but still readable."
+      "The tab bar is scrolled horizontally, so the first tab ('Chat') is clipped at the left edge. The other tabs are still reachable by scrolling.",
+      "Long thread titles and summaries are cut off with ellipses ('Read through the project and list what each …', 'Added greeting.txt with a short greeting and committed …'). This is intentional single-line truncation.",
+      "The header line 'Context unavailable · Compacted 0 times today' wraps onto two lines next to the 'Fresh session' button.",
+      "Most of the lower half of the screen is empty below the Concluded list."
     ]
   }
 }

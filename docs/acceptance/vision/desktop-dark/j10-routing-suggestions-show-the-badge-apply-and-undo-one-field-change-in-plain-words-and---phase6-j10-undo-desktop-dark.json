@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and metadata lines are cut off with ellipses (e.g. 'Exercise answer options: …', 'Context · J11 memory jour…'), which is expected truncation",
-      "'Last runs' says '2 routing suggestions ready' but only one suggestion is waiting and one was already decided; this may confuse users but is not a rendering problem",
-      "The 'Save schedule and jobs' button has low contrast against the card background"
+      "'Last runs' says '2 routing suggestions ready.' even though only one suggestion is waiting and the other is already undone. The count may confuse users, but nothing is broken.",
+      "The 'Schedule and jobs' and 'Last runs' cards are different heights, which leaves empty space below 'Last runs'.",
+      "The undone card under 'Recently decided' has extra empty space at the bottom below the 'Checked against 27 saved cases' line.",
+      "The 'Save schedule and jobs' button text is low contrast against its background and looks disabled."
     ]
   }
 }

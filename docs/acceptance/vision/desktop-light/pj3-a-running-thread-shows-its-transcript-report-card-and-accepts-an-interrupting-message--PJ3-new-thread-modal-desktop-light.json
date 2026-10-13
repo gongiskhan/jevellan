@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal body is scrolled, so the label of the first field (task title) is hidden above the header and that input sits right against the header divider. It can still be reached by scrolling.",
-      "The 'Start now' label sits below its checkbox instead of next to it, so they don't look connected.",
-      "The 'After' multi-select is much taller than its single selected item ('Add a greeting') needs, leaving a large blank area and a dropdown arrow that floats in the middle.",
-      "The 'Needs' field shows placeholder text ('residential, mac') in light grey, which could be mistaken for an entered value."
+      "The modal body is scrolled down a little, so the first field's label is hidden and the title input sits right against the header divider. The content still scrolls normally.",
+      "The 'Start now' checkbox has its label below it instead of next to it, so the two look disconnected.",
+      "The 'After' select is much taller than its single 'Add a greeting' value needs, which leaves a lot of empty space inside it."
     ]
   }
 }

@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Adversarial Rev...' label in the score list is cut short with an ellipsis, so the full step name doesn't show at this width.",
-      "The score list starts at 'Test', so earlier rows seem to be scrolled out of view under the header. The panel looks scrollable, so they should still be reachable.",
-      "The last correction entry ('Just override · effort: high → max') is cut off at the bottom of the screen. This is normal for scrollable content, not a layout overlap.",
-      "Every score bar shows 0.00 and is empty, so the bars look like placeholders."
+      "The 'Adversarial Review' label in the score list is shortened to 'Adversarial Rev…' because the label column is narrow.",
+      "The last correction entry ('Just override · model: claude-fable → claude-opus') is cut off at the bottom of the screen. This looks like normal scrolling, but the rest of the list isn't visible in this capture.",
+      "The score list starts at 'Test' right under the header with almost no top padding, so earlier rows may be scrolled out of view or tucked under the header.",
+      "Every score bar shows 0.00 and is empty, so the bars give no visual information."
     ]
   }
 }

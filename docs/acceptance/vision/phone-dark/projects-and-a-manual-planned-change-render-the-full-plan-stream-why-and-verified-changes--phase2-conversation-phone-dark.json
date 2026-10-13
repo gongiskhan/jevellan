@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The two status banners at the bottom ('Work closed. Its changes are kept…' and 'Work closed and published.') are stacked and say nearly the same thing.",
-      "Step 2's 'Read project' tool card shows the same input and output as Step 1 ('The fixture starts with value 1.'), even though the step text says the value is now 2.",
-      "The 'Proposed plan' card header puts the 'Approved' badge close to the title, so the title area feels a bit crowded."
+      "The 'Done' status badge in the header is small and low-contrast against the dark background",
+      "Step 2 says 'The value is now 2', but its Read project output still shows 'The fixture starts with value 1.' This could confuse a reader, though it doesn't affect rendering",
+      "The two closing banners ('Work closed. Its changes are kept…' and 'Work closed and published.') sit very close together and say nearly the same thing"
     ]
   }
 }

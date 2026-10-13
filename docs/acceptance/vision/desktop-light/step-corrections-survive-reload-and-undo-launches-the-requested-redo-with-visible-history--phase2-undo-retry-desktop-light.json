@@ -10,9 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The error message repeats 'disabled' eight times ('disabled, disabled, ... disabled.'). It's readable but noisy, and it's shown twice: once in the red banner and again in the Resume correction card.",
-      "The step header row has low-contrast pink/gray text ('Undone', 'corrected: effort → max', 'corrected: action → reply, effort → low'). It's small but still readable.",
-      "Some sidebar conversation titles and subtitles are cut off with ellipses ('Change the value to thre…', 'Blocked · Browser fixture · dev-…'). This is normal sidebar truncation."
+      "The error message in the alert banner and the 'Resume correction' card repeats 'disabled' eight times without saying which models are disabled, which makes it hard to read",
+      "Sidebar conversation titles and subtitles are cut off with ellipses (for example 'Change the value to thre…' and 'Browser fixtur…'). This is intended truncation, but rows that look alike are hard to tell apart",
+      "The 'Input' and 'Output' code blocks use a mid-gray background, so the light text has lower contrast than in the rest of the UI. It is still readable",
+      "The pink 'corrected: effort → max' and 'corrected: action → reply, effort → low' tags are small and low-contrast against the white background",
+      "The same error message shows twice, in the red banner and in the Resume correction card, which is redundant"
     ]
   }
 }

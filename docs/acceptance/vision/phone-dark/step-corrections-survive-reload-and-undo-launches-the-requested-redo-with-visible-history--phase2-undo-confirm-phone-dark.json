@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dialog says the redo will use 'low' effort, but the dimmed form behind it shows Effort 'high'. This may be a state mismatch, though it doesn't affect how the screen renders.",
-      "The dimmed background content (header title, step form) shows faintly around the dialog. This is expected for a modal backdrop."
+      "The background page is dimmed under the modal overlay, so background text is low-contrast. This is expected for a modal backdrop.",
+      "The background title 'Change the value to three, then redo thi...' is cut off with an ellipsis, which is intentional truncation in the header."
     ]
   }
 }

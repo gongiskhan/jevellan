@@ -10,7 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The note textarea shows a focus ring that is very bright pink compared with the rest of the modal"
+      "Background content behind the modal overlay is dimmed and hard to read, which is expected for a modal backdrop"
     ]
   }
 }

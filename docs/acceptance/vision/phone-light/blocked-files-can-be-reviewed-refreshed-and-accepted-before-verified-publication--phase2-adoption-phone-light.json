@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the review-note.txt diff, the header line 'diff --git a/review-note.txt b/review-note...' runs past the right edge of the code block. The 'Wrap lines' toggle and horizontal scrolling make it reachable, and it's only diff metadata.",
-      "The 'AGENT EVIDENCE' section starts at the bottom edge of the viewport and needs scrolling to see. This is normal page flow."
+      "In the review-note.txt diff, the header line 'diff --git a/review-note.txt b/review-note…' runs past the right edge of the code block. 'Wrap lines' is unchecked, so this looks like expected horizontal overflow, and the rest of the line can be reached by scrolling or turning on wrapping.",
+      "The 'AGENT EVIDENCE' section starts at the bottom of the viewport and its content is below the fold. This is a normal scroll position, not a rendering defect."
     ]
   }
 }

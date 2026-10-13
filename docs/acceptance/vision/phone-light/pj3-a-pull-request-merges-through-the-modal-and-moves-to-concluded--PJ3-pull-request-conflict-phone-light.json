@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The left edge of the tab strip clips the 'Chat' tab. It looks like a horizontally scrollable tab row, so the tab is still reachable.",
-      "The Merge button looks disabled and has low contrast (light grey on light blue). This fits the Conflicts state, but the label is faint.",
-      "The PR card's action row looks uneven: the text links 'Why', 'Open thread' and 'Open task' sit beside the outlined 'Open on GitHub' button, and Merge wraps onto its own line.",
-      "Most of the screen below 'Recently merged · last 7 days' is empty."
+      "The tab strip is scrolled to the right, so the left edge of the 'Chat' tab is cut off at the viewport edge. You can still reach it by scrolling the strip horizontally.",
+      "The 'Why', 'Open thread' and 'Open task' links are different sizes and sit slightly out of line with each other.",
+      "The Merge button is pale grey and low-contrast. This fits a disabled state while there are conflicts, but it's hard to tell whether it can be clicked."
     ]
   }
 }

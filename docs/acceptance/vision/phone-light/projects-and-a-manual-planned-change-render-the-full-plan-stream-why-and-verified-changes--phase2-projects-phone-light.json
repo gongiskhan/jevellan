@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The settings tab bar scrolls sideways, so the tabs at each edge are cut off (\"…er\" on the left, \"D…\" on the right). Scroll arrows are shown, so those tabs can still be reached.",
-      "Long project paths wrap partway through a word (e.g. \"activity-context-\" / \"project\", \"picked-\" / \"project\")."
+      "The horizontal settings tab strip clips the tabs at both ends (\"er\" on the left, a partial \"D…\" tab on the right). The scroll arrows on either side keep those tabs reachable, so this isn't blocking.",
+      "Long project paths (for example \"/tmp/jevellan-browser-dr3qPn/user/picked-project\" and \"/tmp/jevellan-browser-dr3qPn/shared-memory-project\") wrap onto a second line mid-path. They are still readable."
     ]
   }
 }

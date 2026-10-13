@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the waiting-for-you card, the owner command (printf '%s\\n' 'owner-visible-text-owner-visible…) is clipped at the right edge of the code block. The 'Scroll sideways to read the full command' hint and the Copy button keep it reachable, but the clipped text has no fade or scrollbar to show there is more.",
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Shared memory fi…', 'Done · Improver sandbox · Gonca…').",
-      "The project name 'Projects fixture' in the header has a lot of empty space around the status row ('Idle', 'Context unavailable · Compacted 0 times today'), and the meta text is small and low-contrast.",
-      "The answers on the left are recorded in a long vertical stack ('Asked you: …' / 'Recorded your chat answer' rows), which repeats information; this affects density, not legibility."
+      "The printf command in the 'Waiting for you' panel is cut off at the right edge. The 'Scroll sideways to read the full command' hint shows it scrolls on purpose, but the end of the command isn't visible in the capture.",
+      "The page is very long, so the CM4 owner command question and its 'codex login' block, with the Copy and Run in Terminal buttons, sit at the very bottom of the transcript. It is fully visible there.",
+      "Many 'Noted.' lines repeat through the transcript, which makes the conversation hard to scan."
     ]
   }
 }

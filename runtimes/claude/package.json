@@ -1,6 +1,6 @@
 {
   "name": "@jevellan/runtime-claude",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "license": "MIT",
@@ -11,8 +11,8 @@
     }
   },
   "dependencies": {
-    "@jevellan/core": "0.2.1",
-    "@jevellan/runtime-contract": "0.2.1",
+    "@jevellan/core": "0.3.0",
+    "@jevellan/runtime-contract": "0.3.0",
     "@anthropic-ai/claude-agent-sdk": "0.3.281",
     "zod": "4.6.5"
   },

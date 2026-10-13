@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The user message bubble in the top right (with Retry/Edit) runs into the header divider, so its top border looks clipped where the conversation has scrolled under the header.",
-      "The 'completed' status on the 'Read project' tool card sits on its own line below the title instead of lining up with it, which leaves odd empty space.",
-      "Sidebar conversation titles and subtitles are cut short with ellipses (e.g. 'Exercise answer options: ...', 'Context · J11 memory jour...'), as intended; full titles can't be seen here."
+      "The user message bubble in the top right (\"Exercise answer options: change the value.\" with Retry/Edit) starts right at the header divider, so its top edge looks clipped.",
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. \"Exercise answer options: ...\", \"Context · J11 memory jour...\"). This looks like intended truncation.",
+      "The \"completed\" status label in the Read project tool card sits on its own line, away from the \"Read project\" title, which leaves awkward empty space."
     ]
   }
 }

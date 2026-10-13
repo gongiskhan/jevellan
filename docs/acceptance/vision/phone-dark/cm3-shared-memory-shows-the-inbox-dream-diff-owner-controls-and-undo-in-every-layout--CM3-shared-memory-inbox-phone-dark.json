@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Background page text shows through above and below the modal (e.g. a partly hidden text line near the top and the 'Open / Browse memory / Context' buttons at the bottom), which looks slightly busy but doesn't block anything",
-      "Nothing separates the 'Add an owner note' disclosure from the 'Search memory' label below it, so they look crowded"
+      "The 'Add an owner note' toggle sits very close to the 'Search memory' label below it, so the two look crowded together.",
+      "The dimmed page behind the dialog still shows through at the top and bottom (nav tabs, a path line and the Open / Browse memory / Context buttons). It is readable but slightly distracting.",
+      "The inbox and project note items look like full-width outlined buttons with centered text, so they are hard to tell apart from action buttons."
     ]
   }
 }

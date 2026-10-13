@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Join code field shows as a solid grey bar, and the end of the npx command is covered by a white box. Both look like the capture's own secret masking, not a rendering fault. If they aren't masks, the join code isn't visible to the user, and that would be blocking.",
-      "The 'Add a device' dialog covers the middle of the Devices page, so the cards behind it are partly hidden under the dimmed backdrop. That's expected for a modal."
+      "The Join code field shows only a solid gray box, and the token at the end of the command is covered by a white rectangle. Both look like secrets masked when the screenshot was taken, not a rendering failure. If they weren't masked on purpose, the join code is missing from the screen.",
+      "The modal sits on top of the blurred Devices settings page, as expected for a dialog. Its title, close button, instructions, command block and expiry date are all fully visible and readable."
     ]
   }
 }

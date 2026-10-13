@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The last section heading ('JEV…') is cut off at the bottom edge of the viewport. This looks like normal scroll overflow, not a clipped element.",
-      "The 'Claude Code Sonnet' row shows a bullet and no score bar, so it doesn't line up with the other model rows.",
-      "The pink highlighted bars for the 'changed by you' selections (Opus 0.15, low 0.10) are short and hard to tell apart from the gray bars at a glance."
+      "The TASK section heading sits at the bottom edge of the viewport and its content isn't visible. This is probably just content below the scroll line, not truncation.",
+      "The 'Claude Code Sonnet' model row has a bullet but no bar or score, unlike the other rows. It's unclear whether it was excluded or the data is missing.",
+      "In the header, the pink task name 'Tidy the README wording' is small and sits close to the 'Why this placement' title, so it reads as crowded on a phone-width screen.",
+      "The 'Jev' labels next to PLACEMENT and ISOLATION are terse and may not mean much to the user."
     ]
   }
 }

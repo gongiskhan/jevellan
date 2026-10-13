@@ -10,9 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Improver sandbox · dev-ma…'). This looks like intentional overflow handling.",
-      "'Claude Code Sonnet' in the Model section has no bar or score and is indented with a '·' marker, so it doesn't line up with the other model rows.",
-      "The Why panel's JEV footer ('Placed Oct 12, 12:43:46') sits right at the bottom edge, so there may be more content to scroll to."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · dev-ma…'). The full text is not visible, but the rows are still identifiable.",
+      "The Why panel runs past the bottom of the viewport after 'TASK: feature' (a divider is visible below it), so the rest of the panel needs scrolling.",
+      "In the MODEL list, 'Claude Code Sonnet' has no bar or value and is indented with a dot, so it does not line up with the other rows.",
+      "Session metadata and the mono-spaced labels (e.g. 'PROJECT MEMORY', 'changed by you', the share values) are dim grey and low-contrast on the dark background, but still readable.",
+      "'Recalled for the first turn' looks like 'tum' because of tight letter spacing."
     ]
   }
 }

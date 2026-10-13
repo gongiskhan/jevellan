@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar session titles and subtitles are cut off with ellipses (for example \"Context · J11 memory journ…\" and \"Done · Shared memory fixture · …\"). This looks like intended truncation.",
-      "The coordinator label \"Claude Code Fable · high\" in the header is set in small, low-contrast monospace text.",
-      "The 'Order' and 'Goals' queue toggles are slightly out of line with the left edge of the right column's section headings.",
-      "Spacing in the Nightly section is uneven: there's a big gap between 'Project day' and the buttons, and the caption is offset."
+      "Long task titles are cut off with ellipses in the sidebar shell sessions list (e.g. 'Context - J11 memory jour...') and in the Running panel ('Read through the project and list what each file is ...'). This is intended truncation.",
+      "Many repeated 'Noted.' lines make the conversation timeline long and visually noisy.",
+      "The left sidebar has a large empty area between the shell sessions list and the footer."
     ]
   }
 }

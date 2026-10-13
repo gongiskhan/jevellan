@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The report card shows the same command block 'scripts/owner-only.sh' twice, each with its own Copy and Run in Terminal buttons: once in the report body and again in the nested owner-step card. The repetition looks redundant.",
-      "Sidebar session titles and subtitles are cut short with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · Gonca…'). This looks like intentional overflow handling for the narrow sidebar."
+      "The command scripts/owner-only.sh appears twice in a row: once in the report body and again in the owner-reserved card, each with its own Copy and Run in Terminal buttons.",
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour...', 'Done · Improver sandbox · dev-ma...'). This is the intended truncation, not a layout fault.",
+      "The thread-attach command at the bottom is in small monospace text with low contrast against its background chip."
     ]
   }
 }

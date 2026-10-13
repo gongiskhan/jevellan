@@ -10,8 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. \"Context · J11 memory jour…\", \"Done · Improver sandbox · dev-ma…\"). This looks like intentional truncation and does not hide anything needed for this step.",
-      "There is a large empty area below the Cancel/Save buttons in the notebook panel, while the textarea takes up most of the height. This is a layout imbalance only."
+      "The conversation title in the center header is cut to \"Pr...\" because the toolbar buttons crowd it out. The full name, \"Projects fixture\", still shows in the notebook panel header and the sidebar.",
+      "Session names and subtitles in the sidebar are cut off with ellipses (e.g. \"Context · J11 memory journ...\", \"Done · Improver sandbox · dev-ma...\").",
+      "The first chat card is partly scrolled out of view under the tab bar. This is normal scroll position, not a layout overlap.",
+      "The notebook textarea leaves a lot of empty space, while the conflict banner and Cancel/Save buttons sit low in the panel. They are still fully visible and reachable."
     ]
   }
 }

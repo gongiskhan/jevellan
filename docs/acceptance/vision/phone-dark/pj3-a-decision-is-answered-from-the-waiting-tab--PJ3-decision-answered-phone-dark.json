@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Pull requests' tab is cut off at the right edge of the tab strip. The strip probably scrolls sideways, but nothing on screen shows that more tabs are off to the right.",
-      "The 'Sent to the coordinator.' confirmation appears above 'Nothing waiting.' even though the count says 0. This reads fine, but the answered item is only visible after expanding the collapsed 'Answered 1' section."
+      "The last tab label, 'Pull requests', is clipped at the right edge of the tab row. The row probably scrolls sideways, but nothing on screen shows that more tabs are available.",
+      "There is a lot of empty space below the collapsed 'Answered 1' section. The answered decision is only visible after expanding it."
     ]
   }
 }

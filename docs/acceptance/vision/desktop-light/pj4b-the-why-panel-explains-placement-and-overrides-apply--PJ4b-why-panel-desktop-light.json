@@ -10,9 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Mesh journey fix…'). This is intentional truncation, and the full text isn't needed on this screen.",
-      "The Why panel's JEV footer ('Placed Oct 12, 12:43:26') sits right at the bottom edge of the viewport, so there may be more content below that you have to scroll to see. Nothing that is visible is clipped.",
-      "The 'Jev' source labels on the right of each Why panel section header are small and low-contrast, but still readable."
+      "The 'Why this placement' panel content continues below the bottom edge after the 'TASK: feature' section (a divider is visible at the fold). It is probably scrollable, but this screenshot doesn't show the full panel.",
+      "In the Prompt card's bullet, 'last report: (none)' runs straight into 'Merged to main in the last 24 hours: (none)' with no line break or separator, so it reads as one run-on sentence.",
+      "Sidebar session titles and subtitles (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · dev-ma…') are cut off with ellipses. This appears to be intended, but the full names can't be read here.",
+      "Some panel headings repeat the 'Jev' attribution label on the right edge, which is a little cluttered next to the 'only option' note on DEVICE.",
+      "The panel header mixes a pink monospace task title ('Tidy the README wording') with a bold sans 'Why this placement' heading, so the two styles clash slightly."
     ]
   }
 }

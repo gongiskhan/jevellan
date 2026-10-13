@@ -5,14 +5,14 @@
   "test": "Closing packed installation",
   "layout": "phone-light",
   "screenshot": "screenshots/phase5-guide-why-phone-light.png",
-  "expected": "the Why panel with readable decision details and reachable controls",
+  "expected": "the Why panel with readable decision details and reachable controls Bright magenta rectangles are intentional screenshot masks over saved secret data, not product overlays or rendering faults.",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Adversarial Rev...' label in the Next Step list is shortened with an ellipsis, so the full option name isn't visible.",
-      "The timestamp line at the bottom of the Jev section is partly cut off by the bottom edge of the screen. The panel probably scrolls, but that can't be confirmed from this screenshot.",
-      "In the Memory section, 'No memory notes were selected.' uses a larger body font than the nearby muted text, so it looks inconsistent."
+      "The 'Adversarial Review' label in the Next step list is cut off as 'Adversarial Revi...'",
+      "The bottom timestamp line in the Jev section is partly cut off at the panel edge. It looks like scrollable content, not a hidden control.",
+      "The Jev timing lines wrap awkwardly, e.g. '3 ms' drops onto its own line."
     ]
   }
 }

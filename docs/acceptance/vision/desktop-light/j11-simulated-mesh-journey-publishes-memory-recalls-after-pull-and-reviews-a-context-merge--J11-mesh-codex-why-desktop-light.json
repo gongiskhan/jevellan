@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the left sidebar, the last conversation item (below 'J8: implement after the o…') is cut off partway by the scroll area, so only the top of its title shows above 'Some native sessions are unavailable'. The list still scrolls, so nothing is out of reach.",
-      "Long conversation titles and subtitles in the sidebar end in ellipses ('Explain how to write a Vit…', 'Waiting for you · J11 memory jou…'). This is intended single-line clipping.",
-      "The 'Jev is unavailable (authentication failed). Pick the next step:' message appears twice: once in the 'Why this step' panel and again in the main recovery card. This is repeated but doesn't break the layout."
+      "Conversation titles and subtitles in the sidebar are cut off with ellipses ('Explain how to write a Vit…', 'J8: implement after the o…'). The truncation is intentional and the text is still readable.",
+      "The last sidebar conversation row is partly clipped by the scroll area just above 'Some native sessions are unavailable'.",
+      "The message 'Jev is unavailable (authentication failed). Pick the next step:' appears in both the main panel and the Why panel."
     ]
   }
 }

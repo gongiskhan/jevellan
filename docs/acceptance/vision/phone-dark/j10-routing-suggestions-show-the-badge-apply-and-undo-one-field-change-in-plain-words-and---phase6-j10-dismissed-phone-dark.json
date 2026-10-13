@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Devices' tab is clipped at the right edge of the tab strip. The scroll arrows still reach it.",
-      "In the Trial log table, the week value '2026-10-12' wraps onto two lines. The column headers also wrap, so the narrow table looks cramped.",
-      "The 'Apply and tell me' field has no label beside it and is not lined up with the other job rows. Its role isn't obvious."
+      "The 'Devices' tab in the top tab bar is cut off at the right edge. Scroll arrows are there, so it can still be reached.",
+      "In the Trial log table, the 'Week of' date '2026-10-12' wraps onto two lines, and the 'In Jevellan' and 'Why they finished elsewhere' headers wrap tightly in the narrow columns.",
+      "The diff code blocks wrap long lines mid-path (e.g. 'b/menu/claude-sonnet/description' moves to a new line), which makes them a little harder to scan."
     ]
   }
 }

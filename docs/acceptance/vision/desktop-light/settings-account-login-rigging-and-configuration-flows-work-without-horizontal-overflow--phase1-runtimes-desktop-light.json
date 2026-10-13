@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Claude Code 'Rigging local fixture' account has a per-device panel that says 'Codex sign-ins are kept per device for now.' This looks like copy carried over from Codex into the Claude Code section.",
-      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Waiting for you · Browser fixtur…'). This is intentional truncation and the full text is reachable elsewhere.",
-      "The usage meters show 'Unknown' with empty bars for every account, so a lot of space shows no usage data."
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Waiting for you · Browser fixtur…'). This is ordinary single-line truncation and the text is still readable.",
+      "The 'Codex sign-ins are kept per device for now.' note also appears under the 'Rigging local fixture' account in the Claude Code section, which looks like copy in the wrong place rather than a layout problem.",
+      "The Codex 'Applied from this device' section shows 'Models appear after an account is checked.' while the Claude Code one shows a 'Fable' chip, so the two sections look inconsistent. Not a rendering defect."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip behind the modal clips the first and last tabs at the screen edges. It scrolls and has arrow controls, so nothing is lost.",
-      "The background project cards are cut off at the top and bottom of the scroll area behind the dimmed overlay. This is expected while the modal is open.",
-      "The 'Current instruction files' disclosure is collapsed and uses small monospace text, so it is less noticeable than the rest of the dialog."
+      "The background tab bar is clipped at both edges (\"Devices\" and \"Git\" tabs are partly cut off). This is normal behavior for a horizontally scrolling tab strip, and the dialog covers it anyway.",
+      "The \"Current instruction files\" disclosure is collapsed and uses a monospace font that looks a little inconsistent with the rest of the dialog.",
+      "The \"Context change completed.\" status box has plenty of empty space next to the short message and the single \"Open work\" link."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar, the fourth conversation item is cut off at the bottom edge of its scroll area, just above the 'Some native sessions are unavailable' notice. The list looks scrollable, so the item can still be reached.",
-      "In the sidebar, conversation titles and subtitles are shortened with ellipses (e.g. 'Exercise automatic decisi…', 'Waiting for you · Automatic fixt…'). This is intended truncation and nothing important is lost.",
-      "The 'Review …' recovery links wrap across four uneven lines and look crowded, but each link is still readable and clickable."
+      "In the sidebar, the fourth conversation item is cut off at the bottom of the scroll area, just above 'Some native sessions are unavailable'. Only the top of its title shows. The list can scroll, so the item can still be reached.",
+      "Sidebar conversation titles and subtitles are shortened with ellipses, e.g. 'Exercise automatic decisi…' and 'Waiting for you · Automatic fixt…'. This looks intentional, and the full title is shown in the main header.",
+      "The many 'Review …' recovery links wrap across four lines next to the 'Try automatic again' button, which makes the area look crowded. The long UUID-suffixed 'Review Login recovery' entries are hard to tell apart."
     ]
   }
 }

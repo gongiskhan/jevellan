@@ -10,11 +10,12 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation titles and subtitles are cut off with ellipses ('Context · J11 memory journ…', 'Context · Mesh journey fixt…', 'dev-ma…'). This looks intentional, but the full names can't be read.",
-      "The 'Open' button on the dev-madrid card and the 'Inspect worktrees' and 'Open' buttons on the Offline fixture card are drawn in a faint, disabled-looking style, which makes them hard to read.",
-      "The 'Automatic device choice' checkbox and its 'Coming later.' text are very low contrast.",
-      "The page has no visible power or AC-sleep readiness text, so you can't see from the screen alone that the hub is power ready.",
-      "The Browser member card is much shorter than the dev-madrid card, which leaves a large empty area in the right column next to the Offline fixture card."
+      "No hub power or AC sleep indicator appears on the dev-madrid Hub card. This fits the cleared 'ready' state, but nothing on screen confirms that the readiness check passed.",
+      "The 'Open terminals' link sits centred under the left-aligned 'Terminal' button, so it looks detached from it.",
+      "On Mini apps only, the 'Apps only' badge stretches across the full card width as an empty-looking bordered box instead of fitting its text.",
+      "The cards are uneven: dev-madrid and Mini apps only show worktree usage lines that Browser member and Offline fixture don't, so the bottom edges don't line up.",
+      "The 'Open' button on dev-madrid and the 'Inspect worktrees' and 'Open' buttons on Offline fixture have greyed text. That is probably intended as disabled, but the contrast is low.",
+      "Under Native conversations, the line 'CSG uses the SSH connection…' uses an unexplained acronym, and its small grey text is fairly faint."
     ]
   }
 }

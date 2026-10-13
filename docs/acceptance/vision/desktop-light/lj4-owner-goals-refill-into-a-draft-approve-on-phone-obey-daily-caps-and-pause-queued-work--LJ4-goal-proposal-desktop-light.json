@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Right panel content runs past the bottom of the viewport: the 'Add checks or a review to run every night' text is clipped at the bottom edge. It can presumably be reached by scrolling.",
-      "Sidebar session titles are truncated with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…') and so are their metadata lines ('dev-ma…', 'dev-…', 'de…').",
-      "The proposed task 'Exercise an important path' appears twice: expanded under Proposed tasks and collapsed under Queue. This could be intentional, but it looks repetitive.",
-      "The heading 'Projects goals' is a little awkward grammatically."
+      "The 'New nightly item' and 'New job' buttons at the bottom of the right panel are cut off by the viewport, but the panel looks scrollable.",
+      "The session titles and subtitles in the left sidebar are cut off with ellipses (e.g. 'J11 memory journ…', 'Mesh journey fixt…').",
+      "The 'Working…' status badge and the 'Coordinator is working…' label end in ellipses, and the status badge is small.",
+      "There's a lot of empty space in the conversation column between the proposal message and the composer."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal header 'Context · Context fixture' repeats the word 'Context'.",
-      "In the diff blocks, the lone '-' and '+' lines for blank lines look like stray characters.",
-      "The 'Open work' link sits below the Cancel/Apply buttons, so the action area looks slightly unbalanced."
+      "The 'AGENTS.MD' and 'CLAUDE.MD' section labels are small, light grey, uppercase monospace text with fairly low contrast against the white background.",
+      "The 'Open work' link sits alone below the Cancel/Apply buttons, so it looks loosely attached to the review card.",
+      "The empty diff lines ('-' and '+' on their own) add visual noise but are still readable."
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Confirmation copy says 'Each is older than seven days' even though only 1 worktree is listed; the singular/plural wording doesn't match.",
-      "Size shows as '0 GB', which tells the user little. A finer unit such as MB would be clearer for small worktrees."
+      "The background behind the modal is heavily blurred and dimmed. This looks intentional, but nothing on the page behind it can be read.",
+      "The dialog states sizes as '0 GB' (in the summary and next to the fixture worktree), which tells the user nothing. Showing a smaller unit such as MB or KB would be clearer."
     ]
   }
 }

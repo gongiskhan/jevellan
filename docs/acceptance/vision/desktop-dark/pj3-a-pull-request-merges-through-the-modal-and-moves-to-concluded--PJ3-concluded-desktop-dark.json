@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The running task title 'Read through the project and list what each file is ...' is cut off with an ellipsis in the right panel. The full title appears in the Queue card above it.",
-      "Sidebar session names ('Context · J11 memory jour...', 'Context · Mesh journey fix...') and their subtitles are cut off with ellipses.",
-      "The 'Checks passing' card is followed straight by the 'has conflicts' card, with no 'Noted.' reply in between, so the spacing is uneven compared with the rest of the timeline.",
-      "There is a large empty area in the sidebar between the session list and the 'Some native sessions are unavailable' note."
+      "The sidebar truncates long session titles with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Shared memory fi…'). The truncation is expected but cuts off the full names.",
+      "The 'Running' task title in the right panel is cut off ('Read through the project and list what each file is …').",
+      "Many 'Noted.' replies repeat in the timeline, which adds visual noise.",
+      "The 'Checks failing' and 'Checks passing' events show up one after the other with no extra context, which may confuse readers."
     ]
   }
 }

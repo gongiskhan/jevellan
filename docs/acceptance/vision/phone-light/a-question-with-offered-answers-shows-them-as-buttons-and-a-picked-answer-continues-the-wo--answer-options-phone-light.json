@@ -10,7 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Exercise answer options: change the va…'). The full text appears in the subtitle line just below it, so nothing is lost."
+      "The header title is shortened with an ellipsis ('Exercise answer options: change the va...'). The full text still appears in the subtitle line right below it.",
+      "The large blank area between the 'Step details' section and the question card makes the screen feel a bit empty."
     ]
   }
 }

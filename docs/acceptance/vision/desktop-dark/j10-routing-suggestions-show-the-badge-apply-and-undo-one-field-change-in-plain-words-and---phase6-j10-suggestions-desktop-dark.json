@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles are truncated with ellipses ('Exercise answer options: ...', 'Context · J11 memory jour...', 'Context · Mesh journey fix...'), but they stay readable and are clearly meant to truncate",
-      "The 'Save schedule and jobs' button text is low-contrast against its background, so it may look disabled",
-      "The 'Waiting for you' filter label in the sidebar shows no count while the Improver badge shows 2, which could confuse users"
+      "Long lines in the diff blocks wrap onto a second line without a wrap marker, so a wrapped '-'/'+' line looks like two separate diff lines.",
+      "Session titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Exercise answer options: ...', 'Context · J11 memory jour...'). This is expected truncation, but the full titles can't be seen.",
+      "The 'Save schedule and jobs' button and the 'Apply and tell me' dropdown are very low contrast, so they look disabled. That fits if nothing has changed yet, but they are hard to see on the dark background.",
+      "The 'Simulated judge responses.' note in each 'Checked against 27 saved cases' line is in dim text that is harder to read than the rest of the line."
     ]
   }
 }

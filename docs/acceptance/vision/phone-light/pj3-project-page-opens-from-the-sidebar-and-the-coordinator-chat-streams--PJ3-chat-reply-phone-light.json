@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row is clipped at the right edge, so the 'Pull requests' tab is cut off and any tabs after it are off-screen. It looks like a horizontally scrollable tab strip, but nothing on screen shows that it scrolls.",
-      "The coordinator's reply ('Started \"Add a greeting\".') is plain text with no bubble, timestamp or sender label, so it looks less finished than the user message, which has all three.",
-      "The chat area has a lot of empty space below the short conversation. This is expected with only a few messages."
+      "The tab row runs past the right edge, so the 'Pull requests' tab is clipped and any later tabs are hidden. This looks like a horizontally scrollable tab strip, but nothing on screen shows that it scrolls.",
+      "The 'Context unavailable · Compacted 0 times today' status text wraps onto two lines next to the 'Fresh session' button. It is still readable.",
+      "The coordinator's reply ('Started \"Add a greeting\".') is plain text with no bubble or sender label, unlike the user's message, so it stands out less as a reply."
     ]
   }
 }

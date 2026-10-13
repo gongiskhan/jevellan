@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The two feedback buttons ('Should have asked me' and 'Didn't need asking') are stacked and right-aligned, with uneven widths. They sit close under the 'Changed files and context' disclosure and look a little cramped.",
-      "The full commit hash chip nearly fills the line width, so the sentence wraps awkwardly ('. 2' is left at the end of the line).",
-      "The probability list ('merge: 0%', 'test-then-merge: 0%', 'ask-owner: 100%') uses raw internal route names instead of user-friendly labels."
+      "The 'Should have asked me' and 'Didn't need asking' buttons are stacked and right-aligned right under the 'Changed files and context' disclosure. They look crowded against it, and their link to the 'Saved for future merge decisions.' line below is unclear.",
+      "The modal's top padding is tight against the header divider, and the bottom of the modal has a lot of empty space compared with the top."
     ]
   }
 }

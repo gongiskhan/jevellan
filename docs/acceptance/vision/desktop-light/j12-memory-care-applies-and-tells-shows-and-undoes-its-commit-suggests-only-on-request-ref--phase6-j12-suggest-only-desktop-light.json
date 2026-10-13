@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Long diff lines in the 'Prefer GPT for implement steps' card wrap onto a second line, which makes them a little harder to read",
-      "The 'Memory care' Last runs entry wraps onto three lines, which is denser than the other entries",
-      "The 'Run nightly at' time field looks greyed out, so it may read as disabled"
+      "Sidebar session titles are cut off with ellipses (e.g. 'Exercise answer options: c...', 'Context · J11 memory jour...'). This looks like intentional overflow handling.",
+      "The Last runs entries for Memory care · Improver sandbox and AGENTS.md · Improver sandbox wrap to multiple lines, which makes that column uneven.",
+      "Disabled 'Save schedule and jobs' button has low contrast"
     ]
   }
 }

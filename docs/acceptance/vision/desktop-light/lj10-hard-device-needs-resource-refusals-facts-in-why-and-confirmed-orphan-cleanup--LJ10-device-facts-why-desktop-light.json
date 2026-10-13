@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Why panel's content runs past the bottom of the screen: a section heading that starts with \"JEV\" is cut off at the bottom edge. The panel looks scrollable, so this is normal overflow, not a rendering defect.",
-      "Sidebar conversation titles such as \"Context · J11 memory jour...\" and \"Context · Mesh journey fix...\" and their subtitles are cut short with an ellipsis. This is deliberate truncation and doesn't hide any controls."
+      "The sidebar shortens long session titles and subtitles with an ellipsis (for example 'Context · J11 memory jour…' and 'Context · Shared memory …'). This is normal truncation, and the titles can still be told apart.",
+      "The Why panel content continues below the bottom edge. The 'TASK' section is only partly visible, which looks like normal scrollable overflow rather than clipping.",
+      "The main pane has a large empty area under the report card, above the 'This thread has ended' footer."
     ]
   }
 }

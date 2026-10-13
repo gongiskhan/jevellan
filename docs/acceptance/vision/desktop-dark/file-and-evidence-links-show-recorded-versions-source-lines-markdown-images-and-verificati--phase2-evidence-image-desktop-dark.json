@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the middle column, the metadata line (Started Oct 12, 12:52:14 · Ended Oct 12, 12:52:20 · Duration 5s · Local time) is cut off at the top where it scrolls under the sticky conversation header. There is no fade or separator, so it looks half-clipped.",
-      "The sidebar conversation list cuts off a partially visible row above 'Some native sessions are unavailable'. This is normal scroll overflow, but it looks like stray dashes.",
-      "The screen.png preview in the evidence panel is a very small thumbnail (about 100×60 px) in an otherwise empty panel, so the recorded image's content is hard to inspect at this size.",
-      "The 'Open working copy' and 'Open recorded step' links sit very close together with little visual separation."
+      "In the middle column, the 'Started Oct 13, 02:09:06 · Ended … · Duration 5s · Local time' metadata row is partly hidden under the sticky conversation header. This is a scroll-position overlap; the text is still mostly readable.",
+      "In the sidebar conversation list, a fourth item is cut off at the bottom edge and shows only a sliver of text above 'Some native sessions are unavailable'. This is normal scroll clipping, but it looks untidy.",
+      "The screen.png preview in the evidence panel is very small (about 100×60 px), so you can't make out its content without opening it.",
+      "The evidence panel leaves most of its height as empty space below the preview and the 'Open working copy' / 'Open recorded step' links."
     ]
   }
 }

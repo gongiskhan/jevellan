@@ -10,11 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The same 'Claude Code started working in External activity fixture…' warning banner appears twice in the main column",
-      "In the sidebar conversation list, a fourth item is partly clipped at the bottom edge above 'Some native sessions are unavailable'. The list appears to scroll.",
-      "'Working on the requested change.' sits right against the description line above it, with almost no spacing",
-      "Sidebar conversation titles are cut off with ellipses ('Exercise external activity…', 'Exercise composer choic…'), which looks intentional",
-      "The 'completed' status label in the 'Read project' card sits alone on its own line instead of lining up with the card title"
+      "The same red warning appears twice in a row in the main column (\"Claude Code started working in External activity fixture while this step ran…\").",
+      "The \"Working on the requested change.\" text sits right under the header divider with almost no top spacing.",
+      "The last conversation row in the sidebar is clipped at the bottom of the scroll area and shows as a faded partial row above \"Some native sessions are unavailable\".",
+      "The amber \"Blocked\" status chip next to \"dev-madrid\" is low-contrast against the light background."
     ]
   }
 }

@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Back to project' link sits flush against the top edge of the viewport, centered over the content column, with almost no top padding.",
-      "The merge-correction controls ('Jev would: ask you', 'Why', 'Should have asked me', 'Didn't need asking') and the 'Saved for future merge decisions.' confirmation are packed tightly into one right-aligned row with little spacing, so the confirmation reads as part of the control group.",
-      "The 'Open thread' button spans the full content width, which looks oversized for a secondary action.",
-      "Most of the main content area below the card is empty."
+      "'Back to project' link sits centered at the very top edge with almost no top padding, away from the page heading it belongs to",
+      "'Open thread' button stretches the full content width, which looks heavy for a secondary action",
+      "Merge correction row ('Jev would: ask you', Why, Should have asked me, Didn't need asking, 'Saved for future merge decisions.') is right-aligned on one line with tight spacing, so the actions and the confirmation run together",
+      "The ellipses on sidebar session titles and metadata ('Context · J11 memory journ…', 'dev-…') are intentional, but they hide the full names",
+      "Large empty area below the content; the page doesn't use the vertical space"
     ]
   }
 }

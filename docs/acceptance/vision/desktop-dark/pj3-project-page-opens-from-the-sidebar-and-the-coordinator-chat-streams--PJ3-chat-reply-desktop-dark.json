@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses ('Context · J11 memory jour…', 'Mesh journey fix…', 'dev-ma…'). They are still identifiable, but the full names are hidden.",
-      "The chat pane is mostly empty space below the short reply, while the right panel is dense. The layout feels unbalanced at this width.",
-      "The header status chip says 'Idle' while the right panel shows 'Add a greeting' as Active/Running. The status may look inconsistent, but this isn't a layout problem.",
-      "The low-contrast grey metadata text (for example 'Claude Code · Fable · high · Worktree · dev-madrid' and 'Some native sessions are unavailable') is small and faint, though still readable."
+      "The 'Add a goal to explain what matters and let the coordinator…' hint at the bottom of the right column is cut off at the bottom edge of the window. The column looks scrollable, so the text should still be reachable.",
+      "Long session titles and subtitles in the sidebar are shortened with an ellipsis (for example 'Context · J11 memory jour…' and 'Context · Shared memory …').",
+      "The header badge says 'Idle' while the right column lists 'Add a greeting' as Active/Running. This is a state mismatch, not a layout problem."
     ]
   }
 }

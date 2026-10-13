@@ -12,7 +12,7 @@ import {
   EVENT_CURSOR_AHEAD, MESSAGE_ID_REUSED, RESTARTED, coordinatorFailedTwiceNotice, coordinatorSystemAppend, coordinatorUnavailableNotice, derivedId, noCoordinatorAccount, noCoordinatorModel,
 } from '../packages/projects/dist/index.js';
 import {
-  FIXTURE_MENU, commitStep, expectNoLeaks, queueThread, holdStep, never, projectFixture, reportStep, type ProjectFixture, type ProjectFixtureOptions,
+  FIXTURE_MENU, commitStep, expectNoLeaks, queueThread, holdStep, never, projectFixture, reportStep, threadRequestText, type ProjectFixture, type ProjectFixtureOptions,
 } from './helpers/project-fixture.js';
 
 let fixture: ProjectFixture | undefined;
@@ -114,7 +114,7 @@ test('PJ2 one owner message starts two threads and the publications arrive batch
   expect(first).toMatchObject({ owner: { kind: 'coordinator', projectId: pid, id: pid }, turn: 1, permissions: 'read-only', safetyProfile: 'coordinator', cwd: f.checkout,
     systemAppend: coordinatorSystemAppend('Shop') });
   expect(first!.resume).toBeUndefined();
-  expect(first!.prompt).toMatch(clocked('Project notebook:\n(empty)\n\nActive threads:\n(none)\n\nOpen questions to the owner (numbered as the owner sees them):\n(none)\n\nRecent conversation with the owner:\n(none)\n\nEvents since your last turn:\n[owner HH:MM] add A and fix B'));
+  expect(first!.prompt).toMatch(clocked('Project notebook:\n(empty)\n\nActive threads:\n(none)\n\nOpen questions to the owner (numbered as the owner sees them):\n(none)\n\nRecent conversation with the owner:\n(none)\n\nProject memory:\nRecently updated notes:\nSearch memory with memory_search for more.\n\nEvents since your last turn:\n[owner HH:MM] add A and fix B'));
   expect(second!.resume).toEqual({ sessionId: sessionOf(f, first!).sessionId });
   const pr = async (id: string) => (await f.index(id))!.pr!.number;
   const [lineA, lineB] = [`[thread "Add A" (${idA})] Pull request #${await pr(idA)} opened.`, `[thread "Fix B" (${idB})] Pull request #${await pr(idB)} opened.`];
@@ -125,11 +125,17 @@ test('PJ2 one owner message starts two threads and the publications arrive batch
   // 4. The chat: the owner message, two start lines, both publications received during turn 1, both replies and completed ends.
   expect(ledgerTypes(f)).toEqual(['coordinator-event', 'coordinator-turn-start', 'coordinator-tool', 'coordinator-tool', 'coordinator-event', 'coordinator-event', 'coordinator-text',
     'coordinator-turn-end', 'coordinator-turn-start', 'coordinator-text', 'coordinator-turn-end']);
-  expect(payloads(f, 'coordinator-tool')).toEqual([
+  const tools = payloads(f, 'coordinator-tool');
+  expect(tools.map(({ input: _input, inputTruncated: _truncated, ...line }) => { void _input; void _truncated; return line; })).toEqual([
     { schema: 'coordinator-tool-v1', tool: 'jevellan_task_create', ok: true, summary: 'Queued task "Add A"' },
     { schema: 'coordinator-tool-v1', tool: 'jevellan_task_create', ok: true, summary: 'Queued task "Fix B"' }]);
   expect(payloads(f, 'coordinator-text').map((data) => data.text)).toEqual(['Started two threads.', 'Both pull requests are open.']);
-  expect(payloads(f, 'coordinator-turn-end')).toEqual([{ schema: 'coordinator-turn-end-v1', turn: 1, status: 'completed' }, { schema: 'coordinator-turn-end-v1', turn: 2, status: 'completed' }]);
+  const defaults = { type: 'feature', source: 'owner-request', after: [], fixed: {}, goalId: null, needs: [], now: false };
+  expect(tools.map(line => JSON.parse(line.input!))).toEqual([{ title: 'Add A', brief: 'Create a.txt.', ...defaults }, { title: 'Fix B', brief: 'Create b.txt.', ...defaults }]);
+  expect(tools.map(line => line.inputTruncated)).toEqual([false, false]);
+  const ends = payloads(f, 'coordinator-turn-end');
+  expect(ends.map(({ sessionKey: _key, usage: _usage, ...line }) => { void _key; void _usage; return line; })).toEqual([{ schema: 'coordinator-turn-end-v1', turn: 1, status: 'completed' }, { schema: 'coordinator-turn-end-v1', turn: 2, status: 'completed' }]);
+  for (const end of ends) { expect(end.sessionKey).toMatch(/^[a-f0-9]{64}$/u); expect(end.usage).toEqual({ inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, costSource: 'unknown' }); }
   const events = received(f);
   expect(events[0]).toMatchObject({ kind: 'user-message', clientMessageId: 'msg_pj2', text: 'add A and fix B' });
   expect(new Set(events.slice(1).map((event) => event.kind === 'thread-published' ? `${event.threadId}:${event.result}:${event.prNumber}` : event.kind)))
@@ -184,7 +190,7 @@ test('PJ2b a needs-decision report becomes an owner question and the answer reac
   for (let n = 0; n < 8; n += 1) f.fake.enqueueTurn(coordinate, forCoordinator);
   f.fake.enqueueTurn(reportStep({ status: 'needs-decision', summary: 'Need a database choice.', question: 'Which database?', options: [{ label: 'SQLite' }, { label: 'Postgres' }] }),
     forThread((input) => input.prompt.startsWith('Task: Store data')));
-  f.fake.enqueueTurn(commitStep({ 'store.txt': 'sqlite\n' }, { status: 'done', summary: 'Stored the data in SQLite.' }), forThread((input) => input.prompt === 'Use SQLite.'));
+  f.fake.enqueueTurn(commitStep({ 'store.txt': 'sqlite\n' }, { status: 'done', summary: 'Stored the data in SQLite.' }), forThread((input) => threadRequestText(input.prompt) === 'Use SQLite.'));
 
   expect(await post(f, 'msg_pj2b', 'Store the data.')).toBe(false);
   const asked = await f.waitFor(async () => (await work(f)).decisions.open, (open) => open.length === 1);
@@ -211,7 +217,8 @@ test('PJ2b a needs-decision report becomes an owner question and the answer reac
   expect(results[2]).toEqual({ schema: 'thread-message-result-v1', threadId, state: expect.stringMatching(/^(waiting-for-you|running)$/), delivery: 'started' });
   const [turnOne, turnTwo] = threadTurns(f, threadId);
   expect(threadTurns(f, threadId)).toHaveLength(2);
-  expect(turnTwo).toMatchObject({ prompt: 'Use SQLite.', resume: { sessionId: sessionOf(f, turnOne!).sessionId } });
+  expect(turnTwo).toMatchObject({ resume: { sessionId: sessionOf(f, turnOne!).sessionId } });
+  expect(threadRequestText(turnTwo!.prompt)).toBe('Use SQLite.');
   expect(f.thread(threadId)).toMatchObject({ state: 'in-review', lastReport: { status: 'done', summary: 'Stored the data in SQLite.', synthesized: false } });
   expect(received(f).filter((event) => event.kind === 'decision-answer')).toEqual([expect.objectContaining({ id: derivedId('cev', 'answer', decisionId), decisionId, threadId, question,
     answer: { optionLabel: 'SQLite', source: 'panel' } })]);
@@ -223,7 +230,8 @@ test('PJ2b a needs-decision report becomes an owner question and the answer reac
   expect(view.decisions.open).toEqual([]);
   expect(view.decisions.answered).toEqual([expect.objectContaining({ id: decisionId, answer: { optionLabel: 'SQLite', source: 'panel' } })]);
   expect(payloads(f, 'coordinator-tool').map((line) => [line.tool, line.ok])).toEqual([['jevellan_task_create', true], ['jevellan_ask_user', true], ['jevellan_thread_message', true]]);
-  expect(payloads(f, 'coordinator-tool')[1]).toEqual({ schema: 'coordinator-tool-v1', tool: 'jevellan_ask_user', ok: true, summary: `Asked you: ${question}`, threadId, decisionId });
+  expect(payloads(f, 'coordinator-tool')[1]).toEqual({ schema: 'coordinator-tool-v1', tool: 'jevellan_ask_user', ok: true, summary: `Asked you: ${question}`, threadId, decisionId,
+    input: JSON.stringify({ question, options: [{ label: 'SQLite', detail: 'Single file' }, { label: 'Postgres' }], threadId }), inputTruncated: false });
 });
 
 test('PJ2c without a coordinator account the thread question goes to the owner directly', { timeout: 120_000 }, async () => {
@@ -232,7 +240,7 @@ test('PJ2c without a coordinator account the thread question goes to the owner d
   expect(reason).toBe(`No account can run the coordinator model on ${f.deviceName}.`);
   f.fake.enqueueTurn(reportStep({ status: 'needs-decision', summary: 'Need a database choice.', question: 'Which database?', options: [{ label: 'SQLite' }, { label: 'Postgres' }] }),
     forThread((input) => input.prompt.startsWith('Task: Store data')));
-  f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'Using SQLite.' }), forThread((input) => input.prompt === 'SQLite'));
+  f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'Using SQLite.' }), forThread((input) => threadRequestText(input.prompt) === 'SQLite'));
 
   // Two messages: the coordinator is unavailable for lack of an account, said once in the chat.
   expect(await post(f, 'msg_c1', 'Store the data.')).toBe(false); expect(await post(f, 'msg_c2', 'Keep it small.')).toBe(false);
@@ -254,7 +262,7 @@ test('PJ2c without a coordinator account the thread question goes to the owner d
   // Answering with an option reaches the thread as the owner's message, which the coordinator queue also records.
   expect(await call(f, route(f, `/decisions/${open[0]!.id}/answer`), 'POST', answer('ans_c', 'SQLite'), 202)).toEqual({ schema: 'decision-answered-view-v1', repeated: false });
   await f.waitFor(() => f.thread(threadId), (thread) => thread.state === 'idle' && thread.turns === 2); await idle(f);
-  expect(threadTurns(f, threadId).map((input) => input.prompt)).toEqual([expect.stringMatching(/^Task: Store data\n\nStore the data\./), 'SQLite']);
+  expect(threadTurns(f, threadId).map((input) => threadRequestText(input.prompt))).toEqual(['Task: Store data\n\nStore the data.', 'SQLite']);
   expect(f.coordinatorState().queue.map((event) => event.kind)).toEqual(['user-message', 'user-message', 'thread-user-message', 'thread-report', 'thread-user-message', 'thread-report']);
   expect(f.coordinatorState().queue[4]).toMatchObject({ kind: 'thread-user-message', threadId, text: 'SQLite' });
   // Nothing ran on the coordinator runtime, and the reason was told once however many events arrived and sweeps ran.
@@ -423,7 +431,9 @@ test('a restart drops the running coordinator turn; its events stay queued and t
   // The ledger shows the dropped turn; the next turn delivers the undelivered message and the interruption, in a normal turn.
   const interrupted = received(f).find((event) => event.kind === 'thread-interrupted')!;
   expect(interrupted).toMatchObject({ threadId, reason: 'restart', message: RESTARTED });
-  expect(payloads(f, 'coordinator-turn-end')).toEqual([{ schema: 'coordinator-turn-end-v1', turn: 1, status: 'dropped' }, { schema: 'coordinator-turn-end-v1', turn: 2, status: 'completed' }]);
+  const ends = payloads(f, 'coordinator-turn-end');
+  expect(ends.map(({ sessionKey: _key, usage: _usage, ...line }) => { void _key; void _usage; return line; })).toEqual([{ schema: 'coordinator-turn-end-v1', turn: 1, status: 'dropped' }, { schema: 'coordinator-turn-end-v1', turn: 2, status: 'completed' }]);
+  expect(ends[0]!.usage).toBeUndefined(); expect(ends[1]!.sessionKey).toMatch(/^[a-f0-9]{64}$/u); expect(ends[1]!.usage).toMatchObject({ costSource: 'unknown' });
   expect(payloads(f, 'coordinator-turn-start').map((data) => [data.turn, data.eventIds])).toEqual([[1, queued], [2, [...queued, interrupted.id]]]);
   const next = coordinatorTurns(f)[1]!;
   // A normal new turn: the dropped turn's session carries on, and the turn sends the undelivered events.

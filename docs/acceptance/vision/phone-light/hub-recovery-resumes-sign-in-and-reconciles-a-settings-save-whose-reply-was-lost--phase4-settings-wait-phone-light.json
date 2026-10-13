@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fixed 'Can't reach the hub' wait banner sits over the bottom of the Guards card, just below the 'Pause after a plan' checkbox. The screenshot can't show whether the page has enough bottom padding for the controls under the banner to scroll into view.",
-      "The tab strip clips its neighbouring labels ('…es' on the left, 'Improve…' on the right). This is expected for a horizontally scrolling tab bar with arrow buttons.",
-      "The textarea above the Guards card is cut off at the top edge because the page is scrolled. Its placeholder text is only partly visible."
+      "The fixed 'Can't reach the hub' wait banner covers the bottom of the Guards form, just below the 'Pause after a plan' checkbox. The checkbox is still visible. Any controls further down depend on the page scrolling clear of the banner, which can't be confirmed from this frame.",
+      "The tab bar clips the first tab's label (shows only '…es') beside the left scroll arrow. This is expected for a horizontally scrolling tab strip.",
+      "The text area at the top is cut off by the scroll position, so its helper text shows only partly. This is expected because the page is scrolled down."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The command box cuts the command off at the right edge ('owner-visible-text-owner-vi…'). This looks intentional: the box scrolls sideways, a hint says so, and Copy is right there.",
-      "The tab bar is clipped at the right edge ('Pull requ…'). It looks like a tab strip that scrolls sideways, but nothing on screen shows that more tabs exist.",
-      "The status text 'Context unavailable · Compacted 0 times today' wraps awkwardly beside the 'Fresh session' button."
+      "The command block is clipped on the right edge ('owner-visible-text-owner-vis…'). The 'Scroll sideways to read the full command' hint says this is by design, and the Copy and Run in Terminal buttons still give the exact command.",
+      "The last tab is cut off at the edge of the screen ('Pull requ…'). The tab bar looks horizontally scrollable.",
+      "The status badge text is shortened to 'Working…'."
     ]
   }
 }

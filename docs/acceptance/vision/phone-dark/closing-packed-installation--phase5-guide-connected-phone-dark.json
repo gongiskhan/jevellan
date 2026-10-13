@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The settings tab strip cuts off the labels on both sides (\"s\" on the left, \"Improv\" on the right). The arrow buttons scroll it, so the other tabs can still be reached.",
-      "Several model description fields (Fable, GPT) and the Routing profile field show only part of their text. You have to scroll inside the field to read the rest.",
-      "The Jev key input is empty and has no placeholder, so it isn't clear whether a key is already saved. The magenta mask above it is intentional."
+      "The top tab strip cuts off its edge labels ('…nd' on the left and 'Improv…' on the right). The scroll arrows are visible, so the other tabs can still be reached.",
+      "Some multiline fields show only part of their text and cut off a line partway at the bottom edge. This affects the Fable, Opus and GPT model descriptions and the Routing profile text. The fields appear to scroll, so the rest of the text is still reachable.",
+      "The Fable card's description label and the start of its description field fall behind the sticky Save decisions settings bar. This comes from the full-page capture, not a real layout overlap."
     ]
   }
 }

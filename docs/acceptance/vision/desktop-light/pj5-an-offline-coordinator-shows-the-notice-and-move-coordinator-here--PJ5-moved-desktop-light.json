@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Session titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Mesh journey fixture · de…'), as expected for narrow list rows.",
-      "The main conversation area is mostly empty under the 'The coordinator moved to dev-madrid.' notice, which leaves a large blank space."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'), which is expected for long names",
+      "The 'Nothing in the queue. Ask the coordinator or add a task.' line is indented less than the other empty-state messages in the right panel",
+      "'Project day: 2026-10-13' uses a larger font than the other empty-state text in the Nightly section"
     ]
   }
 }

@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dialog is scrolled partway down, so the 'Path on Offline fixture' label sits right under the header divider with little space above it.",
-      "The path field is labeled 'Path on Offline fixture', but the button below it says 'Browse folders on dev-madrid'. The two device names don't match, which may confuse users.",
-      "The Memory section is the last thing in the scroll area and sits close to the sticky Cancel/Save footer. Any memory fields below 'Memory folder' would need more scrolling to reach."
+      "The dialog body opens scrolled, so the 'Path on Offline fixture' label sits right under the header divider and the fields above it are hidden until you scroll up.",
+      "The path field is labeled for 'Offline fixture', but the button below says 'Browse folders on dev-madrid', so it's unclear which device it browses.",
+      "The 'Allowed devices' checkboxes use bright magenta, which doesn't match the muted dark theme.",
+      "The last field ('Memory folder') sits close to the footer divider. It's still fully visible, but the spacing is tight."
     ]
   }
 }

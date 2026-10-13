@@ -5,14 +5,13 @@
   "test": "Closing packed installation",
   "layout": "desktop-light",
   "screenshot": "screenshots/phase5-guide-verified-desktop-light.png",
-  "expected": "the finished conversation and verification result without overlap or clipping",
+  "expected": "the finished conversation and verification result without overlap or clipping Bright magenta rectangles are intentional screenshot masks over saved secret data, not product overlays or rendering faults.",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation titles and subtitles are cut off with ellipses ('Installation acceptance: …', 'Installation fixture · de…'). This looks like intended truncation but hides the full title and project/branch name.",
-      "The left gutter of the right-hand diff panel shows the old line number (1) and the new line number (1) at different offsets, so the two line-number columns look misaligned.",
-      "The 'Shell sessions' toggle and the 'Some native sessions are unavailable' disclosure text are small and low-contrast but still readable."
+      "Sidebar conversation titles and subtitles are cut off with an ellipsis ('Installation acceptance: c…', 'Done · Installation fixture · G…'). This is intentional truncation, and the full title appears in the main header.",
+      "There is a large empty area in the right Changes panel below the Jevellan Verification card, and in the main column above the composer."
     ]
   }
 }

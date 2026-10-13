@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Improver sandbox · dev-ma…'). This is intentional overflow handling and the full text is likely available elsewhere.",
-      "The dev-madrid hub card has no visible power or AC-sleep readiness indicator. That fits the 'ready' state (the warning has cleared), but there is no positive confirmation that the hub is power-ready.",
-      "The 'Open' button on the dev-madrid card and the 'Inspect worktrees' and 'Open' buttons on the offline card are greyed out with low contrast. This looks like an intentional disabled state.",
-      "The 'Automatic device choice' checkbox and its 'Coming later.' note are low contrast."
+      "The 'Open terminals' links sit centered, away from the left-aligned Terminal buttons above them, so they look disconnected from the control they belong to.",
+      "The hub card (dev-madrid) shows no explicit power or sleep readiness indicator. The ready state can only be inferred because no AC-sleep warning is shown.",
+      "The dimmed 'Open' on dev-madrid and the dimmed 'Inspect worktrees' and 'Open' on Offline fixture have low contrast, though they look intentionally disabled.",
+      "The 'Apps only' chip on 'Mini apps only' stretches the full card width as a thin bar, which looks heavier than the other badges."
     ]
   }
 }

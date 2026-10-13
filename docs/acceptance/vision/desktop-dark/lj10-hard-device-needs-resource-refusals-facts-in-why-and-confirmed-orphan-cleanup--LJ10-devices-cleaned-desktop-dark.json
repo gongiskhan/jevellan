@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation titles are cut off with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…'), and so are their subtitle lines ('dev-ma…', 'dev-…', 'de…')",
-      "The 'Open' button on dev-madrid and the 'Inspect worktrees' and 'Open' buttons on Offline fixture look dimmed or disabled, so they have low contrast",
-      "The secondary metadata text (cores/load/memory lines, worktree usage) is small and low-contrast, but you can still read it",
-      "The device cards have uneven heights, which leaves empty space under the right-hand cards"
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…'). This looks like intentional truncation.",
+      "The cards in the grid have uneven heights, which leaves empty space below the Browser member and Offline fixture cards.",
+      "The 'Apps only' badge on the Mini apps only card stretches across the full card width, so it looks like an input field rather than a badge.",
+      "The 'Open terminals' links are centered while the other actions are left-aligned, so the alignment is inconsistent.",
+      "The 'Open' and 'Inspect worktrees' buttons that look disabled have low contrast against the dark background."
     ]
   }
 }

@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The right panel is cut off at the bottom of the screen: the 'GOALS 1' section and its 'New goal' button are only partly visible. The panel probably scrolls, so nothing is out of reach.",
-      "Session titles and metadata in the sidebar are shortened with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…').",
-      "The 'Asks' and 'Daily' sections in the goal's group sit very close together. The 'Daily' heading follows the 'Nothing open for this goal.' text with almost no gap, and spacing is uneven compared with the other sections.",
-      "The 'Project day: 2026-10-12' line under NIGHTLY is indented differently from the empty-state text in other sections."
+      "Thread titles in the sidebar session list are truncated with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Shared memory fi…'); this looks like intended truncation.",
+      "The 'Asks' and 'Daily' subsections in the right panel have tight vertical spacing; the 'Daily' heading sits right under 'Nothing open for this goal.'",
+      "The 'GOALS 1' header at the bottom of the right panel is clipped by the viewport edge. The panel appears scrollable, so this is fold placement, not a blocking cutoff.",
+      "The 'Order' / 'Goals' toggle under QUEUE is somewhat crowded against the 'Hardening through automated tests' heading.",
+      "The header shows 'Context unavailable', and the 'Some native sessions are unavailable' notice appears in the sidebar. These are informational states, not rendering defects."
     ]
   }
 }

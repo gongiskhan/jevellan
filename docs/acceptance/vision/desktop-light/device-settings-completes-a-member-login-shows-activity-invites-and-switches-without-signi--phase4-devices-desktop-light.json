@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Conversation titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · Outside context…', 'Exercise automatic decisi…'). This is intentional truncation in a narrow column.",
-      "The 'Open' button on the current device (dev-madrid) and the 'Inspect worktrees'/'Open' buttons on the Offline fixture card are styled as low-contrast disabled buttons. They are still readable.",
-      "The dev-madrid card is taller than the Browser member card next to it, which leaves empty space under the right column."
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Exercise external activity…', 'Context · Outside context…'). This looks like intentional truncation, not a layout bug.",
+      "Browser member card has empty space on the right in the two-column grid next to the taller dev-madrid card. The Offline fixture card leaves an empty column beside it.",
+      "Offline fixture card's 'Inspect worktrees' button looks muted or disabled compared to the other cards, but it's still readable.",
+      "'Automatic device choice' checkbox and 'Coming later.' text are light gray and low contrast, but still readable."
     ]
   }
 }

@@ -10,7 +10,7 @@ import {
 import { HubProjectAccess } from '../packages/mesh/dist/index.js';
 import { FakeRuntime, forCoordinator, forThread } from '../packages/runtime-contract/dist/index.js';
 import { STOP_THE_THREAD, accountMovedNotice } from '../packages/projects/dist/index.js';
-import { FIXTURE_MENU, commitStep, expectNoLeaks, projectFixture, reportStep, type ProjectFixture, type ProjectFixtureOptions } from './helpers/project-fixture.js';
+import { FIXTURE_MENU, commitStep, expectNoLeaks, projectFixture, reportStep, threadRequestText, type ProjectFixture, type ProjectFixtureOptions } from './helpers/project-fixture.js';
 
 let fixture: ProjectFixture | undefined;
 afterEach(async () => {
@@ -87,7 +87,7 @@ test('an attached thread refuses Stop, Restart and Discard from the owner and th
   claude.enqueueTurn(reportStep({ status: 'progress', summary: 'Checked the copy.' }), forThread());
   await f.app.projectWork.threads.message('project', threadId, 'owner', 'Check the copy.', false);
   await f.waitFor(() => threadTurns(claude).length, (count) => count === 2); await rest(f, threadId);
-  expect(threadTurns(claude).at(-1)!.prompt).toBe('Check the copy.');
+  expect(threadRequestText(threadTurns(claude).at(-1)!.prompt)).toBe('Check the copy.');
   expect((await f.json(`/api/projects/project/threads/${threadId}`, ThreadViewSchema)).stopRefusal).toBeUndefined();
   expect((await f.request(`/api/projects/project/threads/${threadId}/stop`, 'POST', { schema: 'thread-stop-request-v1' })).status).toBe(202);
   expect((await f.waitFor(() => f.thread(threadId), (thread) => thread.state === 'stopped')).stateReason).toMatch(/^Stopped by you\. Its unpublished commits were saved at /);
@@ -145,13 +145,13 @@ test("an attached thread's account is held for turns on its device: other thread
   expect(f.thread(other).stateReason).toBe(waitingForAccount('Claude A')); expect(f.thread(late).stateReason).toBe(waitingForAccount('Claude A'));
 
   // Detach releases the account: the waiting message resumes the other thread's session and the late thread takes its first turn.
-  claude.enqueueTurn(reportStep({ status: 'progress', summary: 'Went on.' }), forThread((input) => input.prompt === 'Go on.'));
+  claude.enqueueTurn(reportStep({ status: 'progress', summary: 'Went on.' }), forThread((input) => threadRequestText(input.prompt) === 'Go on.'));
   claude.enqueueTurn(reportStep({ status: 'progress', summary: 'Started late.' }), forThread((input) => input.prompt.startsWith('Task: Late')));
   await f.app.projectWork.detach(attached);
   await f.waitFor(() => threadTurns(claude).length, (count) => count === 4); await rest(f, other); await rest(f, late);
-  const resumed = threadTurns(claude).find((input) => input.prompt === 'Go on.')!;
+  const resumed = threadTurns(claude).find((input) => threadRequestText(input.prompt) === 'Go on.')!;
   expect(resumed.resume).toEqual({ sessionId: session }); expect(resumed.account.account.id).toBe('acc_claude_a');
-  expect(threadTurns(claude).find((input) => input.prompt.startsWith('Task: Late'))!.prompt).toBe('Task: Late\n\nDo Late.');
+  expect(threadRequestText(threadTurns(claude).find((input) => input.prompt.startsWith('Task: Late'))!.prompt)).toBe('Task: Late\n\nDo Late.');
   expect(f.thread(other)).toMatchObject({ state: 'idle', queuedMessages: [], turns: 2 }); expect(f.thread(other).stateReason).toBeUndefined();
   expect(f.thread(late)).toMatchObject({ state: 'idle', turns: 1 }); expect(f.local(late)).not.toHaveProperty('pendingTurn');
 

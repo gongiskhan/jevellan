@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The leftmost 'Chat' tab is clipped at the left edge of the tab bar. It looks like a horizontally scrolled tab strip, so the tab can still be reached by scrolling.",
-      "In the #1 Review loop card, the action links ('Why', 'Should have asked me', 'Didn't need asking', 'Open thread', 'Open task') wrap across uneven rows and alignments, so the card looks a little cluttered. All of them are still readable and can be tapped."
+      "The tab strip is scrolled so the 'Chat' tab is partly cut off at the left edge. It looks like a horizontally scrollable strip, so the tab can still be reached.",
+      "In the merged PR cards, the action links wrap unevenly. 'Why / Should have asked me / Didn't need asking' sit right-aligned on their own row, while 'Open thread' and 'Open task' land on different rows in each card, so the layout looks inconsistent.",
+      "The '#7 Write the welcome copy' card shows no 'Should have asked me / Didn't need asking' correction links, unlike #1 and #2. This may be intentional."
     ]
   }
 }

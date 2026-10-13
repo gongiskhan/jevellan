@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour...', 'dev-ma...'). This is expected truncation, and the full text is likely available elsewhere.",
-      "The large empty area below the transcript is just unused space.",
-      "The muted footer text 'Some native sessions are unavailable' has fairly low contrast but can still be read."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'). This is normal overflow for a narrow sidebar.",
+      "The metadata line under the header ('Claude Code · Opus · low effort · …') is small, low-contrast monospace text, though it is still readable.",
+      "There is a large empty space between the last report card and the 'This thread has ended' footer."
     ]
   }
 }

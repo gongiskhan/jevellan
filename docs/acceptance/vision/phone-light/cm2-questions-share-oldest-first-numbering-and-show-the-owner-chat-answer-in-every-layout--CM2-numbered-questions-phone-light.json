@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row is cut off at the right edge ('Pull requ…'). It looks like a horizontally scrollable tab strip, but there is no visible scroll hint.",
-      "The 'Working…' status chip and the 'Claude Code Fable · high' label are small, low-contrast monospace text. They are still readable."
+      "The tab strip cuts off at the right edge ('Pull requ…'). It looks like a horizontally scrollable tab row, but nothing on screen shows that more tabs are available.",
+      "The status pill reads 'Working…' with an ellipsis. It may be cut short, or the ellipsis may be intended.",
+      "The 'Context unavailable · Compacted 0 times today' line wraps onto two lines next to the 'Fresh session' button. Both are still readable."
     ]
   }
 }

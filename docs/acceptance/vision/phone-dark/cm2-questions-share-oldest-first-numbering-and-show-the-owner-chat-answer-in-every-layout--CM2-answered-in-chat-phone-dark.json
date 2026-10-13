@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row is cut off at the right edge ('Pull requests' runs past the screen). It looks like a horizontally scrolling tab bar, so the tab can still be reached.",
-      "The 'Working…' status badge text is shortened with an ellipsis.",
-      "The 'Context unavailable · Compacted 0 times today' line wraps onto two lines next to the 'Fresh session' button."
+      "The tab row is clipped at the right edge: 'Pull requests' is cut off at the screen edge, and any later tabs are only reachable by scrolling sideways, with no visible hint that the row scrolls.",
+      "The status badge is shortened to 'Working…', so the full status text is hidden.",
+      "The three answered questions each repeat the full combined answer ('1 Archive, 2 Amber, 3 25') instead of showing only their own answer. The text is readable but repetitive."
     ]
   }
 }

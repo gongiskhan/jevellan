@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar session titles are cut off with ellipses ('Context · J11 memory jour…', 'Context · Mesh journey fix…'), and so are their subtitles ('dev-ma…', 'dev-…', 'de…'). That's normal truncation, and the full text is likely available elsewhere.",
-      "The fallback chip 'Placed without Jev: authentication failed' is in small amber monospace text on a pale background, so it has fairly low contrast, but it's still readable.",
-      "The meta line under the header ('Claude Code · Fable · high effort · …') is small, light gray monospace text with low contrast.",
-      "Most of the main pane below the report card is empty white space."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Mesh journey fixture · de…'). This is intentional truncation; the full text likely shows on hover.",
+      "The 'Placed without Jev: authentication failed' chip uses small amber monospace text on a pale background, so its contrast is fairly low, but it is still readable.",
+      "The 'Project now' bullet in the prompt runs two pieces of information into one line ('…last report: (none) Merged to main in the last 24 hours: (none)') with no separator, which makes it harder to read."
     ]
   }
 }

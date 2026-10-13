@@ -701,7 +701,7 @@ const correction = (group, n, action, from, to) => {
 };
 for (const n of [1, 2, 3]) { correction('implement', n, 'implement', 'claude-fable', 'codex-gpt'); correction('review', n, 'review', 'claude-fable', 'claude-opus'); }
 // Projects control (design 5.5 item 9), on the same listener: POST routes; every body is a versioned fixture document (pulse has none).
-const ControlClockSchema = z.strictObject({ schema: z.literal('fixture-project-clock-v1'), advanceMinutes: z.number().int().min(0).max(1440) });
+const ControlClockSchema = z.strictObject({ schema: z.literal('fixture-project-clock-v1'), advanceMinutes: z.number().int().min(0).max(1440), reset: z.boolean().default(false) });
 const ControlEkoaSchema = z.strictObject({ schema: z.literal('fixture-ekoa-loop-v1'), action: z.enum(['prepare', 'answer', 'approve', 'ask-owner', 'merge', 'tick', 'list']) });
 const ControlDailySchema = z.strictObject({ schema: z.literal('fixture-daily-control-v1'), action: z.enum(['prepare', 'prepare-late', 'reset', 'open', 'pass', 'fail', 'workflow', 'scheduler-watch', 'scheduler-dispatch']) });
 const dailyMarker = join(root, 'daily-result');
@@ -787,6 +787,7 @@ async function projectControl(request, response) {
     if (input.action !== 'list') await application.ekoa.tick();
     send(200, { schema: 'fixture-ekoa-state-v1', tasks: [...ekoaFixture.tasks.values()].map(task => ({ title: task.title, status: task.status })) });
   } else if (request.url === '/projects/clock' && (input = parse(ControlClockSchema))) {
+    if (input.reset) { frozenProjectClock = undefined; projectClockOffset = 0; }
     if (frozenProjectClock === undefined) projectClockOffset += input.advanceMinutes * 60_000; else frozenProjectClock += input.advanceMinutes * 60_000;
     await application.projectWork.pulse(); send(200, { schema: 'fixture-project-clock-result-v1', advancedMinutes: input.advanceMinutes });
   } else if (request.url === '/projects/daily' && (input = parse(ControlDailySchema))) {

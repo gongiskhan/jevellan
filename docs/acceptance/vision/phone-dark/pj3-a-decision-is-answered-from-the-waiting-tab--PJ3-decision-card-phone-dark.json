@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip cuts off the last tab at the right edge (\"Pull requ…\"). This looks like a horizontally scrollable bar, so the tab can still be reached.",
-      "The Send button has low contrast against the card background, so it looks disabled while the input is empty. Its label can still be read.",
-      "The \"Answer in your own words\" placeholder is large compared with the option text in the card."
+      "The header tab strip cuts off the 'Pull requests' tab at the right edge ('Pull requ'). The strip appears to scroll horizontally, but no affordance shows that.",
+      "'Projects fixture' in the header sits tight against the icon buttons and may truncate if the title is longer.",
+      "The 'Send' button looks low-contrast or disabled, likely because the input is empty.",
+      "A large empty area sits below the decision card."
     ]
   }
 }

@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The device tags field on dev-madrid cuts off its value at 'phone-testi…'. It is an editable input, so the full value can still be reached.",
-      "The tab bar clips the tab before 'Improver' to 's' and cuts off the 'Projects' label. Scroll arrows are provided, so those tabs can still be reached.",
-      "The 'Inspect worktrees' and 'Open' buttons on Offline fixture look muted or disabled. This is probably intentional because the device is offline.",
-      "The 'Automatic device choice' checkbox is disabled and labelled 'Coming later', which is intentional."
+      "The settings tab strip at the top is clipped at both edges (the label at the left edge is unreadable and 'Projects' is cut off). It looks like an intended horizontal scroller with arrow controls, so the tabs are still reachable.",
+      "The 'Open terminals' link sits centered in pink text under the left-aligned 'Terminal' button, so it looks misaligned and detached from the rest of the card.",
+      "The 'Apps only' badge on the 'Mini apps only' card stretches across the full card width instead of fitting its text like the other tags.",
+      "Some lines in the storage section wrap awkwardly, with a line ending in 'Up to 20' and 'GB' left alone on the next line. They are still readable.",
+      "The checkbox and label for 'Automatic device choice' / 'Coming later.' are very low contrast. This is acceptable because the option is disabled."
     ]
   }
 }

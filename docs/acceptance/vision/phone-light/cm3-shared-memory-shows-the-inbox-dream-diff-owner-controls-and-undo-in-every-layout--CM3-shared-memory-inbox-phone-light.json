@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Add an owner note' toggle sits very close to the 'Search memory' label, so the bottom of the dialog looks cramped.",
-      "Inbox and project-note items are plain full-width bold buttons with no metadata or preview text, so they look more like actions than list entries.",
-      "Page content behind the dimmed overlay (such as the 'Open', 'Browse memory' and 'Context' buttons) shows faintly around the dialog. This is expected for a modal and does not overlap the dialog."
+      "The modal ends just below the Search row, so it's unclear whether more content (like Undo or owner controls further down) is reached by scrolling inside the modal.",
+      "The project path text in the dimmed background ('/tmp/jevellan-browser-…') shows just below the modal's bottom edge. It's behind the overlay, so it doesn't block anything.",
+      "The Inbox and Project notes entries are full-width outlined buttons with centered labels. They look like action buttons, not list items, which makes them a bit ambiguous."
     ]
   }
 }

@@ -5,15 +5,13 @@
   "test": "Closing packed installation",
   "layout": "desktop-light",
   "screenshot": "screenshots/phase5-guide-running-desktop-light.png",
-  "expected": "the running conversation with readable transcript and reachable controls",
+  "expected": "the running conversation with readable transcript and reachable controls Bright magenta rectangles are intentional screenshot masks over saved secret data, not product overlays or rendering faults.",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar conversation titles are cut off with ellipses ('Installation acceptance: ...', 'Context · Installation fixtu...') and so are the subtitle lines, but the full title is shown in the main header",
-      "Large empty area between the transcript and the composer",
-      "'Running' status is shown in three places at once: the header 'Working' badge, the step's 'Running' label, and 'Agent is working' above the composer",
-      "The light/dark/system theme switcher and the version text are small and low-contrast"
+      "Sidebar conversation titles and subtitles are cut off with ellipses ('Installation acceptance: c…', 'Running · Installation fixture …', 'Done · Installation fixture · G…'). The full title still shows in the main header.",
+      "A large empty area sits between the step card and the 'Agent is working' status bar, so the transcript feels sparse."
     ]
   }
 }

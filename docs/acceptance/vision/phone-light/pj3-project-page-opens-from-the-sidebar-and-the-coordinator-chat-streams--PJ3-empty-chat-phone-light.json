@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row overflows on the right: the 'Pull requests' tab is clipped at the screen edge, and any tabs after it can't be seen. It looks like a horizontally scrollable tab strip, so the tabs are probably still reachable, but there's no fade or arrow showing that more tabs exist.",
-      "The large empty area above and below the centered help text leaves the screen looking sparse. This is only visual balance, not a usability problem."
+      "The tab strip runs past the right edge, so the 'Pull requests' tab is clipped. It appears to be a horizontally scrollable row, but nothing on screen shows that more tabs are off-screen.",
+      "There is a large empty area between the tab row and the centered empty-state text, so the layout looks top-heavy on a phone."
     ]
   }
 }

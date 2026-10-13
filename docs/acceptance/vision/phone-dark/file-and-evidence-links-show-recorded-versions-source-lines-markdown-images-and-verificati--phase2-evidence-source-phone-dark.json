@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Code line 3 runs almost to the right edge of the code block and past the line-2 highlight's width, leaving no right padding. Longer lines would probably need horizontal scrolling or wrapping.",
-      "The checkpoint hash wraps onto its own line after 'Recorded checkpoint ·', so the dangling separator looks a little awkward.",
-      "The 'Open recorded step' link is low-contrast grey compared with the pink 'Open working copy' link.",
-      "The large empty area below the content is expected for short evidence."
+      "In the source code block, line 3 (`export const label = '<b>plain text</b>';`) runs right up to the block's right border. The text is still fully visible, but the highlight on line 2 stops short of it, so the code area likely scrolls sideways on narrow screens.",
+      "The recorded checkpoint hash is set in very small, low-contrast text. It can still be read.",
+      "\"Open recorded step\" is a muted grey and is much less visible than the pink \"Open working copy\" link next to it.",
+      "Most of the panel below the action links is empty space."
     ]
   }
 }

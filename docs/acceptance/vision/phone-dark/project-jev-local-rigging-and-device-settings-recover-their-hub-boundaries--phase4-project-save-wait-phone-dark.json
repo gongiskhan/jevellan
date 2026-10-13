@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Path on dev-madrid' input cuts off its long value at the right edge. This is normal for a single-line text field, and the value can still be scrolled.",
-      "The disabled 'Saving...' button has low contrast against the dark background, but it is still readable as a disabled state.",
-      "The modal scrolls on its own and its top edge sits close to the viewport, so a little of the dimmed page behind it shows above the header."
+      "The 'Path on dev-madrid' input cuts off the long temp path at the right edge ('settings-wait-pro…'). Text inputs normally scroll, so this doesn't block anything.",
+      "The disabled 'Saving...' button has low contrast against the dark background. This is the expected disabled styling, but it's harder to read than the other controls.",
+      "The 'Browse folders on dev-madrid' button sits right above the 'Git policy' label with very little space between them."
     ]
   }
 }

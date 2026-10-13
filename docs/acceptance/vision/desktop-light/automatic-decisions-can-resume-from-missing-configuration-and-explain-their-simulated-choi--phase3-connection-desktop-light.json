@@ -10,8 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Jev key saved.' toast covers the middle of the Decisions subtitle ('Jev chooses each next step from the … give it.'). It is a dismissible, temporary overlay, so the text is hidden only while it shows.",
-      "Routing profile textarea text runs past the bottom edge; the last line is clipped, but the field is a resizable, scrollable textarea, so the content can still be reached."
+      "The 'Jev key saved.' toast sits on top of the page subtitle and hides its middle ('Jev chooses each next step from the … give it.'). The toast is temporary and the subtitle is only explanatory text, so this is not blocking.",
+      "The Routing profile textarea cuts its last line off at the bottom edge. The box scrolls and can be resized, so the rest of the text is still reachable.",
+      "Long conversation titles and subtitles in the sidebar are shortened with ellipses, which looks intentional.",
+      "The model ID badge 'claude-fable-5-1' is pushed to the far right, away from its 'claude' label, which leaves a large empty gap in the Model menu row."
     ]
   }
 }

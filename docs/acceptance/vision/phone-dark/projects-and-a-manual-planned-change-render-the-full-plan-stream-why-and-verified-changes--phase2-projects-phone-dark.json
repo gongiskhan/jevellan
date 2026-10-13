@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Tab labels at both ends of the settings tab strip are clipped (\"er\" on the left, a partial label on the right). This looks like an intentional horizontal scroller with arrow buttons, but the clipped labels are hard to read.",
-      "Long project paths wrap mid-segment (for example \"activity-context-/project\" and \"user/picked-/project\"), so they're a little harder to read.",
-      "The \"Context needs a decision\" badges are small, low-contrast amber text on a dark background."
+      "The horizontally scrolling settings tab strip shows a partly clipped tab at the left edge (\"…er\") and another at the right edge. Scroll arrows are present, so these tabs can still be reached.",
+      "Long project paths wrap mid-segment (e.g. \"user/picked-project\", \"shared-memory-project\"). They stay readable."
     ]
   }
 }

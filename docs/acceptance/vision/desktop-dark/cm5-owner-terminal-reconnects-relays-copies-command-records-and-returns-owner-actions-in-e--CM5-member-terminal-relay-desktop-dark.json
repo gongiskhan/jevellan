@@ -10,9 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Session titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Gonca…'). This is intentional overflow handling, and the full titles are likely available on hover.",
-      "The 'Send to…' button and the 'Run' button look dimmed or disabled at low contrast. That is probably correct, since nothing is selected and the input is empty, but they are slightly harder to read than the other controls.",
-      "The long member path in the Terminal header ('/private/var/folders/…/user') takes up most of the header width. It fits at this size, but it could crowd the 'Connected' status at narrower widths."
+      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory jour…', 'dev-…'); this is intended truncation and the text is still readable",
+      "The 'Send to…' button label ends in an ellipsis and looks dimmer than the other copy buttons, maybe because it is disabled",
+      "The terminal output repeats the sudo hint message twice",
+      "The large empty terminal area leaves most of the panel blank",
+      "The 'Run' button looks dim or disabled while the command input is empty"
     ]
   }
 }

@@ -125,7 +125,7 @@ test('one turn at a time: events during a turn arrive batched in the next, which
   expect(first).toMatchObject({ owner: { kind: 'coordinator', projectId: 'proj_a', id: 'proj_a' }, turn: 1, permissions: 'read-only', safetyProfile: 'coordinator', cwd: checkout,
     model: 'scripted-model', effort: 'medium', timeoutMs: 1_200_000, systemAppend: coordinatorSystemAppend('Shop') });
   expect(first!.resume).toBeUndefined();
-  expect(first!.prompt).toMatch(/^Project notebook:\n\(empty\)\n\nActive threads:\n\(none\)\n\nOpen questions to the owner:\n\(none\)\n\nRecent conversation with the owner:\n\(none\)\n\nEvents since your last turn:\n\[owner \d{2}:\d{2}\] add A and fix B$/);
+  expect(first!.prompt).toMatch(/^Project notebook:\n\(empty\)\n\nActive threads:\n\(none\)\n\nOpen questions to the owner \(numbered as the owner sees them\):\n\(none\)\n\nRecent conversation with the owner:\n\(none\)\n\nProject memory:\nProject memory is unavailable for this turn\.\n\nEvents since your last turn:\n\[owner \d{2}:\d{2}\] add A and fix B$/);
   expect(second).toMatchObject({ turn: 2, resume: { sessionId: work.coordinators.get('proj_a').state().session!.nativeSessionId } });
   expect(second!.prompt).toBe('Events since your last turn:\n[thread "Add A" (thread_a)] Pull request #1 opened.\n[thread "(unknown thread)" (thread_b)] Pull request #2 opened.');
   const state = work.coordinators.get('proj_a').state();
@@ -134,10 +134,11 @@ test('one turn at a time: events during a turn arrive batched in the next, which
   // Ledger: events on receipt (D2a), delivered ids on the turn start, the final text, and completed ends.
   const starts = payloads(work, 'coordinator-turn-start');
   expect(starts).toEqual([
-    { schema: 'coordinator-turn-v1', turn: 1, fresh: true, runtime: 'fake', modelLabel: 'Fixture', effort: 'medium', accountLabel: 'Work', eventIds: [expect.stringMatching(/^cev_/)] },
-    { schema: 'coordinator-turn-v1', turn: 2, fresh: false, runtime: 'fake', modelLabel: 'Fixture', effort: 'medium', accountLabel: 'Work', eventIds: ['cev_pa', 'cev_pb'] }]);
+    { schema: 'coordinator-turn-v1', turn: 1, fresh: true, runtime: 'fake', modelLabel: 'Fixture', effort: 'medium', accountLabel: 'Work', eventIds: [expect.stringMatching(/^cev_/)], prompt: first!.prompt, promptTruncated: false },
+    { schema: 'coordinator-turn-v1', turn: 2, fresh: false, runtime: 'fake', modelLabel: 'Fixture', effort: 'medium', accountLabel: 'Work', eventIds: ['cev_pa', 'cev_pb'], prompt: second!.prompt, promptTruncated: false }]);
   expect(payloads(work, 'coordinator-text').map((data) => data.text)).toEqual(['Started two threads.', 'Both pull requests are open.']);
-  expect(payloads(work, 'coordinator-turn-end')).toEqual([{ schema: 'coordinator-turn-end-v1', turn: 1, status: 'completed' }, { schema: 'coordinator-turn-end-v1', turn: 2, status: 'completed' }]);
+  const extras = { sessionKey: expect.stringMatching(/^[a-f0-9]{64}$/u), usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, costSource: 'unknown' } };
+  expect(payloads(work, 'coordinator-turn-end')).toEqual([{ schema: 'coordinator-turn-end-v1', turn: 1, status: 'completed', ...extras }, { schema: 'coordinator-turn-end-v1', turn: 2, status: 'completed', ...extras }]);
   expect(ledger(work).events().map((entry) => entry.type)).toEqual(['coordinator-event', 'coordinator-turn-start', 'coordinator-event', 'coordinator-event', 'coordinator-text',
     'coordinator-turn-end', 'coordinator-turn-start', 'coordinator-text', 'coordinator-turn-end']);
   expect(work.coordinators.store.local('proj_a').process).toBeUndefined();
@@ -214,8 +215,9 @@ test('a failed turn retries once with its events in front; after two failures th
   expect(coordinator.state()).toMatchObject({ state: 'idle', failedTurnsInARow: 2 });
   expect(coordinator.state().queue.map((entry) => entry.kind)).toEqual(['user-message']);
   expect(coordinator.fallbackActive()).toBe(true);
-  expect(payloads(work, 'coordinator-turn-end')).toEqual([{ schema: 'coordinator-turn-end-v1', turn: 1, status: 'failed', error: 'Model overloaded.' },
-    { schema: 'coordinator-turn-end-v1', turn: 2, status: 'failed', error: 'Model overloaded.' }]);
+  const extras = { sessionKey: expect.stringMatching(/^[a-f0-9]{64}$/u), usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, costSource: 'unknown' } };
+  expect(payloads(work, 'coordinator-turn-end')).toEqual([{ schema: 'coordinator-turn-end-v1', turn: 1, status: 'failed', error: 'Model overloaded.', ...extras },
+    { schema: 'coordinator-turn-end-v1', turn: 2, status: 'failed', error: 'Model overloaded.', ...extras }]);
   expect(notices(work)).toEqual(['The coordinator failed twice: Model overloaded. Send a message to try again.']);
   expect(await status()).toMatchObject({ state: 'idle', failedTurnsInARow: 2 });
   // A thread event does not start a third turn; its needs-decision question goes to the owner directly (decision 7).
@@ -246,7 +248,7 @@ test('a failed turn retries once with its events in front; after two failures th
   fake.enqueueTurn(say('Done.'), forCoordinator);
   await message(quick, 'slow');
   await quick.idle('proj_a');
-  expect(payloads(quick, 'coordinator-turn-end').at(-2)).toEqual({ schema: 'coordinator-turn-end-v1', turn: 4, status: 'timed-out', error: 'The coordinator turn timed out after 1 second.' });
+  expect(payloads(quick, 'coordinator-turn-end').at(-2)).toEqual({ schema: 'coordinator-turn-end-v1', turn: 4, status: 'timed-out', error: 'The coordinator turn timed out after 1 second.', ...extras });
   expect(payloads(quick, 'coordinator-turn-end').at(-1)).toMatchObject({ turn: 5, status: 'completed' });
   expect(quick.coordinators.get('proj_a').state()).toMatchObject({ failedTurnsInARow: 0, queue: [] });
 });
@@ -299,7 +301,8 @@ test('without a coordinator model or account the coordinator is unavailable with
   fake.enqueueTurn(say('Caught up.'), forCoordinator);
   await work.pulse(); await work.idle('proj_a');
   expect(turns()).toHaveLength(1);
-  expect(turns()[0]!.prompt).toMatch(/\[owner \d{2}:\d{2}\] first\n\[owner \d{2}:\d{2}\] second\n\[thread "\(unknown thread\)" \(thread_x\) reported needs-decision\] Need a database choice\.\nQuestion: Which database\?\nOptions: SQLite; Postgres \(Jevellan asked the owner directly\.\)\n\[owner \d{2}:\d{2}\] third$/);
+  const prompt = turns()[0]!.prompt;
+  expect(prompt.slice(prompt.lastIndexOf('Events since your last turn:')).replace(/\[owner \d{2}:\d{2}\]/gu, '[owner HH:MM]')).toBe(`Events since your last turn:\n[owner HH:MM] first\n[owner HH:MM] second\n[thread "(unknown thread)" (thread_x) reported needs-decision] Need a database choice.\nQuestion: Which database?\nOptions: SQLite; Postgres (Jevellan asked the owner directly.)\n[owner HH:MM] third\n\nOpen questions to the owner (numbered as the owner sees them):\n1. [(unknown thread)] Which database? Options: SQLite, Postgres. (questionId ${derivedId('pdec', 'fallback', 'cev_q')})`);
   expect(work.coordinators.get('proj_a').state()).toMatchObject({ state: 'idle', queue: [] });
   expect('unavailableReason' in work.coordinators.get('proj_a').state()).toBe(false);
   expect(notices(work)).toHaveLength(2);
@@ -432,8 +435,8 @@ test('coordinator memory tools read project memory through the bridge and leave 
   expect(found).toEqual([{ schema: 'memory-search-v1', notes: [] }]);
   expect(refused).toEqual(['No note.', 'This turn cannot use that tool.']);
   expect(payloads(work, 'coordinator-tool')).toEqual([
-    { schema: 'coordinator-tool-v1', tool: 'memory_search', ok: true, summary: 'Searched project memory' },
-    { schema: 'coordinator-tool-v1', tool: 'memory_read', ok: false, summary: 'Could not read a project memory note: No note.' },
+    { schema: 'coordinator-tool-v1', tool: 'memory_search', ok: true, summary: 'Searched project memory', input: JSON.stringify({ query: 'login' }), inputTruncated: false },
+    { schema: 'coordinator-tool-v1', tool: 'memory_read', ok: false, summary: 'Could not read a project memory note: No note.', input: JSON.stringify({ permalink: 'notes/login' }), inputTruncated: false },
   ]);
 });
 

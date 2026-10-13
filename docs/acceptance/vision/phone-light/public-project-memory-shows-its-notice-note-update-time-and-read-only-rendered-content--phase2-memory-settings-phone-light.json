@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dialog body is scrolled, so the fields above 'Path on Offline fixture' are out of view and that label sits right under the header divider. The view seems scrolled on purpose to show the Memory section.",
-      "The 'Memory folder' field is the last item before the footer. It's unclear whether more settings sit below it, because the body has no visible scroll indicator.",
-      "The page behind the modal shows faint, partly cut-off elements at the top left and right edges. This is normal for a modal overlay."
+      "The modal body is scrolled, so the 'Path on Offline fixture' label sits right under the header divider with little top padding.",
+      "Small pieces of the page behind the modal show through at the top-left edge near the header."
     ]
   }
 }

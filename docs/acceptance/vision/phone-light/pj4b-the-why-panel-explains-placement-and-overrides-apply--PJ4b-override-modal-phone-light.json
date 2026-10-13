@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background page text behind the modal scrim (thread title, breadcrumbs, the 'Take over in a terminal' command) is faint and partly hidden by the modal. That's expected for a dimmed backdrop.",
-      "The terminal attach command at the bottom of the page is cut off at the right edge ('thread_01M…') behind the scrim. It isn't part of the modal."
+      "The background thread content and composer show through dimmed behind the modal overlay. This is expected modal-backdrop behavior.",
+      "The background header text (thread title, buttons) is partly covered by the scrim, but it isn't interactive while the modal is open."
     ]
   }
 }

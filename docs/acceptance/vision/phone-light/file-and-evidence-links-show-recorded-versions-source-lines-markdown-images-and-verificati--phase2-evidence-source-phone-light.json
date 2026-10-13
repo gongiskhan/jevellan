@@ -10,7 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Line 3 of the code block ('export const label = '<b>plain text</b>';') runs right up to the code panel's right border, with almost no padding. The closing semicolon is still visible."
+      "Code line 3 (\"export const label = '<b>plain text</b>';\") runs past the code block's inner padding and touches its right border. The line 2 highlight stops at about x=359, so the text seems to overflow the padded content area. It is still fully readable.",
+      "The checkpoint hash is shown in a very small monospace font on a pale blue background, so it has low contrast and is hard to read at a glance.",
+      "Line 4 of the code block is empty and only shows its line number."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Two sidebar session titles end in an ellipsis (\"Context · J11 memory jour…\", \"Context · Mesh journey fix…\"), and so do their subtitle lines (\"dev-…\", \"de…\"). This looks like intended single-line truncation.",
-      "The selected copy command is shown in bright magenta on pink, which is loud next to the rest of the light theme. It is still readable.",
-      "The disabled composer has low-contrast placeholder text and a faint send button. That fits its disabled state."
+      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Shared memory fixture · d…'), but you can still identify each row",
+      "The magenta highlight behind the selected command in the footer is strong, but the text is still readable",
+      "The large empty area between the report card and the composer leaves the layout looking sparse"
     ]
   }
 }

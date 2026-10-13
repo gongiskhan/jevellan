@@ -10,8 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background is dimmed, so the thread header text and the attach command behind the modal are hard to read. That's expected behind a modal.",
-      "The attach command at the bottom is cut off with an ellipsis ('thread_01HQ7TCMA6M5...'). It sits behind the modal, so it doesn't block this screen."
+      "The page behind the modal still shows through around its edges. Background text like 'Take over in a terminal on dev-madrid' is faintly visible under the scrim, but it doesn't interfere with the modal."
     ]
   }
 }

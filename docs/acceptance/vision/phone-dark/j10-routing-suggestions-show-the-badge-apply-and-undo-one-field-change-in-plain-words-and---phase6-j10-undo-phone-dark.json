@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The third tab in the top tab bar is clipped at the right edge ('Dev…'). The bar looks horizontally scrollable with a right arrow, so the tab can still be reached.",
-      "Both diff code blocks have a large empty gap at the bottom, below the last line of the diff.",
-      "The Trial log description ('Conversations finished in Jevellan and outside it, per week.') and the 'Simulated judge responses.' notes use small, low-contrast grey text on a dark background. They are readable but faint.",
-      "The 'Save schedule and jobs' button is dimmed (disabled-looking), with low contrast against its card."
+      "The top tab strip cuts off a third tab ('Dev…') at the right edge. It can still be reached with the scroll arrow.",
+      "The 'Save schedule and jobs' button looks low-contrast or disabled.",
+      "The 'Last runs' entry says '2 routing suggestions ready', but only 1 is waiting and 1 is already decided. This may be intended."
     ]
   }
 }

@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip clips the left tab to a lone 's'. Scroll arrows are there, so this is expected horizontal scrolling.",
-      "'Open terminals' is a centered magenta link under a left-aligned 'Terminal' button. It looks out of place next to the rest of the card's left alignment.",
-      "The line 'Thread worktrees: 0 GB · Job and verification worktrees: 0 GB' wraps so that 'GB' sits alone on the second line.",
-      "A button below 'Inspect worktrees' is cut off at the bottom of the viewport. This is just the page scrolling, and the content can be reached by scrolling."
+      "The Device tags field is a single-line input, so its value is clipped at the right edge ('phone-testi…'). The field can scroll, so the full value is still reachable.",
+      "The settings tab strip clips its first and last labels ('s' and 'Projects'). Scroll arrows are shown, so this is the expected overflow behaviour.",
+      "The 'Open terminals' link is centred in magenta/red text, which doesn't match the left-aligned layout and looks a bit like an error message.",
+      "A button is partly cut off at the bottom of the screenshot, just below 'Inspect worktrees'. This is normal page scrolling and doesn't affect the protected paths section.",
+      "The 'Hub' badge uses a small monospace font that differs from the rest of the card's type."
     ]
   }
 }

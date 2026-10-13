@@ -14,7 +14,7 @@ import {
 import { PlacementStateSchema, type JevQuestions } from '../packages/decisions/dist/index.js';
 import { forCoordinator, forThread, type FakeRuntime, type FakeTurn, type FakeTurnStep, type TurnInput } from '../packages/runtime-contract/dist/index.js';
 import { STOPPED_BY_YOU, mainConflictPrompt, type ProjectWork } from '../packages/projects/dist/index.js';
-import { FIXTURE_MENU, expectNoLeaks, git, projectFixture, projectMember, type ProjectFixture, type ProjectMember } from './helpers/project-fixture.js';
+import { FIXTURE_MENU, expectNoLeaks, git, projectFixture, projectMember, threadRequestText, type ProjectFixture, type ProjectMember } from './helpers/project-fixture.js';
 
 let fixture: ProjectFixture | undefined;
 afterEach(async () => {
@@ -243,7 +243,7 @@ test('PJ6 two main threads on two devices reserve, mail, publish and resolve a c
   });
   t2.end();
   const done2 = await until(f, m, () => m.thread(two.threadId), settled('done'));
-  const prompt = m.fake.turnStarts.find((input) => input.owner.id === two.threadId && input.turn === 2)!.prompt;
+  const prompt = threadRequestText(m.fake.turnStarts.find((input) => input.owner.id === two.threadId && input.turn === 2)!.prompt);
   expect(prompt).toBe('Main moved while you worked and your commits conflict with it in: src/app.txt. Run git fetch origin main and git rebase origin/main, resolve the conflicts keeping both intents, run the tests, and report done again.');
   expect(prompt).toBe(mainConflictPrompt(['src/app.txt']));
   expect(resolution).toEqual({ upstream: done1.publishedCommit, rebase: 'conflict', rebasing: false });

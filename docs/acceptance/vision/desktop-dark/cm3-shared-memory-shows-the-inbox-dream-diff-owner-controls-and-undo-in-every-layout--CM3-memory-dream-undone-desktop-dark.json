@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dream status and summary appear twice: once in the line 'Memory dream: undone — Kept the test conventions and consolidated the inbox.' and again as separate 'undone' and summary lines.",
-      "The stats line shows raw camelCase keys ('inboxPromoted: 1 · inboxDropped: 0 · …') rather than readable labels.",
-      "The diff box and the 'INBOX (FROM TODAY)' section are cut off at the bottom edges of their scroll areas. This looks like normal scrolling, but nothing on screen shows that more content is below."
+      "The modal body is scrolled, so the summary line 'Kept the test conventions and consolidated the inbox.' is partly cut off under the modal header. Scrolling up reveals it.",
+      "This view shows no 'undone' status or confirmation. Any status that exists may be scrolled out of view above the summary line.",
+      "The 'Memory changes' diff stops partway through in its own scroll box, so most of the diff isn't visible without scrolling inside it.",
+      "The 'Add an owner note' expander and the 'Search memory' label sit very close together with almost no spacing."
     ]
   }
 }

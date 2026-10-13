@@ -5,14 +5,14 @@
   "test": "Closing packed installation",
   "layout": "phone-dark",
   "screenshot": "screenshots/phase5-guide-project-phone-dark.png",
-  "expected": "the first-project setup step with readable project controls",
+  "expected": "the first-project setup step with readable project controls Bright magenta rectangles are intentional screenshot masks over saved secret data, not product overlays or rendering faults.",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Continue is enabled before any project is added, so it's unclear whether this step is optional",
-      "The helper text 'Add a checked-out project to start a conversation.' mostly repeats the subtitle",
-      "The bottom two-thirds of the screen is empty"
+      "The 'STEP 3 OF 4' label is small, dim magenta text that's a bit hard to read on the dark background, but it can still be read.",
+      "The stepper label '1 Jev key' looks like a possible typo or truncation of a longer word ('Dev key'?).",
+      "There's a lot of empty space below the Back/Continue buttons."
     ]
   }
 }

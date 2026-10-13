@@ -3,7 +3,7 @@
   "runs": [
     {
       "schema": "installation-command-check-v9",
-      "at": "2026-10-11T22:07:58.262Z",
+      "at": "2026-10-13T00:34:51.077Z",
       "passed": true,
       "firstRun": {
         "layout": "phone",
@@ -20,7 +20,7 @@
       "work": "real-conversation-simulated-providers",
       "dependencies": "live",
       "serviceManager": "fake-owned-processes",
-      "updateRelease": "simulated-version-0.3.0",
+      "updateRelease": "simulated-version-0.4.0",
       "devices": "local-simulated-devices",
       "checks": {
         "independentCopy": true,
@@ -38,8 +38,8 @@
         "memberRemoval": true,
         "busyUninstallRefused": true,
         "updateWaited": true,
-        "updateVersion": "0.3.0",
-        "rollbackVersion": "0.2.0",
+        "updateVersion": "0.4.0",
+        "rollbackVersion": "0.3.0",
         "removedServiceAndApplications": true,
         "dataRetained": true,
         "purgeRemovedHome": true,
@@ -62,7 +62,7 @@
     },
     {
       "schema": "installation-command-check-v9",
-      "at": "2026-10-11T21:59:03.094Z",
+      "at": "2026-10-13T00:25:25.345Z",
       "passed": true,
       "firstRun": {
         "layout": "phone",
@@ -79,7 +79,7 @@
       "work": "real-conversation-simulated-providers",
       "dependencies": "live",
       "serviceManager": "fake-owned-processes",
-      "updateRelease": "simulated-version-0.3.0",
+      "updateRelease": "simulated-version-0.4.0",
       "devices": "local-simulated-devices",
       "checks": {
         "independentCopy": true,
@@ -97,8 +97,8 @@
         "memberRemoval": true,
         "busyUninstallRefused": true,
         "updateWaited": true,
-        "updateVersion": "0.3.0",
-        "rollbackVersion": "0.2.0",
+        "updateVersion": "0.4.0",
+        "rollbackVersion": "0.3.0",
         "removedServiceAndApplications": true,
         "dataRetained": true,
         "purgeRemovedHome": true,
@@ -121,7 +121,7 @@
     },
     {
       "schema": "installation-command-check-v9",
-      "at": "2026-10-11T21:54:34.510Z",
+      "at": "2026-10-13T00:20:39.157Z",
       "passed": true,
       "firstRun": {
         "layout": "desktop",
@@ -138,7 +138,7 @@
       "work": "real-conversation-simulated-providers",
       "dependencies": "live",
       "serviceManager": "fake-owned-processes",
-      "updateRelease": "simulated-version-0.3.0",
+      "updateRelease": "simulated-version-0.4.0",
       "devices": "local-simulated-devices",
       "checks": {
         "independentCopy": true,
@@ -156,8 +156,8 @@
         "memberRemoval": true,
         "busyUninstallRefused": true,
         "updateWaited": true,
-        "updateVersion": "0.3.0",
-        "rollbackVersion": "0.2.0",
+        "updateVersion": "0.4.0",
+        "rollbackVersion": "0.3.0",
         "removedServiceAndApplications": true,
         "dataRetained": true,
         "purgeRemovedHome": true,
@@ -179,7 +179,7 @@
     },
     {
       "schema": "installation-command-check-v9",
-      "at": "2026-10-11T22:03:27.605Z",
+      "at": "2026-10-13T00:30:16.195Z",
       "passed": true,
       "firstRun": {
         "layout": "desktop",
@@ -196,7 +196,7 @@
       "work": "real-conversation-simulated-providers",
       "dependencies": "live",
       "serviceManager": "fake-owned-processes",
-      "updateRelease": "simulated-version-0.3.0",
+      "updateRelease": "simulated-version-0.4.0",
       "devices": "local-simulated-devices",
       "checks": {
         "independentCopy": true,
@@ -214,8 +214,8 @@
         "memberRemoval": true,
         "busyUninstallRefused": true,
         "updateWaited": true,
-        "updateVersion": "0.3.0",
-        "rollbackVersion": "0.2.0",
+        "updateVersion": "0.4.0",
+        "rollbackVersion": "0.3.0",
         "removedServiceAndApplications": true,
         "dataRetained": true,
         "purgeRemovedHome": true,

@@ -10,8 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row runs past the right edge, so the 'Pull requests' tab is cut off. This looks like a horizontally scrollable tab strip, so the tab can still be reached.",
-      "In both nightly cards, the 'Enabled' checkbox sits above its label instead of beside it, which looks slightly out of line with the 'Run now' and 'Edit' buttons."
+      "The header title is cut off with an ellipsis (\"Projects workflo...\"). This looks like intended truncation to fit the phone width.",
+      "The \"Pull requests\" tab is clipped at the right edge of the tab row. The row appears to scroll horizontally, so the tab can still be reached.",
+      "Each \"Enabled\" checkbox sits above its label instead of beside it, which looks slightly misaligned next to the Run now and Edit buttons.",
+      "The \"Workflow success\" output box only says \"No output recorded.\", which leaves a lot of empty space."
     ]
   }
 }

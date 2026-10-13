@@ -5,14 +5,12 @@
   "test": "Closing packed installation",
   "layout": "desktop-dark",
   "screenshot": "screenshots/phase5-guide-welcome-desktop-dark.png",
-  "expected": "the passphrase welcome screen with readable text and reachable setup controls",
+  "expected": "the passphrase welcome screen with readable text and reachable setup controls Bright magenta rectangles are intentional screenshot masks over saved secret data, not product overlays or rendering faults.",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The footer tagline 'AUTONOMOUS DEVELOPMENT, COORDINATED.' is low-contrast and small, but you can still read it",
-      "The helper text 'At least 8 characters.' is small and muted against the dark card",
-      "There's a fairly large gap between the passphrase field and the helper text below it"
+      "The 'AUTONOMOUS DEVELOPMENT, COORDINATED.' tagline and the 'At least 8 characters.' hint are small, low-contrast grey on a dark background, so they're harder to read"
     ]
   }
 }

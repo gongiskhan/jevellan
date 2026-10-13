@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The disabled 'Claude Code · Current account' checkbox is very low contrast, so it's hard to tell whether it's checked or just disabled",
-      "Background page content is visible through the modal backdrop, and the tab strip is cut off on the right (scroll arrow shown), which is expected behind a modal"
+      "The disabled 'Claude Code · Current account' checkbox has very low contrast, so it's hard to tell whether it's checked or locked.",
+      "The tab strip behind the modal is cut off at the right edge, but it scrolls and has a next arrow, so it doesn't block anything."
     ]
   }
 }

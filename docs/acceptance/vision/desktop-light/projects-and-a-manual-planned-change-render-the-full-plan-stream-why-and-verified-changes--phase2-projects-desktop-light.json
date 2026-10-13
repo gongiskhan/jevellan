@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Several sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Mesh journey fixt…', 'Waiting for you · Browser fixtur…'). This looks like intentional truncation.",
-      "The 'Manual conversation fixture' card appears in the Projects grid, but that project is missing from the sidebar PROJECTS list.",
-      "Card heights don't match across each row (e.g. the Public memory fixture card is taller than the Mesh journey fixture card), so the bottom edges of the cards are uneven.",
-      "The long path and command text in the cards uses a small monospace font. It is readable but dense."
+      "Several conversation titles and subtitles in the sidebar are cut off with an ellipsis (e.g. 'Context · J11 memory journ…', 'Context · Shared memory fi…', 'Waiting for you · Browser fixtur…'). This looks like deliberate single-line truncation, not broken layout.",
+      "Cards in the two columns have different heights, so rows don't line up (e.g. the Public memory fixture card with its warning banner is taller than the Mesh journey fixture card next to it), which leaves an uneven gap under the shorter card.",
+      "The PROJECTS list in the sidebar has 14 entries but the grid shows 16 cards. 'Manual conversation fixture' and 'Undo across works' are missing from the sidebar, which may be a filter or a data mismatch, but nothing is hidden or unreachable on this screen."
     ]
   }
 }

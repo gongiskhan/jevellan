@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The first tab in the tab strip is clipped at the left edge (\"Chat\"). It looks like a horizontally scrolled strip, so the tab can still be reached.",
-      "The status pill in the header is cut short to \"Working…\" with an ellipsis.",
-      "On the Deploy nightly card, the disabled \"Run now\" button has low contrast against the dark background.",
-      "The section headers (\"QUEUE 3\", \"NIGHTLY 3\", \"GOALS 2\") use small, dim text that is a little hard to read."
+      "The tab strip is scrolled so the 'Chat' tab is clipped at the left edge. It looks like a horizontally scrollable row, so the tab can still be reached.",
+      "The 'Working…' status pill in the header is cut short with an ellipsis.",
+      "The top banner says 'Last night: 3 of 3 nightly tasks passed', and Deploy shows 'Done today at 04:30 AM'. Nothing on screen clearly says the fix missed the cutoff: the fix only appears as 'Now · Active' in the queue. Worth checking this matches the scenario.",
+      "The second Order/Goals toggle pill and the small mono status chips (for example 'Done today at 02:00 AM') have low contrast against the dark background, but they can still be read."
     ]
   }
 }

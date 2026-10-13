@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The diff in the \"Revised change\" box is preview-only and doesn't match the edited text in the left textarea: it shows the plain-words revision (\"Only for reviews of the improver fixture.\"), so it isn't clear which of the two edits \"Apply this\" will commit.",
-      "The check summary in the modal (\"27 unchanged, 0 better, 0 worse.\") leaves out the \"Simulated judge responses.\" note that the same summary carries on the background cards."
+      "The 'Edit the after text' box still shows 'Preferred for review steps.', but the 'Revised change' preview shows 'Only for reviews of the improver fixture.' It is unclear which edit 'Apply this' will apply.",
+      "The 'Revised change' diff has no file header (unlike the diffs on the cards behind it), so it doesn't say which field it changes.",
+      "Both text boxes are tall but mostly empty, leaving a lot of unused space in the dialog."
     ]
   }
 }

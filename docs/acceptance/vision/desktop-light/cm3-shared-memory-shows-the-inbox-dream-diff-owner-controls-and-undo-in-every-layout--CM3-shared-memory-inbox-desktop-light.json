@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The inbox and project-note items are full-width outlined buttons with centered text. They read as action buttons rather than list entries.",
-      "The 'Add an owner note' disclosure and the 'Search memory' label have very little vertical space between them, which makes the bottom of the modal look cramped.",
-      "The modal has little padding below the Search row, and there is no scroll cue. It's unclear whether more content sits below the visible area."
+      "Vertical spacing is tight in places: the 'Capture durable knowledge' checkbox sits right on top of the 'Nightly dream' label, and 'Add an owner note' crowds the 'Search memory' label below it.",
+      "The inbox and project-note items are full-width outlined buttons with centered bold text, so they look more like action buttons than list entries.",
+      "The modal's bottom padding under the Search row is small compared with the padding at the top."
     ]
   }
 }

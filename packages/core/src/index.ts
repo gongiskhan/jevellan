@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const DEFAULT_PORT = 9771;
-export const VERSION = '0.2.1';
+export const VERSION = '0.3.0';
 export const HealthSchema = z.object({
   schema: z.literal('health-v1'),
   status: z.literal('ok'),
@@ -61,6 +61,7 @@ export * from './agent-access-schemas.js';
 export * from './hub-migration-schemas.js';
 
 export * from './native-setup.js';
+export * from './project-instructions.js';
 export * from './native-setup-schemas.js';
 export * from './project-loop-schemas.js';
 

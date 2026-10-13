@@ -10,8 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The diff blocks have bare '-' and '+' lines for blank lines, which look like stray characters.",
-      "Behind the dimmed backdrop, the tab row ('Git…') and the path text ('/tmp/jevellan-browser-…') are cut off at the screen edges. Only the background is affected, not the modal."
+      "Background content behind the modal overlay (top tabs bar, memory-project path and public-repo warning) peeks out around the dialog edges. It is dimmed and doesn't interfere with the modal."
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dialog doesn't show an editor or a 'Make managed' control. That fits the read-only saved/reloaded state shown here.",
-      "The background is heavily dimmed behind the modal, which is expected."
+      "The secondary helper text in the modal ('This bundle has 2 files…', 'Local edits save automatically on this account.') is small and low-contrast grey on the dark navy background, so it reads faintly at desktop size.",
+      "The 'Saved' status label next to the 'Source' toggle is fairly muted and easy to miss compared with the pink 'Source' link."
     ]
   }
 }

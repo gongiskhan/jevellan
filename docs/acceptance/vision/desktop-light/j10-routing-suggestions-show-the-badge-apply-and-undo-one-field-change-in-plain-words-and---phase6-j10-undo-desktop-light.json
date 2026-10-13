@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'dev-ma…'). This looks like intended single-line truncation, but the full text can't be read.",
-      "The 'Last runs' card says '2 routing suggestions ready', but only one suggestion is waiting and the other appears as Undone. The wording may confuse users, though nothing is broken visually.",
-      "The 'Last runs' card is much shorter than the 'Schedule and jobs' card next to it, which leaves a large empty space on the right."
+      "Shell session titles and their meta lines in the sidebar are cut off with ellipses (e.g. 'Exercise answer options: …', 'Context · J11 memory jour…', 'Done · Automatic fixture · dev-m…'), so the full names only show if you widen the sidebar or hover",
+      "The long diff lines in the 'Recently decided' card wrap onto a second line inside the code block, which makes the -/+ lines a little harder to compare",
+      "'Last runs' says '2 routing suggestions ready', but only one is waiting (the other is shown as Undone under Recently decided), which may confuse readers but is not a layout problem"
     ]
   }
 }

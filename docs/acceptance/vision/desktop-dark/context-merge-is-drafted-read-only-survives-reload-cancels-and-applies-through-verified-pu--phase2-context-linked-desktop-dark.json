@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Current instruction files' disclosure label uses a small monospace font that looks a little different from the rest of the dialog text",
-      "The background behind the modal is blurred and dimmed as intended. It makes the underlying page unreadable, but that's expected while a modal is open"
+      "The 'Open work' link's pink accent has fairly low contrast against the dark panel, but it's still readable",
+      "Most of the modal's vertical space goes to the status card. The 'Current instruction files' disclosure is collapsed, so the instruction file details aren't visible without expanding it"
     ]
   }
 }

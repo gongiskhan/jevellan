@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Tab strip cuts off a partly visible fourth tab behind the scroll arrow at the right edge. The arrow still lets you reach it.",
-      "Metadata lines (e.g. 'Local · Parked · Rigging local fixture · Claude Code') use small, low-contrast monospace text that is a bit hard to read on the dark background."
+      "The tab strip clips the fourth tab label at the right edge, behind the scroll arrow button. The arrow keeps it reachable.",
+      "The 'Refresh local items' link is bright pink, which stands out against the rest of the muted dark theme.",
+      "The monospace metadata lines (e.g. 'Package · Parked · Rigging local fixture · Claude Code') are small, low-contrast grey text, though still readable."
     ]
   }
 }

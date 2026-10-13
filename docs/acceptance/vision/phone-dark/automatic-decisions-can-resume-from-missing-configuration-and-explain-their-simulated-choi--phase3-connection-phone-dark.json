@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab strip clips the labels at both edges (the left tab shows only 'es' and the right one reads 'Improve…'). The strip scrolls and has arrow controls, so those tabs can still be reached.",
-      "The Routing profile textarea cuts off its last visible line mid-text. The box is scrollable, so the rest of the text is still readable.",
-      "The 'Saved · ••••e5fd' status line is small, low-contrast monospace text."
+      "The horizontal tab strip cuts off neighbouring tabs at both edges ('…es', 'Improve…'). Scroll arrows are visible, so the tabs can still be reached.",
+      "The Routing profile textarea cuts off its last visible line at the bottom edge. The field scrolls, so the text is still reachable.",
+      "Jev model shows 'jev-1.13.0' while the label reads 'Automatic Fable' and the card shows 'claude-fable-5-1'. This mixed naming may confuse readers, but it is legible.",
+      "The 'Jev key saved.' toast sits at the bottom of the page. It overlaps nothing here, but it could cover the Pause checkbox in a shorter viewport."
     ]
   }
 }

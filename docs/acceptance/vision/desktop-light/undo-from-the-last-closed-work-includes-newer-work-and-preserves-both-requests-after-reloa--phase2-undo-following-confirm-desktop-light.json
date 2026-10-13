@@ -10,7 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background is blurred and dimmed behind the modal on purpose, so you can't read the conversation content there. This is expected for a confirm dialog."
+      "Sidebar session titles get cut off with ellipses (e.g. 'Change the value to two ...', 'Context · JH memory journ...'). This is expected and happens behind the blurred backdrop.",
+      "The modal's secondary note ('This also undoes the newer open work...') is lighter grey than the body text, so it has a little less contrast, but it is still readable."
     ]
   }
 }

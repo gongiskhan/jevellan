@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The long conversation title in the header is cut off with an ellipsis. This looks intentional for an unbroken long title, and the start of the title is still readable.",
-      "Titles and subtitles in the sidebar conversation list are cut off with ellipses (e.g. 'A conversation with a lon…', 'Exercise reviewed checkp…'). This is expected list truncation.",
-      "The long unbroken tool header in the 'Read project' card wraps across two lines with an awkward break in the middle of a word ('long_tool_' / 'header_'). It is still fully readable."
+      "The long unbroken conversation title in the header is cut off with an ellipsis. This looks like intended single-line truncation, and the full title isn't shown anywhere else on screen.",
+      "Conversation titles and metadata in the sidebar are cut off with ellipses (e.g. 'A conversation with a lon…', 'Undo across wo…'), which is expected given the narrow sidebar.",
+      "The long unbroken tool header wraps across three lines in the 'Read project' card. It is still readable and doesn't overlap the 'completed' status."
     ]
   }
 }

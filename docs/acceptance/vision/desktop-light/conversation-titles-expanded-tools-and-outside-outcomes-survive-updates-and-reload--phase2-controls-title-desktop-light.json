@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The long unbroken conversation title in the header is cut off with an ellipsis. This looks like intended single-line truncation, but nothing on screen shows the full title (it may only be available in a tooltip).",
-      "Sidebar conversation names and subtitles are cut off with ellipses (e.g. 'A conversation with a lon…', 'Exercise reviewed checkp…'). This is expected for list items.",
-      "The long unbroken tool header name wraps across three lines inside the tool card, and the 'completed' status sits on its own line below it, leaving uneven spacing.",
-      "The light sidebar and the beige panel ('Jev is unavailable…') have fairly low contrast against the background, but the text is still readable."
+      "The long unbroken conversation title in the header is cut off with an ellipsis. This is expected for a long title, but the full title isn't visible on screen.",
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'A conversation with a lon…', 'Waiting for you · Undo across wo…').",
+      "The long tool header ('Read project · long_tool_header_...') breaks mid-token across three lines, which looks slightly awkward but stays readable."
     ]
   }
 }

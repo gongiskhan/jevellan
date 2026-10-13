@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles are cut off with ellipses ('Context · J11 memory journ…', 'Context · Mesh journey fixt…') and their subtitles are clipped too; hovering or opening the session shows the full name",
-      "Wrapped run titles in Last runs ('AGENTS.md · Checkpoint recovery fixture') push their Open log links and timestamps out of line with the other rows",
-      "Schedule and jobs card ends well above the much taller Last runs column, leaving a large empty area underneath it",
-      "Fine monospace text in the diff blocks and the commit hash chips is small and low-contrast, but still readable"
+      "Shell session titles in the left sidebar are cut off with an ellipsis (e.g. 'Exercise answer options: c…', 'Context · J11 memory jour…', 'Context · Mesh journey fix…'), so the full titles are hidden at this width.",
+      "In the 'Prefer GPT for implement steps' card, the long diff lines wrap inside the code block. This makes the -/+ lines harder to compare by eye.",
+      "The 'Last runs' panel is much taller than the 'Schedule and jobs' card next to it, which leaves a large empty gap under the schedule card.",
+      "The 'Some native sessions are unavailable' note near the bottom of the sidebar is small, low-contrast text."
     ]
   }
 }

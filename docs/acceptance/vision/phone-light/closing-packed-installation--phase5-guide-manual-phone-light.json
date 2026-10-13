@@ -5,13 +5,13 @@
   "test": "Closing packed installation",
   "layout": "phone-light",
   "screenshot": "screenshots/phase5-guide-manual-phone-light.png",
-  "expected": "the manual choices after skipped Jev setup with readable controls",
+  "expected": "the manual choices after skipped Jev setup with readable controls Bright magenta rectangles are intentional screenshot masks over saved secret data, not product overlays or rendering faults.",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis (\"Installation acceptance: change the val...\"). The full text still appears in the subtitle line and in the message bubble.",
-      "The bottom of the screen has a large empty area between the manual-choice panel and the input box."
+      "Header title is truncated with an ellipsis ('Installation acceptance: change the val…'), but the full text appears in the subtitle and in the message bubble",
+      "The Effort dropdown is narrower than the Action dropdown above it, so the form grid looks uneven"
     ]
   }
 }

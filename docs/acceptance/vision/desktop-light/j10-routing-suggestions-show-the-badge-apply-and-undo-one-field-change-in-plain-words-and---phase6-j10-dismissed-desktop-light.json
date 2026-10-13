@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar session titles are truncated with ellipses (\"Context · J11 memory jour…\", \"Context · Mesh journey fix…\") and so are their subtitles (\"dev-ma…\", \"de…\"). This is normal sidebar truncation.",
-      "The dismissed card ends with an unlabeled quote (\"Plans stay on Fable.\") in small muted text. It reads but stands apart from the card's other content.",
-      "The Undone card for 'Prefer GPT for implement steps' has extra empty space at the bottom below the check summary.",
-      "Some long diff lines in the GPT card wrap onto a second line inside the code block. They stay readable."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Exercise answer options: ...', 'Context · J11 memory jour...'). This looks like intended truncation.",
+      "The 'Apply and tell me' dropdown for Memory care and the '03:00 AM' time field are light grey on a light background, so they have weak contrast next to the other controls.",
+      "The 'Save schedule and jobs' button is light grey and looks disabled, so it is hard to tell whether it can be clicked."
     ]
   }
 }

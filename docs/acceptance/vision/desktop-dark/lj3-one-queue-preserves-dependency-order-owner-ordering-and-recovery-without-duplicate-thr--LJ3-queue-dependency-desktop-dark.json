@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the Running list on the right, the title 'Read through the project and list what each file is f…' is cut off with an ellipsis. The full title appears in the Queue section.",
-      "In the Running list, the summary line 'Read the README on this device: a title and one line about th…' is cut off with an ellipsis.",
-      "In the left sidebar, shell session names ('Context · J11 memory jour…', 'Context · Mesh journey fix…') and their subtitles are cut off with ellipses.",
-      "In the conversation, almost every event card is followed by the same 'Noted.' reply, which makes the thread repetitive and long."
+      "Some long titles are cut short with an ellipsis: the shell session names in the sidebar ('Context · J11 memory journ…', 'Context · Shared memory fi…') and the running item 'Read through the project and list what each file is f…'. The full titles appear elsewhere on the screen.",
+      "In the running list, the progress line for 'Read the README on the member' is cut short with an ellipsis.",
+      "The main thread is very long and has many repeated 'Noted.' replies, so the page needs a lot of vertical scrolling."
     ]
   }
 }

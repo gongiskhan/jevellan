@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dev-madrid device tags field cuts off its value at the edge ('phone-testi…'). It looks like a single-line input that scrolls, so the text is still reachable.",
-      "The settings tab strip clips its labels at both ends (a stray 's' on the left, 'Projects' fading out on the right). Scroll arrows are shown, so the tabs are still reachable.",
-      "The hub readiness warning says 'this Mac', but the dev-madrid card is labelled Linux. The wording doesn't match the card, though the layout is fine.",
-      "The disabled 'Inspect worktrees' and 'Open' buttons on the Offline fixture and dev-madrid cards have low contrast, but they're still readable."
+      "The device tags field on dev-madrid cuts off its value at the right edge ('…phone-testi'). It is a scrollable input, so the content can still be reached.",
+      "The top tab bar cuts off the 'Projects' tab at the right edge. Scroll arrows are present, so the tab is still reachable.",
+      "The pink 'Open terminals' text sits centered and floating between the Terminal button and the content below it. It looks detached from the button it belongs to.",
+      "The 'Apps only' badge on 'Mini apps only' is a full-width box with left-aligned text, which doesn't match the style of the other badges."
     ]
   }
 }

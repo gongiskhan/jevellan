@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row runs off the right edge, so the 'Pull requests' tab is cut off. It looks like a row you can scroll sideways, so the tab can probably still be reached.",
-      "Each answered item shows the same combined chat answer ('1 Archive, 2 Amber, 3 25') rather than only its own answer. This may be intended, but the line is repeated three times.",
-      "There is a large empty area below the Answered list."
+      "The tab row runs past the right edge, so the 'Pull requests' tab is clipped. It looks like a horizontally scrolling row and is still reachable.",
+      "All three numbered questions show the same combined chat answer ('1 Archive, 2 Amber, 3 25') rather than each question's own answer. That is probably intended, but it is a little repetitive."
     ]
   }
 }

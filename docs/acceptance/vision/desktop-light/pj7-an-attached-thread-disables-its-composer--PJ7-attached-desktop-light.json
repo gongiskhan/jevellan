@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and metadata lines are truncated with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This is normal for a narrow sidebar.",
-      "The composer is disabled and its placeholder text is low-contrast. This is expected for an attached thread, and the text can still be read.",
-      "There is a large empty area between the report card and the composer."
+      "Session titles and meta lines in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · dev-ma…'). The truncation is intentional, but the full names can't be read.",
+      "The disabled composer's placeholder ('Message this thread') and the 'Attached in a terminal…' notes use low-contrast grey text. They are still readable.",
+      "Lots of empty space between the report card and the composer. The layout is fine but sparse."
     ]
   }
 }

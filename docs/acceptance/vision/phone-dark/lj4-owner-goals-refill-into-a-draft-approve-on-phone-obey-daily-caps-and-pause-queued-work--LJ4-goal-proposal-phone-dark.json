@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top tab row runs past the right edge, so the last tab shows as 'Pull requ'. It looks like a tab bar you can scroll sideways, but nothing on screen shows that more tabs are hidden.",
-      "The action buttons wrap onto three rows and the up/down arrow buttons sit on their own at the end of the last row. This makes the card tall and a little uneven, but every control is still visible and reachable.",
-      "The 'Idle' status badge and the 'Claude Code Fable · high' subtitle use small, low-contrast text. It is readable but faint against the dark background."
+      "The last tab label ('Pull requ…') is cut off at the right edge. The tab row probably scrolls sideways, so the tab is still reachable.",
+      "The status pill is shortened to 'Working…'.",
+      "The header reads 'Context unavailable · Compacted 0 times today'. 'Context unavailable' is a confusing status, and '0 times today' adds nothing.",
+      "The proposal card's action buttons wrap onto three rows, which makes the card crowded on a phone screen."
     ]
   }
 }

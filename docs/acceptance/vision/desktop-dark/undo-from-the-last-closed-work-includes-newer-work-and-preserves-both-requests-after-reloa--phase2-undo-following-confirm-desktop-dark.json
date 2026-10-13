@@ -9,9 +9,6 @@
   "result": {
     "ok": true,
     "blocking": [],
-    "cosmetic": [
-      "The background page has no confirmation-type step labels visible besides blurred content; the modal itself is fully rendered and legible",
-      "Background conversation text overlaps the modal's backdrop blur, so the blurred card at top right ('Now change the value to three...') sits partly behind the modal edges. This is expected modal layering and not a defect."
-    ]
+    "cosmetic": []
   }
 }

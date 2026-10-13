@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The sidebar session titles and subtitles are cut off with ellipses (e.g., 'Context · J11 memory journ…', 'Context · Shared memory fi…'). This is intended truncation.",
-      "The 'Send to…' button looks disabled or low-contrast, but it is still legible.",
-      "Most of the terminal output area is empty whitespace."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This is intentional truncation, and the main items are still identifiable.",
+      "The 'Send to…' button looks lighter or muted next to the other copy buttons. It may be disabled, but it is still visible.",
+      "The same sudo hint message appears twice in the terminal output. This is terminal content, not a layout problem."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Change the value to two and publish th...'). This is expected for a long title on a phone screen, but the full request can't be read in the header.",
-      "The muted grey 'Undone' labels and the struck-through 'Step 1 · Implement' and 'Step 2 · Implement' headings have low contrast on the dark background.",
-      "The small pink 'corrected: action → reply' label next to Step 1 is somewhat low-contrast and crowds the end of the step header line."
+      "The header title is cut off with an ellipsis ('Change the value to two and publish th...'). This is deliberate single-line truncation, and the full request text shows in the conversation.",
+      "Some metadata text is small and low-contrast but still readable: the 'Undone' labels, the magenta 'corrected: action → reply' tag, 'Local time' and the 'Step details' toggles.",
+      "The checkbox label 'This request explicitly asks to remember something.' wraps to two lines in the narrow manual-step panel."
     ]
   }
 }

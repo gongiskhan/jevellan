@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis (\"Read through the project an...\"). The full task text is still readable in the Prompt card.",
-      "The terminal attach command (\"jevellan thread attach thread_01M4R0DD33PM6G0...\") is cut off with an ellipsis. The copy button next to it is visible and reachable.",
-      "The metadata line under \"Back to the project\" wraps over four lines and breaks the worktree path mid-segment, which makes it a little harder to read."
+      "Header title 'Read through the project and list what each fil...' is cut off with an ellipsis. That's expected at phone width, and the full prompt appears in the Prompt card.",
+      "The attach command at the bottom, 'jevellan thread attach thread_01M4SD7AT7QVGF0...', is cut off. The copy button next to it is still visible and reachable.",
+      "The worktree line in the metadata header wraps awkwardly across several lines ('Projects Claude · Worktree on jv/read-through-the-project-and-list-what-e-kasabg · dev-madrid').",
+      "The status line 'Working on turn 1...' is cut off with an ellipsis, though the meaning is still clear."
     ]
   }
 }

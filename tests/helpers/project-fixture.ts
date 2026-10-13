@@ -20,6 +20,28 @@ import type { ProjectTimers } from '../../packages/projects/dist/index.js';
 import { Application, createDaemon, startDaemon } from '../../apps/daemon/dist/index.js';
 import { startGitHubFixture, type GitHubFixture } from '../fixtures/github-server.mjs';
 
+/** Validate the required computed context while keeping exact assertions on the task/message being delivered. */
+export function threadRequestText(prompt: string): string {
+  const parts = prompt.split(/Project now \(\d{2}:\d{2}\):\n/u); expect(parts).toHaveLength(2);
+  let before = parts[0]!, remaining = parts[1]!;
+  const boundary = remaining.indexOf('\n\n'), now = boundary < 0 ? remaining : remaining.slice(0, boundary);
+  remaining = boundary < 0 ? '' : remaining.slice(boundary + 2);
+  expect(now.length).toBeLessThanOrEqual(2500); expect(now).toMatch(/^Other active threads:\n/u);
+  expect(now).toMatch(/\nMerged to [^\n]+ in the last 24 hours:\n/u);
+  const memoryAt = before.indexOf('Project memory:\n');
+  if (memoryAt >= 0) {
+    const memory = before.slice(memoryAt).trimEnd(); expect(memory.length).toBeLessThanOrEqual(5000);
+    if (memory.includes('unavailable')) expect([
+      'Project memory:\nProject memory is unavailable for this turn.',
+      'Project memory:\nProject memory is unavailable: the hub is offline.',
+    ]).toContain(memory);
+    else expect(memory).toMatch(/Search memory with memory_search for more\.$/u);
+    before = before.slice(0, memoryAt);
+  }
+  const task = before.trimEnd();
+  return task && remaining ? `${task}\n\n---\n\n${remaining}` : task || remaining;
+}
+
 export type ProjectFixtureOptions = {
   /** Default true: `remote.origin.url` is `https://github.com/fixture/repo.git`, redirected to the bare origin by `insteadOf`. */
   github?: boolean;

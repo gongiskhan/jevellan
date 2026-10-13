@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Mesh journey fix…', 'dev-ma…'). The full text isn't visible, but the rows can still be told apart.",
-      "The chat column has a lot of empty space next to it because the notebook panel takes up the right third of the window."
+      "The project title in the main header is cut down to \"Pr...\" because the open notebook panel narrows the centre column. The full name \"Projects fixture\" still shows in the sidebar and the notebook header.",
+      "Session names in the sidebar are cut off with ellipses (e.g. \"Context · J11 memory journ...\", \"Context · Shared memory fi...\"), and so are their subtitle lines.",
+      "The first message card in the chat is partly hidden under the tab bar at the top of the scroll area. This is expected scroll behaviour, but the card looks clipped."
     ]
   }
 }

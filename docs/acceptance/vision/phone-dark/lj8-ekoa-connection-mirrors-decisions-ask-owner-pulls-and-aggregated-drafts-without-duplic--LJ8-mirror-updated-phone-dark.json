@@ -10,9 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The left edge of the tab strip fades and partly clips the 'Projects' tab label. This is expected for a horizontal scroller with arrow controls, and the tab is still reachable.",
-      "The 'Mirror tasks to Ekoa' label sits below its checkbox instead of next to it, so they look less clearly linked.",
-      "The 'Connected' card has a lot of empty space when 'Available tools' is collapsed."
+      "The 'Projects' tab on the left is partly clipped by the tab strip's scroll arrow. It's a horizontally scrollable strip with arrow controls, so the tab can still be reached.",
+      "The 'Mirror tasks to Ekoa' label sits below its checkbox instead of next to it.",
+      "Grammar: '1 proposed tasks' should be '1 proposed task'.",
+      "'Jevellan · Projects daily: night report · open' appears twice in the Mirrored tasks list. That may be intended, but it looks like a duplicate in a scenario that is meant to have none.",
+      "The 'Available tools' disclosure under Connected is collapsed, so the card looks sparse."
     ]
   }
 }

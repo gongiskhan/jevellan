@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The horizontally scrolling settings tab strip clips its edge labels ('...vices' on the left and a partly visible tab after 'Ekoa' on the right). The scroll arrows are still visible and reachable, so this is expected overflow, not missing content.",
-      "The disabled 'Save Git settings' button has low contrast against the card background, but its label can still be read.",
-      "The 'GitHub token scope' label and dropdown sit outside a card, so their spacing differs slightly from the carded sections around them."
+      "Tab strip cuts off the first tab label at the left edge ('...vices') and a partial icon at the right. These are scroll overflow with arrow controls, so all tabs can still be reached.",
+      "'Save Git settings' button is low-contrast and looks disabled. This is probably intentional because nothing has changed."
     ]
   }
 }

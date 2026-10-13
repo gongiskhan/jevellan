@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The first settings tab on the left is partly hidden behind the left scroll arrow and reads only 'ices'. This is expected for a horizontally scrolling tab strip with arrow controls.",
-      "The 'Save Git settings' button has low contrast against the card. It may be intentionally shown as disabled.",
-      "The text under 'Saved · updated Oct 12, 2026' is muted grey on a dark background, so it's somewhat low contrast but still readable."
+      "The settings tab strip cuts off the first visible tab ('…ices') at the left edge. The strip scrolls and has arrow buttons, so this does not block anything.",
+      "The 'GitHub token scope' label and dropdown sit outside any card, so they look a little detached from the GitHub token card below.",
+      "The disabled 'Save Git settings' button has very low contrast against the dark card background.",
+      "The small helper text ('This choice is saved only in Jevellan…') is dim grey on dark navy. It is readable but low contrast."
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The conversation title in the header is cut off with an ellipsis ('Exercise composer choices: explain the...'). The full text still shows in the subtitle and the user message.",
-      "The 'Proposed plan' heading and 'The full fixture plan' subheading sit very close together, with almost no vertical gap."
+      "The header title is cut off with an ellipsis ('Exercise composer choices: explain the...'). The full request is still readable in the subtitle and the message bubble.",
+      "Step 2 repeats the 'Read project' input/output and the text 'The plan has three steps.' from Step 1, which looks redundant."
     ]
   }
 }

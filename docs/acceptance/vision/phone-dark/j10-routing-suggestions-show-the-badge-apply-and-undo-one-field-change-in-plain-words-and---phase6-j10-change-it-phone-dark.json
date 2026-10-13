@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The two textareas leave a lot of empty space under short text, which makes the modal taller than it needs to be on a phone screen.",
-      "The 'Checked against 27 saved cases' line is in small, low-contrast grey text on the dark modal background. It is readable, but faint."
+      "The modal floats over a blurred page that's taller than the viewport, so the backdrop content is unreadable. That's expected behind a modal, though.",
+      "Text in the diff block is a little small for phone reading but still legible."
     ]
   }
 }

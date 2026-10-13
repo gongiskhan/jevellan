@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis (\"Read the README on the mem…\"). The full task name still appears in the prompt card.",
-      "The terminal attach command is cut off (\"jevellan thread attach thread_01M4R0HN599Z3E0…\"). The copy button next to it still gives the full command.",
-      "The metadata line under \"Back to the project\" wraps onto 3 lines of small monospace text, which makes it a bit dense to read."
+      "The attach command at the bottom ('jevellan thread attach thread_01M4SDB5AQNJ0WC…') is cut off with an ellipsis. The copy button next to it still copies the full command, so this doesn't block anything.",
+      "The meta line ('Codex · GPT · high effort · Projects Codex · Worktree on jv/read-the-readme-on-the-member-553z9x · Browser member') runs over four lines and is a bit crowded on a phone screen.",
+      "The second icon button in the header row (a square, presumably stop) has no label, so its purpose isn't obvious."
     ]
   }
 }

@@ -10,13 +10,12 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Right rail: the 'Enabled' checkboxes sit above and offset from their labels instead of inline with them, on the Review since last, Full suite and Deploy cards.",
-      "PR #3 card: the 'Why' and 'Open thread' links are packed tightly together, while 'Open task' is set apart in larger type, so the action row looks uneven.",
-      "Sidebar session titles and subtitles are cut short with ellipses (e.g. 'Context · J11 memory jour…'). This looks intentional and the main parts are still readable.",
-      "The 'Nightly window finished' card shortens its body to '…' after the task path, so the full result list isn't shown inline.",
-      "The right rail runs past the bottom of the viewport, so the 'Jobs (0)' section header is cut off at the bottom edge. Scrolling reaches it.",
-      "The 'Last night: 3 of 3 nightly tasks passed.' banner text runs right up against the 'Dismiss' button with almost no space between them.",
-      "The thread repeats many 'Noted.' lines, which adds visual noise."
+      "Last-night banner: the 'Dismiss' button sits right against the text 'Last night: 3 of 3 nightly tasks passed.' with almost no space between them.",
+      "PR #3 card: the 'Why' and 'Open thread' links run together and look like one label, and 'Open task' sits apart from them, so the action row looks uneven.",
+      "Nightly item cards (Review since last, Full suite, Deploy): the 'Enabled' checkbox sits above its label instead of beside it, and is out of line with the 'Run now' and 'Edit' buttons.",
+      "The sidebar shell session titles are cut off with an ellipsis ('Context · J11 memory journ…', 'Context · Mesh journey fixt…', 'Context · Shared memory fi…'), and so are their subtitles. This looks intentional and the main part of each title is still readable.",
+      "The 'Nightly window finished' card ends with a '…' line after the task path, so part of the summary is cut off.",
+      "The Deploy card at the bottom of the right column touches the bottom edge of the screen. Its controls are still fully visible."
     ]
   }
 }

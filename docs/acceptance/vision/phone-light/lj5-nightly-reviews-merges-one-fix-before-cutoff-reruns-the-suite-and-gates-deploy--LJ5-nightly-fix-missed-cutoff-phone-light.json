@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row is scrolled sideways, so the 'Chat' tab is clipped at the left edge. It reads as a scrollable tab strip and the tab can still be reached.",
-      "The 'Working…' status badge in the header is shortened with an ellipsis.",
-      "In each nightly card, the 'Enabled' checkbox label wraps under the checkbox instead of sitting beside it, which leaves the Run now/Edit row looking uneven."
+      "The tab row is clipped at the left edge: the first tab shows as 'Chat' with its start cut off. It looks like a horizontally scrolling strip, so the tab can still be reached.",
+      "The 'Working…' status pill is truncated with an ellipsis.",
+      "The header text 'Context unavailable · Compacted 0 times today' wraps awkwardly beside the 'Fresh session' button."
     ]
   }
 }

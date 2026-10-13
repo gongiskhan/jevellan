@@ -4,16 +4,17 @@
   "model": "claude-opus-5-5",
   "test": "an agent connection is scoped, shown once, and revocable",
   "layout": "phone-dark",
-  "screenshot": "docs/acceptance/screenshots/matrix-agents-phone-dark.png",
+  "screenshot": "test-results/agents-phone-dark.png",
   "expected": "the Jevellan web app \"agents\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"an agent connection is scoped, shown once, and revocable\"; the other steps are judged in their own screenshots)",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The settings tab bar cuts off the last tab ('Configur…') at the right edge. It scrolls sideways and has arrow controls, so the tab can still be reached.",
-      "In the JSON configuration block, the long Authorization line wraps, so '<connection token>\"' starts at the left edge instead of lining up with the code indentation.",
-      "The 'Create connection' button looks low-contrast while disabled (the name field is empty), but its label is still readable.",
-      "The 'Active' badge sits on its own line under the connection name, which leaves some uneven space next to the Revoke button."
+      "The settings tab strip cuts off 'Configur…' on the right, and the left scroll arrow partly covers the 'Git' tab icon. Both tabs can still be reached with the scroll arrows.",
+      "In the JSON configuration block, the value \"Bearer <connection token>\" wraps onto a new line at the left edge, which breaks the indentation and makes the snippet a little harder to read.",
+      "The 'Active' badge sits on its own line under the connection name, not next to it.",
+      "The 'Expires Oct 20, 2026' date wraps onto a second line in the connection metadata.",
+      "The disabled 'Create connection' button has low contrast. This is expected while the Name field is empty."
     ]
   }
 }

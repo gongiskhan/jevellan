@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and metadata are cut off with ellipses ('Context · J11 memory jour…', 'dev-ma…', 'de…'). This appears to be intentional truncation.",
-      "The right queue panel's last card (Loop task 3) sits very close to the bottom of the viewport, so any content below it would need scrolling.",
-      "The 'Queue barrier' start and stop cards each repeat a mostly empty 'Open thread' row, which uses a lot of vertical space."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · dev-ma…'). This is deliberate truncation, but the full names can't be read.",
+      "The bottom of the Loop task 3 card in the right queue panel runs off the bottom of the viewport. Its last row of controls (Move to top, Move to bottom, up and down arrows) is still fully visible, and the panel looks scrollable.",
+      "Header shows 'Context unavailable', which reads more like an error than a status."
     ]
   }
 }

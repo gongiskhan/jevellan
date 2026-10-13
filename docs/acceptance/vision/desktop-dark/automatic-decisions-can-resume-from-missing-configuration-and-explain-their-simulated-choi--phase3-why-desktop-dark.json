@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The right 'Why this step' panel cuts off at the bottom edge: a line below 'Automatic account: eligible · selected' is only partly visible. This looks like normal scroll overflow, but nothing shows that the panel scrolls.",
-      "In the sidebar, a fourth conversation item is half hidden under the fade above 'Some native sessions are unavailable', so its title can't be read until you scroll.",
-      "The Effort section reads 'medium → high', but the highlighted bar is 'medium' (1.00) and 'high' shows 0.00. A reader may not be sure which effort was actually used.",
-      "The conversation titles 'Exercise automatic decisi…', 'Explain the memorybrows…' and 'Exercise evidence navigat…' and their subtitles are cut short with ellipses. This is expected for a narrow sidebar."
+      "Sidebar conversation list cuts off the 4th item ('Fi…') partway through, just above the 'Some native sessions are unavailable' note. It looks like a scroll overflow edge but reads as a clipped row.",
+      "The bottom of the 'Why this step' panel cuts off a line partway through below 'Automatic account: eligible · selected'. The panel can probably scroll, but there's no visible cue that more content is below.",
+      "In the sidebar, conversation titles and subtitles are cut off with ellipses (e.g. 'Exercise automatic decisi…', 'Explain the memorybrows…'). This looks intended but hides the full titles.",
+      "In the Effort section, the bar chart puts medium at 1.00 even though the text above and the notice below say 'using high'. This might confuse users, but it doesn't affect layout."
     ]
   }
 }

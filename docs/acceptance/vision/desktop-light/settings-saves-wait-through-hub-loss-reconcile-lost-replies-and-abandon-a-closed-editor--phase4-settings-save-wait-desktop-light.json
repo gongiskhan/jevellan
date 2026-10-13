@@ -10,8 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Background sidebar text under the modal overlay is blurred and hard to read, which is expected for a modal backdrop",
-      "The 'Saving…' button is low-contrast in its disabled state but still readable"
+      "The background page is blurred and dimmed behind the modal, as you'd expect, so the settings content behind it can't be read. This doesn't affect the dialog itself."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles get cut off with an ellipsis ('Context · J11 memory jour…', 'Context · Mesh journey fix…'). This looks like intended truncation.",
-      "The notebook textarea takes up a lot of space while the content uses only three lines, so much of the panel is empty.",
-      "The 'Projects fixture' label in the notebook header is in small pink monospace and has low contrast against the dark background."
+      "The project title in the middle pane header is cut down to \"Pr...\" because the action buttons crowd it. The notebook panel header still shows \"Projects fixture\", so the context is still visible.",
+      "Session names in the sidebar are cut off with an ellipsis (\"Context · J11 memory journ...\", \"Context · Mesh journey fixt...\", \"Context · Shared memory fi...\"), and so are their subtitles (\"dev-ma...\", \"de...\").",
+      "The conflict banner's dark red fill and border are faint against the dark background. The banner text and the pink \"Reload\" link are still readable."
     ]
   }
 }

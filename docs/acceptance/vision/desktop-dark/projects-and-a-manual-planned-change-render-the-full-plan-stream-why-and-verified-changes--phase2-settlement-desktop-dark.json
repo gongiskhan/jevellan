@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The background is dimmed and blurred, so the conversation, sidebar and settings panel behind the modal are hard to read. That's expected behind a modal.",
-      "The 'Discard...' button label uses an ellipsis, which suggests a confirmation step comes next. That's fine, just noting it."
+      "The settlement dialog's \"Publish\" button has a filled light style while \"Keep them\" and \"Discard…\" are outlined. Publish may be the intended default, but nothing else marks it as the recommended choice.",
+      "The dimmed backdrop leaves some background text partly visible behind the dialog, such as the step stream and the status messages. This is expected for a modal, but it adds visual noise around the edges."
     ]
   }
 }

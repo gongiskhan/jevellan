@@ -13,7 +13,7 @@ import { Application, createDaemon } from '../apps/daemon/dist/index.js';
 let root: string; let app: Application; let server: Server; let base: string;
 const at = new Date().toISOString();
 test('stored v1 settings migrate explicitly without losing fixed coordinator choices or unrelated fields', async () => {
-  const legacy = ProjectWorkSettingsSchemaV1.parse({ ...Object.fromEntries(Object.entries(defaultProjectWorkSettings('project')).filter(([key]) => !['allowMainIsolation', 'threadRules', 'coordinatorReview', 'autoMerge', 'riskyAreas', 'requiredChecks', 'nightlyWindow', 'refill', 'perDeviceLimits'].includes(key))), schema: 'project-work-settings-v1', coordinator: { runtimeId: 'claude', accountId: 'fixed', modelId: 'chosen', effort: 'high' }, setupCommand: 'npm ci', maxRunningThreads: 9 });
+  const legacy = ProjectWorkSettingsSchemaV1.parse({ ...Object.fromEntries(Object.entries(defaultProjectWorkSettings('project')).filter(([key]) => !['allowMainIsolation', 'threadRules', 'coordinatorReview', 'autoMerge', 'riskyAreas', 'requiredChecks', 'nightlyWindow', 'refill', 'perDeviceLimits', 'compactAtPercent', 'memory'].includes(key))), schema: 'project-work-settings-v1', coordinator: { runtimeId: 'claude', accountId: 'fixed', modelId: 'chosen', effort: 'high' }, setupCommand: 'npm ci', maxRunningThreads: 9 });
   app.hub.put('project-work-settings', 'project', ProjectWorkSettingsSchemaV1, { ...legacy, revision: 1 }, 0);
   const left = await member('left'), migrated = await left.hub.settings('project');
   expect(migrated?.document).toMatchObject({ schema: 'project-work-settings-v3', revision: 1, coordinator: legacy.coordinator, setupCommand: 'npm ci', maxRunningThreads: 9, autoMerge: false, riskyAreas: '', allowMainIsolation: true });

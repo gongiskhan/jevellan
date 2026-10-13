@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The right panel is scrolled slightly, so the top half of the 'CONCLUDED 0' section heading is cut off at the panel's upper edge, just under the banner. The panel scrolls, so the heading can still be reached.",
-      "The bottom of the 'Switch mode nightly' card is cut off at the bottom of the screen. Its controls (Run now, Edit, Enabled) are still visible, and the rest is reachable by scrolling.",
-      "Each 'Enabled' checkbox sits above and to the left of its label instead of in line with it, so the label lines up with the Run now/Edit buttons and the checkbox floats above.",
-      "Each job card has a lot of empty space below its controls."
+      "In each nightly card, the 'Enabled' checkbox sits above and offset from its label instead of on the same line as the Run now and Edit buttons, so the row looks misaligned.",
+      "The 'Switch mode nightly' card is cut off at the bottom of the viewport. The right panel appears to scroll, so this seems to be normal overflow rather than a hidden control.",
+      "Some session titles and subtitles in the sidebar are cut short with an ellipsis (e.g. 'Context · J11 memory jour…'). This looks intentional.",
+      "The 'Missing run' card shows only 'Queued' with no job row, while the conversation reports its timeout. The two places may not agree on this run's state."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The close (×) button on the 'Current file reloaded' banner is very small and low-contrast, so it is easy to miss.",
-      "The rendered instructions preview ('Edited local instructions…') sits directly under the 'Saved'/'Source' row with no visible editor frame, so it's not obvious where the editable area starts and ends.",
-      "The modal's meta lines ('This bundle has 2 files…', 'Local edits save automatically on this account.') use small, light text that is readable but hard to see on the white background."
+      "Very small helper text in the modal (bundle note 'This bundle has 2 files…' and 'Local edits save automatically on this account.') is small but still readable",
+      "The 'Saved' status label is light gray and low-contrast against the white background",
+      "The page header and sidebar text behind the modal overlay is heavily dimmed, which is expected for a modal"
     ]
   }
 }

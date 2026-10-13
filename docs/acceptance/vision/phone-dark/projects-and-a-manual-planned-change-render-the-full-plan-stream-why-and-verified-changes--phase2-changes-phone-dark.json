@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Header says \"1 changed files\" when it should be \"1 changed file\"",
-      "Large empty area below the verification card",
-      "Agent evidence 'file: value.txt' uses slightly larger type than surrounding content"
+      "The header says \"1 changed files\". It should say \"1 changed file\" (singular).",
+      "The 'Read output' link is pink and centered, so it looks different from the other controls on the screen.",
+      "There is a lot of empty space below the verification card."
     ]
   }
 }

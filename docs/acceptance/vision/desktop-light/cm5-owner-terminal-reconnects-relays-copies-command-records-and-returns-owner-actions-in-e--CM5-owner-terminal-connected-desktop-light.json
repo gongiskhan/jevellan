@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The working-directory path in the terminal header is cut off with an ellipsis ('.../projects...'). The full path still shows in the pwd output.",
-      "Some sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ...', 'Context · Shared memory fi...', 'Gonca...')."
+      "Sidebar shell-session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Shared memory …'), which is expected truncation, not overflow.",
+      "Repeated 'To run a command as administrator…' sudo banner at the top of the terminal output adds clutter.",
+      "The terminal output area has a lot of empty space below the last prompt."
     ]
   }
 }

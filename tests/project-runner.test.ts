@@ -20,6 +20,7 @@ import {
   ownerStartedLine, pullRequestEntries, queuedReason, synthesizedReport, turnEndAction, turnLimitQuestion, waitingForSlotReason, withState, workCounts,
 } from '../packages/projects/dist/index.js';
 import { startGitHubFixture, type GitHubFixture } from './fixtures/github-server.mjs';
+import { threadRequestText } from './helpers/project-fixture.js';
 
 const at = '2026-10-03T10:00:00.000Z';
 const placement = PlacementRecordSchema.parse({ schema: 'placement-v1', questionSet: 'p-v1', source: 'fallback', fixed: [], isolation: 'worktree', runtime: 'fake', modelId: 'fixture',
@@ -250,7 +251,8 @@ test('an owner thread prepares a worktree, runs its turn, opens the pull request
   expect(thread.branch).toMatch(/^jv\/add-greeting-[0-9a-z]{6}$/);
   expect(fake.turnStarts).toHaveLength(1);
   expect(fake.turnStarts[0]).toMatchObject({ owner: { kind: 'thread', projectId: 'proj_a', id: created.threadId }, turn: 1, permissions: 'write', safetyProfile: 'thread',
-    prompt: 'Task: Add greeting\n\nDo Add greeting.', cwd: homes.at('worktrees', 'proj_a', created.threadId) });
+    cwd: homes.at('worktrees', 'proj_a', created.threadId) });
+  expect(threadRequestText(fake.turnStarts[0]!.prompt)).toBe('Task: Add greeting\n\nDo Add greeting.');
   expect(fake.turnStarts[0]!.resume).toBeUndefined();
   expect(fake.turnStarts[0]!.systemAppend).toContain(`Isolation: your own git worktree on branch ${thread.branch}, based on main.`);
   expect(work.ledgers.thread('proj_a', created.threadId).events().map((event) => event.type)).toEqual(['thread-placement', 'thread-state', 'thread-state', 'thread-state',
@@ -296,7 +298,7 @@ test('turns without reports are synthesized, the limit waits for the owner, and 
     await work.threadMessage('proj_a', threadId, { schema: 'thread-message-request-v1', clientMessageId: `msg_${n}`, text: `Go ${n}.`, interrupt: false });
     await settle(work);
   }
-  expect(fake.turnStarts.map((input) => input.prompt).slice(1)).toEqual(['Continue.', 'Go 3.', 'Go 4.', 'Go 5.']);
+  expect(fake.turnStarts.map((input) => threadRequestText(input.prompt)).slice(1)).toEqual(['Continue.', 'Go 3.', 'Go 4.', 'Go 5.']);
   expect(fake.turnStarts.slice(1).map((input) => input.resume?.sessionId)).toEqual(Array(4).fill(work.store.get(threadId)!.nativeSessionId));
   // Right after the fifth turn: waiting for the owner with the item, and the fifth report reached the coordinator.
   expect(work.store.get(threadId)).toMatchObject({ state: 'waiting-for-you', stateReason: TURN_LIMIT_REACHED, turns: 5 });
@@ -313,7 +315,7 @@ test('turns without reports are synthesized, the limit waits for the owner, and 
   expect(await work.answerDecision('proj_a', item!.id, { schema: 'decision-answer-request-v1', clientRequestId: 'ans_1', optionLabel: ALLOW_MORE_TURNS })).toEqual({ repeated: false });
   await settle(work);
   expect(work.store.get(threadId)).toMatchObject({ state: 'idle', turnAllowance: 15, turns: 6 });
-  expect(fake.turnStarts.at(-1)!.prompt).toBe('One more thing.');
+  expect(threadRequestText(fake.turnStarts.at(-1)!.prompt)).toBe('One more thing.');
   expect(await work.answerDecision('proj_a', item!.id, { schema: 'decision-answer-request-v1', clientRequestId: 'ans_1', optionLabel: ALLOW_MORE_TURNS })).toEqual({ repeated: true });
   await settle(work);
   expect(work.store.get(threadId)).toMatchObject({ turnAllowance: 15 });
@@ -401,7 +403,7 @@ test('an interrupt steers the running turn into the next one, and a message sent
   expect(await work.threads.message('proj_a', threadId, 'coordinator', 'Also add a README.', false)).toMatchObject({ delivery: 'queued', state: 'publishing' });
   await waitFor(() => work.store.get(threadId)!.turns, (turns) => turns === 3);
   await settle(work);
-  expect(fake.turnStarts.map((input) => input.prompt)).toEqual(['Task: Steered\n\nDo Steered.', 'Change of plan.', 'Also add a README.']);
+  expect(fake.turnStarts.map((input) => threadRequestText(input.prompt))).toEqual(['Task: Steered\n\nDo Steered.', 'Change of plan.', 'Also add a README.']);
   const session = work.store.get(threadId)!.nativeSessionId; expect(session).toBeDefined();
   expect(fake.turnStarts.slice(1).map((input) => input.resume?.sessionId)).toEqual([session, session]);
   const ledger = work.ledgers.thread('proj_a', threadId);
@@ -421,7 +423,7 @@ test('an idle thread holds no slot; its next turn waits for one and starts by it
   const second = await create(work, 'Second');
   expect(second.state).toBe('preparing');
   await waitFor(() => work.store.get(second.threadId)!.state, (state) => state === 'running');
-  fake.enqueueTurn(report({ status: 'progress', summary: 'Finished.' }), forThread((input) => input.prompt === 'Finish it.'));
+  fake.enqueueTurn(report({ status: 'progress', summary: 'Finished.' }), forThread((input) => threadRequestText(input.prompt) === 'Finish it.'));
   expect(await work.threads.message('proj_a', first.threadId, 'coordinator', 'Finish it.', false)).toMatchObject({ delivery: 'queued', state: 'idle' });
   expect(work.store.get(first.threadId)).toMatchObject({ state: 'idle', stateReason: waitingForSlotReason(1, null), queuedMessages: [expect.objectContaining({ text: 'Finish it.' })] });
   await work.pulse();

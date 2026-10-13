@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal says the step will be redone with 'Reply, Fable, low', but the blurred step picker behind it shows Effort 'high'. This may be intended (the modal could reflect a separate correction choice), but the two values should be checked against each other.",
-      "The background is heavily blurred and dimmed behind the modal, so the step history isn't readable. This is expected for a modal backdrop."
+      "The background is blurred and dimmed behind the modal, so the step history and the next-step panel can't be read on this screen. This looks like the intended modal overlay.",
+      "The dialog says the redo will use 'Reply, Fable, low', but the next-step picker behind it shows effort 'high'. The picker may be a separate control, but the mismatch could confuse users."
     ]
   }
 }

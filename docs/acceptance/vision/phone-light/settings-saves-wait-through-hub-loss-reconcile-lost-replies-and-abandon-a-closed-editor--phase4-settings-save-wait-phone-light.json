@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Background content behind the modal overlay (a page heading on the left edge, the 'Login recovery…' card at the bottom) peeks out around the dialog. It's dimmed and doesn't interfere.",
-      "The tab bar behind the overlay is clipped on the right ('Decisions' and a partial tab before the scroll arrow). It's covered by the modal and doesn't affect this screen.",
-      "The 'Saving…' button is disabled and low-contrast, which is expected for the in-progress state but a bit faint.",
-      "The two lines of hub-wait text use different sizes (the main message is larger than the 'Stopping the wait…' note), so the spacing in the banner looks slightly uneven."
+      "The disabled \"Saving…\" button has low-contrast text. This is expected for a disabled control, but it's faint at phone size.",
+      "The hub-loss banner text wraps into a narrow column next to the \"Stop waiting\" button, so the message runs over four short lines.",
+      "The dimmed background, including the 'Login recovery e218cb9a…' row and the clipped tab strip, shows around the modal's edges. It doesn't overlap any modal controls."
     ]
   }
 }

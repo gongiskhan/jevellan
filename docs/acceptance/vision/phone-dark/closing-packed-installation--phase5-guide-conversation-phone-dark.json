@@ -5,15 +5,14 @@
   "test": "Closing packed installation",
   "layout": "phone-dark",
   "screenshot": "screenshots/phase5-guide-conversation-phone-dark.png",
-  "expected": "the first-conversation setup step with readable controls",
+  "expected": "the first-conversation setup step with readable controls Bright magenta rectangles are intentional screenshot masks over saved secret data, not product overlays or rendering faults.",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The progress bars in the stepper are confusing: a pink active-style bar sits under '2 Account', but step 4 'Conversation' is the current step and has no bar of its own.",
-      "The disabled 'Start' button has very low contrast against the card background, so it's hard to see. It's disabled because the prompt is empty, which is expected.",
-      "The helper text under Device ('Coming later: Jevellan will pick a free machine...') is small and dim, though still readable.",
-      "The 'Auto' control is a very faint outline button, so it's hard to tell what it does and that it can be clicked."
+      "Disabled Start button has low contrast against the card background",
+      "The 'Auto' control text and the 'Coming later' helper text are small and low-contrast",
+      "Inactive stepper labels ('1 Jev key', '3 Project') are dim compared with the active step"
     ]
   }
 }

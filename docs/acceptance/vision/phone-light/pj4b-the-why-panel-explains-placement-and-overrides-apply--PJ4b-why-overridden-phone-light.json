@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The screenshot ends partway through a section headed \"JEV\" below the TASK divider. This looks like the panel scrolling past the phone viewport rather than text being clipped, but that section can't be checked from this capture.",
-      "The 'Claude Code Sonnet' row has a leading dot but no bar or score, unlike the other model rows. This may be intentional (unscored model), but it looks inconsistent.",
-      "The 'Tidy the README wording' task label in the header is small pink monospace text next to the bold title. It is legible but low-emphasis and could get crowded with longer task names."
+      "The TASK section heading sits right at the bottom edge of the viewport and its content is below the fold. The panel looks scrollable, so this is not blocking.",
+      "'Claude Code Sonnet' appears as an indented '·' entry with no bar or score, unlike the other model rows. Its meaning (unavailable or not considered) is not labelled.",
+      "The task title in the header ('Tidy the README wording') is in small coloured monospace text, so it carries less weight next to the bold 'Why this placement' title."
     ]
   }
 }

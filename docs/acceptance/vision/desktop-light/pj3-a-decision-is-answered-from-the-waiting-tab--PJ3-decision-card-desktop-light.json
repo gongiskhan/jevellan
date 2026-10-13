@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the pull request card, the 'Why' and 'Open thread' links run together with no separator, so they read as one label ('Why Open thread').",
-      "The pull request card's actions are unevenly laid out: 'Open task' sits apart from the other links, and 'Merge' wraps onto its own row under 'Open on GitHub'.",
-      "Sidebar session titles and their metadata lines are cut short with an ellipsis (e.g. 'Context · J11 memory jour…', 'dev-ma…'), so the full names can't be read.",
-      "The decision card's disabled 'Send' button has low contrast against the pink card background."
+      "The PR card's action row is unevenly spaced: 'Why' and 'Open thread' sit on the left, 'Open task' floats in the middle, and 'Merge' wraps onto its own line below 'Open on GitHub'.",
+      "The Concluded item 'Write the welcome copy' is clipped at the bottom of the viewport, but the right panel scrolls so it can still be reached.",
+      "Sidebar session titles and metadata are cut short with ellipses ('Context · J11 memory journ…'), which looks like intended truncation.",
+      "The header shows 'Context unavailable', a fixture state rather than a rendering defect."
     ]
   }
 }

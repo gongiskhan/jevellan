@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The Join code field is a solid light-gray box with no visible text. It is probably masked on purpose because the code is a secret, but on its own it looks like an empty bright input sitting on a dark theme.",
-      "A light box covers the end of the command (the token part). It also looks like intentional masking.",
-      "The command wraps in the middle of the URL ('htt' / 'p://127.0.0.1:30774'), which is harder to read. Breaking at word boundaries or allowing horizontal scroll would help.",
-      "The dimmed page behind the modal shows a little through the backdrop, but it doesn't get in the way of the modal content."
+      "The command wraps in the middle of the URL ('htt' / 'p://127.0.0.1:31274'), which makes it harder to read. Breaking at a word or token boundary, or letting it scroll horizontally, would read better.",
+      "The Join code field shows as a solid light-gray block with no visible text, and part of the command is covered by a similar block. These look like the capture tool hiding the secret code on purpose. If they aren't, the join code can't be read.",
+      "The light-gray Join code field stands out sharply against the dark theme of the dialog.",
+      "The background page shows faintly through the overlay around the dialog. It's readable but a little busy."
     ]
   }
 }

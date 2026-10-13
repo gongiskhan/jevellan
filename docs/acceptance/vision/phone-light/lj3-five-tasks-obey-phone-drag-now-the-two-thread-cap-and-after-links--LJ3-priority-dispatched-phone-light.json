@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Pull requests' tab is cut off at the right edge of the tab bar. The bar probably scrolls sideways, so the tab can still be reached.",
-      "The dev ID 'dev_01M4QYSJVSN4PV16MH76SA96J4' wraps onto its own line in the Loop task 5 card."
+      "The 'Pull requests' tab is cut off at the right edge of the tab row. It looks like a horizontally scrollable tab bar, so the tab can probably still be reached.",
+      "The model/effort line and the dev_ session ID wrap onto two lines in the Loop task 5 card. The text is still readable.",
+      "The down-arrow button in the Loop task 3 card looks lighter or disabled compared with the up-arrow next to it."
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dialog's lead sentence says 'Each is older than seven days…' but only one worktree is listed, so 'Each' reads awkwardly.",
-      "The '0 GB' size shown both in the summary and on the list item gives the user little useful information."
+      "The background is blurred and dimmed behind the modal, so the device cards can't be read. This is expected for a confirmation dialog.",
+      "The dialog says \"using 0 GB\" and lists \"orphan_fixture · 0 GB\". Rounding a small worktree down to 0 GB gives the user no useful size information."
     ]
   }
 }

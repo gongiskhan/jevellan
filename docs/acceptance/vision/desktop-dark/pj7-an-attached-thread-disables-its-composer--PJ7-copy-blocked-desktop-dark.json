@@ -10,8 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Mesh journey fix…'). This is normal truncation, and the full names appear in the Projects list.",
-      "The empty space between the report card and the composer leaves the main pane looking sparse."
+      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory journ…', 'Shared memory fi…'). The rows still read fine and stay clickable.",
+      "The send arrow button in the composer is very low-contrast. That fits a disabled composer for an attached thread.",
+      "The bright pink highlight on the selected 'jevellan thread attach …' command is harsh next to the dark theme, but the text is still readable.",
+      "The two hint lines under the composer use small text with low contrast."
     ]
   }
 }

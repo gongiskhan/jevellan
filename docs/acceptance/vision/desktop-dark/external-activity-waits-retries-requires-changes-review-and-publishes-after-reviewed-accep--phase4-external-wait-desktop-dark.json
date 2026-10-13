@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the sidebar, a fourth conversation row is partly clipped at the bottom edge of the scroll area, just above 'Some native sessions are unavailable'. The list scrolls, so this looks like ordinary scroll clipping, but the half-row is visually untidy.",
-      "Sidebar conversation titles and subtitles are shortened with ellipses (e.g. 'Exercise external activity…', 'External activity fixt…'). They are readable, but the full text can't be seen at this width.",
-      "The two recovery buttons, 'Retry' (filled) and 'Try automatic again' (outlined), are stacked vertically and look different from each other. They would read more consistently if placed side by side or styled the same way.",
-      "The blocked-reason banner uses a dark red background with light text. It is readable, but the contrast is a bit low."
+      "A fourth conversation row in the sidebar list is cut off at the bottom of the scroll area, just above 'Some native sessions are unavailable'. Only the top of its title shows, so the list looks clipped rather than ending cleanly. You can still scroll to it.",
+      "Long conversation titles and metadata in the sidebar are truncated with ellipses. They're still readable but incomplete, e.g. 'Exercise external activity…' and 'Blocked · External activity fixt…'.",
+      "The 'Retry' and 'Try automatic again' buttons are stacked vertically with uneven styling: 'Retry' is filled and 'Try automatic again' is outlined. They aren't grouped inline with the blocked-message banner, so the layout looks a little loose."
     ]
   }
 }

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Claude Code · Current account' checkbox is greyed out and looks disabled next to the bright pink Codex checkbox, so it's hard to tell whether it is checked or locked.",
-      "The page behind the dialog is heavily dimmed and blurred, which is expected for a dialog overlay."
+      "The 'Claude Code · Current account' checkbox is grey and low-contrast next to the pink Codex checkbox, so it's unclear whether it's checked or disabled.",
+      "The 'Install for' options are small and tightly spaced compared with the rest of the dialog's text."
     ]
   }
 }

@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Can't reach the hub' wait toast sits right on the bottom edge of the Guards card and covers the left part of the save footer. Nothing important appears to be hidden, but the toast feels crowded there.",
-      "The text in the Routing profile textarea is cut off at the bottom and the textarea above is partly scrolled out of view. This is normal scrolling, not missing content.",
-      "The sidebar conversation list is cut off mid-item above 'Some native sessions are unavailable'. This is a normal scroll cutoff.",
-      "The Saving… button looks dimmed while it is busy, so it has lower contrast than the other controls."
+      "The wait toast ('Can't reach the hub (Fixture hub)…' with 'Stop waiting') covers the left side of the settings footer and its divider line. It sits right against the bottom edge of the Guards card. Nothing important seems to be hidden, because the footer text 'Saving creates a configuration revision.' and the 'Saving…' button are on the right and fully visible.",
+      "The Routing profile textarea cuts its last line off partway. It's a scrollable textarea, so the rest of the text can still be reached.",
+      "The top of the settings content (the bottom of the previous card's textarea) is cut off by the scroll position.",
+      "A row in the sidebar conversation list is cut off behind the 'Some native sessions are unavailable' notice. The list scrolls, so the row can still be reached.",
+      "The 'Saving…' button looks faded, which is expected while a save is in progress."
     ]
   }
 }

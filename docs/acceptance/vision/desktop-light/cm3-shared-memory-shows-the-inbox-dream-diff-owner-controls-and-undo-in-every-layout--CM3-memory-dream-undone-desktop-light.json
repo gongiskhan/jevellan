@@ -10,11 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The status is repeated: the summary line already says 'Memory dream: undone — Kept the test conventions and consolidated the inbox.', and the next two lines show 'undone' and the same sentence again.",
-      "The counts line shows raw camelCase keys ('inboxPromoted: 1 · inboxDropped: 0 · …') instead of readable labels.",
-      "The diff panel cuts off at '-updated: …' and needs scrolling inside the panel to see the rest of the diff.",
-      "The 'INBOX (FROM TODAY)' heading is cut off at the bottom of the dialog, so you have to scroll to see the inbox section.",
-      "There's no visible sign that the dream was undone, such as a badge or a disabled 'Undo' state. Only the word 'undone' in plain text shows it."
+      "The modal body is scrolled, so the header cuts off the top line of the dream summary ('Kept the test conventions and consolidated the inbox.'). This is normal scroll clipping, not truncation, but the screen opens mid-content.",
+      "The 'Memory changes' diff is clipped at the bottom of a fixed-height code block (it ends at '-updated: ...'). It appears to scroll internally, but nothing visibly shows that more content follows.",
+      "The 'Add an owner note' disclosure and the 'Search memory' label sit tightly stacked with almost no vertical spacing between them and the 'Public memory guide' button above.",
+      "The 'Search' button uses a low-contrast pale fill that makes it look disabled, though its text is still readable.",
+      "The screenshot does not show any visible marker (Undo control, 'undone' notice or reverted diff) that confirms the dream was undone. The diff and stats still show the changes, so this capture may not show the intended post-undo state."
     ]
   }
 }

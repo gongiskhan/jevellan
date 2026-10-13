@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Git policy' explanation box is cut off at the bottom edge of the dialog's scrollable area (text ends mid-sentence at 'If main'). It looks like normal scroll overflow, and the text can be reached by scrolling.",
-      "The 'Saving…' button is disabled and low-contrast against the dark background, but you can still read it."
+      "The modal body scrolls, so the Git policy explanation box is cut off at the bottom of the visible area ('...If main'). The rest of it can be reached by scrolling.",
+      "The disabled 'Saving…' button has low contrast against the dark background."
     ]
   }
 }

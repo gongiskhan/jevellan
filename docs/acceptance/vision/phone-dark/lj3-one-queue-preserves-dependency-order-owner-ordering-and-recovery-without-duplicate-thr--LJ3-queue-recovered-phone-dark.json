@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Pull requests' tab is cut off at the right edge of the tab row. It looks like a horizontally scrollable tab strip, but nothing on screen shows that more tabs are off to the right.",
-      "The 'Idle' status badge and the 'Claude Code Fable · high' subtitle are very small and low-contrast, but still readable."
+      "The tab row is cut off at the right edge: 'Pull requests' is partly clipped, which suggests the row scrolls sideways, but there's no visible cue that more tabs are off-screen.",
+      "The top status text ('Context unavailable · Compacted 0 times today') wraps awkwardly beside the 'Fresh session' button.",
+      "There's a large empty area below the Goals section."
     ]
   }
 }

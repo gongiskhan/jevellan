@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The command 'jevellan thread attach thread_01M4S55JZZ96C8HJ…' in the footer is cut off with an ellipsis. A copy button sits next to it, so the full command can still be copied.",
-      "The command 'scripts/owner-only.sh' and its Copy and Run in Terminal buttons appear twice: once in the report body and again in the nested owner-reserved card. The repeat looks redundant.",
-      "The metadata line ('Claude Code · Fable · high effort · Projects Claude · Worktree on jv/reserved-owner-step-7y28t0 · Goncalos-MacBook-Pro.local') wraps across three lines in small monospace text. It is dense but still readable."
+      "The takeover command in the footer ('jevellan thread attach thread_01M4SE74MYHHWY4…') is cut off with an ellipsis. The copy button next to it still gives access to the full command.",
+      "The report card shows 'scripts/owner-only.sh' twice: once in the report body and again in the nested reserved-step card, each with its own Copy and Run in Terminal buttons. This repetition takes up vertical space.",
+      "The prompt's 'Merged to main in the last 24 hours' items (#1, #2) are listed at the same level as the active-thread bullets, so the grouping is a little unclear."
     ]
   }
 }

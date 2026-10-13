@@ -10,7 +10,7 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The page behind the dialog is blurred, which is expected for a modal backdrop. Nothing important is hidden."
+      "The background is blurred under the modal overlay, which is expected for a dialog, so background text can't be read."
     ]
   }
 }

@@ -10,11 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fourth conversation in the left sidebar is cut off at the bottom edge of the list. Only its top few pixels show above the 'Some native sessions are unavailable' note. This looks like normal scroll overflow, but the cut-off row looks unfinished.",
-      "In the middle column, the 'Step details' card is cut off by the 'Jump to latest' bar. The '300 tokens · $0.010' line is only partly visible. This is normal scroll-container clipping, and the content can be reached by scrolling.",
-      "In the evidence panel, the image reference shows as a plain 'Recorded pixel' link instead of an inline image preview. It is legible and clickable, but a reviewer may expect a rendered image there.",
-      "The recorded checkpoint hash is shown in a very small, low-contrast monospace font on a light blue background. It can be read, but only barely.",
-      "In the evidence panel, 'Open working copy' is pink and 'Open recorded step' is grey. The two actions look different, so it isn't clear whether both are active."
+      "Sidebar conversation list cuts off a partially visible fourth item ('Context ...') under the 'Some native sessions are unavailable' row. This is a normal scroll-area edge.",
+      "The 'Step details' card in the transcript is clipped at the bottom ('300 tokens · $0.010' is half visible) above 'Jump to latest'. The content is still reachable by scrolling.",
+      "Sidebar conversation titles and subtitles are truncated with ellipses (e.g. 'Exercise evidence naviga…', 'dev-m…')."
     ]
   }
 }

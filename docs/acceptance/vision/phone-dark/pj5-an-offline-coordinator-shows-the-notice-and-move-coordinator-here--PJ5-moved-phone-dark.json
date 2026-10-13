@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Pull requests' tab is clipped at the right edge of the tab row. This looks like a horizontally scrollable tab strip, but there's no scroll hint or fade to show more tabs are off-screen.",
-      "The 'Projects offline' title plus the 'Idle' status above a 'moved to dev-madrid' notice could confuse users about the coordinator's state, though the text is fully legible."
+      "The tab strip runs off the right edge: the 'Pull requests' pill is clipped and any tabs after it are hidden. It looks like a horizontally scrollable row, but nothing on screen shows that it scrolls.",
+      "The 'Projects offline' title sits close to the header icon buttons. It isn't cut off."
     ]
   }
 }

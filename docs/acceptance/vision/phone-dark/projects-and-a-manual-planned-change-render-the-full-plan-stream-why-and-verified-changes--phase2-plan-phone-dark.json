@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The title row's chips ('Manual conversation fixture', 'dev-madrid', 'Waiting for you') are small and tightly packed at the phone width.",
-      "The 'completed' status label in the Read project card sits on its own line, which leaves extra empty space above Input.",
-      "The yellow notice and the 'Waiting for plan approval. Review plan ↑' line repeat the approval prompt already shown in the plan card."
+      "The 'Changes' chip icon looks slightly cramped next to its label",
+      "The header title 'Change the value to two and verify it.' wraps tightly against the overflow menu",
+      "There's a lot of empty space under the composer at the bottom of the viewport"
     ]
   }
 }

@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Two identical error banners are stacked ('No model can run this step right now: disabled, disabled, …'), and each lists 'disabled' eight times. They are readable but look noisy and repeated.",
-      "Conversation titles and subtitles in the sidebar are cut short with ellipses (e.g. 'Change the value to thre…', 'Browser fixtur…'). This is normal width truncation and the full title is shown in the main header.",
-      "The struck-through 'Step 1 · Implement' heading and the muted 'Undone' label are low contrast on the dark background, but still readable.",
-      "The 'corrected: effort → max' and 'corrected: action → reply, effort → low' labels are small and pink-on-dark, so they are harder to read."
+      "The error message 'No model can run this step right now: disabled, disabled, ...' shows up twice in a row, and each copy lists 'disabled' eight times. It's readable but cluttered.",
+      "The Step 1 header has a lot of small pink/purple metadata text ('corrected: effort → max', 'corrected: action → reply, effort → low'). It's low-contrast but still readable.",
+      "The 'Local time' label and 'completed' status text are dim gray on the dark background, so contrast is low.",
+      "Sidebar conversation titles and subtitles are cut off with an ellipsis (e.g. 'Change the value to thre…', 'Context · J11 memory journ…'). This is intentional and the full text shows in the main pane."
     ]
   }
 }

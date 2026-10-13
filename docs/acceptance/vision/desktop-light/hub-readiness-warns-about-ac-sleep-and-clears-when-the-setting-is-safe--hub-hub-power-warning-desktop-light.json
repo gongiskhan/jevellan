@@ -10,9 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The inline code `sudo pmset -c sleep 0` in the hub readiness warning wraps across two lines, so the trailing `0` sits alone on the next line. It is still readable.",
-      "The warning says \"this Mac\", but the hub card lists the device as Linux. This is a wording mismatch in the fixture, not a layout problem.",
-      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. \"Context · J11 memory journ…\"). This looks like intended truncation."
+      "Inline code 'sudo pmset -c sleep 0' in the hub readiness warning breaks across two lines, so the '0' ends up on its own line",
+      "Disabled-looking 'Open' button on the dev-madrid (this device) card and 'Inspect worktrees'/'Open' on the offline card have low-contrast text",
+      "The 'Open terminals' link is centered by itself under the Terminal button, which looks out of place",
+      "Cards in the same row have different heights, which leaves uneven empty space under the Browser member card",
+      "The 'Apps only' badge on the Mini apps only card stretches across the full card width"
     ]
   }
 }

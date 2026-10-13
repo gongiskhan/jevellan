@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Summary row says '1 changed files' instead of '1 changed file'",
-      "'No checkpoint changes in this step.' appears directly above an uncommitted diff, which may read as contradictory",
-      "Large empty area below the 'No verification receipt yet.' line"
+      "The summary row says \"1 changed files\"; it should be singular: \"1 changed file\".",
+      "Most of the lower part of the screen is empty, and the page ends with \"No verification receipt yet.\" There's no visible publish control yet, which seems expected before Continue is tapped."
     ]
   }
 }

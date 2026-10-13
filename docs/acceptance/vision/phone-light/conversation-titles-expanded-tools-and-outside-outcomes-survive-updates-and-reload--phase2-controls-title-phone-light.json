@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The conversation title in the header is shortened with an ellipsis ('A conversation with a long title · Unbro...'). This looks like intended truncation on a narrow phone screen, but the full title can't be read in this view.",
-      "The long tool header ('Read project · long_tool_header_...') breaks mid-word across several lines, so it's hard to scan, but all of it is visible.",
-      "The 'completed' status label sits on its own line below the wrapped tool header instead of lining up with the header."
+      "The conversation title in the header is cut short with an ellipsis ('A conversation with a long title · Unbro...'). This is expected for a long title at phone width, but the full title can't be read in this view.",
+      "The long tool header ('long_tool_header_...') breaks mid-word across five lines and pushes the 'completed' status onto its own line. It is still readable, but it looks crowded."
     ]
   }
 }

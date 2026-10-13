@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The fourth conversation row in the sidebar is cut off partway, behind the 'Some native sessions are unavailable' disclosure, so its title cannot be read. This looks like normal scroll overflow.",
-      "Conversation titles and subtitles in the sidebar end in ellipses (e.g. 'Exercise external activity…', 'External activity fixt…'). The truncation is intentional, but the full text is not visible.",
-      "There are two 'Retry' buttons, one on the user message bubble and one under the error banner. Users may not know which one to use.",
-      "The 'Retry' and 'Try automatic again' buttons are stacked with their left edges aligned but have different widths, so the action area looks a little unbalanced."
+      "The third sidebar conversation item is cut off at the bottom of the scrollable list, just above the 'Some native sessions are unavailable' row; it looks like normal scroll clipping.",
+      "The two buttons 'Retry' (primary) and 'Try automatic again' (secondary) are stacked vertically with a large gap and different widths, so they look unbalanced next to each other.",
+      "There are two 'Retry' buttons near each other: one on the user message bubble and the primary one under the error banner. This could be confusing.",
+      "Under the header, the description line repeats the conversation title exactly."
     ]
   }
 }

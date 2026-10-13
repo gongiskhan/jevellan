@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Change the value to two and publish th...'). This is normal truncation on a narrow phone screen.",
-      "The 'Change this step' confirmation dialog is still open over the work view. If this capture was meant to show the screen after confirming, the confirm step may not have finished yet. Everything shown is still complete and readable.",
-      "Background text under the dimmed overlay (the 'Retry' and 'Edit' buttons, step metadata, the 'Waiting for you' badge) has low contrast. That is expected behind a modal."
+      "The page title in the header is cut off with an ellipsis ('Change the value to two and publish th...'). This is expected truncation and the dialog is unaffected.",
+      "The page behind the dimmed overlay looks crowded near the top: the 'Read project' card sits tightly under the 'Now change the value to three...' line. It is hard to read through the scrim but does not affect the dialog.",
+      "The 'Jump to latest' link in red/coral and the message input behind the overlay show through the scrim. This is normal for a modal and they are not reachable while the dialog is open."
     ]
   }
 }

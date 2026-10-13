@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Jev key saved.' toast sits over the page subtitle under the 'Decisions' heading and hides part of its text ('Jev chooses each next step from the … give it.'). The toast is temporary and can be dismissed, so this isn't blocking.",
-      "The Routing profile textarea cuts off its last line at the bottom edge. The field scrolls and can be resized, so the content is still reachable.",
-      "Long conversation titles and subtitles in the sidebar are shortened with ellipses, which is expected.",
-      "The 'Saved model: jev-1.13.0. Returned models: jev-latest.' message shows that the saved and returned model names differ. This is about content, not layout."
+      "The 'Jev key saved.' toast covers the middle of the page subtitle under 'Decisions' ('Jev chooses each next step from the … give it.'). The toast is temporary and can be dismissed, so this doesn't block anything.",
+      "The Routing profile textarea cuts off its last line at the bottom edge. The box scrolls and can be resized, so the text can still be reached.",
+      "Conversation titles and subtitles in the sidebar are cut short with ellipses, which is intentional."
     ]
   }
 }

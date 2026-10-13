@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The working-directory path in the terminal header is cut off with an ellipsis ('.../projects-…'), but the full path still shows in the terminal output.",
-      "The sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Shared memory fi…').",
-      "The empty terminal output area takes up a lot of vertical space below the prompt."
+      "The 'Project' label next to 'Connected' in the header is in a saturated pink that stands out; it's still readable",
+      "The sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…'). This is expected truncation",
+      "The terminal output takes up only about two-thirds of the panel, which leaves a large empty area below the last prompt"
     ]
   }
 }

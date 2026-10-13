@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The error message 'No model can run this step right now: disabled, disabled, …' lists 'disabled' nine times without naming the models, so it adds length and tells the user nothing.",
-      "The same error text appears twice: once in the red banner and again inside the 'Resume correction · step 1' card.",
-      "The header title is shortened with an ellipsis ('Change the value to three, then redo thi…'). The full text is still visible in the prompt line below it.",
-      "The page is scrolled, so the top of the tool-call card (the 'Input' label) is cut off by the header chips. This comes from the scroll position, not the layout."
+      "Header title is cut off with an ellipsis ('Change the value to three, then redo this...'), but the full text shows in the subtitle line below it.",
+      "The 'No model can run this step right now' message lists 'disabled' eight times. It is hard to read and doesn't explain anything. Grouping the reasons (e.g. 'all 8 models disabled') would read better.",
+      "The same error text appears twice: in the red banner and again in the 'Resume correction · step 1' card.",
+      "The Input card is cut off at the top of the viewport because the page is scrolled. This is fine, but the step's header is not visible in this capture."
     ]
   }
 }

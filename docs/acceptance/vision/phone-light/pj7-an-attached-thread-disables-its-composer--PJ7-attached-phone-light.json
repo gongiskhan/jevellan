@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The take-over command at the bottom ('jevellan thread attach thread_01M4R0GJYKKRJ1T…') is cut off with an ellipsis. The copy button next to it is visible and reachable, so the full command can still be copied.",
-      "There is a large empty gap between the report card and the attached-state notice and composer at the bottom."
+      "The takeover command at the bottom is cut off with an ellipsis ('jevellan thread attach thread_01M4SDC9JBK7677…'). The copy button is still visible and works, and the full thread ID appears in the banner text at the top.",
+      "There is a large empty gap between the Report card and the attached-state notice above the composer."
     ]
   }
 }

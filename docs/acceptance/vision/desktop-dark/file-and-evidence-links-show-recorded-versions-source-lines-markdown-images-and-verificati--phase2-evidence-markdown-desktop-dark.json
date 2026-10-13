@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Step details' card at the bottom of the chat column is clipped mid-line ('300 tokens · $0.010') at the edge of the scroll area. 'Jump to latest' is visible, so the content can still be reached.",
-      "In the sidebar, a fourth conversation item is partly visible behind the 'Some native sessions are unavailable' notice at the bottom of the scroll area.",
-      "Long titles in the sidebar are truncated with ellipses ('Exercise evidence naviga…', 'Context · Created instructi…'). This is intended truncation.",
-      "The muted gray secondary text in the evidence panel ('Recorded checkpoint ·' hash, 'Open recorded step') has fairly low contrast on the dark background but is still readable."
+      "In the sidebar, the fourth conversation row (around y≈710) is cut in half above the 'Some native sessions are unavailable' notice, so it looks clipped rather than fading out like a scroll edge.",
+      "In the main column, the 'Step details' card is cut off at the bottom by the scroll area, just above 'Jump to latest'. This is expected scroll overflow.",
+      "The recorded checkpoint hash in the evidence panel is in very small, low-contrast monospace text, but it can still be read.",
+      "Long conversation titles in the sidebar are shortened with ellipses ('Exercise evidence naviga…', 'Change the value to two a…')."
     ]
   }
 }

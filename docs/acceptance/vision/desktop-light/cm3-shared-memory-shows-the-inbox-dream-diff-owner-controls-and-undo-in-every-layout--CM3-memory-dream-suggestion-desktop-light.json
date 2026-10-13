@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dream status is shown twice: the summary line 'Memory dream: suggested — Kept the test conventions…' is followed by separate 'suggested' and 'Kept the test conventions…' lines.",
-      "The stats line uses raw camelCase keys (inboxPromoted, inboxDropped) instead of readable labels.",
-      "The diff block cuts off mid-hunk at '-updated: …' with no visible scroll cue. Its content is presumably scrollable.",
-      "'Run now' sits on its own line below Apply / Discard suggestion, close to the modal's bottom edge, so the button grouping looks a little disconnected."
+      "The dream status and summary appear twice: once in the line 'Memory dream: suggested — Kept the test conventions and consolidated the inbox.' and again as separate 'suggested' and 'Kept the test conventions…' lines.",
+      "The 'Memory changes' diff box is cut off at the bottom (it stops partway through the '-updated:' line). It looks like a scrollable box, so this probably isn't a real problem.",
+      "The 'Run now' button sits right against the bottom edge of the modal with almost no padding below it.",
+      "The 'Run now' button is on its own line under 'Apply' and 'Discard suggestion', so the button group looks uneven."
     ]
   }
 }

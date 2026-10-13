@@ -10,10 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The right column ends at the bottom edge of the viewport. The 'Run now' and 'Edit' buttons and the checkbox label in the 'Review since last' nightly card are only partly visible. The column appears to scroll, so they can still be reached.",
-      "Long session titles in the sidebar are cut off with an ellipsis, e.g. 'Context · J11 memory jour…' and 'Context · Mesh journey fix…'. Their subtitles are cut off too ('dev-ma…', 'dev-…').",
-      "In the PR #3 card, the 'Open task' link uses a larger font than the 'Why' and 'Open thread' links next to it.",
-      "The 'Merge' button on PR #3 is greyed out with low contrast. This fits merges being held, but the label is faint."
+      "In the pull request #3 card, the 'Why', 'Open thread' and 'Open task' links sit on one line with uneven spacing, so they look crowded and don't line up with the 'Open on GitHub' button.",
+      "Shell session titles and their metadata lines in the left sidebar are cut short with an ellipsis (e.g. 'Context · J11 memory journ…', 'dev-ma…'). Hovering may show the full text.",
+      "The 'Review since last' nightly card in the right column runs past the bottom of the viewport. The column appears to scroll, so it is still reachable.",
+      "The pull request #3 'Merge' button looks low-contrast or disabled. That is probably intended because merges are held, but it is hard to read.",
+      "'Merges are held while the nightly window runs.' appears three times on the screen (the top banner, the pull request #3 card and the Nightly section)."
     ]
   }
 }

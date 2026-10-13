@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar shell session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Improver sandbox · dev-ma…'); this is expected truncation and nothing important is lost",
-      "The status pill says 'Idle' even though the scenario describes a running thread; the layout is fine, but the state label may not match the scenario",
-      "Large empty gap in the sidebar between the shell session list and the 'Some native sessions are unavailable' footer"
+      "The sidebar thread titles are cut off with ellipses ('Context · J11 memory journ...', 'Context · Mesh journey fixt...'), and so are their subtitles. The full titles appear elsewhere on the screen.",
+      "The worktree name in the header metadata line is long and makes the line crowded, but you can still read all of it.",
+      "The 'completed' status labels on the tool cards are low-contrast teal on a dark background, but they are still readable."
     ]
   }
 }

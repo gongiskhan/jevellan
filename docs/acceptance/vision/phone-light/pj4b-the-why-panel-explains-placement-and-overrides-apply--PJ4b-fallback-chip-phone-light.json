@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The take-over command 'jevellan thread attach thread_01M4QYSRRK1GY5Y…' is cut off with an ellipsis. The copy button next to it is still visible and reachable.",
-      "The Worktree metadata line wraps in an odd place, leaving 'dev-madrid' alone on its own line."
+      "The take-over command at the bottom ('jevellan thread attach thread_01M4SD4T2QXCVRV...') is cut off with an ellipsis. The copy button next to it still gives access to the full command.",
+      "There is a large empty gap between the report card and the message composer.",
+      "The meta line 'Projects Claude · Worktree on jv/check-the-readme-links-cpsycx · dev-madrid' wraps awkwardly across three lines."
     ]
   }
 }

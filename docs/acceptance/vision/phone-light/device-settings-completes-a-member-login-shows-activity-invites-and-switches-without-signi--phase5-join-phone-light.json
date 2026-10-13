@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Join code' field shows an empty grey box and the end of the command is a blank white rectangle. This looks like the screenshot tool hiding a changing value, but if it isn't, the join code isn't showing.",
-      "The URL in the command breaks in the middle of a word ('htt' / 'p://127.0.0.1:30772'), which makes it harder to read and copy by eye.",
-      "The dialog's padding is a bit uneven: there is more empty space below the 'Expires' line than above the body text."
+      "The join code field shows as an empty gray box, and the end of the command is covered by a blank white box. These are probably masks the screenshot tool puts over the secret code, but if they aren't, the code is missing.",
+      "The command breaks mid-URL ('htt' / 'p://127.0.0.1:31272'), which makes it harder to read.",
+      "The modal is centred over the blurred settings page underneath. That's expected, but the background content is still partly visible around the dialog."
     ]
   }
 }

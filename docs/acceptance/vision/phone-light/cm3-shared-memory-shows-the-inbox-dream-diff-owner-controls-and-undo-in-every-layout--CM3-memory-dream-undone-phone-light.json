@@ -10,12 +10,11 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dream summary appears three times: in the 'Memory dream: undone — …' line, then as a separate 'undone' line, then the summary sentence again.",
-      "The counts line shows internal key names (inboxPromoted, inboxDropped, etc.) instead of readable labels.",
-      "The long 'diff --git a/Project brief.md b/Project brief.md' header breaks onto a second line in the narrow code block.",
-      "The diff block is cut off at the bottom and must be scrolled to see the rest; it isn't clear that it scrolls.",
-      "The 'Capture durable knowledge from sessions' checkbox is pale grey and looks disabled, so its state is hard to read.",
-      "The 'Suggest only' dropdown text is light grey and could pass for placeholder text."
+      "The 'undone' status and the summary 'Kept the test conventions and consolidated the inbox.' appear twice: once in the 'Memory dream: undone — …' line and again as separate paragraphs below it.",
+      "The diff block is clipped at the bottom after 'created: 2026-10-13T01:30:24.346Z'. It looks like a scrollable container, but there is no visible scroll cue.",
+      "The 'Capture durable knowledge from sessions' checkbox and the 'Suggest only' select are pale and low-contrast, so they look disabled.",
+      "The long 'diff --git a/Project brief.md b/Project brief.md' header wraps onto two lines in the narrow code block.",
+      "The stats line ('inboxPromoted: 1 · inboxDropped: 0 · …') shows raw camelCase keys instead of readable labels."
     ]
   }
 }

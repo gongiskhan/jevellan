@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The dialog says it will redo with effort 'low', but the Effort field behind the overlay shows 'high'. This may be a state mismatch rather than a layout problem.",
-      "The header title is cut off with an ellipsis ('Change the value to three, then redo thi...'), which is intended truncation behind the modal overlay.",
-      "The 'Undo and redo' and 'Back' buttons are on the left, leaving empty space on the right of the dialog footer."
+      "The dialog says the redo will run with 'Reply, Fable, low', but the form behind it shows Effort set to 'high'. This mismatch may be a logic bug rather than a rendering problem, so please check it.",
+      "The 'Back' button has a light outline and less contrast than the main 'Undo and redo' button, but it is still easy to read and tap."
     ]
   }
 }

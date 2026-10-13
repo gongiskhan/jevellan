@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal body is scrolled partway down, so the top of the diff and the section heading above it are hidden under the modal header. This looks like normal scroll overflow, not clipping.",
-      "The error banner 'These files changed since your review. Review changes again.' shows while the 'Continue' button above it still looks enabled. A user could read these two signals as conflicting.",
-      "The diff block's left padding is close to the edge of its container. The text is still easy to read."
+      "The modal body is scrolled, so the top of the diff block (and anything above it) is hidden under the modal header. This is normal scroll overflow, but the start of the diff is not visible in this capture.",
+      "The error banner ('These files changed since your review. Review changes again.') sits at the bottom of the modal, below the 'Continue' / 'Refresh changes' buttons it refers to. It might be easier to notice if it were closer to those buttons."
     ]
   }
 }

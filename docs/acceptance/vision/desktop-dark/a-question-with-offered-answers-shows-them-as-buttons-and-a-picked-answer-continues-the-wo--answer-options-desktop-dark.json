@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The user message bubble at the top right ('Exercise answer options: change the value.' with Retry/Edit) touches the header divider line, with no gap above it.",
-      "Sidebar conversation titles and subtitles are cut short with ellipses (e.g. 'Exercise answer options: ...', 'Context · J11 memory jour...'). This looks intentional and the full title is in the header.",
-      "The prompt text 'Exercise answer options: change the value.' appears three times near the top (header title, subtitle line and message bubble), which is redundant.",
-      "The 'completed' status label on the Read project card sits on its own line below the card title, leaving extra space."
+      "The user message bubble (Retry/Edit) sits right against the header divider, so it looks like its top border is clipped. This is probably just the scroll position.",
+      "In the 'Read project' tool card, the 'completed' status sits alone on its own line on the right, which leaves awkward empty space.",
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Exercise answer options: ...', 'Context · J11 memory jour...'). This is intended overflow handling."
     ]
   }
 }

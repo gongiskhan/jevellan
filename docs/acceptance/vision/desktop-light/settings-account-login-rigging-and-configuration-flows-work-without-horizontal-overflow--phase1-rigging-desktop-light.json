@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "In the warning banner, the 'Retry' button sits right against the end of the message text ('...needs to finish.') with almost no space between them.",
-      "The disabled checkboxes on the 'Safety' hook are very pale against the white background, though their 'Claude Code' and 'Codex' labels can still be read.",
-      "Some conversation titles and subtitles in the sidebar are cut short with an ellipsis (e.g. 'Context · Mesh journey fixt…'). This looks intentional and doesn't hide any controls."
+      "The warning banner text 'needs to finish.' sits right against the 'Retry' button with no gap.",
+      "The disabled Claude Code and Codex checkboxes on the 'Safety' hook are very faint against the white background.",
+      "Some conversation titles and subtitles in the left sidebar are cut off with an ellipsis (e.g. 'Context · J11 memory journ…'). This looks like deliberate truncation, not a layout problem.",
+      "The 'Waiting for you' filter's count badge ('4') is small and low-contrast."
     ]
   }
 }

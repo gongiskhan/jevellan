@@ -10,9 +10,12 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The horizontal tab strip clips its edge labels: 's' on the left and 'Projects' on the right. Scroll arrows are visible, so the tabs can still be reached.",
-      "Disabled 'Open' and 'Inspect worktrees' buttons have low contrast but can still be read.",
-      "The worktree text 'Job and verification worktrees: 0 GB' wraps, leaving 'GB' alone on its own line."
+      "The tab strip at the top is cut off at both edges (\"Improver\" on the left, \"Projects\" on the right). The arrow buttons on each side keep it scrollable, so this is expected.",
+      "The \"Open terminals\" link is centered and pink, unlike the left-aligned buttons around it, so it looks out of place in the device cards.",
+      "The line \"Thread worktrees: 0 GB · Job and verification worktrees: 0 GB\" wraps and leaves \"GB\" alone on its own line.",
+      "On the dev-madrid card (this device), the \"Open\" button is dimmed with no explanation. This is probably intentional because it is the current device.",
+      "The Offline fixture card's \"Inspect worktrees\" and \"Open\" buttons are dimmed. This is expected while the device is offline, but it is not explained.",
+      "The device tags field shows \"linux, datacenter\" in all three cards, and it is unclear whether these are entered values or placeholder text."
     ]
   }
 }

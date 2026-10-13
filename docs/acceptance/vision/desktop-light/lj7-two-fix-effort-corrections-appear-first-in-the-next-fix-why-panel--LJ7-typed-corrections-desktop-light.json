@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Mesh journey fix…', 'dev-ma…'). The truncation looks intentional.",
-      "The corrections list sits at the very bottom of the Why panel, right against the edge of the window, with almost no padding below it.",
-      "The 'Devices when placed' section uses larger body text than the other panel sections, so the type sizes look inconsistent."
+      "The Why panel is scrolled down a little, so the first row ('Main 0.20') sits right under the header and whatever is above it is out of view. You can scroll back to it, so nothing is lost.",
+      "Sidebar session titles and subtitles are cut short with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Improver sandbox · dev-ma…').",
+      "Some panel text is very small and low-contrast, e.g. the 'fixed', 'Jev' and 'only option' labels and the footer 'Placement · jev-browser-simulated · 60 tokens · 3 ms'. It is still readable."
     ]
   }
 }

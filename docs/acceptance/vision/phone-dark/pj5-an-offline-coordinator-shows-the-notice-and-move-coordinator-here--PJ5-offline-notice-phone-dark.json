@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The last tab, 'Pull requests', is clipped at the right edge. The tab bar looks horizontally scrollable, but nothing on screen shows that more tabs are off to the right.",
-      "The 'Offline' badge under the title uses small monospace text in a low-contrast grey on the dark background. It is readable but faint."
+      "The tab row runs off the right edge: the 'Pull requests' pill is clipped and any tabs after it are hidden. This looks like a horizontally scrollable strip, but nothing on screen shows that it scrolls.",
+      "The 'Offline' badge under the header title is small and low-contrast, but still readable."
     ]
   }
 }

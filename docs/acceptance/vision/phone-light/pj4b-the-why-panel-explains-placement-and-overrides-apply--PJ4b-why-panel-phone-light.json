@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The last section heading (\"JEV…\") is cut off at the bottom of the viewport. This looks like normal scroll overflow in the panel, but the rest of that section isn't visible in this capture.",
-      "The task title \"Tidy the README wording\" in the header uses a small pink monospace font that has less contrast than the bold \"Why this placement\" heading next to it.",
-      "The light grey-blue bars for the 0.10–0.20 values are short and low-contrast, but the numbers beside them are easy to read."
+      "The TASK section is cut off at the bottom edge of the viewport. The panel likely scrolls, so this probably isn't real clipping, but the screenshot alone doesn't confirm it.",
+      "The task title 'Tidy the README wording' in the header is small, pink and set in a monospace font. It's readable but has lower contrast than the panel title next to it.",
+      "The right-aligned source labels ('Jev', 'only option') are small and light grey, so they're hard to see."
     ]
   }
 }

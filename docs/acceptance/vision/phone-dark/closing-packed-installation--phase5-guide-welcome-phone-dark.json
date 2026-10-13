@@ -5,15 +5,14 @@
   "test": "Closing packed installation",
   "layout": "phone-dark",
   "screenshot": "screenshots/phase5-guide-welcome-phone-dark.png",
-  "expected": "the passphrase welcome screen with readable text and reachable setup controls",
+  "expected": "the passphrase welcome screen with readable text and reachable setup controls Bright magenta rectangles are intentional screenshot masks over saved secret data, not product overlays or rendering faults.",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tagline 'AUTONOMOUS DEVELOPMENT, COORDINATED.' is in small, low-contrast monospace text on a dark background, so it's a bit hard to read",
-      "The helper text 'At least 8 characters.' and the subtitle are fairly low-contrast gray-blue on a dark card",
-      "The passphrase field has no placeholder or show/hide toggle",
-      "The magenta focus ring on the input doesn't match the rest of the muted palette"
+      "The 'AUTONOMOUS DEVELOPMENT, COORDINATED.' tagline below the card is small, widely letter-spaced and low-contrast, but you can still read it.",
+      "The 'At least 8 characters.' hint text is fairly low-contrast against the dark card background.",
+      "The card sits a bit above vertical center, leaving a large empty area at the bottom of the viewport."
     ]
   }
 }

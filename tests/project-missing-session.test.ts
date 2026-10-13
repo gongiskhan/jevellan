@@ -6,7 +6,7 @@ import { afterEach, expect, test } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { ThreadCreatedViewSchema } from '../packages/core/dist/index.js';
 import { forThread } from '../packages/runtime-contract/dist/index.js';
-import { expectNoLeaks, projectFixture, reportStep, type ProjectFixture } from './helpers/project-fixture.js';
+import { expectNoLeaks, projectFixture, reportStep, threadRequestText, type ProjectFixture } from './helpers/project-fixture.js';
 
 let fixture: ProjectFixture | undefined;
 afterEach(async () => {
@@ -33,7 +33,7 @@ test('a thread turn whose stored session no longer exists runs again at once in 
   const rested = await f.waitFor(() => f.thread(threadId), (thread) => thread.state === 'idle' && thread.lastReport?.summary === 'Second step.');
   expect(threadTurns(f)).toHaveLength(3);
   const [, missing, fresh] = threadTurns(f);
-  expect(missing!.resume?.sessionId).toBe(first); expect(missing!.prompt).toBe('Go on with the footer.');
+  expect(missing!.resume?.sessionId).toBe(first); expect(threadRequestText(missing!.prompt)).toBe('Go on with the footer.');
   expect(fresh!.resume).toBeUndefined();
   expect(fresh!.prompt.startsWith('Task: Headers\n\nKeep every header.')).toBe(true); expect(fresh!.prompt.endsWith('Go on with the footer.')).toBe(true);
   expect(rested.nativeSessionId).toBeDefined(); expect(rested.nativeSessionId).not.toBe(first);

@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The modal body is cut off at the bottom: the 'Minutes between refills' input is only partly visible above the footer. Scrolling inside the modal reaches it, and it is not part of the compaction controls.",
-      "The modal does not show any context-usage indicator or 'Fresh session' control. The 'Fresh session' button is visible behind the dimmed overlay, so those controls are probably judged in other steps."
+      "The modal body cuts off at the bottom: the 'Minutes between refills' input is only partly visible above the footer. There is no visible scrollbar to show that more settings are below.",
+      "The screen doesn't show the context or 'fresh session' controls, so it only covers the compaction threshold setting ('Compact at percent' = 65)."
     ]
   }
 }

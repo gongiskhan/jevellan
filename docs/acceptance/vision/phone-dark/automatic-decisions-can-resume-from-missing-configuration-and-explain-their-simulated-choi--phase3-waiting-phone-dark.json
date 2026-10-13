@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Exercise automatic decisions: change t…'). The full text still shows in the subtitle and the message bubble.",
-      "The 'Review Login recovery <uuid>' links break in the middle of the UUID ('a22c-' / '1caf1f1e1579'), which looks ragged.",
-      "The long list of 'Review … fixture' links sits close together with mixed wrapping (some lines hold two links, others one), so it looks cluttered on a phone screen.",
-      "'Try automatic again' and 'Review Automatic account' share a row with different styles (a pill button next to a plain link), so the layout looks a little uneven."
+      "The header title is cut off with an ellipsis (\"Exercise automatic decisions: change t…\"). The full text still appears in the subtitle line below and in the message bubble.",
+      "The list of Review fixture links is long and packed tightly. Some links share a row and others sit alone, so the spacing looks uneven. On a phone the links are small and close together as touch targets.",
+      "The two 'Review Login recovery <UUID>' links break in the middle of the UUID. The text is still readable, but the raw IDs make the labels hard to scan.",
+      "The bright pink links compete visually with the 'Try automatic again' button, which is the main action."
     ]
   }
 }

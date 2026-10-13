@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Large empty area between the last report card and the footer notice",
-      "The metadata line ('Claude Code · Opus · low effort · Projects Claude · Worktree on jv/tidy-the-readme-wording-8kj0z7 · dev-madrid') wraps onto three lines in a small monospace font, so it's dense to read"
+      "The metadata line (Claude Code · Opus · low effort · Projects Claude · Worktree on jv/tidy-the-readme-wording-nvwz4t · dev-madrid) wraps onto three lines in small monospace text, so it's dense but still readable",
+      "The 'Restarted as thread_01M4SDA1MWAZDZV73V1WPFRNY6.' link fills almost the whole width of the screen, so a longer ID could overflow",
+      "Both reports just say 'Done for now.', so the cards show almost no content, but they render correctly"
     ]
   }
 }

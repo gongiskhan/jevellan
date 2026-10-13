@@ -5,16 +5,14 @@
   "test": "Closing packed installation",
   "layout": "phone-dark",
   "screenshot": "screenshots/phase5-guide-jev-phone-dark.png",
-  "expected": "the Connect Jev setup step with readable text and reachable controls",
+  "expected": "the Connect Jev setup step with readable text and reachable controls Bright magenta rectangles are intentional screenshot masks over saved secret data, not product overlays or rendering faults.",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Continue' and 'Test connection' buttons look disabled and have very low contrast against the background. If that's intentional, they're still hard to read.",
-      "The notice says 'Add your Jev key in Settings → Decisions', but the Jev key field is right on this screen, which could confuse users.",
-      "The Jev key input has no placeholder or helper text explaining what format the key should be in.",
-      "The stepper labels for steps 2–4 are muted grey and fairly low contrast, though still readable.",
-      "There's a large empty area below the action buttons."
+      "The disabled 'Test connection' and 'Continue' buttons have low-contrast text that is hard to read, though this is normal styling for disabled controls.",
+      "The notice says to add the Jev key in Settings → Decisions, but a Jev key field is right below it on this screen, so the instructions are confusing.",
+      "The 'STEP 1 OF 4' label is small, widely spaced magenta text with fairly low contrast against the dark background."
     ]
   }
 }

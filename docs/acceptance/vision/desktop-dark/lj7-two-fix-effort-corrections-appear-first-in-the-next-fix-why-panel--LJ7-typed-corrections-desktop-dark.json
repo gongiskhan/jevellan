@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · J11 memory journey · dev-…'). This is intentional truncation but hides context.",
-      "The 'Corrections shown to Jev' list sits at the very bottom edge of the Why panel. Any further entries would need scrolling, though both expected corrections ('Small fix 2' and 'Small fix 1', high→medium, next-turn) are fully visible and readable.",
-      "The bars in the Isolation and Effort sections, and the small grey mono text in the panel (e.g. the 0.10 values), have low contrast on the dark background but can still be read."
+      "The Why panel opens scrolled down, so the heading of its first section is out of view and only the 'Main 0.20' row shows at the top. It can still be reached by scrolling.",
+      "Sidebar conversation titles and subtitles are cut short with ellipses (e.g. 'Context · J11 memory jour…'). This is intended single-line truncation.",
+      "In the prompt card, 'Merged to main in the last 24 hours: (none)' runs on inside the second bullet instead of sitting on its own line."
     ]
   }
 }

@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Enabled' label sits under its checkbox instead of beside it, so the two don't line up the way a checkbox and label usually do",
-      "The helper text under 'Review from commit' is small and low-contrast against the dark background"
+      "The 'Enabled' checkbox sits on its own line above its label, so the two look disconnected.",
+      "There's an empty gap under the Save/Cancel buttons at the bottom of the modal.",
+      "The background is dimmed so much that the sidebar and right panel are hard to read. This is expected behind a modal."
     ]
   }
 }

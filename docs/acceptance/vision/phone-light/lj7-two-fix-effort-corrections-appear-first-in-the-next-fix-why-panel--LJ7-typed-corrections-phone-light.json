@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The panel is scrolled, so the list above EFFORT is partly hidden under the sticky header ('Claude Code Opus' sits right at the header's edge). This is normal scroll clipping, not an overlap bug.",
-      "The effort bars for low, medium, xhigh and max all show the same 0.10 value, so they are hard to tell apart. They are still readable."
+      "The panel is scrolled, so the bullet list at the top ('Claude Code Opus', 'Claude Code Sonnet') sits right under the sticky header and its section heading is out of view. 'Claude Code Opus' almost touches the header's bottom border.",
+      "The 'Small fix 3' tag in the header uses small magenta monospace text, which has fairly low contrast on the light background.",
+      "The monospace footer metadata ('Placement · jev-browser-simulated · 60 tokens · 3 ms') wraps unevenly, leaving a stray '·' at the end of the first line."
     ]
   }
 }

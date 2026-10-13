@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Claude Code Opus' list item at the top is partly hidden under the sticky header because the panel is scrolled, so content continues above the visible area.",
-      "The secondary labels ('Jev', 'only option') and the small grey effort numbers are low-contrast on the dark background, but they can still be read."
+      "The panel is scrolled partway down: the heading above the 'Claude Code Opus' / 'Claude Code Sonnet' list sits under the sticky header and can't be seen, so that list has no visible label in this capture.",
+      "The effort bars for low, medium, xhigh and max (0.10 each) are short grey stubs that are hard to tell apart from the empty track on the dark background."
     ]
   }
 }

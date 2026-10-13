@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The tab row ends at the right edge of the screen. The 'Pull requests' tab touches the edge and its pill border is cut off, and any tabs after it are hidden. The row probably scrolls sideways, but nothing on screen shows that it does (no fade or partly visible next tab).",
-      "The empty-chat help text sits low on the screen, leaving a large empty area above it. This is a layout-balance issue only."
+      "The tab row runs past the right edge: 'Pull requests' is clipped and any tabs after it are out of view. It looks like a horizontally scrollable tab strip, but nothing on screen shows that it scrolls.",
+      "The 'Projects offline' title and the 'Offline' chip sit close to the header icon buttons, so the header feels slightly cramped at phone width."
     ]
   }
 }

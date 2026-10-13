@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'dev-ma…'). This is intended truncation, and the full text isn't needed on this screen.",
-      "The coordinator status in the header reads 'Idle' while the right panel shows 'Add a greeting' as running. That may confuse users, though it probably refers to the coordinator's own state.",
-      "The right panel's content reaches the bottom edge of the viewport ('propose useful work.'), so the page probably scrolls for anything below it. No needed controls are hidden on this screen."
+      "The bottom of the right panel cuts off the Goals helper text mid-line at the viewport edge (\"Add a goal to explain what matters and let the coordinator…\"). It looks like a scrollable panel, so the text should still be reachable by scrolling.",
+      "Long session titles and subtitles in the sidebar list are shortened with ellipses (e.g. \"Context · J11 memory jour…\", \"Done · Shared memory fixture · d…\"). This looks intentional.",
+      "The header status badge says \"Idle\" even though the Running section shows \"Add a greeting\" in progress. This may be a state mismatch rather than a layout problem.",
+      "The Nightly section's \"Project day: 2026-10-13\" line and its buttons start further left than the other right-panel content, so the alignment is slightly inconsistent."
     ]
   }
 }

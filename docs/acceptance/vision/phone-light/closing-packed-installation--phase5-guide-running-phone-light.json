@@ -5,15 +5,15 @@
   "test": "Closing packed installation",
   "layout": "phone-light",
   "screenshot": "screenshots/phase5-guide-running-phone-light.png",
-  "expected": "the running conversation with readable transcript and reachable controls",
+  "expected": "the running conversation with readable transcript and reachable controls Bright magenta rectangles are intentional screenshot masks over saved secret data, not product overlays or rendering faults.",
   "result": {
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header title is cut off with an ellipsis ('Installation acceptance: ch…'), but the full text shows in the subtitle and the message bubble, so nothing is lost",
-      "A large empty gap sits between the step divider and the 'Agent is working' indicator, which makes the working status look separate from the step it belongs to",
-      "The working status shows in three places (the 'Working' badge, the 'Running' step label and the 'Agent is working' footer), which repeats the same information",
-      "The '0s' timer is right-aligned on its own line, away from the 'Agent is working' label it belongs to"
+      "The header title is cut off with an ellipsis ('Installation acceptance: ch...'). The full text still appears in the subtitle and in the message bubble.",
+      "There is a large empty gap between the step section and the 'Agent is working' indicator.",
+      "The 'Agent is working' spinner and label are left-aligned and look disconnected from the elapsed '0s' counter on the right.",
+      "The pink 'Why' button and the pink divider line both look highlighted. They could be mistaken for focus or error states."
     ]
   }
 }

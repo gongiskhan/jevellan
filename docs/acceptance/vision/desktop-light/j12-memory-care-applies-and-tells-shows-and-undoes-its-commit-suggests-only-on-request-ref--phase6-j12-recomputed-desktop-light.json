@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Last runs' panel ends much higher than the 'Schedule and jobs' column next to it, which leaves a large empty space below it.",
-      "Most of the wide sidebar area below the session list is empty.",
-      "Long run titles such as 'AGENTS.md · Checkpoint recovery fixture' wrap onto two lines in the narrow 'Last runs' column."
+      "Sidebar session titles are truncated with ellipses (e.g. 'Exercise answer options: c...', 'Context · J11 memory jour...'), which is expected for a sidebar",
+      "The trial log table leaves a lot of empty horizontal space",
+      "The 'Last runs' list is long and repetitive, so the page gets very tall"
     ]
   }
 }

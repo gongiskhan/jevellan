@@ -82,7 +82,7 @@ test('thread store writes the state file first, records every index change and p
   const report = { schema: 'thread-report-v1', turn: 1, status: 'progress', summary: 'x'.repeat(1000), synthesized: false };
   threads.update(created.id, (value) => ({ ...value, state: 'idle', turns: 1, lastReport: projectLedgerData('thread-report', report) }), { type: 'thread-report', data: report, turn: 1 });
   expect(types(ledger).slice(-2)).toEqual(['thread-report', 'thread-state']); expect(ledger.events().at(-2)!.turn).toBe(1);
-  expect(ledger.data(ledger.events().at(-1)!)).toEqual({ schema: 'thread-state-v1', from: 'preparing', to: 'idle', changed: ['lastSummary', 'state', 'turns'] });
+  expect(ledger.data(ledger.events().at(-1)!)).toEqual({ schema: 'thread-state-v1', from: 'preparing', to: 'idle', changed: ['changedPaths', 'lastSummary', 'state', 'turns'] });
   // A reason-only change is a state change too.
   threads.update(created.id, (value) => ({ ...value, stateReason: 'Queued: the project is at its limit of 6 running threads.' }));
   expect(ledger.data(ledger.events().at(-1)!)).toMatchObject({ from: 'idle', to: 'idle', reason: 'Queued: the project is at its limit of 6 running threads.', changed: ['stateReason'] });
