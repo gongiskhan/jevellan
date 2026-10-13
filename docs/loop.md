@@ -223,3 +223,6 @@ Live activation checkpoint: the owner delegated browser driving, and the protect
 
 
 Live follow-up, 13 October: 0.3.1 is published and healthy on the Pro. Twelve histories and retained account/vault/project data pass preservation, with full cold rollback retained. The separate live sandbox uses hub memory and the requested gate/coordinator configuration; its Pro terminal/copy preflight passes. Fresh Pro/Madrid space is above the unchanged guards. Ekoa binding is held by preserved legacy work pending an owner decision; protected sign-ins, member-access confirmation and scoped credentials remain pending. Formal scenarios and phone acceptance have not started. See [release evidence](acceptance/release-031.md).
+
+
+Decision 762 updates current activation copy to 0.3.1, completed hub login and fresh passing disk facts. A live Pro terminal reconnect/390 × 844 command-line preflight succeeds, with retained pwd output and a harmless echo; it is not a formal D or physical-phone acceptance. Protected inputs and member grants remain pending. See acceptance/loop-activation.md.

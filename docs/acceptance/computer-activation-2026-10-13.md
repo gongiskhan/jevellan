@@ -1,6 +1,8 @@
 # Computer-driven activation checkpoint — 13 October 2026
 
-Current follow-up: the Pro is signed in. Gmail Claude is freshly Ready; Ekoa Claude reaches its usage ceiling. Jev-latest is discovered, saved and verified. Applying the browser's ready update resolves the stale v3 response. Original conversation replay then exposes a separate migration ownership bug that blocks Project Settings. The tested 0.3.1 repair preserves the old history entries and appends the matching import's owner-transfer record. Its source checks pass; publication/preserved installation follow. See [repair evidence](hub-history-rebinding-2026-10-13.md), decisions 754–758 and the current ordered handoff. OpenAI/1Password, GitHub passkey and member-grant confirmation remain pending; no real scenario clock has started.
+Current live follow-up: 0.3.1 is published and healthy on the Pro; its twelve-history preservation checks pass and Project Settings works. Pro hub sign-in, Gmail Claude freshness and Jev-latest verification are complete. The dedicated new sandbox uses the requested hub-memory/gate/coordinator settings. Its real Pro terminal retains output across reload, and the 390 × 844 command line runs a harmless echo successfully. Pro/Madrid disk guards now pass. OpenAI/1Password, GitHub passkey, member-access grant, scoped credentials and the retained Ekoa-work decision remain pending. The real scenario clock is unstarted. See release-031.md, decisions 759–762 and the ordered handoff.
+
+## Historical pre-sign-in and pre-0.3.1 checkpoint
 
 The following records the earlier preparation checkpoint before that sign-in.
 
