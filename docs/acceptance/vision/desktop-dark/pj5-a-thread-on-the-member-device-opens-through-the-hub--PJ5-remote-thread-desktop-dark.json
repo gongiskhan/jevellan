@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar thread titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Mesh journey fixt…', 'Done · Shared memory fixture · d…'). This is normal truncation, and the full titles can still be found elsewhere.",
-      "The thread's metadata line under the header ('Codex · GPT · high effort · Projects Codex · Worktree on jv/read-the-readme-on-the-member-j595tx · Browser member') is small, low-contrast monospace text, but it is still readable.",
-      "In the Read tool card, the 'completed' label sits on its own line below the 'Read' title instead of next to it, which leaves some empty space."
+      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Shared memory fixture · …'). This is expected overflow handling in a narrow column.",
+      "The 'completed' status label on the Read tool card sits on its own line below the 'Read' title instead of lining up with it, which leaves odd spacing.",
+      "The page-level 'Idle' status badge is very low-contrast and easy to miss next to 'Back to the project'."
     ]
   }
 }

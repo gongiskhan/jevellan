@@ -10,8 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The take-over command at the bottom ('jevellan thread attach thread_01M4SDB5H94TQ2B…') is cut off with an ellipsis, so the full thread ID isn't visible. The copy button next to it still gives you the full command.",
-      "The header metadata line ('Codex · GPT · high effort · Projects Codex · Worktree on jv/read-the-readme-on-the-member-nke621 · Browser member') wraps over four lines of small monospace text. It's readable but dense."
+      "The 'jevellan thread attach thread_01M4VMDAWSJZ1CS0…' command at the bottom is cut off with an ellipsis. The copy button next to it still gives the full command.",
+      "The 'REPORT · TURN 1' label is small, light grey text, which is fainter than the text around it."
     ]
   }
 }
