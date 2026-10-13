@@ -61,16 +61,24 @@ test('owner responses retain non-UTF8 bytes without buffering the whole response
 test('SSE forwards the reconnect cursor, survives its connect deadline and closes upstream when the viewer leaves', async () => {
   let cursor: string | string[] | undefined; let closed!: () => void; const close = new Promise<void>(resolve => { closed = resolve; });
   const upstream = await serve((request, response) => {
-    cursor = request.headers['last-event-id']; response.writeHead(200, { 'Content-Type': 'text/event-stream' }); response.write('id: 8\ndata: first\n\n');
+    cursor = request.headers['last-event-id']; response.writeHead(200, { 'Content-Type': 'text/event-stream', 'X-Jevellan-Ledger-Head': '9' }); response.write('id: 8\ndata: first\n\n');
     const timer = setTimeout(() => response.write('id: 9\ndata: still live\n\n'), 150);
     response.on('close', () => { clearTimeout(timer); closed(); });
   });
   const base = await relay(upstream, { stream: true, timeoutMs: 100 }); const controller = new AbortController(); controllers.push(controller);
   const response = await fetch(`${base}/api/mesh/owner/example/events`, { headers: { 'Last-Event-ID': '7' }, signal: controller.signal });
   expect(response.status).toBe(200); expect(response.headers.get('cache-control')).toContain('no-transform'); expect(cursor).toBe('7');
+  expect(response.headers.get('x-jevellan-ledger-head')).toBe('9');
   const reader = response.body!.getReader(); let text = Buffer.from((await reader.read()).value!).toString(); expect(text).toContain('id: 8');
   while (!text.includes('id: 9')) { const chunk = await reader.read(); expect(chunk.done).toBe(false); text += Buffer.from(chunk.value!).toString(); }
   controller.abort(); await close; reader.releaseLock();
+});
+
+test.each(['not-a-count', '-1', '9007199254740992'])('a malformed replay head is refused before stream headers are sent: %s', async head => {
+  const upstream = await serve((_request, response) => { response.writeHead(200, { 'Content-Type': 'text/event-stream', 'X-Jevellan-Ledger-Head': head }); response.end('data: payload\n\n'); });
+  const base = await relay(upstream, { stream: true });
+  const response = await fetch(`${base}/api/mesh/owner/example/events`);
+  expect(response.status).toBe(502); expect(await response.json()).toMatchObject({ schema: 'error-v1', message: expect.stringContaining('replay') });
 });
 
 test('an owner that never sends headers times out with a readable failure', async () => {

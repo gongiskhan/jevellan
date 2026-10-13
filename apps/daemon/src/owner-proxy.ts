@@ -1,5 +1,6 @@
 import { once } from 'node:events';
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { z } from 'zod';
 import { DeviceOriginSchema, PeerSessionInputSchema, UiSessionTokenSchema } from '@jevellan/core';
 import { COORDINATOR_DEVICE_REDIRECT, THREAD_DEVICE_REDIRECT, coordinatorUnreachable, threadDeviceUnreachable } from '@jevellan/projects';
 import type { Application } from './application.js';
@@ -8,6 +9,7 @@ import { requestBody } from './http.js';
 
 const peerPrefix = '/api/mesh/owner/';
 const failure = (message: string, status: number) => Object.assign(new Error(message), { status });
+const ReplayHead = z.string().max(16).regex(/^\d+$/).transform(Number).pipe(z.number().int().nonnegative());
 export const OWNER_REQUEST_TIMEOUT_MS = 20_000;
 export const OWNER_STREAM_CONNECT_TIMEOUT_MS = 125_000;
 /** What a proxied request is for: the texts a failure shows (the Projects pages never say conversation, D266). */
@@ -70,7 +72,13 @@ export async function forwardOwner(request: IncomingMessage, response: ServerRes
     if (upstream.status >= 300 && upstream.status < 400) { await upstream.body?.cancel(); throw failure(copy.redirect, 502); }
     const contentType = upstream.headers.get('content-type') ?? 'application/octet-stream';
     const streaming = options.stream && upstream.ok && contentType.split(';')[0]?.trim() === 'text/event-stream';
-    const headers = { 'Content-Type': contentType, 'Cache-Control': streaming ? 'no-cache, no-transform' : 'no-store', 'X-Content-Type-Options': 'nosniff', ...(streaming ? { 'X-Accel-Buffering': 'no' } : {}) };
+    const headers: Record<string, string> = { 'Content-Type': contentType, 'Cache-Control': streaming ? 'no-cache, no-transform' : 'no-store', 'X-Content-Type-Options': 'nosniff', ...(streaming ? { 'X-Accel-Buffering': 'no' } : {}) };
+    const head = upstream.headers.get('x-jevellan-ledger-head');
+    if (streaming && head !== null) {
+      const parsed = ReplayHead.safeParse(head);
+      if (!parsed.success) throw failure('The device returned an invalid ledger replay cursor.', 502);
+      headers['X-Jevellan-Ledger-Head'] = String(parsed.data);
+    }
     reader = upstream.body?.getReader();
     if (streaming) { clearTimeout(timer); response.writeHead(upstream.status, headers); response.flushHeaders(); }
     if (reader) {

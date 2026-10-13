@@ -586,5 +586,11 @@
     "title": "Await authorized sandbox UI answers without hiding errors",
     "why": "Decision798 refines decision736's driver, using the owner's existing sandbox test-PR merge authorization. The shared UI merge helper now waits for the answered card and propagates a displayed error; both acknowledgement/refusal regressions fail before repair. C uses that same helper when its green, clean PR is waiting on an owner decision, retaining the unchanged compaction, prompt, session-identity and Done assertions. No owner message, test hint, coordinator merge tool, gate bypass or production exception is added. All22 affected harness cases/typecheck/lint pass. The active third C keeps its already-loaded implementation; exact reruns from the start use the corrected driver.",
     "status": "complete-with-blockers"
+  },
+  {
+    "id": "activation-remote-replay-boundary",
+    "title": "Preserve member ledger replay cursors for complete snapshots",
+    "why": "Decision799 refines decision737's remote ledger replay. A live diagnostic immediately returns an empty remote history even though that thread has completed turns; the owner proxy strips X-Jevellan-Ledger-Head, so the reader cannot wait for its replay boundary. Forward only that validated nonnegative safe-integer stream cursor and reject malformed values before sending headers. Four cursor regressions fail before repair; all39 affected proxy/API/harness cases, typecheck/lint/build pass. Original failed receipts remain unchanged; recover completed-turn usage separately through each original endedAt after private activation. No authentication/cookie headers or new endpoint are exposed.",
+    "status": "complete-with-blockers"
   }
 ]
