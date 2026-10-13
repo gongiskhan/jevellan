@@ -56,7 +56,7 @@ export class TerminalManager {
     let process: pty.IPty;
     try { process = pty.spawn(shell.shell, shell.args, { name: 'xterm-256color', cols: 100, rows: 30, cwd, env: shell.env }); }
     catch (error) { rmSync(shell.directory, { recursive: true, force: true }); throw error; }
-    const buffer = new TerminalBuffer(id, cwd, this.#now); let ready: () => void = () => {};
+    const buffer = new TerminalBuffer(id, cwd, this.#now, shell.integrated); let ready: () => void = () => {};
     const live: Live = { local, process, buffer, ready: new Promise(resolve => { ready = resolve; }), lastOutput: this.#now(), listeners: new Set(), closed: new Set(), sent: false, expectedCommand: undefined };
     buffer.onPrompt = ready;
     buffer.onCommand = command => { if (local.source && !local.completion && live.sent && (command.approximate || command.command.trim() === live.expectedCommand)) { command.fromOwnerCommand = local.source; this.#complete(live, command); } this.#dirty.add(id); };

@@ -610,5 +610,11 @@
     "title": "Await the requested terminal clipboard range",
     "why": "Decision802 refines736. Real phone D6 reads the stale clipboard before Copy finishes; bounded settlement preserves all exact copy and escape-code assertions. Regression fails before repair;26 affected simulated cases/typecheck/lint pass. Original live deadline and native messages remain.",
     "status": "complete-with-blockers"
+  },
+  {
+    "id": "activation-terminal-startup-boundary",
+    "title": "Record commands entered during shell startup once",
+    "why": "Decision803 refines732. Real D1 exposes an early echo-only approximate completion before actual pwd. Known integrated shells wait for semantic boundaries; unsupported/SSH fallback remains. Bash/zsh regressions both fail before repair;48 affected simulated cases/typecheck/lint/build pass. Private activation and live D rerun pending.",
+    "status": "complete-with-blockers"
   }
 ]

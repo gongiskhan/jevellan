@@ -71,6 +71,16 @@ test('an ssh shell uses approximate inner command boundaries and plain copies pr
   expect(terminalPlain('\x1b[32mcafé 🧭\x1b[0m')).toBe('café 🧭');
 });
 for (const shell of ['/bin/bash', '/bin/zsh'].filter(existsSync)) {
+  test(`${shell} records input sent during startup only once after its actual command executes`, async () => {
+    const f = fixture(shell), startup = join(f.user, shell.endsWith('bash') ? '.bash_profile' : '.zlogin');
+    const source = 'export OWNER_SHELL_FILE=loaded\nsleep 0.4\n'; writeFileSync(startup, source);
+    const session = await create(f.manager, f.user);
+    f.manager.input(session.id, 'pwd\r');
+    await waitFor(() => f.manager.snapshot(session.id).commands.some(row => row.command === 'pwd' && !row.approximate && row.endedAt !== null));
+    const records = f.manager.snapshot(session.id).commands.filter(row => row.command === 'pwd');
+    expect(records).toHaveLength(1); expect(records[0]!.output).toContain(f.user); expect(records[0]!.exitCode).toBe(0);
+    expect(readFileSync(startup, 'utf8')).toBe(source);
+  });
   test(`${shell} loads the owner setup without edits, reports commands and non-zero exits, and survives a disconnected reader`, async () => {
     const f = fixture(shell);
     if (shell.endsWith('bash')) writeFileSync(join(f.user, '.bash_profile'), 'export OWNER_SHELL_FILE=loaded\nPROMPT_COMMAND="printf owner-prompt"\n');

@@ -22,7 +22,7 @@ export class TerminalBuffer {
   #integrated = false; #echo = ''; #remote = false; #paste = false;
   onPrompt: (() => void) | undefined;
   onCommand: ((command: TerminalCommand) => void) | undefined;
-  constructor(readonly sessionId: string, cwd: string, readonly now: () => number = Date.now) { this.#cwd = cwd; }
+  constructor(readonly sessionId: string, cwd: string, readonly now: () => number = Date.now, readonly expectsIntegration = false) { this.#cwd = cwd; }
   get integrated() { return this.#integrated; }
   get current() { return this.#current; }
   get cwd() { return this.#cwd; }
@@ -53,7 +53,8 @@ export class TerminalBuffer {
   #text(text: string) {
     if (!text) return;
     this.#echo = (this.#echo + terminalPlain(text)).slice(-16000);
-    if ((!this.#integrated || this.#remote) && this.#candidate.endsWith('\n') && this.#echo.includes(this.#candidate.trim())) {
+    // Input can be echoed while a supported shell is still loading; its first prompt is not that command's completion.
+    if (((!this.#integrated && !this.expectsIntegration) || this.#remote) && this.#candidate.endsWith('\n') && this.#echo.includes(this.#candidate.trim())) {
       this.begin(this.#candidate.trim(), true); this.#candidate = '';
     }
     if (this.#current) { this.#current.output = byteTail(this.#current.output + text, TERMINAL_BUFFER_BYTES); this.#trim(); }
