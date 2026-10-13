@@ -530,7 +530,7 @@
   {
     "id": "activation-isolated-thread-git",
     "title": "Let isolated threads fetch their private project",
-    "why": "Decision 789: real CSV conflict resolution cannot fetch despite the saved project token. Fresh writable turns get only registered-repository Git authentication through the existing vault, ephemeral/redacted and absent from other roles, native homes, argv and MCP input. 130 distinct affected cases pass through targeted rerun; typecheck/lint/build pass. Real isolated Git read passes; full provider rerun pending within original clock.",
+    "why": "Decision 789: real CSV conflict resolution cannot fetch despite the saved project token. Fresh writable turns get only registered-repository Git authentication through the existing vault, ephemeral/redacted and absent from other roles, native homes, argv and MCP input. 130 distinct affected cases pass through targeted rerun; typecheck/lint/build pass. Real isolated Git read passes; full provider rerun pending within original clock. Live third A resolves the CSV conflict and reaches a clean green head without the former fetch question; full A3 acceptance remains pending.",
     "status": "complete-with-blockers"
   },
   {

@@ -296,3 +296,6 @@ Decision 791 retains the second A as interrupted, never passed: an operator diag
 
 
 Decision 792 repairs a live member restart finding: a hub outage during the PR poll's credential/budget lookup escaped its error handling and terminated the owned Madrid daemon. Keep the last PR state, record one local notice per error kind and retry normally after hub recovery. The regression fails before repair; 14 publication/Git cases, build/typecheck/lint pass. Installed production and source-release tags remain unchanged. Both test profiles stay stopped while the repaired module is staged; exact A rerun follows the checkpoint.
+
+
+Live recovery correction: the repaired private Pro/Madrid profiles are active on their verified 0.3.3 development copies, and both actual /api/health documents are healthy. Real provider preflight has no gaps. Third A passes its exact A1/A2 assertions; invoice PR4 merges and CSV PR5 reaches a clean green head after rebasing without the former owner-fetch question. A3 remains in progress, without a failed-check event; no full scenario pass or new cache/journal clock is claimed. See docs/acceptance/prior-profile-recovery-2026-10-13.md.

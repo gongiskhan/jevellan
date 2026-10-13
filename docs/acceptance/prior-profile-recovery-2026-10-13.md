@@ -1,0 +1,15 @@
+# Prior scenario profile recovery, 13 October 2026
+
+Live readiness and partial journey evidence; no complete scenario or owner acceptance.
+
+Main checkpoints d933e74, 3ec6a03, 8f293b0, 9fa65bb and 04a454b are pushed after mandatory secret scans. The source repairs are documented in decisions 788–792. Installed production stays on its existing versions; the private uninstalled test applications use verified 0.3.3 platform bases with explicit compiled overlays for coordinator dependency guidance, temporary thread Git authentication and hub-outage PR polling. Both package copies are overlaid and their actual exported modules are verified.
+
+On the Pro and Madrid, /api/health returns health-v1, status ok, version 0.3.3. The /health path renders the SPA and is not used as health evidence. The actual real-provider preflight at 20:25:31 UTC has no gaps: Claude Opus 5.5/high is available for the coordinator and an eligible Codex thread model is available normally. Native discovery still does not offer the specified non-gating Sol coordinator; no model is forced. Ordinary A/B compaction is 70%, and only these uninstalled profiles use the thirty-minute nightly fix cutoff. Original production accounts, native homes, services and rollback remain retained.
+
+The second A is interrupted by the operator diagnostic at 19:52:23 UTC. Its manual recovery file retains actual ledger state and seven completed sessions, with accepted false and no automated step verdicts. Its data is not converted into a successful A or a fabricated B prerequisite. The fixture is retired through ordinary task/thread controls with its history intact.
+
+The third A starts at 20:29:34 UTC on a fresh logical sandbox project. Its unchanged A1 and A2 assertions pass at 20:30:22 and 20:30:36 UTC. Invoice PR #4 merges; CSV PR #5 resolves its conflict, reaches passing checks and a clean head, and waits at its ask-owner merge card. It does not repeat the former routine-fetch question. This is live evidence for the Git credential repair. A3 is still waiting for its required failed-check diagnosis; the full scenario remains in progress. No failed check is manufactured and no assertion is waived.
+
+Additional simulated verification: 19 affected harness cases, 20 native-adapter/setup/MCP/instruction cases, 14 publication/Git cases and 35 merge-gate/request-budget cases pass. The exact hub-outage recovery path has regression evidence; restarting both real daemons proves startup/readiness, not a separate live outage-path pass. Typecheck, lint and build pass for the source repairs. No additional review occurs.
+
+Retain firstScenarioAt 18:15:59.903 UTC on 13 October and the ten-hour stop at 04:15:59.903 UTC on 14 October. Finish any prior scenario in progress at that boundary, then stop new iterations and hand off exact assertions and evidence. The new cache/journal eight-hour build and three-hour live-check clocks have not started. Its owner-approved release target remains 0.3.4, preserving published releases and full cold rollback. Ekoa browser sign-in is complete; OAuth compatibility and mirror acceptance remain blocked outside this new scope.
