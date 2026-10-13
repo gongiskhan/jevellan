@@ -5,7 +5,7 @@ Projects connects a coordinator, coding threads, pull requests and the owner's d
 
 This document describes the intended complete product. Implementation and live evidence are tracked separately in the roadmap and acceptance report.
 
-The hub move, sign-ins and approved memberships are complete. The Pro is healthy on 0.3.3 with a full cold 0.3.1 restore retained; both members remain healthy on 0.3.2 and Mini stays apps-only. The approved project GitHub tokens are saved, and the old Ekoa work is closed with files/history retained. Both dedicated Ekoa clones are bound. Ekoa preset/MCP setup, real provider journeys and owner phone acceptance remain pending. The ordered handoff is in `docs/acceptance/loop-activation.md`.
+The hub move, sign-ins and approved memberships are complete. The Pro is healthy on 0.3.3 with a full cold 0.3.1 restore retained; both members remain healthy on 0.3.2 and Mini stays apps-only. The approved project GitHub tokens are saved, and the old Ekoa work is closed with files/history retained. Both dedicated Ekoa clones are bound. The Ekoa preset is applied in watch/shadow mode with hub memory and Pro/Madrid limits 6/8/12. Ekoa MCP setup, real provider journeys and owner phone acceptance remain pending. The ordered handoff is in `docs/acceptance/loop-activation.md`.
 
 ## Coordinator, memory and terminal extension
 
@@ -261,3 +261,8 @@ Decision 772 replaces decision 771's provisional package identity checkpoint. Ar
 ## 13 October 2026 — Old work closed and Ekoa clones bound
 
 Decision 773 completes 771–772's live recovery: published 0.3.3 from f02f27b is healthy on the Pro under its retained user service/HTTPS address, with accounts/settings/vault/authentication/identity and 37 original history files preserved. Full cold 0.3.1 restoration and all earlier backups remain. The owner-approved normal Keep control closes the old Ekoa work and releases only its imported claim. Both dedicated clean-main clones are now bound to the existing Ekoa registration, allowing Pro/Madrid and retaining project-only GitHub scope; Mini remains excluded/apps-only. Both final platform assets match published digests, actual CLI/native PTY and 21 files/10 assets. Preset/MCP/provider acceptance remain pending; no formal clock, extra review or owner acceptance is claimed. See docs/acceptance/release-033.md.
+
+
+## Live Ekoa preset checkpoint, 13 October
+
+Decision 774 replaces decision 773's pending Ekoa preset application. The normal authenticated setup operation configures the existing Ekoa project on the active Pro hub: six goals, two active, all Propose tasks; shadow merging with requiredChecks [result]; the exact thread rules/risky areas; worktree isolation and npm ci; 01:00 Europe/Lisbon Nightly; hub memory, capture and the independent dream. Only Pro and Madrid are allowed, with limits 6/8 and project limit 12. The first review starts at current main 770e76b, not the whole history. The selected existing Opus model is unchanged; only its display label is corrected. The real coordinator completes a refill, reads memory/GitHub commits and proposes two drafts; neither is approved or starts a coding thread. Live Variables read at 14:34 UTC finds NIGHTLY_SCHEDULER unset, so watch mode remains; PR208 is open/unmerged. Ekoa rejects the browser's saved login; the visible login panel awaits the owner's correct existing credential. MCP, provider journeys and phone acceptance remain blocked/unclaimed; no formal scenario clock or additional review starts. See docs/acceptance/ekoa-preset-live-2026-10-13.md.
