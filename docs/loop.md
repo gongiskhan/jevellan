@@ -226,3 +226,9 @@ Live follow-up, 13 October: 0.3.1 is published and healthy on the Pro. Twelve hi
 
 
 Decision 762 updates current activation copy to 0.3.1, completed hub login and fresh passing disk facts. A live Pro terminal reconnect/390 × 844 command-line preflight succeeds, with retained pwd output and a harmless echo; it is not a formal D or physical-phone acceptance. Protected inputs and member grants remain pending. See acceptance/loop-activation.md.
+
+
+Live activation follow-up: the Pro Codex account is signed in as goncalo@ekoa.io and labelled Ekoa Codex, with Ready status and its 90% ceiling retained. GitHub browser confirmation is complete. The Pro sandbox Git check passes using the machine connection preference in Jevellan, without changing native Git configuration. Token creation remains blocked on the specific prepared repo + workflow, 30-day classic-token approval: GitHub fine-grained tokens cannot call the Checks API. Member access, retained Ekoa work, Ekoa MCP credentials and real scenarios remain pending. Decisions 763–765 and acceptance/pro-codex-auth-2026-10-13.md record the checkpoint.
+
+
+Decision 766: the real invoices/customers sandbox is published at 61fc71abcf86d4cd14a127bb47ff473fddece17b with sandbox-baseline; loop-pilot-baseline retains the original pilot. Only the sandbox NIGHTLY_SCHEDULER is set to jevellan. Its original Vitest 5 pin requires Node 22 and fails the new actual Node 20 install/run regression before the fix. Pin Vitest 4.1.11; ten affected harness/regression cases pass, including real engine-strict npm installation and generated-app execution on Node 20. The actual app passes lint, three unit tests and eight page cases in phone/desktop light/dark layouts. Dedicated vision credentials are unavailable, so those eight vision checks are blocked. The installed Pro daemon stays 0.3.1; the corrected harness runs from current main. No formal scenario/clock or new review started.

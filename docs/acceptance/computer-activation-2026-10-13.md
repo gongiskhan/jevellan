@@ -1,6 +1,6 @@
 # Computer-driven activation checkpoint — 13 October 2026
 
-Current live follow-up: 0.3.1 is published and healthy on the Pro; its twelve-history preservation checks pass and Project Settings works. Pro hub sign-in, Gmail Claude freshness and Jev-latest verification are complete. The dedicated new sandbox uses the requested hub-memory/gate/coordinator settings. Its real Pro terminal retains output across reload, and the 390 × 844 command line runs a harmless echo successfully. Pro/Madrid disk guards now pass. OpenAI/1Password, GitHub passkey, member-access grant, scoped credentials and the retained Ekoa-work decision remain pending. The real scenario clock is unstarted. See release-031.md, decisions 759–762 and the ordered handoff.
+Current live follow-up: 0.3.1 is published and healthy on the Pro; its twelve-history preservation checks pass and Project Settings works. Pro hub sign-in, Gmail Claude freshness and Jev-latest verification are complete. The dedicated new sandbox uses the requested hub-memory/gate/coordinator settings. Its real Pro terminal retains output across reload, and the 390 × 844 command line runs a harmless echo successfully. Pro/Madrid disk guards now pass. Pro OpenAI/Codex and GitHub browser authentication now succeed. The exact prepared classic-token grant, member-access grant, Ekoa MCP credentials and retained Ekoa-work decision remain pending. The real scenario clock is unstarted. See release-031.md, decisions 759–762 and the ordered handoff.
 
 ## Historical pre-sign-in and pre-0.3.1 checkpoint
 
@@ -36,3 +36,6 @@ Blocked: protected hub sign-in, subsequent account/status/model refresh, scoped 
 Not run: real merge-gate journeys, A/B/C/D provider scenarios, LJ9, live Ekoa mirror, two clean watch nights and physical-phone acceptance. The ten-hour scenario clock has not started; actual scenario tokens, cost and minutes remain unknown. Ekoa's CI, scheduler variable and automatic-merge setting are unchanged.
 
 No source code, test assertion or release asset changed. The closing code/test evidence remains sealed at 7ceadbf3; no additional review pass or full source test rerun was performed for this operational documentation checkpoint. See the ordered [activation handoff](loop-activation.md).
+
+
+Live activation follow-up: the Pro Codex account is signed in as goncalo@ekoa.io and labelled Ekoa Codex, with Ready status and its 90% ceiling retained. GitHub browser confirmation is complete. The Pro sandbox Git check passes using the machine connection preference in Jevellan, without changing native Git configuration. Token creation remains blocked on the specific prepared repo + workflow, 30-day classic-token approval: GitHub fine-grained tokens cannot call the Checks API. Member access, retained Ekoa work, Ekoa MCP credentials and real scenarios remain pending. Decisions 763–765 and pro-codex-auth-2026-10-13.md record the checkpoint.
