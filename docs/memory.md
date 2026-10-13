@@ -142,3 +142,6 @@ Live activation checkpoint: the owner delegated browser driving, and the protect
 ## Activation continuity — 13 October 2026
 
 The shared Jevellan handoff records the authenticated Pro, current account/model readiness, the imported-history replay blocker and its 0.3.1 repair. Source checks and fixture vision remain separate from real provider/memory scenarios, which have not started. Keep native homes and old note stores untouched. The repair changes only conversation ownership bookkeeping; capture, recall, hub notes and dream behavior are unchanged. See [the repair evidence](acceptance/hub-history-rebinding-2026-10-13.md).
+
+
+Live follow-up, 13 October: 0.3.1 is published and healthy on the Pro. Twelve histories and retained account/vault/project data pass preservation, with full cold rollback retained. The separate live sandbox uses hub memory and the requested gate/coordinator configuration; its Pro terminal/copy preflight passes. Fresh Pro/Madrid space is above the unchanged guards. Ekoa binding is held by preserved legacy work pending an owner decision; protected sign-ins, member-access confirmation and scoped credentials remain pending. Formal scenarios and phone acceptance have not started. See [release evidence](acceptance/release-031.md).
