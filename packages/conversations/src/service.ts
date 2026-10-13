@@ -960,6 +960,22 @@ export class ConversationService {
         this.#current(work, input.generation, operation); return run();
       }, { owner });
       try {
+        // Imported paths may be deliberately unbound. A reply-only work cannot
+        // have made checkout changes; Keep can settle its receipt-bound claim
+        // without first binding or opening the former hub's checkout.
+        const steps = view.stretches.filter(step => step.workId === target.id);
+        const replyOnly = !target.baseCommit && !view.conversation.origin && steps.length > 0
+          && steps.every(step => step.action === 'reply' && step.status === 'completed' && !step.gitAfter)
+          && view.handoffs.filter(handoff => steps.some(step => step.n === handoff.stretch)).every(handoff => !handoff.changedFiles.length)
+          && !work.ledger.events().some(event => ['git', 'undo', 'publication'].includes(event.type))
+          && !this.options.contexts.list().some(context => context.conversationId === id);
+        if (input.choice === 'keep' && replyOnly && await wait(() => this.ownership.releaseUnboundImport(project, workspace.owner))) {
+          this.#current(work, input.generation, operation);
+          if (work.load().conversation.work) work.close(record.closedAs);
+          work.ledger.append({ type: 'ownership', data: WorkSettlementSchema.parse({ ...record, status: 'completed', retained: false }) });
+          this.#notice(work, 'Work closed.');
+          return;
+        }
         await wait(async () => {
           const claim = await this.ownership.current(project);
           if (claim?.held && (claim.conversationId !== id || claim.workId !== target.id)) throw conflict('Another work owns this checkout. Its changes cannot be settled here.');

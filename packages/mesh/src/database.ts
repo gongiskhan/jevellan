@@ -10,7 +10,7 @@ export class HubDatabase {
   readonly configuration: ConfigurationStore;
   readonly vault: SecretVault;
   readonly redactor: SecretRedactor;
-  constructor(homes: Homes, role: 'hub' | 'member', redactor = new SecretRedactor()) {
+  constructor(readonly homes: Homes, role: 'hub' | 'member', redactor = new SecretRedactor()) {
     if (role !== 'hub') throw new Error('Member devices must use the hub HTTP API.');
     homes.ensure(); homes.ensure('hub');
     const file = homes.at('hub', 'jevellan.db');

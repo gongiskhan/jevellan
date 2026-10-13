@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
+import { existsSync } from 'node:fs';
 import { posix, win32 } from 'node:path';
-import { CheckoutClaimSchema, CheckoutStoreRequestSchema, CheckoutStoreResultSchema, IdSchema, PublicationLeases, PublicationLeaseRequestSchema, PublicationLeaseResultSchema, PublicationLeaseSchema, type CheckoutClaim, type CoordinationStore, type DocumentSchema, type PublicationLease, type PublicationLeaseService } from '@jevellan/core';
+import { CheckoutClaimSchema, CheckoutStoreRequestSchema, CheckoutStoreResultSchema, HubImportReceiptSchema, IdSchema, ProjectSchema, PublicationLeases, PublicationLeaseRequestSchema, PublicationLeaseResultSchema, PublicationLeaseSchema, readDocument, type CheckoutClaim, type CheckoutOwner, type CoordinationStore, type DocumentSchema, type PublicationLease, type PublicationLeaseService } from '@jevellan/core';
 import type { HubDatabase } from './database.js';
 import { HubProtocolError, type MemberHubClient } from './client.js';
 
@@ -27,6 +28,32 @@ export class HubCheckoutStore implements CoordinationStore {
       if (previous?.document.held && (previous.document.conversationId !== claim.conversationId || !claim.held && previous.document.workId !== claim.workId)) refuse('Another work owns this checkout.', 409);
       const saved = this.hub.put(namespace, id, CheckoutClaimSchema, { ...claim, updatedAt: new Date(this.now()).toISOString() }, expectedRevision);
       return { revision: saved.revision, document: schema.parse(saved.document) };
+    });
+  }
+  /** The importer retained old keys for unbound claims. Ordinary device-scoped
+   * get/put must continue refusing them; settle only this hub's receipt-bound
+   * old claim atomically after ConversationService proves reply-only work.
+   */
+  releaseUnboundImport(projectId: string, owner: CheckoutOwner): boolean {
+    const file = this.hub.homes.at('hub-import.json'); if (!existsSync(file)) return false;
+    const receipt = readDocument(file, HubImportReceiptSchema);
+    if (receipt.destinationDeviceId !== this.deviceId || receipt.sourceDeviceId === this.deviceId || !receipt.unboundProjectIds.includes(projectId)) return false;
+    return this.hub.transaction(() => {
+      const project = this.hub.get('projects', projectId, ProjectSchema)?.document;
+      if (!project || project.paths[this.deviceId]) return false;
+      const path = project.paths[receipt.sourceDeviceId]; if (!path) return false;
+      const id = hash(`${receipt.sourceDeviceId}\0${path}`), row = this.hub.get('checkout-ownership', id, CheckoutClaimSchema);
+      if (!row) return false;
+      const claim = row.document;
+      if (claim.deviceId !== this.deviceId || claim.path !== path || claim.conversationId !== owner.conversationId || claim.workId !== owner.workId)
+        refuse('The imported checkout claim no longer belongs to this work.', 409);
+      if (this.hub.get('checkout-ownership', hash(`${this.deviceId}\0${path}`), CheckoutClaimSchema)?.document.held)
+        refuse('This checkout has destination ownership. Inspect it before closing the imported work.', 409);
+      if (claim.held) {
+        if (Date.parse(claim.updatedAt) > Date.parse(receipt.importedAt)) refuse('The checkout claim changed after import. Inspect it before closing this work.', 409);
+        this.hub.put('checkout-ownership', id, CheckoutClaimSchema, { ...claim, held: false, updatedAt: new Date(this.now()).toISOString() }, row.revision);
+      }
+      return true;
     });
   }
   request(input: unknown) {

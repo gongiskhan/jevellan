@@ -4,10 +4,13 @@ import { CheckoutClaimSchema, IdSchema, PublicationLeaseSchema, type CheckoutCla
 import { readDocument, writeDocument } from './files.js';
 import { Homes, resolveProjectPath } from './homes.js';
 import type { Stored } from './store.js';
+import { HubImportReceiptSchema } from './hub-migration-schemas.js';
 
 export interface CoordinationStore {
   get<T>(namespace: string, id: string, schema: DocumentSchema<T>): Stored<T> | null | Promise<Stored<T> | null>;
   put<T>(namespace: string, id: string, schema: DocumentSchema<T>, value: unknown, expectedRevision: number): Stored<T> | Promise<Stored<T>>;
+  /** Hub-local recovery only; never available through the member checkout API. */
+  releaseUnboundImport?(projectId: string, owner: CheckoutOwner): boolean | Promise<boolean>;
 }
 export type CheckoutOwner = { conversationId: string; conversationTitle: string; workId: string };
 const digest = (value: string) => createHash('sha256').update(value).digest('hex');
@@ -95,6 +98,20 @@ export class CheckoutOwnership {
       const local = readDocument(file, CheckoutClaimSchema);
       if (sameOwner(local, owner) && local.pid === this.pid) unlinkSync(file);
     }
+  }
+  /** Only for an owner's Keep settlement after the ledger proves reply-only work.
+   * An unbound import has no destination checkout or local process to release.
+   * Its claim still uses the source device's key; do not inspect or change that checkout.
+   */
+  async releaseUnboundImport(project: Project, owner: CheckoutOwner): Promise<boolean> {
+    const file = this.homes.at('hub-import.json');
+    if (project.paths[this.deviceId] || !existsSync(file)) return false;
+    const receipt = readDocument(file, HubImportReceiptSchema);
+    if (receipt.destinationDeviceId !== this.deviceId || receipt.sourceDeviceId === this.deviceId || !receipt.unboundProjectIds.includes(project.id)) return false;
+    const path = project.paths[receipt.sourceDeviceId]; if (!path) return false;
+    if (existsSync(this.#file(path)))
+      throw new Error('This checkout has destination ownership. Inspect it before closing the imported work.');
+    return await this.hub.releaseUnboundImport?.(project.id, owner) ?? false;
   }
 }
 
