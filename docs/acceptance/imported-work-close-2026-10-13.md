@@ -11,3 +11,6 @@ Decision 771 replaces decision 761's pending owner decision. The owner explicitl
 **Blocked/not run:** installed Pro remains 0.3.1 until verified 0.3.3 activation. The real old work is still open pending that update and normal owner-control retry. Ekoa bindings, preset/LJ9, MCP setup and A/B/C/D remain pending. No real scenario clock, extra review or owner acceptance is claimed. Existing cold homes, release archives, Mini apps and authority fence remain retained.
 
 Private verification logs are in `/Users/ggomes/.jevellan-build/loop-owner-2026-10-11/imported-close-*.log`. They contain fixture evidence only; credentials and raw owner history stay outside Git.
+
+
+**Package check correction (decision 772):** both initial archive CLI checks return 0.3.2 and fail against the declared 0.3.3. The runtime VERSION was missed in the manifest bump. An actual-CLI regression independently fails before repair and passes after it. No GitHub release or production installation had occurred. Preserve the failed candidates and correct only the new unpublished tag with an exact-old-target lease; rebuild both packages. Earlier releases and production data stay unchanged.

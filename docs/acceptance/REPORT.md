@@ -1931,3 +1931,8 @@ Decision 771 supersedes decision 761's pending old-work choice: the owner approv
 
 
 Final simulated verification: the isolated Linux run passes 187/187 affected backend cases in six files. Both existing close journeys pass all eight phone/desktop light/dark cases. Final typecheck/lint/build and two private full-data update/restore fixtures pass. New vision checks are blocked without their dedicated credential. Corrective 0.3.3 source and platform packages precede the normal Pro update/close; live closure remains pending, with rollback retained and no additional review or scenario clock.
+
+
+### Decision 772 — Correct the advertised identity before publishing 0.3.3
+
+Decision 772 replaces decision 771's provisional package identity checkpoint. Archive verification catches an advertised CLI version of 0.3.2 despite 0.3.3 manifests, before installation or GitHub release publication. Synchronize the runtime VERSION and add an actual-CLI regression in an isolated home: it fails before repair and passes after it. Preserve the failed private candidates. Only this run's new unpublished v0.3.3 tag is retargeted to the correction, with an expected-old-target lease; earlier published tags/assets and both source commits stay preserved. Rebuild and verify both final packages before publication/activation. This adds one passing check to the earlier 187 affected cases; no additional review or live scenario starts.
