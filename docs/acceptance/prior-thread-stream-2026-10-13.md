@@ -1,0 +1,8 @@
+# Indexed thread streams — 13 October 2026
+
+Decision 794 refines decision 737's authenticated thread stream. A remote thread's hub index can arrive before its local file; owner routing already validates the project and device, so subscribe to its existing ledger immediately instead of requiring the full thread view. Unknown and other-project ids still return 404. The regression fails before repair; all 27 affected API/coordinator/harness/proxy cases, typecheck/lint/build pass. First C passes C1–C3 with one Claude compaction, the same session and the preserved invoice title rule, then C4 fails on that real 404 race. Its original failed receipt and separately recovered completed usage remain live evidence. Rerun C from the start on the documented private overlay; production stays unchanged, and the original ten-hour clock and queued cache/journal gate remain.
+
+- **Live:** real Claude C1–C3 pass; C4 fails on the 404 before its member thread arrives. Retain the original failed receipt and separate bounded usage recovery. No full C pass or owner acceptance.
+- **Simulated:** API regression reproduces 404 before the repair and then receives the later event through the same open stream; unknown and other-project ids remain refused. Nineteen API/coordinator/harness cases and eight proxy cases pass. Typecheck, lint and build pass.
+- **Not run at this checkpoint:** exact C rerun and D layouts. Stage only the compiled API module in both owned uninstalled test copies after push; preserve immutable releases and installed services.
+- **Clock:** prior stop2026-10-14T04:15:59.903Z; cache/journal clocks unstarted and release0.3.4 remains queued.

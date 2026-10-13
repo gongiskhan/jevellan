@@ -100,6 +100,25 @@ afterEach(async () => {
   await new Promise<void>((resolve) => { server.close(() => resolve()); server.closeAllConnections(); }); await app.close(); await fake.close(); await github.close();
   rmSync(root, { recursive: true, force: true });
 });
+test('a dispatched thread stream opens from its owner index before the local thread arrives', { timeout: 60000 }, async () => {
+  const id = 'thread_in_transit', at = new Date().toISOString();
+  await new HubProjectAccess(app.hub, app.device.deviceId).publishThread(ThreadIndexSchema.parse({ schema: 'project-thread-index-v1', revision: 0, id, projectId: 'project', title: 'Arriving work',
+    state: 'preparing', isolation: 'worktree', ownerDeviceId: app.device.deviceId, runtime: 'fake', modelLabel: 'Fixture', effort: 'high', accountLabel: 'Fixture', turns: 0, createdAt: at, updatedAt: at }), 1);
+  expect(app.projectWork.store.get(id)).toBeUndefined();
+  expect((await request(`/api/projects/another/threads/${id}/events`)).status).toBe(404);
+  expect((await request('/api/projects/project/threads/thread_missing/events')).status).toBe(404);
+  const abort = new AbortController();
+  try {
+    const response = await fetch(`${base}/api/projects/project/threads/${id}/events`, { headers: { Cookie: cookie }, signal: abort.signal });
+    expect(response.status).toBe(200);
+    const ledger = app.projectWork.ledgers.thread('project', id);
+    ledger.append({ type: 'notice', data: { schema: 'project-notice-v1', text: 'Thread reached its device.', kind: 'info' } });
+    const reader = response.body!.getReader(); let text = '';
+    while (!text.includes('Thread reached its device.')) { const value = await reader.read(); expect(value.done).toBe(false); text += new TextDecoder().decode(value.value); }
+    expect(text).toContain('event: project');
+  } finally { abort.abort(); }
+});
+
 test('the owner thread ledger stream authenticates, checks project ownership and replays prompts and hashed usage evidence', { timeout: 60000 }, async () => {
   fake.enqueueTurn(async turn => {
     turn.emit({ type: 'usage', inputTokens: 90, outputTokens: 12, costUsd: 0.02, costSource: 'reported' });

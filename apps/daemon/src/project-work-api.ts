@@ -241,7 +241,8 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
       streamLedger(ledger, request, response, url, caller.authenticated, projectFrame(ledger)); return true;
     }
     case 'thread-events': {
-      await work.threadView(projectId, threadId);
+      // Owner routing already validates the project and hub index. The index can precede
+      // the member's local thread file; subscribe now so its first events are not missed.
       const ledger = work.ledgers.thread(projectId, threadId);
       streamLedger(ledger, request, response, url, caller.authenticated, projectFrame(ledger)); return true;
     }
