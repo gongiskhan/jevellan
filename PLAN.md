@@ -1,6 +1,23 @@
 # Projects loop implementation plan
 
-Authority: the owner's 12 October coordinator, shared memory and terminal brief (Downloads/BRIEF-coordinator-memory-terminal.md), followed by amendment 2, amendment 1 and BRIEF-loop.md. The newest brief wins on conflicts. Main only; phase checkpoints update roadmap and acceptance evidence before commit/push. Preserve completed work outside the amendment.
+Authority: the owner's 13 October cache-aware sessions and project journal brief (Downloads/BRIEF-cache-journal.md), followed by the 12 October coordinator, shared memory and terminal brief, amendment 2, amendment 1 and BRIEF-loop.md. The newest brief wins on conflicts. Main only; phase checkpoints update roadmap and acceptance evidence before commit/push. Preserve completed work outside the amendment.
+
+## Cache-aware sessions and project journal — queued
+
+The exact owner brief is saved untracked at /Users/ggomes/Downloads/BRIEF-cache-journal.md. Decisions 775–781 record its replacements. Its start condition is explicit: run the existing A–D provider scenarios on the current release first, until they pass or their ten-hour time box stops them. Those scenarios remain unstarted, so this intake does not start the new eight-hour build or three-hour live-check clocks and does not change runtime behavior. Preparation continues under the prior run. A blocked preflight is neither a scenario pass nor time-box completion.
+
+| Part | Requested scope | Status |
+| --- | --- | --- |
+| 1 | Versioned cache receipts for every Projects session; per-runtime windows; today metrics and session table | Planned, waiting for prior acceptance; provisional Claude 60/Codex 10 minutes are unmeasured |
+| 2 | Deterministic ledger-derived hub Markdown journal, atomic files/index, read-only member mirrors, CLI rebuild and bounded digests | Planned, waiting for prior acceptance |
+| 3 | Cold/large coordinator and thread checkpoints with exact restart copy, preserved pending delivery/history and test-only override | Planned, waiting for prior acceptance; default disabled until L2 and L3 pass |
+| Closing | Simulated section 8.1 checks, L1–L3 (three hours total), one crucial-issues review, verified release/update/rollback and measured handoff | Planned; owner-approved release 0.3.4, preserving existing 0.3.2/0.3.3 |
+
+Build on packages/projects ledger/session context/turn execution/copy, existing runtimes, mesh and UI. The ledger stays authoritative; code renders one file per thread/day/night and INDEX.md, not model-written summaries or a parallel store. Session journal reads use ordinary runtime file tools, with no new coordinator tool. Journal mirrors update within 30 seconds/reconnect, and rebuild must be byte-identical. INDEX.md is capped at 12,000 characters with the prescribed folding order and uncollapsed Open now. Coordinator digests cap at 60,000 characters without cutting notebook/open questions; thread digests keep the task and journal header plus the last 20,000 characters, then Project memory and Project now.
+
+Before each coordinator/thread turn, warm sessions and small cold sessions continue. Enabled cold sessions at or above checkpointMinTokens (40,000 default, 20,000–200,000 range) restart with the same normal runtime/model/effort/account rules. Preserve the previous transcript, exact pending events/messages and checkpoint receipt. Compaction remains the warm-session safety net. Review/verification/memory single runs receive measurement/journal access but no cold restart. The 1–5 minute override uses the existing uninstalled-test fence and is refused with install.json.
+
+No keep-warm requests, cross-thread cache prefix, Conversations/memory/dream/merge-gate changes or adjacent fixes in this new run. At eight build hours stop and ship only working parts with checkpoints off. L1 measures eight real follow-ups while L2/L3 run; L2/L3 must pass before defaults enable checkpoints. Unavailable checks remain blocked; their measurements and costs stay unknown. The owner approved next unused 0.3.4; existing published release tags/assets remain intact. Every part updates docs/roadmap/evidence, passes affected checks and secret scans, and commits/pushes on main.
 
 ## Coordinator, shared memory and terminal run (0.3.0)
 

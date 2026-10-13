@@ -478,5 +478,29 @@
     "title": "Apply the Ekoa watch and shadow preset on the live hub",
     "why": "Decision 774 replaces decision 773's pending Ekoa preset application. The normal authenticated setup operation configures the existing Ekoa project on the active Pro hub: six goals, two active, all Propose tasks; shadow merging with requiredChecks [result]; the exact thread rules/risky areas; worktree isolation and npm ci; 01:00 Europe/Lisbon Nightly; hub memory, capture and the independent dream. Only Pro and Madrid are allowed, with limits 6/8 and project limit 12. The first review starts at current main 770e76b, not the whole history. The selected existing Opus model is unchanged; only its display label is corrected. The real coordinator completes a refill, reads memory/GitHub commits and proposes two drafts; neither is approved or starts a coding thread. Live Variables read at 14:34 UTC finds NIGHTLY_SCHEDULER unset, so watch mode remains; PR208 is open/unmerged. Ekoa rejects the browser's saved login; the visible login panel awaits the owner's correct existing credential. MCP, provider journeys and phone acceptance remain blocked/unclaimed; no formal scenario clock or additional review starts. See docs/acceptance/ekoa-preset-live-2026-10-13.md.",
     "status": "complete-with-blockers"
+  },
+  {
+    "id": "cache-journal-p1",
+    "title": "Measure Projects cache usage",
+    "why": "Queued after prior A\u2013D live acceptance; session-turn-cache-v1, runtime windows and today metrics use existing usage only. Decisions 775\u2013776.",
+    "status": "planned"
+  },
+  {
+    "id": "cache-journal-p2",
+    "title": "Build the ledger-derived project journal",
+    "why": "Queued; atomic deterministic thread/day/night files and bounded INDEX.md, read-only member mirrors and byte-identical CLI rebuild. Decisions 777/779.",
+    "status": "planned"
+  },
+  {
+    "id": "cache-journal-p3",
+    "title": "Checkpoint large cold sessions",
+    "why": "Queued; preserve pending delivery/transcript history, same normal launch policy, exact restart digests and test-only override. Defaults off until L2/L3 pass. Decisions 778\u2013780.",
+    "status": "planned"
+  },
+  {
+    "id": "cache-journal-closing",
+    "title": "Measure real cache windows and release",
+    "why": "Queued; eight-hour build and three-hour L1\u2013L3 clocks unstarted. Existing 0.3.2/0.3.3 releases preserved; owner approves next unused 0.3.4 instead of the brief's older target. Decision 781.",
+    "status": "planned"
   }
 ]

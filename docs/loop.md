@@ -1,4 +1,4 @@
-<!-- Owner coordinator/memory/terminal brief, 2026-10-12, takes precedence over amendment 2 where it conflicts. Implementation evidence stays separate. -->
+<!-- Owner cache/journal brief, 2026-10-13, has highest precedence; its prior-scenario start condition is unmet. Implementation evidence stays separate. -->
 # Goals, tasks and the daily loop
 
 Projects connects a coordinator, coding threads, pull requests and the owner's decisions. Its loop keeps useful work moving between owner messages: goals explain what matters, a visible task queue holds the work, nightly items run recurring review and checks before a gated deploy.
@@ -6,6 +6,16 @@ Projects connects a coordinator, coding threads, pull requests and the owner's d
 This document describes the intended complete product. Implementation and live evidence are tracked separately in the roadmap and acceptance report.
 
 The hub move, sign-ins and approved memberships are complete. The Pro is healthy on 0.3.3 with a full cold 0.3.1 restore retained; both members remain healthy on 0.3.2 and Mini stays apps-only. The approved project GitHub tokens are saved, and the old Ekoa work is closed with files/history retained. Both dedicated Ekoa clones are bound. The Ekoa preset is applied in watch/shadow mode with hub memory and Pro/Madrid limits 6/8/12. Ekoa MCP setup, real provider journeys and owner phone acceptance remain pending. The ordered handoff is in `docs/acceptance/loop-activation.md`.
+
+## Cache-aware sessions and project journal (planned)
+
+The 13 October brief supersedes uninterrupted large cold coordinator/thread resumes (decision 703) once its prerequisite and live checks are met. Current behavior is unchanged: A–D live scenarios must first finish on the current release by passing or reaching their time box. The new build/live clocks have not started. Decisions 775–781 and [the intake evidence](acceptance/cache-journal-2026-10-13.md) record the requested changes separately from delivery.
+
+Every Projects session will record existing runtime cache usage, idle time and context in session-turn-cache-v1, without new provider traffic. Settings will expose per-runtime cache windows; coordinator/thread panels and the project session table will show today's hit ratio, cold starts and tokens written cold. Claude 60 and Codex 10 minutes are initial requested values, awaiting L1 measurement rather than claims about actual provider behavior.
+
+The authoritative project JSONL ledger will produce an atomic, rebuildable Markdown folder under project-journal/{projectId}, with threads/, days/, nights/ and a bounded INDEX.md. The hub writes and members mirror read-only within 30 seconds or on reconnect. Ordinary file tools read it. It is historical evidence; durable knowledge still belongs in memory and plans/in-flight decisions in the notebook. Thread reports/messages/commands/publication/routes/verification/checkpoints/compactions, full owner/coordinator messages and nightly reports are retained in their specified files with ledger anchors.
+
+Warm sessions and small cold sessions continue. Enabled cold coordinator/thread sessions with at least the configured 40,000 context tokens restart from a bounded digest, retain their transcript history and receive pending messages/events exactly once. Compaction stays. Checkpoints remain disabled by default until real L2 and L3 pass; test cache-window acceleration is refused in installed production. The implementation has eight hours and real L1–L3 have three hours, including fixes. The owner replaces the brief's already-published 0.3.2 target with next unused 0.3.4; existing releases stay intact.
 
 ## Coordinator, memory and terminal extension
 

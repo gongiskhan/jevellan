@@ -1944,3 +1944,36 @@ Decision 773 completes 771–772's live recovery: published 0.3.3 from f02f27b i
 
 
 774. replaces decision 773's pending Ekoa preset application. The normal authenticated setup operation configures the existing Ekoa project on the active Pro hub: six goals, two active, all Propose tasks; shadow merging with requiredChecks [result]; the exact thread rules/risky areas; worktree isolation and npm ci; 01:00 Europe/Lisbon Nightly; hub memory, capture and the independent dream. Only Pro and Madrid are allowed, with limits 6/8 and project limit 12. The first review starts at current main 770e76b, not the whole history. The selected existing Opus model is unchanged; only its display label is corrected. The real coordinator completes a refill, reads memory/GitHub commits and proposes two drafts; neither is approved or starts a coding thread. Live Variables read at 14:34 UTC finds NIGHTLY_SCHEDULER unset, so watch mode remains; PR208 is open/unmerged. Ekoa rejects the browser's saved login; the visible login panel awaits the owner's correct existing credential. MCP, provider journeys and phone acceptance remain blocked/unclaimed; no formal scenario clock or additional review starts. See docs/acceptance/ekoa-preset-live-2026-10-13.md.
+
+
+## 13 October 2026 — Cache/journal brief intake (queued)
+
+### Decision 775 — Prior real scenarios remain the start gate
+
+Replaces any interpretation of decisions 713/774 that source completion or an activation preflight finishes the prior live run. The new owner brief starts only after the current A–D provider scenarios pass or stop at their ten-hour time box. They remain unstarted. Save the exact brief untracked and queue its plan without changing code, claiming acceptance or starting the eight-hour build/three-hour check clocks. The brief wins future conflicts; unaffected completed work stays preserved.
+
+### Decision 776 — Measure existing cache usage before choosing windows
+
+Replaces the absence of Projects cache evidence alongside decision 703's context panel. Every coordinator/thread/review/verification/memory turn will record session-turn-cache-v1 from existing usage, with idle/context/cold classification and today's metrics. Per-runtime windows initially request Claude 60/Codex 10 minutes, then L1 evidence chooses actual defaults. No background keep-warm traffic; no current cache ratio/window/cost is invented.
+
+### Decision 777 — Ledger-derived files instead of a single custom-tool history
+
+Replaces any reuse of Garrison's single large ledger/custom-reader approach for Jevellan historical recall, while preserving decision 715's existing-service rule and decision 709's memory/notebook/live-state separation. Render the existing authoritative project ledger into deterministic thread/day/night Markdown files and INDEX.md on the hub, with atomic replacements, ledger anchors, read-only member mirrors and byte-identical rebuild. Read with ordinary file tools; no new coordinator tool or model-written journal summaries. History files grow; index folding follows the explicit 12,000-character/Open-now rules.
+
+### Decision 778 — Cold checkpoints supplement persistent sessions
+
+Replaces decision 703's unconditional continuation of a large otherwise-eligible cold coordinator/thread session. Warm or below-threshold cold sessions continue; enabled cold sessions at/above checkpointMinTokens restart through normal account/runtime/model/effort rules, retaining the old transcript and session-checkpointed-v1 receipt. CompactAtPercent remains the safety net. Single-run review/verification/memory sessions are unaffected by checkpoint decisions.
+
+### Decision 779 — Journal digests and exact restart copy
+
+Extends decision 709's fresh context and replaces its notebook-only restart framing. Coordinator digest adds local journal path/INDEX.md and caps at 60,000 characters, folding index before recent conversation and never cutting notebook/open questions. Thread digest keeps task, its journal header and last 20,000 characters with Earlier entries, memory and Project now. Use the brief's exact restart/system copy; pending events/messages must survive and be delivered exactly once.
+
+### Decision 780 — Measured opt-in and bounded delivery
+
+Replaces any assumption under decision 703 that new session restart policy is enabled before real provider acceptance. Session checkpoints default off unless L2 and L3 pass. The 1–5 minute cache-window override is test-only and refused with install.json. Stop building at eight hours and stop live checks at three hours, retaining failures/costs/evidence and shipping only working parts with checkpoints off when necessary. No adjacent Conversations/memory/dream/merge-gate fixes or reviews during this new build; one crucial-issues review belongs to its closing phase.
+
+### Decision 781 — Use the owner-approved 0.3.4 target
+
+Replaces the new brief section 9's already-published 0.3.2 target. The owner explicitly replies Use 0.3.4. Preserve decisions 769–770's immutable 0.3.2 and decision 774's live 0.3.3; build and activate next unused 0.3.4 after this extension's gates. No version bump, tag edit, release replacement, downgrade or installation occurs during intake. Prior full-data rollback remains retained.
+
+Intake evidence: live source/main and current shared handoff; read-only peer checks; exact untracked brief copy. Cache/journal code, simulated tests, L1–L3 and release are not run. Prior A–D acceptance remains blocked/unstarted. See docs/acceptance/cache-journal-2026-10-13.md. Documentation checks and push follow; no provider requests, runtime mutation or review pass is made by intake.

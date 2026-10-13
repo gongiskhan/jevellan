@@ -1,5 +1,7 @@
 # Projects loop activation handoff
 
+The cache/journal brief is queued under decisions 775–781, with owner-approved release 0.3.4. Its implementation starts only after the current A–D scenarios pass or reach their ten-hour stop; blocked preflights do not satisfy that prerequisite. No new build/live clock starts during intake. Continue the routine activation/scenario preparation below, preserving current 0.3.3 behavior for those tests.
+
 ## Remaining activation steps, in order
 
 1. Sign in with your correct Ekoa credential in the visible Ekoa panel beside this chat, then reply done. The saved browser credential was rejected; keep the password in that panel. I will prepare the exact MCP task read/write grant after sign-in, then request its action-time approval. The GitHub capability requirements remain Contents, Pull requests and Actions read/write, Checks and Commit statuses read, and Variables read for Ekoa; the sandbox additionally needs Variables and Workflows write. The broader classic-token path was specifically approved and saved only in the sandbox and Ekoa project entries; the default remains unset (decision 767). An Ekoa label for test items is optional; without it, mirror assertions remain blocked. Existing credentials are checked before creating replacements.
