@@ -1,0 +1,22 @@
+{
+  "schema": "scenario-partial-step-v1",
+  "label": "live",
+  "scenario": "C",
+  "step": "C4",
+  "receipt": "docs/acceptance/scenarios/2026-10-13/C-run_d7afb32303944840ba59422c6171ac16.json",
+  "accepted": false,
+  "projectId": "live_day_47736134ab054e3aa8ee6fbf18a1122a",
+  "threadId": "thread_01M4VMQWXTKSS01PCEKB2PCN8E",
+  "recoveredAt": "2026-10-13T23:01:07.114Z",
+  "compaction": {
+    "at": "2026-10-13T22:11:02.220Z",
+    "beforeTokens": 51476,
+    "afterTokens": null,
+    "contextWindow": 258400,
+    "thresholdPercent": 20
+  },
+  "beforeSessionKey": "1e4a8a9525ce4e7e1c8a20984a5c43bf195f9a2879d91294e5c66ac2479fadb5",
+  "afterSessionKey": "1e4a8a9525ce4e7e1c8a20984a5c43bf195f9a2879d91294e5c66ac2479fadb5",
+  "prompt": "Task: Write tests for every function in src/invoices and src/customers\n\nWrite tests for every function in src/invoices and src/customers.\n\nTask type: feature.\n\nRules for every thread:\nNever run scripts/owner-only.sh yourself; the owner runs it.\n\nProject memory:\nSearch memory with memory_search for more.\n\nProject now (23:12):\nOther active threads:\n- Invoices: add PDF download (codex GPT on dev-madrid scenarios): idle; working on CHANGELOG.md, package.json, package-lock.json, src/invoices/data.ts, src/invoices/pdf.ts, src/invoices/pdf.test.ts, src/web/server.ts, tests/browser/invoices.spec.ts; last report: Feature implemented and committed as 8a00042 on jv/invoices-add-pdf-download-rtfwhw; working tree clean, ready for Jevellan publication. Download PDF link, appl\nMerged to main in the last 24 hours:\n(none)\n\nFrom the coordinator:\nCoordinator review of PR #8 (head c5aea1f). CI is green. The customers tests and the invoiceDate tests look good. Two changes are needed before I can call this done.\n\n1. Some lineTotalCents/invoiceTotalCents tests lock in a bug instead of exposing it. `Math.floor(unitPrice * 100)` loses a cent on ordinary prices because of floating-point error: 0.29 * 100 = 28.999..., which floors to 28. No pricing rule intends that.\n   - Add cases with ordinary 2-decimal prices and the correct expected values:\n     - { quantity: 1, unitPrice: 0.29 } -> 29\n     - { quantity: 1, unitPrice: 1.15 } -> 115\n     - { quantity: 1, unitPrice: 0.57 } -> 57\n     - plus an invoiceTotalCents case that includes one of these lines\n   - As agreed, do not fix src in this PR. These tests will fail. Do not mark them `.fails` or `.skip`.\n   - The \"fractional cents floored before multiplication\" (1.239 -> 369), \"sub-cent prices\" (0.009 -> 0) and \"floors each unit price before summin",
+  "failure": "Timed out after 30 minutes: the Codex test-writing thread to reach done"
+}

@@ -1,0 +1,84 @@
+{
+  "schema": "scenario-usage-recovery-v1",
+  "label": "live",
+  "receipt": "docs/acceptance/scenarios/2026-10-13/C-run_d7afb32303944840ba59422c6171ac16.json",
+  "accepted": false,
+  "throughAt": "2026-10-13T22:44:01.528Z",
+  "recoveredAt": "2026-10-13T22:59:30.345Z",
+  "sessions": [
+    {
+      "key": "cc2ef4197a0e278c4a1bb6d9120677d178dcb69594d7bdb3a896eb81db9a025e",
+      "runtime": "claude",
+      "model": "Claude Opus 5.5",
+      "inputTokens": 727936,
+      "outputTokens": 288849,
+      "costUsd": 36.41959280000001,
+      "costSource": "estimated",
+      "seconds": 402.169
+    },
+    {
+      "key": "505ff12a652926a5a5e4d8cde77230561ba4ba915509ed9c5a7990412fa612cb",
+      "runtime": "claude",
+      "model": "claude-opus-5-5",
+      "inputTokens": 1026,
+      "outputTokens": 2379,
+      "costUsd": 0.1255154,
+      "costSource": "estimated",
+      "seconds": 46.388
+    },
+    {
+      "key": "7c5fea57290fa86714897d080c54d36ba0a45348f73b6f31e4465837f20a5ddd",
+      "runtime": "claude",
+      "model": "claude-opus-5-5",
+      "inputTokens": 1010,
+      "outputTokens": 543,
+      "costUsd": 0.0732912,
+      "costSource": "estimated",
+      "seconds": 11.052
+    },
+    {
+      "key": "live_day_47736134ab054e3aa8ee6fbf18a1122a:coordinator:92",
+      "runtime": "codex",
+      "model": "gpt-6-astra",
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "costUsd": null,
+      "costSource": "unknown",
+      "seconds": 1.271
+    },
+    {
+      "key": "ad479ced7b2fc90d74276df719daf32bd3d6a99d4648e3b40d52f9f31d421198",
+      "runtime": "codex",
+      "model": "gpt-6-astra",
+      "inputTokens": 393772,
+      "outputTokens": 6685,
+      "costUsd": null,
+      "costSource": "unknown",
+      "seconds": 203.014
+    },
+    {
+      "key": "1e4a8a9525ce4e7e1c8a20984a5c43bf195f9a2879d91294e5c66ac2479fadb5",
+      "runtime": "codex",
+      "model": "gpt-6-astra",
+      "inputTokens": 883164,
+      "outputTokens": 15378,
+      "costUsd": null,
+      "costSource": "unknown",
+      "seconds": 498.493
+    },
+    {
+      "key": "deaf0a29f0978878a38af2453adcb43160dd8d2f59ea64dba1f740044a881673",
+      "runtime": "codex",
+      "model": "gpt-6-astra",
+      "inputTokens": 576247,
+      "outputTokens": 3770,
+      "costUsd": null,
+      "costSource": "unknown",
+      "seconds": 124.43
+    }
+  ],
+  "observations": [
+    "Usage records come from runtime-reported turn outcomes. Missing tokens or cost remain unknown; minutes include concurrent sessions.",
+    "Read-only recovery of completed turns through the original failed receipt end. The original failure and incomplete collector are retained."
+  ]
+}
