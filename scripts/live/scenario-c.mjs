@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { github, until } from './client.mjs';
+import { mergeWhenAsked } from './scenario-a.mjs';
 
 const minutes = n => n * 60000;
 export async function scenarioC(client, projectId, recorder) {
@@ -36,6 +37,12 @@ export async function scenarioC(client, projectId, recorder) {
     const after = await until('the first thread turn after compaction', () => client.ledger(projectId, task.threadId).find(row => row.type === 'thread-turn-start' && row.id > compacted.id), minutes(15)); assert(after.data.prompt && !after.data.promptTruncated); const prompt = after.data.prompt;
     const taskAt = prompt.indexOf(task.title), memoryAt = prompt.indexOf('Project memory'), nowAt = prompt.indexOf('Project now'); assert(taskAt >= 0 && memoryAt > taskAt && nowAt > memoryAt);
     const before = client.ledger(projectId, task.threadId).filter(row => row.type === 'thread-turn-end' && row.id < after.id).at(-1); const ended = await until('the resumed thread turn to finish', () => client.ledger(projectId, task.threadId).find(row => row.type === 'thread-turn-end' && row.id > after.id), minutes(30)); assert(before?.data.sessionKey && before.data.sessionKey === ended.data.sessionKey);
-    await until('the Codex test-writing thread to reach done', async () => (await client.thread(projectId, task.threadId)).thread.state === 'done', minutes(30)); return { taskId: task.id, threadId: task.threadId, sessionKey: ended.data.sessionKey, compaction: compacted.data, prompt: prompt.slice(0, 1800) };
+    const finished = await until('the Codex test-writing thread to reach done', async () => {
+      const view = await client.thread(projectId, task.threadId);
+      if (view.thread.state === 'done') return view;
+      if (view.thread.state === 'in-review' && view.thread.pr?.checks === 'passing' && view.thread.pr.mergeable === 'clean') await mergeWhenAsked(client, projectId, task.threadId, recorder);
+    }, minutes(30));
+    if (finished.thread.pr) recorder.receipt.pullRequests.push(finished.thread.pr.number);
+    return { taskId: task.id, threadId: task.threadId, sessionKey: ended.data.sessionKey, compaction: compacted.data, prompt: prompt.slice(0, 1800), pullRequest: finished.thread.pr?.number };
   });
 }

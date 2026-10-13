@@ -100,6 +100,23 @@ afterEach(async () => {
   await new Promise<void>((resolve) => { server.close(() => resolve()); server.closeAllConnections(); }); await app.close(); await fake.close(); await github.close();
   rmSync(root, { recursive: true, force: true });
 });
+test('a forwarded decision answer reaches its thread owner with peer login and keeps browser and wrong-owner refusals', async () => {
+  vi.spyOn(app, 'peerLoginAuthenticated').mockResolvedValue(true);
+  const owner = vi.spyOn(app.projectWork, 'decisionOwner').mockResolvedValue(app.device.deviceId);
+  const answer = vi.spyOn(app.projectWork, 'answerDecision').mockResolvedValue({ repeated: false });
+  const route = `${base}/api/mesh/projects/project/decisions/decision_fixture/answer`;
+  const body = { schema: 'decision-answer-request-v1', clientRequestId: 'answer_fixture', optionLabel: 'Merge' };
+  const headers = { Authorization: 'Bearer fixture.session', 'X-Jevellan-Source-Device': 'dev_source', 'Content-Type': 'application/json' };
+  const response = await fetch(route, { method: 'POST', headers, body: JSON.stringify(body) });
+  expect(response.status).toBe(202); expect(await response.json()).toEqual({ schema: 'decision-answered-view-v1', repeated: false });
+  expect(answer).toHaveBeenCalledExactlyOnceWith('project', 'decision_fixture', body);
+  owner.mockResolvedValue('dev_elsewhere');
+  expect((await fetch(route, { method: 'POST', headers, body: JSON.stringify(body) })).status).toBe(404);
+  expect((await fetch(route, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })).status).toBe(401);
+  expect((await fetch(route, { method: 'POST', headers: { ...headers, Origin: base }, body: JSON.stringify(body) })).status).toBe(403);
+  expect(answer).toHaveBeenCalledTimes(1);
+});
+
 test('a known dispatched task stream waits for its thread index without changing unknown-thread refusals', { timeout: 60000 }, async () => {
   const id = 'thread_index_pending', at = new Date().toISOString();
   await app.projectWork.coordinators.ensureAssigned('project');

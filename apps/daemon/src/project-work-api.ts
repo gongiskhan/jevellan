@@ -165,7 +165,7 @@ export async function handleProjectWorkApi(app: Application, request: IncomingMe
 /**
  * The peer receiver (phase 5, design 2.10, D41): another device forwards a signed-in owner's request for a thread this device
  * owns or a coordinator it runs. Browsers are refused, the session is checked with the generic peer check, the path must be one
- * of the owner or coordinator routes (the brief's background start and coordinator event delivery do not exist, D40), and the
+ * of the owner/coordinator routes or a decision answer forwarded to its thread owner (background start/event routes stay absent, D40), and the
  * resource must be here; then the same handler runs, never proxying again.
  */
 export async function handleProjectWorkPeer(app: Application, request: IncomingMessage, response: ServerResponse, url: URL, retryable: () => void): Promise<boolean> {
@@ -174,7 +174,7 @@ export async function handleProjectWorkPeer(app: Application, request: IncomingM
   const local = localPath(url.pathname); let route: ProjectWorkRoute | null = null;
   // A method the local route does not take is as absent here as an unknown path.
   if (local !== null) { try { route = projectWorkRoute(local, request.method ?? 'GET'); } catch { route = null; } }
-  if (!route || (route.target !== 'owner' && route.target !== 'coordinator')) throw failure(PROJECT_OPERATION_NOT_FOUND, 404);
+  if (!route || (route.target !== 'owner' && route.target !== 'coordinator' && route.name !== 'answer')) throw failure(PROJECT_OPERATION_NOT_FOUND, 404);
   const authorization = request.headers.authorization;
   const input = PeerLoginSessionInputSchema.safeParse({ schema: 'peer-login-session-input-v1', sourceDeviceId: request.headers['x-jevellan-source-device'],
     token: authorization?.startsWith('Bearer ') ? authorization.slice(7) : undefined });

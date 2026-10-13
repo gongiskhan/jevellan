@@ -8,12 +8,27 @@ import { join } from 'node:path';
 import { LiveStateSchema, ScenarioReceiptSchema, ScenarioRecorder, canStart, evidenceRedactor, gatingPlan, loadState, saveState, titleSimilarity } from '../scripts/live/contracts.mjs';
 import { planFor, runLive } from '../scripts/live/scenarios.mjs';
 import { OwnerClient, until } from '../scripts/live/client.mjs';
+import { mergeWhenAsked } from '../scripts/live/scenario-a.mjs';
 import { preflight } from '../scripts/live/setup.mjs';
 import { SANDBOX_FILES, assertSandbox, writeSandbox } from '../scripts/live/sandbox.mjs';
 let root: string;
 beforeEach(() => { root = mkdtempSync(join(tmpdir(), 'jevellan-live-harness-')); });
 afterEach(() => rmSync(root, { recursive: true, force: true }));
 const state = () => LiveStateSchema.parse({ schema: 'live-scenarios-state-v1' });
+
+test.each(['answered', 'refused'])('the authorized merge driver waits for the UI response: %s', async outcome => {
+  let visible = true, refused = false, timer: ReturnType<typeof setTimeout> | undefined;
+  const click = vi.fn(async () => { timer = setTimeout(() => { if (outcome === 'answered') visible = false; else refused = true; }, 10); });
+  const card = { isVisible: async () => visible, getByRole: () => ({ click }), locator: () => ({ count: async () => Number(refused), textContent: async () => 'Project operation not found.' }) };
+  const client = { config: { hub: 'http://fixture' }, work: async () => ({ decisions: { open: [{ threadId: 'thread_fixture', merge: {}, question: 'Merge #1?' }] } }),
+    page: { goto: async () => {}, getByRole: () => ({ isVisible: async () => false }), locator: () => ({ filter: () => card }) } };
+  const recorder = { receipt: { observations: [] } };
+  try {
+    if (outcome === 'refused') await expect(mergeWhenAsked(client, 'project', 'thread_fixture', recorder)).rejects.toThrow('Project operation not found.');
+    else { await mergeWhenAsked(client, 'project', 'thread_fixture', recorder); expect(visible).toBe(false); expect(recorder.receipt.observations).toHaveLength(1); }
+    expect(click).toHaveBeenCalledOnce();
+  } finally { clearTimeout(timer); }
+});
 
 test('owner ledger cleanup cancels the body and closes the browser even when fetch ignores abort', async () => {
   let controller: ReadableStreamDefaultController<Uint8Array> | undefined;

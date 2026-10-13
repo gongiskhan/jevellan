@@ -182,3 +182,8 @@ Decision 774 replaces decision 773's pending Ekoa preset application. The normal
 ## Prior live acceptance correction, 13 October
 
 Decision794 records live partial C1–C3 continuity: the Claude coordinator compacts in its existing session and its refreshed notebook/memory context preserves the invoice title convention. C4 fails before Codex compaction on a member thread-stream race, repaired with a failing-before regression. Full scenario and cross-provider compaction acceptance remain pending. The Ekoa browser sign-in is now complete; its OAuth-only MCP remains blocked by the current static-token client, as decision788 records. No memory feature or native home changes here.
+
+
+## Third C correction, 13 October
+
+Decisions796–798 preserve the real third C evidence: Claude C1–C3 pass; Codex compacts and resumes, but the owner merge answer is rejected on the member. Full C remains in progress. Its unrelated PDF work exposes the managed-worktree preview refusal. Both product paths now have failing-before regressions; compiled changes await the retained result before private activation. No memory feature or source/native memory folder changes.

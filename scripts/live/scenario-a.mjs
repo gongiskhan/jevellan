@@ -13,6 +13,10 @@ export async function mergeWhenAsked(client, projectId, threadId, recorder) {
   const waiting = client.page.getByRole('button', { name: /^Waiting/u }); if (await waiting.isVisible()) await waiting.click();
   const card = client.page.locator('.pw-decision').filter({ hasText: decision.question });
   await card.getByRole('button', { name: 'Merge', exact: true }).click();
+  await until('the authorized sandbox merge answer to finish', async () => {
+    const error = card.locator('.error'); if (await error.count()) throw new Error(await error.textContent());
+    return !await card.isVisible();
+  }, minutes(1), 100);
   recorder.receipt.observations.push(`Owner-authorized sandbox UI merge for ${threadId}: ${decision.question}`);
 }
 async function pr(client, projectId, task, timeout = minutes(30)) {

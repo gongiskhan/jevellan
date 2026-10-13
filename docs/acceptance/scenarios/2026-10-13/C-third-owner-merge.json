@@ -1,0 +1,102 @@
+{
+  "schema": "scenario-owner-action-v1",
+  "label": "live",
+  "scenario": "C",
+  "projectId": "live_day_47736134ab054e3aa8ee6fbf18a1122a",
+  "threadId": "thread_01M4VMQWXTKSS01PCEKB2PCN8E",
+  "pullRequest": 8,
+  "checkedHead": "de83aac8f290649c870c2c5a35cc9ef06b3d4f14",
+  "at": "2026-10-13T22:25:02.149Z",
+  "action": "sandbox-ui-merge",
+  "authorization": "The owner explicitly permits live journeys to merge their own sandbox test pull requests. The existing owner UI helper is used; no coordinator merge tool or test assertion change.",
+  "route": {
+    "schema": "merge-documents-view-v1",
+    "records": [
+      {
+        "schema": "merge-route-v1",
+        "id": "mroute_b9eec0778c8ab76749d7efda150162d9670d5649",
+        "projectId": "live_day_47736134ab054e3aa8ee6fbf18a1122a",
+        "revision": 3,
+        "deviceId": "dev_01M4V38ABJAT5B8FEMBBD7KMC9",
+        "threadId": "thread_01M4VMQWXTKSS01PCEKB2PCN8E",
+        "commit": "de83aac8f290649c870c2c5a35cc9ef06b3d4f14",
+        "at": "2026-10-13T22:15:16.701Z",
+        "prNumber": 8,
+        "questionSet": "m-v1",
+        "route": "ask-owner",
+        "source": "jev",
+        "reason": "Touches a risky area, changes stored data or production behaviour, or is large or hard to undo.",
+        "packet": {
+          "schema": "merge-route-state-v1",
+          "title": "Write tests for every function in src/invoices and src/customers",
+          "task": {
+            "type": "feature",
+            "needs": [],
+            "goal": null
+          },
+          "summary": "Committed authorized rounding fix as de83aac8f290649c870c2c5a35cc9ef06b3d4f14; clean worktree. Uses the requested Math.round(unitPrice * 100) * quantity, unchanged signatures. All 49 tests pass; lint, changelog check, diff check pass; live HTTP GET /invoices returns 200 with 25.00. Inspected PDF branch callers and all five .fails assertions in PR #6 commit 26452b5: all were real monetary bugs; all now have enabled passing coverage, including newly added 3 x 1.15 -> 345 (before 342). Original five regression before/after, cents: lineTotalCents({quantity:1,unitPrice:0.29}) 28 -> 29 expected29; (1,1.15) 114 -> 115 expected115; (3,0.29) 84 -> 87 expected87; (2,19.99) 3996 -> 3998 expected3998; invoiceTotalCents([{quantity:3,unitPrice:0.29},{quantity:2,unitPrice:1.15}]) 312 -> 317 expected317. Added .57,4.35,8.20 and explicit fractional-cent nearest rounding. No disabled/weakened assertions or failing tests. PR #8 GitHub result is passing at old head c5aea1f only. Jevellan publication required: push assigned branch HEAD de83aac (includes b4c1e5e) to update PR #8, then run/verify CI at that SHA; agent has not pushed per workflow instruction.",
+          "riskyAreas": "src/customers storage format",
+          "files": [
+            {
+              "path": "CHANGELOG.md",
+              "additions": 2,
+              "deletions": 0
+            },
+            {
+              "path": "src/customers/index.test.ts",
+              "additions": 184,
+              "deletions": 6
+            },
+            {
+              "path": "src/invoices/index.test.ts",
+              "additions": 77,
+              "deletions": 3
+            },
+            {
+              "path": "src/invoices/index.ts",
+              "additions": 1,
+              "deletions": 1
+            }
+          ],
+          "totalSize": 274,
+          "corrections": []
+        },
+        "calls": [
+          {
+            "schema": "jev-call-v1",
+            "kind": "merge",
+            "requestedModel": "jev-latest",
+            "returnedModel": "jev-1.13.0",
+            "usage": {
+              "input_tokens": 958,
+              "output_tokens": 45
+            },
+            "latencyMs": 269
+          }
+        ],
+        "probabilities": {
+          "merge": 0.11,
+          "test-then-merge": 0.12,
+          "ask-owner": 0.77
+        },
+        "state": "asked",
+        "failures": 0,
+        "notified": [
+          "ask-owner:0"
+        ],
+        "verificationRetries": 0,
+        "decisionId": "pdec_7f44529916ba200f0662748fd6b49ba1247da6ee",
+        "verificationId": null
+      }
+    ]
+  },
+  "observations": [
+    "Owner-authorized sandbox UI merge for thread_01M4VMQWXTKSS01PCEKB2PCN8E: Merge #8 Write tests for every function in src/invoices and src/customers?",
+    "Initial UI click was followed by browser close before completion; the subsequent read still showed the PR open. No completed merge was claimed.",
+    "Unconfirmed retry: Project operation not found."
+  ],
+  "after": {
+    "state": "in-review",
+    "prState": "open"
+  }
+}
