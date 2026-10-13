@@ -1,0 +1,131 @@
+{
+  "schema": "interrupted-live-scenario-evidence-v1",
+  "label": "live",
+  "scenario": "A",
+  "projectId": "live_day_2e6224d2a0c34423ba4097f080a780e8",
+  "firstScenarioAt": "2026-10-13T18:15:59.903Z",
+  "readinessAt": "2026-10-13T18:53:59.235Z",
+  "driverEndedAt": "2026-10-13T19:52:23.566Z",
+  "recoveredAt": "2026-10-13T19:57:55.208Z",
+  "automatedResultSaved": false,
+  "accepted": false,
+  "reason": "Operator diagnostic used an unsupported dynamic import in the inspector and crashed the driver before it wrote a receipt. The preceding stall is not assigned a cause without evidence.",
+  "coordinator": {
+    "state": "idle",
+    "turns": 8
+  },
+  "tasks": [
+    {
+      "id": "task_80637b94fd5d620fa209c073a397ecd32f376a85",
+      "title": "Fix invoice totals off by a cent",
+      "state": "done",
+      "after": [],
+      "threadId": "thread_01M4V9VXB4HR1XY9DCA70Y2VE0"
+    },
+    {
+      "id": "task_44c6404c84100581febf600d7c2d98f3ae1b6a92",
+      "title": "CSV export on the customers page",
+      "state": "active",
+      "after": [],
+      "threadId": "thread_01M4V9W5HM6S8TMTQZ8BZ89BGD"
+    }
+  ],
+  "prEvents": [
+    {
+      "at": "2026-10-13T18:59:28.149Z",
+      "change": "checks-passed",
+      "threadId": "thread_01M4V9VXB4HR1XY9DCA70Y2VE0"
+    },
+    {
+      "at": "2026-10-13T18:59:29.446Z",
+      "change": "checks-passed",
+      "threadId": "thread_01M4V9W5HM6S8TMTQZ8BZ89BGD"
+    },
+    {
+      "at": "2026-10-13T18:59:35.974Z",
+      "change": "merged",
+      "threadId": "thread_01M4V9VXB4HR1XY9DCA70Y2VE0"
+    },
+    {
+      "at": "2026-10-13T19:00:21.652Z",
+      "change": "conflict",
+      "threadId": "thread_01M4V9W5HM6S8TMTQZ8BZ89BGD"
+    }
+  ],
+  "sessions": [
+    {
+      "key": "947b683689db11662a5f7e0c8c323851e81793bc911b3ff84d69ba19b51195ec",
+      "runtime": "claude",
+      "model": "Claude Opus 5.5",
+      "inputTokens": 8862,
+      "outputTokens": 77830,
+      "costUsd": 5.315409799999999,
+      "costSource": "estimated",
+      "seconds": 211.408
+    },
+    {
+      "key": "f702829af9844108a53f0635d6ec581ce3a833da1c3004ec5cf7879a5fd7250b",
+      "runtime": "claude",
+      "model": "claude-opus-5-5",
+      "inputTokens": 1029,
+      "outputTokens": 2998,
+      "costUsd": 0.14745280000000002,
+      "costSource": "estimated",
+      "seconds": 54.324
+    },
+    {
+      "key": "live_day_2e6224d2a0c34423ba4097f080a780e8:coordinator:15",
+      "runtime": "codex",
+      "model": "gpt-6-astra",
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "costUsd": null,
+      "costSource": "unknown",
+      "seconds": 0.447
+    },
+    {
+      "key": "live_day_2e6224d2a0c34423ba4097f080a780e8:coordinator:67",
+      "runtime": "codex",
+      "model": "gpt-6-astra",
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "costUsd": null,
+      "costSource": "unknown",
+      "seconds": 0.656
+    },
+    {
+      "key": "live_day_2e6224d2a0c34423ba4097f080a780e8:coordinator:68",
+      "runtime": "codex",
+      "model": "gpt-6-astra",
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "costUsd": null,
+      "costSource": "unknown",
+      "seconds": 0.68
+    },
+    {
+      "key": "8f1c57b3a66a30631b2e3097f493b5637a7e07581dcd49867e0477a7be9bf676",
+      "runtime": "codex",
+      "model": "gpt-6-astra",
+      "inputTokens": 999050,
+      "outputTokens": 8512,
+      "costUsd": null,
+      "costSource": "unknown",
+      "seconds": 222.25900000000001
+    },
+    {
+      "key": "db4bb260c0f1e0e88e44740b1a28feb715c85661fcb28a48ef7a8ba8859de331",
+      "runtime": "codex",
+      "model": "gpt-6-astra",
+      "inputTokens": 2933582,
+      "outputTokens": 30760,
+      "costUsd": null,
+      "costSource": "unknown",
+      "seconds": 412.655
+    }
+  ],
+  "observations": [
+    "Usage records come from runtime-reported turn outcomes. Missing tokens or cost remain unknown; minutes include concurrent sessions.",
+    "Manual recovery of ledger state, not automated step acceptance. A3 has no checks-failed event in the recovered ledger. The original overall clock and null lastA are retained."
+  ]
+}

@@ -538,5 +538,11 @@
     "title": "Stop begun sandbox work before resetting",
     "why": "Decision 790: cancel only unstarted tasks; stop begun threads through normal owner controls and wait for terminal states before GitHub reset. Owner-attached sessions block before mutation. Regression fails before repair; 19 affected harness cases/typecheck/lint pass. Assertions/messages/history/original clock unchanged; real reset pending.",
     "status": "complete-with-blockers"
+  },
+  {
+    "id": "activation-live-progress",
+    "title": "Record live scenario progress and interrupted evidence",
+    "why": "Decision 791: operator diagnostic interrupts the second A before its automated result saves. Keep separate sanitized manual ledger evidence with no acceptance pass; original clock retained. Step and teardown-stage logging makes the next exact rerun observable. 19 affected harness cases/typecheck/lint and 20 simulated native-adapter cases pass. Source fixes already pushed; isolated profile activation follows.",
+    "status": "complete-with-blockers"
   }
 ]

@@ -98,8 +98,10 @@ export class ScenarioRecorder {
   }
   async step(id, assertion, run) {
     const start = this.now(); let verdict = 'passed', evidence = {}, reason;
+    process.stdout.write(`${this.receipt.scenario} ${id}: started ${new Date(start).toISOString()}\n`);
     try { evidence = await run() ?? {}; } catch (error) { verdict = error.blocked ? 'blocked' : 'failed'; reason = error.message; }
     this.receipt.steps.push(StepSchema.parse({ id, assertion, verdict, startedAt: new Date(start).toISOString(), endedAt: new Date(this.now()).toISOString(), seconds: (this.now() - start) / 1000, evidence: this.clean(evidence), ...(reason ? { reason: this.clean(reason) } : {}) }));
+    process.stdout.write(`${this.receipt.scenario} ${id}: ${verdict} ${new Date(this.now()).toISOString()}\n`);
     if (verdict !== 'passed') { const error = new Error(`${id}: ${reason}`); error.blocked = verdict === 'blocked'; throw error; }
     return evidence;
   }

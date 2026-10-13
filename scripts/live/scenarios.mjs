@@ -53,8 +53,11 @@ export async function runLive({ plan, config, state, secrets, output = 'docs/acc
       await implementations[item.scenario](client, projectId, recorder, { ...secrets, jevModel: available.jevModel, ...item });
     } catch (failure) { error = failure; if (!recorder.receipt.steps.length && !failure.blocked) recorder.receipt.observations.push(`Setup failed: ${failure.message}`); }
     finally {
+      process.stdout.write(`${item.scenario}: collecting runtime usage\n`);
       if (client && recorder.receipt.startedAt) await collectUsage(client, recorder.receipt.projectId, recorder, Date.parse(recorder.receipt.startedAt)).catch(failure => recorder.receipt.observations.push(`Usage collection incomplete: ${failure.message}`));
+      process.stdout.write(`${item.scenario}: closing owner readers\n`);
       await client?.close();
+      process.stdout.write(`${item.scenario}: owner readers closed\n`);
     }
     const result = recorder.finish(error ? [error.message] : []); results.push(result);
     if (item.scenario === 'A' && recorder.receipt.projectId) state.lastA = { passed: result.receipt.passed, projectId: recorder.receipt.projectId, receipt: result.file, coordinator: item.coordinator };
