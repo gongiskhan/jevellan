@@ -592,5 +592,11 @@
     "title": "Preserve member ledger replay cursors for complete snapshots",
     "why": "Decision799 refines decision737's remote ledger replay. A live diagnostic immediately returns an empty remote history even though that thread has completed turns; the owner proxy strips X-Jevellan-Ledger-Head, so the reader cannot wait for its replay boundary. Forward only that validated nonnegative safe-integer stream cursor and reject malformed values before sending headers. Four cursor regressions fail before repair; all39 affected proxy/API/harness cases, typecheck/lint/build pass. Original failed receipts remain unchanged; recover completed-turn usage separately through each original endedAt after private activation. No authentication/cookie headers or new endpoint are exposed. Private activation and complete replay recovery are live; separate partial continuity proof keeps unknown after-count null and failed C unchanged. Exact fourth C remains in progress. Live corrected C passes once; separate authorized member Merge-card and managed local preview probes confirm the relevant paths. Overall prior acceptance remains incomplete.",
     "status": "complete"
+  },
+  {
+    "id": "activation-canonical-bridge-assertions",
+    "title": "Read canonical coordinator follow-up inputs in live assertions",
+    "why": "Decision800 refines736. Canonical bridge message fields replace owner-HTTP text in A3/A5; successful failed-check log/follow-up pairing remains required. Regression fails before repair;23 affected simulated cases/typecheck/lint pass. Strict real failed-check prerequisite and original clock unchanged; fifth C remains active.",
+    "status": "complete"
   }
 ]

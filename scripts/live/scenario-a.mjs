@@ -6,6 +6,14 @@ import { titleSimilarity } from './contracts.mjs';
 
 const minutes = n => n * 60000, input = tool => { try { return JSON.parse(tool.input ?? '{}'); } catch { return {}; } };
 const active = task => ['active', 'in-review'].includes(task.state);
+export function failedCheckDiagnosis(rows) {
+  for (const failed of rows.filter(row => row.type === 'coordinator-event' && row.data.kind === 'pr-update' && row.data.change === 'checks-failed')) {
+    const turn = rows.find(row => row.type === 'coordinator-turn-start' && row.data.eventIds.includes(failed.data.id)); if (!turn) continue;
+    const tools = rows.filter(row => row.type === 'coordinator-tool' && row.turn === turn.turn && row.data.ok === true).map(row => row.data);
+    const log = tools.find(tool => tool.tool === 'jevellan_github' && input(tool).action === 'job_log'), message = tools.find(tool => tool.tool === 'jevellan_thread_message' && input(tool).threadId === failed.data.threadId && /CHANGELOG/u.test(input(tool).message ?? ''));
+    if (log && message) return { eventId: failed.id, jobId: input(log).jobId, tools };
+  }
+}
 export async function mergeWhenAsked(client, projectId, threadId, recorder) {
   const view = await client.work(projectId), decision = view.decisions.open.find(row => row.threadId === threadId && row.merge);
   if (!decision) return;
@@ -63,15 +71,8 @@ export async function scenarioA(client, projectId, recorder, { jevKey, jevModel 
     assert.deepEqual((await client.tasks(projectId)).map(row => row.id), before); return { threadId: current.thread.id, tools: turn.tools };
   });
   await recorder.step('A3', 'A failed result check is diagnosed through its job log and CHANGELOG message; both PRs merge within 45 minutes; the rounding regression fails at baseline.', async () => {
-    const diagnosis = await until('a failed check to be diagnosed on the next coordinator turn', () => {
-      const rows = client.ledger(projectId);
-      for (const failed of rows.filter(row => row.type === 'coordinator-event' && row.data.kind === 'pr-update' && row.data.change === 'checks-failed')) {
-        const turn = rows.find(row => row.type === 'coordinator-turn-start' && row.data.eventIds.includes(failed.data.id)); if (!turn) continue;
-        const tools = rows.filter(row => row.type === 'coordinator-tool' && row.turn === turn.turn).map(row => row.data);
-        const log = tools.find(tool => tool.tool === 'jevellan_github' && input(tool).action === 'job_log'), message = tools.find(tool => tool.tool === 'jevellan_thread_message' && input(tool).threadId === failed.data.threadId && /CHANGELOG/u.test(input(tool).text ?? ''));
-        if (log && message) { const job = github(`actions/jobs/${input(log).jobId}`); assert.equal(job.name, 'result'); return { eventId: failed.id, jobId: job.id, tools }; }
-      }
-    }, Math.max(1, started + minutes(45) - Date.now()));
+    const diagnosis = await until('a failed check to be diagnosed on the next coordinator turn', () => failedCheckDiagnosis(client.ledger(projectId)), Math.max(1, started + minutes(45) - Date.now()));
+    assert.equal(github(`actions/jobs/${diagnosis.jobId}`).name, 'result');
     const results = []; for (const task of [exportTask, roundingTask]) results.push(await merged(client, projectId, task, recorder, started + minutes(45)));
     const exportDiff = changedSource(results[0].pull.number); assert(/vat/iu.test(exportDiff.patch)); assert(exportDiff.files.some(row => /test|spec/iu.test(row.filename) && /vat/iu.test(row.patch ?? '')));
     const roundingDiff = changedSource(results[1].pull.number); const tests = roundingDiff.files.filter(row => /\.test\.ts$/u.test(row.filename)); assert(tests.length);
@@ -102,7 +103,7 @@ export async function scenarioA(client, projectId, recorder, { jevKey, jevModel 
     const tasks = await client.tasks(projectId); a5Tasks = a5Tasks.map(receipt => tasks.find(row => row.id === receipt.taskId)); assert(a5Tasks.every(Boolean));
     for (const task of a5Tasks) { assert(task.threadId); await client.watch(projectId, task.threadId); }
     assert(!a5Questions.some(question => question.threadId === a5Tasks[3].threadId));
-    const notebookMessage = client.ledger(projectId).filter(row => row.type === 'coordinator-tool').map(row => row.data).find(tool => tool.tool === 'jevellan_thread_message' && input(tool).threadId === a5Tasks[3].threadId && /DD\/MM\/YYYY/u.test(input(tool).text ?? '')); assert(notebookMessage);
+    const notebookMessage = client.ledger(projectId).filter(row => row.type === 'coordinator-tool').map(row => row.data).find(tool => tool.tool === 'jevellan_thread_message' && input(tool).threadId === a5Tasks[3].threadId && /DD\/MM\/YYYY/u.test(input(tool).message ?? '')); assert(notebookMessage);
     await page.goto(`${client.config.hub}/projects/${projectId}`); const waiting = page.getByRole('button', { name: /^Waiting/u }); if (await waiting.isVisible()) await waiting.click();
     const cards = page.locator('.pw-decision'); await expect(cards).toHaveCount(3);
     const labels = a5Questions.map((question, index) => { const position = a5Tasks.findIndex(task => task.threadId === question.threadId); assert(position >= 0 && position < 3); return `${index + 1} ${['archive', 'amber', '25'][position]}`; });
@@ -112,7 +113,7 @@ export async function scenarioA(client, projectId, recorder, { jevKey, jevModel 
     const answered = await client.work(projectId); assert.equal(answered.decisions.open.length, 0);
     for (const question of a5Questions) { const saved = answered.decisions.answered.find(row => row.id === question.id); assert.equal(saved?.answer?.source, 'owner-chat'); assert.equal(saved.answer.ownerMessage, answer); }
     const messages = client.ledger(projectId).filter(row => row.type === 'coordinator-tool' && row.data.tool === 'jevellan_thread_message').map(row => input(row.data));
-    for (let index = 0; index < 3; index++) { const own = messages.findLast(row => row.threadId === a5Tasks[index].threadId), value = ['archive', 'amber', '25'][index]; assert(own?.text.toLowerCase().includes(value)); for (let other = 0; other < 3; other++) if (other !== index) assert(!own.text.toLowerCase().includes(['archive', 'amber', '25'][other])); }
+    for (let index = 0; index < 3; index++) { const own = messages.findLast(row => row.threadId === a5Tasks[index].threadId), value = ['archive', 'amber', '25'][index]; assert(own?.message.toLowerCase().includes(value)); for (let other = 0; other < 3; other++) if (other !== index) assert(!own.message.toLowerCase().includes(['archive', 'amber', '25'][other])); }
     return { questions: a5Questions.map(({ id, threadId, question }) => ({ id, threadId, question })), answer };
   });
   await recorder.step('A6', 'The pagination cancellation is sent immediately after A5 answers; its work stops and never merges.', async () => {

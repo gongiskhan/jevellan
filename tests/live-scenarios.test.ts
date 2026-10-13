@@ -8,13 +8,30 @@ import { join } from 'node:path';
 import { LiveStateSchema, ScenarioReceiptSchema, ScenarioRecorder, canStart, evidenceRedactor, gatingPlan, loadState, saveState, titleSimilarity } from '../scripts/live/contracts.mjs';
 import { planFor, runLive } from '../scripts/live/scenarios.mjs';
 import { OwnerClient, until } from '../scripts/live/client.mjs';
-import { mergeWhenAsked } from '../scripts/live/scenario-a.mjs';
+import { failedCheckDiagnosis, mergeWhenAsked } from '../scripts/live/scenario-a.mjs';
+import { ThreadMessageInputSchema } from '../packages/core/dist/index.js';
 import { preflight } from '../scripts/live/setup.mjs';
 import { SANDBOX_FILES, assertSandbox, writeSandbox } from '../scripts/live/sandbox.mjs';
 let root: string;
 beforeEach(() => { root = mkdtempSync(join(tmpdir(), 'jevellan-live-harness-')); });
 afterEach(() => rmSync(root, { recursive: true, force: true }));
 const state = () => LiveStateSchema.parse({ schema: 'live-scenarios-state-v1' });
+
+test('CI diagnosis reads the canonical bridge message and requires the matching failed event, turn and log call', () => {
+  const message = ThreadMessageInputSchema.parse({ threadId: 'thread_fixture', message: 'The failed result job says CHANGELOG.md needs an entry.' });
+  const rows = [
+    { id: 1, type: 'coordinator-event', data: { kind: 'pr-update', change: 'checks-failed', id: 'failed_event', threadId: 'thread_fixture' } },
+    { id: 2, type: 'coordinator-turn-start', turn: 'turn_fixture', data: { eventIds: ['failed_event'] } },
+    { id: 3, type: 'coordinator-tool', turn: 'turn_fixture', data: { tool: 'jevellan_github', ok: true, input: JSON.stringify({ action: 'job_log', jobId: 42 }) } },
+    { id: 4, type: 'coordinator-tool', turn: 'turn_fixture', data: { tool: 'jevellan_thread_message', ok: true, input: JSON.stringify(message) } },
+  ];
+  expect(failedCheckDiagnosis(rows)).toMatchObject({ eventId: 1, jobId: 42 });
+  expect(failedCheckDiagnosis(rows.slice(1))).toBeUndefined();
+  for (const id of [3, 4]) expect(failedCheckDiagnosis(rows.map(row => row.id === id ? { ...row, data: { ...row.data, ok: false } } : row))).toBeUndefined();
+  expect(failedCheckDiagnosis(rows.filter(row => row.id !== 3))).toBeUndefined();
+  expect(failedCheckDiagnosis(rows.map(row => row.id === 4 ? { ...row, turn: 'another_turn' } : row))).toBeUndefined();
+  expect(failedCheckDiagnosis(rows.map(row => row.id === 4 ? { ...row, data: { ...row.data, input: JSON.stringify({ ...message, threadId: 'another_thread' }) } } : row))).toBeUndefined();
+});
 
 test.each(['answered', 'refused'])('the authorized merge driver waits for the UI response: %s', async outcome => {
   let visible = true, refused = false, timer: ReturnType<typeof setTimeout> | undefined;
