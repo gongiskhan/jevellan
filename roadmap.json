@@ -544,5 +544,11 @@
     "title": "Record live scenario progress and interrupted evidence",
     "why": "Decision 791: operator diagnostic interrupts the second A before its automated result saves. Keep separate sanitized manual ledger evidence with no acceptance pass; original clock retained. Step and teardown-stage logging makes the next exact rerun observable. 19 affected harness cases/typecheck/lint and 20 simulated native-adapter cases pass. Source fixes already pushed; isolated profile activation follows.",
     "status": "complete-with-blockers"
+  },
+  {
+    "id": "activation-member-hub-outage-poll",
+    "title": "Retry member PR polling when the hub returns",
+    "why": "Decision 792: controlled test-hub stop exposes an uncaught budget-lookup HubUnavailable that ends the fixture member. Preserve PR state, deduplicate local error notices, continue polling and resume after recovery. Regression fails before repair; 14 publication/Git cases/build/typecheck/lint pass. Production unchanged; private recovery and full scenario rerun pending.",
+    "status": "complete-with-blockers"
   }
 ]

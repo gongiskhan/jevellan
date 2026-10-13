@@ -1,5 +1,5 @@
 import {
-  GitHubError, MergeResultViewSchema, PrDiffResultSchema, isTerminal, newId, parseGitHubPullUrl, parseGitHubRemote, stableJson,
+  GitHubError, HubUnavailable, MergeResultViewSchema, PrDiffResultSchema, isTerminal, newId, parseGitHubPullUrl, parseGitHubRemote, stableJson,
   type CoordinatorEvent, type GitHubRepository, type Project, type ProjectHub, type PullRequestState, type SecretRedactor, type Thread, type ThreadLocal,
 } from '@jevellan/core';
 import type { z } from 'zod';
@@ -80,10 +80,12 @@ export class PullRequestTracker {
       for (const thread of this.#o.threads.all()) {
         if (this.#closed) break;
         if (thread.pr?.state === 'open') {
-          const budget = await (await this.#o.github.open(thread.projectId)).rateLimit(), slow = budget && budget.remaining / budget.limit < 0.2 && budget.resetAt > this.#o.now();
-          if (slow && !this.#budgetNotices.has(thread.projectId)) { this.#budgetNotices.add(thread.projectId); this.#notice(thread, 'GitHub has less than 20% of its request budget remaining. Pull requests refresh every five minutes until it resets.'); }
-          if (!slow) this.#budgetNotices.delete(thread.projectId);
-          if (!slow || this.#o.now() - (this.#lastPoll.get(thread.id) ?? 0) >= 300_000) { this.#lastPoll.set(thread.id, this.#o.now()); await this.#read(thread.id, false).catch(() => undefined); }
+          try {
+            const budget = await (await this.#o.github.open(thread.projectId)).rateLimit(), slow = budget && budget.remaining / budget.limit < 0.2 && budget.resetAt > this.#o.now();
+            if (slow && !this.#budgetNotices.has(thread.projectId)) { this.#budgetNotices.add(thread.projectId); this.#notice(thread, 'GitHub has less than 20% of its request budget remaining. Pull requests refresh every five minutes until it resets.'); }
+            if (!slow) this.#budgetNotices.delete(thread.projectId);
+            if (!slow || this.#o.now() - (this.#lastPoll.get(thread.id) ?? 0) >= 300_000) { this.#lastPoll.set(thread.id, this.#o.now()); await this.#read(thread.id, false).catch(() => undefined); }
+          } catch (error) { this.#readFailure(thread, error); }
         }
       }
       await Promise.allSettled([...this.#transitions.values()]);
@@ -111,6 +113,12 @@ export class PullRequestTracker {
   #notice(thread: Thread, text: string): void {
     this.#o.threads.ledgers.thread(thread.projectId, thread.id).append({ type: 'notice', data: { schema: 'project-notice-v1', text, kind: 'error' } });
   }
+  #readFailure(thread: Thread, error: unknown): string {
+    const message = this.#o.redactor.text(error instanceof Error ? error.message : String(error));
+    const kind = error instanceof GitHubError ? error.kind : error instanceof HubUnavailable ? 'hub-unavailable' : 'other';
+    if (this.#errors.get(thread.id) !== kind) { this.#errors.set(thread.id, kind); this.#notice(thread, prStatusUnavailable(message)); }
+    return message;
+  }
   #read(threadId: string, wait: boolean): Promise<Read> {
     return this.#serial(threadId, async () => {
       const thread = this.#o.threads.get(threadId); if (!thread) throw refuse(THREAD_NOT_FOUND, 404);
@@ -121,10 +129,7 @@ export class PullRequestTracker {
       let next: PullRequestState;
       try { next = await this.#fetch(thread.projectId, thread.pr); }
       catch (error) {
-        const message = this.#o.redactor.text(error instanceof Error ? error.message : String(error));
-        const kind = error instanceof GitHubError ? error.kind : 'other';
-        // Keep the last state; tell the thread's history once per kind of failure.
-        if (this.#errors.get(threadId) !== kind) { this.#errors.set(threadId, kind); this.#notice(thread, prStatusUnavailable(message)); }
+        const message = this.#readFailure(thread, error);
         return { pr: thread.pr, reason: message };
       }
       this.#errors.delete(threadId);

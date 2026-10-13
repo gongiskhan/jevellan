@@ -5,7 +5,7 @@ import { existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
-  Homes, PlacementRecordSchema, ProjectSchema, SecretRedactor, ThreadReportSchema, ThreadSchema, type CoordinatorEvent, type Project, type Thread,
+  Homes, HubUnavailable, PlacementRecordSchema, ProjectSchema, SecretRedactor, ThreadReportSchema, ThreadSchema, type CoordinatorEvent, type Project, type Thread,
 } from '../packages/core/dist/index.js';
 import {
   BRANCH_PUSHED_NO_TOKEN, GitHubAccess, MERGE_CHECKS_FAILING, MERGE_CONFLICTS, NOT_GITHUB, NO_REMOTE, PR_CLOSED, REMOTE_CREDENTIALS, ProjectLedgers, ProjectPaths, PullRequestTracker,
@@ -44,6 +44,27 @@ function commit(cwd: string, files: Record<string, string>, message = 'Work'): s
 const publish = (thread: Thread, over: Partial<WorktreePublication> = {}) => publication.publishWorktree({ project, thread, local: threads.local(thread.id), ledger: ledgers.thread('proj_a', thread.id), labels, ...over });
 const verifications = (threadId: string) => ledgers.thread('proj_a', threadId).events().filter((event) => event.type === 'thread-verification').map((event) => event.data);
 const pullPosts = () => github.requests.filter((request) => request.method === 'POST' && request.path === '/repos/fixture/repo/pulls');
+
+test('PR polling keeps the last state during a hub credential outage and resumes without duplicate notices', async () => {
+  const thread = await prepared('thread_outage', 'Outage recovery'); commit(thread.cwd, { 'greeting.txt': 'hello\n' });
+  const published = await publish(thread); if (published.outcome.kind !== 'pr') throw new Error('Fixture PR not opened');
+  const pr = published.outcome.pr;
+  threads.update(thread.id, current => ({ ...current, state: 'idle', pr }));
+  let offline = true;
+  const outageAccess = new GitHubAccess({ credential: async () => { if (offline) throw new HubUnavailable('Pro'); return token; }, baseUrl: github.url, redactor });
+  const events: CoordinatorEvent[] = [];
+  const tracker = new PullRequestTracker({ threads, github: outageAccess, git, worktrees, project: async () => project, toCoordinator: async (_id, event) => { events.push(event); }, redactor, now: () => now });
+  const before = threads.get(thread.id)!.pr;
+  try {
+    await expect(tracker.poll()).resolves.toBeUndefined(); await tracker.poll();
+    expect(threads.get(thread.id)!.pr).toEqual(before);
+    expect(ledgers.thread(project.id, thread.id).events().filter(row => row.type === 'notice')).toHaveLength(1);
+    expect(events).toEqual([]);
+    offline = false; github.setChecks(published.outcome.pr.number, 'passing'); await tracker.poll();
+    expect(threads.get(thread.id)!.pr?.checks).toBe('passing');
+    expect(events.filter(event => event.kind === 'pr-update' && event.change === 'checks-passed')).toHaveLength(1);
+  } finally { await tracker.close(); }
+});
 
 beforeEach(async () => {
   root = realpathSync(mkdtempSync(join(tmpdir(), 'jevellan-publication-'))); mkdirSync(join(root, 'user'));
