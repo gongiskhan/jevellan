@@ -6,6 +6,7 @@ import { readFile, realpath, stat } from 'node:fs/promises';
 import { existsSync, readdirSync } from 'node:fs';
 import { extname, join, resolve, sep } from 'node:path';
 import { z } from 'zod';
+import { ProjectPaths } from './paths.js';
 import { NativeProcessSchema, ProjectAppInputSchema, ProjectAppSchema, deviceAllowsWork, readDocument, spawnGroup, terminateGroup, writeDocument,
   type Homes, type NativeProcess, type ProjectApp, type SecretRedactor } from '@jevellan/core';
 
@@ -128,7 +129,9 @@ export class ProjectApps {
     const directory = await realpath(resolve(scope.cwd, input.directory));
     const roots = await Promise.all([realpath(scope.cwd), realpath(scope.projectDirectory)]);
     if (!roots.some(root => contained(root, directory))) throw new Error('An app must run inside this thread or its registered project checkout.');
-    if (contained(this.homes.root, directory) || ['.claude', '.codex', '.cursor', '.gemini', '.basic-memory'].some(name => contained(join(this.homes.userHome, name), directory))) throw new Error('An app cannot serve agent or runtime homes.');
+    const managed = new ProjectPaths(this.homes).worktree(scope.projectId, scope.threadId);
+    const ownWorktree = roots[0] === managed && contained(managed, directory);
+    if (contained(this.homes.root, directory) && !ownWorktree || ['.claude', '.codex', '.cursor', '.gemini', '.basic-memory'].some(name => contained(join(this.homes.userHome, name), directory))) throw new Error('An app cannot serve agent or runtime homes.');
     if (!((await stat(directory)).isDirectory())) throw new Error('The app directory does not exist.');
     const fingerprint = createHash('sha256').update(JSON.stringify({ projectId: scope.projectId, input, directory })).digest('hex');
     const id = retained?.id ?? `app_${fingerprint.slice(0, 24)}`; const existing = this.#apps.get(id);

@@ -1,0 +1,9 @@
+# Managed worktree previews — 13 October 2026
+
+Decision796 refines the app-home confinement retained by decision626. A real sandbox thread cannot publish its preview because its managed worktree lives under Jevellan's data home. Allow only the calling thread's exact managed worktree and its descendants, using the existing canonical ProjectPaths checks; retain account/native-home, foreign-directory and symlink refusals, and external MCP's static-only restriction. The static/command preview regression fails before repair. All21 affected app/bridge/MCP cases, typecheck/lint/build pass; fixture auth bytes remain unchanged. The current C continues on its existing application until its result is retained; new live preview acceptance remains not run. The unfinished earlier full backend attempt is interrupted with exit130 before this compiled change and has no passing result; repeat the full suite after the outstanding fixes. No extra review, installed-service change, native-home edit or new cache/journal clock.
+
+- **Live:** existing real sandbox PDF thread reports the app-start runtime-home refusal during the third C run. Current scenario continues unchanged; no full acceptance claimed.
+- **Simulated:** the new preview regression fails before repair. All21 app/bridge/MCP cases pass afterwards, including actual disposable static/command HTTP responses and preserved fixture auth bytes. Typecheck, lint and build pass.
+- **Not run:** real-provider preview retry on the fixed module and the new full backend result. Earlier unfinished full test exit130 is interrupted evidence, never a pass.
+
+The managed directory must be the calling project/thread path. Other runtime data, native agent folders, sibling threads and unsafe aliases gain no allowance. No new external command capability is exposed.
