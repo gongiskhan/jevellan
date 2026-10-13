@@ -520,5 +520,11 @@
     "title": "Queue independent worktree tasks concurrently",
     "why": "Real A1 fails before repair: the old prompt serializes two independent tasks only because both edit the changelog. Keep exact assertions/messages. Use after only for required results; independent worktree tasks may share files, Main edits remain serialized. 32 affected backend cases/build/typecheck/lint pass. Private current-release guidance overlay verified; original modules/releases/production unchanged. Live rerun pending within the original ten-hour clock. Decision 787.",
     "status": "complete-with-blockers"
+  },
+  {
+    "id": "activation-ekoa-oauth-compatibility",
+    "title": "Connect Ekoa through its supported authentication",
+    "why": "Decision 788: owner browser sign-in is complete. Live MCP metadata and source require OAuth/PKCE and rotating refresh tokens; the current static-token mirror cannot complete a durable connection. No temporary grant or repeated owner credential request. Authenticated discovery/mirrors blocked; outside cache/journal scope. Prior real A is in progress under the original ten-hour clock.",
+    "status": "blocked"
   }
 ]

@@ -35,6 +35,8 @@ Prior live-scenario readiness, decisions 784–786: 7.7 GB of owned reproducible
 
 First real A1 failed under the unchanged assertion: the old coordinator system rule serializes independent worktree tasks solely for a shared changelog. Decision 787 replaces that blanket rule with real-result dependencies and parallel independent worktrees, preserving shared-Main sequencing. Thirty-two affected backend cases/build/typecheck/lint pass. The failed receipt is retained; only the owned test Pro runtime receives a verified development guidance overlay, with immutable releases/production unchanged. Rerun A from the start within the original 04:15:59 UTC deadline on 14 October. New cache/journal build/live clocks remain unstarted.
 
+Current live correction: the prior scenario clock began at 18:15:59 UTC on 13 October, with a ten-hour deadline at 04:15:59 UTC on 14 October. The repaired A rerun passes independent concurrent placement and continues; full acceptance remains unclaimed. Ekoa sign-in is complete. Decision 788 records the live OAuth-only MCP authentication as incompatible with Jevellan's current static-token mirror; no additional password entry or unusable short-lived grant is requested. The new cache/journal scope remains queued, with release 0.3.4 approved.
+
 ## The hub and devices
 
 The MacBook Pro is the hub and primary working device. Supported encrypted hub export and import preserve accounts, the vault, configuration, Rigging, projects, notebooks, history and project work. Export requires a stopped daemon; import validates the manifest and activates atomically with rollback. The destination has its own device identity. Codex subscription authentication is not transferred: imported accounts need sign-in through Settings.
