@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The command card at the top is cut off by scrolling, so its first line ('scripts/owner-only.sh') is only partly visible under the header. This is expected for a scrolled thread.",
-      "The attach command at the bottom ('jevellan thread attach thread_01M4SERNBFMSD6F…') is cut short with an ellipsis. The copy button next to it still gives you the full command.",
-      "The long worktree path in the prompt wraps across several lines with breaks in the middle of words. It is still readable."
+      "The 'Take over in a terminal' attach command at the bottom is cut off with an ellipsis (thread ID not fully visible). The copy button next to it still works.",
+      "The top card (Copy / Run in Terminal) is partly scrolled out of view under the header. That's expected for a scrolled thread view.",
+      "The long worktree path in the Prompt card breaks across lines mid-token, which makes it a bit harder to read."
     ]
   }
 }

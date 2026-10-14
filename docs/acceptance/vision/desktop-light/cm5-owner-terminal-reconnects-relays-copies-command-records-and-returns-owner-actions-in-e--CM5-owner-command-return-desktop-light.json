@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The first card at the top of the conversation is partly hidden under the sticky header. The view is scrolled, and its border shows just below the metadata line.",
-      "Thread titles and subtitles in the sidebar session list end in an ellipsis (e.g. 'Context · J11 memory jour…', 'Context · Shared memory …'). Full names are only available on hover or when opened.",
-      "The Turn 1 report card still shows a 'Blocked' badge next to the 'Ran in terminal' confirmation. Turn 2 shows 'Progress', so the two badges may look inconsistent."
+      "The first message card is scrolled partly out of view under the header; its top edge is cut off, but the visible lines can still be read.",
+      "Session titles and subtitles in the sidebar are cut short with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Shared memory …'). This looks like intended truncation.",
+      "The long worktree path in the Prompt message wraps across lines in the middle of a path segment ('jevellan-browser-' / 'fxNz51')."
     ]
   }
 }

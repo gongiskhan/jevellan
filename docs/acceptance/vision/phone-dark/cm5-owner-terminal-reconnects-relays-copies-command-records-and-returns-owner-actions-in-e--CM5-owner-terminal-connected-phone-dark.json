@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The row of special keys (Esc, Tab, Ctrl, Alt, arrows) runs past the right edge, and a button after '→' is cut in half. It looks like the row scrolls sideways, but nothing on screen shows that more keys are there.",
-      "Terminal output breaks lines mid-word ('r / oot', 'E4 / sDXr') because the terminal is narrow. This is normal terminal wrapping but harder to read.",
-      "Long prompt lines take up two rows each, so less command history fits on screen.",
-      "The first visible terminal line is blank, leaving extra space at the top of the terminal area."
+      "The row of shortcut keys (Esc, Tab, Ctrl, Alt and the arrow keys) runs past the right edge after the → key, so the last key is only partly visible. It looks like a row you scroll sideways, so the key can probably still be reached, but nothing on screen shows that the row scrolls.",
+      "The host/path text in the header is cut short with an ellipsis ('/private/var/fo...'), so the full working directory isn't shown in the header. The full path is visible in the terminal output from pwd.",
+      "The 'Project' label sits in the middle of the status row, with uneven spacing between 'Connected' and the 'Close terminal' button."
     ]
   }
 }

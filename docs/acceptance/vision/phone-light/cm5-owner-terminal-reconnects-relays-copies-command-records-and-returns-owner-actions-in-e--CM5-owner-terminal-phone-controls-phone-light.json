@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The row of quick keys (→, |, ~, /, -, Paste, A-, A+, …) is clipped at both screen edges. The → key on the left and the … button on the right are only partly visible. The row looks horizontally scrollable, but nothing on screen shows that it scrolls.",
-      "The project path in the header is cut short with an ellipsis ('/tmp/jevellan-browser-rlm3jp/...'). This appears intentional.",
-      "Long prompt lines in the terminal wrap partway through the path ('rlm3' / 'jp/projects-app$'), which makes them a little harder to read but still legible."
+      "The row of shortcut keys runs past both edges of the screen. The '→' key is partly cut off on the left and the '⋯' key on the right. This looks like a row you scroll sideways, but nothing on screen shows that it scrolls.",
+      "The host path in the header is cut off at '/private/var/fo…'.",
+      "Each shell prompt line is long and wraps, so the command appears on its own line below the prompt. It is still readable but uses a lot of space."
     ]
   }
 }

@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The row of special keys (Esc, Tab, Ctrl, Alt, arrows) runs off the right edge, with a partly visible button after →. It looks like a horizontal scroll strip, but there's no clear hint that more keys are off-screen.",
-      "The workspace path in the header is shortened with an ellipsis ('/tmp/jevellan-browser-E...').",
-      "Terminal text breaks in the middle of words because of the narrow width ('roo' / 't\")').",
-      "The sudo hint message appears twice in the terminal output."
+      "The row of special keys (Esc, Tab, Ctrl, Alt, arrows) is cut off at the right edge. Only a sliver of the next key shows, and nothing on screen says the row scrolls sideways. It's probably a horizontal scroller, but keys past the edge are hard to find.",
+      "The working directory path in the header is cut short with an ellipsis ('/private/var/folders/6k/3f…'). This is expected truncation, but the full path can't be read.",
+      "The terminal output breaks the URL in the middle ('https://sup' / 'port.apple.com'). That's normal terminal wrapping at this width and still readable.",
+      "There's a lot of empty space below the terminal output. Purely visual."
     ]
   }
 }

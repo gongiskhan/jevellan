@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top command card is scrolled partly under the sticky header, so the 'scripts/owner-only.sh' code line is clipped at the top edge. This is a normal scroll position, not a layout bug.",
-      "The terminal attach command in the footer ends in an ellipsis ('jevellan thread attach thread_01M4SERRXZNA9NA...'). The copy button next to it still gives you the full command.",
-      "The long worktree path in the Prompt card wraps in the middle of a word ('t/hread_...'), which makes it a little harder to read."
+      "The 'jevellan thread attach thread_01M4VW5BQ31J2E3…' command in the footer is cut off with an ellipsis, but the copy button next to it still gives you the full command.",
+      "The command card above is scrolled partly out of view at the top. Its Copy and Run in Terminal buttons and its status line are still fully visible.",
+      "The long worktree path in the Prompt card wraps in the middle of path segments, which makes it a little harder to read, but nothing is cut off."
     ]
   }
 }

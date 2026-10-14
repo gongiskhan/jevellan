@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header subtitle path is cut off with an ellipsis ('dev-madrid · /tmp/jevellan-browser-E4sDXr...'). This looks deliberate, and the full path also appears in the terminal prompt.",
-      "The first key in the shortcut row ('→') is partly cut off at the left edge. The row looks horizontally scrollable, so the key should still be reachable.",
-      "The shell prompt wraps in the middle of the path ('E4sD' / 'Xr/projects-app$') because the terminal is narrow. All output is still readable."
+      "The shortcut-key row is cut off at the left edge: the first key (→) is only partly visible and there's no left padding. It looks like a horizontal scroller, so the other keys can still be reached, but there's no visible sign that it scrolls.",
+      "The working-directory path in the header is shortened with an ellipsis ('/private/var/fo…'). That's acceptable on a narrow screen.",
+      "The 'Project' label is centered with a lot of empty space around it and looks loosely aligned next to 'Connected' and 'Close terminal'."
     ]
   }
 }

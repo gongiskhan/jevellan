@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory jour…', 'dev-ma…'); this is expected truncation, and the full text isn't shown",
-      "The 'Send to…' button label ends in an ellipsis, which may be intended",
+      "Terminal header path is truncated with an ellipsis ('.../projects...'), but the full path shows in the terminal output",
+      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory jour...', 'Context · Shared memory ...')",
       "The terminal output area has a lot of empty space below the last prompt",
-      "'Project' in the header is magenta text that looks like a link, which differs from the button style used next to it"
+      "Text in the shell-session filter chips ('Running', 'Waiting for you', 'Done') is small and low-contrast but still readable"
     ]
   }
 }

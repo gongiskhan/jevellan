@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'Project' label next to 'Connected' in the header is in a saturated pink that stands out; it's still readable",
-      "The sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…'). This is expected truncation",
-      "The terminal output takes up only about two-thirds of the panel, which leaves a large empty area below the last prompt"
+      "The terminal header path is cut off with an ellipsis (\"…/projects...\"). The full path still shows in the terminal output.",
+      "Session titles and subtitles in the sidebar are cut off with ellipses (e.g. \"Context · J11 memory jour...\", \"Context · Shared memory ...\").",
+      "The terminal output area has a lot of empty space below the last prompt, so the output panel looks unbalanced against the controls below it."
     ]
   }
 }

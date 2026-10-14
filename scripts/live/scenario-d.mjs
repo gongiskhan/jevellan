@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { expect } from '@playwright/test';
 import { tsImport } from 'tsx/esm/api';
 import { until } from './client.mjs';
+import { REST_STATES } from '../../packages/projects/dist/thread-runner.js';
 
 const minutes = n => n * 60000;
 export async function terminalToolbarAction(page, label) {
@@ -18,6 +19,7 @@ export async function copyTerminalOutput(page, label, ready) {
     return ready(text) ? text : undefined;
   }, 30000, 100);
 }
+export function takeoverReady(view) { return REST_STATES.includes(view.thread.state) && !!view.transcript; }
 export async function scenarioD(client, projectId, recorder) {
   const page = client.page; let session, madrid;
   const last = async (id, text, timeout = minutes(2)) => until(`terminal command ${text} to end`, async () => (await client.terminalSnapshot(id)).commands.findLast(row => row.command === text && row.endedAt), timeout, 100);
@@ -48,7 +50,7 @@ export async function scenarioD(client, projectId, recorder) {
   });
   await recorder.step('D8', 'Take over in browser attaches a real native thread session; leaving detaches and returns it to Jevellan.', async () => {
     const receipt = await client.task(projectId, 'Terminal takeover check', 'Inspect the invoices app, report its structure and wait for the owner before making any change.');
-    const task = await until('a real idle session to take over', async () => { const task = (await client.tasks(projectId)).find(row => row.id === receipt.taskId); if (!task?.threadId) return; const view = await client.thread(projectId, task.threadId); return view.thread.state === 'idle' && view.transcript ? task : undefined; }, minutes(15));
+    const task = await until('a real resting session to take over', async () => { const task = (await client.tasks(projectId)).find(row => row.id === receipt.taskId); if (!task?.threadId) return; const view = await client.thread(projectId, task.threadId); return takeoverReady(view) ? task : undefined; }, minutes(15));
     await page.goto(`${client.config.hub}/projects/${projectId}/threads/${task.threadId}`); await page.getByRole('button', { name: 'Take over in browser', exact: true }).click(); await expect(page).toHaveURL(/\/terminals\//u); await until('the real thread attachment', async () => (await client.thread(projectId, task.threadId)).thread.state === 'attached', minutes(2)); await shot('native-takeover', 'a browser terminal attached to a native coding session with usable exit controls');
     // Ctrl-D exits the native client without sending a synthetic agent response.
     await page.locator('.xterm-helper-textarea').press('Control+d');

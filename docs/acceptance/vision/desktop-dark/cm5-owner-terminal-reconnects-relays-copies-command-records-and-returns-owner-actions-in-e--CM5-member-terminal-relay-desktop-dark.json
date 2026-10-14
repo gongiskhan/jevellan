@@ -10,11 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory jour…', 'dev-…'); this is intended truncation and the text is still readable",
-      "The 'Send to…' button label ends in an ellipsis and looks dimmer than the other copy buttons, maybe because it is disabled",
-      "The terminal output repeats the sudo hint message twice",
-      "The large empty terminal area leaves most of the panel blank",
-      "The 'Run' button looks dim or disabled while the command input is empty"
+      "The terminal path in the header is long and makes the subtitle line crowded, but you can still read all of it.",
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour...'). This is expected for the layout and doesn't block anything.",
+      "The 'Send to...' button looks dimmed, probably on purpose because it's disabled.",
+      "There's a lot of empty space in the terminal output area below the content."
     ]
   }
 }

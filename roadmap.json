@@ -614,7 +614,13 @@
   {
     "id": "activation-terminal-startup-boundary",
     "title": "Record commands entered during shell startup once",
-    "why": "Decision803 refines732. Real D1 exposes an early echo-only approximate completion before actual pwd. Known integrated shells wait for semantic boundaries; unsupported/SSH fallback remains. Bash/zsh regressions both fail before repair;48 affected simulated cases/typecheck/lint/build pass. Private activation and live D rerun pending.",
+    "why": "Decision803 refines732. Real D1 exposes an early echo-only approximate completion before actual pwd. Known integrated shells wait for semantic boundaries; unsupported/SSH fallback remains. Bash/zsh regressions both fail before repair;48 affected simulated cases/typecheck/lint/build pass. Both private copies activate digest-verified modules; real phone D1\u2013D7 pass. CM5 all4 layouts/16 current dedicated vision judgments pass; overall real D remains pending.",
+    "status": "complete"
+  },
+  {
+    "id": "activation-native-takeover-rest-states",
+    "title": "Use supported resting states for native takeover acceptance",
+    "why": "Decision804 refines736. Real phone D1\u2013D7 pass; its thread correctly waits for the owner, but the driver selects idle only. Reuse backend REST_STATES and require a transcript;9 regression cases keep running/attached/ended states refused. Two fail before repair;35 affected cases/typecheck/lint pass. Original active D and clock remain unchanged until its receipt saves.",
     "status": "complete-with-blockers"
   }
 ]

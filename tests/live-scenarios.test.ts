@@ -9,7 +9,7 @@ import { LiveStateSchema, ScenarioReceiptSchema, ScenarioRecorder, canStart, evi
 import { planFor, runLive } from '../scripts/live/scenarios.mjs';
 import { OwnerClient, until } from '../scripts/live/client.mjs';
 import { failedCheckDiagnosis, mergeWhenAsked } from '../scripts/live/scenario-a.mjs';
-import { copyTerminalOutput, terminalToolbarAction } from '../scripts/live/scenario-d.mjs';
+import { copyTerminalOutput, takeoverReady, terminalToolbarAction } from '../scripts/live/scenario-d.mjs';
 import { ThreadMessageInputSchema } from '../packages/core/dist/index.js';
 import { preflight } from '../scripts/live/setup.mjs';
 import { SANDBOX_FILES, assertSandbox, writeSandbox } from '../scripts/live/sandbox.mjs';
@@ -17,6 +17,16 @@ let root: string;
 beforeEach(() => { root = mkdtempSync(join(tmpdir(), 'jevellan-live-harness-')); });
 afterEach(() => rmSync(root, { recursive: true, force: true }));
 const state = () => LiveStateSchema.parse({ schema: 'live-scenarios-state-v1' });
+
+test.each([
+  ['idle', true], ['in-review', true], ['waiting-for-you', true], ['running', false],
+  ['attached', false], ['done', false], ['stopped', false], ['failed', false],
+])('native takeover setup recognises the supported resting state %s: %s', (state, ready) => {
+  expect(takeoverReady({ thread: { state }, transcript: { turns: [] } })).toBe(ready);
+});
+test('native takeover still requires a real transcript', () => {
+  expect(takeoverReady({ thread: { state: 'idle' }, transcript: null })).toBe(false);
+});
 
 test('terminal copy waits for the asynchronous clipboard write before checking its exact command range', async () => {
   let text = 'previous clipboard'; let timer: ReturnType<typeof setTimeout> | undefined;

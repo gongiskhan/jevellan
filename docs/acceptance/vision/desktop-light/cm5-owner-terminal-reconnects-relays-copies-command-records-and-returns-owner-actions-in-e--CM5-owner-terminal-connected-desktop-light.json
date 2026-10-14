@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar shell-session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Shared memory …'), which is expected truncation, not overflow.",
-      "Repeated 'To run a command as administrator…' sudo banner at the top of the terminal output adds clutter.",
-      "The terminal output area has a lot of empty space below the last prompt."
+      "The terminal path in the header is cut off with an ellipsis ('.../projects-…'). The full path still appears in the terminal output.",
+      "Sidebar conversation titles and subtitles are cut off with ellipses (for example 'Context · J11 memory jour…' and 'Context · Shared memory …').",
+      "The terminal output leaves a large empty area below the last prompt. This is normal for a short session."
     ]
   }
 }

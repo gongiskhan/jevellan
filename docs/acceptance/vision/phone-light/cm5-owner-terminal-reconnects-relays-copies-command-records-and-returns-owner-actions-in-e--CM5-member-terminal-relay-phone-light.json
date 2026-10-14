@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header subtitle path is cut off with an ellipsis ('/tmp/jevellan-browser-rl…'). The full path isn't visible, but the 'Browser member' label is still readable.",
-      "The row of special-key buttons runs past the right edge, so the last button is only partly visible. It looks like a horizontally scrollable strip, so the keys past the edge are probably still reachable by scrolling.",
-      "Because the terminal is narrow, the sudo hint wraps in the middle of a word ('roo' / 't\")'). The text is still readable.",
-      "The sudo hint banner appears twice in the terminal output."
+      "The path in the header is cut off with an ellipsis ('/private/var/folders/6k/3f…'), so the full working directory can't be seen at this width.",
+      "The last special-key button in the Esc/Tab/Ctrl/Alt/arrow row is only partly visible at the right edge. The row appears to scroll sideways, but nothing else shows that more keys are there.",
+      "The terminal output breaks the Apple support URL across two lines ('https://sup' / 'port.apple.com/...'). This is normal terminal wrapping but harder to read."
     ]
   }
 }

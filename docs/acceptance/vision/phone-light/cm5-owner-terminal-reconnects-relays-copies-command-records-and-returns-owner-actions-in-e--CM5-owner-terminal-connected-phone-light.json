@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The key row (Esc, Tab, Ctrl, Alt, arrow keys) runs past the right edge, so the last key is only partly visible. It looks like a horizontally scrollable strip, so the remaining keys can likely be reached by scrolling, but nothing on screen clearly shows that.",
-      "The terminal wraps words mid-word at its column width (for example \"r oot\" and \"rl / m3jp\"). This is normal terminal wrapping but slightly harder to read on a narrow screen.",
-      "The connection path in the header is cut short with an ellipsis (\"/tmp/jevellan-browser-rlm3jp/...\"). This is an intentional truncation, and the full path also appears in the shell prompt."
+      "Header subtitle (host · path) is truncated with an ellipsis, so the full working directory can't be seen in the header. The full path does appear in the terminal output.",
+      "The special-key row is cut off at the right edge, and the last key is only partly visible. It looks like a horizontal scroller, but there is no clear scroll cue.",
+      "Long path output in the terminal wraps in the middle of words (e.g. 'pro/jects-app'), which makes it slightly harder to read."
     ]
   }
 }

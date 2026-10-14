@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Shell session titles and subtitles in the sidebar end in ellipses (e.g. 'Context · J11 memory jour…', 'Done · Mesh journey fixture · de…'). This is intended truncation, not a layout fault.",
-      "The 'Send to…' button label ends in an ellipsis. It's probably meant to show that it opens a menu.",
-      "The sudo notice ('To run a command as administrator…') appears twice at the top of the terminal output.",
-      "The terminal output takes up only about two-thirds of the panel, leaving a lot of empty space below the last prompt."
+      "The terminal header path is cut off with an ellipsis ('.../projects-...'). The full path does show in the terminal output.",
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour...', 'Context · Shared memory ...').",
+      "There is a lot of empty space below the last prompt line in the terminal output area."
     ]
   }
 }
