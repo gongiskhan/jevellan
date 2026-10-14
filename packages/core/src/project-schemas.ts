@@ -183,6 +183,10 @@ export const PlacementRecordSchema = z.strictObject({ schema: z.literal('placeme
   taskContext: TaskPlacementContextSchema.optional(), correctionsShown: z.array(z.string().max(12000)).max(72).optional(),
   jevCalls: z.array(JevCallSchema), decidedAt: TimestampSchema });
 export type PlacementRecord = z.infer<typeof PlacementRecordSchema>;
+export const ThreadMessageRouteSchema = z.strictObject({ schema: z.literal('thread-message-route-v1'),
+  projectId: IdSchema, threadId: IdSchema, messageIds: z.array(IdSchema).min(1), digest: z.string().regex(/^[a-f0-9]{64}$/u),
+  outcome: ProjectRequestOutcomeSchema, placement: PlacementRecordSchema, modelLabel: text });
+export type ThreadMessageRoute = z.infer<typeof ThreadMessageRouteSchema>;
 // 5.5 owner-local <home>/projects/<pid>/threads/<tid>/thread.json
 export const QueuedMessageSchema = z.strictObject({ id: IdSchema, from: z.enum(['coordinator', 'owner']),
   text: z.string().min(1).max(20000), at: TimestampSchema, interrupt: z.boolean() });
@@ -342,7 +346,7 @@ export type InboxSeen = z.infer<typeof InboxSeenSchema>;
 // Project ledger (brief 5.13, D2). data stays unknown in the envelope: payloads over 64 KiB spill to a blob-ref.
 export const ProjectLedgerEventTypeSchema = z.enum(['coordinator-turn-start', 'coordinator-text', 'coordinator-tool',
   'coordinator-turn-end', 'coordinator-event', 'thread-turn-start', 'thread-turn-end', 'thread-report',
-  'thread-placement', 'thread-state', 'thread-verification', 'thread-publication', 'session-compacted', 'session-checkpointed', 'project-session-end', 'session-turn-cache', 'journal-config', 'journal-thread', 'journal-source', 'journal-document', 'journal-message', 'notice']);
+  'thread-placement', 'thread-message-route', 'thread-state', 'thread-verification', 'thread-publication', 'session-compacted', 'session-checkpointed', 'project-session-end', 'session-turn-cache', 'journal-config', 'journal-thread', 'journal-source', 'journal-document', 'journal-message', 'notice']);
 export type ProjectLedgerEventType = z.infer<typeof ProjectLedgerEventTypeSchema>;
 export const ProjectLedgerEventSchema = z.strictObject({ schema: z.literal('project-ledger-event-v1'), t: TimestampSchema,
   id: positive, type: ProjectLedgerEventTypeSchema, turn: positive.optional(), data: z.unknown() });
@@ -387,7 +391,7 @@ export const ProjectLedgerDataSchemas = {
   'coordinator-turn-start': CoordinatorTurnStartSchema, 'coordinator-text': CoordinatorTextSchema,
   'coordinator-tool': CoordinatorToolSchema, 'coordinator-turn-end': CoordinatorTurnEndSchema,
   'coordinator-event': CoordinatorEventSchema, 'thread-turn-start': ThreadTurnStartSchema, 'thread-turn-end': ThreadTurnEndSchema,
-  'thread-report': ThreadReportSchema, 'thread-placement': PlacementRecordSchema, 'thread-state': ThreadStateChangeSchema,
+  'thread-report': ThreadReportSchema, 'thread-placement': PlacementRecordSchema, 'thread-message-route': ThreadMessageRouteSchema, 'thread-state': ThreadStateChangeSchema,
   'session-compacted': SessionCompactedSchema,
   'session-checkpointed': SessionCheckpointedSchema,
   'project-session-end': ProjectSessionEndSchema,
@@ -433,6 +437,7 @@ export const ProjectWorkViewSchema = z.strictObject({ schema: z.literal('project
   devices: z.array(ProjectDeviceSetupSchema).optional() });
 export type ProjectWorkView = z.infer<typeof ProjectWorkViewSchema>;
 export const ThreadViewSchema = z.strictObject({ sessionHistory: z.array(SessionHistoryLinkSchema).optional(), schema: z.literal('project-thread-view-v1'),
+  messageRoute: ThreadMessageRouteSchema.optional(),
   memoryRecall: MemoryRecallSchema.optional(),
   thread: ThreadIndexSchema, placement: PlacementRecordSchema, reports: z.array(ThreadReportSchema),
   transcript: CursorTranscriptSchema.nullable(), queuedMessages: z.array(QueuedMessageSchema),

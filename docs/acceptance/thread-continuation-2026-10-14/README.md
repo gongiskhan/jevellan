@@ -1,0 +1,19 @@
+# Continuing Projects threads — 14 October 2026
+
+The owner could not send a follow-up to a completed UX thread. Completion is now the end of the current work, with the message box kept available. Direct owner messages reopen the same thread, retaining its reports and transcript history; Jev classifies intent and chooses automatic provider/model/effort/account for the follow-up. Its workspace/device stay fixed. Fixed owner choices, admission, safety, turn limits and automatic merge settings remain enforced.
+
+Successful no-change work keeps its workspace. Older removed worktrees are rebuilt; prior native sessions remain accessible. A merged/closed PR is left intact and a new follow-up uses a distinct branch. Discard/replacement closes the thread. The coordinator cannot restart terminal work without an owner message.
+
+Evidence will distinguish simulated regression checks, live installed UI checks and blocked/not-run checks. No owner acceptance is claimed.
+
+## Result
+
+**Simulated:** all90 affected backend cases pass in8files, including a real disposable git origin, two-daemon remote delivery, owner-only reopening, concurrent duplicate sends, messages queued during completion, offline notice deduplication, prior-session history, merged-PR follow-up branches, fixed choices, Jev classification and durable route replay. Typecheck, lint and production build pass. An intermediate offline-notice regression was caught and fixed without changing the original one-notice assertion. One closing crucial-issues inspection found no serious issue; no second inspection. No full-suite pass is claimed.
+
+**Live:** Pro and Madrid run0.3.6. Normal updates preserved device identity, membership and authentication with complete cold rollback homes. Each extracted platform archive matches the changed compiled modules and web entry. The real owner's existing UX thread now has an enabled composer in all4layouts: [desktop light](ux-desktop-light.jpg), [desktop dark](ux-desktop-dark.jpg), [phone light](ux-phone-light.jpg), [phone dark](ux-phone-dark.jpg). Screenshots were directly inspected for readability and available controls; System theme and viewport were restored. No message was sent to that owner thread.
+
+**Live:** a follow-up sent through the UI to the previously completed Madrid diagnostic keeps the same thread ID and reaches turn2. Both reports remain visible, with the earlier native session accessible; the old removed workspace was reconstructed and the new one remains after completion. Jev classifies `answer`, chooses Sonnet/low, and uses the only eligible shared account, Ekoa. Gmail had a genuine needs-login observation at this checkpoint and was excluded. The model answers from the previous report without commands or file edits; no PR is opened. See [sanitized live receipt](live-followup.json), [Jev classification](followup-why.jpg), [completed follow-up](followup-done.jpg) and [original behavior](before.jpg). The user acceptance is not claimed.
+
+**Blocked:** the automatic Projects browser fixture could not join its simulated member to its localhost hub, before journeys began. No timeout/assertion was relaxed. Dedicated automated vision was not run; the four live layout screenshots above were inspected directly. Earlier failed Node20/fixture/operator attempts are retained in checks.json rather than labelled passing.
+
+To check: reload the existing thread, type in **Message this thread**, and send. The same thread continues. **Why → Follow-up classification** shows Jev's intent, then the automatic execution choices. Fixed owner choices stay fixed. An explicit discard/replacement still closes that old thread; a prior publication whose worktree cleanup is incomplete waits rather than risking existing files. Completed work consumes no active runtime slot while waiting for a follow-up.

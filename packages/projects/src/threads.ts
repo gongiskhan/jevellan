@@ -22,7 +22,7 @@ import type { Outbox } from './envelopes.js';
 import type { ProjectLedgers } from './ledger.js';
 import type { DeviceRoster, PendingMain, Placement } from './placement.js';
 import type { StartReceipts, StartedSummary, ThreadLabels, ThreadStore } from './stores.js';
-import { REST_STATES, ThreadRunner, restartRefusal, type ThreadRunnerContext } from './thread-runner.js';
+import { REST_STATES, ThreadRunner, canContinueThread, restartRefusal, type ThreadRunnerContext } from './thread-runner.js';
 import { assistantText, type ThreadTranscripts } from './transcript.js';
 
 const refuse = (message: string, status: number) => Object.assign(new Error(message), { status });
@@ -580,14 +580,13 @@ export class ThreadService {
     });
   }
   /**
-   * A message for a thread (brief 7.1, 8.2; D81). The coordinator cannot message an attached thread; ended threads refuse
-   * both senders. An owner message also reaches the coordinator as `thread-user-message`.
+   * The coordinator cannot message an attached or terminal thread. Owner follow-ups reopen completed work (D834)
+   * and also reach the coordinator as `thread-user-message`.
    */
   async message(projectId: string, threadId: string, from: 'coordinator' | 'owner', text: string, interrupt: boolean, clientMessageId?: string): Promise<{ delivery: 'started' | 'queued' | 'interrupting'; state: ThreadState; repeated: boolean }> {
     if (!this.#o.store.get(threadId)) return this.#remoteMessage(projectId, threadId, from, text, interrupt, clientMessageId);
     const thread = this.#local(projectId, threadId);
     if (from === 'coordinator' && thread.state === 'attached') throw refuse(THREAD_ATTACHED, 409);
-    if (isTerminal(thread.state)) throw refuse(THREAD_ENDED, 409);
     const at = this.#o.now();
     const result = await this.runner(threadId)!.deliver({ id: clientMessageId ?? newId('tmsg', at), from, text, at: new Date(at).toISOString(), interrupt });
     if (from === 'owner' && !result.repeated) {
@@ -604,7 +603,7 @@ export class ThreadService {
   async #remoteMessage(projectId: string, threadId: string, from: 'coordinator' | 'owner', text: string, interrupt: boolean, clientMessageId?: string): Promise<{ delivery: 'queued' | 'interrupting'; state: ThreadState; repeated: boolean }> {
     const index = await this.#remote(projectId, threadId);
     if (from === 'coordinator' && index.state === 'attached') throw refuse(THREAD_ATTACHED, 409);
-    if (isTerminal(index.state)) throw refuse(THREAD_ENDED, 409);
+    if (isTerminal(index.state) && (from !== 'owner' || !canContinueThread(index))) throw refuse(THREAD_ENDED, 409);
     const at = this.#o.now();
     const message: QueuedMessage = { id: clientMessageId ?? newId('tmsg', at), from, text: this.#o.redactor.text(text), at: new Date(at).toISOString(), interrupt };
     await this.#o.delivery.toThreadOwner(projectId, threadId, index.ownerDeviceId, { type: 'message', message }, derivedId('tcmd', 'message', projectId, threadId, message.id));

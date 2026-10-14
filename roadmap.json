@@ -712,5 +712,11 @@
     "title": "Use shared saved accounts on members and let Jev choose an account",
     "why": "Decisions832–833: ignore synthetic missing observations for shared vault logins, preserve real authentication/resource exclusions and Codex per-device sign-ins; add a-v1 account decisions and usage snapshots to placement and Why, with sticky eligible resumes and Jev reselection. Focused checks and a live member task before activation. Live Madrid one-turn success with Jev-selected saved Gmail/Sonnet/low and all four Why layouts manually inspected. 174 affected cases, typecheck, lint and build pass. Automated browser fixture startup blocked; coordinator stale-device-ID correction retained. Pro/Madrid0.3.5 active with rollback. Evidence: docs/acceptance/shared-accounts-2026-10-14/.",
     "status": "complete-with-blockers"
+  },
+  {
+    "id": "continuing-project-threads",
+    "title": "Continue completed Projects threads with Jev-classified follow-ups",
+    "why": "Decisions834–835: keep the owner composer and workspace, reopen the same thread through admission, classify every owner follow-up with Jev, preserve native/session/publication history and reroute automatic model, effort and saved account. Regression and live acceptance in docs/acceptance/thread-continuation-2026-10-14/. Pro/Madrid0.3.6 live;90 targeted cases and build/typecheck/lint pass. A real completed Madrid thread continues to turn2 with Jev classification and both reports preserved. Owner UX composer verified in4layouts. Automated fixture member join blocks the browser suite; no full-green claim.",
+    "status": "complete-with-blockers"
   }
 ]

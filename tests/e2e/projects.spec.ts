@@ -547,6 +547,10 @@ test('PJ3 a pull request merges through the modal and moves to Concluded', async
   await shot(page, 'concluded');
   const merged = await threadView(page, await threadId(page, 'Add a greeting'));
   expect({ state: merged.thread.state, pr: merged.thread.pr?.state }).toEqual({ state: 'done', pr: 'merged' });
+  await tap(page, concluded.getByRole('link', { name: /^Add a greeting/ }));
+  await expect(page.getByRole('textbox', { name: 'Message this thread' })).toBeEnabled(LONG);
+  await expect(page.getByText('Continue here. Jev will classify your message and choose how to run the follow-up.', { exact: true })).toBeVisible();
+  await shot(page, 'completed-thread-followup');
   expect(errors).toEqual([]);
 });
 

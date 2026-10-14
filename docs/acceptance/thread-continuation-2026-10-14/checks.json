@@ -1,0 +1,86 @@
+{
+  "schema": "thread-continuation-checks-v1",
+  "version": "0.3.6",
+  "backend": {
+    "label": "simulated",
+    "passed": 90,
+    "files": 8
+  },
+  "typecheck": "passed",
+  "lint": "passed",
+  "build": "passed",
+  "browser": {
+    "label": "blocked",
+    "reason": "Projects fixture member could not join its local fixture hub (HubUnavailable on 127.0.0.1:17782); config.webServer exited before journeys. No assertion or timeout weakened. Automated vision not run."
+  },
+  "failedBefore": "Completed thread canMessage=false; its no-change worktree was removed. New regression required an enabled composer, retained workspace, classified follow-up and idempotent replay.",
+  "earlierReceipts": [
+    "Initial test command used Node20 and could not load node:sqlite; no case ran. Corrected to the project-supported Node22.",
+    "Two older fixture assertions assumed raw follow-up prompts and terminal owner refusal; updated explicitly to the new continuation contract.",
+    "A first merged-PR follow-up exposed reuse of the earlier remote branch. A distinct follow-up branch now preserves the earlier PR. An intermediate rerun used the prior compiled file; all final checks compiled source first.",
+    "An intermediate mesh run detected repeated offline notices after a cosmetic preparing-state change. Removed that unnecessary state change; the final 90-case run includes the original one-notice offline assertion unchanged."
+  ],
+  "activationNotes": [
+    "The first Pro invocation passed a tgz where Installer expects an extracted application directory. It stopped at planned state before service changes; that private journal is retained and the corrected invocation uses the verified extracted bundle.",
+    "The first Madrid wrapper invocation omitted the explicit member home and found no default device.json; no update began. Corrected to /home/ggomes/.jevellan-member."
+  ],
+  "crucialIssuesReview": {
+    "label": "simulated",
+    "scope": "Changed message acceptance, duplicate handling, routing, session history, workspace lifecycle and UI paths",
+    "seriousFindings": 0,
+    "secondReview": "not run"
+  },
+  "fullSuites": {
+    "label": "not run",
+    "reason": "Scoped follow-up requested; targeted backend and live UI verification used. Historical full-suite failures remain historical."
+  },
+  "installations": [
+    {
+      "label": "live",
+      "device": "Pro",
+      "version": "0.3.6",
+      "membershipUnchanged": true,
+      "authenticationUnchanged": true,
+      "rollbackRetained": true
+    },
+    {
+      "label": "live",
+      "device": "dev-madrid",
+      "version": "0.3.6",
+      "membershipUnchanged": true,
+      "authenticationUnchanged": true,
+      "rollbackRetained": true
+    }
+  ],
+  "manualUi": {
+    "label": "live",
+    "thread": "Owner\u2019s existing completed UX thread",
+    "layouts": [
+      "1440x900 light",
+      "1440x900 dark",
+      "390x844 light",
+      "390x844 dark"
+    ],
+    "result": "Composer enabled; continuation hint and existing report readable. Screenshots inspected directly; original System theme and viewport restored. No message sent to this owner thread."
+  },
+  "liveFollowup": {
+    "label": "live",
+    "threadId": "thread_01M4XPPJH6AFCF9KPTBSMH0743",
+    "turns": 2,
+    "state": "done",
+    "intent": "answer",
+    "intentSource": "jev",
+    "model": "claude-sonnet-5",
+    "effort": "low",
+    "account": "Ekoa",
+    "accountChoiceSource": "only-option",
+    "workspaceRetained": true,
+    "earlierSessions": 1,
+    "filesChanged": [],
+    "newPullRequests": 0
+  },
+  "secretScan": {
+    "worktree": "passed",
+    "prePush": "mandatory git hook"
+  }
+}

@@ -3,9 +3,10 @@ import { threadRestart } from './checkpoints.js';
 import { createHash } from 'node:crypto';
 import type { AccountService } from '@jevellan/accounts';
 import {
-  HubUnavailable, MANUAL_CHECKOUT_COMPLETED, SecretRedactor, ThreadReportSchema, clipRedacted, isTerminal, liveWork, newId, redactWithin, stableJson, type CoordinatorEvent, type Project, type ProjectWorkSettings,
-  type MemoryRecall, type QueuedMessage, type Thread, type ThreadLocal, type ThreadReport, type ThreadState, type TurnProcess,
+  HubUnavailable, MANUAL_CHECKOUT_COMPLETED, SecretRedactor, ThreadReportSchema, clipRedacted, isTerminal, liveWork, newId, redactWithin, stableJson, threadBranch, type CoordinatorEvent, type Project, type ProjectWorkSettings,
+  type MemoryRecall, type QueuedMessage, type Thread, type ThreadLocal, type ThreadReport, type ThreadState, type TurnProcess, type ThreadMessageRoute,
 } from '@jevellan/core';
+import { projectOutcomeInstruction } from '@jevellan/decisions';
 import { SESSION_NOT_FOUND } from '@jevellan/runtime-contract';
 import type { Admission } from './admission.js';
 import type { ProjectMemoryReader, ProjectToolHandlers } from './bridge-tools.js';
@@ -87,6 +88,8 @@ export function discardedReason(reason: string | undefined): string {
 }
 /** The worktree is gone: discarded, or removed by a restart (D252). */
 export const isDiscarded = (reason: string | undefined): boolean => !!reason?.endsWith(WORKTREE_DISCARDED.trim()) || isRestarted(reason);
+/** Completion releases resources; only explicit discard/replacement closes the owner's conversation. */
+export const canContinueThread = (thread: Pick<Thread, 'stateReason' | 'restartedAs'>): boolean => !thread.restartedAs && !isDiscarded(thread.stateReason);
 /**
  * Why Restart is not allowed (brief 10): an open pull request, a publication to main, or an earlier restart (D252); for now, the owner's
  * terminal session on the thread (phase 8).
@@ -131,6 +134,7 @@ export type ThreadRunnerContext = {
   journalContents?(projectId: string, threadId: string): Promise<{ path: string; text: string }>;
   projectNow?(project: Project, thread: Thread): Promise<string>;
   captureTurn?(project: Project, thread: Thread): Promise<void>;
+  routeMessages?(thread: Thread, body: string, messageIds: string[], signal: AbortSignal): Promise<ThreadMessageRoute>;
   /** Mail and reservations, the main-isolation thread tools (brief 7.2). */
   mail: Pick<MailService, 'threadTool' | 'releaseThread'>;
   appTool?: ProjectToolHandlers['call'];
@@ -164,7 +168,7 @@ export class ThreadRunner {
   #execution: TurnExecution | undefined;
   #turn: number | undefined;
   #steer = false;
-  readonly #abort = new AbortController();
+  #abort = new AbortController();
   #stopping: string | undefined;
   #concluding = 0;
   #closed = false;
@@ -334,8 +338,24 @@ export class ThreadRunner {
   /** One turn (2.6.9 steps 1 and 3-9); returns the turn that continues the live step, if any. */
   async #turnOnce(next: NextTurn): Promise<NextTurn | null> {
     let thread = this.#thread();
-    // Before every turn, also verification turns and messages that arrive at rest (D73).
     if (atTurnLimit(thread)) { await this.#atLimit(); return null; }
+    if (this.#c.routeMessages && next.messages.some(id => thread.queuedMessages.some(message => message.id === id && message.from === 'owner'))) {
+      const release = this.#c.enterOperation(thread.id, 'Classifying a thread follow-up');
+      let route: ThreadMessageRoute;
+      try { route = await this.#c.routeMessages(thread, next.body, next.messages, this.#abort.signal); }
+      finally { release(); }
+      if (this.#halted()) return null;
+      const old = thread.placement;
+      if (old.runtime !== route.placement.runtime || old.model !== route.placement.model || old.accountId !== route.placement.accountId) this.#freshSession();
+      thread = this.#set(current => ({ ...current, placement: route.placement }), { type: 'thread-placement', data: route.placement });
+      this.#c.store.setLabels(thread.id, { modelLabel: route.modelLabel });
+      const ledger = this.#c.ledgers.thread(thread.projectId, thread.id);
+      if (!ledger.events().some(event => event.type === 'thread-message-route' && ledger.payload(event as typeof event & { type: 'thread-message-route' }).digest === route.digest)) {
+        ledger.append({ type: 'thread-message-route', data: route });
+      }
+      next = { ...next, body: `${next.body}\n\nRequested result (Jev): ${projectOutcomeInstruction(route.outcome)}\nPrevious report: ${thread.lastReport?.summary ?? '(none)'}` };
+    }
+    // Before every turn, also verification turns and messages that arrive at rest (D73).
     // A thread attached in a terminal holds its account (phase 8): with no other eligible account the turn waits, before it takes anything.
     const wait = await this.#c.accountWait(thread);
     if (wait) { if (!this.#halted()) this.#rest(next, wait); return null; }
@@ -581,18 +601,15 @@ export class ThreadRunner {
             { type: 'thread-publication', data: { schema: 'thread-publication-v1', result: 'checkout-completed' } });
           await this.#giveBack(project, thread, 'unchanged');
           await this.#releaseReservations(thread);
-          this.#undelivered();
           await this.#tell(projectId, { kind: 'thread-published', threadId, result: 'checkout-completed' });
-          return null;
+          return this.#afterCompletion();
         }
         case 'no-changes': {
           thread = this.#set((current) => ({ ...withState(current, 'done', NO_CHANGES), verificationAttempts: attempts(current), endedAt: current.endedAt ?? this.#at() }),
             { type: 'thread-publication', data: { schema: 'thread-publication-v1', result: 'no-changes' } });
           if (thread.isolation === 'main') { await this.#giveBack(project, thread, 'unchanged'); await this.#releaseReservations(thread); }
-          else await this.#cleanup(project, thread);
-          this.#undelivered();
           await this.#tell(projectId, { kind: 'thread-published', threadId, result: 'no-changes' });
-          return null;
+          return this.#afterCompletion();
         }
         case 'verification-failed': {
           const count = thread.verificationAttempts + 1; const verification = outcome.verification;
@@ -632,9 +649,8 @@ export class ThreadRunner {
             { type: 'thread-publication', data: { schema: 'thread-publication-v1', result: 'main-published', commit: outcome.commit } });
           await this.#giveBack(project, thread, 'published');
           await this.#releaseReservations(thread);
-          this.#undelivered();
           await this.#tell(projectId, { kind: 'thread-published', threadId, result: 'main-published', commit: outcome.commit });
-          return null;
+          return this.#afterCompletion();
         }
       }
     } catch (error) {
@@ -650,6 +666,40 @@ export class ThreadRunner {
     const thread = this.#thread(); if (!thread.queuedMessages.length) return;
     this.#notice(thread, messagesNotDelivered(thread.queuedMessages.map((message) => message.text)), 'error');
     this.#set((current) => ({ ...current, queuedMessages: [] }));
+  }
+  async #afterCompletion(): Promise<NextTurn | null> {
+    const thread = this.#thread();
+    if (this.#halted() || !thread.queuedMessages.some(message => message.from === 'owner')) { this.#undelivered(); return null; }
+    await this.#reopen();
+    return messagesTurn(this.#thread(), 'messages');
+  }
+  #freshSession(): void {
+    const thread = this.#thread();
+    if (thread.nativeSessionId) this.#c.store.updateLocal(thread.id, local => ({ ...local, sessionHistory: [...(local.sessionHistory ?? []).filter(entry => entry.key !== digest(thread.nativeSessionId!)),
+      { schema: 'project-session-history-v1', key: digest(thread.nativeSessionId!), nativeSessionId: thread.nativeSessionId!, runtime: thread.placement.runtime,
+        model: thread.placement.model, accountId: thread.placement.accountId, at: this.#at() }] }));
+    this.#set(current => { const next = { ...current }; delete next.nativeSessionId; delete next.sessionContext; return next; });
+  }
+  async #reopen(): Promise<void> {
+    const thread = this.#thread();
+    if (this.#closed || !canContinueThread(thread)) throw refuse(THREAD_ENDED, 409);
+    const local = this.#c.store.local(thread.id);
+    if (local.process || local.unsettledCheckout) throw refuse('The previous turn is still being settled. Try again once it has finished.', 409);
+    const missing = thread.isolation === 'worktree' && !(await this.#c.worktrees.exists(await this.#c.project(thread.projectId), thread));
+    if (thread.pr && thread.pr.state !== 'open' && !missing) throw refuse('The previous pull request worktree cleanup has not finished. No files were changed.', 409);
+    if (missing) this.#freshSession();
+    this.#abort = new AbortController(); this.#stopping = undefined;
+    this.#set(current => {
+      const next = { ...withState(current, 'idle'), verificationAttempts: 0 }; delete next.endedAt;
+      delete next.publishedCommit;
+      if (next.pr?.state !== 'open') delete next.pr;
+      if (missing) {
+        next.cwd = ''; next.baseCommit = ''; next.baseBranch = ''; delete next.branch;
+        if (current.pr && current.pr.state !== 'open') next.branch = `${threadBranch(current.title, current.id)}-followup-${current.turns + 1}`;
+      }
+      return next;
+    });
+    this.#c.store.updateLocal(thread.id, current => { const next = { ...current }; delete next.pendingTurn; delete next.pushedCommit; delete next.prNotified; return next; });
   }
   /**
    * Messages that arrived during publication are delivered after it (2.6.9 deliver), in a turn that continues the step,
@@ -722,11 +772,17 @@ export class ThreadRunner {
    * Message ids are remembered, so a retried message repeats and a reused id with other text is refused (D153).
    */
   async deliver(raw: QueuedMessage): Promise<{ delivery: 'started' | 'queued' | 'interrupting'; repeated: boolean }> {
-    const thread = this.#thread();
-    if (isTerminal(thread.state)) throw refuse(THREAD_ENDED, 409);
+    let thread = this.#thread();
     const message: QueuedMessage = { ...raw, text: this.#c.redactor.text(raw.text) }; const hash = digest(message.text);
     const seen = this.#c.store.local(thread.id).seenMessages?.find((entry) => entry.id === message.id);
     if (seen) { if (seen.digest !== hash) throw refuse(MESSAGE_ID_REUSED, 409); return { delivery: 'queued', repeated: true }; }
+    if (isTerminal(thread.state)) {
+      if (raw.from !== 'owner') throw refuse(THREAD_ENDED, 409);
+      await this.#serial(async () => { if (isTerminal(this.#thread().state)) await this.#reopen(); });
+      thread = this.#thread();
+      const repeated = this.#c.store.local(thread.id).seenMessages?.find(entry => entry.id === message.id);
+      if (repeated) { if (repeated.digest !== hash) throw refuse(MESSAGE_ID_REUSED, 409); return { delivery: 'queued', repeated: true }; }
+    }
     this.#c.store.update(thread.id, (current) => ({ ...current, queuedMessages: [...current.queuedMessages, message] }), { type: 'journal-message', data: { schema: 'journal-message-v1', ...message } });
     this.#c.store.updateLocal(thread.id, (local) => ({ ...local, seenMessages: [...(local.seenMessages ?? []), { id: message.id, digest: hash }].slice(-SEEN_MESSAGES) }));
     const route = deliveryRoute(thread.state);

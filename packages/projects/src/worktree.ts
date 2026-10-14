@@ -135,7 +135,7 @@ export class ThreadWorktree {
     await this.#git.run(repo, ['worktree', 'remove', '--force', path]);
   }
   /**
-   * Cleanup on merge, close, discard and done without changes (brief 8.3): `worktree remove --force` (also when the folder vanished,
+   * Cleanup on merge, close and explicit discard: `worktree remove --force` (also when the folder vanished,
    * for that one entry), `branch -D` for the local `jv/` branch, and the private thread refs. Remote branches stay.
    */
   async remove(project: Project, thread: Thread): Promise<void> {

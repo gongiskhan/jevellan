@@ -199,6 +199,53 @@ const commit = (files: Record<string, string>, body: object): FakeTurnStep => as
 };
 const hold = (): FakeTurnStep => async ({ signal }) => { await new Promise((resolve) => signal.addEventListener('abort', resolve, { once: true })); return { status: 'completed' }; };
 const create = (work: ProjectWork, title: string, clientRequestId = `req_${randomUUID()}`) => work.createThread('proj_a', { schema: 'thread-create-request-v1', clientRequestId, title, task: `Do ${title}.` });
+
+test('completed threads keep their workspace and accept classified owner follow-ups in the same thread', { timeout: 120_000 }, async () => {
+  const work = app(); await work.ready;
+  fake.enqueueTurn(report({ status: 'done', summary: 'Analysis complete.' }), forThread());
+  const { threadId } = await create(work, 'Read the project'); await settle(work);
+  const first = work.store.get(threadId)!;
+  expect((await work.threadView('proj_a', threadId)).canMessage).toBe(true);
+  expect(existsSync(first.cwd)).toBe(true);
+  fake.enqueueTurn(report({ status: 'done', summary: 'Follow-up complete.' }), forThread());
+  const input = { schema: 'thread-message-request-v1' as const, clientMessageId: 'msg_followup', text: 'Explain the previous result.', interrupt: false };
+  const concurrent = await Promise.all([work.threadMessage('proj_a', threadId, input), work.threadMessage('proj_a', threadId, input)]);
+  expect(concurrent.map(value => value.repeated).sort()).toEqual([false, true]);
+  await settle(work);
+  expect(work.store.get(threadId)).toMatchObject({ state: 'done', turns: 2, cwd: first.cwd });
+  expect((await work.threadView('proj_a', threadId)).reports).toHaveLength(2);
+  expect(fake.turnStarts[1]!.resume?.sessionId).toBe(first.nativeSessionId);
+  expect(work.ledgers.thread('proj_a', threadId).events().some(event => event.type === 'thread-message-route')).toBe(true);
+  expect(await work.threadMessage('proj_a', threadId, input)).toEqual({ repeated: true });
+  expect(fake.turnStarts).toHaveLength(2);
+});
+
+test('a stopped thread resumes only on an owner message, with a fresh stop controller', { timeout: 120_000 }, async () => {
+  const work = app(); await work.ready;
+  fake.enqueueTurn(hold(), forThread());
+  const { threadId } = await create(work, 'Pause and continue');
+  await waitFor(() => work.store.local(threadId).process, value => !!value);
+  await work.stopThread('proj_a', threadId); await settle(work);
+  await expect(work.threads.message('proj_a', threadId, 'coordinator', 'Go.', false)).rejects.toMatchObject({ status: 409 });
+  fake.enqueueTurn(report({ status: 'done', summary: 'Continued.' }), forThread());
+  await work.threadMessage('proj_a', threadId, { schema: 'thread-message-request-v1', clientMessageId: 'resume_stopped', text: 'Continue the work.', interrupt: false });
+  await settle(work);
+  expect(work.store.get(threadId)).toMatchObject({ state: 'done', lastReport: { summary: 'Continued.' } });
+});
+
+test('owner follow-ups queued during the last turn survive completion', { timeout: 120_000 }, async () => {
+  const work = app(); await work.ready;
+  let finish!: () => void;
+  const waiting = new Promise<void>(resolve => { finish = resolve; });
+  fake.enqueueTurn(async turn => { await turn.bridge('jevellan_thread_report', { status: 'done', summary: 'First result.' }); await waiting; return { status: 'completed' }; }, forThread());
+  fake.enqueueTurn(report({ status: 'done', summary: 'Second result.' }), forThread());
+  const { threadId } = await create(work, 'Read and follow up');
+  await waitFor(() => work.store.local(threadId).process, value => !!value);
+  await work.threadMessage('proj_a', threadId, { schema: 'thread-message-request-v1', clientMessageId: 'msg_before_done', text: 'Explain that result.', interrupt: false });
+  finish(); await settle(work);
+  expect(work.store.get(threadId)).toMatchObject({ state: 'done', turns: 2, queuedMessages: [], lastReport: { summary: 'Second result.' } });
+  expect((await work.threadView('proj_a', threadId)).reports).toHaveLength(2);
+});
 async function settings(over: Partial<ProjectWorkSettings>): Promise<void> {
   const access = new HubProjectAccess(hub, 'dev_a'); const current = await access.settings('proj_a');
   await access.putSettings(ProjectWorkSettingsSchema.parse({ ...(current?.document ?? defaultProjectWorkSettings('proj_a')), ...over }), current?.revision ?? 0);
@@ -277,6 +324,13 @@ test('an owner thread prepares a worktree, runs its turn, opens the pull request
   expect(existsSync(thread.cwd)).toBe(false);
   expect(kinds(queue(work))).toEqual(['thread-user-message', 'thread-published', 'pr:merged']);
   expect({ head: run(checkout, 'rev-parse', 'HEAD'), status: run(checkout, 'status', '--porcelain=v1') }).toEqual(before);
+  fake.enqueueTurn(commit({ 'followup.txt': 'next\n', 'greeting.txt': 'new greeting\n' }, { status: 'done', summary: 'A separate follow-up.' }), forThread());
+  await work.threadMessage('proj_a', created.threadId, { schema: 'thread-message-request-v1', clientMessageId: 'after_merge', text: 'Add a follow-up.', interrupt: false });
+  await settle(work);
+  expect(work.store.get(created.threadId)!.stateReason).toBeUndefined();
+  expect(work.store.get(created.threadId)).toMatchObject({ state: 'in-review', turns: 2, pr: { number: 2, state: 'open' } });
+  expect(fake.turnStarts[1]!.resume).toBeUndefined();
+  expect((await work.threadView('proj_a', created.threadId)).sessionHistory).toHaveLength(1);
 });
 
 test('turns without reports are synthesized, the limit waits for the owner, and Allow 10 more turns runs the queued message once (D31, D73, D85)', { timeout: 120_000 }, async () => {
@@ -298,7 +352,9 @@ test('turns without reports are synthesized, the limit waits for the owner, and 
     await work.threadMessage('proj_a', threadId, { schema: 'thread-message-request-v1', clientMessageId: `msg_${n}`, text: `Go ${n}.`, interrupt: false });
     await settle(work);
   }
-  expect(fake.turnStarts.map((input) => threadRequestText(input.prompt)).slice(1)).toEqual(['Continue.', 'Go 3.', 'Go 4.', 'Go 5.']);
+  const followups = fake.turnStarts.map(input => threadRequestText(input.prompt)).slice(1);
+  expect(followups.map(text => text.split('\n\nRequested result (Jev):')[0])).toEqual(['Continue.', 'Go 3.', 'Go 4.', 'Go 5.']);
+  for (const text of followups) expect(text).toContain('Requested result (Jev): Jev could not interpret this request. Preserve the owner’s full request');
   expect(fake.turnStarts.slice(1).map((input) => input.resume?.sessionId)).toEqual(Array(4).fill(work.store.get(threadId)!.nativeSessionId));
   // Right after the fifth turn: waiting for the owner with the item, and the fifth report reached the coordinator.
   expect(work.store.get(threadId)).toMatchObject({ state: 'waiting-for-you', stateReason: TURN_LIMIT_REACHED, turns: 5 });
@@ -322,7 +378,7 @@ test('turns without reports are synthesized, the limit waits for the owner, and 
   expect(kinds(queue(work)).length).toBe(userMessages + 1);
 });
 
-test('limits queue a start until a slot frees; stop keeps the worktree, discard removes it, and ended threads refuse messages (D9a, D28)', { timeout: 120_000 }, async () => {
+test('limits queue a start until a slot frees; discard closes a thread while completed work keeps its workspace', { timeout: 120_000 }, async () => {
   await settings({ maxRunningThreads: 1 });
   const work = app(); await work.ready; work.start();
   fake.enqueueTurn(hold(), forThread());
@@ -341,13 +397,15 @@ test('limits queue a start until a slot frees; stop keeps the worktree, discard 
   await waitFor(() => work.store.get(second.threadId)!.state, (state) => state === 'done');
   await settle(work);
   expect(work.store.get(second.threadId)).toMatchObject({ state: 'done', stateReason: NO_CHANGES });
-  await expect(work.threadMessage('proj_a', first.threadId, { schema: 'thread-message-request-v1', clientMessageId: 'msg_x', text: 'Hello.', interrupt: false }))
-    .rejects.toMatchObject({ message: THREAD_ENDED, status: 409 });
+  await expect(work.threads.message('proj_a', first.threadId, 'coordinator', 'Hello.', false)).rejects.toMatchObject({ message: THREAD_ENDED, status: 409 });
   await expect(work.discardThread('proj_a', second.threadId)).rejects.toMatchObject({ message: DISCARD_REFUSED, status: 409 });
   await work.discardThread('proj_a', first.threadId); await work.discardThread('proj_a', first.threadId);
   expect(work.store.get(first.threadId)!.stateReason).toBe('Stopped by you. Worktree discarded.');
   expect(existsSync(stopped.cwd)).toBe(false);
-  expect(run(checkout, 'branch', '--list', 'jv/*')).toBe('');
+  await expect(work.threadMessage('proj_a', first.threadId, { schema: 'thread-message-request-v1', clientMessageId: 'msg_x', text: 'Hello.', interrupt: false }))
+    .rejects.toMatchObject({ message: THREAD_ENDED, status: 409 });
+  expect(existsSync(work.store.get(second.threadId)!.cwd)).toBe(true);
+  expect(run(checkout, 'branch', '--list', stopped.branch!)).toBe('');
 });
 
 test('a restart leaves a running thread idle with the restart reason, ends its process and resumes nothing; an unconfirmed orphan fails the thread (8.6, D24)', { timeout: 120_000 }, async () => {

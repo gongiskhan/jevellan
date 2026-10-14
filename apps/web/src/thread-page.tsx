@@ -350,8 +350,8 @@ function QueuedEntry({ queued }: { queued: QueuedMessage }) {
 
 /**
  * The thread composer (12.3): a growing textarea and the send icon, with Interrupt current turn while a turn runs. Messages
- * are idempotent by client id. An attached thread disables it with the brief's sentence; a concluded thread takes no
- * message, so only the reason shows (D81, D231). Refusals stay here, and the page reads the thread again. Under it, the
+ * are idempotent by client id. An attached thread disables it; completed work keeps the owner composer (D834).
+ * Discarded/replaced threads show their closure. Refusals stay here, and the page reads the thread again. Under it, the
  * command that takes the thread over in a terminal (phase 7), for every thread that has not concluded (D304).
  */
 function ThreadComposer({ base, view, behind, jump, sent, refused, onError, message }: {
@@ -368,6 +368,7 @@ function ThreadComposer({ base, view, behind, jump, sent, refused, onError, mess
   const live = threadLiveText(view.thread);
   const block = composerBlock(view);
   const ended = !view.canMessage && view.thread.state !== 'attached';
+  const completed = ['done', 'stopped', 'failed'].includes(view.thread.state);
   return (
     <form className="composer card pw-composer pw-thread-composer" ref={composerClearance} onSubmit={(event) => {
       event.preventDefault();
@@ -401,6 +402,7 @@ function ThreadComposer({ base, view, behind, jump, sent, refused, onError, mess
       )}
       {error && <p className="error pw-composer-error">{error}</p>}
       {block && <p className={`pw-composer-note${ended ? ' ended' : ''}`}>{block}</p>}
+      {completed && view.canMessage && <p className="pw-composer-note">{copy.THREAD_CONTINUE}</p>}
       {!ended && (
         <fieldset className="pw-fields" disabled={!!block}>
           <div className="message-input-row">
@@ -411,7 +413,7 @@ function ThreadComposer({ base, view, behind, jump, sent, refused, onError, mess
           </div>
         </fieldset>
       )}
-      {!ended && <TakeOver device={view.deviceName} command={view.attachCommand} message={message} />}
+      {!ended && !completed && <TakeOver device={view.deviceName} command={view.attachCommand} message={message} />}
     </form>
   );
 }
@@ -483,6 +485,9 @@ function WhyPanel({ view, data, close }: { view: ThreadView; data: PageProps['da
   return (
     <Panel title={copy.WHY_TITLE} eyebrow={thread.title} close={close}>
       <div className="pw-why">
+        {view.messageRoute && <section className="why-section"><h3>Follow-up classification</h3>
+          <p>{view.messageRoute.outcome.source === 'jev' ? `Jev: ${view.messageRoute.outcome.goal}` : 'Jev unavailable; your full request is preserved.'}</p>
+        </section>}
         {view.memoryRecall && <section className="why-section"><h3>Project memory</h3>
           <p>{view.memoryRecall.source === 'unavailable' ? view.memoryRecall.section : 'Recalled for the first turn or after compaction.'}</p>
           <ul>{view.memoryRecall.notes.map(note => <li key={note.permalink}><strong>{note.title}</strong>: {note.reason}</li>)}</ul>

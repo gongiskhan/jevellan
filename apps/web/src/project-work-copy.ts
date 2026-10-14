@@ -231,6 +231,7 @@ export const WORKTREE_DISCARDED = 'Worktree discarded.';
 export const MORE_TURNS_ALLOWED = 'The thread can take 10 more turns.';
 /** The composer of a concluded thread; the server refuses messages to it with the same sentence (D81). */
 export const THREAD_ENDED = 'This thread has ended. Start a new thread for new work.';
+export const THREAD_CONTINUE = 'Continue here. Jev will classify your message and choose how to run the follow-up.';
 /** The composer's live line while a turn, the preparation or the publication runs. */
 export const turnRunning = (turn: number): string => `Working on turn ${turn}…`;
 export const PREPARING = 'Preparing…';

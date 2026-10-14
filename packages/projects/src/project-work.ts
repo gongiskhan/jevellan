@@ -57,6 +57,7 @@ import { endTurnProcess, recoverProjects } from './recovery.js';
 import { CoordinatorStore, StartReceipts, ThreadStore, threadIndex } from './stores.js';
 import { LocalDelivery, ThreadService, type RemoteStart } from './threads.js';
 import { ThreadTranscripts } from './transcript.js';
+import { ThreadFollowups } from './thread-followup.js';
 import { ProjectViews, effectiveSettings } from './views.js';
 import { ThreadWorktree } from './worktree.js';
 import { ProjectGoals } from './goals.js';
@@ -284,11 +285,14 @@ export class ProjectWork {
         if (state.state !== 'idle' || state.queue.length || state.failedTurnsInARow >= 2 || coordinator.busy) return false;
         const view = await this.views.project(projectId); return view.coordinator.state === 'idle' && view.coordinator.planned !== null;
       } });
+    const followups = new ThreadFollowups({ paths: this.paths, placement, settings: o.settings, project: id => this.#project(id),
+      workSettings: id => this.admission.settings(id), client: o.decisionClient });
     this.threads = new ThreadService({ deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, store: this.store, ledgers: this.ledgers, receipts, hub: o.hub,
       projects: o.projects, admission: this.admission, placement, accounts: o.accounts, transcripts: this.transcripts, delivery, settings: o.settings, now,
       roster: o.roster, decisions: this.decisions, fallbackCheckMs: timers.fallbackCheckMs, managedQueue: true,
       queueChanged: projectId => { void this.dispatcher.sweep(projectId).catch(() => undefined); },
       runner: {
+        routeMessages: (thread, body, ids, signal) => followups.route(thread, body, ids, signal),
       ...(this.journal ? { journalContents: (projectId: string, threadId: string) => this.journal!.contents(projectId, threadId) } : {}),
         deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, store: this.store, ledgers: this.ledgers, project: (projectId) => this.#project(projectId),
         workSettings: (projectId) => this.admission.settings(projectId), worktrees, main, publication, launcher, accounts: o.accounts, admission: this.admission,

@@ -1,0 +1,41 @@
+{
+  "label": "live",
+  "schema": "continuation-package-check-v1",
+  "files": [
+    {
+      "path": "packages/core/dist/project-schemas.js",
+      "sha256": "e36321aa38e99092b85a7293e87715b3792df56437f81bc81b082d3a17a3164f",
+      "matches": true
+    },
+    {
+      "path": "packages/projects/dist/thread-followup.js",
+      "sha256": "25da70c280a385d0e79f4880308b914d0917db14578bef6fd5ac07d307821da1",
+      "matches": true
+    },
+    {
+      "path": "packages/projects/dist/thread-runner.js",
+      "sha256": "c4c873f4fab7269f62e087a30884eda8ef0c1a72126075fb6f7390bfbba5bfdd",
+      "matches": true
+    },
+    {
+      "path": "packages/projects/dist/threads.js",
+      "sha256": "4b88904c226eaaa1e61b5b3c6100a0e10a41ab448e6cd963fe536be9e13dacd5",
+      "matches": true
+    },
+    {
+      "path": "packages/projects/dist/views.js",
+      "sha256": "3029118b4dba662b9ad6dedecf0e6fb99069e129d0f5017e80f515d51102051a",
+      "matches": true
+    },
+    {
+      "path": "packages/projects/dist/project-work.js",
+      "sha256": "d8e5ca699920d7776eb21542ac76feaaa7ca24bd6949b6f36250d6b11c22c710",
+      "matches": true
+    },
+    {
+      "path": "apps/web/dist/index.html",
+      "sha256": "3feefc5c59f82398c13c06cc064dc8a0dd5edf65625143ad8b977929a9837e88",
+      "matches": true
+    }
+  ]
+}
