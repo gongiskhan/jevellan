@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { setTimeout as sleep } from 'node:timers/promises';
 import { expect } from '@playwright/test';
 import { tsImport } from 'tsx/esm/api';
 import { until } from './client.mjs';
@@ -30,14 +31,10 @@ export function nativeTakeoverReady(snapshot) {
 
 export async function exitNativeTakeover(client, page, projectId, threadId, sessionId, timeout = minutes(2), interval = 2000) {
   await page.locator('.xterm-helper-textarea').press('Control+d');
-  let confirmed = false;
-  await until('the native thread to detach', async () => {
-    if ((await client.thread(projectId, threadId)).thread.state !== 'attached') return true;
-    if (!confirmed && (await client.terminalSnapshot(sessionId)).tail.replace(/\s/gu, '').includes('PressCtrl-Dagaintoexit')) {
-      confirmed = true; await page.locator('.xterm-helper-textarea').press('Control+d');
-    }
-    return false;
-  }, timeout, interval);
+  // The native exit window is shorter than a remote state poll; send the normal double-key gesture before polling.
+  await sleep(50);
+  await page.locator('.xterm-helper-textarea').press('Control+d');
+  await until(`the native thread to detach from terminal ${sessionId}`, async () => (await client.thread(projectId, threadId)).thread.state !== 'attached', timeout, interval);
 }
 export async function scenarioD(client, projectId, recorder) {
   const page = client.page; let session, madrid, takeover;

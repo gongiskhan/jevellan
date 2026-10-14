@@ -36,6 +36,17 @@ test('browser takeover exit acknowledges the native client confirmation without 
   expect(presses).toBe(2);
 });
 
+test('native exit confirmation is completed before a delayed owner-state read can expire it', async () => {
+  let pressed = false, detached = false;
+  const page = { locator: () => ({ press: async (key: string) => {
+    expect(key).toBe('Control+d'); if (pressed) detached = true; else pressed = true;
+  } }) };
+  const client = { thread: async () => { if (!detached) pressed = false; return { thread: { state: detached ? 'idle' : 'attached' } }; },
+    terminalSnapshot: async () => ({ tail: 'Press Ctrl-D again to exit' }) };
+  await exitNativeTakeover(client, page, 'project', 'thread', 'terminal', 100, 1);
+  expect(detached).toBe(true);
+});
+
 test('browser takeover requires the native coding prompt, not a live shell or a first-run dialog', () => {
   const snapshot = (tail: string) => ({ session: { status: 'open' }, tail });
   expect(nativeTakeoverReady(snapshot('Resuming the thread in Claude Code.'))).toBe(false);

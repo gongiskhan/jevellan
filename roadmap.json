@@ -670,5 +670,11 @@
     "title": "Use the native repository trust identity",
     "why": "Decision814 refines809. Retain strict actual phone-light pass and phone-dark trust-dialog failure. Claude keys linked worktree trust on main checkout. Resolve it using bounded read-only NUL Git metadata, preserving isolated preferences and protected checkout guards. Linked-worktree regression fails before fix;18 attach cases/typecheck/lint/build pass. Full4-layout real rerun pending.",
     "status": "complete-with-blockers"
+  },
+  {
+    "id": "activation-native-exit-window",
+    "title": "Complete native exit before remote polling",
+    "why": "Decision815 refines807/813. Preserve eleventh strict phone-light pass and phone-dark detach timeout; canonical repository trust resumes both actual conversations. Send the native double-Ctrl-D gesture before state polling can expire its confirmation window. Delayed-read regression fails before repair;28 harness cases/typecheck/lint pass. Actual zero exit/detach and original timeout remain required. Full4-layout real rerun pending.",
+    "status": "complete-with-blockers"
   }
 ]
