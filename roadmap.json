@@ -500,7 +500,7 @@
   {
     "id": "cache-journal-closing",
     "title": "Measure real cache windows and release",
-    "why": "Decision823: original live clock06:36:41–09:36:41UTC. L2/L3 continue, firstL1fixture failed its context setup and is retained; corrected fixed-input calibration keeps all assertions, same-session proof and no intervening requests. Current-code full backend/browser running, no full pass or deployment yet.034 target; checkpoints stayoff untilL2/L3pass.",
+    "why": "Decisions823–824: original live deadline09:36:41UTC retained. L2 seed and L3 actual-cold prerequisite fail; checkpoints remainoff. Corrected direct-input L1 has six qualifying initial contexts and two Codex startup failures; follow-ups running. Immutable full backend and production-built full browser matrix running; no full pass/deployment claim. Target034, existing rollback retained.",
     "status": "in-progress"
   },
   {
