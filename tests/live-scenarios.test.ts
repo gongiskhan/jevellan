@@ -42,6 +42,7 @@ test('browser takeover requires the native coding prompt, not a live shell or a 
   expect(nativeTakeoverReady(snapshot('Quick safety check: Is this a project you created or one you trust?'))).toBe(false);
   expect(nativeTakeoverReady(snapshot('Choose the text style that looks best with your terminal'))).toBe(false);
   expect(nativeTakeoverReady(snapshot('Claude Code v2.1.295\n>\n? for shortcuts\nbypass permissions on'))).toBe(true);
+  expect(nativeTakeoverReady(snapshot('Earlier thread conversation\n❯\n⏵⏵ bypass permissions on (shift+tab to cycle)'))).toBe(true);
 });
 
 test('terminal copy waits for the asynchronous clipboard write before checking its exact command range', async () => {

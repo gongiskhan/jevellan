@@ -23,8 +23,9 @@ export function takeoverReady(view) { return REST_STATES.includes(view.thread.st
 
 export function nativeTakeoverReady(snapshot) {
   const text = snapshot.tail.replace(/\s/gu, '');
-  return snapshot.session.status === 'open' && /(?:ClaudeCodev|OpenAICodex)/u.test(text)
-    && (text.includes('?forshortcuts') || text.includes('bypasspermissionson'));
+  const resumedClaude = text.includes('❯') && text.includes('bypasspermissionson');
+  const clientWithBanner = /(?:ClaudeCodev|OpenAICodex)/u.test(text) && text.includes('?forshortcuts');
+  return snapshot.session.status === 'open' && (resumedClaude || clientWithBanner);
 }
 
 export async function exitNativeTakeover(client, page, projectId, threadId, sessionId, timeout = minutes(2), interval = 2000) {

@@ -658,5 +658,11 @@
     "title": "Keep terminal heading and exit controls visible",
     "why": "Decisions811\u2013812 refine732/736. Retain live desktop vision failure and failing geometry regression. Match terminal/page padding, including phone safe area; close each owned takeover shell normally. CM5 all4 layouts/16 current clear live vision judgments,36 affected unit cases/typecheck/lint/build pass. Actual native four-layout D rerun remains pending.",
     "status": "complete-with-blockers"
+  },
+  {
+    "id": "activation-native-resume-screen",
+    "title": "Recognize the actual resumed native composer",
+    "why": "Decision813 refines810. Preserve ninth D timeout despite real conversation resume. Actual Claude resumes can omit their banner; composer plus native permissions footer proves readiness. Setup negatives, zero exit and detachment remain required. Before regression fails;27 harness cases pass. Full4-layout real rerun pending; original clock unchanged.",
+    "status": "complete-with-blockers"
   }
 ]
