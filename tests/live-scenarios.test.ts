@@ -9,7 +9,7 @@ import { LiveStateSchema, ScenarioReceiptSchema, ScenarioRecorder, canStart, evi
 import { planFor, runLive } from '../scripts/live/scenarios.mjs';
 import { OwnerClient, until } from '../scripts/live/client.mjs';
 import { failedCheckDiagnosis, mergeWhenAsked } from '../scripts/live/scenario-a.mjs';
-import { copyTerminalOutput, takeoverReady, terminalToolbarAction } from '../scripts/live/scenario-d.mjs';
+import { copyTerminalOutput, exitNativeTakeover, takeoverReady, terminalToolbarAction } from '../scripts/live/scenario-d.mjs';
 import { ThreadMessageInputSchema } from '../packages/core/dist/index.js';
 import { preflight } from '../scripts/live/setup.mjs';
 import { SANDBOX_FILES, assertSandbox, writeSandbox } from '../scripts/live/sandbox.mjs';
@@ -26,6 +26,14 @@ test.each([
 });
 test('native takeover still requires a real transcript', () => {
   expect(takeoverReady({ thread: { state: 'idle' }, transcript: null })).toBe(false);
+});
+
+test('browser takeover exit acknowledges the native client confirmation without sending a chat message', async () => {
+  let presses = 0;
+  const page = { locator: () => ({ press: async (key: string) => { expect(key).toBe('Control+d'); presses++; } }) };
+  const client = { thread: async () => ({ thread: { state: presses < 2 ? 'attached' : 'idle' } }), terminalSnapshot: async () => ({ tail: 'Press Ctrl-D again to exit' }) };
+  await exitNativeTakeover(client, page, 'project', 'thread', 'terminal', 100, 1);
+  expect(presses).toBe(2);
 });
 
 test('terminal copy waits for the asynchronous clipboard write before checking its exact command range', async () => {

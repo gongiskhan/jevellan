@@ -4,7 +4,7 @@
 // fixture directory and the system directories, and HOME is the fixture's user directory.
 import { afterEach, expect, test, vi } from 'vitest';
 import { createHash, randomUUID } from 'node:crypto';
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parse as parseToml } from 'smol-toml';
@@ -12,7 +12,7 @@ import { AccountSchema, DeviceSchema, DoctorControlSchema, Homes, ThreadIndexSch
 import { HubProjectAccess } from '../packages/mesh/dist/index.js';
 import { FakeRuntime, fakeNativeSessionFile, forThread, writeFakeNativeSession } from '../packages/runtime-contract/dist/index.js';
 import { THREAD_NOT_FOUND, THREAD_WORKING, ownerWorkedLine, threadRunsOn } from '../packages/projects/dist/index.js';
-import { attachThread, detachThread, staysAttached } from '../packages/cli/dist/thread-attach.js';
+import { attachThread, detachThread, prepareClaudeInteractiveHome, staysAttached } from '../packages/cli/dist/thread-attach.js';
 import { runningDiagnostics } from '../packages/cli/dist/doctor.js';
 import { holdStep, projectFixture, reportStep, type ProjectFixture, type ProjectFixtureOptions } from './helpers/project-fixture.js';
 import { ATTACH_MENU, BACK, BACK_ADOPTED, CANARY, agents, claudeAccount, finished, jevellan, named, rest, start, stopCommands, worked, type AgentRecord } from './helpers/attach-cli.js';
@@ -45,6 +45,35 @@ async function setup(options: ProjectFixtureOptions = {}): Promise<ProjectFixtur
   fixture = await projectFixture({ control: true, menu: ATTACH_MENU, ...options });
   return fixture;
 }
+
+test('Claude takeover preferences are confined, validated and preserve completed account files byte-for-byte', () => {
+  const root = mkdtempSync(join(tmpdir(), 'takeover-preferences-')); roots.push(root);
+  const user = join(root, 'user'), homes = new Homes(join(root, 'jevellan'), user), home = homes.account('claude', 'account');
+  mkdirSync(user); const native = join(user, '.claude.json'); writeFileSync(native, '{"owner":true}\n');
+  expect(() => prepareClaudeInteractiveHome(homes, user)).toThrow('isolated account home');
+  expect(readFileSync(native, 'utf8')).toBe('{"owner":true}\n');
+  const file = join(home, '.claude.json'); symlinkSync(native, file);
+  expect(() => prepareClaudeInteractiveHome(homes, home)).toThrow('preferences'); expect(readFileSync(native, 'utf8')).toBe('{"owner":true}\n');
+  rmSync(file); writeFileSync(file, 'not json');
+  expect(() => prepareClaudeInteractiveHome(homes, home)).toThrow(); expect(readFileSync(file, 'utf8')).toBe('not json');
+  writeFileSync(file, '  { "hasCompletedOnboarding": true, "theme":"light" }\n');
+  const before = readFileSync(file); prepareClaudeInteractiveHome(homes, home); expect(readFileSync(file)).toEqual(before);
+  rmSync(file); prepareClaudeInteractiveHome(homes, home); expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual({ hasCompletedOnboarding: true });
+});
+
+test('an authenticated isolated Claude takeover skips first-run onboarding and preserves account preferences', { timeout: 120_000 }, async () => {
+  const claude = named('claude'), f = await setup({ runtimes: { fake: new FakeRuntime(), claude } });
+  const { home } = await claudeAccount(f), file = join(home, '.claude.json');
+  const preferences = { theme: 'light', numStartups: 7, projects: { fixture: { existing: true } } };
+  writeFileSync(file, JSON.stringify(preferences));
+  claude.enqueueTurn(reportStep({ status: 'progress', summary: 'Ready for the owner.' }), forThread());
+  const threadId = await start(f, 'Native takeover', 'Inspect the project then wait.', 'claude_fixture'); await rest(f, threadId);
+  const cli = agents(f), command = jevellan(f, ['thread', 'attach', threadId], { path: `${cli.bin}:/usr/bin:/bin` });
+  const run = await cli.started(1);
+  expect(run.completedOnboarding).toBe(true);
+  expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual({ ...preferences, hasCompletedOnboarding: true });
+  command.send('exit 0\n'); expect((await finished(command)).code).toBe(0);
+});
 
 test('an attached owner session retains scoped read tools and capture, then expires on detach', async () => {
   const claude = named('claude'), f = await setup({ runtimes: { fake: new FakeRuntime(), claude } }); const { home } = await claudeAccount(f);

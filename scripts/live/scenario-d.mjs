@@ -20,6 +20,18 @@ export async function copyTerminalOutput(page, label, ready) {
   }, 30000, 100);
 }
 export function takeoverReady(view) { return REST_STATES.includes(view.thread.state) && !!view.transcript; }
+
+export async function exitNativeTakeover(client, page, projectId, threadId, sessionId, timeout = minutes(2), interval = 2000) {
+  await page.locator('.xterm-helper-textarea').press('Control+d');
+  let confirmed = false;
+  await until('the native thread to detach', async () => {
+    if ((await client.thread(projectId, threadId)).thread.state !== 'attached') return true;
+    if (!confirmed && (await client.terminalSnapshot(sessionId)).tail.replace(/\s/gu, '').includes('PressCtrl-Dagaintoexit')) {
+      confirmed = true; await page.locator('.xterm-helper-textarea').press('Control+d');
+    }
+    return false;
+  }, timeout, interval);
+}
 export async function scenarioD(client, projectId, recorder) {
   const page = client.page; let session, madrid;
   const last = async (id, text, timeout = minutes(2)) => until(`terminal command ${text} to end`, async () => (await client.terminalSnapshot(id)).commands.findLast(row => row.command === text && row.endedAt), timeout, 100);
@@ -52,9 +64,9 @@ export async function scenarioD(client, projectId, recorder) {
     const receipt = await client.task(projectId, 'Terminal takeover check', 'Inspect the invoices app, report its structure and wait for the owner before making any change.');
     const task = await until('a real resting session to take over', async () => { const task = (await client.tasks(projectId)).find(row => row.id === receipt.taskId); if (!task?.threadId) return; const view = await client.thread(projectId, task.threadId); return takeoverReady(view) ? task : undefined; }, minutes(15));
     await page.goto(`${client.config.hub}/projects/${projectId}/threads/${task.threadId}`); await page.getByRole('button', { name: 'Take over in browser', exact: true }).click(); await expect(page).toHaveURL(/\/terminals\//u); await until('the real thread attachment', async () => (await client.thread(projectId, task.threadId)).thread.state === 'attached', minutes(2)); await shot('native-takeover', 'a browser terminal attached to a native coding session with usable exit controls');
-    // Ctrl-D exits the native client without sending a synthetic agent response.
-    await page.locator('.xterm-helper-textarea').press('Control+d');
-    await until('the native thread to detach', async () => (await client.thread(projectId, task.threadId)).thread.state !== 'attached', minutes(2)); return { threadId: task.threadId, returnedState: (await client.thread(projectId, task.threadId)).thread.state };
+    // Follow the native client's exit confirmation without sending a synthetic agent response.
+    await exitNativeTakeover(client, page, projectId, task.threadId, new URL(page.url()).pathname.split('/terminals/')[1]);
+    return { threadId: task.threadId, returnedState: (await client.thread(projectId, task.threadId)).thread.state };
   });
   await recorder.step('D9', 'Every captured screen passes the dedicated live vision rubric in this layout.', async () => {
     const { judgeScreenshot } = await tsImport('../../tests/e2e/vision.ts', import.meta.url); const directory = join(recorder.output, new Date().toISOString().slice(0, 10), `${recorder.receipt.run}-screens`); mkdirSync(directory, { recursive: true }); const evidence = [];

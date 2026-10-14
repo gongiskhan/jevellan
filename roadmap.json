@@ -628,5 +628,17 @@
     "title": "Wait for dispatched thread data before returning its view",
     "why": "Decision805 refines794\u2013795. Real D hits task-before-owner arrival404. Owner reads wait for known dispatch/index and local data; streams stay index-only, mutations unchanged. Unknown/foreign404 and bounded pending409 preserved. Both gap regressions fail before repair;45 affected cases/typecheck/lint/build pass. PJ5 layouts and private activation pending.",
     "status": "complete-with-blockers"
+  },
+  {
+    "id": "activation-native-onboarding",
+    "title": "Prepare authenticated isolated Claude takeover",
+    "why": "Decision806 refines47/732. Preserve seventh real D timeout. Set native onboarding receipt only in the authenticated isolated account, preserving preferences and refusing unsafe or invalid files. Regression fails before repair;18 affected attach cases and final9-case CLI rerun pass. Full real D pending.",
+    "status": "complete-with-blockers"
+  },
+  {
+    "id": "activation-native-exit-confirmation",
+    "title": "Follow native takeover exit confirmation",
+    "why": "Decision807 refines736. A single Ctrl-D only asks for confirmation in installed Claude2.1.295. Follow the observed confirmation once; actual detach remains required. Original extracted interaction fails regression, then26 simulated harness cases pass. Real four-layout D remains pending.",
+    "status": "complete-with-blockers"
   }
 ]

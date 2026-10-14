@@ -47,7 +47,7 @@ export async function claudeAccount(f: ProjectFixture): Promise<{ secret: string
 export const worked = (f: ProjectFixture, threadId: string) => f.coordinatorState().queue
   .filter((event: CoordinatorEvent) => event.kind === 'thread-user-message' && event.threadId === threadId && event.text.startsWith('[owner worked'));
 
-export type AgentRecord = { name: 'claude' | 'codex'; pid: number; kind: 'help' | 'run' | 'signal' | 'exit' | 'no-home'; argv?: string[]; envKeys?: string[]; cwd?: string;
+export type AgentRecord = { name: 'claude' | 'codex'; pid: number; kind: 'help' | 'run' | 'signal' | 'exit' | 'no-home'; argv?: string[]; envKeys?: string[]; cwd?: string; completedOnboarding?: boolean;
   tty?: boolean; sessionId?: string; authDigest?: string; signal?: string; code?: number };
 export type Agents = { bin: string; records(): AgentRecord[]; started(count: number): Promise<AgentRecord> };
 /** `claude` and `codex` executables in a fresh PATH directory, logging to one file; `effort: false` leaves `--effort` out of `claude --help`. */

@@ -7,7 +7,8 @@
 //
 // The test writes `claude` and `codex` executables on a temporary PATH that import this module and call `run({ name, log, effort })`:
 // the attach command passes only a minimal environment, so the log path cannot travel through it.
-import { appendFileSync } from 'node:fs';
+import { appendFileSync, existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { createInterface } from 'node:readline';
 import { writeFakeNativeSession } from '../../packages/runtime-contract/dist/fake-native.js';
@@ -34,6 +35,7 @@ export function run({ name, log, effort = true }) {
   writeFakeNativeSession({ format: name, home, sessionId, cwd: process.cwd(), append: false,
     rows: [{ role: 'user', text: 'Worked on the thread in a terminal.' }, { role: 'assistant', text: 'Done in the terminal.' }] });
   record({ kind: 'run', argv: args, envKeys: Object.keys(process.env).sort(), cwd: process.cwd(), tty: process.stdin.isTTY === true, sessionId,
+    ...(name === 'claude' ? { completedOnboarding: existsSync(join(home, '.claude.json')) && JSON.parse(readFileSync(join(home, '.claude.json'), 'utf8')).hasCompletedOnboarding === true } : {}),
     ...(auth ? { authDigest: createHash('sha256').update(auth).digest('hex') } : {}) });
   console.log(`agent-cli ${name} started: ${args.join(' ')}`);
   createInterface({ input: process.stdin, terminal: false }).on('line', (line) => {

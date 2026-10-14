@@ -1,10 +1,10 @@
 import { spawn, type ChildProcess } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, lstatSync, readFileSync } from 'node:fs';
 import { constants } from 'node:os';
-import { isAbsolute } from 'node:path';
+import { basename, isAbsolute, join } from 'node:path';
 import { isatty } from 'node:tty';
 import { z } from 'zod';
-import { CLAUDE_FLAG_SETTINGS, Homes, ThreadAttachViewSchema, ThreadDetachViewSchema, minimalEnvironment, projectInstructionFile, runOwnedCommand } from '@jevellan/core';
+import { CLAUDE_FLAG_SETTINGS, Homes, ThreadAttachViewSchema, ThreadDetachViewSchema, atomicWrite, minimalEnvironment, projectInstructionFile, resolvedPath, runOwnedCommand } from '@jevellan/core';
 import { LocalRequestError, localRequest } from './local-request.js';
 import { findExecutable } from './toolchain.js';
 
@@ -32,6 +32,21 @@ function toml(value: unknown): string {
 /** D47: the thread stays attached until a detach reaches the daemon. */
 export const staysAttached = (threadId: string): string => `The thread stays attached. Run jevellan thread detach ${threadId} when Jevellan is running.`;
 const sentence = (error: unknown) => error instanceof Error && error.message ? error.message : UNANSWERED;
+
+/** Token-backed accounts already authenticated in Jevellan have no native onboarding receipt. Only their isolated account file is updated. */
+export function prepareClaudeInteractiveHome(homes: Homes, home: string): void {
+  if (home !== homes.at('homes', 'claude', basename(home)) || resolvedPath(home) !== home) throw new Error('Claude takeover requires its isolated account home.');
+  const file = join(home, '.claude.json');
+  let value: Record<string, unknown> = {};
+  if (existsSync(file)) {
+    const stat = lstatSync(file);
+    if (!stat.isFile() || stat.size > 2_000_000) throw new Error('Claude account preferences cannot be prepared for takeover.');
+    try { value = z.record(z.string(), z.unknown()).parse(JSON.parse(readFileSync(file, 'utf8'))); }
+    catch { throw new Error('Claude account preferences cannot be prepared for takeover.'); }
+  }
+  if (value.hasCompletedOnboarding === true) return;
+  atomicWrite(file, `${JSON.stringify({ ...value, hasCompletedOnboarding: true }, null, 2)}\n`);
+}
 
 /**
  * One local control request about a thread: the daemon's JSON answer (the caller parses it, so a 200 is always known to have taken
@@ -61,7 +76,7 @@ export async function claudeTakesEffort(executable: string, cwd: string, env: Re
  * `codex resume <id> -m <model> -c model_reasoning_effort="<effort>"`, in the thread's folder, with the account home and authentication
  * variables merged into a minimal environment. Secrets stay in the environment, never in the arguments.
  */
-async function prepare(answer: unknown, base: NodeJS.ProcessEnv): Promise<Launch | string> {
+async function prepare(answer: unknown, base: NodeJS.ProcessEnv, homes: Homes): Promise<Launch | string> {
   const parsed = ThreadAttachViewSchema.safeParse(answer); if (!parsed.success) return UNUSABLE;
   const view = parsed.data, home = view.env.HOME, label = LABELS[view.runtime];
   if (!home || !isAbsolute(home) || view.env[view.runtime === 'claude' ? 'CLAUDE_CONFIG_DIR' : 'CODEX_HOME'] !== home || view.env[view.runtime === 'claude' ? 'CODEX_HOME' : 'CLAUDE_CONFIG_DIR'] !== undefined) return UNUSABLE;
@@ -73,6 +88,7 @@ async function prepare(answer: unknown, base: NodeJS.ProcessEnv): Promise<Launch
   const executable = findExecutable(view.runtime, env.PATH ?? '/usr/bin:/bin');
   if (!executable) return `${label} is not installed on this device: the ${view.runtime} command was not found on PATH.`;
   if (!existsSync(view.cwd)) return `The thread's folder no longer exists: ${view.cwd}`;
+  if (view.runtime === 'claude') prepareClaudeInteractiveHome(homes, home);
   const integration = view.integration;
   const rootInstructions = view.runtime === 'codex' ? projectInstructionFile(view.cwd) : null;
   const hooks = integration ? { PreToolUse: [{ matcher: '.*', hooks: [{ type: 'command', command: integration.safetyCommand, timeout: 10 }] }] } : undefined;
@@ -140,7 +156,7 @@ export async function attachThread(threadId: string, options: ThreadCommandOptio
     const attached = await call(homes, options, threadId, 'attach', { schema: 'thread-attach-request-v1' });
     if (!attached.ok) { console.error(attached.message); return 1; }
     let launch: Launch | string;
-    try { launch = await prepare(attached.value, options.env ?? process.env); }
+    try { launch = await prepare(attached.value, options.env ?? process.env, homes); }
     catch (error) { launch = sentence(error); }
     const early = hold.received();
     if (typeof launch === 'string' || early) {
