@@ -1,0 +1,43 @@
+{
+  "schema": "readiness-runtime-model-evidence-v1",
+  "label": "live",
+  "at": "2026-10-14T11:05:07.101Z",
+  "source": "/Users/ggomes/.jevellan/apm.yml (model menu only)",
+  "menu": [
+    {
+      "id": "claude-fable",
+      "label": "Fable",
+      "runtime": "claude",
+      "model": "claude-fable-5-1",
+      "enabled": true
+    },
+    {
+      "id": "claude-opus",
+      "label": "Claude Opus 5.5",
+      "runtime": "claude",
+      "model": "claude-opus-5-5",
+      "enabled": true
+    },
+    {
+      "id": "codex-gpt",
+      "label": "GPT",
+      "runtime": "codex",
+      "model": "gpt-6-astra",
+      "enabled": true
+    },
+    {
+      "id": "claude-sonnet",
+      "label": "Sonnet",
+      "runtime": "claude",
+      "model": "claude-sonnet-5",
+      "enabled": false
+    },
+    {
+      "id": "model_724b3d194be446b1aeab87c948e8f9b3",
+      "label": "GPT-6.1-Sol",
+      "runtime": "codex",
+      "model": "gpt-6.1-sol",
+      "enabled": false
+    }
+  ]
+}

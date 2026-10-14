@@ -1,0 +1,180 @@
+{
+  "label": "live",
+  "source": "/Users/ggomes/.jevellan/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/start-plans/treq_70cde0703c46f18a6d70d07d30c1c65698680a2d.json",
+  "threadId": "thread_01M4X06SXEJPYAREQA4ND3C1A4",
+  "taskContext": {
+    "type": "fix",
+    "needs": [],
+    "goal": {
+      "name": "Hardening through automated tests",
+      "motivation": "Nothing in Ekoa should break without a test noticing. Every finding ends in a test or a written dismissal, and the nightly suite stays green."
+    }
+  },
+  "placement": {
+    "schema": "placement-v1",
+    "questionSet": "p-v1",
+    "source": "jev",
+    "fixed": [],
+    "isolation": "worktree",
+    "runtime": "codex",
+    "modelId": "codex-gpt",
+    "model": "gpt-6-astra",
+    "effortRequested": "medium",
+    "effortEffective": "medium",
+    "deviceId": "dev_01M4TBASXPRTQHPZCS1GDGBKDP",
+    "accountId": "acc_test",
+    "probabilities": {
+      "pick_model": {
+        "claude-fable": 0.01,
+        "claude-opus": 0.21,
+        "codex-gpt": 0.78
+      },
+      "effort": {
+        "low": 0.01,
+        "medium": 0.69,
+        "high": 0.3,
+        "xhigh": 0,
+        "max": 0
+      }
+    },
+    "eligibleModels": [
+      "claude-fable",
+      "claude-opus",
+      "codex-gpt"
+    ],
+    "excludedModels": [
+      {
+        "modelId": "claude-sonnet",
+        "reason": "disabled in Settings"
+      },
+      {
+        "modelId": "model_724b3d194be446b1aeab87c948e8f9b3",
+        "reason": "Not offered by this runtime right now"
+      }
+    ],
+    "eligibleDevices": [
+      "dev_01M4TBASXPRTQHPZCS1GDGBKDP"
+    ],
+    "excludedDevices": [
+      {
+        "deviceId": "dev_01M4NF02MA5E1EYSJRSRAMT5BA",
+        "reason": "Goncalos-MacBook-Pro.local has 3 GB free; Jevellan needs at least 20 GB to start work there."
+      },
+      {
+        "deviceId": "dev_01M4TB9PZK8HQ9CNZV5G7G0HBM",
+        "reason": "not set up for this project"
+      }
+    ],
+    "deviceFacts": [
+      {
+        "deviceId": "dev_01M4NF02MA5E1EYSJRSRAMT5BA",
+        "name": "Goncalos-MacBook-Pro.local",
+        "running": 0,
+        "tags": [
+          "mac",
+          "residential",
+          "browser-automation"
+        ],
+        "facts": {
+          "schema": "device-facts-v1",
+          "cores": 10,
+          "load1": 9.12646484375,
+          "load5": 10.431640625,
+          "totalMemoryBytes": 34359738368,
+          "freeMemoryBytes": 110215168,
+          "freeDiskBytes": 3980705792,
+          "os": "darwin",
+          "runningThreads": [],
+          "runningJobRuns": [],
+          "power": {
+            "schema": "device-power-v1",
+            "status": "available",
+            "observedAt": "2026-10-14T10:43:32.098Z",
+            "acSleepMinutes": 0
+          }
+        }
+      },
+      {
+        "deviceId": "dev_01M4TB9PZK8HQ9CNZV5G7G0HBM",
+        "name": "Mac.lan",
+        "running": 0,
+        "tags": [
+          "mac",
+          "residential"
+        ],
+        "facts": {
+          "schema": "device-facts-v1",
+          "cores": 10,
+          "load1": 3.37109375,
+          "load5": 3.59716796875,
+          "totalMemoryBytes": 17179869184,
+          "freeMemoryBytes": 388382720,
+          "freeDiskBytes": 353908875264,
+          "os": "darwin",
+          "runningThreads": [],
+          "runningJobRuns": [],
+          "power": {
+            "schema": "device-power-v1",
+            "status": "available",
+            "observedAt": "2026-10-14T10:44:13.515Z",
+            "acSleepMinutes": 0
+          }
+        }
+      },
+      {
+        "deviceId": "dev_01M4TBASXPRTQHPZCS1GDGBKDP",
+        "name": "dev-madrid",
+        "running": 0,
+        "tags": [
+          "linux",
+          "datacenter"
+        ],
+        "facts": {
+          "schema": "device-facts-v1",
+          "cores": 16,
+          "load1": 6.34,
+          "load5": 5.23,
+          "totalMemoryBytes": 67416625152,
+          "freeMemoryBytes": 16625152000,
+          "freeDiskBytes": 595065843712,
+          "os": "linux",
+          "runningThreads": [],
+          "runningJobRuns": [],
+          "power": {
+            "schema": "device-power-v1",
+            "status": "not-applicable",
+            "observedAt": "2026-10-14T10:44:10.360Z"
+          }
+        }
+      }
+    ],
+    "taskContext": {
+      "type": "fix",
+      "needs": [],
+      "goal": {
+        "name": "Hardening through automated tests",
+        "motivation": "Nothing in Ekoa should break without a test noticing. Every finding ends in a test or a written dismissal, and the nightly suite stays green."
+      }
+    },
+    "correctionsShown": [],
+    "jevCalls": [
+      {
+        "schema": "jev-call-v1",
+        "kind": "placement",
+        "requestedModel": "jev-latest",
+        "returnedModel": "jev-1.13.0",
+        "usage": {
+          "input_tokens": 2515,
+          "output_tokens": 102
+        },
+        "latencyMs": 274
+      }
+    ],
+    "decidedAt": "2026-10-14T10:44:23.831Z"
+  },
+  "labels": {
+    "modelLabel": "GPT",
+    "accountLabel": "Ekoa Codex",
+    "deviceName": "dev-madrid"
+  }
+}

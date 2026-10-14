@@ -1,0 +1,18 @@
+Live UI excerpt at 2026-10-14T10:54:31.778Z
+Nothing is running right now. Two threads exist and both are stuck on dev-madrid, and the third task hasn't started.
+
+Thread / task	Where it stands	How far
+WhatsApp undo: refuse negated requests and keep documents edited since the save	Idle, blocked: Codex is logged out on dev-madrid	About 90%. Both bugs reproduced and fixed in commit 495a3269a on branch jv/whatsapp-undo-refuse-negated-requests-an-0zyx7h. Left: one test-suite rerun, then the push and the PR.
+Make agent-user.test.ts pass under any umask	Idle, 0 turns taken	0%. Its first step failed on "The hub returned an invalid response", and Jevellan placed it on Codex on dev-madrid too, so my resume message will probably hit the same logout.
+Review Local drivers phase 2 (575cabfa9) against the repo rules and fix what it finds	Queued, not started	0%. No thread yet.
+
+Three drafts are still waiting for your approval: the larger review, the chat-thinking flake fix and the nightly triage.
+
+The one blocker is the Codex logout on dev-madrid. It holds up both threads, and the review task will likely land there too. Answering question 1 below unblocks both threads. Option A stays on Codex. Option B moves the work to Claude, and you'd need to tell me that in words, because I don't choose a thread's model myself.
+
+Open questions:
+
+"WhatsApp undo: refuse negated requests and keep documents edited since the save" (also blocks "Make agent-user.test.ts pass under any umask"): Codex is logged out on dev-madrid. How do you want to unblock it?
+A) I'll log Codex in on dev-madrid (run codex login --device-auth; I resume both threads on Codex)
+B) Finish it on Claude instead (I move the remaining work to Claude, continuing from the same branches)
+C) Ship as is (push the committed WhatsApp fix now; the umask thread still needs A or B)

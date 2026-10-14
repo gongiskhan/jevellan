@@ -1,0 +1,10 @@
+{
+  "label": "live",
+  "at": "2026-10-14T10:59:53.488896+00:00",
+  "projectSettingsDifferencesIgnoringRevision": {},
+  "currentSessionCheckpoints": {
+    "enabled": false,
+    "checkpointMinTokens": 40000
+  },
+  "currentAutoMerge": false
+}

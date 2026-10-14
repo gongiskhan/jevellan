@@ -1,0 +1,8 @@
+{
+  "schema": "readiness-source-freeze-v1",
+  "label": "live",
+  "at": "2026-10-14T11:17:54.505271+00:00",
+  "testedCommit": "ba595bf78fe4b885d486833dc715b5753654ae4a",
+  "sourceChangesAfterWrap": false,
+  "stagedSourceChanges": false
+}

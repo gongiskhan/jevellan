@@ -1,0 +1,11 @@
+{
+  "label": "live",
+  "at": "2026-10-14T10:42:45.029Z",
+  "project": "ekoa-code",
+  "autoMerge": false,
+  "sessionCheckpoints": {
+    "enabled": false,
+    "checkpointMinTokens": 40000
+  },
+  "requiredChecks": "result"
+}

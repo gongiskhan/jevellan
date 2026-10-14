@@ -1,0 +1,9 @@
+{
+  "label": "live",
+  "at": "2026-10-14T10:59:23.789Z",
+  "cacheWindowMinutes": 60,
+  "checkpointMinTokens": 40000,
+  "checkpointsEnabled": false,
+  "autoMerge": false,
+  "method": "Settings UI"
+}

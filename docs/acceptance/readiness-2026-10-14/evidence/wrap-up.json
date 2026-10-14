@@ -1,0 +1,56 @@
+{
+  "label": "live",
+  "sourceCommit": "ba595bf78fe4b885d486833dc715b5753654ae4a",
+  "build": {
+    "schema": "release-build-v1",
+    "version": "0.3.4",
+    "label": "simulated",
+    "sourceCommit": "ba595bf78fe4b885d486833dc715b5753654ae4a",
+    "platform": "darwin",
+    "arch": "arm64",
+    "startedAt": "2026-10-14T10:32:07.075Z",
+    "endedAt": "2026-10-14T10:33:08.469Z",
+    "checks": [
+      {
+        "name": "native",
+        "startedAt": "2026-10-14T10:32:07.076Z",
+        "endedAt": "2026-10-14T10:32:07.111Z",
+        "exitCode": 0
+      },
+      {
+        "name": "build",
+        "startedAt": "2026-10-14T10:32:07.111Z",
+        "endedAt": "2026-10-14T10:32:28.191Z",
+        "exitCode": 0
+      },
+      {
+        "name": "pack",
+        "startedAt": "2026-10-14T10:32:28.191Z",
+        "endedAt": "2026-10-14T10:33:08.468Z",
+        "exitCode": 0
+      }
+    ],
+    "status": "passed"
+  },
+  "activation": {
+    "source": "/Users/ggomes/.jevellan-build/loop-owner-2026-10-11/pro034-update-journal.json",
+    "state": "activated",
+    "at": "2026-10-14T10:36:24.235Z",
+    "fromVersion": "0.3.3",
+    "target": "0.3.4",
+    "rollback": "/Users/ggomes/.jevellan.before-034-2026-10-14"
+  },
+  "members": {
+    "madrid": {
+      "result": "failed",
+      "source": "/Users/ggomes/.jevellan-build/loop-owner-2026-10-11/readiness-wrap/madrid-update.log",
+      "errorExcerpt": "mux_client_request_session: session request failed: Session open refused by peer\nControlSocket /Users/ggomes/.ssh/control-5d062c22da7ceaede1be8215297768257988349c already exists, disabling multiplexing\nnode:fs:440\n    return binding.readFileUtf8(path, stringToFlags(options.flag));\n                   ^\n\nError: ENOENT: no such file or directory, open '/home/ggomes/.jevellan/device.json'\n    at readFileSync (node:fs:440:20)\n    at readDocument (file:///home/ggomes/.jevellan-build/verified034-shipping-linux/package/packages/core/dist/files.js:38:36)\n    at file:///home/ggomes/.jevellan-build/release034-shipping/member-update-034.mjs:21:17 {\n  errno: -2,\n  code: 'ENOENT',\n  syscall: 'open',\n  path: '/home/ggomes/.jevellan/device.json'\n}\n\nNode.js v22.23.2\n"
+    },
+    "mini": {
+      "result": "failed",
+      "source": "/Users/ggomes/.jevellan-build/loop-owner-2026-10-11/readiness-wrap/mini-update.log",
+      "errorExcerpt": "(node:67667) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\nfile:///Users/ggomes/.jevellan-build/release034-shipping/verified/package/packages/cli/dist/toolchain.js:113\n            throw new Error('The active dependency environment needs repair. Uninstall while keeping data, then reinstall.');\n                  ^\n\nError: The active dependency environment needs repair. Uninstall while keeping data, then reinstall.\n    at install (file:///Users/ggomes/.jevellan-build/release034-shipping/verified/package/packages/cli/dist/toolchain.js:113:19)\n    at installToolchain (file:///Users/ggomes/.jevellan-build/release034-shipping/verified/package/packages/cli/dist/toolchain.js:128:19)\n    at async Installer.prepare (file:///Users/ggomes/.jevellan-build/release034-shipping/verified/package/packages/cli/dist/installation.js:110:23)\n    at async Installer.update (file:///Users/ggomes/.jevellan-build/release034-shipping/verified/package/packages/cli/dist/installation.js:149:31)\n    at async preservedUpdate034 (file:///Users/ggomes/.jevellan-build/release034-shipping/preserved-update-034-mini-shipping.mjs:83:20)\n    at async file:///Users/ggomes/.jevellan-build/release034-shipping/member-update-034.mjs:28:15\n\nNode.js v22.22.0\n"
+    }
+  },
+  "disk": "Filesystem      Size    Used   Avail Capacity iused ifree %iused  Mounted on\n/dev/disk3s1   460Gi   422Gi   3.7Gi   100%    6.7M   39M   15%   /System/Volumes/Data\n"
+}

@@ -1,0 +1,261 @@
+{
+  "schema": "readiness-verdicts-v1",
+  "label": "live",
+  "completedAt": "2026-10-14T11:16:59.006074+00:00",
+  "tests": {
+    "T1": {
+      "result": "Partly",
+      "reason": "Two goal-linked tasks were created; only one thread was created, and it failed before turn 1. The review task did not start.",
+      "body": "<p>The exact requested instruction was sent at 11:43:19 Lisbon. The coordinator created one owner-request task under each objective and marked both Now. This proves task splitting and goal links, but not two running threads.</p><p class=\"path\">/Users/ggomes/.jevellan/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/ledger/000001.jsonl</p><pre>10:44:23 \u00b7 event 237 \u00b7 jevellan_task_create \u2192 Queued task &quot;Make agent-user.test.ts pass under any umask&quot;\n10:44:35 \u00b7 jevellan_task_create \u2192 Queued task &quot;Review Local drivers phase 2 (575cabfa9) against the repo rules and fix what it finds&quot;</pre><p class=\"path\">/home/ggomes/.jevellan-member/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/threads/thread_01M4X06SXEJPYAREQA4ND3C1A4/ledger/000001.jsonl</p><pre>10:44:25.894 \u00b7 preparing\n10:44:26.121 \u00b7 This step failed: The hub returned an invalid response.\n10:44:26.129 \u00b7 idle; turns: 0; cwd: empty</pre><p>The task creation succeeded, but this is not a pass for two running threads. No manual model/account override or internal task-start call was used to rescue it.</p><p>The first startup failure was recorded within about one minute of task creation. At the 30-minute observation limit, there was still no second thread. The later documentary snapshot at 11:13:43 UTC shows the same state; it is not a retry or an extension for success.</p>",
+      "evidence": [
+        "T1-request.json",
+        "T1-goals-and-accounts.json",
+        "T1-member.json",
+        "T1-coordinator-replies.json",
+        "T1-cutoff.json"
+      ],
+      "screenshots": [
+        [
+          "T1-running.png",
+          "Live: the Running section shows the failed new task as Idle, alongside an older unrelated thread. It does not show two new running threads."
+        ],
+        [
+          "T1-queue.png",
+          "Live: the code-review task is Now \u00b7 Queued, with its goal shown."
+        ],
+        [
+          "T1-thread-failed.png",
+          "Live: the new thread has no transcript because its first turn never started."
+        ],
+        [
+          "T1-running-at-cutoff.png",
+          "Live: later documentary snapshot; the first test thread remains Idle with zero turns."
+        ],
+        [
+          "T1-queue-at-cutoff.png",
+          "Live: later documentary snapshot; the review task remains queued."
+        ]
+      ]
+    },
+    "T2": {
+      "result": "Partly",
+      "reason": "The coordinator reports the real zero-turn/queued states, but gives a stale logout as the sole cause.",
+      "body": "<p>At 11:53:37, about ten minutes after T1, the exact status question was sent. The answer matches the task and thread states captured at that moment. Its diagnosis goes beyond that evidence: it says Codex logout is the one blocker even though Settings and the stored account status say Ready on Madrid.</p><p class=\"path\">Projects UI answer, 11:54 Lisbon</p><pre>&quot;Make agent-user.test.ts pass under any umask&quot;: Idle, 0 turns taken; 0%.\n&quot;Review Local drivers phase 2 ...&quot;: Queued, not started; 0%.\n&quot;The one blocker is the Codex logout on dev-madrid.&quot;</pre><p class=\"path\">/Users/ggomes/.jevellan/hub/jevellan.db \u00b7 account-statuses</p><pre>Ekoa Codex \u00b7 dev-madrid \u00b7 auth: ready\nweeklyPct: 15 \u00b7 observedAt: 2026-10-14T10:23:22.326Z</pre><p>The new thread has no session transcript. Its empty transcript and zero turns, rather than an invented progress excerpt, are the comparison evidence.</p>",
+      "evidence": [
+        "T2-request.json",
+        "T2-answer.txt",
+        "T2-ledger.json",
+        "T2-contemporaneous.json",
+        "T2-hub-at-question.json"
+      ],
+      "screenshots": [
+        [
+          "T2-answer.png",
+          "Live: the coordinator\u2019s status answer."
+        ],
+        [
+          "T2-codex-ready.png",
+          "Live: Codex is Ready on the Pro and dev-madrid, contradicting the claimed sole logout blocker."
+        ]
+      ]
+    },
+    "T3": {
+      "result": "Partly",
+      "reason": "The first task has a real Jev placement; the second has no thread or placement to inspect.",
+      "body": "<p>The first task was placed automatically, with no manual override: Codex GPT-6-Astra, medium effort, Ekoa Codex, on Madrid. GPT-6-Astra is enabled in the configured menu and the placement\u2019s source is Jev. No separate high-quality allowlist is evidenced here. Medium effort is reasonable for the small permission-fixture task. The record gives model/effort probabilities and device exclusions; it does not give a separate narrative account-choice rationale.</p><p class=\"path\">/Users/ggomes/.jevellan/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/start-plans/treq_70cde0703c46f18a6d70d07d30c1c65698680a2d.json</p><pre>source: jev; fixed: []\nruntime: codex; model: gpt-6-astra\neffortRequested: medium; effortEffective: medium\naccountId: acc_test (Ekoa Codex)\npick_model: GPT .78 / Opus .21 / Fable .01\neffort: medium .69 / high .30 / low .01\nPro excluded: 3 GB free, needs at least 20 GB.\nMadrid: only eligible device. Mini: not set up for this project.</pre><p>Usage available when that decision was made is preserved in the snapshot. Ekoa Codex was the only configured Codex account; its week usage was 15%, five-hour usage unknown. Claude Gmail showed 1% five-hour / 21% week, last observed 05:56 Lisbon. Claude Ekoa showed 12% / 98%, last observed the previous day, with resets already in the past. These stale observations are not fresh measurements. No account was selected or changed by the test driver.</p>",
+      "evidence": [
+        "T3-first-placement.json",
+        "T3-usage.json",
+        "T1-goals-and-accounts.json",
+        "T3-configured-models.json"
+      ],
+      "screenshots": [
+        [
+          "T3-placement.png",
+          "Live: the Why drawer shows Jev\u2019s scores, selected effort/account and the resource reasons."
+        ]
+      ]
+    },
+    "T4": {
+      "result": "Not run",
+      "reason": "No task PR exists, so there is no diff or key change to compare.",
+      "body": "<p>Task versus diff: No task PR exists, so there is no diff or key change to compare.</p><p>The GitHub listing is used only to establish that these tasks have no PR. Existing repository PRs from other work are not substituted. No PR was edited or pushed by the builder.</p>",
+      "evidence": [
+        "github-before.json",
+        "T1-member.json"
+      ],
+      "screenshots": [
+        [
+          "T1-thread-failed.png",
+          "Live: no transcript or produced work exists for the first task."
+        ]
+      ]
+    },
+    "T5": {
+      "result": "Not run",
+      "reason": "The thread ran zero turns; there are no build/test commands, PR body, checks or runner to evaluate.",
+      "body": "<p>Commands and runners: The thread ran zero turns; there are no build/test commands, PR body, checks or runner to evaluate.</p><p>The GitHub listing is used only to establish that these tasks have no PR. Existing repository PRs from other work are not substituted. No PR was edited or pushed by the builder.</p><p>Time from thread start to PR open: not measurable, because no PR opened. Runner location, narrow-test compliance and absence of self-review are unverified, not assumed from the task instructions.</p>",
+      "evidence": [
+        "github-before.json",
+        "T1-member.json"
+      ],
+      "screenshots": [
+        [
+          "T1-thread-failed.png",
+          "Live: no transcript or produced work exists for the first task."
+        ]
+      ]
+    },
+    "T7": {
+      "result": "Not run",
+      "reason": "There are no two PRs to review. Correctness, scope, tests and readability are unscored, rather than assigning fabricated 1\u20135 ratings.",
+      "body": "<p>Quality scores: There are no two PRs to review. Correctness, scope, tests and readability are unscored, rather than assigning fabricated 1\u20135 ratings.</p><p>The GitHub listing is used only to establish that these tasks have no PR. Existing repository PRs from other work are not substituted. No PR was edited or pushed by the builder.</p><div class=\"table\"><table><thead><tr><th>Criterion</th><th>Test-hardening PR</th><th>Code-review PR</th></tr></thead><tbody><tr><td>Correctness</td><td>Not run \u2014 no PR</td><td>Not run \u2014 no PR</td></tr><tr><td>Scope</td><td>Not run \u2014 no PR</td><td>Not run \u2014 no PR</td></tr><tr><td>Tests</td><td>Not run \u2014 no PR</td><td>Not run \u2014 no PR</td></tr><tr><td>Readability</td><td>Not run \u2014 no PR</td><td>Not run \u2014 no PR</td></tr></tbody></table></div><p>No real PR bug can be listed from these tasks because neither produced a diff. This is not a clean review verdict.</p>",
+      "evidence": [
+        "github-before.json",
+        "T1-member.json"
+      ],
+      "screenshots": [
+        [
+          "T1-thread-failed.png",
+          "Live: no transcript or produced work exists for the first task."
+        ]
+      ]
+    },
+    "T8": {
+      "result": "Not run",
+      "reason": "The required idle period after both tasks finish cannot begin: the tasks never finished.",
+      "body": "<p>Automatic goal refill is present and enabled, but this test requires both requested tasks to finish first. Existing drafts from before the run do not count as new suggestions. No refill was triggered manually and no draft was approved to manufacture the prerequisite.</p><p>An additional passive observation of 15 minutes 20 seconds, from 11:00:36 to 11:15:57 UTC, produced no new draft. The same three old drafts remain. Because the two work items never finished, this does not prove or disprove refill after completion; it is not labelled \u201cNot present\u201d.</p>",
+      "evidence": [
+        "T1-created.json",
+        "T8-observation-start.json",
+        "T8-observation-end.json",
+        "final-state.json"
+      ],
+      "screenshots": [
+        [
+          "T1-queue.png",
+          "Live: the pre-existing drafts and the still-queued review task."
+        ],
+        [
+          "T8-queue-after-idle.png",
+          "Live: the queue after the extra fifteen-minute observation. No new draft appears."
+        ]
+      ]
+    },
+    "T11": {
+      "result": "Partly",
+      "reason": "Day/night files and INDEX exist, but indexed thread files and the member mirror are missing; the question cannot reach a running session.",
+      "body": "<p>The hub folder was listed and its index compared with the ledger. Its day file contains T1\u2019s owner message, and its night file contains the prior night\u2019s results. The index links to both the old and new thread, but there is no threads directory. Madrid\u2019s mirror is absent more than 30 seconds later.</p><p class=\"path\">/Users/ggomes/.jevellan/project-journal/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/</p><pre>INDEX.md\ndays/2026-10-13.md\ndays/2026-10-14.md\nnights/2026-10-14.md\nNo threads/*.md files.</pre><p class=\"path\">/Users/ggomes/.jevellan/project-journal/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/INDEX.md</p><pre>Thread &quot;Make agent-user.test.ts pass under any umask&quot; (codex GPT, idle)\n\u2192 threads/make-agent-user-test-ts-pass-under-any-umask-35755f4d480f.md\nThe referenced file does not exist.</pre><p>The exact question \u201cWhat did the other thread change today?\u201d was sent through the thread UI at 11:50:16. It remains queued; there is no answer and no journal file read in a transcript. The failure is retained without restarting the session or repairing the mirror.</p><p>At the final observation, 25 minutes after the question, the UI still shows \u201cWaiting for the next turn\u201d and \u201cThe hub returned an invalid response.\u201d No command or file read ran.</p>",
+      "evidence": [
+        "T11-question.json",
+        "T11-hub-journal.json",
+        "T11-journal-excerpts.json",
+        "T11-mirror-after-30s.json",
+        "T1-member.json",
+        "final-member.json"
+      ],
+      "screenshots": [
+        [
+          "T11-thread-question.png",
+          "Live: the journal question is sent to the thread; no model turn has started."
+        ],
+        [
+          "T11-unanswered.png",
+          "Live: the final empty transcript and queued journal question."
+        ]
+      ]
+    },
+    "T9": {
+      "result": "Partly",
+      "reason": "Coordinator cache receipts and cold classification work; thread measurements and a calibrated cache window are not established.",
+      "body": "<p>Consecutive coordinator turns are recorded below exactly as the runtime reports them. They show high reads, but the write counters are large; this does not establish low per-turn writes or billing savings. The new thread has no turn records. Turn 14 is marked startedCold after 235.533 seconds with T10\u2019s temporary one-minute cache window.</p><div class=\"table\"><table><thead><tr><th>Turn</th><th>Idle seconds</th><th>Cache read</th><th>Cache write</th><th>Uncached input</th><th>Hit ratio</th><th>Started cold</th><th>Window minutes</th></tr></thead><tbody><tr><td>10</td><td>\u2014</td><td>3,499,116</td><td>346,027</td><td>1,107</td><td>91.0%</td><td>no</td><td>60</td></tr><tr><td>11</td><td>1.58</td><td>3,753,298</td><td>347,429</td><td>1,111</td><td>91.5%</td><td>no</td><td>60</td></tr><tr><td>12</td><td>479.184</td><td>4,010,039</td><td>362,571</td><td>1,115</td><td>91.7%</td><td>no</td><td>60</td></tr><tr><td>13</td><td>37.432</td><td>4,297,731</td><td>365,130</td><td>1,119</td><td>92.1%</td><td>no</td><td>60</td></tr><tr><td>14</td><td>235.533</td><td>4,443,435</td><td>365,736</td><td>1,121</td><td>92.4%</td><td>yes</td><td>1</td></tr><tr><td>15</td><td>32.539</td><td>4,736,499</td><td>368,687</td><td>1,125</td><td>92.8%</td><td>no</td><td>60</td></tr><tr><td>New test thread</td><td>No turn</td><td>\u2014</td><td>\u2014</td><td>\u2014</td><td>Unknown</td><td>\u2014</td><td>10</td></tr></tbody></table></div><p>The cold flag describes the configured idle threshold. It does not independently prove that the provider\u2019s cache expired.</p><h3>Earlier L1 calibration \u2014 historical live evidence</h3><div class=\"table\"><table><thead><tr><th>Idle minutes</th><th>Claude hit ratio</th><th>Codex hit ratio</th></tr></thead><tbody><tr><td>3</td><td>38.73%</td><td>Startup failed / missing</td></tr><tr><td>15</td><td>38.33%</td><td>58.4%</td></tr><tr><td>55</td><td>38.33%</td><td>18.8%</td></tr><tr><td>70</td><td>3.21%</td><td>Startup failed / missing</td></tr></tbody></table></div><p>L1 ran earlier today, from 07:17 to 08:27 UTC, on source b22c5fc6. All six recorded follow-ups are below the required 80% ratio; two Codex follow-ups are missing. No supported cache window was measured. Claude 60 / Codex 10 minutes remain provisional, not measured defaults. The earlier result is not rerun or counted as a pass here.</p>",
+      "evidence": [
+        "T9-cache-records.json",
+        "T9-historical-L1.json",
+        "T10-outcome.json"
+      ],
+      "screenshots": [
+        [
+          "T9-cache.png",
+          "Live: the coordinator\u2019s cache table, before the later test turns."
+        ]
+      ]
+    },
+    "T10": {
+      "result": "Doesn't work",
+      "reason": "The word is recalled, but no checkpoint or digest restart happens; the enabled setting remains off.",
+      "body": "<p>The exact remember instruction was sent, then Claude\u2019s cache window was set to 1 minute and the project minimum to 20,000 tokens through Settings. After 199.7 seconds, the exact recall question was sent. It answered \u201canchor-blue\u201d. Both values were then restored and verified.</p><p class=\"path\">/Users/ggomes/.jevellan/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/ledger/000001.jsonl</p><pre>turn 14: fresh=false\nidleSeconds=235.533; contextTokensBefore=145706; cacheWindowMinutes=1\nstartedCold=true\nsession-checkpointed events since test start: 0\nbefore/after session: same hashed identity\nFirst prompt: Events since your last turn:\n[owner 11:58] What is the test word?\n\nOpen questions to the owner (numbered as the owner sees them):\n1. [W</pre><p>There is no new digest to quote: the turn starts with the ordinary event block, not the fresh-session restart line. Checkpoints were already disabled because L2/L3 had not passed. The owner allowed only the two named settings to change, so enabled was not switched on. This result establishes the installed limitation, not a new failure in the checkpoint decision algorithm.</p>",
+      "evidence": [
+        "T10-remember-request.json",
+        "T10-runtime-baseline.json",
+        "T10-settings-applied.json",
+        "T10-recall-request.json",
+        "T10-answer.txt",
+        "T10-outcome.json",
+        "T10-settings-restored.json",
+        "settings-restoration-check.json"
+      ],
+      "screenshots": [
+        [
+          "T10-temporary-settings.png",
+          "Live: 20,000-token minimum with Checkpoint large cold sessions still unchecked."
+        ],
+        [
+          "T10-answer.png",
+          "Live: correct word recall, without a checkpoint."
+        ]
+      ]
+    },
+    "T6": {
+      "result": "Partly",
+      "reason": "It reads GitHub and correctly reports no task PRs; failed-check handling and merge routes cannot be exercised.",
+      "body": "<p>The exact PR-status question was sent through coordinator chat. The ledger records jevellan_github with action pulls, and the reply says neither new task has a PR. The gh listing agrees. The reply mixes the older WhatsApp thread into \u201cthese two\u201d and calls the requested review a third task; it also repeats the stale logout explanation.</p><p class=\"path\">/Users/ggomes/.jevellan/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/ledger/000001.jsonl</p><pre>coordinator tools: jevellan_thread_list; jevellan_github { action: pulls, state: open }\nReply: &quot;Neither thread has a PR yet.&quot;\nReview task: &quot;still queued with no thread, so it has no PR either.&quot;</pre><p>No PR checks finished for these tasks, no checks-failed event exists for them, and no green PR reached the merge gate. The requested \u201ctests needed or not\u201d routes are therefore not run, rather than inferred from another PR. Automatic merges stay off.</p><p>The reply says 10 open PRs; the gh output lists 11. Its limited lookup is not an accurate total. Both agree that the requested tasks have no PR.</p>",
+      "evidence": [
+        "T6-request.json",
+        "T6-answer.txt",
+        "T6-ledger.json",
+        "T6-github-today.json",
+        "T6-github-open.json",
+        "github-captures.json"
+      ],
+      "screenshots": [
+        [
+          "T6-answer.png",
+          "Live: the coordinator uses GitHub and reports the missing PRs."
+        ]
+      ]
+    }
+  },
+  "settingsRows": [
+    [
+      "ekoa-code autoMerge",
+      "false",
+      "false; confirmed before testing and after restoration"
+    ],
+    [
+      "Claude cacheWindowMinutes",
+      "60",
+      "1 during T10; restored to 60"
+    ],
+    [
+      "ekoa-code checkpointMinTokens",
+      "40,000",
+      "20,000 during T10; restored to 40,000"
+    ],
+    [
+      "ekoa-code sessionCheckpoints.enabled",
+      "false",
+      "false; unchanged"
+    ],
+    [
+      "Required checks",
+      "result",
+      "result; unchanged"
+    ],
+    [
+      "Runtime/model/account choices, goals, scheduler variable and guards",
+      "Existing values",
+      "Unchanged by the test driver"
+    ]
+  ]
+}

@@ -1,0 +1,128 @@
+{
+  "label": "live",
+  "source": "/Users/ggomes/.jevellan/hub/jevellan.db (read-only documents snapshot)",
+  "at": "2026-10-14T10:45:17.499436+00:00",
+  "goalLinks": [
+    {
+      "id": "task_0588b87ee887a1e85fff1a1e51d1c0e3a5ffc6f7",
+      "title": "Review Local drivers phase 2 (575cabfa9) against the repo rules and fix what it finds",
+      "type": "review",
+      "goalId": "goal_e050069d893454650ee25e02bc7038e1ee4c763c",
+      "source": "owner-request",
+      "state": "queued",
+      "threadId": null,
+      "createdAt": "2026-10-14T10:44:35.386Z",
+      "dispatchedAt": null
+    },
+    {
+      "id": "task_a9e114e89c037bfa48c86c8ec29a255d3d463d38",
+      "title": "Make agent-user.test.ts pass under any umask",
+      "type": "fix",
+      "goalId": "goal_92ee9cfab8481371112d2ba12cd6e27a32f05041",
+      "source": "owner-request",
+      "state": "active",
+      "threadId": "thread_01M4X06SXEJPYAREQA4ND3C1A4",
+      "createdAt": "2026-10-14T10:44:23.475Z",
+      "dispatchedAt": "2026-10-14T10:44:24.162Z"
+    }
+  ],
+  "usageAtDecision": [
+    {
+      "id": "2d54421440760027853ec8901199a2623936767bf8ed2a9deea51dde68c83b32",
+      "document": {
+        "schema": "account-status-v2",
+        "accountId": "acc_test",
+        "deviceId": "dev_01M4NF02MA5E1EYSJRSRAMT5BA",
+        "auth": "ready",
+        "usage": {
+          "weeklyPct": 15,
+          "weeklyResetsAt": "2026-10-20T04:58:28.000Z",
+          "source": "probe",
+          "observedAt": "2026-10-14T10:19:45.863Z"
+        },
+        "observedAt": "2026-10-14T10:19:45.974Z"
+      }
+    },
+    {
+      "id": "4c7cfbe9ff2981568e4ae587adb0b9e8a41e8757e4ab8c828c56b8f5619d3d52",
+      "document": {
+        "schema": "account-status-v2",
+        "accountId": "acc_01M3CRN0G9NKRYKKN0B2YVM0RF",
+        "deviceId": "dev_01M4NF02MA5E1EYSJRSRAMT5BA",
+        "auth": "ready",
+        "usage": {
+          "fiveHourPct": 1,
+          "weeklyPct": 21,
+          "fiveHourResetsAt": "2026-10-14T08:50:00.000Z",
+          "weeklyResetsAt": "2026-10-19T05:00:00.000Z",
+          "source": "probe",
+          "observedAt": "2026-10-14T04:56:40.531Z"
+        },
+        "observedAt": "2026-10-14T04:56:40.533Z"
+      }
+    },
+    {
+      "id": "59f7530f1aa65a621889069c6566668a28fa0202286e6547957ccd837f07d72f",
+      "document": {
+        "schema": "account-status-v2",
+        "accountId": "acc_test",
+        "deviceId": "dev_01M4TBASXPRTQHPZCS1GDGBKDP",
+        "auth": "ready",
+        "usage": {
+          "weeklyPct": 15,
+          "weeklyResetsAt": "2026-10-20T04:58:28.000Z",
+          "source": "probe",
+          "observedAt": "2026-10-14T10:23:22.143Z"
+        },
+        "observedAt": "2026-10-14T10:23:22.326Z"
+      }
+    },
+    {
+      "id": "74b086d54ca42d95e41aae19f9a0b64699811c0f093b2e679d04edaa2d954862",
+      "document": {
+        "schema": "account-status-v2",
+        "accountId": "acc_01M3CRQ2SN9FZZZ6RK44T8K0P0",
+        "deviceId": "dev_01M4NF02MA5E1EYSJRSRAMT5BA",
+        "auth": "ready",
+        "usage": {
+          "fiveHourPct": 12,
+          "weeklyPct": 98,
+          "fiveHourResetsAt": "2026-10-13T05:00:00.000Z",
+          "weeklyResetsAt": "2026-10-13T10:00:00.000Z",
+          "source": "probe",
+          "observedAt": "2026-10-13T04:52:32.252Z"
+        },
+        "observedAt": "2026-10-13T04:52:32.252Z"
+      }
+    }
+  ],
+  "availableAccounts": [
+    {
+      "id": "acc_01M3CRN0G9NKRYKKN0B2YVM0RF",
+      "document": {
+        "schema": "account-v1",
+        "id": "acc_01M3CRN0G9NKRYKKN0B2YVM0RF",
+        "runtime": "claude",
+        "label": "Gmail"
+      }
+    },
+    {
+      "id": "acc_01M3CRQ2SN9FZZZ6RK44T8K0P0",
+      "document": {
+        "schema": "account-v1",
+        "id": "acc_01M3CRQ2SN9FZZZ6RK44T8K0P0",
+        "runtime": "claude",
+        "label": "Ekoa"
+      }
+    },
+    {
+      "id": "acc_test",
+      "document": {
+        "schema": "account-v1",
+        "id": "acc_test",
+        "runtime": "codex",
+        "label": "Ekoa Codex"
+      }
+    }
+  ]
+}

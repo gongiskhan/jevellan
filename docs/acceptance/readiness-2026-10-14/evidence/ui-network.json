@@ -1,0 +1,6030 @@
+{
+  "label": "live",
+  "source": "Playwright browser response metadata",
+  "requests": [
+    {
+      "at": "2026-10-14T10:40:42.799Z",
+      "method": "GET",
+      "path": "/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:42.815Z",
+      "method": "GET",
+      "path": "/assets/index-CCZKs9dH.css",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:42.818Z",
+      "method": "GET",
+      "path": "/assets/evidence-refs-BqK-w8Pz.js",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:42.827Z",
+      "method": "GET",
+      "path": "/assets/rolldown-runtime-hePW80VL.js",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:42.836Z",
+      "method": "GET",
+      "path": "/assets/client-uHjBcGK0.js",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:42.852Z",
+      "method": "GET",
+      "path": "/assets/index-DHfH86Hn.js",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:42.974Z",
+      "method": "GET",
+      "path": "/api/auth",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:43.003Z",
+      "method": "GET",
+      "path": "/hub/config",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:43.004Z",
+      "method": "GET",
+      "path": "/hub/accounts",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:43.015Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:43.065Z",
+      "method": "GET",
+      "path": "/api/runtimes",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:43.089Z",
+      "method": "GET",
+      "path": "/assets/geist-wght-BgDaEnEv.woff2",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:43.089Z",
+      "method": "GET",
+      "path": "/assets/bricolage-grotesque-opsz-Cre6nC2_.woff2",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:43.099Z",
+      "method": "GET",
+      "path": "/hub/rigging",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:43.101Z",
+      "method": "GET",
+      "path": "/hub/devices/roster",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:43.103Z",
+      "method": "GET",
+      "path": "/hub/secrets/jev",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:43.138Z",
+      "method": "GET",
+      "path": "/assets/jetbrains-mono-wght-B9CIFXIH.woff2",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:43.158Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:43.158Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:43.166Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:43.167Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:43.167Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:43.172Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:43.173Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:43.179Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/coordinator/events",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:43.217Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:43.254Z",
+      "method": "GET",
+      "path": "/assets/markdown-9Vj24TbY.js",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:43.309Z",
+      "method": "POST",
+      "path": "/api/terminals/owner-command/receipt",
+      "status": 409
+    },
+    {
+      "at": "2026-10-14T10:40:43.330Z",
+      "method": "GET",
+      "path": "/icon-192.png",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:43.403Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:43.406Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:43.408Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:43.414Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:43.930Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:47.557Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:48.192Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:48.193Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:48.210Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:48.210Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:48.210Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:48.225Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:48.227Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:48.246Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:53.018Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:53.049Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:53.137Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:53.137Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:53.138Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:53.151Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:53.151Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:53.164Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:53.165Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:53.165Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:56.796Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:58.137Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:58.138Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:58.151Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:58.151Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:58.151Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:58.156Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:58.158Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:40:58.159Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:01.847Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:03.018Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:03.140Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:03.140Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:03.153Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:03.153Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:03.154Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:03.156Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:03.157Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:03.170Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:05.355Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:08.147Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:08.149Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:08.150Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:08.158Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:08.160Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:08.160Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:08.174Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:08.174Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:11.689Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:13.017Z",
+      "method": "GET",
+      "path": "/hub/devices/roster",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:13.017Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:13.149Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:13.149Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:13.149Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:13.149Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:13.152Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:13.152Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:13.152Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:13.166Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:16.039Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:16.039Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:16.039Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:16.039Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:18.136Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:18.948Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:20.995Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:20.995Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:20.995Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:23.018Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:23.134Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:25.996Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:26.012Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:26.016Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:26.328Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:28.135Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:30.998Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:30.998Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:30.998Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:31.817Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:33.021Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:33.136Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:36.012Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:36.013Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:36.015Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:36.406Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:38.134Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:40.709Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:41.000Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:41.006Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:41.013Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:43.037Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:43.051Z",
+      "method": "GET",
+      "path": "/hub/devices/roster",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:43.135Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:44.246Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:45.997Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:45.997Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:45.997Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:48.135Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:49.658Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:50.990Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:50.991Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:51.004Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:53.015Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:53.134Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:54.909Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:56.074Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:56.077Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:56.077Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:58.139Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:41:59.054Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:00.991Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:00.995Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:01.009Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:03.017Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:03.136Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:04.338Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:05.991Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:05.994Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:05.994Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:08.148Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:08.151Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:08.194Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:08.194Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:08.246Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:08.250Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:08.250Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:08.251Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:09.063Z",
+      "method": "GET",
+      "path": "/api/projects/project_b44a3a8c-90bb-4481-ac64-edf697c20a1f/visibility",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:09.104Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/visibility",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:10.694Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:13.026Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:13.058Z",
+      "method": "GET",
+      "path": "/hub/devices/roster",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:13.134Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:13.248Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:13.248Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:13.250Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:16.257Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:18.135Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:18.248Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:18.250Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:18.252Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:19.738Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:23.062Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:23.141Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:23.244Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:23.245Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:23.260Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:25.021Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:25.229Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:25.234Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:25.248Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:25.255Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:25.259Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:25.273Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:25.273Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:25.274Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/coordinator/events",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:25.357Z",
+      "method": "POST",
+      "path": "/api/terminals/owner-command/receipt",
+      "status": 409
+    },
+    {
+      "at": "2026-10-14T10:42:25.384Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:25.386Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:25.443Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:25.443Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:28.175Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:28.729Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:30.220Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:30.221Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:30.222Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:30.235Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:30.235Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:30.235Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:30.240Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:33.016Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:33.136Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:33.552Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:34.879Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work-settings",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:35.221Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:35.224Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:35.242Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:35.242Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:35.242Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:35.244Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:35.265Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:38.144Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:38.165Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:40.225Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:40.226Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:40.227Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:40.228Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:40.241Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:40.241Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:40.242Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:43.018Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:43.067Z",
+      "method": "GET",
+      "path": "/hub/devices/roster",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:43.138Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:43.470Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:45.186Z",
+      "method": "PUT",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work-settings",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:45.228Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:45.228Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:45.228Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:45.228Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:45.259Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:45.267Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:45.267Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:45.288Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:45.288Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:45.288Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:45.289Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:48.143Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:49.782Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:50.226Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:50.226Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:50.227Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:50.241Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:50.241Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:50.247Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:50.247Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:53.014Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:53.138Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:55.057Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:55.233Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:55.233Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:55.233Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:55.233Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:55.233Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:55.250Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:55.250Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:42:58.144Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:00.223Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:00.224Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:00.226Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:00.231Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:00.232Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:00.247Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:00.248Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:00.379Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:03.019Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:03.138Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:05.240Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:05.241Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:05.244Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:05.258Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:05.260Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:05.262Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:05.269Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:06.532Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:08.137Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:10.230Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:10.231Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:10.231Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:10.244Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:10.244Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:10.244Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:10.248Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:13.127Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:13.185Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:13.323Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:13.376Z",
+      "method": "GET",
+      "path": "/hub/devices/roster",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:15.239Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:15.239Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:15.244Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:15.273Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:15.277Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:15.288Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:15.299Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:16.717Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:18.140Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:19.908Z",
+      "method": "POST",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/coordinator/messages",
+      "status": 202
+    },
+    {
+      "at": "2026-10-14T10:43:19.936Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:19.936Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:19.953Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:19.953Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:19.953Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:19.999Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:20.005Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:20.007Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:20.009Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:20.347Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:20.366Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:20.394Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:20.399Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:20.399Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:20.407Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:20.433Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:20.433Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:23.297Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:23.329Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:23.380Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:23.390Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:23.392Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:23.392Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:24.067Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:25.235Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:25.235Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:25.235Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:25.235Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:25.249Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:25.249Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:25.249Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:28.137Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:29.288Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:30.223Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:30.225Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:30.227Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:30.227Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:30.257Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:30.257Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:30.257Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:33.572Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:33.610Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:34.062Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:35.243Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:35.253Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:35.257Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:35.272Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:35.277Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:35.285Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:35.339Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:35.679Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:35.681Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:35.688Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:35.697Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:38.124Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:38.142Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:40.224Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:40.224Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:40.225Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:40.240Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:40.240Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:40.242Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:40.261Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:43.215Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:43.253Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:43.312Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:43.312Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:43.313Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:43.320Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:43.390Z",
+      "method": "GET",
+      "path": "/hub/devices/roster",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:44.779Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:45.441Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:45.442Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:45.444Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:45.463Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:45.473Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:45.514Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:45.608Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:48.137Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:48.847Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:50.227Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:50.228Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:50.229Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:50.243Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:50.243Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:50.245Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:50.251Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:53.201Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:53.235Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:55.014Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:55.255Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:55.256Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:55.269Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:55.313Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:55.315Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:55.335Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:55.412Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:43:58.161Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:00.232Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:00.239Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:00.239Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:00.253Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:00.258Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:00.258Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:00.271Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:00.474Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:03.523Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:03.561Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:04.184Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:05.223Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:05.223Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:05.230Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:05.230Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:05.246Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:05.253Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:05.253Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:08.139Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:09.615Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:10.222Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:10.222Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:10.224Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:10.226Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:10.239Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:10.240Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:10.244Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:13.402Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:13.424Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:13.495Z",
+      "method": "GET",
+      "path": "/hub/devices/roster",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:15.223Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:15.224Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:15.225Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:15.239Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:15.250Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:15.256Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:15.256Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:15.886Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:18.137Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:20.227Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:20.227Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:20.230Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:20.236Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:20.236Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:20.249Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:20.250Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:21.293Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:23.015Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:23.329Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:23.651Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:23.654Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:23.716Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:23.786Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:25.237Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:25.238Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:25.242Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:25.243Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:25.248Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:25.249Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:25.249Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:26.115Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:26.118Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:26.125Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:26.128Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:26.798Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:28.136Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:30.207Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:30.230Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:30.238Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:30.238Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:30.246Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:30.266Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:30.266Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:30.287Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:33.036Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:33.654Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:33.729Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:33.733Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:33.739Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:33.745Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:34.952Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:35.230Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:35.231Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:35.246Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:35.250Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:35.250Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:35.263Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:35.263Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:35.608Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:35.610Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:35.688Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:35.758Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:38.137Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:39.405Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:40.234Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:40.234Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:40.247Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:40.256Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:40.256Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:40.260Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:40.261Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:40.999Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:41.009Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:41.014Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:41.016Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:43.014Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:43.439Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:43.516Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:43.516Z",
+      "method": "GET",
+      "path": "/hub/devices/roster",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:43.516Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:43.551Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:43.552Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:44.781Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:45.229Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:45.238Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:45.244Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:45.258Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:45.266Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:45.268Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:45.275Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:48.146Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:48.155Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:49.909Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:49.910Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:49.971Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:50.044Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:50.225Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:50.225Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:50.226Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:50.241Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:50.241Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:50.242Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:50.248Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:53.016Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:53.418Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:53.485Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:53.486Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:53.498Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:53.499Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:53.529Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:55.222Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:55.231Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:55.234Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:55.236Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:55.237Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:55.249Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:55.249Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:58.136Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:58.918Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:59.066Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:59.077Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:59.083Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:44:59.086Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:00.231Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:00.231Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:00.232Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:00.245Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:00.245Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:00.245Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:00.251Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:03.490Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:03.616Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:03.620Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:03.858Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:04.070Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:04.087Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:05.239Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:05.242Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:05.247Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:05.248Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:05.258Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:05.265Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:05.284Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:06.282Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:08.138Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:10.222Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:10.222Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:10.225Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:10.228Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:10.239Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:10.239Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:10.253Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:11.936Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:13.018Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:13.357Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:13.524Z",
+      "method": "GET",
+      "path": "/hub/devices/roster",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:15.220Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:15.221Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:15.225Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:15.238Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:15.239Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:15.239Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:15.244Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:17.318Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:18.159Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:20.235Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:20.237Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:20.238Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:20.250Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:20.254Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:20.265Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:20.267Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:21.059Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:21.149Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:21.187Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:21.189Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:21.197Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:21.325Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:21.327Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:21.334Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:21.337Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:22.098Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:22.101Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:22.103Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:22.110Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:23.054Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:23.430Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:23.500Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:23.501Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:23.510Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:23.517Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:25.222Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:25.223Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:25.226Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:25.230Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:25.230Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:25.246Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:25.251Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:27.272Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:28.157Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:28.277Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:28.281Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:28.283Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:28.291Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:30.220Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:30.229Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:30.233Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:30.235Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:30.236Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:30.245Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:30.248Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:32.696Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:33.026Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:33.138Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:33.584Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:33.598Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:33.598Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:33.604Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:35.223Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:35.226Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:35.227Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:35.227Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:35.228Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:35.242Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:35.244Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:36.047Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:38.137Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:40.223Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:40.223Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:40.226Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:40.228Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:40.237Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:40.249Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:40.252Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:40.517Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:40.552Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:40.554Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:40.560Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:40.764Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:40.767Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:40.774Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:40.781Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:41.896Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:43.042Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:43.139Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:43.524Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:43.526Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:43.529Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:43.536Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:43.538Z",
+      "method": "GET",
+      "path": "/hub/devices/roster",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:45.222Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:45.222Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:45.226Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:45.227Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:45.235Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:45.238Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:45.252Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:47.457Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:48.211Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:50.228Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:50.237Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:50.240Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:50.240Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:50.246Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:50.247Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:50.260Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:52.731Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:53.048Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:53.137Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:55.228Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:55.229Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:55.229Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:55.242Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:55.242Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:55.244Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:55.249Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:57.999Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:45:58.140Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:00.252Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:00.255Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:00.278Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:00.350Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:00.391Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:00.392Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:00.552Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:03.018Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:03.136Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:04.489Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:05.257Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:05.258Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:05.260Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:05.282Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:05.285Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:05.325Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:05.345Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:08.135Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:09.991Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:10.229Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:10.238Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:10.241Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:10.262Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:10.263Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:10.263Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:10.294Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:13.030Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:13.135Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:13.570Z",
+      "method": "GET",
+      "path": "/hub/devices/roster",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:15.225Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:15.231Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:15.243Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:15.243Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:15.263Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:15.291Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:15.292Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:15.295Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:18.135Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:20.232Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:20.232Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:20.233Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:20.246Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:20.260Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:20.260Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:20.260Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:21.477Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:23.056Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:23.147Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:25.222Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:25.224Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:25.236Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:25.236Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:25.236Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:25.252Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:25.253Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:27.674Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:28.149Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:30.237Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:30.239Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:30.240Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:30.245Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:30.245Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:30.246Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:30.259Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:33.019Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:33.140Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:33.164Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:35.229Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:35.230Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:35.234Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:35.235Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:35.235Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:35.250Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:35.250Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:38.135Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:39.757Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:40.234Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:40.296Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:40.296Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:40.296Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:40.304Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:40.305Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:40.335Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:43.017Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:43.136Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:43.578Z",
+      "method": "GET",
+      "path": "/hub/devices/roster",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:45.086Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:45.225Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:45.236Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:45.240Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:45.244Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:45.247Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:45.266Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:45.266Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:48.158Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:50.228Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:50.228Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:50.232Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:50.234Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:50.246Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:50.254Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:50.254Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:51.217Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:53.018Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:53.135Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:55.229Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:55.248Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:55.248Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:55.248Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:55.253Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:55.254Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:55.266Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:56.552Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:46:58.138Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:00.230Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:00.232Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:00.233Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:00.246Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:00.246Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:00.246Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:00.249Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:01.930Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:03.020Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:03.135Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:05.227Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:05.238Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:05.247Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:05.281Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:05.287Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:05.299Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:05.311Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:08.136Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:10.227Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:10.239Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:10.239Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:10.240Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:10.248Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:10.269Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:10.269Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:10.460Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:13.016Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:13.166Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:13.584Z",
+      "method": "GET",
+      "path": "/hub/devices/roster",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:15.229Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:15.230Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:15.230Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:15.243Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:15.243Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:15.243Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:15.249Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:17.688Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:18.138Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:20.236Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:20.238Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:20.239Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:20.239Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:20.246Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:20.254Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:20.255Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:23.042Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:23.161Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:24.819Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:25.223Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:25.224Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:25.239Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:25.239Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:25.245Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:25.253Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:25.256Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:28.136Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:30.230Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:30.230Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:30.233Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:30.235Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:30.235Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:30.250Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:30.252Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:32.738Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:33.046Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:33.134Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:35.229Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:35.230Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:35.233Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:35.234Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:35.236Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:35.251Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:35.256Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:38.138Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:40.228Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:40.237Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:40.240Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:40.241Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:40.241Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:40.262Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:40.271Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:40.571Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:43.017Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:43.136Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:43.596Z",
+      "method": "GET",
+      "path": "/hub/devices/roster",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:45.223Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:45.224Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:45.227Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:45.240Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:45.242Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:45.246Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:45.273Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:48.139Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:48.735Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:50.228Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:50.228Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:50.232Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:50.233Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:50.247Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:50.247Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:50.249Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:53.022Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:53.133Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:55.227Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:55.228Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:55.233Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:55.235Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:55.236Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:55.251Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:55.251Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:56.072Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:47:58.135Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:00.225Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:00.226Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:00.239Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:00.240Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:00.240Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:00.244Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:00.254Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:03.020Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:03.132Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:03.493Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:05.223Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:05.223Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:05.224Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:05.243Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:05.243Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:05.246Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:05.255Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:08.136Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:10.222Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:10.223Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:10.224Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:10.238Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:10.238Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:10.242Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:10.245Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:10.734Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:13.600Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:13.640Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:13.733Z",
+      "method": "GET",
+      "path": "/hub/devices/roster",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:15.228Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:15.235Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:15.244Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:15.250Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:15.262Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:15.264Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:15.278Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:18.132Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:19.206Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:20.226Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:20.227Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:20.240Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:20.249Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:20.249Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:20.249Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:20.249Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:23.021Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:23.133Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:25.220Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:25.221Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:25.222Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:25.236Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:25.237Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:25.237Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:25.249Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:26.294Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:28.137Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:30.223Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:30.229Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:30.233Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:30.239Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:30.250Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:30.276Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:30.290Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:33.080Z",
+      "method": "POST",
+      "path": "/api/improver",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:33.599Z",
+      "method": "GET",
+      "path": "/api/session-list",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:35.236Z",
+      "method": "GET",
+      "path": "/api/project-work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:35.237Z",
+      "method": "GET",
+      "path": "/api/conversations",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:35.249Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/dailies",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:35.254Z",
+      "method": "GET",
+      "path": "/hub/projects",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:35.268Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/work",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:35.269Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/goals",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:35.271Z",
+      "method": "GET",
+      "path": "/api/projects/project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-14T10:48:35.563Z",
+      "method": "GET",
+      "path": "/api/cursor",
+      "status": 200
+    }
+  ]
+}

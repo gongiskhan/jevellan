@@ -1,0 +1,21 @@
+{
+  "schema": "readiness-report-validation-v1",
+  "label": "live",
+  "at": "2026-10-14T11:18:46.659229+00:00",
+  "scope": "Report artifact only, not product tests",
+  "testSections": [
+    "T1",
+    "T2",
+    "T3",
+    "T4",
+    "T5",
+    "T6",
+    "T7",
+    "T8",
+    "T9",
+    "T10",
+    "T11"
+  ],
+  "missingLocalArtifacts": [],
+  "fileCount": 77
+}

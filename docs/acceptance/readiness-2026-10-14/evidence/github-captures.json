@@ -1,0 +1,31 @@
+{
+  "schema": "readiness-github-capture-v1",
+  "label": "live",
+  "readOnly": true,
+  "captures": [
+    {
+      "file": "github-before.json",
+      "command": "gh pr list --repo gongiskhan/ekoa-code --state open --limit 50 --json number,title,url,headRefName,headRefOid,createdAt,author,isDraft",
+      "rows": 11,
+      "contemporaneousSnapshot": "T1-progress.json",
+      "snapshotAt": "2026-10-14T10:45:02.125819+00:00",
+      "timestampNote": "Snapshot time is contemporaneous, not an exact API response timestamp. File mtime changed during secret/session-identity sanitization."
+    },
+    {
+      "file": "T6-github-today.json",
+      "command": "gh pr list --repo gongiskhan/ekoa-code --state all --search created:>=2026-10-14 --limit 50 --json number,title,url,headRefName,headRefOid,createdAt,updatedAt,state,isDraft",
+      "rows": 8,
+      "contemporaneousSnapshot": "T10-after-answer.json",
+      "snapshotAt": "2026-10-14T10:59:25.615636+00:00",
+      "timestampNote": "Snapshot time is contemporaneous, not an exact API response timestamp. File mtime changed during secret/session-identity sanitization."
+    },
+    {
+      "file": "T6-github-open.json",
+      "command": "gh pr list --repo gongiskhan/ekoa-code --state open --limit 50 --json number,title,url,headRefName,headRefOid,createdAt,updatedAt,isDraft",
+      "rows": 11,
+      "contemporaneousSnapshot": "T6-state.json",
+      "snapshotAt": "2026-10-14T11:00:39.816374+00:00",
+      "timestampNote": "Snapshot time is contemporaneous, not an exact API response timestamp. File mtime changed during secret/session-identity sanitization."
+    }
+  ]
+}

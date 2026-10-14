@@ -1,0 +1,8 @@
+{
+  "label": "live",
+  "at": "2026-10-14T10:49:53.311Z",
+  "runtime": "claude",
+  "cacheWindowMinutes": 60,
+  "checkpointMinTokens": 40000,
+  "checkpointsEnabled": false
+}

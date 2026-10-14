@@ -1,0 +1,90 @@
+[
+  {
+    "createdAt": "2026-10-14T10:42:34Z",
+    "headRefName": "claude/quick-legal-depth-m7wxu3",
+    "headRefOid": "6cb5cd27e0c1dd27288a009e2d9dad6ef0ee4ef7",
+    "isDraft": false,
+    "number": 248,
+    "state": "OPEN",
+    "title": "Legal answers: a lawyer's working opinion in the chat, on the Expert profile",
+    "updatedAt": "2026-10-14T10:53:26Z",
+    "url": "https://github.com/gongiskhan/ekoa-code/pull/248"
+  },
+  {
+    "createdAt": "2026-10-14T10:24:35Z",
+    "headRefName": "claude/project-thread-x482ks",
+    "headRefOid": "4b0aab43f24379c9ab3b89f7714bf231709f4c7a",
+    "isDraft": false,
+    "number": 247,
+    "state": "MERGED",
+    "title": "MCP: lead a client to build what no integration action does",
+    "updatedAt": "2026-10-14T10:36:17Z",
+    "url": "https://github.com/gongiskhan/ekoa-code/pull/247"
+  },
+  {
+    "createdAt": "2026-10-14T09:41:09Z",
+    "headRefName": "claude/legal-quality-programme-ii4eh4",
+    "headRefOid": "43a804a04232ec059a1e1f2f4cc8b84f2b5969bf",
+    "isDraft": false,
+    "number": 246,
+    "state": "OPEN",
+    "title": "Legal loop: the night tries one fix, under a monthly ceiling, and a refused key judges nothing (LQ-44)",
+    "updatedAt": "2026-10-14T09:41:09Z",
+    "url": "https://github.com/gongiskhan/ekoa-code/pull/246"
+  },
+  {
+    "createdAt": "2026-10-14T08:24:31Z",
+    "headRefName": "claude/project-thread-x482ks",
+    "headRefOid": "78d6f2a672731d82d6f2ad1d41cadeed354244ef",
+    "isDraft": false,
+    "number": 245,
+    "state": "MERGED",
+    "title": "Integration build page: approve or stop a build that waits on you",
+    "updatedAt": "2026-10-14T08:35:52Z",
+    "url": "https://github.com/gongiskhan/ekoa-code/pull/245"
+  },
+  {
+    "createdAt": "2026-10-14T05:16:17Z",
+    "headRefName": "claude/project-thread-vil9ts",
+    "headRefOid": "d1f4c25990e8e064412e9c3b10d7ad30941ac2f8",
+    "isDraft": false,
+    "number": 244,
+    "state": "MERGED",
+    "title": "Last night's two red tests: Integra\u00e7\u00f5es spec fix, and GENIUS at high effort (D-MODEL-6)",
+    "updatedAt": "2026-10-14T05:48:04Z",
+    "url": "https://github.com/gongiskhan/ekoa-code/pull/244"
+  },
+  {
+    "createdAt": "2026-10-14T05:10:24Z",
+    "headRefName": "claude/desktop-auto-update-ocfmgi",
+    "headRefOid": "9c307d79fea2a7d186c9f719f8b1c7b06095b7e5",
+    "isDraft": false,
+    "number": 243,
+    "state": "MERGED",
+    "title": "Mac update banner: ask the app to check when the server's minimum is ahead of it",
+    "updatedAt": "2026-10-14T05:21:55Z",
+    "url": "https://github.com/gongiskhan/ekoa-code/pull/243"
+  },
+  {
+    "createdAt": "2026-10-14T05:04:43Z",
+    "headRefName": "claude/whatsapp-files-to-client-1v57uc",
+    "headRefOid": "4036521f63fc46a54d277af29143f52b9bea41cd",
+    "isDraft": false,
+    "number": 242,
+    "state": "MERGED",
+    "title": "Diagram 10: the D-WA-11 note's rawText matches its own text",
+    "updatedAt": "2026-10-14T05:15:39Z",
+    "url": "https://github.com/gongiskhan/ekoa-code/pull/242"
+  },
+  {
+    "createdAt": "2026-10-14T01:56:56Z",
+    "headRefName": "legal-quality/2026-10-14-daily-report",
+    "headRefOid": "9e5d9677fb10193ecb64cce7770d73c5ff640d77",
+    "isDraft": false,
+    "number": 241,
+    "state": "MERGED",
+    "title": "docs(legal): daily report 2026-10-14",
+    "updatedAt": "2026-10-14T05:08:53Z",
+    "url": "https://github.com/gongiskhan/ekoa-code/pull/241"
+  }
+]

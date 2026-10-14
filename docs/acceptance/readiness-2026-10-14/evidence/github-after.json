@@ -1,0 +1,102 @@
+[
+  {
+    "createdAt": "2026-10-14T09:41:09Z",
+    "headRefName": "claude/legal-quality-programme-ii4eh4",
+    "headRefOid": "43a804a04232ec059a1e1f2f4cc8b84f2b5969bf",
+    "isDraft": false,
+    "number": 246,
+    "title": "Legal loop: the night tries one fix, under a monthly ceiling, and a refused key judges nothing (LQ-44)",
+    "updatedAt": "2026-10-14T09:41:09Z",
+    "url": "https://github.com/gongiskhan/ekoa-code/pull/246"
+  },
+  {
+    "createdAt": "2026-10-11T18:33:26Z",
+    "headRefName": "codex/jevellan-nightly-dispatch",
+    "headRefOid": "187ed0290326465d74dd15860cd9bda69142e253",
+    "isDraft": false,
+    "number": 208,
+    "title": "Keep the GitHub night behind an owner scheduler switch",
+    "updatedAt": "2026-10-12T17:01:17Z",
+    "url": "https://github.com/gongiskhan/ekoa-code/pull/208"
+  },
+  {
+    "createdAt": "2026-10-08T16:01:33Z",
+    "headRefName": "feat/i18n-en-honorarios",
+    "headRefOid": "d13f6f771c8ba78d88b9f4fdae784fa248d947c3",
+    "isDraft": false,
+    "number": 143,
+    "title": "feat(legal): Honor\u00e1rios follows the dashboard language, EN option (Honor\u00e1rios)",
+    "updatedAt": "2026-10-08T16:01:50Z",
+    "url": "https://github.com/gongiskhan/ekoa-code/pull/143"
+  },
+  {
+    "createdAt": "2026-10-08T16:01:30Z",
+    "headRefName": "feat/i18n-en-nucleo",
+    "headRefOid": "b6152b1e6109176fcb51ec94d7d7400d3f0229a6",
+    "isDraft": false,
+    "number": 142,
+    "title": "feat(legal): N\u00facleo follows the dashboard language, EN option (N\u00facleo)",
+    "updatedAt": "2026-10-08T16:01:47Z",
+    "url": "https://github.com/gongiskhan/ekoa-code/pull/142"
+  },
+  {
+    "createdAt": "2026-10-08T16:01:27Z",
+    "headRefName": "feat/i18n-en-prazos",
+    "headRefOid": "359a48035d8bbc99172d3dda22a4306cfe4a25fc",
+    "isDraft": false,
+    "number": 141,
+    "title": "feat(legal): Prazos follows the dashboard language, EN option (Prazos)",
+    "updatedAt": "2026-10-08T16:01:44Z",
+    "url": "https://github.com/gongiskhan/ekoa-code/pull/141"
+  },
+  {
+    "createdAt": "2026-10-08T16:01:24Z",
+    "headRefName": "feat/i18n-en-plataforma",
+    "headRefOid": "439ee87d96732128ebd159aab81fd12a8fb47e1a",
+    "isDraft": false,
+    "number": 140,
+    "title": "feat(web): EN for the shell, the header button saves the person's language, apps are told the language (plataforma)",
+    "updatedAt": "2026-10-08T16:01:24Z",
+    "url": "https://github.com/gongiskhan/ekoa-code/pull/140"
+  },
+  {
+    "createdAt": "2026-10-08T14:21:16Z",
+    "headRefName": "feat/painel-app-simplificado",
+    "headRefOid": "98323f4635ef4e3650753bdc4d4c11f46f4af5c8",
+    "isDraft": false,
+    "number": 137,
+    "title": "feat(shell): painel de app com uma s\u00f3 barra; a app ocupa o painel (shell, nenhuma app EKOA)",
+    "updatedAt": "2026-10-08T16:00:27Z",
+    "url": "https://github.com/gongiskhan/ekoa-code/pull/137"
+  },
+  {
+    "createdAt": "2026-10-07T17:51:04Z",
+    "headRefName": "fix/honorarios-timbre-semente",
+    "headRefOid": "f9030f2ec46c7af1b396125f1d75d51ff51759f4",
+    "isDraft": false,
+    "number": 117,
+    "title": "fix(legal): a new office's printed documents no longer carry the name \"Fonseca & Associados\" (Honor\u00e1rios, Dossi\u00ea, Injun\u00e7\u00f5es)",
+    "updatedAt": "2026-10-07T17:51:04Z",
+    "url": "https://github.com/gongiskhan/ekoa-code/pull/117"
+  },
+  {
+    "createdAt": "2026-10-07T17:51:01Z",
+    "headRefName": "fix/cobrancas-extrato-anuladas",
+    "headRefOid": "ca30933e1e7b1418c23ef6bf32bead2cfeb28e18",
+    "isDraft": false,
+    "number": 116,
+    "title": "fix(legal): the client's extrato de conta corrente leaves voided debts out (Cobran\u00e7as)",
+    "updatedAt": "2026-10-07T17:51:01Z",
+    "url": "https://github.com/gongiskhan/ekoa-code/pull/116"
+  },
+  {
+    "createdAt": "2026-10-07T17:50:58Z",
+    "headRefName": "fix/prazos-edicao-dias-uteis",
+    "headRefOid": "9b19d0ec2bf84f60ab68f6e804dce681d9d59074",
+    "isDraft": false,
+    "number": 115,
+    "title": "fix(legal): changing a deadline's counting to dias \u00fateis in the edit form no longer keeps the holiday suspension (Prazos)",
+    "updatedAt": "2026-10-07T17:50:58Z",
+    "url": "https://github.com/gongiskhan/ekoa-code/pull/115"
+  }
+]

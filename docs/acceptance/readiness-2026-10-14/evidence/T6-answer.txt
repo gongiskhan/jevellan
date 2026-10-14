@@ -1,0 +1,16 @@
+Live UI excerpt at 2026-10-14T11:00:36.988Z
+Neither thread has a PR yet. None of the 10 open PRs on GitHub comes from a Jevellan thread branch.
+
+"WhatsApp undo: refuse negated requests and keep documents edited since the save": no PR. The fix is committed locally on branch jv/whatsapp-undo-refuse-negated-requests-an-0zyx7h (commit 495a3269a) but hasn't been pushed. Jevellan pushes the branch and opens the PR once the thread reports done, and the thread can't take that last turn while Codex is logged out on dev-madrid.
+"Make agent-user.test.ts pass under any umask": no PR, no branch and no commits. The thread has taken 0 turns: its first step failed on a hub error, and it's on the same logged-out Codex on dev-madrid.
+
+The third task you asked for, "Review Local drivers phase 2 (575cabfa9) against the repo rules and fix what it finds", is still queued with no thread, so it has no PR either.
+
+Answering question 1 below unblocks both threads.
+
+Open questions:
+
+"WhatsApp undo: refuse negated requests and keep documents edited since the save" (also blocks "Make agent-user.test.ts pass under any umask"): Codex is logged out on dev-madrid. How do you want to unblock it?
+A) I'll log Codex in on dev-madrid (run codex login --device-auth; I resume both threads on Codex)
+B) Finish it on Claude instead (I move the remaining work to Claude, continuing from the same branches)
+C) Ship as is (push the committed WhatsApp fix now; the umask thread still needs A or B)
