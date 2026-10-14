@@ -20,6 +20,8 @@
     "typecheck": "passed",
     "lint": "passed"
   },
-  "liveRepeat": "not run",
-  "ownerAcceptance": false
+  "liveRepeat": "passed",
+  "ownerAcceptance": false,
+  "sourceCommit": "834a258d08384d2d0e2204f6d85a89d80f879861",
+  "liveEvidence": "journal-projection.json"
 }

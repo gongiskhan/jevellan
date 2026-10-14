@@ -1,0 +1,36 @@
+{
+  "schema": "cache-journal-live-projection-v1",
+  "label": "live",
+  "at": "2026-10-14T08:49:47.282Z",
+  "projectId": "live_cache_3e278f080b3e4f36b2b6e0bb68585640",
+  "calendarChanged": true,
+  "previousBytesPreserved": true,
+  "files": 4,
+  "rebuildByteIdentical": true,
+  "readOnly": true,
+  "mirrorMatched": true,
+  "mirrorWaitSeconds": 2.451,
+  "manifest": {
+    "INDEX.md": {
+      "sha256": "47149eff605399415a432e8af92be08da2b50813e974b862cc075c89024dd746",
+      "bytes": 477,
+      "mode": 256
+    },
+    "days/2026-10-14.md": {
+      "sha256": "1cf71b46f35e3914795ae0ec9efee8d1356c1e33b025575e202e45c5aff29266",
+      "bytes": 119053,
+      "mode": 256
+    },
+    "threads/add-csv-export-to-the-customers-page-fad6e4b5f385.md": {
+      "sha256": "e7c86b747273694e69f61ef52bff625284530d4e67557ea7be7160cc0f1ee5a0",
+      "bytes": 34013,
+      "mode": 256
+    },
+    "threads/paginate-the-customers-list-4668ca6d0f49.md": {
+      "sha256": "f6a7fb8346094da9a257318b7bdb860fc78a0339fb4ba821a104b457bc508bfd",
+      "bytes": 57954,
+      "mode": 256
+    }
+  },
+  "ownerAcceptance": false
+}

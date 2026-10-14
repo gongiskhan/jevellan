@@ -500,7 +500,7 @@
   {
     "id": "cache-journal-closing",
     "title": "Measure real cache windows and release",
-    "why": "Decisions826–827: live mesh check finds calendar replay and sweep starvation; versioned ledger configuration and isolated four-worker metadata sweep fix it. Three regressions fail before;26 affected cases/build/type/lint pass after. RealL1 has six valid ratios below0.8 and two Codex startup failures; L2/L3 and one unchanged-clock L2 retry fail before qualifying checkpoints. Defaults off/40000, windows provisional60/10. Earlier full backend2113pass/16fail/7skip; full browser running. Corrected034 archives/full checks and activation pending.",
+    "why": "Decisions826–827: live mesh check finds calendar replay and sweep starvation; versioned ledger configuration and isolated four-worker metadata sweep fix it. Three regressions fail before;26 affected cases/build/type/lint pass after. RealL1 has six valid ratios below0.8 and two Codex startup failures; L2/L3 and one unchanged-clock L2 retry fail before qualifying checkpoints. Defaults off/40000, windows provisional60/10. Earlier full backend2113pass/16fail/7skip; full browser running. Corrected034 archives/full checks and activation pending. Decision828: real calendar change preserves historical bytes, rebuild is identical and Madrid updates in2.451s. Both private profiles closed normally. Corrected Mac/Linux/Mini archive checks pass; draft staged on834. Final full suites and production activation pending.",
     "status": "in-progress"
   },
   {

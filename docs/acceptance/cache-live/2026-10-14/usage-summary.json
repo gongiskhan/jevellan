@@ -1,0 +1,28 @@
+{
+  "schema": "cache-live-usage-summary-v1",
+  "label": "live",
+  "at": "2026-10-14T08:57:13.162526+00:00",
+  "providers": {
+    "claude": {
+      "sessions": 12,
+      "reportedCostUsd": 15.9425704,
+      "unknownCostSessions": 0,
+      "reportedInputTokens": 484499,
+      "unknownInputSessions": 0,
+      "reportedOutputTokens": 98555,
+      "summedSessionMinutes": 10.900416666666667
+    },
+    "codex": {
+      "sessions": 14,
+      "reportedCostUsd": 0,
+      "unknownCostSessions": 14,
+      "reportedInputTokens": 6425566,
+      "unknownInputSessions": 0,
+      "reportedOutputTokens": 37413,
+      "summedSessionMinutes": 28.251833333333334
+    }
+  },
+  "coldCheckpointCostUsd": null,
+  "coldResumeComparisonUsd": null,
+  "reason": "No qualifying live checkpoint; no measured savings. Provider costs are runtime-reported, not a bill. Unknown costs are not zero. Session minutes overlap; vision and infrastructure cost are not recorded."
+}
