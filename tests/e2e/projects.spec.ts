@@ -1668,3 +1668,41 @@ test('CM5 owner terminal reconnects, relays, copies command records and returns 
   await page.getByRole('textbox', { name: 'Type or dictate a command' }).fill('exit 0'); await page.locator('.terminal-commandline').getByRole('button', { name: 'Run', exact: true }).click();
   await expect.poll(async () => (await threadView(page, started.threadId)).thread.state, LONG).toBe('idle'); expect(errors).toEqual([]);
 });
+
+
+test('CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout', async ({ page }) => {
+  await control('/projects/clock', { schema: 'fixture-project-clock-v1', advanceMinutes: 0, reset: true });
+  const errors = await begin(page); await openProject(page, 'Projects fixture');
+  let dialog = await openSettings(page);
+  const enabled = dialog.getByRole('checkbox', { name: 'Checkpoint large cold sessions', exact: true });
+  await expect(enabled).not.toBeChecked(); await enabled.check();
+  const minimum = dialog.getByRole('spinbutton', { name: 'Checkpoint minimum context tokens', exact: true });
+  await expect(minimum).toHaveValue('40000'); await minimum.fill('42000');
+  await dialog.getByRole('button', { name: 'Save', exact: true }).click(); await expect(dialog).toHaveCount(0);
+  dialog = await openSettings(page); await expect(enabled).toBeChecked(); await expect(minimum).toHaveValue('42000');
+  await shot(page, 'checkpoint-settings', false); await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+  if (phone(test.info())) await tap(page, tab(page, 'Chat'));
+  await composer(page).fill('CACHE1 metrics'); await composer(page).press('Enter');
+  await expect.poll(async () => (await work(page)).coordinator.session?.context?.tokens, LONG).toBe(48000);
+  const created = await page.request.post(`${PROJECT}/threads`, { data: { schema: 'thread-create-request-v1', clientRequestId: randomUUID(), title: 'Checkpoint thread', task: 'CACHE1 metrics', isolation: 'worktree', modelId: 'claude-fable', effort: 'high' } });
+  expect(created.ok()).toBe(true); const thread = await created.json();
+  await expect.poll(async () => (await threadView(page, thread.threadId)).thread.sessionCache?.length, LONG).toBe(1);
+  await control('/projects/clock', { schema: 'fixture-project-clock-v1', advanceMinutes: 61 });
+  await composer(page).fill('CACHE2 continue'); await composer(page).press('Enter');
+  await expect.poll(async () => (await work(page)).coordinator.sessionHistory?.length, LONG).toBe(1);
+  await page.getByText('Earlier sessions (1)', { exact: true }).click();
+  await page.locator('a[href*="/session-transcript?session="]').click();
+  dialog = page.getByRole('dialog', { name: 'Earlier session', exact: true });
+  await expect(dialog).toContainText('Session usage is recorded.'); await shot(page, 'coordinator-earlier-session', false);
+  await dialog.getByRole('button', { name: 'Close panel', exact: true }).click();
+  const message = await page.request.post(`${PROJECT}/threads/${thread.threadId}/messages`, { data: { schema: 'thread-message-request-v1', clientMessageId: randomUUID(), text: 'Continue with the pending answer.', interrupt: false } });
+  expect(message.ok()).toBe(true);
+  await expect.poll(async () => (await threadView(page, thread.threadId)).sessionHistory?.length, LONG).toBe(1);
+  await page.goto(`/projects/projects_fixture/threads/${thread.threadId}`);
+  await page.getByText('Earlier sessions (1)', { exact: true }).click();
+  await page.locator(`a[href*="/threads/${thread.threadId}?session="]`).click();
+  dialog = page.getByRole('dialog', { name: 'Earlier session', exact: true });
+  await expect(dialog).toContainText('Session usage is recorded.'); await shot(page, 'thread-earlier-session', false);
+  await dialog.getByRole('button', { name: 'Close panel', exact: true }).click();
+  expect(errors).toEqual([]);
+});

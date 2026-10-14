@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/CHECKPOINT3-CACHE2-thread-earlier-session-phone-light.png",
+  "expected": "the Jevellan web app \"CACHE2 thread earlier session\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "In the Input code block, the closing quote of the \"summary\" line is clipped at the right edge (\"Session usage is recorded…\"). The block probably scrolls sideways, but nothing on screen shows that it does. The full text still appears below as \"Session usage is recorded.\"",
+      "The prompt card reads \"CACHE1 metrics\", but this step is labelled CACHE2. That's a content question, not a rendering problem."
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/screenshots/CHECKPOINT3-CACHE2-checkpoint-settings-desktop-light.png",
+  "expected": "the Jevellan web app \"CACHE2 checkpoint settings\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The modal body scrolls, so the footer clips the bottom of the 'Risky areas' textarea and any fields below it. Scrolling reaches them, so this doesn't block the screen.",
+      "The required checks and risky areas textareas are empty and have no placeholder text, so it isn't clear what to enter."
+    ]
+  }
+}

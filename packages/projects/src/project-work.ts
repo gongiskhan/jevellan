@@ -170,6 +170,10 @@ export class ProjectWork {
       deviceId: o.deviceId, deviceName: o.deviceName, daemonUrl: () => this.daemonUrl, redactor: o.redactor, held, projectSettings: projectId => this.admission.settings(projectId),
       sessionLedger: projectId => this.ledgers.coordinator(projectId), now, useOwnSetup: async runtime => (await o.settings()).runtimes[runtime]?.useOwnSetup !== false,
       cacheWindowMinutes: async runtime => (await o.settings()).runtimes[runtime]?.cacheWindowMinutes ?? (runtime === 'claude' ? 60 : 10),
+      archiveSession: (owner, session) => {
+        if (owner.kind === 'thread') this.store.updateLocal(owner.id, local => ({ ...local, sessionHistory: [...(local.sessionHistory ?? []).filter(row => row.key !== session.key), session] }));
+        else if (owner.kind === 'coordinator') coordinatorStore.updateLocal(owner.projectId, local => ({ ...local, sessionHistory: [...(local.sessionHistory ?? []).filter(row => row.key !== session.key), session] }));
+      },
       cacheLedger: owner => owner.kind === 'thread' ? this.ledgers.thread(owner.projectId, owner.id) : this.ledgers.coordinator(owner.projectId),
       ...(this.journal ? { journalDirectory: async (projectId: string) => { await this.journal!.sync(projectId).catch(() => undefined); return this.journal!.readableDirectory(projectId); } } : {}),
       threadGitEnvironment: async projectId => {
@@ -226,6 +230,7 @@ export class ProjectWork {
     const main = new MainCheckout({ git, redactor: o.redactor, deviceId: o.deviceId, deviceName: o.deviceName, ownership: o.ownership, outside: o.outside });
     this.coordinators = new CoordinatorService({ deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, store: coordinatorStore, ledgers: this.ledgers, hub: o.hub,
       captureTurn: (project, session) => this.#capture(project, { scope: 'coordinator', runtime: session.runtime, model: session.model, accountId: session.accountId, sessionId: session.nativeSessionId }),
+      ...(this.journal ? { journalContents: (projectId: string) => this.journal!.contents(projectId) } : {}),
       memoryContext: async project => {
         try { const port = o.memory.project(project, o.deviceId, () => {}, { kind: 'viewer' }), signal = AbortSignal.timeout(150_000);
           const notes = port.list ? await port.list(signal) : (await port.search('Project OR build OR test OR convention OR decision', signal)).notes;
@@ -274,7 +279,9 @@ export class ProjectWork {
       projects: o.projects, admission: this.admission, placement, accounts: o.accounts, transcripts: this.transcripts, delivery, settings: o.settings, now,
       roster: o.roster, decisions: this.decisions, fallbackCheckMs: timers.fallbackCheckMs, managedQueue: true,
       queueChanged: projectId => { void this.dispatcher.sweep(projectId).catch(() => undefined); },
-      runner: { deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, store: this.store, ledgers: this.ledgers, project: (projectId) => this.#project(projectId),
+      runner: {
+      ...(this.journal ? { journalContents: (projectId: string, threadId: string) => this.journal!.contents(projectId, threadId) } : {}),
+        deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, store: this.store, ledgers: this.ledgers, project: (projectId) => this.#project(projectId),
         workSettings: (projectId) => this.admission.settings(projectId), worktrees, main, publication, launcher, accounts: o.accounts, admission: this.admission,
         endProcess: (process) => endTurnProcess(process),
         accountWait: (thread) => launcher.accountWait({ runtime: thread.placement.runtime, model: thread.placement.model,
@@ -685,6 +692,18 @@ export class ProjectWork {
         ...(input.runtimeId ? { runtimeId: input.runtimeId } : {}), ...(input.accountId ? { accountId: input.accountId } : {}),
         ...(input.deviceId ? { deviceId: input.deviceId } : {}) } });
     return ThreadCreatedViewSchema.parse({ schema: 'thread-created-view-v1', threadId: started.threadId, state: started.state, placement: started.placement });
+  }
+  async sessionTranscript(projectId: string, key: string, threadId?: string) {
+    const project = await this.#project(projectId);
+    if (!/^[a-f0-9]{64}$/u.test(key)) throw Object.assign(new Error('Session history not found.'), { status: 404 });
+    if (threadId) this.#thread(projectId, threadId);
+    const history = threadId ? this.store.local(threadId).sessionHistory ?? [] : this.coordinators.get(projectId).sessionHistory();
+    const previous = history.find(row => row.key === key);
+    if (!previous) throw Object.assign(new Error('Session history not found.'), { status: 404 });
+    const transcript = await this.transcripts.read({ id: `history_${key}`, title: threadId ? this.store.get(threadId)!.title : `Coordinator: ${project.name}`,
+      nativeSessionId: previous.nativeSessionId, placement: { runtime: previous.runtime, accountId: previous.accountId } }, project.name);
+    if (!transcript) throw Object.assign(new Error('The earlier transcript is unavailable.'), { status: 404 });
+    return transcript;
   }
   threadView(projectId: string, threadId: string): Promise<ThreadView> { return this.views.thread(projectId, threadId); }
   async threadMessage(projectId: string, threadId: string, input: z.infer<typeof ThreadMessageRequestSchema>): Promise<{ repeated: boolean }> {

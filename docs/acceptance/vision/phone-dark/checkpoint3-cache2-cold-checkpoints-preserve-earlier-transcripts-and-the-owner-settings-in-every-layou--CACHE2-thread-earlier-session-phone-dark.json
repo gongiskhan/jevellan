@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/CHECKPOINT3-CACHE2-thread-earlier-session-phone-dark.png",
+  "expected": "the Jevellan web app \"CACHE2 thread earlier session\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "In the Input code block, the \"summary\" line is cut off at the right edge after \"Session usage is recorded\", with no closing quote showing. The block probably scrolls sideways, and the same text appears in full below as \"Session usage is recorded.\", so nothing is lost.",
+      "The tool name \"mcp__jevellan__jevellan_thread_report\" and the \"completed\" status take up two lines in the card header. They are still readable."
+    ]
+  }
+}

@@ -25,7 +25,7 @@ let lostStatusWrites = 0;
 const run = (cwd: string, ...args: string[]) => execFileSync('git', ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', ...args], { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
 const account = (id: string, label: string) => AccountSchema.parse({ schema: 'account-v1', id, runtime: 'fake', label, kind: 'subscription', enabled: true, credential: 'per-device' });
 
-function app(timers: Record<string, unknown> = {}): ProjectWork {
+function app(timers: Record<string, unknown> = {}, extra: Partial<ConstructorParameters<typeof ProjectWork>[0]> = {}): ProjectWork {
   fake.capabilities.readOnlyEnforced = readOnly;
   const access = new HubProjectAccess(hub, 'dev_a'); const putStatus = access.putCoordinatorStatus.bind(access);
   access.putCoordinatorStatus = async (written) => {
@@ -46,7 +46,7 @@ function app(timers: Record<string, unknown> = {}): ProjectWork {
     riggingItems: async () => [],
     roster: async () => DeviceRosterSchema.parse({ schema: 'device-roster-v1', currentDeviceId: 'dev_a', devices: [{ schema: 'device-view-v1', status: 'online', heartbeat: null, revoked: false,
       device: { schema: 'device-v1', id: 'dev_a', name: 'Mac mini', role: 'hub', url: 'http://127.0.0.1:9771', os: 'darwin', version: '0.1.0', joinedAt: at } }] }),
-    enterOperation: () => () => undefined, timers: { periodic: false, coordinatorStartMs: 0, coordinatorRetryMs: 50, ...timers } });
+    enterOperation: () => () => undefined, timers: { periodic: false, coordinatorStartMs: 0, coordinatorRetryMs: 50, ...timers }, ...extra });
   work.daemonUrl = url; works.push(work);
   return work;
 }
@@ -458,4 +458,32 @@ test('compaction keeps the coordinator session and refreshes the next prompt acr
   expect(next.prompt.startsWith('Project notebook:')).toBe(true);
   expect(restarted.coordinators.get('proj_a').state().session?.context?.needsFreshContext).toBe(false);
   expect(payloads(restarted, 'coordinator-turn-start').at(-1)).toMatchObject({ fresh: false });
+});
+
+
+test('a cold coordinator starts from notebook and journal, keeps earlier native history and delivers the owner event once after restart', { timeout: 60000 }, async () => {
+  let now = Date.now();
+  await settings({ sessionCheckpoints: { enabled: true, checkpointMinTokens: 40000 } });
+  const access = new HubProjectAccess(hub, 'dev_a');
+  await access.putNotebook({ schema: 'project-notebook-v1', projectId: 'proj_a', content: 'Invoice titles start with Invoices:.', revision: 0, updatedBy: 'owner', updatedAt: new Date(now).toISOString() }, 0);
+  const boot = async () => { const work = app({ now: () => now }, { journal: { isHub: true } }); await work.ready; work.start(); return work; };
+  let work = await boot();
+  fake.enqueueTurn(turn => { turn.emit({ type: 'context', tokens: 45000 }); turn.say('Kept the standing instruction.'); return { status: 'completed' }; }, forCoordinator);
+  await message(work, 'Remember the invoice prefix.'); await work.idle('proj_a');
+  const previous = work.coordinators.get('proj_a').state().session!.nativeSessionId!;
+  await work.close(); now += 11 * 60000; work = await boot();
+  fake.enqueueTurn(turn => { turn.emit({ type: 'usage', inputTokens: 10, outputTokens: 2, cacheReadTokens: 0, cacheWriteTokens: 2000 }); turn.say('Invoices: PDF.'); return { status: 'completed' }; }, forCoordinator);
+  await message(work, 'Add a PDF download for invoices.', 'checkpoint_pending'); await work.idle('proj_a');
+  const next = turns().at(-1)!;
+  expect(next.resume).toBeUndefined();
+  expect(next.prompt).toMatch(/^This is a fresh coordinator session: the previous one was idle long enough for its cache to expire\./u);
+  expect(next.prompt).toContain('Invoice titles start with Invoices:.'); expect(next.prompt).toContain('INDEX.md follows.');
+  expect(next.prompt.match(/Add a PDF download for invoices\./gu)).toHaveLength(1);
+  expect(work.coordinators.get('proj_a').state().session!.nativeSessionId).not.toBe(previous);
+  expect(work.coordinators.get('proj_a').state().queue).toEqual([]);
+  expect(work.coordinators.get('proj_a').sessionHistory()).toMatchObject([{ nativeSessionId: previous }]);
+  expect(payloads(work, 'session-checkpointed')).toMatchObject([{ owner: { kind: 'coordinator', id: 'proj_a' }, previousContextTokens: 45000, firstTurnCacheWriteTokens: 2000 }]);
+  expect(JSON.stringify((await work.view('proj_a')).coordinator)).not.toContain(previous);
+  await work.journal!.sync('proj_a', true);
+  expect((await work.journal!.contents('proj_a')).text).toContain('journal');
 });

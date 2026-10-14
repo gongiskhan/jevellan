@@ -89,3 +89,5 @@ export * from './project-memory-schemas.js';
 export * from './owner-command-schemas.js';
 export * from './project-memory-session-schemas.js';
 export * from './terminal-schemas.js';
+
+export * from './checkpoint-schemas.js';

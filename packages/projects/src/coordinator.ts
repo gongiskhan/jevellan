@@ -21,6 +21,8 @@ import type { ProjectLedger, ProjectLedgers } from './ledger.js';
 import type { DeviceRoster } from './placement.js';
 import type { CoordinatorStore } from './stores.js';
 import { contextEvent, sessionContext } from './session-context.js';
+import { coordinatorJournalDigest } from './journal-digest.js';
+import { coordinatorRestart } from './checkpoints.js';
 import { cacheRecords, sessionCacheKey, sessionCacheSnapshot } from './session-cache.js';
 import { TurnExecution, type TurnOutcome } from './turn-execution.js';
 
@@ -143,6 +145,7 @@ export type CoordinatorContext = {
   decisions: Pick<DecisionItems, 'fallbackFromReports'>;
   /** Bound after construction: the thread service is built later. */
   tools(): CoordinatorToolHandlers;
+  journalContents?(projectId: string): Promise<{ path: string; text: string }>;
   memoryContext?(project: Project): Promise<string>;
   captureTurn?(project: Project, session: CoordinatorSession): Promise<void>;
   outcome?(projectId: string, event: Extract<CoordinatorEvent, { kind: 'user-message' }>, history: string, signal: AbortSignal): Promise<ProjectRequestOutcome>;
@@ -273,6 +276,7 @@ export class Coordinator {
     for (const event of this.c.store.get(this.projectId).queue) if (!history.events.has(event.id)) { this.record(event); added += 1; }
     return added;
   }
+  sessionHistory() { return this.c.store.local(this.projectId).sessionHistory ?? []; }
   state(): CoordinatorState { return this.c.store.get(this.projectId); }
   /** Decision fallback (decision 7): the coordinator cannot run or failed twice in a row. */
   fallbackActive(): boolean { const state = this.state(); return state.state === 'unavailable' || state.failedTurnsInARow >= 2; }
@@ -548,6 +552,10 @@ export class Coordinator {
       launched = await this.c.launcher.launch({ owner: { kind: 'coordinator', projectId, id: projectId }, turn, runtime: model.runtime, modelId: model.id, model: model.model,
         modelLabel: model.label, effort, pinnedAccountId: prepared.accountId, ...(prepared.requiredAccountId ? { requiredAccountId: prepared.requiredAccountId } : {}), permissions: 'read-only', cwd: prepared.cwd, systemAppend: coordinatorSystemAppend(project.name, project.branchPolicy),
         prompt: (resumed) => coordinatorPrompt(prepared.prompt, resumed && !session?.context?.needsFreshContext), ...(session?.nativeSessionId ? { resume: session.nativeSessionId } : {}),
+        ...(this.c.journalContents ? { checkpointPrompt: async () => {
+          const journal = await this.c.journalContents!(projectId);
+          return { digest: `${coordinatorRestart}\n\n${coordinatorJournalDigest(coordinatorFreshContext(prepared.prompt), journal.path.replace(/\/INDEX\.md$/u, ''), journal.text, 60000 - coordinatorRestart.length - 2)}`, pending: coordinatorPrompt(prepared.prompt, true) };
+        } } : {}),
         contextTokensBefore: session?.context?.tokens,
         safetyProfile: 'coordinator', timeoutMs: this.c.timers.turnTimeoutMs, tools, memoryMode: project.memory.mode });
     } catch (error) { this.#scope = undefined; await tools.close(); return this.#failed(turn, messageOf(error), 'failed'); }
@@ -676,6 +684,7 @@ export class Coordinator {
           accountLabel: accounts.find((view) => view.account.id === session.accountId)?.account.label ?? session.accountId };
       }
       await this.c.hub.putCoordinatorStatus(ProjectCoordinatorStatusSchema.parse({ schema: 'project-coordinator-status-v1', revision: 0, projectId: this.projectId,
+        sessionHistory: (this.c.store.local(this.projectId).sessionHistory ?? []).map(({ nativeSessionId: _native, ...entry }) => { void _native; return entry; }),
         sessionCache: sessionCacheSnapshot(cacheRecords(this.#ledger)),
         deviceId: this.c.deviceId, state: state.state, ...(state.unavailableReason ? { unavailableReason: state.unavailableReason.slice(0, 400) } : {}),
         failedTurnsInARow: state.failedTurnsInARow, session: session && labels ? { runtime: session.runtime, modelLabel: labels.modelLabel, effort: session.effort,

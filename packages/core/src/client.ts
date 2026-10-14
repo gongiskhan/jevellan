@@ -48,3 +48,5 @@ export * from './project-review-schemas.js';
 export * from './workflow-schemas.js';
 export * from './ekoa-code-schemas.js';
 export * from './terminal-schemas.js';
+
+export * from './checkpoint-schemas.js';

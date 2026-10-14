@@ -7,6 +7,7 @@ import type { CursorTranscriptSchema, Homes, Thread } from '@jevellan/core';
 import { tail } from './git.js';
 
 export type CursorTranscript = z.infer<typeof CursorTranscriptSchema>;
+type TranscriptSource = Pick<Thread, 'id' | 'title' | 'nativeSessionId'> & { placement: Pick<Thread['placement'], 'runtime' | 'accountId'> };
 type Cached = { sessionId: string; root: string; file: string; size: number; mtimeMs: number; transcript: CursorTranscript };
 export const TRANSCRIPT_TAIL_CHARS = 8000;
 const unavailable = () => Object.assign(new Error(NATIVE_SESSION_UNAVAILABLE), { status: 404 });
@@ -31,7 +32,7 @@ export class ThreadTranscripts {
     this.#homes = o.homes; this.#deviceId = o.deviceId; this.#deviceName = o.deviceName; this.#format = o.format ?? nativeFormat; this.#timeoutMs = o.timeoutMs;
   }
   /** Null when the thread has no session yet; a session missing on disk rejects with status 404. */
-  read(thread: Thread, projectName: string): Promise<CursorTranscript | null> {
+  read(thread: TranscriptSource, projectName: string): Promise<CursorTranscript | null> {
     const running = this.#inflight.get(thread.id); if (running) return running;
     const read = this.#read(thread, projectName).finally(() => { this.#inflight.delete(thread.id); });
     this.#inflight.set(thread.id, read);
@@ -42,12 +43,12 @@ export class ThreadTranscripts {
   sessions(thread: Thread): Promise<NativeJournal[]> { return listNativeSessions({ runtime: this.#format(thread.placement.runtime), root: this.#root(thread) }, this.#timeout()); }
   #timeout(): { timeoutMs?: number } { return this.#timeoutMs === undefined ? {} : { timeoutMs: this.#timeoutMs }; }
   /** The account home is read where it is; it is never created for a read. */
-  #root(thread: Thread): string {
+  #root(thread: TranscriptSource): string {
     const root = this.#homes.at('homes', thread.placement.runtime, thread.placement.accountId);
     if (root !== join(this.#homes.root, 'homes', thread.placement.runtime, thread.placement.accountId)) throw new Error('Account homes cannot alias another directory.');
     return root;
   }
-  async #read(thread: Thread, projectName: string): Promise<CursorTranscript | null> {
+  async #read(thread: TranscriptSource, projectName: string): Promise<CursorTranscript | null> {
     const sessionId = thread.nativeSessionId; if (!sessionId) return null;
     const runtime = this.#format(thread.placement.runtime); const timeout = this.#timeout(); const root = this.#root(thread);
     let cached = this.#cache.get(thread.id);

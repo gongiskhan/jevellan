@@ -9,7 +9,9 @@ import { ACCOUNT_BUSY, MEMORY_HOOKS_UNDELIVERED, accountInTerminal, cannotRunHer
 import { ThreadGit } from './git.js';
 import { compactPercent, contextEvent, sessionContext } from './session-context.js';
 import type { ProjectLedger } from './ledger.js';
-import { cacheWindowMinutes, defaultCacheWindow, measureSession } from './session-cache.js';
+import { cacheRecords, sameCacheSession, cacheWindowMinutes, defaultCacheWindow, measureSession } from './session-cache.js';
+
+import { coldCheckpoint, checkpointRun, sessionHash } from './checkpoints.js';
 
 export type GitIdentity = { name: string; email: string };
 export type LaunchRequest = {
@@ -27,6 +29,7 @@ export type LaunchRequest = {
    * then includes its fresh preamble (the thread task block, D94; the coordinator's fresh context).
    */
   prompt(resumed: boolean): string | Promise<string>;
+  checkpointPrompt?(journal: string): Promise<{ digest: string; pending: string }>;
   resume?: string | undefined; safetyProfile: TurnInput['safetyProfile']; timeoutMs: number; tools: BridgeScopeTools;
   /** Thread turns: the project checkout whose git identity the agent commits with (D15). */
   gitIdentityFrom?: string | undefined;
@@ -61,6 +64,7 @@ export type TurnLauncherOptions = {
   sessionLedger?(projectId: string): ProjectLedger;
   cacheLedger?(owner: TurnInput['owner']): ProjectLedger;
   journalDirectory?(projectId: string): Promise<string>;
+  archiveSession?(owner: TurnInput['owner'], session: import('@jevellan/core').SessionHistory): void;
   now?(): number;
   protectedPaths?(): Promise<string[]>;
   /** Fresh, repository-scoped Git authentication for a writable thread turn; never persisted in a home or MCP configuration. */
@@ -126,7 +130,7 @@ export class TurnLauncher {
     }
     const account = selected.account;
     const accountChanged = request.pinnedAccountId !== undefined && account.id !== request.pinnedAccountId;
-    const resumed = !!request.resume && !accountChanged;
+    let resumed = !!request.resume && !accountChanged;
     const serial = !capabilities.perLaunchConfig;
     if (serial && this.#o.accountRuns.has(account.id)) return { kind: 'unavailable', reason: ACCOUNT_BUSY };
     if (serial) this.#o.accountRuns.add(account.id);
@@ -164,21 +168,28 @@ export class TurnLauncher {
       const gitEnv = request.owner.kind === 'thread' && request.permissions === 'write'
         ? await this.#o.threadGitEnvironment?.(request.owner.projectId, request.cwd) ?? {} : {};
       const journal = await this.#o.journalDirectory?.(request.owner.projectId);
+      const cacheLedger = this.#o.cacheLedger?.(request.owner) ?? this.#o.sessionLedger?.(request.owner.projectId);
+      const now = this.#o.now ?? Date.now;
+      const previous = resumed && cacheLedger ? cacheRecords(cacheLedger).findLast(row => sameCacheSession(row, request.owner, request.resume!, request.runtime, account.id)) : undefined;
+      const checkpoint = resumed && journal && request.checkpointPrompt ? coldCheckpoint(projectSettings?.sessionCheckpoints, previous, request.resume, cacheWindow, now(), request.contextTokensBefore) : undefined;
+      const checkpointPrompt = checkpoint ? await request.checkpointPrompt!(journal!) : undefined;
+      if (checkpoint) resumed = false;
       const input = TurnInputSchema.parse({
         schema: 'turn-input-v1', owner: request.owner, turn: request.turn, cwd: request.cwd, permissions: request.permissions, model: request.model, effort: request.effort,
-        account: resolved, systemAppend: request.systemAppend + (journal ? `\n- The project journal at ${journal} has one file per thread, per day and per night, listed in INDEX.md. Read it when you need to know what other work did.` : ''), prompt: await request.prompt(resumed), ...(resumed ? { resume: { sessionId: request.resume } } : {}),
+        account: resolved, systemAppend: request.systemAppend + (journal ? `\n- The project journal at ${journal} has one file per thread, per day and per night, listed in INDEX.md. Read it when you need to know what other work did.` : ''), prompt: checkpointPrompt ? `${checkpointPrompt.digest}\n\n${checkpointPrompt.pending}` : await request.prompt(resumed), ...(resumed ? { resume: { sessionId: request.resume } } : {}),
         ...(journal ? { readOnlyDirectories: [journal] } : {}),
         launch: { useOwnSetup: await this.#o.useOwnSetup?.(request.runtime) ?? true, env: { ...env, ...gitEnv }, mcpServers: { jevellan: { command: process.execPath, args: [join(applicationRoot(), 'bin', 'jevellan.mjs'), 'mcp-bridge'], env } } },
         safetyProfile: request.safetyProfile, timeoutMs: request.timeoutMs, compaction: { thresholdPercent: percent, ...(contextWindow ? { contextWindow } : {}) },
         ...(request.owner.kind === 'thread' && request.isolation === 'worktree' ? { protectedPaths: await this.#o.protectedPaths?.() ?? [] } : {}),
       });
-      const cacheLedger = this.#o.cacheLedger?.(request.owner) ?? this.#o.sessionLedger?.(request.owner.projectId);
       const rawRun = adapter.startTurn(input);
-      const nativeRun = cacheLedger ? measureSession(rawRun, { ledger: cacheLedger, owner: request.owner, runtime: request.runtime, model: request.model,
+      const measuredRun = cacheLedger ? measureSession(rawRun, { ledger: cacheLedger, owner: request.owner, runtime: request.runtime, model: request.model,
         accountId: account.id, turn: request.turn, windowMinutes: cacheWindow, ...(resumed ? { resume: request.resume } : {}),
-        contextTokensBefore: request.contextTokensBefore, timezone: projectSettings?.nightlyWindow.timezone, now: this.#o.now ?? Date.now }) : rawRun;
+        contextTokensBefore: resumed ? request.contextTokensBefore : undefined, timezone: projectSettings?.nightlyWindow.timezone, now: this.#o.now ?? Date.now }) : rawRun;
+      const nativeRun = checkpoint && checkpointPrompt && cacheLedger && (request.owner.kind === 'coordinator' || request.owner.kind === 'thread') ? checkpointRun(measuredRun, cacheLedger, checkpoint, {
+        kind: request.owner.kind, id: request.owner.id, turn: request.turn, digestChars: checkpointPrompt.digest.length, now,
+        archive: previousSessionId => this.#o.archiveSession?.(request.owner, { schema: 'project-session-history-v1', key: sessionHash(previousSessionId), nativeSessionId: previousSessionId, runtime: request.runtime, model: request.model, accountId: account.id, at: new Date(now()).toISOString() }) }) : measuredRun;
       const ledger = ['review', 'verification', 'memory'].includes(request.owner.kind) ? this.#o.sessionLedger?.(request.owner.projectId) : undefined;
-      const now = this.#o.now ?? Date.now;
       let context = sessionContext(undefined, percent, compactionNotice);
       const run: StretchRun = ledger ? {
         get native() { return nativeRun.native; }, done: nativeRun.done,

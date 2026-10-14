@@ -165,7 +165,7 @@ function run(cwd: string, ...args: string[]): string {
   return execFileSync('git', ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', ...args], { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
 }
 const account = AccountSchema.parse({ schema: 'account-v1', id: 'acc_fixture', runtime: 'fake', label: 'Work', kind: 'subscription', enabled: true, credential: 'per-device' });
-function app(timers: Record<string, unknown> = {}): ProjectWork {
+function app(timers: Record<string, unknown> = {}, extra: Partial<ConstructorParameters<typeof ProjectWork>[0]> = {}): ProjectWork {
   const access = new HubProjectAccess(hub, 'dev_a');
   const work = new ProjectWork({ homes, deviceId: 'dev_a', deviceName: 'Mac mini', redactor, hub: access,
     projects: { get: async (id: string) => id === project.id ? { schema: 'project-view-v1', revision: 1, project } : null, list: async () => [{ schema: 'project-view-v1', revision: 1, project }] } as never,
@@ -179,7 +179,7 @@ function app(timers: Record<string, unknown> = {}): ProjectWork {
     riggingItems: async () => [],
     roster: async () => DeviceRosterSchema.parse({ schema: 'device-roster-v1', currentDeviceId: 'dev_a', devices: [{ schema: 'device-view-v1', status: 'online', heartbeat: null, revoked: false,
       device: { schema: 'device-v1', id: 'dev_a', name: 'Mac mini', role: 'hub', url: 'http://127.0.0.1:9771', os: 'darwin', version: '0.1.0', joinedAt: at } }] }),
-    enterOperation: () => () => undefined, timers: { periodic: false, ...timers } });
+    enterOperation: () => () => undefined, timers: { periodic: false, ...timers }, ...extra });
   work.daemonUrl = url; works.push(work);
   return work;
 }
@@ -435,4 +435,41 @@ test('an idle thread holds no slot; its next turn waits for one and starts by it
   expect('stateReason' in work.store.get(first.threadId)!).toBe(false);
   // A coordinator stop tells the coordinator nothing (D28).
   expect(queue(work).some((event) => event.kind === 'thread-interrupted')).toBe(false);
+});
+
+
+test('a large cold thread checkpoints across daemon restart with its own question, one answer and no duplicate turn', { timeout: 120000 }, async () => {
+  let now = Date.now();
+  await settings({ sessionCheckpoints: { enabled: true, checkpointMinTokens: 40000 } });
+  const boot = async () => { const work = app({ now: () => now }, { journal: { isHub: true } }); await work.ready; work.start(); return work; };
+  let work = await boot();
+  fake.enqueueTurn(async turn => {
+    turn.emit({ type: 'context', tokens: 45000 });
+    await turn.bridge('jevellan_thread_report', { status: 'needs-decision', summary: 'Need a size.', question: 'Page size: 10, 25 or 50?', options: [{ label: '10' }, { label: '25' }, { label: '50' }] });
+    return { status: 'completed' };
+  }, forThread());
+  const made = await create(work, 'Paginate customers');
+  await waitFor(() => work.store.get(made.threadId)?.state, state => state === 'waiting-for-you');
+  await work.idle('proj_a');
+  const previous = work.store.get(made.threadId)!.nativeSessionId!;
+  await work.close(); now += 11 * 60000; work = await boot();
+  fake.enqueueTurn(async turn => {
+    expect(turn.input.resume).toBeUndefined();
+    expect(turn.input.prompt).toMatch(/^You are continuing this task in a fresh session:/u);
+    expect(turn.input.prompt).toContain('Page size: 10, 25 or 50?');
+    expect(turn.input.prompt).toContain('Project now');
+    expect(turn.input.prompt.match(/ANSWER-25/gu)).toHaveLength(1);
+    await turn.bridge('jevellan_thread_report', { status: 'blocked', summary: 'Received the size, no change committed.' });
+    return { status: 'completed' };
+  }, forThread(input => input.owner.id === made.threadId));
+  const input = { schema: 'thread-message-request-v1' as const, clientMessageId: 'checkpoint_answer', text: 'ANSWER-25', interrupt: false };
+  expect(await work.threadMessage('proj_a', made.threadId, input)).toEqual({ repeated: false });
+  await work.idle('proj_a');
+  expect(await work.threadMessage('proj_a', made.threadId, input)).toEqual({ repeated: true });
+  const thread = work.store.get(made.threadId)!;
+  expect(thread.nativeSessionId).not.toBe(previous); expect(thread.queuedMessages).toEqual([]);
+  expect(work.store.local(thread.id).sessionHistory).toMatchObject([{ nativeSessionId: previous }]);
+  expect(fake.turnStarts.filter(turn => turn.owner.kind === 'thread')).toHaveLength(2);
+  expect(work.ledgers.thread('proj_a', thread.id).events().filter(event => event.type === 'session-checkpointed')).toHaveLength(1);
+  expect((await work.threadView('proj_a', thread.id)).sessionHistory).toMatchObject([{ key: expect.stringMatching(/^[a-f0-9]{64}$/u) }]);
 });

@@ -15,7 +15,7 @@ import { streamLedger, type LedgerStreamFrame } from './conversation-events.js';
 import { json, requestBody } from './http.js';
 import { OWNER_REQUEST_TIMEOUT_MS, forwardOwner } from './owner-proxy.js';
 
-export type ProjectWorkRouteName = 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'fresh' | 'move' | 'settings' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
+export type ProjectWorkRouteName = 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'fresh' | 'move' | 'settings' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
   | 'thread-events' | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'pr-merge' | 'pr-refresh' | 'pr-route' | 'pr-correction' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'job-list' | 'job-create' | 'job-update' | 'job-run' | 'job-runs' | 'daily-list' | 'daily-create' | 'daily-update' | 'daily-run' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
 /** Where a route runs: this device (`local`), the project's coordinator device, the thread's owner device, or any device. */
 export type ProjectWorkRoute = { name: ProjectWorkRouteName; projectId?: string; threadId?: string; decisionId?: string; taskId?: string; goalId?: string; jobId?: string; dailyId?: string;
@@ -26,6 +26,7 @@ type Row = { name: ProjectWorkRouteName; pattern: RegExp; methods: readonly ('GE
 
 // The closed route table (brief 11, design 2.10). Paths are matched whole; ids are validated after a match.
 const rows: readonly Row[] = [
+  { name: 'session-history', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/session-transcript$/, methods: ['GET'], target: 'coordinator' },
   { name: 'ekoa-code-setup', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/ekoa-code-setup$/, methods: ['POST'], target: 'coordinator' },
   { name: 'job-list', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/jobs$/, methods: ['GET'], target: 'any' },
   { name: 'job-create', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/jobs$/, methods: ['POST'], target: 'coordinator' },
@@ -216,6 +217,7 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
   }
   if (route.target === 'coordinator' && /^(job|daily)-(create|run)$/u.test(route.name)) await work.prepareDailyWork(projectId);
   switch (route.name) {
+    case 'session-history': send(await work.sessionTranscript(projectId, url.searchParams.get('session') ?? '')); return true;
     case 'ekoa-code-setup': send(await work.setupEkoaCode(projectId, EkoaCodeSetupRequestSchema.parse(await requestBody(request)))); return true;
     case 'job-list': send({ schema: 'project-job-list-view-v1', projectId, jobs: await work.daily.jobs(projectId) }); return true;
     case 'job-create': send(await work.daily.createJob(projectId, JobCreateRequestSchema.parse(await requestBody(request))), 201); return true;
@@ -268,7 +270,7 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
       send(DecisionAnsweredViewSchema.parse({ schema: 'decision-answered-view-v1', repeated }), 202); return true;
     }
     case 'thread-create': send(await work.createThread(projectId, ThreadCreateRequestSchema.parse(await requestBody(request))), 201); return true;
-    case 'thread': send(await work.threadView(projectId, threadId)); return true;
+    case 'thread': send(url.searchParams.has('session') ? await work.sessionTranscript(projectId, url.searchParams.get('session')!, threadId) : await work.threadView(projectId, threadId)); return true;
     case 'thread-message': {
       const { repeated } = await work.threadMessage(projectId, threadId, ThreadMessageRequestSchema.parse(await requestBody(request)));
       send(ThreadMessageReceiptSchema.parse({ schema: 'thread-message-receipt-v1', repeated }), 202); return true;

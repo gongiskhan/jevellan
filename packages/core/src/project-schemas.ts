@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SessionCheckpointSettingsSchema, SessionCheckpointedSchema, SessionHistorySchema, SessionHistoryLinkSchema } from './checkpoint-schemas.js';
 import { SessionTurnCacheSchema, SessionCacheSummarySchema } from './session-cache-schemas.js';
 import { JournalDocumentSchema, JournalThreadSchema, ProjectJournalRecordSchema } from './project-journal-schemas.js';
 import { OwnerCommandsSchema } from './owner-command-schemas.js';
@@ -42,6 +43,7 @@ export const ProjectWorkSettingsSchemaV2 = ProjectWorkSettingsSchemaV1.extend({
   refill: z.strictObject({ enabled: z.boolean(), minIntervalMinutes: z.number().int().min(10).max(1440) }).default({ enabled: true, minIntervalMinutes: 30 }),
 });
 export const ProjectWorkSettingsSchema = ProjectWorkSettingsSchemaV2.omit({ coordinatorReview: true }).extend({ schema: z.literal('project-work-settings-v3'), autoMerge: z.boolean().default(false), riskyAreas: z.string().max(2000).default(''), requiredChecks: z.array(z.string().min(1).max(200)).max(50).default([]),
+  sessionCheckpoints: SessionCheckpointSettingsSchema.default({ enabled: false, checkpointMinTokens: 40000 }),
   compactAtPercent: z.number().int().min(50).max(90).default(70),
   memory: ProjectMemorySettingsSchema.default({ mode: 'hub', capture: true, dreamMode: 'apply' }),
   perDeviceLimits: z.record(IdSchema, z.number().int().min(1).max(10)).default({}) });
@@ -242,6 +244,7 @@ export const TurnProcessSchema = z.strictObject({ turn: positive, pid: z.number(
 export type TurnProcess = z.infer<typeof TurnProcessSchema>;
 // <home>/projects/<pid>/threads/<tid>/thread-local.json
 export const ThreadLocalSchema = z.strictObject({ schema: z.literal('thread-local-v1'),
+  sessionHistory: z.array(SessionHistorySchema).optional(),
   memoryRecall: MemoryRecallSchema.optional(),
   process: TurnProcessSchema.optional(),
   pushedCommit: z.string().regex(/^[0-9a-f]{40,64}$/).optional(),
@@ -266,13 +269,14 @@ export const ThreadLocalSchema = z.strictObject({ schema: z.literal('thread-loca
 export type ThreadLocal = z.infer<typeof ThreadLocalSchema>;
 // <home>/projects/<pid>/coordinator-local.json
 export const CoordinatorLocalSchema = z.strictObject({ schema: z.literal('coordinator-local-v1'),
+  sessionHistory: z.array(SessionHistorySchema).optional(),
   process: TurnProcessSchema.optional(), deliveredTurn: count.default(0),
   fallbackEventIds: z.array(IdSchema).max(500).default([]),
   // phase 5: events this device handed over to a coordinator that moved away (3.5.4, D271), the newest 500; they no longer count as received here
   forwardedEventIds: z.array(IdSchema).max(500).optional() });
 export type CoordinatorLocal = z.infer<typeof CoordinatorLocalSchema>;
 // hub namespace project-coordinator-status, key projectId; written only by the coordinator device
-export const ProjectCoordinatorStatusSchema = z.strictObject({ schema: z.literal('project-coordinator-status-v1'),
+export const ProjectCoordinatorStatusSchema = z.strictObject({ sessionHistory: z.array(SessionHistoryLinkSchema).optional(), schema: z.literal('project-coordinator-status-v1'),
   sessionCache: z.array(SessionCacheSummarySchema).max(500).optional(),
   revision, projectId: IdSchema, deviceId: IdSchema,
   state: z.enum(['idle', 'running', 'unavailable']), unavailableReason: z.string().max(400).optional(),
@@ -330,7 +334,7 @@ export type InboxSeen = z.infer<typeof InboxSeenSchema>;
 // Project ledger (brief 5.13, D2). data stays unknown in the envelope: payloads over 64 KiB spill to a blob-ref.
 export const ProjectLedgerEventTypeSchema = z.enum(['coordinator-turn-start', 'coordinator-text', 'coordinator-tool',
   'coordinator-turn-end', 'coordinator-event', 'thread-turn-start', 'thread-turn-end', 'thread-report',
-  'thread-placement', 'thread-state', 'thread-verification', 'thread-publication', 'session-compacted', 'project-session-end', 'session-turn-cache', 'journal-thread', 'journal-source', 'journal-document', 'journal-message', 'notice']);
+  'thread-placement', 'thread-state', 'thread-verification', 'thread-publication', 'session-compacted', 'session-checkpointed', 'project-session-end', 'session-turn-cache', 'journal-thread', 'journal-source', 'journal-document', 'journal-message', 'notice']);
 export type ProjectLedgerEventType = z.infer<typeof ProjectLedgerEventTypeSchema>;
 export const ProjectLedgerEventSchema = z.strictObject({ schema: z.literal('project-ledger-event-v1'), t: TimestampSchema,
   id: positive, type: ProjectLedgerEventTypeSchema, turn: positive.optional(), data: z.unknown() });
@@ -377,6 +381,7 @@ export const ProjectLedgerDataSchemas = {
   'coordinator-event': CoordinatorEventSchema, 'thread-turn-start': ThreadTurnStartSchema, 'thread-turn-end': ThreadTurnEndSchema,
   'thread-report': ThreadReportSchema, 'thread-placement': PlacementRecordSchema, 'thread-state': ThreadStateChangeSchema,
   'session-compacted': SessionCompactedSchema,
+  'session-checkpointed': SessionCheckpointedSchema,
   'project-session-end': ProjectSessionEndSchema,
   'session-turn-cache': SessionTurnCacheSchema,
   'thread-verification': ThreadVerificationSchema, 'thread-publication': ThreadPublicationSchema, notice: ProjectNoticeSchema,
@@ -393,7 +398,7 @@ export const ProjectWorkListViewSchema = z.strictObject({ schema: z.literal('pro
   projects: z.array(z.strictObject({ projectId: IdSchema, name: text, waiting: count, running: count, inReview: count,
     coordinator: z.strictObject({ deviceId: IdSchema.nullable(), state: CoordinatorStateNameSchema }) })) });
 export type ProjectWorkListView = z.infer<typeof ProjectWorkListViewSchema>;
-export const CoordinatorViewSchema = z.strictObject({ state: CoordinatorStateNameSchema,
+export const CoordinatorViewSchema = z.strictObject({ sessionHistory: z.array(SessionHistoryLinkSchema).optional(), state: CoordinatorStateNameSchema,
   unavailableReason: z.string().optional(), deviceId: IdSchema.nullable(), deviceName: z.string().nullable(), online: z.boolean(),
   session: z.strictObject({ runtime: IdSchema, modelLabel: text, effort: EffortSchema, accountLabel: text, turns: count, context: ProjectSessionContextSchema.optional(), cacheSessionKey: z.string().regex(/^[a-f0-9]{64}$/u).optional() }).nullable(),
   planned: z.strictObject({ runtime: IdSchema, modelLabel: text, effort: EffortSchema }).nullable(),
@@ -419,7 +424,7 @@ export const ProjectWorkViewSchema = z.strictObject({ schema: z.literal('project
   // phase 5: every roster device that is not revoked, in roster order, so New thread and Override disable what placement refuses (D281)
   devices: z.array(ProjectDeviceSetupSchema).optional() });
 export type ProjectWorkView = z.infer<typeof ProjectWorkViewSchema>;
-export const ThreadViewSchema = z.strictObject({ schema: z.literal('project-thread-view-v1'),
+export const ThreadViewSchema = z.strictObject({ sessionHistory: z.array(SessionHistoryLinkSchema).optional(), schema: z.literal('project-thread-view-v1'),
   memoryRecall: MemoryRecallSchema.optional(),
   thread: ThreadIndexSchema, placement: PlacementRecordSchema, reports: z.array(ThreadReportSchema),
   transcript: CursorTranscriptSchema.nullable(), queuedMessages: z.array(QueuedMessageSchema),
@@ -453,6 +458,7 @@ export const ProjectWorkSettingsRequestSchema = z.strictObject({ schema: z.liter
     allowMainIsolation: z.boolean().optional(), threadRules: z.string().max(4000).optional(), autoMerge: z.boolean().optional(), riskyAreas: z.string().max(2000).optional(), requiredChecks: z.array(z.string().min(1).max(200)).max(50).optional(),
     nightlyWindow: ProjectWorkSettingsSchema.shape.nightlyWindow.removeDefault().optional(), refill: ProjectWorkSettingsSchema.shape.refill.removeDefault().optional(),
     compactAtPercent: ProjectWorkSettingsSchema.shape.compactAtPercent.removeDefault().optional(),
+    sessionCheckpoints: ProjectWorkSettingsSchema.shape.sessionCheckpoints.removeDefault().optional(),
     memory: ProjectWorkSettingsSchema.shape.memory.removeDefault().optional(),
     perDeviceLimits: ProjectWorkSettingsSchema.shape.perDeviceLimits.removeDefault().optional(),
   }), clientRequestId: IdSchema.optional() });

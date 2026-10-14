@@ -29,6 +29,16 @@ export class ProjectJournals {
     return path;
   }
   readableDirectory(projectId: string): string { const path = this.path(projectId); mkdirSync(path, { recursive: true, mode: 0o700 }); return path; }
+  async contents(projectId: string, threadId?: string): Promise<{ path: string; text: string }> {
+    await this.sync(projectId);
+    const state = this.state(projectId);
+    const metadata = threadId ? this.o.ledgers.thread(projectId, threadId).events().find(event => event.type === 'journal-thread') : undefined;
+    const file = threadId && metadata ? threadJournalFile(this.o.ledgers.thread(projectId, threadId).payload(metadata as typeof metadata & { type: 'journal-thread' })) : 'INDEX.md';
+    if (threadId && file === 'INDEX.md') throw refuse('The thread journal is not available for a checkpoint.');
+    const path = join(this.path(projectId), file);
+    if (!state.files[file] || !existsSync(path)) throw refuse('The project journal is not available for a checkpoint.');
+    return { path, text: readFileSync(path, 'utf8') };
+  }
   #statePath(projectId: string) { return this.o.homes.at('project-journal-state', `${IdSchema.parse(projectId)}.json`); }
   #publishedPath(projectId: string) { return this.o.homes.at('project-journal-publish', `${IdSchema.parse(projectId)}.json`); }
   state(projectId: string): ProjectJournalState {

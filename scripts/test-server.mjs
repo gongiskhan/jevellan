@@ -112,6 +112,7 @@ const EVENTS_HEADER = eventBlock([]);
 function coordinatorStep(input) {
   // Only delivered events count; the fresh-session recap repeats earlier messages.
   const at = input.prompt.lastIndexOf(EVENTS_HEADER); const events = at < 0 ? input.prompt : input.prompt.slice(at);
+  if (events.includes('CACHE2 continue')) return async turn => { turn.say('Continuing from the notebook and journal.'); return { status: 'completed' }; };
   if (events.includes('CACHE1 metrics')) return async turn => {
     turn.emit({ type: 'context', tokens: 48000, contextWindow: 200000 });
     turn.emit({ type: 'usage', inputTokens: 10, outputTokens: 5, cacheReadTokens: 80, cacheWriteTokens: 10 });

@@ -1,0 +1,109 @@
+{
+  "schema": "checkpoint-part3-checks-v1",
+  "label": "simulated",
+  "baseCommit": "9b6541f35596c786323d58ef0773f2e32caf6528",
+  "at": "2026-10-14T06:26:04.243998+00:00",
+  "backend": {
+    "affectedPassed": 158,
+    "affectedFiles": 9,
+    "finalPassed": 86,
+    "finalFiles": 4,
+    "overlapping": true
+  },
+  "checks": {
+    "typecheck": "passed",
+    "lint": "passed",
+    "build": "passed"
+  },
+  "browser": "cache-journal-part3-browser.json",
+  "runtimeSource": [
+    {
+      "path": "apps/daemon/src/project-work-api.ts",
+      "sha256": "198d9d6f360c3d622a95a9c10222a6758adf787f7ed374a4965076d17e57a6a1"
+    },
+    {
+      "path": "apps/web/src/project-work-model.ts",
+      "sha256": "fbe2120acbb86ec5c918b8cc950f32b078bb769cd5b1145867e3c61898db3463"
+    },
+    {
+      "path": "apps/web/src/project-work.tsx",
+      "sha256": "045edf8af9255933f2de610739de8c204d25e93e316f0795e5b6602d85a34377"
+    },
+    {
+      "path": "apps/web/src/session-history.tsx",
+      "sha256": "15822bcb369ff3204025fdfc74e8656e2c68e9639e05977efce2ac75bcccbfea"
+    },
+    {
+      "path": "apps/web/src/thread-page.tsx",
+      "sha256": "67afa6a212baf0049abce964a459b8bdf285dfee1036236c5ed81a94555bd477"
+    },
+    {
+      "path": "packages/core/src/checkpoint-schemas.ts",
+      "sha256": "81aa04cde9d724578fc9e5fa78fa9cbdb09cf177070949c729420ea8f015aea7"
+    },
+    {
+      "path": "packages/core/src/client.ts",
+      "sha256": "31c194aee006fa57dc9ca834a3a7fc109788e462ec8281adf759b29271c31ad1"
+    },
+    {
+      "path": "packages/core/src/index.ts",
+      "sha256": "60770e068b4a9b37f992ed5e8f97422867e57a3d3e6b0769f95622cd3a385680"
+    },
+    {
+      "path": "packages/core/src/project-schemas.ts",
+      "sha256": "6f135cd7697ca50270532a40e3f821c0aef344d06f9570cbc859ff7d5a9a21f7"
+    },
+    {
+      "path": "packages/projects/src/checkpoints.ts",
+      "sha256": "dda3eec8fd078efab83a3afe022383d3e56630fd8bf2a16160c19bed09bdb3aa"
+    },
+    {
+      "path": "packages/projects/src/coordinator.ts",
+      "sha256": "59a98ccd07f33b715f609eba050aef91dd4e2912fd58f7306fcf52dee31bc582"
+    },
+    {
+      "path": "packages/projects/src/copy.ts",
+      "sha256": "bef256c395e9092466ada08e787586185d59d527fe3df37f58eba603d52cbcc3"
+    },
+    {
+      "path": "packages/projects/src/index.ts",
+      "sha256": "e32a43fa3e88767b19d64506104c1bdbdcd9c721fc2cca741c9e2cdf912cecdc"
+    },
+    {
+      "path": "packages/projects/src/journal.ts",
+      "sha256": "a12de4327a803f44f8b541e7c5b80e92b25fd9417135b38ce2e5ba6088df7d29"
+    },
+    {
+      "path": "packages/projects/src/launch.ts",
+      "sha256": "145d4a7ea8d941e3e87a35b4f65aecec6bc015a4ee8004fa7745fe6df74d7d03"
+    },
+    {
+      "path": "packages/projects/src/project-work.ts",
+      "sha256": "ac42cb9683f168574247e388c75cc69d3b979b3cb815127f00a318b88ae57d31"
+    },
+    {
+      "path": "packages/projects/src/thread-runner.ts",
+      "sha256": "644507e93c5c5d559124efb9649ed770089c7b7af7c7f7337438c45dc88b8de6"
+    },
+    {
+      "path": "packages/projects/src/transcript.ts",
+      "sha256": "6005193dd908dcd827f2f202ada52242fd655235b10744f003979658d8a43af9"
+    },
+    {
+      "path": "packages/projects/src/views.ts",
+      "sha256": "597228fadcde0f57e99accf7a90d743e509613b82a25bed15df1e318e68b2087"
+    }
+  ],
+  "retainedFailures": [
+    "Initial schema default expectation omitted the newly specified checkpoint setting; complete expected object updated.",
+    "First browser driver looked for Close instead of the existing Close panel.",
+    "Second browser driver used singular/message instead of the existing/messages endpoint."
+  ],
+  "logs": {
+    "regressions": "4691edc991aad82df373aa55b5913f7766ee21cb2e851dcf0fab1c58bcd5faae",
+    "final-unit": "81dc20d8180ba5a0755bfe8ff3a9decf818befc8dab81d795cab180f237c2418",
+    "typecheck": "0e0a781ae86995970f55756323fc818f02068c6f861b03984d5322e6e292e9b5",
+    "lint": "980a27b8311b8de8ac9b371fe50e81be50bdfc8b5e66758989817ffe6d1c2d3c",
+    "build": "a177f7c2758c37418cd5c13e55d720013bfac77ae34e2e923e39e25ce558e685"
+  }
+}

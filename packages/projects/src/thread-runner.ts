@@ -1,3 +1,5 @@
+import { threadJournalExcerpt } from './journal-digest.js';
+import { threadRestart } from './checkpoints.js';
 import { createHash } from 'node:crypto';
 import type { AccountService } from '@jevellan/accounts';
 import {
@@ -126,6 +128,7 @@ export type ThreadRunnerContext = {
   /** Read-only project memory for the thread's tools. */
   memory(project: Project, scope?: import('./bridge-tools.js').ProjectScope): ProjectMemoryReader | Promise<ProjectMemoryReader>;
   recall?(project: Project, thread: Thread): Promise<MemoryRecall>;
+  journalContents?(projectId: string, threadId: string): Promise<{ path: string; text: string }>;
   projectNow?(project: Project, thread: Thread): Promise<string>;
   captureTurn?(project: Project, thread: Thread): Promise<void>;
   /** Mail and reservations, the main-isolation thread tools (brief 7.2). */
@@ -432,7 +435,13 @@ export class ThreadRunner {
           if (!now && !recall) return threadPrompt(thread, next.body, continuing, next.reason);
           const context = [recall?.section, now].filter(Boolean).join('\n\n');
           return continuing ? `${now ?? ''}\n\n${next.body}` : `${taskPrompt(thread.title, thread.task)}\n\n${context}${next.reason === 'task' ? '' : `\n\n${next.body}`}`;
-        }, ...(thread.nativeSessionId ? { resume: thread.nativeSessionId } : {}),
+        },
+        ...(this.#c.journalContents ? { checkpointPrompt: async () => {
+          const journal = await this.#c.journalContents!(project.id, thread.id);
+          if (this.#c.recall) { recall ??= await this.#c.recall(project, thread); this.#c.store.updateLocal(thread.id, local => ({ ...local, memoryRecall: recall! })); }
+          const digest = [threadRestart(journal.path), taskPrompt(thread.title, thread.task), threadJournalExcerpt(journal.text, journal.path), recall?.section, now].filter(Boolean).join('\n\n');
+          return { digest, pending: next.reason === 'task' ? '' : next.body };
+        } } : {}), ...(thread.nativeSessionId ? { resume: thread.nativeSessionId } : {}),
         safetyProfile: 'thread', timeoutMs: this.#c.timers.threadTurnTimeoutMs, tools, gitIdentityFrom: this.#c.worktrees.repository(project), memoryMode: project.memory.mode, isolation: thread.isolation,
         contextTokensBefore: thread.sessionContext?.tokens });
     } catch (error) { await tools.close(); return { status: 'unavailable', error: this.#message(error) }; }

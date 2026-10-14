@@ -20,6 +20,7 @@ import {
 import { RouteLink, Stamp, afterDialogs, deviceNames, failureText, runtimeNames, updated, useClientIds, useLocalError } from './project-work.js';
 import { TranscriptTurn } from './session-transcript.js';
 import { shortTime } from './time.js';
+import { SessionHistory } from './session-history.js';
 import { SessionCache } from './session-cache.js';
 
 /**
@@ -228,6 +229,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
       </div>
       {loadError && <p className="notice" role="status">{loadError}</p>}
       {actionError && <p className="error">{actionError}</p>}
+      <SessionHistory entries={view.sessionHistory} path={`/api/projects/${projectId}/threads/${thread.id}`} />
       <div className="cursor-transcript pw-transcript" aria-label={copy.TRANSCRIPT_LABEL}>
         {notice && <p className="pw-transcript-note">{notice}</p>}
         {mergeThreadToolTurns(items).map((item) => item.kind === 'turn'

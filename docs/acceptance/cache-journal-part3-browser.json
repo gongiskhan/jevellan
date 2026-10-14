@@ -1,0 +1,39 @@
+{
+  "schema": "checkpoint-part3-browser-v1",
+  "label": "simulated",
+  "visionLabel": "live",
+  "sourceBaseCommit": "9b6541f35596c786323d58ef0773f2e32caf6528",
+  "sourceArchiveSha256": "6d58a7034ec3dbdfc08d05ced0c663d9d00447a4ef5bf56160e2aeef7d30914d",
+  "startedAt": "2026-10-14T06:19:25.824Z",
+  "endedAt": "2026-10-14T06:23:14.029Z",
+  "journeys": 4,
+  "layouts": 4,
+  "screenshots": [
+    "docs/acceptance/screenshots/CHECKPOINT3-CACHE2-checkpoint-settings-desktop-dark.png",
+    "docs/acceptance/screenshots/CHECKPOINT3-CACHE2-coordinator-earlier-session-desktop-light.png",
+    "docs/acceptance/screenshots/CHECKPOINT3-CACHE2-checkpoint-settings-desktop-light.png",
+    "docs/acceptance/screenshots/CHECKPOINT3-CACHE2-thread-earlier-session-phone-light.png",
+    "docs/acceptance/screenshots/CHECKPOINT3-CACHE2-checkpoint-settings-phone-light.png",
+    "docs/acceptance/screenshots/CHECKPOINT3-CACHE2-coordinator-earlier-session-phone-dark.png",
+    "docs/acceptance/screenshots/CHECKPOINT3-CACHE2-coordinator-earlier-session-desktop-dark.png",
+    "docs/acceptance/screenshots/CHECKPOINT3-CACHE2-thread-earlier-session-desktop-dark.png",
+    "docs/acceptance/screenshots/CHECKPOINT3-CACHE2-coordinator-earlier-session-phone-light.png",
+    "docs/acceptance/screenshots/CHECKPOINT3-CACHE2-thread-earlier-session-phone-dark.png",
+    "docs/acceptance/screenshots/CHECKPOINT3-CACHE2-thread-earlier-session-desktop-light.png",
+    "docs/acceptance/screenshots/CHECKPOINT3-CACHE2-checkpoint-settings-phone-dark.png"
+  ],
+  "vision": [
+    "docs/acceptance/vision/phone-dark/checkpoint3-cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-coordinator-earlier-session-phone-dark.json",
+    "docs/acceptance/vision/phone-dark/checkpoint3-cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-thread-earlier-session-phone-dark.json",
+    "docs/acceptance/vision/phone-dark/checkpoint3-cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-checkpoint-settings-phone-dark.json",
+    "docs/acceptance/vision/desktop-dark/checkpoint3-cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-checkpoint-settings-desktop-dark.json",
+    "docs/acceptance/vision/phone-light/checkpoint3-cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-coordinator-earlier-session-phone-light.json",
+    "docs/acceptance/vision/desktop-dark/checkpoint3-cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-coordinator-earlier-session-desktop-dark.json",
+    "docs/acceptance/vision/desktop-dark/checkpoint3-cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-thread-earlier-session-desktop-dark.json",
+    "docs/acceptance/vision/phone-light/checkpoint3-cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-checkpoint-settings-phone-light.json",
+    "docs/acceptance/vision/phone-light/checkpoint3-cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-thread-earlier-session-phone-light.json",
+    "docs/acceptance/vision/desktop-light/checkpoint3-cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-checkpoint-settings-desktop-light.json",
+    "docs/acceptance/vision/desktop-light/checkpoint3-cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-thread-earlier-session-desktop-light.json",
+    "docs/acceptance/vision/desktop-light/checkpoint3-cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-coordinator-earlier-session-desktop-light.json"
+  ]
+}

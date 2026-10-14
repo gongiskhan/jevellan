@@ -319,3 +319,36 @@ test('failures record the account error with the model scope, timeouts read time
   // A steer that arrives after the turn finished interrupts nothing.
   const finished = execution(done); expect((await finished.turn.done).status).toBe('completed'); await finished.turn.steer();
 });
+
+test.each([
+  { name: 'warm boundary', enabled: true, tokens: 45000, idle: 60000, fresh: false },
+  { name: 'small cold', enabled: true, tokens: 39999, idle: 60001, fresh: false },
+  { name: 'large cold', enabled: true, tokens: 40000, idle: 60001, fresh: true },
+  { name: 'disabled', enabled: false, tokens: 90000, idle: 60001, fresh: false },
+])('checkpoint decision preserves the normal pending payload: $name', async ({ enabled, tokens, idle, fresh }) => {
+  const ledgers = new ProjectLedgers(new ProjectPaths(homes)), ledger = ledgers.thread('proj_a', 'thread_a');
+  const history: import('../packages/core/dist/index.js').SessionHistory[] = []; let now = Date.now();
+  const { launcher: value } = launcher([status('acc_work')], undefined, { now: () => now, cacheLedger: () => ledger, cacheWindowMinutes: async () => 1,
+    projectSettings: async () => ({ ...defaultProjectWorkSettings('proj_a'), sessionCheckpoints: { enabled, checkpointMinTokens: 40000 } }),
+    journalDirectory: async () => homes.ensure('project-journal', 'proj_a'), archiveSession: (_owner, entry) => history.push(entry) });
+  fake.enqueueTurn(turn => { turn.emit({ type: 'context', tokens }); return { status: 'completed' }; });
+  const drain = async (input: LaunchRequest) => { const run = await value.launch(input); if (run.kind !== 'started') throw new Error(run.reason);
+    try { for await (const event of run.run.events) void event; await run.run.done; return run.run.native.sessionId!; } finally { await run.release(); } };
+  const previous = await drain(request()); now += idle;
+  fake.enqueueTurn(turn => { turn.emit({ type: 'usage', inputTokens: 20, outputTokens: 2, cacheReadTokens: 0, cacheWriteTokens: 123 }); return { status: 'completed' }; });
+  const current = await drain(request({ turn: 3, resume: previous, pinnedAccountId: 'acc_work', contextTokensBefore: tokens,
+    prompt: resumed => `${resumed ? '' : 'TASK\n'}PENDING-ANSWER: 25`, checkpointPrompt: async () => ({ digest: 'EXACT RESTART\nTASK\nMY QUESTION\nJOURNAL', pending: 'PENDING-ANSWER: 25' }) }));
+  const input = fake.turnStarts.at(-1)!;
+  expect(input.prompt.match(/PENDING-ANSWER: 25/gu)).toHaveLength(1);
+  expect(input.resume?.sessionId).toBe(fresh ? undefined : previous);
+  expect(current === previous).toBe(!fresh);
+  const checkpoints = ledger.events().filter(event => event.type === 'session-checkpointed');
+  expect(checkpoints).toHaveLength(fresh ? 1 : 0); expect(history).toHaveLength(fresh ? 1 : 0);
+  if (fresh) {
+    expect(input.prompt).toBe('EXACT RESTART\nTASK\nMY QUESTION\nJOURNAL\n\nPENDING-ANSWER: 25');
+    expect(history[0]).toMatchObject({ nativeSessionId: previous, accountId: 'acc_work', runtime: 'fake' });
+    expect(ledger.payload(checkpoints[0]!)).toMatchObject({ schema: 'session-checkpointed-v1', owner: { kind: 'thread', id: 'thread_a' }, reason: 'cold', idleSeconds: idle / 1000,
+      previousContextTokens: tokens, digestChars: 'EXACT RESTART\nTASK\nMY QUESTION\nJOURNAL'.length, firstTurnCacheWriteTokens: 123 });
+    expect(JSON.stringify(checkpoints)).not.toContain(previous);
+  }
+});

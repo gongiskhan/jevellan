@@ -23,7 +23,7 @@ const refuse = (message: string, status: number) => Object.assign(new Error(mess
  * to this device (`canMoveHere`, 3.5.3).
  */
 type CoordinatorWhere = { deviceId: string | null; deviceName: string | null; state: CoordinatorView['state']; unavailableReason?: string; online: boolean;
-  movable: boolean; local?: CoordinatorState; published?: CoordinatorView['session']; lastEventId?: number; sessionCache?: SessionCacheSummary[] };
+  movable: boolean; local?: CoordinatorState; published?: CoordinatorView['session']; lastEventId?: number; sessionCache?: SessionCacheSummary[]; sessionHistory?: import('@jevellan/core').CoordinatorView['sessionHistory'] };
 const ANSWERED_SHOWN = 10;
 const BRANCH_ONLY = [BRANCH_PUSHED_NO_TOKEN, NOT_GITHUB];
 
@@ -116,7 +116,7 @@ export class ProjectViews {
     const published = (await this.#o.hub.coordinatorStatus(projectId))?.document;
     const status = published?.deviceId === deviceId ? published : undefined;
     return { deviceId, deviceName, state: status?.state ?? 'idle', ...(status?.unavailableReason ? { unavailableReason: status.unavailableReason } : {}), online: true,
-      movable: coordinatorMovable(deviceId, row, status), published: status?.session ?? null, lastEventId: status?.lastEventId ?? 0, sessionCache: status?.sessionCache ?? [] };
+      movable: coordinatorMovable(deviceId, row, status), published: status?.session ?? null, lastEventId: status?.lastEventId ?? 0, sessionCache: status?.sessionCache ?? [], sessionHistory: status?.sessionHistory ?? [] };
   }
   /**
    * A list row's coordinator from the hub's summary (D267), by the `#coordinatorState` rules: here the local state; elsewhere
@@ -144,6 +144,7 @@ export class ProjectViews {
     const session = where.local?.session;
     return { deviceId: where.deviceId, deviceName: where.deviceName, planned, canMoveHere: where.movable, ...(moveRefusal ? { moveRefusal: moveRefusal.slice(0, 400) } : {}), state: where.state,
       ...(where.unavailableReason ? { unavailableReason: where.unavailableReason } : {}), online: where.online,
+      sessionHistory: where.local ? this.#o.coordinators.get(project.id).sessionHistory().map(({ nativeSessionId: _native, ...entry }) => { void _native; return entry; }) : where.sessionHistory ?? [],
       session: session ? { runtime: session.runtime, modelLabel: label(session.modelId), effort: session.effort,
         accountLabel: accounts.find((view) => view.account.id === session.accountId)?.account.label ?? session.accountId, turns: session.turns, ...(session.context ? { context: session.context } : {}),
         ...(session.nativeSessionId ? { cacheSessionKey: sessionCacheKey({ kind: 'coordinator', id: project.id }, session.runtime, session.accountId, session.nativeSessionId) } : {}) }
@@ -198,6 +199,7 @@ export class ProjectViews {
     return ThreadViewSchema.parse({ schema: 'project-thread-view-v1', thread: { ...threadIndex(thread, this.#o.store.labels(threadId), events.at(-1)?.t ?? thread.createdAt),
       sessionCache: sessionCacheSummaries(cacheRecords(ledger)).slice(-500) },
       ...(this.#o.store.local(threadId).memoryRecall ? { memoryRecall: this.#o.store.local(threadId).memoryRecall } : {}),
+      sessionHistory: (this.#o.store.local(threadId).sessionHistory ?? []).map(({ nativeSessionId: _native, ...entry }) => { void _native; return entry; }),
       placement: thread.placement, reports, transcript, queuedMessages: thread.queuedMessages,
       canMessage: !['attached', 'done', 'stopped', 'failed'].includes(thread.state), turnAllowance: thread.turnAllowance, deviceName: this.#o.deviceName,
       baseBranch: thread.baseBranch, ...(thread.attach ? { attach: thread.attach } : {}), attachCommand: attachCommand(threadId),

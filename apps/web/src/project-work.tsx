@@ -27,6 +27,7 @@ import { queuedRefresh } from './refresh.js';
 import { ProjectGoals, type GoalEntry } from './project-goals.js';
 import { TaskQueue } from './task-queue.js';
 import { relativeDuration, shortTime, timeStamp } from './time.js';
+import { SessionHistory } from './session-history.js';
 import { SessionCache, SessionsCache } from './session-cache.js';
 
 // The sidebar section remembers whether it is open; expanded by default (D55).
@@ -484,6 +485,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
         </div>
       </div>
       {loadError && <p className="notice" role="status">{loadError}</p>}
+      <SessionHistory entries={coordinator.sessionHistory} path={`/api/projects/${id}/session-transcript`} />
       <SessionsCache rows={view.sessionCache} timezone={view.settings.nightlyWindow.timezone} titles={Object.fromEntries([[id, 'Coordinator'], ...view.threads.map(thread => [thread.id, thread.title])])} />
       {coordinator.session?.context?.notice && <p className="notice" role="status">{coordinator.session.context.notice}</p>}
       {daily && <NightlyBanner view={daily} />}
@@ -958,7 +960,7 @@ type SettingsBase = Pick<ProjectWorkView, 'settings' | 'settingsNotice'>;
 const settingsForm = (from: SettingsBase) => ({
   defaultIsolation: from.settings.defaultIsolation, isolationChanged: false, modelId: from.settings.coordinator.modelId ?? '',
   effort: from.settings.coordinator.effort, setupCommand: from.settings.setupCommand ?? '', maxRunningThreads: String(from.settings.maxRunningThreads),
-  compactAtPercent: String(from.settings.compactAtPercent), maxRunningPerDevice: String(from.settings.maxRunningPerDevice), threadTurnCap: String(from.settings.threadTurnCap),
+  sessionCheckpoints: from.settings.sessionCheckpoints, compactAtPercent: String(from.settings.compactAtPercent), maxRunningPerDevice: String(from.settings.maxRunningPerDevice), threadTurnCap: String(from.settings.threadTurnCap),
   perDeviceLimits: from.settings.perDeviceLimits,
   refill: from.settings.refill, nightlyWindow: from.settings.nightlyWindow, autoMerge: from.settings.autoMerge, riskyAreas: from.settings.riskyAreas, requiredChecks: from.settings.requiredChecks, threadRules: from.settings.threadRules, allowMainIsolation: from.settings.allowMainIsolation,
 });
@@ -1039,6 +1041,8 @@ function SettingsDialog({ props, view, close }: { props: PageProps; view: Projec
             <input value={form.setupCommand} maxLength={500} placeholder={copy.SETUP_COMMAND_PLACEHOLDER} spellCheck={false}
               onChange={(event) => change({ setupCommand: event.target.value })} />
           </label>
+          <label className="checkbox"><input type="checkbox" checked={form.sessionCheckpoints.enabled} onChange={event => change({ sessionCheckpoints: { ...form.sessionCheckpoints, enabled: event.target.checked } })} />Checkpoint large cold sessions</label>
+          <label>Checkpoint minimum context tokens<input type="number" required min={20000} max={200000} step={1000} value={form.sessionCheckpoints.checkpointMinTokens} onChange={event => change({ sessionCheckpoints: { ...form.sessionCheckpoints, checkpointMinTokens: Number(event.target.value) } })} /></label>
           <label>Compact at percent<input type="number" required min={50} max={90} step={1} inputMode="numeric" value={form.compactAtPercent}
             onChange={event => change({ compactAtPercent: event.target.value })} /></label>
           <label className="checkbox"><input type="checkbox" checked={form.autoMerge} onChange={event => change({ autoMerge: event.target.checked })} />Merge automatically after checks</label>

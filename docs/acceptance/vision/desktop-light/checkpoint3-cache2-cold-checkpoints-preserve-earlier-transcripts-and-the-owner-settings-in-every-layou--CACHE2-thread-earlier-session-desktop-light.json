@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/screenshots/CHECKPOINT3-CACHE2-thread-earlier-session-desktop-light.png",
+  "expected": "the Jevellan web app \"CACHE2 thread earlier session\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The prompt bubble is indented to the right of the tool-call card and the summary text below, so the left edges inside the modal don't line up.",
+      "The prompt bubble's 'CACHE1 metrics' line is a different label from the 'CACHE2' screen name. This is probably fixture content, not a rendering fault."
+    ]
+  }
+}

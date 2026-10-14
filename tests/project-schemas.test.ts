@@ -140,7 +140,7 @@ test('nested documents are strict too', () => {
 
 test('defaults match the brief and fill optional collections', () => {
   expect(settings).toEqual({ schema: 'project-work-settings-v3', projectId: 'project', revision: 0, defaultIsolation: 'worktree', coordinator: { modelId: null, effort: 'medium' }, setupCommand: null, maxRunningThreads: 6, maxRunningPerDevice: 4, threadTurnCap: 30,
-    perDeviceLimits: {}, allowMainIsolation: true, threadRules: '', autoMerge: false, riskyAreas: '', requiredChecks: [], compactAtPercent: 70, memory: { mode: 'hub', capture: true, dreamMode: 'apply' },
+    perDeviceLimits: {}, allowMainIsolation: true, threadRules: '', autoMerge: false, riskyAreas: '', requiredChecks: [], compactAtPercent: 70, sessionCheckpoints: { enabled: false, checkpointMinTokens: 40000 }, memory: { mode: 'hub', capture: true, dreamMode: 'apply' },
     nightlyWindow: { enabled: false, time: '02:00', timezone: 'Europe/Lisbon' }, refill: { enabled: true, minIntervalMinutes: 30 } });
   expect(() => defaultProjectWorkSettings('../escape')).toThrow();
   expect(ThreadReportSchema.parse(without(report, 'changedFiles')).changedFiles).toEqual([]);
@@ -261,6 +261,7 @@ test('ledger envelopes are separate from conversation ledgers and payloads are v
     'thread-verification': { schema: 'thread-verification-v1', attempt: 1, command: null, status: 'skipped', timedOut: false, commit: 'a'.repeat(40), tail: '' },
     'thread-publication': { schema: 'thread-publication-v1', result: 'pr-opened', prNumber: 7, branch: 'jv/fix-login-q2k9m', pr, files: ['src/login.ts'] },
     'session-compacted': { schema: 'session-compacted-v1', owner: { kind: 'thread', id: threadId }, runtime: 'codex', model: 'gpt-5', at, beforeTokens: 140000, afterTokens: 10000, contextWindow: 200000, thresholdPercent: 70 },
+    'session-checkpointed': { schema: 'session-checkpointed-v1', owner: { kind: 'thread', id: threadId }, previousSessionId: 'a'.repeat(64), newSessionId: 'b'.repeat(64), reason: 'cold', idleSeconds: 120, previousContextTokens: 45000, digestChars: 6000, firstTurnCacheWriteTokens: 2000, at },
     'session-turn-cache': { schema: 'session-turn-cache-v1', owner: { kind: 'thread', id: threadId }, sessionId: 'a'.repeat(64), runtime: 'codex', model: 'gpt-5', accountId: 'acc_b', turn: 1, at, idleSeconds: null, startedCold: false, cacheWindowMinutes: 10, contextTokensBefore: null, cacheReadTokens: 10, cacheWriteTokens: 0, uncachedInputTokens: 20, outputTokens: 3, activityAt: at, activitySource: 'usage', contextTokensAfter: null, usageKnown: true, cacheWritesKnown: false },
     'project-session-end': { schema: 'project-session-end-v1', owner: { kind: 'memory', id: 'memory_1' }, runtime: 'claude', model: 'opus', startedAt: at, endedAt: at, status: 'completed', usage: { inputTokens: 10, outputTokens: 20, costSource: 'unknown' } },
     notice: { schema: 'project-notice-v1', text: 'Saved.', kind: 'error' },
