@@ -500,7 +500,7 @@
   {
     "id": "cache-journal-closing",
     "title": "Measure real cache windows and release",
-    "why": "Decisions823–824: original live deadline09:36:41UTC retained. L2 seed and L3 actual-cold prerequisite fail; checkpoints remainoff. Corrected direct-input L1 has six qualifying initial contexts and two Codex startup failures; follow-ups running. Immutable full backend and production-built full browser matrix running; no full pass/deployment claim. Target034, existing rollback retained.",
+    "why": "Decisions823–824: original live deadline09:36:41UTC retained. L2 seed and L3 actual-cold prerequisite fail; checkpoints remainoff. Corrected direct-input L1 has six qualifying initial contexts and two Codex startup failures; follow-ups running. Immutable full backend and production-built full browser matrix running; no full pass/deployment claim. Target034, existing rollback retained. Decision825: single crucial-issues pass finds no serious new issue; two cold rollback fixtures and actual034CLI/build/type/lint pass. Packaging/installation pending.",
     "status": "in-progress"
   },
   {

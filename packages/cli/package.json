@@ -1,6 +1,6 @@
 {
   "name": "@jevellan/cli",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "private": true,
   "type": "module",
   "license": "MIT",
@@ -11,13 +11,13 @@
     }
   },
   "dependencies": {
-    "@jevellan/core": "0.3.3",
-    "@jevellan/daemon": "0.3.3",
-    "@jevellan/memory": "0.3.3",
-    "@jevellan/mesh": "0.3.3",
+    "@jevellan/core": "0.3.4",
+    "@jevellan/daemon": "0.3.4",
+    "@jevellan/memory": "0.3.4",
+    "@jevellan/mesh": "0.3.4",
     "@modelcontextprotocol/sdk": "1.30.1",
     "zod": "4.6.5",
     "tar": "7.5.22",
-    "@jevellan/agent-mcp": "0.3.3"
+    "@jevellan/agent-mcp": "0.3.4"
   }
 }
