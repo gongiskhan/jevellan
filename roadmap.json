@@ -640,5 +640,11 @@
     "title": "Follow native takeover exit confirmation",
     "why": "Decision807 refines736. A single Ctrl-D only asks for confirmation in installed Claude2.1.295. Follow the observed confirmation once; actual detach remains required. Original extracted interaction fails regression, then26 simulated harness cases pass. Real four-layout D remains pending.",
     "status": "complete-with-blockers"
+  },
+  {
+    "id": "activation-cross-platform-fixture-baselines",
+    "title": "Make placement and queue fixtures explicit",
+    "why": "Decision808. Retain7eb full Linux failure:2072 passed,2 failed,5 skipped. Quiet reruns reproduce host-dependent tags and a baseline taken before the held runtime turn starts. Explicit owner tags and actual held-turn admission preserve exact assertions. Corrected two files pass10/10 on each Mac/Linux; typecheck/lint pass. Final full rerun pending.",
+    "status": "complete-with-blockers"
   }
 ]

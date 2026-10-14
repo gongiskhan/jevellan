@@ -160,6 +160,9 @@ test('PJ4 Jev places threads with recorded probabilities and falls back on failu
 test('PJ4 Call B asks for the device when a second device qualifies', { timeout: 120_000 }, async () => {
   const transport = jev(); const f = await setup([SWIFT, DEEP], transport); const deep = f.runtimes.fake2!;
   const hubId = f.app.device.deviceId;
+  // Owner tags are the subject of the packet assertion, independent of the host running this fixture.
+  expect((await f.request('/hub/devices/tags', 'POST', { schema: 'device-tags-input-v1', deviceId: hubId,
+    tags: ['mac', 'residential', 'browser-automation'] })).status).toBe(200);
   // A second device: joined (so it is not revoked), online by its heartbeat, set up for the project, with an eligible account
   // for Deep's runtime that only it reports. It needs no daemon: placement reads the roster and the hub account list.
   const hubRow = f.app.hub.get('devices', hubId, DeviceSchema)!; f.app.hub.put('devices', hubId, DeviceSchema, { ...hubRow.document, url: f.base }, hubRow.revision);

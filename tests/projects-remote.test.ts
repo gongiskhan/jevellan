@@ -299,6 +299,8 @@ test('the coordinator acts on member threads through commands, reads them with t
   m.fake.enqueueTurn(holdStep(busyHeld), forThread());
   const busy = (await startOnMember('Long job')).threadId;
   await f.waitFor(async () => { await m.app.projectWork.pulse(); return (await f.index(busy))?.state; }, (state) => state === 'running');
+  // Running includes turn preparation. Wait until the held model turn actually starts before taking a start-count baseline.
+  await f.waitFor(() => m.fake.turnStarts.filter(input => input.owner.kind === 'thread' && input.owner.id === busy).length, count => count === 1);
   const first = await f.json(`/api/projects/${pid}/threads`, ThreadCreatedViewSchema, 'POST', createBody('Hub job', { deviceId: hubId }));
   const second = await startOnMember('Member job');
   expect([first.state, second.state]).toEqual(['queued', 'queued']); expect(second.placement).toContain(`· ${m.name}`);

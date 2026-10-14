@@ -1,0 +1,64 @@
+{
+  "schema": "backend-verification-evidence-v1",
+  "label": "simulated",
+  "source": {
+    "schema": "source-checks-v1",
+    "label": "simulated",
+    "sourceCommit": "7eb99ead3eca8535a0797fe67a357cbb95c880f1",
+    "sourceTree": "979537e23c6c0b9f6c1d09e89a29e4095c8f7f0c",
+    "device": "dev-madrid",
+    "node": "v22.23.2",
+    "startedAt": "2026-10-14T00:07:28.076Z",
+    "endedAt": "2026-10-14T01:08:28.876Z",
+    "status": "failed",
+    "checks": [
+      {
+        "name": "typecheck",
+        "startedAt": "2026-10-14T00:07:28.080Z",
+        "endedAt": "2026-10-14T00:07:43.494Z",
+        "exitCode": 0
+      },
+      {
+        "name": "lint",
+        "startedAt": "2026-10-14T00:07:43.495Z",
+        "endedAt": "2026-10-14T00:07:59.419Z",
+        "exitCode": 0
+      },
+      {
+        "name": "backend",
+        "startedAt": "2026-10-14T00:07:59.420Z",
+        "endedAt": "2026-10-14T01:08:28.875Z",
+        "exitCode": 1
+      }
+    ]
+  },
+  "counts": {
+    "passed": 2072,
+    "failed": 2,
+    "skipped": 5,
+    "filesPassed": 185,
+    "filesFailed": 2,
+    "filesSkipped": 1
+  },
+  "failures": [
+    {
+      "file": "tests/projects-placement-app.test.ts",
+      "reason": "The fixture expected Mac tags while inheriting the Linux host defaults."
+    },
+    {
+      "file": "tests/projects-remote.test.ts",
+      "reason": "The fixture took its runtime-start baseline before its held model turn entered the runtime."
+    }
+  ],
+  "correctedFiles": [
+    "tests/projects-placement-app.test.ts",
+    "tests/projects-remote.test.ts"
+  ],
+  "correctedCasesPerPlatform": 10,
+  "platforms": [
+    "darwin",
+    "linux"
+  ],
+  "fullPassingVerdict": false,
+  "ownerAcceptance": false
+}
