@@ -56,7 +56,10 @@ function payloads<T extends ProjectLedgerEventType>(f: ProjectFixture, type: T):
 }
 const received = (f: ProjectFixture): CoordinatorEvent[] => payloads(f, 'coordinator-event');
 const notices = (f: ProjectFixture) => payloads(f, 'notice').map((data) => data.text);
+const journalTypes = new Set<ProjectLedgerEventType>(['journal-config', 'journal-source', 'journal-document', 'session-turn-cache']);
+// Chat ordering excludes only its separately checked passive journal/cache records.
 const ledgerTypes = (f: ProjectFixture) => f.app.projectWork.coordinatorLedger(f.project.id).events().map((event) => event.type);
+const chatLedgerTypes = (f: ProjectFixture) => ledgerTypes(f).filter(type => !journalTypes.has(type));
 const state = (f: ProjectFixture, threadId: string, wanted: string) => f.waitFor(() => f.thread(threadId).state, (value) => value === wanted);
 
 /** The coordinator chat stream as raw SSE text, read until the frame with id `last`; every frame must be exactly id, event and data. */
@@ -112,7 +115,7 @@ test('PJ2 one owner message starts two threads and the publications arrive batch
   const [first, second] = coordinatorTurns(f);
   expect(coordinatorTurns(f)).toHaveLength(2);
   expect(first).toMatchObject({ owner: { kind: 'coordinator', projectId: pid, id: pid }, turn: 1, permissions: 'read-only', safetyProfile: 'coordinator', cwd: f.checkout,
-    systemAppend: coordinatorSystemAppend('Shop') });
+    systemAppend: coordinatorSystemAppend('Shop') + `\n- The project journal at ${f.app.projectWork.journal!.path(pid)} has one file per thread, per day and per night, listed in INDEX.md. Read it when you need to know what other work did.`, readOnlyDirectories: [f.app.projectWork.journal!.path(pid)] });
   expect(first!.resume).toBeUndefined();
   expect(first!.prompt).toMatch(clocked('Project notebook:\n(empty)\n\nActive threads:\n(none)\n\nOpen questions to the owner (numbered as the owner sees them):\n(none)\n\nRecent conversation with the owner:\n(none)\n\nProject memory:\nRecently updated notes:\nSearch memory with memory_search for more.\n\nEvents since your last turn:\n[owner HH:MM] add A and fix B'));
   expect(second!.resume).toEqual({ sessionId: sessionOf(f, first!).sessionId });
@@ -123,8 +126,21 @@ test('PJ2 one owner message starts two threads and the publications arrive batch
   expect([await pr(idA), await pr(idB)].sort()).toEqual([1, 2]);
 
   // 4. The chat: the owner message, two start lines, both publications received during turn 1, both replies and completed ends.
-  expect(ledgerTypes(f)).toEqual(['coordinator-event', 'coordinator-turn-start', 'coordinator-tool', 'coordinator-tool', 'coordinator-event', 'coordinator-event', 'coordinator-text',
+  expect(chatLedgerTypes(f)).toEqual(['coordinator-event', 'coordinator-turn-start', 'coordinator-tool', 'coordinator-tool', 'coordinator-event', 'coordinator-event', 'coordinator-text',
     'coordinator-turn-end', 'coordinator-turn-start', 'coordinator-text', 'coordinator-turn-end']);
+  const cache = payloads(f, 'session-turn-cache');
+  expect(cache.map(row => row.turn)).toEqual([1, 2]);
+  expect(cache.every(row => row.owner.kind === 'coordinator' && row.owner.id === pid && /^[a-f0-9]{64}$/u.test(row.sessionId))).toBe(true);
+  expect(payloads(f, 'journal-config')).toEqual([{ schema: 'journal-config-v1', name: 'Shop', timezone: 'Europe/Lisbon' }]);
+  const sources = payloads(f, 'journal-source'), keys = sources.map(row => `${row.deviceId}:${row.ledgerId}:${row.event.id}`);
+  expect(new Set(keys).size).toBe(keys.length);
+  for (const id of [idA, idB]) expect(sources.some(row => row.ledgerId === id && row.event.type === 'thread-report')).toBe(true);
+  const journalEvents = f.app.projectWork.coordinatorLedger(pid).events();
+  for (const turn of [1, 2]) {
+    const receipt = journalEvents.find(event => event.type === 'session-turn-cache' && event.turn === turn)!;
+    expect(receipt.id).toBeGreaterThan(journalEvents.find(event => event.type === 'coordinator-turn-start' && event.turn === turn)!.id);
+    expect(receipt.id).toBeLessThan(journalEvents.find(event => event.type === 'coordinator-turn-end' && event.turn === turn)!.id);
+  }
   const tools = payloads(f, 'coordinator-tool');
   expect(tools.map(({ input: _input, inputTruncated: _truncated, ...line }) => { void _input; void _truncated; return line; })).toEqual([
     { schema: 'coordinator-tool-v1', tool: 'jevellan_task_create', ok: true, summary: 'Queued task "Add A"' },

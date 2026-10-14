@@ -1,0 +1,25 @@
+{
+  "schema": "cache-journal-fixture-checks-v1",
+  "label": "simulated",
+  "runtimeSourceCommit": "834a258d08384d2d0e2204f6d85a89d80f879861",
+  "decision": 829,
+  "files": {
+    "tests/project-coordinator-api.test.ts": "66722d0b57d938b2027f696b2f2dafff82d1fff7c8c85a27258a29f627de554c",
+    "tests/project-hub-store.test.ts": "08e8f1638d9fe43068bbef69756794d4bbe3c743546551ecc2ee8ba81aceb62e",
+    "tests/project-main-publication.test.ts": "f2a852eed1e0ebf5ced0a8128a2c792718a48025153ecb22ebfe71f15386fa8c",
+    "tests/project-merge-gate.test.ts": "9d7a96447f62ddca34fbfe99d65b9e281fa761cbaa250c5eec3f30c7bbcbc49b",
+    "tests/project-work-ui.test.ts": "621ad102ebfb117e5535571c16e00171266e3caa65bdbcb6e2d1307d55b22965",
+    "tests/projects-coordinator.test.ts": "85f3394813dd09387631099c6ccf8d0a8d6685349d6feb557b94fb8abe9c89e2"
+  },
+  "result": {
+    "filesPassed": 6,
+    "testsPassed": 112,
+    "durationSeconds": 533.79
+  },
+  "logSha256": "8d5ac650aea06bf6e244ad8123a8f8577b24b93777eeed72fc5da13fc523209d",
+  "typecheck": "passed",
+  "lint": "passed",
+  "runtimeChanged": false,
+  "earlierFailuresRetained": true,
+  "ownerAcceptance": false
+}

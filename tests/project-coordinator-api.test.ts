@@ -85,7 +85,7 @@ async function watch(f: ProjectFixture, options: { query?: string; headers?: Rec
     async ended() { while (await read()); parse(); },
   };
 }
-const resolved = (f: ProjectFixture, events: readonly ProjectLedgerEvent[]) => { const ledger = f.app.projectWork.coordinatorLedger(f.project.id); return events.map((event) => ({ ...event, data: ledger.data(event) })); };
+const resolved = (f: ProjectFixture, events: readonly ProjectLedgerEvent[]) => { const ledger = f.app.projectWork.coordinatorLedger(f.project.id); return events.map((event) => ({ ...event, data: publicProjectData(ledger.data(event)) })); };
 
 test('the phase 2 rows of the route table: coordinator, settings, notebook and answers, with their ids, methods and stream flag', () => {
   const project = (suffix: string) => `/api/projects/proj_a${suffix}`;
@@ -173,7 +173,7 @@ test('coordinator routes: session required, assignment by the first message, ide
   // Before the first message: no coordinator, the planned session (D91), an empty chat; Stop and Fresh assign nothing.
   const planned = { runtime: 'fake', modelLabel: 'Fixture', effort: 'high' };
   const before = ProjectWorkViewSchema.parse(await call(f, route('/work'), 'GET', undefined, 200));
-  expect(before.coordinator).toEqual({ state: 'none', deviceId: null, deviceName: null, online: false, session: null, planned, canMoveHere: false });
+  expect(before.coordinator).toEqual({ state: 'none', deviceId: null, deviceName: null, online: false, session: null, sessionHistory: [], planned, canMoveHere: false });
   expect(before).toMatchObject({ lastEventId: 0, notebookRevision: 0, decisions: { open: [], answered: [] } });
   for (const action of ['stop', 'fresh']) expect(ProjectWorkViewSchema.parse(await call(f, route(`/coordinator/${action}`), 'POST', empty, 202)).coordinator.state).toBe('none');
   expect(await call(f, route('/coordinator/stop'), 'POST', { schema: 'stop-v1' }, 400)).toEqual(refused('request-failed', CHECK));
@@ -196,16 +196,17 @@ test('coordinator routes: session required, assignment by the first message, ide
   expect((await f.app.projectHub.coordinator(pid))?.document.deviceId).toBe(f.app.device.deviceId);
   await work.idle(pid);
   const turnOne = ledger.events();
-  expect(turnOne.map((event) => event.type)).toEqual(['coordinator-event', 'coordinator-turn-start', 'coordinator-text', 'coordinator-turn-end']);
+  expect(turnOne.map((event) => event.type)).toEqual(['coordinator-event', 'journal-config', 'journal-source', 'journal-source', 'coordinator-turn-start', 'session-turn-cache', 'coordinator-text', 'coordinator-turn-end']);
   expect(f.fake.turnStarts.filter((turn) => turn.owner.kind === 'coordinator')).toHaveLength(1);
 
   // The stream opened before any event received every one live, in ledger order, exactly as the ledger holds it.
   const lastOne = turnOne.at(-1)!.id;
   const live = await early.through(lastOne);
   expect(live.map((frame) => frame.event)).toEqual(resolved(f, turnOne));
+  expect(JSON.stringify(live)).not.toContain('"sessionId"');
   expect(early.text().startsWith(`id: 1\nevent: project\ndata: {"schema":"project-event-v1","event":{"schema":"project-ledger-event-v1",`)).toBe(true);
   expect(live[0]!.event.data).toMatchObject({ kind: 'user-message', clientMessageId: 'msg_api_1', text: 'Add A and fix B.' });
-  expect(live[2]!.event.data).toEqual({ schema: 'coordinator-text-v1', text: 'Noted. I will split this into two threads.' });
+  expect(live.filter(frame => frame.event.type === 'coordinator-text').map(frame => frame.event.data)).toEqual([{ schema: 'coordinator-text-v1', text: 'Noted. I will split this into two threads.' }]);
   // Two viewers see the same frames.
   const second = await watch(f);
   expect(await second.through(lastOne)).toEqual(live);
@@ -215,7 +216,7 @@ test('coordinator routes: session required, assignment by the first message, ide
   const after = ProjectWorkViewSchema.parse(await call(f, route('/work'), 'GET', undefined, 200));
   expect(after.coordinator).toEqual({ state: 'idle', deviceId: f.app.device.deviceId, deviceName: f.deviceName, online: true,
     session: { runtime: 'fake', modelLabel: 'Fixture', effort: 'high', accountLabel: 'Fixture', turns: 1,
-      context: expect.objectContaining({ schema: 'project-session-context-v1', thresholdPercent: 70, compactions: [], lastCompactionAt: null, needsFreshContext: false }) }, planned, canMoveHere: false });
+      context: expect.objectContaining({ schema: 'project-session-context-v1', thresholdPercent: 70, compactions: [], lastCompactionAt: null, needsFreshContext: false }), cacheSessionKey: expect.stringMatching(/^[a-f0-9]{64}$/u) }, sessionHistory: [], planned, canMoveHere: false });
   expect(after.lastEventId).toBe(lastOne);
   expect(ProjectWorkListViewSchema.parse(await call(f, '/api/project-work', 'GET', undefined, 200)).projects)
     .toEqual([{ projectId: pid, name: 'Shop', waiting: 0, running: 0, inReview: 0, coordinator: { deviceId: f.app.device.deviceId, state: 'idle' } }]);
@@ -224,9 +225,9 @@ test('coordinator routes: session required, assignment by the first message, ide
   const resumed = await watch(f, { headers: { 'Last-Event-ID': '2' } });
   expect((await resumed.through(lastOne)).map((frame) => frame.event.id)).toEqual(turnOne.slice(2).map((event) => event.id));
   const byQuery = await watch(f, { query: '?after=3' });
-  expect((await byQuery.through(lastOne)).map((frame) => frame.event.id)).toEqual([4]);
+  expect((await byQuery.through(lastOne)).map((frame) => frame.event.id)).toEqual(turnOne.slice(3).map(event => event.id));
   const headerWins = await watch(f, { query: '?after=0', headers: { 'Last-Event-ID': '3' } });
-  expect((await headerWins.through(lastOne)).map((frame) => frame.event.id)).toEqual([4]);
+  expect((await headerWins.through(lastOne)).map((frame) => frame.event.id)).toEqual(turnOne.slice(3).map(event => event.id));
 
   // Stop interrupts the running turn and answers the project view; the turn's events count as delivered (D33).
   const held = holdTurn(f);
@@ -237,7 +238,7 @@ test('coordinator routes: session required, assignment by the first message, ide
   expect(stopped.coordinator).toMatchObject({ state: 'idle', session: { turns: 2 } });
   await work.idle(pid);
   const turnTwo = ledger.events().slice(turnOne.length);
-  expect(turnTwo.map((event) => event.type)).toEqual(['coordinator-event', 'coordinator-turn-start', 'coordinator-turn-end']);
+  expect(turnTwo.map((event) => event.type)).toEqual(['coordinator-event', 'journal-source', 'journal-source', 'journal-source', 'journal-source', 'journal-source', 'coordinator-turn-start', 'session-turn-cache', 'coordinator-turn-end']);
   expect(ledger.data(turnTwo.at(-1)!)).toMatchObject({ status: 'interrupted' });
   expect(f.coordinatorState().queue).toEqual([]);
   const lastTwo = turnTwo.at(-1)!.id;
