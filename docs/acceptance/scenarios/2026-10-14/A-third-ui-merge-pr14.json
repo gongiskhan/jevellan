@@ -1,0 +1,18 @@
+{
+  "schema": "scenario-owner-merge-v1",
+  "label": "live",
+  "at": "2026-10-14T03:11:53.988Z",
+  "projectId": "live_day_782f7663dd3541fda2ac0d1f702b607f",
+  "threadId": "thread_01M4W5P2F7GBAE37PFQQ69ED1P",
+  "number": 14,
+  "checkedHead": "35db134f1e4d7d2aadebfb71145fb533a761cc54",
+  "route": "ask-owner",
+  "decisionId": "pdec_8eca6826e4a226069aaa2fee010977ce058ca35e",
+  "action": "Merge button",
+  "state": "done",
+  "observations": [
+    "Owner-authorized sandbox UI merge for thread_01M4W5P2F7GBAE37PFQQ69ED1P: Merge #14 Add CSV export to the customers page?"
+  ],
+  "scenarioAssertion": "A3 still requires a genuine failed-check diagnosis",
+  "ownerAcceptance": false
+}

@@ -1,0 +1,17 @@
+{
+  "schema": "quiet-conversation-comparison-v1",
+  "label": "simulated",
+  "at": "2026-10-14T03:20:06.677Z",
+  "sourceCommit": "ccd9b6d508f7f6aed65ff7233d0acaa85d930a3f",
+  "referenceCommit": "0cd42aef588f6e620991ddc99c64a8970a9de5c2",
+  "testBlob": "91ba8280ac4ddde6883bcf9dee6b8b9ccb8bc51d",
+  "platform": "darwin",
+  "workers": 1,
+  "passed": 3,
+  "skipped": 92,
+  "durationSeconds": 152.42,
+  "logSha256": "23195387ef01dd4e719f1ca9e151a34a874e1ab7583ade66eafe6e9167ce3a52",
+  "fullPassingVerdict": false,
+  "ownerAcceptance": false,
+  "note": "The affected test file is byte-identical to0cd. Same three cases and original deadlines, dedicated bundled Basic Memory, simulated provider, fresh isolated test home. Linux failures remain unresolved; this targeted Mac pass does not replace the full failed verdict. No product/assertion/timeout changes."
+}

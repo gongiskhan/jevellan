@@ -1,0 +1,17 @@
+{
+  "schema": "quiet-conversation-comparison-v1",
+  "label": "simulated",
+  "at": "2026-10-14T03:53:27.793Z",
+  "sourceCommit": "0cd42aef588f6e620991ddc99c64a8970a9de5c2",
+  "referenceCommit": "0cd42aef588f6e620991ddc99c64a8970a9de5c2",
+  "testBlob": "91ba8280ac4ddde6883bcf9dee6b8b9ccb8bc51d",
+  "platform": "linux",
+  "workers": 1,
+  "passed": 3,
+  "skipped": 92,
+  "durationSeconds": 199.72,
+  "logSha256": "db83b01f4126510c6126d582831a09da3401437250e6ce552129faddf869762e",
+  "fullPassingVerdict": false,
+  "ownerAcceptance": false,
+  "note": "Final unchanged three-case rerun after the observed Ekoa suite/expensive jobs ended, proper bundled Basic Memory and one worker. Capture46.054seconds; conflict/undo75.025 and74.703seconds under original60/90second limits. Earlier full/isolated Linux timeouts remain failed; timings are consistent with load sensitivity, not proof of a sole cause. No code/assertion/deadline changes; stop diagnostic retries."
+}

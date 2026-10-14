@@ -1,0 +1,63 @@
+{
+  "schema": "activation-github-observation-v1",
+  "label": "live",
+  "at": "2026-10-14T03:47:53.445Z",
+  "pull": {
+    "number": 208,
+    "state": "open",
+    "head": "187ed0290326465d74dd15860cd9bda69142e253",
+    "base": "f3dcac657c0068369d025790a9518caaf0c1262a",
+    "mergeable": false,
+    "mergeableState": "dirty"
+  },
+  "schedulerRead": {
+    "status": 404,
+    "value": null,
+    "note": "The current CLI read returned404; unset vs inaccessible is not established. The product policy falls back to watch on a failed read; this is not a re-read of the persisted window-opening decision."
+  },
+  "runs": [
+    {
+      "id": 38495440575,
+      "event": "schedule",
+      "title": "nightly-legal-programme night",
+      "conclusion": "success",
+      "head": "7a7b36831c4a85eb8b6e972a8a92dd131a7e5912",
+      "url": "https://github.com/gongiskhan/ekoa-code/actions/runs/38495440575"
+    },
+    {
+      "id": 38498491476,
+      "event": "workflow_run",
+      "title": "nightly-deploy",
+      "conclusion": "success",
+      "head": "7a7b36831c4a85eb8b6e972a8a92dd131a7e5912",
+      "url": "https://github.com/gongiskhan/ekoa-code/actions/runs/38498491476"
+    },
+    {
+      "id": 38500711169,
+      "event": "workflow_run",
+      "title": "nightly-all-tests",
+      "conclusion": "failure",
+      "head": "7a7b36831c4a85eb8b6e972a8a92dd131a7e5912",
+      "url": "https://github.com/gongiskhan/ekoa-code/actions/runs/38500711169"
+    }
+  ],
+  "failedSteps": [
+    {
+      "jobId": 115646772242,
+      "job": "suite",
+      "step": "every sub-suite, the browser estate and the phone-width specs",
+      "startedAt": "2026-10-14T02:22:58Z",
+      "completedAt": "2026-10-14T03:35:28Z"
+    },
+    {
+      "jobId": 115646772383,
+      "job": "expensive",
+      "step": "the expensive tests",
+      "startedAt": "2026-10-14T02:22:58Z",
+      "completedAt": "2026-10-14T03:33:15Z"
+    }
+  ],
+  "cleanNight": false,
+  "repositoryChanged": false,
+  "ownerAcceptance": false
+}

@@ -1,0 +1,38 @@
+{
+  "schema": "live-merge-routes-evidence-v1",
+  "label": "live",
+  "at": "2026-10-14T03:18:07.543Z",
+  "projectId": "live_day_782f7663dd3541fda2ac0d1f702b607f",
+  "rows": [
+    {
+      "number": 13,
+      "threadId": "thread_01M4W5NW7TA86QH71255W79ECS",
+      "commit": "96ef5c060ebc61dc70f46dc05d794f5e25229ebc",
+      "route": "merge",
+      "source": "jev",
+      "state": "merged",
+      "reason": "Small or low-risk change outside the project's risky areas, covered by the checks that passed.",
+      "probabilities": {
+        "merge": 0.7,
+        "test-then-merge": 0.22,
+        "ask-owner": 0.08
+      }
+    },
+    {
+      "number": 14,
+      "threadId": "thread_01M4W5P2F7GBAE37PFQQ69ED1P",
+      "commit": "35db134f1e4d7d2aadebfb71145fb533a761cc54",
+      "route": "ask-owner",
+      "source": "jev",
+      "state": "merged",
+      "reason": "Touches a risky area, changes stored data or production behaviour, or is large or hard to undo.",
+      "probabilities": {
+        "merge": 0.33,
+        "test-then-merge": 0.06,
+        "ask-owner": 0.61
+      }
+    }
+  ],
+  "ownerAcceptance": false,
+  "scenarioAssertion": "A3 diagnosis remains independently required"
+}
