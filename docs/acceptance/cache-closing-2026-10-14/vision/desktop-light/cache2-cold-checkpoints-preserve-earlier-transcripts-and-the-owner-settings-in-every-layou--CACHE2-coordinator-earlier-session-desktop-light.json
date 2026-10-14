@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/screenshots/CACHE2-coordinator-earlier-session-desktop-light.png",
+  "expected": "the Jevellan web app \"CACHE2 coordinator earlier session\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The last 'Session usage is recorded.' line sits right at the bottom edge of the modal's scroll area. It looks like normal scroll overflow, not a clipping bug.",
+      "The coordinator replies ('Session usage is recorded.', 'Noted.') sit further left than the indented Prompt cards. This makes the two speakers look slightly unbalanced.",
+      "The prompt bubbles repeat raw thread IDs (e.g. thread_01M4WXTDGPWFHFHV4V9GBA1DE0). The long tokens are dense but they wrap and stay readable."
+    ]
+  }
+}

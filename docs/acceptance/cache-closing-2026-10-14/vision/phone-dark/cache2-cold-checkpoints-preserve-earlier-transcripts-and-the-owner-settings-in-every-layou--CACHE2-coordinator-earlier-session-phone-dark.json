@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/CACHE2-coordinator-earlier-session-phone-dark.png",
+  "expected": "the Jevellan web app \"CACHE2 coordinator earlier session\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The last 'Prompt' card is cut off at the bottom edge of the modal. This looks like normal scroll overflow in the transcript list, but nothing on screen shows that more content can be scrolled to.",
+      "The long thread ID (thread_01M4WXZRJ09Y1SC8Z42M34JQB8) wraps mid-token across lines. It is still readable."
+    ]
+  }
+}

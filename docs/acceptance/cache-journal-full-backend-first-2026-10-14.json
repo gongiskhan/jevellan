@@ -1,0 +1,38 @@
+{
+  "schema": "cache-closing-backend-v1",
+  "label": "simulated",
+  "sourceCommit": "4c4301b88b3a7c0b1c592cb158cd03f031516831",
+  "startedAt": "2026-10-14T06:36:58.369Z",
+  "endedAt": "2026-10-14T08:27:45.472Z",
+  "status": "failed",
+  "testFiles": {
+    "passed": 182,
+    "failed": 10,
+    "skipped": 1
+  },
+  "tests": {
+    "passed": 2113,
+    "failed": 16,
+    "skipped": 7
+  },
+  "failureTitles": [
+    "FAIL  tests/project-coordinator-api.test.ts > coordinator routes: session required, assignment by the first message, idempotent messages, a resumable chat stream, Stop, Fresh and no native session id",
+    "FAIL  tests/project-hub-store.test.ts > stored v1 settings migrate explicitly without losing fixed coordinator choices or unrelated fields",
+    "FAIL  tests/project-main-publication.test.ts > a main thread claims the checkout, works on main, publishes to main and gives the checkout back; a conversation and a second main thread are kept off it meanwhile (brief 8.2, 8.4, 9.4, 10)",
+    "FAIL  tests/project-merge-gate.test.ts > basic verification uses the other provider, medium effort and a fresh clean head before merging",
+    "FAIL  tests/project-runner.test.ts > an owner thread prepares a worktree, runs its turn, opens the pull request, and concludes when it merges (3.1)",
+    "FAIL  tests/project-runner.test.ts > turns without reports are synthesized, the limit waits for the owner, and Allow 10 more turns runs the queued message once (D31, D73, D85)",
+    "FAIL  tests/project-runner.test.ts > limits queue a start until a slot frees; stop keeps the worktree, discard removes it, and ended threads refuse messages (D9a, D28)",
+    "FAIL  tests/project-runner.test.ts > a restart leaves a running thread idle with the restart reason, ends its process and resumes nothing; an unconfirmed orphan fails the thread (8.6, D24)",
+    "FAIL  tests/project-runner.test.ts > an interrupt steers the running turn into the next one, and a message sent while publishing runs right after it (2.6.9, D72, D160)",
+    "FAIL  tests/project-runner.test.ts > an idle thread holds no slot; its next turn waits for one and starts by itself when the slot frees (D9)",
+    "FAIL  tests/project-runner.test.ts > a large cold thread checkpoints across daemon restart with its own question, one answer and no duplicate turn",
+    "FAIL  tests/project-work-ui.test.ts > request bodies: Automatic placement fields are omitted and a stored main default survives a save (D205, D223)",
+    "FAIL  tests/projects-coordinator.test.ts > PJ2 one owner message starts two threads and the publications arrive batched",
+    "FAIL  tests/projects-move.test.ts > an offline coordinator device: the hub takes the coordinator over, events relayed to the gone device follow the move, and the device that returns stops its turn and hands its queue over",
+    "FAIL  tests/settings-api.test.ts > Project memory starts enabled and supports persistent per-runtime toggles with immutable content",
+    "FAIL  tests/thread-worktree.test.ts > thread git reads identity and the raw origin url, and fetches only into private thread refs"
+  ],
+  "logSha256": "c513bd10a8ef6c2cb22e3b8ff34c547074f76e54d6e723389fd3226a5ee08aae",
+  "ownerAcceptance": false
+}

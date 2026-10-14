@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CACHE1 session metrics and runtime windows persist across reload in every layout",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/screenshots/CACHE1-sessions-cache-desktop-dark.png",
+  "expected": "the Jevellan web app \"CACHE1 sessions cache\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"CACHE1 session metrics and runtime windows persist across reload in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Today in Europe/Lisbon' caption sits centered above the sessions table and looks detached from the 'Sessions and cache · today' heading.",
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · dev-ma…'). This looks like intended truncation, and the text is still readable.",
+      "The table's session subtitle 'CLAUDE · CLAUDE-FABLE-5-1 · 01414790' is very small, low-contrast monospace text, though still legible.",
+      "The right column reaches the bottom of the window, and the 'Add checks or a review to run every night.' line sits close to the bottom edge."
+    ]
+  }
+}

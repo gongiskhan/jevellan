@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/CACHE2-thread-earlier-session-phone-dark.png",
+  "expected": "the Jevellan web app \"CACHE2 thread earlier session\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The Input JSON block cuts off at the right edge: the \"summary\" value reads \"Session usage is recorded\" with no closing quote, and no scroll affordance is visible. The full text still appears as the final message below, so nothing is lost.",
+      "The prompt card says \"CACHE1 metrics\", but this screen is labelled as the CACHE2 thread's earlier session. Worth checking that the right transcript is shown. It isn't a rendering problem.",
+      "The last line, \"Session usage is recorded.\", sits close to the bottom edge of the viewport with little padding underneath."
+    ]
+  }
+}

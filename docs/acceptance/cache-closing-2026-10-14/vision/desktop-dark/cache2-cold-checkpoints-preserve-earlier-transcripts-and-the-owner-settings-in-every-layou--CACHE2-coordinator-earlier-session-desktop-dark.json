@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/screenshots/CACHE2-coordinator-earlier-session-desktop-dark.png",
+  "expected": "the Jevellan web app \"CACHE2 coordinator earlier session\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The transcript is cut off at the bottom of the modal ('Session usage is recorded.' sits at the edge) and there's no visible scrollbar or fade to show that more content is below",
+      "The prompt cards are indented more than the replies ('Session usage is recorded.', 'Noted.'), so the left margins don't line up",
+      "Text like 'Project memory: Recently updated notes: Search memory with memory_search for more.' reads as one run-on line because the separate fields run together"
+    ]
+  }
+}

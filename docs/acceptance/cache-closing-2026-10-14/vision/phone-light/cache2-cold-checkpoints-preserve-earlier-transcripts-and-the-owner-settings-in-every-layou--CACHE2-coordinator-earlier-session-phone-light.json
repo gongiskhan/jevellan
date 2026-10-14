@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/CACHE2-coordinator-earlier-session-phone-light.png",
+  "expected": "the Jevellan web app \"CACHE2 coordinator earlier session\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The last prompt card is clipped at the bottom of the modal's scroll area, with no visible scroll cue or fade to show more content below",
+      "The transcript has no visual separation between the bare reply lines ('Session usage is recorded.', 'Noted.') and the prompt cards, so the conversation is slightly harder to scan"
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/screenshots/CACHE2-thread-earlier-session-desktop-dark.png",
+  "expected": "the Jevellan web app \"CACHE2 thread earlier session\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The Prompt card sits further right than the tool-call card and the final message below it, so the left edges don't line up.",
+      "The last message, 'Session usage is recorded.', sits very close to the modal's bottom edge with little padding; there may be more content to scroll to below it.",
+      "The prompt mentions 'CACHE1 metrics' while the screen is labelled CACHE2; this looks like a fixture naming quirk, not a rendering problem."
+    ]
+  }
+}

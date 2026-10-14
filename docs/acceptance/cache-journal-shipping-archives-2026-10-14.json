@@ -1,0 +1,117 @@
+{
+  "schema": "cache-shipping-archives-v1",
+  "label": "live",
+  "sourceCommit": "8474079ac63915185270b3a415e747b86140ee86",
+  "version": "0.3.4",
+  "at": "2026-10-14T09:55:40.930698+00:00",
+  "archives": [
+    {
+      "name": "jevellan-0.3.4-darwin-arm64.tgz",
+      "bytes": 369729594,
+      "sha256": "511c9d35ec5b3a1ea93c5d2fa79d02985644398feebb2495e73c5612797ccb69"
+    },
+    {
+      "name": "jevellan-0.3.4-linux-x64.tgz",
+      "bytes": 500951896,
+      "sha256": "b6eb09f0fecf86a250c7cd41d9ad385b4907492bb1081200fd87da28bceedfe1"
+    }
+  ],
+  "checks": {
+    "mac": {
+      "build": {
+        "schema": "release-build-v1",
+        "version": "0.3.4",
+        "label": "simulated",
+        "sourceCommit": "8474079ac63915185270b3a415e747b86140ee86",
+        "platform": "darwin",
+        "arch": "arm64",
+        "startedAt": "2026-10-14T09:42:44.519Z",
+        "endedAt": "2026-10-14T09:43:49.607Z",
+        "checks": [
+          {
+            "name": "native",
+            "startedAt": "2026-10-14T09:42:44.520Z",
+            "endedAt": "2026-10-14T09:42:44.547Z",
+            "exitCode": 0
+          },
+          {
+            "name": "build",
+            "startedAt": "2026-10-14T09:42:44.566Z",
+            "endedAt": "2026-10-14T09:43:07.709Z",
+            "exitCode": 0
+          },
+          {
+            "name": "pack",
+            "startedAt": "2026-10-14T09:43:07.710Z",
+            "endedAt": "2026-10-14T09:43:49.607Z",
+            "exitCode": 0
+          }
+        ],
+        "status": "passed"
+      },
+      "verification": {
+        "schema": "release-archive-check-v1",
+        "label": "live",
+        "version": "0.3.4",
+        "platform": "darwin",
+        "arch": "arm64",
+        "files": 11546,
+        "matchedFiles": 103,
+        "matchedAssets": 10,
+        "cli": true,
+        "nativePty": true,
+        "prohibitedPaths": 0
+      }
+    },
+    "linux": {
+      "build": {
+        "schema": "release-build-v1",
+        "version": "0.3.4",
+        "label": "simulated",
+        "sourceCommit": "8474079ac63915185270b3a415e747b86140ee86",
+        "platform": "linux",
+        "arch": "x64",
+        "startedAt": "2026-10-14T09:43:52.498Z",
+        "endedAt": "2026-10-14T09:46:35.314Z",
+        "checks": [
+          {
+            "name": "native",
+            "startedAt": "2026-10-14T09:43:52.498Z",
+            "endedAt": "2026-10-14T09:43:52.560Z",
+            "exitCode": 0
+          },
+          {
+            "name": "build",
+            "startedAt": "2026-10-14T09:43:52.560Z",
+            "endedAt": "2026-10-14T09:44:58.171Z",
+            "exitCode": 0
+          },
+          {
+            "name": "pack",
+            "startedAt": "2026-10-14T09:44:58.171Z",
+            "endedAt": "2026-10-14T09:46:35.313Z",
+            "exitCode": 0
+          }
+        ],
+        "status": "passed"
+      },
+      "verification": {
+        "schema": "release-archive-check-v1",
+        "label": "live",
+        "version": "0.3.4",
+        "platform": "linux",
+        "arch": "x64",
+        "files": 11553,
+        "matchedFiles": 103,
+        "matchedAssets": 10,
+        "cli": true,
+        "nativePty": true,
+        "prohibitedPaths": 0
+      }
+    }
+  },
+  "draft": true,
+  "installed": false,
+  "earlierDriverFailure": "Linux upload began before its local transfer completed; GitHub rejected the changing request body. Wait for transfer completion, require equal Mac/Madrid SHA256, then retry the same unpublished draft. Published releases were not modified.",
+  "ownerAcceptance": false
+}

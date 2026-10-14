@@ -1,0 +1,290 @@
+{
+  "schema": "cache-closing-browser-v1",
+  "label": "simulated",
+  "visionLabel": "live",
+  "sourceCommit": "8474079ac63915185270b3a415e747b86140ee86",
+  "startedAt": "2026-10-14T10:01:40.167Z",
+  "endedAt": "2026-10-14T10:06:34.477Z",
+  "status": "passed",
+  "counts": {
+    "passed": 8,
+    "failed": 0,
+    "notRun": 0
+  },
+  "failureTitles": [],
+  "logSha256": "cd91d9d1ff9b20bce9f96bb1cf5b8c706e13634580f3850688d9509ec438aaab",
+  "freshVision": {
+    "total": 24,
+    "clear": 24,
+    "cacheTotal": 24,
+    "cacheClear": 24
+  },
+  "vision": [
+    {
+      "path": "docs/acceptance/vision/desktop-dark/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-runtime-cache-window-desktop-dark.json",
+      "sha256": "cf6abf6280be8ff88447f569f9dbeb458d2059eb87062ecc6e82cd24bf16c98f",
+      "test": "CACHE1 session metrics and runtime windows persist across reload in every layout",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/CACHE1-runtime-cache-window-desktop-dark.png",
+      "screenshotSha256": "554a4ee9233d759886521c282a54ae4f1de1690d0f4cfc4108334144de8252c1",
+      "artifactPath": "docs/acceptance/cache-closing-2026-10-14/vision/desktop-dark/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-runtime-cache-window-desktop-dark.json",
+      "screenshotArtifact": "docs/acceptance/cache-closing-2026-10-14/screenshots/CACHE1-runtime-cache-window-desktop-dark.png"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-sessions-cache-desktop-dark.json",
+      "sha256": "147eb03134973def58a244f07b71ffabbec276a5bbac5363bc3c70511da61f35",
+      "test": "CACHE1 session metrics and runtime windows persist across reload in every layout",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/CACHE1-sessions-cache-desktop-dark.png",
+      "screenshotSha256": "32fbd392f1a77fe0e30d18f9a396b412a241d407b4a1aa197e147dd71c82f21f",
+      "artifactPath": "docs/acceptance/cache-closing-2026-10-14/vision/desktop-dark/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-sessions-cache-desktop-dark.json",
+      "screenshotArtifact": "docs/acceptance/cache-closing-2026-10-14/screenshots/CACHE1-sessions-cache-desktop-dark.png"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-thread-cache-desktop-dark.json",
+      "sha256": "8edcc76ea808eaefdf5cb45fe276d574d1058cb08e40eddf2d4329bfcd4f0ecf",
+      "test": "CACHE1 session metrics and runtime windows persist across reload in every layout",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/CACHE1-thread-cache-desktop-dark.png",
+      "screenshotSha256": "0ae1109a7bdadd985ed8db5941c669a9c94abad114ee9974d0ca0a50149c27dc",
+      "artifactPath": "docs/acceptance/cache-closing-2026-10-14/vision/desktop-dark/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-thread-cache-desktop-dark.json",
+      "screenshotArtifact": "docs/acceptance/cache-closing-2026-10-14/screenshots/CACHE1-thread-cache-desktop-dark.png"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-checkpoint-settings-desktop-dark.json",
+      "sha256": "d333f76ec2148ba6998042b3d9284cdc2f15e036cd1ed4c0144fa789a815b5d1",
+      "test": "CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/CACHE2-checkpoint-settings-desktop-dark.png",
+      "screenshotSha256": "803ca3b6389f5466ef6c1704fe4d6e6039cd03c5f9528ffd56e8c25f7f24f083",
+      "artifactPath": "docs/acceptance/cache-closing-2026-10-14/vision/desktop-dark/cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-checkpoint-settings-desktop-dark.json",
+      "screenshotArtifact": "docs/acceptance/cache-closing-2026-10-14/screenshots/CACHE2-checkpoint-settings-desktop-dark.png"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-coordinator-earlier-session-desktop-dark.json",
+      "sha256": "ef934666a477d14d5d53d0c4006fb8a5634fc50243426ec80f349830ea027921",
+      "test": "CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/CACHE2-coordinator-earlier-session-desktop-dark.png",
+      "screenshotSha256": "d15e8b675891d7297f677e5e3f287a3995eb0edffd956d7fbff4401803f2b50f",
+      "artifactPath": "docs/acceptance/cache-closing-2026-10-14/vision/desktop-dark/cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-coordinator-earlier-session-desktop-dark.json",
+      "screenshotArtifact": "docs/acceptance/cache-closing-2026-10-14/screenshots/CACHE2-coordinator-earlier-session-desktop-dark.png"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-thread-earlier-session-desktop-dark.json",
+      "sha256": "9bbd501221b416ed15075da0652ec1fc25ef18a0abcbc751af283f852e9bc5ff",
+      "test": "CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/CACHE2-thread-earlier-session-desktop-dark.png",
+      "screenshotSha256": "bde235d96294645f14ece345686eb6fac02e9d7b6019a221aae934dfaf7450fc",
+      "artifactPath": "docs/acceptance/cache-closing-2026-10-14/vision/desktop-dark/cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-thread-earlier-session-desktop-dark.json",
+      "screenshotArtifact": "docs/acceptance/cache-closing-2026-10-14/screenshots/CACHE2-thread-earlier-session-desktop-dark.png"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-runtime-cache-window-desktop-light.json",
+      "sha256": "efd6fadf126c3a96964d8142c30120ddb090e7d2ddc42bf5f68e940da18a0e44",
+      "test": "CACHE1 session metrics and runtime windows persist across reload in every layout",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/CACHE1-runtime-cache-window-desktop-light.png",
+      "screenshotSha256": "6ff3ab3256e48b52ddb55a2dcf1ed8fa9bbe74d454bf6e6e2862223c22fa59ce",
+      "artifactPath": "docs/acceptance/cache-closing-2026-10-14/vision/desktop-light/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-runtime-cache-window-desktop-light.json",
+      "screenshotArtifact": "docs/acceptance/cache-closing-2026-10-14/screenshots/CACHE1-runtime-cache-window-desktop-light.png"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-sessions-cache-desktop-light.json",
+      "sha256": "5702d397c3bc5fcee963c8e9347f87beb324fedf1755229c6efe80b1b281027f",
+      "test": "CACHE1 session metrics and runtime windows persist across reload in every layout",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/CACHE1-sessions-cache-desktop-light.png",
+      "screenshotSha256": "01b30ba12b2dea3e1dc49c78d69f0d1d02a91a3791bd545a18a3509f2b4605f7",
+      "artifactPath": "docs/acceptance/cache-closing-2026-10-14/vision/desktop-light/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-sessions-cache-desktop-light.json",
+      "screenshotArtifact": "docs/acceptance/cache-closing-2026-10-14/screenshots/CACHE1-sessions-cache-desktop-light.png"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-thread-cache-desktop-light.json",
+      "sha256": "0dac92ae73dacd81abe85c075e61c61722708bd2e4dfcd154a2b8ccdd834cc9b",
+      "test": "CACHE1 session metrics and runtime windows persist across reload in every layout",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/CACHE1-thread-cache-desktop-light.png",
+      "screenshotSha256": "bde2e29a0e2c2cc8d56946aac413f809292caf9c35fbac22b96de9af2ef1339d",
+      "artifactPath": "docs/acceptance/cache-closing-2026-10-14/vision/desktop-light/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-thread-cache-desktop-light.json",
+      "screenshotArtifact": "docs/acceptance/cache-closing-2026-10-14/screenshots/CACHE1-thread-cache-desktop-light.png"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-checkpoint-settings-desktop-light.json",
+      "sha256": "2026ba47d719737778005fdb1f41389ce69cb8364b4a775bc0050cfc5f759e45",
+      "test": "CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/CACHE2-checkpoint-settings-desktop-light.png",
+      "screenshotSha256": "e3935c1df6cf8e6d5a34bb8749d88759791b7a6f607cfa25fade85f60f21e98d",
+      "artifactPath": "docs/acceptance/cache-closing-2026-10-14/vision/desktop-light/cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-checkpoint-settings-desktop-light.json",
+      "screenshotArtifact": "docs/acceptance/cache-closing-2026-10-14/screenshots/CACHE2-checkpoint-settings-desktop-light.png"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-coordinator-earlier-session-desktop-light.json",
+      "sha256": "2829f0dc58bb76c49222d705767912810c90a9c3dd1586c07c018b8aa2929be2",
+      "test": "CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/CACHE2-coordinator-earlier-session-desktop-light.png",
+      "screenshotSha256": "8823fe022e504e7339723cb4f21190898e74ea8acd36d4c3da039b1c608cfc2b",
+      "artifactPath": "docs/acceptance/cache-closing-2026-10-14/vision/desktop-light/cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-coordinator-earlier-session-desktop-light.json",
+      "screenshotArtifact": "docs/acceptance/cache-closing-2026-10-14/screenshots/CACHE2-coordinator-earlier-session-desktop-light.png"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-thread-earlier-session-desktop-light.json",
+      "sha256": "0e9436a061b196c87021a0bad7162557a9c4ed6d50e75d4f190a21899a74f0bf",
+      "test": "CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/CACHE2-thread-earlier-session-desktop-light.png",
+      "screenshotSha256": "cbe837bcd4b1d8cfd447c246f3cefbca37d7587675e7943d572601a228cadf3b",
+      "artifactPath": "docs/acceptance/cache-closing-2026-10-14/vision/desktop-light/cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-thread-earlier-session-desktop-light.json",
+      "screenshotArtifact": "docs/acceptance/cache-closing-2026-10-14/screenshots/CACHE2-thread-earlier-session-desktop-light.png"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-runtime-cache-window-phone-dark.json",
+      "sha256": "69abc0a489653e6c232385d874358d0f6984aeb182c0c0ec995c6f147b89104b",
+      "test": "CACHE1 session metrics and runtime windows persist across reload in every layout",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/CACHE1-runtime-cache-window-phone-dark.png",
+      "screenshotSha256": "1d026a6e9e5cc8c044d27add8ad77cf2f52231d2be0d8dfcbf38a05d4e3f8f6d",
+      "artifactPath": "docs/acceptance/cache-closing-2026-10-14/vision/phone-dark/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-runtime-cache-window-phone-dark.json",
+      "screenshotArtifact": "docs/acceptance/cache-closing-2026-10-14/screenshots/CACHE1-runtime-cache-window-phone-dark.png"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-sessions-cache-phone-dark.json",
+      "sha256": "c58a1918e2a9c622713562b022284b605dc579702845b7f8c9acedceff74c86d",
+      "test": "CACHE1 session metrics and runtime windows persist across reload in every layout",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/CACHE1-sessions-cache-phone-dark.png",
+      "screenshotSha256": "aad64c804c9cecdad0b68860a7842d9ebb164d903d033ecaecbdcbcbb17d3601",
+      "artifactPath": "docs/acceptance/cache-closing-2026-10-14/vision/phone-dark/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-sessions-cache-phone-dark.json",
+      "screenshotArtifact": "docs/acceptance/cache-closing-2026-10-14/screenshots/CACHE1-sessions-cache-phone-dark.png"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-thread-cache-phone-dark.json",
+      "sha256": "16eb56eb5efba358fb47dfd01a790c0c403f80cb9986b79c33ec6348b954ff92",
+      "test": "CACHE1 session metrics and runtime windows persist across reload in every layout",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/CACHE1-thread-cache-phone-dark.png",
+      "screenshotSha256": "a21488d8a6c9a43856ca4d8c89244e2cdd6772a09d3ae5bdf2d56a452038e749",
+      "artifactPath": "docs/acceptance/cache-closing-2026-10-14/vision/phone-dark/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-thread-cache-phone-dark.json",
+      "screenshotArtifact": "docs/acceptance/cache-closing-2026-10-14/screenshots/CACHE1-thread-cache-phone-dark.png"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-checkpoint-settings-phone-dark.json",
+      "sha256": "9326822c611cdf008a73d961279ebcb28433c87bee58c2063e5a7f74fefe14e3",
+      "test": "CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/CACHE2-checkpoint-settings-phone-dark.png",
+      "screenshotSha256": "4073e67e3212421b74e331ca1426d46d28867949d7413e3c88a80164909359f5",
+      "artifactPath": "docs/acceptance/cache-closing-2026-10-14/vision/phone-dark/cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-checkpoint-settings-phone-dark.json",
+      "screenshotArtifact": "docs/acceptance/cache-closing-2026-10-14/screenshots/CACHE2-checkpoint-settings-phone-dark.png"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-coordinator-earlier-session-phone-dark.json",
+      "sha256": "7953039b7cd2b9f7e4c9bb9a428003719eba372ad72b9114b733582982928722",
+      "test": "CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/CACHE2-coordinator-earlier-session-phone-dark.png",
+      "screenshotSha256": "543025f256a5f25ff992ef61c370fe968adc1a46def1f83c9aa3985aa4d25629",
+      "artifactPath": "docs/acceptance/cache-closing-2026-10-14/vision/phone-dark/cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-coordinator-earlier-session-phone-dark.json",
+      "screenshotArtifact": "docs/acceptance/cache-closing-2026-10-14/screenshots/CACHE2-coordinator-earlier-session-phone-dark.png"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-thread-earlier-session-phone-dark.json",
+      "sha256": "eff4be2293f5c680f96d4b622155b9eb24d7a3b4a67f758a1e913191cc3e8aa0",
+      "test": "CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/CACHE2-thread-earlier-session-phone-dark.png",
+      "screenshotSha256": "86734fefeb4bf6b478c6d7b28971e000d802ee27046bae3286221af8a3236839",
+      "artifactPath": "docs/acceptance/cache-closing-2026-10-14/vision/phone-dark/cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-thread-earlier-session-phone-dark.json",
+      "screenshotArtifact": "docs/acceptance/cache-closing-2026-10-14/screenshots/CACHE2-thread-earlier-session-phone-dark.png"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-runtime-cache-window-phone-light.json",
+      "sha256": "b6c65347e59ce0919834a5de7427925da97a99676b37a2dc99e8928cb096bf6f",
+      "test": "CACHE1 session metrics and runtime windows persist across reload in every layout",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/CACHE1-runtime-cache-window-phone-light.png",
+      "screenshotSha256": "beb73b692766a0fce2e163a12bd24aa9d9aa9cb2b372cb6758299c5ddd6fe3e3",
+      "artifactPath": "docs/acceptance/cache-closing-2026-10-14/vision/phone-light/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-runtime-cache-window-phone-light.json",
+      "screenshotArtifact": "docs/acceptance/cache-closing-2026-10-14/screenshots/CACHE1-runtime-cache-window-phone-light.png"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-sessions-cache-phone-light.json",
+      "sha256": "e0817d355f7d64fdef49823b87789cc3e7cabd1ee3adc33b7f3d3dd5a8f59b53",
+      "test": "CACHE1 session metrics and runtime windows persist across reload in every layout",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/CACHE1-sessions-cache-phone-light.png",
+      "screenshotSha256": "b2470f72a34711de193776ba9a0c1dab690fe5a3d03f1f8ba53f897b8cbbe8a3",
+      "artifactPath": "docs/acceptance/cache-closing-2026-10-14/vision/phone-light/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-sessions-cache-phone-light.json",
+      "screenshotArtifact": "docs/acceptance/cache-closing-2026-10-14/screenshots/CACHE1-sessions-cache-phone-light.png"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-thread-cache-phone-light.json",
+      "sha256": "aa83979fcf8a3085e07927a2eeb5e3c980b7a3e8bf46743c77fda7960d250d8c",
+      "test": "CACHE1 session metrics and runtime windows persist across reload in every layout",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/CACHE1-thread-cache-phone-light.png",
+      "screenshotSha256": "46e4cc68106e6721e186ac8ffe37d7f334d53a367d10da8e99ed6509ef886cde",
+      "artifactPath": "docs/acceptance/cache-closing-2026-10-14/vision/phone-light/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-thread-cache-phone-light.json",
+      "screenshotArtifact": "docs/acceptance/cache-closing-2026-10-14/screenshots/CACHE1-thread-cache-phone-light.png"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-checkpoint-settings-phone-light.json",
+      "sha256": "a9caaa4453365f89a2f3e702cdfdf03ba4c5683c73177b1784c9271e99f09362",
+      "test": "CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/CACHE2-checkpoint-settings-phone-light.png",
+      "screenshotSha256": "ce0d21d160483a70e31f3a3d417853a17931ab72b47e39d95e1e4fe614d974a4",
+      "artifactPath": "docs/acceptance/cache-closing-2026-10-14/vision/phone-light/cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-checkpoint-settings-phone-light.json",
+      "screenshotArtifact": "docs/acceptance/cache-closing-2026-10-14/screenshots/CACHE2-checkpoint-settings-phone-light.png"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-coordinator-earlier-session-phone-light.json",
+      "sha256": "e26d3cbf87bf49807fff522094e3de01a25803f4a9ead8c4e37251cc9d901253",
+      "test": "CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/CACHE2-coordinator-earlier-session-phone-light.png",
+      "screenshotSha256": "f89da8ddc6afe9818b78c09f924c640355cacc70ec4bd5e25c76c9f90ff49d3e",
+      "artifactPath": "docs/acceptance/cache-closing-2026-10-14/vision/phone-light/cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-coordinator-earlier-session-phone-light.json",
+      "screenshotArtifact": "docs/acceptance/cache-closing-2026-10-14/screenshots/CACHE2-coordinator-earlier-session-phone-light.png"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-thread-earlier-session-phone-light.json",
+      "sha256": "5270ff70c5bb37e6a9cf8ecbff391d7524d255c1be429aa23a378a8e81379f53",
+      "test": "CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/CACHE2-thread-earlier-session-phone-light.png",
+      "screenshotSha256": "cde418766ba80a0e45128ed6d625bb1ac3a32d1b501946dacb8c367a6e933155",
+      "artifactPath": "docs/acceptance/cache-closing-2026-10-14/vision/phone-light/cache2-cold-checkpoints-preserve-earlier-transcripts-and-the-owner-settings-in-every-layou--CACHE2-thread-earlier-session-phone-light.json",
+      "screenshotArtifact": "docs/acceptance/cache-closing-2026-10-14/screenshots/CACHE2-thread-earlier-session-phone-light.png"
+    }
+  ],
+  "ownerAcceptance": false,
+  "physicalPhone": "not run"
+}

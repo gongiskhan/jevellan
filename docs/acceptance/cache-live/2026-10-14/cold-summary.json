@@ -1,0 +1,29 @@
+{
+  "schema": "cache-live-cold-summary-v1",
+  "label": "live",
+  "at": "2026-10-14T09:49:08.577143+00:00",
+  "selectedOpaqueSessionKeys": 22,
+  "providers": {
+    "claude": {
+      "recordedTurns": 32,
+      "sessionsWithReceipts": 12,
+      "coldStarts": 13,
+      "knownColdWriteTokens": 739013,
+      "coldWritesUnknown": 0,
+      "observedWindowMinutes": [
+        1
+      ]
+    },
+    "codex": {
+      "recordedTurns": 21,
+      "sessionsWithReceipts": 10,
+      "coldStarts": 3,
+      "knownColdWriteTokens": 0,
+      "coldWritesUnknown": 0,
+      "observedWindowMinutes": [
+        1
+      ]
+    }
+  },
+  "reason": "Only passive ledger records matching the session keys in the three live receipts. The test profile uses the one-minute override; these are threshold classifications, not evidence of provider cache expiry. Missing records remain unknown; no qualifying live checkpoint or savings comparison."
+}

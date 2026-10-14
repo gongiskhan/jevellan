@@ -482,25 +482,25 @@
   {
     "id": "cache-journal-p1",
     "title": "Measure Projects cache usage",
-    "why": "Decisions817–818: all-five-role passive records, opaque identities, runtime cache windows, session/day metrics and authenticated member snapshots.220 affected backend cases, typecheck/lint/build and4 browser layouts pass;12 live vision judgments clear. Browser/runtime source matches across21 changed files. No guard/assertion waiver or provider traffic. L1 windows still provisional60/10 and checkpoints off; journal/checkpoints/live checks follow. See docs/acceptance/cache-journal-part1-2026-10-14.md.",
+    "why": "Decisions817–818/827/830: passive cache receipts and UI are built; affected tests and final4-layout coverage pass. L1 fails with six valid ratios below0.8 and two missing follow-ups, so windows remain provisional60/10. No provider traffic added. See cache-journal-closing-2026-10-14.md.",
     "status": "complete-with-blockers"
   },
   {
     "id": "cache-journal-p2",
     "title": "Build the ledger-derived project journal",
-    "why": "Decisions819–820: hub ledger-derived journal, authenticated atomic member mirrors, read-only session access, bounded digests and CLI rebuild.220 backend cases, typecheck/lint/build and8 browser journeys pass;20 live vision judgments clear,22 runtime files match. See docs/acceptance/cache-journal-part2-checks.json. Checkpoints/live checks follow.",
-    "status": "complete-with-blockers"
+    "why": "Decisions819–820/826/828: deterministic hub journal, read-only mirrors/digests and CLI rebuild. The live calendar change preserves history; rebuild is identical and Madrid receives it in2.451s. Three regressions fail before the calendar/sweep repair;26 cases pass after. No model-written journal or new coordinator tool.",
+    "status": "complete"
   },
   {
     "id": "cache-journal-p3",
     "title": "Checkpoint large cold sessions",
-    "why": "Decisions821–822: cold co/thread decision, exact bounded journal restarts, hashed receipts, owner-local native history/transcript links and settings off/40000.158 affected cases plus86 final overlapping cases, typecheck/lint/build and4 browser layouts pass;12 clear live vision judgments,19 runtime files match. RealL1–L3 pending; defaults remainoff. See docs/acceptance/cache-journal-part3-checks.json.",
+    "why": "Decisions821–822/827/829–830: bounded cold restarts, history/transcript links and settings built.158 affected cases and86 overlapping final cases pass; finalCACHE1/CACHE2 eight-case matrix and24 clear vision checks pass. L2/L3 fail before qualifying checkpoints, so default remainsoff/40000. No measured savings.",
     "status": "complete-with-blockers"
   },
   {
     "id": "cache-journal-closing",
     "title": "Measure real cache windows and release",
-    "why": "Decisions826–827: live mesh check finds calendar replay and sweep starvation; versioned ledger configuration and isolated four-worker metadata sweep fix it. Three regressions fail before;26 affected cases/build/type/lint pass after. RealL1 has six valid ratios below0.8 and two Codex startup failures; L2/L3 and one unchanged-clock L2 retry fail before qualifying checkpoints. Defaults off/40000, windows provisional60/10. Earlier full backend2113pass/16fail/7skip; full browser running. Corrected034 archives/full checks and activation pending. Decision828: real calendar change preserves historical bytes, rebuild is identical and Madrid updates in2.451s. Both private profiles closed normally. Corrected Mac/Linux/Mini archive checks pass; draft staged on834. Final full suites and production activation pending. Decision829: six strict older fixtures now include the specified journal/cache records, public redaction and default settings;112 cases pass together without runtime or gate changes. Full corrected-fixture backend and closing browser remain pending.",
+    "why": "Decision830: source847 shipping archives pass Mac/Linux/Mini checks; owned034 draft has matching digests, still unpublished. Final broad browser195pass/44fail/65notrun with307 clear vision; directfinalcache8/8 and24clear vision.9 real Basic Memory hub cases pass after private test-tool repair. Current full backend and normal production/member activation pending. Defaults off/40000; original12:25:11UTC deadline.",
     "status": "in-progress"
   },
   {

@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/screenshots/CACHE2-checkpoint-settings-desktop-light.png",
+  "expected": "the Jevellan web app \"CACHE2 checkpoint settings\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The modal body scrolls, so the 'Risky areas' textarea is partly cut off at the bottom edge above the footer. It can still be reached by scrolling.",
+      "The placeholder 'npm ci' in the Worktree setup command field is low-contrast light gray."
+    ]
+  }
+}

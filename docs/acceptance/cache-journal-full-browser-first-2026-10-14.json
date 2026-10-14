@@ -1,0 +1,2884 @@
+{
+  "schema": "cache-closing-browser-v1",
+  "label": "simulated",
+  "visionLabel": "live",
+  "sourceCommit": "b22c5fc601a00f366f18300bee2a542097b67c8d",
+  "startedAt": "2026-10-14T07:28:11.438Z",
+  "endedAt": "2026-10-14T08:44:58.961Z",
+  "status": "failed",
+  "counts": {
+    "passed": 199,
+    "failed": 40,
+    "notRun": 65
+  },
+  "failureTitles": [
+    "1) [desktop-light] \u203a tests/e2e/skeleton.spec.ts:153:1 \u203a Projects and a manual planned change render the full plan, stream, Why and verified Changes",
+    "2) [desktop-light] \u203a tests/e2e/skeleton.spec.ts:199:1 \u203a kept checkpoints can be discarded after reload through the confirmation panel",
+    "3) [desktop-light] \u203a tests/e2e/skeleton.spec.ts:220:1 \u203a step corrections survive reload and undo launches the requested redo with visible history",
+    "4) [phone-light] \u203a tests/e2e/skeleton.spec.ts:153:1 \u203a Projects and a manual planned change render the full plan, stream, Why and verified Changes",
+    "5) [phone-light] \u203a tests/e2e/skeleton.spec.ts:199:1 \u203a kept checkpoints can be discarded after reload through the confirmation panel",
+    "6) [phone-light] \u203a tests/e2e/skeleton.spec.ts:220:1 \u203a step corrections survive reload and undo launches the requested redo with visible history",
+    "7) [desktop-light] \u203a tests/e2e/skeleton.spec.ts:331:1 \u203a context merge is drafted read-only, survives reload, cancels and applies through verified publication \u203a server work: context created",
+    "8) [phone-light] \u203a tests/e2e/skeleton.spec.ts:331:1 \u203a context merge is drafted read-only, survives reload, cancels and applies through verified publication \u203a server work: context created",
+    "9) [desktop-light] \u203a tests/e2e/skeleton.spec.ts:439:1 \u203a public project memory shows its notice, note update time and read-only rendered content",
+    "10) [desktop-light] \u203a tests/e2e/skeleton.spec.ts:466:1 \u203a Why lists recalled project memory and its selection source after reload",
+    "11) [phone-light] \u203a tests/e2e/skeleton.spec.ts:439:1 \u203a public project memory shows its notice, note update time and read-only rendered content",
+    "12) [phone-light] \u203a tests/e2e/skeleton.spec.ts:466:1 \u203a Why lists recalled project memory and its selection source after reload",
+    "13) [desktop-light] \u203a tests/e2e/skeleton.spec.ts:910:1 \u203a J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
+    "14) [phone-light] \u203a tests/e2e/skeleton.spec.ts:910:1 \u203a J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
+    "15) [desktop-dark] \u203a tests/e2e/skeleton.spec.ts:153:1 \u203a Projects and a manual planned change render the full plan, stream, Why and verified Changes",
+    "16) [desktop-dark] \u203a tests/e2e/skeleton.spec.ts:199:1 \u203a kept checkpoints can be discarded after reload through the confirmation panel",
+    "17) [phone-dark] \u203a tests/e2e/skeleton.spec.ts:153:1 \u203a Projects and a manual planned change render the full plan, stream, Why and verified Changes",
+    "18) [desktop-dark] \u203a tests/e2e/skeleton.spec.ts:220:1 \u203a step corrections survive reload and undo launches the requested redo with visible history",
+    "19) [phone-dark] \u203a tests/e2e/skeleton.spec.ts:199:1 \u203a kept checkpoints can be discarded after reload through the confirmation panel",
+    "20) [phone-dark] \u203a tests/e2e/skeleton.spec.ts:220:1 \u203a step corrections survive reload and undo launches the requested redo with visible history",
+    "21) [desktop-dark] \u203a tests/e2e/skeleton.spec.ts:331:1 \u203a context merge is drafted read-only, survives reload, cancels and applies through verified publication \u203a server work: context created",
+    "22) [phone-dark] \u203a tests/e2e/skeleton.spec.ts:331:1 \u203a context merge is drafted read-only, survives reload, cancels and applies through verified publication \u203a server work: context created",
+    "23) [desktop-dark] \u203a tests/e2e/skeleton.spec.ts:439:1 \u203a public project memory shows its notice, note update time and read-only rendered content",
+    "24) [desktop-dark] \u203a tests/e2e/skeleton.spec.ts:466:1 \u203a Why lists recalled project memory and its selection source after reload",
+    "25) [phone-dark] \u203a tests/e2e/skeleton.spec.ts:439:1 \u203a public project memory shows its notice, note update time and read-only rendered content",
+    "26) [phone-dark] \u203a tests/e2e/skeleton.spec.ts:466:1 \u203a Why lists recalled project memory and its selection source after reload",
+    "27) [desktop-dark] \u203a tests/e2e/skeleton.spec.ts:910:1 \u203a J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
+    "28) [phone-dark] \u203a tests/e2e/skeleton.spec.ts:910:1 \u203a J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
+    "29) [desktop-light-improver] \u203a tests/e2e/improver.spec.ts:164:1 \u203a J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule",
+    "30) [phone-light-improver] \u203a tests/e2e/improver.spec.ts:164:1 \u203a J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule",
+    "31) [desktop-dark-improver] \u203a tests/e2e/improver.spec.ts:164:1 \u203a J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule",
+    "32) [phone-dark-improver] \u203a tests/e2e/improver.spec.ts:164:1 \u203a J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule",
+    "33) [phone-light-projects] \u203a tests/e2e/projects.spec.ts:553:1 \u203a PJ3 the notebook can be edited \u2500\u2500\u2500",
+    "34) [desktop-light-projects] \u203a tests/e2e/projects.spec.ts:1253:1 \u203a LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy",
+    "35) [desktop-dark-projects] \u203a tests/e2e/projects.spec.ts:1253:1 \u203a LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy",
+    "36) [installation] \u203a tests/e2e/installation.spec.ts:18:3 \u203a packed first run, active update, rollback and removal \u00b7 desktop light",
+    "37) [installation] \u203a tests/e2e/installation.spec.ts:18:3 \u203a packed first run, active update, rollback and removal \u00b7 phone light",
+    "38) [phone-dark-projects] \u203a tests/e2e/projects.spec.ts:1253:1 \u203a LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy",
+    "39) [installation] \u203a tests/e2e/installation.spec.ts:18:3 \u203a packed first run, active update, rollback and removal \u00b7 desktop dark",
+    "40) [installation] \u203a tests/e2e/installation.spec.ts:18:3 \u203a packed first run, active update, rollback and removal \u00b7 phone dark"
+  ],
+  "logSha256": "274036c3f3cb4edac425577ba4ad06f761719626d64902ff21e4cfc48694a58f",
+  "freshVision": {
+    "total": 313,
+    "clear": 313,
+    "cacheTotal": 0,
+    "cacheClear": 0
+  },
+  "vision": [
+    {
+      "path": "docs/acceptance/vision/desktop-dark/a-question-with-offered-answers-shows-them-as-buttons-and-a-picked-answer-continues-the-wo--answer-options-desktop-dark.json",
+      "sha256": "a36a2f2695ac255f2c13526c5db5946515b984e6f738626ed817d18c1fc40906",
+      "test": "a question with offered answers shows them as buttons, and a picked answer continues the work",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/answer-options-desktop-dark.png",
+      "screenshotSha256": "bd46fb5d1a63a8eef45756142ddbd4de4a1e3a861f5d10869507de091e208053"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/an-agent-connection-is-scoped-shown-once-and-revocable--agents-desktop-dark.json",
+      "sha256": "1923a223da877dce7140d6f714727add450d200947dab27c23726cee745bfa76",
+      "test": "an agent connection is scoped, shown once, and revocable",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "test-results/agents-desktop-dark.png",
+      "screenshotSha256": "f310ab62fc7e157df500af9f31224b67ddadf16dda89c5902b7c71d9ee245a74"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/automatic-decisions-can-resume-from-missing-configuration-and-explain-their-simulated-choi--phase3-automatic-desktop-dark.json",
+      "sha256": "72f8caa5b49ba29c89779fee7d97e47d5fa539fc8f3b8e24b497c8318e248244",
+      "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase3-automatic-desktop-dark.png",
+      "screenshotSha256": "c2952871fed6dd5fcc46e0d76c82b7ee4f2c85bc453ddc3bd04ca8f9f2eeedec"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/automatic-decisions-can-resume-from-missing-configuration-and-explain-their-simulated-choi--phase3-connection-desktop-dark.json",
+      "sha256": "93ce55d802e40477cdb9121d9b2f6cc13420a7a1ae1fead5f30cf854d9a84b63",
+      "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase3-connection-desktop-dark.png",
+      "screenshotSha256": "d11efe6a88b02386b65368023ebfc88e550d8310ed3818a51fea9b10889ac044"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/automatic-decisions-can-resume-from-missing-configuration-and-explain-their-simulated-choi--phase3-waiting-desktop-dark.json",
+      "sha256": "13618928598c362e4fb1c1217011546757eb54309b89a2a19a201e493b127c0a",
+      "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase3-waiting-desktop-dark.png",
+      "screenshotSha256": "68e51e823da928e970ea53a1067a4de26be171a89c9017161383ebe3614fcbc9"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/automatic-decisions-can-resume-from-missing-configuration-and-explain-their-simulated-choi--phase3-why-desktop-dark.json",
+      "sha256": "6d8efe24bd67eddb600f9da68dba2c94b7039ef423a01f4b8f293b65bd8d07aa",
+      "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase3-why-desktop-dark.png",
+      "screenshotSha256": "32f445dd237c986fc6acc7aafb120ae704bd030619cadd413c10f85967c45abf"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/blocked-files-can-be-reviewed-refreshed-and-accepted-before-verified-publication--phase2-adoption-desktop-dark.json",
+      "sha256": "bc40756adb759a36252c9c0f932387f06c6496bee39d0376174ef27cca0fec78",
+      "test": "blocked files can be reviewed, refreshed and accepted before verified publication",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-adoption-desktop-dark.png",
+      "screenshotSha256": "df693a47d78436e153dae85ede935fa90975a8e0b882d62978932d6ed5e097de"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/claude-sign-in-shows-pending-progress-and-resumes-polling-after-a-connection-error--login-recovery-desktop-dark.json",
+      "sha256": "d4b9b210eda53d64c6cc7462bcd764f6a2b0494fcb59ff388fbe6ca915fc41bd",
+      "test": "Claude sign-in shows pending progress and resumes polling after a connection error",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/login-recovery-desktop-dark.png",
+      "screenshotSha256": "8bbc68682697885ff1feae13d54cd83bfaf589ab19e8815c54e7c8556a8099e8"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/composer-choices-apply-once-keep-conversation-pins-and-explain-corrections-after-reload--phase3-composer-kept-desktop-dark.json",
+      "sha256": "4f32c087716e923b2c1ac178eddf3f0d3180f3037807f6593df033b98449511f",
+      "test": "composer choices apply once, keep conversation pins and explain corrections after reload",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase3-composer-kept-desktop-dark.png",
+      "screenshotSha256": "418eb429609cbb370ce17776295992f2db2353c82c50115352931f0ff4232957"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/composer-choices-apply-once-keep-conversation-pins-and-explain-corrections-after-reload--phase3-composer-start-desktop-dark.json",
+      "sha256": "8007fe954ada23deb23cf97ac110b464ab13da2d0028814a318f84fcb8f6f496",
+      "test": "composer choices apply once, keep conversation pins and explain corrections after reload",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase3-composer-start-desktop-dark.png",
+      "screenshotSha256": "b008e83bbbb5d761f451b66a37fc9b1adf8bc00d59f1345e8497042221439f48"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/composer-choices-apply-once-keep-conversation-pins-and-explain-corrections-after-reload--phase3-composer-why-desktop-dark.json",
+      "sha256": "5d4e92d920096a6b87287aa479f443f497ab8a4401b14802a612dbfa21dae69d",
+      "test": "composer choices apply once, keep conversation pins and explain corrections after reload",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase3-composer-why-desktop-dark.png",
+      "screenshotSha256": "f313a3aecd61e89cbddcd5da037edfec93508337af6a1976a2128106f5b2194e"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/consecutive-tool-calls-share-an-open-area-and-new-live-output-appends-to-it--jevellan-tool-groups-desktop-dark-projects.json",
+      "sha256": "4a638c8a4a9efac6c2da97748ba6f5ebab6d93efed95b1e4e3ed8e55fa7997af",
+      "test": "Consecutive tool calls share an open area and new live output appends to it",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "/tmp/jevellan-tool-groups-desktop-dark-projects.png",
+      "screenshotSha256": "13e7312a72cb951c13eb9fc8c9a06c7c2e0601f01bd4dad3c696b6a2a89f5a2a"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/context-changes-interrupted-by-outside-activity-require-a-fresh-reviewed-diff-before-publi--phase4-context-review-desktop-dark.json",
+      "sha256": "206f2228338e28301fe0bcf9eff67ae9a30978ebebc5d4c72cba1f8d4bbd4f54",
+      "test": "context changes interrupted by outside activity require a fresh reviewed diff before publication",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase4-context-review-desktop-dark.png",
+      "screenshotSha256": "e563c6d3ac0f3555cabf97125a75f1ae4eaa275431e20d84570f1b228d2f6f46"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/conversation-titles-expanded-tools-and-outside-outcomes-survive-updates-and-reload--phase2-controls-finish-desktop-dark.json",
+      "sha256": "82061ef1362edcbfe0a3d61f50597806b947bc1c1f5f547ef61ac2e217a0bf27",
+      "test": "conversation titles, expanded tools and outside outcomes survive updates and reload",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-controls-finish-desktop-dark.png",
+      "screenshotSha256": "89c1499172d7f7fff85319ade13303462e44c2145b783ff9fd4370f4f8ece22c"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/conversation-titles-expanded-tools-and-outside-outcomes-survive-updates-and-reload--phase2-controls-outcome-desktop-dark.json",
+      "sha256": "9392b835ab5e7d530bf5b2424bf4026db6121746a2ce934893600b058d440012",
+      "test": "conversation titles, expanded tools and outside outcomes survive updates and reload",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-controls-outcome-desktop-dark.png",
+      "screenshotSha256": "2c11a6b82af2aea0c621d482cc5c76d299bf4d341a1e7da48652c511ecca136f"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/conversation-titles-expanded-tools-and-outside-outcomes-survive-updates-and-reload--phase2-controls-title-desktop-dark.json",
+      "sha256": "eaaf63d335eab0dcd888e0ab27fb18b4cd77465b6583e0ff4473695fde1aa371",
+      "test": "conversation titles, expanded tools and outside outcomes survive updates and reload",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-controls-title-desktop-dark.png",
+      "screenshotSha256": "06b9bbd148d637d9b1c6284ed44b537783a1a43d1c46e9652108bcf7e6b52b5b"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/coordinator-overrides-expose-model-and-effort-while-preserving-unrelated-project-settings--jevellan-coordinator-override-desktop-dark-projects.json",
+      "sha256": "534d10d96d1624ea4a9f4bb5097dcf70425c1a8e2cef1fcaa004230ae1a73d8c",
+      "test": "Coordinator overrides expose model and effort while preserving unrelated project settings",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "/tmp/jevellan-coordinator-override-desktop-dark-projects.png",
+      "screenshotSha256": "397a1dde1cce6abb1c96a5e1a5f6da4789c5600adfc4f52309d9e8c8660ab9f9"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/device-settings-completes-a-member-login-shows-activity-invites-and-switches-without-signi--phase4-devices-desktop-dark.json",
+      "sha256": "cee73ad6daccad00301af0d397f78d5453f78080aee7a3ad7c2e9f746e422eb7",
+      "test": "device Settings completes a member login, shows activity, invites and switches without signing in again",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase4-devices-desktop-dark.png",
+      "screenshotSha256": "4d3ae3e316cb199813a4baa76e081dd99b0cc9a392b3cee345398311f7fbdd96"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/device-settings-completes-a-member-login-shows-activity-invites-and-switches-without-signi--phase5-join-desktop-dark.json",
+      "sha256": "be076ff46824b61c4ec37352805b778717b20d255941c8a60b4b9f232d2351e7",
+      "test": "device Settings completes a member login, shows activity, invites and switches without signing in again",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase5-join-desktop-dark.png",
+      "screenshotSha256": "66987255e5f3eb2cf91170fb4b20db974097cde65a35b86f1c85220ae4b375cc"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/external-activity-waits-retries-requires-changes-review-and-publishes-after-reviewed-accep--phase4-external-review-desktop-dark.json",
+      "sha256": "61e9d20ac664c6bf7e710d86bc053abee6ad19b0abe5d18338d3a40737b0ac40",
+      "test": "external activity waits, retries, requires Changes review and publishes after reviewed acceptance",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase4-external-review-desktop-dark.png",
+      "screenshotSha256": "22ccce70369f3241e93d21927e78eb2cf5e886953b5a35b55a70f6c4b4c5b113"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/external-activity-waits-retries-requires-changes-review-and-publishes-after-reviewed-accep--phase4-external-wait-desktop-dark.json",
+      "sha256": "8d3a877a9edd6f3a9c7350f7e83882e807462db92d96d14b23a79c83678cb0e0",
+      "test": "external activity waits, retries, requires Changes review and publishes after reviewed acceptance",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase4-external-wait-desktop-dark.png",
+      "screenshotSha256": "b62b9ff2c77a96664f7600d99832d7050860c412c8cc12ed6ee109cfc2c6429d"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/file-and-evidence-links-show-recorded-versions-source-lines-markdown-images-and-verificati--phase2-evidence-image-desktop-dark.json",
+      "sha256": "7b6eefcee0d313bffc9db3d78a7f5207e3e142a5458fe8890456096b707c6d8d",
+      "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-evidence-image-desktop-dark.png",
+      "screenshotSha256": "2e67b290356dbc841a8757cf158df10ce00da6846bd2ee8207af298e59c3d8cd"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/file-and-evidence-links-show-recorded-versions-source-lines-markdown-images-and-verificati--phase2-evidence-markdown-desktop-dark.json",
+      "sha256": "4465a5e1941d7d3ff2b8e5281422a5be197412a0fe5136394e4b4eee55c96759",
+      "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-evidence-markdown-desktop-dark.png",
+      "screenshotSha256": "8d793a03fd7bf8da1d5b035e73d43c6421b24e749f86d7569f3835d74196a415"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/file-and-evidence-links-show-recorded-versions-source-lines-markdown-images-and-verificati--phase2-evidence-source-desktop-dark.json",
+      "sha256": "cef0e89012efb904a8214fb2a428d797abeb1aadae82a7ab93df68e057ab1b35",
+      "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-evidence-source-desktop-dark.png",
+      "screenshotSha256": "686c54a3d2375e696439ed5987bce769f46ac7543880bca3df0bb3cdd746a8d6"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/git-settings-can-be-saved-reloaded-and-checked-from-projects--git-settings-desktop-dark.json",
+      "sha256": "cb38f522dc66bd8b96e5dcd5ed3f07a5f8ad1ce2c259a0bf6a430a9549fbf09c",
+      "test": "Git settings can be saved, reloaded and checked from Projects",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "test-results/git-settings-desktop-dark.png",
+      "screenshotSha256": "159dc5cd2aa1d4ab93300b6b51a304816341f71d6fc510db47bd8bc38419a4f4"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/hub-recovery-resumes-sign-in-and-reconciles-a-settings-save-whose-reply-was-lost--phase4-settings-wait-desktop-dark.json",
+      "sha256": "5d763a71dee8ef731687b779d50e9ec334d8259357b772a0a8b6a85bc5e246f6",
+      "test": "hub recovery resumes sign-in and reconciles a settings save whose reply was lost",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase4-settings-wait-desktop-dark.png",
+      "screenshotSha256": "73b7ab2e758a6419af87a24ff8bc9d12ebf733df29e9e4394a7b9f577fc41980"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/j10-routing-suggestions-show-the-badge-apply-and-undo-one-field-change-in-plain-words-and---phase6-j10-change-it-desktop-dark.json",
+      "sha256": "25285f8b334d6e24c22d8492d707b7570153bf37d83353ba727d1853d42659aa",
+      "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase6-j10-change-it-desktop-dark.png",
+      "screenshotSha256": "97406211ba8edaaddc5893a81591dc91b48524771499ba5563f899c94141701a"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/j10-routing-suggestions-show-the-badge-apply-and-undo-one-field-change-in-plain-words-and---phase6-j10-dismissed-desktop-dark.json",
+      "sha256": "36d00d7488c8a627d2b04d3785ec500a116c0c3d0b2acacc0316da2f05901378",
+      "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase6-j10-dismissed-desktop-dark.png",
+      "screenshotSha256": "95cd495f582cefeee0f2794dcdcc8e0f95932ff0ab978254a0d48310b333a428"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/j10-routing-suggestions-show-the-badge-apply-and-undo-one-field-change-in-plain-words-and---phase6-j10-suggestions-desktop-dark.json",
+      "sha256": "7c93c81a92528c9c5ca79bd652c88d4b7b4ce5fc1e139242def08a7bad2faf06",
+      "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase6-j10-suggestions-desktop-dark.png",
+      "screenshotSha256": "592e2e85a333a7d30baf00f45018f181fd62e6779086c3b93b81388c15a79733"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/j10-routing-suggestions-show-the-badge-apply-and-undo-one-field-change-in-plain-words-and---phase6-j10-undo-desktop-dark.json",
+      "sha256": "e48a38758f0d74dc6d1a0b54364c0003081b04a830664fb9852db22668b09a76",
+      "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase6-j10-undo-desktop-dark.png",
+      "screenshotSha256": "a8a5753bcbed5195410b7c1ed634205d7194cec806f58aec3a5bdd2d8fc1e855"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/j8-simulated-mesh-journey-switches-streams-corrects-logs-in-remotely-and-respects-outside---J8-guard-desktop-dark.json",
+      "sha256": "7b7680924872aacf3572b050eff08c5a50be9aa457d0c6df514375f276ff702d",
+      "test": "J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/J8-guard-desktop-dark.png",
+      "screenshotSha256": "71b4f61fd1d68b39ac28fd00b6b1269d86ec74d55800891c92fc784e0dd74c2a"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/j8-simulated-mesh-journey-switches-streams-corrects-logs-in-remotely-and-respects-outside---J8-proxy-desktop-dark.json",
+      "sha256": "c57499862d35bd80fabd67bfaf75df7495570fcc9fe8f08dcbdb786f29cbd3a0",
+      "test": "J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/J8-proxy-desktop-dark.png",
+      "screenshotSha256": "2706c5c8c7d5ab7b16a527f1bef3ff51e063da12482082bee0a738e701b6638b"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/lj2-native-setup-remains-visible-and-merge-routing-explains-its-ask-owner-choice--LJ2-merge-route-why-desktop-dark.json",
+      "sha256": "1dc321522e2f06b94fc4d38ddab62984b4bb460de3044a90d4961770b825df66",
+      "test": "LJ2 native setup remains visible and merge routing explains its ask-owner choice",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ2-merge-route-why-desktop-dark.png",
+      "screenshotSha256": "4f73bbf196a7af0460bf3c134850f6252ac68623958b85b6ac497235a932e92d"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/lj2-native-setup-remains-visible-and-merge-routing-explains-its-ask-owner-choice--LJ2-merge-shadow-route-desktop-dark.json",
+      "sha256": "2fc2cbfcbac13d5105f48a622bf0dca5eb94192342c1df021a2b3184f9bafa3f",
+      "test": "LJ2 native setup remains visible and merge routing explains its ask-owner choice",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ2-merge-shadow-route-desktop-dark.png",
+      "screenshotSha256": "f5fa5cea4dd2822738315e408ea2297c2e70dadbe91753464da74fc80fb7bc89"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/lj2-native-setup-remains-visible-and-merge-routing-explains-its-ask-owner-choice--LJ2-merged-pr-correction-desktop-dark.json",
+      "sha256": "6999d7801501a9a6c79dcd24b7dcec389444c9034c2018ce12d23163dbb81793",
+      "test": "LJ2 native setup remains visible and merge routing explains its ask-owner choice",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ2-merged-pr-correction-desktop-dark.png",
+      "screenshotSha256": "04b337e6a3032fe32949e0082dde21b79237a133c76f351cdcb314ffa97bc293"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/lj2-native-setup-remains-visible-and-merge-routing-explains-its-ask-owner-choice--LJ2-native-setup-desktop-dark.json",
+      "sha256": "d3e8b15e82e2a2e31d854348e7aae2c4f315b88b4118fe4f40953234a4d272b3",
+      "test": "LJ2 native setup remains visible and merge routing explains its ask-owner choice",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ2-native-setup-desktop-dark.png",
+      "screenshotSha256": "f01ed0420e7b174c322a8700b490387ff11276166779a69ce17696f282ea4a01"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/lj2-native-setup-remains-visible-and-merge-routing-explains-its-ask-owner-choice--LJ2-task-merge-correction-desktop-dark.json",
+      "sha256": "6b08b6e4abd1e2a4b1ccc24e807788ce0ab26e275c9ae994e95cf6195274daef",
+      "test": "LJ2 native setup remains visible and merge routing explains its ask-owner choice",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ2-task-merge-correction-desktop-dark.png",
+      "screenshotSha256": "4171b2898eb0ee96ff554af024f7ac42dd969b85c940d62be82faa8dab7cb87a"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/lj3-five-tasks-obey-phone-drag-now-the-two-thread-cap-and-after-links--LJ3-five-ranked-tasks-desktop-dark.json",
+      "sha256": "af84a869befadb0264889f2ec26d30059153f9851411f8b73875f3734bf34edf",
+      "test": "LJ3 five tasks obey phone drag, Now, the two-thread cap and after links",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ3-five-ranked-tasks-desktop-dark.png",
+      "screenshotSha256": "30ee8da8bfe5bd5a030b1c000c9de17532b190e7df7899498b05788d461b3c08"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/lj3-five-tasks-obey-phone-drag-now-the-two-thread-cap-and-after-links--LJ3-priority-dispatched-desktop-dark.json",
+      "sha256": "27aa8a87c2be1bebf22a42149b214bbd9fed93db007d8fbef78e1015d9e317c3",
+      "test": "LJ3 five tasks obey phone drag, Now, the two-thread cap and after links",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ3-priority-dispatched-desktop-dark.png",
+      "screenshotSha256": "6eb8b3fe00f1c302ea9fb44e5d338c669966c2cafb3922cd290fb097891c0e71"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/lj3-one-queue-preserves-dependency-order-owner-ordering-and-recovery-without-duplicate-thr--LJ3-queue-dependency-desktop-dark.json",
+      "sha256": "f40ca6b5af9f46764e14a482ec018a42fbe9ce74ed7e85632e961d5df8736dc3",
+      "test": "LJ3 one queue preserves dependency order, owner ordering and recovery without duplicate threads",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ3-queue-dependency-desktop-dark.png",
+      "screenshotSha256": "76af573eb662dad36a12898c0cc6eec8ef3960e3ec1cea29559c53a75323a059"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/lj3-one-queue-preserves-dependency-order-owner-ordering-and-recovery-without-duplicate-thr--LJ3-queue-recovered-desktop-dark.json",
+      "sha256": "21bd904ec0b33c255332b56623824d1efcd92cb1e8b0395b7cb9863e69960a48",
+      "test": "LJ3 one queue preserves dependency order, owner ordering and recovery without duplicate threads",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ3-queue-recovered-desktop-dark.png",
+      "screenshotSha256": "19a8af1638ba22dc428b02caaa7b6e791fa254a72521f0ea33c39411b192a4cc"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/lj4-owner-goals-refill-into-a-draft-approve-on-phone-obey-daily-caps-and-pause-queued-work--LJ4-goal-paused-desktop-dark.json",
+      "sha256": "bdbf7c4d2255546ba5e1e83022ac6570d448d43f576797138269eecdda16fd7b",
+      "test": "LJ4 owner goals refill into a draft, approve on phone, obey daily caps and pause queued work",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ4-goal-paused-desktop-dark.png",
+      "screenshotSha256": "70270b6aacd6847310c8c56630b7e757b512c252d8fa245ecc89b09eed77f389"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/lj4-owner-goals-refill-into-a-draft-approve-on-phone-obey-daily-caps-and-pause-queued-work--LJ4-goal-proposal-desktop-dark.json",
+      "sha256": "64eac12ff7931d411aba2d878924d220ce9d992bf0f734c89b21b6cbe724978f",
+      "test": "LJ4 owner goals refill into a draft, approve on phone, obey daily caps and pause queued work",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ4-goal-proposal-desktop-dark.png",
+      "screenshotSha256": "a885ce4bee83efff4f1381c963a61b71aa0501277fb62b763519a09dce3a4cdd"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/loose-rigging-autosaves-rejects-stale-edits-parks-bundles-and-restores-them-across-reload--phase2-rigging-local-desktop-dark.json",
+      "sha256": "14b8579c5fab2142faceed2f2c0a9e330abb570a4d578c3ea03682bea2639b78",
+      "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-rigging-local-desktop-dark.png",
+      "screenshotSha256": "414a62a235c423ed43b6ef22d5487dcd99035a43087ccbd27dfeacc8a1a690f6"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/loose-rigging-autosaves-rejects-stale-edits-parks-bundles-and-restores-them-across-reload--phase2-rigging-mcp-desktop-dark.json",
+      "sha256": "0eac40773c403d25cabc5d337d5c4b84b9ae3f4754aaa97ae62a779cf41ee87f",
+      "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-rigging-mcp-desktop-dark.png",
+      "screenshotSha256": "d2b82df4df9944f68abfb6687adb76a54309b46c91fb6896358f453f7b779a9c"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/loose-rigging-autosaves-rejects-stale-edits-parks-bundles-and-restores-them-across-reload--phase2-rigging-parked-desktop-dark.json",
+      "sha256": "6016d655f59a596a7ae577aff6f937a9a98c820c1930568e2df3025f9cd5f643",
+      "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-rigging-parked-desktop-dark.png",
+      "screenshotSha256": "7d3683a9e00f2b015dee8a31ce21200950ef2043c4ba05688840df02430b7ab5"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/loose-rigging-becomes-managed-with-bundled-files-durable-retry-and-runtime-toggles--phase2-rigging-managed-desktop-dark.json",
+      "sha256": "82f5342f010c7f295de6ba455bc92c5cd3f7fa5c4ab6343a069acb5078b14c0a",
+      "test": "loose Rigging becomes managed with bundled files, durable retry and runtime toggles",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-rigging-managed-desktop-dark.png",
+      "screenshotSha256": "389b894ec20dfe20c9dd743901b87b70bd30ee68bb4ac1dd6084c1f5a26f524d"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/loose-rigging-becomes-managed-with-bundled-files-durable-retry-and-runtime-toggles--phase2-rigging-promote-desktop-dark.json",
+      "sha256": "1e81cbd027304318237708484f8fe5e319029b8ab3e55cbce21d1f5c256f3952",
+      "test": "loose Rigging becomes managed with bundled files, durable retry and runtime toggles",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-rigging-promote-desktop-dark.png",
+      "screenshotSha256": "d18fe1a2f038f9fd31ce83408930283fbb479b5660d99b46478dd69a489ef010"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/migrated-conversation-history-and-project-settings-stay-usable-on-the-new-hub--migrated-conversation-history-desktop-dark.json",
+      "sha256": "a28da22b5cff8d871383111587cb232cd8e6d254ab2191798ca5776b3acc6480",
+      "test": "migrated conversation history and Project Settings stay usable on the new hub",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/migrated-conversation-history-desktop-dark.png",
+      "screenshotSha256": "e644891ca4bd40bd46a502205819a172ae998a24beadafa10ea8caac04477c74"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/migrated-conversation-history-and-project-settings-stay-usable-on-the-new-hub--migrated-project-settings-desktop-dark.json",
+      "sha256": "5024ec15a8d3cff9a53a995d26f3c5dc209c19494e780c25dd15b91c4651abf0",
+      "test": "migrated conversation history and Project Settings stay usable on the new hub",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/migrated-project-settings-desktop-dark.png",
+      "screenshotSha256": "dd674bd6a46b2a763355008d3caa952e60317e49bba9c0bcd2c8ab03112784dd"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/pending-work-shows-a-live-stage-while-controls-stay-compact--conversation-progress-desktop-dark.json",
+      "sha256": "85e5e20f683e85e6a6d022e604929df06ab900d3e4d67a497adc23c6697965a4",
+      "test": "pending work shows a live stage while controls stay compact",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "test-results/conversation-progress-desktop-dark.png",
+      "screenshotSha256": "56029467d5cf08fbc93afbe584503b960adfbb42a9d85cf9d5e52fbef477118b"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/pj3-a-decision-is-answered-from-the-waiting-tab--PJ3-decision-answered-desktop-dark.json",
+      "sha256": "fa1dff4eaa1ec111f54f7585c3d487981383b933164a04d1cf87ba3c5b5f4234",
+      "test": "PJ3 a decision is answered from the Waiting tab",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-decision-answered-desktop-dark.png",
+      "screenshotSha256": "6b79c409fed0d6c191c6b83eca8c2c56d2fe877627bd1957b5c68ba858382652"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/pj3-a-decision-is-answered-from-the-waiting-tab--PJ3-decision-card-desktop-dark.json",
+      "sha256": "c289771ef6663f5e9a7876ac657122cba65f11311163bfce79ed5422bd3a9369",
+      "test": "PJ3 a decision is answered from the Waiting tab",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-decision-card-desktop-dark.png",
+      "screenshotSha256": "436edec0337e987db84170aac0df1e6f905c77d51dfba0bf3caab0340a8166c3"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/pj3-a-pull-request-merges-through-the-modal-and-moves-to-concluded--PJ3-concluded-desktop-dark.json",
+      "sha256": "214d12c58839f5814194fe22c267f30451b797836608a6626faacd9dcba1eb0b",
+      "test": "PJ3 a pull request merges through the modal and moves to Concluded",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-concluded-desktop-dark.png",
+      "screenshotSha256": "53113abae748d7ef8cc63c325cd01ab03db57e738157eb6a9eccdead7df71d0b"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/pj3-a-pull-request-merges-through-the-modal-and-moves-to-concluded--PJ3-merge-modal-desktop-dark.json",
+      "sha256": "964dc0dfb4ff45e3041324d53084de1de210798b325c0ac17aef9f206b2377a3",
+      "test": "PJ3 a pull request merges through the modal and moves to Concluded",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-merge-modal-desktop-dark.png",
+      "screenshotSha256": "4f710db57b8d9dde8ea96914af80c694503944abcece6586358b829eedcaca2c"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/pj3-a-pull-request-merges-through-the-modal-and-moves-to-concluded--PJ3-pull-request-conflict-desktop-dark.json",
+      "sha256": "5198c1d3e1ea764ac8c2f57a70e721fb73c7af1daa1252b4d3daf47b6969e41e",
+      "test": "PJ3 a pull request merges through the modal and moves to Concluded",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-pull-request-conflict-desktop-dark.png",
+      "screenshotSha256": "7666a2b6895d5f7cbc88a44eb782e9daac1ba986e1ba04673eb91d060be44d3d"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/pj3-a-pull-request-merges-through-the-modal-and-moves-to-concluded--PJ3-pull-requests-desktop-dark.json",
+      "sha256": "0f2a081e7aef5217f608e52b6d5573801ca653708370ed0433ce32cb39ba6f88",
+      "test": "PJ3 a pull request merges through the modal and moves to Concluded",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-pull-requests-desktop-dark.png",
+      "screenshotSha256": "0fdde809648ddd0be4da5d458cbc2ca7bd934c8379b30e1f3ce74ad977cdae41"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/pj3-a-running-thread-shows-its-transcript-report-card-and-accepts-an-interrupting-message--PJ3-new-thread-modal-desktop-dark.json",
+      "sha256": "a4b6c490562c984154e0cc9a6a2b3380571c46d7cca431f5ee846667090b8217",
+      "test": "PJ3 a running thread shows its transcript, report card and accepts an interrupting message",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-new-thread-modal-desktop-dark.png",
+      "screenshotSha256": "6373923156e34a0606ae566d82f8852d72a57ac543667f9badf68816bd660851"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/pj3-a-running-thread-shows-its-transcript-report-card-and-accepts-an-interrupting-message--PJ3-thread-report-desktop-dark.json",
+      "sha256": "5b5d3a8239d1064a9ca51218382d6a8d752abdc59723ce90eb3536f7451534aa",
+      "test": "PJ3 a running thread shows its transcript, report card and accepts an interrupting message",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-thread-report-desktop-dark.png",
+      "screenshotSha256": "e12e0df6e2aae8559e265ecb5868967573314dce6fe128d48fe5eb83541b73dd"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/pj3-a-running-thread-shows-its-transcript-report-card-and-accepts-an-interrupting-message--PJ3-thread-running-desktop-dark.json",
+      "sha256": "073149f696cd6383e904172359e6a9b9b594f26d89389dadd8e2a1f7418a551c",
+      "test": "PJ3 a running thread shows its transcript, report card and accepts an interrupting message",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-thread-running-desktop-dark.png",
+      "screenshotSha256": "c6565a418b57bb6275e2843509990fbbccf68a08dccc0e6039a85fa2c322c6fe"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/pj3-leave-git-to-me-offers-main-and-preserves-the-manual-git-policy--jevellan-manual-settings-desktop-dark-projects.json",
+      "sha256": "318fd888ab223a39c13b1ed18c31f1a62feb00fe313c554e8097b84980392e33",
+      "test": "PJ3 Leave git to me offers Main and preserves the manual git policy",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "/tmp/jevellan-manual-settings-desktop-dark-projects.png",
+      "screenshotSha256": "e3204be2352ff07674aae06297cad01af7a033fad599f30a2d1fa52965025abc"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/pj3-project-page-opens-from-the-sidebar-and-the-coordinator-chat-streams--PJ3-chat-reply-desktop-dark.json",
+      "sha256": "6a55d6c7f0e545298b78dfea49c4a27d47719ac18b138604c79aa2c9ffb03d83",
+      "test": "PJ3 project page opens from the sidebar and the coordinator chat streams",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-chat-reply-desktop-dark.png",
+      "screenshotSha256": "ed7ed8314569b5a1e7ebbafcf43f2276cef7ef2581e786b37a46b7a50d9e18d5"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/pj3-project-page-opens-from-the-sidebar-and-the-coordinator-chat-streams--PJ3-coordinator-working-desktop-dark.json",
+      "sha256": "e9cbd37d63c54505ad5df0ffd10f326b4a317ee303f1de5f5c4b2a07d7901855",
+      "test": "PJ3 project page opens from the sidebar and the coordinator chat streams",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-coordinator-working-desktop-dark.png",
+      "screenshotSha256": "4c782876dec90cfff07bc7b212aab765aab4c4313008e2fd7a9f093671692273"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/pj3-project-page-opens-from-the-sidebar-and-the-coordinator-chat-streams--PJ3-empty-chat-desktop-dark.json",
+      "sha256": "5c916b3300fc1667f91a00a0e1443233021e14cbf93487d5e0a1b2c01a9897e7",
+      "test": "PJ3 project page opens from the sidebar and the coordinator chat streams",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-empty-chat-desktop-dark.png",
+      "screenshotSha256": "95775ec5cb2f1f6edcb90653675561c2cc09476a3bb6b330e568206edf695981"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/pj3-the-github-token-card-saves-replaces-and-removes-the-token--PJ3-github-token-desktop-dark.json",
+      "sha256": "4b6a5bb69bb5eb9ae72fcd2aef15f5b67633a600201357a310fb751d1d0ef541",
+      "test": "PJ3 the GitHub token card saves, replaces and removes the token",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-github-token-desktop-dark.png",
+      "screenshotSha256": "465fd494cd799ce8fb6d39c76ac9a18bad8f7ca6e49da888566c3660b2280791"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/pj3-the-notebook-can-be-edited--PJ3-notebook-conflict-desktop-dark.json",
+      "sha256": "2a351baa00e2fb2492902f5534aa34964a971096cdd003bf80886e6152fef851",
+      "test": "PJ3 the notebook can be edited",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-notebook-conflict-desktop-dark.png",
+      "screenshotSha256": "73fca2de0033ef465e8003ba07c454c9e8f415e27bda59a504b00a61b69a6922"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/pj3-the-notebook-can-be-edited--PJ3-notebook-panel-desktop-dark.json",
+      "sha256": "cdf3af766231d1a25be7071e2128411e61bd0f4ad4ea14b0c6bc327e0f655430",
+      "test": "PJ3 the notebook can be edited",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-notebook-panel-desktop-dark.png",
+      "screenshotSha256": "47708b35dcaa2e81b4d518fc0885ba6f598e4bea57e0390f0bd3ab2cdff8c0f2"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/pj4b-the-why-panel-explains-placement-and-overrides-apply--PJ4b-fallback-chip-desktop-dark.json",
+      "sha256": "817e59b47aecb2ac297a4a4e469927e1c37383aaf9d0c62f3d5f5cf33ba9118f",
+      "test": "PJ4b the Why panel explains placement and overrides apply",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ4b-fallback-chip-desktop-dark.png",
+      "screenshotSha256": "1c52c8b9d9d0942030d266f5106fa060a1a6bc60e5f5cf0cdf44a4b1f336c0cf"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/pj4b-the-why-panel-explains-placement-and-overrides-apply--PJ4b-override-modal-desktop-dark.json",
+      "sha256": "89777b5d7ff1042a83c7299fd765ac3086e2a07194758095dc47abb4a1e6e8b2",
+      "test": "PJ4b the Why panel explains placement and overrides apply",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ4b-override-modal-desktop-dark.png",
+      "screenshotSha256": "aeef04ac1a4d762802aa5d16220dd00d7ad3f2f7500a03dcad8fd94ca305a415"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/pj4b-the-why-panel-explains-placement-and-overrides-apply--PJ4b-restarted-desktop-dark.json",
+      "sha256": "50cf8461f40dcdc1af8f5fe42877216ca811222cbc3c07a4bd111498508d572a",
+      "test": "PJ4b the Why panel explains placement and overrides apply",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ4b-restarted-desktop-dark.png",
+      "screenshotSha256": "f877791e1a2c69312f3dc3f6022af78e6b480b76d1ecad4ab5d012a4f4fa3965"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/pj4b-the-why-panel-explains-placement-and-overrides-apply--PJ4b-why-overridden-desktop-dark.json",
+      "sha256": "b0e188dc4c5c3706687d4ef8809a5ac48799b4598237974cd62daf95315eb348",
+      "test": "PJ4b the Why panel explains placement and overrides apply",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ4b-why-overridden-desktop-dark.png",
+      "screenshotSha256": "df805e9601b1f31f87ccee9e90fdff570c5259c1860d627e0073f0c78991da05"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/pj4b-the-why-panel-explains-placement-and-overrides-apply--PJ4b-why-panel-desktop-dark.json",
+      "sha256": "b5a095b213efdd4dec706a230918fa02d1ea1bd337153e82bf68ca1c3d189d60",
+      "test": "PJ4b the Why panel explains placement and overrides apply",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ4b-why-panel-desktop-dark.png",
+      "screenshotSha256": "b573f1598a05de79ac62b16137fd7b0a114dab2b7e3c81d40f7951e60bb72c10"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/pj5-a-thread-on-the-member-device-opens-through-the-hub--PJ5-remote-thread-desktop-dark.json",
+      "sha256": "03d873e431c028197a8f8d4d4e63ae83c7ef5d9e355f538f88b4febcf7c59306",
+      "test": "PJ5 a thread on the member device opens through the hub",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ5-remote-thread-desktop-dark.png",
+      "screenshotSha256": "a31b2d8d5d5b93cb5b2e0a4098cb84b74306ae109f27af4916badfc031eb44b2"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/pj5-an-offline-coordinator-shows-the-notice-and-move-coordinator-here--PJ5-moved-desktop-dark.json",
+      "sha256": "f8e6f071bca8a95670fdb381e664f814469a0d2b07f6a987057b215d749d81d5",
+      "test": "PJ5 an offline coordinator shows the notice and Move coordinator here",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ5-moved-desktop-dark.png",
+      "screenshotSha256": "4f46c0463a18e2bf97559d7229f420ae925f8d8ffc7d2ffed1adc58efc1de098"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/pj5-an-offline-coordinator-shows-the-notice-and-move-coordinator-here--PJ5-offline-notice-desktop-dark.json",
+      "sha256": "6c6e0c2c6424b3776823a3c504cd974335276e398c8faf31599de4317e33da6b",
+      "test": "PJ5 an offline coordinator shows the notice and Move coordinator here",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ5-offline-notice-desktop-dark.png",
+      "screenshotSha256": "e4b65b760e64f0a22cd9abc92a60513a750e64d392f0ece67b5413b07e5b91c3"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/pj7-an-attached-thread-disables-its-composer--PJ7-attached-desktop-dark.json",
+      "sha256": "5441e1ff00622e5a3356917141dc71117b22a3a48c03cf9c7b4b07c5de019b9e",
+      "test": "PJ7 an attached thread disables its composer",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ7-attached-desktop-dark.png",
+      "screenshotSha256": "a8f6c0773e60e15132f58a061f0980cde763b29a7980e9a5fa4582fe961c26d0"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/pj7-an-attached-thread-disables-its-composer--PJ7-copy-blocked-desktop-dark.json",
+      "sha256": "ab3627e55829582ff5bc2110845850cceda509d4b355eaa2c091ad3f85376e28",
+      "test": "PJ7 an attached thread disables its composer",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ7-copy-blocked-desktop-dark.png",
+      "screenshotSha256": "3c81ffa3e2768dad9e7f74b199d992141a58fd9de45a051f730452ba12c05525"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/project-jev-local-rigging-and-device-settings-recover-their-hub-boundaries--phase4-project-save-wait-desktop-dark.json",
+      "sha256": "9f5e16c048f2e0d7824bd118642e8a6b72fbd309d71b106337e157c1b50be0e0",
+      "test": "project, Jev, local Rigging and device Settings recover their hub boundaries",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase4-project-save-wait-desktop-dark.png",
+      "screenshotSha256": "ca93b50e31998d70e288f9b9999c52165c3410a56590dbbf7b221778199c5661"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/provider-login-recovers-lost-start-and-accepted-code-replies-inside-its-panel--phase4-login-wait-desktop-dark.json",
+      "sha256": "a42681c5b12d66de05e4f8cdba525ca0c34df3362fa22c11bd383b274d3fd204",
+      "test": "provider login recovers lost start and accepted-code replies inside its panel",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase4-login-wait-desktop-dark.png",
+      "screenshotSha256": "7658a916a77c53ddd0e353e958782c9ab574c1615d31b1ed21e67fa34fa2b1bb"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/settings-account-login-rigging-and-configuration-flows-work-without-horizontal-overflow--phase1-rigging-desktop-dark.json",
+      "sha256": "3861c18ef3a2eab65a9da37a3d5d573d8f959a5c307313d2ec9dff3b1dc8edd3",
+      "test": "Settings account, login, Rigging and configuration flows work without horizontal overflow",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase1-rigging-desktop-dark.png",
+      "screenshotSha256": "31ab9b21e58787d610529d82faaef2757b9b088e784aa0c3e1134c612c608275"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/settings-account-login-rigging-and-configuration-flows-work-without-horizontal-overflow--phase1-runtimes-desktop-dark.json",
+      "sha256": "543de5929288685b515f57eb3725ce0386ec58e06ac699dd473f46f7c60bbbae",
+      "test": "Settings account, login, Rigging and configuration flows work without horizontal overflow",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase1-runtimes-desktop-dark.png",
+      "screenshotSha256": "68f99ad6153f296a38949fc4e9500065a348a16f6765fd1cdc6c5e349bf7615a"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/settings-saves-wait-through-hub-loss-reconcile-lost-replies-and-abandon-a-closed-editor--phase4-settings-save-wait-desktop-dark.json",
+      "sha256": "bb0cbf4195a75403920aa84ddd46241ceae876bfe9b692786f18b45d02af9c78",
+      "test": "Settings saves wait through hub loss, reconcile lost replies and abandon a closed editor",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase4-settings-save-wait-desktop-dark.png",
+      "screenshotSha256": "8000a1fa6add9a6b39a39cbc2e0ea038e8b3c88e532fcc49326410578a7aac79"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/undo-from-the-last-closed-work-includes-newer-work-and-preserves-both-requests-after-reloa--phase2-undo-following-confirm-desktop-dark.json",
+      "sha256": "663023b88e9d7d91a6e935897a76582a103d4761065cd09fa53b488cbb41e2ee",
+      "test": "undo from the last closed work includes newer work and preserves both requests after reload",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-undo-following-confirm-desktop-dark.png",
+      "screenshotSha256": "11bde9631b7e068b933523bec5a72fff2b44143baf16455f2b1898225e9d7a3c"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-dark/undo-from-the-last-closed-work-includes-newer-work-and-preserves-both-requests-after-reloa--phase2-undo-following-desktop-dark.json",
+      "sha256": "0bec98c904a672eb0cf07397f94ad9836d6cb1da70d689fb1d64be763a784e7b",
+      "test": "undo from the last closed work includes newer work and preserves both requests after reload",
+      "layout": "desktop-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-undo-following-desktop-dark.png",
+      "screenshotSha256": "8a01fdbd964a65cb8ccf5594bf653d02db5b43caaab5a8164a4a36354616a6a9"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/a-question-with-offered-answers-shows-them-as-buttons-and-a-picked-answer-continues-the-wo--answer-options-desktop-light.json",
+      "sha256": "77503812367e72e5a345bd4e4c701cf93fdb53431c1af02d159723708f411fca",
+      "test": "a question with offered answers shows them as buttons, and a picked answer continues the work",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/answer-options-desktop-light.png",
+      "screenshotSha256": "0923c40c381961933a01a3ab14e437fc012c1ee0a5f69efdd8c9961241872566"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/an-agent-connection-is-scoped-shown-once-and-revocable--agents-desktop-light.json",
+      "sha256": "037fc7f4ba806cf137ea7d9217ac13dc6e5a62f71e8ee646867937792558f59b",
+      "test": "an agent connection is scoped, shown once, and revocable",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "test-results/agents-desktop-light.png",
+      "screenshotSha256": "d3f30c1533d10430367bd5750b605f68c7f9a706538668aa519ef7bb4dd375e0"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/automatic-decisions-can-resume-from-missing-configuration-and-explain-their-simulated-choi--phase3-automatic-desktop-light.json",
+      "sha256": "8260f4d42850253ded55896e13255ed1e2427bd0c7960cb78c48c1674566883b",
+      "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase3-automatic-desktop-light.png",
+      "screenshotSha256": "9115beb0467faf5ccaab2929966cd60dc42bd924ff41061c8bf0af206af12402"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/automatic-decisions-can-resume-from-missing-configuration-and-explain-their-simulated-choi--phase3-connection-desktop-light.json",
+      "sha256": "f3c7f03d9db8e1f51a8c8fb67bb8c7229f386bc4dfe2efc0ba8f27422b651d51",
+      "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase3-connection-desktop-light.png",
+      "screenshotSha256": "d03f161fcc29dd4e9ef1a183916cf54179f2886ad3369cc6e4002843d7bc97b4"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/automatic-decisions-can-resume-from-missing-configuration-and-explain-their-simulated-choi--phase3-waiting-desktop-light.json",
+      "sha256": "16d8d8facba66f99d4e662da10635f35586c1e9c265470e55fa3a4911b06331e",
+      "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase3-waiting-desktop-light.png",
+      "screenshotSha256": "52c37b7af1885db8e4efaef3dc359c3a4a733b4c16b15db9f15733ab4d641d6e"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/automatic-decisions-can-resume-from-missing-configuration-and-explain-their-simulated-choi--phase3-why-desktop-light.json",
+      "sha256": "6767a1cf1589b3902fb773b69f8dd660f6158dc8343912b3f7d3c9043b81de3a",
+      "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase3-why-desktop-light.png",
+      "screenshotSha256": "bf2494f53a0e4468aa6641c2ff1574634173ac13c62d1dd5f94f88d623886920"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/blocked-files-can-be-reviewed-refreshed-and-accepted-before-verified-publication--phase2-adoption-desktop-light.json",
+      "sha256": "a79ae9af0a3af7321105d82ec95153c7dfe8bd6958193d05340a499c4dbc77a1",
+      "test": "blocked files can be reviewed, refreshed and accepted before verified publication",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-adoption-desktop-light.png",
+      "screenshotSha256": "35e57215bdc691efd8737bb1a60a429a0eca4013fbff8e11367a06b8c89fdb28"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/claude-sign-in-shows-pending-progress-and-resumes-polling-after-a-connection-error--login-recovery-desktop-light.json",
+      "sha256": "f3b7e9b6c6a0379e762197876b0b135ecd68b54a359b5d9a5443948960b6ebcf",
+      "test": "Claude sign-in shows pending progress and resumes polling after a connection error",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/login-recovery-desktop-light.png",
+      "screenshotSha256": "28dfc1fbe44e9a7e9f86e4872a3abc663daa52128659d9df93ee1cf9019ed630"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/composer-choices-apply-once-keep-conversation-pins-and-explain-corrections-after-reload--phase3-composer-kept-desktop-light.json",
+      "sha256": "0c7d92822584cf0065eba55293b5604e7b04a2cc99ef6264548c31afcf437162",
+      "test": "composer choices apply once, keep conversation pins and explain corrections after reload",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase3-composer-kept-desktop-light.png",
+      "screenshotSha256": "4c142f55eda13d3b8a81749e50a1dfd83504ea3635e966e85033d82877c26426"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/composer-choices-apply-once-keep-conversation-pins-and-explain-corrections-after-reload--phase3-composer-start-desktop-light.json",
+      "sha256": "27a22eee72774ebe4faf427ab3ff758873bd62298a9f46f16ed8c405c9205544",
+      "test": "composer choices apply once, keep conversation pins and explain corrections after reload",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase3-composer-start-desktop-light.png",
+      "screenshotSha256": "7e8abe1668c48f923b80f0f7aa4bec1b55228ad8dc5639143483a8b47e718e66"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/composer-choices-apply-once-keep-conversation-pins-and-explain-corrections-after-reload--phase3-composer-why-desktop-light.json",
+      "sha256": "3c280a57ac868327364fa1f49cdaf5e0af29720d0985a833ba0422a22df5ba52",
+      "test": "composer choices apply once, keep conversation pins and explain corrections after reload",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase3-composer-why-desktop-light.png",
+      "screenshotSha256": "cb28c8ad93d48e7acf71f87103378b17bb1f82f85d3d79fcb3f90721a495b706"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/consecutive-tool-calls-share-an-open-area-and-new-live-output-appends-to-it--jevellan-tool-groups-desktop-light-projects.json",
+      "sha256": "f4611de0b510e86c4adbc4ff65586377050528476563b21420124f269fe88b31",
+      "test": "Consecutive tool calls share an open area and new live output appends to it",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "/tmp/jevellan-tool-groups-desktop-light-projects.png",
+      "screenshotSha256": "4f71bead10d31689f1191e134ea47bccaa3464b2f22083cbde35e91b1879d25c"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/context-changes-interrupted-by-outside-activity-require-a-fresh-reviewed-diff-before-publi--phase4-context-review-desktop-light.json",
+      "sha256": "4d08a19245a1fe6de1c11e87c1a79d287d1254153774473d4dbaa8b0441dc22a",
+      "test": "context changes interrupted by outside activity require a fresh reviewed diff before publication",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase4-context-review-desktop-light.png",
+      "screenshotSha256": "664313c53094fc6e75fcd20944bfde305ff95d3b1cb53c5ae34c8fa2ccec3ac7"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/conversation-titles-expanded-tools-and-outside-outcomes-survive-updates-and-reload--phase2-controls-finish-desktop-light.json",
+      "sha256": "bfbceb2158d9d8f9b15eda437649a216a4f92e3f128b13108a5689fe374668b1",
+      "test": "conversation titles, expanded tools and outside outcomes survive updates and reload",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-controls-finish-desktop-light.png",
+      "screenshotSha256": "1a7ed75a5777360eb6af38f0b3c0a3f01929ef0a378a66ff0536ecac71696ef1"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/conversation-titles-expanded-tools-and-outside-outcomes-survive-updates-and-reload--phase2-controls-outcome-desktop-light.json",
+      "sha256": "bfff7600d9a2c543f740b4c57bee07d5e70b5e942d4a7b5b5d5a73fcd271765b",
+      "test": "conversation titles, expanded tools and outside outcomes survive updates and reload",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-controls-outcome-desktop-light.png",
+      "screenshotSha256": "869c3a089b7a560e7c03fc012422a276f56d8e955259925d06b64a5a3b51b4e8"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/conversation-titles-expanded-tools-and-outside-outcomes-survive-updates-and-reload--phase2-controls-title-desktop-light.json",
+      "sha256": "957a1956f6fbef51e30c115ebbbf8c4ede4bd9df9a3c2104f8870a20541954bd",
+      "test": "conversation titles, expanded tools and outside outcomes survive updates and reload",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-controls-title-desktop-light.png",
+      "screenshotSha256": "0e7e6e72062eab8269d2a8516ff7a02b8ffeb9cb201b2e6ebe0e817964cc692a"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/coordinator-overrides-expose-model-and-effort-while-preserving-unrelated-project-settings--jevellan-coordinator-override-desktop-light-projects.json",
+      "sha256": "494b437678e5944dec689ae222ba980a217a4dfd27235dd4f36a0e5de8c3a429",
+      "test": "Coordinator overrides expose model and effort while preserving unrelated project settings",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "/tmp/jevellan-coordinator-override-desktop-light-projects.png",
+      "screenshotSha256": "0e1079151cfe91f785df5c9118c109e66bfe0ed5a9caab05bf78220f9fa9920b"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/device-settings-completes-a-member-login-shows-activity-invites-and-switches-without-signi--phase4-devices-desktop-light.json",
+      "sha256": "9f8316acca6e464af1c4e46a91c4e94395471be89fa86ac35f6d78543cb8dcf7",
+      "test": "device Settings completes a member login, shows activity, invites and switches without signing in again",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase4-devices-desktop-light.png",
+      "screenshotSha256": "a13be502e90c825ca49cdc9f7bcc90f16c8af7e56350a3bfaebe809cf8bad14f"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/device-settings-completes-a-member-login-shows-activity-invites-and-switches-without-signi--phase5-join-desktop-light.json",
+      "sha256": "6c55dba365a2c4bd9e51ae16386b78036c8c0cff4e9c4fcc67bf6a9449256299",
+      "test": "device Settings completes a member login, shows activity, invites and switches without signing in again",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase5-join-desktop-light.png",
+      "screenshotSha256": "231396d9a02feb7587b169d77341e106c5e1d5f5c06a4441063daf3802afd777"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/external-activity-waits-retries-requires-changes-review-and-publishes-after-reviewed-accep--phase4-external-review-desktop-light.json",
+      "sha256": "a4dc6146a84b5eb4aa25c403d4b71f29b25b3201f1951b5db1847c7623f0a781",
+      "test": "external activity waits, retries, requires Changes review and publishes after reviewed acceptance",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase4-external-review-desktop-light.png",
+      "screenshotSha256": "c06ed6b73c23c71c0de8ef1958b09f94138d44302fe404d757c78a6c7bba0496"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/external-activity-waits-retries-requires-changes-review-and-publishes-after-reviewed-accep--phase4-external-wait-desktop-light.json",
+      "sha256": "f6d67ba25d456a5c8345e4e8000b567a07655e58e8a6c6642deba71e19e6b406",
+      "test": "external activity waits, retries, requires Changes review and publishes after reviewed acceptance",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase4-external-wait-desktop-light.png",
+      "screenshotSha256": "0bac426159a2eae6c78d75b999d939dcd6582c9a78f0ef2c08104508ccee697f"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/file-and-evidence-links-show-recorded-versions-source-lines-markdown-images-and-verificati--phase2-evidence-image-desktop-light.json",
+      "sha256": "dc352272e8352bcf44afced8ea95098963a1735a3fa995b289f068a928a0b4dc",
+      "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-evidence-image-desktop-light.png",
+      "screenshotSha256": "63b1589e15a679d9aa1e027d3e70941f27e542176a32ce927d8900e5e918e2ff"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/file-and-evidence-links-show-recorded-versions-source-lines-markdown-images-and-verificati--phase2-evidence-markdown-desktop-light.json",
+      "sha256": "54b3eb0582a5c8e014e7098c2760de3ea8eb07cd62dcbe680c7f9e038464d11c",
+      "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-evidence-markdown-desktop-light.png",
+      "screenshotSha256": "ab3e3e485672936b6c58fe5d9f425b13697e052fa9070c3caf2ee39d0931f426"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/file-and-evidence-links-show-recorded-versions-source-lines-markdown-images-and-verificati--phase2-evidence-source-desktop-light.json",
+      "sha256": "b3232a623958befe757caa2178b6f220470cbc6486daf2f97a3623b45dacce2f",
+      "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-evidence-source-desktop-light.png",
+      "screenshotSha256": "d0c601e6f0255e6bee781cd2ab6eac3dd27ba59bb5f93563d2f2da9133a046a6"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/git-settings-can-be-saved-reloaded-and-checked-from-projects--git-settings-desktop-light.json",
+      "sha256": "0902e455f4308762f2c314d12a64a6e176691f9bf706de07f0738feb14048cc5",
+      "test": "Git settings can be saved, reloaded and checked from Projects",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "test-results/git-settings-desktop-light.png",
+      "screenshotSha256": "591eff40239bbe06220cdccbbf5665c91147b02f89dd4a04506e4c7be4f2815e"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/hub-recovery-resumes-sign-in-and-reconciles-a-settings-save-whose-reply-was-lost--phase4-settings-wait-desktop-light.json",
+      "sha256": "c7ded238fc4a653967f9efee96174348cd4e1986a7c12292ce28d5683a93bd25",
+      "test": "hub recovery resumes sign-in and reconciles a settings save whose reply was lost",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase4-settings-wait-desktop-light.png",
+      "screenshotSha256": "08a05ed30c35b2a7ef155bf5d9d12a388472891fa1ca3ae2e30d033e66a12df0"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/j10-routing-suggestions-show-the-badge-apply-and-undo-one-field-change-in-plain-words-and---phase6-j10-change-it-desktop-light.json",
+      "sha256": "91bacf3b25c65c222607c5df28688d2dfc268bab9467e15e765b44d164a309e1",
+      "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase6-j10-change-it-desktop-light.png",
+      "screenshotSha256": "808c591f4781a57c1bac3a1f36f8e503d2b7c15ac8a899cca8adc882fd2e80ae"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/j10-routing-suggestions-show-the-badge-apply-and-undo-one-field-change-in-plain-words-and---phase6-j10-dismissed-desktop-light.json",
+      "sha256": "0eb3bbdd28913712bc7f717ab173b2ca1a8d0a8b9de418132f5f4c5585c8bdaa",
+      "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase6-j10-dismissed-desktop-light.png",
+      "screenshotSha256": "05d5cd6b2b03849657bc7138ec51dd04278ad2169efa4c8ebccb187bd22cf313"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/j10-routing-suggestions-show-the-badge-apply-and-undo-one-field-change-in-plain-words-and---phase6-j10-suggestions-desktop-light.json",
+      "sha256": "1f0447b3da4659608d9b191d9266c1e435cd102e0dfa50be4a0049ccc6f88e75",
+      "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase6-j10-suggestions-desktop-light.png",
+      "screenshotSha256": "84b0a02f2b2d60ab6c693f91e40b4678449da6c93a583f5b730bdba2bb5c850b"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/j10-routing-suggestions-show-the-badge-apply-and-undo-one-field-change-in-plain-words-and---phase6-j10-undo-desktop-light.json",
+      "sha256": "c3c35eb464caef3a78da0e4db152343391d33a349edea4b50f6bd5264d84f041",
+      "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase6-j10-undo-desktop-light.png",
+      "screenshotSha256": "e35aebe7a622b6be0a627aed5f305da6fd9bf38f82859d3ef02f58e6bafa3d34"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/j8-simulated-mesh-journey-switches-streams-corrects-logs-in-remotely-and-respects-outside---J8-guard-desktop-light.json",
+      "sha256": "993ce60f2b647a38965b0dfa915faafa6f943ecd42cb00ac16effa257c0b5241",
+      "test": "J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/J8-guard-desktop-light.png",
+      "screenshotSha256": "979d20e45e77c2baa9b56e7a4d79d7e69c5922d0a392c5eee189eef49d843fc2"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/j8-simulated-mesh-journey-switches-streams-corrects-logs-in-remotely-and-respects-outside---J8-proxy-desktop-light.json",
+      "sha256": "d7eeb6127c035a55f8b1df87ca885dcf4d609669a7d21338dfcd448e78cdb98e",
+      "test": "J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/J8-proxy-desktop-light.png",
+      "screenshotSha256": "a22a1346249b0bc5190da57b9b46209c5d6736276fd3c277590b22ecba8476d8"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/lj2-native-setup-remains-visible-and-merge-routing-explains-its-ask-owner-choice--LJ2-merge-route-why-desktop-light.json",
+      "sha256": "e4d884b58535f7b37fe656a305651383244917c6f59f46004f744e462d491c7c",
+      "test": "LJ2 native setup remains visible and merge routing explains its ask-owner choice",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ2-merge-route-why-desktop-light.png",
+      "screenshotSha256": "7c92d391a9ff42decf76b0b9db678665442bc22aec156f3d0dfefb0c40b299e2"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/lj2-native-setup-remains-visible-and-merge-routing-explains-its-ask-owner-choice--LJ2-merge-shadow-route-desktop-light.json",
+      "sha256": "53abda9435fb707bfa038d67d33c8a01357fbb02a12a9194719cc4961badb298",
+      "test": "LJ2 native setup remains visible and merge routing explains its ask-owner choice",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ2-merge-shadow-route-desktop-light.png",
+      "screenshotSha256": "1d6bbf8d54d1842e341230370e6d8373a0738a4f1545811a41f44e61e9e75423"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/lj2-native-setup-remains-visible-and-merge-routing-explains-its-ask-owner-choice--LJ2-merged-pr-correction-desktop-light.json",
+      "sha256": "31a823700ca3547ed62ab4cbf891ac819372b723ff85fbf52ff5f836f7671cde",
+      "test": "LJ2 native setup remains visible and merge routing explains its ask-owner choice",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ2-merged-pr-correction-desktop-light.png",
+      "screenshotSha256": "540bebed81e2edee72765d2fd6ca71003a6dd28281e5db014a00b15d78351c24"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/lj2-native-setup-remains-visible-and-merge-routing-explains-its-ask-owner-choice--LJ2-native-setup-desktop-light.json",
+      "sha256": "bb79ac8ff2c7b5c2411fa930b3c731cf98b38280ee49cd0a17d9c32699013a36",
+      "test": "LJ2 native setup remains visible and merge routing explains its ask-owner choice",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ2-native-setup-desktop-light.png",
+      "screenshotSha256": "ea6eb67035b30b605e596dafb39d794594ace77a34837c021981ff724d943e3e"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/lj2-native-setup-remains-visible-and-merge-routing-explains-its-ask-owner-choice--LJ2-task-merge-correction-desktop-light.json",
+      "sha256": "682c9f928378736a9292483f26d8258e40fd88799b51d49f1824463d2abdd0a4",
+      "test": "LJ2 native setup remains visible and merge routing explains its ask-owner choice",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ2-task-merge-correction-desktop-light.png",
+      "screenshotSha256": "a86a2e62fe62861ca5669d5d50b4a78b3552a50b57b22c081ac1f0e23d5fedbf"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/lj3-five-tasks-obey-phone-drag-now-the-two-thread-cap-and-after-links--LJ3-five-ranked-tasks-desktop-light.json",
+      "sha256": "4ec80013e8c8fc9601696bfa47317e177a800c2d8ddf94ba85b562f64355938c",
+      "test": "LJ3 five tasks obey phone drag, Now, the two-thread cap and after links",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ3-five-ranked-tasks-desktop-light.png",
+      "screenshotSha256": "76d00085d56e2e052fd4881470c9e4b749242ff51a9fae9848ce9183425a2172"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/lj3-five-tasks-obey-phone-drag-now-the-two-thread-cap-and-after-links--LJ3-priority-dispatched-desktop-light.json",
+      "sha256": "6893fafb1fd0c83e163b801b658d55665a69bd3f300039b3f4c2a0a7b3b330c9",
+      "test": "LJ3 five tasks obey phone drag, Now, the two-thread cap and after links",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ3-priority-dispatched-desktop-light.png",
+      "screenshotSha256": "6aaef7dc963fe06ba4b842fa3889997c833c068bc34dc409bd7f629619516b47"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/lj3-one-queue-preserves-dependency-order-owner-ordering-and-recovery-without-duplicate-thr--LJ3-queue-dependency-desktop-light.json",
+      "sha256": "c13572ad84629adcc11df0202439a3b7e15025cb46224df73d397bc34eda23b3",
+      "test": "LJ3 one queue preserves dependency order, owner ordering and recovery without duplicate threads",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ3-queue-dependency-desktop-light.png",
+      "screenshotSha256": "9e328b1bacff3f250703a0949a148dd8fdc353edef33724d988a7fe1323f973c"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/lj3-one-queue-preserves-dependency-order-owner-ordering-and-recovery-without-duplicate-thr--LJ3-queue-recovered-desktop-light.json",
+      "sha256": "ac301d7ae117cf1aab86d5841c0a93de7df63e84789f26aa60ce19ee663e9623",
+      "test": "LJ3 one queue preserves dependency order, owner ordering and recovery without duplicate threads",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ3-queue-recovered-desktop-light.png",
+      "screenshotSha256": "41c08ca512e1b5557e4e0c654fe77d7481a234a8ada2088b494df4c410d2424e"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/lj4-owner-goals-refill-into-a-draft-approve-on-phone-obey-daily-caps-and-pause-queued-work--LJ4-goal-paused-desktop-light.json",
+      "sha256": "046d7678a37b523b412338665e05c16076cef32467f394605df4a0e229058da4",
+      "test": "LJ4 owner goals refill into a draft, approve on phone, obey daily caps and pause queued work",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ4-goal-paused-desktop-light.png",
+      "screenshotSha256": "c36932e2be4a46a72c175efd8eaca0e32f87c06e4b82c5c39648aefa1f738c27"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/lj4-owner-goals-refill-into-a-draft-approve-on-phone-obey-daily-caps-and-pause-queued-work--LJ4-goal-proposal-desktop-light.json",
+      "sha256": "fdbfd511b6fbfac0e9aaf5533395ef5d755142c0793e0c4accf446f23851bb01",
+      "test": "LJ4 owner goals refill into a draft, approve on phone, obey daily caps and pause queued work",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ4-goal-proposal-desktop-light.png",
+      "screenshotSha256": "1fe59016cb1fff316ccce9f6c0098a14da082392b00ec642cb59e09b5f1ffb3a"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/loose-rigging-autosaves-rejects-stale-edits-parks-bundles-and-restores-them-across-reload--phase2-rigging-local-desktop-light.json",
+      "sha256": "26efb563088ae49230dc8effc77472e9c05c8b61c34114faa9fe53be099f2a80",
+      "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-rigging-local-desktop-light.png",
+      "screenshotSha256": "4731c4ecd5965fc8736983340d2aa621676dc028be0c8f8b96b053dced0bf1f8"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/loose-rigging-autosaves-rejects-stale-edits-parks-bundles-and-restores-them-across-reload--phase2-rigging-mcp-desktop-light.json",
+      "sha256": "fc784ab811ec28e912f57b3a31808b42b10acf91f37b470ec45c2ddb6882dcd9",
+      "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-rigging-mcp-desktop-light.png",
+      "screenshotSha256": "e8d9c57647052a63690eb7dfd7303cc18aff2860ec4c1b34dd7697fcddf937d2"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/loose-rigging-autosaves-rejects-stale-edits-parks-bundles-and-restores-them-across-reload--phase2-rigging-parked-desktop-light.json",
+      "sha256": "c063c015d59fab64f3abad5a970d5ea4296c7283e6698bbc34b8f4af37f7e951",
+      "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-rigging-parked-desktop-light.png",
+      "screenshotSha256": "7b2f52b0cd865fac6f5039bc50114b75fadfe504e33e33ff069a2b8110259ef0"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/loose-rigging-becomes-managed-with-bundled-files-durable-retry-and-runtime-toggles--phase2-rigging-managed-desktop-light.json",
+      "sha256": "3b7839ef22e553799a5ae0a0443e36e146149f4701eb4ff00f858d7ef054ee22",
+      "test": "loose Rigging becomes managed with bundled files, durable retry and runtime toggles",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-rigging-managed-desktop-light.png",
+      "screenshotSha256": "b073be8d48e716604a9ff29f0d4e619597ae9f5a716af2f37c983da107c15427"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/loose-rigging-becomes-managed-with-bundled-files-durable-retry-and-runtime-toggles--phase2-rigging-promote-desktop-light.json",
+      "sha256": "a9851dc690457d125291a85a46eb34ee8a0b0c9a9ab1e83df937368db9670adf",
+      "test": "loose Rigging becomes managed with bundled files, durable retry and runtime toggles",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-rigging-promote-desktop-light.png",
+      "screenshotSha256": "5f32eaa31583dc5fe363b4d2dc296ae0e9ea776aa76b7499ceb8be9c53fc1594"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/migrated-conversation-history-and-project-settings-stay-usable-on-the-new-hub--migrated-conversation-history-desktop-light.json",
+      "sha256": "4c359d2b3d5901adc22f8853637d64e4cede650f548b234155b84ef03ab2fc63",
+      "test": "migrated conversation history and Project Settings stay usable on the new hub",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/migrated-conversation-history-desktop-light.png",
+      "screenshotSha256": "c723ce5fbf7c2df66e2a24339b035a93ee4456150a0f6a79d64d7ceded7ee887"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/migrated-conversation-history-and-project-settings-stay-usable-on-the-new-hub--migrated-project-settings-desktop-light.json",
+      "sha256": "668868d9ba16bc71e5592dd1ad4bf19241430caf16db2a1b1f33e04357aaad7c",
+      "test": "migrated conversation history and Project Settings stay usable on the new hub",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/migrated-project-settings-desktop-light.png",
+      "screenshotSha256": "5c0a8d1241dc68e512e0e82f60fe1fec293ab5c051b55fca88d8e4fe12a8b680"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/pending-work-shows-a-live-stage-while-controls-stay-compact--conversation-progress-desktop-light.json",
+      "sha256": "753a25441fa220913d05695080d0f87e6c684ee037148fd0a4bbad2bdab87bb7",
+      "test": "pending work shows a live stage while controls stay compact",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "test-results/conversation-progress-desktop-light.png",
+      "screenshotSha256": "97478d74579a3c69cccc6f97e5016cfd8803c90a24f9c6206057068451bfc27b"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/pj3-a-decision-is-answered-from-the-waiting-tab--PJ3-decision-answered-desktop-light.json",
+      "sha256": "74387578a4ff1ac99c9040423e071eb4e4b1a745c24153cee15dcf08fdbaa4e2",
+      "test": "PJ3 a decision is answered from the Waiting tab",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-decision-answered-desktop-light.png",
+      "screenshotSha256": "245a7e4a5e4e235194abba2b22a2b6f1c49aa01a835b464fd08c752a40e8dc70"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/pj3-a-decision-is-answered-from-the-waiting-tab--PJ3-decision-card-desktop-light.json",
+      "sha256": "adfa7d5881c650c7f0c6bd3ea756dd09b80b8aa949106cb50fe2a58885c6c157",
+      "test": "PJ3 a decision is answered from the Waiting tab",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-decision-card-desktop-light.png",
+      "screenshotSha256": "7bc858452e275fdc36bc3f523499a26c970d1a65f41699a8b31c93e91289c7d3"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/pj3-a-pull-request-merges-through-the-modal-and-moves-to-concluded--PJ3-concluded-desktop-light.json",
+      "sha256": "aa2261ae7dd624ad3fe24b5da20e61d190cf3b2f67a818a391974e6f405179c7",
+      "test": "PJ3 a pull request merges through the modal and moves to Concluded",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-concluded-desktop-light.png",
+      "screenshotSha256": "d571f4fbc3d94ccb0be2583af88a17ccd0dd89afc3739ce49c0502890dc23991"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/pj3-a-pull-request-merges-through-the-modal-and-moves-to-concluded--PJ3-merge-modal-desktop-light.json",
+      "sha256": "b921ee02e1da1a1b5c1226c811e5262e963346db19c0cd7376bdda2cd6f35214",
+      "test": "PJ3 a pull request merges through the modal and moves to Concluded",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-merge-modal-desktop-light.png",
+      "screenshotSha256": "7294f5e021e02552c097c2179a6c7c965f34d52c3ecb0d84e98fcf4b0117c0da"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/pj3-a-pull-request-merges-through-the-modal-and-moves-to-concluded--PJ3-pull-request-conflict-desktop-light.json",
+      "sha256": "74d8497487de3ce51518c956d109d439b0acde7e37b2f25d83b27209b56d1a8b",
+      "test": "PJ3 a pull request merges through the modal and moves to Concluded",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-pull-request-conflict-desktop-light.png",
+      "screenshotSha256": "0b25210bdb6e1bef3e8b561d9ff07472a0620d85c2f27f0aa792d431a681a68e"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/pj3-a-pull-request-merges-through-the-modal-and-moves-to-concluded--PJ3-pull-requests-desktop-light.json",
+      "sha256": "1d6d2c3811563791b4d1f3a423f07fcd4b88c20592e9756fdc5a717452d63f4e",
+      "test": "PJ3 a pull request merges through the modal and moves to Concluded",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-pull-requests-desktop-light.png",
+      "screenshotSha256": "ac559ad58f770267e8d20bbd4cfbe3c7272f0f2d74c9158f117b33efd775b917"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/pj3-a-running-thread-shows-its-transcript-report-card-and-accepts-an-interrupting-message--PJ3-new-thread-modal-desktop-light.json",
+      "sha256": "14d1524812b5671b7b4f6c1f97f879f30cb2ce0594f7c08d99a704de0f6b3765",
+      "test": "PJ3 a running thread shows its transcript, report card and accepts an interrupting message",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-new-thread-modal-desktop-light.png",
+      "screenshotSha256": "392121e761460017c3df82b5c61f2df55c3883791fd2e4856eb78c58b79ce96d"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/pj3-a-running-thread-shows-its-transcript-report-card-and-accepts-an-interrupting-message--PJ3-thread-report-desktop-light.json",
+      "sha256": "792549fd101fd0a9284eb7978203c9c66d7602e2cf83b4d7f6cbde92ca5a7595",
+      "test": "PJ3 a running thread shows its transcript, report card and accepts an interrupting message",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-thread-report-desktop-light.png",
+      "screenshotSha256": "1b65d04116b8182f213043865c322d7d3617fbdb997ae271602400d79d45429f"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/pj3-a-running-thread-shows-its-transcript-report-card-and-accepts-an-interrupting-message--PJ3-thread-running-desktop-light.json",
+      "sha256": "3affec32ccd4fc7092eec484865ec565c6698f948a29ebb599e3d8aa41b9aade",
+      "test": "PJ3 a running thread shows its transcript, report card and accepts an interrupting message",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-thread-running-desktop-light.png",
+      "screenshotSha256": "64ef7b5c2af3c4c525eb5ec13d8b9928ef78fdd22864d99ace4c0e30cc5bff61"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/pj3-leave-git-to-me-offers-main-and-preserves-the-manual-git-policy--jevellan-manual-settings-desktop-light-projects.json",
+      "sha256": "0b6a668fb932ec661111ac64410c49265f06a7245b8865fe5c8cb1c2ee03cb89",
+      "test": "PJ3 Leave git to me offers Main and preserves the manual git policy",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "/tmp/jevellan-manual-settings-desktop-light-projects.png",
+      "screenshotSha256": "073a4e768cfee73cedb91f4e269dfc059209963d7d2090457905e8d3034e2f41"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/pj3-project-page-opens-from-the-sidebar-and-the-coordinator-chat-streams--PJ3-chat-reply-desktop-light.json",
+      "sha256": "2966efcbfe2aed48ae0fa4f7e2d61f3794e6efcf0771d6dac01ce04b8a7ad84e",
+      "test": "PJ3 project page opens from the sidebar and the coordinator chat streams",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-chat-reply-desktop-light.png",
+      "screenshotSha256": "ecac56f458cb19237e555576da4aef074280dcf2f26d3ee633d46044a07cf038"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/pj3-project-page-opens-from-the-sidebar-and-the-coordinator-chat-streams--PJ3-coordinator-working-desktop-light.json",
+      "sha256": "e796bf4935bc50e2b0f2d7c47ba361be2da94b80df5b1e33c17b461f7b9c3872",
+      "test": "PJ3 project page opens from the sidebar and the coordinator chat streams",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-coordinator-working-desktop-light.png",
+      "screenshotSha256": "b2ee156a3377f8d10b55e9bf730212e06d04e813a0fe927224ce4a614fc6e305"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/pj3-project-page-opens-from-the-sidebar-and-the-coordinator-chat-streams--PJ3-empty-chat-desktop-light.json",
+      "sha256": "d84bb498c8f31f3f6a0e7c8930eb907e53f9c7ebbf049589e083ff64c8726302",
+      "test": "PJ3 project page opens from the sidebar and the coordinator chat streams",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-empty-chat-desktop-light.png",
+      "screenshotSha256": "76b5db9d9f764ae93e43ac3daa3f7487ffc15d001d9b7e41f053d7fded16649c"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/pj3-the-github-token-card-saves-replaces-and-removes-the-token--PJ3-github-token-desktop-light.json",
+      "sha256": "1d28ce057d44b70c4081b7fc1cf2227b79cda3d0da81fe0fdaec6f23928d22ea",
+      "test": "PJ3 the GitHub token card saves, replaces and removes the token",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-github-token-desktop-light.png",
+      "screenshotSha256": "edf2775b8f2fee410a4b3aae31f8b99ff4cf717fe5bfbc18f058b7befa27729e"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/pj3-the-notebook-can-be-edited--PJ3-notebook-conflict-desktop-light.json",
+      "sha256": "335bb9c4c0bbd060342b835b318b3be99178eeaeace6a6a0e170cd4d577221f4",
+      "test": "PJ3 the notebook can be edited",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-notebook-conflict-desktop-light.png",
+      "screenshotSha256": "2bf8b441b4346b27822216256a4eee08698f7dd0deb04d1e3887399e1024926b"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/pj3-the-notebook-can-be-edited--PJ3-notebook-panel-desktop-light.json",
+      "sha256": "2b499f7e34cd0358961c65738a47288fbef8ca6d83a875cfb751c225fb9dc3e4",
+      "test": "PJ3 the notebook can be edited",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-notebook-panel-desktop-light.png",
+      "screenshotSha256": "b8630bb0ee3eff1b693ffb4437e3f0a6e50510670f21ea685c9a90982f5e732e"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/pj4b-the-why-panel-explains-placement-and-overrides-apply--PJ4b-fallback-chip-desktop-light.json",
+      "sha256": "681b4cb75b92b4874dfee5c7e24ceea6041c98d83d39bc5808af87bf0c93d682",
+      "test": "PJ4b the Why panel explains placement and overrides apply",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ4b-fallback-chip-desktop-light.png",
+      "screenshotSha256": "54ad2918af5b97fe0e6a48b1e79cb7d37940e1ac19407805dd0715a603f7877e"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/pj4b-the-why-panel-explains-placement-and-overrides-apply--PJ4b-override-modal-desktop-light.json",
+      "sha256": "707778c52e9e15d9665d98a05a39943c4c4ac5ceba2d7badf9ec00feb569f6bb",
+      "test": "PJ4b the Why panel explains placement and overrides apply",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ4b-override-modal-desktop-light.png",
+      "screenshotSha256": "30dacbfd1a6847cb88c9a77800100a99d7219990e068e6371dd9175eb2323169"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/pj4b-the-why-panel-explains-placement-and-overrides-apply--PJ4b-restarted-desktop-light.json",
+      "sha256": "50967fa2ef5d9b85000d8e3bef6b50a8a6f7d3c2b733803b65fbd9feff54aa8a",
+      "test": "PJ4b the Why panel explains placement and overrides apply",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ4b-restarted-desktop-light.png",
+      "screenshotSha256": "fd3691dc457479f919725ee753079e794996ff3318d362e50c8445a087284b5a"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/pj4b-the-why-panel-explains-placement-and-overrides-apply--PJ4b-why-overridden-desktop-light.json",
+      "sha256": "56f616cbeee53c2f48deb3c08b3e0521d614d4212564e65cdd5b07f290bef819",
+      "test": "PJ4b the Why panel explains placement and overrides apply",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ4b-why-overridden-desktop-light.png",
+      "screenshotSha256": "c0ff2bde0dfbae72d99f0d532eea6c6a4e8bf5a0da4ada2f704ba6fca32dfdf8"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/pj4b-the-why-panel-explains-placement-and-overrides-apply--PJ4b-why-panel-desktop-light.json",
+      "sha256": "84234b963e84ffcefb8e896b24bfc7c3a5cfe4054bcb9e16d873020f907c73d4",
+      "test": "PJ4b the Why panel explains placement and overrides apply",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ4b-why-panel-desktop-light.png",
+      "screenshotSha256": "671d850a77a007bd0877ad0adc3f746b32a7135e36f8cf0ea91316c7931eb3c2"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/pj5-a-thread-on-the-member-device-opens-through-the-hub--PJ5-remote-thread-desktop-light.json",
+      "sha256": "b7b8b954b270d22f86e3cfb2c8a9343aff73b6caeaa7e11a0af6ce1ec279f3e4",
+      "test": "PJ5 a thread on the member device opens through the hub",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ5-remote-thread-desktop-light.png",
+      "screenshotSha256": "1effd4c9417057ea7f737553cb678f0a4661ed1d731e37b2062846b677705e6d"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/pj5-an-offline-coordinator-shows-the-notice-and-move-coordinator-here--PJ5-moved-desktop-light.json",
+      "sha256": "b9870352f11b2273ea4ab333b67d132f3f07dab0626ba7197a33cad3747c7125",
+      "test": "PJ5 an offline coordinator shows the notice and Move coordinator here",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ5-moved-desktop-light.png",
+      "screenshotSha256": "840bda83410b8794b7ef49e2ea236f5bb21d0b2d18e80d0c9ef3ae3769dec79c"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/pj5-an-offline-coordinator-shows-the-notice-and-move-coordinator-here--PJ5-offline-notice-desktop-light.json",
+      "sha256": "03e737b49ed24c87b54b9f10dbaf3547731bd88b91b39958ab7126b87b61f5af",
+      "test": "PJ5 an offline coordinator shows the notice and Move coordinator here",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ5-offline-notice-desktop-light.png",
+      "screenshotSha256": "08c01ca2f5881611e8858a52cb394aa6d88e64e96919ff28852e089e72f89169"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/pj7-an-attached-thread-disables-its-composer--PJ7-attached-desktop-light.json",
+      "sha256": "4b12bfb48057357bc56460d39db41c15262b34d934562cdbb2f4a0791496a9dc",
+      "test": "PJ7 an attached thread disables its composer",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ7-attached-desktop-light.png",
+      "screenshotSha256": "a23a53e02558f915814c856bd69acf72428532fb6de3f35c41c242368b7d5dc7"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/pj7-an-attached-thread-disables-its-composer--PJ7-copy-blocked-desktop-light.json",
+      "sha256": "f85ecb07be018d55ecffafa5f82cf9d9c840bc93ac53cf72ff6bd2a961f3dace",
+      "test": "PJ7 an attached thread disables its composer",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ7-copy-blocked-desktop-light.png",
+      "screenshotSha256": "919fb4587bbc311c0cc40595b7ad6b37e5c27bd265ca33301f00aa669a136ae8"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/project-jev-local-rigging-and-device-settings-recover-their-hub-boundaries--phase4-project-save-wait-desktop-light.json",
+      "sha256": "b1e4c30452dbd99e0d8af9ebfa36e824f09f18a11edef3c033cc072428c3c58a",
+      "test": "project, Jev, local Rigging and device Settings recover their hub boundaries",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase4-project-save-wait-desktop-light.png",
+      "screenshotSha256": "101ea32f8ada602ed8cd7339f61c35f9018a16a02b6e36e9ae2a21317cdaa0b7"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/provider-login-recovers-lost-start-and-accepted-code-replies-inside-its-panel--phase4-login-wait-desktop-light.json",
+      "sha256": "cd928ea04d4707f92ffc9d28c5f5f09322a174f8c0e961ca58f3389cd33fdf11",
+      "test": "provider login recovers lost start and accepted-code replies inside its panel",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase4-login-wait-desktop-light.png",
+      "screenshotSha256": "5e6faee99214358683a9b2e1c766ac4379b924a981142bde2506797c4fe24c38"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/settings-account-login-rigging-and-configuration-flows-work-without-horizontal-overflow--phase1-rigging-desktop-light.json",
+      "sha256": "e1e9963eb6b30bd81657e88cb1bb35ddac67aafd6eb13632a11f558ff798dc78",
+      "test": "Settings account, login, Rigging and configuration flows work without horizontal overflow",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase1-rigging-desktop-light.png",
+      "screenshotSha256": "54bd1fe588bee4ca7382a507e797429f527dca3033511c9ac4b7626e9e3cab32"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/settings-account-login-rigging-and-configuration-flows-work-without-horizontal-overflow--phase1-runtimes-desktop-light.json",
+      "sha256": "1fb6283713b92730aecc341f4eecff58555a450ca95441567e7ef6bc41898a03",
+      "test": "Settings account, login, Rigging and configuration flows work without horizontal overflow",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase1-runtimes-desktop-light.png",
+      "screenshotSha256": "5ad8649301453d4b7fe4c544f31f0ee7758b5205607ec5f3fa7b2b021acb73a3"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/settings-saves-wait-through-hub-loss-reconcile-lost-replies-and-abandon-a-closed-editor--phase4-settings-save-wait-desktop-light.json",
+      "sha256": "ffaa073db23d5e0a3c56763481d6d4b360860dccabee226459d947031fa86652",
+      "test": "Settings saves wait through hub loss, reconcile lost replies and abandon a closed editor",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase4-settings-save-wait-desktop-light.png",
+      "screenshotSha256": "ec5615be09b9c787276c3347d523fd11de7c1aabf65e844344110459b3f74d70"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/undo-from-the-last-closed-work-includes-newer-work-and-preserves-both-requests-after-reloa--phase2-undo-following-confirm-desktop-light.json",
+      "sha256": "b20bd156ceba7f1e4c89b66b209dab9d034ffa05a9255c127d58ba543598c8f3",
+      "test": "undo from the last closed work includes newer work and preserves both requests after reload",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-undo-following-confirm-desktop-light.png",
+      "screenshotSha256": "68f100f4bf0f46ba33b64146bf0bf72854a7ba1196d5990448e6147498a06a42"
+    },
+    {
+      "path": "docs/acceptance/vision/desktop-light/undo-from-the-last-closed-work-includes-newer-work-and-preserves-both-requests-after-reloa--phase2-undo-following-desktop-light.json",
+      "sha256": "8a05b63f5e1c72ea5da45c483df925dedeea203b0fe37f3121d28f6c7a180f63",
+      "test": "undo from the last closed work includes newer work and preserves both requests after reload",
+      "layout": "desktop-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-undo-following-desktop-light.png",
+      "screenshotSha256": "05808b2a5daa3cb573e182497578cf1bf279aa5c512dac4396feff0a3dc7e7b3"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/a-question-with-offered-answers-shows-them-as-buttons-and-a-picked-answer-continues-the-wo--answer-options-phone-dark.json",
+      "sha256": "200948bc7e5c279b835c28a64c6bf37b7fa2e60390569be0516ede154b290866",
+      "test": "a question with offered answers shows them as buttons, and a picked answer continues the work",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/answer-options-phone-dark.png",
+      "screenshotSha256": "2b2c37ed8ae43ffb077abf81fd3561c61ddf94ed0f1350dda1f70d4a0eec7a66"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/an-agent-connection-is-scoped-shown-once-and-revocable--agents-phone-dark.json",
+      "sha256": "78a9f7a27a335ba3a149fa5bb338c84fcb2564c75204d19232fd3361a45b4819",
+      "test": "an agent connection is scoped, shown once, and revocable",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "test-results/agents-phone-dark.png",
+      "screenshotSha256": "9cbd144addb99fb3ec154806ee6e000596ea91a21d28fb93844c58b74deb0c32"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/automatic-decisions-can-resume-from-missing-configuration-and-explain-their-simulated-choi--phase3-automatic-phone-dark.json",
+      "sha256": "44df026e3410b02e08f41d3d4e0d7bc173a248ca81296e851421f30f6ceee63b",
+      "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase3-automatic-phone-dark.png",
+      "screenshotSha256": "95fc78c4fb8953c9490f1f7638dd75528b746dd50b4adcad8196ef2aa75a2a9d"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/automatic-decisions-can-resume-from-missing-configuration-and-explain-their-simulated-choi--phase3-connection-phone-dark.json",
+      "sha256": "82664bebdae2faeb11589ab92fdbd0bfad04a2b6d59bb2aa0a16204732257a7a",
+      "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase3-connection-phone-dark.png",
+      "screenshotSha256": "c14096a9b8be02b1bb7e1efe44c7adb17f07474b396b52852cddf6f7515f5f30"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/automatic-decisions-can-resume-from-missing-configuration-and-explain-their-simulated-choi--phase3-waiting-phone-dark.json",
+      "sha256": "dbc7c860e457034e67a3fbb2769182898fd8058838560edce0cdfdbcce39912b",
+      "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase3-waiting-phone-dark.png",
+      "screenshotSha256": "66ca37390677ecda07430b5097ec3bcc9a34de23a838051d2557281ecc6485ab"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/automatic-decisions-can-resume-from-missing-configuration-and-explain-their-simulated-choi--phase3-why-phone-dark.json",
+      "sha256": "6f25572196cb433923b1d436890ecbeffed45c532450ab0957c944d6db3361bf",
+      "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase3-why-phone-dark.png",
+      "screenshotSha256": "5c184ac35d825bd9c78b977f9bca2322be64f1111097b199dbeb785b9ce059a2"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/blocked-files-can-be-reviewed-refreshed-and-accepted-before-verified-publication--phase2-adoption-phone-dark.json",
+      "sha256": "d97f8dcd0d9829d5608b1868f569310c1bd1d426be36eb76de3c032b4d9e991e",
+      "test": "blocked files can be reviewed, refreshed and accepted before verified publication",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-adoption-phone-dark.png",
+      "screenshotSha256": "4d3921359939fa57b96b5eb1f32aa5daef7560a9c4928d7c943bed9ab97fb967"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/claude-sign-in-shows-pending-progress-and-resumes-polling-after-a-connection-error--login-recovery-phone-dark.json",
+      "sha256": "68bab246713e186c0eccfab6282c78c867ddf471c06da34ad4797d1f43a232d1",
+      "test": "Claude sign-in shows pending progress and resumes polling after a connection error",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/login-recovery-phone-dark.png",
+      "screenshotSha256": "19481f7dc0a7602ab08cd0b93767509eb12a03e0ae54c5ae2075eec170d7a0e6"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/composer-choices-apply-once-keep-conversation-pins-and-explain-corrections-after-reload--phase3-composer-kept-phone-dark.json",
+      "sha256": "dbd87e41a343a8c7293710ad45601872e015a50f70faf41cde8164cbd44b4772",
+      "test": "composer choices apply once, keep conversation pins and explain corrections after reload",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase3-composer-kept-phone-dark.png",
+      "screenshotSha256": "ce5fa4298a026b73d598f1af2b7d9a4c349eac1fcea37b9840f68a993bd39258"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/composer-choices-apply-once-keep-conversation-pins-and-explain-corrections-after-reload--phase3-composer-start-phone-dark.json",
+      "sha256": "10e0e180250cf035d198f90905d1d5c2e97b145dfc9b75165eae243325944745",
+      "test": "composer choices apply once, keep conversation pins and explain corrections after reload",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase3-composer-start-phone-dark.png",
+      "screenshotSha256": "c55923d086036714aa473eae5ec2fda627d6f756d085bc6233e0cb673ef88155"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/composer-choices-apply-once-keep-conversation-pins-and-explain-corrections-after-reload--phase3-composer-why-phone-dark.json",
+      "sha256": "930923986ffe9ec1ca5771224e47888d81ea4993391d85689598d57ed8ebbc8c",
+      "test": "composer choices apply once, keep conversation pins and explain corrections after reload",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase3-composer-why-phone-dark.png",
+      "screenshotSha256": "8041501000e4be658f8f2abb82bb87273dc48ec9a568d9843b19025948aaebac"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/consecutive-tool-calls-share-an-open-area-and-new-live-output-appends-to-it--jevellan-tool-groups-phone-dark-projects.json",
+      "sha256": "8d2be22169b61686daaca897f3af397b297c403b1df5bb2d23ca5cec8bc057ad",
+      "test": "Consecutive tool calls share an open area and new live output appends to it",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "/tmp/jevellan-tool-groups-phone-dark-projects.png",
+      "screenshotSha256": "07c23e6f3cbf6a79ae815e0589bf7a726fc38d2bb3299e4a686859628b92260b"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/context-changes-interrupted-by-outside-activity-require-a-fresh-reviewed-diff-before-publi--phase4-context-review-phone-dark.json",
+      "sha256": "304dd94a7aa55a1880dce28d9d7da21d48f0639e95137a7a4b10a7349a79304d",
+      "test": "context changes interrupted by outside activity require a fresh reviewed diff before publication",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase4-context-review-phone-dark.png",
+      "screenshotSha256": "adc1a2e19e79167ef8c4993c2f54bbeff95148dd5bd5b1a9d2609d2d3948cea3"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/conversation-titles-expanded-tools-and-outside-outcomes-survive-updates-and-reload--phase2-controls-finish-phone-dark.json",
+      "sha256": "9b1e59aab92518f081333799959a004766ea3e953375360bf4166fcf89af88b4",
+      "test": "conversation titles, expanded tools and outside outcomes survive updates and reload",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-controls-finish-phone-dark.png",
+      "screenshotSha256": "39a7c380ffb7b3da79aedf741bb736ebd2fcdfeb3f3db768c817fd88659af590"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/conversation-titles-expanded-tools-and-outside-outcomes-survive-updates-and-reload--phase2-controls-outcome-phone-dark.json",
+      "sha256": "89ef8819df9c40424a2b811517cc822f2c30685920c26fce669b0dad6f9342cb",
+      "test": "conversation titles, expanded tools and outside outcomes survive updates and reload",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-controls-outcome-phone-dark.png",
+      "screenshotSha256": "4b7edd3dc49bbbaf5fa5e956d21364b61381f8c5b7b08435f21622d8db1288fd"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/conversation-titles-expanded-tools-and-outside-outcomes-survive-updates-and-reload--phase2-controls-title-phone-dark.json",
+      "sha256": "55129187bbae084e86b45721dcdccd94c42171b880be416633a56b9864422813",
+      "test": "conversation titles, expanded tools and outside outcomes survive updates and reload",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-controls-title-phone-dark.png",
+      "screenshotSha256": "58ce43527c6e222d1d2ba4c1a890d0a986594e36516bceb51f5a14d27f16f2a0"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/coordinator-overrides-expose-model-and-effort-while-preserving-unrelated-project-settings--jevellan-coordinator-override-phone-dark-projects.json",
+      "sha256": "f41b383f5f9078a2b4217b85bc3bf876714a0f6918d326f6bef26a3997266fb1",
+      "test": "Coordinator overrides expose model and effort while preserving unrelated project settings",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "/tmp/jevellan-coordinator-override-phone-dark-projects.png",
+      "screenshotSha256": "c107556b1b0f294f54f0cc3d82818961cf49093d44875c5e14a0a8aad853fe9e"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/device-settings-completes-a-member-login-shows-activity-invites-and-switches-without-signi--phase4-devices-phone-dark.json",
+      "sha256": "b11ab57e7526cddc3db4d9ec3cff95c5cdc796d140516d1ce8e688ecca390e43",
+      "test": "device Settings completes a member login, shows activity, invites and switches without signing in again",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase4-devices-phone-dark.png",
+      "screenshotSha256": "0b92dd06355c31bbac9a121bffe17e49060110d6fe9e897c90bea1cf34b01540"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/device-settings-completes-a-member-login-shows-activity-invites-and-switches-without-signi--phase5-join-phone-dark.json",
+      "sha256": "9a7ff5014ef333fbcbf5e6494eedcae067de1616cb13b654b36fcdd3c50d07d0",
+      "test": "device Settings completes a member login, shows activity, invites and switches without signing in again",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase5-join-phone-dark.png",
+      "screenshotSha256": "5556aedd2f7f6c0f280c716950bd269914066907019b864d50d97fd396280c5b"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/external-activity-waits-retries-requires-changes-review-and-publishes-after-reviewed-accep--phase4-external-review-phone-dark.json",
+      "sha256": "5f2bca43f51a2e6ae248fccdb9fcec6aaefb32329efdac27e36bed35229c1e1f",
+      "test": "external activity waits, retries, requires Changes review and publishes after reviewed acceptance",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase4-external-review-phone-dark.png",
+      "screenshotSha256": "eec652fa285d28cc7b3312e6f16b243f4b78a5607d228698092c9b60e335c23c"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/external-activity-waits-retries-requires-changes-review-and-publishes-after-reviewed-accep--phase4-external-wait-phone-dark.json",
+      "sha256": "81cb82413dc0850e780a0c318964713f2c76e8244e97056c4ef765c5e7ec5024",
+      "test": "external activity waits, retries, requires Changes review and publishes after reviewed acceptance",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase4-external-wait-phone-dark.png",
+      "screenshotSha256": "db5b785f26774cb6fa06cd53203cc4baa0cf2017f0f5ac43a2d1cb9b79b2de19"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/file-and-evidence-links-show-recorded-versions-source-lines-markdown-images-and-verificati--phase2-evidence-image-phone-dark.json",
+      "sha256": "4f665d2ef17f460fadf3cb3dacae0a85f444831d37ea86fd75f69b5de1956675",
+      "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-evidence-image-phone-dark.png",
+      "screenshotSha256": "01d6b21323db3469a84dd650e8e3467b1f653b19d0e9c5a92d049697d467502f"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/file-and-evidence-links-show-recorded-versions-source-lines-markdown-images-and-verificati--phase2-evidence-markdown-phone-dark.json",
+      "sha256": "2ffd2b88c6b632bee442e40589957f797d7870031762e1bda5cac38da0cf9a52",
+      "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-evidence-markdown-phone-dark.png",
+      "screenshotSha256": "0477e391e69b3ccc8f22ae2d09058abebea339922cbd3e760f40033de5e86554"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/file-and-evidence-links-show-recorded-versions-source-lines-markdown-images-and-verificati--phase2-evidence-source-phone-dark.json",
+      "sha256": "d8c6d6c5c33322bb687da32e7f328b62bb1c63d19d17dec28eda932e2be98cd6",
+      "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-evidence-source-phone-dark.png",
+      "screenshotSha256": "7dff68606cf706b5167d1c085b373a0d605d02822a7498795abb1569d838ed2c"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/git-settings-can-be-saved-reloaded-and-checked-from-projects--git-settings-phone-dark.json",
+      "sha256": "457a49ade36406db81c28069a3b20429531a39ff95058aa34503060ac0590205",
+      "test": "Git settings can be saved, reloaded and checked from Projects",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "test-results/git-settings-phone-dark.png",
+      "screenshotSha256": "ca14cfe878830e9acdf1ec5861f2b3d07b1b1fb1e0c37311079369f4c86269f1"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/hub-recovery-resumes-sign-in-and-reconciles-a-settings-save-whose-reply-was-lost--phase4-settings-wait-phone-dark.json",
+      "sha256": "d36900c90b51c81f8091da8355c90591e5acaa480788b446e6e9a2bcc0eb9db2",
+      "test": "hub recovery resumes sign-in and reconciles a settings save whose reply was lost",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase4-settings-wait-phone-dark.png",
+      "screenshotSha256": "f0a9773e0489bf8212e91d731cfffbaf7cbb95551d48f8558ccd0ba7e66cad29"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/j10-routing-suggestions-show-the-badge-apply-and-undo-one-field-change-in-plain-words-and---phase6-j10-change-it-phone-dark.json",
+      "sha256": "a291f36afb9091b99be7ac8e973e6bd3518f2b0543d14cf24d1fcf9e5a357cae",
+      "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase6-j10-change-it-phone-dark.png",
+      "screenshotSha256": "ca7d18cdafe3d9738d69fefe4ef931d5f8d92a5ff6c3c66868528a6fc5ab3737"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/j10-routing-suggestions-show-the-badge-apply-and-undo-one-field-change-in-plain-words-and---phase6-j10-dismissed-phone-dark.json",
+      "sha256": "ac591ad2be6c1cea4fb922c9259de8a1d7fcc88f9bc6466013876ebaacbc371e",
+      "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase6-j10-dismissed-phone-dark.png",
+      "screenshotSha256": "7b01f7da49aebf2386301868de5e3e12d08b7e3519797573d4adcb35b1da462d"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/j10-routing-suggestions-show-the-badge-apply-and-undo-one-field-change-in-plain-words-and---phase6-j10-suggestions-phone-dark.json",
+      "sha256": "e6815925fd8a4602dd54c14bfc7b31f691b701a91cc22b10cb58d9f3e5fb7f2b",
+      "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase6-j10-suggestions-phone-dark.png",
+      "screenshotSha256": "d1dc657bedc5d5a2f63f73fd03d542b1882760391183ffd860b32417dc9c2175"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/j10-routing-suggestions-show-the-badge-apply-and-undo-one-field-change-in-plain-words-and---phase6-j10-undo-phone-dark.json",
+      "sha256": "9fa00c23684045c4f877cec829e793585abd5bc512f7c8b3ee8dee3a47950127",
+      "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase6-j10-undo-phone-dark.png",
+      "screenshotSha256": "2454be72782c787fa3c52c8d098e46a37658bbd13526720281c55d10c4449f10"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/j8-simulated-mesh-journey-switches-streams-corrects-logs-in-remotely-and-respects-outside---J8-guard-phone-dark.json",
+      "sha256": "327e66eedc0ac2fa1db6e68924f763ef82af731cdca46e8d5d4b1f081a955236",
+      "test": "J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/J8-guard-phone-dark.png",
+      "screenshotSha256": "fda1e41f8f0c0742a86ca49cb29a7fd0c8b96ac1ed002fad8e27988e61068222"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/j8-simulated-mesh-journey-switches-streams-corrects-logs-in-remotely-and-respects-outside---J8-proxy-phone-dark.json",
+      "sha256": "b923b366214511bae30d8535641ac90988195fd70f0d1b65500055b09f0db400",
+      "test": "J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/J8-proxy-phone-dark.png",
+      "screenshotSha256": "6cfa412dce2993b4c8fdfdb070176f8890813b1fc2a5aef996e3af662ea5d880"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/lj2-native-setup-remains-visible-and-merge-routing-explains-its-ask-owner-choice--LJ2-merge-route-why-phone-dark.json",
+      "sha256": "3633ea0ec0977b3a05759f8a21a077867e45f2b5ad54bde109b06d483256fd5f",
+      "test": "LJ2 native setup remains visible and merge routing explains its ask-owner choice",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ2-merge-route-why-phone-dark.png",
+      "screenshotSha256": "be36290beb424a781e2d3f60ef7f56527940a4473a443ff4fd9a7213112a9613"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/lj2-native-setup-remains-visible-and-merge-routing-explains-its-ask-owner-choice--LJ2-merge-shadow-route-phone-dark.json",
+      "sha256": "5fa809523da59725aba097ab43bafb87044d187e4b8ed5b6bd43d840ef64a3aa",
+      "test": "LJ2 native setup remains visible and merge routing explains its ask-owner choice",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ2-merge-shadow-route-phone-dark.png",
+      "screenshotSha256": "619d5104d948ec47bc23411feaab09b037715603eb06f741347c1e10f1a33ac8"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/lj2-native-setup-remains-visible-and-merge-routing-explains-its-ask-owner-choice--LJ2-merged-pr-correction-phone-dark.json",
+      "sha256": "58ebc30f4898ab794b7cf53371f2cf61bfd4720f87db30f532a74b39d76bd902",
+      "test": "LJ2 native setup remains visible and merge routing explains its ask-owner choice",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ2-merged-pr-correction-phone-dark.png",
+      "screenshotSha256": "c439a5bdc5d2c9fa79abf631ed66c5ecf063c8dc903fdfe7f565143797146d12"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/lj2-native-setup-remains-visible-and-merge-routing-explains-its-ask-owner-choice--LJ2-native-setup-phone-dark.json",
+      "sha256": "dab736e30a0c57ab10f098c7e2220af6cce196cfed11b143dc849c92c900d63e",
+      "test": "LJ2 native setup remains visible and merge routing explains its ask-owner choice",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ2-native-setup-phone-dark.png",
+      "screenshotSha256": "f052d5799a991b49551a3a09359abe94ae755c3ecdcaaf7fdab0dd56f80393d6"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/lj2-native-setup-remains-visible-and-merge-routing-explains-its-ask-owner-choice--LJ2-task-merge-correction-phone-dark.json",
+      "sha256": "14fffb2c9f035223ead6821a2d73f3f40055c87dc5217d356e0e6ff9e443a92b",
+      "test": "LJ2 native setup remains visible and merge routing explains its ask-owner choice",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ2-task-merge-correction-phone-dark.png",
+      "screenshotSha256": "ac1c0923cf04503011b37d3a5027c9fafe4ccd60c013b39e39b54b7e1f10d17f"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/lj3-five-tasks-obey-phone-drag-now-the-two-thread-cap-and-after-links--LJ3-five-ranked-tasks-phone-dark.json",
+      "sha256": "25fac18b10d36f95356aa306cf3ab52f271f773648c17fd04ed1969527850fe6",
+      "test": "LJ3 five tasks obey phone drag, Now, the two-thread cap and after links",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ3-five-ranked-tasks-phone-dark.png",
+      "screenshotSha256": "590add69c07dc42baefc9d803e4106d6ae0b86cfdcd5185244a03d94bd70a8be"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/lj3-five-tasks-obey-phone-drag-now-the-two-thread-cap-and-after-links--LJ3-priority-dispatched-phone-dark.json",
+      "sha256": "f56a859238a643159536536f274d38532f551d31a997c7cbc6f807b59ea9503c",
+      "test": "LJ3 five tasks obey phone drag, Now, the two-thread cap and after links",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ3-priority-dispatched-phone-dark.png",
+      "screenshotSha256": "88d45f6424bf55c8c1463a2c0acfcaed9ee0116be849e924abc61e892233afcd"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/lj3-one-queue-preserves-dependency-order-owner-ordering-and-recovery-without-duplicate-thr--LJ3-queue-dependency-phone-dark.json",
+      "sha256": "d025abcbad35932c554dd96a384ac1374f79f5be4288365d14611f0b2b118360",
+      "test": "LJ3 one queue preserves dependency order, owner ordering and recovery without duplicate threads",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ3-queue-dependency-phone-dark.png",
+      "screenshotSha256": "18ef77dc8f6d4882aa358ce7ac0db56c6f93b0b3fd78c089c213f1aa7dfd9fd9"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/lj3-one-queue-preserves-dependency-order-owner-ordering-and-recovery-without-duplicate-thr--LJ3-queue-recovered-phone-dark.json",
+      "sha256": "5094e9b6c2b62137017884df51702461acd5642f8aede86c4607a33ee6c529d9",
+      "test": "LJ3 one queue preserves dependency order, owner ordering and recovery without duplicate threads",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ3-queue-recovered-phone-dark.png",
+      "screenshotSha256": "9fa82bdf9f6094f9c72ed4899ba6eb0fd9e9d864635fba717463d28b2dfbe04b"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/lj4-owner-goals-refill-into-a-draft-approve-on-phone-obey-daily-caps-and-pause-queued-work--LJ4-goal-paused-phone-dark.json",
+      "sha256": "f56c0aec034d7ae81c2935b55d93750a4b913738b0a498acc5a3f07052ca071a",
+      "test": "LJ4 owner goals refill into a draft, approve on phone, obey daily caps and pause queued work",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ4-goal-paused-phone-dark.png",
+      "screenshotSha256": "d54cca29e3157232d8dc4e381dc5222add882d2da0be1b29eab9b8cf2d308645"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/lj4-owner-goals-refill-into-a-draft-approve-on-phone-obey-daily-caps-and-pause-queued-work--LJ4-goal-proposal-phone-dark.json",
+      "sha256": "87b6d719fb5f926222fae6e100af8fe2ffec56bb32194cc43ab2deb32e28856c",
+      "test": "LJ4 owner goals refill into a draft, approve on phone, obey daily caps and pause queued work",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/LJ4-goal-proposal-phone-dark.png",
+      "screenshotSha256": "c536640c729b43fdb6062836a42c251691b667daa09acc154809ee207e7fada8"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/loose-rigging-autosaves-rejects-stale-edits-parks-bundles-and-restores-them-across-reload--phase2-rigging-local-phone-dark.json",
+      "sha256": "e6ca4e5d6c9a52c21fc00ea709652a6ee6fa513362fff3445b6a489204409f7e",
+      "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-rigging-local-phone-dark.png",
+      "screenshotSha256": "c31b4e116c7a85be2ea98db2e4d3f39ba1e7a97833faaec2f6db8a122c08a2a4"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/loose-rigging-autosaves-rejects-stale-edits-parks-bundles-and-restores-them-across-reload--phase2-rigging-mcp-phone-dark.json",
+      "sha256": "5dd8db6ce80f47229649e9dd03d0c3b513e00e857fa738e17ec214643edf6986",
+      "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-rigging-mcp-phone-dark.png",
+      "screenshotSha256": "312910113c131c763569ab5969742b7ab52a77ca2d69b8c775949a2820fbebd3"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/loose-rigging-autosaves-rejects-stale-edits-parks-bundles-and-restores-them-across-reload--phase2-rigging-parked-phone-dark.json",
+      "sha256": "15005a1cf4a6044b8a56a8a7b834ea85e2682d5f188d6a334726912d4ebf0e97",
+      "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-rigging-parked-phone-dark.png",
+      "screenshotSha256": "6224b5a62fe68eae1ecdba32df859ea48aee5e820470cca79d4b795cc7bd5779"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/loose-rigging-becomes-managed-with-bundled-files-durable-retry-and-runtime-toggles--phase2-rigging-managed-phone-dark.json",
+      "sha256": "9aaca43ea164869ea3db96b6a216fb2dc54b9093c83d4470ba9a0ee18b835fb9",
+      "test": "loose Rigging becomes managed with bundled files, durable retry and runtime toggles",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-rigging-managed-phone-dark.png",
+      "screenshotSha256": "a6d591fe31ea5f803bf8bbb750f4e0488d97d610815cbfdd1ddc6406c36f9101"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/loose-rigging-becomes-managed-with-bundled-files-durable-retry-and-runtime-toggles--phase2-rigging-promote-phone-dark.json",
+      "sha256": "ab436ae3054b81783ff921ff8483e1db38002d86224bcdab234176e9b69bf587",
+      "test": "loose Rigging becomes managed with bundled files, durable retry and runtime toggles",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-rigging-promote-phone-dark.png",
+      "screenshotSha256": "b3249a99db28ef55354afe8bf09bae11d06aa443c8c70213c6c858560b326b01"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/migrated-conversation-history-and-project-settings-stay-usable-on-the-new-hub--migrated-conversation-history-phone-dark.json",
+      "sha256": "997424a59e81690d8138b46cf60abb574b32f4872623eef11af56fa44b763d7c",
+      "test": "migrated conversation history and Project Settings stay usable on the new hub",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/migrated-conversation-history-phone-dark.png",
+      "screenshotSha256": "48ba5ed13d248c29675ed640047201cc8f47c86420467c5e6dca563607d0ba61"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/migrated-conversation-history-and-project-settings-stay-usable-on-the-new-hub--migrated-project-settings-phone-dark.json",
+      "sha256": "ed911a7d8a4a79595caf34e914609c69516a686dfa037fe759deac6c103b8d86",
+      "test": "migrated conversation history and Project Settings stay usable on the new hub",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/migrated-project-settings-phone-dark.png",
+      "screenshotSha256": "16139954abfd098b577e57c90cb37719d5f8b272976af1acbf74b13a86fdc9f2"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/pending-work-shows-a-live-stage-while-controls-stay-compact--conversation-progress-phone-dark.json",
+      "sha256": "089f884401c232c2cb3a7e3dceebb4e39a6e49f35e08743fa20b945ee1130c11",
+      "test": "pending work shows a live stage while controls stay compact",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "test-results/conversation-progress-phone-dark.png",
+      "screenshotSha256": "691a491cbd3f82a2f16aa1fbec819aafb46359e0fd4afe9c43135bb6b228ace5"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/pj3-a-decision-is-answered-from-the-waiting-tab--PJ3-chat-with-waiting-badge-phone-dark.json",
+      "sha256": "aaf4e0750c67d620d0529b7c9021056dde686cd53fd0776b63e58c0243883e38",
+      "test": "PJ3 a decision is answered from the Waiting tab",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-chat-with-waiting-badge-phone-dark.png",
+      "screenshotSha256": "7618b4bfb1a835d9905f141f562c2a9abce047fe1d783cc0e0a714fd07f2660e"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/pj3-a-decision-is-answered-from-the-waiting-tab--PJ3-decision-answered-phone-dark.json",
+      "sha256": "b5f8cc575a025834d3eb3483fd978fa3496fc08a4ddd24a74c12985be9dae42e",
+      "test": "PJ3 a decision is answered from the Waiting tab",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-decision-answered-phone-dark.png",
+      "screenshotSha256": "dcc71b6bfa317f47987717f6371529a93cb8cc7d1a040416e59ea131519f983b"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/pj3-a-decision-is-answered-from-the-waiting-tab--PJ3-decision-card-phone-dark.json",
+      "sha256": "41508062734e333110e165f4780a4477455c0e0b253c609471173ed3f4aff925",
+      "test": "PJ3 a decision is answered from the Waiting tab",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-decision-card-phone-dark.png",
+      "screenshotSha256": "bcb44e7b15a8dc99645b10b6317bd83ca3df5db0743878a87aa8ad140c23a38d"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/pj3-a-decision-is-answered-from-the-waiting-tab--PJ3-projects-sidebar-phone-dark.json",
+      "sha256": "f908bc55832b122c00fd398fb8a2d969ed2b2b492a4605906318c0e0ef9cc5f6",
+      "test": "PJ3 a decision is answered from the Waiting tab",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-projects-sidebar-phone-dark.png",
+      "screenshotSha256": "d7b95d62bb80932c6ab6cd9fe14e534f02b0128114b741040b6012613af57dcf"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/pj3-a-pull-request-merges-through-the-modal-and-moves-to-concluded--PJ3-concluded-phone-dark.json",
+      "sha256": "e578ec331ff121139b3e8df7de80d23bcbefe77cf0ac891e5b4db48764078b26",
+      "test": "PJ3 a pull request merges through the modal and moves to Concluded",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-concluded-phone-dark.png",
+      "screenshotSha256": "e3538fb4dd906127d3c9bb65604ae47ac6c97c0cbef57fa856d9b1f64db2a96a"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/pj3-a-pull-request-merges-through-the-modal-and-moves-to-concluded--PJ3-merge-modal-phone-dark.json",
+      "sha256": "db4c85b22d0acc158f38eda9d2d34641177cee64dea519c79a05fd31995e5042",
+      "test": "PJ3 a pull request merges through the modal and moves to Concluded",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-merge-modal-phone-dark.png",
+      "screenshotSha256": "8f527f1a1535cf0f0fd9ab3a475c12923dea244d7f16fde9061372690a3b2105"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/pj3-a-pull-request-merges-through-the-modal-and-moves-to-concluded--PJ3-pull-request-conflict-phone-dark.json",
+      "sha256": "87274662e1d4efb45cd922a93529e12aabcd7175e7ba44ca091d35bcb80f8fa9",
+      "test": "PJ3 a pull request merges through the modal and moves to Concluded",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-pull-request-conflict-phone-dark.png",
+      "screenshotSha256": "29ad013b1540080ccb9432e9b09998e761487285ab24f88e0d53986d453baf9a"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/pj3-a-pull-request-merges-through-the-modal-and-moves-to-concluded--PJ3-pull-requests-phone-dark.json",
+      "sha256": "f0f418867023b5644959c8535f654b2355cace61c2325424be3d47013d22f432",
+      "test": "PJ3 a pull request merges through the modal and moves to Concluded",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-pull-requests-phone-dark.png",
+      "screenshotSha256": "1e6e8a55d487115a071fad09b465bf22af8712fe87cccd5b61caa47d5491ffff"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/pj3-a-running-thread-shows-its-transcript-report-card-and-accepts-an-interrupting-message--PJ3-new-thread-modal-phone-dark.json",
+      "sha256": "bf6de41160c3d57ae06b4eef77d85870a983a2b823fdc415d9cf1f3eed925020",
+      "test": "PJ3 a running thread shows its transcript, report card and accepts an interrupting message",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-new-thread-modal-phone-dark.png",
+      "screenshotSha256": "af3ef05d0df0ca9bacc1e73b7d26c303e9b2fdcc27161898d951708fa159ed9d"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/pj3-a-running-thread-shows-its-transcript-report-card-and-accepts-an-interrupting-message--PJ3-thread-report-phone-dark.json",
+      "sha256": "b6f258641ba5bcd6f65eb03fd93e28ae1c357a73e3d1539a72e708bc562ef962",
+      "test": "PJ3 a running thread shows its transcript, report card and accepts an interrupting message",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-thread-report-phone-dark.png",
+      "screenshotSha256": "20afb5f2a06659fe0e81c55cf9d850a92d8dd633ce28874db06b78df9cfa376b"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/pj3-a-running-thread-shows-its-transcript-report-card-and-accepts-an-interrupting-message--PJ3-thread-running-phone-dark.json",
+      "sha256": "db2592ab5dc326ab0b99a1f5600714a7748560e925fc92b4fd52d65160674930",
+      "test": "PJ3 a running thread shows its transcript, report card and accepts an interrupting message",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-thread-running-phone-dark.png",
+      "screenshotSha256": "dc909c232775f9207e5579366af9f7c94aad18b0918543c91c18a66995f350b7"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/pj3-leave-git-to-me-offers-main-and-preserves-the-manual-git-policy--jevellan-manual-settings-phone-dark-projects.json",
+      "sha256": "0280eff2971bc9311520438523e81f114e26eb3b12fca612ce85f8c5eca2bf97",
+      "test": "PJ3 Leave git to me offers Main and preserves the manual git policy",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "/tmp/jevellan-manual-settings-phone-dark-projects.png",
+      "screenshotSha256": "3dbb2b36040b8d781226848800a1003519272018734234d674bed2943dd5e1ea"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/pj3-project-page-opens-from-the-sidebar-and-the-coordinator-chat-streams--PJ3-chat-reply-phone-dark.json",
+      "sha256": "605268591eeab537642c7379cd0e71be3ca4a8d147a356e08a07367b1a44a87b",
+      "test": "PJ3 project page opens from the sidebar and the coordinator chat streams",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-chat-reply-phone-dark.png",
+      "screenshotSha256": "dedee340835d4a8764992a142857daf2787bcf0f0970afe40f98babfe81ee636"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/pj3-project-page-opens-from-the-sidebar-and-the-coordinator-chat-streams--PJ3-coordinator-working-phone-dark.json",
+      "sha256": "f7307f2cf932a5273c60a6a69074ae199183c74fbddd6b494de9dae3a5275bba",
+      "test": "PJ3 project page opens from the sidebar and the coordinator chat streams",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-coordinator-working-phone-dark.png",
+      "screenshotSha256": "0758eba7b1ed20ecb179464ef805fadecab38aa2ea10b73299a358f2d888bbc5"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/pj3-project-page-opens-from-the-sidebar-and-the-coordinator-chat-streams--PJ3-empty-chat-phone-dark.json",
+      "sha256": "df096c2eb954c580694c709e2fdbda0a6d6f705ef28f543ae5ef62eaeaf6030f",
+      "test": "PJ3 project page opens from the sidebar and the coordinator chat streams",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-empty-chat-phone-dark.png",
+      "screenshotSha256": "017075f029c6748d3376e2b93036c3d00189855b6c2cb0f955e21830372b82fb"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/pj3-the-github-token-card-saves-replaces-and-removes-the-token--PJ3-github-token-phone-dark.json",
+      "sha256": "c7e42c100e407570a4afb1ad443878720742fc1e30d34b361dd3f5d9629281f3",
+      "test": "PJ3 the GitHub token card saves, replaces and removes the token",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-github-token-phone-dark.png",
+      "screenshotSha256": "3efb139c55bc91213f5021787d8bd51209c7fba895b5f1b094779e9f4eead435"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/pj3-the-notebook-can-be-edited--PJ3-notebook-conflict-phone-dark.json",
+      "sha256": "eb17f9dfb03c026c1343e827c63d9ce37559dfe3ccf6cde33f31f461a1408f73",
+      "test": "PJ3 the notebook can be edited",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-notebook-conflict-phone-dark.png",
+      "screenshotSha256": "0156d0bc754465baf05c1f5d94cb4959742a98674947e7ed102f21728657a323"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/pj3-the-notebook-can-be-edited--PJ3-notebook-panel-phone-dark.json",
+      "sha256": "b8a10a8db70942eaa893a9281d73154426feb4c2e7d27525ff60913456d4ade4",
+      "test": "PJ3 the notebook can be edited",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-notebook-panel-phone-dark.png",
+      "screenshotSha256": "5dcbfd51956915bea1e90cb9367c8507e97782bd9e6aca7d9fb9ce4e3366e091"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/pj4b-the-why-panel-explains-placement-and-overrides-apply--PJ4b-fallback-chip-phone-dark.json",
+      "sha256": "734d9b017def4b37d36b99777735bf0f7e5976e69d8a622366b4ef277c589678",
+      "test": "PJ4b the Why panel explains placement and overrides apply",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ4b-fallback-chip-phone-dark.png",
+      "screenshotSha256": "8bc140d30b7b271b745b7b8fffd6a3565a705294402829889092d4cbf8d59312"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/pj4b-the-why-panel-explains-placement-and-overrides-apply--PJ4b-override-modal-phone-dark.json",
+      "sha256": "6d003895cd010754ff1d9733cc0b309667a4ae1625112c42c1cf5dee6324a680",
+      "test": "PJ4b the Why panel explains placement and overrides apply",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ4b-override-modal-phone-dark.png",
+      "screenshotSha256": "cefc26a7fa6651c499fa73b5a5278d90b5684cea2c6d3ad7fe994ec2e3040903"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/pj4b-the-why-panel-explains-placement-and-overrides-apply--PJ4b-restarted-phone-dark.json",
+      "sha256": "b79f4e6c09cd9ef633a6ba0f6350f0effe0f3133e018c28fe63ac530d01ffe51",
+      "test": "PJ4b the Why panel explains placement and overrides apply",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ4b-restarted-phone-dark.png",
+      "screenshotSha256": "a84a34ba5229cf2618d874e7f4f3bb4e72fe5f7596e391efb72bf8eece1be8f5"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/pj4b-the-why-panel-explains-placement-and-overrides-apply--PJ4b-why-overridden-phone-dark.json",
+      "sha256": "41e3ebae545afa50a7c9e7e0039734233ea68d839a93d3ec0613f29815ba334f",
+      "test": "PJ4b the Why panel explains placement and overrides apply",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ4b-why-overridden-phone-dark.png",
+      "screenshotSha256": "a23ef55c78ef1efc537883a36ab996e5636caa594959a8137564fe48b81bf38c"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/pj4b-the-why-panel-explains-placement-and-overrides-apply--PJ4b-why-panel-phone-dark.json",
+      "sha256": "6cd5145924a4333fe20016448d8d79cd3ad4de38dffac8bddcefd680da489f1c",
+      "test": "PJ4b the Why panel explains placement and overrides apply",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ4b-why-panel-phone-dark.png",
+      "screenshotSha256": "fa053aee0d1cb0492440b0e65944c9f61fed140f7788ac030124955db4fa3aae"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/pj5-a-thread-on-the-member-device-opens-through-the-hub--PJ5-remote-thread-phone-dark.json",
+      "sha256": "ed5409e81078965d0606a2ca78911e750bda8dd61ce92aabce69ae7350a0d3e3",
+      "test": "PJ5 a thread on the member device opens through the hub",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ5-remote-thread-phone-dark.png",
+      "screenshotSha256": "9bcc95bc9227a93de1599c71d9b3282a405e17d4cac21a6eebbc4648f944f781"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/pj5-an-offline-coordinator-shows-the-notice-and-move-coordinator-here--PJ5-moved-phone-dark.json",
+      "sha256": "7c80c8f18cc44cda5ff5f0987d8908ee1a9071b4351dda246f344d3b88094e89",
+      "test": "PJ5 an offline coordinator shows the notice and Move coordinator here",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ5-moved-phone-dark.png",
+      "screenshotSha256": "3d3f9ece16474633e287756ccd4a128f804284a26975fee17550083778a6d1e6"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/pj5-an-offline-coordinator-shows-the-notice-and-move-coordinator-here--PJ5-offline-notice-phone-dark.json",
+      "sha256": "d30444c4b97de3fa5fee02737f0a1fe2cccefc44c9fb97f1e090ff6be979cf8e",
+      "test": "PJ5 an offline coordinator shows the notice and Move coordinator here",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ5-offline-notice-phone-dark.png",
+      "screenshotSha256": "cc28e83f4a06e5168bd032acae48f9d6c098f2fc52d302df993b21122baa58e3"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/pj7-an-attached-thread-disables-its-composer--PJ7-attached-phone-dark.json",
+      "sha256": "77d4b3b22a2d9c3074b460b855700c17caf80eb9df5414524965e4c3a98237db",
+      "test": "PJ7 an attached thread disables its composer",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ7-attached-phone-dark.png",
+      "screenshotSha256": "52cc81ae61a7ac3f48b9e4930fb8280aa2713502cb30b5729b57e662c335ae77"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/pj7-an-attached-thread-disables-its-composer--PJ7-copy-blocked-phone-dark.json",
+      "sha256": "a5aaa363d78771170f9d0fada977ac609bf445cabfaf48caaf4084d6e06091e3",
+      "test": "PJ7 an attached thread disables its composer",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ7-copy-blocked-phone-dark.png",
+      "screenshotSha256": "664f6c3b06428f10e1fce29f19b95030bbd1ceb6c4a5262592678bbcafa4acc0"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/project-jev-local-rigging-and-device-settings-recover-their-hub-boundaries--phase4-project-save-wait-phone-dark.json",
+      "sha256": "344228c4d74f8f198f02aac7d44c7319f1dfe3cdfa096882f723e4a48606f29a",
+      "test": "project, Jev, local Rigging and device Settings recover their hub boundaries",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase4-project-save-wait-phone-dark.png",
+      "screenshotSha256": "dc6dd0121cab5f47b7117db912edaae0a01b26c5b2bbf49139d9b9585069a7db"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/provider-login-recovers-lost-start-and-accepted-code-replies-inside-its-panel--phase4-login-wait-phone-dark.json",
+      "sha256": "63a01ead68aae21d762939cf38ac4f277fa580fa8b5d66f1f5c2ab791fa2b77c",
+      "test": "provider login recovers lost start and accepted-code replies inside its panel",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase4-login-wait-phone-dark.png",
+      "screenshotSha256": "585eff740d6a2103affb2102f6d89caa3de67c5a1dd70fe7c5bdf05d285744af"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/settings-account-login-rigging-and-configuration-flows-work-without-horizontal-overflow--phase1-rigging-phone-dark.json",
+      "sha256": "04cd387eade8bf4b67787866d227615c0bcda90fb18f60d9695d6305f9a9d041",
+      "test": "Settings account, login, Rigging and configuration flows work without horizontal overflow",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase1-rigging-phone-dark.png",
+      "screenshotSha256": "a1dbe3898e312c195090ddcd3fe984985d86f4185ec883ed2f13aebb1cc8f690"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/settings-account-login-rigging-and-configuration-flows-work-without-horizontal-overflow--phase1-runtimes-phone-dark.json",
+      "sha256": "aef64b8455d0ceb5b3650ee397b69a891a93c6471ef90560188a8d4ab8379b1e",
+      "test": "Settings account, login, Rigging and configuration flows work without horizontal overflow",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase1-runtimes-phone-dark.png",
+      "screenshotSha256": "feb4e547d9fffdca70bde1b59d0f51fce95c727fd0990e9a5b0944e87347f098"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/settings-saves-wait-through-hub-loss-reconcile-lost-replies-and-abandon-a-closed-editor--phase4-settings-save-wait-phone-dark.json",
+      "sha256": "6c67d1f144806ff6ebf01434a6ce7e200221331316049a8cc4a3f8ea1ad3f68d",
+      "test": "Settings saves wait through hub loss, reconcile lost replies and abandon a closed editor",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase4-settings-save-wait-phone-dark.png",
+      "screenshotSha256": "e12a55bb78a4dee63baea40cdae040d1b44dcb4b9170212ba9139d1f3e7355b1"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/undo-from-the-last-closed-work-includes-newer-work-and-preserves-both-requests-after-reloa--phase2-undo-following-confirm-phone-dark.json",
+      "sha256": "22b32f3bcf690f11003decefde814ffc9e7d6dea94271f1a0720b271aa75cde4",
+      "test": "undo from the last closed work includes newer work and preserves both requests after reload",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-undo-following-confirm-phone-dark.png",
+      "screenshotSha256": "2ad4a073a9810a66cafa0e312b413931b3d7ba3a5b3e90c39c0742f06fcb778d"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-dark/undo-from-the-last-closed-work-includes-newer-work-and-preserves-both-requests-after-reloa--phase2-undo-following-phone-dark.json",
+      "sha256": "0d1ea2d9dae89f85ed4376934f721c5701eef4214378b7a09406386e88554d23",
+      "test": "undo from the last closed work includes newer work and preserves both requests after reload",
+      "layout": "phone-dark",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-undo-following-phone-dark.png",
+      "screenshotSha256": "bb65c4cf2cb8473210b4190bd77f18b986594cf2446e8a911502b3d41297aeea"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/a-question-with-offered-answers-shows-them-as-buttons-and-a-picked-answer-continues-the-wo--answer-options-phone-light.json",
+      "sha256": "eba09d43a6f27ff281e15c60b89d341b28ca55293d644397aff9858c66d50bc6",
+      "test": "a question with offered answers shows them as buttons, and a picked answer continues the work",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/answer-options-phone-light.png",
+      "screenshotSha256": "59291135608c8718fe0b66f4836ed204e63b43506931729a32432f86bea3f44d"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/an-agent-connection-is-scoped-shown-once-and-revocable--agents-phone-light.json",
+      "sha256": "7307913baf1697826f1159957d7a4b50993ab7bf65248159b6c2f5817c7eb935",
+      "test": "an agent connection is scoped, shown once, and revocable",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "test-results/agents-phone-light.png",
+      "screenshotSha256": "136fb985345f221f3038a23103900ee2366696136a6d3609f0835aabd8740e52"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/automatic-decisions-can-resume-from-missing-configuration-and-explain-their-simulated-choi--phase3-automatic-phone-light.json",
+      "sha256": "e1a0a0e934c1c4a7c9ba2c136956649a5332fe86b4b33ce00d0b70cc54fdfecb",
+      "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase3-automatic-phone-light.png",
+      "screenshotSha256": "f0acce6d76d9408e64a0141b9644c21ded5ee03c691537f997e9d39bac500e92"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/automatic-decisions-can-resume-from-missing-configuration-and-explain-their-simulated-choi--phase3-connection-phone-light.json",
+      "sha256": "56ef09b97f818b8aafd80307f208031f5dc55793541377ea689922b7021123b6",
+      "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase3-connection-phone-light.png",
+      "screenshotSha256": "b56edb0336787fc06abf1fa24b0a9805bf9e2bc39a115a5467e2225a5696d866"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/automatic-decisions-can-resume-from-missing-configuration-and-explain-their-simulated-choi--phase3-waiting-phone-light.json",
+      "sha256": "9356bd1e88ca46509b549e6db156fd089659888ddc93842243e1896e765e54ed",
+      "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase3-waiting-phone-light.png",
+      "screenshotSha256": "c4ddf5ee576d5cd1142a373eddea15043c45024b61c9e806ada33c2ba4d3dd97"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/automatic-decisions-can-resume-from-missing-configuration-and-explain-their-simulated-choi--phase3-why-phone-light.json",
+      "sha256": "9c24b1ec67df954d4391c44766442586cfa807b02c0e8578af3480176869ba22",
+      "test": "automatic decisions can resume from missing configuration and explain their simulated choices",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase3-why-phone-light.png",
+      "screenshotSha256": "87294f331e7ce90edd706a1f6df32d708894f6da31bbefd7eb834207d3312439"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/blocked-files-can-be-reviewed-refreshed-and-accepted-before-verified-publication--phase2-adoption-phone-light.json",
+      "sha256": "0a3dbfcd97263f4ad3c0488766e182e2e3cfab51beecaf5a4de1b14c1e5f3ad8",
+      "test": "blocked files can be reviewed, refreshed and accepted before verified publication",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-adoption-phone-light.png",
+      "screenshotSha256": "1384defaa69a2a0a6d9323435cc5d20d68da039872fcc3ab266415c21ea7d6c8"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/claude-sign-in-shows-pending-progress-and-resumes-polling-after-a-connection-error--login-recovery-phone-light.json",
+      "sha256": "0be6f5afbf32cb802d5774cd3436dc89aa7e31f6dd7614e271fb792887728874",
+      "test": "Claude sign-in shows pending progress and resumes polling after a connection error",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/login-recovery-phone-light.png",
+      "screenshotSha256": "4c4361071d166fd16f3da0ccda9a612b3e5bf10a9c4592ceb7bf5a7c2691b737"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/composer-choices-apply-once-keep-conversation-pins-and-explain-corrections-after-reload--phase3-composer-kept-phone-light.json",
+      "sha256": "8d9f6059a47ede055f0f9120542e9c04d9a008274124ab57941207bd5fbb693d",
+      "test": "composer choices apply once, keep conversation pins and explain corrections after reload",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase3-composer-kept-phone-light.png",
+      "screenshotSha256": "0ca0d3f1a1ac79f6a1e9ccc5680ea2f90b1a8116b32569e4116a996d6c12c4a1"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/composer-choices-apply-once-keep-conversation-pins-and-explain-corrections-after-reload--phase3-composer-start-phone-light.json",
+      "sha256": "753ebec54f45134566d13e6342ff964187c01722b79933e8bc6d137adafab177",
+      "test": "composer choices apply once, keep conversation pins and explain corrections after reload",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase3-composer-start-phone-light.png",
+      "screenshotSha256": "66fd37eafcd538d7062e253e032a02a31f8ca474f1e3649f0345908f3a47fd27"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/composer-choices-apply-once-keep-conversation-pins-and-explain-corrections-after-reload--phase3-composer-why-phone-light.json",
+      "sha256": "1a9dac9abbab10c64595d3dcba3df28e95f9c553d99ec5e6ffd4d05cc917427d",
+      "test": "composer choices apply once, keep conversation pins and explain corrections after reload",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase3-composer-why-phone-light.png",
+      "screenshotSha256": "84561fd87ff1230efdb27c8c99995641a999bc55e7febff48ad6269e9d470832"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/context-changes-interrupted-by-outside-activity-require-a-fresh-reviewed-diff-before-publi--phase4-context-review-phone-light.json",
+      "sha256": "ccbc21290441f8f352a870cc8fb6b59d0441ef2671deb4ef2e1922ec2268f6db",
+      "test": "context changes interrupted by outside activity require a fresh reviewed diff before publication",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase4-context-review-phone-light.png",
+      "screenshotSha256": "5dd1e0ac5b054cda63d6650736ce76374d939d34da31f08232b1aa99b90880e9"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/conversation-titles-expanded-tools-and-outside-outcomes-survive-updates-and-reload--phase2-controls-finish-phone-light.json",
+      "sha256": "29a55d90f5dfd0e87f26967e49cb2ace6908bbd512a49c5c8b76611abe289503",
+      "test": "conversation titles, expanded tools and outside outcomes survive updates and reload",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-controls-finish-phone-light.png",
+      "screenshotSha256": "215ae76f029503e17d50147774955262addb9a9bccea1142b1db0bb435f32560"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/conversation-titles-expanded-tools-and-outside-outcomes-survive-updates-and-reload--phase2-controls-outcome-phone-light.json",
+      "sha256": "7ddb4cbe26cb081d62170822e7d8ebc54121c772737086d66ea400cb172f9ea3",
+      "test": "conversation titles, expanded tools and outside outcomes survive updates and reload",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-controls-outcome-phone-light.png",
+      "screenshotSha256": "19d5baca9df294e543a2c0a7ec106c0975ad7579fda55f2089db40667f2bc9be"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/conversation-titles-expanded-tools-and-outside-outcomes-survive-updates-and-reload--phase2-controls-title-phone-light.json",
+      "sha256": "034900d56fc046709454289bbe13976a170aeaa70a909297b70bf72134616a00",
+      "test": "conversation titles, expanded tools and outside outcomes survive updates and reload",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-controls-title-phone-light.png",
+      "screenshotSha256": "c21a4d495aacc1d61db7c0a244036a52bed11806419860ec00ff4e2e9e536d29"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/device-settings-completes-a-member-login-shows-activity-invites-and-switches-without-signi--phase4-devices-phone-light.json",
+      "sha256": "3c670ca56539034ec9e46087264e7ba4d71a305f3cadb0725e841e069d78199b",
+      "test": "device Settings completes a member login, shows activity, invites and switches without signing in again",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase4-devices-phone-light.png",
+      "screenshotSha256": "cb57cfe07eab08fb8bb4275cd5914fc32ffbec7beb7023e8bf710a6db77780d0"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/device-settings-completes-a-member-login-shows-activity-invites-and-switches-without-signi--phase5-join-phone-light.json",
+      "sha256": "d8665734500c5565663d6493e7219cd7b3d884c2558eb48b5367968f67e4a56c",
+      "test": "device Settings completes a member login, shows activity, invites and switches without signing in again",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase5-join-phone-light.png",
+      "screenshotSha256": "848ad8800719e105ad3100dd5142bf65a1b65eeb5b0e5115f9b2c9e66aaafc70"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/external-activity-waits-retries-requires-changes-review-and-publishes-after-reviewed-accep--phase4-external-review-phone-light.json",
+      "sha256": "e3bcae77f9a7221106f5efda0d240bf5840ea70ec4f4a4f2394e24ac7a238dbb",
+      "test": "external activity waits, retries, requires Changes review and publishes after reviewed acceptance",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase4-external-review-phone-light.png",
+      "screenshotSha256": "9f41011946c7ca2715cbff67d82a75c14ecc2f01ab7cb7b434f59298a94b3372"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/external-activity-waits-retries-requires-changes-review-and-publishes-after-reviewed-accep--phase4-external-wait-phone-light.json",
+      "sha256": "4a4373eb5760ca210b0edd9bc4dfc0f9d57f4ae9bd33bcb1724a2a825120d692",
+      "test": "external activity waits, retries, requires Changes review and publishes after reviewed acceptance",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase4-external-wait-phone-light.png",
+      "screenshotSha256": "ad80e17709f2aa3f9fa2d9650bea59cf7dfd584b7d69574c18e091827e2ec790"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/file-and-evidence-links-show-recorded-versions-source-lines-markdown-images-and-verificati--phase2-evidence-image-phone-light.json",
+      "sha256": "23311634b14ce3fbbdbfbe5c49bc6e6ddf45184cc02f8272c9fa6c9632118c46",
+      "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-evidence-image-phone-light.png",
+      "screenshotSha256": "3074970ff2af9138d7f3a170721a942023fe2ebc7e877a5c574321792d4a7033"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/file-and-evidence-links-show-recorded-versions-source-lines-markdown-images-and-verificati--phase2-evidence-markdown-phone-light.json",
+      "sha256": "5429821dbaff5899a3aa314ff3c5820e70fac5b106d110e97bd0b45bf1de11ad",
+      "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-evidence-markdown-phone-light.png",
+      "screenshotSha256": "2a620678442ea0f9565c3cc717640fedf8297b839ec725be009abb2152ca1150"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/file-and-evidence-links-show-recorded-versions-source-lines-markdown-images-and-verificati--phase2-evidence-source-phone-light.json",
+      "sha256": "07db680cf853965a12313d57d22afd07b1e4b2917fd6a7e3045fd7696cb8369e",
+      "test": "file and evidence links show recorded versions, source lines, Markdown, images and verification output",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-evidence-source-phone-light.png",
+      "screenshotSha256": "33cbf369b3c2a0476e20c9464d6ee5b8da5c4f49c907adb132d7e6a84dc042ca"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/git-settings-can-be-saved-reloaded-and-checked-from-projects--git-settings-phone-light.json",
+      "sha256": "c1160add33c73b80eb612f6ad0e7bf83f825ffe963a77875e3d59c721301a033",
+      "test": "Git settings can be saved, reloaded and checked from Projects",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "test-results/git-settings-phone-light.png",
+      "screenshotSha256": "00a8cd0a1b28b0025ca242e9752d1b93e99dae3a31805e0cd45b53a9adc586b7"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/hub-recovery-resumes-sign-in-and-reconciles-a-settings-save-whose-reply-was-lost--phase4-settings-wait-phone-light.json",
+      "sha256": "ea35c1aaeac8984fef804f53e42e721bfd5381f555c35fec31a0e43ce7c69a23",
+      "test": "hub recovery resumes sign-in and reconciles a settings save whose reply was lost",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase4-settings-wait-phone-light.png",
+      "screenshotSha256": "4501f313e866c2a8c6dc83a9b2d8f66bbf5dd2511b6895674a1e8d51d38d80ae"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/j10-routing-suggestions-show-the-badge-apply-and-undo-one-field-change-in-plain-words-and---phase6-j10-change-it-phone-light.json",
+      "sha256": "261c13bb2681e61248ebea76c2cfa919bef78d81857018bb634b850379b3e19d",
+      "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase6-j10-change-it-phone-light.png",
+      "screenshotSha256": "aedd43963e24899baf8a97e1dd1b21e1008cd6c3fee73ce7d1b3282dd263919f"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/j10-routing-suggestions-show-the-badge-apply-and-undo-one-field-change-in-plain-words-and---phase6-j10-dismissed-phone-light.json",
+      "sha256": "b43e89c1243ec2e5f02da220a133e8e6cb903e2fdbb85f4a64dff0b12c3a7836",
+      "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase6-j10-dismissed-phone-light.png",
+      "screenshotSha256": "a360cd59fbeb844b77d5e7c2c02a788b11abbe0386c77412b33c7e52fb25daed"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/j10-routing-suggestions-show-the-badge-apply-and-undo-one-field-change-in-plain-words-and---phase6-j10-suggestions-phone-light.json",
+      "sha256": "b211990e87309c0c47516a5b1103d73aabd07ac44c1ea7eb0058ad7f128acbdf",
+      "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase6-j10-suggestions-phone-light.png",
+      "screenshotSha256": "c40437b8e6c4b27be9b77933996518d672eec482d86a267abc7466cf6a34a7c3"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/j10-routing-suggestions-show-the-badge-apply-and-undo-one-field-change-in-plain-words-and---phase6-j10-undo-phone-light.json",
+      "sha256": "2f4804441e2655fd13abddb3cd3d4943405772c5a74126eb62bddfb06a96a06e",
+      "test": "J10: routing suggestions show the badge, apply and undo one field, change in plain words and stay dismissed",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase6-j10-undo-phone-light.png",
+      "screenshotSha256": "75ea2a99eeac01b466e9d49ccd6beab8d33f69e820539f87b3f4de94e995fb6d"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/j8-simulated-mesh-journey-switches-streams-corrects-logs-in-remotely-and-respects-outside---J8-guard-phone-light.json",
+      "sha256": "30f1769719c2a63fb2263747e261bbd74d8acef4c53ee094dbb89cf1e62c2c25",
+      "test": "J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/J8-guard-phone-light.png",
+      "screenshotSha256": "8f3335d8605f30c390ff3c5b66d0b77e4eeaa67449d9538b47b5d81eabac727d"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/j8-simulated-mesh-journey-switches-streams-corrects-logs-in-remotely-and-respects-outside---J8-proxy-phone-light.json",
+      "sha256": "a5e43f95f09a58afcb532a62dc35e555699eac0fef5b9a4f864abbbf366ae977",
+      "test": "J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/J8-proxy-phone-light.png",
+      "screenshotSha256": "3aa0d9527fa85e1f1b24d9872094f4a6c1b147e58ebc5e7f58883b06bfafe287"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/loose-rigging-autosaves-rejects-stale-edits-parks-bundles-and-restores-them-across-reload--phase2-rigging-local-phone-light.json",
+      "sha256": "3b61252e41bbd4550d3fadf8bd8f84fea45f581b2e4af4bf4c093edf55ee1ced",
+      "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-rigging-local-phone-light.png",
+      "screenshotSha256": "eb3492d6d2b907bb6ea740b6b2eccbd06523b0400e0def431f482e3853904d5f"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/loose-rigging-autosaves-rejects-stale-edits-parks-bundles-and-restores-them-across-reload--phase2-rigging-mcp-phone-light.json",
+      "sha256": "d57e7332e109f536ddef73087300e77691d20f297285929224870f082080e10a",
+      "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-rigging-mcp-phone-light.png",
+      "screenshotSha256": "bd9d49b9f6c8964dcccd9bf08ea1609e96b9c56bf8a20b772e3a76b65bce03ec"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/loose-rigging-autosaves-rejects-stale-edits-parks-bundles-and-restores-them-across-reload--phase2-rigging-parked-phone-light.json",
+      "sha256": "9833032ffedbca80061b897488a7f1b340933a521b1ca995f8b2cf2980b7c0f9",
+      "test": "loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-rigging-parked-phone-light.png",
+      "screenshotSha256": "607afe317653c864768d91da62edee13ff37efd7044f353860cec7870771aea6"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/loose-rigging-becomes-managed-with-bundled-files-durable-retry-and-runtime-toggles--phase2-rigging-managed-phone-light.json",
+      "sha256": "f7136c2c399f08b6199d21ee250337ad44804b4bf974546c4a6050510826c899",
+      "test": "loose Rigging becomes managed with bundled files, durable retry and runtime toggles",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-rigging-managed-phone-light.png",
+      "screenshotSha256": "39fe20e31b4c9cbdac1a2bffa5eab9fcc03287adf563de77ccb350c7f1ad244d"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/loose-rigging-becomes-managed-with-bundled-files-durable-retry-and-runtime-toggles--phase2-rigging-promote-phone-light.json",
+      "sha256": "f534ed8fc0be8e8a21389feead42929daa37f45d27f0542fed2066476fe0acc4",
+      "test": "loose Rigging becomes managed with bundled files, durable retry and runtime toggles",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-rigging-promote-phone-light.png",
+      "screenshotSha256": "0495c12c0a6b7f060e69748763fdba86314fb2bc9ea06eeb3b04656f990b4902"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/migrated-conversation-history-and-project-settings-stay-usable-on-the-new-hub--migrated-conversation-history-phone-light.json",
+      "sha256": "4220f3d0c2f4159e5f4876ec1272e1d3dd0abba59c69b958031925b7432633ff",
+      "test": "migrated conversation history and Project Settings stay usable on the new hub",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/migrated-conversation-history-phone-light.png",
+      "screenshotSha256": "d07b5ef0f24048e5dd70f2187580b55138ca1f361126913313756a94fdefc0b1"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/migrated-conversation-history-and-project-settings-stay-usable-on-the-new-hub--migrated-project-settings-phone-light.json",
+      "sha256": "68800d480987d6c9b61179643f004f5871e1d4b90ef514c599c2bc1e9a332e22",
+      "test": "migrated conversation history and Project Settings stay usable on the new hub",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/migrated-project-settings-phone-light.png",
+      "screenshotSha256": "fe997fee07770637743f2acc20e345b38f3bee56d1da421134d4e1060f3d3b93"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/pending-work-shows-a-live-stage-while-controls-stay-compact--conversation-progress-phone-light.json",
+      "sha256": "0be3627960e8c539b12899a0fd0c1d4ad65c7ad5225f7b1014f22c62cc4acf46",
+      "test": "pending work shows a live stage while controls stay compact",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "test-results/conversation-progress-phone-light.png",
+      "screenshotSha256": "d9e51c951cff074ad30468438345de7912f1fbf96459d66536304e5441a29ac5"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/pj3-a-decision-is-answered-from-the-waiting-tab--PJ3-chat-with-waiting-badge-phone-light.json",
+      "sha256": "8f1eac5af2032f1456aea0d18185d220244ac33b4362e07ee7376340ee8360c1",
+      "test": "PJ3 a decision is answered from the Waiting tab",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-chat-with-waiting-badge-phone-light.png",
+      "screenshotSha256": "27bb5f1791b61c0dd77c6566cfe38997ae200a92864087e96171a66a9a9ae322"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/pj3-a-decision-is-answered-from-the-waiting-tab--PJ3-decision-answered-phone-light.json",
+      "sha256": "79d0e9a88ee0e96ddd095ebdc941c37c174f081fb41d9873bf621220c80a199c",
+      "test": "PJ3 a decision is answered from the Waiting tab",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-decision-answered-phone-light.png",
+      "screenshotSha256": "6aeee434dac86082e5dfafe630b9ebbe72b2a62ff40b287dad132690d10965d1"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/pj3-a-decision-is-answered-from-the-waiting-tab--PJ3-decision-card-phone-light.json",
+      "sha256": "4c1a61a78427851f528dafd465c9b0fbab70431f1b1de05fb08f3e0cb9e0c17d",
+      "test": "PJ3 a decision is answered from the Waiting tab",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-decision-card-phone-light.png",
+      "screenshotSha256": "ba9e1def2a858b1a7f88f6be1a5203b50ea279e469e48d62b5939b1373a6e10a"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/pj3-a-decision-is-answered-from-the-waiting-tab--PJ3-projects-sidebar-phone-light.json",
+      "sha256": "b81dafcc6d6f86d200461f62fa1f6b6cd9e86c94ffae90d774e8f1d5a5ce6d45",
+      "test": "PJ3 a decision is answered from the Waiting tab",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-projects-sidebar-phone-light.png",
+      "screenshotSha256": "13e42df2a21ddfb8c7856596576e803ede239a6ca35ba1b6df30edda42f9a31d"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/pj3-a-pull-request-merges-through-the-modal-and-moves-to-concluded--PJ3-concluded-phone-light.json",
+      "sha256": "777437b99819c7dec937a7f40d48eddf231a414758ceab252d577b5a0007fdb6",
+      "test": "PJ3 a pull request merges through the modal and moves to Concluded",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-concluded-phone-light.png",
+      "screenshotSha256": "d4c5ca414b1d0636275371f8b588ebcd68f2869ac014cc3680ef09f3e9be3d30"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/pj3-a-pull-request-merges-through-the-modal-and-moves-to-concluded--PJ3-merge-modal-phone-light.json",
+      "sha256": "dd9391c16f76b6c48d25439c8341f8efbec20f3610b1fea1636600d3d234b1f7",
+      "test": "PJ3 a pull request merges through the modal and moves to Concluded",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-merge-modal-phone-light.png",
+      "screenshotSha256": "0efbe916024e5f6dc34723ae924ac73df2b0def3dc9ebbe80a8c7af88ff49cb6"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/pj3-a-pull-request-merges-through-the-modal-and-moves-to-concluded--PJ3-pull-request-conflict-phone-light.json",
+      "sha256": "63e87af32b678a1c7f0ace001ff7bc8899c43d5a043d9c990ded2d9427250318",
+      "test": "PJ3 a pull request merges through the modal and moves to Concluded",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-pull-request-conflict-phone-light.png",
+      "screenshotSha256": "6cf67c45fdd1c479b95a8c6fb001a982be879e0d740abb87cd1e2da0b27e8b3d"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/pj3-a-pull-request-merges-through-the-modal-and-moves-to-concluded--PJ3-pull-requests-phone-light.json",
+      "sha256": "4ed4188419edf81da6307cea380f4bb5517a9757f63c032e830e7b54d3f27ffd",
+      "test": "PJ3 a pull request merges through the modal and moves to Concluded",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-pull-requests-phone-light.png",
+      "screenshotSha256": "ef063704e2a5b23ca546b90692691dc254f8cbeecc1181e46d52a04b0d7d219b"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/pj3-a-running-thread-shows-its-transcript-report-card-and-accepts-an-interrupting-message--PJ3-new-thread-modal-phone-light.json",
+      "sha256": "1b27e41cc1d29b5c5971496d7af5b0e1f35d092dc9da954b65af4ec93965af4f",
+      "test": "PJ3 a running thread shows its transcript, report card and accepts an interrupting message",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-new-thread-modal-phone-light.png",
+      "screenshotSha256": "521dd9ea534a812075002f8ebdfc7dcaaafe6fd52f364ec30b986bf017a13dd3"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/pj3-a-running-thread-shows-its-transcript-report-card-and-accepts-an-interrupting-message--PJ3-thread-report-phone-light.json",
+      "sha256": "1bcbe9ef0014a5fedad5d14ad8841b719c0147565ca5598ade9c6cb15fbf7244",
+      "test": "PJ3 a running thread shows its transcript, report card and accepts an interrupting message",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-thread-report-phone-light.png",
+      "screenshotSha256": "59152d8e9076787ff775597174bcbcc95cc2c7c7d3308c8bcafd6aff7bdaf50f"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/pj3-a-running-thread-shows-its-transcript-report-card-and-accepts-an-interrupting-message--PJ3-thread-running-phone-light.json",
+      "sha256": "9e94b022f0ed5958d8e8737794f15a8093c0a4e76defbfa8ec1dd996cf89c6a7",
+      "test": "PJ3 a running thread shows its transcript, report card and accepts an interrupting message",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-thread-running-phone-light.png",
+      "screenshotSha256": "70e1eb06fb0e5e99c39eb6e3d90b2c3e8866ce33661a683cf3653f29a2ab7130"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/pj3-project-page-opens-from-the-sidebar-and-the-coordinator-chat-streams--PJ3-chat-reply-phone-light.json",
+      "sha256": "6faa7fd8ea5afa05131d1f08d538ae05fb486654f48f4b92d0bb02b25e94e2ba",
+      "test": "PJ3 project page opens from the sidebar and the coordinator chat streams",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-chat-reply-phone-light.png",
+      "screenshotSha256": "46b0239d6cdba8a416ffeae031295328934908336b88feaab1d85fefa8062296"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/pj3-project-page-opens-from-the-sidebar-and-the-coordinator-chat-streams--PJ3-coordinator-working-phone-light.json",
+      "sha256": "43605d9315c999b78c8b5a38175bd9847ed7e2b1010f3e37e2aae00fce87bd6d",
+      "test": "PJ3 project page opens from the sidebar and the coordinator chat streams",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-coordinator-working-phone-light.png",
+      "screenshotSha256": "a894864538ce25821cd3fbde93d9f31e20621b4c5566fa847cc3dfe1802ff5a7"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/pj3-project-page-opens-from-the-sidebar-and-the-coordinator-chat-streams--PJ3-empty-chat-phone-light.json",
+      "sha256": "2d6ca335d5793845fad92d52d1f72d7a9450f2c10bea67b0824b193a8471ecd5",
+      "test": "PJ3 project page opens from the sidebar and the coordinator chat streams",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/PJ3-empty-chat-phone-light.png",
+      "screenshotSha256": "12e865adfbf186da5340aea63a248065957a3a1b0902d96931bbaeeea1a6c25d"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/project-jev-local-rigging-and-device-settings-recover-their-hub-boundaries--phase4-project-save-wait-phone-light.json",
+      "sha256": "f0ba4fb6788e8421f1786a524b87c544bd954f6e70e0f847a3919efee9247129",
+      "test": "project, Jev, local Rigging and device Settings recover their hub boundaries",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase4-project-save-wait-phone-light.png",
+      "screenshotSha256": "d1728b5417d7677dfb7a427bec2ec370b9536fab583ae50f75a3eefdbfa22eff"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/provider-login-recovers-lost-start-and-accepted-code-replies-inside-its-panel--phase4-login-wait-phone-light.json",
+      "sha256": "54e159df0d29495414f4940bd9e34f070b202f760d314e1b58278a2dd84152c9",
+      "test": "provider login recovers lost start and accepted-code replies inside its panel",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase4-login-wait-phone-light.png",
+      "screenshotSha256": "df44a1c22f17ea71b292cc6ef77fba51a980204198a2d2fe849e0c21aa23b419"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/settings-account-login-rigging-and-configuration-flows-work-without-horizontal-overflow--phase1-rigging-phone-light.json",
+      "sha256": "2d420475f7371bad9cf764ce8a3319f0838bda7823a4efaa491f48304e2b0acc",
+      "test": "Settings account, login, Rigging and configuration flows work without horizontal overflow",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase1-rigging-phone-light.png",
+      "screenshotSha256": "1a65fe10ca405e346842d8d9993ef0f2fd8f66893da0aa2f461fd64ced063d6a"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/settings-account-login-rigging-and-configuration-flows-work-without-horizontal-overflow--phase1-runtimes-phone-light.json",
+      "sha256": "ca9737fbc8f2ac4196c3784c9797b39cb25378d67f52a18fe88121f023233352",
+      "test": "Settings account, login, Rigging and configuration flows work without horizontal overflow",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase1-runtimes-phone-light.png",
+      "screenshotSha256": "9d52dbb9368a15df80b7f6ee993ef79b5e7b1a0d52cf0d1fa7317aeebda9fca1"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/settings-saves-wait-through-hub-loss-reconcile-lost-replies-and-abandon-a-closed-editor--phase4-settings-save-wait-phone-light.json",
+      "sha256": "5bd82eed73ff537444858f8c82658baf01961c8f90da6c95b26e6a8985cb3e96",
+      "test": "Settings saves wait through hub loss, reconcile lost replies and abandon a closed editor",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase4-settings-save-wait-phone-light.png",
+      "screenshotSha256": "9cdc71d31431a35a277e3b7270bb8d8860f0941f5c2fa0c89ed7c7d4b1846b46"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/undo-from-the-last-closed-work-includes-newer-work-and-preserves-both-requests-after-reloa--phase2-undo-following-confirm-phone-light.json",
+      "sha256": "80b92c7162b9abdfdbfda960841f8f62262bc7607e75616080a75c6c28a89ef9",
+      "test": "undo from the last closed work includes newer work and preserves both requests after reload",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-undo-following-confirm-phone-light.png",
+      "screenshotSha256": "7ce1a635b00560fed137809872f1183f521bff1153d14d284b1d43a15d088daf"
+    },
+    {
+      "path": "docs/acceptance/vision/phone-light/undo-from-the-last-closed-work-includes-newer-work-and-preserves-both-requests-after-reloa--phase2-undo-following-phone-light.json",
+      "sha256": "82a5040c0286c63eef9f25daf22017e8673eaba943333354939b4d67bf8d173d",
+      "test": "undo from the last closed work includes newer work and preserves both requests after reload",
+      "layout": "phone-light",
+      "clear": true,
+      "screenshot": "docs/acceptance/screenshots/phase2-undo-following-phone-light.png",
+      "screenshotSha256": "8d7aa8dab65491c9464a0ab3971f727abff4fb48d36d2437b438d5a42e611067"
+    }
+  ],
+  "ownerAcceptance": false,
+  "physicalPhone": "not run"
+}

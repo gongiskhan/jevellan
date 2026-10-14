@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CACHE1 session metrics and runtime windows persist across reload in every layout",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/CACHE1-runtime-cache-window-phone-dark.png",
+  "expected": "the Jevellan web app \"CACHE1 runtime cache window\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"CACHE1 session metrics and runtime windows persist across reload in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The top tab bar is cut off at the right edge: the fourth tab shows only a partial icon behind the scroll arrow. The arrow keeps it reachable.",
+      "Most usage rows say 'Unknown' for Five hours and Week, so the usage section gives little useful information."
+    ]
+  }
+}

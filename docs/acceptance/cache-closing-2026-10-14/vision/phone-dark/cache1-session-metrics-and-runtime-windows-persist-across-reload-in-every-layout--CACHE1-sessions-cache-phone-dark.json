@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CACHE1 session metrics and runtime windows persist across reload in every layout",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/CACHE1-sessions-cache-phone-dark.png",
+  "expected": "the Jevellan web app \"CACHE1 sessions cache\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"CACHE1 session metrics and runtime windows persist across reload in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The table column headers in 'Sessions and cache · today' break in the middle of words because the columns are too narrow: 'TURNS' shows as 'TU / RN / S' and 'CONTEXT' as 'CONTEX / T'. 'COLD STARTS' and 'TOKENS WRITTEN COLD' also wrap onto several lines. They can still be read, but it looks cramped.",
+      "The model label in the coordinator row wraps awkwardly over three lines ('CLAUDE · / CLAUDE-FABLE- / 5-1 · / ECCA506C').",
+      "The 'Pull requests' tab is cut off at the right edge of the tab row. It looks like a horizontally scrollable tab strip, but nothing shows that more tabs are available.",
+      "The cache summary at the top right ('Cache today 80% · 0 cold starts · 0 tokens written cold') wraps over four lines and looks crowded next to the 'Fresh session' button."
+    ]
+  }
+}
