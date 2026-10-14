@@ -4,6 +4,7 @@
 // fixture directory and the system directories, and HOME is the fixture's user directory.
 import { afterEach, expect, test, vi } from 'vitest';
 import { createHash, randomUUID } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -48,6 +49,7 @@ async function setup(options: ProjectFixtureOptions = {}): Promise<ProjectFixtur
 
 test('Claude takeover preferences are confined, validated and preserve completed account files byte-for-byte', () => {
   const root = realpathSync(mkdtempSync(join(tmpdir(), 'takeover-preferences-'))); roots.push(root);
+  execFileSync('git', ['init', '-q', root]);
   const user = join(root, 'user'), homes = new Homes(join(root, 'jevellan'), user), home = homes.account('claude', 'account');
   mkdirSync(user); const native = join(user, '.claude.json'); writeFileSync(native, '{"owner":true}\n');
   expect(() => prepareClaudeInteractiveHome(homes, user, root)).toThrow('isolated account home');
@@ -71,9 +73,11 @@ test('an authenticated isolated Claude takeover skips first-run onboarding and p
   const cli = agents(f), command = jevellan(f, ['thread', 'attach', threadId], { path: `${cli.bin}:/usr/bin:/bin` });
   const run = await cli.started(1);
   expect(run.completedOnboarding).toBe(true);
-  expect(JSON.parse(readFileSync(file, 'utf8')).projects[run.cwd!]?.hasTrustDialogAccepted).toBe(true);
+  const trustRoot = realpathSync(f.checkout);
+  expect(run.cwd).not.toBe(trustRoot);
+  expect(JSON.parse(readFileSync(file, 'utf8')).projects[trustRoot]?.hasTrustDialogAccepted).toBe(true);
   expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual({ ...preferences, hasCompletedOnboarding: true,
-    projects: { ...preferences.projects, [run.cwd!]: { hasTrustDialogAccepted: true } } });
+    projects: { ...preferences.projects, [trustRoot]: { hasTrustDialogAccepted: true } } });
   command.send('exit 0\n'); expect((await finished(command)).code).toBe(0);
 });
 

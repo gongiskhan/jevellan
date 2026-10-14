@@ -1,4 +1,4 @@
-import { spawn, type ChildProcess } from 'node:child_process';
+import { execFileSync, spawn, type ChildProcess } from 'node:child_process';
 import { existsSync, lstatSync, readFileSync } from 'node:fs';
 import { constants } from 'node:os';
 import { basename, isAbsolute, join } from 'node:path';
@@ -48,7 +48,15 @@ export function prepareClaudeInteractiveHome(homes: Homes, home: string, cwd: st
   let projects: Record<string, Record<string, unknown>>;
   try { projects = z.record(z.string(), z.record(z.string(), z.unknown())).parse(value.projects ?? {}); }
   catch { throw new Error('Claude account preferences cannot be prepared for takeover.'); }
-  const path = resolvedPath(cwd), project = projects[path] ?? {};
+  // Claude keys linked worktree trust on the main checkout. NUL output preserves paths containing newlines.
+  let path: string;
+  try {
+    const first = execFileSync('git', ['worktree', 'list', '--porcelain', '-z'], { cwd, encoding: 'utf8', timeout: 5000, maxBuffer: 1024 * 1024,
+      env: { PATH: process.env.PATH ?? '/usr/bin:/bin', GIT_OPTIONAL_LOCKS: '0' }, stdio: ['ignore', 'pipe', 'ignore'] }).split('\0')[0];
+    if (!first?.startsWith('worktree ') || !isAbsolute(first.slice(9))) throw new Error('Invalid worktree root.');
+    path = resolvedPath(first.slice(9));
+  } catch { throw new Error('Claude takeover could not determine its repository trust root.'); }
+  const project = projects[path] ?? {};
   if (value.hasCompletedOnboarding === true && project.hasTrustDialogAccepted === true) return;
   atomicWrite(file, `${JSON.stringify({ ...value, hasCompletedOnboarding: true,
     projects: { ...projects, [path]: { ...project, hasTrustDialogAccepted: true } } }, null, 2)}\n`);

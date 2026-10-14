@@ -1,0 +1,170 @@
+{
+  "schema": "live-scenario-receipt-v1",
+  "scenario": "D",
+  "run": "run_e9b04fe79b9f4927a11e96323be82ff1",
+  "coordinator": "claude",
+  "layout": "phone-dark",
+  "label": "live",
+  "passed": false,
+  "startedAt": "2026-10-14T01:51:23.755Z",
+  "endedAt": "2026-10-14T01:54:19.539Z",
+  "minutes": 2.9297333333333335,
+  "clockStartedAt": "2026-10-13T18:15:59.903Z",
+  "timeBoxEnded": false,
+  "projectId": "live_day_dea40cc13fd7422dbe8d05c3b961ce28",
+  "steps": [
+    {
+      "id": "D1",
+      "assertion": "The Pro project terminal opens in its registered dedicated checkout.",
+      "verdict": "passed",
+      "startedAt": "2026-10-14T01:51:23.755Z",
+      "endedAt": "2026-10-14T01:51:26.426Z",
+      "seconds": 2.671,
+      "evidence": {
+        "id": "term_01M4W1PWEK2KQD6373QCS31VB1",
+        "device": "dev_01M4V2PFFJNAK1W6TGEFGB617S",
+        "cwd": "/Users/ggomes/jevellan-projects/jevellan-live-sandbox",
+        "output": "/Users/ggomes/jevellan-projects/jevellan-live-sandbox\n"
+      }
+    },
+    {
+      "id": "D2",
+      "assertion": "The dev-madrid device terminal uses the existing relay and prints the actual remote hostname.",
+      "verdict": "passed",
+      "startedAt": "2026-10-14T01:51:26.427Z",
+      "endedAt": "2026-10-14T01:51:29.742Z",
+      "seconds": 3.315,
+      "evidence": {
+        "id": "term_01M4W1PYDB49FGBY9JRCNJBVQV",
+        "device": "dev_01M4V38ABJAT5B8FEMBBD7KMC9",
+        "hostname": "dev-madrid",
+        "output": "dev-madrid\n"
+      }
+    },
+    {
+      "id": "D3",
+      "assertion": "Type or dictate a command and Run send echo hello through the real PTY.",
+      "verdict": "passed",
+      "startedAt": "2026-10-14T01:51:29.742Z",
+      "endedAt": "2026-10-14T01:51:30.110Z",
+      "seconds": 0.368,
+      "evidence": {
+        "command": "echo hello",
+        "output": "hello\n"
+      }
+    },
+    {
+      "id": "D4",
+      "assertion": "Sticky Ctrl and C interrupt sleep within two seconds and preserve its non-zero exit record.",
+      "verdict": "passed",
+      "startedAt": "2026-10-14T01:51:30.111Z",
+      "endedAt": "2026-10-14T01:51:30.308Z",
+      "seconds": 0.197,
+      "evidence": {
+        "exitCode": 130,
+        "elapsedMs": 63
+      }
+    },
+    {
+      "id": "D5",
+      "assertion": "Reload reconnects the same terminal and replays hello in its scrollback.",
+      "verdict": "passed",
+      "startedAt": "2026-10-14T01:51:30.308Z",
+      "endedAt": "2026-10-14T01:51:30.552Z",
+      "seconds": 0.244,
+      "evidence": {
+        "sessionId": "term_01M4W1PWEK2KQD6373QCS31VB1",
+        "replayed": "hello"
+      }
+    },
+    {
+      "id": "D6",
+      "assertion": "The copy buttons include exactly the requested command range and strip every escape code.",
+      "verdict": "passed",
+      "startedAt": "2026-10-14T01:51:30.552Z",
+      "endedAt": "2026-10-14T01:51:32.277Z",
+      "seconds": 1.725,
+      "evidence": {
+        "one": "$ echo record-6\nrecord-6\n",
+        "five": "$ echo record-2\nrecord-2\n\n\n$ echo record-3\nrecord-3\n\n\n$ echo record-4\nrecord-4\n\n\n$ echo record-5\nrecord-5\n\n\n$ echo record-6\nrecord-6\n",
+        "allChars": 749
+      }
+    },
+    {
+      "id": "D7",
+      "assertion": "Send to… delivers the last command to the coordinator and starts its next turn.",
+      "verdict": "passed",
+      "startedAt": "2026-10-14T01:51:32.278Z",
+      "endedAt": "2026-10-14T01:51:34.339Z",
+      "seconds": 2.061,
+      "evidence": {
+        "eventId": 1,
+        "turn": 1,
+        "text": "The owner sent output from the terminal on Goncalos-MacBook-Pro.local in /Users/ggomes/jevellan-projects/jevellan-live-sandbox:\n$ echo record-6\nrecord-6\n\nExit code: 0"
+      }
+    },
+    {
+      "id": "D8",
+      "assertion": "Take over in browser attaches a real native thread session; leaving detaches and returns it to Jevellan.",
+      "verdict": "failed",
+      "startedAt": "2026-10-14T01:51:34.339Z",
+      "endedAt": "2026-10-14T01:54:19.261Z",
+      "seconds": 164.922,
+      "reason": "Timed out after 2 minutes: the resumed native coding prompt beyond first-run dialogs",
+      "evidence": {}
+    }
+  ],
+  "messages": [],
+  "toolCalls": [],
+  "pullRequests": [],
+  "workflowRunIds": [],
+  "notes": [],
+  "sessions": [
+    {
+      "key": "8c45ee413988712bca919fcab07ebb444f3826d94d6cf81c50d09acd17c2bf66",
+      "runtime": "claude",
+      "model": "Claude Opus 5.5",
+      "inputTokens": 3387,
+      "outputTokens": 8234,
+      "costUsd": 0.4911038,
+      "costSource": "estimated",
+      "seconds": 84.51599999999999
+    },
+    {
+      "key": "35c52f4a07fabccbea7175351fb77a08ecd79b75ca84147d8a20186f4a3d7c82",
+      "runtime": "claude",
+      "model": "claude-opus-5-5",
+      "inputTokens": 1011,
+      "outputTokens": 628,
+      "costUsd": 0.07519220000000001,
+      "costSource": "estimated",
+      "seconds": 11.05
+    },
+    {
+      "key": "9ddc1408bde05968bdc3097ce3eae20c0f0f04260b7d48f2bcc6c77fff552c4e",
+      "runtime": "claude",
+      "model": "claude-opus-5-5",
+      "inputTokens": 1006,
+      "outputTokens": 2450,
+      "costUsd": 0.23217800000000002,
+      "costSource": "estimated",
+      "seconds": 28.967
+    }
+  ],
+  "providerTotals": {
+    "claude": {
+      "inputTokens": 5404,
+      "outputTokens": 11312,
+      "costUsd": 0.798474,
+      "unknownTokenSessions": 0,
+      "unknownCostSessions": 0,
+      "minutes": 2.07555
+    }
+  },
+  "blockedBy": [
+    "D8: Timed out after 2 minutes: the resumed native coding prompt beyond first-run dialogs"
+  ],
+  "observations": [
+    "Usage records come from runtime-reported turn outcomes. Missing tokens or cost remain unknown; minutes include concurrent sessions."
+  ]
+}

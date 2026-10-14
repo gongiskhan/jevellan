@@ -664,5 +664,11 @@
     "title": "Recognize the actual resumed native composer",
     "why": "Decision813 refines810. Preserve ninth D timeout despite real conversation resume. Actual Claude resumes can omit their banner; composer plus native permissions footer proves readiness. Setup negatives, zero exit and detachment remain required. Before regression fails;27 harness cases pass. Full4-layout real rerun pending; original clock unchanged.",
     "status": "complete-with-blockers"
+  },
+  {
+    "id": "activation-canonical-worktree-trust",
+    "title": "Use the native repository trust identity",
+    "why": "Decision814 refines809. Retain strict actual phone-light pass and phone-dark trust-dialog failure. Claude keys linked worktree trust on main checkout. Resolve it using bounded read-only NUL Git metadata, preserving isolated preferences and protected checkout guards. Linked-worktree regression fails before fix;18 attach cases/typecheck/lint/build pass. Full4-layout real rerun pending.",
+    "status": "complete-with-blockers"
   }
 ]
