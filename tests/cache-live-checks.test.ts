@@ -10,3 +10,12 @@ test('cache live evidence is versioned and retains the actual independent deadli
   expect(clock.liveStartedAt).toBeNull(); expect(CacheClockSchema.safeParse({ ...clock, release: '0.3.2' }).success).toBe(false);
   expect(CacheCheckReceiptSchema.safeParse({ schema: 'cache-live-checks-v1', label: 'simulated' }).success).toBe(false);
 });
+
+
+test('a corrected cache fixture reuses the existing deadline and refuses a late70-minute run', async () => {
+  const { cacheWindowDeadline } = await import('../scripts/live/cache-windows.mjs');
+  const clock = { liveStartedAt: '2026-10-14T06:36:41.379Z', liveDeadlineAt: '2026-10-14T09:36:41.379Z' };
+  expect(cacheWindowDeadline(clock, Date.parse('2026-10-14T07:00:00Z'))).toBe(Date.parse(clock.liveDeadlineAt));
+  expect(() => cacheWindowDeadline(clock, Date.parse('2026-10-14T09:00:00Z'))).toThrow('At least75');
+  expect(() => cacheWindowDeadline({ liveStartedAt: null, liveDeadlineAt: null })).toThrow('existing cache live clock');
+});

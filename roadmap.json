@@ -500,8 +500,8 @@
   {
     "id": "cache-journal-closing",
     "title": "Measure real cache windows and release",
-    "why": "Build clock04:25:11.517–12:25:11.517UTC14October; new live clock unstarted, at most three hours. Prior A/B/C/D window closed with retained failures and qualified C/D passes. Existing032/033 preserved; target034 approved. Checkpoints stay off until L2/L3. Decision781.",
-    "status": "planned"
+    "why": "Decision823: original live clock06:36:41–09:36:41UTC. L2/L3 continue, firstL1fixture failed its context setup and is retained; corrected fixed-input calibration keeps all assertions, same-session proof and no intervening requests. Current-code full backend/browser running, no full pass or deployment yet.034 target; checkpoints stayoff untilL2/L3pass.",
+    "status": "in-progress"
   },
   {
     "id": "activation-scoped-scenario-harness",

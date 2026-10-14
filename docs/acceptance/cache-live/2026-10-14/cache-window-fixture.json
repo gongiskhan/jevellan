@@ -1,0 +1,60 @@
+{
+  "schema": "cache-window-fixture-qualification-v1",
+  "label": "live",
+  "at": "2026-10-14T07:04:37.500Z",
+  "decision": 823,
+  "original": "cache-checks.json",
+  "reason": "The model-selected file reads did not load the fixed60000-token context in every session.",
+  "observed": [
+    {
+      "runtime": "claude",
+      "idleMinutes": 3,
+      "actualIdleSeconds": 180.62,
+      "threadId": "thread_01M4WJ1WACRGTAGSX6JJZHQ9DE",
+      "hitRatio": 0.8447470358352595,
+      "contextTokens": 133642,
+      "cacheReadTokens": 687815,
+      "cacheWriteTokens": 125073,
+      "cacheWritesKnown": true,
+      "uncachedInputTokens": 1338
+    },
+    {
+      "runtime": "codex",
+      "idleMinutes": 3,
+      "actualIdleSeconds": 181.294,
+      "threadId": "thread_01M4WJ1WQA05JHKW5KB9AG2EGP",
+      "hitRatio": 0.8045303414456405,
+      "contextTokens": 38094,
+      "cacheReadTokens": 158976,
+      "cacheWriteTokens": 0,
+      "cacheWritesKnown": true,
+      "uncachedInputTokens": 38625
+    },
+    {
+      "runtime": "claude",
+      "idleMinutes": 15,
+      "actualIdleSeconds": 905.031,
+      "threadId": "thread_01M4WJ1WE7EX0DZXRAWSY6YGWM",
+      "hitRatio": 0.8936595733086292,
+      "contextTokens": 26676,
+      "cacheReadTokens": 163991,
+      "cacheWriteTokens": 18141,
+      "cacheWritesKnown": true,
+      "uncachedInputTokens": 1373
+    }
+  ],
+  "stoppedOwnedThreads": [
+    "thread_01M4WJ1WACRGTAGSX6JJZHQ9DE",
+    "thread_01M4WJ1WE7EX0DZXRAWSY6YGWM",
+    "thread_01M4WJ1WGVMZG30KY7DHYPKR2F",
+    "thread_01M4WJ1WMQMHC9TTRJ10RD4XY7",
+    "thread_01M4WJ1WQA05JHKW5KB9AG2EGP",
+    "thread_01M4WJ1WVWF5PV0NFZETFEB1Y6",
+    "thread_01M4WJ1WZ5VCJ3S4AQ98MJM32M",
+    "thread_01M4WJ1X32B268520MXJ7DV0F8"
+  ],
+  "oldEvidencePreserved": true,
+  "clockReset": false,
+  "correctedFixture": "Fixed sandbox source is delivered directly to each fresh coordinator in a distinct dedicated sandbox clone; actual context >=60000, unchanged native session and exactly two model turns remain required.",
+  "correctedResult": "not run"
+}
