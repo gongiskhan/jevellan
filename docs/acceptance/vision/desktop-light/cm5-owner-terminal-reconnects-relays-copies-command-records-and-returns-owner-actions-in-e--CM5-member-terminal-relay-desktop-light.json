@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles get truncated with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Shared memory fixture · …')",
-      "The terminal path in the header is very long and drawn in small, low-contrast grey text",
-      "The 'Send to…' button and the 'Run' button both look disabled or low-contrast",
-      "The terminal output starts with an empty first line"
+      "The \"Send to...\" button is greyed out and harder to read than the other action buttons. It may be disabled on purpose.",
+      "The cwd path in the terminal header is long and makes the header crowded, but none of it is cut off.",
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. \"Context · J11 memory jour...\"). This is expected in a narrow sidebar."
     ]
   }
 }

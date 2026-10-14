@@ -646,5 +646,17 @@
     "title": "Make placement and queue fixtures explicit",
     "why": "Decision808. Retain7eb full Linux failure:2072 passed,2 failed,5 skipped. Quiet reruns reproduce host-dependent tags and a baseline taken before the held runtime turn starts. Explicit owner tags and actual held-turn admission preserve exact assertions. Corrected two files pass10/10 on each Mac/Linux; typecheck/lint pass. Final full rerun pending.",
     "status": "complete-with-blockers"
+  },
+  {
+    "id": "activation-native-worktree-trust",
+    "title": "Resume the validated native worktree past setup",
+    "why": "Decisions809\u2013810 refine806/736/807. Preserve isolated account preferences, trust only the current validated worktree, retain safety hooks and existing authorized permissions. Require an actual native coding prompt and zero CLI exit; reject setup-dialog false positives. Before regressions fail;36 affected cases pass. Two automated phone results explicitly unqualified, full four-layout D pending.",
+    "status": "complete-with-blockers"
+  },
+  {
+    "id": "activation-terminal-viewport",
+    "title": "Keep terminal heading and exit controls visible",
+    "why": "Decisions811\u2013812 refine732/736. Retain live desktop vision failure and failing geometry regression. Match terminal/page padding, including phone safe area; close each owned takeover shell normally. CM5 all4 layouts/16 current clear live vision judgments,36 affected unit cases/typecheck/lint/build pass. Actual native four-layout D rerun remains pending.",
+    "status": "complete-with-blockers"
   }
 ]

@@ -21,7 +21,7 @@ const STACK = /^\s+at /mu;
 function claudeIntegration(run: AgentRecord, session: string, effort = true) {
   expect(run.argv!.slice(0, effort ? 6 : 4)).toEqual(['--resume', session, '--model', 'scripted-model', ...(effort ? ['--effort', 'high'] : [])]);
   const settings = JSON.parse(run.argv![run.argv!.indexOf('--settings') + 1]!);
-  expect(settings.cleanupPeriodDays).toBe(36500); expect(settings.hooks.PreToolUse[0].hooks[0].command).toContain('safety-hook.js');
+  expect(settings.cleanupPeriodDays).toBe(36500); expect(settings.skipDangerousModePermissionPrompt).toBe(true); expect(settings.hooks.PreToolUse[0].hooks[0].command).toContain('safety-hook.js');
   const servers = JSON.parse(run.argv![run.argv!.indexOf('--mcp-config') + 1]!);
   expect(servers.mcpServers.jevellan.args.at(-1)).toBe('mcp-bridge'); expect(run.argv!.slice(-2)).toEqual(['--permission-mode', 'bypassPermissions']);
 }
@@ -47,18 +47,18 @@ async function setup(options: ProjectFixtureOptions = {}): Promise<ProjectFixtur
 }
 
 test('Claude takeover preferences are confined, validated and preserve completed account files byte-for-byte', () => {
-  const root = mkdtempSync(join(tmpdir(), 'takeover-preferences-')); roots.push(root);
+  const root = realpathSync(mkdtempSync(join(tmpdir(), 'takeover-preferences-'))); roots.push(root);
   const user = join(root, 'user'), homes = new Homes(join(root, 'jevellan'), user), home = homes.account('claude', 'account');
   mkdirSync(user); const native = join(user, '.claude.json'); writeFileSync(native, '{"owner":true}\n');
-  expect(() => prepareClaudeInteractiveHome(homes, user)).toThrow('isolated account home');
+  expect(() => prepareClaudeInteractiveHome(homes, user, root)).toThrow('isolated account home');
   expect(readFileSync(native, 'utf8')).toBe('{"owner":true}\n');
   const file = join(home, '.claude.json'); symlinkSync(native, file);
-  expect(() => prepareClaudeInteractiveHome(homes, home)).toThrow('preferences'); expect(readFileSync(native, 'utf8')).toBe('{"owner":true}\n');
+  expect(() => prepareClaudeInteractiveHome(homes, home, root)).toThrow('preferences'); expect(readFileSync(native, 'utf8')).toBe('{"owner":true}\n');
   rmSync(file); writeFileSync(file, 'not json');
-  expect(() => prepareClaudeInteractiveHome(homes, home)).toThrow(); expect(readFileSync(file, 'utf8')).toBe('not json');
-  writeFileSync(file, '  { "hasCompletedOnboarding": true, "theme":"light" }\n');
-  const before = readFileSync(file); prepareClaudeInteractiveHome(homes, home); expect(readFileSync(file)).toEqual(before);
-  rmSync(file); prepareClaudeInteractiveHome(homes, home); expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual({ hasCompletedOnboarding: true });
+  expect(() => prepareClaudeInteractiveHome(homes, home, root)).toThrow(); expect(readFileSync(file, 'utf8')).toBe('not json');
+  writeFileSync(file, `  { "hasCompletedOnboarding": true, "theme":"light", "projects": { ${JSON.stringify(root)}: { "hasTrustDialogAccepted": true } } }\n`);
+  const before = readFileSync(file); prepareClaudeInteractiveHome(homes, home, root); expect(readFileSync(file)).toEqual(before);
+  rmSync(file); prepareClaudeInteractiveHome(homes, home, root); expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual({ hasCompletedOnboarding: true, projects: { [root]: { hasTrustDialogAccepted: true } } });
 });
 
 test('an authenticated isolated Claude takeover skips first-run onboarding and preserves account preferences', { timeout: 120_000 }, async () => {
@@ -71,7 +71,9 @@ test('an authenticated isolated Claude takeover skips first-run onboarding and p
   const cli = agents(f), command = jevellan(f, ['thread', 'attach', threadId], { path: `${cli.bin}:/usr/bin:/bin` });
   const run = await cli.started(1);
   expect(run.completedOnboarding).toBe(true);
-  expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual({ ...preferences, hasCompletedOnboarding: true });
+  expect(JSON.parse(readFileSync(file, 'utf8')).projects[run.cwd!]?.hasTrustDialogAccepted).toBe(true);
+  expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual({ ...preferences, hasCompletedOnboarding: true,
+    projects: { ...preferences.projects, [run.cwd!]: { hasTrustDialogAccepted: true } } });
   command.send('exit 0\n'); expect((await finished(command)).code).toBe(0);
 });
 

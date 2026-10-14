@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The row of shortcut keys runs past both edges of the screen. The '→' key is partly cut off on the left and the '⋯' key on the right. This looks like a row you scroll sideways, but nothing on screen shows that it scrolls.",
-      "The host path in the header is cut off at '/private/var/fo…'.",
-      "Each shell prompt line is long and wraps, so the command appears on its own line below the prompt. It is still readable but uses a lot of space."
+      "The terminal's top line shows only 'jects-app' because older output has scrolled off the top. That's expected scrollback, not a layout problem.",
+      "The left edge clips the first key in the shortcut row (the '→' key). The row looks horizontally scrollable, so the key can still be reached.",
+      "The header path is shortened with an ellipsis ('/private/var/fol...'). This is intentional truncation."
     ]
   }
 }

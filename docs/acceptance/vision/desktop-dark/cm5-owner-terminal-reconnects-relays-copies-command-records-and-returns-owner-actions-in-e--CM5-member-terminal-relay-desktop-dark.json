@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The terminal path in the header is long and makes the subtitle line crowded, but you can still read all of it.",
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour...'). This is expected for the layout and doesn't block anything.",
-      "The 'Send to...' button looks dimmed, probably on purpose because it's disabled.",
-      "There's a lot of empty space in the terminal output area below the content."
+      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory jour...', 'Context · Shared memory ...'), but the full name can still be read from context",
+      "The long working-directory path in the terminal header looks crowded next to the 'Connected' status and the 'Close terminal' button, but it is not clipped",
+      "The 'Send to...' button has lower contrast than the other copy buttons, maybe because it is meant to look disabled"
     ]
   }
 }

@@ -1593,6 +1593,13 @@ test('CM5 owner terminal reconnects, relays, copies command records and returns 
   await expect(page).toHaveURL(/\/terminals\//u); const id = page.url().split('/').at(-1)!;
   const snapshot = async () => TerminalSnapshotSchema.parse(await read(page, `/api/terminals/${id}`));
   await expect(page.getByRole('status').filter({ hasText: 'Connected' })).toBeVisible(LONG);
+  await page.getByRole('checkbox', { name: 'Type straight into terminal', exact: true }).check();
+  await expect.poll(() => page.evaluate(() => {
+    const heading = document.querySelector('.terminal-heading')!.getBoundingClientRect();
+    const header = document.querySelector('.app-header')!.getBoundingClientRect();
+    return heading.top >= header.bottom && document.documentElement.scrollHeight <= window.innerHeight + 1;
+  }), LONG).toBe(true);
+  await page.getByRole('checkbox', { name: 'Type straight into terminal', exact: true }).uncheck();
   const run = async (command: string) => { await page.getByRole('textbox', { name: 'Type or dictate a command' }).fill(command); await page.locator('.terminal-commandline').getByRole('button', { name: 'Run', exact: true }).click();
     await expect.poll(async () => (await snapshot()).commands.some(row => row.command === command && row.endedAt !== null), LONG).toBe(true); };
   await run('pwd'); expect((await snapshot()).commands.at(-1)!.output).toContain((await snapshot()).session.cwd);

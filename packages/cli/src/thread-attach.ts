@@ -34,8 +34,9 @@ export const staysAttached = (threadId: string): string => `The thread stays att
 const sentence = (error: unknown) => error instanceof Error && error.message ? error.message : UNANSWERED;
 
 /** Token-backed accounts already authenticated in Jevellan have no native onboarding receipt. Only their isolated account file is updated. */
-export function prepareClaudeInteractiveHome(homes: Homes, home: string): void {
+export function prepareClaudeInteractiveHome(homes: Homes, home: string, cwd: string): void {
   if (home !== homes.at('homes', 'claude', basename(home)) || resolvedPath(home) !== home) throw new Error('Claude takeover requires its isolated account home.');
+  if (!isAbsolute(cwd)) throw new Error('Claude takeover requires its existing worktree.');
   const file = join(home, '.claude.json');
   let value: Record<string, unknown> = {};
   if (existsSync(file)) {
@@ -44,8 +45,13 @@ export function prepareClaudeInteractiveHome(homes: Homes, home: string): void {
     try { value = z.record(z.string(), z.unknown()).parse(JSON.parse(readFileSync(file, 'utf8'))); }
     catch { throw new Error('Claude account preferences cannot be prepared for takeover.'); }
   }
-  if (value.hasCompletedOnboarding === true) return;
-  atomicWrite(file, `${JSON.stringify({ ...value, hasCompletedOnboarding: true }, null, 2)}\n`);
+  let projects: Record<string, Record<string, unknown>>;
+  try { projects = z.record(z.string(), z.record(z.string(), z.unknown())).parse(value.projects ?? {}); }
+  catch { throw new Error('Claude account preferences cannot be prepared for takeover.'); }
+  const path = resolvedPath(cwd), project = projects[path] ?? {};
+  if (value.hasCompletedOnboarding === true && project.hasTrustDialogAccepted === true) return;
+  atomicWrite(file, `${JSON.stringify({ ...value, hasCompletedOnboarding: true,
+    projects: { ...projects, [path]: { ...project, hasTrustDialogAccepted: true } } }, null, 2)}\n`);
 }
 
 /**
@@ -88,14 +94,14 @@ async function prepare(answer: unknown, base: NodeJS.ProcessEnv, homes: Homes): 
   const executable = findExecutable(view.runtime, env.PATH ?? '/usr/bin:/bin');
   if (!executable) return `${label} is not installed on this device: the ${view.runtime} command was not found on PATH.`;
   if (!existsSync(view.cwd)) return `The thread's folder no longer exists: ${view.cwd}`;
-  if (view.runtime === 'claude') prepareClaudeInteractiveHome(homes, home);
+  if (view.runtime === 'claude') prepareClaudeInteractiveHome(homes, home, view.cwd);
   const integration = view.integration;
   const rootInstructions = view.runtime === 'codex' ? projectInstructionFile(view.cwd) : null;
   const hooks = integration ? { PreToolUse: [{ matcher: '.*', hooks: [{ type: 'command', command: integration.safetyCommand, timeout: 10 }] }] } : undefined;
   const mcp = integration ? { jevellan: { command: integration.bridgeCommand, args: integration.bridgeArgs } } : undefined;
   const args = view.runtime === 'claude'
     ? ['--resume', view.nativeSessionId, '--model', view.model, ...(await claudeTakesEffort(executable, view.cwd, minimalEnvironment('claude', home, {}, {}, base)) ? ['--effort', view.effort] : []),
-      '--settings', JSON.stringify({ ...CLAUDE_FLAG_SETTINGS, ...(hooks ? { hooks } : {}) }), ...(mcp ? ['--mcp-config', JSON.stringify({ mcpServers: mcp }), '--permission-mode', 'bypassPermissions'] : [])]
+      '--settings', JSON.stringify({ ...CLAUDE_FLAG_SETTINGS, ...(hooks ? { hooks, skipDangerousModePermissionPrompt: true } : {}) }), ...(mcp ? ['--mcp-config', JSON.stringify({ mcpServers: mcp }), '--permission-mode', 'bypassPermissions'] : [])]
     : ['resume', view.nativeSessionId, '-m', view.model, '-c', `model_reasoning_effort="${view.effort}"`, ...(integration ? ['-c', 'approval_policy="never"', '-c', 'sandbox_mode="danger-full-access"',
       '-c', 'features.hooks=true', '-c', `hooks=${toml(hooks)}`, '-c', `mcp_servers.jevellan.command=${JSON.stringify(integration.bridgeCommand)}`, '-c', `mcp_servers.jevellan.args=${JSON.stringify(integration.bridgeArgs)}`,
       '-c', `mcp_servers.jevellan.env_vars=${JSON.stringify(launchKeys)}`, '-c', 'mcp_servers.jevellan.default_tools_approval_mode="approve"',

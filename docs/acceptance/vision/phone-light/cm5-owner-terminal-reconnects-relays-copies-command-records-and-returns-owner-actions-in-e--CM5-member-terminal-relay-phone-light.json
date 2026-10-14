@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The path in the header is cut off with an ellipsis ('/private/var/folders/6k/3f…'), so the full working directory can't be seen at this width.",
-      "The last special-key button in the Esc/Tab/Ctrl/Alt/arrow row is only partly visible at the right edge. The row appears to scroll sideways, but nothing else shows that more keys are there.",
-      "The terminal output breaks the Apple support URL across two lines ('https://sup' / 'port.apple.com/...'). This is normal terminal wrapping but harder to read."
+      "The row of special keys (Esc, Tab, Ctrl, Alt, arrows) runs past the right edge. The last button is only partly visible, so it looks like the row scrolls sideways, but there's no clear hint that more keys are off-screen.",
+      "The subtitle path ('Browser member · /private/var/folders/6k/3f…') is cut short with an ellipsis. That's expected in this narrow layout.",
+      "The terminal output wraps a URL in the middle of a word ('sup / port.apple.com'). This is normal terminal wrapping, not a layout problem.",
+      "The terminal pane has a lot of empty space below the output, with a thin horizontal line near the bottom that has no clear purpose."
     ]
   }
 }

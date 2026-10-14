@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The thread is scrolled so the top of the first message card (the 'CM5 owner command thread' card) is cut off under the header. Scrolling reveals it.",
-      "Long session titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Shared memory …').",
-      "The long worktree path in the returned prompt wraps in the middle of the path, which makes it harder to read."
+      "Sidebar thread titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour...', 'Context · Shared memory ...'), as intended",
+      "The first transcript card is partly scrolled out of view at the top of the thread pane",
+      "The long worktree path in the prompt card wraps mid-path across lines"
     ]
   }
 }

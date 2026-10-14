@@ -1,0 +1,20 @@
+{
+  "schema": "live-scenario-qualification-v1",
+  "label": "live",
+  "at": "2026-10-14T01:25:36.414Z",
+  "originalReceipts": [
+    "D-run_583a4e7b2ba04c6892b1998166182082.json",
+    "D-run_50114dd3915f4bce9cb7df8afed24181.json",
+    "D-run_2a6ebd4de81545c883ded96d4d3dc9aa.json"
+  ],
+  "reason": "D8 observed backend attachment and exit while the native client was still at folder trust. Native-session acceptance requires the resumed coding prompt and a successful native exit. Desktop vision also finds the sticky-header overlap.",
+  "originalReceiptsModified": false,
+  "acceptedForPassRule": false,
+  "clockStartedAt": "2026-10-13T18:15:59.903Z",
+  "withdrawnLayouts": [
+    "phone-light",
+    "phone-dark"
+  ],
+  "consecutiveC": 2,
+  "ownerAcceptance": false
+}

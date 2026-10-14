@@ -1,3 +1,4 @@
+main.page-content:has(> .owner-terminal-page) { max-width: none; padding: 14px 28px; }
 .owner-terminal-page { height: calc(100dvh - var(--header-height) - 28px); min-height: 420px; display: flex; flex-direction: column; min-width: 0; gap: 10px; }
 .terminal-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 18px; min-width: 0; }
 .terminal-heading h1 { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 20px; margin: 0; }
@@ -26,7 +27,8 @@
 .pw-terminal-tab { margin-top: 12px; }
 .pw-layout[data-tab="terminal"] { display: none; }
 @media (max-width: 600px) {
-  .owner-terminal-page { height: calc(100dvh - var(--header-height) - 8px); min-height: 0; margin: -8px -12px; padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); gap: 6px; }
+  main.page-content:has(> .owner-terminal-page) { padding: 0; }
+  .owner-terminal-page { height: calc(100dvh - var(--header-height)); min-height: 0; margin: 0; padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); gap: 6px; }
   .terminal-heading { gap: 4px 8px; }
   .terminal-heading h1 { font-size: 16px; max-width: 65%; }
   .terminal-location { font-size: 11px; }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The row of shortcut keys (Esc, Tab, Ctrl, Alt and the arrow keys) runs past the right edge after the → key, so the last key is only partly visible. It looks like a row you scroll sideways, so the key can probably still be reached, but nothing on screen shows that the row scrolls.",
-      "The host/path text in the header is cut short with an ellipsis ('/private/var/fo...'), so the full working directory isn't shown in the header. The full path is visible in the terminal output from pwd.",
-      "The 'Project' label sits in the middle of the status row, with uneven spacing between 'Connected' and the 'Close terminal' button."
+      "The key row (Esc, Tab, Ctrl, Alt, arrows) cuts off a key at the right edge. The row looks horizontally scrollable, but nothing visibly shows that more keys are there.",
+      "The project path in the header is shortened with an ellipsis ('/private/var/fol...'). This looks intentional and doesn't block anything.",
+      "The terminal output wraps long lines mid-word (e.g. 'sup/port.apple.com', 'pro/jects-app'), which makes them a little harder to read."
     ]
   }
 }

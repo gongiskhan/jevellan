@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Header subtitle (host · path) is truncated with an ellipsis, so the full working directory can't be seen in the header. The full path does appear in the terminal output.",
-      "The special-key row is cut off at the right edge, and the last key is only partly visible. It looks like a horizontal scroller, but there is no clear scroll cue.",
-      "Long path output in the terminal wraps in the middle of words (e.g. 'pro/jects-app'), which makes it slightly harder to read."
+      "The header path is cut off with an ellipsis ('/private/var/fol...'). This looks deliberate and doesn't hide anything important.",
+      "The key row (Esc, Tab, Ctrl, Alt, arrows) runs past the right edge and the last button is only partly visible. It appears to be a horizontally scrollable strip, so the controls are still reachable, but there's no clear sign that it scrolls.",
+      "There's a horizontal line near the bottom of the terminal output with an empty prompt line above it. It's a little cramped but doesn't block anything."
     ]
   }
 }

@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The shortcut-key row is cut off at the left edge: the first key (→) is only partly visible and there's no left padding. It looks like a horizontal scroller, so the other keys can still be reached, but there's no visible sign that it scrolls.",
-      "The working-directory path in the header is shortened with an ellipsis ('/private/var/fo…'). That's acceptable on a narrow screen.",
-      "The 'Project' label is centered with a lot of empty space around it and looks loosely aligned next to 'Connected' and 'Close terminal'."
+      "The header subtitle with the host and path is cut off with an ellipsis ('/private/var/fol...'). That looks intentional for a narrow screen, but the full working directory can't be read.",
+      "The first line of terminal output reads 'jects-app' because older output has scrolled off the top. This is normal terminal scrollback.",
+      "The first key button ('→') is partly clipped at the left edge of the shortcut-key row. The row appears to scroll sideways, but there is no clear sign that it can be scrolled.",
+      "The 'Project' label in the status row is pink and centred, and it isn't visually aligned with 'Connected' or 'Close terminal'."
     ]
   }
 }

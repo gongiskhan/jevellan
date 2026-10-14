@@ -9,7 +9,7 @@ import { LiveStateSchema, ScenarioReceiptSchema, ScenarioRecorder, canStart, evi
 import { planFor, runLive } from '../scripts/live/scenarios.mjs';
 import { OwnerClient, until } from '../scripts/live/client.mjs';
 import { failedCheckDiagnosis, mergeWhenAsked } from '../scripts/live/scenario-a.mjs';
-import { copyTerminalOutput, exitNativeTakeover, takeoverReady, terminalToolbarAction } from '../scripts/live/scenario-d.mjs';
+import { copyTerminalOutput, exitNativeTakeover, nativeTakeoverReady, takeoverReady, terminalToolbarAction } from '../scripts/live/scenario-d.mjs';
 import { ThreadMessageInputSchema } from '../packages/core/dist/index.js';
 import { preflight } from '../scripts/live/setup.mjs';
 import { SANDBOX_FILES, assertSandbox, writeSandbox } from '../scripts/live/sandbox.mjs';
@@ -34,6 +34,14 @@ test('browser takeover exit acknowledges the native client confirmation without 
   const client = { thread: async () => ({ thread: { state: presses < 2 ? 'attached' : 'idle' } }), terminalSnapshot: async () => ({ tail: 'Press Ctrl-D again to exit' }) };
   await exitNativeTakeover(client, page, 'project', 'thread', 'terminal', 100, 1);
   expect(presses).toBe(2);
+});
+
+test('browser takeover requires the native coding prompt, not a live shell or a first-run dialog', () => {
+  const snapshot = (tail: string) => ({ session: { status: 'open' }, tail });
+  expect(nativeTakeoverReady(snapshot('Resuming the thread in Claude Code.'))).toBe(false);
+  expect(nativeTakeoverReady(snapshot('Quick safety check: Is this a project you created or one you trust?'))).toBe(false);
+  expect(nativeTakeoverReady(snapshot('Choose the text style that looks best with your terminal'))).toBe(false);
+  expect(nativeTakeoverReady(snapshot('Claude Code v2.1.295\n>\n? for shortcuts\nbypass permissions on'))).toBe(true);
 });
 
 test('terminal copy waits for the asynchronous clipboard write before checking its exact command range', async () => {

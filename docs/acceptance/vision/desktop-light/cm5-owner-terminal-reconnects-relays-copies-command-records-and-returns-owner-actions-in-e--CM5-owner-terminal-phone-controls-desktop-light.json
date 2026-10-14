@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The terminal header path is cut off with an ellipsis ('.../projects-...'). The full path does show in the terminal output.",
+      "The terminal header path is cut off with an ellipsis ('.../projects...'). The full path still appears in the terminal output.",
       "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour...', 'Context · Shared memory ...').",
-      "There is a lot of empty space below the last prompt line in the terminal output area."
+      "The terminal output pane has a large empty area below the last prompt. This is expected for a short session."
     ]
   }
 }

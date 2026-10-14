@@ -21,6 +21,12 @@ export async function copyTerminalOutput(page, label, ready) {
 }
 export function takeoverReady(view) { return REST_STATES.includes(view.thread.state) && !!view.transcript; }
 
+export function nativeTakeoverReady(snapshot) {
+  const text = snapshot.tail.replace(/\s/gu, '');
+  return snapshot.session.status === 'open' && /(?:ClaudeCodev|OpenAICodex)/u.test(text)
+    && (text.includes('?forshortcuts') || text.includes('bypasspermissionson'));
+}
+
 export async function exitNativeTakeover(client, page, projectId, threadId, sessionId, timeout = minutes(2), interval = 2000) {
   await page.locator('.xterm-helper-textarea').press('Control+d');
   let confirmed = false;
@@ -33,7 +39,7 @@ export async function exitNativeTakeover(client, page, projectId, threadId, sess
   }, timeout, interval);
 }
 export async function scenarioD(client, projectId, recorder) {
-  const page = client.page; let session, madrid;
+  const page = client.page; let session, madrid, takeover;
   const last = async (id, text, timeout = minutes(2)) => until(`terminal command ${text} to end`, async () => (await client.terminalSnapshot(id)).commands.findLast(row => row.command === text && row.endedAt), timeout, 100);
   const shots = [];
   const shot = async (name, expected) => { const image = await page.screenshot({ fullPage: true }); shots.push({ name, expected, image }); };
@@ -63,15 +69,21 @@ export async function scenarioD(client, projectId, recorder) {
   await recorder.step('D8', 'Take over in browser attaches a real native thread session; leaving detaches and returns it to Jevellan.', async () => {
     const receipt = await client.task(projectId, 'Terminal takeover check', 'Inspect the invoices app, report its structure and wait for the owner before making any change.');
     const task = await until('a real resting session to take over', async () => { const task = (await client.tasks(projectId)).find(row => row.id === receipt.taskId); if (!task?.threadId) return; const view = await client.thread(projectId, task.threadId); return takeoverReady(view) ? task : undefined; }, minutes(15));
-    await page.goto(`${client.config.hub}/projects/${projectId}/threads/${task.threadId}`); await page.getByRole('button', { name: 'Take over in browser', exact: true }).click(); await expect(page).toHaveURL(/\/terminals\//u); await until('the real thread attachment', async () => (await client.thread(projectId, task.threadId)).thread.state === 'attached', minutes(2)); await shot('native-takeover', 'a browser terminal attached to a native coding session with usable exit controls');
+    await page.goto(`${client.config.hub}/projects/${projectId}/threads/${task.threadId}`); await page.getByRole('button', { name: 'Take over in browser', exact: true }).click(); await expect(page).toHaveURL(/\/terminals\//u); await until('the real thread attachment', async () => (await client.thread(projectId, task.threadId)).thread.state === 'attached', minutes(2));
+    const terminalId = new URL(page.url()).pathname.split('/terminals/')[1];
+    takeover = { id: terminalId };
+    await until('the resumed native coding prompt beyond first-run dialogs', async () => nativeTakeoverReady(await client.terminalSnapshot(terminalId)), minutes(2));
+    await shot('native-takeover', 'a browser terminal attached to a resumed native coding session, past setup and trust dialogs, with usable exit controls');
     // Follow the native client's exit confirmation without sending a synthetic agent response.
-    await exitNativeTakeover(client, page, projectId, task.threadId, new URL(page.url()).pathname.split('/terminals/')[1]);
-    return { threadId: task.threadId, returnedState: (await client.thread(projectId, task.threadId)).thread.state };
+    await exitNativeTakeover(client, page, projectId, task.threadId, terminalId);
+    const command = await until('the completed native attach command', async () => (await client.terminalSnapshot(terminalId)).commands.findLast(row => row.command.includes(' thread attach ') && row.endedAt), minutes(2));
+    assert.equal(command.exitCode, 0);
+    return { threadId: task.threadId, terminalId, exitCode: command.exitCode, returnedState: (await client.thread(projectId, task.threadId)).thread.state };
   });
   await recorder.step('D9', 'Every captured screen passes the dedicated live vision rubric in this layout.', async () => {
     const { judgeScreenshot } = await tsImport('../../tests/e2e/vision.ts', import.meta.url); const directory = join(recorder.output, new Date().toISOString().slice(0, 10), `${recorder.receipt.run}-screens`); mkdirSync(directory, { recursive: true }); const evidence = [];
     for (const shot of shots) { const path = join(directory, `${shot.name}.png`); writeFileSync(path, shot.image); const result = await judgeScreenshot(shot.image, shot.expected); evidence.push({ screenshot: path, expected: shot.expected, result }); assert(result.ok && result.blocking.length === 0, JSON.stringify(result)); }
     return { layout: recorder.receipt.layout, screens: evidence };
   });
-  for (const terminal of [session, madrid]) if (terminal) await client.call('POST', `/api/terminals/${terminal.id}/close`, { schema: 'empty-request-v1' });
+  for (const terminal of [session, madrid, takeover]) if (terminal) await client.call('POST', `/api/terminals/${terminal.id}/close`, { schema: 'empty-request-v1' });
 }

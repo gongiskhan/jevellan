@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Terminal header path is truncated with an ellipsis ('.../projects...'), but the full path shows in the terminal output",
-      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory jour...', 'Context · Shared memory ...')",
-      "The terminal output area has a lot of empty space below the last prompt",
-      "Text in the shell-session filter chips ('Running', 'Waiting for you', 'Done') is small and low-contrast but still readable"
+      "The working-directory path in the terminal header is cut off with an ellipsis, but the full path still shows in the terminal output.",
+      "The titles and metadata of the session list items in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory jour...', 'Context · Shared memory ...').",
+      "The sidebar footer note 'Some native sessions are unavailable' is in small, low-contrast text.",
+      "The status label 'Connected' is low-contrast grey on the dark background."
     ]
   }
 }
