@@ -1,0 +1,130 @@
+{
+  "schema": "live-scenario-receipt-v1",
+  "scenario": "D",
+  "run": "run_fe1a087a5af84289b1188f4f9ac4faae",
+  "coordinator": "claude",
+  "layout": "phone-light",
+  "label": "live",
+  "passed": false,
+  "startedAt": "2026-10-14T00:24:22.280Z",
+  "endedAt": "2026-10-14T00:24:36.232Z",
+  "minutes": 0.23253333333333334,
+  "clockStartedAt": "2026-10-13T18:15:59.903Z",
+  "timeBoxEnded": false,
+  "projectId": "live_day_451ca70926b74a23916d85fca0bdcb06",
+  "steps": [
+    {
+      "id": "D1",
+      "assertion": "The Pro project terminal opens in its registered dedicated checkout.",
+      "verdict": "passed",
+      "startedAt": "2026-10-14T00:24:22.281Z",
+      "endedAt": "2026-10-14T00:24:27.185Z",
+      "seconds": 4.904,
+      "evidence": {
+        "id": "term_01M4VWQJ8HQ47R4PR5MNPZYR7W",
+        "device": "dev_01M4V2PFFJNAK1W6TGEFGB617S",
+        "cwd": "/Users/ggomes/jevellan-projects/jevellan-live-sandbox",
+        "output": "/Users/ggomes/jevellan-projects/jevellan-live-sandbox\n"
+      }
+    },
+    {
+      "id": "D2",
+      "assertion": "The dev-madrid device terminal uses the existing relay and prints the actual remote hostname.",
+      "verdict": "passed",
+      "startedAt": "2026-10-14T00:24:27.186Z",
+      "endedAt": "2026-10-14T00:24:30.007Z",
+      "seconds": 2.821,
+      "evidence": {
+        "id": "term_01M4VWQNBSKWM2N203SZ5ZS1BG",
+        "device": "dev_01M4V38ABJAT5B8FEMBBD7KMC9",
+        "hostname": "dev-madrid",
+        "output": "dev-madrid\n"
+      }
+    },
+    {
+      "id": "D3",
+      "assertion": "Type or dictate a command and Run send echo hello through the real PTY.",
+      "verdict": "passed",
+      "startedAt": "2026-10-14T00:24:30.007Z",
+      "endedAt": "2026-10-14T00:24:30.298Z",
+      "seconds": 0.291,
+      "evidence": {
+        "command": "echo hello",
+        "output": "hello\n"
+      }
+    },
+    {
+      "id": "D4",
+      "assertion": "Sticky Ctrl and C interrupt sleep within two seconds and preserve its non-zero exit record.",
+      "verdict": "passed",
+      "startedAt": "2026-10-14T00:24:30.298Z",
+      "endedAt": "2026-10-14T00:24:30.510Z",
+      "seconds": 0.212,
+      "evidence": {
+        "exitCode": 130,
+        "elapsedMs": 64
+      }
+    },
+    {
+      "id": "D5",
+      "assertion": "Reload reconnects the same terminal and replays hello in its scrollback.",
+      "verdict": "passed",
+      "startedAt": "2026-10-14T00:24:30.513Z",
+      "endedAt": "2026-10-14T00:24:30.663Z",
+      "seconds": 0.15,
+      "evidence": {
+        "sessionId": "term_01M4VWQJ8HQ47R4PR5MNPZYR7W",
+        "replayed": "hello"
+      }
+    },
+    {
+      "id": "D6",
+      "assertion": "The copy buttons include exactly the requested command range and strip every escape code.",
+      "verdict": "passed",
+      "startedAt": "2026-10-14T00:24:30.663Z",
+      "endedAt": "2026-10-14T00:24:31.982Z",
+      "seconds": 1.319,
+      "evidence": {
+        "one": "$ echo record-6\nrecord-6\n",
+        "five": "$ echo record-2\nrecord-2\n\n\n$ echo record-3\nrecord-3\n\n\n$ echo record-4\nrecord-4\n\n\n$ echo record-5\nrecord-5\n\n\n$ echo record-6\nrecord-6\n",
+        "allChars": 749
+      }
+    },
+    {
+      "id": "D7",
+      "assertion": "Send to… delivers the last command to the coordinator and starts its next turn.",
+      "verdict": "passed",
+      "startedAt": "2026-10-14T00:24:31.982Z",
+      "endedAt": "2026-10-14T00:24:34.064Z",
+      "seconds": 2.082,
+      "evidence": {
+        "eventId": 1,
+        "turn": 1,
+        "text": "The owner sent output from the terminal on Goncalos-MacBook-Pro.local in /Users/ggomes/jevellan-projects/jevellan-live-sandbox:\n$ echo record-6\nrecord-6\n\nExit code: 0"
+      }
+    },
+    {
+      "id": "D8",
+      "assertion": "Take over in browser attaches a real native thread session; leaving detaches and returns it to Jevellan.",
+      "verdict": "failed",
+      "startedAt": "2026-10-14T00:24:34.064Z",
+      "endedAt": "2026-10-14T00:24:36.194Z",
+      "seconds": 2.13,
+      "reason": "GET /api/projects/live_day_451ca70926b74a23916d85fca0bdcb06/threads/thread_01M4VWQVV3XJHKTACF82NGBA4A: 404 This thread was not found.",
+      "evidence": {}
+    }
+  ],
+  "messages": [],
+  "toolCalls": [],
+  "pullRequests": [],
+  "workflowRunIds": [],
+  "notes": [],
+  "sessions": [],
+  "providerTotals": {},
+  "blockedBy": [
+    "D8: GET /api/projects/live_day_451ca70926b74a23916d85fca0bdcb06/threads/thread_01M4VWQVV3XJHKTACF82NGBA4A: 404 This thread was not found."
+  ],
+  "observations": [
+    "Usage records come from runtime-reported turn outcomes. Missing tokens or cost remain unknown; minutes include concurrent sessions."
+  ]
+}

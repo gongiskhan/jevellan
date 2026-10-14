@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The attach command at the bottom ('jevellan thread attach thread_01M4VME4VR1GRD0Z…') is cut off with an ellipsis. The copy button next to it still gives access to the full command.",
-      "The metadata line under the header ('Codex · GPT · high effort · Projects Codex · Worktree on jv/read-the-readme-on-the-member-49fmrx · Browser member') wraps across three lines and is crowded, but it is readable.",
-      "The icon-only controls (settings sliders, stop, help) have no text labels."
+      "The take-over command at the bottom ('jevellan thread attach thread_01M4VXGRWM5R6DH1…') is cut off with an ellipsis. The copy button next to it still copies the full command.",
+      "The metadata line wraps the long branch name 'jv/read-the-readme-on-the-member-har3rd' awkwardly across lines.",
+      "The header icon buttons wrap onto a second row under 'Open terminal here' and 'Take over in browser', which makes the header feel crowded."
     ]
   }
 }

@@ -560,6 +560,17 @@ export class ProjectWork {
     }
     throw refuse('This thread is still starting on its device. Try again shortly.', 409);
   }
+  /** A read also needs the owner's local file, which can arrive after its dispatch index. */
+  async threadReadOwner(projectId: string, threadId: string): Promise<string | null> {
+    const owner = await this.threadStreamOwner(projectId, threadId);
+    if (owner !== this.#o.deviceId) return owner;
+    for (let attempt = 0; attempt < 50; attempt++) {
+      const local = this.store.get(threadId);
+      if (local) return local.projectId === projectId ? owner : null;
+      await delay(200);
+    }
+    throw refuse("This thread's data has not arrived on its device. Try again shortly.", 409);
+  }
   /** Coordinators run on the device they are assigned to; the routes proxy another device's coordinator there (D266). */
   async #coordinatorHere(projectId: string): Promise<string> {
     await this.#project(projectId);

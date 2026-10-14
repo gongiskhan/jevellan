@@ -1,0 +1,54 @@
+{
+  "schema": "affected-thread-read-browser-v1",
+  "label": "simulated",
+  "vision": "live",
+  "ownerAcceptance": false,
+  "baseCommit": "625f7ace501d0e216eebbe3e79a7e1a06adc06de",
+  "sourceFiles": {
+    "packages/projects/src/project-work.ts": "a14e40a8771d54ae0db8eeb99c4d157140a514ecb20e8b745da073211ec502e5",
+    "apps/daemon/src/project-work-api.ts": "560b29351d459df189f6d73b5793f7ed7f7ac7bfd63fb34733a7a8a5f6ae064d",
+    "packages/projects/dist/project-work.js": "9c90bb351aa558d462759254fe75f3320fc139840e18dbfc5c524107bebd9881",
+    "apps/daemon/dist/project-work-api.js": "ae685c1c70fa15f31775b653d4cc17e60522b30137992b4e1029d70df5294ae6"
+  },
+  "at": "2026-10-14T00:40:48.335Z",
+  "layouts": [
+    {
+      "project": "desktop-light-projects",
+      "exitCode": 0
+    },
+    {
+      "project": "phone-light-projects",
+      "exitCode": 0
+    },
+    {
+      "project": "desktop-dark-projects",
+      "exitCode": 0
+    },
+    {
+      "project": "phone-dark-projects",
+      "exitCode": 0
+    }
+  ],
+  "screens": [
+    {
+      "receipt": "docs/acceptance/vision/desktop-light/pj5-a-thread-on-the-member-device-opens-through-the-hub--PJ5-remote-thread-desktop-light.json",
+      "screenshot": "docs/acceptance/screenshots/PJ5-remote-thread-desktop-light.png",
+      "sha256": "e76b0e9613cea78489a856749fc00e496086f61bccb5f6694a56a19633d968de"
+    },
+    {
+      "receipt": "docs/acceptance/vision/phone-light/pj5-a-thread-on-the-member-device-opens-through-the-hub--PJ5-remote-thread-phone-light.json",
+      "screenshot": "docs/acceptance/screenshots/PJ5-remote-thread-phone-light.png",
+      "sha256": "1e33348f494d37ec013c2dc70fa7cfb9aaff549e218cbb8a97c0ba928341b717"
+    },
+    {
+      "receipt": "docs/acceptance/vision/desktop-dark/pj5-a-thread-on-the-member-device-opens-through-the-hub--PJ5-remote-thread-desktop-dark.json",
+      "screenshot": "docs/acceptance/screenshots/PJ5-remote-thread-desktop-dark.png",
+      "sha256": "611a56e7a08925c03f936ed7d1cb3a63d762a2472479f49dc8e4dd8203b043ec"
+    },
+    {
+      "receipt": "docs/acceptance/vision/phone-dark/pj5-a-thread-on-the-member-device-opens-through-the-hub--PJ5-remote-thread-phone-dark.json",
+      "screenshot": "docs/acceptance/screenshots/PJ5-remote-thread-phone-dark.png",
+      "sha256": "6f7178e10c247293d8f5e0786d548e6de3e24402ac84e7cee130ba5d8d070b2b"
+    }
+  ]
+}

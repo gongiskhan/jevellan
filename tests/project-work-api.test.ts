@@ -10,7 +10,7 @@ import { ZodError } from 'zod';
 import {
   AccountSchema, ContextPanelSchema, Homes, MergeResultViewSchema, ProjectSchema, ProjectVisibilitySchema, ProjectWorkListViewSchema, ProjectWorkViewSchema, ThreadCreatedViewSchema,
   ThreadIndexSchema, ThreadMessageReceiptSchema, ThreadViewSchema, type Project,
-  ProjectEventFrameSchema, ProjectWorkTaskSchema,
+  ProjectEventFrameSchema, ProjectWorkTaskSchema, PlacementRecordSchema, ThreadSchema,
 } from '../packages/core/dist/index.js';
 import { HubProjectAccess, HubUnavailable } from '../packages/mesh/dist/index.js';
 import { FakeRuntime, forThread, type FakeTurnStep } from '../packages/runtime-contract/dist/index.js';
@@ -115,6 +115,36 @@ test('a forwarded decision answer reaches its thread owner with peer login and k
   expect((await fetch(route, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })).status).toBe(401);
   expect((await fetch(route, { method: 'POST', headers: { ...headers, Origin: base }, body: JSON.stringify(body) })).status).toBe(403);
   expect(answer).toHaveBeenCalledTimes(1);
+});
+
+test.each(['task-before-index', 'index-before-file'])('a dispatched thread read waits for %s and keeps unknown and foreign ids refused', { timeout: 60000 }, async gap => {
+  const id = 'thread_read_pending', at = new Date().toISOString();
+  await app.projectWork.coordinators.ensureAssigned('project');
+  await app.projectWork.tasks.save(ProjectWorkTaskSchema.parse({ schema: 'project-work-task-v1', id: 'task_read_pending', projectId: 'project', revision: 0,
+    title: 'Arriving read', brief: 'Inspect the work.', kind: 'session', type: 'feature', goalId: null, source: 'owner', state: 'active', rank: '8', ownerRanked: false,
+    now: false, after: [], needs: [], dailyId: null, jobId: null, threadId: id, jobRunId: null, fixed: {}, createdAt: at, updatedAt: at }));
+  if (gap === 'index-before-file') await new HubProjectAccess(app.hub, app.device.deviceId).publishThread(ThreadIndexSchema.parse({ schema: 'project-thread-index-v1', revision: 0, id, projectId: 'project', title: 'Arriving read',
+    state: 'preparing', isolation: 'worktree', ownerDeviceId: app.device.deviceId, runtime: 'fake', modelLabel: 'Fixture', effort: 'high', accountLabel: 'Fixture', turns: 0, createdAt: at, updatedAt: at }), 1);
+  expect((await request(`/api/projects/another/threads/${id}`)).status).toBe(404);
+  expect((await request('/api/projects/project/threads/thread_missing')).status).toBe(404);
+  const arrival = (async () => {
+    await new Promise(resolve => setTimeout(resolve, 200));
+    const placement = PlacementRecordSchema.parse({ schema: 'placement-v1', questionSet: 'p-v1', source: 'fallback', fixed: [], isolation: 'worktree', runtime: 'fake',
+      modelId: 'fake', model: 'fake-version', effortRequested: 'high', effortEffective: 'high', deviceId: app.device.deviceId, accountId: 'acc_fixture', eligibleModels: ['fake'],
+      excludedModels: [], eligibleDevices: [app.device.deviceId], excludedDevices: [], error: { kind: 'not-enabled', message: 'Placement is not enabled in this fixture.' }, jevCalls: [], decidedAt: at });
+    app.projectWork.store.create(ThreadSchema.parse({ schema: 'project-thread-v1', id, projectId: 'project', title: 'Arriving read', task: 'Inspect the work.', createdAt: at, createdBy: 'owner', state: 'preparing', isolation: 'worktree', placement,
+      ownerDeviceId: app.device.deviceId, coordinatorDeviceId: app.device.deviceId, cwd: '', baseBranch: '', baseCommit: '', turns: 0, turnAllowance: 30, queuedMessages: [], verificationAttempts: 0 }), { modelLabel: 'Fixture', accountLabel: 'Fixture' });
+  })();
+  try { const response = await request(`/api/projects/project/threads/${id}`); expect(response.status).toBe(200); expect(ThreadViewSchema.parse(await response.json()).thread.id).toBe(id); }
+  finally { await arrival; }
+});
+
+test('a known thread read returns a bounded pending error when its local data never arrives', { timeout: 60000 }, async () => {
+  const id = 'thread_data_pending', at = new Date().toISOString();
+  await new HubProjectAccess(app.hub, app.device.deviceId).publishThread(ThreadIndexSchema.parse({ schema: 'project-thread-index-v1', revision: 0, id, projectId: 'project', title: 'Waiting for data',
+    state: 'preparing', isolation: 'worktree', ownerDeviceId: app.device.deviceId, runtime: 'fake', modelLabel: 'Fixture', effort: 'high', accountLabel: 'Fixture', turns: 0, createdAt: at, updatedAt: at }), 1);
+  const response = await request(`/api/projects/project/threads/${id}`);
+  expect(response.status).toBe(409); expect(await response.json()).toMatchObject({ schema: 'error-v1', message: expect.stringContaining('has not arrived') });
 });
 
 test('a known dispatched task stream waits for its thread index without changing unknown-thread refusals', { timeout: 60000 }, async () => {

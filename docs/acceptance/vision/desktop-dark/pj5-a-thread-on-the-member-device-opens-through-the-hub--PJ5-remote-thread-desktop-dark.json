@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Shared memory fixture · …'). This is expected overflow handling in a narrow column.",
-      "The 'completed' status label on the Read tool card sits on its own line below the 'Read' title instead of lining up with it, which leaves odd spacing.",
-      "The page-level 'Idle' status badge is very low-contrast and easy to miss next to 'Back to the project'."
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour...', 'Done · Improver sandbox · Gonca...'), but these are expected list truncations",
+      "The 'completed' status label in the Read tool card sits on its own line under the 'Read' heading instead of lining up with it",
+      "There is a large empty area between the last report card and the message composer"
     ]
   }
 }

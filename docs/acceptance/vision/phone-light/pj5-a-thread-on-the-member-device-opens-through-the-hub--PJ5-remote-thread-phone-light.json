@@ -10,8 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The 'jevellan thread attach thread_01M4VMDAWSJZ1CS0…' command at the bottom is cut off with an ellipsis. The copy button next to it still gives the full command.",
-      "The 'REPORT · TURN 1' label is small, light grey text, which is fainter than the text around it."
+      "The terminal attach command at the bottom ('jevellan thread attach thread_01M4VXE2BWEQ9R43...') is cut off with an ellipsis. The copy button next to it still gives you the full command.",
+      "The header controls wrap onto two rows, so the settings and stop icon buttons sit alone on a second line under 'Open terminal here' / 'Take over in browser'.",
+      "The metadata line ('Codex · GPT · high effort · Projects Codex · Worktree on jv/read-the-readme-on-the-member-83gzrq · Browser member') is small, low-contrast monospace text that wraps over three lines. It is still readable."
     ]
   }
 }

@@ -622,5 +622,11 @@
     "title": "Use supported resting states for native takeover acceptance",
     "why": "Decision804 refines736. Real phone D1\u2013D7 pass; its thread correctly waits for the owner, but the driver selects idle only. Reuse backend REST_STATES and require a transcript;9 regression cases keep running/attached/ended states refused. Two fail before repair;35 affected cases/typecheck/lint pass. Original active D and clock remain unchanged until its receipt saves.",
     "status": "complete-with-blockers"
+  },
+  {
+    "id": "activation-thread-read-arrival",
+    "title": "Wait for dispatched thread data before returning its view",
+    "why": "Decision805 refines794\u2013795. Real D hits task-before-owner arrival404. Owner reads wait for known dispatch/index and local data; streams stay index-only, mutations unchanged. Unknown/foreign404 and bounded pending409 preserved. Both gap regressions fail before repair;45 affected cases/typecheck/lint/build pass. PJ5 layouts and private activation pending.",
+    "status": "complete-with-blockers"
   }
 ]

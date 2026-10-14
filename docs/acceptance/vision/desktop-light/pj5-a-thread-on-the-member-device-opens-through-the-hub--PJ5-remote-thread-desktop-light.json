@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar thread titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Improver sandbox · Gonca…'). This looks like intended overflow handling, and the main thread content isn't affected.",
-      "The 'completed' status label in the Read tool card sits on its own line under the 'Read' heading instead of beside it, which leaves a slightly awkward gap.",
-      "There's a large empty area between the report card and the message composer. It's harmless, but the layout looks sparse."
+      "Sidebar thread titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Context · Shared memory …', 'Done · Improver sandbox · Gonca…'), but the full names are still easy to make out.",
+      "The header shows an 'Idle' status badge while the 'Stop' button is still active, which sends mixed signals about the thread's state.",
+      "The 'Progress' tag sits by itself in the top-right corner of the report card, and 'completed' sits apart on the right of the Read tool card. The spacing feels a little loose but nothing overlaps.",
+      "There is a lot of empty space between the last report card and the message box."
     ]
   }
 }
