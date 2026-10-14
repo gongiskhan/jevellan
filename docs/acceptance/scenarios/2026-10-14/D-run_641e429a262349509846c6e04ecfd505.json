@@ -1,0 +1,232 @@
+{
+  "schema": "live-scenario-receipt-v1",
+  "scenario": "D",
+  "run": "run_641e429a262349509846c6e04ecfd505",
+  "coordinator": "claude",
+  "layout": "desktop-dark",
+  "label": "live",
+  "passed": true,
+  "startedAt": "2026-10-14T02:57:31.408Z",
+  "endedAt": "2026-10-14T02:59:04.500Z",
+  "minutes": 1.5515333333333334,
+  "clockStartedAt": "2026-10-13T18:15:59.903Z",
+  "timeBoxEnded": false,
+  "projectId": "live_day_a75f4159114e4e5db44c98899c0471a1",
+  "steps": [
+    {
+      "id": "D1",
+      "assertion": "The Pro project terminal opens in its registered dedicated checkout.",
+      "verdict": "passed",
+      "startedAt": "2026-10-14T02:57:31.413Z",
+      "endedAt": "2026-10-14T02:57:35.650Z",
+      "seconds": 4.237,
+      "evidence": {
+        "id": "term_01M4W5FZNW0JR882YMY9VD77TG",
+        "device": "dev_01M4V2PFFJNAK1W6TGEFGB617S",
+        "cwd": "/Users/ggomes/jevellan-projects/jevellan-live-sandbox",
+        "output": "/Users/ggomes/jevellan-projects/jevellan-live-sandbox\n"
+      }
+    },
+    {
+      "id": "D2",
+      "assertion": "The dev-madrid device terminal uses the existing relay and prints the actual remote hostname.",
+      "verdict": "passed",
+      "startedAt": "2026-10-14T02:57:35.650Z",
+      "endedAt": "2026-10-14T02:57:41.277Z",
+      "seconds": 5.627,
+      "evidence": {
+        "id": "term_01M4W5G34SDB2DDMFGDJCMFSQ6",
+        "device": "dev_01M4V38ABJAT5B8FEMBBD7KMC9",
+        "hostname": "dev-madrid",
+        "output": "dev-madrid\n"
+      }
+    },
+    {
+      "id": "D3",
+      "assertion": "Type or dictate a command and Run send echo hello through the real PTY.",
+      "verdict": "passed",
+      "startedAt": "2026-10-14T02:57:41.279Z",
+      "endedAt": "2026-10-14T02:57:41.756Z",
+      "seconds": 0.477,
+      "evidence": {
+        "command": "echo hello",
+        "output": "hello\n"
+      }
+    },
+    {
+      "id": "D4",
+      "assertion": "Sticky Ctrl and C interrupt sleep within two seconds and preserve its non-zero exit record.",
+      "verdict": "passed",
+      "startedAt": "2026-10-14T02:57:41.756Z",
+      "endedAt": "2026-10-14T02:57:42.000Z",
+      "seconds": 0.244,
+      "evidence": {
+        "exitCode": 130,
+        "elapsedMs": 97
+      }
+    },
+    {
+      "id": "D5",
+      "assertion": "Reload reconnects the same terminal and replays hello in its scrollback.",
+      "verdict": "passed",
+      "startedAt": "2026-10-14T02:57:42.000Z",
+      "endedAt": "2026-10-14T02:57:42.406Z",
+      "seconds": 0.406,
+      "evidence": {
+        "sessionId": "term_01M4W5FZNW0JR882YMY9VD77TG",
+        "replayed": "hello"
+      }
+    },
+    {
+      "id": "D6",
+      "assertion": "The copy buttons include exactly the requested command range and strip every escape code.",
+      "verdict": "passed",
+      "startedAt": "2026-10-14T02:57:42.406Z",
+      "endedAt": "2026-10-14T02:57:45.828Z",
+      "seconds": 3.422,
+      "evidence": {
+        "one": "$ echo record-6\nrecord-6\n",
+        "five": "$ echo record-2\nrecord-2\n\n\n$ echo record-3\nrecord-3\n\n\n$ echo record-4\nrecord-4\n\n\n$ echo record-5\nrecord-5\n\n\n$ echo record-6\nrecord-6\n",
+        "allChars": 749
+      }
+    },
+    {
+      "id": "D7",
+      "assertion": "Send to… delivers the last command to the coordinator and starts its next turn.",
+      "verdict": "passed",
+      "startedAt": "2026-10-14T02:57:45.829Z",
+      "endedAt": "2026-10-14T02:57:48.030Z",
+      "seconds": 2.201,
+      "evidence": {
+        "eventId": 1,
+        "turn": 1,
+        "text": "The owner sent output from the terminal on Goncalos-MacBook-Pro.local in /Users/ggomes/jevellan-projects/jevellan-live-sandbox:\n$ echo record-6\nrecord-6\n\nExit code: 0"
+      }
+    },
+    {
+      "id": "D8",
+      "assertion": "Take over in browser attaches a real native thread session; leaving detaches and returns it to Jevellan.",
+      "verdict": "passed",
+      "startedAt": "2026-10-14T02:57:48.030Z",
+      "endedAt": "2026-10-14T02:58:42.204Z",
+      "seconds": 54.174,
+      "evidence": {
+        "threadId": "thread_01M4W5GFTRXJFSXNFPN4TW9K03",
+        "terminalId": "term_01M4W5HT4NEBVBJ9HGAYS2MEDS",
+        "exitCode": 0,
+        "returnedState": "idle"
+      }
+    },
+    {
+      "id": "D9",
+      "assertion": "Every captured screen passes the dedicated live vision rubric in this layout.",
+      "verdict": "passed",
+      "startedAt": "2026-10-14T02:58:42.208Z",
+      "endedAt": "2026-10-14T02:59:02.999Z",
+      "seconds": 20.791,
+      "evidence": {
+        "layout": "desktop-dark",
+        "screens": [
+          {
+            "screenshot": "docs/acceptance/scenarios/2026-10-14/run_641e429a262349509846c6e04ecfd505-screens/project-terminal.png",
+            "expected": "a connected project terminal with usable controls and no clipped text",
+            "result": {
+              "ok": true,
+              "blocking": [],
+              "cosmetic": [
+                "Sidebar conversation titles are truncated with ellipses ('Context · Live invoices and…', 'Blocked · Live invoices and cus…'), and the project list shows the same name 'Live invoices and customers' many times, so items are hard to tell apart",
+                "The 'Run' button looks dimmed or low-contrast while the command input is empty",
+                "The terminal output area is mostly empty space, and the output text is small compared to the panel size",
+                "The header path text '/Users/ggomes/jevellan-projects/jevellan-live-sandbox' is low-contrast gray"
+              ]
+            }
+          },
+          {
+            "screenshot": "docs/acceptance/scenarios/2026-10-14/run_641e429a262349509846c6e04ecfd505-screens/madrid-terminal.png",
+            "expected": "a connected dev-madrid terminal with the remote hostname and usable controls",
+            "result": {
+              "ok": true,
+              "blocking": [],
+              "cosmetic": [
+                "Sidebar conversation titles are truncated with ellipses (e.g. 'Context · Live invoices and…'), and the metadata lines are cut off too",
+                "All the project entries in the sidebar have the same name 'Live invoices and customers', so you can't tell them apart",
+                "The 'Send to…' button is dimmer than the other copy buttons, so it may look disabled",
+                "The terminal output is short and leaves a large empty area"
+              ]
+            }
+          },
+          {
+            "screenshot": "docs/acceptance/scenarios/2026-10-14/run_641e429a262349509846c6e04ecfd505-screens/copy-controls.png",
+            "expected": "terminal copy and Send to controls reachable at this layout",
+            "result": {
+              "ok": true,
+              "blocking": [],
+              "cosmetic": [
+                "The 'Send to...' button label is shortened with an ellipsis, but it still reads clearly",
+                "The 'Copied' confirmation is plain text next to the buttons, with no styling to set it apart",
+                "Long conversation titles in the sidebar are cut off with ellipses (e.g. 'Context · Live invoices and...')",
+                "All the project names in the sidebar are the same ('Live invoices and customers'), so they're hard to tell apart",
+                "Much of the terminal output area is empty space"
+              ]
+            }
+          },
+          {
+            "screenshot": "docs/acceptance/scenarios/2026-10-14/run_641e429a262349509846c6e04ecfd505-screens/native-takeover.png",
+            "expected": "a browser terminal attached to a resumed native coding session, past setup and trust dialogs, with usable exit controls",
+            "result": {
+              "ok": true,
+              "blocking": [],
+              "cosmetic": [
+                "The workspace path in the header is cut off with an ellipsis ('.../worktrees/live_day_a75f...'). The full path can't be read, but nothing else is affected.",
+                "Conversation titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · Live invoices and ...', 'Blocked · Live invoices and cus...').",
+                "Every project row in the sidebar has the same name ('Live invoices and customers'), so you can only tell them apart by their badges.",
+                "The terminal shows a stop hook error ('/Users/ggomes/.nvm/versions/node/v22.22.0/bin/node: not found'). This is a session environment problem, not a layout problem, and the session stays usable."
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "messages": [],
+  "toolCalls": [],
+  "pullRequests": [],
+  "workflowRunIds": [],
+  "notes": [],
+  "sessions": [
+    {
+      "key": "0605d0e09d158c4a874d6a5d4ef937e82974ecbdd4c67fec5f42a5c2c6d55af8",
+      "runtime": "claude",
+      "model": "Claude Opus 5.5",
+      "inputTokens": 3364,
+      "outputTokens": 4397,
+      "costUsd": 0.29189380000000004,
+      "costSource": "estimated",
+      "seconds": 51.263999999999996
+    },
+    {
+      "key": "af75920dea31d83f3433a6d204aa5c84617c7110d26c8ba884dbec7af0eefa52",
+      "runtime": "claude",
+      "model": "claude-opus-5-5",
+      "inputTokens": 1006,
+      "outputTokens": 2051,
+      "costUsd": 0.2047818,
+      "costSource": "estimated",
+      "seconds": 30.294
+    }
+  ],
+  "providerTotals": {
+    "claude": {
+      "inputTokens": 4370,
+      "outputTokens": 6448,
+      "costUsd": 0.49667560000000005,
+      "unknownTokenSessions": 0,
+      "unknownCostSessions": 0,
+      "minutes": 1.3593
+    }
+  },
+  "blockedBy": [],
+  "observations": [
+    "Usage records come from runtime-reported turn outcomes. Missing tokens or cost remain unknown; minutes include concurrent sessions."
+  ]
+}

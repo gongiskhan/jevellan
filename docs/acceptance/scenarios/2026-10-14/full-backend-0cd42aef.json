@@ -1,0 +1,75 @@
+{
+  "schema": "backend-verification-evidence-v2",
+  "label": "simulated",
+  "source": {
+    "schema": "source-checks-v1",
+    "label": "simulated",
+    "sourceCommit": "0cd42aef588f6e620991ddc99c64a8970a9de5c2",
+    "sourceTree": "86faa6475398d796f8a65e8c7bcfc10a5219fbc5",
+    "device": "dev-madrid",
+    "node": "v22.23.2",
+    "startedAt": "2026-10-14T01:37:40.008Z",
+    "endedAt": "2026-10-14T02:47:40.172Z",
+    "status": "failed",
+    "checks": [
+      {
+        "name": "typecheck",
+        "startedAt": "2026-10-14T01:37:40.013Z",
+        "endedAt": "2026-10-14T01:38:06.690Z",
+        "exitCode": 0
+      },
+      {
+        "name": "lint",
+        "startedAt": "2026-10-14T01:38:06.695Z",
+        "endedAt": "2026-10-14T01:38:23.603Z",
+        "exitCode": 0
+      },
+      {
+        "name": "backend",
+        "startedAt": "2026-10-14T01:38:23.603Z",
+        "endedAt": "2026-10-14T02:47:40.170Z",
+        "exitCode": 1
+      }
+    ]
+  },
+  "counts": {
+    "passed": 2088,
+    "failed": 2,
+    "skipped": 5,
+    "filesPassed": 186,
+    "filesFailed": 1,
+    "filesSkipped": 1
+  },
+  "failures": [
+    {
+      "file": "tests/conversation-service.test.ts",
+      "test": "memory captured by a read-only reply publishes without running a failing code test",
+      "reason": "60-second timeout."
+    },
+    {
+      "file": "tests/conversation-service.test.ts",
+      "test": "conflict integration publishes verified code and memory, and undo from step 1 preserves upstream intent",
+      "reason": "90-second timeout."
+    }
+  ],
+  "diagnostics": [
+    {
+      "kind": "launcher-error",
+      "passed": 0,
+      "failed": 3,
+      "reason": "First isolated launcher used a missing Basic Memory directory; failures include ENOENT. Not evidence of a reproduced product defect.",
+      "logSha256": "3903b4278ef91ca9067aafbf5708a460451331c9abca961989e0f598b6990215"
+    },
+    {
+      "kind": "quiet-rerun",
+      "passed": 1,
+      "failed": 2,
+      "reason": "Correct bundled executable/environment, one worker, same immutable source: memory capture passes; both conflict-integration variants time out at90seconds. Cause unresolved; no product or timeout changes.",
+      "logSha256": "73ba90425545dfd72d7e6d57be9d6f3e3e3f5683ea6dd8e349cb6175e40c969b"
+    }
+  ],
+  "fullLogSha256": "e1fa0128b306ee8c48f23e73d0fa2491f1cf5cc453fe571c6b109b46cc398e19",
+  "fullPassingVerdict": false,
+  "build": "not run",
+  "ownerAcceptance": false
+}

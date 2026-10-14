@@ -1,0 +1,147 @@
+{
+  "schema": "live-terminal-matrix-v1",
+  "label": "live",
+  "at": "2026-10-14T03:00:50.369Z",
+  "sourceCommit": "b563f88876ebf97a3c0ecf62f44e1fb8f4cdc9d6",
+  "cliSourceCommit": "24c5105c758bc66e760e90478a3d15ff948b359b",
+  "webSourceCommit": "0cd42aef588f6e620991ddc99c64a8970a9de5c2",
+  "cliModuleSha256": "fba2cf7fe06f03a280b87853a186f4142fbd52e14877a1f139caf7016ed7bd10",
+  "rows": [
+    {
+      "receipt": "docs/acceptance/scenarios/2026-10-14/D-run_17038a7a8e8843548a5fb7fd1a25b1e1.json",
+      "layout": "phone-light",
+      "minutes": 1.9335833333333334,
+      "providerTotals": {
+        "claude": {
+          "inputTokens": 4395,
+          "outputTokens": 10821,
+          "costUsd": 0.7305234,
+          "unknownTokenSessions": 0,
+          "unknownCostSessions": 0,
+          "minutes": 2.2052500000000004
+        }
+      },
+      "screens": [
+        {
+          "path": "docs/acceptance/scenarios/2026-10-14/run_17038a7a8e8843548a5fb7fd1a25b1e1-screens/project-terminal.png",
+          "sha256": "81b6261422ecee86a719c56a9198b31101fddf5764565515f7c2ec30b77df524"
+        },
+        {
+          "path": "docs/acceptance/scenarios/2026-10-14/run_17038a7a8e8843548a5fb7fd1a25b1e1-screens/madrid-terminal.png",
+          "sha256": "60b4badbacaf5749fae4d3ee44111b9917462dc6cdeae5554175d06d44546d08"
+        },
+        {
+          "path": "docs/acceptance/scenarios/2026-10-14/run_17038a7a8e8843548a5fb7fd1a25b1e1-screens/copy-controls.png",
+          "sha256": "249e52ce4fdd08d80ada42cd8466d7e2e8072895cb968b8ec0ebec0dbcc3aafc"
+        },
+        {
+          "path": "docs/acceptance/scenarios/2026-10-14/run_17038a7a8e8843548a5fb7fd1a25b1e1-screens/native-takeover.png",
+          "sha256": "e56fe9e8f17d86e4b5badbc9f4915115af49da11b74aa2bd06518048399cd0b5"
+        }
+      ]
+    },
+    {
+      "receipt": "docs/acceptance/scenarios/2026-10-14/D-run_2db6ee881a904e0a8b68d33b7b916884.json",
+      "layout": "phone-dark",
+      "minutes": 1.92525,
+      "providerTotals": {
+        "claude": {
+          "inputTokens": 6522,
+          "outputTokens": 17385,
+          "costUsd": 1.1501156,
+          "unknownTokenSessions": 0,
+          "unknownCostSessions": 0,
+          "minutes": 2.144066666666667
+        }
+      },
+      "screens": [
+        {
+          "path": "docs/acceptance/scenarios/2026-10-14/run_2db6ee881a904e0a8b68d33b7b916884-screens/project-terminal.png",
+          "sha256": "f202428ed35ed5facdee9a074311bd4b52b4811c625d4527d0946ca68c8052d2"
+        },
+        {
+          "path": "docs/acceptance/scenarios/2026-10-14/run_2db6ee881a904e0a8b68d33b7b916884-screens/madrid-terminal.png",
+          "sha256": "7e8e9a7cdc82939dcb034c0c8750446cc55ff1fa8c97d7b80b8961f03fc748fb"
+        },
+        {
+          "path": "docs/acceptance/scenarios/2026-10-14/run_2db6ee881a904e0a8b68d33b7b916884-screens/copy-controls.png",
+          "sha256": "6ea10c6716c417514abe80f14f992e349d7abf13df9b6ac5d33ae12df09c1298"
+        },
+        {
+          "path": "docs/acceptance/scenarios/2026-10-14/run_2db6ee881a904e0a8b68d33b7b916884-screens/native-takeover.png",
+          "sha256": "d1c49fe946531284303e7f857632b91e9f751d1505d5638e39345544dbdc4ea8"
+        }
+      ]
+    },
+    {
+      "receipt": "docs/acceptance/scenarios/2026-10-14/D-run_173b06dd33cb489f87558a611330f23a.json",
+      "layout": "desktop-light",
+      "minutes": 1.7685166666666667,
+      "providerTotals": {
+        "claude": {
+          "inputTokens": 5514,
+          "outputTokens": 12544,
+          "costUsd": 0.8244682000000001,
+          "unknownTokenSessions": 0,
+          "unknownCostSessions": 0,
+          "minutes": 1.6587666666666663
+        }
+      },
+      "screens": [
+        {
+          "path": "docs/acceptance/scenarios/2026-10-14/run_173b06dd33cb489f87558a611330f23a-screens/project-terminal.png",
+          "sha256": "ba3ea1d4dedbad667248a23b79b1bf96fbb94704d959f969e70c85b4e04d9d6b"
+        },
+        {
+          "path": "docs/acceptance/scenarios/2026-10-14/run_173b06dd33cb489f87558a611330f23a-screens/madrid-terminal.png",
+          "sha256": "1d82b8deaed4fd0b7ad433edd45afe793270ba65f736320fa8ec03982ba66983"
+        },
+        {
+          "path": "docs/acceptance/scenarios/2026-10-14/run_173b06dd33cb489f87558a611330f23a-screens/copy-controls.png",
+          "sha256": "169079a097b088e1283307aac04425ee2899c30eaaa86d84e8fdbf8f500e075d"
+        },
+        {
+          "path": "docs/acceptance/scenarios/2026-10-14/run_173b06dd33cb489f87558a611330f23a-screens/native-takeover.png",
+          "sha256": "7ecdca414665c838de00a661c532895975bf29247df38aa3917107e03b772e8c"
+        }
+      ]
+    },
+    {
+      "receipt": "docs/acceptance/scenarios/2026-10-14/D-run_641e429a262349509846c6e04ecfd505.json",
+      "layout": "desktop-dark",
+      "minutes": 1.5515333333333334,
+      "providerTotals": {
+        "claude": {
+          "inputTokens": 4370,
+          "outputTokens": 6448,
+          "costUsd": 0.49667560000000005,
+          "unknownTokenSessions": 0,
+          "unknownCostSessions": 0,
+          "minutes": 1.3593
+        }
+      },
+      "screens": [
+        {
+          "path": "docs/acceptance/scenarios/2026-10-14/run_641e429a262349509846c6e04ecfd505-screens/project-terminal.png",
+          "sha256": "0ea00a15121f86e031a5d3fead9a9d5c7e3d699e5deff34acc1f369468b74fed"
+        },
+        {
+          "path": "docs/acceptance/scenarios/2026-10-14/run_641e429a262349509846c6e04ecfd505-screens/madrid-terminal.png",
+          "sha256": "edf89bf11feb560a9a0d57408a24e1c61007d7392cb215313e589726e164e4bf"
+        },
+        {
+          "path": "docs/acceptance/scenarios/2026-10-14/run_641e429a262349509846c6e04ecfd505-screens/copy-controls.png",
+          "sha256": "f7c9dd8b78215c7bc4af75fee64025e4ccec17dab6d3acf2cfefa09845f875ae"
+        },
+        {
+          "path": "docs/acceptance/scenarios/2026-10-14/run_641e429a262349509846c6e04ecfd505-screens/native-takeover.png",
+          "sha256": "5a4c50611add85012b39e94d3e82471a81ec8d6081e4b7a41c818f6b89d3c5d9"
+        }
+      ]
+    }
+  ],
+  "passed": true,
+  "ownerAcceptance": false,
+  "physicalPhone": "not run",
+  "costs": "runtime estimates; unknown costs remain unknown"
+}
