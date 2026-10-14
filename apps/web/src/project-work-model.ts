@@ -402,7 +402,7 @@ export function overrideReady(view: Pick<ThreadView, 'placement' | 'canOverride'
 }
 
 /** The p-v1 question Jev answers for each placement field (brief 10). */
-export const PLACEMENT_QUESTIONS: Partial<Record<PlacementField, string>> = { isolation: 'isolation', model: 'pick_model', effort: 'effort', device: 'device' };
+export const PLACEMENT_QUESTIONS: Partial<Record<PlacementField, string>> = { isolation: 'isolation', model: 'pick_model', effort: 'effort', device: 'device', account: 'account' };
 export type FieldSource = keyof typeof copy.FIELD_SOURCES;
 export type WhyField = { field: PlacementField; value: string; source: FieldSource; bars: Array<{ option: string; p: number; chosen: boolean }> };
 const fieldValue = (placement: PlacementRecord, field: PlacementField): string =>
@@ -413,7 +413,7 @@ const fieldValue = (placement: PlacementRecord, field: PlacementField): string =
  * Jev's probabilities, D252). Fields Jev was not asked were fixed, the only option left, or the fallback rule's.
  */
 export function whyFields(placement: PlacementRecord): WhyField[] {
-  return PlacementFieldSchema.options.filter((field) => !['runtime', 'account'].includes(field) || placement.fixed.includes(field)).map((field) => {
+  return PlacementFieldSchema.options.filter((field) => !['runtime', 'account'].includes(field) || placement.fixed.includes(field) || field === 'account' && placement.accountChoice).map((field) => {
     const value = fieldValue(placement, field);
     const question = PLACEMENT_QUESTIONS[field];
     const answered = question ? placement.probabilities?.[question] : undefined;
@@ -422,7 +422,7 @@ export function whyFields(placement: PlacementRecord): WhyField[] {
     const source: FieldSource = answered && (answered[value] ?? -1) < top ? 'changed'
       : placement.fixed.includes(field) ? 'fixed'
       : answered ? 'jev'
-      : placement.source === 'fallback' ? 'fallback' : 'only';
+      : (field === 'account' ? placement.accountChoice?.source : placement.source) === 'fallback' ? 'fallback' : 'only';
     return { field, value, source, bars };
   });
 }

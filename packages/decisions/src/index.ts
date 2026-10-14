@@ -8,6 +8,7 @@ export * from './improver.js';
 export * from './evaluation.js';
 export * from './memory-care.js';
 export * from './placement.js';
+export * from './account-choice.js';
 export * from './project-outcome.js';
 
 export * from './merge-route.js';

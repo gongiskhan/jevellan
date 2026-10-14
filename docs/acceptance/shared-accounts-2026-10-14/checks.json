@@ -1,0 +1,119 @@
+{
+  "schema": "shared-account-checks-v1",
+  "labels": {
+    "backend": "simulated",
+    "typecheck": "simulated",
+    "lint": "simulated",
+    "build": "simulated",
+    "browser": "blocked",
+    "manualBrowser": "live"
+  },
+  "tests": {
+    "passed": 174,
+    "skipped": 4,
+    "files": 9
+  },
+  "typecheck": "passed",
+  "lint": "passed",
+  "build": "passed",
+  "browser": "Fixture webServer did not become ready in its unchanged 60000 ms startup timeout. No browser journey started; no assertion was relaxed.",
+  "regressionsFailedBeforeFix": [
+    "Shared readiness overridden by an unprobed member",
+    "Jev account choice replaced by resource ranking"
+  ],
+  "activationNotes": [
+    "First Pro update attempt stopped during HTTPS planning because the operator PATH omitted /opt/homebrew/bin. Existing service/data unchanged; retained the attempt journal and retried with Tailscale on PATH."
+  ],
+  "memberInstallation": {
+    "label": "live",
+    "version": "0.3.5",
+    "membershipUnchanged": true,
+    "authenticationUnchanged": true,
+    "rollbackRetained": true
+  },
+  "hubInstallation": {
+    "label": "live",
+    "version": "0.3.5",
+    "membershipUnchanged": true,
+    "authenticationUnchanged": true,
+    "rollbackRetained": true
+  },
+  "macDistribution": [
+    {
+      "path": "packages/core/dist/account-status.js",
+      "sha256": "0433b5e741eb5eabbc97ca184069d73b0415409231f2203ae170c8da67464aa8",
+      "matches": true
+    },
+    {
+      "path": "packages/accounts/dist/eligibility.js",
+      "sha256": "f6a63fda3f50386a0474eb411422ce41ed1bc8553c5d0e86015818afcf13d1df",
+      "matches": true
+    },
+    {
+      "path": "packages/decisions/dist/account-choice.js",
+      "sha256": "062c93c64cd5b4b7a624464a176ad4c7547adf79fd771b46ad456e030c8ac6b8",
+      "matches": true
+    },
+    {
+      "path": "packages/decisions/dist/placement.js",
+      "sha256": "110d4b8952523181227952f0230baaac70f2db1908cba116b5e1815903f484c6",
+      "matches": true
+    },
+    {
+      "path": "packages/projects/dist/launch.js",
+      "sha256": "6350fc144c4db259d2b4fd31b5ebeacfc3500b325fb9c98d4f30e2a3511900ff",
+      "matches": true
+    },
+    {
+      "path": "packages/projects/dist/project-work.js",
+      "sha256": "4c295a39585b5a9370a5c5bf04e287a349e1dcfa50119d427fa969ed5c247551",
+      "matches": true
+    },
+    {
+      "path": "packages/projects/dist/thread-runner.js",
+      "sha256": "2de3fb0c1f45b84a4ff8674755e3de918dd22a8097e5c67ae5386622d7f39ba9",
+      "matches": true
+    }
+  ],
+  "crucialIssuesReview": {
+    "label": "simulated",
+    "scope": "Changed account eligibility, selection, launch, schema and Why paths",
+    "seriousFindings": 0,
+    "secondReview": "not run"
+  },
+  "manualBrowser": {
+    "layouts": [
+      "1280x900 light",
+      "1280x900 dark",
+      "390x844 light",
+      "390x844 dark"
+    ],
+    "result": "Account choice, usage and eligibility visible and readable in all four saved screenshots. Direct screenshot inspection; no automated vision claim.",
+    "restored": [
+      "System theme",
+      "viewport override reset"
+    ]
+  },
+  "liveSession": {
+    "threadId": "thread_01M4XPPJH6AFCF9KPTBSMH0743",
+    "state": "done",
+    "turns": 1,
+    "runtime": "claude",
+    "model": "claude-sonnet-5",
+    "effort": "low",
+    "account": "Gmail",
+    "accountChoiceSource": "jev",
+    "probabilities": {
+      "Gmail": 0.97,
+      "Ekoa": 0.03
+    },
+    "host": "dev-madrid",
+    "repository": "gongiskhan/ekoa-code",
+    "changedFiles": []
+  },
+  "testSetupIssue": "The coordinator initially pinned the diagnostic to the Pro using a stale job device ID. Its task-update tool cannot change device pins. The owned incorrect diagnostic was stopped; a replacement through coordinator chat used the actual Madrid ID. This is a remaining coordinator/device-discovery limitation, not a passing automatic device-selection claim.",
+  "secretScan": {
+    "worktree": "passed",
+    "prePush": "mandatory git hook"
+  }
+}

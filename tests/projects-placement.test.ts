@@ -239,7 +239,7 @@ test('the fallback takes the default isolation, the first eligible model and med
   const value = input({ statuses: [status('claude_a', 'dev_mini'), status('claude_a', 'dev_studio')] });
   const record = fallback(value);
   expect(record).toEqual({ schema: 'placement-v1', questionSet: 'p-v1', source: 'fallback', fixed: [], isolation: 'worktree', runtime: 'claude', modelId: 'deep', model: 'deep-version',
-    effortRequested: 'medium', effortEffective: 'high', deviceId: 'dev_mini', accountId: 'claude_a', eligibleModels: ['deep'],
+    effortRequested: 'medium', effortEffective: 'high', deviceId: 'dev_mini', accountId: 'claude_a', accountChoice: expect.objectContaining({ schema: 'placement-account-choice-v1', source: 'fallback', accountId: 'claude_a', candidates: [expect.objectContaining({ accountId: 'claude_a', eligible: true, auth: 'ready' })] }), eligibleModels: ['deep'],
     excludedModels: [{ modelId: 'swift', reason: 'Mac mini: Codex needs login; Studio: Codex needs login' }], eligibleDevices: ['dev_mini', 'dev_studio'], excludedDevices: [],
     error: { kind: 'no-key', message: 'no key configured' }, jevCalls: [], decidedAt: '2026-10-03T10:00:00.000Z' });
   expect(PlacementRecordSchema.parse(record)).toEqual(record);
@@ -313,6 +313,35 @@ const usage = (weeklyPct: number) => ({ weeklyPct, source: 'probe' as const, obs
 const questionKeys = (value: PlacementInput) => Object.keys(preparePlacementA(value, candidates(value)));
 const placementCall = { schema: 'jev-call-v1', kind: 'placement', requestedModel: 'jev-1.13.0', returnedModel: 'fixture-returned', usage: { input_tokens: 20, output_tokens: 10 }, latencyMs: expect.any(Number) };
 
+test('Jev chooses the account after model and device, seeing usage but never machine credentials', async () => {
+  const value = input({ gates: closed, fixed: { isolation: 'worktree', modelId: 'deep', effort: 'high' },
+    accounts: [account('claude_a', 'claude'), account('claude_b', 'claude'), account('claude_full', 'claude')],
+    statuses: [status('claude_a', 'dev_mini', { usage: usage(10) }), status('claude_b', 'dev_mini', { usage: usage(20) }), status('claude_full', 'dev_mini', { usage: usage(100) })] });
+  const decide = jev({ account: 'claude_b' });
+  const record = await placed(value, decide);
+  expect(record.accountId).toBe('claude_b');
+  expect(decide).toHaveBeenCalledOnce();
+  const questions = decide.mock.calls[0]![0].questions;
+  expect(Object.keys(questions)).toEqual(['account']);
+  expect(questions.account).toMatchObject({ criteria: { claude_a: expect.stringContaining('"weeklyPct":10'), claude_b: expect.stringContaining('"weeklyPct":20') } });
+  expect(JSON.stringify(questions)).not.toContain('claude_full');
+  expect(record.accountChoice).toMatchObject({ source: 'jev', accountId: 'claude_b', candidates: [
+    { accountId: 'claude_a', eligible: true }, { accountId: 'claude_b', eligible: true }, { accountId: 'claude_full', eligible: false, reason: 'usage-ceiling' }] });
+});
+
+test('an account choice failure is recorded and fixed accounts never ask Jev', async () => {
+  const value = input({ gates: closed, fixed: { isolation: 'worktree', modelId: 'deep', effort: 'high' },
+    accounts: [account('claude_a', 'claude'), account('claude_b', 'claude')],
+    statuses: [status('claude_a', 'dev_mini', { usage: usage(20) }), status('claude_b', 'dev_mini', { usage: usage(10) })] });
+  const fallback = await placed(value, jev(new JevError('network')));
+  expect(fallback.accountChoice).toMatchObject({ source: 'fallback', accountId: 'claude_b', error: { kind: 'network' } });
+  const decide = vi.fn<DecisionClient['decide']>();
+  const fixed = await placed({ ...value, fixed: { ...value.fixed, accountId: 'claude_a' } }, decide);
+  expect(fixed.accountChoice).toMatchObject({ source: 'fixed', accountId: 'claude_a' });
+  expect(decide).not.toHaveBeenCalled();
+  await expect(place(value, jev(new JevError('cancelled')))).rejects.toMatchObject({ kind: 'cancelled' });
+});
+
 test('Call A asks isolation only when both are allowed, the eligible models by description and the effort guide', async () => {
   const value = input(); const a = preparePlacementA(value, candidates(value));
   expect(Object.keys(a)).toEqual(['isolation', 'pick_model', 'effort']);
@@ -363,12 +392,12 @@ test('Jev answers resolve to the highest probability, the mapped effort and the 
     statuses: [status('codex_a', 'dev_mini'), status('codex_a', 'dev_studio'), status('claude_a', 'dev_mini'), status('claude_a', 'dev_studio', { usage: usage(80) }), status('claude_b', 'dev_studio', { usage: usage(10) })] });
   // Jev's choice sits 0.011 below the maximum: the parser accepts it and the maximum wins (D30).
   const decide = jev({ isolation: { choice: 'worktree', probabilities: { worktree: 0.8, main: 0.2 } }, pick_model: { choice: 'swift', probabilities: { swift: 0.4945, deep: 0.5055 } },
-    effort: { choice: 'max', probabilities: { low: 0, medium: 0.1, high: 0.3, xhigh: 0, max: 0.6 } } }, { device: 'dev_studio' });
+    effort: { choice: 'max', probabilities: { low: 0, medium: 0.1, high: 0.3, xhigh: 0, max: 0.6 } } }, { device: 'dev_studio' }, { account: 'claude_b' });
   const record = await placed(value, decide);
   expect(record).toEqual({ schema: 'placement-v1', questionSet: 'p-v1', source: 'jev', fixed: [], isolation: 'worktree', runtime: 'claude', modelId: 'deep', model: 'deep-version',
-    effortRequested: 'max', effortEffective: 'max', deviceId: 'dev_studio', accountId: 'claude_b',
-    probabilities: { isolation: { worktree: 0.8, main: 0.2 }, pick_model: { swift: 0.4945, deep: 0.5055 }, effort: { low: 0, medium: 0.1, high: 0.3, xhigh: 0, max: 0.6 }, device: { dev_mini: 0, dev_studio: 1 } },
-    eligibleModels: ['swift', 'deep'], excludedModels: [], eligibleDevices: ['dev_mini', 'dev_studio'], excludedDevices: [], taskContext: { type: 'feature', needs: [], goal: null }, correctionsShown: [], jevCalls: [placementCall, placementCall], decidedAt: '2026-10-03T10:00:00.000Z' });
+    effortRequested: 'max', effortEffective: 'max', deviceId: 'dev_studio', accountId: 'claude_b', accountChoice: expect.objectContaining({ source: 'jev', accountId: 'claude_b', candidates: [expect.objectContaining({ accountId: 'claude_b', usage: usage(10) }), expect.objectContaining({ accountId: 'claude_a', usage: usage(80) })] }),
+    probabilities: { isolation: { worktree: 0.8, main: 0.2 }, pick_model: { swift: 0.4945, deep: 0.5055 }, effort: { low: 0, medium: 0.1, high: 0.3, xhigh: 0, max: 0.6 }, device: { dev_mini: 0, dev_studio: 1 }, account: { claude_b: 1, claude_a: 0 } },
+    eligibleModels: ['swift', 'deep'], excludedModels: [], eligibleDevices: ['dev_mini', 'dev_studio'], excludedDevices: [], taskContext: { type: 'feature', needs: [], goal: null }, correctionsShown: [], jevCalls: [placementCall, placementCall, placementCall], decidedAt: '2026-10-03T10:00:00.000Z' });
   expect(PlacementRecordSchema.parse(record)).toEqual(record);
   const [first, second] = decide.mock.calls.map(([request]) => request);
   expect(Object.keys(first!.questions)).toEqual(['isolation', 'pick_model', 'effort']); expect(Object.keys(second!.questions)).toEqual(['device']);

@@ -37,6 +37,18 @@ test('per-device credentials never borrow readiness from another device', () => 
   expect(rank([account('local')], [status('local', { deviceId: 'elsewhere' })])[0]?.reason).toBe('needs-login');
   expect(rank([account('shared', { kind: 'api-key', credential: 'shared', paidUse: 'always' })], [status('shared', { deviceId: 'elsewhere' })])[0]?.eligible).toBe(true);
 });
+test('an unprobed member does not override shared login readiness; real revocation and rotation still do', () => {
+  const shared = account('shared', { runtime: 'claude', credential: 'shared' });
+  const ready = status('shared', { deviceId: 'hub' });
+  const missing = status('shared', { auth: 'missing', observedAt: new Date(now + 1000).toISOString() });
+  const ranked = (statuses: AccountStatus[]) => rankAccounts({ accounts: [shared], statuses, runtime: 'claude', deviceId: 'here', now });
+  expect(ranked([ready, missing])[0]).toMatchObject({ eligible: true, status: { deviceId: 'hub' } });
+  expect(ranked([missing])[0]?.reason).toBe('needs-login');
+  for (const auth of ['needs-login', 'expired', 'checking'] as const) {
+    expect(ranked([ready, { ...missing, auth }])[0]?.eligible).toBe(false);
+  }
+  expect(rank([account('shared')], [ready, missing])[0]?.eligible).toBe(false);
+});
 test.each([
   [{ enabled: false }, {}, 'disabled'], [{}, { auth: 'expired' }, 'expired'],
   [{}, { coolingUntil: new Date(now + 1000).toISOString() }, 'cooling'], [{}, { usage: usage(1, 90) }, 'usage-ceiling'],

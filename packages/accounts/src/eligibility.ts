@@ -1,4 +1,4 @@
-import { AccountSchema, AccountStatusSchema, type Account, type AccountStatus, type ExclusionReason } from '@jevellan/core';
+import { AccountSchema, AccountStatusSchema, effectiveAccountStatus, type Account, type AccountStatus, type ExclusionReason } from '@jevellan/core';
 
 export type RankedAccount = { account: Account; status?: AccountStatus; eligible: boolean; reason: ExclusionReason | 'eligible'; knownUsage: boolean; effectivePct: number; weeklyPct: number };
 /** model: the runtime's model id; a limit on that model on an account excludes the account for it as 'cooling'. */
@@ -7,7 +7,10 @@ export function rankAccounts(input: { accounts: Account[]; statuses: AccountStat
   const statuses = input.statuses.map((status) => AccountStatusSchema.parse(status));
   const base = input.accounts.map((raw): RankedAccount => {
     const account = AccountSchema.parse(raw);
-    const status = statuses.filter((value) => value.accountId === account.id && (account.credential === 'shared' || value.deviceId === input.deviceId)).sort((a, b) => Date.parse(b.observedAt) - Date.parse(a.observedAt))[0];
+    // Shared credentials live in the hub vault. A member without a local observation gets a
+    // synthetic `missing` row; its timestamp must not invalidate a checked shared credential.
+    // Actual probe failures and credential-rotation `checking` rows still take precedence.
+    const status = effectiveAccountStatus(account, statuses, input.deviceId);
     const windows = [status?.usage?.fiveHourPct, status?.usage?.weeklyPct].filter((value): value is number => value !== undefined);
     let reason: RankedAccount['reason'] = 'eligible';
     if (account.runtime !== input.runtime || account.credential === 'hub-refreshed') reason = 'unsupported';

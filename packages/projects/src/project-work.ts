@@ -27,7 +27,7 @@ import {
 import type { StretchBridges, BridgeScopeTools } from '@jevellan/conversations';
 import { bridgeTools, applicationRoot, minimalEnvironment, resolvedPath, stableJson } from '@jevellan/core';
 import { ProjectTools } from './bridge-tools.js';
-import { decideProjectOutcome, type DecisionClient } from '@jevellan/decisions';
+import { decideAccount, decideProjectOutcome, JevError, type DecisionClient } from '@jevellan/decisions';
 import type { BasicMemory } from '@jevellan/memory';
 import type { RuntimeAdapter } from '@jevellan/runtime-contract';
 import { Admission } from './admission.js';
@@ -170,6 +170,15 @@ export class ProjectWork {
       deviceId: o.deviceId, deviceName: o.deviceName, daemonUrl: () => this.daemonUrl, redactor: o.redactor, held, projectSettings: projectId => this.admission.settings(projectId),
       sessionLedger: projectId => this.ledgers.coordinator(projectId), now, useOwnSetup: async runtime => (await o.settings()).runtimes[runtime]?.useOwnSetup !== false,
       cacheWindowMinutes: async runtime => (await o.settings()).runtimes[runtime]?.cacheWindowMinutes ?? (runtime === 'claude' ? 60 : 10),
+      chooseAccount: async (request, ranking) => {
+        const settings = await o.settings();
+        const thread = request.owner.kind === 'thread' ? this.store.get(request.owner.id) : undefined;
+        return decideAccount(o.decisionClient ? await o.decisionClient() : { decide: async () => { throw new JevError('no-key'); } }, {
+          ranking, model: settings.decisions.model, now: now(), redactor: o.redactor,
+          state: JSON.stringify(o.redactor.document({ schema: 'account-route-state-v1', runtime: request.runtime, model: request.model,
+            owner: request.owner.kind, title: thread?.title ?? request.modelLabel, task: thread?.task.slice(0, 6000), routingProfile: settings.routingProfile })),
+        }, AbortSignal.timeout(150_000));
+      },
       archiveSession: (owner, session) => {
         if (owner.kind === 'thread') this.store.updateLocal(owner.id, local => ({ ...local, sessionHistory: [...(local.sessionHistory ?? []).filter(row => row.key !== session.key), session] }));
         else if (owner.kind === 'coordinator') coordinatorStore.updateLocal(owner.projectId, local => ({ ...local, sessionHistory: [...(local.sessionHistory ?? []).filter(row => row.key !== session.key), session] }));

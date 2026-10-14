@@ -5,7 +5,7 @@ import { JournalConfigSchema, JournalDocumentSchema, JournalThreadSchema, Projec
 import { OwnerCommandsSchema } from './owner-command-schemas.js';
 import { ProjectReviewReportSchema } from './project-review-schemas.js';
 import { CursorTranscriptSchema } from './cursor-schemas.js';
-import { DeviceFactsSchema, DeviceTagsSchema, EffortSchema, IdSchema, JevCallSchema, TimestampSchema, UsageSchema } from './schemas.js';
+import { AccountUsageSchema, AuthSchema, DeviceFactsSchema, DeviceTagsSchema, EffortSchema, IdSchema, JevCallSchema, TimestampSchema, UsageSchema } from './schemas.js';
 import { TaskPlacementContextSchema, TaskTypeSchema } from './task-types.js';
 import { ProjectMemorySettingsSchema, MemoryRecallSchema } from './memory-note-schemas.js';
 
@@ -163,10 +163,18 @@ export const PullRequestStateSchema = z.strictObject({ number: positive, url: z.
   headFirstSeenAt: TimestampSchema.optional(), passedChecks: z.array(z.string().max(200)).max(2000).optional(), mergeable: z.enum(['clean', 'conflict', 'unknown']), updatedAt: TimestampSchema, review: PullRequestReviewSchema.optional() });
 export type PullRequestState = z.infer<typeof PullRequestStateSchema>;
 // 5.8
+export const PlacementAccountChoiceSchema = z.strictObject({ schema: z.literal('placement-account-choice-v1'), questionSet: z.literal('a-v1'),
+  source: z.enum(['jev', 'only-option', 'fixed', 'fallback']), accountId: IdSchema, at: TimestampSchema,
+  candidates: z.array(z.strictObject({ accountId: IdSchema, label: text, eligible: z.boolean(), reason: text, ceilingPct: z.number(),
+    credential: z.enum(['shared', 'per-device', 'hub-refreshed']), auth: AuthSchema.optional(), statusDeviceId: IdSchema.optional(), usage: AccountUsageSchema.optional() })),
+  probabilities: z.record(z.string(), z.number().min(0).max(1)).optional(),
+  error: z.strictObject({ kind: text, message: z.string().max(300) }).optional(), jevCalls: z.array(JevCallSchema) });
+export type PlacementAccountChoice = z.infer<typeof PlacementAccountChoiceSchema>;
 export const PlacementRecordSchema = z.strictObject({ schema: z.literal('placement-v1'), questionSet: z.literal('p-v1'),
   source: z.enum(['jev', 'fixed', 'fallback']), fixed: z.array(PlacementFieldSchema), isolation: IsolationSchema,
   runtime: IdSchema, modelId: IdSchema, model: text, effortRequested: EffortSchema, effortEffective: EffortSchema,
   deviceId: IdSchema, accountId: IdSchema,
+  accountChoice: PlacementAccountChoiceSchema.optional(),
   probabilities: z.record(z.string(), z.record(z.string(), z.number())).optional(),
   eligibleModels: z.array(IdSchema), excludedModels: z.array(z.strictObject({ modelId: IdSchema, reason: z.string() })),
   eligibleDevices: z.array(IdSchema), excludedDevices: z.array(z.strictObject({ deviceId: IdSchema, reason: z.string() })),

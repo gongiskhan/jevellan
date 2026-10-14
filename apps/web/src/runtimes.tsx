@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
 import {
   AccountViewSchema,
+  effectiveAccountStatus,
   LoginViewSchema,
   type AccountView,
   type AccountStatus,
@@ -27,9 +28,7 @@ const paidLabels = {
 };
 type Login = z.infer<typeof LoginViewSchema>;
 function currentStatus(view: AccountView, deviceId: string) {
-  return [...view.statuses]
-    .filter((status) => view.account.credential === 'shared' || status.deviceId === deviceId)
-    .sort((a, b) => b.observedAt.localeCompare(a.observedAt))[0];
+  return effectiveAccountStatus(view.account, view.statuses, deviceId);
 }
 function Usage({ status }: { status: AccountStatus | undefined }) {
   return (

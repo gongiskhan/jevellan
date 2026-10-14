@@ -453,7 +453,9 @@ export class ThreadRunner {
     try {
       if (started.accountChanged) {
         // The session lives in the old account's home (D16): drop it so no later turn tries to resume it here.
-        this.#set((current) => { const moved: Thread = { ...current, placement: { ...current.placement, accountId: started.accountId } }; delete moved.nativeSessionId; return moved; });
+        this.#set((current) => { const moved: Thread = { ...current, placement: { ...current.placement, accountId: started.accountId,
+          ...(started.accountChoice ? { accountChoice: started.accountChoice, probabilities: { ...current.placement.probabilities, account: started.accountChoice.probabilities ?? {} } } : {}) } }; delete moved.nativeSessionId; return moved; });
+        if (started.accountChoice) ledger.append({ type: 'thread-placement', data: this.#thread().placement });
         this.#notice(thread, accountMovedNotice(started.accountLabel), 'info');
       }
       this.#c.store.setLabels(thread.id, { accountLabel: started.accountLabel });

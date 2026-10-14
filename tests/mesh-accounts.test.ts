@@ -8,7 +8,7 @@ import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { AccountHubRequestSchema, CredentialCaptureReceiptSchema, DeviceSchema, Homes, SecretRedactor, type AccountStatus } from '../packages/core/dist/index.js';
 import { HubAccounts, HubDatabase, HubUnavailable, MemberAccounts, MemberHubClient, joinMember, memberConnection } from '../packages/mesh/dist/index.js';
-import { AccountService } from '../packages/accounts/dist/index.js';
+import { AccountService, rankAccounts } from '../packages/accounts/dist/index.js';
 import { Application, createDaemon } from '../apps/daemon/dist/index.js';
 import { FakeRuntime, type RuntimeAdapter } from '../packages/runtime-contract/dist/index.js';
 
@@ -56,6 +56,22 @@ test('member account checks and model discovery run locally while shared data an
   expect(readFileSync(homes.at('apm.yml'), 'utf8')).toContain('claude-fable-5-1');
   expect(JSON.stringify(await service.list())).not.toContain(secret); expect(JSON.stringify(app.hub.db.prepare('SELECT document FROM documents UNION ALL SELECT document FROM secrets').all())).not.toContain(secret);
   expect(redactor.text(secret)).toBe('[redacted]'); expect(existsSync(homes.at('hub'))).toBe(false);
+});
+
+test('a hub-checked shared account launches from an unprobed member with its saved credential and isolated home', async () => {
+  const hub = new HubAccounts(app.hub, app.device.deviceId);
+  const secret = `fixture-${randomUUID()}`;
+  const created = hub.add({ schema: 'add-account-v1', runtime: 'claude', label: 'Hub login', kind: 'subscription', secret });
+  hub.writeStatus({ ...hub.status(created.account.id), auth: 'ready', observedAt: new Date(Date.now() - 1000).toISOString() }, created.account.secretRef!);
+  const views = await service.list();
+  const ranked = rankAccounts({ accounts: views.map(view => view.account), statuses: views.flatMap(view => view.statuses), runtime: 'claude', deviceId: connection.deviceId });
+  expect(ranked[0]?.eligible).toBe(true);
+  const resolved = await service.resolve(created.account.id);
+  expect(resolved.home).toBe(homes.account('claude', created.account.id));
+  expect(resolved.env).toEqual({ CLAUDE_CODE_OAUTH_TOKEN: secret });
+  expect(runtime.beginLogin).not.toHaveBeenCalled();
+  expect(JSON.stringify(views)).not.toContain(secret);
+  expect(existsSync(join(root, 'user', '.claude'))).toBe(false);
 });
 
 test('credential replacement is atomic when a status write fails and invalidates every known device only after success', async () => {

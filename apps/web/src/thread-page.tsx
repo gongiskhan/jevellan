@@ -523,9 +523,20 @@ function WhyPanel({ view, data, close }: { view: ThreadView; data: PageProps['da
             </section>
           );
         })}
-        {!placement.fixed.includes('account') && <section className="why-section">
+        {!placement.fixed.includes('account') && !placement.accountChoice && <section className="why-section">
           <h3>{copy.ACCOUNT}</h3>
           <p className="why-line"><b>{account}</b></p>
+        </section>}
+        {placement.accountChoice && <section className="why-section">
+          <h3>Accounts when chosen</h3>
+          {placement.accountChoice.error && <p className="notice">Account choice used the resource ranking: {placement.accountChoice.error.message}</p>}
+          <ul>{placement.accountChoice.candidates.map(candidate => <li key={candidate.accountId}>
+            <b>{candidate.label}</b>{candidate.accountId === placement.accountId ? ' · chosen' : ''}: {candidate.eligible ? 'eligible' : candidate.reason}
+            {' · '}{candidate.credential === 'shared' ? 'Shared saved login' : 'Device-local login'}
+            {' · '}Five hours {candidate.usage?.fiveHourPct === undefined ? 'unknown' : `${candidate.usage.fiveHourPct}%`}
+            {' · '}Week {candidate.usage?.weeklyPct === undefined ? 'unknown' : `${candidate.usage.weeklyPct}%`}
+            {' · '}Ceiling {candidate.ceilingPct}%
+          </li>)}</ul>
         </section>}
         {!!placement.deviceFacts?.length && <section className="why-section">
           <h3>Devices when placed</h3>

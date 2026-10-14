@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { AccountSchema, AccountStatusSchema, type AccountStatus } from '../packages/core/dist/index.js';
+import { AccountSchema, AccountStatusSchema, effectiveAccountStatus, type AccountStatus } from '../packages/core/dist/index.js';
 import { rankAccounts } from '../packages/accounts/dist/index.js';
 import { accountAvailability } from '../apps/web/src/account-availability.js';
 
@@ -41,4 +41,13 @@ test('missing credentials and failed checks cannot advertise a fresh Ready state
   expect(accountAvailability(account, status({ auth: 'missing' }), true, now).label).toBe('Needs login');
   expect(accountAvailability(account, status({ auth: 'expired' }), true, now).label).toBe('Expired');
   expect(accountAvailability(account, status({ lastError: 'Provider unavailable' }), true, now).label).toBe('Signed in · check failed');
+});
+
+test('Settings and launch eligibility agree about an unprobed member using a shared login', () => {
+  const statuses = [status({ deviceId: 'hub', usage: usage(20) }), status({ deviceId: 'member', auth: 'missing', observedAt: new Date(now + 1000).toISOString() })];
+  const current = effectiveAccountStatus(account, statuses, 'member');
+  expect(accountAvailability(account, current, true, now).label).toBe('Ready');
+  expect(rankAccounts({ accounts: [account], statuses, runtime: 'claude', deviceId: 'member', now })[0]?.eligible).toBe(true);
+  const local = { ...account, credential: 'per-device' as const };
+  expect(accountAvailability(local, effectiveAccountStatus(local, statuses, 'member'), true, now).label).toBe('Needs login');
 });

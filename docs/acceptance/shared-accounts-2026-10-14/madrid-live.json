@@ -1,0 +1,269 @@
+{
+  "schema": "shared-account-live-check-v1",
+  "label": "live",
+  "threadId": "thread_01M4XPPJH6AFCF9KPTBSMH0743",
+  "title": "Diagnostic: Claude Code on dev-madrid reads the repository name",
+  "state": "done",
+  "turns": 1,
+  "createdAt": "2026-10-14T17:17:29.510Z",
+  "endedAt": "2026-10-14T17:18:49.994Z",
+  "stateReason": "Concluded without changes.",
+  "placement": {
+    "schema": "placement-v1",
+    "questionSet": "p-v1",
+    "source": "jev",
+    "fixed": [
+      "runtime",
+      "device"
+    ],
+    "isolation": "worktree",
+    "runtime": "claude",
+    "modelId": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "effortRequested": "low",
+    "effortEffective": "low",
+    "deviceId": "dev_01M4TBASXPRTQHPZCS1GDGBKDP",
+    "accountId": "acc_01M3CRN0G9NKRYKKN0B2YVM0RF",
+    "accountChoice": {
+      "schema": "placement-account-choice-v1",
+      "questionSet": "a-v1",
+      "source": "jev",
+      "accountId": "acc_01M3CRN0G9NKRYKKN0B2YVM0RF",
+      "at": "2026-10-14T17:17:28.919Z",
+      "candidates": [
+        {
+          "accountId": "acc_01M3CRN0G9NKRYKKN0B2YVM0RF",
+          "label": "Gmail",
+          "eligible": true,
+          "reason": "eligible",
+          "ceilingPct": 90,
+          "credential": "shared",
+          "auth": "ready",
+          "statusDeviceId": "dev_01M4NF02MA5E1EYSJRSRAMT5BA",
+          "usage": {
+            "fiveHourPct": 9,
+            "weeklyPct": 26,
+            "fiveHourResetsAt": "2026-10-14T18:50:00.000Z",
+            "weeklyResetsAt": "2026-10-19T05:00:00.000Z",
+            "source": "probe",
+            "observedAt": "2026-10-14T17:14:53.801Z"
+          }
+        },
+        {
+          "accountId": "acc_01M3CRQ2SN9FZZZ6RK44T8K0P0",
+          "label": "Ekoa",
+          "eligible": true,
+          "reason": "eligible",
+          "ceilingPct": 90,
+          "credential": "shared",
+          "auth": "ready",
+          "statusDeviceId": "dev_01M4NF02MA5E1EYSJRSRAMT5BA",
+          "usage": {
+            "fiveHourPct": 35,
+            "weeklyPct": 28,
+            "fiveHourResetsAt": "2026-10-14T21:00:00.000Z",
+            "weeklyResetsAt": "2026-10-20T10:00:00.000Z",
+            "source": "probe",
+            "observedAt": "2026-10-14T17:14:54.708Z"
+          }
+        }
+      ],
+      "probabilities": {
+        "acc_01M3CRN0G9NKRYKKN0B2YVM0RF": 0.97,
+        "acc_01M3CRQ2SN9FZZZ6RK44T8K0P0": 0.03
+      },
+      "jevCalls": [
+        {
+          "schema": "jev-call-v1",
+          "kind": "placement",
+          "requestedModel": "jev-latest",
+          "returnedModel": "jev-1.13.0",
+          "usage": {
+            "input_tokens": 2158,
+            "output_tokens": 96
+          },
+          "latencyMs": 252
+        }
+      ]
+    },
+    "probabilities": {
+      "pick_model": {
+        "claude-fable": 0.04,
+        "claude-opus": 0.27,
+        "claude-sonnet": 0.69
+      },
+      "effort": {
+        "low": 0.68,
+        "medium": 0.31,
+        "high": 0.01,
+        "xhigh": 0,
+        "max": 0
+      },
+      "account": {
+        "acc_01M3CRN0G9NKRYKKN0B2YVM0RF": 0.97,
+        "acc_01M3CRQ2SN9FZZZ6RK44T8K0P0": 0.03
+      }
+    },
+    "eligibleModels": [
+      "claude-fable",
+      "claude-opus",
+      "claude-sonnet"
+    ],
+    "excludedModels": [
+      {
+        "modelId": "codex-gpt",
+        "reason": "not chosen"
+      },
+      {
+        "modelId": "model_724b3d194be446b1aeab87c948e8f9b3",
+        "reason": "not chosen"
+      },
+      {
+        "modelId": "model_faa7b3591a424534bf1b0cc81b9acdc5",
+        "reason": "not chosen"
+      }
+    ],
+    "eligibleDevices": [
+      "dev_01M4TBASXPRTQHPZCS1GDGBKDP"
+    ],
+    "excludedDevices": [
+      {
+        "deviceId": "dev_01M4NF02MA5E1EYSJRSRAMT5BA",
+        "reason": "not chosen"
+      },
+      {
+        "deviceId": "dev_01M4TB9PZK8HQ9CNZV5G7G0HBM",
+        "reason": "not chosen"
+      }
+    ],
+    "deviceFacts": [
+      {
+        "deviceId": "dev_01M4NF02MA5E1EYSJRSRAMT5BA",
+        "name": "Goncalos-MacBook-Pro.local",
+        "running": 0,
+        "tags": [
+          "mac",
+          "residential",
+          "browser-automation"
+        ],
+        "facts": {
+          "schema": "device-facts-v1",
+          "cores": 10,
+          "load1": 30.59228515625,
+          "load5": 25.24169921875,
+          "totalMemoryBytes": 34359738368,
+          "freeMemoryBytes": 446070784,
+          "freeDiskBytes": 86075400192,
+          "os": "darwin",
+          "runningThreads": [],
+          "runningJobRuns": [],
+          "power": {
+            "schema": "device-power-v1",
+            "status": "available",
+            "observedAt": "2026-10-14T17:17:02.436Z",
+            "acSleepMinutes": 0
+          }
+        }
+      },
+      {
+        "deviceId": "dev_01M4TB9PZK8HQ9CNZV5G7G0HBM",
+        "name": "Mac.lan",
+        "running": 0,
+        "tags": [
+          "mac",
+          "residential"
+        ],
+        "facts": {
+          "schema": "device-facts-v1",
+          "cores": 10,
+          "load1": 4.52001953125,
+          "load5": 3.6494140625,
+          "totalMemoryBytes": 17179869184,
+          "freeMemoryBytes": 203505664,
+          "freeDiskBytes": 353621250048,
+          "os": "darwin",
+          "runningThreads": [],
+          "runningJobRuns": [],
+          "power": {
+            "schema": "device-power-v1",
+            "status": "available",
+            "observedAt": "2026-10-14T17:16:14.650Z",
+            "acSleepMinutes": 0
+          }
+        }
+      },
+      {
+        "deviceId": "dev_01M4TBASXPRTQHPZCS1GDGBKDP",
+        "name": "dev-madrid",
+        "running": 0,
+        "tags": [
+          "linux",
+          "datacenter"
+        ],
+        "facts": {
+          "schema": "device-facts-v1",
+          "cores": 16,
+          "load1": 8.4,
+          "load5": 7.61,
+          "totalMemoryBytes": 67416625152,
+          "freeMemoryBytes": 18038583296,
+          "freeDiskBytes": 559955939328,
+          "os": "linux",
+          "runningThreads": [],
+          "runningJobRuns": [],
+          "power": {
+            "schema": "device-power-v1",
+            "status": "not-applicable",
+            "observedAt": "2026-10-14T17:16:42.308Z"
+          }
+        }
+      }
+    ],
+    "taskContext": {
+      "type": "ops",
+      "needs": [],
+      "goal": null
+    },
+    "correctionsShown": [],
+    "jevCalls": [
+      {
+        "schema": "jev-call-v1",
+        "kind": "placement",
+        "requestedModel": "jev-latest",
+        "returnedModel": "jev-1.13.0",
+        "usage": {
+          "input_tokens": 1985,
+          "output_tokens": 102
+        },
+        "latencyMs": 333
+      },
+      {
+        "schema": "jev-call-v1",
+        "kind": "placement",
+        "requestedModel": "jev-latest",
+        "returnedModel": "jev-1.13.0",
+        "usage": {
+          "input_tokens": 2158,
+          "output_tokens": 96
+        },
+        "latencyMs": 252
+      }
+    ],
+    "decidedAt": "2026-10-14T17:17:28.919Z"
+  },
+  "labels": {
+    "modelLabel": "Sonnet",
+    "accountLabel": "Gmail"
+  },
+  "lastReport": {
+    "schema": "thread-report-v1",
+    "turn": 1,
+    "status": "done",
+    "summary": "Repo read: gongiskhan/ekoa-code (origin remote). Hostname: dev-madrid. Read-only \u2014 no files, commits, branches, or credentials changed.",
+    "changedFiles": [],
+    "synthesized": false
+  },
+  "worktreePresentAfterCompletion": false,
+  "baseCommit": "6f42b4c4ef1a5f17820878d6d82d5ae2a761ca4c",
+  "scope": "Provider and device fixed for the remote Claude regression; model, effort and saved account chosen by Jev."
+}

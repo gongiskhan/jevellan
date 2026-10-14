@@ -2,7 +2,7 @@ import { join } from 'node:path';
 import { rankAccounts } from '@jevellan/accounts';
 import type { AccountService } from '@jevellan/accounts';
 import { ACCOUNT_REASON_TEXT } from '@jevellan/decisions';
-import { PROJECT_MEMORY_ID, applicationRoot, deviceAllowsWork, type AccountStatus, type Effort, type Homes, type RiggingItem, type ProjectWorkSettings, type SecretRedactor } from '@jevellan/core';
+import { PROJECT_MEMORY_ID, applicationRoot, deviceAllowsWork, type PlacementAccountChoice, type AccountStatus, type Effort, type Homes, type RiggingItem, type ProjectWorkSettings, type SecretRedactor } from '@jevellan/core';
 import type { BridgeScopeTools, StretchBridges } from '@jevellan/conversations';
 import { TurnInputSchema, type RuntimeAdapter, type StretchRun, type TurnInput } from '@jevellan/runtime-contract';
 import { ACCOUNT_BUSY, MEMORY_HOOKS_UNDELIVERED, accountInTerminal, cannotRunHere, noTurnAccount, waitingForAccountReason } from './copy.js';
@@ -43,6 +43,7 @@ export type LaunchStarted = {
   kind: 'started'; run: StretchRun; accountId: string; accountLabel: string; accountChanged: boolean; resumed: boolean; secretRef: string | null;
   /** This device's last known usage of the account, the base for streamed rate limits. */
   usage?: AccountStatus['usage'] | undefined;
+  accountChoice?: PlacementAccountChoice;
   compactionPercent: number; compactionNotice?: string;
   gitIdentity?: GitIdentity | undefined;
   /** Closes the bridge grant and the serial account guard; idempotent. */
@@ -69,6 +70,7 @@ export type TurnLauncherOptions = {
   protectedPaths?(): Promise<string[]>;
   /** Fresh, repository-scoped Git authentication for a writable thread turn; never persisted in a home or MCP configuration. */
   threadGitEnvironment?(projectId: string, cwd: string): Promise<Record<string, string>>;
+  chooseAccount?(request: LaunchRequest, ranking: readonly Ranked[]): Promise<PlacementAccountChoice>;
 };
 type Ranked = ReturnType<typeof rankAccounts>[number];
 
@@ -116,13 +118,21 @@ export class TurnLauncher {
     if (!adapter || !capabilities?.turns || !capabilities.mcp || (request.permissions === 'read-only' ? !capabilities.readOnlyEnforced : !capabilities.edit || !capabilities.shell)) {
       return { kind: 'unavailable', reason: cannotRunHere(adapter?.displayName ?? request.runtime) };
     }
-    const accounts = await this.#o.accounts.list();
-    const ranking = this.#ranking(accounts, request).filter((entry) => request.requiredAccountId === undefined || entry.account.id === request.requiredAccountId);
+    let accounts = await this.#o.accounts.list();
+    let ranking = this.#ranking(accounts, request).filter((entry) => request.requiredAccountId === undefined || entry.account.id === request.requiredAccountId);
     // An account a terminal holds is passed over like an ineligible one: the pinned account while it is free, else the next in rank (D16).
-    const held = this.#o.held?.() ?? new Set<string>();
+    const held = new Set(this.#o.held?.() ?? []);
     const free = (entry: Ranked) => entry.eligible && !held.has(entry.account.id);
-    const selected = ranking.find((entry) => free(entry) && entry.account.id === request.pinnedAccountId) ?? ranking.find(free);
+    const pinned = ranking.find((entry) => free(entry) && entry.account.id === request.pinnedAccountId);
+    const chosenAccount = !pinned && request.requiredAccountId === undefined && ranking.some(free) && this.#o.chooseAccount
+      ? await this.#o.chooseAccount(request, ranking.filter(entry => !held.has(entry.account.id))) : undefined;
+    if (chosenAccount) {
+      accounts = await this.#o.accounts.list(); ranking = this.#ranking(accounts, request);
+      for (const id of this.#o.held?.() ?? []) held.add(id);
+    }
+    const selected = pinned ?? (chosenAccount ? ranking.find(entry => free(entry) && entry.account.id === chosenAccount.accountId) : ranking.find(free));
     if (!selected) {
+      if (chosenAccount) return { kind: 'unavailable', reason: 'The saved account changed availability while Jev was choosing. Retry the turn to choose an available account.' };
       const taken = ranking.find((entry) => entry.eligible);
       if (taken) return { kind: 'unavailable', reason: accountInTerminal(taken.account.label) };
       const best = ranking[0]?.reason;
@@ -203,6 +213,7 @@ export class TurnLauncher {
       } : nativeRun;
       const usage = accounts.find((view) => view.account.id === account.id)?.statuses.find((status) => status.deviceId === this.#o.deviceId)?.usage;
       return { kind: 'started', run, prompt: input.prompt, accountId: account.id, accountLabel: account.label, accountChanged, resumed, secretRef: account.secretRef ?? null,
+        ...(chosenAccount ? { accountChoice: chosenAccount } : {}),
         compactionPercent: percent, ...(compactionNotice ? { compactionNotice } : {}), ...(usage ? { usage } : {}), ...(gitIdentity ? { gitIdentity } : {}), release };
     } catch (error) {
       await release().catch(() => undefined);

@@ -733,6 +733,8 @@ test('PJ4b the Why panel explains placement and overrides apply', async ({ page 
   await expect(section('Device').locator('.why-rank li.excluded')).toHaveText([
     'Browser member: not set up for this project', 'Offline fixture: offline']);
   await expect(section('Account').locator('.why-line')).toHaveText(placed.thread.accountLabel);
+  await expect(panel.getByRole('heading', { name: 'Accounts when chosen', exact: true })).toBeVisible();
+  await expect(panel.getByText(/Ceiling 90%/)).toBeVisible();
   await expect(panel.locator('.why-jev p').first()).toHaveText(/^Placement · jev-browser-simulated · 60 tokens · \d+ ms$/);
   await expectWholeParts(panel.locator('.why-jev p').first());
   // The panel narrows the page beside it on desktops: the placement line still breaks between its parts, not inside the branch.

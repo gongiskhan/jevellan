@@ -5,6 +5,8 @@ import { JevError, type JevQuestions, type JevResponse } from './contract.js';
 import { askJev, type DecisionClient } from './engine.js';
 import type { RuntimeSupport } from './selection.js';
 import { approximateTokens } from './state.js';
+import { accountChoice, decideAccount } from './account-choice.js';
+import type { PlacementAccountChoice } from '@jevellan/core';
 
 export const PLACEMENT_QUESTION_SET = 'p-v1';
 // Placement copy. The Projects copy module re-exports these constants and never retypes them.
@@ -214,17 +216,19 @@ export function fixedPlacementFields(fixed: PlacementFixed): PlacementField[] {
   return (Object.keys(FIXED_KEYS) as PlacementField[]).filter((field) => fixed[FIXED_KEYS[field]] !== undefined);
 }
 
-type PlacementChoice = { isolation: Isolation; options: PlacementOptions; entry: PlacementModel; device: PlacementDevice | undefined; effortRequested: Effort };
+type PlacementChoice = { isolation: Isolation; options: PlacementOptions; entry: PlacementModel; device: PlacementDevice | undefined; effortRequested: Effort; accountChoice?: PlacementAccountChoice };
 type PlacementOutcome = { source: PlacementRecord['source']; calls: JevCall[]; probabilities?: PlacementRecord['probabilities']; error?: { kind: string; message: string } };
 /** One record for every source: the lists are the chosen isolation's options and the chosen model's devices (D136). */
-function placementRecord(input: PlacementInput, { isolation, options, entry, device, effortRequested }: PlacementChoice, outcome: PlacementOutcome): PlacementRecord {
-  const account = device && ranking(input, entry.model, device.id).find((ranked) => ranked.eligible);
+function placementRecord(input: PlacementInput, { isolation, options, entry, device, effortRequested, accountChoice: chosenAccount }: PlacementChoice, outcome: PlacementOutcome): PlacementRecord {
+  const rankedAccounts = device ? ranking(input, entry.model, device.id) : [];
+  const account = rankedAccounts.find(ranked => ranked.eligible && (!chosenAccount || ranked.account.id === chosenAccount.accountId));
   if (!device || !account) throw new Error('Placement candidates have no device for the model.');
   const choice = placementDevices(input, options, entry);
   return PlacementRecordSchema.parse({
     schema: 'placement-v1', questionSet: PLACEMENT_QUESTION_SET, source: outcome.source, fixed: fixedPlacementFields(input.fixed),
     isolation, runtime: entry.model.runtime, modelId: entry.model.id, model: entry.model.model,
     effortRequested, effortEffective: mapEffort(effortRequested, entry.model.efforts), deviceId: device.id, accountId: account.account.id,
+    accountChoice: chosenAccount ?? accountChoice(rankedAccounts, account.account.id, input.fixed.accountId ? 'fixed' : outcome.source === 'fallback' ? 'fallback' : 'only-option', input.now),
     ...(outcome.probabilities ? { probabilities: outcome.probabilities } : {}),
     eligibleModels: options.models.map((model) => model.model.id), excludedModels: options.excludedModels,
     eligibleDevices: choice.devices.map((candidate) => candidate.id), excludedDevices: choice.excluded,
@@ -390,8 +394,13 @@ export async function decidePlacement(client: DecisionClient, input: PlacementSt
     const deviceId = choose(b, answerB, 'device') ?? devices[0]?.id;
     const device = devices.find((candidate) => candidate.id === deviceId);
     if (!device) throw new JevError('invalid-response');
-    return placed(placementRecord(input, { isolation: isolation.data, options, entry, device, effortRequested: effort.data },
-      calls.length ? { source: 'jev', calls, probabilities } : { source: 'fixed', calls }));
+    const chosenAccount = await decideAccount(client, { ranking: ranking(input, entry.model, device.id), state: () => state ?? buildPlacementState(input).state,
+      model: input.jevModel, now: input.now, redactor: { text: value => input.redactor.document(value) }, ...(input.fixed.accountId ? { fixed: input.fixed.accountId } : {}) }, signal);
+    calls.push(...chosenAccount.jevCalls);
+    if (chosenAccount.probabilities) probabilities.account = chosenAccount.probabilities;
+    return placed(placementRecord(input, { isolation: isolation.data, options, entry, device, effortRequested: effort.data, accountChoice: chosenAccount },
+      chosenAccount.source === 'fallback' ? { source: 'fallback', calls, probabilities, ...(chosenAccount.error ? { error: chosenAccount.error } : {}) }
+        : calls.length ? { source: 'jev', calls, probabilities } : { source: 'fixed', calls }));
   } catch (error) {
     if (error instanceof JevError && error.kind !== 'cancelled') return placed(placementFallback(input, candidates, { kind: error.kind, message: error.message }, calls));
     // The hub-backed key source answers 503 while the hub is unreachable; the client raises it as a plain error.

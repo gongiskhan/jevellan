@@ -5,6 +5,7 @@ import { rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { AccountSchema, AccountStatusSchema, BridgeToolsSchema, Homes, SecretRedactor, defaultProjectWorkSettings, projectToolNames, type Account, type AccountStatus } from '../packages/core/dist/index.js';
+import { accountChoice } from '../packages/decisions/dist/index.js';
 import { StretchBridges } from '../packages/conversations/dist/index.js';
 import { FakeRuntime, forThread, groupAlive, type FakeTurnStep, type NativeProcess } from '../packages/runtime-contract/dist/index.js';
 import {
@@ -115,6 +116,23 @@ function request(over: Partial<LaunchRequest> = {}): LaunchRequest {
     tools: tools(thread).tools, ...over };
 }
 const done: FakeTurnStep = () => ({ status: 'completed' });
+
+test('automatic account changes use Jev choice, while an eligible session account stays pinned', async () => {
+  const choices: string[] = [];
+  const { launcher: value } = launcher([status('acc_work'), status('acc_home')], undefined, {
+    chooseAccount: async (_request, ranking) => { choices.push('asked'); return accountChoice(ranking, 'acc_home', 'jev', Date.now()); },
+  });
+  for (const pinnedAccountId of [undefined, 'acc_work']) {
+    fake.enqueueTurn(done);
+    const result = await value.launch(request({ pinnedAccountId, ...(pinnedAccountId ? { resume: 'stored-session' } : {}) }));
+    if (result.kind !== 'started') throw new Error(result.reason);
+    expect(result.accountId).toBe(pinnedAccountId ?? 'acc_home');
+    expect(result.resumed).toBe(!!pinnedAccountId);
+    for await (const event of result.run.events) void event;
+    await result.run.done; await result.run.terminate(); await result.release();
+  }
+  expect(choices).toEqual(['asked']);
+});
 
 test.each(['coordinator', 'thread', 'review', 'verification', 'memory'] as const)('%s cache measurement uses the one native turn and its correct ledger', async kind => {
   fake.capabilities.readOnlyEnforced = true;

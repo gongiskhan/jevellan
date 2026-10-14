@@ -490,6 +490,13 @@ const overrideView = (fields: { placement?: Partial<PlacementRecord>; nextTurn?:
   thread: thread({ runtime: 'claude', modelLabel: 'Fable', ownerDeviceId: 'mac' }), placement: placement(fields.placement),
   canOverride: { nextTurn: fields.nextTurn ?? true, restart: fields.restart ?? true, ...(fields.restartReason ? { restartReason: fields.restartReason } : {}) } });
 
+test('Why shows Jev account probabilities and preserves legacy placement records', () => {
+  const record = placement({ accountChoice: { schema: 'placement-account-choice-v1', questionSet: 'a-v1', source: 'jev', accountId: 'acc_work', at: ago(5), candidates: [], jevCalls: [], probabilities: { acc_work: 0.8, acc_home: 0.2 } },
+    probabilities: { account: { acc_work: 0.8, acc_home: 0.2 } } });
+  expect(whyFields(record).find(field => field.field === 'account')).toMatchObject({ source: 'jev', value: 'acc_work', bars: [{ option: 'acc_work', p: 0.8, chosen: true }, { option: 'acc_home', p: 0.2, chosen: false }] });
+  expect(whyFields(placement()).some(field => field.field === 'account')).toBe(false);
+});
+
 test('the Why panel reads the placement field by field: Jev bars with the current value, fixed, only option, fallback and owner changes (D255)', () => {
   const fields = whyFields(placement());
   expect(fields.map((field) => [field.field, field.value, field.source])).toEqual([['isolation', 'worktree', 'only'], ['model', 'fable', 'jev'], ['effort', 'high', 'jev'], ['device', 'mac', 'only']]);
