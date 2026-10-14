@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory jour...', 'Context · Shared memory ...'), but the full name can still be read from context",
-      "The long working-directory path in the terminal header looks crowded next to the 'Connected' status and the 'Close terminal' button, but it is not clipped",
-      "The 'Send to...' button has lower contrast than the other copy buttons, maybe because it is meant to look disabled"
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Shared memory fi…'). This is intentional truncation.",
+      "The 'Send to…' button looks dimmer and lower-contrast than the other copy buttons. It's probably disabled on purpose.",
+      "The terminal header path is long and runs close to the 'Connected' label, though they don't overlap.",
+      "The large empty terminal area leaves a lot of unused vertical space."
     ]
   }
 }

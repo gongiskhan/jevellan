@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar thread titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory jour…', 'Goncalos-MacBook-Pro.local' shortened to 'Gonca…'), but the full text is presumably available elsewhere",
-      "The top context card is clipped at the top edge of the scroll area, which is normal scroll behavior",
-      "The long worktree path in the second prompt card wraps in the middle of the 'jevellan-browser-UWszSo' segment"
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Shared memory fi…'), which is expected for the narrow sidebar.",
+      "The topmost context card is partly scrolled out of view at the top of the thread, so its header isn't visible.",
+      "The long worktree path in the Prompt card wraps in the middle of a word ('jevellan-browser-' / '9YoD4N'), which makes it harder to read."
     ]
   }
 }

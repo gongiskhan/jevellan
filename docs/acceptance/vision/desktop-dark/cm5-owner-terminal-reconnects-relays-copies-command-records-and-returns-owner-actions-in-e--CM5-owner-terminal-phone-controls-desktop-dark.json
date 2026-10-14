@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The working-directory path in the terminal header is cut off with an ellipsis ('.../jevellan-browser-QdYKCL/projects...'). The full path still shows in the terminal output.",
-      "Session titles and subtitles in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory jour...', 'Context · Shared memory ...'). This is expected for a sidebar of fixed width.",
-      "The terminal output area has a lot of empty space below the last prompt. The terminal panel is fixed-height and does not resize to fit its content."
+      "Terminal header path is cut off with an ellipsis ('.../projects...'), so the full working directory isn't visible in the header. The full path does appear in the terminal output from `pwd`.",
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Shared memory fixture · …').",
+      "The terminal output area leaves a lot of empty space below the last prompt, which makes the control rows sit low on the screen."
     ]
   }
 }

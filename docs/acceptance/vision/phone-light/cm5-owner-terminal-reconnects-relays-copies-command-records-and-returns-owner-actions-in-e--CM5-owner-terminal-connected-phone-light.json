@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header path is cut off with an ellipsis ('/private/var/fol...'). This looks deliberate and doesn't hide anything important.",
-      "The key row (Esc, Tab, Ctrl, Alt, arrows) runs past the right edge and the last button is only partly visible. It appears to be a horizontally scrollable strip, so the controls are still reachable, but there's no clear sign that it scrolls.",
-      "There's a horizontal line near the bottom of the terminal output with an empty prompt line above it. It's a little cramped but doesn't block anything."
+      "The row of terminal keys (Esc, Tab, Ctrl, Alt, arrows) runs past the right edge, so the last key is only partly visible. It looks like a row you can scroll sideways, but nothing on screen shows that it scrolls.",
+      "The host and path in the header ('Goncalos-MacBook-Pro.local · /private/var/fol...') is cut off with an ellipsis.",
+      "The long pwd path in the terminal wraps in the middle of words ('pro / jects-app'), which makes it a little harder to read."
     ]
   }
 }

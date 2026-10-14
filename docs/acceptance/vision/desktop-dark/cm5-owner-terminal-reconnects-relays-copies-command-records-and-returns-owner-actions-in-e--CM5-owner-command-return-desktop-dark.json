@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "Sidebar thread titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour...', 'Context · Shared memory ...'), as intended",
-      "The first transcript card is partly scrolled out of view at the top of the thread pane",
-      "The long worktree path in the prompt card wraps mid-path across lines"
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Done · Improver sandbox · Gonca…'). This is normal truncation and the text is still readable.",
+      "The top of the conversation is scrolled out of view, so the first card begins partway through ('CM5 owner command thread'). This is normal scroll position.",
+      "The muted secondary text in the metadata line and the 'Goncalos-MacBook-Pro.local · worktree' label has fairly low contrast, but it is still readable."
     ]
   }
 }

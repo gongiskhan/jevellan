@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The \"Send to...\" button is greyed out and harder to read than the other action buttons. It may be disabled on purpose.",
-      "The cwd path in the terminal header is long and makes the header crowded, but none of it is cut off.",
-      "Sidebar session titles and subtitles are cut off with ellipses (e.g. \"Context · J11 memory jour...\"). This is expected in a narrow sidebar."
+      "The terminal path in the header is long and makes the header row crowded, but it is still fully readable.",
+      "Sidebar session titles and subtitles are cut off with ellipses (for example 'Context · J11 memory journ…'). This is the intended truncation style.",
+      "The 'Send to…' button and the 'Run' button look muted or disabled, which may be the intended state because nothing is selected and the command box is empty.",
+      "The terminal output area is mostly empty space below the prompt."
     ]
   }
 }

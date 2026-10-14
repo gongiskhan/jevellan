@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The terminal's top line shows only 'jects-app' because older output has scrolled off the top. That's expected scrollback, not a layout problem.",
-      "The left edge clips the first key in the shortcut row (the '→' key). The row looks horizontally scrollable, so the key can still be reached.",
-      "The header path is shortened with an ellipsis ('/private/var/fol...'). This is intentional truncation."
+      "The header subtitle 'Goncalos-MacBook-Pro.local · /private/var/fol…' is cut off with an ellipsis, so the full path isn't shown.",
+      "The leftmost key in the shortcut row ('→') is partly clipped at the left edge. The row appears to scroll sideways, so it's still reachable.",
+      "The first visible terminal line ('jects-app') is cut at the top of the scrollback area. This is normal for scrolled output.",
+      "The 'Project' label is centered in accent color between 'Connected' and 'Close terminal', and its purpose is unclear."
     ]
   }
 }

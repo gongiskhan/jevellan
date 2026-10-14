@@ -9,7 +9,7 @@ import { LiveStateSchema, ScenarioReceiptSchema, ScenarioRecorder, canStart, evi
 import { planFor, runLive } from '../scripts/live/scenarios.mjs';
 import { OwnerClient, until } from '../scripts/live/client.mjs';
 import { failedCheckDiagnosis, mergeWhenAsked } from '../scripts/live/scenario-a.mjs';
-import { copyTerminalOutput, exitNativeTakeover, nativeTakeoverReady, takeoverReady, terminalToolbarAction } from '../scripts/live/scenario-d.mjs';
+import { copyTerminalOutput, exitNativeTakeover, nativeTakeoverReady, takeoverReady, terminalScreenshot, terminalToolbarAction } from '../scripts/live/scenario-d.mjs';
 import { ThreadMessageInputSchema } from '../packages/core/dist/index.js';
 import { preflight } from '../scripts/live/setup.mjs';
 import { SANDBOX_FILES, assertSandbox, writeSandbox } from '../scripts/live/sandbox.mjs';
@@ -62,6 +62,26 @@ test('terminal copy waits for the asynchronous clipboard write before checking i
   const page = { getByRole: () => ({ filter: () => ({ isVisible: async () => true, click: async () => { timer = setTimeout(() => { text = expected; }, 10); } }) }), evaluate: async () => text };
   try { expect(await copyTerminalOutput(page, 'Copy last command', (value: string) => value.includes('$ echo record-6'))).toBe(expected); }
   finally { clearTimeout(timer); }
+});
+
+test('live terminal screenshots settle full-page geometry before capture and restore the layout', async () => {
+  let viewport = { width: 1440, height: 900 };
+  const initial = { ...viewport }, changes: typeof viewport[] = [];
+  const page = { viewportSize: () => viewport, setViewportSize: async (value: typeof viewport) => { viewport = value; changes.push(value); },
+    evaluate: async (fn: () => unknown) => fn.toString().includes('requestAnimationFrame') ? undefined : { top: 0, height: 1044, window: viewport.height, heading: 0 },
+    screenshot: async (options: { fullPage: boolean }) => { expect(options.fullPage).toBe(false); expect(viewport.height).toBe(1044); return Buffer.from('settled'); } };
+  expect(await terminalScreenshot(page)).toEqual(Buffer.from('settled'));
+  expect(changes).toEqual([{ width: 1440, height: 1044 }, initial]);
+  expect(viewport).toEqual(initial);
+});
+
+test('failed live terminal capture restores the original viewport', async () => {
+  let viewport = { width: 390, height: 844 };
+  const page = { viewportSize: () => viewport, setViewportSize: async (value: typeof viewport) => { viewport = value; },
+    evaluate: async (fn: () => unknown) => fn.toString().includes('requestAnimationFrame') ? undefined : { top: 0, height: 900, window: viewport.height, heading: 0 },
+    screenshot: async () => { throw new Error('Capture failed'); } };
+  await expect(terminalScreenshot(page)).rejects.toThrow('Capture failed');
+  expect(viewport).toEqual({ width: 390, height: 844 });
 });
 
 test.each(['phone', 'desktop'])('terminal toolbar actions use the reachable controls at %s width', async layout => {

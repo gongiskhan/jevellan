@@ -10,10 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The header subtitle with the host and path is cut off with an ellipsis ('/private/var/fol...'). That looks intentional for a narrow screen, but the full working directory can't be read.",
-      "The first line of terminal output reads 'jects-app' because older output has scrolled off the top. This is normal terminal scrollback.",
-      "The first key button ('→') is partly clipped at the left edge of the shortcut-key row. The row appears to scroll sideways, but there is no clear sign that it can be scrolled.",
-      "The 'Project' label in the status row is pink and centred, and it isn't visually aligned with 'Connected' or 'Close terminal'."
+      "The header subtitle path is cut off with an ellipsis ('/private/var/fol…'). This is expected for long paths on a narrow screen.",
+      "The first key in the special-key row ('→') is partly clipped at the left edge. The row looks horizontally scrollable, so the key is still reachable.",
+      "The terminal output's first visible line is a fragment ('jects-app') because the output is scrolled. This is normal scrollback, not a layout defect.",
+      "Each shell prompt wraps so the command appears on its own line. Output is still readable."
     ]
   }
 }

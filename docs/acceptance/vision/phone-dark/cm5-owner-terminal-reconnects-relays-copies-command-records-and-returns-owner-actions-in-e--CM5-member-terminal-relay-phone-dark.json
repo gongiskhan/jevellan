@@ -10,9 +10,10 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The workspace path in the header is shortened with an ellipsis ('/private/var/folders/6k/3f…'). This looks deliberate, but the full path can't be read.",
-      "The key bar is cut off at the right edge after the '→' key. It looks like a sideways-scrolling strip, but nothing else shows that more keys are available.",
-      "The terminal wraps lines in the middle of words (for example, the URL breaks as 'sup' / 'port.apple.com'). This is normal for a narrow terminal and the text is still readable."
+      "The header path ('/private/var/folders/6k/3f…') is cut off with an ellipsis, so the full working directory can't be seen. This looks like intentional truncation of a long path.",
+      "The special-key row (Esc, Tab, Ctrl, Alt, arrows) is cut off at the right edge after '→'. The partly visible button suggests the row scrolls sideways, but nothing on screen says so.",
+      "The terminal output wraps the URL in the middle of a word ('https://sup' / 'port.apple.com…'), which is normal terminal wrapping but a bit harder to read.",
+      "There is a large empty area below the terminal output. This is expected for a new session."
     ]
   }
 }

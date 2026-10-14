@@ -1,0 +1,232 @@
+{
+  "schema": "live-scenario-receipt-v1",
+  "scenario": "D",
+  "run": "run_a6c3520c9f254f3faa79ef2b02cbef18",
+  "coordinator": "claude",
+  "layout": "phone-light",
+  "label": "live",
+  "passed": true,
+  "startedAt": "2026-10-14T02:26:41.254Z",
+  "endedAt": "2026-10-14T02:28:09.707Z",
+  "minutes": 1.4742166666666667,
+  "clockStartedAt": "2026-10-13T18:15:59.903Z",
+  "timeBoxEnded": false,
+  "projectId": "live_day_982b7a4c80414174937a9baa2bd9c6a3",
+  "steps": [
+    {
+      "id": "D1",
+      "assertion": "The Pro project terminal opens in its registered dedicated checkout.",
+      "verdict": "passed",
+      "startedAt": "2026-10-14T02:26:41.255Z",
+      "endedAt": "2026-10-14T02:26:45.241Z",
+      "seconds": 3.986,
+      "evidence": {
+        "id": "term_01M4W3QH7PXG36638WEQYYBWCQ",
+        "device": "dev_01M4V2PFFJNAK1W6TGEFGB617S",
+        "cwd": "/Users/ggomes/jevellan-projects/jevellan-live-sandbox",
+        "output": "/Users/ggomes/jevellan-projects/jevellan-live-sandbox\n"
+      }
+    },
+    {
+      "id": "D2",
+      "assertion": "The dev-madrid device terminal uses the existing relay and prints the actual remote hostname.",
+      "verdict": "passed",
+      "startedAt": "2026-10-14T02:26:45.242Z",
+      "endedAt": "2026-10-14T02:26:48.827Z",
+      "seconds": 3.585,
+      "evidence": {
+        "id": "term_01M4W3QKWQWR2B4B9Z7JJ4GMSD",
+        "device": "dev_01M4V38ABJAT5B8FEMBBD7KMC9",
+        "hostname": "dev-madrid",
+        "output": "dev-madrid\n"
+      }
+    },
+    {
+      "id": "D3",
+      "assertion": "Type or dictate a command and Run send echo hello through the real PTY.",
+      "verdict": "passed",
+      "startedAt": "2026-10-14T02:26:48.828Z",
+      "endedAt": "2026-10-14T02:26:49.217Z",
+      "seconds": 0.389,
+      "evidence": {
+        "command": "echo hello",
+        "output": "hello\n"
+      }
+    },
+    {
+      "id": "D4",
+      "assertion": "Sticky Ctrl and C interrupt sleep within two seconds and preserve its non-zero exit record.",
+      "verdict": "passed",
+      "startedAt": "2026-10-14T02:26:49.217Z",
+      "endedAt": "2026-10-14T02:26:49.432Z",
+      "seconds": 0.215,
+      "evidence": {
+        "exitCode": 130,
+        "elapsedMs": 78
+      }
+    },
+    {
+      "id": "D5",
+      "assertion": "Reload reconnects the same terminal and replays hello in its scrollback.",
+      "verdict": "passed",
+      "startedAt": "2026-10-14T02:26:49.432Z",
+      "endedAt": "2026-10-14T02:26:50.450Z",
+      "seconds": 1.018,
+      "evidence": {
+        "sessionId": "term_01M4W3QH7PXG36638WEQYYBWCQ",
+        "replayed": "hello"
+      }
+    },
+    {
+      "id": "D6",
+      "assertion": "The copy buttons include exactly the requested command range and strip every escape code.",
+      "verdict": "passed",
+      "startedAt": "2026-10-14T02:26:50.450Z",
+      "endedAt": "2026-10-14T02:26:51.887Z",
+      "seconds": 1.437,
+      "evidence": {
+        "one": "$ echo record-6\nrecord-6\n",
+        "five": "$ echo record-2\nrecord-2\n\n\n$ echo record-3\nrecord-3\n\n\n$ echo record-4\nrecord-4\n\n\n$ echo record-5\nrecord-5\n\n\n$ echo record-6\nrecord-6\n",
+        "allChars": 749
+      }
+    },
+    {
+      "id": "D7",
+      "assertion": "Send to… delivers the last command to the coordinator and starts its next turn.",
+      "verdict": "passed",
+      "startedAt": "2026-10-14T02:26:51.887Z",
+      "endedAt": "2026-10-14T02:26:57.971Z",
+      "seconds": 6.084,
+      "evidence": {
+        "eventId": 1,
+        "turn": 1,
+        "text": "The owner sent output from the terminal on Goncalos-MacBook-Pro.local in /Users/ggomes/jevellan-projects/jevellan-live-sandbox:\n$ echo record-6\nrecord-6\n\nExit code: 0"
+      }
+    },
+    {
+      "id": "D8",
+      "assertion": "Take over in browser attaches a real native thread session; leaving detaches and returns it to Jevellan.",
+      "verdict": "passed",
+      "startedAt": "2026-10-14T02:26:57.971Z",
+      "endedAt": "2026-10-14T02:27:42.863Z",
+      "seconds": 44.892,
+      "evidence": {
+        "threadId": "thread_01M4W3R0NQJJWFJEF1WV2FZ5CD",
+        "terminalId": "term_01M4W3S17A6KW0H9Z6PT3ETJNM",
+        "exitCode": 0,
+        "returnedState": "idle"
+      }
+    },
+    {
+      "id": "D9",
+      "assertion": "Every captured screen passes the dedicated live vision rubric in this layout.",
+      "verdict": "passed",
+      "startedAt": "2026-10-14T02:27:42.864Z",
+      "endedAt": "2026-10-14T02:28:08.627Z",
+      "seconds": 25.763,
+      "evidence": {
+        "layout": "phone-light",
+        "screens": [
+          {
+            "screenshot": "docs/acceptance/scenarios/2026-10-14/run_a6c3520c9f254f3faa79ef2b02cbef18-screens/project-terminal.png",
+            "expected": "a connected project terminal with usable controls and no clipped text",
+            "result": {
+              "ok": true,
+              "blocking": [],
+              "cosmetic": [
+                "Header subtitle host/path is cut off with an ellipsis ('/Users/ggomes...').",
+                "The last key in the shortcut row is cut off at the right edge, and nothing shows the row can scroll to reach more keys.",
+                "Terminal output breaks words mid-line ('jevellan-l / ive-sandbox', 'jevellan-live- / sandbox %'), which is normal terminal wrapping but harder to read on a narrow screen.",
+                "The 'Project' label is centred between 'Connected' and 'Close terminal', and it's unclear whether it is a tab, a badge or a status."
+              ]
+            }
+          },
+          {
+            "screenshot": "docs/acceptance/scenarios/2026-10-14/run_a6c3520c9f254f3faa79ef2b02cbef18-screens/madrid-terminal.png",
+            "expected": "a connected dev-madrid terminal with the remote hostname and usable controls",
+            "result": {
+              "ok": true,
+              "blocking": [],
+              "cosmetic": [
+                "The special-key row is clipped at the right edge: a partly visible button follows the → key. It looks like a horizontally scrollable row, but nothing shows that it scrolls.",
+                "A stray 'hostname' line appears above the first prompt, probably local echo before the prompt was drawn.",
+                "There are two hamburger menu buttons stacked in the header (Conversations and Terminal), which is redundant.",
+                "A thin black horizontal line near the bottom of the terminal area looks like a stray border or cursor line."
+              ]
+            }
+          },
+          {
+            "screenshot": "docs/acceptance/scenarios/2026-10-14/run_a6c3520c9f254f3faa79ef2b02cbef18-screens/copy-controls.png",
+            "expected": "terminal copy and Send to controls reachable at this layout",
+            "result": {
+              "ok": true,
+              "blocking": [],
+              "cosmetic": [
+                "The header path is truncated ('/Users/ggomes…'), so the full working directory isn't visible.",
+                "The first and last buttons in the quick-key row ('→' and '⋯') are partly clipped at the left and right edges. This suggests the row scrolls sideways but gives no clear sign that it does.",
+                "The long shell prompt ('ggomes@Goncalos-MacBook-Pro jevellan-live-sandbox %') wraps onto two lines, which makes the terminal output harder to scan.",
+                "The 'Copied' confirmation is plain unstyled text below the buttons, so it's easy to miss."
+              ]
+            }
+          },
+          {
+            "screenshot": "docs/acceptance/scenarios/2026-10-14/run_a6c3520c9f254f3faa79ef2b02cbef18-screens/native-takeover.png",
+            "expected": "a browser terminal attached to a resumed native coding session, past setup and trust dialogs, with usable exit controls",
+            "result": {
+              "ok": true,
+              "blocking": [],
+              "cosmetic": [
+                "The header path is cut off ('/home/ggo...'), so the full working directory isn't visible.",
+                "The terminal status line is cut off at the right edge ('bypass permissions on (shift+tab to').",
+                "The last key in the special-keys row is partly hidden at the right edge. The row looks horizontally scrollable, so the key is probably still reachable.",
+                "The terminal shows a stop hook error ('/bin/sh: 1: /Users/ggomes/.nvm/versions/node/v22.22.0/bin/node: not found'). This is an environment problem, not a layout problem, but it clutters the session output.",
+                "The 'Project' label floats between 'Connected' and 'Close terminal' and doesn't clearly read as a tab or a status."
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "messages": [],
+  "toolCalls": [],
+  "pullRequests": [],
+  "workflowRunIds": [],
+  "notes": [],
+  "sessions": [
+    {
+      "key": "3da7a881038e143c53965db73ead02a29c9d01970d3800eb97e0c3b675b73b46",
+      "runtime": "claude",
+      "model": "Claude Opus 5.5",
+      "inputTokens": 3376,
+      "outputTokens": 6872,
+      "costUsd": 0.4068262,
+      "costSource": "estimated",
+      "seconds": 64.851
+    },
+    {
+      "key": "c248fc3460685cc2a3f6c2300c3799cb95f83b021fa5b74a3f856b9c3425d35a",
+      "runtime": "claude",
+      "model": "claude-opus-5-5",
+      "inputTokens": 1004,
+      "outputTokens": 1906,
+      "costUsd": 0.1944064,
+      "costSource": "estimated",
+      "seconds": 22.42
+    }
+  ],
+  "providerTotals": {
+    "claude": {
+      "inputTokens": 4380,
+      "outputTokens": 8778,
+      "costUsd": 0.6012326,
+      "unknownTokenSessions": 0,
+      "unknownCostSessions": 0,
+      "minutes": 1.4545166666666667
+    }
+  },
+  "blockedBy": [],
+  "observations": [
+    "Usage records come from runtime-reported turn outcomes. Missing tokens or cost remain unknown; minutes include concurrent sessions."
+  ]
+}

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The key row (Esc, Tab, Ctrl, Alt, arrows) cuts off a key at the right edge. The row looks horizontally scrollable, but nothing visibly shows that more keys are there.",
-      "The project path in the header is shortened with an ellipsis ('/private/var/fol...'). This looks intentional and doesn't block anything.",
-      "The terminal output wraps long lines mid-word (e.g. 'sup/port.apple.com', 'pro/jects-app'), which makes them a little harder to read."
+      "The row of special keys (Esc, Tab, Ctrl, Alt, arrows) runs past the right edge, so the last key is cut in half. It looks like a row you can scroll sideways, but nothing on screen shows that more keys are there.",
+      "The host and path in the Terminal header are shortened with an ellipsis ('/private/var/fol...'). This looks intentional but hides most of the path.",
+      "Long lines in the terminal wrap in the middle of a word (the pwd output breaks at 'zwgjhw0000gn/T/jevellan-browser-cVUXxW/pro' / 'jects-app'). Normal for a terminal, and still readable."
     ]
   }
 }

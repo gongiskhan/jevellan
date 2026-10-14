@@ -10,10 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The working-directory path in the terminal header is cut off with an ellipsis, but the full path still shows in the terminal output.",
-      "The titles and metadata of the session list items in the sidebar are cut off with ellipses (e.g. 'Context · J11 memory jour...', 'Context · Shared memory ...').",
-      "The sidebar footer note 'Some native sessions are unavailable' is in small, low-contrast text.",
-      "The status label 'Connected' is low-contrast grey on the dark background."
+      "The working-directory path in the terminal header is cut off with an ellipsis ('.../projects...'). The full path is still visible in the terminal output.",
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory journ...', 'Context · Mesh journey fixt...', 'Context · Shared memory fi...').",
+      "The host selector label 'Goncalos-MacBook-Pro.local' fills the pill with almost no space left over."
     ]
   }
 }

@@ -10,9 +10,9 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The top card is partly hidden under the sticky header because the view is scrolled; its Copy and Run in Terminal buttons and the 'Ran in terminal' line are still fully visible.",
-      "The take-over command at the bottom ('jevellan thread attach thread_01M4W0ATS0GGCW4Y...') is cut off with an ellipsis, but the copy button next to it still gives access to the full command.",
-      "In the Prompt card, the long worktree path breaks mid-token across several lines, which makes it a little harder to read."
+      "The 'Take over in a terminal' attach command at the bottom is cut off with an ellipsis (jevellan thread attach thread_01M4W4M8645K6DS…). A copy button sits next to it, so the full command can still be copied.",
+      "The command card at the top is partly scrolled under the sticky header. Its top edge is hidden, but the Copy and Run in Terminal buttons and the 'Ran in terminal' status are fully visible.",
+      "The long worktree path in the Prompt card breaks in the middle of words (e.g. 'mlzwgj / hw0000gn', 't / hread_…'). It's still readable but looks untidy."
     ]
   }
 }

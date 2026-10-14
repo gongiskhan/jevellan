@@ -10,9 +10,8 @@
     "ok": true,
     "blocking": [],
     "cosmetic": [
-      "The attach command at the bottom ('jevellan thread attach thread_01M4W07J67C9JSN9…') is cut off with an ellipsis. The copy button next to it still gives access to the full command.",
-      "The top of the earlier command card is scrolled out of view above the 'Copy' and 'Run in Terminal' buttons. This is normal scrolling, not a layout fault.",
-      "The long worktree path in the prompt breaks in the middle of path segments, which makes it a little harder to read."
+      "The take-over command at the bottom (`jevellan thread attach thread_01M4W4HWZJHTQC0P…`) is cut off with an ellipsis. The copy button next to it still gives access to the full command.",
+      "The earlier command card at the top is partly scrolled out of view. This is normal for a scrolled thread."
     ]
   }
 }

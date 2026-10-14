@@ -1,0 +1,118 @@
+{
+  "schema": "affected-terminal-capture-v1",
+  "label": "simulated",
+  "vision": "live",
+  "ownerAcceptance": false,
+  "baseSourceCommit": "a4066fc3c1330d92cf606e01e3fa1930d9e59f5f",
+  "at": "2026-10-14T02:44:44.186Z",
+  "sourceHashes": {
+    "scripts/live/scenario-d.mjs": "d28bed16171d5fa624ee72313021df4d80bdd62ff9136e25e9fcc34d9242506b",
+    "tests/e2e/capture.ts": "c2706d1d84a99b55f7e977730a18f1036c173ff70b462c967e606f888ff1b1b9",
+    "tests/e2e/fixtures.ts": "a7438e897cc4fc268156fb16ec64f1436eaeaed6518c351560f878bc75ecc2a2",
+    "tests/live-scenarios.test.ts": "5158aeeaaea2e2a482ab5ecb3089ac0b7a3abff2cddb0f3e6ebc9ae262228531"
+  },
+  "layouts": [
+    {
+      "project": "desktop-light-projects",
+      "exitCode": 0
+    },
+    {
+      "project": "phone-light-projects",
+      "exitCode": 0
+    },
+    {
+      "project": "desktop-dark-projects",
+      "exitCode": 0
+    },
+    {
+      "project": "phone-dark-projects",
+      "exitCode": 0
+    }
+  ],
+  "screens": [
+    {
+      "receipt": "docs/acceptance/vision/desktop-light/cm5-owner-terminal-reconnects-relays-copies-command-records-and-returns-owner-actions-in-e--CM5-member-terminal-relay-desktop-light.json",
+      "screenshot": "docs/acceptance/screenshots/CM5-member-terminal-relay-desktop-light.png",
+      "sha256": "94ec676c68e2f5326e613711abd513688895c89b413dd8311cf8edcd6a53c79e"
+    },
+    {
+      "receipt": "docs/acceptance/vision/desktop-light/cm5-owner-terminal-reconnects-relays-copies-command-records-and-returns-owner-actions-in-e--CM5-owner-command-return-desktop-light.json",
+      "screenshot": "docs/acceptance/screenshots/CM5-owner-command-return-desktop-light.png",
+      "sha256": "68ee91caed4e91e0d4daaeab3fa8fb50b44c9756e1c50b0823a8fcf27fae727d"
+    },
+    {
+      "receipt": "docs/acceptance/vision/desktop-light/cm5-owner-terminal-reconnects-relays-copies-command-records-and-returns-owner-actions-in-e--CM5-owner-terminal-connected-desktop-light.json",
+      "screenshot": "docs/acceptance/screenshots/CM5-owner-terminal-connected-desktop-light.png",
+      "sha256": "03664839ac26fa6d64d4694409c0648f6421fb23084e064890251cf644aca880"
+    },
+    {
+      "receipt": "docs/acceptance/vision/desktop-light/cm5-owner-terminal-reconnects-relays-copies-command-records-and-returns-owner-actions-in-e--CM5-owner-terminal-phone-controls-desktop-light.json",
+      "screenshot": "docs/acceptance/screenshots/CM5-owner-terminal-phone-controls-desktop-light.png",
+      "sha256": "f97cf6896530c118cb66f2653847b4d20af0753917e17dbf7ecd1ef93e6bb186"
+    },
+    {
+      "receipt": "docs/acceptance/vision/phone-light/cm5-owner-terminal-reconnects-relays-copies-command-records-and-returns-owner-actions-in-e--CM5-member-terminal-relay-phone-light.json",
+      "screenshot": "docs/acceptance/screenshots/CM5-member-terminal-relay-phone-light.png",
+      "sha256": "a1bc00f8d117a428ceb14bd5876a9727bb8851aadc69d5fb13299de862a5d0c6"
+    },
+    {
+      "receipt": "docs/acceptance/vision/phone-light/cm5-owner-terminal-reconnects-relays-copies-command-records-and-returns-owner-actions-in-e--CM5-owner-command-return-phone-light.json",
+      "screenshot": "docs/acceptance/screenshots/CM5-owner-command-return-phone-light.png",
+      "sha256": "513d57e9f69788f6604f55134c3b2c7798915cdd270830133257ef8fb8785566"
+    },
+    {
+      "receipt": "docs/acceptance/vision/phone-light/cm5-owner-terminal-reconnects-relays-copies-command-records-and-returns-owner-actions-in-e--CM5-owner-terminal-connected-phone-light.json",
+      "screenshot": "docs/acceptance/screenshots/CM5-owner-terminal-connected-phone-light.png",
+      "sha256": "f12afb0dbbc4bcfa8392fa7e894353b0f4f0f903e114a13cbded63ca5e891def"
+    },
+    {
+      "receipt": "docs/acceptance/vision/phone-light/cm5-owner-terminal-reconnects-relays-copies-command-records-and-returns-owner-actions-in-e--CM5-owner-terminal-phone-controls-phone-light.json",
+      "screenshot": "docs/acceptance/screenshots/CM5-owner-terminal-phone-controls-phone-light.png",
+      "sha256": "0ebff066fa61ef86bc3d9bc0a9a301fbb189d1b1ea59db0125e762b4f17ff03d"
+    },
+    {
+      "receipt": "docs/acceptance/vision/desktop-dark/cm5-owner-terminal-reconnects-relays-copies-command-records-and-returns-owner-actions-in-e--CM5-member-terminal-relay-desktop-dark.json",
+      "screenshot": "docs/acceptance/screenshots/CM5-member-terminal-relay-desktop-dark.png",
+      "sha256": "64b32c3d5220fa935f5b3c2e7519d825b85235c6905dcf6580e86ddeec5567b2"
+    },
+    {
+      "receipt": "docs/acceptance/vision/desktop-dark/cm5-owner-terminal-reconnects-relays-copies-command-records-and-returns-owner-actions-in-e--CM5-owner-command-return-desktop-dark.json",
+      "screenshot": "docs/acceptance/screenshots/CM5-owner-command-return-desktop-dark.png",
+      "sha256": "5ae4f5f46809de8ae5ce2a854cf56e27cc89ca978cf742542bb2f54246eb375e"
+    },
+    {
+      "receipt": "docs/acceptance/vision/desktop-dark/cm5-owner-terminal-reconnects-relays-copies-command-records-and-returns-owner-actions-in-e--CM5-owner-terminal-connected-desktop-dark.json",
+      "screenshot": "docs/acceptance/screenshots/CM5-owner-terminal-connected-desktop-dark.png",
+      "sha256": "81320529c4f5581b7d8f598bdef378672d473daf8ef656d74c6c5ec551cd99ff"
+    },
+    {
+      "receipt": "docs/acceptance/vision/desktop-dark/cm5-owner-terminal-reconnects-relays-copies-command-records-and-returns-owner-actions-in-e--CM5-owner-terminal-phone-controls-desktop-dark.json",
+      "screenshot": "docs/acceptance/screenshots/CM5-owner-terminal-phone-controls-desktop-dark.png",
+      "sha256": "2534b4792295faa6b9ed2e48c9a57c9eafa941604c86a046275774712ea90c49"
+    },
+    {
+      "receipt": "docs/acceptance/vision/phone-dark/cm5-owner-terminal-reconnects-relays-copies-command-records-and-returns-owner-actions-in-e--CM5-member-terminal-relay-phone-dark.json",
+      "screenshot": "docs/acceptance/screenshots/CM5-member-terminal-relay-phone-dark.png",
+      "sha256": "84b38fe63405974c19aa982f5b89d15ac4c8a96a64b695fb42eb6417e59124d6"
+    },
+    {
+      "receipt": "docs/acceptance/vision/phone-dark/cm5-owner-terminal-reconnects-relays-copies-command-records-and-returns-owner-actions-in-e--CM5-owner-command-return-phone-dark.json",
+      "screenshot": "docs/acceptance/screenshots/CM5-owner-command-return-phone-dark.png",
+      "sha256": "57ea6251f73f761c497def8faca72a0ccdb791899e8f76b7de39088c7444a4b9"
+    },
+    {
+      "receipt": "docs/acceptance/vision/phone-dark/cm5-owner-terminal-reconnects-relays-copies-command-records-and-returns-owner-actions-in-e--CM5-owner-terminal-connected-phone-dark.json",
+      "screenshot": "docs/acceptance/screenshots/CM5-owner-terminal-connected-phone-dark.png",
+      "sha256": "9f4d7e71ba0762899172d22364b9ff88eee231cb523688aef2c37899e59baa75"
+    },
+    {
+      "receipt": "docs/acceptance/vision/phone-dark/cm5-owner-terminal-reconnects-relays-copies-command-records-and-returns-owner-actions-in-e--CM5-owner-terminal-phone-controls-phone-dark.json",
+      "screenshot": "docs/acceptance/screenshots/CM5-owner-terminal-phone-controls-phone-dark.png",
+      "sha256": "b5bea7cdf0356444c92445ee569c55d0f768d866d231234f411df0edca3ee8be"
+    }
+  ],
+  "logSha256": "8734769b9bea03b86aeada8cb35cb22522b120f7cd5de434a93d33e83700cc41",
+  "harnessTests": 30,
+  "typecheck": "passed",
+  "lint": "passed"
+}

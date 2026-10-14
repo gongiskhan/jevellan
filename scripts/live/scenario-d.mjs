@@ -36,11 +36,16 @@ export async function exitNativeTakeover(client, page, projectId, threadId, sess
   await page.locator('.xterm-helper-textarea').press('Control+d');
   await until(`the native thread to detach from terminal ${sessionId}`, async () => (await client.thread(projectId, threadId)).thread.state !== 'attached', timeout, interval);
 }
+export async function terminalScreenshot(page) {
+  const { captureFullPage } = await tsImport('../../tests/e2e/capture.ts', import.meta.url);
+  return captureFullPage(page);
+}
+
 export async function scenarioD(client, projectId, recorder) {
   const page = client.page; let session, madrid, takeover;
   const last = async (id, text, timeout = minutes(2)) => until(`terminal command ${text} to end`, async () => (await client.terminalSnapshot(id)).commands.findLast(row => row.command === text && row.endedAt), timeout, 100);
   const shots = [];
-  const shot = async (name, expected) => { const image = await page.screenshot({ fullPage: true }); shots.push({ name, expected, image }); };
+  const shot = async (name, expected) => { const image = await terminalScreenshot(page); shots.push({ name, expected, image }); };
   await recorder.step('D1', 'The Pro project terminal opens in its registered dedicated checkout.', async () => {
     await page.goto(`${client.config.hub}/projects/${projectId}`); await page.getByRole('button', { name: 'Terminal', exact: true }).click(); await page.getByLabel('Project terminals').getByRole('button', { name: 'Open terminal', exact: true }).click();
     await expect(page).toHaveURL(/\/terminals\//u); session = (await client.terminalSnapshot(new URL(page.url()).pathname.split('/').at(-1))).session; assert.equal(session.deviceId, client.config.proDeviceId); await client.run('pwd'); const record = await last(session.id, 'pwd'); assert(record.output.includes(client.config.proCheckout)); await shot('project-terminal', 'a connected project terminal with usable controls and no clipped text'); return { id: session.id, device: session.deviceId, cwd: session.cwd, output: record.output };
