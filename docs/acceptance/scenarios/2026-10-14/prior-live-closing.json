@@ -1,0 +1,328 @@
+{
+  "schema": "prior-scenario-handoff-v1",
+  "label": "live",
+  "at": "2026-10-14T04:16:11.109Z",
+  "closing": true,
+  "clockStartedAt": "2026-10-13T18:15:59.903Z",
+  "stopNewScenariosAt": "2026-10-14T04:15:59.903Z",
+  "gatingPassed": false,
+  "gates": {
+    "consecutiveAB": 0,
+    "consecutiveC": 2,
+    "dLayouts": [
+      "phone-light",
+      "phone-dark",
+      "desktop-light",
+      "desktop-dark"
+    ]
+  },
+  "failures": [
+    {
+      "receipt": "docs/acceptance/scenarios/2026-10-13/A-run_ac984a21f87540febdc44c69c4073e00.json",
+      "scenario": "A",
+      "layout": null,
+      "step": "A1",
+      "assertion": "Exactly two owner-request tasks, both named in the reply; both active with Jev placement within ten minutes.",
+      "verdict": "failed",
+      "reason": "Timed out after 10 minutes: both owner tasks to become active",
+      "currentGatePassed": false
+    },
+    {
+      "receipt": "docs/acceptance/scenarios/2026-10-13/A-run_5053b441bb2d4a0b8176008d5c88985d.json",
+      "scenario": "A",
+      "layout": null,
+      "step": "A3",
+      "assertion": "A failed result check is diagnosed through its job log and CHANGELOG message; both PRs merge within 45 minutes; the rounding regression fails at baseline.",
+      "verdict": "failed",
+      "reason": "Timed out after 44 minutes: a failed check to be diagnosed on the next coordinator turn",
+      "currentGatePassed": false
+    },
+    {
+      "receipt": "docs/acceptance/scenarios/2026-10-13/C-run_7ed9f3cb5ec8472fad9c91661e1e61c5.json",
+      "scenario": "C",
+      "layout": null,
+      "step": "C4",
+      "assertion": "A real Codex thread compacts without rotating, receives Task, Project memory and Project now after compaction, and reaches done.",
+      "verdict": "failed",
+      "reason": "The owner ledger stream returned 404.",
+      "currentGatePassed": true
+    },
+    {
+      "receipt": "docs/acceptance/scenarios/2026-10-13/C-run_508dab527f2f42c48b2987ce139ff9f7.json",
+      "scenario": "C",
+      "layout": null,
+      "step": "C4",
+      "assertion": "A real Codex thread compacts without rotating, receives Task, Project memory and Project now after compaction, and reaches done.",
+      "verdict": "failed",
+      "reason": "The owner ledger stream returned 404.",
+      "currentGatePassed": true
+    },
+    {
+      "receipt": "docs/acceptance/scenarios/2026-10-13/C-run_d7afb32303944840ba59422c6171ac16.json",
+      "scenario": "C",
+      "layout": null,
+      "step": "C4",
+      "assertion": "A real Codex thread compacts without rotating, receives Task, Project memory and Project now after compaction, and reaches done.",
+      "verdict": "failed",
+      "reason": "Timed out after 30 minutes: the Codex test-writing thread to reach done",
+      "currentGatePassed": true
+    },
+    {
+      "receipt": "docs/acceptance/scenarios/2026-10-13/D-run_c37da2a2348f46f08383ae5c2f00703a.json",
+      "scenario": "D",
+      "layout": "phone-light",
+      "step": "D6",
+      "assertion": "The copy buttons include exactly the requested command range and strip every escape code.",
+      "verdict": "failed",
+      "reason": "locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: 'Copy last command', exact: true }).visible()\u001b[22m\n",
+      "currentGatePassed": true
+    },
+    {
+      "receipt": "docs/acceptance/scenarios/2026-10-13/D-run_4e0ed15f7ce54a8a9d7da8c818846db9.json",
+      "scenario": "D",
+      "layout": "phone-light",
+      "step": "D1",
+      "assertion": "The Pro project terminal opens in its registered dedicated checkout.",
+      "verdict": "failed",
+      "reason": "apiRequestContext.fetch: read ECONNRESET\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:19775/api/terminals/term_01M4VTD3F374C0M0BDN0E1TVG6\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\u001b[2m    - Origin: http://127.0.0.1:19775\u001b[22m\n\u001b[2m    - cookie: jevellan_session=[redacted]\u001b[22m\n",
+      "currentGatePassed": true
+    },
+    {
+      "receipt": "docs/acceptance/scenarios/2026-10-13/D-run_02e516b8c9454b7e92e3c3bdd3a65090.json",
+      "scenario": "D",
+      "layout": "phone-light",
+      "step": "D6",
+      "assertion": "The copy buttons include exactly the requested command range and strip every escape code.",
+      "verdict": "failed",
+      "reason": "The expression evaluated to a falsy value:\n\n  assert(one.includes('$ echo record-6') && !one.includes('record-5'))\n",
+      "currentGatePassed": true
+    },
+    {
+      "receipt": "docs/acceptance/scenarios/2026-10-13/D-run_6bf3f9a768ba4aa4aa81ff77da7e13e9.json",
+      "scenario": "D",
+      "layout": "phone-light",
+      "step": "D1",
+      "assertion": "The Pro project terminal opens in its registered dedicated checkout.",
+      "verdict": "failed",
+      "reason": "The expression evaluated to a falsy value:\n\n  assert(record.output.includes(client.config.proCheckout))\n",
+      "currentGatePassed": true
+    },
+    {
+      "receipt": "docs/acceptance/scenarios/2026-10-14/D-run_fa72422d3cb44d30b9b71fa88d99ced9.json",
+      "scenario": "D",
+      "layout": "phone-light",
+      "step": "D8",
+      "assertion": "Take over in browser attaches a real native thread session; leaving detaches and returns it to Jevellan.",
+      "verdict": "failed",
+      "reason": "Timed out after 15 minutes: a real idle session to take over",
+      "currentGatePassed": true
+    },
+    {
+      "receipt": "docs/acceptance/scenarios/2026-10-14/D-run_fe1a087a5af84289b1188f4f9ac4faae.json",
+      "scenario": "D",
+      "layout": "phone-light",
+      "step": "D8",
+      "assertion": "Take over in browser attaches a real native thread session; leaving detaches and returns it to Jevellan.",
+      "verdict": "failed",
+      "reason": "GET /api/projects/live_day_451ca70926b74a23916d85fca0bdcb06/threads/thread_01M4VWQVV3XJHKTACF82NGBA4A: 404 This thread was not found.",
+      "currentGatePassed": true
+    },
+    {
+      "receipt": "docs/acceptance/scenarios/2026-10-14/D-run_1bb817b2d1874988bbb06d6e5587f028.json",
+      "scenario": "D",
+      "layout": "phone-light",
+      "step": "D8",
+      "assertion": "Take over in browser attaches a real native thread session; leaving detaches and returns it to Jevellan.",
+      "verdict": "failed",
+      "reason": "Timed out after 2 minutes: the native thread to detach",
+      "currentGatePassed": true
+    },
+    {
+      "receipt": "docs/acceptance/scenarios/2026-10-14/D-run_2a6ebd4de81545c883ded96d4d3dc9aa.json",
+      "scenario": "D",
+      "layout": "desktop-light",
+      "step": "D9",
+      "assertion": "Every captured screen passes the dedicated live vision rubric in this layout.",
+      "verdict": "failed",
+      "reason": "{\"ok\":false,\"blocking\":[\"The sticky 'Conversations' top bar overlaps the terminal header. The 'Take over thread' title, workspace path, connection status and the 'Close terminal' button are cut off at the top, so the main exit control is only partly visible and may not be clickable without scrolling.\"],\"cosmetic\":[\"The terminal shows the thread attach command and the 'Exit Claude Code to hand the thread back to Jevellan' notice, but Claude Code is still on the folder trust prompt, so the native session hasn't started yet.\",\"Long paths in the terminal output wrap mid-word ('/bi' / 'n/node', thread ID split across lines).\",\"Every sidebar project is named 'Live invoices and customers', so the projects can't be told apart.\",\"Conversation titles and subtitles in the sidebar list are truncated with ellipses.\",\"The bottom sidebar conversation item is cut off by the 'Install app' section.\"]}",
+      "currentGatePassed": true
+    },
+    {
+      "receipt": "docs/acceptance/scenarios/2026-10-14/D-run_01a49ce65e58450eabcc549f4bdafa8a.json",
+      "scenario": "D",
+      "layout": "phone-light",
+      "step": "D8",
+      "assertion": "Take over in browser attaches a real native thread session; leaving detaches and returns it to Jevellan.",
+      "verdict": "failed",
+      "reason": "Timed out after 2 minutes: the resumed native coding prompt beyond first-run dialogs",
+      "currentGatePassed": true
+    },
+    {
+      "receipt": "docs/acceptance/scenarios/2026-10-14/D-run_e9b04fe79b9f4927a11e96323be82ff1.json",
+      "scenario": "D",
+      "layout": "phone-dark",
+      "step": "D8",
+      "assertion": "Take over in browser attaches a real native thread session; leaving detaches and returns it to Jevellan.",
+      "verdict": "failed",
+      "reason": "Timed out after 2 minutes: the resumed native coding prompt beyond first-run dialogs",
+      "currentGatePassed": true
+    },
+    {
+      "receipt": "docs/acceptance/scenarios/2026-10-14/D-run_7e6c3d0e88594c8d9c8258cecb83129d.json",
+      "scenario": "D",
+      "layout": "phone-dark",
+      "step": "D8",
+      "assertion": "Take over in browser attaches a real native thread session; leaving detaches and returns it to Jevellan.",
+      "verdict": "failed",
+      "reason": "Timed out after 2 minutes: the native thread to detach",
+      "currentGatePassed": true
+    },
+    {
+      "receipt": "docs/acceptance/scenarios/2026-10-14/D-run_66c9ca8cc55f4443bcf88d4e60e7083e.json",
+      "scenario": "D",
+      "layout": "desktop-light",
+      "step": "D9",
+      "assertion": "Every captured screen passes the dedicated live vision rubric in this layout.",
+      "verdict": "failed",
+      "reason": "{\"ok\":false,\"blocking\":[\"The top line of terminal output ('ggomes@Goncalos-MacBook-Pro jevellan-live-sandbox % pwd') is cut off horizontally. Its upper half is hidden under the header area.\",\"The terminal panel's top edge sits under the header. The header and terminal output overlap, so the top border is hidden and output is clipped.\",\"The bottoms of the action buttons ('Copy all', 'Copy last command', 'Copy last 5 commands', 'Send to…') are clipped by the header's bottom edge and the 'Conversations' row below them. The buttons look cut off and their click areas may be partly covered.\"],\"cosmetic\":[\"A stray 'Conversations' label sits below the action buttons, misaligned with the header content. It looks like a leftover tab or breadcrumb.\",\"All seven project entries in the sidebar have the same name, 'Live invoices and customers', so they can't be told apart.\",\"Conversation titles and subtitles in the sidebar are truncated with ellipses ('Context · Live invoices and…', 'Blocked · Live invoices and cus…').\",\"The 'Send to…' button label is truncated with an ellipsis.\",\"There is a large empty band above the header and empty space below the app, which suggests the layout doesn't fill the viewport.\",\"The 'Run' button looks disabled or low-contrast while the input is empty.\"]}",
+      "currentGatePassed": true
+    },
+    {
+      "receipt": "docs/acceptance/scenarios/2026-10-14/A-run_3c899b05bc5946c7a346d06ef377d8f1.json",
+      "scenario": "A",
+      "layout": null,
+      "step": "A3",
+      "assertion": "A failed result check is diagnosed through its job log and CHANGELOG message; both PRs merge within 45 minutes; the rounding regression fails at baseline.",
+      "verdict": "failed",
+      "reason": "Timed out after 43.7 minutes: a failed check to be diagnosed on the next coordinator turn",
+      "currentGatePassed": false
+    }
+  ],
+  "notRun": [
+    {
+      "step": "A4",
+      "reason": "The latest exact A ended before this step; retain its failed assertion."
+    },
+    {
+      "step": "A5",
+      "reason": "The latest exact A ended before this step; retain its failed assertion."
+    },
+    {
+      "step": "A6",
+      "reason": "The latest exact A ended before this step; retain its failed assertion."
+    },
+    {
+      "step": "A7",
+      "reason": "The latest exact A ended before this step; retain its failed assertion."
+    },
+    {
+      "step": "A8",
+      "reason": "The latest exact A ended before this step; retain its failed assertion."
+    },
+    {
+      "step": "A9",
+      "reason": "The latest exact A ended before this step; retain its failed assertion."
+    },
+    {
+      "step": "A10",
+      "reason": "The latest exact A ended before this step; retain its failed assertion."
+    },
+    {
+      "step": "A11",
+      "reason": "The latest exact A ended before this step; retain its failed assertion."
+    },
+    {
+      "step": "B1",
+      "reason": "B requires the successful A state; no successful A receipt exists."
+    },
+    {
+      "step": "B2",
+      "reason": "B requires the successful A state; no successful A receipt exists."
+    },
+    {
+      "step": "B3",
+      "reason": "B requires the successful A state; no successful A receipt exists."
+    },
+    {
+      "step": "B4",
+      "reason": "B requires the successful A state; no successful A receipt exists."
+    },
+    {
+      "step": "B5",
+      "reason": "B requires the successful A state; no successful A receipt exists."
+    }
+  ],
+  "byScenario": {
+    "A": {
+      "receipts": 3,
+      "minutes": 104.16655
+    },
+    "C": {
+      "receipts": 5,
+      "minutes": 79.53376666666666
+    },
+    "D": {
+      "receipts": 22,
+      "minutes": 46.97088333333334
+    }
+  },
+  "providers": {
+    "claude": {
+      "inputTokens": 2442102,
+      "outputTokens": 1372500,
+      "costUsd": 149.3444436,
+      "unknownTokenSessions": 0,
+      "unknownCostSessions": 0,
+      "minutes": 61.61844999999998
+    },
+    "codex": {
+      "inputTokens": 12619825,
+      "outputTokens": 130362,
+      "costUsd": 0,
+      "unknownTokenSessions": 0,
+      "unknownCostSessions": 18,
+      "minutes": 80.40671666666667
+    }
+  },
+  "receipts": [
+    "docs/acceptance/scenarios/2026-10-13/A-run_ac984a21f87540febdc44c69c4073e00.json",
+    "docs/acceptance/scenarios/2026-10-13/A-run_5053b441bb2d4a0b8176008d5c88985d.json",
+    "docs/acceptance/scenarios/2026-10-13/C-run_7ed9f3cb5ec8472fad9c91661e1e61c5.json",
+    "docs/acceptance/scenarios/2026-10-13/C-run_508dab527f2f42c48b2987ce139ff9f7.json",
+    "docs/acceptance/scenarios/2026-10-13/C-run_d7afb32303944840ba59422c6171ac16.json",
+    "docs/acceptance/scenarios/2026-10-13/C-run_a671c418ea514618a78cd26014d4613c.json",
+    "docs/acceptance/scenarios/2026-10-13/C-run_5b92a9a960ae4010913c4af40fad62c5.json",
+    "docs/acceptance/scenarios/2026-10-13/D-run_c37da2a2348f46f08383ae5c2f00703a.json",
+    "docs/acceptance/scenarios/2026-10-13/D-run_4e0ed15f7ce54a8a9d7da8c818846db9.json",
+    "docs/acceptance/scenarios/2026-10-13/D-run_02e516b8c9454b7e92e3c3bdd3a65090.json",
+    "docs/acceptance/scenarios/2026-10-13/D-run_6bf3f9a768ba4aa4aa81ff77da7e13e9.json",
+    "docs/acceptance/scenarios/2026-10-14/D-run_fa72422d3cb44d30b9b71fa88d99ced9.json",
+    "docs/acceptance/scenarios/2026-10-14/D-run_fe1a087a5af84289b1188f4f9ac4faae.json",
+    "docs/acceptance/scenarios/2026-10-14/D-run_1bb817b2d1874988bbb06d6e5587f028.json",
+    "docs/acceptance/scenarios/2026-10-14/D-run_583a4e7b2ba04c6892b1998166182082.json",
+    "docs/acceptance/scenarios/2026-10-14/D-run_50114dd3915f4bce9cb7df8afed24181.json",
+    "docs/acceptance/scenarios/2026-10-14/D-run_2a6ebd4de81545c883ded96d4d3dc9aa.json",
+    "docs/acceptance/scenarios/2026-10-14/D-run_01a49ce65e58450eabcc549f4bdafa8a.json",
+    "docs/acceptance/scenarios/2026-10-14/D-run_985b332e4b284b4294b5f91a6cfe865a.json",
+    "docs/acceptance/scenarios/2026-10-14/D-run_e9b04fe79b9f4927a11e96323be82ff1.json",
+    "docs/acceptance/scenarios/2026-10-14/D-run_794536655bb14aec8a073410f74518ad.json",
+    "docs/acceptance/scenarios/2026-10-14/D-run_7e6c3d0e88594c8d9c8258cecb83129d.json",
+    "docs/acceptance/scenarios/2026-10-14/D-run_a6c3520c9f254f3faa79ef2b02cbef18.json",
+    "docs/acceptance/scenarios/2026-10-14/D-run_fc3cc740a96045fc956c6debbda27801.json",
+    "docs/acceptance/scenarios/2026-10-14/D-run_66c9ca8cc55f4443bcf88d4e60e7083e.json",
+    "docs/acceptance/scenarios/2026-10-14/D-run_17038a7a8e8843548a5fb7fd1a25b1e1.json",
+    "docs/acceptance/scenarios/2026-10-14/D-run_2db6ee881a904e0a8b68d33b7b916884.json",
+    "docs/acceptance/scenarios/2026-10-14/D-run_173b06dd33cb489f87558a611330f23a.json",
+    "docs/acceptance/scenarios/2026-10-14/D-run_641e429a262349509846c6e04ecfd505.json",
+    "docs/acceptance/scenarios/2026-10-14/A-run_3c899b05bc5946c7a346d06ef377d8f1.json"
+  ],
+  "ownerAcceptance": false,
+  "observations": [
+    "Costs are cumulative runtime estimates, not invoices. Unknown Codex cost is not zero; session minutes can overlap.",
+    "Original eighth D setup passes are withdrawn by D-eighth-qualification.json; D-matrix-passed.json supplies the later qualified four-layout proof.",
+    "C/D current gates supersede their older failures; all original receipts remain.",
+    "Codex coordinator A is blocked by the requested Sol model being unavailable in discovered choices.",
+    "Optional Ekoa mirror checks remain blocked by unsupported OAuth/PKCE/refresh; no repeated credentials requested.",
+    "Full Linux backend failed; targeted Mac pass is separate. Quiet full Pro sourceccd9 run has its own immutable source receipt."
+  ]
+}
