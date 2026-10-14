@@ -1,6 +1,7 @@
 // Browser-safe schemas only: no filesystem, process, vault or SDK imports.
 export * from './schemas.js';
 export * from './session-cache-schemas.js';
+export * from './project-journal-schemas.js';
 export * from './improver-schemas.js';
 export * from './project-improver-schemas.js';
 export * from './text-diff.js';

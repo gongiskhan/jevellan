@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { SessionTurnCacheSchema, SessionCacheSummarySchema } from './session-cache-schemas.js';
+import { JournalDocumentSchema, JournalThreadSchema, ProjectJournalRecordSchema } from './project-journal-schemas.js';
 import { OwnerCommandsSchema } from './owner-command-schemas.js';
 import { ProjectReviewReportSchema } from './project-review-schemas.js';
 import { CursorTranscriptSchema } from './cursor-schemas.js';
@@ -329,7 +330,7 @@ export type InboxSeen = z.infer<typeof InboxSeenSchema>;
 // Project ledger (brief 5.13, D2). data stays unknown in the envelope: payloads over 64 KiB spill to a blob-ref.
 export const ProjectLedgerEventTypeSchema = z.enum(['coordinator-turn-start', 'coordinator-text', 'coordinator-tool',
   'coordinator-turn-end', 'coordinator-event', 'thread-turn-start', 'thread-turn-end', 'thread-report',
-  'thread-placement', 'thread-state', 'thread-verification', 'thread-publication', 'session-compacted', 'project-session-end', 'session-turn-cache', 'notice']);
+  'thread-placement', 'thread-state', 'thread-verification', 'thread-publication', 'session-compacted', 'project-session-end', 'session-turn-cache', 'journal-thread', 'journal-source', 'journal-document', 'journal-message', 'notice']);
 export type ProjectLedgerEventType = z.infer<typeof ProjectLedgerEventTypeSchema>;
 export const ProjectLedgerEventSchema = z.strictObject({ schema: z.literal('project-ledger-event-v1'), t: TimestampSchema,
   id: positive, type: ProjectLedgerEventTypeSchema, turn: positive.optional(), data: z.unknown() });
@@ -369,6 +370,8 @@ export const ThreadPublicationSchema = z.strictObject({ schema: z.literal('threa
   files: z.array(z.string()).optional() });
 export const ProjectNoticeSchema = z.strictObject({ schema: z.literal('project-notice-v1'), text, kind: z.enum(['info', 'error']) });
 export const ProjectLedgerDataSchemas = {
+  'journal-thread': JournalThreadSchema, 'journal-source': ProjectJournalRecordSchema, 'journal-document': JournalDocumentSchema,
+  'journal-message': QueuedMessageSchema.extend({ schema: z.literal('journal-message-v1') }),
   'coordinator-turn-start': CoordinatorTurnStartSchema, 'coordinator-text': CoordinatorTextSchema,
   'coordinator-tool': CoordinatorToolSchema, 'coordinator-turn-end': CoordinatorTurnEndSchema,
   'coordinator-event': CoordinatorEventSchema, 'thread-turn-start': ThreadTurnStartSchema, 'thread-turn-end': ThreadTurnEndSchema,

@@ -37,6 +37,7 @@ export const TurnInputSchema = z.strictObject({
   resume: z.strictObject({ sessionId: z.string().min(1).max(256) }).optional(),
   compaction: z.strictObject({ thresholdPercent: z.number().int().min(15).max(90), contextWindow: z.number().int().positive().optional() }).optional(),
   protectedPaths: z.array(z.string().min(1).max(4096).refine(isAbsolute)).max(1000).optional(),
+  readOnlyDirectories: z.array(z.string().min(1).max(4096).refine(isAbsolute)).max(20).optional(),
   launch: LaunchSchema, safetyProfile: z.enum(['coordinator', 'thread', 'verification', 'review', 'memory']), timeoutMs: z.number().int().positive(),
 }).refine((value) => value.safetyProfile === value.owner.kind, 'The safety profile must match the turn owner.')
   .refine((value) => ['coordinator', 'review', 'memory'].includes(value.owner.kind) ? value.permissions === 'read-only' && (value.owner.kind !== 'coordinator' || value.owner.id === value.owner.projectId) : value.permissions === 'write', 'Coordinator turns are read-only and thread turns write.');

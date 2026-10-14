@@ -134,11 +134,12 @@ const turnSession = (input: TurnInput, daemonPid: number, executable?: string): 
   const bridgeTools = input.owner.kind === 'coordinator' ? claudeBridgeToolNames(projectToolNames({ kind: 'coordinator', ...(env.JEVELLAN_PROJECT_MEMORY_MODE === 'hub' ? { memoryMode: 'hub' } : {}) }))
     : input.owner.kind === 'review' ? claudeBridgeToolNames(['jevellan_project_review_report', 'memory_search', 'memory_read'])
     : input.owner.kind === 'memory' ? claudeBridgeToolNames(['memory_search', 'memory_read', 'memory_write', 'memory_edit', 'jevellan_memory_inbox_add', 'jevellan_memory_archive', 'jevellan_memory_dream_report']) : undefined;
-  const hook = claudePermissionHook({ cwd: input.cwd, daemonPid, profile: input.safetyProfile, permissions: input.permissions, ...(input.protectedPaths ? { protectedPaths: input.protectedPaths } : {}), ...(bridgeTools ? { bridgeTools } : {}) });
+  const hook = claudePermissionHook({ cwd: input.cwd, daemonPid, profile: input.safetyProfile, permissions: input.permissions, ...(input.protectedPaths ? { protectedPaths: input.protectedPaths } : {}), ...(input.readOnlyDirectories ? { readOnlyDirectories: input.readOnlyDirectories } : {}), ...(bridgeTools ? { bridgeTools } : {}) });
   return {
     async interrupt() { control.interrupted = true; await control.current?.interrupt(); },
     run: (message, timeoutMs, emit, session) => execute(control, message, timeoutMs, {
       cwd: input.cwd, env, model: input.model, effort: input.effort,
+      ...(input.readOnlyDirectories ? { additionalDirectories: input.readOnlyDirectories } : {}),
       systemPrompt: { type: 'preset', preset: 'claude_code', append: [input.launch.nativeSetup?.instructions, input.systemAppend].filter(Boolean).join('\n\n') },
       settingSources: ['user', 'project', 'local'], settings: { ...input.launch.nativeSetup?.settings, ...CLAUDE_FLAG_SETTINGS }, plugins: (input.launch.nativeSetup?.plugins ?? []).map(path => ({ type: 'local' as const, path })), includePartialMessages: true,
       permissionMode: input.permissions === 'write' ? 'bypassPermissions' : 'dontAsk',

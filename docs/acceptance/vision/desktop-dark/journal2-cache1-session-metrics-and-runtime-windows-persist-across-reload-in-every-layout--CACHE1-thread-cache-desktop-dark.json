@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CACHE1 session metrics and runtime windows persist across reload in every layout",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/screenshots/JOURNAL2-CACHE1-thread-cache-desktop-dark.png",
+  "expected": "the Jevellan web app \"CACHE1 thread cache\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"CACHE1 session metrics and runtime windows persist across reload in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Sidebar session titles and subtitles are truncated with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Shared memory fi…'). The full text isn't shown, but this looks like intended overflow handling.",
+      "The cache metrics line ('Cache today 80% · 0 cold starts · 0 tokens written cold') is small, low-contrast text, though it is still readable.",
+      "A large empty area sits between the report card and the message composer."
+    ]
+  }
+}

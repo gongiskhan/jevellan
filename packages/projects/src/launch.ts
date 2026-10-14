@@ -60,6 +60,7 @@ export type TurnLauncherOptions = {
   projectSettings?(projectId: string): Promise<ProjectWorkSettings>;
   sessionLedger?(projectId: string): ProjectLedger;
   cacheLedger?(owner: TurnInput['owner']): ProjectLedger;
+  journalDirectory?(projectId: string): Promise<string>;
   now?(): number;
   protectedPaths?(): Promise<string[]>;
   /** Fresh, repository-scoped Git authentication for a writable thread turn; never persisted in a home or MCP configuration. */
@@ -162,9 +163,11 @@ export class TurnLauncher {
         ...(gitIdentity ? { GIT_AUTHOR_NAME: gitIdentity.name, GIT_AUTHOR_EMAIL: gitIdentity.email, GIT_COMMITTER_NAME: gitIdentity.name, GIT_COMMITTER_EMAIL: gitIdentity.email } : {}) };
       const gitEnv = request.owner.kind === 'thread' && request.permissions === 'write'
         ? await this.#o.threadGitEnvironment?.(request.owner.projectId, request.cwd) ?? {} : {};
+      const journal = await this.#o.journalDirectory?.(request.owner.projectId);
       const input = TurnInputSchema.parse({
         schema: 'turn-input-v1', owner: request.owner, turn: request.turn, cwd: request.cwd, permissions: request.permissions, model: request.model, effort: request.effort,
-        account: resolved, systemAppend: request.systemAppend, prompt: await request.prompt(resumed), ...(resumed ? { resume: { sessionId: request.resume } } : {}),
+        account: resolved, systemAppend: request.systemAppend + (journal ? `\n- The project journal at ${journal} has one file per thread, per day and per night, listed in INDEX.md. Read it when you need to know what other work did.` : ''), prompt: await request.prompt(resumed), ...(resumed ? { resume: { sessionId: request.resume } } : {}),
+        ...(journal ? { readOnlyDirectories: [journal] } : {}),
         launch: { useOwnSetup: await this.#o.useOwnSetup?.(request.runtime) ?? true, env: { ...env, ...gitEnv }, mcpServers: { jevellan: { command: process.execPath, args: [join(applicationRoot(), 'bin', 'jevellan.mjs'), 'mcp-bridge'], env } } },
         safetyProfile: request.safetyProfile, timeoutMs: request.timeoutMs, compaction: { thresholdPercent: percent, ...(contextWindow ? { contextWindow } : {}) },
         ...(request.owner.kind === 'thread' && request.isolation === 'worktree' ? { protectedPaths: await this.#o.protectedPaths?.() ?? [] } : {}),

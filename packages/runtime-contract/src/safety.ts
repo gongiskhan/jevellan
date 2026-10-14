@@ -10,7 +10,7 @@ export const ownerCommandDenial = (reason: string) => reason.endsWith(OWNER_COMM
 const READ_ONLY_REASON = 'This step is read-only. Use the read tools and return a handoff.';
 export type SafetyProfile = 'stretch' | 'coordinator' | 'thread' | 'verification' | 'review' | 'memory';
 // No profile means a stretch. Turns carry a profile and no action.
-export type SafetyContext = { cwd: string; daemonPid: number; action?: string | undefined; profile?: SafetyProfile | undefined; protectedPaths?: string[] | undefined };
+export type SafetyContext = { cwd: string; daemonPid: number; action?: string | undefined; profile?: SafetyProfile | undefined; protectedPaths?: string[] | undefined; readOnlyDirectories?: string[] | undefined };
 export function safetyReason(context: Pick<SafetyContext, 'profile'>): string {
   if (context.profile === 'verification') return 'Verification must not change, commit or push anything.';
   return context.profile === 'thread' ? THREAD_SAFETY_REASON : context.profile === 'coordinator' ? COORDINATOR_SAFETY_REASON : SAFETY_REASON;
@@ -39,15 +39,22 @@ export function shellWords(command: string): string[][] {
 
 /** Existing and not-yet-created targets resolve through their nearest real ancestor. */
 export function protectedPathDenial(path: string, context: SafetyContext): string | null {
+  const readOnly = readOnlyPathDenial(path, context); if (readOnly) return readOnly;
   if (context.profile !== 'thread' || !context.protectedPaths?.length) return null;
   if (/[$`*?]/u.test(path)) return safetyReason(context);
   const target = canonical(resolve(context.cwd, path));
   return context.protectedPaths.some(root => { const rel = relative(canonical(root), target); return !rel || rel !== '..' && !rel.startsWith('../') && !isAbsolute(rel); })
     ? `A worktree thread cannot act inside a registered checkout or protected path. ${safetyReason(context)}` : null;
 }
+function readOnlyPathDenial(path: string, context: SafetyContext): string | null {
+  if (!context.readOnlyDirectories?.length) return null;
+  const target = canonical(resolve(context.cwd, path));
+  return context.readOnlyDirectories.some(root => { const rel = relative(canonical(root), target); return !rel || rel !== '..' && !rel.startsWith('../') && !isAbsolute(rel); })
+    ? 'The project journal is read-only. Jevellan builds it from the project ledger.' : null;
+}
 
 export function fileWriteDenial(tool: string, input: unknown, context: SafetyContext): string | null {
-  if (!context.protectedPaths?.length) return null;
+  if (!context.protectedPaths?.length && !context.readOnlyDirectories?.length) return null;
   const value = input && typeof input === 'object' ? input as Record<string, unknown> : {};
   const paths: string[] = [];
   if (['Write', 'Edit', 'MultiEdit', 'NotebookEdit', 'write_file', 'edit_file'].includes(tool)) {

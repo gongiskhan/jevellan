@@ -85,6 +85,10 @@ function unreadableEnvelope(raw: unknown): UnreadableEnvelope {
   return { id: id(record.id), projectId: id(record.projectId), sourceDeviceId: id(record.sourceDeviceId), kind: kind.success ? kind.data : null };
 }
 export class MemberHubClient {
+  async projectJournal(input: unknown) {
+    const { ProjectJournalRequestSchema, ProjectJournalResultSchema } = await import('@jevellan/core');
+    return this.#request('journal', ProjectJournalResultSchema, ProjectJournalRequestSchema.parse(input), 30000);
+  }
   terminals(input: unknown) { return this.#request('terminals', TerminalHubResultSchema, TerminalHubRequestSchema.parse(input), 20_000); }
   readonly #transport: HubTransport;
   readonly deviceId: string;

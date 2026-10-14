@@ -244,6 +244,10 @@ test('ledger envelopes are separate from conversation ledgers and payloads are v
   expect(ProjectLedgerEventSchema.safeParse({ ...envelope, data: { schema: 'blob-ref-v1', ref: `blobs/${'a'.repeat(64)}`, sha256: 'a'.repeat(64), bytes: 70000 } }).success).toBe(true);
   expect(Object.keys(ProjectLedgerDataSchemas).sort()).toEqual([...ProjectLedgerEventTypeSchema.options].sort());
   const payloads: Record<string, unknown> = {
+    'journal-thread': { schema: 'journal-thread-v1', id: threadId, projectId: 'project', title: 'Fix login', task: 'Keep the task.', taskId: null, goal: null, type: null, runtime: 'codex', model: 'gpt-5', effort: 'high', deviceId: 'dev_a', isolation: 'worktree', branch: null, pr: null, state: 'idle', createdAt: at, endedAt: null },
+    'journal-source': { schema: 'project-journal-record-v1', deviceId: 'dev_a', ledgerId: 'coordinator', event: { schema: 'project-ledger-event-v1', t: at, id: 1, type: 'coordinator-text', data: { schema: 'coordinator-text-v1', text: 'Recorded.' } } },
+    'journal-document': { schema: 'journal-document-v1', collection: 'question', key: 'question_a', document: { schema: 'project-decision-v1', id: 'question_a', projectId: 'project', revision: 1, from: 'coordinator', question: 'Choose?', options: [], createdAt: at } },
+    'journal-message': { schema: 'journal-message-v1', id: 'message_a', from: 'owner', text: 'Keep this message.', at, interrupt: false },
     'coordinator-turn-start': { schema: 'coordinator-turn-v1', turn: 1, fresh: true, runtime: 'claude', modelLabel: 'Claude Opus', effort: 'medium', accountLabel: 'Work', eventIds: ['cev_1'] },
     'coordinator-text': { schema: 'coordinator-text-v1', text: 'Started two threads.' },
     'coordinator-tool': { schema: 'coordinator-tool-v1', tool: 'jevellan_withdraw_question', ok: true, summary: 'Withdrew a question.', decisionId: 'pdec_1', reason: 'The thread solved it.' },

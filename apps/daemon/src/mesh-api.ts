@@ -26,6 +26,12 @@ export async function handleMeshDeviceApi(app: Application, request: IncomingMes
   const authorization = request.headers.authorization;
   const device = app.devices.authenticate(authorization?.startsWith('Bearer ') ? authorization.slice(7) : undefined);
   const send = (value: unknown) => json(response, app.hub.redactor.document(value));
+  if (path === '/hub/mesh/journal' && method === 'POST') {
+    if (!app.projectWork.journal) throw Object.assign(new Error('The project journal is unavailable.'), { status: 503 });
+    const release = app.lifecycle.enter({ kind: 'request' });
+    try { const result = await app.projectWork.journal.request(await requestBody(request), device.id); app.devices.authenticate(authorization!.slice(7)); send(result); return true; }
+    finally { release(); }
+  }
   if (path === '/hub/mesh/terminals' && method === 'POST') {
     const input = TerminalHubRequestSchema.parse(await requestBody(request));
     const result = await app.terminals.hubRequest(input, device.id); app.devices.authenticate(authorization!.slice(7)); send(result); return true;

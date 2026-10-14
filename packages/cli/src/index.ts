@@ -10,6 +10,7 @@ import { installationArguments } from './installation-arguments.js';
 import { attachThread, detachThread } from './thread-attach.js';
 import { serveAgentMcp } from './agent-mcp.js';
 import { hubCommand } from './hub-command.js';
+import { journalCommand } from './journal-command.js';
 
 function printInstallation(result: Awaited<ReturnType<Installer['install']>>) {
   if (result.changedPort) console.log(`The default port was occupied. Jevellan uses ${result.port}.`);
@@ -32,6 +33,7 @@ async function offerHttps() {
 export async function main(args: string[], options: { installer?: () => Installer; confirmPurge?: (path: string) => Promise<string>; doctor?: typeof doctor; offerHttps?: () => Promise<boolean>; attach?: typeof attachThread; detach?: typeof detachThread; mcpServer?: typeof serveAgentMcp } = {}) {
   if (args[0] === '--version') { console.log(VERSION); return; }
   if (args[0] === 'hub') { await hubCommand(args.slice(1)); return; }
+  if (args[0] === 'journal') { await journalCommand(args.slice(1)); return; }
   if (args[0] === 'doctor') {
     if (args.length !== 1) throw new Error('Usage: jevellan doctor');
     const report = await (options.doctor ?? doctor)(); doctorLines(report).forEach(line => console.log(line));
@@ -83,6 +85,6 @@ export async function main(args: string[], options: { installer?: () => Installe
     console.log(`Jevellan is running at ${daemon.addresses.join(' and ')}`);
     return;
   }
-  console.log('Jevellan — Autonomous development, coordinated.\nCommands: install [--from path] [--join hubUrl code] [--https | --no-https], join hubUrl code [--from path] [--https | --no-https], update [--from path], rollback, uninstall [--purge], doctor, start [--port number] [--force], hub export --out file --to destination-name, hub import file [--paths mapping-file], mcp-server, thread attach threadId, thread detach threadId, --version');
+  console.log('Jevellan — Autonomous development, coordinated.\nCommands: install [--from path] [--join hubUrl code] [--https | --no-https], join hubUrl code [--from path] [--https | --no-https], update [--from path], rollback, uninstall [--purge], doctor, start [--port number] [--force], hub export --out file --to destination-name, hub import file [--paths mapping-file], mcp-server, thread attach threadId, thread detach threadId, journal rebuild project, --version');
   if (args.length) process.exitCode = 1;
 }

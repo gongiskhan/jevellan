@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CM1 compaction controls show context, persist the threshold and start a fresh session on request",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/screenshots/JOURNAL2-CM1-compaction-settings-desktop-dark.png",
+  "expected": "the Jevellan web app \"CM1 compaction settings\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"CM1 compaction controls show context, persist the threshold and start a fresh session on request\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The modal body scrolls, so the 'Minutes between refills' input is only partly visible above the footer at this scroll position. It can still be reached by scrolling.",
+      "The 'Required checks' and 'Risky areas' textareas are empty and have no placeholder text, so a lot of the dark modal is blank space."
+    ]
+  }
+}

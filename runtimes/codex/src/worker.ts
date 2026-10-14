@@ -116,7 +116,7 @@ const stretchSession = (input: StretchInput, daemonPid: number, executable?: str
 // root instructions are read again on each new or resumed turn.
 const turnSession = (input: TurnInput, daemonPid: number, executable?: string): WorkerSession => {
   const cwd = realpathSync(input.cwd);
-  const runtime = codexRuntime(input, cwd, { cwd: input.cwd, daemonPid, profile: input.safetyProfile, ...(input.protectedPaths ? { protectedPaths: input.protectedPaths } : {}) }, executable);
+  const runtime = codexRuntime(input, cwd, { cwd: input.cwd, daemonPid, profile: input.safetyProfile, ...(input.protectedPaths ? { protectedPaths: input.protectedPaths } : {}), ...(input.readOnlyDirectories ? { readOnlyDirectories: input.readOnlyDirectories } : {}) }, executable);
   const fullAccess = input.owner.kind === 'thread' && input.permissions === 'write', writable = input.permissions === 'write' && !fullAccess ? worktreeGitDirs(cwd) : undefined;
   const options: ThreadOptions = { workingDirectory: cwd, model: input.model, modelReasoningEffort: input.effort, sandboxMode: input.permissions === 'read-only' ? 'read-only' : fullAccess ? 'danger-full-access' : 'workspace-write', approvalPolicy: 'never', networkAccessEnabled: input.permissions === 'write', ...(writable ? { additionalDirectories: writable } : {}) };
   const control: Control = { controller: new AbortController(), textEmitted: false };

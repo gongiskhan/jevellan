@@ -44,6 +44,7 @@ import { Inbox, Outbox, type EnvelopeOf } from './envelopes.js';
 import { ThreadGit } from './git.js';
 import { ThreadIndexPublisher } from './index-publisher.js';
 import { TurnLauncher } from './launch.js';
+import { ProjectJournals, type JournalOptions } from './journal.js';
 import { cacheRecords, sessionCacheSnapshot } from './session-cache.js';
 import { ProjectLedgers, type ProjectLedger } from './ledger.js';
 import { MailService } from './mail.js';
@@ -81,6 +82,7 @@ export const DEFAULT_PROJECT_TIMERS: ProjectTimers = {
   mainLeaseRetryMs: 20_000, fallbackCheckMs: 60_000, now: Date.now,
 };
 export type ProjectWorkOptions = {
+  journal?: Pick<JournalOptions, 'isHub' | 'request'>;
   terminalRead?(scope: import('./bridge-tools.js').ProjectScope, input: unknown): Promise<unknown>;
   homes: Homes; deviceId: string; deviceName: string; redactor: SecretRedactor;
   facts?(): DeviceFacts;
@@ -113,6 +115,7 @@ const statusOf = (error: unknown) => (error as { status?: unknown } | undefined)
  * states for recovery (D24).
  */
 export class ProjectWork {
+  readonly journal: ProjectJournals | undefined;
   readonly ready: Promise<void>;
   /** The daemon's own URL for bridge calls; empty until `Application.bindDaemonUrl`. */
   daemonUrl = '';
@@ -152,6 +155,11 @@ export class ProjectWork {
     this.ledgers = new ProjectLedgers(this.paths, { redactor: o.redactor, now: () => new Date(now()).toISOString() });
     this.#publisher = new ThreadIndexPublisher(o.hub, timers.indexRetryMs);
     this.store = new ThreadStore(this.paths, this.ledgers, this.#publisher);
+    this.journal = o.journal ? new ProjectJournals({ homes: o.homes, deviceId: o.deviceId, ...o.journal, ledgers: this.ledgers, hub: o.hub,
+      projects: async () => (await o.projects.list()).map(row => row.project), threads: projectId => this.store.list(projectId), now,
+      dream: projectId => { const dream = this.memoryProgramme?.dream.state(projectId); if (!dream?.report) return undefined;
+        const windowId = this.memoryProgramme?.session(projectId, 'dream')?.windowId;
+        return { id: dream.id, report: dream.report, ...(windowId ? { windowId } : {}) }; } }) : undefined;
     const coordinatorStore = new CoordinatorStore(this.paths); const receipts = new StartReceipts(this.paths, now);
     const github = new GitHubAccess({ credential: o.github.credential, fetch: o.github.fetch, baseUrl: o.github.baseUrl, redactor: o.redactor });
     const git = new ThreadGit({ homes: o.homes, redactor: o.redactor });
@@ -163,6 +171,7 @@ export class ProjectWork {
       sessionLedger: projectId => this.ledgers.coordinator(projectId), now, useOwnSetup: async runtime => (await o.settings()).runtimes[runtime]?.useOwnSetup !== false,
       cacheWindowMinutes: async runtime => (await o.settings()).runtimes[runtime]?.cacheWindowMinutes ?? (runtime === 'claude' ? 60 : 10),
       cacheLedger: owner => owner.kind === 'thread' ? this.ledgers.thread(owner.projectId, owner.id) : this.ledgers.coordinator(owner.projectId),
+      ...(this.journal ? { journalDirectory: async (projectId: string) => { await this.journal!.sync(projectId).catch(() => undefined); return this.journal!.readableDirectory(projectId); } } : {}),
       threadGitEnvironment: async projectId => {
         try {
           const registered = await o.projects.get(projectId); if (!registered) throw new Error(PROJECT_NOT_FOUND);
@@ -434,6 +443,7 @@ export class ProjectWork {
     this.#started = true;
     void this.ready.then(() => {
       if (this.#closing) return;
+      this.journal?.start(this.#timers.periodic);
       if (!deviceAllowsWork(this.#o.homes)) { this.inbox.start(); return; }
       this.threads.begin();
       this.coordinators.begin();
@@ -508,6 +518,7 @@ export class ProjectWork {
       await this.threads.close();
       await this.dispatcher.close();
       await this.jobs.close();
+      await this.journal?.close();
       await this.apps.close();
       await this.tracker.close();
       await this.#publisher.close();

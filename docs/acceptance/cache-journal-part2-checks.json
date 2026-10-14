@@ -1,0 +1,116 @@
+{
+  "schema": "journal-part2-checks-v1",
+  "label": "simulated",
+  "baseCommit": "24d0eefb27108dee400ff4a5d40c5d748ef963b6",
+  "at": "2026-10-14T06:00:10.071284+00:00",
+  "backend": {
+    "passed": 220,
+    "files": 12,
+    "journalAndCli": 14
+  },
+  "checks": {
+    "typecheck": "passed",
+    "lint": "passed",
+    "build": "passed"
+  },
+  "browser": "cache-journal-part2-browser.json",
+  "runtimeSource": [
+    {
+      "path": "apps/daemon/src/application.ts",
+      "sha256": "4b1778a0d0e3b4386a9d43ccc1c5d0b492c050be677ebaee02841653a7e881ae"
+    },
+    {
+      "path": "apps/daemon/src/local-api.ts",
+      "sha256": "6212dcd5ff0e56dcabc7700fd719b3d12e7d7a75c785397dce58a8ce5b83e8e3"
+    },
+    {
+      "path": "apps/daemon/src/mesh-api.ts",
+      "sha256": "41e7b2a6a6e2c4c819ffc293bb9d5fe935b4c3a3d9c1c3be11d9062690e98583"
+    },
+    {
+      "path": "packages/cli/src/index.ts",
+      "sha256": "6f3c11082e58db6adc69ff695a86514e7f08bc255800763de80d158d2180452d"
+    },
+    {
+      "path": "packages/cli/src/journal-command.ts",
+      "sha256": "63b7ffca48b9f7fddee361611f17027349b1e338c496fe0ecca0b18b926ce2de"
+    },
+    {
+      "path": "packages/core/src/client.ts",
+      "sha256": "982aa851e0c2b4a98304903e892354406880da00e9a8e1575d81499266fc54cb"
+    },
+    {
+      "path": "packages/core/src/index.ts",
+      "sha256": "f1b62d09c94062f6c1b47aaff30ee8f9792aac4a7db102d96bed12cc50b7d7bc"
+    },
+    {
+      "path": "packages/core/src/project-journal-schemas.ts",
+      "sha256": "e5008c180d608c87f56df63e0f0370d9e5200e70f3edc58c298e1c86132ca1de"
+    },
+    {
+      "path": "packages/core/src/project-schemas.ts",
+      "sha256": "aa152c1172fee21921fd0d831cca10acaca95f4d32f0b6f25383cbcd59cd9183"
+    },
+    {
+      "path": "packages/mesh/src/client.ts",
+      "sha256": "7f5cdf6b5be07d89772d54b4f3faab63dcaa0ea28bd4ae6d9bb713c46f571a19"
+    },
+    {
+      "path": "packages/projects/src/index.ts",
+      "sha256": "551db3aee9975b4b0b153854d66f6e9e5dc5fbcae9abc7257150d376e2d6d0b3"
+    },
+    {
+      "path": "packages/projects/src/journal-digest.ts",
+      "sha256": "e0990878f1b4f5b966f5c4f6526539381590bc05df3e64218a9d9f17d75d547a"
+    },
+    {
+      "path": "packages/projects/src/journal-render.ts",
+      "sha256": "7b58b9cf634d2468c0e87e8e0f372e7b66bd6654bade93280af00512e0768f4c"
+    },
+    {
+      "path": "packages/projects/src/journal.ts",
+      "sha256": "576847612f6902d29905b9db1445affc6788e57c9410aeeed4caea2b82c55eae"
+    },
+    {
+      "path": "packages/projects/src/launch.ts",
+      "sha256": "13b9e5db5e5db466a294f89379e76771f5b5d5494d00ac2aa0ca7695c2cec71c"
+    },
+    {
+      "path": "packages/projects/src/project-work.ts",
+      "sha256": "907162c325491b43af8d5656b5d66c7c10a95ff3b7f18a392c3d2051c4794b12"
+    },
+    {
+      "path": "packages/projects/src/thread-runner.ts",
+      "sha256": "5dbedf0d8043e2918cebbdc128c029529ad849f0d7c18d9d62ac547ffa38dcc8"
+    },
+    {
+      "path": "packages/runtime-contract/src/contract.ts",
+      "sha256": "224b4919b8fab145af902126e303a7238bd6cf6b7bb9261aa97ff1783be0a883"
+    },
+    {
+      "path": "packages/runtime-contract/src/safety.ts",
+      "sha256": "277ee690937bd66c855847b52c9c4951190be7576b27219d386a0f3b36be481a"
+    },
+    {
+      "path": "runtimes/claude/src/worker.ts",
+      "sha256": "aa1abe41660165808723ad13547523e08b2930f318b7f1c90503958240eef254"
+    },
+    {
+      "path": "runtimes/codex/src/safety-hook.ts",
+      "sha256": "94beb0860110b1d56718d9b3622771a8cb378d19048b4586a444084a3d58fc8b"
+    },
+    {
+      "path": "runtimes/codex/src/worker.ts",
+      "sha256": "ec4dab32c158bcf30c95155562c8b83b3f0d360d6547c0181e7d9ecbc55500f4"
+    }
+  ],
+  "retainedFailures": [
+    "Initial mirror fixture compared the manifest between atomic file writes and final manifest publication; final fixture waits for both inside the original30-second deadline. Original219pass/1fail log retained."
+  ],
+  "logs": {
+    "final-regressions": "a12d00649933138b1f31344ac9bfd5c2c55797ea2601ff21a5df60c27195aa4a",
+    "typecheck": "0e0a781ae86995970f55756323fc818f02068c6f861b03984d5322e6e292e9b5",
+    "lint": "980a27b8311b8de8ac9b371fe50e81be50bdfc8b5e66758989817ffe6d1c2d3c",
+    "build": "7e1864be309696ac384407e40769952df80d6808b6ac1894e22641ab52eeda3f"
+  }
+}

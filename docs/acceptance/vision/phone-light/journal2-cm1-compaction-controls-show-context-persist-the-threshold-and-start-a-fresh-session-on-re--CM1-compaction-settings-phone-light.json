@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CM1 compaction controls show context, persist the threshold and start a fresh session on request",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/JOURNAL2-CM1-compaction-settings-phone-light.png",
+  "expected": "the Jevellan web app \"CM1 compaction settings\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"CM1 compaction controls show context, persist the threshold and start a fresh session on request\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The modal body scrolls, and the footer cuts off the 'Minutes between refills' label and hides its input at the bottom. You can still reach it by scrolling, but there's no visual cue that more settings are below.",
+      "The 'Compact at percent' field shows only a bare number (65). There's no unit, helper text or current context usage next to it, so it's not clear what the value means on this screen."
+    ]
+  }
+}

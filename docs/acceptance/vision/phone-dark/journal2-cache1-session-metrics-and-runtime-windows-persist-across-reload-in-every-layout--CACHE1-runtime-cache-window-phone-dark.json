@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CACHE1 session metrics and runtime windows persist across reload in every layout",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/screenshots/JOURNAL2-CACHE1-runtime-cache-window-phone-dark.png",
+  "expected": "the Jevellan web app \"CACHE1 runtime cache window\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"CACHE1 session metrics and runtime windows persist across reload in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The top tab bar gets cut off at the right edge: a fourth tab shows only as a partial icon behind the scroll arrow. The arrow still reaches it, so this isn't blocking.",
+      "On cards that say they are Disabled, the 'Log in here' links still appear in active pink, so they look clickable even though they may not work."
+    ]
+  }
+}

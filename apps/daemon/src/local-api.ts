@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { z } from 'zod';
 import { EmptySchema, ErrorDocumentSchema, HubUnavailable, IdSchema, ThreadAttachRequestSchema, ThreadDetachRequestSchema } from '@jevellan/core';
+import { JournalRebuildInputSchema, JournalRebuildReceiptSchema } from '@jevellan/core';
 import type { Application } from './application.js';
 import { diagnoseApplication, type LocalDiagnostics } from './diagnostics.js';
 import { json, requestBody } from './http.js';
@@ -29,6 +30,18 @@ export async function handleLocalApi(app: Application | undefined, control: Loca
   if (!app || !control?.authorized(request)) { json(response, ErrorDocumentSchema.parse({ schema: 'error-v1', code: 'unauthenticated', message: 'Local commands require the installation control file.' }), 401); return; }
   let release: (() => void) | undefined;
   try {
+    if (path === '/api/local/journal/rebuild') {
+      if (request.method !== 'POST') throw failure('This operation does not support that method.', 405);
+      const input = JournalRebuildInputSchema.parse(await requestBody(request)), projects = (await app.state.projects.list()).map(row => row.project);
+      const found = projects.filter(project => project.id === input.project || project.name === input.project);
+      if (found.length !== 1) throw failure(found.length ? 'More than one project has that name. Use its id.' : 'Project not found.', found.length ? 409 : 404);
+      if (!app.projectWork.journal) throw failure('The project journal is unavailable.', 503);
+      release = app.lifecycle.enter({ kind: 'request' });
+      const project = found[0]!;
+      if (app.member) await app.member.projectJournal({ schema: 'project-journal-request-v1', projectId: project.id, operation: 'rebuild' });
+      await app.projectWork.journal.sync(project.id, true);
+      json(response, JournalRebuildReceiptSchema.parse({ schema: 'project-journal-rebuilt-v1', projectId: project.id, path: app.projectWork.journal.path(project.id), files: Object.keys(app.projectWork.journal.state(project.id).files).length })); return;
+    }
     const match = path.match(THREAD);
     if (!match) throw failure('Not found.', 404);
     if (request.method !== 'POST') throw failure('This operation does not support that method.', 405);

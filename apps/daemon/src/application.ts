@@ -153,6 +153,7 @@ export class Application {
       // Projects share the account serialization, checkout ownership, leases, bridge registry and memory with conversations.
       this.projectHub = this.member ? new MemberProjectStore(this.member) : new HubProjectAccess(this.hub, this.device.deviceId, undefined, () => this.devices.list());
       this.projectWork = new ProjectWork({ homes: this.homes, deviceId: this.device.deviceId, deviceName: this.device.name, redactor: this.redactor,
+        journal: { isHub: !this.member, ...(this.member ? { request: input => this.member!.projectJournal(input) } : {}) },
         terminalRead: (scope, input) => this.terminals.read(scope.kind === 'thread' ? { kind: 'thread', projectId: scope.projectId, threadId: scope.threadId }
           : { kind: 'coordinator', projectId: scope.projectId }, input),
         switchMemory: async (projectId, mode, requestId) => {

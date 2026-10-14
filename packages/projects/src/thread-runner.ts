@@ -716,7 +716,7 @@ export class ThreadRunner {
     const message: QueuedMessage = { ...raw, text: this.#c.redactor.text(raw.text) }; const hash = digest(message.text);
     const seen = this.#c.store.local(thread.id).seenMessages?.find((entry) => entry.id === message.id);
     if (seen) { if (seen.digest !== hash) throw refuse(MESSAGE_ID_REUSED, 409); return { delivery: 'queued', repeated: true }; }
-    this.#c.store.update(thread.id, (current) => ({ ...current, queuedMessages: [...current.queuedMessages, message] }));
+    this.#c.store.update(thread.id, (current) => ({ ...current, queuedMessages: [...current.queuedMessages, message] }), { type: 'journal-message', data: { schema: 'journal-message-v1', ...message } });
     this.#c.store.updateLocal(thread.id, (local) => ({ ...local, seenMessages: [...(local.seenMessages ?? []), { id: message.id, digest: hash }].slice(-SEEN_MESSAGES) }));
     const route = deliveryRoute(thread.state);
     if (route === 'running') {

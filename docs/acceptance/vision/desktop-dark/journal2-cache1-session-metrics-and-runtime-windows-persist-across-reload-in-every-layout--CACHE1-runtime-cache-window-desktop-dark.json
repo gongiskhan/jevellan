@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CACHE1 session metrics and runtime windows persist across reload in every layout",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/screenshots/JOURNAL2-CACHE1-runtime-cache-window-desktop-dark.png",
+  "expected": "the Jevellan web app \"CACHE1 runtime cache window\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"CACHE1 session metrics and runtime windows persist across reload in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The Claude Code accounts both say 'Codex sign-ins are kept per device for now.' That copy looks wrong for a Claude Code runtime.",
+      "The usage bars for Five hours and Week are empty tracks marked 'Unknown', so they're barely visible against the dark background.",
+      "The 'Disabled' and 'Offline' status labels are low-contrast gray, but they can still be read."
+    ]
+  }
+}
