@@ -2,7 +2,7 @@ import { afterEach, beforeEach, expect, test } from 'vitest';
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { Homes, JournalThreadSchema, MemoryDreamReportSchema, MergeRouteSchema, PlacementRecordSchema, ProjectJobRunSchema, ProjectSchema, ProjectWindowSchema, ProjectWorkTaskSchema, ThreadSchema, VerificationRunSchema, type ProjectJournalRecord } from '../packages/core/dist/index.js';
+import { defaultProjectWorkSettings, Homes, JournalThreadSchema, MemoryDreamReportSchema, MergeRouteSchema, PlacementRecordSchema, ProjectJobRunSchema, ProjectSchema, ProjectWindowSchema, ProjectWorkTaskSchema, ThreadSchema, VerificationRunSchema, type ProjectJournalRecord } from '../packages/core/dist/index.js';
 import { HubDatabase, HubProjectAccess } from '../packages/mesh/dist/index.js';
 import { ProjectJournals, ProjectLedgers, ProjectPaths, coordinatorJournalDigest, journalIndex, journalRecordKey, renderProjectJournal, threadJournalExcerpt, threadJournalFile } from '../packages/projects/dist/index.js';
 import { fileWriteDenial, safetyDenial } from '../packages/runtime-contract/dist/index.js';
@@ -141,6 +141,48 @@ test.each(['coordinator', 'thread', 'verification', 'review', 'memory'] as const
   expect(fileWriteDenial('apply_patch', `*** Update File: ${journal}/INDEX.md\n`, context)).toContain('read-only');
   for (const command of [`echo changed > ${journal}/INDEX.md`, `rm ${journal}/INDEX.md`, `chmod 600 ${journal}/INDEX.md`]) expect(safetyDenial(command, context)).toContain('read-only');
   expect(safetyDenial(`cat ${journal}/INDEX.md`, context)).toBeNull();
+});
+
+test('saving default settings and later calendar or name changes never rewrites earlier journal entries', async () => {
+  const { project, hub, ledgers, engine } = setup(), ledger = ledgers.coordinator(project.id);
+  ledger.append({ type: 'coordinator-text', data: { schema: 'coordinator-text-v1', text: 'Before settings exist.' } });
+  await engine.sync(project.id); const path = join(engine.path(project.id), 'days/2026-10-14.md'), before = readFileSync(path, 'utf8');
+  const stored = await hub.putSettings(defaultProjectWorkSettings(project.id), 0);
+  await engine.sync(project.id); expect(readFileSync(path, 'utf8').startsWith(before)).toBe(true);
+  project.name = 'Renamed shop';
+  await hub.putSettings({ ...stored.document, nightlyWindow: { ...stored.document.nightlyWindow, timezone: 'UTC' } }, stored.revision);
+  await engine.sync(project.id);
+  now += 60000; ledger.append({ type: 'coordinator-text', data: { schema: 'coordinator-text-v1', text: 'After the calendar change.' } });
+  await engine.sync(project.id); const updated = readFileSync(path, 'utf8');
+  expect(updated.startsWith(before)).toBe(true); expect(updated).toContain('2026-10-14 11:00'); expect(updated).toContain('2026-10-14 10:01');
+  await engine.sync(project.id, true); expect(readFileSync(path, 'utf8')).toBe(updated);
+});
+
+test('a slow project does not delay an independent journal in the same sweep', async () => {
+  const { project, hub, ledgers } = setup(), slow = ProjectSchema.parse({ ...project, id: 'slow_project' });
+  database.put('projects', slow.id, ProjectSchema, slow, 0);
+  let release!: () => void; const pending = new Promise<void>(resolve => { release = resolve; });
+  const delayed = new Proxy(hub, { get(target, property) {
+    if (property === 'tasks') return async (id: string, after?: string) => { if (id === slow.id) await pending; return target.tasks(id, after); };
+    const value = Reflect.get(target, property); return typeof value === 'function' ? value.bind(target) : value;
+  } });
+  const journal = new ProjectJournals({ homes, deviceId: 'hub', isHub: true, ledgers, hub: delayed, projects: async () => [slow, project], threads: () => [], now: () => now }); engines.push(journal);
+  const sweep = journal.syncAll();
+  try { await expect.poll(() => existsSync(join(journal.path(project.id), 'INDEX.md')), { timeout: 1000 }).toBe(true); }
+  finally { release(); await sweep; }
+});
+
+test('one failed project does not prevent later journals from synchronizing and recovers on the next sweep', async () => {
+  const { project, hub, ledgers } = setup(), bad = ProjectSchema.parse({ ...project, id: 'bad_project', name: 'Unavailable project' });
+  database.put('projects', bad.id, ProjectSchema, bad, 0);
+  let unavailable = true;
+  const journal = new ProjectJournals({ homes, deviceId: 'hub', isHub: true, ledgers, hub, projects: async () => [bad, project],
+    threads: id => { if (id === bad.id && unavailable) throw new Error('This project is temporarily unavailable.'); return []; }, now: () => now }); engines.push(journal);
+  await journal.syncAll().catch(() => undefined);
+  expect(existsSync(join(journal.path(project.id), 'INDEX.md'))).toBe(true);
+  expect(existsSync(join(journal.path(bad.id), 'INDEX.md'))).toBe(false);
+  unavailable = false; await journal.syncAll();
+  expect(existsSync(join(journal.path(bad.id), 'INDEX.md'))).toBe(true);
 });
 
 test('two actual local daemons mirror changes and catch up after a simulated hub disconnection', { timeout: 120000 }, async () => {

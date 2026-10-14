@@ -1,0 +1,15 @@
+{
+  "schema": "cache-pr-completion-v1",
+  "label": "live",
+  "at": "2026-10-14T08:03:53.578Z",
+  "projectId": "live_cache_3e278f080b3e4f36b2b6e0bb68585640",
+  "threadId": "thread_01M4WMNZYA5D4WZ1VM1PCD8RP7",
+  "pullRequest": 15,
+  "state": "merged",
+  "threadState": "done",
+  "headSha": "9f4d105ac042c84b1c43dc280fd70cc51ca1d40c",
+  "observations": [
+    "Owner-authorized sandbox UI merge for thread_01M4WMNZYA5D4WZ1VM1PCD8RP7: Merge #15 Paginate the customers list?"
+  ],
+  "checkpointPass": false
+}

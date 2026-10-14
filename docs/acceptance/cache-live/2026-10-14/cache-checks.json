@@ -1,0 +1,328 @@
+{
+  "schema": "cache-live-checks-v1",
+  "label": "live",
+  "release": "0.3.4",
+  "sourceCommit": "4c4301b88b3a7c0b1c592cb158cd03f031516831",
+  "startedAt": "2026-10-14T06:36:41.379Z",
+  "endedAt": "2026-10-14T07:59:45.103Z",
+  "deadlineAt": "2026-10-14T09:36:41.379Z",
+  "ownerAcceptance": false,
+  "passed": false,
+  "checks": [
+    {
+      "name": "L1",
+      "verdict": "failed",
+      "startedAt": "2026-10-14T06:36:55.294Z",
+      "endedAt": "2026-10-14T07:59:37.018Z",
+      "reason": "POST /api/projects/cache_windows_0a005cfaddde450f84afef3ca5114acd/threads/thread_01M4WJ1WGVMZG30KY7DHYPKR2F/messages: 409 This thread has ended. Start a new thread for new work.\nPOST /api/projects/cache_windows_0a005cfaddde450f84afef3ca5114acd/threads/thread_01M4WJ1WMQMHC9TTRJ10RD4XY7/messages: 409 This thread has ended. Start a new thread for new work.\nPOST /api/projects/cache_windows_0a005cfaddde450f84afef3ca5114acd/threads/thread_01M4WJ1WVWF5PV0NFZETFEB1Y6/messages: 409 This thread has ended. Start a new thread for new work.\nPOST /api/projects/cache_windows_0a005cfaddde450f84afef3ca5114acd/threads/thread_01M4WJ1WZ5VCJ3S4AQ98MJM32M/messages: 409 This thread has ended. Start a new thread for new work.\nPOST /api/projects/cache_windows_0a005cfaddde450f84afef3ca5114acd/threads/thread_01M4WJ1X32B268520MXJ7DV0F8/messages: 409 This thread has ended. Start a new thread for new work.\n\n5 !== 0\n",
+      "evidence": {
+        "materialSha256": "954b9ceaa517dde1f3f7d06e608b74349e38f12e4ea5442d681f8fa3ef2c9906",
+        "materialChars": 240000,
+        "sourceSizing": "240000 characters targeting60000 tokens; actual session context checked separately",
+        "measurements": [
+          {
+            "runtime": "claude",
+            "idleMinutes": 3,
+            "actualIdleSeconds": 180.62,
+            "threadId": "thread_01M4WJ1WACRGTAGSX6JJZHQ9DE",
+            "hitRatio": 0.8447470358352595,
+            "contextTokens": 133642,
+            "cacheReadTokens": 687815,
+            "cacheWriteTokens": 125073,
+            "cacheWritesKnown": true,
+            "uncachedInputTokens": 1338
+          },
+          {
+            "runtime": "codex",
+            "idleMinutes": 3,
+            "actualIdleSeconds": 181.294,
+            "threadId": "thread_01M4WJ1WQA05JHKW5KB9AG2EGP",
+            "hitRatio": 0.8045303414456405,
+            "contextTokens": 38094,
+            "cacheReadTokens": 158976,
+            "cacheWriteTokens": 0,
+            "cacheWritesKnown": true,
+            "uncachedInputTokens": 38625
+          },
+          {
+            "runtime": "claude",
+            "idleMinutes": 15,
+            "actualIdleSeconds": 905.031,
+            "threadId": "thread_01M4WJ1WE7EX0DZXRAWSY6YGWM",
+            "hitRatio": 0.8936595733086292,
+            "contextTokens": 26676,
+            "cacheReadTokens": 163991,
+            "cacheWriteTokens": 18141,
+            "cacheWritesKnown": true,
+            "uncachedInputTokens": 1373
+          }
+        ],
+        "windows": {
+          "claude": 15,
+          "codex": 3
+        }
+      }
+    },
+    {
+      "name": "L2",
+      "verdict": "failed",
+      "startedAt": "2026-10-14T06:36:55.951Z",
+      "endedAt": "2026-10-14T07:22:57.303Z",
+      "reason": "Timed out after 45 minutes: CSV export to reach a merged pull request",
+      "evidence": {}
+    },
+    {
+      "name": "L3",
+      "verdict": "failed",
+      "startedAt": "2026-10-14T07:22:57.304Z",
+      "endedAt": "2026-10-14T07:40:14.026Z",
+      "reason": "Timed out after 15 minutes: a real thread checkpoint after the card answer",
+      "evidence": {}
+    }
+  ],
+  "observations": [
+    "Usage records come from runtime-reported turn outcomes. Missing tokens or cost remain unknown; minutes include concurrent sessions.",
+    "Usage records come from runtime-reported turn outcomes. Missing tokens or cost remain unknown; minutes include concurrent sessions."
+  ],
+  "projects": [
+    "live_cache_3e278f080b3e4f36b2b6e0bb68585640",
+    "cache_windows_0a005cfaddde450f84afef3ca5114acd"
+  ],
+  "sessions": [
+    {
+      "key": "491029ad701cc1bd3b1e46722b1a5c846b2da6e2cc2f94a908ea6c8c43414608",
+      "runtime": "claude",
+      "model": "Claude Opus 5.5",
+      "inputTokens": 8262,
+      "outputTokens": 61354,
+      "costUsd": 3.7210972000000004,
+      "costSource": "estimated",
+      "seconds": 198.075
+    },
+    {
+      "key": "c5946d1a9287f9a9cf4fb6bfbfe9eafdba5e1e3470a0e752d6a0c851f94a5324",
+      "runtime": "claude",
+      "model": "claude-opus-5-5",
+      "inputTokens": 1037,
+      "outputTokens": 4885,
+      "costUsd": 0.4024214,
+      "costSource": "estimated",
+      "seconds": 103.207
+    },
+    {
+      "key": "76fc71750c93c96c696a0295f549299adc0fc832df79c49a8b529a96d16ba5de",
+      "runtime": "claude",
+      "model": "Claude Opus 5.5",
+      "inputTokens": 10777,
+      "outputTokens": 10494,
+      "costUsd": 0.7792233999999999,
+      "costSource": "estimated",
+      "seconds": 66.075
+    },
+    {
+      "key": "live_cache_3e278f080b3e4f36b2b6e0bb68585640:thread_01M4WJ31870VD0A9HZ90NH8E6N:8",
+      "runtime": "codex",
+      "model": "gpt-6-astra",
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "costUsd": null,
+      "costSource": "unknown",
+      "seconds": 1.401
+    },
+    {
+      "key": "live_cache_3e278f080b3e4f36b2b6e0bb68585640:thread_01M4WJ31870VD0A9HZ90NH8E6N:16",
+      "runtime": "codex",
+      "model": "gpt-6-astra",
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "costUsd": null,
+      "costSource": "unknown",
+      "seconds": 1.316
+    },
+    {
+      "key": "e57c07fc1d685b3ec9c7d3969aa1cde9308a876731931fcff7e49cf71b0fd4b2",
+      "runtime": "codex",
+      "model": "gpt-6-astra",
+      "inputTokens": 2785008,
+      "outputTokens": 25800,
+      "costUsd": null,
+      "costSource": "unknown",
+      "seconds": 462.76599999999996
+    },
+    {
+      "key": "cb582d39e3376787d6e8c6c6b4501b3e8d67e072fdd0c4fe47e5761f16ec9ad2",
+      "runtime": "claude",
+      "model": "claude-opus-5-5",
+      "inputTokens": 2672,
+      "outputTokens": 5829,
+      "costUsd": 2.3289903999999995,
+      "costSource": "estimated",
+      "seconds": 48.385999999999996
+    },
+    {
+      "key": "3f7b5e4c58c381814142ef43546149774feb43a7ac0da412f36407d5476bfad8",
+      "runtime": "claude",
+      "model": "claude-opus-5-5",
+      "inputTokens": 2742,
+      "outputTokens": 2389,
+      "costUsd": 0.3822932000000001,
+      "costSource": "estimated",
+      "seconds": 24.848
+    },
+    {
+      "key": "98741446d9e41e930e865e36bc2758bfe7b5712ad379fbed4e03014d808d96ef",
+      "runtime": "claude",
+      "model": "claude-opus-5-5",
+      "inputTokens": 1332,
+      "outputTokens": 1639,
+      "costUsd": 0.4037068,
+      "costSource": "estimated",
+      "seconds": 28.805
+    },
+    {
+      "key": "a62604b9dd83b79f8cba6781c39f2e19fd06da0901d6008bc3171e9c5c4b2f86",
+      "runtime": "claude",
+      "model": "claude-opus-5-5",
+      "inputTokens": 1373,
+      "outputTokens": 3277,
+      "costUsd": 1.1365256,
+      "costSource": "estimated",
+      "seconds": 44.896
+    },
+    {
+      "key": "2328a2af6c6fca2668a5aec577440f70fede5645c8bb8229f127994f930088e4",
+      "runtime": "codex",
+      "model": "gpt-6-astra",
+      "inputTokens": 197601,
+      "outputTokens": 660,
+      "costUsd": null,
+      "costSource": "unknown",
+      "seconds": 162.75
+    },
+    {
+      "key": "cache_windows_0a005cfaddde450f84afef3ca5114acd:thread_01M4WJ1WVWF5PV0NFZETFEB1Y6:7",
+      "runtime": "codex",
+      "model": "gpt-6-astra",
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "costUsd": null,
+      "costSource": "unknown",
+      "seconds": 0.767
+    },
+    {
+      "key": "0d997e9c2482844d89968262680a31d2beb0ed95a128e802e2d6fc4830ef308e",
+      "runtime": "codex",
+      "model": "gpt-6-astra",
+      "inputTokens": 706341,
+      "outputTokens": 873,
+      "costUsd": null,
+      "costSource": "unknown",
+      "seconds": 219.833
+    },
+    {
+      "key": "61836d880141c073ee46f8c2894c9b10160ccf4d59007ffaea2cd7b29eb9aea2",
+      "runtime": "codex",
+      "model": "gpt-6-astra",
+      "inputTokens": 1003199,
+      "outputTokens": 1059,
+      "costUsd": null,
+      "costSource": "unknown",
+      "seconds": 233.923
+    },
+    {
+      "key": "cache_windows_0a005cfaddde450f84afef3ca5114acd:thread_01M4WJ1X32B268520MXJ7DV0F8:7",
+      "runtime": "codex",
+      "model": "gpt-6-astra",
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "costUsd": null,
+      "costSource": "unknown",
+      "seconds": 0.846
+    },
+    {
+      "key": "235200a67c8bf0e5068f7fd4a3756d01e0439a430164b44d7596d7bf642a1453",
+      "runtime": "codex",
+      "model": "gpt-6-astra",
+      "inputTokens": 730684,
+      "outputTokens": 956,
+      "costUsd": null,
+      "costSource": "unknown",
+      "seconds": 180.023
+    }
+  ],
+  "messages": [
+    {
+      "owner": "Add a CSV export to the customers page",
+      "reply": "I queued the task \"Add CSV export to the customers page\" under the Customer screens goal. No thread has picked it up yet.\n\nWhat the brief asks for:\n- **Download link:** `GET /customers.csv` downloads a file named `customers.csv`. An \"Export CSV\" link goes on `/customers`.\n- **Columns:** Name, VAT and Created. Created uses DD/MM/YYYY, the date rule from the notebook.\n- **File safety:**\n  - Commas, quotes and line breaks inside fields are handled so the file opens correctly.\n  - Names starting with `=`, `+`, `-` or `@` get a leading quote so spreadsheets don't run them as formulas.\n  - A marker at the start of the file lets Excel show accented names correctly.\n- **Tests:** unit tests for the CSV content, plus a browser test that clicks the link and checks the downloaded file.\n- **Report:** the thread must send back the pull request link and a sample of the CSV.\n\nThe notebook is updated with this plan.\n\nNo open questions.",
+      "turn": 1
+    }
+  ],
+  "toolCalls": [
+    {
+      "schema": "coordinator-tool-v1",
+      "tool": "jevellan_tasks_list",
+      "ok": true,
+      "input": "{\"include\":\"all\"}",
+      "inputTruncated": false,
+      "summary": "Listed tasks"
+    },
+    {
+      "schema": "coordinator-tool-v1",
+      "tool": "jevellan_goals_list",
+      "ok": true,
+      "input": "{}",
+      "inputTruncated": false,
+      "summary": "Read goals"
+    },
+    {
+      "schema": "coordinator-tool-v1",
+      "tool": "memory_search",
+      "ok": true,
+      "input": "{\"query\":\"customers page export CSV\"}",
+      "inputTruncated": false,
+      "summary": "Searched project memory"
+    },
+    {
+      "schema": "coordinator-tool-v1",
+      "tool": "jevellan_task_create",
+      "ok": true,
+      "input": "{\"title\":\"Add CSV export to the customers page\",\"brief\":\"Owner request: \\\"Add a CSV export to the customers page.\\\"\\n\\nContext\\n- Node 20 + TypeScript app. Customers store: src/customers/index.ts (Customer = { id, name, vat, createdAt ISO string }, persisted in $SANDBOX_DATA_DIR/customers.json). Web server: src/web/server.ts renders /customers as an HTML table (Name, VAT) and serves /api/customers as JSON. Unit tests use vitest (src/**/index.test.ts); browser tests use Playwright (tests/browser/customers.spec.ts). Follow AGENTS.md (never run scripts/owner-only.sh).\\n- Project rule: dates shown to users are always DD/MM/YYYY.\\n\\nWhat to build\\n1. A CSV serializer for customers (put it in src/customers, pure function, unit tested). Columns: Name, VAT, Created (createdAt formatted DD/MM/YYYY). Header row first. RFC 4180 quoting: wrap fields containing comma, double quote, CR or LF in double quotes and double any inner quotes. Use CRLF line endings. Guard against CSV formula injection: prefix fields starting with =, +, -, @, tab or CR with a single quote. Prepend a UTF-8 BOM so Excel opens non-ASCII names correctly.\\n2. A download route, e.g. GET /customers.csv (make sure the existing /customers startsWith match does not swallow it), responding with Content-Type: text/csv; charset=utf-8 and Content-Disposition: attachment; filename=\\\"customers.csv\\\". Empty store returns only the header row.\\n3. A visible \\\"Export CSV\\\" link/button on the /customers page pointing at the route. Text label only, no emoji. Keep it visually consistent with the existing page.\\n\\nTests\\n- Vitest: serializer covers header, DD/MM/YYYY date, quoting of commas/quotes/newlines, formula-injection prefixing, empty list.\\n- Playwright: on /customers, the Export CSV control is visible; clicking it triggers a download named customers.csv whose content starts with the header and includes a seeded customer.\\n- Run lint/typecheck, vitest and Playwright; all green. Fix any pre-existing failure you hit.\\n\\nDone when: the export works end to end in a browser, tests pass, CHANGELOG.md has an entry, and the PR is open. In the report, include the PR link and a sample of the generated CSV.\",\"type\":\"feature\",\"goalId\":\"goal_b716d23fbbfb85fb1c8707be48e8aa43b691f5cc\",\"now\":false,\"after\":[],\"needs\":[],\"fixed\":{},\"source\":\"owner-request\"}",
+      "inputTruncated": false,
+      "summary": "Queued task \"Add CSV export to the customers page\""
+    },
+    {
+      "schema": "coordinator-tool-v1",
+      "tool": "jevellan_notebook_read",
+      "ok": true,
+      "input": "{}",
+      "inputTruncated": false,
+      "summary": "Read the notebook"
+    },
+    {
+      "schema": "coordinator-tool-v1",
+      "tool": "jevellan_notebook_write",
+      "ok": true,
+      "input": "{\"content\":\"Dates in the UI are always DD/MM/YYYY.\\n\\n## Plan / in flight\\n- 14/10/2026: owner asked for CSV export on customers page. Task task_2f1cf700aa15cc796a0a8e343af5160bf66311a4 queued (goal Customer screens). Spec: GET /customers.csv, columns Name, VAT, Created (DD/MM/YYYY), RFC 4180 quoting, formula-injection guard, UTF-8 BOM, \\\"Export CSV\\\" link on /customers, vitest + Playwright. Check report for PR link + CSV sample.\\n\\n## Open questions\\n(none)\",\"expectedRevision\":1}",
+      "inputTruncated": false,
+      "summary": "Updated the notebook"
+    }
+  ],
+  "pullRequests": [],
+  "providerTotals": {
+    "claude": {
+      "costUsd": 9.154258,
+      "unknownCostSessions": 0,
+      "inputTokens": 28195,
+      "outputTokens": 89867,
+      "minutes": 8.571533333333333
+    },
+    "codex": {
+      "costUsd": 0,
+      "unknownCostSessions": 9,
+      "inputTokens": 5422833,
+      "outputTokens": 29348,
+      "minutes": 21.06041666666666
+    }
+  },
+  "minutes": 83.06206666666667
+}

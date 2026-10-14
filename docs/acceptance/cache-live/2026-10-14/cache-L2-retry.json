@@ -1,0 +1,117 @@
+{
+  "schema": "cache-live-checks-v1",
+  "label": "live",
+  "release": "0.3.4",
+  "sourceCommit": "e4faf7d9690baf70c9447d5f9ad50023d9d58516",
+  "startedAt": "2026-10-14T08:12:31.426Z",
+  "endedAt": "2026-10-14T08:20:39.710Z",
+  "deadlineAt": "2026-10-14T09:36:41.379Z",
+  "ownerAcceptance": false,
+  "passed": false,
+  "checks": [
+    {
+      "name": "L2",
+      "verdict": "failed",
+      "startedAt": "2026-10-14T08:12:45.745Z",
+      "endedAt": "2026-10-14T08:20:37.524Z",
+      "reason": "apiRequestContext.fetch: read ECONNRESET\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:19775/api/projects/cache_L2_retry_682760f340d6493c88e9cedf0e8a7244/tasks\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\u001b[2m    - Origin: http://127.0.0.1:19775\u001b[22m\n\u001b[2m    - cookie: jevellan_session=[redacted]\u001b[22m\n",
+      "evidence": {}
+    }
+  ],
+  "observations": [
+    "L2-only retry after the private Madrid launch-path repair. Original failed receipt retained; same clock, messages, thresholds, assertions and deadlines.",
+    "Usage records come from runtime-reported turn outcomes. Missing tokens or cost remain unknown; minutes include concurrent sessions."
+  ],
+  "projects": [
+    "cache_L2_retry_682760f340d6493c88e9cedf0e8a7244"
+  ],
+  "sessions": [
+    {
+      "key": "ccda49d449205fc82288ebfe7405095b820716f46f63895d110ed4283defc37d",
+      "runtime": "claude",
+      "model": "Claude Opus 5.5",
+      "inputTokens": 2144,
+      "outputTokens": 7905,
+      "costUsd": 0.5820852000000001,
+      "costSource": "estimated",
+      "seconds": 86.648
+    },
+    {
+      "key": "f0ac4a6242211a4bb393fabdd63ec0eb53d89405baf279685191f4712becb346",
+      "runtime": "codex",
+      "model": "gpt-6-astra",
+      "inputTokens": 620788,
+      "outputTokens": 7955,
+      "costUsd": null,
+      "costSource": "unknown",
+      "seconds": 351.04699999999997
+    }
+  ],
+  "messages": [
+    {
+      "owner": "Add a CSV export to the customers page",
+      "reply": "I queued the task \"Add CSV export to the customers page\" to run now. Nothing built yet. No thread has reported back.\n\nBrief asks for:\n- **Export:** an \"Export CSV\" link on `/customers` that downloads all customers as `customers.csv`.\n- **Columns:** Name, VAT, Created, with dates as DD/MM/YYYY.\n- **Safety:** commas, quotes and line breaks in names are handled. Cells starting with `=`, `+`, `-` or `@` are neutralised so spreadsheets don't run them as formulas.\n- **Checks:** unit tests, browser test, CHANGELOG entry, and lint, tests and changelog check all passing.\n- **Proof:** thread must start the app, click Export CSV itself, and send back a working browser link plus the CSV content it got. Work ends in a pull request.\n\nNotebook updated with the plan.\n\nOpen questions: none.",
+      "turn": 1
+    }
+  ],
+  "toolCalls": [
+    {
+      "schema": "coordinator-tool-v1",
+      "tool": "jevellan_tasks_list",
+      "ok": true,
+      "input": "{\"include\":\"open\"}",
+      "inputTruncated": false,
+      "summary": "Listed tasks"
+    },
+    {
+      "schema": "coordinator-tool-v1",
+      "tool": "memory_search",
+      "ok": true,
+      "input": "{\"query\":\"customers page export CSV\"}",
+      "inputTruncated": false,
+      "summary": "Searched project memory"
+    },
+    {
+      "schema": "coordinator-tool-v1",
+      "tool": "jevellan_task_create",
+      "ok": true,
+      "input": "{\"title\":\"Add CSV export to the customers page\",\"brief\":\"Owner request: \\\"Add a CSV export to the customers page\\\".\\n\\nRequested result: the owner wants this built. Done means a user on /customers can click a visible \\\"Export CSV\\\" link/button and download a CSV of all customers, working end to end in the running app.\\n\\nContext:\\n- Node 20 + TypeScript app. src/customers/index.ts stores customers (id, name, vat, createdAt ISO string) in $SANDBOX_DATA_DIR/customers.json. src/web/server.ts is a plain node:http server rendering the /customers page (table with Name and VAT columns) and /api/customers (JSON).\\n- Scripts: npm start, npm test (vitest), npm run test:browser (playwright, tests/browser/customers.spec.ts), npm run lint (tsc --noEmit), npm run check:changelog.\\n- Project convention: dates shown to users are always DD/MM/YYYY.\\n\\nWhat to build:\\n- A route such as GET /customers.csv (or /api/customers.csv) returning text/csv; charset=utf-8 with Content-Disposition: attachment; filename=\\\"customers.csv\\\". Make sure the existing `/customers` prefix match in server.ts does not swallow the new route.\\n- Columns: Name, VAT, Created (DD/MM/YYYY). Header row always present, even with zero customers.\\n- Correct CSV escaping per RFC 4180: quote fields containing comma, quote, CR or LF; double embedded quotes. Use CRLF line endings. Guard against spreadsheet formula injection (prefix cells starting with =, +, -, @ with a single quote or equivalent).\\n- Put the CSV serialisation in a small pure, unit-tested function (not inline in the server).\\n- Add an \\\"Export CSV\\\" link on the customers page near the heading/table, styled consistently with the existing page. No emoji.\\n\\nTests:\\n- Unit tests for the CSV function: empty list, escaping of commas/quotes/newlines, formula-injection guard, date format.\\n- Extend tests/browser/customers.spec.ts: link visible on /customers, and the download (or response) has the right headers and content.\\n- npm test, npm run lint, npm run test:browser and npm run check:changelog must all pass. Add a CHANGELOG.md entry.\\n\\nVerification for the report: start the app as a managed app (jevellan_app_start) with some seeded customers, open /customers in a browser, click Export CSV, confirm the downloaded file content, and return the verified browser link plus the CSV content you saw. Do not run scripts/owner-only.sh. End with a pull request.\",\"type\":\"feature\",\"goalId\":null,\"now\":true,\"after\":[],\"needs\":[],\"fixed\":{},\"source\":\"owner-request\"}",
+      "inputTruncated": false,
+      "summary": "Queued task \"Add CSV export to the customers page\""
+    },
+    {
+      "schema": "coordinator-tool-v1",
+      "tool": "jevellan_notebook_read",
+      "ok": true,
+      "input": "{}",
+      "inputTruncated": false,
+      "summary": "Read the notebook"
+    },
+    {
+      "schema": "coordinator-tool-v1",
+      "tool": "jevellan_notebook_write",
+      "ok": true,
+      "input": "{\"content\":\"Dates in the UI are always DD/MM/YYYY.\\n\\n## Current plan\\n- 14/10/2026: owner asked for CSV export on customers page. Task \\\"Add CSV export to the customers page\\\" (task_4142ddd028e0b5958d9a6ca20583aafb040a5b4c) queued now. Brief: /customers.csv route, Name/VAT/Created (DD/MM/YYYY), RFC 4180 escaping + formula-injection guard, Export CSV link, unit + browser tests, CHANGELOG entry, PR.\\n- Done check: thread must return verified managed-app browser link + observed CSV content, all checks (test, lint, test:browser, check:changelog) green.\\n\\n## Open questions\\n(none)\",\"expectedRevision\":1}",
+      "inputTruncated": false,
+      "summary": "Updated the notebook"
+    }
+  ],
+  "pullRequests": [],
+  "providerTotals": {
+    "claude": {
+      "costUsd": 0.5820852000000001,
+      "unknownCostSessions": 0,
+      "inputTokens": 2144,
+      "outputTokens": 7905,
+      "minutes": 1.4441333333333333
+    },
+    "codex": {
+      "costUsd": 0,
+      "unknownCostSessions": 1,
+      "inputTokens": 620788,
+      "outputTokens": 7955,
+      "minutes": 5.850783333333333
+    }
+  },
+  "minutes": 8.138066666666667
+}

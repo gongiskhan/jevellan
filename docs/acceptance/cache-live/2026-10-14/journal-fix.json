@@ -1,0 +1,25 @@
+{
+  "schema": "journal-live-fix-v1",
+  "label": "live",
+  "at": "2026-10-14T08:37:08.696832+00:00",
+  "beforeSource": "e4faf7d9690baf70c9447d5f9ad50023d9d58516",
+  "failure": "Madrid journal files were stale; direct member rebuild succeeded. The preceding cache probe project refused an earlier-entry rewrite after cleanup changed its calendar to UTC.",
+  "rootCause": "Earlier entries were rendered using the current project name/timezone, and one project error aborted the whole periodic sweep.",
+  "fix": "Ledger records journal-config-v1 changes; replay uses the observed configuration for historical entries. Metadata sweeps use four workers and retain failures after allowing independent projects to finish.",
+  "regressionLabel": "simulated",
+  "before": {
+    "failed": 3,
+    "sourceCommit": "4c4301b88b3a7c0b1c592cb158cd03f031516831",
+    "originalRuntimeFilesUnchanged": true,
+    "fixture": "The final regression file was added as a separate driver after the original full run closed."
+  },
+  "after": {
+    "passed": 26,
+    "files": 4,
+    "build": "passed",
+    "typecheck": "passed",
+    "lint": "passed"
+  },
+  "liveRepeat": "not run",
+  "ownerAcceptance": false
+}

@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { z } from 'zod';
-import { IdSchema, JournalDocumentSchema, JournalRelativePathSchema, JournalThreadSchema, ProjectJournalRecordSchema, ProjectJournalRequestSchema, ProjectJournalResultSchema,
+import { defaultProjectWorkSettings, IdSchema, JournalConfigSchema, JournalDocumentSchema, JournalRelativePathSchema, JournalThreadSchema, ProjectJournalRecordSchema, ProjectJournalRequestSchema, ProjectJournalResultSchema,
   ProjectJournalStateSchema, ProjectLedgerEventSchema, atomicWrite, parseProjectLedgerData, readDocument, stableJson, writeDocument, type Homes, type Project,
   type ProjectHub, type JournalDocument, type ProjectJournalRecord, type ProjectJournalRequest, type ProjectJournalResult, type ProjectJournalState, type Thread } from '@jevellan/core';
 import type { ProjectLedgers } from './ledger.js';
@@ -50,7 +50,17 @@ export class ProjectJournals {
     this.#timer = setInterval(() => { void this.syncAll().catch(() => undefined); }, 10000); this.#timer.unref();
     void this.syncAll().catch(() => undefined);
   }
-  async syncAll(): Promise<void> { for (const project of await this.o.projects()) await this.sync(project.id); }
+  async syncAll(): Promise<void> {
+    const projects = await this.o.projects(), failures: unknown[] = []; let next = 0;
+    // A broken or slow project must not starve the other mirrors. Bound metadata work per sweep.
+    await Promise.all(Array.from({ length: Math.min(4, projects.length) }, async () => {
+      while (next < projects.length) {
+        const project = projects[next++]!;
+        try { await this.sync(project.id); } catch (error) { failures.push(error); }
+      }
+    }));
+    if (failures.length) throw new AggregateError(failures, 'Some project journals could not synchronize.');
+  }
   sync(projectId: string, rebuild = false): Promise<void> {
     if (this.#closed) return Promise.resolve();
     const pending = this.#running.get(projectId);
@@ -60,6 +70,12 @@ export class ProjectJournals {
   }
   async #sync(projectId: string, rebuild: boolean): Promise<void> {
     const project = (await this.o.projects()).find(row => row.id === projectId); if (!project) throw refuse('Project not found.', 404);
+    if (this.o.isHub) {
+      const ledger = this.o.ledgers.coordinator(projectId), previous = ledger.events().findLast(event => event.type === 'journal-config');
+      const settings = (await this.o.hub.settings(projectId))?.document ?? defaultProjectWorkSettings(projectId);
+      const config = JournalConfigSchema.parse({ schema: 'journal-config-v1', name: project.name, timezone: settings.nightlyWindow.timezone });
+      if (!previous || stableJson(ledger.payload(previous as typeof previous & { type: 'journal-config' })) !== stableJson(config)) ledger.append({ type: 'journal-config', data: config });
+    }
     await this.#captureThreads(projectId);
     if (this.o.isHub) await this.#captureDocuments(projectId, project.memory.mode === 'hub');
     const statePath = this.#publishedPath(projectId), published = existsSync(statePath) ? readDocument(statePath, PublishStateSchema) : PublishStateSchema.parse({ schema: 'project-journal-publish-state-v1', cursors: {} });
@@ -169,7 +185,7 @@ export class ProjectJournals {
     atomicWrite(target, text, 0o400);
   }
   async #render(project: Project, rebuild: boolean): Promise<void> {
-    const records = this.#records(project.id), prior = this.state(project.id), settings = (await this.o.hub.settings(project.id))?.document;
+    const records = this.#records(project.id), prior = this.state(project.id), settings = (await this.o.hub.settings(project.id))?.document ?? defaultProjectWorkSettings(project.id);
     const threads = await this.#all(project.id, after => this.o.hub.threads(project.id, after));
     const headers = new Map<string, ReturnType<typeof JournalThreadSchema.parse>>();
     for (const record of records) if (record.event.type === 'journal-thread') { const data = JournalThreadSchema.parse(record.event.data); if (!headers.has(data.id)) headers.set(data.id, data); }
@@ -178,7 +194,7 @@ export class ProjectJournals {
     for (const [index, question] of questions.entries()) {
       const source = records.findLast(record => record.event.type === 'journal-document' && JournalDocumentSchema.parse(record.event.data).collection === 'question' && JournalDocumentSchema.parse(record.event.data).key === question.id);
       const path = question.threadId && headers.has(question.threadId) ? threadJournalFile(headers.get(question.threadId)!)
-        : source ? `days/${new Intl.DateTimeFormat('en-CA', { timeZone: settings?.nightlyWindow.timezone ?? 'Europe/Lisbon', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(source.event.t))}.md` : 'INDEX.md';
+        : source ? `days/${new Intl.DateTimeFormat('en-CA', { timeZone: settings.nightlyWindow.timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(source.event.t))}.md` : 'INDEX.md';
       open.push(`- Question ${index + 1}: [${threads.find(thread => thread.id === question.threadId)?.title ?? 'Coordinator'}] ${question.question.replace(/[\r\n]/gu, ' ')} → ${path}${source ? `#e-${journalRecordKey(source)}` : ''}`);
     }
     const tasks = await this.#all(project.id, after => this.o.hub.tasks(project.id, after)); open.push(`- Queue: ${tasks.filter(task => task.state === 'queued').sort(taskOrder).slice(0, 10).map(task => task.title.replace(/[\r\n]/gu, ' ')).join('; ') || '(none)'}`);
@@ -188,7 +204,7 @@ export class ProjectJournals {
     open.push(`- Nightly: ${activeWindow ? `window in progress (${String(activeWindow.date)})` : settings?.nightlyWindow.enabled ? `${settings.nightlyWindow.time} ${settings.nightlyWindow.timezone}` : '(disabled)'}`);
     const latest = this.o.ledgers.coordinator(project.id).events().findLast(event => event.type === 'journal-source');
     const updatedAt = latest?.t ?? '1970-01-01T00:00:00.000Z';
-    const rendered = renderProjectJournal({ name: project.name, timezone: settings?.nightlyWindow.timezone ?? 'Europe/Lisbon', records, open, updatedAt });
+    const rendered = renderProjectJournal({ name: project.name, timezone: settings.nightlyWindow.timezone, records, open, updatedAt });
     const state: ProjectJournalState = { schema: 'project-journal-state-v1', lastLedgerEventId: records.at(-1) ? journalRecordKey(records.at(-1)!) : null, files: {}, indexUpdatedAt: new Date(this.o.now()).toISOString() };
     for (const [path, text] of Object.entries(rendered.files)) {
       if (path === 'INDEX.md' && !rebuild && this.o.now() - Date.parse(prior.indexUpdatedAt) < 10000) { if (prior.files[path]) state.files[path] = prior.files[path]; state.indexUpdatedAt = prior.indexUpdatedAt; continue; }

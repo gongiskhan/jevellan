@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { IdSchema, TimestampSchema } from './schemas.js';
 
+export const JournalConfigSchema = z.strictObject({ schema: z.literal('journal-config-v1'), name: z.string().min(1).max(200), timezone: z.string().min(1).max(120) });
 const count = z.number().int().nonnegative();
 export const JournalThreadSchema = z.strictObject({
   schema: z.literal('journal-thread-v1'), id: IdSchema, projectId: IdSchema, title: z.string().min(1).max(120),

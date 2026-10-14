@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { JournalDocumentSchema, JournalThreadSchema, parseProjectLedgerData, type JournalThread, type ProjectJournalRecord, type ProjectLedgerEventType } from '@jevellan/core';
+import { JournalConfigSchema, JournalDocumentSchema, JournalThreadSchema, parseProjectLedgerData, type JournalThread, type ProjectJournalRecord, type ProjectLedgerEventType } from '@jevellan/core';
 import { MemoryDreamReportSchema, MergeDocumentSchema, ProjectDecisionSchema, ProjectJobRunSchema, ProjectRefillStateSchema, ProjectWindowSchema, ProjectWorkTaskSchema, TaskHistoryEventSchema } from '@jevellan/core';
 
 export function validateJournalDocument(raw: unknown) {
@@ -112,25 +112,28 @@ export function renderProjectJournal(input: { name: string; timezone: string; re
     const data = JournalDocumentSchema.parse(record.event.data);
     if (data.collection === 'window' && typeof data.document.date === 'string') windows.set(data.key, data.document.date);
   }
+  const initial = input.records.find(record => record.event.type === 'journal-config');
+  let config = initial ? JournalConfigSchema.parse(initial.event.data) : { name: input.name, timezone: input.timezone };
   const files: Record<string, string> = {}, days = new Map<string, JournalIndexDay>(), visibleHeaders = new Set<string>(), questions = new Set<string>(), ownerMessages = new Set<string>();
   const dayRow = (date: string) => { let row = days.get(date); if (!row) { row = { date, ownerMessages: 0, ended: [], questions: 0 }; days.set(date, row); } return row; };
   for (const header of headers.values()) files[threadJournalFile(header)] = `# ${header.title}\n\nTask: ${header.taskId ?? '(none)'}\nGoal: ${header.goal ?? '(none)'}\nType: ${header.type ?? '(none)'}\nRuntime: ${header.runtime}\nModel: ${header.model}\nEffort: ${header.effort}\nDevice: ${header.deviceId}\nIsolation: ${header.isolation}\nBranch: ${header.branch ?? '(not yet created)'}\nPull request: ${header.pr === null ? '(none)' : `#${header.pr}`}\nState when recorded: ${header.state}\nCreated: ${header.createdAt}\nEnded when recorded: ${header.endedAt ?? '(not ended)'}\n\n## Task brief\n\n${header.task}\n\n## Entries\n`;
   for (const record of input.records) {
+    if (record.event.type === 'journal-config') config = JournalConfigSchema.parse(record.event.data);
     if (record.event.type === 'journal-thread') visibleHeaders.add(JournalThreadSchema.parse(record.event.data).id);
     const entry = journalEntry(record); if (!entry) continue;
-    const date = journalDate(record.event.t, input.timezone), row = dayRow(date), thread = entry.threadId ? headers.get(entry.threadId) : undefined;
+    const date = journalDate(record.event.t, config.timezone), row = dayRow(date), thread = entry.threadId ? headers.get(entry.threadId) : undefined;
     const threadPath = thread ? threadJournalFile(thread) : undefined, anchor = `e-${journalRecordKey(record)}`;
-    const text = `\n### ${clock(record.event.t, input.timezone)} ${entry.kind}\n<a id="${anchor}"></a>\n\n${entry.body}\n`;
+    const text = `\n### ${clock(record.event.t, config.timezone)} ${entry.kind}\n<a id="${anchor}"></a>\n\n${entry.body}\n`;
     let night: string | undefined;
     if (record.event.type === 'journal-document') {
       const data = JournalDocumentSchema.parse(record.event.data), windowId = data.nightlyWindowId ?? data.document.nightlyWindowId;
       night = data.collection === 'window' ? windows.get(data.key) : typeof windowId === 'string' ? windows.get(windowId) : undefined;
       if (data.collection === 'window' && night) dayRow(night).night = { summary: String(data.document.outcome ?? data.document.state), failed: data.document.failed === true };
     }
-    if (night) files[`nights/${night}.md`] = (files[`nights/${night}.md`] ?? `# ${input.name} · Night ${night}\n`) + text;
+    if (night) files[`nights/${night}.md`] = (files[`nights/${night}.md`] ?? `# ${config.name} · Night ${night}\n`) + text;
     if (threadPath) files[threadPath] = (files[threadPath] ?? '') + text;
     const path = `days/${date}.md`;
-    files[path] = (files[path] ?? `# ${input.name} · ${date}\n`) + text + (threadPath && visibleHeaders.has(thread!.id) ? `\nThread: [${thread!.title}](../${threadPath}#${anchor})\n` : '');
+    files[path] = (files[path] ?? `# ${config.name} · ${date}\n`) + text + (threadPath && visibleHeaders.has(thread!.id) ? `\nThread: [${thread!.title}](../${threadPath}#${anchor})\n` : '');
     if (entry.owner) {
       const eventId = String((record.event.data as Record<string, unknown>).id);
       if (!ownerMessages.has(eventId)) { ownerMessages.add(eventId); row.ownerMessages++; }
