@@ -650,3 +650,13 @@ button.danger:disabled, button.danger:disabled:hover { background: var(--bg-3); 
 .owner-command pre, .shell-command pre { white-space: pre; overflow-x: auto; max-width: 100%; }
 .owner-command-actions .actions { flex-wrap: wrap; justify-content: flex-start; }
 .owner-command-actions { margin-top: 8px; }
+.session-cache-metrics { font-size: .78rem; color: var(--ink-3); overflow-wrap: anywhere; }
+.session-cache-table { margin: .65rem 0; min-width: 0; }
+.session-cache-table summary { cursor: pointer; font-size: .85rem; }
+.session-cache-scroll { overflow-x: auto; max-width: 100%; }
+.session-cache-table table { width: 100%; font-size: .8rem; text-align: left; border-collapse: collapse; }
+.session-cache-table th, .session-cache-table td { padding: .5rem; vertical-align: top; }
+.session-cache-table th { max-width: 20rem; overflow-wrap: anywhere; }
+.session-cache-table small { display: block; font-weight: normal; }
+.runtime-cache-window { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; margin: .8rem 0; }
+.runtime-cache-window input { width: 6rem; }

@@ -1,0 +1,86 @@
+{
+  "schema": "cache-part1-browser-v1",
+  "label": "simulated",
+  "sourceBaseCommit": "c78e355a2fba85697123696380ac49cea358b242",
+  "sourceArchiveSha256": "5757851cf0580581cc2bcce5a433e1af61a86895f08981f31c20b32433e7589e",
+  "startedAt": "2026-10-14T04:59:49.187Z",
+  "endedAt": "2026-10-14T05:02:28.965Z",
+  "layouts": 4,
+  "vision": {
+    "label": "live",
+    "judgments": [
+      {
+        "path": "docs/acceptance/vision/phone-dark/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-sessions-cache-phone-dark.json",
+        "sha256": "18c41b2f072b1d7c1e96ef4803aa2ff67c3b2df7758fd50ed94ed81790e95dfa",
+        "layout": "phone-dark",
+        "blocking": []
+      },
+      {
+        "path": "docs/acceptance/vision/phone-dark/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-thread-cache-phone-dark.json",
+        "sha256": "71226f3f9e07a9a9992fdd266964f2ee87e32059f4d74e26565278d29308665d",
+        "layout": "phone-dark",
+        "blocking": []
+      },
+      {
+        "path": "docs/acceptance/vision/phone-dark/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-runtime-cache-window-phone-dark.json",
+        "sha256": "133e96c251941b4424c5f95f98e6d9666c585e49a284a1480b90c736e46ec0a5",
+        "layout": "phone-dark",
+        "blocking": []
+      },
+      {
+        "path": "docs/acceptance/vision/desktop-light/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-thread-cache-desktop-light.json",
+        "sha256": "7f6ee819c9f54f89f2822bd3efd89026dfc3d75f8f4702d3474a26d40a412e24",
+        "layout": "desktop-light",
+        "blocking": []
+      },
+      {
+        "path": "docs/acceptance/vision/desktop-light/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-runtime-cache-window-desktop-light.json",
+        "sha256": "74525689b3365f1bc1c968527601453a36add16739c0a2b74a8cf5f08c28f615",
+        "layout": "desktop-light",
+        "blocking": []
+      },
+      {
+        "path": "docs/acceptance/vision/desktop-light/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-sessions-cache-desktop-light.json",
+        "sha256": "0522fa3bd491b7cf7a502ef3ff31162d0a63196f232857e14b7c034d3b9f0c63",
+        "layout": "desktop-light",
+        "blocking": []
+      },
+      {
+        "path": "docs/acceptance/vision/phone-light/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-thread-cache-phone-light.json",
+        "sha256": "17ec3f9d7ecf38aa8888522fb2a370eecc0c6fca7cab426085a100d21dc3d9ca",
+        "layout": "phone-light",
+        "blocking": []
+      },
+      {
+        "path": "docs/acceptance/vision/phone-light/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-runtime-cache-window-phone-light.json",
+        "sha256": "50588b432a0f945e58800a70744ead9463ca84e40d9a9f8524706684a689d800",
+        "layout": "phone-light",
+        "blocking": []
+      },
+      {
+        "path": "docs/acceptance/vision/phone-light/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-sessions-cache-phone-light.json",
+        "sha256": "78867a32a78de19c611e13d13c7229d1757d0096f4673250e72035e91c19f7cf",
+        "layout": "phone-light",
+        "blocking": []
+      },
+      {
+        "path": "docs/acceptance/vision/desktop-dark/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-runtime-cache-window-desktop-dark.json",
+        "sha256": "eb7e04f1b10677e79213ecdcf4e2e39ff5394c4d5e12265343c56cfb3f474f6b",
+        "layout": "desktop-dark",
+        "blocking": []
+      },
+      {
+        "path": "docs/acceptance/vision/desktop-dark/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-thread-cache-desktop-dark.json",
+        "sha256": "0ccd476bcd1a90a8a775802786a7830fc62525a2de99c72ef75085809f88886a",
+        "layout": "desktop-dark",
+        "blocking": []
+      },
+      {
+        "path": "docs/acceptance/vision/desktop-dark/cache1-session-metrics-and-runtime-windows-persist-across-reload-in-every-layout--CACHE1-sessions-cache-desktop-dark.json",
+        "sha256": "4cb12ef263b1c53cedb6c830c3c7abe2a6c6b9067e34eb90b9327d391ebe8c44",
+        "layout": "desktop-dark",
+        "blocking": []
+      }
+    ]
+  }
+}

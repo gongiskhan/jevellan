@@ -139,8 +139,8 @@ test('one turn at a time: events during a turn arrive batched in the next, which
   expect(payloads(work, 'coordinator-text').map((data) => data.text)).toEqual(['Started two threads.', 'Both pull requests are open.']);
   const extras = { sessionKey: expect.stringMatching(/^[a-f0-9]{64}$/u), usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, costSource: 'unknown' } };
   expect(payloads(work, 'coordinator-turn-end')).toEqual([{ schema: 'coordinator-turn-end-v1', turn: 1, status: 'completed', ...extras }, { schema: 'coordinator-turn-end-v1', turn: 2, status: 'completed', ...extras }]);
-  expect(ledger(work).events().map((entry) => entry.type)).toEqual(['coordinator-event', 'coordinator-turn-start', 'coordinator-event', 'coordinator-event', 'coordinator-text',
-    'coordinator-turn-end', 'coordinator-turn-start', 'coordinator-text', 'coordinator-turn-end']);
+  expect(ledger(work).events().map((entry) => entry.type)).toEqual(['coordinator-event', 'coordinator-turn-start', 'coordinator-event', 'coordinator-event', 'session-turn-cache', 'coordinator-text',
+    'coordinator-turn-end', 'coordinator-turn-start', 'session-turn-cache', 'coordinator-text', 'coordinator-turn-end']);
   expect(work.coordinators.store.local('proj_a').process).toBeUndefined();
   expect(await status()).toMatchObject({ state: 'idle', failedTurnsInARow: 0, session: { runtime: 'fake', modelLabel: 'Fixture', effort: 'medium', accountLabel: 'Work', turns: 2 } });
   // The native session id stays in coordinator.json: never in the hub status or the ledger.

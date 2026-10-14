@@ -20,6 +20,7 @@ import {
 import { RouteLink, Stamp, afterDialogs, deviceNames, failureText, runtimeNames, updated, useClientIds, useLocalError } from './project-work.js';
 import { TranscriptTurn } from './session-transcript.js';
 import { shortTime } from './time.js';
+import { SessionCache } from './session-cache.js';
 
 /**
  * The thread page (12.3): the header with the state, its reason, the placement and the pull request; the native transcript
@@ -222,6 +223,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
           {actions.stopRefusal && <p className="pw-thread-note" id={stopNoteId}>{actions.stopRefusal}</p>}
           {view.checkoutHeld && <p className="pw-thread-note pw-tone-warn" role="status">{view.checkoutHeld}</p>}
           <p className="pw-placement-line" title={line}><Parts line={line} /></p>
+          <SessionCache rows={thread.sessionCache} sessionKey={thread.cacheSessionKey} timezone={thread.sessionCache?.at(-1)?.timezone ?? 'UTC'} />
         </div>
       </div>
       {loadError && <p className="notice" role="status">{loadError}</p>}

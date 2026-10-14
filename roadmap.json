@@ -482,8 +482,8 @@
   {
     "id": "cache-journal-p1",
     "title": "Measure Projects cache usage",
-    "why": "Queued after prior A\u2013D live acceptance; session-turn-cache-v1, runtime windows and today metrics use existing usage only. Decisions 775\u2013776.",
-    "status": "planned"
+    "why": "Decisions817\u2013818: all-five-role passive records, opaque identities, runtime cache windows, session/day metrics and authenticated member snapshots.220 affected backend cases, typecheck/lint/build and4 browser layouts pass;12 live vision judgments clear. Browser/runtime source matches across21 changed files. No guard/assertion waiver or provider traffic. L1 windows still provisional60/10 and checkpoints off; journal/checkpoints/live checks follow. See docs/acceptance/cache-journal-part1-2026-10-14.md.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "cache-journal-p2",
@@ -500,7 +500,7 @@
   {
     "id": "cache-journal-closing",
     "title": "Measure real cache windows and release",
-    "why": "Queued; eight-hour build and three-hour L1\u2013L3 clocks unstarted. Existing 0.3.2/0.3.3 releases preserved; owner approves next unused 0.3.4 instead of the brief's older target. Decision 781.",
+    "why": "Build clock04:25:11.517\u201312:25:11.517UTC14October; new live clock unstarted, at most three hours. Prior A/B/C/D window closed with retained failures and qualified C/D passes. Existing032/033 preserved; target034 approved. Checkpoints stay off until L2/L3. Decision781.",
     "status": "planned"
   },
   {

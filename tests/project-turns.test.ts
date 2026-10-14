@@ -8,7 +8,7 @@ import { AccountSchema, AccountStatusSchema, BridgeToolsSchema, Homes, SecretRed
 import { StretchBridges } from '../packages/conversations/dist/index.js';
 import { FakeRuntime, forThread, groupAlive, type FakeTurnStep, type NativeProcess } from '../packages/runtime-contract/dist/index.js';
 import {
-  ACCOUNT_BUSY, ProjectLedgers, ProjectPaths, ProjectTools, REPORT_ALREADY_SENT, TOOL_NOT_IN_TURN, TURN_ENDED, TurnExecution, TurnLauncher, cannotRunHere, noTurnAccount,
+  ACCOUNT_BUSY, ProjectLedgers, ProjectPaths, ProjectTools, REPORT_ALREADY_SENT, TOOL_NOT_IN_TURN, TURN_ENDED, TurnExecution, TurnLauncher, cacheRecords, cannotRunHere, noTurnAccount,
   type LaunchRequest, type ProjectScope, type ProjectToolHandlers, type TurnLauncherOptions,
 } from '../packages/projects/dist/index.js';
 
@@ -115,6 +115,26 @@ function request(over: Partial<LaunchRequest> = {}): LaunchRequest {
     tools: tools(thread).tools, ...over };
 }
 const done: FakeTurnStep = () => ({ status: 'completed' });
+
+test.each(['coordinator', 'thread', 'review', 'verification', 'memory'] as const)('%s cache measurement uses the one native turn and its correct ledger', async kind => {
+  fake.capabilities.readOnlyEnforced = true;
+  const ledgers = new ProjectLedgers(new ProjectPaths(homes));
+  const destination = kind === 'thread' ? ledgers.thread('proj_a', 'thread_a') : ledgers.coordinator('proj_a');
+  const { launcher: value } = launcher([status('acc_work')], undefined, { cacheLedger: () => destination,
+    sessionLedger: () => ledgers.coordinator('proj_a'), cacheWindowMinutes: async () => 17 });
+  fake.enqueueTurn(turn => { turn.emit({ type: 'context', tokens: 47000 }); turn.emit({ type: 'usage', inputTokens: 100, outputTokens: 4, cacheReadTokens: 75, cacheWriteTokens: 5 }); return { status: 'completed' }; });
+  const result = await value.launch(request({ owner: { kind, projectId: 'proj_a', id: kind === 'thread' ? 'thread_a' : kind === 'coordinator' ? 'proj_a' : 'session_auxiliary' },
+    permissions: kind === 'coordinator' || kind === 'review' || kind === 'memory' ? 'read-only' : 'write', safetyProfile: kind }));
+  if (result.kind !== 'started') throw new Error(result.reason);
+  try {
+    for await (const event of result.run.events) void event;
+    await result.run.done;
+    expect(fake.turnStarts).toHaveLength(1);
+    expect(cacheRecords(destination)).toHaveLength(1);
+    expect(cacheRecords(destination)[0]).toMatchObject({ owner: { kind }, turn: 2, cacheWindowMinutes: 17, cacheReadTokens: 75, cacheWriteTokens: 5, uncachedInputTokens: 20, outputTokens: 4, contextTokensAfter: 47000 });
+    if (kind === 'thread') expect(cacheRecords(ledgers.coordinator('proj_a'))).toHaveLength(0);
+  } finally { await result.run.terminate(); await result.release(); }
+});
 
 test('thread turns receive current project Git credentials without changing account homes or granting them to coordinators', async () => {
   const calls: Array<{ projectId: string; cwd: string }> = [];

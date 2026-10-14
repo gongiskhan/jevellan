@@ -507,6 +507,20 @@ export function RuntimesPage(props: PageProps & { embedded?: boolean }) {
               <span>Enabled</span>
             </label>
           </div>
+          <label className="runtime-cache-window">Cache window (minutes)
+            <input type="number" min={1} max={1440} aria-label={`${runtime.displayName} cache window (minutes)`}
+              key={data.config.configuration['x-jevellan'].runtimes[runtime.id]?.cacheWindowMinutes ?? 'default'}
+              defaultValue={data.config.configuration['x-jevellan'].runtimes[runtime.id]?.cacheWindowMinutes ?? (runtime.id === 'claude' ? 60 : 10)}
+              disabled={task.busy} onBlur={event => {
+                if (!event.currentTarget.validity.valid || !event.currentTarget.value) return;
+                const value = Number(event.currentTarget.value);
+                const configuration = structuredClone(data.config.configuration);
+                const before = configuration['x-jevellan'].runtimes[runtime.id];
+                if (value === (before?.cacheWindowMinutes ?? (runtime.id === 'claude' ? 60 : 10))) return;
+                configuration['x-jevellan'].runtimes[runtime.id] = { ...before!, cacheWindowMinutes: value };
+                void task.run(signal => props.saveConfig(configuration, signal));
+              }} />
+          </label>
           {runtime.nativeSetup && <div className="native-setup">
             <label className="toggle">
               <input type="checkbox" aria-label={`Use my own ${runtime.displayName} setup`}

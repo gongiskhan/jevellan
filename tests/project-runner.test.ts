@@ -256,7 +256,7 @@ test('an owner thread prepares a worktree, runs its turn, opens the pull request
   expect(fake.turnStarts[0]!.resume).toBeUndefined();
   expect(fake.turnStarts[0]!.systemAppend).toContain(`Isolation: your own git worktree on branch ${thread.branch}, based on main.`);
   expect(work.ledgers.thread('proj_a', created.threadId).events().map((event) => event.type)).toEqual(['thread-placement', 'thread-state', 'thread-state', 'thread-state',
-    'thread-turn-start', 'thread-turn-end', 'thread-report', 'thread-state', 'thread-verification', 'thread-publication', 'thread-state']);
+    'thread-turn-start', 'thread-state', 'session-turn-cache', 'thread-turn-end', 'thread-report', 'thread-state', 'thread-verification', 'thread-publication', 'thread-state']);
   expect(kinds(queue(work))).toEqual(['thread-user-message', 'thread-published']);
   expect(queue(work)[0]).toMatchObject({ text: ownerStartedLine('Add greeting', created.threadId, 'Do Add greeting.') });
   expect(queue(work)[1]).toMatchObject({ result: 'pr-opened', prNumber: 1 });

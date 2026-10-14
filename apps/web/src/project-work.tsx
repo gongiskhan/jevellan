@@ -27,6 +27,7 @@ import { queuedRefresh } from './refresh.js';
 import { ProjectGoals, type GoalEntry } from './project-goals.js';
 import { TaskQueue } from './task-queue.js';
 import { relativeDuration, shortTime, timeStamp } from './time.js';
+import { SessionCache, SessionsCache } from './session-cache.js';
 
 // The sidebar section remembers whether it is open; expanded by default (D55).
 const sectionKey = 'jevellan-projects-sidebar';
@@ -479,9 +480,11 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
             {coordinator.session.context.lastCompactionAt && <>{' · '}Last compaction {new Date(coordinator.session.context.lastCompactionAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</>}
           </span>}
           <button type="button" className="secondary" disabled={control.busy || offline} onClick={fresh}>{copy.FRESH_COORDINATOR}</button>
+          <SessionCache rows={view.sessionCache} sessionKey={coordinator.session?.cacheSessionKey} timezone={view.settings.nightlyWindow.timezone} />
         </div>
       </div>
       {loadError && <p className="notice" role="status">{loadError}</p>}
+      <SessionsCache rows={view.sessionCache} timezone={view.settings.nightlyWindow.timezone} titles={Object.fromEntries([[id, 'Coordinator'], ...view.threads.map(thread => [thread.id, thread.title])])} />
       {coordinator.session?.context?.notice && <p className="notice" role="status">{coordinator.session.context.notice}</p>}
       {daily && <NightlyBanner view={daily} />}
       {coordinator.state === 'unavailable' && coordinator.unavailableReason && <p className="notice">{copy.coordinatorUnavailableNotice(coordinator.unavailableReason)}</p>}

@@ -8,6 +8,7 @@ import { START_REQUEST_REUSED, THREAD_NOT_FOUND } from './copy.js';
 import type { ProjectLedgers } from './ledger.js';
 import type { ProjectPaths } from './paths.js';
 import type { IndexUpdate, ThreadIndexPublisher } from './index-publisher.js';
+import { cacheRecords, sessionCacheKey, sessionCacheSnapshot } from './session-cache.js';
 
 export type ThreadLabels = { modelLabel: string; accountLabel: string };
 export type ThreadEvent = { type: ProjectLedgerEvent['type']; data: unknown; turn?: number | undefined };
@@ -22,6 +23,7 @@ const PATTERNS = new SecretRedactor();
  */
 export function threadIndex(thread: Thread, labels: ThreadLabels, updatedAt: string): ThreadIndex {
   return ThreadIndexSchema.parse({
+    ...(thread.nativeSessionId ? { cacheSessionKey: sessionCacheKey({ kind: 'thread', id: thread.id }, thread.placement.runtime, thread.placement.accountId, thread.nativeSessionId) } : {}),
     schema: 'project-thread-index-v1', revision: 0, id: thread.id, projectId: thread.projectId, title: thread.title, state: thread.state,
     ...(thread.stateReason === undefined ? {} : { stateReason: thread.stateReason }), isolation: thread.isolation, ...(thread.gitPolicy ? { gitPolicy: thread.gitPolicy } : {}), ownerDeviceId: thread.ownerDeviceId,
     runtime: thread.placement.runtime, modelLabel: labels.modelLabel, effort: thread.placement.effortEffective, accountLabel: labels.accountLabel,
@@ -48,6 +50,11 @@ export class ThreadStore {
   readonly #locals = new Map<string, ThreadLocal>();
   constructor(readonly paths: ProjectPaths, readonly ledgers: ProjectLedgers, readonly publisher: ThreadIndexPublisher) {
     publisher.onConflict((threadId) => this.#republish(threadId));
+  }
+  /** The cache projection is bound to the same thread-ledger id as the index. */
+  index(thread: Thread, labels: ThreadLabels, at: string): ThreadIndex {
+    const sessionCache = sessionCacheSnapshot(cacheRecords(this.ledgers.thread(thread.projectId, thread.id)));
+    return { ...threadIndex(thread, labels, at), ...(sessionCache.length ? { sessionCache } : {}) };
   }
   #all(): Map<string, Thread> {
     if (this.#threads) return this.#threads;
@@ -79,7 +86,7 @@ export class ThreadStore {
     const ledger = this.ledgers.thread(thread.projectId, thread.id);
     ledger.append({ type: 'thread-placement', data: thread.placement });
     const event = ledger.append({ type: 'thread-state', data: { schema: 'thread-state-v1', from: null, to: thread.state, ...(thread.stateReason === undefined ? {} : { reason: thread.stateReason }), changed: [] } });
-    this.publisher.enqueue(threadIndex(thread, labels, event.t), event.id);
+    this.publisher.enqueue(this.index(thread, labels, event.t), event.id);
     return structuredClone(thread);
   }
   /**
@@ -99,7 +106,7 @@ export class ThreadStore {
     if (event) last = ledger.append({ type: event.type, data: event.data, ...(event.turn === undefined ? {} : { turn: event.turn }) });
     const stateChanged = thread.state !== before.state || thread.stateReason !== before.stateReason;
     if (stateChanged || (!event && changed.length)) last = ledger.append({ type: 'thread-state', data: this.#stateChange(before.state, thread, changed) });
-    if (last) this.publisher.enqueue(threadIndex(thread, labels, last.t), last.id);
+    if (last) this.publisher.enqueue(this.index(thread, labels, last.t), last.id);
     return structuredClone(thread);
   }
   #stateChange(from: Thread['state'] | null, thread: Thread, changed: string[]) {
@@ -130,13 +137,13 @@ export class ThreadStore {
     const thread = this.#require(threadId); const ledger = this.ledgers.thread(thread.projectId, threadId);
     const changed = changedIndexFields(threadIndex(thread, current, thread.createdAt), threadIndex(thread, next, thread.createdAt));
     const event = ledger.append({ type: 'thread-state', data: this.#stateChange(thread.state, thread, changed) });
-    this.publisher.enqueue(threadIndex(thread, next, event.t), event.id);
+    this.publisher.enqueue(this.index(thread, next, event.t), event.id);
     return structuredClone(thread);
   }
   /** The index under the ledger's last event, for the startup rebuild (2.6.13 step 7). */
   current(threadId: string): IndexUpdate | undefined {
     const thread = this.#require(threadId); const last = this.ledgers.thread(thread.projectId, threadId).events().at(-1);
-    return last && { index: threadIndex(thread, this.labels(threadId), last.t), eventId: last.id };
+    return last && { index: this.index(thread, this.labels(threadId), last.t), eventId: last.id };
   }
   /**
    * Startup reconciliation (2.6.13 step 6): when the ledger's last `thread-state` does not end in thread.json's state
@@ -149,7 +156,7 @@ export class ThreadStore {
     if (recorded && recorded.to === thread.state && recorded.reason === thread.stateReason) return false;
     if (!events.some((event) => event.type === 'thread-placement')) ledger.append({ type: 'thread-placement', data: thread.placement });
     const event = ledger.append({ type: 'thread-state', data: this.#stateChange(recorded?.to ?? null, thread, []) });
-    this.publisher.enqueue(threadIndex(thread, this.labels(threadId), event.t), event.id);
+    this.publisher.enqueue(this.index(thread, this.labels(threadId), event.t), event.id);
     return true;
   }
   /** Re-enqueues every local thread's index. */
@@ -159,7 +166,7 @@ export class ThreadStore {
   #republish(threadId: string): IndexUpdate | undefined {
     const thread = this.#all().get(threadId); if (!thread) return undefined;
     const event = this.ledgers.thread(thread.projectId, threadId).append({ type: 'thread-state', data: this.#stateChange(thread.state, thread, []) });
-    return { index: threadIndex(thread, this.labels(threadId), event.t), eventId: event.id };
+    return { index: this.index(thread, this.labels(threadId), event.t), eventId: event.id };
   }
 }
 

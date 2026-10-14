@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SessionTurnCacheSchema, SessionCacheSummarySchema } from './session-cache-schemas.js';
 import { OwnerCommandsSchema } from './owner-command-schemas.js';
 import { ProjectReviewReportSchema } from './project-review-schemas.js';
 import { CursorTranscriptSchema } from './cursor-schemas.js';
@@ -195,6 +196,8 @@ export const ThreadStartPlanSchema = z.strictObject({ schema: z.literal('thread-
   digest: z.string().regex(/^[0-9a-f]{64}$/u), thread: ThreadSchema, labels: z.strictObject({ modelLabel: z.string().min(1), accountLabel: z.string().min(1), deviceName: z.string().min(1) }) });
 // 5.6 hub namespace project-threads, key threadId
 export const ThreadIndexSchema = z.strictObject({ schema: z.literal('project-thread-index-v1'), revision,
+  sessionCache: z.array(SessionCacheSummarySchema).max(500).optional(),
+  cacheSessionKey: z.string().regex(/^[a-f0-9]{64}$/u).optional(),
   id: IdSchema, projectId: IdSchema, title: z.string().min(1).max(120), state: ThreadStateSchema, stateReason: z.string().max(400).optional(),
   isolation: IsolationSchema, gitPolicy: z.enum(['main', 'external']).optional(), ownerDeviceId: IdSchema, runtime: IdSchema, modelLabel: text, effort: EffortSchema,
   accountLabel: text, branch: z.string().optional(), pr: PullRequestStateSchema.optional(),
@@ -269,10 +272,11 @@ export const CoordinatorLocalSchema = z.strictObject({ schema: z.literal('coordi
 export type CoordinatorLocal = z.infer<typeof CoordinatorLocalSchema>;
 // hub namespace project-coordinator-status, key projectId; written only by the coordinator device
 export const ProjectCoordinatorStatusSchema = z.strictObject({ schema: z.literal('project-coordinator-status-v1'),
+  sessionCache: z.array(SessionCacheSummarySchema).max(500).optional(),
   revision, projectId: IdSchema, deviceId: IdSchema,
   state: z.enum(['idle', 'running', 'unavailable']), unavailableReason: z.string().max(400).optional(),
   failedTurnsInARow: count,
-  session: z.strictObject({ runtime: IdSchema, modelLabel: text, effort: EffortSchema, accountLabel: text, turns: count, context: ProjectSessionContextSchema.optional() }).nullable(),
+  session: z.strictObject({ runtime: IdSchema, modelLabel: text, effort: EffortSchema, accountLabel: text, turns: count, context: ProjectSessionContextSchema.optional(), cacheSessionKey: z.string().regex(/^[a-f0-9]{64}$/u).optional() }).nullable(),
   // phase 5: the coordinator ledger's last event id when published, so other devices' work views bound the chat history (D268)
   lastEventId: count.optional(),
   updatedAt: TimestampSchema });
@@ -325,7 +329,7 @@ export type InboxSeen = z.infer<typeof InboxSeenSchema>;
 // Project ledger (brief 5.13, D2). data stays unknown in the envelope: payloads over 64 KiB spill to a blob-ref.
 export const ProjectLedgerEventTypeSchema = z.enum(['coordinator-turn-start', 'coordinator-text', 'coordinator-tool',
   'coordinator-turn-end', 'coordinator-event', 'thread-turn-start', 'thread-turn-end', 'thread-report',
-  'thread-placement', 'thread-state', 'thread-verification', 'thread-publication', 'session-compacted', 'project-session-end', 'notice']);
+  'thread-placement', 'thread-state', 'thread-verification', 'thread-publication', 'session-compacted', 'project-session-end', 'session-turn-cache', 'notice']);
 export type ProjectLedgerEventType = z.infer<typeof ProjectLedgerEventTypeSchema>;
 export const ProjectLedgerEventSchema = z.strictObject({ schema: z.literal('project-ledger-event-v1'), t: TimestampSchema,
   id: positive, type: ProjectLedgerEventTypeSchema, turn: positive.optional(), data: z.unknown() });
@@ -371,6 +375,7 @@ export const ProjectLedgerDataSchemas = {
   'thread-report': ThreadReportSchema, 'thread-placement': PlacementRecordSchema, 'thread-state': ThreadStateChangeSchema,
   'session-compacted': SessionCompactedSchema,
   'project-session-end': ProjectSessionEndSchema,
+  'session-turn-cache': SessionTurnCacheSchema,
   'thread-verification': ThreadVerificationSchema, 'thread-publication': ThreadPublicationSchema, notice: ProjectNoticeSchema,
 } as const satisfies Record<ProjectLedgerEventType, z.ZodType>;
 export type ProjectLedgerData<T extends ProjectLedgerEventType> = z.output<(typeof ProjectLedgerDataSchemas)[T]>;
@@ -387,7 +392,7 @@ export const ProjectWorkListViewSchema = z.strictObject({ schema: z.literal('pro
 export type ProjectWorkListView = z.infer<typeof ProjectWorkListViewSchema>;
 export const CoordinatorViewSchema = z.strictObject({ state: CoordinatorStateNameSchema,
   unavailableReason: z.string().optional(), deviceId: IdSchema.nullable(), deviceName: z.string().nullable(), online: z.boolean(),
-  session: z.strictObject({ runtime: IdSchema, modelLabel: text, effort: EffortSchema, accountLabel: text, turns: count, context: ProjectSessionContextSchema.optional() }).nullable(),
+  session: z.strictObject({ runtime: IdSchema, modelLabel: text, effort: EffortSchema, accountLabel: text, turns: count, context: ProjectSessionContextSchema.optional(), cacheSessionKey: z.string().regex(/^[a-f0-9]{64}$/u).optional() }).nullable(),
   planned: z.strictObject({ runtime: IdSchema, modelLabel: text, effort: EffortSchema }).nullable(),
   canMoveHere: z.boolean(), offlineSince: TimestampSchema.optional(),
   // phase 5: why this device cannot take the coordinator although the move rule allows it (no model, account or checkout here, D282)
@@ -400,6 +405,7 @@ export type PullRequestEntry = z.infer<typeof PullRequestEntrySchema>;
 export const ProjectDeviceSetupSchema = z.strictObject({ schema: z.literal('project-device-setup-v1'), deviceId: IdSchema, name: text, reason: z.string().max(400).optional() });
 export type ProjectDeviceSetup = z.infer<typeof ProjectDeviceSetupSchema>;
 export const ProjectWorkViewSchema = z.strictObject({ schema: z.literal('project-work-view-v1'),
+  sessionCache: z.array(SessionCacheSummarySchema).optional(),
   project: z.strictObject({ id: IdSchema, name: text, branchPolicy: z.enum(['main', 'external']), baseBranch: z.string().nullable() }),
   settings: ProjectWorkSettingsSchema, settingsNotice: z.string().optional(), githubNotice: z.string().max(500).optional(),
   coordinator: CoordinatorViewSchema, threads: z.array(ThreadIndexSchema),

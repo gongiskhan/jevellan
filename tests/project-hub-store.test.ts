@@ -70,6 +70,19 @@ test('listByField filters on one top-level field in SQL, orders by id and pages 
   for (const limit of [0, -1, 1.5]) expect(() => app.hub.listByField('fixture-documents', 'projectId', 'a', Fixture, { limit })).toThrow('Invalid document limit.');
   expect(() => app.hub.listByField('fixture-documents', 'projectId', 'a', Fixture, { after: '../x' })).toThrow();
 });
+test('member cache snapshots use the authenticated mesh, survive a lost reply and refuse another device identity', async () => {
+  const transport = losing(), left = await member('left', transport.fetcher), right = await member('right');
+  const snapshot = { schema: 'project-session-cache-v1' as const, projectId: 'project', deviceId: 'left', revision: 0, lastEventId: 1, updatedAt: at, records: [] };
+  transport.state.operation = 'session-cache-put';
+  await expect(left.hub.putSessionCache(snapshot)).rejects.toThrow();
+  await left.hub.putSessionCache(snapshot);
+  expect(await right.hub.sessionCaches('project')).toEqual([{ ...snapshot, revision: 1 }]);
+  expect(await right.hub.sessionCaches('other')).toEqual([]);
+  await expect(right.hub.putSessionCache(snapshot)).rejects.toMatchObject({ status: 403 });
+  const local = new HubProjectAccess(app.hub, 'left');
+  expect(await local.sessionCaches('project')).toEqual(await left.hub.sessionCaches('project'));
+});
+
 test('a member reads hyphenated job-runs over the authenticated hub collection route', async () => {
   const left = await member('left');
   expect(await left.hub.jobRuns('project')).toEqual({ records: [], next: null });

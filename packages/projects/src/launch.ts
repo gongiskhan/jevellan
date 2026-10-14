@@ -9,6 +9,7 @@ import { ACCOUNT_BUSY, MEMORY_HOOKS_UNDELIVERED, accountInTerminal, cannotRunHer
 import { ThreadGit } from './git.js';
 import { compactPercent, contextEvent, sessionContext } from './session-context.js';
 import type { ProjectLedger } from './ledger.js';
+import { cacheWindowMinutes, defaultCacheWindow, measureSession } from './session-cache.js';
 
 export type GitIdentity = { name: string; email: string };
 export type LaunchRequest = {
@@ -31,6 +32,7 @@ export type LaunchRequest = {
   gitIdentityFrom?: string | undefined;
   memoryMode?: 'hub' | 'repo' | 'device';
   isolation?: 'worktree' | 'main';
+  contextTokensBefore?: number | null | undefined;
 };
 export type LaunchStarted = {
   /** Effective user input after account/session resolution; safe owner evidence uses the ledger redactor. */
@@ -54,8 +56,10 @@ export type TurnLauncherOptions = {
    */
   held?(): ReadonlySet<string>;
   useOwnSetup?(runtime: string): Promise<boolean>;
+  cacheWindowMinutes?(runtime: string): Promise<number>;
   projectSettings?(projectId: string): Promise<ProjectWorkSettings>;
   sessionLedger?(projectId: string): ProjectLedger;
+  cacheLedger?(owner: TurnInput['owner']): ProjectLedger;
   now?(): number;
   protectedPaths?(): Promise<string[]>;
   /** Fresh, repository-scoped Git authentication for a writable thread turn; never persisted in a home or MCP configuration. */
@@ -131,7 +135,9 @@ export class TurnLauncher {
       try { await grant?.close(); } finally { if (serial) this.#o.accountRuns.delete(account.id); }
     };
     try {
-      const percent = compactPercent((await this.#o.projectSettings?.(request.owner.projectId))?.compactAtPercent ?? 70, this.#o.homes);
+      const projectSettings = await this.#o.projectSettings?.(request.owner.projectId);
+      const percent = compactPercent(projectSettings?.compactAtPercent ?? 70, this.#o.homes);
+      const cacheWindow = cacheWindowMinutes(await this.#o.cacheWindowMinutes?.(request.runtime) ?? defaultCacheWindow(request.runtime), this.#o.homes);
       const resolved = await this.#o.accounts.resolve(account.id);
       let contextWindow: number | undefined;
       if (request.runtime === 'codex') {
@@ -163,7 +169,11 @@ export class TurnLauncher {
         safetyProfile: request.safetyProfile, timeoutMs: request.timeoutMs, compaction: { thresholdPercent: percent, ...(contextWindow ? { contextWindow } : {}) },
         ...(request.owner.kind === 'thread' && request.isolation === 'worktree' ? { protectedPaths: await this.#o.protectedPaths?.() ?? [] } : {}),
       });
-      const nativeRun = adapter.startTurn(input);
+      const cacheLedger = this.#o.cacheLedger?.(request.owner) ?? this.#o.sessionLedger?.(request.owner.projectId);
+      const rawRun = adapter.startTurn(input);
+      const nativeRun = cacheLedger ? measureSession(rawRun, { ledger: cacheLedger, owner: request.owner, runtime: request.runtime, model: request.model,
+        accountId: account.id, turn: request.turn, windowMinutes: cacheWindow, ...(resumed ? { resume: request.resume } : {}),
+        contextTokensBefore: request.contextTokensBefore, timezone: projectSettings?.nightlyWindow.timezone, now: this.#o.now ?? Date.now }) : rawRun;
       const ledger = ['review', 'verification', 'memory'].includes(request.owner.kind) ? this.#o.sessionLedger?.(request.owner.projectId) : undefined;
       const now = this.#o.now ?? Date.now;
       let context = sessionContext(undefined, percent, compactionNotice);

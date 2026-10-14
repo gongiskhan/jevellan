@@ -3,7 +3,7 @@ import {
   ProjectWorkListViewSchema, ProjectWorkViewSchema, ThreadViewSchema, defaultProjectWorkSettings, deviceAway, isTerminal, openQuestions, projectPathProblem, type AccountView, type Configuration, type CoordinatorState,
   type CoordinatorView, type Project,
   type ProjectDecision, type ProjectHub, type ProjectLedgerEvent, type ProjectWorkListView, type ProjectWorkSettings, type ProjectWorkSummary, type ProjectWorkView,
-  type PullRequestEntry, type SharedProjects, type ThreadIndex, type ThreadReport, type ThreadView,
+  type PullRequestEntry, type SharedProjects, type ThreadIndex, type ThreadReport, type ThreadView, type SessionCacheSummary,
 } from '@jevellan/core';
 import type { PlacementGates } from '@jevellan/decisions';
 import type { RuntimeAdapter } from '@jevellan/runtime-contract';
@@ -15,6 +15,7 @@ import { threadIndex, type ThreadStore } from './stores.js';
 import { atTurnLimit, isDiscarded, restartRefusal } from './thread-runner.js';
 import type { ThreadTranscripts } from './transcript.js';
 import type { ThreadWorktree } from './worktree.js';
+import { cacheRecords, sessionCacheKey, sessionCacheSummaries } from './session-cache.js';
 
 const refuse = (message: string, status: number) => Object.assign(new Error(message), { status });
 /**
@@ -22,7 +23,7 @@ const refuse = (message: string, status: number) => Object.assign(new Error(mess
  * to this device (`canMoveHere`, 3.5.3).
  */
 type CoordinatorWhere = { deviceId: string | null; deviceName: string | null; state: CoordinatorView['state']; unavailableReason?: string; online: boolean;
-  movable: boolean; local?: CoordinatorState; published?: CoordinatorView['session']; lastEventId?: number };
+  movable: boolean; local?: CoordinatorState; published?: CoordinatorView['session']; lastEventId?: number; sessionCache?: SessionCacheSummary[] };
 const ANSWERED_SHOWN = 10;
 const BRANCH_ONLY = [BRANCH_PUSHED_NO_TOKEN, NOT_GITHUB];
 
@@ -60,7 +61,7 @@ export function effectiveSettings(settings: ProjectWorkSettings, project: Pick<P
 
 export type ProjectViewsOptions = {
   deviceId: string; deviceName: string;
-  hub: Pick<ProjectHub, 'threads' | 'decisions' | 'settings' | 'coordinator' | 'coordinatorStatus' | 'notebook' | 'workSummaries'>;
+  hub: Pick<ProjectHub, 'threads' | 'decisions' | 'settings' | 'coordinator' | 'coordinatorStatus' | 'notebook' | 'workSummaries' | 'sessionCaches'>;
   projects: Pick<SharedProjects, 'get' | 'list'>;
   store: Pick<ThreadStore, 'get' | 'labels' | 'local'>; ledgers: ProjectLedgers; coordinators: Pick<CoordinatorService, 'get'>;
   transcripts: Pick<ThreadTranscripts, 'read'>; worktrees: Pick<ThreadWorktree, 'repository' | 'baseBranch'>;
@@ -115,7 +116,7 @@ export class ProjectViews {
     const published = (await this.#o.hub.coordinatorStatus(projectId))?.document;
     const status = published?.deviceId === deviceId ? published : undefined;
     return { deviceId, deviceName, state: status?.state ?? 'idle', ...(status?.unavailableReason ? { unavailableReason: status.unavailableReason } : {}), online: true,
-      movable: coordinatorMovable(deviceId, row, status), published: status?.session ?? null, lastEventId: status?.lastEventId ?? 0 };
+      movable: coordinatorMovable(deviceId, row, status), published: status?.session ?? null, lastEventId: status?.lastEventId ?? 0, sessionCache: status?.sessionCache ?? [] };
   }
   /**
    * A list row's coordinator from the hub's summary (D267), by the `#coordinatorState` rules: here the local state; elsewhere
@@ -144,7 +145,8 @@ export class ProjectViews {
     return { deviceId: where.deviceId, deviceName: where.deviceName, planned, canMoveHere: where.movable, ...(moveRefusal ? { moveRefusal: moveRefusal.slice(0, 400) } : {}), state: where.state,
       ...(where.unavailableReason ? { unavailableReason: where.unavailableReason } : {}), online: where.online,
       session: session ? { runtime: session.runtime, modelLabel: label(session.modelId), effort: session.effort,
-        accountLabel: accounts.find((view) => view.account.id === session.accountId)?.account.label ?? session.accountId, turns: session.turns, ...(session.context ? { context: session.context } : {}) }
+        accountLabel: accounts.find((view) => view.account.id === session.accountId)?.account.label ?? session.accountId, turns: session.turns, ...(session.context ? { context: session.context } : {}),
+        ...(session.nativeSessionId ? { cacheSessionKey: sessionCacheKey({ kind: 'coordinator', id: project.id }, session.runtime, session.accountId, session.nativeSessionId) } : {}) }
         : where.published ?? null };
   }
   async #work(projectId: string): Promise<ProjectWorkSettings> { return (await this.#o.hub.settings(projectId))?.document ?? defaultProjectWorkSettings(projectId); }
@@ -170,8 +172,15 @@ export class ProjectViews {
     // Threads are placed on the coordinator's device; while it is away, the only way on is moving it here, so this device places (D281).
     const placing = where.deviceId === null || where.state === 'offline' ? this.#o.deviceId : where.deviceId;
     const coordinator = this.#coordinator(where, work, project, config, accounts);
+    const cacheSnapshots = await this.#o.hub.sessionCaches?.(projectId) ?? [];
+    const summaries = [...cacheSnapshots.filter(row => row.deviceId !== this.#o.deviceId).flatMap(row => row.records),
+      ...sessionCacheSummaries(cacheRecords(this.#o.ledgers.coordinator(projectId)), work.nightlyWindow.timezone),
+      ...(where.deviceId !== this.#o.deviceId ? where.sessionCache ?? [] : []), ...threads.flatMap(thread => thread.sessionCache ?? [])];
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: work.nightlyWindow.timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+    const cacheRows = [...new Map(summaries.filter(row => row.day === today).map(row => [`${row.day}:${row.key}`, row])).values()];
     const devices = this.#o.placement.deviceSetup(project, work, roster, placing, { settings: config, accounts });
     return ProjectWorkViewSchema.parse({ schema: 'project-work-view-v1', project: { id: project.id, name: project.name, branchPolicy: project.branchPolicy, baseBranch },
+      sessionCache: cacheRows,
       settings: shown.settings, ...(githubNotice ? { githubNotice } : {}), ...(shown.notice ? { settingsNotice: shown.notice } : {}), coordinator, threads,
       decisions: decisionLists(decisions), pullRequests: pullRequestEntries(threads), notebookRevision: notebook?.revision ?? 0, lastEventId, gates: PHASE_GATES, devices });
   }
@@ -186,7 +195,8 @@ export class ProjectViews {
     const restartReason = restartRefusal(thread);
     // An ended main thread whose claim the sweeps are still settling says why the checkout stays held (phase 8, D291).
     const kept = isTerminal(thread.state) ? this.#o.store.local(threadId).unsettledCheckout?.message : undefined;
-    return ThreadViewSchema.parse({ schema: 'project-thread-view-v1', thread: threadIndex(thread, this.#o.store.labels(threadId), events.at(-1)?.t ?? thread.createdAt),
+    return ThreadViewSchema.parse({ schema: 'project-thread-view-v1', thread: { ...threadIndex(thread, this.#o.store.labels(threadId), events.at(-1)?.t ?? thread.createdAt),
+      sessionCache: sessionCacheSummaries(cacheRecords(ledger)).slice(-500) },
       ...(this.#o.store.local(threadId).memoryRecall ? { memoryRecall: this.#o.store.local(threadId).memoryRecall } : {}),
       placement: thread.placement, reports, transcript, queuedMessages: thread.queuedMessages,
       canMessage: !['attached', 'done', 'stopped', 'failed'].includes(thread.state), turnAllowance: thread.turnAllowance, deviceName: this.#o.deviceName,

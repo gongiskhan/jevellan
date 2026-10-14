@@ -1485,6 +1485,31 @@ test('hub readiness warns about AC sleep and clears when the setting is safe', a
   await shot(page, 'hub-power-ready', true); expect(errors).toEqual([]);
 });
 
+test('CACHE1 session metrics and runtime windows persist across reload in every layout', async ({ page }) => {
+  const errors = await begin(page); await openProject(page, 'Projects fixture');
+  if (phone(test.info())) await tap(page, tab(page, 'Chat'));
+  await composer(page).fill('CACHE1 metrics'); await composer(page).press('Enter');
+  await expect.poll(async () => (await work(page)).sessionCache?.some(row => row.owner.kind === 'coordinator' && row.cacheReadTokens === 80), LONG).toBe(true);
+  await page.reload();
+  await expect(page.getByLabel('Session cache today')).toContainText('80%');
+  await page.getByText('Sessions and cache · today', { exact: true }).click();
+  await expect(page.locator('.session-cache-table')).toContainText('48,000');
+  await shot(page, 'sessions-cache', true);
+  const created = await page.request.post(`${PROJECT}/threads`, { data: { schema: 'thread-create-request-v1', clientRequestId: randomUUID(), title: 'Cache metrics thread', task: 'CACHE1 metrics', isolation: 'worktree', modelId: 'claude-fable', effort: 'high' } });
+  expect(created.ok()).toBe(true); const started = await created.json();
+  await expect.poll(async () => (await threadView(page, started.threadId)).thread.sessionCache?.length, LONG).toBe(1);
+  await page.goto(`/projects/projects_fixture/threads/${started.threadId}`);
+  await expect(page.getByLabel('Session cache today')).toContainText('80%');
+  await shot(page, 'thread-cache', true);
+  await page.goto('/settings/runtimes');
+  const window = page.getByRole('spinbutton', { name: 'Claude Code cache window (minutes)', exact: true });
+  await window.fill('17'); await window.press('Tab');
+  await expect.poll(async () => (await (await page.request.get('/hub/config')).json()).configuration['x-jevellan'].runtimes.claude.cacheWindowMinutes, LONG).toBe(17);
+  await page.reload(); await expect(window).toHaveValue('17');
+  await shot(page, 'runtime-cache-window', true);
+  expect(errors).toEqual([]);
+});
+
 test('CM1 compaction controls show context, persist the threshold and start a fresh session on request', async ({ page }) => {
   await control('/projects/clock', { schema: 'fixture-project-clock-v1', advanceMinutes: 0, reset: true });
   const errors = await begin(page); await openProject(page, 'Projects fixture');

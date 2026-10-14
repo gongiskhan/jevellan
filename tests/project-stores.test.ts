@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { Homes, PlacementRecordSchema, ThreadSchema, writeDocument, type ProjectHub, type Thread, type ThreadIndex } from '../packages/core/dist/index.js';
 import { HubDatabase, HubProjectAccess } from '../packages/mesh/dist/index.js';
 import {
-  CoordinatorStore, ProjectLedger, ProjectLedgers, ProjectPaths, StartReceipts, ThreadIndexPublisher, ThreadStore, projectLedgerData, publicProjectData, threadIndex,
+  CoordinatorStore, ProjectLedger, ProjectLedgers, ProjectPaths, StartReceipts, ThreadIndexPublisher, ThreadStore, measureSession, projectLedgerData, publicProjectData, sessionCacheKey, threadIndex,
 } from '../packages/projects/dist/index.js';
 
 let root: string; let homes: Homes; let db: HubDatabase; let paths: ProjectPaths;
@@ -72,8 +72,8 @@ test('thread store writes the state file first, records every index change and p
   expect(published).toMatchObject({ id: created.id, state: 'preparing', modelLabel: 'Swift', accountLabel: 'Work', runtime: 'codex', effort: 'medium', updatedAt: ledger.events()[1]!.t });
   for (const key of ['cwd', 'nativeSessionId', 'queuedMessages', 'placement']) expect(published).not.toHaveProperty(key);
 
-  // Owner-local fields only: no event, no publish.
-  threads.update(created.id, (value) => ({ ...value, cwd: '/w/t', nativeSessionId: 'session-1', queuedMessages: [{ id: 'tmsg_1', from: 'owner', text: 'Hi', at, interrupt: false }] }));
+  // Owner-local fields only: no event, no publish. Native identity separately publishes its opaque cache key.
+  threads.update(created.id, (value) => ({ ...value, cwd: '/w/t', queuedMessages: [{ id: 'tmsg_1', from: 'owner', text: 'Hi', at, interrupt: false }] }));
   expect(types(ledger)).toHaveLength(2); expect(publisher.pending).toBe(0);
   // An index field without a state change: one thread-state naming it.
   threads.update(created.id, (value) => ({ ...value, branch: 'jv/fix-login-abcdef', baseBranch: 'main', baseCommit: 'a'.repeat(40) }));
@@ -102,6 +102,26 @@ test('thread store writes the state file first, records every index change and p
   const again = stores(); expect(again.threads.all()).toEqual([threads.get(created.id)]); expect(again.threads.list('proj_b')).toEqual([]);
   await publisher.flush(); const last = ledger.lastId(); again.threads.publishAll(); await again.publisher.flush();
   expect(ledger.lastId()).toBe(last); expect(again.publisher.pending).toBe(0);
+});
+
+test('cache summaries publish from the thread ledger and survive restart without changing an index event identity', async () => {
+  const first = stores(); const created = first.threads.create(thread(), labels);
+  first.threads.update(created.id, value => ({ ...value, nativeSessionId: 'private-cache-native' }));
+  await first.publisher.flush();
+  const ledger = first.ledgers.thread(created.projectId, created.id);
+  const run = measureSession({ native: { pid: 1, pgid: 1, sessionId: 'private-cache-native' }, done: Promise.resolve({ status: 'completed' }),
+    events: (async function* () { yield { type: 'usage' as const, inputTokens: 100, outputTokens: 3, cacheReadTokens: 80, cacheWriteTokens: 0 }; })(),
+    interrupt: async () => undefined, continue: async () => { throw new Error('Unexpected native request'); }, terminate: async () => undefined },
+    { ledger, owner: { kind: 'thread', id: created.id, projectId: created.projectId }, runtime: 'codex', model: 'swift-version', accountId: 'acc_a', turn: 1, windowMinutes: 10, now: () => Date.parse(at) });
+  for await (const event of run.events) void event;
+  first.threads.publishAll(); await first.publisher.flush();
+  const before = (await new HubProjectAccess(db, 'dev_a').thread(created.id))!.document;
+  expect(before.sessionCache).toHaveLength(1); expect(before.cacheSessionKey).toBe(before.sessionCache![0]!.key);
+  expect(JSON.stringify(before)).not.toContain('private-cache-native');
+  const id = ledger.lastId(); const again = stores(); again.threads.publishAll(); await again.publisher.flush();
+  expect(ledger.lastId()).toBe(id); expect(again.publisher.pending).toBe(0);
+  expect((await new HubProjectAccess(db, 'dev_a').thread(created.id))!.document).toEqual(before);
+  first.publisher.close(); again.publisher.close();
 });
 
 test('index publishing retries, ignores stale updates and moves past a conflicting event id', async () => {
@@ -149,7 +169,8 @@ test('a permanently refused index is dropped so other threads still publish', as
 test('threadIndex keeps owner-local fields out and uses the given labels and time', () => {
   const index = threadIndex(thread({ cwd: '/w/t', nativeSessionId: 's', endedAt: at, state: 'done' }), labels, '2026-10-03T11:00:00.000Z');
   expect(index).toEqual({ schema: 'project-thread-index-v1', revision: 0, id: 'thread_01K6ABCDEF', projectId: 'proj_a', title: 'Fix login', state: 'done', isolation: 'worktree',
-    ownerDeviceId: 'dev_a', runtime: 'codex', modelLabel: 'Swift', effort: 'medium', accountLabel: 'Work', turns: 0, createdAt: at, updatedAt: '2026-10-03T11:00:00.000Z', endedAt: at });
+    ownerDeviceId: 'dev_a', runtime: 'codex', modelLabel: 'Swift', effort: 'medium', accountLabel: 'Work', turns: 0, createdAt: at, updatedAt: '2026-10-03T11:00:00.000Z', endedAt: at,
+    cacheSessionKey: sessionCacheKey({ kind: 'thread', id: 'thread_01K6ABCDEF' }, 'codex', 'acc_a', 's') });
   const { threads } = stores(); const created = threads.create(thread({ id: 'thread_nolabels' }), labels);
   rmSync(paths.threadLocal('proj_a', created.id)); const fresh = stores();
   expect(fresh.threads.labels(created.id)).toEqual({ modelLabel: 'swift', accountLabel: 'acc_a' });

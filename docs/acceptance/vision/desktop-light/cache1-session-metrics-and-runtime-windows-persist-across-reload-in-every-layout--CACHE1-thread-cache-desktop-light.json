@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "CACHE1 session metrics and runtime windows persist across reload in every layout",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/screenshots/CACHE1-thread-cache-desktop-light.png",
+  "expected": "the Jevellan web app \"CACHE1 thread cache\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"CACHE1 session metrics and runtime windows persist across reload in every layout\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Sidebar session titles and metadata are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'dev-ma…'). The text is readable and the full title is likely available on hover.",
+      "The cache metrics line ('Cache today 80% · 0 cold starts · 0 tokens written cold') is in small, low-contrast text under the monospace metadata row. It is readable but easy to miss.",
+      "Below the single report card there is a large empty area down to the composer. That is expected for a thread with one turn."
+    ]
+  }
+}

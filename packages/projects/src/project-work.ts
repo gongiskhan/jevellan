@@ -44,6 +44,7 @@ import { Inbox, Outbox, type EnvelopeOf } from './envelopes.js';
 import { ThreadGit } from './git.js';
 import { ThreadIndexPublisher } from './index-publisher.js';
 import { TurnLauncher } from './launch.js';
+import { cacheRecords, sessionCacheSnapshot } from './session-cache.js';
 import { ProjectLedgers, type ProjectLedger } from './ledger.js';
 import { MailService } from './mail.js';
 import { MainCheckout } from './main-checkout.js';
@@ -135,6 +136,7 @@ export class ProjectWork {
   readonly #attach: ThreadAttach;
   readonly #attachedGrants = new Map<string, { token: string; close(): Promise<void> }>();
   #sweepTimer: ReturnType<typeof setInterval> | undefined;
+  readonly #cachePublished = new Map<string, number>();
   #tools: CoordinatorToolHandlers | undefined;
   readonly #github: ProjectGithub;
   #started = false;
@@ -159,6 +161,8 @@ export class ProjectWork {
     const launcher = new TurnLauncher({ accounts: o.accounts, runtimes: o.runtimes, accountRuns: o.accountRuns, riggingItems: o.riggingItems, bridges: o.bridges, homes: o.homes,
       deviceId: o.deviceId, deviceName: o.deviceName, daemonUrl: () => this.daemonUrl, redactor: o.redactor, held, projectSettings: projectId => this.admission.settings(projectId),
       sessionLedger: projectId => this.ledgers.coordinator(projectId), now, useOwnSetup: async runtime => (await o.settings()).runtimes[runtime]?.useOwnSetup !== false,
+      cacheWindowMinutes: async runtime => (await o.settings()).runtimes[runtime]?.cacheWindowMinutes ?? (runtime === 'claude' ? 60 : 10),
+      cacheLedger: owner => owner.kind === 'thread' ? this.ledgers.thread(owner.projectId, owner.id) : this.ledgers.coordinator(owner.projectId),
       threadGitEnvironment: async projectId => {
         try {
           const registered = await o.projects.get(projectId); if (!registered) throw new Error(PROJECT_NOT_FOUND);
@@ -466,6 +470,13 @@ export class ProjectWork {
     if (!this.#started || this.#closing || !deviceAllowsWork(this.#o.homes)) return;
     try {
       for (const { project } of await this.#o.projects.list()) {
+        const ledger = this.ledgers.coordinator(project.id);
+        if (this.#o.hub.putSessionCache && this.#cachePublished.get(project.id) !== ledger.lastId()) {
+          const version = ledger.lastId();
+          await this.#o.hub.putSessionCache({ schema: 'project-session-cache-v1', revision: 0, projectId: project.id, deviceId: this.#o.deviceId,
+            lastEventId: version, updatedAt: new Date(this.#timers.now()).toISOString(), records: sessionCacheSnapshot(cacheRecords(ledger)) });
+          this.#cachePublished.set(project.id, version);
+        }
         await this.memoryProgramme?.sweep(project);
         if ((await this.#o.hub.coordinator(project.id))?.document.deviceId === this.#o.deviceId) { await this.reviews.sweep(project.id); await this.daily.sweep(project.id); await this.dispatcher.sweep(project.id); await this.goals.sweep(project.id); }
         await this.memoryProgramme?.sweep(project);

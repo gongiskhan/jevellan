@@ -1,4 +1,5 @@
 import { MergeDocumentSchema, type MergeDocument } from '@jevellan/core';
+import { ProjectSessionCacheSchema, type ProjectSessionCache } from '@jevellan/core';
 import { PlacementOverrideFilterSchema, type PlacementOverrideFilter } from '@jevellan/core';
 import { ProjectJobSchema, ProjectDailySchema, ProjectJobRunSchema, ProjectWindowSchema, type ProjectJob, type ProjectDaily, type ProjectJobRun, type ProjectWindow } from '@jevellan/core';
 import { ProjectGoalSchema, ProjectRefillStateSchema, type ProjectGoal, type ProjectRefillState } from '@jevellan/core';
@@ -43,6 +44,15 @@ type Page<T> = { records: T[]; next: string | null };
  * build one per request. Reads assert the D3 revision rule; read-then-write operations run in one hub transaction.
  */
 export class HubProjectStore {
+  sessionCaches(projectId: string): ProjectSessionCache[] { return this.#documents('project-session-cache', ProjectSessionCacheSchema, projectId); }
+  putSessionCache(raw: ProjectSessionCache): void {
+    const document = ProjectSessionCacheSchema.parse(raw); this.#project(document.projectId);
+    if (document.deviceId !== this.deviceId) refuse('Only the session device can publish its cache counters.', 403);
+    const id = createHash('sha256').update(JSON.stringify([document.projectId, document.deviceId])).digest('hex');
+    const previous = this.#get('project-session-cache', id, ProjectSessionCacheSchema);
+    if (previous && previous.document.lastEventId >= document.lastEventId) return;
+    this.#put('project-session-cache', id, ProjectSessionCacheSchema, document, previous?.revision ?? 0);
+  }
   /** `devices`: the roster's device views, for the presence in work summaries (without it every coordinator device reads as unknown). */
   constructor(readonly hub: HubDatabase, readonly deviceId: string, readonly now: () => number = Date.now, readonly devices?: () => readonly DeviceView[]) { IdSchema.parse(deviceId); }
   #get<T extends { revision: number }>(namespace: string, id: string, schema: DocumentSchema<T>): Stored<T> | null {
@@ -612,6 +622,8 @@ export class HubProjectStore {
       case 'coordinator-get': result = { ...base, record: this.coordinator(request.projectId) }; break;
       case 'coordinator-assign': result = { ...base, record: this.assignCoordinator(request.projectId, request.deviceId, request.expectedRevision) }; break;
       case 'coordinator-status-get': result = { ...base, record: this.coordinatorStatus(request.projectId) }; break;
+      case 'session-caches': result = { ...base, records: this.sessionCaches(request.projectId) }; break;
+      case 'session-cache-put': this.putSessionCache(request.snapshot); result = base; break;
       case 'coordinator-status-put': result = { ...base, record: this.putCoordinatorStatus(request.status) }; break;
       case 'threads-list': result = { ...base, ...this.threads(request.projectId, request.after) }; break;
       case 'thread-get': result = { ...base, record: this.thread(request.threadId) }; break;
@@ -649,6 +661,8 @@ export class HubProjectStore {
 
 /** The hub's own `ProjectHub`: the same store and authority rules, bound to the hub device. */
 export class HubProjectAccess implements ProjectHub {
+  async sessionCaches(projectId: string) { return this.#store.sessionCaches(projectId); }
+  async putSessionCache(snapshot: ProjectSessionCache) { this.#store.putSessionCache(snapshot); }
   async jobs(projectId: string, after?: string) { return this.#store.jobs(projectId, after); }
   async job(jobId: string) { return this.#store.job(jobId); }
   async putJob(job: ProjectJob, expectedRevision: number) { return this.#store.putJob(job, expectedRevision); }
@@ -717,6 +731,8 @@ export class HubProjectAccess implements ProjectHub {
 
 /** A member's `ProjectHub` over the device-token HTTP API; every reply must match the requested identity and revision. */
 export class MemberProjectStore implements ProjectHub {
+  async sessionCaches(projectId: string) { return this.#check((await this.#call('session-caches', { projectId })).records, rows => rows.every(row => row.projectId === projectId)); }
+  async putSessionCache(snapshot: ProjectSessionCache) { await this.#call('session-cache-put', { snapshot }); }
   constructor(readonly client: MemberHubClient) {}
   async #call<O extends ProjectHubOperation>(operation: O, fields: object): Promise<ProjectHubResultOf<O>> {
     const result = await this.client.projects(collectionOf(operation), { schema: 'project-hub-request-v1', operation, ...fields });

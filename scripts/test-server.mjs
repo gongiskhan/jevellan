@@ -112,6 +112,11 @@ const EVENTS_HEADER = eventBlock([]);
 function coordinatorStep(input) {
   // Only delivered events count; the fresh-session recap repeats earlier messages.
   const at = input.prompt.lastIndexOf(EVENTS_HEADER); const events = at < 0 ? input.prompt : input.prompt.slice(at);
+  if (events.includes('CACHE1 metrics')) return async turn => {
+    turn.emit({ type: 'context', tokens: 48000, contextWindow: 200000 });
+    turn.emit({ type: 'usage', inputTokens: 10, outputTokens: 5, cacheReadTokens: 80, cacheWriteTokens: 10 });
+    turn.say('Session usage is recorded.'); return { status: 'completed' };
+  };
   if (events.includes('CM4 owner commands')) return async turn => {
     await projectTool(turn, 'jevellan_ask_user', { question: 'Run the owner-only setup?', ownerCommands: [{ command: `printf '%s\\n' '${'owner-visible-text-'.repeat(36)}'`, why: 'The owner needs to run this setup.', cwd: 'checkout' }] });
     turn.say('Sign in from the project terminal:\n\n```bash\ncodex login\n```'); return { status: 'completed' };
@@ -181,6 +186,11 @@ const LONG_TOOLS = [['Read', { file_path: 'README.md' }, '# Projects app\n\nA sm
 const longThreads = new Set();
 function threadStep(input) {
   const report = (status, summary, extra = {}) => async (turn) => { await projectPause(350, turn.signal); turn.say(summary); await projectTool(turn, 'jevellan_thread_report', { status, summary, ...extra }); return { status: 'completed' }; };
+  if (input.prompt.includes('CACHE1 metrics')) return async turn => {
+    turn.emit({ type: 'context', tokens: 48000, contextWindow: 200000 });
+    turn.emit({ type: 'usage', inputTokens: 10, outputTokens: 5, cacheReadTokens: 80, cacheWriteTokens: 10 });
+    return report('progress', 'Session usage is recorded.')(turn);
+  };
   if (input.prompt.includes('CM5 owner command thread')) return async turn => {
     mkdirSync(join(turn.input.cwd, 'scripts'), { recursive: true });
     writeFileSync(join(turn.input.cwd, 'scripts/owner-only.sh'), '#!/bin/sh\nprintf "owner result\\n"\ndate > owner-ran.txt\n', { mode: 0o755 });

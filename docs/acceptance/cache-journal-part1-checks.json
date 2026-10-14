@@ -1,0 +1,109 @@
+{
+  "schema": "cache-part1-checks-v1",
+  "label": "simulated",
+  "baseCommit": "c78e355a2fba85697123696380ac49cea358b242",
+  "at": "2026-10-14T05:05:52.590Z",
+  "backend": {
+    "passed": 220,
+    "files": 12,
+    "dedicatedCacheRepeat": 6
+  },
+  "checks": {
+    "typecheck": "passed",
+    "lint": "passed",
+    "build": "passed"
+  },
+  "browser": "cache-journal-part1-browser.json",
+  "runtimeSource": [
+    {
+      "path": "apps/web/src/project-work.css",
+      "sha256": "c54e29e43860a26112e151133c787e9b4e13e85b0bb39aea5b4e0f5165278ca1"
+    },
+    {
+      "path": "apps/web/src/project-work.tsx",
+      "sha256": "8e1a227a17ea52038b53b7fb7c824616eeed3b68404cc5179b84170494ee0d18"
+    },
+    {
+      "path": "apps/web/src/runtimes.tsx",
+      "sha256": "cfe042a21c3ff2860bd9cc81c5eca41516801b913e3e04015f497268e6bd436c"
+    },
+    {
+      "path": "apps/web/src/session-cache.tsx",
+      "sha256": "3136cdd08ad6f058b25094e5b46613713de247439c3c1a09e23fc51fdd123c5e"
+    },
+    {
+      "path": "apps/web/src/thread-page.tsx",
+      "sha256": "e7f0eb8c970ea0d03e1f7b1ccff3956645afcf3bb913deac7d11e4234b5e261f"
+    },
+    {
+      "path": "packages/core/src/client.ts",
+      "sha256": "1c23b5f9cdf53e571292c39101fcf35627e20caa8b7c6a8122c416a97a86be69"
+    },
+    {
+      "path": "packages/core/src/index.ts",
+      "sha256": "42bf539e26f7cbdaba2dbe2e4132ceb334e7fd70410664fb603b52955bb2f0f3"
+    },
+    {
+      "path": "packages/core/src/project-hub-schemas.ts",
+      "sha256": "2bad7fcd17f42ce69ecadf66d9404e48336602a33e8ed1e21c45fa7bed6c3775"
+    },
+    {
+      "path": "packages/core/src/project-hub.ts",
+      "sha256": "014e85266d514bd54967c469eba3013fd701aeafe6cf241cb43bcbab1ea2828e"
+    },
+    {
+      "path": "packages/core/src/project-schemas.ts",
+      "sha256": "c282a8f39f2c33f156173a7280d94e53af3687b612d7b6ade31d558574644f89"
+    },
+    {
+      "path": "packages/core/src/schemas.ts",
+      "sha256": "ac6b2c6b27e49e7512eabbd1fdc2d54311bc1b301e9fef0ac17778e521d4a1ff"
+    },
+    {
+      "path": "packages/core/src/session-cache-schemas.ts",
+      "sha256": "be0a75f9aa66a58333893e72735fb12ebc462a150ca2258a1f6184522bf19396"
+    },
+    {
+      "path": "packages/mesh/src/project-store.ts",
+      "sha256": "e793233d8a4f0e6ca995c82f183262c8379d97435738a50b15b21d20f22263e1"
+    },
+    {
+      "path": "packages/projects/src/coordinator.ts",
+      "sha256": "45142559a5b7fd63bf20b86bffdf0b6d49f9dcccd98dc03b8ea8696e298f1f52"
+    },
+    {
+      "path": "packages/projects/src/index.ts",
+      "sha256": "c701dfb371867b9496076dde6f2f422e1bab698a32ba5d0465860fb4d6316942"
+    },
+    {
+      "path": "packages/projects/src/launch.ts",
+      "sha256": "54f783c1865845294a2aa68e26cf02d8c0a10349fa52e3ae6ebd95bc023e523b"
+    },
+    {
+      "path": "packages/projects/src/project-work.ts",
+      "sha256": "a2f8047b9c54c843bb73567239fc141b2e15e63a6662ba04719264ee1bf11a6f"
+    },
+    {
+      "path": "packages/projects/src/session-cache.ts",
+      "sha256": "86b54db7acc1505f9c66556d9b935f223ed226206b253c1265994710dda7ea9d"
+    },
+    {
+      "path": "packages/projects/src/stores.ts",
+      "sha256": "89ce79f256f38ed519d26cf7140191c73d25db237892089b429db015afa97bc5"
+    },
+    {
+      "path": "packages/projects/src/thread-runner.ts",
+      "sha256": "6ee91af286be02aca3a31608c24c07030e5525cfd8e9d058e8e14747be2706c0"
+    },
+    {
+      "path": "packages/projects/src/views.ts",
+      "sha256": "3c7261f8dfa64f06f91a584f5fc582d7253a99788f85a94fba506777350def05"
+    }
+  ],
+  "retainedFailures": [
+    "Node20 test command failed before loading tests; corrected to required Node22.",
+    "Original mesh privacy check detected native identifiers; hashing repair preserves the unchanged guard.",
+    "Earlier exact event-order expectations omitted the new cache/opaque-key events; updated complete ordered expectations.",
+    "Six Pro lifecycle cases refused placement at load26.1 on10cores; same cases pass on quieter Madrid with guard unchanged."
+  ]
+}

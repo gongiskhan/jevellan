@@ -43,7 +43,7 @@ const ConfigurationFields = {
   dependencies: z.strictObject({ apm: z.array(z.union([text, z.strictObject({ path: text }), z.strictObject({ repo: text })])) }),
 };
 const SettingsFields = {
-  runtimes: z.record(IdSchema, z.strictObject({ enabled: z.boolean(), useOwnSetup: z.boolean().optional() })),
+  runtimes: z.record(IdSchema, z.strictObject({ enabled: z.boolean(), useOwnSetup: z.boolean().optional(), cacheWindowMinutes: z.number().int().min(1).max(1440).optional() })),
   decisions: z.strictObject({ provider: z.literal('jev'), model: text, timeoutMs: z.number().int().positive(), keepCurrentThreshold: z.number().min(0).max(1) }),
   menu: z.array(ModelOptionSchema).max(19), effortGuide: z.record(EffortSchema, text), routingProfile: text, guards: GuardsSchema,
 };

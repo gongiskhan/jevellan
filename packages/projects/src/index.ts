@@ -13,6 +13,7 @@ export * from './placement.js';
 export * from './bridge-tools.js';
 export * from './launch.js';
 export * from './turn-execution.js';
+export * from './session-cache.js';
 export * from './publication.js';
 export * from './pull-requests.js';
 export * from './decision-items.js';
