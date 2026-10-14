@@ -1,0 +1,116 @@
+{
+  "schema": "coordinator-start-ledger-excerpts-v1",
+  "label": "live",
+  "source": "Project thread ledger on the Pro",
+  "events": [
+    {
+      "type": "thread-state",
+      "data": {
+        "schema": "thread-state-v1",
+        "from": null,
+        "to": "preparing"
+      }
+    },
+    {
+      "type": "thread-state",
+      "data": {
+        "schema": "thread-state-v1",
+        "from": "preparing",
+        "to": "preparing"
+      }
+    },
+    {
+      "type": "thread-state",
+      "data": {
+        "schema": "thread-state-v1",
+        "from": "preparing",
+        "to": "running"
+      }
+    },
+    {
+      "type": "thread-state",
+      "data": {
+        "schema": "thread-state-v1",
+        "from": "running",
+        "to": "running"
+      }
+    },
+    {
+      "type": "thread-turn-end",
+      "data": {
+        "schema": "thread-turn-end-v1",
+        "status": "completed"
+      }
+    },
+    {
+      "type": "thread-report",
+      "data": {
+        "schema": "thread-report-v1",
+        "status": "done"
+      }
+    },
+    {
+      "type": "thread-state",
+      "data": {
+        "schema": "thread-state-v1",
+        "from": "running",
+        "to": "publishing"
+      }
+    },
+    {
+      "type": "thread-verification",
+      "data": {
+        "schema": "thread-verification-v1",
+        "status": "passed",
+        "command": "npm run build --workspace shared && npm run typecheck && npm run lint",
+        "exitCode": 0,
+        "timedOut": false,
+        "commit": "a1ce97f0bb5bef87e613fd1706b2200dc6a51885"
+      }
+    },
+    {
+      "type": "thread-publication",
+      "data": {
+        "schema": "thread-publication-v1",
+        "result": "pr-opened",
+        "prNumber": 249,
+        "pr": {
+          "number": 249,
+          "url": "https://github.com/gongiskhan/ekoa-code/pull/249",
+          "state": "open",
+          "headSha": "a1ce97f0bb5bef87e613fd1706b2200dc6a51885",
+          "checks": "none",
+          "mergeable": "unknown",
+          "updatedAt": "2026-10-14T16:10:36.590Z"
+        }
+      }
+    },
+    {
+      "type": "thread-state",
+      "data": {
+        "schema": "thread-state-v1",
+        "from": "publishing",
+        "to": "in-review"
+      }
+    },
+    {
+      "type": "thread-publication",
+      "data": {
+        "schema": "thread-publication-v1",
+        "result": "pr-state",
+        "prNumber": 249,
+        "pr": {
+          "number": 249,
+          "url": "https://github.com/gongiskhan/ekoa-code/pull/249",
+          "state": "open",
+          "headSha": "a1ce97f0bb5bef87e613fd1706b2200dc6a51885",
+          "checks": "pending",
+          "headFirstSeenAt": "2026-10-14T16:10:36.590Z",
+          "passedChecks": [],
+          "mergeable": "clean",
+          "updatedAt": "2026-10-14T16:10:46.939Z"
+        }
+      }
+    }
+  ]
+}

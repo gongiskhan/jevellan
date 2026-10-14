@@ -700,5 +700,11 @@
     "title": "Close the original live window with exact evidence",
     "why": "Prior-window closure,04:16UTC14October: stop at the original ten-hour boundary, without resettingfirstScenarioAt or starting another scenario. Closing collector verifies no own scenario controller is active, validates30 receipts and records18 historical/current failed-step assertions, all unrun steps and runtime costs. prior-live-closing.json and prior-scenarios-closing-2026-10-14.md retain exact links/reasons. C2/D4 pass; A3 fails, A4–A11notrun, Bblocked, optional Sol/mirror blocked. Native runtime estimatesClaudeUSD149.3444436;18Codex session prices unknown. No owner acceptance or all-in invoice claim. Quiet full Proccd9 remains a separate running baseline. This fulfils the newest brief's prior-scenario start condition; the new cache code/build/live clocks remain unstarted until this closing push completes. Do not redo completed work it does not touch.",
     "status": "complete-with-blockers"
+  },
+  {
+    "id": "coordinator-startup-recovery-2026-10-14",
+    "title": "Restore the coordinator to a small Ekoa task and open PR",
+    "why": "Decision831: align Madrid0.3.2 with hub0.3.4 to clear strict-settings protocol errors; retain backup/auth/membership. Check one real UI-created documentation task, leaving auto-merge off and unrelated work intact. Evidence: docs/acceptance/coordinator-start-2026-10-14/. Live UI-created task finished with build/focused tests and publication gate passing; service opened Ekoa PR249, normal result check started, auto-merge off. Existing unrelated ledger fixture failure retained; broad readiness is not claimed.",
+    "status": "complete-with-blockers"
   }
 ]

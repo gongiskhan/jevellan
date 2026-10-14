@@ -1,0 +1,83 @@
+{
+  "schema": "coordinator-start-check-v1",
+  "label": "live",
+  "testedCommit": "a01328be",
+  "runtimeVersion": "0.3.4",
+  "cause": {
+    "memberVersionBefore": "0.3.2",
+    "hubVersion": "0.3.4",
+    "before": {
+      "acceptsHubSettings": false,
+      "error": "Unrecognized key: \"sessionCheckpoints\""
+    },
+    "after": {
+      "memberVersion": "0.3.4",
+      "acceptsHubSettings": true,
+      "issues": []
+    }
+  },
+  "migration": {
+    "backupRetained": true,
+    "membershipUnchanged": true,
+    "authenticationFilesUnchanged": true,
+    "memberMode": "work",
+    "activeServiceVersion": "0.3.4"
+  },
+  "smoke": {
+    "taskTitle": "docs/testing.md: how to run one focused unit test",
+    "createdVia": "Projects coordinator chat",
+    "state": "in-review",
+    "runtime": "codex",
+    "model": "gpt-6-astra",
+    "effort": "medium",
+    "placementSource": "jev",
+    "isolation": "worktree",
+    "pr": "https://github.com/gongiskhan/ekoa-code/pull/249",
+    "focusedChecks": {
+      "apiFile": {
+        "passed": 8
+      },
+      "apiSingleCase": {
+        "passed": 1,
+        "skipped": 7
+      },
+      "webFile": {
+        "passed": 2
+      },
+      "subSuiteLookup": "caixa",
+      "build": "passed (ONNX bundling warnings)"
+    },
+    "changedFiles": [
+      "docs/testing.md"
+    ],
+    "additions": 17,
+    "commit": "a1ce97f0b",
+    "prState": "OPEN",
+    "autoMergeRequest": null,
+    "check": {
+      "name": "result",
+      "status": "in_progress",
+      "run": "https://github.com/gongiskhan/ekoa-code/actions/runs/38595820606",
+      "runnerType": "GitHub-hosted ubuntu-latest"
+    },
+    "publicationGate": {
+      "command": "npm run build --workspace shared && npm run typecheck && npm run lint",
+      "status": "passed"
+    },
+    "prBodyEditedByBuilder": "Replaced conversational status and placement attribution with concise change/validation text; code and test assertions unchanged."
+  },
+  "checks": [
+    {
+      "label": "simulated",
+      "command": "npx vitest run tests/project-schemas.test.ts tests/project-task-queue.test.ts",
+      "passed": 85,
+      "failed": 1,
+      "failure": "Existing ledger event fixture has no payload for a registered event; project-task-queue tests passed."
+    }
+  ],
+  "settings": {
+    "autoMerge": false,
+    "changed": []
+  },
+  "sourceChanges": []
+}
