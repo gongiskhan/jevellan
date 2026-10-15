@@ -37,8 +37,10 @@ test('the real stdio command proxies an isolated HTTP daemon, streams formatted 
     expect(guide && 'text' in guide ? guide.text : '').toContain('cursor');
     const ledger = app.projectWork.coordinatorLedger('fixture_project');
     ledger.append({ type: 'coordinator-text', data: { schema: 'coordinator-text-v1', text: 'Formatted output from the actual daemon.' } });
+    // The second chunk is appended from the first progress callback; the watch ends as soon as it has both events, so a wide stream
+    // window only removes the race with a loaded machine delivering that callback late.
     const messages: string[] = []; const progressCursors: string[] = [];
-    const watched = await external.callTool({ name: 'jevellan_watch', arguments: { target: { kind: 'project', projectId: 'fixture_project' }, limit: 2, streamMs: 2000 } }, undefined,
+    const watched = await external.callTool({ name: 'jevellan_watch', arguments: { target: { kind: 'project', projectId: 'fixture_project' }, limit: 2, streamMs: 20_000 } }, undefined,
       { onprogress: progress => {
         messages.push(progress.message ?? '');
         const meta = (progress as { _meta?: Record<string, unknown> })._meta;
