@@ -7,7 +7,8 @@ Run log for moving Jevellan to a fresh hub on dev-madrid. Times are UTC on 2026-
 | Phase | Start | End |
 | --- | --- | --- |
 | 0 Preflight | 05:35 | 05:40 |
-| 1 Fresh hub | 05:40 | blocked at step 4 (Tailscale operator) |
+| 1 Fresh hub | 05:40 | blocked at step 4 (Tailscale) |
+| 2 Readiness bugs and suites | 06:00 | |
 
 ## Environment
 

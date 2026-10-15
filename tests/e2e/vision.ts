@@ -87,7 +87,8 @@ export async function judgeScreenshot(image: Buffer, expected: string): Promise<
 }
 
 export function writeVisionEvidence(evidence: VisionEvidence) {
-  const folder = join('docs', 'acceptance', 'vision', evidence.layout);
+  // JEVELLAN_VISION_EVIDENCE_DIR keeps a run's verdicts outside the repository.
+  const folder = join(process.env.JEVELLAN_VISION_EVIDENCE_DIR ?? join('docs', 'acceptance', 'vision'), evidence.layout);
   mkdirSync(folder, { recursive: true });
   const name = `${evidence.test.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase().slice(0, 90)}--${basename(evidence.screenshot, '.png')}.json`;
   writeFileSync(join(folder, name), JSON.stringify(VisionEvidenceSchema.parse(evidence), null, 2) + '\n');
