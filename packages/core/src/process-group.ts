@@ -1,14 +1,21 @@
-import { spawn, execFileSync, type ChildProcessWithoutNullStreams } from 'node:child_process';
+import { spawn, execFile, execFileSync, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
+import { promisify } from 'node:util';
+
+const execFileAsync = promisify(execFile);
 
 export type NativeProcess = { pid: number; pgid: number; startIdentity?: string; sessionId?: string };
 type ProcessIdentity = { pid: number; ppid: number; pgid: number; start: string };
 const terminations = new WeakMap<NativeProcess, Promise<void>>();
 const descendants = new WeakMap<NativeProcess, Map<number, ProcessIdentity>>();
 
-function ownedProcesses(native: NativeProcess, strictIdentity = true): ProcessIdentity[] {
+/**
+ * The process table is read without blocking the event loop where callers can wait: on a busy machine one `ps` over every process
+ * takes long enough that reading it synchronously, as termination polls do every 50 ms, stalled the daemon's HTTP answers for seconds.
+ */
+async function ownedProcesses(native: NativeProcess, strictIdentity = true): Promise<ProcessIdentity[]> {
   const known = descendants.get(native) ?? new Map<number, ProcessIdentity>(); descendants.set(native, known);
-  const rows = processTable(); const root = rows.find((row) => row.pid === native.pid);
+  const rows = await processTableAsync(); const root = rows.find((row) => row.pid === native.pid);
   const reused = root && native.startIdentity && root.start !== native.startIdentity;
   if (strictIdentity && reused) throw new Error('Refusing to terminate a reused process identity.');
   let alive = rows.filter((row) => (!reused && row.pgid === native.pgid) || known.get(row.pid)?.start === row.start);
@@ -24,12 +31,19 @@ function ownedProcesses(native: NativeProcess, strictIdentity = true): ProcessId
   return alive;
 }
 
-export function rememberProcessTree(native: NativeProcess): void { ownedProcesses(native); }
+export async function rememberProcessTree(native: NativeProcess): Promise<void> { await ownedProcesses(native); }
 export function terminateDescendants(native: NativeProcess, graceMs = 10_000): Promise<void> { return terminateOwned(native, graceMs, true); }
 
+// Do not inspect arguments or environments; they may contain credentials.
+const PS_ARGS = ['-axo', 'pid=,ppid=,pgid=,lstart='];
+const PS_OPTIONS = { encoding: 'utf8' as const, timeout: 5000, maxBuffer: 8 * 1024 * 1024, env: { LC_ALL: 'C', TZ: 'UTC' } };
 function processTable(): ProcessIdentity[] {
-  // Do not inspect arguments or environments; they may contain credentials.
-  const output = execFileSync('/bin/ps', ['-axo', 'pid=,ppid=,pgid=,lstart='], { encoding: 'utf8', timeout: 5000, maxBuffer: 8 * 1024 * 1024, env: { LC_ALL: 'C', TZ: 'UTC' }, stdio: ['ignore', 'pipe', 'ignore'] });
+  return parseProcessTable(execFileSync('/bin/ps', PS_ARGS, { ...PS_OPTIONS, stdio: ['ignore', 'pipe', 'ignore'] }));
+}
+async function processTableAsync(): Promise<ProcessIdentity[]> {
+  return parseProcessTable((await execFileAsync('/bin/ps', PS_ARGS, PS_OPTIONS)).stdout);
+}
+function parseProcessTable(output: string): ProcessIdentity[] {
   return output.split('\n').flatMap((line) => {
     const match = line.match(/^\s*(\d+)\s+(\d+)\s+(\d+)\s+(.+?)\s*$/);
     return match ? [{ pid: Number(match[1]), ppid: Number(match[2]), pgid: Number(match[3]), start: match[4]! }] : [];
@@ -72,8 +86,8 @@ async function terminateOwned(native: NativeProcess, graceMs: number, childrenOn
     throw new Error('Refusing to terminate an unowned process group.');
   }
   let first = true;
-  const observe = () => {
-    const alive = ownedProcesses(native, first);
+  const observe = async () => {
+    const alive = await ownedProcesses(native, first);
     first = false;
     return childrenOnly ? alive.filter((row) => row.pid !== native.pid) : alive;
   };
@@ -81,7 +95,7 @@ async function terminateOwned(native: NativeProcess, graceMs: number, childrenOn
     try { process.kill(pid, name); }
     catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ESRCH') throw error; }
   };
-  let alive = observe(); if (!alive.length) return;
+  let alive = await observe(); if (!alive.length) return;
   // Capture ancestry before stopping the parent: native shell tools may have
   // created separate groups and become orphaned when the SDK worker exits.
   if (!childrenOnly && alive.some((row) => row.pgid === native.pgid)) signal(-native.pgid, 'SIGTERM');
@@ -92,12 +106,12 @@ async function terminateOwned(native: NativeProcess, graceMs: number, childrenOn
       const identity = `${row.pid}:${row.start}`;
       if (!signalled.has(identity)) { signal(row.pid, 'SIGTERM'); signalled.add(identity); }
     }
-    await delay(50); alive = observe();
+    await delay(50); alive = await observe();
   }
   for (const row of alive) signal(row.pid, 'SIGKILL');
   const killDeadline = Date.now() + 10_000;
   while (alive.length && Date.now() < killDeadline) {
-    await delay(50); alive = observe();
+    await delay(50); alive = await observe();
     for (const row of alive) signal(row.pid, 'SIGKILL');
   }
   if (alive.length) throw new Error('Runtime descendant termination could not be confirmed.');
@@ -110,5 +124,6 @@ export async function spawnGroup(command: string, args: string[], options: { cwd
     child.once('spawn', () => { child.off('error', reject); resolve(); });
   });
   if (!child.pid) throw new Error('Runtime worker started without a process identity.');
+  // Identified synchronously: callers attach their exit listeners when this returns, so awaiting here could miss a quick exit.
   return { child, native: identifySpawnedGroup(child.pid) };
 }

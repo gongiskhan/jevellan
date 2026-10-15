@@ -126,7 +126,7 @@ export class WorkerRun implements StretchRun {
     return this.#interruption;
   }
   async #interrupt(reason: 'steer' | 'timeout' | 'cancel'): Promise<void> {
-    rememberProcessTree(this.native);
+    await rememberProcessTree(this.native);
     this.#send({ schema: 'runtime-command-v1', type: 'interrupt', reason });
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
