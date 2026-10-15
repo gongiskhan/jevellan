@@ -42,8 +42,11 @@ export async function serveAgentMcp(): Promise<void> {
   server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
     try {
       const progressToken = request.params._meta?.progressToken;
+      // Progress is forwarded in order and before the result: a client ignores progress that arrives after its response.
+      let forwarded: Promise<void> = Promise.resolve();
       const response = await client.callTool(request.params, CallToolResultSchema, { signal: extra.signal, timeout: 45_000, maxTotalTimeout: 45_000,
-        ...(progressToken === undefined ? {} : { onprogress: progress => { void extra.sendNotification({ method: 'notifications/progress', params: { ...progress, progressToken } }).catch(() => undefined); } }) });
+        ...(progressToken === undefined ? {} : { onprogress: progress => { forwarded = forwarded.then(() => extra.sendNotification({ method: 'notifications/progress', params: { ...progress, progressToken } })).catch(() => undefined); } }) });
+      await forwarded;
       return CallToolResultSchema.parse(redactor.document(response));
     } catch (error) {
       return { isError: true, content: [{ type: 'text' as const, text: redactor.text(error instanceof Error ? error.message : 'The Jevellan tool request failed.') }] };
