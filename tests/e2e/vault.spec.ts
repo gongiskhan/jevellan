@@ -5,7 +5,7 @@ test('Projects shows the vault and offers Restore from the vault for an origin i
   await page.goto('/');
   await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
-  await page.route('**/api/vault', route => route.fulfill({ json: { schema: 'vault-view-v1', remote: 'https://github.com/gongiskhan/jevellan-vault.git', lastSyncAt: new Date(Date.now() - 120_000).toISOString(),
+  await page.context().route('**/api/vault', route => route.fulfill({ json: { schema: 'vault-view-v1', remote: 'https://github.com/gongiskhan/jevellan-vault.git', lastSyncAt: new Date(Date.now() - 120_000).toISOString(),
     lastError: null, pending: false, folders: ['gongiskhan__ekoa-code'] } }));
   await page.goto('/settings/projects');
   const card = page.getByRole('region', { name: 'Vault' });
@@ -29,7 +29,7 @@ test('a project card keeps a long test command inside the card and its Edit butt
   await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const long = 'npm run build --workspace shared && npm run typecheck && npm run lint && npm run test:unit --workspace server';
-  await page.route('**/hub/projects', async route => {
+  await page.context().route('**/hub/projects', async route => {
     if (route.request().method() !== 'GET') return route.continue();
     const response = await route.fetch(); const body = await response.json();
     body.projects[0].project.testCommand = long;

@@ -33,14 +33,14 @@ test('plans are readable, wait for acceptance, and offer revision with stale-pla
     architecture: { session: 'Keep tokens on the server.', endpoints: ['GET /calendars', 'POST /availability'] }, affectedFiles: { added: ['calendar.ts'], modified: ['app.ts'] },
     checks: ['Verify token refresh', 'Check expired authorization'], risks: ['Rate limits'], decisionsNeeded: ['Choose a calendar provider'],
   };
-  await page.route(`**/api/conversations/${id}`, route => route.fulfill({ json: snapshot }));
-  await page.route(`**/api/conversations/${id}/events`, route => route.fulfill({ contentType: 'text/event-stream', body: payloads.map(payload => `id: ${payload.event.id}\nevent: conversation\ndata: ${JSON.stringify(payload)}\n\n`).join('') }));
+  await page.context().route(`**/api/conversations/${id}`, route => route.fulfill({ json: snapshot }));
+  await page.context().route(`**/api/conversations/${id}/events`, route => route.fulfill({ contentType: 'text/event-stream', body: payloads.map(payload => `id: ${payload.event.id}\nevent: conversation\ndata: ${JSON.stringify(payload)}\n\n`).join('') }));
   let failRead = true;
-  await page.route(`**/api/conversations/${id}/read?*`, route => failRead ? route.fulfill({ status: 400, json: { error: 'Simulated plan load failure' } }) : route.fulfill({ json: { schema: 'conversation-read-v1', pointer, content } }));
+  await page.context().route(`**/api/conversations/${id}/read?*`, route => failRead ? route.fulfill({ status: 400, json: { error: 'Simulated plan load failure' } }) : route.fulfill({ json: { schema: 'conversation-read-v1', pointer, content } }));
   let change: Record<string, unknown> | undefined;
-  await page.route(`**/api/conversations/${id}/messages`, async route => { change = route.request().postDataJSON() as Record<string, unknown>; await route.fulfill({ json: snapshot }); });
+  await page.context().route(`**/api/conversations/${id}/messages`, async route => { change = route.request().postDataJSON() as Record<string, unknown>; await route.fulfill({ json: snapshot }); });
   let approval: Record<string, unknown> | undefined;
-  await page.route(`**/api/conversations/${id}/approve-plan`, async route => {
+  await page.context().route(`**/api/conversations/${id}/approve-plan`, async route => {
     approval = route.request().postDataJSON() as Record<string, unknown>;
     snapshot = ConversationPublicSchema.parse({ ...snapshot, conversation: { ...snapshot.conversation, work: { ...snapshot.conversation.work, approvedPlanRef: pointer } } });
     await route.fulfill({ json: snapshot });

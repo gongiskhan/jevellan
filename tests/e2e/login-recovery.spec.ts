@@ -37,7 +37,7 @@ test('Claude sign-in reports failure and starts a fresh login in the same panel'
 test('Claude sign-in shows pending progress and resumes polling after a connection error', async ({ page }, info) => {
   const { panel, account } = await openLogin(page);
   let submitted = false; let interrupted = false;
-  await page.route('**/api/logins/*', async route => {
+  await page.context().route('**/api/logins/*', async route => {
     if (route.request().method() === 'POST') submitted = true;
     if (submitted && !interrupted && route.request().method() === 'GET') { interrupted = true; await route.abort('failed'); }
     else await route.continue();

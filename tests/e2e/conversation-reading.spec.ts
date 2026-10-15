@@ -47,8 +47,8 @@ test('conversation replies read as chat while tools and recorded details remain 
   ].map(event => ConversationEventSchema.parse({ schema: 'conversation-event-v1', event: {
     schema: 'ledger-event-v1', ...event, stretch: event.type === 'user-message' ? undefined : 1, t: step.startedAt,
   } }));
-  await page.route(`**/api/conversations/${id}`, route => route.fulfill({ json: snapshot }));
-  await page.route(`**/api/conversations/${id}/events`, route => route.fulfill({
+  await page.context().route(`**/api/conversations/${id}`, route => route.fulfill({ json: snapshot }));
+  await page.context().route(`**/api/conversations/${id}/events`, route => route.fulfill({
     contentType: 'text/event-stream', body: payloads.map(payload => `id: ${payload.event.id}\nevent: conversation\ndata: ${JSON.stringify(payload)}\n\n`).join(''),
   }));
   await page.goto(`/conversations/${id}`);
@@ -88,7 +88,7 @@ test('conversation replies read as chat while tools and recorded details remain 
   payloads.push(finalReply);
   const durableAnswer = 'Nothing is running. The simulated fixture can be retired.';
   snapshot = ConversationPublicSchema.parse({ ...snapshot, handoffs: [{ ...handoff, result: { type: 'answer', ref: 'blob:simulated-answer' } }] });
-  await page.route(`**/api/conversations/${id}/read?*`, route => route.fulfill({ json: {
+  await page.context().route(`**/api/conversations/${id}/read?*`, route => route.fulfill({ json: {
     schema: 'conversation-read-v1', pointer: 'blob:simulated-answer', content: `## Short answer\n\n${durableAnswer}`,
   } }));
   await page.reload();

@@ -13,7 +13,7 @@ test('conversation renders its first snapshot while a replay refresh is pending'
   let releaseFirst!: () => void; let releaseLater!: () => void; let reads = 0;
   const first = new Promise<void>(resolve => { releaseFirst = resolve; });
   const later = new Promise<void>(resolve => { releaseLater = resolve; });
-  await page.route(`**/api/conversations/${id}`, async route => {
+  await page.context().route(`**/api/conversations/${id}`, async route => {
     const n = ++reads; await (n === 1 ? first : later);
     await route.fulfill({ json: { ...view, conversation: { ...view.conversation, title: n === 1 ? 'Initial visible conversation' : 'Updated visible conversation' } } });
   });
@@ -40,7 +40,7 @@ test('pending work shows a live stage while controls stay compact', async ({ pag
   const id = `progress_${randomUUID()}`;
   const created = await page.request.post('/api/conversations', { data: { schema: 'start-conversation-v1', id, clientMessageId: `message_${randomUUID()}`, projectId: 'browser_fixture', title: 'Progress fixture', message: 'Explain the project.' } });
   const view = ConversationPublicSchema.parse(await created.json());
-  await page.route(`**/api/conversations/${id}`, route => route.fulfill({ json: { ...view, busy: true, progress: { schema: 'conversation-progress-v1', phase: 'deciding', since: new Date().toISOString() } } }));
+  await page.context().route(`**/api/conversations/${id}`, route => route.fulfill({ json: { ...view, busy: true, progress: { schema: 'conversation-progress-v1', phase: 'deciding', since: new Date().toISOString() } } }));
   await page.goto(`/conversations/${id}`);
   const activity = page.getByRole('region', { name: 'Current activity' });
   await expect(activity).toContainText('Jev is choosing the next step');

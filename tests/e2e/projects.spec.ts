@@ -893,14 +893,14 @@ test('PJ5 a thread on the member device opens through the hub', async ({ page })
   // Opened while its device is offline (the hub's refusal, stubbed: the fixture member never misses ten minutes of heartbeats), the
   // page still names the thread from the project's index and shows the reason as a notice, then the thread once the device answers (D276).
   const threadRead = `**/api/projects/projects_fixture/threads/${id}`;
-  await page.route(threadRead, (route) => route.request().method() === 'GET'
+  await page.context().route(threadRead, (route) => route.request().method() === 'GET'
     ? route.fulfill({ status: 409, json: { schema: 'error-v1', code: 'conflict', message: threadDeviceOffline('Browser member') } }) : route.continue());
   await page.reload();
   await expect(page.locator('.pw-page > .notice')).toHaveText(threadDeviceOffline('Browser member'));
   await expect(page.getByRole('heading', { level: 1, name: title, exact: true })).toBeVisible();
   await expect(page.locator('.pw-state-chip')).toHaveText('Idle');
   await expect(page.locator('.pw-page > .error')).toHaveCount(0);
-  await page.unroute(threadRead);
+  await page.context().unroute(threadRead);
   await expect(report).toBeVisible(LONG);
   await expect(page.locator('.pw-page > .notice')).toHaveCount(0);
   expect(errors).toEqual([]);
@@ -1086,7 +1086,7 @@ test('Consecutive tool calls share an open area and new live output appends to i
   view.reports = []; view.transcript = { schema: 'cursor-transcript-v1', session: { schema: 'cursor-session-v1', id: 'claude_00000000000000000000000000000000', ownerDeviceId: thread.ownerDeviceId,
     deviceName: view.deviceName, title: thread.title, cwd: null, project: 'Projects fixture', state: 'idle', lastActivityAt: new Date().toISOString(), connected: false, canSteer: false, canSend: false },
     turns, messages: [], activity: [], truncated: false, observedAt: new Date().toISOString() };
-  await page.route(`**${PROJECT}/threads/${thread.id}`, route => route.fulfill({ json: view }));
+  await page.context().route(`**${PROJECT}/threads/${thread.id}`, route => route.fulfill({ json: view }));
   await page.goto(`/projects/projects_fixture/threads/${thread.id}`);
   const areas = page.locator('.cursor-tool'); await expect(areas).toHaveCount(4);
   await expect(areas.first().locator('.cursor-tool-call')).toHaveCount(2); await expect(areas.first()).toContainText('Output one'); await expect(areas.first()).toContainText('Output two');

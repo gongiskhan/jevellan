@@ -84,7 +84,7 @@ test('Codex usage shows a reported weekly window and keeps an absent five-hour w
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const view = AccountViewSchema.parse(await (await page.request.post('/hub/accounts', { data: { schema: 'add-account-v1', runtime: 'codex', kind: 'subscription', label: 'Codex usage fixture' } })).json());
   let weeklyPct = 0;
-  await page.route('**/hub/accounts', async route => {
+  await page.context().route('**/hub/accounts', async route => {
     if (route.request().method() !== 'GET') return route.continue();
     const response = await route.fetch(); const body = await response.json();
     for (const entry of body.accounts) if (entry.account.id === view.account.id) {
@@ -693,12 +693,12 @@ test('provider login recovers lost start and accepted-code replies inside its pa
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const account = AccountViewSchema.parse(await (await page.request.post('/hub/accounts', { data: { schema: 'add-account-v1', runtime: 'claude', label: 'Recoverable login', kind: 'subscription' } })).json());
   await page.reload(); const starts: string[] = []; const codes: string[] = []; let loginId = ''; let captured: ReturnType<typeof AccountViewSchema.parse> | undefined;
-  await page.route(`**/api/accounts/${account.account.id}/login`, async route => {
+  await page.context().route(`**/api/accounts/${account.account.id}/login`, async route => {
     starts.push(route.request().postData()!);
     if (starts.length === 1) { const response = await route.fetch(); expect(response.status()).toBe(201); loginId = (await response.json()).id; await route.fulfill(unavailable); }
     else await route.continue();
   });
-  await page.route('**/api/logins/*', async route => {
+  await page.context().route('**/api/logins/*', async route => {
     if (route.request().method() === 'GET' && codes.length === 1) { await route.fulfill(unavailable); return; }
     if (route.request().method() !== 'POST') { await route.continue(); return; }
     codes.push(route.request().postData()!);
@@ -727,7 +727,7 @@ test('provider login waiting can be stopped and the pending login cancelled from
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const account = AccountViewSchema.parse(await (await page.request.post('/hub/accounts', { data: { schema: 'add-account-v1', runtime: 'claude', label: 'Cancelled login', kind: 'subscription' } })).json());
   await page.reload(); let polls = 0; let cancels = 0; let loginId = '';
-  await page.route('**/api/logins/*', route => {
+  await page.context().route('**/api/logins/*', route => {
     loginId = new URL(route.request().url()).pathname.split('/').at(-1)!;
     if (route.request().method() === 'GET') { polls++; return route.fulfill(unavailable); }
     if (route.request().method() === 'DELETE' && ++cancels === 1) return route.fulfill(unavailable);
@@ -744,13 +744,13 @@ test('provider login waiting can be stopped and the pending login cancelled from
 
 test('hub recovery resumes sign-in and reconciles a settings save whose reply was lost', async ({ page }, info) => {
   let logins = 0;
-  await page.route('**/api/auth/login', route => ++logins === 1 ? route.fulfill(unavailable) : route.continue());
+  await page.context().route('**/api/auth/login', route => ++logins === 1 ? route.fulfill(unavailable) : route.continue());
   await page.goto('/settings/decisions'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByText(message, { exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible(); expect(logins).toBe(2);
   await page.getByRole('navigation', { name: 'Settings', exact: true }).getByRole('button', { name: 'Decisions', exact: true }).click();
   const before = await (await page.request.get('/hub/config')).json(); const bodies: string[] = []; let savedRevision: number | undefined;
-  await page.route('**/hub/config', async route => {
+  await page.context().route('**/hub/config', async route => {
     if (route.request().method() !== 'PUT') { await route.continue(); return; }
     bodies.push(route.request().postData()!);
     if (bodies.length === 1) {
@@ -823,7 +823,7 @@ test('hub recovery stops abandoned settings requests before another write', asyn
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const tabs = page.getByRole('navigation', { name: 'Settings', exact: true }); await tabs.getByRole('button', { name: 'Decisions', exact: true }).click();
   const before = await (await page.request.get('/hub/config')).json(); let writes = 0;
-  await page.route('**/hub/config', route => { if (route.request().method() !== 'PUT') return route.continue(); writes++; return route.fulfill(unavailable); });
+  await page.context().route('**/hub/config', route => { if (route.request().method() !== 'PUT') return route.continue(); writes++; return route.fulfill(unavailable); });
   await page.getByRole('button', { name: 'Save decisions settings' }).click(); await expect(page.getByText(message, { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Stop waiting', exact: true }).click(); await expect(page.getByText(message, { exact: true })).not.toBeVisible(); await expect(page.getByRole('button', { name: 'Save decisions settings' })).toBeEnabled();
   await page.getByRole('button', { name: 'Save decisions settings' }).click(); await expect(page.getByText(message, { exact: true })).toBeVisible();
@@ -836,7 +836,7 @@ test('hub recovery starts one conversation after admission loss and a lost creat
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   expect((await page.request.post('/hub/accounts', { data: { schema: 'add-account-v1', runtime: 'claude', label: 'Recovery fixture', kind: 'subscription', secret: `fixture-${randomUUID()}` } })).ok()).toBe(true);
   await page.goto('/'); const bodies: string[] = []; let conversationId: string | undefined;
-  await page.route('**/api/conversations', async route => {
+  await page.context().route('**/api/conversations', async route => {
     if (route.request().method() !== 'POST') { await route.continue(); return; }
     bodies.push(route.request().postData()!);
     if (bodies.length === 1) await route.fulfill(unavailable);
@@ -979,7 +979,7 @@ test('Settings saves wait through hub loss, reconcile lost replies and abandon a
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
   await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click(); await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const dialog = page.getByRole('dialog'); const createdBodies: string[] = [];
-  await page.route('**/hub/accounts', async route => {
+  await page.context().route('**/hub/accounts', async route => {
     if (route.request().method() !== 'POST') return route.continue();
     createdBodies.push(route.request().postData()!);
     if (createdBodies.length === 1) await route.fulfill(unavailable);
@@ -994,7 +994,7 @@ test('Settings saves wait through hub loss, reconcile lost replies and abandon a
   const loseSavedReply = async (path: string, method: string, timeout = 60_000) => {
     const bodies: string[] = [];
     const lost = page.waitForResponse(response => response.request().method() === method && new URL(response.url()).pathname === path && response.status() === 503, { timeout });
-    await page.route(`${info.project.use.baseURL}${path}`, async route => { if (route.request().method() !== method) return route.continue(); bodies.push(route.request().postData()!); if (bodies.length === 1) { const saved = await route.fetch({ timeout }); expect(saved.ok()).toBe(true); await route.fulfill(unavailable); } else await route.continue(); });
+    await page.context().route(`${info.project.use.baseURL}${path}`, async route => { if (route.request().method() !== method) return route.continue(); bodies.push(route.request().postData()!); if (bodies.length === 1) { const saved = await route.fetch({ timeout }); expect(saved.ok()).toBe(true); await route.fulfill(unavailable); } else await route.continue(); });
     return { lost, check: () => { expect(bodies).toHaveLength(2); expect(new Set(bodies).size).toBe(1); expect(JSON.parse(bodies[0]!).clientRequestId).toBeTruthy(); } };
   };
   const edited = await loseSavedReply(`/hub/accounts/${account.account.id}`, 'PATCH'); await card.getByRole('button', { name: 'Edit', exact: true }).click(); await dialog.getByLabel('Label', { exact: true }).fill('Recovered account edit'); await dialog.getByRole('button', { name: 'Save account', exact: true }).click(); await edited.lost; await expect(dialog.getByText(message, { exact: true })).toBeVisible(); await expect(dialog).not.toBeVisible({ timeout: 60_000 }); edited.check(); await expect(card).toContainText('Recovered account edit');
@@ -1002,7 +1002,7 @@ test('Settings saves wait through hub loss, reconcile lost replies and abandon a
   await page.goto('/settings/rigging'); const added = await loseSavedReply('/hub/rigging', 'POST', 180_000); await page.getByRole('button', { name: 'Add local item', exact: true }).click(); await dialog.getByLabel('Name', { exact: true }).fill('Recoverable Settings skill'); await dialog.getByRole('textbox', { name: 'Content', exact: true }).fill('Preserve the requested scope.'); await dialog.getByRole('button', { name: 'Add item', exact: true }).click(); await added.lost; await expect(dialog.getByText(message, { exact: true })).toBeVisible(); await expect(dialog).not.toBeVisible({ timeout: 60_000 }); added.check();
   const items = (await (await page.request.get('/hub/rigging')).json()).items.filter((row: { item: { name: string } }) => row.item.name === 'Recoverable Settings skill'); expect(items).toHaveLength(1); const item = RiggingSaveSchema.shape.item.parse(items[0]);
   const itemPath = `/hub/rigging/${item.item.id}`; const saved = await loseSavedReply(itemPath, 'PUT', 180_000); await page.getByRole('button', { name: /Recoverable Settings skill/ }).click(); await dialog.getByRole('textbox', { name: 'Content', exact: true }).fill('Preserve the scope and verify it.'); await saved.lost; await expect(dialog.getByText(message, { exact: true })).toBeVisible(); await expect(dialog.getByRole('status', { name: '', exact: true }).filter({ hasText: /^Saved/ })).toHaveText('Saved', { timeout: 60_000 }); saved.check();
-  let abandoned = 0; await page.route(`${info.project.use.baseURL}${itemPath}`, route => { if (route.request().method() !== 'PUT') return route.continue(); abandoned++; return route.fulfill(unavailable); }); await dialog.getByRole('textbox', { name: 'Content', exact: true }).fill('This abandoned edit must not be sent later.'); await expect(dialog.getByText(message, { exact: true })).toBeVisible(); await dialog.getByRole('button', { name: 'Close panel', exact: true }).click(); await expect(dialog).not.toBeVisible(); await page.waitForTimeout(2300); expect(abandoned).toBe(1);
+  let abandoned = 0; await page.context().route(`${info.project.use.baseURL}${itemPath}`, route => { if (route.request().method() !== 'PUT') return route.continue(); abandoned++; return route.fulfill(unavailable); }); await dialog.getByRole('textbox', { name: 'Content', exact: true }).fill('This abandoned edit must not be sent later.'); await expect(dialog.getByText(message, { exact: true })).toBeVisible(); await dialog.getByRole('button', { name: 'Close panel', exact: true }).click(); await expect(dialog).not.toBeVisible(); await page.waitForTimeout(2300); expect(abandoned).toBe(1);
   const current = (await (await page.request.get('/hub/rigging')).json()).items.find((row: { item: { id: string } }) => row.item.id === item.item.id); expect(RiggingSaveSchema.shape.item.parse(current).item.content).toBe('Preserve the scope and verify it.'); expect(errors).toEqual([]);
 });
 
@@ -1015,7 +1015,7 @@ test('project, Jev, local Rigging and device Settings recover their hub boundari
   const unavailable = { status: 503, contentType: 'application/json', body: JSON.stringify({ schema: 'error-v1', code: 'hub-unavailable', message, retryable: true }) };
   const interrupt = async (path: string, method: string, afterSave = true, timeout = 60_000) => {
     const bodies: string[] = []; const lost = page.waitForResponse(response => new URL(response.url()).pathname === path && response.request().method() === method && response.status() === 503, { timeout });
-    await page.route(`${info.project.use.baseURL}${path}`, async route => {
+    await page.context().route(`${info.project.use.baseURL}${path}`, async route => {
       if (route.request().method() !== method) return route.continue(); bodies.push(route.request().postData()!);
       if (bodies.length === 1) { if (afterSave) expect((await route.fetch({ timeout })).ok()).toBe(true); await route.fulfill(unavailable); } else await route.continue();
     });
@@ -1034,16 +1034,16 @@ test('project, Jev, local Rigging and device Settings recover their hub boundari
   await page.goto('/settings/rigging'); const item = RiggingDiskListSchema.parse(await (await page.request.get('/api/rigging/homes')).json()).items.find(row => row.name === 'browser-wait')!;
   const path = `/api/rigging/homes/claude/${item.accountId}/${item.id}`; const edit = await interrupt(path, 'PUT', false); const loose = page.locator('.rigging-disk-row[data-state="loose"]').filter({ hasText: 'browser-wait' });
   await loose.getByRole('button', { name: /^browser-wait/ }).click(); await dialog.getByRole('textbox', { name: 'Content', exact: true }).fill('# Saved after waiting\nKeep the bundle.\n'); await edit.lost; await expect(dialog.getByText(message, { exact: true })).toBeVisible(); await expect(dialog.locator('.subheading [role=status]')).toHaveText('Saved'); edit.verify();
-  let abandoned = 0; await page.route(`${info.project.use.baseURL}${path}`, route => { if (route.request().method() !== 'PUT') return route.continue(); abandoned++; return route.fulfill(unavailable); });
-  await dialog.getByRole('textbox', { name: 'Content', exact: true }).fill('An abandoned local draft.'); await expect(dialog.getByText(message, { exact: true })).toBeVisible(); await dialog.getByRole('button', { name: 'Close panel', exact: true }).click(); await page.waitForTimeout(2300); expect(abandoned).toBe(1); expect(readFileSync(join(bundle, 'SKILL.md'), 'utf8')).toBe('# Saved after waiting\nKeep the bundle.\n'); await page.unroute(`${info.project.use.baseURL}${path}`);
+  let abandoned = 0; await page.context().route(`${info.project.use.baseURL}${path}`, route => { if (route.request().method() !== 'PUT') return route.continue(); abandoned++; return route.fulfill(unavailable); });
+  await dialog.getByRole('textbox', { name: 'Content', exact: true }).fill('An abandoned local draft.'); await expect(dialog.getByText(message, { exact: true })).toBeVisible(); await dialog.getByRole('button', { name: 'Close panel', exact: true }).click(); await page.waitForTimeout(2300); expect(abandoned).toBe(1); expect(readFileSync(join(bundle, 'SKILL.md'), 'utf8')).toBe('# Saved after waiting\nKeep the bundle.\n'); await page.context().unroute(`${info.project.use.baseURL}${path}`);
   const park = await interrupt(path, 'POST'); await loose.getByRole('button', { name: 'Park', exact: true }).click(); await park.lost; await expect(page.getByText(message, { exact: true })).toBeVisible(); const parked = page.locator('.rigging-disk-row[data-state="parked"]').filter({ hasText: 'browser-wait' }); await expect(parked).toBeVisible(); park.verify();
   await parked.getByRole('button', { name: 'Restore locally', exact: true }).click(); await expect(loose).toBeVisible(); expect(readFileSync(join(bundle, 'assets/example.txt'), 'utf8')).toBe('Keep this bundled file.\n');
   let stoppedPromotions = 0; let refreshesAfterStop = 0;
   await loose.getByRole('button', { name: 'Make managed', exact: true }).click(); await dialog.getByLabel('Name', { exact: true }).fill('Recovered managed bundle');
-  await page.route(`${info.project.use.baseURL}${path}/promote`, route => { stoppedPromotions++; return route.fulfill(unavailable); });
-  await page.route(`${info.project.use.baseURL}/api/rigging/homes`, route => { refreshesAfterStop++; return route.fulfill(unavailable); });
+  await page.context().route(`${info.project.use.baseURL}${path}/promote`, route => { stoppedPromotions++; return route.fulfill(unavailable); });
+  await page.context().route(`${info.project.use.baseURL}/api/rigging/homes`, route => { refreshesAfterStop++; return route.fulfill(unavailable); });
   await dialog.getByRole('button', { name: 'Make managed', exact: true }).click(); await expect(dialog.getByText(message, { exact: true })).toBeVisible(); await dialog.getByRole('button', { name: 'Stop waiting', exact: true }).click(); await expect(dialog.getByRole('button', { name: 'Retry', exact: true })).toBeEnabled(); await page.waitForTimeout(2300); expect(stoppedPromotions).toBe(1); expect(refreshesAfterStop).toBe(0); await expect(dialog.getByText(message, { exact: true })).not.toBeVisible();
-  await page.unroute(`${info.project.use.baseURL}${path}/promote`); await page.unroute(`${info.project.use.baseURL}/api/rigging/homes`);
+  await page.context().unroute(`${info.project.use.baseURL}${path}/promote`); await page.context().unroute(`${info.project.use.baseURL}/api/rigging/homes`);
   const promotion = await interrupt(`${path}/promote`, 'POST', true, 180_000); await dialog.getByRole('button', { name: 'Retry', exact: true }).click(); await promotion.lost; await expect(dialog.getByText(message, { exact: true })).toBeVisible(); await expect(dialog).not.toBeVisible({ timeout: 60_000 }); promotion.verify();
   expect((await (await page.request.get('/hub/rigging')).json()).items.filter((row: { item: { name: string } }) => row.item.name === 'Recovered managed bundle')).toHaveLength(1); expect(readFileSync(join(bundle, 'assets/example.txt'), 'utf8')).toBe('Keep this bundled file.\n');
   await page.goto('/settings/devices'); const invitation = await interrupt('/hub/devices/invitations', 'POST', false); await page.getByRole('button', { name: 'Add a device', exact: true }).click(); await invitation.lost; await expect(page.getByText(message, { exact: true })).toBeVisible(); await expect(dialog.locator('.verification-code strong')).toHaveText(/^[0-9A-HJKMNP-TV-Z]{8}$/); invitation.verify(); await dialog.getByRole('button', { name: 'Close panel', exact: true }).click();

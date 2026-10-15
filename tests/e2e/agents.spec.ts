@@ -38,7 +38,9 @@ test('retrying a lost connection response does not create another token', async 
   await page.goto('/settings/agents');
   const label = `Retry agent ${test.info().project.name}`;
   let lost = false;
-  await page.route('**/api/agent-access', async route => {
+  // Routes are set on the context: once the PWA service worker controls the page, Chromium no longer shows page.route the page's
+  // requests, and the first POST then reached the hub and issued a token.
+  await page.context().route('**/api/agent-access', async route => {
     if (route.request().method() !== 'POST' || lost) { await route.continue(); return; }
     lost = true;
     const response = await route.fetch();

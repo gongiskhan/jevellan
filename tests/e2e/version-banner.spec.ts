@@ -8,7 +8,7 @@ test('a member on another version than its hub shows the update banner, and a hu
   await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   await expect(page.locator('.version-banner')).toHaveCount(0);
-  await page.route('**/hub/devices/roster', async route => {
+  await page.context().route('**/hub/devices/roster', async route => {
     const response = await route.fetch(); const roster = DeviceRosterSchema.parse(await response.json());
     const self = roster.devices.find(row => row.device.id === roster.currentDeviceId)!;
     const hub = { ...self, device: { ...self.device, id: 'dev_fixturehub', name: 'Fixture hub', role: 'hub' as const, version: '0.3.4' } };
