@@ -10,6 +10,7 @@ Run log for moving Jevellan to a fresh hub on dev-madrid. Times are UTC on 2026-
 | 1 Fresh hub | 05:40 | 07:58, HTTP only (Tailscale) |
 | 2 Readiness bugs and suites | 06:00 | |
 | 3 Coordinator checks (sandbox) | 08:00 | 10:40 |
+| 5 Disposable hub (vault) | 06:30 | 11:33 code, drill and install; final suites in Phase 6 |
 | 4 Real ekoa-code work | 08:21 | 10:11 (working-version milestone, 4 h 36 min after start) |
 
 ## Environment
@@ -70,6 +71,9 @@ Run log for moving Jevellan to a fresh hub on dev-madrid. Times are UTC on 2026-
 - L1 start (live, pass so far): one message started two tasks, both threads running at the same time within 3 minutes, both placed on Codex.
 
 - Live vault (live, pass): the hub syncs `gongiskhan/jevellan-vault` with no error; ekoa-code's notes, `project.json` (6 goals, 3 jobs, 6 dailies; no device, account or path values) and `notebook.md` are on GitHub, and the sandbox folder too.
+
+- 0.4.0 installed (live, pass): health 0.4.0, doctor ten of ten OK, vault synced with no error; per-project export markers initialised against the definitions already in the vault.
+- Crucial review (simulated reading of the diff): three serious findings (a hub's sweep could overwrite another hub's vault definition before Restore; `JEVELLAN_VAULT_REMOTE` could point the vault at a project repository; a message during a preparation retry could run a first turn without the task), all fixed with regression tests in `2842086`.
 
 ## Owner list
 
