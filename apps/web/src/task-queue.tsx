@@ -25,7 +25,7 @@ export function TaskQueue({ projectId, tasks, goals = [], threads = [], grouped 
     {open.length === 0 && <p className="pw-empty">Nothing in the queue. Ask the coordinator or add a task.</p>}
     {groups.map(group => <section className="pw-task-group" key={group.label}>{group.label && <h4>{group.label}</h4>}{group.label && !group.rows.length && <p className="pw-empty">Nothing open for this goal.</p>}{group.rows.map(task => { const index = open.indexOf(task), goal = goals.find(entry => entry.goal.id === task.goalId)?.goal, thread = threads.find(row => row.id === task.threadId); return <article className={`pw-task${drag?.id === task.id ? ' pw-task-dragging' : ''}${drag?.target === task.id ? ' pw-task-drop' : ''}`} key={task.id}
       data-session-id={['draft', 'queued'].includes(task.state) ? task.id : undefined}>
-      <details><summary><strong>{task.title}</strong> <span className="chip">{task.now ? 'Now · ' : ''}{task.state === 'in-review' ? 'In review' : task.state[0]!.toUpperCase() + task.state.slice(1)}</span>{goal && goal.state !== 'active' && <span className="chip">Goal paused</span>}</summary>
+      <details><summary><strong>{task.title}</strong> <span className="chip">{task.held ? 'On hold · ' : task.now ? 'Now · ' : ''}{task.state === 'in-review' ? 'In review' : task.state[0]!.toUpperCase() + task.state.slice(1)}</span>{goal && goal.state !== 'active' && <span className="chip">Goal paused</span>}</summary>
         <p className="muted">{task.type} · {goal?.name ?? (task.goalId ? 'Goal task' : 'Asks')}{task.ownerRanked ? ' · Ordered by you' : ''}</p>
         {goal && goal.state !== 'active' && <p className="pw-field-note">Goal paused</p>}
         {thread && <p className="muted">{thread.modelLabel} · {thread.effort} effort · {thread.ownerDeviceId}</p>}
@@ -38,7 +38,7 @@ export function TaskQueue({ projectId, tasks, goals = [], threads = [], grouped 
           {task.threadId && <button type="button" className="secondary small" onClick={() => navigate(`/projects/${projectId}/threads/${task.threadId}`)}>Open thread</button>}
           {task.state === 'draft' && <><button type="button" className="small" disabled={operation.busy} onClick={() => action(task, 'approve')}>Approve</button><button type="button" className="secondary small" disabled={operation.busy} onClick={() => setRejecting(task)}>Reject</button></>}
           {['draft', 'queued'].includes(task.state) && <>
-            <button type="button" className="secondary small" disabled={operation.busy} onClick={() => action(task, task.now ? 'later' : 'now')}>{task.now ? 'Later' : 'Start now'}</button>
+            <button type="button" className="secondary small" disabled={operation.busy} onClick={() => action(task, task.now && !task.held ? 'later' : 'now')}>{task.now && !task.held ? 'Later' : 'Start now'}</button>
             {!task.threadId && !task.dispatchText && <button type="button" className="secondary small" onClick={() => setEditing(task)}>Edit</button>}
             <button type="button" className="secondary small" disabled={operation.busy || !!task.dispatchText && !task.threadId} onClick={() => action(task, 'cancel')}>Cancel</button>
             <button type="button" className="secondary small" disabled={operation.busy} onClick={() => move(task, 'top')}>Move to top</button>

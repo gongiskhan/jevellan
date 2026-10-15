@@ -48,7 +48,7 @@ export class ProjectDispatcher {
         tasks[index] = await this.o.tasks.save({ ...previous, ...state });
       }
     }
-    for (let task of tasks.filter(task => task.state === 'queued').sort(taskOrder)) {
+    for (let task of tasks.filter(task => task.state === 'queued' && !task.held).sort(taskOrder)) {
       if (task.after.some(id => !tasks.some(parent => parent.id === id && ['done', 'cancelled'].includes(parent.state)))) continue;
       if (this.o.eligible && !await this.o.eligible(task, tasks)) continue;
       if (task.kind === 'job' || task.nightlyReview) {

@@ -17,6 +17,8 @@ const needs = z.array(z.string().regex(/^[a-z0-9-]{1,32}$/u)).max(8), after = z.
 export const ProjectWorkTaskSchema = z.strictObject({ schema: z.literal('project-work-task-v1'), id: IdSchema, projectId: IdSchema, revision: z.number().int().nonnegative(),
   title, brief, kind: TaskKindSchema, type: TaskTypeSchema, goalId: IdSchema.nullable(), source: TaskSourceSchema, state: TaskStateSchema,
   rank: z.string().min(1).max(64), ownerRanked: z.boolean(), now: z.boolean(), after, needs,
+  // Queued but not started until the owner, or the coordinator on the owner's word, releases it.
+  held: z.boolean().optional(),
   dailyId: IdSchema.nullable(), jobId: IdSchema.nullable(), threadId: IdSchema.nullable(), jobRunId: IdSchema.nullable(), fixed: TaskFixedSchema,
   workflowHandoff: WorkflowHandoffStateSchema.optional(), workflowScheduler: WorkflowSchedulerStateSchema.optional(), nightlyReview: z.boolean().optional(), reviewRun: ProjectReviewRunSchema.optional(), nightlyWindowId: IdSchema.optional(), nightlyFixFor: IdSchema.optional(), refillEventId: IdSchema.optional(), projectDay: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u).optional(), placementNote: z.string().max(400).optional(), createdAt: TimestampSchema, updatedAt: TimestampSchema, dispatchedAt: TimestampSchema.optional(), endedAt: TimestampSchema.optional(), endNote: z.string().max(400).optional(),
   // Frozen before the first start. A lost response/restart repeats identical start input.
@@ -24,10 +26,10 @@ export const ProjectWorkTaskSchema = z.strictObject({ schema: z.literal('project
 export type ProjectWorkTask = z.infer<typeof ProjectWorkTaskSchema>;
 export const TaskPositionSchema = z.union([z.enum(['top', 'bottom']), z.strictObject({ before: IdSchema }), z.strictObject({ after: IdSchema })]);
 export const TaskCreateRequestSchema = z.strictObject({ schema: z.literal('task-create-request-v1'), clientRequestId: IdSchema, title, brief,
-  type: TaskTypeSchema.default('feature'), goalId: IdSchema.nullable().default(null), now: z.boolean().default(false), after: after.default([]), needs: needs.default([]), fixed: TaskFixedSchema.default({}), placementNote: z.string().max(400).optional() });
+  type: TaskTypeSchema.default('feature'), goalId: IdSchema.nullable().default(null), now: z.boolean().default(false), held: z.boolean().optional(), after: after.default([]), needs: needs.default([]), fixed: TaskFixedSchema.default({}), placementNote: z.string().max(400).optional() });
 export const TaskUpdateRequestSchema = z.strictObject({ schema: z.literal('task-update-request-v1'), expectedRevision: z.number().int().positive(),
   title: title.optional(), brief: brief.optional(), type: TaskTypeSchema.optional(), goalId: IdSchema.nullable().optional(), after: after.optional(), needs: needs.optional(),
-  fixed: TaskFixedSchema.optional(), now: z.boolean().optional(), position: TaskPositionSchema.optional() });
+  fixed: TaskFixedSchema.optional(), now: z.boolean().optional(), held: z.boolean().optional(), position: TaskPositionSchema.optional() });
 export const TaskActionRequestSchema = z.strictObject({ schema: z.literal('task-action-request-v1'), expectedRevision: z.number().int().positive(),
   action: z.enum(['approve', 'reject', 'cancel', 'now', 'later']), reason: z.string().max(400).optional() });
 export const TaskReceiptSchema = z.strictObject({ schema: z.literal('task-receipt-v1'), taskId: IdSchema, state: TaskStateSchema, repeated: z.boolean() });

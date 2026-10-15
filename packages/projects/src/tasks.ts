@@ -64,10 +64,10 @@ export class ProjectTasks {
       const state = await this.o.validateGoal?.(projectId, input.goalId, source, authority.refillEventId) ?? 'queued';
       if (input.goalId !== null && !this.o.validateGoal) refuse('Goals are not available yet.', 400);
       const ordered = (await this.list(projectId)).filter(taskOpen).sort((a, b) => a.rank.localeCompare(b.rank));
-      const { clientRequestId: _requestId, ...fields } = input; void _requestId;
+      const { clientRequestId: _requestId, held, ...fields } = input; void _requestId;
       const at = this.at(), task = await this.save(ProjectWorkTaskSchema.parse({ ...fields, schema: 'project-work-task-v1', id, projectId, revision: 0,
         kind: 'session', source, state, rank: this.#rank(ordered, ordered.length), ownerRanked: false, dailyId: null, jobId: null, threadId: null, jobRunId: null,
-        createdAt: at, updatedAt: at, requestDigest: digest, ...(authority.refillEventId ? { refillEventId: authority.refillEventId } : {}), ...(this.o.projectDay ? { projectDay: await this.o.projectDay(projectId) } : {}) }));
+        ...(held ? { held: true } : {}), createdAt: at, updatedAt: at, requestDigest: digest, ...(authority.refillEventId ? { refillEventId: authority.refillEventId } : {}), ...(this.o.projectDay ? { projectDay: await this.o.projectDay(projectId) } : {}) }));
       this.o.changed?.(projectId);
       return { schema: 'task-receipt-v1' as const, taskId: task.id, state: task.state, repeated: false };
     });
@@ -77,7 +77,7 @@ export class ProjectTasks {
       await this.assertWriter(projectId); const input = TaskUpdateRequestSchema.parse(raw), current = await this.read(projectId, taskId);
       if (current.revision !== input.expectedRevision) refuse('This task changed. Reload before editing.');
       if (!['draft', 'queued'].includes(current.state)) refuse('Only tasks that have not started can be edited.');
-      if ((current.threadId || current.dispatchText) && Object.keys(input).some(key => !['schema', 'expectedRevision', 'position', 'now'].includes(key))) refuse('The task has a reserved start; only its queue position and Now can change.');
+      if ((current.threadId || current.dispatchText) && Object.keys(input).some(key => !['schema', 'expectedRevision', 'position', 'now', 'held'].includes(key))) refuse('The task has a reserved start; only its queue position and Now can change.');
       if (!owner && input.now !== undefined) refuse('Only the owner can change Now.', 403);
       if (!owner && input.fixed !== undefined) refuse('Only the owner can change fixed placement.', 403);
       if (input.goalId !== undefined) await this.o.validateGoal?.(projectId, input.goalId, current.source);
@@ -90,7 +90,9 @@ export class ProjectTasks {
         if (typeof position === 'object') { const neighbour = 'before' in position ? position.before : position.after; index = ordered.findIndex(task => task.id === neighbour); if (index < 0) refuse('The queue neighbour was not found.', 400); if ('after' in position) index++; }
         rank = this.#rank(ordered, index);
       }
-      const task = await this.save(ProjectWorkTaskSchema.parse({ ...current, ...patch, rank, ownerRanked: current.ownerRanked || owner && position !== undefined }));
+      const { held, ...rest } = patch, next = { ...current, ...rest, rank, ownerRanked: current.ownerRanked || owner && position !== undefined };
+      if (held === false) delete next.held; else if (held) next.held = true;
+      const task = await this.save(ProjectWorkTaskSchema.parse(next));
       this.o.changed?.(projectId); return task;
     });
   }
@@ -105,7 +107,7 @@ export class ProjectTasks {
       if (ended && current.threadId) { if (!this.o.cancelThread) refuse('The queued thread cannot be stopped here.'); await this.o.cancelThread!(current, input.reason ?? 'Cancelled by you.', owner); }
       const task = await this.save({ ...current, ...(input.action === 'approve' ? { state: 'queued' as const } : {}),
         ...(ended ? { state: 'cancelled' as const, endedAt: this.at(), endNote: input.reason ?? (input.action === 'reject' ? 'Rejected by you.' : 'Cancelled by you.') } : {}),
-        ...(['now', 'later'].includes(input.action) ? { now: input.action === 'now' } : {}) });
+        ...(['now', 'later'].includes(input.action) ? { now: input.action === 'now' } : {}), ...(input.action === 'now' ? { held: undefined } : {}) });
       if (['approve', 'reject'].includes(input.action)) await this.o.reviewed?.(task, input.action === 'approve' ? 'approved' : 'rejected');
       this.o.changed?.(projectId); return task;
     });
