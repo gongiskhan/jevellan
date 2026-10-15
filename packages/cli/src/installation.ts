@@ -12,7 +12,7 @@ import { installToolchain, type Toolchain } from './toolchain.js';
 import { nativeServiceManager, type ServiceDefinition, type ServiceManager } from './service-manager.js';
 import { completeHomePurge, recoverHomePurges, stageHomePurge } from './purge.js';
 import { checkCommand, commandOnPath, commandPath, removeCommand, writeCommand } from './installed-command.js';
-import { HttpsService, httpsOrigin } from './https-service.js';
+import { HttpsService, TailscaleRefused, httpsOrigin, routeRemovalCommand } from './https-service.js';
 
 export const InstallationResultSchema = z.strictObject({ schema: z.literal('installation-result-v1'), version: z.string(), url: z.url(), port: z.number().int(), changedPort: z.boolean(), command: z.string(), commandOnPath: z.boolean() });
 export const InstallationJoinInputSchema = z.strictObject({ schema: z.literal('installation-join-input-v1'), hubUrl: DeviceOriginSchema, code: JoinCodeSchema });
@@ -206,7 +206,11 @@ export class Installer {
       if (manifest.https && manifest.https.state !== 'removed') await this.https.check(manifest.https);
       if (manifest.pendingService) { this.files.writeService(manifest.pendingService.definition); manifest = this.files.load(); }
       if (manifest.service) { await this.manager.stop(manifest.service.definition); await this.#stopped(); }
-      if (manifest.https && manifest.https.state !== 'removed') { manifest.https = await this.https.remove(manifest.https); this.files.save(manifest); }
+      if (manifest.https && manifest.https.state !== 'removed') {
+        // A route Tailscale will not let this user remove stays recorded, so a later uninstall of this home removes it; the rest goes now.
+        try { manifest.https = await this.https.remove(manifest.https); this.files.save(manifest); }
+        catch (error) { if (purge || !(error instanceof TailscaleRefused)) throw error; }
+      }
       delete manifest.pendingSwitch; this.files.save(manifest);
       this.files.removeServiceDefinition(); await this.manager.removed();
       removeCommand(this.files);
@@ -216,6 +220,11 @@ export class Installer {
       } else { this.files.discardPreparedApplications(); this.files.removeApplications(); }
       return this.homes.root;
     } finally { release(); }
+  }
+  /** After an uninstall: the HTTPS route Tailscale did not let it remove, as the command that removes it. */
+  retainedRoute(): string | undefined {
+    const manifest = this.files.load();
+    return !manifest.service && manifest.https && manifest.https.state !== 'removed' ? routeRemovalCommand(manifest.https) : undefined;
   }
   close(): void { try { this.#gate.close(); } finally { this.files.close(); } }
 }

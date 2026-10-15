@@ -10,7 +10,7 @@ import { main } from '../packages/cli/dist/index.js';
 import { DEFAULT_PORT, DeviceConfigSchema, Homes, LifecycleGate, MemberJoinPlanSchema, readDocument } from '../packages/core/dist/index.js';
 import { Installer } from '../packages/cli/dist/installation.js';
 import { installationArguments } from '../packages/cli/dist/installation-arguments.js';
-import { HttpsService } from '../packages/cli/dist/https-service.js';
+import { HttpsService, TailscaleRefused } from '../packages/cli/dist/https-service.js';
 import { startDaemon } from '../apps/daemon/dist/index.js';
 import { recoverHomePurges, stageHomePurge } from '../packages/cli/dist/purge.js';
 import { ToolchainSchema, toolchainDirectoryName } from '../packages/cli/dist/toolchain.js';
@@ -63,10 +63,11 @@ function fixture(httpsService?: HttpsService) {
 }
 
 function httpsFixture() {
-  const state = { hostname: 'member.tailtest.ts.net', target: '', port: '', lost: false, changes: 0 };
+  const state = { hostname: 'member.tailtest.ts.net', target: '', port: '', lost: false, refused: false, changes: 0 };
   const service = new HttpsService(async args => {
     if (args[0] === 'status') return JSON.stringify({ BackendState: 'Running', Self: { DNSName: `${state.hostname}.` } });
     if (args[1] === 'status') return JSON.stringify(state.target ? { TCP: { [state.port]: { HTTPS: true } }, Web: { [`${state.hostname}:${state.port}`]: { Handlers: { '/': { Proxy: state.target } } } } } : {});
+    if (state.refused) throw new TailscaleRefused();
     state.changes++; state.port = args.find(value => value.startsWith('--https='))!.slice(8); state.target = args.at(-1) === 'off' ? '' : args.at(-1)!;
     if (state.lost) { state.lost = false; throw new Error('Simulated lost HTTPS response'); } return '';
   });
@@ -138,6 +139,22 @@ test('join arguments accept both documented forms and reject invalid or repeated
   expect(installationArguments('install', ['--https']).https).toBe(true); expect(installationArguments('join', ['https://hub.example', code, '--no-https']).https).toBe(false);
   for (const args of [['install', '--https', '--no-https'], ['update', '--https'], ['join', 'https://hub.example', code, '--https', '--https']]) await expect(main(args, { installer })).rejects.toThrow('Usage:');
   expect(installer).not.toHaveBeenCalled();
+});
+
+test('an uninstall finishes when Tailscale will not let this user remove the route, keeps the route recorded and removes it later', async () => {
+  // dev-madrid, October 2026: a folder share made tailscaled refuse every route change by the user, and uninstall stopped halfway,
+  // with the service disabled but its unit, command and applications left, which blocked every later installation.
+  const proxy = httpsFixture(), f = fixture(proxy.service), installer = f.open(), source = f.source();
+  const installed = await installer.install(source, undefined, true); const target = proxy.state.target;
+  proxy.state.refused = true;
+  await installer.uninstall();
+  expect(installer.files.load()).toMatchObject({ https: { state: 'active', port: 443 } }); expect(installer.files.load().service).toBeUndefined();
+  expect(installer.files.load().applications).toEqual([]); expect(proxy.state.target).toBe(target);
+  expect(installer.retainedRoute()).toBe('sudo tailscale serve --https=443 off');
+  await expect(installer.purge(f.homes.root)).rejects.toBeInstanceOf(TailscaleRefused); expect(existsSync(f.homes.root)).toBe(true);
+  proxy.state.refused = false;
+  await installer.uninstall(); expect(proxy.state.target).toBe(''); expect(installer.files.load().https?.state).toBe('removed'); expect(installer.retainedRoute()).toBeUndefined();
+  expect((await installer.install(source, undefined, true)).url).toBe(installed.url); f.unchanged();
 });
 
 test('HTTPS keeps one registered address through update, rollback, uninstall and retained-data reinstall', async () => {

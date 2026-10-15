@@ -22,11 +22,21 @@ const NodeSchema = z.strictObject({
 });
 type Config = z.infer<typeof ConfigSchema>;
 export type TailscaleCommand = (args: readonly string[]) => Promise<string>;
+/** Tailscale answered, but will not let this user change its routes (on Linux, while any route serves a folder only root may). */
+export class TailscaleRefused extends Error {
+  constructor(readonly port: number | null = null) { super('Tailscale does not let this user change its HTTPS routes.'); }
+}
+const REFUSED = /must be root|Unauthorized|access denied|permission denied/iu;
 const runCommand: TailscaleCommand = async args => {
   try {
     return (await promisify(execFile)('tailscale', [...args], { timeout: 30_000, maxBuffer: 1024 * 1024, env: { PATH: process.env.PATH ?? '/usr/local/bin:/usr/bin:/bin' } })).stdout;
-  } catch { throw new Error('Tailscale HTTPS setup is unavailable. Check Tailscale and its HTTPS setting, then retry installation.'); }
+  } catch (error) {
+    if (REFUSED.test(String((error as { stderr?: unknown }).stderr ?? ''))) throw new TailscaleRefused();
+    throw new Error('Tailscale HTTPS setup is unavailable. Check Tailscale and its HTTPS setting, then retry installation.');
+  }
 };
+/** The one command that removes a route Jevellan could not remove itself. */
+export const routeRemovalCommand = (route: Pick<InstalledHttps, 'port'>) => `sudo tailscale serve --https=${route.port} off`;
 const onPort = (host: string, port: number) => host.endsWith(`:${port}`);
 function occupied(config: Config, port: number): boolean {
   return Object.hasOwn(config.TCP ?? {}, String(port)) || Object.keys(config.Web ?? {}).some(host => onPort(host, port)) || Object.entries(config.AllowFunnel ?? {}).some(([host, enabled]) => enabled && onPort(host, port)) || Object.values(config.Foreground ?? {}).some(value => occupied(ConfigSchema.parse(value), port));

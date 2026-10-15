@@ -58,7 +58,11 @@ export async function main(args: string[], options: { installer?: () => Installe
     try {
       if (command === 'uninstall') {
         if (purge) { const confirmation = await (options.confirmPurge ?? confirmPurge)(installer.homes.root); await installer.purge(confirmation); console.log('Jevellan and its data were removed.'); }
-        else console.log(`Jevellan was uninstalled. Your data remains at ${await installer.uninstall()}`);
+        else {
+          console.log(`Jevellan was uninstalled. Your data remains at ${await installer.uninstall()}`);
+          const route = installer.retainedRoute();
+          if (route) console.log(`Tailscale did not let this user remove the HTTPS route. Remove it with: ${route}\nAfter that, \`jevellan uninstall\` with this home removes the record too.`);
+        }
         return;
       }
       if (command === 'rollback') { printInstallation(await installer.rollback()); return; }
