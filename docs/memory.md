@@ -1,6 +1,6 @@
 # Project memory and context
 
-Jevellan keeps hub-mode notes in `project-memory/{projectId}/notes` under its data home. Repo and device modes use the configured folder, normally `.jevellan/memory`. Basic Memory 0.22.1 supplies the index and note operations. Its configuration, database and process HOME live under Jevellan's `basic-memory/` directory. The user's Basic Memory is not used.
+Jevellan keeps hub-mode notes in the hub's working copy of the owner's private GitHub vault, `<home>/vault/projects/<owner>__<repo>/notes`, keyed by the project's origin (a project without a GitHub origin keeps `project-memory/{projectId}/notes`). Repo and device modes use the configured folder, normally `.jevellan/memory`. Basic Memory 0.22.1 supplies the index and note operations. Its configuration, database and process HOME live under Jevellan's `basic-memory/` directory. The user's Basic Memory is not used.
 
 ## Shared hub memory (0.3.0)
 
@@ -19,6 +19,12 @@ An empty hub store returns an empty search or title lookup immediately, before s
 The nightly memory-dream replaces memory care only in hub mode. It starts at window open independently of ordered items and merge holds, or at 03:00 hub time without a window, with a two-hour cap and Run now. A Jev-placed high-effort session checks inbox/care candidates and today's changes against a read-only main worktree, preserves owner notes and archives rather than deleting durable notes. It updates Project brief within 2,000 characters. One `dream: {date}` commit carries the diff and code-derived counts, displayed as Last night's dream with Undo. Apply and tell me is default; Suggest only waits for an Apply card. The coordinator receives memory-dreamed and the night report includes a line.
 
 Threads receive Project brief plus at most five task-relevant notes on their first turn and after compaction (5,000 characters total; 600 per note), scored by Jev with search-order fallback. Why exposes the selected notes and reasons. Coordinator fresh context receives Project brief and 30 recent titles. Every thread turn also receives bounded live Project now with other threads and merges in the last 24 hours.
+
+## The vault (phase 5)
+
+One working copy at `<home>/vault` holds every project's folder: `notes/`, `project.json` (`vault-project-v1`: settings, goals, jobs and dailies by name, never ids, paths or secrets) and `notebook.md`. Each write is one commit scoped to the project's folder; dreams and imports work on a copy of the whole working copy, so Undo (`git revert`) and the concurrent-note merge keep working. Device-local state (dream state, receipts, session files) stays in `project-memory/{projectId}/`. Notes kept before the vault are copied in once; the old folder stays as it was.
+
+The hub pulls with rebase at start and before each memory session or dream, and pushes 60 seconds after the last commit and at shutdown. A note edited on two hubs keeps both versions with the preservation described under Publication and conflicts; other files keep this hub's version. When GitHub cannot be reached, memory reads and writes continue locally and pushes retry after 1, 5 and 15 minutes, then every 30; Settings → Projects shows the error. The token travels per command and never enters the remote URL or the repository configuration. Nothing is reset or force-pushed.
 
 ## Isolation and synchronization
 

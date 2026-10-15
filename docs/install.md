@@ -51,6 +51,16 @@ npx github:gongiskhan/jevellan install --join HUB_URL JOIN_CODE
 
 Choose HTTPS during that first join if desired. The member uses the hub's passphrase and shared configuration; Codex subscription login is per device. Never copy a rotating native authentication file between devices. Use Settings to add the project's checkout path on each device before running work there.
 
+## New hub or new machine
+
+A hub keeps nothing that needs migrating. Project memory, project definitions and coordinator notebooks live in the owner's private `jevellan-vault` repository on GitHub, one folder per project origin (`projects/<owner>__<repo>/`). To start a hub on another machine:
+
+1. Install with a fresh data home, for example `JEVELLAN_HOME=$HOME/.jevellan-hub node bin/jevellan.mjs install --from "$PWD" --https`.
+2. In Settings, add the credentials: the GitHub token (Settings → Git), the Jev key and the accounts.
+3. Add each project with its GitHub origin. When the vault holds that origin, the form offers **Restore from the vault**, checked by default: settings, goals, jobs, dailies, the notebook and project memory come back, and this device becomes the project's only allowed device.
+
+Members re-join the new hub from a fresh home with a join code. Settings → Projects shows the vault's remote, its last sync and its last error. The vault is named after the account of the GitHub token (`<login>/jevellan-vault`); `JEVELLAN_VAULT_REMOTE=owner/repo` overrides it.
+
 ## Diagnostics, updates and removal
 
 Other agents can connect through **Settings → Agents** and the HTTP MCP endpoint, or use `jevellan mcp-server` for a local-command client. Named connections have project scope, expiry and revocation. See [the MCP guide](mcp.md) for configuration, tools and resumable output.

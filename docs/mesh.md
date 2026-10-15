@@ -16,6 +16,10 @@ Cancellation closes the work after confirmed process termination. Hub-dependent 
 
 An admitted context operation waits before draft launch and at its project, ownership, metadata and checkpoint boundaries. It preserves already applied files and the exact prepared checkpoint rather than replaying the whole operation. Outside changes require the existing context review; explicit acceptance retains that reviewed plan across a wait. Drafts still require Apply, and restart never recreates the continuation. Unfinished cleanup stays blocked even if the work was already Done, with explicit Retry for that recorded work. See [context recovery](acceptance/phase4-context-waits.md).
 
+## A disposable hub
+
+The hub's database holds slim indexes and device state; nothing on it needs migrating. Project memory, project definitions and coordinator notebooks live in the owner's private GitHub vault, which the hub pulls at start and before memory sessions and pushes a minute after each change. A new hub on any machine is install, add credentials, add the project with Restore from the vault; members re-join from a fresh home. See [New hub or new machine](install.md#new-hub-or-new-machine).
+
 ## Authority and credentials
 
 The hub's SQLite database owns the device registry, encrypted device tokens, consumed join-code receipts, heartbeat receipts, switch grants, passphrase hash and session revocations. Members use bearer authentication over HTTP and never open that database. Their local daemon-ownership database is only a process lock.

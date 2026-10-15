@@ -24,8 +24,8 @@ BRIEF.md is the local specification and stays untracked. Read it completely befo
 5. packages/projects owns project work: coordinators, threads, worktrees, publication and pull requests.
 6. packages/decisions asks Jev for actions, models, effort and thread placement, and records corrections.
 7. packages/accounts ranks eligible accounts and manages authentication and usage.
-8. packages/memory isolates Basic Memory per project behind permissioned bridge tools.
-9. packages/mesh owns the hub database, device APIs, routing, tokens and session sensor.
+8. packages/memory isolates Basic Memory per project behind permissioned bridge tools and syncs hub notes, project definitions and notebooks through the private GitHub vault.
+9. packages/mesh owns the disposable hub database (slim indexes, nothing to migrate), device APIs, routing, tokens and session sensor.
 10. packages/runtime-contract defines adapters, stretches and turns, and their contract tests; runtimes/* implements them.
 11. packages/cli installs versioned copies and services, handles join and thread attach, and exposes the MCP bridge.
 
