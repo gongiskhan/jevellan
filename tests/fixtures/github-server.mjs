@@ -65,6 +65,8 @@ export async function startGitHubFixture({ token, repositories = {}, port = 0, o
     if (control && method === 'POST') { try { return send(response, 200, view(apply(find(control[1], body?.repo), body ?? {}))); } catch (error) { return send(response, 404, { message: error.message }); } }
     const failure = failures.findIndex((entry) => entry.method === method && entry.path.test(path));
     if (failure >= 0) { const [entry] = failures.splice(failure, 1); return send(response, entry.status, entry.body); }
+    // The token's own account, which names the owner's vault repository.
+    if (path === '/user' && method === 'GET') return send(response, 200, { login: 'fixture', id: 1 });
     const route = /^\/repos\/([^/]+)\/([^/]+)(\/.*)$/.exec(path);
     const repo = route && `${decodeURIComponent(route[1])}/${decodeURIComponent(route[2])}`;
     if (!route || !origin(repo)) return send(response, 404, { message: 'Not Found' });

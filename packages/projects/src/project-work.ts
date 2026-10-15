@@ -1,3 +1,4 @@
+import { restoreFromVault, vaultDefinition, vaultDefinitionText } from './vault-definition.js';
 import { nightlyFixMinutes } from './session-context.js';
 import { NightlyReview } from './nightly-review.js';
 import { ProjectGithub } from './github-awareness.js';
@@ -510,11 +511,28 @@ export class ProjectWork {
           this.#cachePublished.set(project.id, version);
         }
         await this.memoryProgramme?.sweep(project);
+        await this.#exportToVault(project).catch(() => undefined);
         if ((await this.#o.hub.coordinator(project.id))?.document.deviceId === this.#o.deviceId) { await this.#withdrawSignIns(project.id); await this.reviews.sweep(project.id); await this.daily.sweep(project.id); await this.dispatcher.sweep(project.id); await this.goals.sweep(project.id); }
         await this.memoryProgramme?.sweep(project);
       }
       this.mergeGate.sweep();
     } catch (error) { if (!(error instanceof HubUnavailable)) throw error; }
+  }
+  /** Phase 5: the project's definition and coordinator notebook follow every change into its vault folder; the vault pushes them. */
+  async #exportToVault(project: Project): Promise<void> {
+    const vault = this.#o.hubMemory?.vault, folder = vault?.folder(project.id); if (!vault || !folder) return;
+    const [settings, goals, jobs, dailies, notebook] = await Promise.all([this.admission.settings(project.id), this.goals.list(project.id), this.daily.jobs(project.id), this.daily.dailies(project.id), this.#o.hub.notebook(project.id)]);
+    vault.vault.writeFiles(folder, { 'project.json': vaultDefinitionText(vaultDefinition(project, settings, goals, jobs, dailies)), ...(notebook ? { 'notebook.md': notebook.document.content } : {}) },
+      `owner: ${project.name.replace(/[\r\n]/gu, ' ')} definition and notebook`);
+  }
+  /** Phase 5.6: recreates this project's work from its vault folder (after a pull). False when the vault has no definition for it. */
+  async restoreFromVault(projectId: string): Promise<boolean> {
+    const vault = this.#o.hubMemory?.vault; if (!vault) throw refuse('The vault belongs to the hub.', 404);
+    const folder = vault.folder(projectId); if (!folder) throw refuse('Only a project with a GitHub origin has a vault folder.', 409);
+    await vault.vault.pull();
+    const text = vault.vault.read(folder, 'project.json'); if (!text) return false;
+    await restoreFromVault(this, projectId, folder, JSON.parse(text), vault.vault.read(folder, 'notebook.md'));
+    return true;
   }
   /** B3: a question asking the owner to sign in to an account is withdrawn once that account is Ready, so no stale blocker stays open. */
   async #withdrawSignIns(projectId: string): Promise<void> {

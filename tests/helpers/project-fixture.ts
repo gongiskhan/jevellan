@@ -66,6 +66,8 @@ export type ProjectFixtureOptions = {
   /** Default false: the hub keeps a `fixture-<uuid>` Jev key, so placements call `decisionFetch` (without one they record `no-key`). */
   jevKey?: boolean;
   projectTimers?: Partial<ProjectTimers>;
+  /** Phase 5: the hub's vault remote; without it the vault stays local. */
+  vaultRemote?: () => Promise<{ url: string; token: string } | null>;
   /**
    * Default false: the daemon boots through `createDaemon`. True boots it through `startDaemon` on loopback only, which writes the
    * installation control file the local control routes (`/api/local/*`, phase 7) need.
@@ -144,7 +146,7 @@ export async function projectFixture(options: ProjectFixtureOptions = {}): Promi
     Object.defineProperty(coordinator, 'id', { value: 'fake2' }); coordinator.capabilities.readOnlyEnforced = true;
   }
   const appOptions = { homes, timers: false, repositoryVisibility: async () => 'PUBLIC' as const, runtimes: () => new Map(Object.entries(runtimes)), githubBaseUrl: github.url,
-    deviceFacts: options.deviceFacts ?? fixtureFacts,
+    deviceFacts: options.deviceFacts ?? fixtureFacts, ...(options.vaultRemote ? { vaultRemote: options.vaultRemote } : {}),
     ...(options.decisionFetch ? { decisionFetch: options.decisionFetch } : {}), projectTimers: { periodic: false, coordinatorStartMs: 0, coordinatorRetryMs: 50, ...options.projectTimers } };
   // With `control`, `startDaemon` listens at once and owns the listener; otherwise the application listens after the setup below.
   let daemon: Awaited<ReturnType<typeof startDaemon>> | undefined;

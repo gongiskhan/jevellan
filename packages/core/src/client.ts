@@ -51,3 +51,4 @@ export * from './terminal-schemas.js';
 
 export * from './checkpoint-schemas.js';
 export * from './account-status.js';
+export * from './vault-schemas.js';

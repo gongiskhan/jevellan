@@ -13,15 +13,16 @@ export class MemoryDream {
   watermark(projectId: string) { const file = join(this.store.root(projectId), 'dream-watermark.json'); return existsSync(file) ? readDocument(file, MemoryDreamWatermarkSchema).commit : null; }
   setWatermark(projectId: string, commit: string | null) { writeDocument(join(this.store.root(projectId), 'dream-watermark.json'), MemoryDreamWatermarkSchema, { schema: 'memory-dream-watermark-v1', projectId, commit }); }
   initialise(projectId: string, commit: string) { if (!this.watermark(projectId)) this.setWatermark(projectId, commit); }
-  staging(state: MemoryDreamState) { return { id: state.id, path: this.store.manager.homes.at('project-memory', state.projectId, 'dreams', state.id, 'notes') }; }
+  #stagingBase(state: MemoryDreamState) { return this.store.manager.homes.at('project-memory', state.projectId, 'dreams', state.id, 'notes'); }
+  staging(state: MemoryDreamState) { return { id: state.id, path: this.store.staged(state.projectId, this.#stagingBase(state)) }; }
   baseline(state: MemoryDreamState) { return this.store.manager.homes.at('project-memory', state.projectId, 'dreams', state.id, 'baseline'); }
   begin(project: Project, mainCommit: string, provenance: MemoryProvenance, mode: 'apply' | 'suggest'): Promise<MemoryDreamState> {
     return this.store.exclusive(project.id, async () => {
       const prior = this.state(project.id); if (prior && ['running', 'suggested'].includes(prior.state)) throw new Error('This project already has a dream to finish or apply.');
-      const root = this.store.ensure(project.id); if (this.store.git(root, 'status', '--porcelain').trim()) throw new Error('Memory has an unfinished write; retry the dream after it settles.');
+      const root = this.store.ensure(project.id); if (this.store.dirty(root)) throw new Error('Memory has an unfinished write; retry the dream after it settles.');
       const state = MemoryDreamStateSchema.parse({ schema: 'memory-dream-state-v1', projectId: project.id, id: newId('dream'), mode, state: 'running',
         startedAt: this.store.at(), fromCommit: this.store.git(root, 'rev-parse', 'HEAD').trim(), mainCommit, previousMainCommit: this.watermark(project.id), report: null, diff: '', provenance });
-      cpSync(root, this.staging(state).path, { recursive: true }); cpSync(root, this.baseline(state), { recursive: true }); return this.save(state);
+      this.store.copyInto(project.id, this.#stagingBase(state)); cpSync(root, this.baseline(state), { recursive: true }); return this.save(state);
     });
   }
   #files(root: string): Map<string, string> {
@@ -74,20 +75,19 @@ export class MemoryDream {
     });
   }
   async #apply(project: Project, state: MemoryDreamState): Promise<MemoryDreamState> {
-    const root = this.store.ensure(project.id); let stage = state.applyId ? this.store.manager.homes.at('project-memory', project.id, 'dreams', state.id, 'applications', state.applyId) : this.staging(state).path, report = state.report!;
+    const root = this.store.ensure(project.id); let stage = state.applyId ? this.store.staged(project.id, this.store.manager.homes.at('project-memory', project.id, 'dreams', state.id, 'applications', state.applyId)) : this.staging(state).path, report = state.report!;
     const head = this.store.git(root, 'rev-parse', 'HEAD').trim();
     if (head === report.toCommit) { this.setWatermark(project.id, state.mainCommit); await this.store.project(project, { kind: 'viewer' }).sync(AbortSignal.timeout(150_000)); return this.save({ ...state, state: 'applied' }); }
     if (report.toCommit !== state.fromCommit) {
       let applied = false; try { this.store.git(root, 'merge-base', '--is-ancestor', report.toCommit, head); applied = true; } catch { /* The candidate has not reached the notes history. */ }
       if (applied) { this.setWatermark(project.id, state.mainCommit); await this.store.project(project, { kind: 'viewer' }).sync(AbortSignal.timeout(150_000)); return this.save({ ...state, state: 'applied' }); }
     }
-    if (this.store.git(root, 'status', '--porcelain').trim()) throw new Error('Project memory has an unfinished write. Its files were preserved.');
+    if (this.store.dirty(root)) throw new Error('Project memory has an unfinished write. Its files were preserved.');
     if (head !== state.fromCommit) {
       // Merge on a disposable copy. Concurrent notes stay available on the hub throughout.
-      const applyId = newId('mapply'), candidate = this.store.manager.homes.at('project-memory', project.id, 'dreams', state.id, 'applications', applyId);
-      cpSync(root, candidate, { recursive: true });
+      const applyId = newId('mapply'), candidate = this.store.copyInto(project.id, this.store.manager.homes.at('project-memory', project.id, 'dreams', state.id, 'applications', applyId));
       try {
-        this.store.git(candidate, 'fetch', '--quiet', '--no-tags', stage, report.toCommit);
+        this.store.git(candidate, 'fetch', '--quiet', '--no-tags', this.store.top(stage), report.toCommit);
         this.store.git(candidate, 'merge', '--squash', '--no-commit', report.toCommit);
       } catch { throw new Error('Project memory changed since this suggestion and the same note conflicts. Start a new dream; all current notes were preserved.'); }
       const applied = this.store.commit(candidate, `dream: ${this.store.at().slice(0, 10)}`);
@@ -98,8 +98,8 @@ export class MemoryDream {
     }
     this.#report(state, this.#files(root), this.#files(stage), report.summary, report.toCommit);
     // Fetch from the private staging copy only; no remote is added and no note is overwritten out of Git.
-    this.store.git(root, 'fetch', '--quiet', '--no-tags', stage, report.toCommit);
-    this.store.git(root, 'merge', '--ff-only', '--quiet', report.toCommit);
+    this.store.git(root, 'fetch', '--quiet', '--no-tags', this.store.top(stage), report.toCommit);
+    this.store.git(root, 'merge', '--ff-only', '--quiet', report.toCommit); this.store.changed(root);
     this.setWatermark(project.id, state.mainCommit);
     const saved = this.save({ ...state, state: 'applied', completedAt: this.store.at() });
     await this.store.project(project, { kind: 'viewer' }).sync(AbortSignal.timeout(150_000)); return saved;
@@ -115,6 +115,7 @@ export class MemoryDream {
       try { this.store.git(root, 'revert', '--no-edit', state.report.toCommit); }
       catch { this.store.git(root, 'revert', '--abort'); throw new Error('Later memory changes conflict with Undo; they were preserved.'); }
     }
+    this.store.changed(root);
     const saved = this.save({ ...state, state: 'undone', undoCommit: this.store.git(root, 'rev-parse', 'HEAD').trim() });
     this.setWatermark(project.id, state.previousMainCommit);
     await this.store.project(project, { kind: 'viewer' }).sync(AbortSignal.timeout(150_000)); return saved;

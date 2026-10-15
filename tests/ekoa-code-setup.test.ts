@@ -2,7 +2,7 @@ import { afterEach, expect, test } from 'vitest';
 import { EkoaCodeSetupReceiptSchema, ProjectSchema } from '../packages/core/dist/index.js';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { EKOA_FAST_CHECKS, EKOA_GOALS, EKOA_RISKY_AREAS, EKOA_THREAD_RULES } from '../packages/projects/dist/index.js';
+import { EKOA_FAST_CHECKS, EKOA_GOALS, EKOA_RISKY_AREAS, EKOA_THREAD_RULES, restoreFromVault, vaultDefinition } from '../packages/projects/dist/index.js';
 import { projectFixture, type ProjectFixture } from './helpers/project-fixture.js';
 let fixture: ProjectFixture | undefined;
 afterEach(async () => { await fixture?.close(); fixture = undefined; });
@@ -40,4 +40,31 @@ test('reapplying the earlier preset upgrades only shared memory and the independ
   const result = await f.json('/api/projects/project/ekoa-code-setup', EkoaCodeSetupReceiptSchema, 'POST', request);
   expect(result.presetVersion).toBe(2); expect(result.settings).toMatchObject({ riskyAreas: 'Owner correction', autoMerge: true, memory: { mode: 'hub', capture: true, dreamMode: 'apply' } });
   expect(await work.goals.list('project')).toEqual(goals); expect(await work.daily.jobs('project')).toEqual(jobs); expect((await work.daily.dailies('project')).filter(row => row.target.kind === 'memory-dream')).toHaveLength(1);
+});
+
+test('restore from the vault and the preset, in either order, never duplicate goals, jobs or dailies', { timeout: 120_000 }, async () => {
+  const menu = [{ id: 'discovered_opus', runtime: 'claude', model: 'reported-native-model', label: 'Claude Opus 5.5', description: 'Fixture model discovery', efforts: ['high'], enabled: true }];
+  const request = { schema: 'ekoa-code-setup-request-v1', modelId: 'discovered_opus', workflowPull: 208 };
+  const ekoa = async (f: ProjectFixture) => {
+    const current = await f.app.state.projects.get('project');
+    await f.app.state.projects.put(ProjectSchema.parse({ ...current!.project, name: 'Ekoa Code', remoteUrl: 'https://github.com/gongiskhan/ekoa-code.git', githubTokenScope: 'project', allowedDevices: [f.app.device.deviceId], testCommand: EKOA_FAST_CHECKS }), current!.revision);
+  };
+  const counts = async (f: ProjectFixture) => { const work = f.app.projectWork; return { goals: (await work.goals.list('project')).length, jobs: (await work.daily.jobs('project')).length, dailies: (await work.daily.dailies('project')).length }; };
+  const definition = async (f: ProjectFixture) => {
+    const work = f.app.projectWork, project = (await f.app.state.projects.get('project'))!.project;
+    return vaultDefinition(project, await work.admission.settings('project'), await work.goals.list('project'), await work.daily.jobs('project'), await work.daily.dailies('project'));
+  };
+  // Preset first, then restore its own definition.
+  const first = fixture = await projectFixture({ menu }); await ekoa(first);
+  await first.json('/api/projects/project/ekoa-code-setup', EkoaCodeSetupReceiptSchema, 'POST', request);
+  const exported = await definition(first), before = await counts(first);
+  await restoreFromVault(first.app.projectWork, 'project', 'gongiskhan__ekoa-code', exported, null);
+  expect(await counts(first)).toEqual(before); expect(before).toMatchObject({ goals: 6, jobs: 3 });
+  await first.close(); fixture = undefined;
+  // Restore first on a fresh hub, then the preset.
+  const second = fixture = await projectFixture({ menu }); await ekoa(second);
+  await restoreFromVault(second.app.projectWork, 'project', 'gongiskhan__ekoa-code', exported, 'Notebook.\n');
+  expect(await counts(second)).toEqual(before);
+  await second.json('/api/projects/project/ekoa-code-setup', EkoaCodeSetupReceiptSchema, 'POST', request);
+  expect(await counts(second)).toEqual(before);
 });

@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { cpSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
-import { basename, join, resolve } from 'node:path';
+import { basename, join, relative, resolve } from 'node:path';
 import { parseDocument, stringify } from 'yaml';
 import { z } from 'zod';
 import { HubUnavailable, HubMemoryScopeSchema, IdSchema, MemoryDreamStateSchema, MemoryFrontmatterSchema, MemoryImportSchema, MemoryNoteSchema, ProjectMemoryRequestSchema, ProjectMemoryResultSchema, ProjectMemoryViewSchema,
@@ -9,6 +9,10 @@ import { HubUnavailable, HubMemoryScopeSchema, IdSchema, MemoryDreamStateSchema,
   type Homes, type HubMemoryScope, type MemoryFrontmatter, type MemoryNote, type MemoryProvenance, type Project, type ProjectMemoryRequest, type ProjectMemoryResult,
 } from '@jevellan/core';
 import { BasicMemory, type ProjectMemoryPort } from './basic-memory.js';
+import type { ProjectVault } from './vault.js';
+
+/** Hub-mode notes in the vault: the vault working copy and each project's folder there (null keeps the legacy location). */
+export type HubMemoryVault = { vault: ProjectVault; folder(projectId: string): string | null };
 
 export const HUB_MEMORY_OFFLINE = 'Project memory is unavailable: the hub is offline.';
 const receiptSchema = z.strictObject({ schema: z.literal('memory-write-receipt-v1'), id: IdSchema, digest: z.string(), note: MemoryNoteSchema.optional() });
@@ -56,9 +60,23 @@ export function* memoryImportBatches(source: string, redact: (value: string) => 
 /** The existing Basic Memory index, with one hub-owned notes repository and local Git history. */
 export class HubMemoryStore {
   readonly #queues = new Map<string, Promise<unknown>>();
-  constructor(readonly manager: BasicMemory, readonly deviceId: string, readonly now: () => number = Date.now) {}
+  constructor(readonly manager: BasicMemory, readonly deviceId: string, readonly now: () => number = Date.now, readonly vault?: HubMemoryVault) {}
+  /** Device-local state (dream state, receipts, sessions); the notes themselves live in the vault when the project has a folder there. */
   root(projectId: string) { return this.manager.homes.ensure('project-memory', IdSchema.parse(projectId)); }
-  notes(projectId: string) { return join(this.root(projectId), 'notes'); }
+  #folder(projectId: string): string | null { const name = this.vault?.folder(projectId); return name ? this.vault!.vault.folder(name) : null; }
+  notes(projectId: string) { const folder = this.#folder(projectId); return folder ? join(folder, 'notes') : join(this.root(projectId), 'notes'); }
+  /** The top of the git repository a notes folder belongs to (the vault, a copy of it, or a legacy notes repository). */
+  top(path: string): string { return this.git(path, 'rev-parse', '--show-toplevel').trim(); }
+  /** Copies the repository holding the project's notes into `base` and returns the notes folder inside the copy. */
+  copyInto(projectId: string, base: string): string {
+    const notes = this.ensure(projectId);
+    if (!this.#folder(projectId)) { cpSync(notes, base, { recursive: true }); return base; }
+    cpSync(this.vault!.vault.root, base, { recursive: true }); return this.staged(projectId, base);
+  }
+  /** Where a copy made by `copyInto(projectId, base)` keeps the notes. */
+  staged(projectId: string, base: string): string { const folder = this.#folder(projectId); return folder ? join(base, relative(this.vault!.vault.root, join(folder, 'notes'))) : base; }
+  /** The live notes changed outside `commit` (a dream applied or undone, an import): the vault pushes them. */
+  changed(root: string): void { if (this.vault && inside(this.vault.vault.root, resolvedPath(root))) this.vault.vault.changed(); }
   at() { return new Date(this.now()).toISOString(); }
   git(root: string, ...args: string[]): string {
     return execFileSync('git', ['--no-optional-locks', '-C', root, '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false',
@@ -67,9 +85,20 @@ export class HubMemoryStore {
   }
   ensure(projectId: string): string {
     const path = this.notes(projectId); mkdirSync(path, { recursive: true, mode: 0o700 });
+    if (this.#folder(projectId)) { this.#moveLegacy(projectId, path); return path; }
     if (!existsSync(join(path, '.git'))) { this.git(path, 'init', '--quiet'); this.git(path, 'commit', '--allow-empty', '--quiet', '-m', 'owner: Project memory'); }
     if (this.git(path, 'remote').trim()) throw new Error('Hub memory history must have no remote.');
     return path;
+  }
+  /** Notes this hub kept before the vault are copied into the project's vault folder once; the old folder stays as it was. */
+  #moveLegacy(projectId: string, path: string): void {
+    const legacy = join(this.root(projectId), 'notes'), marker = join(this.root(projectId), 'vault-copied.json');
+    if (existsSync(marker)) return;
+    if (existsSync(legacy)) {
+      cpSync(legacy, path, { recursive: true, force: false, errorOnExist: false, filter: source => !source.split('/').includes('.git') });
+      this.commit(path, 'owner: Copy project memory into the vault');
+    }
+    atomicWrite(marker, `${JSON.stringify({ schema: 'memory-vault-copy-v1', projectId, at: this.at() })}\n`);
   }
   exclusive<T>(projectId: string, work: () => Promise<T>): Promise<T> {
     const pending = (this.#queues.get(projectId) ?? Promise.resolve()).then(work);
@@ -144,11 +173,14 @@ export class HubMemoryStore {
         await prepare(signal); await base.sync(signal); const found = await base.findTitle(title, signal); return found ? read(found.permalink, signal) : null; },
       sync: async signal => { await prepare(signal); await base.sync(signal); } };
   }
+  /** One commit of the notes folder only: the vault holds other projects too. */
   commit(root: string, message: string): string {
-    this.git(root, 'add', '--all');
-    if (this.git(root, 'diff', '--cached', '--name-only').trim()) this.git(root, 'commit', '--quiet', '-m', this.manager.redactor.text(message).slice(0, 500));
+    this.git(root, 'add', '--all', '--', '.');
+    if (this.git(root, 'diff', '--cached', '--name-only', '--', '.').trim()) { this.git(root, 'commit', '--quiet', '-m', this.manager.redactor.text(message).slice(0, 500), '--', '.'); this.changed(root); }
     return this.git(root, 'rev-parse', 'HEAD').trim();
   }
+  /** Uncommitted changes in a notes folder (only this project's, in the vault). */
+  dirty(root: string): boolean { return !!this.git(root, 'status', '--porcelain', '--', '.').trim(); }
   list(projectId: string, stagingPath?: string): MemoryNote[] {
     const root = stagingPath ?? this.ensure(projectId), notes: MemoryNote[] = [];
     const visit = (directory: string, prefix = '') => {
@@ -185,11 +217,11 @@ export class HubMemoryStore {
   importBatch(project: Project, input: { requestId: string; sourcePath: string; files: Array<{ path: string; content: string }>; final: boolean }): Promise<void> {
     return this.exclusive(project.id, async () => {
       const receipt = join(this.root(project.id), 'import.json'); if (existsSync(receipt)) return;
-      const directory = this.manager.homes.ensure('project-memory', project.id, 'imports', IdSchema.parse(input.requestId)), file = join(directory, 'state.json'), stage = join(directory, 'notes'), root = this.ensure(project.id);
+      const directory = this.manager.homes.ensure('project-memory', project.id, 'imports', IdSchema.parse(input.requestId)), file = join(directory, 'state.json'), stage = this.staged(project.id, join(directory, 'notes')), root = this.ensure(project.id);
       let state = existsSync(file) ? readDocument(file, importStateSchema) : undefined;
       if (!state) {
-        if (this.git(root, 'status', '--porcelain').trim()) throw new Error('Hub memory has an unfinished write; its files were preserved.');
-        cpSync(root, stage, { recursive: true }); state = { schema: 'memory-import-state-v1', id: input.requestId, projectId: project.id, sourcePath: input.sourcePath,
+        if (this.dirty(root)) throw new Error('Hub memory has an unfinished write; its files were preserved.');
+        this.copyInto(project.id, join(directory, 'notes')); state = { schema: 'memory-import-state-v1', id: input.requestId, projectId: project.id, sourcePath: input.sourcePath,
           at: this.at(), baseCommit: this.git(root, 'rev-parse', 'HEAD').trim(), commit: null, files: {}, completed: false }; writeDocument(file, importStateSchema, state);
       }
       if (state.sourcePath !== input.sourcePath) throw new Error('This memory import belongs to a different source folder.');
@@ -210,8 +242,8 @@ export class HubMemoryStore {
       state.commit ??= this.commit(stage, 'owner: Import existing project memory'); writeDocument(file, importStateSchema, state);
       const current = this.git(root, 'rev-parse', 'HEAD').trim();
       if (current !== state.commit) {
-        if (current !== state.baseCommit || this.git(root, 'status', '--porcelain').trim()) throw new Error('Hub notes changed while memory was imported. Both copies were preserved.');
-        this.git(root, 'fetch', '--quiet', '--no-tags', stage, state.commit); this.git(root, 'merge', '--ff-only', '--quiet', state.commit);
+        if (current !== state.baseCommit || this.dirty(root)) throw new Error('Hub notes changed while memory was imported. Both copies were preserved.');
+        this.git(root, 'fetch', '--quiet', '--no-tags', this.top(stage), state.commit); this.git(root, 'merge', '--ff-only', '--quiet', state.commit); this.changed(root);
       }
       writeDocument(receipt, MemoryImportSchema, { schema: 'memory-import-v1', projectId: project.id, sourcePath: input.sourcePath, at: state.at, files: Object.keys(state.files).length });
       writeDocument(file, importStateSchema, { ...state, completed: true });

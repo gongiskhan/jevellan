@@ -79,6 +79,8 @@ export class GitHubClient {
     this.#redactor = options.redactor ?? new SecretRedactor(); this.#timeoutMs = timeoutMs;
   }
 
+  /** The login of the account the token belongs to (the owner of their vault repository). */
+  async viewer(): Promise<string> { return (await this.#request('GET', '/user', z.object({ login: z.string().regex(/^[A-Za-z0-9-]{1,39}$/u) }))).login; }
   async rateLimit() { const token = (await this.#token())?.trim(); return token ? budgets.get(createHash('sha256').update(`${this.#base}\0${token}`).digest('hex')) ?? null : null; }
   async findOpenPull(repository: GitHubRepository, branch: string): Promise<GitHubPull | null> {
     const query = new URLSearchParams({ head: `${repository.owner}:${branch}`, state: 'open' });

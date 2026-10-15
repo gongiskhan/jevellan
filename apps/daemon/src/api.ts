@@ -107,6 +107,10 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     if (await handleSessionListApi(app, request, response, url)) return;
     if (await handleCursorApi(app, request, response, url, token)) return;
     if (path === '/api/project-folders' && method === 'GET') { send(await projectFolders(app.homes.userHome, url.searchParams.get('path') ?? undefined)); return; }
+    // Phase 5: the hub's vault, and restoring a project's work from its vault folder.
+    if (path === '/api/vault' && method === 'GET') { send(app.vaultView()); return; }
+    const vaultRestore = path.match(/^\/api\/projects\/([A-Za-z0-9_-]+)\/vault-restore$/);
+    if (vaultRestore && method === 'POST') { retryable = true; send(await app.restoreProjectFromVault(IdSchema.parse(vaultRestore[1]))); return; }
     if (path === '/hub/projects' && method === 'GET') { await app.conversations.ready; send((await app.conversations.projects())); return; }
     if (path === '/hub/projects' && method === 'PUT') { const input = ProjectWriteSchema.parse(await body(request)); retryable = input.clientRequestId !== undefined; send(await app.conversations.saveProject(input)); return; }
     const visibility = path.match(/^\/api\/projects\/([A-Za-z0-9_-]+)\/visibility$/);

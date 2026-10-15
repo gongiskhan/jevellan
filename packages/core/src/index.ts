@@ -94,3 +94,4 @@ export * from './project-memory-session-schemas.js';
 export * from './terminal-schemas.js';
 
 export * from './checkpoint-schemas.js';
+export * from './vault-schemas.js';

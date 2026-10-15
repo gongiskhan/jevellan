@@ -114,6 +114,8 @@ export class ProjectMemoryProgramme {
     return active.promise;
   }
   async #run(project: Project, kind: 'extraction' | 'dream', active: { execution?: TurnExecution }, windowId?: string, requestId?: string): Promise<void> {
+    // Phase 5: notes another hub pushed arrive before the session reads or changes them.
+    await this.o.store.vault?.vault.pull();
     const work = await this.o.settings(project.id), title = kind === 'dream' ? 'Nightly memory dream' : 'Shared memory extraction';
     const placement = await this.o.placement.place({ project, workSettings: work, title, task: title, taskContext: { type: 'memory', needs: [], goal: null },
       fixed: { deviceId: this.o.deviceId, isolation: 'worktree', effort: kind === 'dream' ? 'high' : 'low' }, requiredEffort: kind === 'dream' ? 'high' : 'low', readOnly: true,

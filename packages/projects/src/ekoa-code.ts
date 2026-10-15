@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { EkoaCodeSetupReceiptSchema, EkoaCodeSetupRequestSchema, ProjectWorkSettingsSchema, readDocument, writeDocument, type ProjectGoal, type ProjectWorkSettings } from '@jevellan/core';
 import type { ProjectWork } from './project-work.js';
 import { derivedId } from './decision-items.js';
+import { dailyNamed, goalNamed, jobNamed } from './vault-definition.js';
 export const EKOA_FAST_CHECKS = 'npm run build --workspace shared && npm run typecheck && npm run lint';
 export const EKOA_RISKY_AREAS = 'Tenancy and cross-user data access; the Cofre and credentials; the LLM egress module and the Judge; database migrations and stored data shapes; deploy, CI and infrastructure files; billing; evals/.';
 export const EKOA_THREAD_RULES = `Ekoa Code rules:
@@ -29,7 +30,7 @@ export async function applyEkoaCodeSetup(work: ProjectWork, projectId: string, r
     if (receipt.presetVersion === 1) {
       const { schema: _schema, projectId: _project, revision, ...settings } = current; void _schema; void _project;
       const saved = await work.putSettings(projectId, { schema: 'project-work-settings-request-v1', revision, clientRequestId: derivedId('ekoa_setup', projectId, 'hub_memory'), settings: { ...settings, memory: { mode: 'hub', capture: true, dreamMode: 'apply' } } });
-      await work.daily.createDaily(projectId, { schema: 'daily-create-request-v1', clientRequestId: 'shared_memory_dream', name: 'Memory dream', goalId: null, order: 0, enabled: true, target: { kind: 'memory-dream' } });
+      await dailyNamed(work, projectId, { schema: 'daily-create-request-v1', name: 'Memory dream', goalId: null, order: 0, enabled: true, target: { kind: 'memory-dream' } }, 'shared_memory_dream');
       receipt = { ...receipt, presetVersion: 2, settings: saved.settings }; writeDocument(path, EkoaCodeSetupReceiptSchema, receipt);
     }
     return receipt;
@@ -41,17 +42,19 @@ export async function applyEkoaCodeSetup(work: ProjectWork, projectId: string, r
     writeDocument(path, EkoaCodeSetupReceiptSchema, receipt);
   }
   const goals: ProjectGoal[] = [];
-  for (const [index, goal] of EKOA_GOALS.entries()) goals.push((await work.goals.create(projectId, { schema: 'goal-create-request-v1', clientRequestId: `ekoa_setup_goal_${index}`, ...goal, autonomy: 'propose', dailyRefillCap: 3, openPrCap: 2 })).goal);
+  // Matched by name as well as by request id: a project restored from the vault already has these goals, jobs and dailies.
+  for (const [index, goal] of EKOA_GOALS.entries()) goals.push(await goalNamed(work, projectId, { schema: 'goal-create-request-v1', ...goal, autonomy: 'propose', dailyRefillCap: 3, openPrCap: 2 }, `ekoa_setup_goal_${index}`));
   const workflow = (name: string, file: string, goalIndex: number | null, watchOrder: number, extras = {}) => ({ schema: 'job-create-request-v1', clientRequestId: `ekoa_setup_${file.replaceAll('.', '_')}`, name, goalId: goalIndex === null ? null : goals[goalIndex]!.id, enabled: true, gate: null,
     run: { kind: 'github-workflow', workflow: file, mode: 'dispatch', timeoutMinutes: 420, pinCommitRef: false, schedulerSwitch: { schema: 'workflow-scheduler-switch-v1', variable: 'NIGHTLY_SCHEDULER', dispatchValue: 'jevellan', ownerMergePull: input.workflowPull, watchOrder }, ...extras } });
+  const namedJob = (input: Record<string, unknown> & { name: string; clientRequestId: string }) => { const { clientRequestId, ...fields } = input; return jobNamed(work, projectId, fields, clientRequestId); };
   const chain = (event: 'schedule' | 'workflow_run', afterWorkflow?: string) => ({ schema: 'workflow-watch-chain-v1', event, excludeTitle: '(not in the chain)', ...(afterWorkflow ? { afterWorkflow } : { titleSuffix: ' night' }) });
-  const legal = await work.daily.createJob(projectId, workflow('Legal programme', 'nightly-legal-programme.yml', 2, 1, { inputs: { mode: 'night', dry_run: 'false', test_mode: 'false' }, watchChain: chain('schedule') }));
-  const full = await work.daily.createJob(projectId, workflow('Full suite with the expensive tests', 'nightly-all-tests.yml', 0, 3, { commitInput: 'sha', watchChain: chain('workflow_run', 'nightly-deploy.yml'), inputs: { expensive: 'true' }, requiredJobs: ['suite', 'expensive'], requiredSteps: ['every sub-suite, the browser estate and the phone-width specs', 'the expensive tests'] }));
-  const deploy = await work.daily.createJob(projectId, { ...workflow('Deploy', 'nightly-deploy.yml', null, 2, { commitInput: 'sha', watchChain: chain('workflow_run', 'nightly-legal-programme.yml') }), gate: { jobId: full.id } });
+  const legal = await namedJob(workflow('Legal programme', 'nightly-legal-programme.yml', 2, 1, { inputs: { mode: 'night', dry_run: 'false', test_mode: 'false' }, watchChain: chain('schedule') }));
+  const full = await namedJob(workflow('Full suite with the expensive tests', 'nightly-all-tests.yml', 0, 3, { commitInput: 'sha', watchChain: chain('workflow_run', 'nightly-deploy.yml'), inputs: { expensive: 'true' }, requiredJobs: ['suite', 'expensive'], requiredSteps: ['every sub-suite, the browser estate and the phone-width specs', 'the expensive tests'] }));
+  const deploy = await namedJob({ ...workflow('Deploy', 'nightly-deploy.yml', null, 2, { commitInput: 'sha', watchChain: chain('workflow_run', 'nightly-legal-programme.yml') }), gate: { jobId: full.id } });
   const definitions = [{ name: 'Review since last', goalId: goals[1]!.id, enabled: true, target: { kind: 'review-since-last' } }, ...[legal, full, deploy].map(job => ({ name: job.name, goalId: job.goalId, enabled: job.enabled, target: { kind: 'job', jobId: job.id } })),
     { name: 'Security', goalId: goals[5]!.id, enabled: false, target: { kind: 'session', title: 'Security programme', brief: 'Security is parked until the owner provides the Ekoa Security programme. Report that this input is required.', type: 'ops' } }];
-  for (const [order, definition] of definitions.entries()) await work.daily.createDaily(projectId, { schema: 'daily-create-request-v1', clientRequestId: `ekoa_setup_nightly_${order}`, order, ...definition });
-  await work.daily.createDaily(projectId, { schema: 'daily-create-request-v1', clientRequestId: 'shared_memory_dream', name: 'Memory dream', goalId: null, order: 0, enabled: true, target: { kind: 'memory-dream' } });
+  for (const [order, definition] of definitions.entries()) await dailyNamed(work, projectId, { schema: 'daily-create-request-v1', order, ...definition }, `ekoa_setup_nightly_${order}`);
+  await dailyNamed(work, projectId, { schema: 'daily-create-request-v1', name: 'Memory dream', goalId: null, order: 0, enabled: true, target: { kind: 'memory-dream' } }, 'shared_memory_dream');
   const { schema: _schema, projectId: _project, revision, ...settings } = receipt.settings; void _schema; void _project;
   await work.putSettings(projectId, { schema: 'project-work-settings-request-v1', revision, clientRequestId: derivedId('ekoa_setup', projectId), settings });
   receipt = { ...receipt, completed: true }; writeDocument(path, EkoaCodeSetupReceiptSchema, receipt); return receipt;

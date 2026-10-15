@@ -4,7 +4,7 @@ import { collectDeviceFacts, EkoaRequestSchema, DeviceSettingsInputSchema, Devic
 import { existsSync } from 'node:fs';
 import { hostname } from 'node:os';
 import { z } from 'zod';
-import { ConsumeSwitchSchema, DaemonOwnership, DeviceConfigSchema, DeviceOriginSchema, DeviceSchema, DeviceSwitchInputSchema, JevConnectionSchema, RiggingApplicationSchema, Homes, ProjectVisibility, RiggingDisk, SecretRedactor, VERSION, compareVersions, versionSkewMessage, newId, readDocument, seedConfiguration, stableJson, writeDocument, type DeviceConfig, type Project, type ProjectHub, type VisibilityProbe } from '@jevellan/core';
+import { ConsumeSwitchSchema, DaemonOwnership, DeviceConfigSchema, DeviceOriginSchema, DeviceSchema, DeviceSwitchInputSchema, JevConnectionSchema, RiggingApplicationSchema, GitHubClient, ProjectSchema, VaultProjectSchema, VaultViewSchema, Homes, ProjectVisibility, RiggingDisk, SecretRedactor, VERSION, compareVersions, versionSkewMessage, newId, readDocument, seedConfiguration, stableJson, writeDocument, type DeviceConfig, type VaultView, type Project, type ProjectHub, type VisibilityProbe } from '@jevellan/core';
 import { DeviceRegistry, HubAccounts, HubCheckoutStore, HubDatabase, HubIndexes, HubMesh, HubProjectAccess, HubPublicationLeases, HubState, MemberAccounts, MemberCheckoutStore, MemberHubClient, MemberIndexes, MemberProjectStore, MemberPublicationLeases, MemberState, MemberUiAuth, ProjectImproverHub, UiAuth, memberConnection } from '@jevellan/mesh';
 import { AccountService } from '@jevellan/accounts';
 import { BackgroundDrafts, ContextOperations, ConversationService, StretchBridges } from '@jevellan/conversations';
@@ -13,7 +13,7 @@ import { RoutingImprover } from './routing-improver.js';
 import { Improver } from './improver.js';
 import { ProjectImprover, type MemoryPort } from './project-improver.js';
 import { migrateContextOperations } from './context-migration.js';
-import { BasicMemory, HubMemoryStore, remoteHubMemory } from '@jevellan/memory';
+import { BasicMemory, HubMemoryStore, ProjectVault, remoteHubMemory, vaultFolder, type VaultRemote } from '@jevellan/memory';
 import { ProjectMemoryRequestSchema, type ProjectMemoryRequest } from '@jevellan/core';
 import { memoryImportBatches } from '@jevellan/memory';
 import { JevClient, JevError } from '@jevellan/decisions';
@@ -33,6 +33,7 @@ export type ApplicationOptions = { homes?: Homes; port?: number; url?: string; r
   /** Projects test seams: the GitHub transport and API base (a fake server in tests), and Projects timers (periodic loops follow `timers`). */
   githubFetch?: typeof fetch; githubBaseUrl?: string; projectTimers?: Partial<ProjectTimers>; ekoaConnector?: EkoaConnector; forceHub?: boolean;
   /** Test seam: the version this device reports and compares with its hub's (B5). */ version?: string;
+  /** Test seam: the vault remote (phase 5). Without it, a fake GitHub (`githubBaseUrl`) keeps the vault local. */ vaultRemote?: () => Promise<VaultRemote | null>;
   terminalOptions?: ConstructorParameters<typeof TerminalService>[1] };
 
 export class Application {
@@ -54,6 +55,8 @@ export class Application {
   readonly bridges: StretchBridges;
   readonly memory: BasicMemory; readonly conversations: ConversationService;
   readonly hubMemory: HubMemoryStore | undefined;
+  /** The hub's working copy of the private vault repository: project memory, definitions and notebooks (phase 5). */
+  readonly vault: ProjectVault | undefined;
   /** Projects on this device (brief 8): threads, their turns and pull requests, beside the conversations. */
   readonly ekoa: EkoaMirrorService | undefined;
   readonly projectWork: ProjectWork; readonly projectHub: ProjectHub;
@@ -124,7 +127,10 @@ export class Application {
       this.riggingDisk = new RiggingDisk(this.homes, this.redactor);
       this.bridges = new StretchBridges(this.redactor);
       this.memory = new BasicMemory(this.homes, 'basic-memory', this.redactor);
-      this.hubMemory = this.member ? undefined : new HubMemoryStore(this.memory, this.device.deviceId);
+      this.vault = this.member ? undefined : new ProjectVault({ homes: this.homes, deviceId: this.device.deviceId, redactor: this.redactor, now: Date.now, timers: options.timers !== false,
+        remote: options.vaultRemote ?? (() => this.#vaultRemote(options)) });
+      this.hubMemory = this.member ? undefined : new HubMemoryStore(this.memory, this.device.deviceId, Date.now, { vault: this.vault!,
+        folder: projectId => vaultFolder(this.hub.get('projects', projectId, ProjectSchema)?.document.remoteUrl) });
       this.memory.configureHub((project, _deviceId, scope) => {
         const context = scope ?? { kind: 'viewer' as const };
         return this.member ? remoteHubMemory(this.homes, project, context, request => this.member!.projectMemory(request)) : this.hubMemory!.project(project, context);
@@ -209,6 +215,8 @@ export class Application {
       const releaseStartup = startup; startup = undefined;
       // Startup ends after conversation recovery and Projects recovery (brief 8.6); the improvers still wait only for theirs.
       this.started = Promise.all([improverReady, this.projectWork.ready]).then(releaseStartup, releaseStartup).catch(() => undefined);
+      // Phase 5: bring in what another hub pushed, then push anything left from the last run.
+      void this.started.then(() => this.vault?.sync()).catch(() => undefined);
     } catch (error) { this.#hub?.close(); throw error; }
     } catch (error) { startup?.(); lifecycle?.close(); this.#ownership.close(); throw error; }
   }
@@ -216,6 +224,41 @@ export class Application {
   versionRefusal(): string | undefined {
     const hub = this.member?.hubVersion;
     return hub && compareVersions(this.version, hub) > 0 ? versionSkewMessage(this.version, hub) : undefined;
+  }
+  vaultView(): VaultView {
+    if (!this.vault) throw Object.assign(new Error('The vault belongs to the hub.'), { status: 404 });
+    const { schema: _schema, ...status } = this.vault.status(); void _schema;
+    return VaultViewSchema.parse({ schema: 'vault-view-v1', ...status, folders: this.vault.folders() });
+  }
+  /**
+   * Phase 5.6: a project added on this hub takes its definition from the vault. This device becomes its only allowed device (device ids
+   * never travel through the vault); work settings, goals, jobs, dailies and the notebook follow by name, so a repeat changes nothing.
+   */
+  async restoreProjectFromVault(projectId: string): Promise<{ schema: 'vault-restore-v1'; projectId: string; restored: boolean }> {
+    if (!this.vault) throw Object.assign(new Error('The vault belongs to the hub.'), { status: 404 });
+    await this.conversations.ready;
+    const row = (await this.conversations.projects()).projects.find(entry => entry.project.id === projectId);
+    if (!row) throw Object.assign(new Error('Project not found.'), { status: 404 });
+    const folder = vaultFolder(row.project.remoteUrl); if (!folder) throw Object.assign(new Error('Only a project with a GitHub origin has a vault folder.'), { status: 409 });
+    await this.vault.pull();
+    const text = this.vault.read(folder, 'project.json'); if (!text) return { schema: 'vault-restore-v1', projectId, restored: false };
+    const definition = VaultProjectSchema.parse(JSON.parse(text));
+    const project = { ...row.project, allowedDevices: [this.device.deviceId], branchPolicy: definition.gitPolicy, ...(!row.project.testCommand && definition.testCommand ? { testCommand: definition.testCommand } : {}) };
+    if (stableJson(project) !== stableJson(row.project)) await this.conversations.saveProject({ schema: 'project-write-v1', revision: row.revision, clientRequestId: `vault_restore_${row.revision}`, project });
+    await this.projectWork.restoreFromVault(projectId);
+    return { schema: 'vault-restore-v1', projectId, restored: true };
+  }
+  #vaultLogin: { token: string; login: string } | undefined;
+  /** The owner's `jevellan-vault` repository, named by the account of the shared GitHub token, or `JEVELLAN_VAULT_REMOTE` (owner/repo). */
+  async #vaultRemote(options: ApplicationOptions): Promise<VaultRemote | null> {
+    const token = await this.state.github.credential(); if (!token || options.githubBaseUrl) return null;
+    const configured = process.env.JEVELLAN_VAULT_REMOTE?.trim();
+    if (configured) return { url: `https://github.com/${configured}.git`, token };
+    if (this.#vaultLogin?.token !== token) {
+      const client = new GitHubClient({ token: async () => token, redactor: this.redactor, ...(options.githubFetch ? { fetch: options.githubFetch } : {}), ...(options.githubBaseUrl ? { baseUrl: options.githubBaseUrl } : {}) });
+      this.#vaultLogin = { token, login: await client.viewer() };
+    }
+    return { url: `https://github.com/${this.#vaultLogin.login}/jevellan-vault.git`, token };
   }
   bindDaemonUrl(url: string): void {
     this.conversations.daemonUrl = url; this.backgroundDrafts.daemonUrl = url;
@@ -334,6 +377,7 @@ export class Application {
     // Projects close first: they share ownership, leases, accounts, bridges, memory and the hub with conversations.
     try { await this.terminals.close(); } catch (error) { failures.push(error); }
     try { await this.projectWork.close(); } catch (error) { failures.push(error); }
+    try { await this.vault?.close(); } catch (error) { failures.push(error); }
     try { await this.conversations.close(); } catch (error) { failures.push(error); }
     const cleanup = await Promise.allSettled([this.accounts.close(), this.bridges.close(), this.memory.close()]);
     for (const result of cleanup) if (result.status === 'rejected') failures.push(result.reason);
