@@ -1562,7 +1562,10 @@ dialog:has(.change-columns) { width: min(860px, calc(100vw - 24px)); }
 .vault-facts dd { margin: 0; overflow-wrap: anywhere; }
 .vault-facts .error-text { color: var(--danger); }
 .project-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr)); gap: 12px; align-items: start; margin: 0 0 14px; }
-.project-list > .card { margin: 0; display: grid; gap: 6px; }
+.project-list > .card { margin: 0; display: grid; gap: 6px; min-width: 0; }
+/* A long test command wraps inside its card instead of pushing the card wider than its column. */
+.project-card .model-chips { min-width: 0; }
+.project-card .chip.dim { white-space: normal; overflow-wrap: anywhere; max-width: 100%; }
 .project-card .card-heading { margin: 0; align-items: center; }
 .project-card .card-heading h2 { font-size: 15px; }
 .project-card .actions { margin: 4px 0 0; gap: 6px; }
