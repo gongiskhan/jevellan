@@ -1,0 +1,41 @@
+{
+  "schema": "thread-folding-evidence-v1",
+  "at": "2026-10-15T12:33:28.097244+00:00",
+  "sourceBase": "c86e11a7",
+  "unit": {
+    "label": "simulated",
+    "passed": 45
+  },
+  "browser": {
+    "label": "simulated",
+    "passed": 1,
+    "layout": "desktop-light",
+    "vision": "not run"
+  },
+  "live": {
+    "layouts": [
+      "desktop-light",
+      "desktop-dark",
+      "phone-light",
+      "phone-dark"
+    ],
+    "toolGroups": 79,
+    "openTools": 0,
+    "thinking": 4,
+    "openThinking": 4,
+    "openHistoricalMessages": 0,
+    "openReports": 0,
+    "manualReportOpened": true
+  },
+  "typecheck": "passed",
+  "lint": "passed",
+  "build": "passed",
+  "backendChanged": false,
+  "daemonRestarted": false,
+  "sourceHashes": {
+    "apps/web/src/session-transcript.tsx": "eb0659ae7fcaf10aeedd772e85151a32a69ff1f8f63bb40a00c496aafadfbbb3",
+    "apps/web/src/transcript-groups.ts": "9b72e4f1327e7f9ee3ed6e7fd38f1053dd554df1995709b325ad9fcc6d8ee498",
+    "apps/web/src/thread-page.tsx": "2b94d07d1a2500dd70074818f795c17c156cb5e1983f2b6923041e9ee841f3a5",
+    "apps/web/src/cursor-sessions.css": "f2e70c77b89c23b61204b404e4ce51c8926784ab37f6ec4f7c2b3464832c12b3"
+  }
+}

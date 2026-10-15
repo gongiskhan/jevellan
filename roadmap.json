@@ -724,5 +724,11 @@
     "title": "Compact thread session details and visible tool waits",
     "why": "Decisions836–837: put terminal takeover and execution details in an expandable session panel; keep state, PR and checks visible and name the pending tool. Preserve guard and test-failure evidence. See docs/acceptance/thread-header-2026-10-15/.",
     "status": "complete-with-blockers"
+  },
+  {
+    "id": "focused-thread-transcript",
+    "title": "Keep current work and thinking expanded, fold thread history",
+    "why": "Decision839: completed tools, messages and reports are compact disclosures; the pending block opens and closes as work progresses.45 focused cases and targeted simulated browser journey pass; real Pro inspected in four layouts. Compatible web-only activation retains rollback. Full suites/model vision not run.",
+    "status": "complete-with-blockers"
   }
 ]

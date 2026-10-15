@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "test": "Thread history folds while current work and thinking stay expanded",
+  "layout": "desktop-light",
+  "screenshot": "/tmp/jevellan-tool-groups-desktop-light-projects.png",
+  "expected": "the Jevellan web app \"jevellan tool groups projects\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Thread history folds while current work and thinking stay expanded\"; the other steps are judged in their own screenshots)"
+}

@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 import type { CursorTurn } from '../packages/core/dist/client.js';
-import { mergeTranscriptTurns, transcriptGroups } from '../apps/web/src/transcript-groups.js';
+import { mergeTranscriptTurns, toolAwaitingResult, transcriptGroups } from '../apps/web/src/transcript-groups.js';
 import { mergeThreadToolTurns } from '../apps/web/src/project-work-model.js';
 const tool = (id: string, name = 'Read', state: 'running' | 'completed' | 'failed' = 'completed'): CursorTurn['blocks'][number] => ({ type: 'tool', id, name, input: id, output: `result ${id}`, state });
 const turn = (id: string, blocks: CursorTurn['blocks'], role: CursorTurn['role'] = 'assistant'): CursorTurn => ({ id, blocks, role });
@@ -24,4 +24,13 @@ test('changing tools and user messages ends the current group', () => {
 test('reports remain boundaries between thread tool groups', () => {
   const report = { kind: 'report' as const, report: { schema: 'thread-report-v1' as const, turn: 1, status: 'progress' as const, summary: 'Checked', changedFiles: [], synthesized: false } };
   expect(mergeThreadToolTurns([{ kind: 'turn', turn: turn('a', [tool('one')]) }, report, { kind: 'turn', turn: turn('b', [tool('two')]) }])).toHaveLength(3);
+});
+
+test('only unfinished tool calls qualify for the active disclosure, including native Recorded calls', () => {
+  const call = { type: 'tool' as const, id: 'live', name: 'Bash', input: '{}', state: 'running' as const };
+  expect(toolAwaitingResult(call)).toBe(true);
+  expect(toolAwaitingResult({ ...call, state: 'unknown' })).toBe(true);
+  expect(toolAwaitingResult({ ...call, output: '' })).toBe(false);
+  expect(toolAwaitingResult({ ...call, state: 'completed' })).toBe(false);
+  expect(toolAwaitingResult({ ...call, state: 'failed' })).toBe(false);
 });

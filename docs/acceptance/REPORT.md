@@ -4,6 +4,8 @@ Last updated: 2026-10-15. On 2026-09-26 the user resumed the build on a second m
 
 ## Current state
 
+15 October, Decision839: thread history now folds by default, with only current work and thinking expanded. Compatible web-only activation is live on Pro0.3.6, no daemon restart.45 focused cases and the targeted browser journey pass; actual desktop/phone light/dark inspected. [Folding evidence](thread-folding-2026-10-15/README.md). The prior admission retry activation blocker remains unchanged.
+
 15 October, Decisions836–837: simplify the thread header and explain pending tool results. Frontend-only Pro activation retains the prior web assets and does not restart the daemon or change backend/runtime code. Live recovery interrupts the prolonged turn8 wait and preserves PR255/source/logs; its queued follow-up remains subject to the device load guard. Evidence: [session header and tool wait](thread-header-2026-10-15/README.md).
 
 Latest scoped correction, 14 October: Decisions834–835 keep completed Projects threads open for owner follow-ups and route each through Jev intent and execution placement. Pro/Madrid0.3.6 are installed with full rollback snapshots. All90 targeted cases, typecheck, lint and build pass; the automatic browser fixture cannot join its simulated member, while the real owner UX thread composer is enabled in all4 manually inspected layouts. See [thread continuation evidence](thread-continuation-2026-10-14/README.md). Historical failed/partial readiness remains historical.

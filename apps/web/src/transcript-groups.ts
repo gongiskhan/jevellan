@@ -31,3 +31,6 @@ export function mergeTranscriptTurns(turns: readonly CursorTurn[]): CursorTurn[]
   }
   return result;
 }
+
+/** Unknown native tool records with no result may still be working; a saved result always closes them. */
+export const toolAwaitingResult = (call: ToolBlock): boolean => call.output === undefined && (call.state === 'running' || call.state === 'unknown');

@@ -1,6 +1,6 @@
 import type { Locator, Page, TestInfo } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
-import { DeviceRosterSchema, MergeDocumentsViewSchema, ProjectDailyListViewSchema, ProjectWorkViewSchema, RuntimeListSchema, TaskListViewSchema, TaskReceiptSchema, TerminalSnapshotSchema, ThreadViewSchema, WorktreeDiskSchema, type ThreadView } from '../../packages/core/dist/client.js';
+import { DeviceRosterSchema, MergeDocumentsViewSchema, ProjectDailyListViewSchema, ProjectWorkViewSchema, RuntimeListSchema, TaskListViewSchema, TaskReceiptSchema, TerminalSnapshotSchema, ThreadViewSchema, WorktreeDiskSchema, type ThreadView, type CursorTurn } from '../../packages/core/dist/client.js';
 import { threadDeviceOffline } from '../../packages/projects/dist/copy.js';
 import { expect, test } from './fixtures.js';
 import { expectClearOfComposer, expectNoStaleJump, openSidebar } from './navigation.js';
@@ -1093,14 +1093,14 @@ test('Coordinator overrides expose model and effort while preserving unrelated p
   await expect.poll(async () => (await work(page)).settings.coordinator).toEqual(before.coordinator); expect(errors).toEqual([]);
 });
 
-test('Consecutive tool calls share an open area and new live output appends to it', async ({ page }, info) => {
+test('Thread history folds while current work and thinking stay expanded', async ({ page }, info) => {
   const errors = await begin(page);
   const created = await page.request.post(`${PROJECT}/threads`, { data: { schema: 'thread-create-request-v1', clientRequestId: `request_groups_${info.project.name}`, title: 'Inspect app files for grouping', task: 'Read the README and describe the files.', isolation: 'worktree', modelId: 'claude-fable', effort: 'high' } });
   expect(created.ok(), await created.text()).toBe(true); const started = await created.json();
   await expect.poll(async () => (await threadView(page, started.threadId)).thread.state, LONG).not.toBe('preparing');
   const view = await threadView(page, started.threadId); const thread = view.thread;
   const tool = (id: string, name = 'Read') => ({ type: 'tool' as const, id, name, input: JSON.stringify({ file_path: `${id}.txt` }), output: `Output ${id}`, state: 'completed' as const });
-  const turns = [{ id: 'one', role: 'assistant' as const, blocks: [tool('one')] }, { id: 'two', role: 'assistant' as const, blocks: [tool('two')] },
+  const turns: CursorTurn[] = [{ id: 'one', role: 'assistant' as const, blocks: [tool('one')] }, { id: 'two', role: 'assistant' as const, blocks: [tool('two')] },
     { id: 'boundary', role: 'assistant' as const, blocks: [{ type: 'thinking' as const, text: 'A thinking block starts a new group.' }, tool('three'), tool('four', 'Bash'), tool('five')] }];
   view.reports = []; view.transcript = { schema: 'cursor-transcript-v1', session: { schema: 'cursor-session-v1', id: 'claude_00000000000000000000000000000000', ownerDeviceId: thread.ownerDeviceId,
     deviceName: view.deviceName, title: thread.title, cwd: null, project: 'Projects fixture', state: 'idle', lastActivityAt: new Date().toISOString(), connected: false, canSteer: false, canSend: false },
@@ -1109,9 +1109,27 @@ test('Consecutive tool calls share an open area and new live output appends to i
   await page.goto(`/projects/projects_fixture/threads/${thread.id}`);
   const areas = page.locator('.cursor-tool'); await expect(areas).toHaveCount(4);
   await expect(areas.first().locator('.cursor-tool-call')).toHaveCount(2); await expect(areas.first()).toContainText('Output one'); await expect(areas.first()).toContainText('Output two');
-  await expect(page.locator('details.cursor-tool')).toHaveCount(0);
+  await expect(page.locator('details.cursor-tool')).toHaveCount(4);
+  await expect(page.locator('details.cursor-tool[open]')).toHaveCount(0);
+  await expect(page.locator('.cursor-thinking[open]')).toHaveCount(1);
+  await expect(areas.first().locator('pre').first()).toBeHidden();
+  await areas.first().locator(':scope > summary').click();
+  await areas.first().locator('.cursor-tool-call > summary').first().click();
+  await expect(areas.first().getByText('Output one', { exact: true })).toBeVisible();
   turns[0]!.blocks.push(tool('appended')); await expect(areas.first().locator('.cursor-tool-call')).toHaveCount(3);
   await expect(areas.first()).toContainText('Output appended'); await expect(areas).toHaveCount(4);
+  view.thread.state = 'running';
+  const pending: Extract<CursorTurn['blocks'][number], { type: 'tool' }> = { type: 'tool', id: 'active', name: 'Bash', input: '{"command":"sleep 1"}', state: 'unknown' };
+  turns.at(-1)!.blocks.push(pending);
+  await expect(areas).toHaveCount(5);
+  const current = areas.last();
+  await expect(current).toHaveAttribute('open', '');
+  await expect(current).toContainText('Waiting for result');
+  await expect(current.locator('pre')).toBeVisible();
+  pending.output = 'Finished'; pending.state = 'completed';
+  view.thread.state = 'idle';
+  await expect(current).not.toHaveAttribute('open');
+  await expect(page.locator('.cursor-thinking[open]')).toHaveCount(1);
   await page.screenshot({ path: `/tmp/jevellan-tool-groups-${info.project.name}.png`, fullPage: true }); expect(errors).toEqual([]);
 });
 

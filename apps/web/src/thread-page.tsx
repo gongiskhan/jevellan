@@ -129,6 +129,10 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
   const items = useMemo(() => withoutEchoedSummaries(withoutReportCalls(alignReports(turns ?? [], reports ?? [], state === 'running' ? finished + 1 : finished), reports ?? [])),
     [turns, reports, state, finished]);
 
+  const transcriptItems = useMemo(() => mergeThreadToolTurns(items), [items]);
+  const activeTurn = state === 'running' ? transcriptItems.at(-1) : undefined;
+  const activeTurnId = activeTurn?.kind === 'turn' ? activeTurn.turn.id : undefined;
+
   const back = <RouteLink className="text-button pw-back" href={project} navigate={navigate}><Icon name="back" size={14} />{copy.BACK_TO_PROJECT}</RouteLink>;
   if (!view) {
     const known = held?.thread;
@@ -242,8 +246,8 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
       {actionError && <p className="error">{actionError}</p>}
       <div className="cursor-transcript pw-transcript" aria-label={copy.TRANSCRIPT_LABEL}>
         {notice && <p className="pw-transcript-note">{notice}</p>}
-        {mergeThreadToolTurns(items).map((item) => item.kind === 'turn'
-          ? <TranscriptTurn key={item.turn.id} turn={item.turn} userLabel={copy.PROMPT} collapseLongUser={thread.state === 'attached' ? 0 : copy.PROMPT_COLLAPSE_CHARACTERS} />
+        {transcriptItems.map((item) => item.kind === 'turn'
+          ? <TranscriptTurn key={item.turn.id} turn={item.turn} focus active={item.turn.id === activeTurnId} userLabel={copy.PROMPT} collapseLongUser={thread.state === 'attached' ? 0 : copy.PROMPT_COLLAPSE_CHARACTERS} />
           : <ReportCard key={`report-${item.report.turn}-${item.report.synthesized ? 'synthesized' : 'recorded'}`} report={item.report} />)}
         {view.queuedMessages.length > 0 && (
           <section className="pw-queued" aria-labelledby={queuedId}>
@@ -315,11 +319,12 @@ function ReportCard({ report }: { report: ThreadReport }) {
   const tests = report.testsRun; const options = report.options ?? [];
   return (
     <section className={`pw-report pw-report-${report.status}`} aria-labelledby={headingId}>
-      <div className="pw-report-head">
+      <details className="pw-report-disclosure">
+      <summary className="pw-report-head">
         <h3 id={headingId}>{copy.reportHeading(report.turn)}</h3>
         {report.synthesized && <span className="pw-report-note">{copy.SYNTHESIZED_REPORT}</span>}
         <span className={`chip pw-badge pw-tone-${badge.tone}`}>{badge.text}</span>
-      </div>
+      </summary>
       <Markdown>{report.summary}</Markdown>
       <OwnerCommands commands={report.ownerCommands} />
       {(report.question || options.length > 0) && (
@@ -341,6 +346,7 @@ function ReportCard({ report }: { report: ThreadReport }) {
           {tests.summary && <p>{tests.summary}</p>}
         </div>
       )}
+      </details>
     </section>
   );
 }
@@ -348,13 +354,16 @@ function ReportCard({ report }: { report: ThreadReport }) {
 /** A message that waits for the thread's next turn (D81, D231). */
 function QueuedEntry({ queued }: { queued: QueuedMessage }) {
   return (
-    <article className="pw-queued-message">
-      <p className="pw-source">
+    <details className="pw-queued-message">
+      <summary>
+      <span className="pw-source">
         {queued.from === 'owner' ? copy.YOU : copy.COORDINATOR} · <Stamp at={queued.at} label={shortTime(queued.at)} />
         {queued.interrupt && <> · {copy.INTERRUPTS_TURN}</>}
-      </p>
+      </span>
+        <span className="pw-queued-preview">{queued.text.trim().split('\n')[0]?.slice(0, 160)}</span>
+      </summary>
       <Markdown>{queued.text}</Markdown>
-    </article>
+    </details>
   );
 }
 

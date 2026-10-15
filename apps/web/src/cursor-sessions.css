@@ -38,3 +38,19 @@
 }
 
 .native-follow { position: sticky; bottom: 12px; align-self: center; margin-top: auto; z-index: 10; }
+
+/* Focused Projects transcripts show history as compact, keyboard-operable disclosures. */
+.cursor-text-block { border: 1px solid var(--edge); border-radius: 10px; padding: 10px 14px; min-width: 0; }
+.cursor-text-block > summary, details.cursor-tool > summary, details.cursor-tool-call > summary { cursor: pointer; min-height: 24px; color: var(--ink-2); overflow-wrap: anywhere; }
+.cursor-text-block > summary { font-size: 13px; }
+.cursor-text-block[open] > summary, details.cursor-tool[open] > summary, details.cursor-tool-call[open] > summary { margin-bottom: 10px; }
+.pw-report-disclosure > summary { cursor: pointer; }
+.pw-report-disclosure > summary::before { flex: none; }
+.pw-report-disclosure:not([open]) > summary { margin-bottom: 0; }
+@media (max-width: 600px) {
+  .cursor-text-block > summary, details.cursor-tool > summary, details.cursor-tool-call > summary, .pw-report-disclosure > summary { min-height: 32px; }
+}
+
+.pw-queued-message > summary { cursor: pointer; min-height: 32px; overflow-wrap: anywhere; }
+.pw-queued-preview { display: block; margin-top: 4px; color: var(--ink-2); font-size: 13px; }
+.pw-queued-message[open] > summary { margin-bottom: 10px; }
