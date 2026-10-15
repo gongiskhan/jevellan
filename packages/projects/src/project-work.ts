@@ -83,6 +83,8 @@ export const DEFAULT_PROJECT_TIMERS: ProjectTimers = {
   mainLeaseRetryMs: 20_000, fallbackCheckMs: 60_000, now: Date.now,
 };
 export type ProjectWorkOptions = {
+  /** Why this device may not start new work now (B5: it runs a newer version than its hub). */
+  workRefusal?(): string | undefined;
   journal?: Pick<JournalOptions, 'isHub' | 'request'>;
   terminalRead?(scope: import('./bridge-tools.js').ProjectScope, input: unknown): Promise<unknown>;
   homes: Homes; deviceId: string; deviceName: string; redactor: SecretRedactor;
@@ -287,7 +289,7 @@ export class ProjectWork {
       } });
     const followups = new ThreadFollowups({ paths: this.paths, placement, settings: o.settings, project: id => this.#project(id),
       workSettings: id => this.admission.settings(id), client: o.decisionClient });
-    this.threads = new ThreadService({ deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, store: this.store, ledgers: this.ledgers, receipts, hub: o.hub,
+    this.threads = new ThreadService({ deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, ...(o.workRefusal ? { workRefusal: o.workRefusal } : {}), store: this.store, ledgers: this.ledgers, receipts, hub: o.hub,
       projects: o.projects, admission: this.admission, placement, accounts: o.accounts, transcripts: this.transcripts, delivery, settings: o.settings, now,
       roster: o.roster, decisions: this.decisions, fallbackCheckMs: timers.fallbackCheckMs, managedQueue: true,
       queueChanged: projectId => { void this.dispatcher.sweep(projectId).catch(() => undefined); },
@@ -497,7 +499,7 @@ export class ProjectWork {
     void this.ready.then(() => { if (!this.#closing) this.inbox.kick(); }, () => undefined);
   }
   async #sweepTasks(): Promise<void> {
-    if (!this.#started || this.#closing || !deviceAllowsWork(this.#o.homes)) return;
+    if (!this.#started || this.#closing || !deviceAllowsWork(this.#o.homes) || this.#o.workRefusal?.()) return;
     try {
       for (const { project } of await this.#o.projects.list()) {
         const ledger = this.ledgers.coordinator(project.id);

@@ -4,7 +4,7 @@ import { collectDeviceFacts, EkoaRequestSchema, DeviceSettingsInputSchema, Devic
 import { existsSync } from 'node:fs';
 import { hostname } from 'node:os';
 import { z } from 'zod';
-import { ConsumeSwitchSchema, DaemonOwnership, DeviceConfigSchema, DeviceOriginSchema, DeviceSchema, DeviceSwitchInputSchema, JevConnectionSchema, RiggingApplicationSchema, Homes, ProjectVisibility, RiggingDisk, SecretRedactor, VERSION, newId, readDocument, seedConfiguration, stableJson, writeDocument, type DeviceConfig, type Project, type ProjectHub, type VisibilityProbe } from '@jevellan/core';
+import { ConsumeSwitchSchema, DaemonOwnership, DeviceConfigSchema, DeviceOriginSchema, DeviceSchema, DeviceSwitchInputSchema, JevConnectionSchema, RiggingApplicationSchema, Homes, ProjectVisibility, RiggingDisk, SecretRedactor, VERSION, compareVersions, versionSkewMessage, newId, readDocument, seedConfiguration, stableJson, writeDocument, type DeviceConfig, type Project, type ProjectHub, type VisibilityProbe } from '@jevellan/core';
 import { DeviceRegistry, HubAccounts, HubCheckoutStore, HubDatabase, HubIndexes, HubMesh, HubProjectAccess, HubPublicationLeases, HubState, MemberAccounts, MemberCheckoutStore, MemberHubClient, MemberIndexes, MemberProjectStore, MemberPublicationLeases, MemberState, MemberUiAuth, ProjectImproverHub, UiAuth, memberConnection } from '@jevellan/mesh';
 import { AccountService } from '@jevellan/accounts';
 import { BackgroundDrafts, ContextOperations, ConversationService, StretchBridges } from '@jevellan/conversations';
@@ -32,6 +32,7 @@ export type ApplicationOptions = { homes?: Homes; port?: number; url?: string; r
   /** Test seam for the improver's memory index; production uses the isolated Basic Memory. */ projectMemory?: (project: Project) => MemoryPort;
   /** Projects test seams: the GitHub transport and API base (a fake server in tests), and Projects timers (periodic loops follow `timers`). */
   githubFetch?: typeof fetch; githubBaseUrl?: string; projectTimers?: Partial<ProjectTimers>; ekoaConnector?: EkoaConnector; forceHub?: boolean;
+  /** Test seam: the version this device reports and compares with its hub's (B5). */ version?: string;
   terminalOptions?: ConstructorParameters<typeof TerminalService>[1] };
 
 export class Application {
@@ -46,6 +47,7 @@ export class Application {
   readonly #mesh: HubMesh | undefined;
   readonly homes: Homes; readonly device: DeviceConfig; readonly redactor: SecretRedactor;
   readonly member: MemberHubClient | undefined;
+  readonly version: string;
   readonly agentAccess: AgentAccess;
   readonly hubAgentAccess: HubAgentAccess | undefined;
   readonly accounts: AccountService; readonly auth: UiAuth | MemberUiAuth; readonly rigging: SharedRigging;
@@ -75,6 +77,7 @@ export class Application {
   get devices(): DeviceRegistry { return this.mesh.devices; }
   get hubAuth(): UiAuth { return this.mesh.auth; }
   constructor(options: ApplicationOptions = {}) {
+    this.version = options.version ?? VERSION;
     this.#improverTimers = options.timers !== false;
     this.projectVisibility = new ProjectVisibility(options.repositoryVisibility);
     this.homes = options.homes ?? new Homes(); assertHubNotMoved(this.homes, options.forceHub); this.homes.ensure();
@@ -103,8 +106,8 @@ export class Application {
         if (!this.#hub.configuration.current()) this.#hub.configuration.put(seedConfiguration(), 0, { deviceId: this.device.deviceId, source: 'install' });
         this.#hub.configuration.materialise(this.homes);
         const localDevice = this.#hub.get('devices', this.device.deviceId, DeviceSchema);
-        if (!localDevice) this.#hub.put('devices', this.device.deviceId, DeviceSchema, { schema: 'device-v1', id: this.device.deviceId, name: this.device.name, role: 'hub', url: this.device.url, os: process.platform, version: VERSION, joinedAt: new Date().toISOString() }, 0);
-        else if (localDevice.document.url !== this.device.url || localDevice.document.version !== VERSION) this.#hub.put('devices', this.device.deviceId, DeviceSchema, { ...localDevice.document, url: this.device.url, version: VERSION }, localDevice.revision);
+        if (!localDevice) this.#hub.put('devices', this.device.deviceId, DeviceSchema, { schema: 'device-v1', id: this.device.deviceId, name: this.device.name, role: 'hub', url: this.device.url, os: process.platform, version: this.version, joinedAt: new Date().toISOString() }, 0);
+        else if (localDevice.document.url !== this.device.url || localDevice.document.version !== this.version) this.#hub.put('devices', this.device.deviceId, DeviceSchema, { ...localDevice.document, url: this.device.url, version: this.version }, localDevice.revision);
         if (this.auth instanceof UiAuth) this.#mesh = new HubMesh(this.#hub, new DeviceRegistry(this.#hub, this.device.deviceId), this.auth);
         migrateContextOperations(this.#hub, this.homes, this.device.deviceId, contexts);
         const old = this.#hub.get('rigging-application', this.device.deviceId, RiggingApplicationSchema);
@@ -152,7 +155,7 @@ export class Application {
         accountRuns, enterOperation: (id, title) => this.lifecycle.enter({ kind: 'settings', id, title }) });
       // Projects share the account serialization, checkout ownership, leases, bridge registry and memory with conversations.
       this.projectHub = this.member ? new MemberProjectStore(this.member) : new HubProjectAccess(this.hub, this.device.deviceId, undefined, () => this.devices.list());
-      this.projectWork = new ProjectWork({ homes: this.homes, deviceId: this.device.deviceId, deviceName: this.device.name, redactor: this.redactor,
+      this.projectWork = new ProjectWork({ homes: this.homes, deviceId: this.device.deviceId, deviceName: this.device.name, redactor: this.redactor, workRefusal: () => this.versionRefusal(),
         journal: { isHub: !this.member, ...(this.member ? { request: input => this.member!.projectJournal(input) } : {}) },
         terminalRead: (scope, input) => this.terminals.read(scope.kind === 'thread' ? { kind: 'thread', projectId: scope.projectId, threadId: scope.threadId }
           : { kind: 'coordinator', projectId: scope.projectId }, input),
@@ -192,7 +195,7 @@ export class Application {
         client: this.decisionClient, jevModel: async () => (await this.configuration()).configuration['x-jevellan'].decisions.model,
         draft: (request, signal) => this.backgroundDrafts.run(request, signal), handoffs: projectId => this.conversations.recentHandoffSummaries(projectId),
         enterOperation: (id, title) => this.lifecycle.enter({ kind: 'settings', id, title }), pollMs: this.member ? 15_000 : 60_000 });
-      this.presence = new DevicePresence({ deviceId: this.device.deviceId, version: VERSION, sensor: this.sessions,
+      this.presence = new DevicePresence({ deviceId: this.device.deviceId, version: this.version, sensor: this.sessions,
         facts: () => options.deviceFacts?.() ?? collectDeviceFacts(this.homes, this.projectWork.runningThreads(), this.projectWork.jobs.runningIds()),
         workPolicy: () => ({ schema: 'device-work-policy-v1', mode: deviceAllowsWork(this.homes) ? 'work' : 'apps-only' }),
         projects: async () => (await this.state.projects.list()).map(row => row.project), running: () => this.conversations.localRunning(),
@@ -208,6 +211,11 @@ export class Application {
       this.started = Promise.all([improverReady, this.projectWork.ready]).then(releaseStartup, releaseStartup).catch(() => undefined);
     } catch (error) { this.#hub?.close(); throw error; }
     } catch (error) { startup?.(); lifecycle?.close(); this.#ownership.close(); throw error; }
+  }
+  /** B5: a member newer than its hub starts no new work, since the older hub may refuse its requests. */
+  versionRefusal(): string | undefined {
+    const hub = this.member?.hubVersion;
+    return hub && compareVersions(this.version, hub) > 0 ? versionSkewMessage(this.version, hub) : undefined;
   }
   bindDaemonUrl(url: string): void {
     this.conversations.daemonUrl = url; this.backgroundDrafts.daemonUrl = url;

@@ -1,7 +1,7 @@
 import { EkoaRequestSchema, EkoaStateSchema } from '@jevellan/core';
 import { ProjectMemoryRequestSchema, ProjectMemoryResultSchema } from '@jevellan/core';
 import { DeviceTagsRequestSchema, DeviceSettingsRequestSchema } from '@jevellan/core';
-import { AuthStateSchema, ConsumeSwitchSchema, DeviceOriginSchema, DeviceRosterSchema, DeviceSwitchInputSchema, DeviceSwitchSchema, DeviceTokenSchema, DeviceViewSchema, EmptySchema, ErrorDocumentSchema, HeartbeatSchema, IdSchema, JoinedDeviceSchema, JoinDeviceInputSchema, JoinInvitationSchema, MeshSessionInputSchema, MeshSessionResultSchema, MeshSessionStateSchema, PassphraseInputSchema, SwitchedSessionSchema, UiSigningMaterialSchema, parseReply, stableJson, type DocumentSchema, type SecretRedactor, type UiSigningMaterial } from '@jevellan/core';
+import { AuthStateSchema, ConsumeSwitchSchema, DeviceOriginSchema, DeviceRosterSchema, DeviceSwitchInputSchema, DeviceSwitchSchema, DeviceTokenSchema, DeviceViewSchema, EmptySchema, ErrorDocumentSchema, HeartbeatSchema, IdSchema, JoinedDeviceSchema, JoinDeviceInputSchema, JoinInvitationSchema, MeshSessionInputSchema, MeshSessionResultSchema, MeshSessionStateSchema, PassphraseInputSchema, SwitchedSessionSchema, UiSigningMaterialSchema, VERSION_PATTERN, parseReply, stableJson, type DocumentSchema, type SecretRedactor, type UiSigningMaterial } from '@jevellan/core';
 import { verifySharedSession } from './auth.js';
 import { AccountHubRequestSchema, AccountHubResultSchema } from '@jevellan/core';
 import { CheckoutStoreRequestSchema, CheckoutStoreResultSchema, PublicationLeaseRequestSchema, PublicationLeaseResultSchema } from '@jevellan/core';
@@ -25,6 +25,8 @@ export class HubProtocolError extends Error {
 type TransportOptions = { hubUrl: string; hubName: string; redactor: SecretRedactor; fetch?: typeof fetch; timeoutMs?: number };
 class HubTransport {
   readonly origin: string;
+  /** The hub's version from its latest reply (B5); older hubs send none. */
+  hubVersion: string | undefined;
   constructor(private readonly options: TransportOptions) { this.origin = DeviceOriginSchema.parse(options.hubUrl); }
   async request<T>(path: string, schema: DocumentSchema<T>, body: unknown | undefined, token?: string, timeoutMs?: number): Promise<T> {
     const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), timeoutMs ?? this.options.timeoutMs ?? 5000);
@@ -35,6 +37,8 @@ class HubTransport {
         headers: { Accept: 'application/json', ...(body === undefined ? {} : { 'Content-Type': 'application/json' }), ...(token ? { Authorization: `Bearer ${DeviceTokenSchema.parse(token)}` } : {}) },
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       });
+      const version = response.headers.get('x-jevellan-version');
+      if (version && VERSION_PATTERN.test(version)) this.hubVersion = version;
       if (response.status >= 300 && response.status < 400 || response.headers.get('content-type')?.split(';')[0]?.trim() !== 'application/json') {
         await response.body?.cancel(); throw new HubProtocolError();
       }
@@ -94,6 +98,8 @@ export class MemberHubClient {
   readonly #transport: HubTransport;
   readonly deviceId: string;
   constructor(private readonly options: MemberHubOptions) { this.deviceId = IdSchema.parse(options.deviceId); this.#transport = new HubTransport(options); }
+  /** The hub's version as its latest reply stated it, the heartbeat's included (B5). */
+  get hubVersion(): string | undefined { return this.#transport.hubVersion; }
   #request<T>(path: string, schema: DocumentSchema<T>, body?: unknown, timeoutMs?: number) {
     const token = DeviceTokenSchema.parse(this.options.token()); this.options.redactor.add(token);
     return this.#transport.request(path, schema, body, token, timeoutMs);

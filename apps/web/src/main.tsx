@@ -170,6 +170,18 @@ function Toast({ notice, dismiss }: { notice: { text: string; error: boolean }; 
   return dialog ? createPortal(toast, dialog) : toast;
 }
 
+/** B5: a member on another version than its hub says so, with the one command that fixes it. */
+function VersionBanner({ devices }: { devices: SettingsData['devices'] }) {
+  const self = devices.devices.find((device) => device.id === devices.currentDeviceId);
+  const hub = devices.devices.find((device) => device.role === 'hub');
+  if (!self || !hub || self.id === hub.id || self.version === hub.version) return null;
+  return (
+    <div className="version-banner" role="status">
+      This device runs {self.version}. The hub runs {hub.version}. Update this device with <code>jevellan update</code>.
+    </div>
+  );
+}
+
 function App() {
   const [auth, setAuth] = useState<Auth>();
   const [data, setData] = useState<SettingsData>();
@@ -520,6 +532,7 @@ function App() {
             </span>
           </div>
         </header>}
+        <VersionBanner devices={data.devices} />
         <main className="page-content">
           {setup ? (
             <SetupPage {...props} path={path} key={path} />

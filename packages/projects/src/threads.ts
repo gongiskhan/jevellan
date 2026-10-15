@@ -100,6 +100,8 @@ export type StartRequest = {
 export type StartResult = { threadId: string; state: ThreadState; stateReason?: string; placement: string; repeated: boolean };
 export type ThreadServiceOptions = {
   deviceId: string; deviceName: string; redactor: SecretRedactor;
+  /** Why this device may not start new work now (B5: it runs a newer version than its hub). */
+  workRefusal?(): string | undefined;
   store: ThreadStore; ledgers: ProjectLedgers; receipts: StartReceipts;
   hub: Pick<ProjectHub, 'threads' | 'thread' | 'coordinator' | 'addOverride'>; projects: Pick<SharedProjects, 'get'>;
   admission: Pick<Admission, 'admit' | 'counts' | 'settings' | 'dispatched' | 'isDispatched'>; placement: Pick<Placement, 'place' | 'refusal'>; accounts: Pick<AccountService, 'list'>;
@@ -199,6 +201,8 @@ export class ThreadService {
    * created. An owner start tells the coordinator with the preformatted line (brief 9.5, D35).
    */
   start(request: StartRequest): Promise<StartResult> {
+    const refusal = this.#o.workRefusal?.();
+    if (refusal) return Promise.reject(refuse(refusal, 409));
     return this.#exclusive(request.projectId, async () => {
       const { projectId } = request;
       const normalized = { title: request.title, task: request.assembledTask ?? request.task, ...(request.taskContext ? { taskContext: request.taskContext } : {}), ...request.fixed };

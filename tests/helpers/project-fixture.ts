@@ -267,7 +267,7 @@ export type ProjectMember = {
  * remote added to the project's paths, a signed-in browser session and a heartbeat. Timers are off: tests call `pulse()` on
  * each side. The hub's device row gets its listening URL, which members and proxies use.
  */
-export async function projectMember(f: ProjectFixture, options: { name?: string } = {}): Promise<ProjectMember> {
+export async function projectMember(f: ProjectFixture, options: { name?: string; version?: string } = {}): Promise<ProjectMember> {
   const name = options.name ?? 'Fixture member';
   const hubRow = f.app.hub.get('devices', f.app.device.deviceId, DeviceSchema)!;
   if (hubRow.document.url !== f.base) f.app.hub.put('devices', f.app.device.deviceId, DeviceSchema, { ...hubRow.document, url: f.base }, hubRow.revision);
@@ -304,7 +304,7 @@ export async function projectMember(f: ProjectFixture, options: { name?: string 
     return response;
   };
   const app = new Application({ homes, timers: false, repositoryVisibility: async () => 'PUBLIC', deviceFacts: () => fixtureFacts('linux'), runtimes: () => new Map([['fake', fake as RuntimeAdapter]]), githubBaseUrl: f.github.url, hubFetch,
-    projectTimers: { periodic: false, coordinatorStartMs: 0, coordinatorRetryMs: 50 } });
+    projectTimers: { periodic: false, coordinatorStartMs: 0, coordinatorRetryMs: 50 }, ...(options.version ? { version: options.version } : {}) });
   serverOptions.application = app; await app.started; app.bindDaemonUrl(base);
   f.closers.push(async () => {
     await new Promise<void>((resolve) => { server.close(() => resolve()); server.closeAllConnections(); });
@@ -314,7 +314,8 @@ export async function projectMember(f: ProjectFixture, options: { name?: string 
   if (login.status !== 200) throw new Error(`Member login failed with ${login.status}.`);
   const cookie = login.headers.get('set-cookie')!.split(';')[0]!;
   // Its own account, eligible on the member only; the hub's account has no status there.
-  f.app.hub.put('accounts', 'acc_member', AccountSchema, { schema: 'account-v1', id: 'acc_member', runtime: 'fake', label: 'Member account', kind: 'subscription', enabled: true, ceilingPct: 90,
+  // A second member shares it.
+  if (!f.app.hub.get('accounts', 'acc_member', AccountSchema)) f.app.hub.put('accounts', 'acc_member', AccountSchema, { schema: 'account-v1', id: 'acc_member', runtime: 'fake', label: 'Member account', kind: 'subscription', enabled: true, ceilingPct: 90,
     credential: 'per-device' }, 0);
   await app.accounts.check('acc_member');
   git(f.root, 'clone', f.origin, member.checkout); git(member.checkout, 'config', 'user.name', 'Fixture'); git(member.checkout, 'config', 'user.email', 'fixture@example.invalid');

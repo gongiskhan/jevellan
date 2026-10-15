@@ -16,6 +16,8 @@ import { TerminalHubRequestSchema } from '@jevellan/core';
 export const PROJECT_HUB_ROUTE = /^\/hub\/mesh\/projects\/([a-z-]+)$/;
 export async function handleMeshDeviceApi(app: Application, request: IncomingMessage, response: ServerResponse, url: URL): Promise<boolean> {
   const path = url.pathname; if (!path.startsWith('/hub/mesh/')) return false;
+  // Every device reply, the heartbeat's included, states the hub's version, so a member can tell it runs another one (B5).
+  response.setHeader('X-Jevellan-Version', app.version);
   if (app.device.role !== 'hub') throw Object.assign(new Error('This endpoint belongs to the hub.'), { status: 404 });
   // These endpoints exchange device credentials, not browser Settings data.
   if (request.headers.origin || request.headers['sec-fetch-site']) throw Object.assign(new Error('Use the device connection for this request.'), { status: 403 });
