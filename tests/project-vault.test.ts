@@ -63,3 +63,30 @@ test('an unreachable remote keeps the commits local, reports a redacted error an
   expect(a.vault.status()).toMatchObject({ pending: false, lastError: null });
   expect(git(bare, 'show', 'main:projects/fixture__repo/notebook.md')).toBe('Plan: tests first.');
 });
+
+test('Undo still reverts a dream after a pull rebased its commit onto another hub\'s work', { timeout: 240_000 }, async () => {
+  const { BasicMemory, HubMemoryStore, MemoryDream } = await import('../packages/memory/dist/index.js');
+  const { ProjectSchema } = await import('../packages/core/dist/index.js');
+  const a = hub('a'), b = hub('b'); await b.vault.sync();
+  const redactor = new SecretRedactor(), manager = new BasicMemory(a.homes, 'basic-memory', redactor);
+  const store = new HubMemoryStore(manager, 'hub', Date.now, { vault: a.vault, folder: () => 'fixture__repo' });
+  manager.configureHub((definition, _device, scope) => store.project(definition, scope));
+  try {
+    const project = ProjectSchema.parse({ schema: 'project-v1', id: 'project_a', name: 'Fixture', paths: {}, branchPolicy: 'external', remoteUrl: 'https://github.com/fixture/repo.git', memory: { mode: 'hub', dir: '.jevellan/memory' }, context: { state: 'none' } });
+    const port = store.project(project, { kind: 'owner', provenance: { source: 'owner', runtime: 'owner', model: 'owner' } });
+    const note = await port.write({ title: 'Kept note', content: 'Stays.' }, AbortSignal.timeout(120_000));
+    await a.vault.sync();
+    const dream = new MemoryDream(store), state = await dream.begin(project, 'a'.repeat(40), { source: 'dream', runtime: 'fake', model: 'fixture' }, 'apply');
+    writeFileSync(join(dream.staging(state).path, 'Dream note.md'), '---\ntitle: Dream note\nsource: dream\nruntime: fake\nmodel: fixture\nstatus: active\n---\nLearned.\n');
+    const applied = await dream.finish(project, 'One note.'); expect(applied.state).toBe('applied');
+    // Another hub pushes first; this hub's pull rebases the unpushed dream commit onto it.
+    await b.vault.sync(); b.write('projects/other__repo/notes/Elsewhere.md', 'Other project.\n'); await b.vault.sync();
+    await a.vault.pull();
+    expect(git(a.vault.root, 'log', '--format=%s', '-3')).toContain('dream:');
+    expect((await dream.undo(project)).state).toBe('undone');
+    expect(store.list(project.id).map(row => row.title)).toEqual(['Kept note']);
+    expect(readFileSync(join(port.path, note.permalink), 'utf8')).toContain('Stays.');
+    expect(readFileSync(join(a.vault.root, 'projects/other__repo/notes/Elsewhere.md'), 'utf8')).toBe('Other project.\n');
+    await a.vault.sync(); expect(a.vault.status().lastError).toBeNull();
+  } finally { await manager.close(); }
+});
