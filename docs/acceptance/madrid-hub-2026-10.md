@@ -73,12 +73,14 @@ Run log for moving Jevellan to a fresh hub on dev-madrid. Times are UTC on 2026-
 - Live vault (live, pass): the hub syncs `gongiskhan/jevellan-vault` with no error; ekoa-code's notes, `project.json` (6 goals, 3 jobs, 6 dailies; no device, account or path values) and `notebook.md` are on GitHub, and the sandbox folder too.
 
 - 0.4.0 installed (live, pass): health 0.4.0, doctor ten of ten OK, vault synced with no error; per-project export markers initialised against the definitions already in the vault.
-- Crucial review (simulated reading of the diff): three serious findings (a hub's sweep could overwrite another hub's vault definition before Restore; `JEVELLAN_VAULT_REMOTE` could point the vault at a project repository; a message during a preparation retry could run a first turn without the task), all fixed with regression tests in `2842086`.
+- Crucial review (simulated reading of the diff): three serious findings (a hub's sweep could overwrite another hub's vault definition before Restore; `JEVELLAN_VAULT_REMOTE` could point the vault at a project repository; a message during a preparation retry could run a first turn without the task), all fixed with regression tests in `2842086`. A second review of the later changes found nothing serious.
 
 ## Owner list
 
 - Run `sudo tailscale serve --https=8500 off` on dev-madrid. Tailscale refuses every route change by a non-root user while any route serves a folder, and `:8500` serves `~/Documents/Codex/2026-09-03/so-i-used-to-play-this`. Re-add it afterwards, if wanted, with `sudo tailscale serve --bg --https=8500 /home/ggomes/Documents/Codex/2026-09-03/so-i-used-to-play-this` (that again blocks later Jevellan route changes).
 
 ## Open problems
+
+- Second review (minor): a `project.json` edit made on two hubs at once keeps the upstream copy and the losing hub does not re-export until its next change; the first export can run before the first pull on a cold start (GitHub stays safe); termination signals pids from a snapshot that is older on a busy machine.
 
 - The old member is half uninstalled until the `:8500` folder share is removed; the hub install, Phase 1 from step 4, and Phases 3 and 4 wait on it.
