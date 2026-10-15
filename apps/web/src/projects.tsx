@@ -12,8 +12,13 @@ import {
   ProjectViewSchema,
   ProjectVisibilitySchema,
   ProjectFoldersSchema,
+  VaultRestoreResultSchema,
+  VaultViewSchema,
+  vaultFolder,
   type Project,
+  type VaultView,
 } from '@jevellan/core/client';
+import { timeStamp } from './time.js';
 import { api } from './api.js';
 import { OPEN } from './project-work-copy.js';
 import {
@@ -33,6 +38,11 @@ export function ProjectsPage(props: PageProps & { embedded?: boolean }) {
   const [editing, setEditing] = useState<ProjectView | 'new'>();
   const [memory, setMemory] = useState<Project>();
   const [context, setContext] = useState<Project>();
+  // Phase 5: the hub's vault; a member has none and shows nothing.
+  const [vault, setVault] = useState<VaultView>();
+  useEffect(() => {
+    void api('/api/vault', VaultViewSchema).then(setVault).catch(() => undefined);
+  }, []);
   const reload = async (signal?: AbortSignal) =>
     setProjects(
       (await api('/hub/projects', ProjectsListSchema, 'GET', undefined, { signal, waitForHub: true }))
@@ -78,6 +88,7 @@ export function ProjectsPage(props: PageProps & { embedded?: boolean }) {
           </p>
         </>
       )}
+      {vault && !props.embedded && <VaultStatus vault={vault} />}
       {!projects.length && <p className="empty-inline">Add a checked-out project to start a conversation.</p>}
       <div className="project-list">
         {projects.map((row) => {
@@ -127,6 +138,7 @@ export function ProjectsPage(props: PageProps & { embedded?: boolean }) {
         <ProjectForm
           {...props}
           row={editing === 'new' ? undefined : editing}
+          vault={vault}
           knownPublic={editing !== 'new' && visibility[editing.project.id]?.visibility === 'PUBLIC'}
           close={() => setEditing(undefined)}
           saved={async (signal) => {
@@ -157,6 +169,25 @@ export function ProjectsPage(props: PageProps & { embedded?: boolean }) {
     </>
   );
 }
+/** Where project memory, definitions and notebooks are kept, and how the last sync went. */
+function VaultStatus({ vault }: { vault: VaultView }) {
+  const synced = vault.lastSyncAt ? timeStamp(vault.lastSyncAt) : null;
+  return (
+    <section className="card vault-status" aria-label="Vault">
+      <div className="card-heading">
+        <h2>Vault</h2>
+        <span className={`chip ${vault.lastError ? 'state-blocked' : ''}`}>{vault.lastError ? 'Not synced' : vault.pending ? 'Changes waiting' : vault.remote ? 'Synced' : 'Local only'}</span>
+      </div>
+      <p className="muted small-text">Project memory, project definitions and coordinator notebooks. A new hub restores a project from here when you add it.</p>
+      <dl className="vault-facts">
+        <dt>Remote</dt><dd>{vault.remote ?? 'None yet: save a GitHub token in Settings → Git.'}</dd>
+        <dt>Last sync</dt><dd>{synced ? <span title={synced.title}>{synced.label}</span> : 'Not yet'}</dd>
+        {vault.lastError && <><dt>Last error</dt><dd className="error-text">{vault.lastError}</dd></>}
+      </dl>
+    </section>
+  );
+}
+
 function PublicMemoryNotice() {
   return (
     <p className="notice public-memory-notice">
@@ -167,11 +198,13 @@ function PublicMemoryNotice() {
 export function ProjectForm({
   row,
   knownPublic,
+  vault,
   close,
   saved,
   ...props
 }: PageProps & {
   row: ProjectView | undefined;
+  vault?: VaultView | undefined;
   knownPublic: boolean;
   close(): void;
   saved(signal: AbortSignal): Promise<void>;
@@ -190,6 +223,9 @@ export function ProjectForm({
   );
   const [folders, setFolders] = useState<z.infer<typeof ProjectFoldersSchema>>();
   const [createContext, setCreateContext] = useState(true);
+  const [restore, setRestore] = useState(true);
+  // A new project whose origin has a vault folder offers to restore its work from there (phase 5.6).
+  const restorable = !row && !!vault?.folders.includes(vaultFolder(project.remoteUrl) ?? '');
   const task = useTask(props.onError);
   const save = useSettingsSave();
   const change = (values: Partial<Project>) => setProject({ ...project, ...values });
@@ -238,6 +274,7 @@ export function ProjectForm({
               },
               signal,
             );
+            if (restorable && restore) await api(`/api/projects/${project.id}/vault-restore`, VaultRestoreResultSchema, 'POST', {}, { signal });
             await saved(signal);
           });
         }}
@@ -261,6 +298,13 @@ export function ProjectForm({
             onChange={(event) => change({ remoteUrl: event.target.value })}
           />
         </label>
+        {restorable && (
+          <label className="toggle">
+            <input type="checkbox" checked={restore} onChange={(event) => setRestore(event.target.checked)} />
+            Restore from the vault
+          </label>
+        )}
+        {restorable && <p className="muted small-text">Settings, goals, jobs, the notebook and project memory come back from {vaultFolder(project.remoteUrl)}. This device becomes its only device.</p>}
         <label className="toggle"><input type="checkbox" checked={project.githubTokenScope === 'project'} onChange={event => change({ githubTokenScope: event.target.checked ? 'project' : 'shared' })} />Require this project's GitHub token</label>
         <p className="muted small-text">Save it in Settings → Git. When required, this project waits for its own token.</p>
         {props.data.devices.devices.map((device) => (

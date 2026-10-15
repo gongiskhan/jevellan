@@ -17,12 +17,7 @@ export const VAULT_RETRY_MINUTES = [1, 5, 15, 30] as const;
 const BRANCH = 'main';
 const FOLDER = /^[A-Za-z0-9._-]{1,100}__[A-Za-z0-9._-]{1,100}$/u;
 
-/** A project's vault folder, keyed by its GitHub origin (`projects/<owner>__<repo>`), never by its project id; null without one. */
-export function vaultFolder(remoteUrl: string | undefined): string | null {
-  const repository = parseGitHubRemote(remoteUrl ?? ''); if (!repository) return null;
-  const name = `${repository.owner}__${repository.repo}`;
-  return FOLDER.test(name) && !name.startsWith('.') ? name : null;
-}
+export { vaultFolder } from '@jevellan/core';
 
 /**
  * The hub's one working copy of the private vault repository (`<home>/vault`): project memory notes, project definitions and the

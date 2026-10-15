@@ -33,3 +33,13 @@ export type VaultProject = z.infer<typeof VaultProjectSchema>;
 export const VaultViewSchema = z.strictObject({ schema: z.literal('vault-view-v1'), remote: z.string().nullable(), lastSyncAt: z.string().nullable(), lastError: z.string().nullable(),
   pending: z.boolean(), folders: z.array(z.string().max(210)).max(1000) });
 export type VaultView = z.infer<typeof VaultViewSchema>;
+
+const VAULT_FOLDER = /^[A-Za-z0-9._-]{1,100}__[A-Za-z0-9._-]{1,100}$/u;
+const GITHUB_ORIGIN = /^(?:https:\/\/github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)([A-Za-z0-9._-]+)\/([A-Za-z0-9._-]+?)(?:\.git)?\/?$/iu;
+/** A project's vault folder, keyed by its GitHub origin (`<owner>__<repo>`), never by its project id; null without one. */
+export function vaultFolder(remoteUrl: string | undefined): string | null {
+  const match = GITHUB_ORIGIN.exec((remoteUrl ?? '').trim()); if (!match) return null;
+  const name = `${match[1]}__${match[2]}`;
+  return VAULT_FOLDER.test(name) && !name.startsWith('.') && !/^\.+$/u.test(match[2]!) ? name : null;
+}
+export const VaultRestoreResultSchema = z.strictObject({ schema: z.literal('vault-restore-v1'), projectId: z.string().min(1).max(200), restored: z.boolean() });
