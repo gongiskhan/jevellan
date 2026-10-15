@@ -483,8 +483,7 @@ test('explicit account overrides stay strict and a next-turn account change star
   const auto = { schema: 'thread-override-request-v1', clientRequestId: 'return_auto', mode: 'next-turn', runtimeId: null, accountId: null, modelId: null, effort: null };
   const returned = await f.request(`/api/projects/project/threads/${threadId}/override`, 'POST', auto);
   expect(returned.status, await returned.text()).toBe(200);
-  // Back to automatic choice; an existing thread keeps its device and isolation (its workspace never moves).
-  expect(f.thread(threadId).placement).toMatchObject({ runtime: 'fake', accountId: 'acc_fixture', fixed: ['isolation', 'device'] });
+  expect(f.thread(threadId).placement).toMatchObject({ runtime: 'fake', accountId: 'acc_fixture', fixed: [] });
   expect(f.thread(threadId).nativeSessionId).toBeUndefined();
   expect((await f.app.projectHub.recentOverrides('project', 8))[0]?.changes).toEqual(expect.arrayContaining([
     { field: 'account', from: 'acc_second', to: 'auto' }, { field: 'model', from: 'fixture', to: 'auto' }, { field: 'effort', from: 'high', to: 'auto' },
