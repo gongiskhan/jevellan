@@ -730,5 +730,29 @@
     "title": "Keep current work and thinking expanded, fold thread history",
     "why": "Decision839: completed tools, messages and reports are compact disclosures; the pending block opens and closes as work progresses.45 focused cases and targeted simulated browser journey pass; real Pro inspected in four layouts. Compatible web-only activation retains rollback. Full suites/model vision not run.",
     "status": "complete-with-blockers"
+  },
+  {
+    "id": "madrid-fresh-hub",
+    "title": "Run a fresh hub on dev-madrid with nothing migrated",
+    "why": "Madrid hub run (docs/acceptance/madrid-hub-2026-10.md): the Pro is stood down, the old member uninstalled with its home kept, and a new hub at ~/.jevellan-hub holds the seeded credentials, ekoa-code with the Ekoa Code preset and the live sandbox. HTTPS waits on one owner command for Tailscale; the hub serves over the tailnet address meanwhile.",
+    "status": "complete-with-blockers"
+  },
+  {
+    "id": "readiness-fixes",
+    "title": "Fix the 14 October readiness failures",
+    "why": "Failed preparation retries after 1, 5 and 15 minutes or fails its task and frees the goal slot; journal INDEX links only existing files; every coordinator turn states live account readiness and sign-in questions are withdrawn once Ready; hub and peer replies tolerate unknown keys and members learn the hub version; held tasks; owner terminal ignores other terminals' integration variables; uninstall finishes when Tailscale refuses route changes.",
+    "status": "complete"
+  },
+  {
+    "id": "working-loop-live",
+    "title": "Coordinator checks and real ekoa-code work on the installed hub",
+    "why": "C1 to C9 pass live on the sandbox; one coordinator message on ekoa-code produced PRs #259 and #261 in parallel with result passing and no owner action, and a Claude thread produced PR #260.",
+    "status": "complete"
+  },
+  {
+    "id": "github-vault",
+    "title": "Disposable hub: project memory, definitions and notebooks in a private GitHub vault",
+    "why": "gongiskhan/jevellan-vault holds projects/<owner>__<repo>/notes, project.json (vault-project-v1) and notebook.md; pull with rebase, debounced push, conflict preservation, retries; Restore from the vault when adding a project; drill passes in tests and by hand. 0.4.0 installed.",
+    "status": "complete"
   }
 ]
