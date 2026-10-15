@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 import { SecretRedactor, defaultProjectWorkSettings, parseReply } from '../packages/core/dist/index.js';
-import { HubProtocolError, MemberHubClient } from '../packages/mesh/dist/index.js';
+import { HubProtocolError, MemberAccounts, MemberHubClient } from '../packages/mesh/dist/index.js';
 import { z } from 'zod';
 
 const projectId = 'project_tolerance';
@@ -42,4 +42,14 @@ test('parseReply removes only reported keys, at most ten levels deep, and leaves
   expect(input.extra12).toBe(1);
   expect(() => parseReply(Leaf, { a: 'one', b: 1 })).toThrow();
   expect(() => parseReply(Leaf, 'text')).toThrow();
+});
+
+test('a member reads an account list (a plain union reply) from a newer hub that adds keys to accounts and statuses', async () => {
+  const at = '2026-10-15T09:00:00.000Z';
+  const account = { schema: 'account-v1', id: 'acc_a', runtime: 'claude', label: 'Work', kind: 'subscription', enabled: true, ceilingPct: 90, credential: 'shared', secretRef: 'secret_a', laterAccountKey: 'x' };
+  const status = { schema: 'account-status-v2', accountId: 'acc_a', deviceId: 'dev_member', auth: 'ready', observedAt: at, laterStatusKey: 1 };
+  const client = fakeHub(() => ({ schema: 'accounts-list-v1', accounts: [{ schema: 'account-view-v1', revision: 1, account, statuses: [status], laterViewKey: true }] }));
+  const [view] = await new MemberAccounts(client).list();
+  expect(view!.account).not.toHaveProperty('laterAccountKey'); expect(view!.statuses[0]).not.toHaveProperty('laterStatusKey'); expect(view).not.toHaveProperty('laterViewKey');
+  expect(view!.statuses[0]!.auth).toBe('ready');
 });
