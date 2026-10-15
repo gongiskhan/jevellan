@@ -32,7 +32,8 @@ Run log for moving Jevellan to a fresh hub on dev-madrid. Times are UTC on 2026-
 
 ## Owner list
 
-- Run `sudo tailscale set --operator=ggomes` on dev-madrid (the session may not run sudo; the member uninstall and the hub's HTTPS route need it).
+- Done by the owner at about 06:50: `sudo tailscale set --operator=ggomes`.
+- Run `sudo tailscale serve --https=8500 off` on dev-madrid. Tailscale refuses every route change by a non-root user while any route serves a folder, and `:8500` serves `~/Documents/Codex/2026-09-03/so-i-used-to-play-this`. Re-add it afterwards, if wanted, with `sudo tailscale serve --bg --https=8500 /home/ggomes/Documents/Codex/2026-09-03/so-i-used-to-play-this` (that again blocks later Jevellan route changes).
 
 ## Open problems
 
