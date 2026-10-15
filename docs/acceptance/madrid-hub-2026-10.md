@@ -12,7 +12,7 @@ Run log for moving Jevellan to a fresh hub on dev-madrid. Times are UTC on 2026-
 | 3 Coordinator checks (sandbox) | 08:00 | 10:40 |
 | 5 Disposable hub (vault) | 06:30 | 11:33 |
 | 4 Real ekoa-code work | 08:21 | 10:11 (working-version milestone, 4 h 36 min after start) |
-| 6 Final review, suites, 0.4.1 and last task | 11:33 | |
+| 6 Final review, suites, 0.4.1 and last task | 11:33 | 16:00 |
 
 ## Environment
 
@@ -76,6 +76,10 @@ Run log for moving Jevellan to a fresh hub on dev-madrid. Times are UTC on 2026-
 - Live vault (live, pass): the hub syncs `gongiskhan/jevellan-vault` with no error; ekoa-code's notes, `project.json` (6 goals, 3 jobs, 6 dailies; no device, account or path values) and `notebook.md` are on GitHub, and the sandbox folder too.
 
 - 0.4.0 installed (live, pass): health 0.4.0, doctor ten of ten OK, vault synced with no error; per-project export markers initialised against the definitions already in the vault.
+- 0.4.1 installed (live, pass): includes the peer thread-page commits and the ordered tool progress; health 0.4.1, doctor ten of ten OK, all three accounts Ready just before.
+- Last task on 0.4.1 (live, pass): one coordinator message at 13:59 started a test-hardening task (bridge bash tool stdin EPIPE, test first); its Codex thread opened PR #268 (3 files) with `result` SUCCESS 41 minutes later; no owner question; left open. PRs #259, #260 and #261 still show `result` SUCCESS and are open.
+- Backend suite (simulated, on `63775bd`): 2179 passed, 1 skipped (platform guard), 7 timed out while the browser suite and a live thread ran beside it; the three files involved (200 tests) then passed alone. Typecheck and lint clean.
+- Browser suite (simulated): full run before the peer commits 254 passed, 4 failed (LJ2 capture height, LJ3 and LJ5 request timeouts under load), 58 not run behind them. On the final code the Projects spec alone passes through LJ4 in all four layouts after PJ4b and PJ7 were updated to the session panel and focused transcript; PJ3 notebook failed once (Jump to latest shown) and passed on rerun; LJ5 fails in all four layouts; the 52 tests after LJ5 were not run; the other specs were not rerun on the final code.
 - Crucial review (simulated reading of the diff): three serious findings (a hub's sweep could overwrite another hub's vault definition before Restore; `JEVELLAN_VAULT_REMOTE` could point the vault at a project repository; a message during a preparation retry could run a first turn without the task), all fixed with regression tests in `2842086`. A second review of the later changes found nothing serious.
 
 ## Owner list
@@ -87,3 +91,6 @@ Run log for moving Jevellan to a fresh hub on dev-madrid. Times are UTC on 2026-
 - Second review (minor): a `project.json` edit made on two hubs at once keeps the upstream copy and the losing hub does not re-export until its next change; the first export can run before the first pull on a cold start (GitHub stays safe); termination signals pids from a snapshot that is older on a busy machine.
 
 - The hub has no HTTPS route yet and the old member's `:443` route still forwards to port 9771; both wait on the Owner list command, then `JEVELLAN_HOME=$HOME/.jevellan-member node bin/jevellan.mjs uninstall` from the checkout and `jevellan install --https`.
+- LJ5 (browser, nightly window) fails deterministically: on the third night the Full suite job fails, a draft fix task appears, and the gated Deploy task stays queued, so the window never finishes and Deploy is never recorded as skipped. Not yet diagnosed; the dispatch check in `packages/projects/src/daily.ts` (one active job per project) is the next place to look. It had not passed in any run this session.
+- PJ3 notebook showed Jump to latest once in a full Projects run (chat content still settling from earlier tests); passes alone and on rerun.
+- Device resource guard: a thread's turn waits while load5 is above twice the core count; heavy local test runs can hold live threads on dev-madrid.
