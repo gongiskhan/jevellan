@@ -9,7 +9,7 @@ Run log for moving Jevellan to a fresh hub on dev-madrid. Times are UTC on 2026-
 | 0 Preflight | 05:35 | 05:40 |
 | 1 Fresh hub | 05:40 | 07:58, HTTP only (Tailscale) |
 | 2 Readiness bugs and suites | 06:00 | |
-| 3 Coordinator checks (sandbox) | 08:00 | C4 pending |
+| 3 Coordinator checks (sandbox) | 08:00 | 10:40 |
 | 4 Real ekoa-code work | 08:21 | 10:11 (working-version milestone, 4 h 36 min after start) |
 
 ## Environment
@@ -56,6 +56,8 @@ Run log for moving Jevellan to a fresh hub on dev-madrid. Times are UTC on 2026-
 - C2 no stale blockers (live, pass): reply cited no sign-in or account problem ("Accounts ready").
 - C3 task and placement (live, fail then fixed): the task could not be queued without starting, so the coordinator stopped the auto-started thread; held tasks fixed in 0.3.8 (`021b993`). The started copy ran Preparing, Running, Publishing on dev-madrid with Jev's placement (Codex GPT-6 Astra, medium, Ekoa Codex) and opened sandbox PR #17 (README and the required CHANGELOG entry, `result` passing).
 - C3 side finding (live): the sandbox test command chosen in Phase 1 missed `TZ=UTC` and `SANDBOX_DATA_DIR`; the coordinator asked the owner, the setting was corrected and the question answered.
+- C3 on 0.3.8 (live, pass): "Do not start it yet" now leaves the task queued and held with no thread; "Start it now" released it.
+- C4 restart (live, pass): with a sandbox thread running, `systemctl --user restart jevellan`; the thread rested, then continued on its own 46 seconds after the restart; six threads before and after (no duplicate); the status answer afterwards was correct. The start first waited on the goal's open pull request cap (2), which the coordinator explained and asked about; the disposable sandbox PRs #17 and #18 were closed.
 - C5 steer and stop (live, pass): a steer to a running sandbox thread (one-sentence Contributing section, only README.md and CHANGELOG.md) is what its next turn published (PR #18); Stop from the thread page cancelled the other task ("Stopped by you."), freeing the goal slot, and the task queued on the same goal started at once.
 - C6 failure path (live, pass): an unreachable origin failed preparation with "Retry 1 of 3 at 08:23 UTC"; after restoring the origin the retry prepared and ran the thread.
 - C7 fresh session (live, pass): after Fresh session the coordinator listed both open tasks.
