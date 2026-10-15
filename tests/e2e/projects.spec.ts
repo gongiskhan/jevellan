@@ -1239,7 +1239,7 @@ test('LJ3 five tasks obey phone drag, Now, the two-thread cap and after links', 
   expect((await queue()).filter(row => row.state === 'queued')).toHaveLength(3);
   const third = page.locator('.pw-task').filter({ hasText: 'Loop task 3' }); await third.locator('summary').click(); await expect(third).toContainText('Waiting on: Loop task 4');
   await shot(page, 'priority-dispatched');
-  await control('/projects/release', { schema: 'fixture-release-v1', marker: 'LJ3 Loop task 4' });
+  expect(await control('/projects/release', { schema: 'fixture-release-v1', marker: 'LJ3 Loop task 4' })).toEqual({ released: 1 });
   await expect.poll(async () => (await queue()).find(row => row.id === fourth.id)?.state, LONG).toBe('done');
   // Starts can advance during cleanup. Resolve each current row rather than acting on an earlier revision.
   for (const original of await queue()) {
@@ -1273,7 +1273,7 @@ test('LJ4 owner goals refill into a draft, approve on phone, obey daily caps and
   await proposal.locator('summary').click(); await expect(proposal).toContainText('Draft'); await shot(page, 'goal-proposal');
   await proposal.getByRole('button', { name: 'Approve', exact: true }).click();
   await expect.poll(async () => (await queue()).find(task => task.source === 'refill')?.state, LONG).toBe('active');
-  await control('/projects/release', { schema: 'fixture-release-v1', marker: 'LJ4 goal task' });
+  expect(await control('/projects/release', { schema: 'fixture-release-v1', marker: 'LJ4 goal task' })).toEqual({ released: 1 });
   await expect.poll(async () => (await queue()).find(task => task.source === 'refill')?.state, LONG).toBe('done');
   await control('/projects/clock', { schema: 'fixture-project-clock-v1', advanceMinutes: 31 });
   expect((await queue()).filter(task => task.source === 'refill')).toHaveLength(1);
@@ -1356,7 +1356,7 @@ test('LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and ga
   const late = await view(), lateFix = late.tasks.find(task => task.nightlyFixFor === late.window!.taskIds[0])!;
   expect(lateFix.state).toBe('active'); expect(late.runs.find(run => run.jobId === full.id && late.window!.taskIds.includes(run.taskId))!.commit).toBe(late.lastReviewedCommit);
   await shot(page, 'nightly-fix-missed-cutoff');
-  await control('/projects/release', { schema: 'fixture-release-v1', marker: 'LJ5 late fix' });
+  expect(await control('/projects/release', { schema: 'fixture-release-v1', marker: 'LJ5 late fix' })).toEqual({ released: 1 });
   await expect.poll(async () => (await tasks()).find(task => task.id === lateFix.id)?.state, LONG).toBe('done');
   await step('prepare'); await step('open'); await expect.poll(async () => (await tasks()).filter(task => task.nightlyFixFor && ['queued', 'active', 'in-review'].includes(task.state)).length, LONG).toBe(0);
   await step('fail'); await expect.poll(async () => (await view()).window?.state, LONG).toBe('finished');

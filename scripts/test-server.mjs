@@ -828,9 +828,10 @@ async function projectControl(request, response) {
   } else if (request.url === '/projects/pulse') {
     await Promise.all([application.projectWork.pulse(), member.projectWork.pulse()]); send(200, { pulsed: true });
   } else if (request.url === '/projects/release' && (input = parse(ControlReleaseSchema))) {
-    // A release waits up to ten seconds for its step to start holding; the answer counts the steps it released.
-    const deadline = Date.now() + 10_000; let matching;
-    while (!(matching = [...held].filter((entry) => entry.marker === input.marker)).length && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 50));
+    // A release waits until its step holds (a thread can take a while to prepare on a loaded machine), or until the caller gives
+    // up and closes the request; the answer counts the steps it released.
+    let matching; let closed = false; response.on('close', () => { closed = true; });
+    while (!(matching = [...held].filter((entry) => entry.marker === input.marker)).length && !closed) await new Promise((resolve) => setTimeout(resolve, 50));
     for (const entry of matching) entry.release();
     send(200, { released: matching.length });
   } else if (request.url === '/projects/notebook' && (input = parse(ControlNotebookSchema))) {
