@@ -265,6 +265,7 @@ export function waitingForSlotReason(limit: number, device: string | null): stri
   return `${WAITING_FOR_SLOT}${device === null ? 'the project' : device} is at its limit of ${limit} running threads.`;
 }
 /** A thread at rest whose next turn waits for admission (D9); the sweep retries exactly these (D157). */
+export const waitingForResourceReason = (reason: string): string => `${WAITING_FOR_SLOT}${reason}`;
 export const isWaitingForSlot = (reason: string | undefined): boolean => !!reason?.startsWith(WAITING_FOR_SLOT);
 /** A thread at rest whose next turn could not start while the hub was unreachable (D273); the sweep retries these too. */
 export const WAITING_FOR_HUB = "Waiting for the hub. This thread continues when it's back.";

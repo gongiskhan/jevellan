@@ -17,6 +17,10 @@ const layout = (info: TestInfo) => String(info.project.metadata.layout ?? info.p
 const phone = (info: TestInfo) => layout(info).startsWith('phone');
 // Turns, publication and pull request polling run on the fixture's timers, behind three other loaded layouts.
 const LONG = { timeout: 60_000 };
+async function sessionDetails(page: Page) {
+  const button = page.getByRole('button', { name: 'Session information', exact: true });
+  if (await button.getAttribute('aria-expanded') === 'false') await button.click();
+}
 const PROJECT = '/api/projects/projects_fixture';
 // Longer than a thread row, so every capture also checks that a clipped title cannot widen the page or the side column.
 const LONG_TITLE = 'Read through the project and list what each file is for, one line per file';
@@ -436,6 +440,12 @@ test('PJ3 a running thread shows its transcript, report card and accepts an inte
   const view = await threadView(page, id); const runtime = await runtimeName(page, view.thread.runtime);
   expect(placed).toContain('Queued task');
   await expect(page.locator('.pw-state-chip')).toHaveText('Running', LONG);
+  const sessionInformation = page.getByRole('button', { name: 'Session information', exact: true });
+  await expect(sessionInformation).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.locator('.pw-thread-composer .pw-takeover')).toHaveCount(0);
+  await sessionInformation.click();
+  await expect(page.getByRole('region', { name: 'Session information', exact: true })).toBeVisible();
+  await expect(page.locator('.pw-session-panel .pw-takeover')).toBeVisible();
   await expect(page.locator('.pw-placement-line')).toHaveText(`${runtime} · ${view.thread.modelLabel} · ${view.thread.effort} effort · ${view.thread.accountLabel} · Worktree on ${view.thread.branch} · ${view.deviceName}`);
   await expectWholeParts(page.locator('.pw-placement-line'));
   const transcript = page.locator('[aria-label="Thread transcript"]');
@@ -480,6 +490,7 @@ test('PJ3 a running thread shows its transcript, report card and accepts an inte
 
   // Why on a thread whose title is longer than the panel: the title in the eyebrow truncates, while the panel title and Close
   // stay whole and the heading never scrolls sideways.
+  await sessionDetails(page);
   await tap(page, page.getByRole('button', { name: 'Why', exact: true }));
   const why = page.getByRole('dialog', { name: 'Why this placement', exact: true });
   await expect(why.locator('.panel-eyebrow')).toHaveText(LONG_TITLE);
@@ -710,9 +721,11 @@ test('PJ4b the Why panel explains placement and overrides apply', async ({ page 
   await openThread('Tidy the README wording');
   const placed = await view(placedId);
   expect(placed.placement).toMatchObject({ source: 'jev', fixed: [], modelId: 'claude-fable', effortRequested: 'high', effortEffective: 'high' });
+  await page.getByRole('button', { name: 'Session information', exact: true }).click();
   await expect(page.locator('.pw-placement-line')).toHaveText(placementLine(placed));
   await expect(page.locator('.pw-fallback-chip')).toHaveCount(0);
   const why = button('Why');
+  await sessionDetails(page);
   await tap(page, why); await expect(why).toHaveAttribute('aria-pressed', 'true');
   const panel = page.getByRole('dialog', { name: 'Why this placement', exact: true });
   await expect(panel.locator('.panel-eyebrow')).toHaveText('Tidy the README wording');
@@ -761,6 +774,7 @@ test('PJ4b the Why panel explains placement and overrides apply', async ({ page 
   expect(fallback.placement.probabilities).toBeUndefined();
   await expect(page.locator('.pw-fallback-chip')).toHaveText('Placed without Jev: authentication failed');
   await shot(page, 'fallback-chip');
+  await sessionDetails(page);
   await tap(page, why);
   await expect(section('Placement').locator('h3')).toHaveText('Placement without Jev');
   await expect(section('Placement').locator('.notice')).toHaveText('Placed without Jev: authentication failed');
@@ -772,6 +786,7 @@ test('PJ4b the Why panel explains placement and overrides apply', async ({ page 
   // From the next turn: the model only among the same runtime's entries, and the effort. The next turn runs with them.
   await page.getByRole('link', { name: 'Back to the project', exact: true }).click();
   await openThread('Tidy the README wording');
+  await sessionDetails(page);
   await tap(page, button('Override'));
   let dialog = page.getByRole('dialog', { name: 'Override', exact: true });
   await expect(dialog.getByRole('radio', { name: 'From the next turn', exact: true })).toBeChecked();
@@ -803,6 +818,7 @@ test('PJ4b the Why panel explains placement and overrides apply', async ({ page 
   await expect(page.locator('.pw-placement-line')).toHaveText(placementLine(overridden));
   await expect(page.locator('.pw-placement-line')).toContainText(`${claude} · Opus · low effort · `);
   // Jev's probabilities stay; the panel marks what runs now as the owner's change.
+  await sessionDetails(page);
   await tap(page, why);
   await expect(section('Model').locator('h3')).toHaveText('Model changed by you');
   await expect(section('Model').locator('.why-option.win > span:first-child')).toHaveText(`${claude} Opus`);
@@ -812,6 +828,7 @@ test('PJ4b the Why panel explains placement and overrides apply', async ({ page 
   await tap(page, panel.getByRole('button', { name: 'Close panel', exact: true }));
 
   // Restart with these choices: a new thread with the same title and task, the shown fields fixed; the old one links it.
+  await sessionDetails(page);
   await tap(page, button('Override'));
   dialog = page.getByRole('dialog', { name: 'Override', exact: true });
   await dialog.getByRole('radio', { name: 'Restart with these choices', exact: true }).check();
@@ -882,6 +899,7 @@ test('PJ5 a thread on the member device opens through the hub', async ({ page })
   expect(view.placement).toMatchObject({ fixed: ['device'], deviceId: view.thread.ownerDeviceId });
   expect(placed).toContain('Queued task');
   const runtime = await runtimeName(page, view.thread.runtime);
+  await page.getByRole('button', { name: 'Session information', exact: true }).click();
   await expect(page.locator('.pw-placement-line')).toHaveText(`${runtime} · ${view.thread.modelLabel} · ${view.thread.effort} effort · ${view.thread.accountLabel} · Worktree on ${view.thread.branch} · Browser member`);
   await expectWholeParts(page.locator('.pw-placement-line'));
   await expect(page.locator('[aria-label="Thread transcript"] .cursor-tool-header > span:first-child')).toHaveText(['Read']);
@@ -953,6 +971,7 @@ test('PJ7 an attached thread disables its composer', async ({ page }) => {
 
   // Under the composer of a thread that has not concluded: where and how to take it over, with the command to copy.
   const command = `jevellan thread attach ${id}`;
+  await page.getByRole('button', { name: 'Session information', exact: true }).click();
   const takeOver = page.locator('.pw-takeover');
   await expect(takeOver).toHaveText(`Take over in a terminal on ${here}: ${command}`);
   const message = page.getByRole('textbox', { name: 'Message this thread', exact: true });

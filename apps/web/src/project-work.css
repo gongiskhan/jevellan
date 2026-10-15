@@ -660,3 +660,31 @@ button.danger:disabled, button.danger:disabled:hover { background: var(--bg-3); 
 .session-cache-table small { display: block; font-weight: normal; }
 .runtime-cache-window { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; margin: .8rem 0; }
 .runtime-cache-window input { width: 6rem; }
+
+/* Session details stay available without competing with the task and its current state. */
+.pw-session-badges { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-width: 0; }
+button.pw-session-badge { display: inline-flex; gap: 6px; min-height: 30px; padding: 4px 8px; max-width: 100%; color: var(--ink-2); font-size: 12px; }
+.pw-session-account { border-left: 1px solid var(--edge); padding-left: 6px; }
+.pw-session-device { display: inline-flex; align-items: center; gap: 5px; color: var(--ink-3); font-size: 12px; overflow-wrap: anywhere; }
+.pw-session-panel { display: grid; gap: 12px; margin-top: 8px; padding: 14px; border: 1px solid var(--edge); border-radius: 12px; background: var(--bg-2); }
+.pw-session-panel[hidden] { display: none; }
+.pw-session-panel .pw-placement-line { display: block; overflow: visible; font-size: 12px; }
+.pw-session-actions { justify-content: flex-start; flex-wrap: wrap; gap: 8px; }
+.pw-session-panel .pw-takeover { margin: 0; }
+.pw-session-panel .pw-takeover-command { min-width: 0; max-width: 100%; }
+.pw-live-activity { display: block; margin-top: 4px; color: var(--ink-3); font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; }
+.pw-thread-composer .ordinary-live-bar > [role="status"] { min-width: 0; }
+@media (max-width: 600px) {
+  .pw-session-panel { padding: 10px; }
+  .pw-session-badges { gap: 4px 8px; }
+  .pw-session-device { font-size: 11px; }
+}
+
+.pw-session-panel { max-height: 50dvh; overflow-y: auto; }
+@media (max-width: 600px) {
+  .pw-heading > .actions .pw-session-toggle { width: 44px; min-height: 44px; }
+}
+
+.pw-thread-composer .ordinary-live-bar > [role="status"] { display: flex; flex-direction: column; align-items: flex-start; gap: 0; }
+.pw-live-title { display: inline-flex; align-items: center; gap: 8px; }
+.pw-live-activity { margin-left: 22px; }

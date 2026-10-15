@@ -11,7 +11,7 @@ import {
   alignReports, chatItems, checksBadge, composerBlock, coordinatorChip, coordinatorLabel, decisionSource, defaultTab, deviceBlock, deviceChoices, deviceRefusal, dotClass, effortChoices, fallbackChip,
   lineParts, mainIsolationBlock, mergeBlock, nearestEffort, openPullRequests, outcomeText, overrideForm, overrideOffered, overrideReady, overrideRequest, partWords, placementLine, projectDot,
   projectRoute, pullRequestBadges, reportBadge, restartedThread, rowClockMs, sentText, settingsRequest, showSent, sidebarProjects, threadActions, threadCreateRequest,
-  threadLiveText, threadMeta, threadPollDelay, threadReason, threadSections, threadStarting, toolIcon, transcriptNotice, whyFields, withdrawals, withoutEchoedSummaries,
+  threadActivity, threadLiveText, threadMeta, threadPollDelay, threadReason, threadSections, threadStarting, toolIcon, transcriptNotice, whyFields, withdrawals, withoutEchoedSummaries,
   withoutReportCalls, working,
 } from '../apps/web/src/project-work-model.js';
 import { dateOnly, duration, relativeDuration, shortTime, timeStamp } from '../apps/web/src/time.js';
@@ -649,4 +649,15 @@ test('interface copy: brief-verbatim texts, shared server texts and no conversat
 
 test('task detail routes preserve their project context', () => {
   expect(projectRoute('/projects/p/tasks/t')).toEqual({ projectId: 'p', taskId: 't' });
+});
+
+
+test('running threads explain a pending tool without claiming recorded tools are live', () => {
+  const pending = { type: 'tool' as const, id: 'poll', name: 'Bash', input: JSON.stringify({ description: 'Poll the security unit suite until it finishes', timeout: 600000 }), state: 'unknown' as const };
+  const view = { thread: thread(), transcript: { turns: [{ id: 'native-turn', role: 'assistant', blocks: [pending] }] } } as Pick<ThreadView, 'thread' | 'transcript'>;
+  expect(threadActivity(view)).toBe('Waiting for tool result: Poll the security unit suite until it finishes');
+  expect(threadActivity({ ...view, thread: thread({ state: 'idle' }) })).toBeNull();
+  expect(threadActivity({ ...view, transcript: { ...view.transcript!, turns: [{ id: 'done', role: 'assistant', blocks: [{ ...pending, state: 'completed', output: 'passed' }] }] } })).toBeNull();
+  expect(threadActivity({ ...view, transcript: { ...view.transcript!, turns: [{ id: 'new-owner-message', role: 'user', blocks: [{ type: 'text', text: 'Continue' }] }] } })).toBeNull();
+  expect(threadActivity({ ...view, transcript: { ...view.transcript!, turns: [{ id: 'partial', role: 'assistant', blocks: [{ ...pending, state: 'running', input: '{' }] }] } })).toBe('Waiting for tool result: Bash');
 });

@@ -313,6 +313,20 @@ export function threadLiveText(thread: Pick<ThreadIndex, 'state' | 'turns'>): st
   return thread.state === 'running' ? copy.turnRunning(thread.turns + 1) : thread.state === 'preparing' ? copy.PREPARING
     : thread.state === 'publishing' ? copy.PUBLISHING : null;
 }
+/** Show the latest tool's stated purpose while its result is pending, without inferring process health. */
+export function threadActivity(view: Pick<ThreadView, 'thread' | 'transcript'>): string | null {
+  if (view.thread.state !== 'running') return null;
+  const turn = view.transcript?.turns.at(-1);
+  if (turn?.role !== 'assistant') return null;
+  const block = turn.blocks.at(-1);
+  if (block?.type !== 'tool' || block.output !== undefined || !['running', 'unknown'].includes(block.state)) return null;
+  let purpose = block.name;
+  try {
+    const input: unknown = JSON.parse(block.input);
+    if (input && typeof input === 'object' && 'description' in input && typeof input.description === 'string') purpose = input.description;
+  } catch { /* Partial tool input still has its tool name. */ }
+  return `Waiting for tool result: ${purpose.slice(0, 180)}`;
+}
 /** The note above a thread transcript: none yet, unreadable (reports still show) or only its most recent part. */
 export function transcriptNotice(view: Pick<ThreadView, 'transcript' | 'reports' | 'thread'>): string | null {
   if (!view.transcript) return view.reports.length || view.thread.turns ? copy.TRANSCRIPT_UNAVAILABLE : copy.NO_TRANSCRIPT_YET;

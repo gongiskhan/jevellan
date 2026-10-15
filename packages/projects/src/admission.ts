@@ -1,5 +1,5 @@
 import { HubUnavailable, defaultProjectWorkSettings, deviceResourceRefusal, liveWork, type DeviceFacts, type ProjectHub, type ProjectWorkSettings } from '@jevellan/core';
-import { queuedReason, waitingForSlotReason } from './copy.js';
+import { queuedReason, waitingForSlotReason, waitingForResourceReason } from './copy.js';
 
 export type AdmissionCounts = {
   /** Live threads of the project (remote indexes, local runners and pending dispatches, each thread once). */
@@ -124,7 +124,7 @@ export class Admission {
   }
   async #admit(projectId: string, deviceId: string, threadId: string): Promise<AdmissionResult> {
     const resource = (deviceId === this.#deviceId ? deviceResourceRefusal(this.#deviceName, this.#facts?.()) : undefined) ?? await this.#guard?.(projectId, deviceId, threadId);
-    if (resource) return { ok: false, scope: 'device', limit: 0, device: this.#deviceName, reason: resource, queued: resource };
+    if (resource) return { ok: false, scope: 'device', limit: 0, device: this.#deviceName, reason: waitingForResourceReason(resource), queued: resource };
     const counts = await this.counts(projectId, threadId);
     const refuse = async (scope: 'project' | 'device', limit: number): Promise<AdmissionRefusal> => {
       const device = scope === 'project' ? null : await this.#name(deviceId);

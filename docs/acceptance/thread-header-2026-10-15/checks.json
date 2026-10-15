@@ -1,0 +1,36 @@
+{
+  "schema": "thread-header-evidence-v1",
+  "at": "2026-10-15T12:06:47.280836+00:00",
+  "sourceBaseline": "41d7a2b7",
+  "unit": {
+    "label": "simulated",
+    "passed": 54
+  },
+  "typecheck": "passed",
+  "lint": "passed",
+  "build": "passed",
+  "ui": {
+    "label": "live",
+    "layouts": [
+      "desktop-light",
+      "desktop-dark",
+      "phone-light",
+      "phone-dark"
+    ],
+    "physicalPhone": "not run"
+  },
+  "backendChanged": true,
+  "daemonRestarted": false,
+  "automaticMergeChanged": false,
+  "recovery": "Turn8 interrupted; verified test group stopped; ordinary UI message starts turn9 after load relief",
+  "browser": {
+    "label": "simulated",
+    "coordinator": "passed",
+    "decision": "passed",
+    "threadSessionAndInterrupt": "passed after opening Session on revisit",
+    "vision": "not run"
+  },
+  "resourceRetryRegression": "fails before fix, passes after",
+  "backendActivated": false,
+  "integrationBase": "2ade5652"
+}

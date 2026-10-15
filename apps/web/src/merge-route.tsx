@@ -3,8 +3,9 @@ import { MergeDocumentsViewSchema, type MergeDocument } from '@jevellan/core/cli
 import { api, isCancelled } from './api.js';
 import { clientId } from './client-id.js';
 import { Modal } from './components.js';
+import { Icon } from './icons.js';
 
-export function MergeWhy({ projectId, threadId, commit, shadow, buttonLabel = 'Why' }: { projectId: string; threadId: string; commit: string; shadow?: boolean | undefined; buttonLabel?: string }) {
+export function MergeWhy({ projectId, threadId, commit, shadow, compact = false, buttonLabel = 'Why' }: { projectId: string; threadId: string; commit: string; shadow?: boolean | undefined; compact?: boolean; buttonLabel?: string }) {
   const [open, setOpen] = useState(false), [records, setRecords] = useState<MergeDocument[]>([]), [notice, setNotice] = useState(''), [busy, setBusy] = useState(false);
   const path = `/api/projects/${projectId}/threads/${threadId}/pr`;
   useEffect(() => {
@@ -19,8 +20,8 @@ export function MergeWhy({ projectId, threadId, commit, shadow, buttonLabel = 'W
     catch (error) { setNotice(error instanceof Error ? error.message : 'The correction could not be saved.'); } finally { setBusy(false); }
   };
   return <>{shadow && route?.schema === 'merge-route-v1' && <span className="chip">Jev would: {route.route === 'merge' ? 'merge' : route.route === 'test-then-merge' ? 'test then merge' : 'ask you'}</span>}
-    <button type="button" className="text-button" onClick={() => setOpen(true)}>{buttonLabel}</button>
-    {route && <><button type="button" className="text-button" disabled={busy} onClick={() => { void correct('should-have-asked'); }}>Should have asked me</button><button type="button" className="text-button" disabled={busy} onClick={() => { void correct('did-not-need-asking'); }}>Didn't need asking</button></>}
+    <button type="button" className={compact ? "icon-button" : "text-button"} aria-label={buttonLabel} title={buttonLabel} onClick={() => setOpen(true)}>{compact ? <Icon name="why" size={15} /> : buttonLabel}</button>
+    {route && !compact && <><button type="button" className="text-button" disabled={busy} onClick={() => { void correct('should-have-asked'); }}>Should have asked me</button><button type="button" className="text-button" disabled={busy} onClick={() => { void correct('did-not-need-asking'); }}>Didn't need asking</button></>}
     {notice && <span role="status">{notice}</span>}
     {open && <MergeRouteDrawer projectId={projectId} threadId={threadId} commit={commit} close={() => setOpen(false)} />}</>;
 }

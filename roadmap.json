@@ -718,5 +718,11 @@
     "title": "Continue completed Projects threads with Jev-classified follow-ups",
     "why": "Decisions834–835: keep the owner composer and workspace, reopen the same thread through admission, classify every owner follow-up with Jev, preserve native/session/publication history and reroute automatic model, effort and saved account. Regression and live acceptance in docs/acceptance/thread-continuation-2026-10-14/. Pro/Madrid0.3.6 live;90 targeted cases and build/typecheck/lint pass. A real completed Madrid thread continues to turn2 with Jev classification and both reports preserved. Owner UX composer verified in4layouts. Automated fixture member join blocks the browser suite; no full-green claim.",
     "status": "complete-with-blockers"
+  },
+  {
+    "id": "thread-session-header",
+    "title": "Compact thread session details and visible tool waits",
+    "why": "Decisions836–837: put terminal takeover and execution details in an expandable session panel; keep state, PR and checks visible and name the pending tool. Preserve guard and test-failure evidence. See docs/acceptance/thread-header-2026-10-15/.",
+    "status": "complete-with-blockers"
   }
 ]

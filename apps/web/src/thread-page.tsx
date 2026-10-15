@@ -14,7 +14,7 @@ import { MessageInput } from './message-delivery.js';
 import * as copy from './project-work-copy.js';
 import {
   THREAD_POLL_AFTER_ACTION_MS, THREAD_POLL_LIVE_MS, alignReports, composerBlock, deviceBlock, deviceChoices, deviceRefusal, dotClass, effortChoices, fallbackChip, lineParts, mainIsolationBlock, nearestEffort,
-  mergeThreadToolTurns, overrideForm, overrideOffered, overrideReady, overrideRequest, partWords, placementLine, pullRequestBadges, reportBadge, threadActions, threadLiveText,
+  mergeThreadToolTurns, overrideForm, overrideOffered, overrideReady, overrideRequest, partWords, placementLine, pullRequestBadges, reportBadge, threadActions, threadActivity, threadLiveText,
   threadPollDelay, threadReason, threadStarting, transcriptNotice, whyFields, withoutEchoedSummaries, withoutReportCalls, type OverrideForm, type OverrideMode,
 } from './project-work-model.js';
 import { RouteLink, Stamp, afterDialogs, deviceNames, failureText, runtimeNames, updated, useClientIds, useLocalError } from './project-work.js';
@@ -39,6 +39,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
   const [confirming, setConfirming] = useState<'stop' | 'discard'>();
   const [why, setWhy] = useState(false);
   const [overriding, setOverriding] = useState(false);
+  const [sessionOpen, setSessionOpen] = useState(false);
   const latest = useRef<ThreadView | undefined>(undefined);
   const fastUntil = useRef(0);
   const kick = useRef(() => {});
@@ -169,16 +170,10 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
       <div className="section-heading conversation-heading pw-heading pw-thread-heading">
         <h1 aria-labelledby={titleId}>{navigation}<span id={titleId} className="session-title" title={thread.title}>{thread.title}</span></h1>
         <div className="actions">
-          <OpenTerminalButton props={props} projectId={projectId} threadId={threadId} deviceId={thread.ownerDeviceId} />
-          {!['done', 'stopped', 'failed', 'running', 'attached'].includes(thread.state) && <OpenTerminalButton props={props} projectId={projectId} threadId={threadId} deviceId={thread.ownerDeviceId} takeover label="Take over in browser" />}
-          <button type="button" className="secondary pw-head-button" aria-pressed={why} onClick={() => setWhy(!why)}>
-            <Icon name="why" size={15} /><span className="pw-head-label">{copy.WHY}</span>
+          <button type="button" className="secondary pw-head-button pw-session-toggle" aria-label="Session information" title="Session information"
+            aria-expanded={sessionOpen} aria-controls="thread-session-information" onClick={() => { if (!sessionOpen) { following.current = false; setBehind(true); } setSessionOpen(!sessionOpen); }}>
+            <Icon name="settings" size={16} /><span className="pw-head-label">Session</span>
           </button>
-          {overrideOffered(view) && (
-            <button type="button" className="secondary pw-head-button" onClick={() => setOverriding(true)}>
-              <Icon name="tune" size={15} /><span className="pw-head-label">{copy.OVERRIDE}</span>
-            </button>
-          )}
           {actions.stop && (
             <button type="button" className="secondary pw-head-button" disabled={!!actions.stopRefusal} title={actions.stopRefusal ?? undefined}
               aria-describedby={actions.stopRefusal ? stopNoteId : undefined} onClick={() => setConfirming('stop')}>
@@ -206,7 +201,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
               <a className="chip pw-pr-chip" href={thread.pr.url} target="_blank" rel="noopener noreferrer" title={copy.OPEN_PULL_REQUEST}>
                 <Icon name="pull-request" size={13} />{copy.pullRequestNumber(thread.pr.number)}
               </a>
-              <MergeWhy projectId={projectId} threadId={thread.id} commit={thread.pr.headSha} buttonLabel="Why this merge" />
+              <MergeWhy projectId={projectId} threadId={thread.id} commit={thread.pr.headSha} buttonLabel="Why this merge" compact />
               {pullRequestBadges(thread.pr).map((badge) => <span key={badge.text} className={`chip pw-badge pw-tone-${badge.tone}`}>{badge.text}</span>)}
             </>
           )}
@@ -223,13 +218,28 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
           {/* Why Stop and Restart wait while the thread is attached, and why an ended main thread still holds the checkout (phase 8). */}
           {actions.stopRefusal && <p className="pw-thread-note" id={stopNoteId}>{actions.stopRefusal}</p>}
           {view.checkoutHeld && <p className="pw-thread-note pw-tone-warn" role="status">{view.checkoutHeld}</p>}
-          <p className="pw-placement-line" title={line}><Parts line={line} /></p>
-          <SessionCache rows={thread.sessionCache} sessionKey={thread.cacheSessionKey} timezone={thread.sessionCache?.at(-1)?.timezone ?? 'UTC'} />
+          <div className="pw-session-badges">
+            <button type="button" className="chip pw-session-badge" aria-label="Model and account details" aria-expanded={sessionOpen} onClick={() => { if (!sessionOpen) { following.current = false; setBehind(true); } setSessionOpen(!sessionOpen); }}>
+              <Icon name="agents" size={13} />{thread.modelLabel}<span className="pw-session-account">{thread.accountLabel}</span><Icon name="chevron" size={12} />
+            </button>
+            <span className="pw-session-device"><Icon name="devices" size={13} />{view.deviceName}</span>
+          </div>
+          <section id="thread-session-information" className="pw-session-panel" aria-label="Session information" hidden={!sessionOpen}>
+            <p className="pw-placement-line"><Parts line={line} /></p>
+            <div className="actions pw-session-actions">
+              <OpenTerminalButton props={props} projectId={projectId} threadId={threadId} deviceId={thread.ownerDeviceId} />
+              {!['done', 'stopped', 'failed', 'running', 'attached'].includes(thread.state) && <OpenTerminalButton props={props} projectId={projectId} threadId={threadId} deviceId={thread.ownerDeviceId} takeover label="Take over in browser" />}
+              <button type="button" className="secondary" aria-pressed={why} onClick={() => setWhy(!why)}><Icon name="why" size={15} />{copy.WHY}</button>
+              {overrideOffered(view) && <button type="button" className="secondary" onClick={() => setOverriding(true)}><Icon name="tune" size={15} />{copy.OVERRIDE}</button>}
+            </div>
+            {!['done', 'stopped', 'failed'].includes(thread.state) && <TakeOver device={view.deviceName} command={view.attachCommand} message={message} />}
+            <SessionCache rows={thread.sessionCache} sessionKey={thread.cacheSessionKey} timezone={thread.sessionCache?.at(-1)?.timezone ?? 'UTC'} />
+            <SessionHistory entries={view.sessionHistory} path={`/api/projects/${projectId}/threads/${thread.id}`} />
+          </section>
         </div>
       </div>
       {loadError && <p className="notice" role="status">{loadError}</p>}
       {actionError && <p className="error">{actionError}</p>}
-      <SessionHistory entries={view.sessionHistory} path={`/api/projects/${projectId}/threads/${thread.id}`} />
       <div className="cursor-transcript pw-transcript" aria-label={copy.TRANSCRIPT_LABEL}>
         {notice && <p className="pw-transcript-note">{notice}</p>}
         {mergeThreadToolTurns(items).map((item) => item.kind === 'turn'
@@ -242,7 +252,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
           </section>
         )}
       </div>
-      <ThreadComposer base={base} view={view} behind={behind} jump={jump} onError={onError} message={message}
+      <ThreadComposer base={base} view={view} behind={behind} jump={jump} onError={onError}
         sent={() => { following.current = true; kick.current(); }} refused={() => kick.current()} />
       <div ref={bottom} />
       {why && <WhyPanel view={view} data={data} close={() => setWhy(false)} />}
@@ -352,10 +362,10 @@ function QueuedEntry({ queued }: { queued: QueuedMessage }) {
  * The thread composer (12.3): a growing textarea and the send icon, with Interrupt current turn while a turn runs. Messages
  * are idempotent by client id. An attached thread disables it; completed work keeps the owner composer (D834).
  * Discarded/replaced threads show their closure. Refusals stay here, and the page reads the thread again. Under it, the
- * command that takes the thread over in a terminal (phase 7), for every thread that has not concluded (D304).
+ * terminal controls live in the session information panel.
  */
-function ThreadComposer({ base, view, behind, jump, sent, refused, onError, message }: {
-  base: string; view: ThreadView; behind: boolean; jump(): void; sent(): void; refused(): void; onError(error: unknown): void; message(text: string): void;
+function ThreadComposer({ base, view, behind, jump, sent, refused, onError }: {
+  base: string; view: ThreadView; behind: boolean; jump(): void; sent(): void; refused(): void; onError(error: unknown): void;
 }) {
   const [text, setText] = useState('');
   const [interrupt, setInterrupt] = useState(false);
@@ -366,6 +376,7 @@ function ThreadComposer({ base, view, behind, jump, sent, refused, onError, mess
   // A choice made for a turn that has ended never carries over to the next one.
   useEffect(() => { if (!running) setInterrupt(false); }, [running]);
   const live = threadLiveText(view.thread);
+  const activity = threadActivity(view);
   const block = composerBlock(view);
   const ended = !view.canMessage && view.thread.state !== 'attached';
   const completed = ['done', 'stopped', 'failed'].includes(view.thread.state);
@@ -387,7 +398,7 @@ function ThreadComposer({ base, view, behind, jump, sent, refused, onError, mess
     }}>
       {(live || behind) && (
         <div className="cursor-live-bar ordinary-live-bar">
-          {live && <span role="status"><span className="activity-spinner" aria-hidden="true" />{live}</span>}
+          {live && <span role="status"><span className="pw-live-title"><span className="activity-spinner" aria-hidden="true" />{live}</span>{activity && <small className="pw-live-activity">{activity}</small>}</span>}
           {((running && !block) || behind) && (
             <span className="pw-live-end">
               {running && !block && (
@@ -413,7 +424,7 @@ function ThreadComposer({ base, view, behind, jump, sent, refused, onError, mess
           </div>
         </fieldset>
       )}
-      {!ended && !completed && <TakeOver device={view.deviceName} command={view.attachCommand} message={message} />}
+
     </form>
   );
 }

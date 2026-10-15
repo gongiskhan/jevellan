@@ -287,3 +287,19 @@ test('main isolation is placed only where the checkout is on main and free: clai
   const external = await place(free.placement, { work: { defaultIsolation: 'main' }, project: { ...project, branchPolicy: 'external' } });
   expect(external.kind === 'placed' && external.record.isolation).toBe('main');
 });
+
+test('a resource-blocked follow-up remains eligible for the waiting sweep and starts only after the guard clears', async () => {
+  let blocked = true;
+  const value = new Admission({ hub: hub([]), deviceId: 'dev_mini', deviceName: 'Mac mini', localLive: () => [],
+    guard: async () => blocked ? 'Mac mini is busy (load 20.4 on 10 cores).' : undefined });
+  const denied = await value.admit('proj_app', 'dev_mini', 'thread_waiting');
+  expect(denied.ok).toBe(false);
+  if (denied.ok) throw new Error('Expected the resource guard to hold this turn');
+  expect(denied.reason).toMatch(/^Waiting for a free slot: /);
+  expect(denied.reason).toContain('busy (load 20.4');
+  expect((await value.admit('proj_app', 'dev_mini', 'thread_waiting')).ok).toBe(false);
+  blocked = false;
+  const ready = await value.admit('proj_app', 'dev_mini', 'thread_waiting');
+  expect(ready.ok).toBe(true);
+  if (ready.ok) ready.release();
+});

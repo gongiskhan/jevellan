@@ -534,3 +534,14 @@ Decision835 refines Decision833’s sticky-session choice: every direct owner fo
 
 
 Decisions834–835 closure: Pro and Madrid0.3.6 are active with complete cold rollback snapshots and unchanged membership/authentication. All90 affected simulated cases pass in8files; typecheck, lint and build pass. Real UI follow-up on the completed Madrid diagnostic reaches turn2 in the same thread, preserves both reports and prior-session access, records Jev answer/Sonnet/low and the eligible shared Ekoa account, runs no model commands and opens no PR. Its reconstructed worktree remains. The owner UX thread composer is enabled and directly inspected in all4layouts, without messaging it. Automated browser journeys are blocked before start by simulated-member join failure; full suites/dedicated automated vision are not rerun. One closing crucial-issues inspection finds no serious issue. Evidence: docs/acceptance/thread-continuation-2026-10-14/. Original theme/viewport restored; unrelated work, native homes and Ekoa autoMerge unchanged.
+
+
+## Session header and prolonged tool waits — 15 October 2026
+
+Decision836 replaces the always-visible session action row, full placement/cache line and takeover footer with a compact state/PR/checks row, model/account badge and expandable Session information. Keep warnings visible. Terminal, takeover command/copy, Why, Override, cache and earlier sessions remain in that panel; the composer contains only messaging and current activity. Merge corrections remain in the merge Why drawer. Opening session details stops automatic transcript following so the panel stays readable.
+
+Decision837 refines the generic running-turn indicator: show the latest tool's description when the saved transcript has no result yet, including its unknown/Recorded state. Say “Waiting for tool result”, without inferring that the process is alive or finished. Do not hide failures, invent a test pass or weaken resource guards.
+
+Live diagnosis: turn8's native worker was alive and its CI lane passed. It then waited on the requested security unit sub-suite, with platform-related failures and a prolonged polling command. The owner recovery message interrupted that wait; only the verified thread-owned security test group was terminated, with its logs and source retained. The next owner message remains subject to the existing device load guard. This is operational recovery, not a repair to Ekoa's test suite. See docs/acceptance/thread-header-2026-10-15/.
+
+Decision838 repairs resource-guard recovery: mark resource-denied follow-ups as waiting for admission, so the existing periodic waiting sweep retries after CPU/disk/memory relief. Do not weaken the guards. The new regression fails before repair and54 affected cases pass after it. Backend activation must acquire the existing idle maintenance gate; active work prevents replacement.

@@ -1,0 +1,1 @@
+Simulated Projects browser journeys: coordinator chat and decision cards pass. Thread interruption/session panel journey passes after reopening Session on revisit. No assertions or timeouts relaxed. Dedicated model vision not run: credential absent. Initial navigation failure and launcher failures retained privately.
