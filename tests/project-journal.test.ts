@@ -2,7 +2,7 @@ import { afterEach, beforeEach, expect, test } from 'vitest';
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { defaultProjectWorkSettings, Homes, JournalThreadSchema, MemoryDreamReportSchema, MergeRouteSchema, PlacementRecordSchema, ProjectJobRunSchema, ProjectSchema, ProjectWindowSchema, ProjectWorkTaskSchema, ThreadSchema, VerificationRunSchema, type ProjectJournalRecord } from '../packages/core/dist/index.js';
+import { defaultProjectWorkSettings, Homes, JournalThreadSchema, MemoryDreamReportSchema, MergeRouteSchema, PlacementRecordSchema, ProjectJobRunSchema, ProjectSchema, ProjectWindowSchema, ProjectWorkTaskSchema, ThreadIndexSchema, ThreadSchema, VerificationRunSchema, type ProjectJournalRecord } from '../packages/core/dist/index.js';
 import { HubDatabase, HubProjectAccess } from '../packages/mesh/dist/index.js';
 import { ProjectJournals, ProjectLedgers, ProjectPaths, coordinatorJournalDigest, journalIndex, journalRecordKey, renderProjectJournal, threadJournalExcerpt, threadJournalFile } from '../packages/projects/dist/index.js';
 import { fileWriteDenial, safetyDenial } from '../packages/runtime-contract/dist/index.js';
@@ -203,4 +203,15 @@ test('two actual local daemons mirror changes and catch up after a simulated hub
   member.offline = false;
   await expect.poll(() => readFileSync(join(mirror.path(projectId), path), 'utf8'), { timeout: 30000 }).toContain('Written while the member is offline.');
   await expect.poll(() => readFileSync(join(authority.path(projectId), path), 'utf8'), { timeout: 30000 }).toContain('Member note while offline.');
+});
+
+test('INDEX links a thread only when its journal file exists, and lists a remote thread without one by title and state', async () => {
+  // Readiness failure: INDEX linked threads/<file>.md for threads whose header was never captured on this device.
+  const { engine, project } = setup();
+  await new HubProjectAccess(database, 'dev_other').publishThread(ThreadIndexSchema.parse({ schema: 'project-thread-index-v1', revision: 0, id: 'thread_remote', projectId: project.id, title: 'Remote work', state: 'running', isolation: 'worktree',
+    ownerDeviceId: 'dev_other', runtime: 'claude', modelLabel: 'Claude Opus', effort: 'high', accountLabel: 'Work', turns: 1, createdAt: at, updatedAt: at }), 1);
+  await engine.sync(project.id, true);
+  const index = readFileSync(join(engine.path(project.id), 'INDEX.md'), 'utf8'), line = index.split('\n').find(row => row.includes('Remote work'))!;
+  expect(line).toContain('(no journal yet)'); expect(line).toContain('running'); expect(line).not.toMatch(/threads\//u);
+  for (const link of index.matchAll(/(?:→ |\]\()((?:threads|days|nights)\/[^\s#)]+)/gu)) expect(existsSync(join(engine.path(project.id), link[1]!)), link[1]).toBe(true);
 });

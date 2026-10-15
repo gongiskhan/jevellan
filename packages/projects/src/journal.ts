@@ -189,7 +189,7 @@ export class ProjectJournals {
     const threads = await this.#all(project.id, after => this.o.hub.threads(project.id, after));
     const headers = new Map<string, ReturnType<typeof JournalThreadSchema.parse>>();
     for (const record of records) if (record.event.type === 'journal-thread') { const data = JournalThreadSchema.parse(record.event.data); if (!headers.has(data.id)) headers.set(data.id, data); }
-    const open = threads.filter(thread => !['done', 'stopped', 'failed'].includes(thread.state)).map(thread => `- Thread "${thread.title.replace(/[\r\n]/gu, ' ')}" (${thread.runtime} ${thread.modelLabel}, ${thread.state}${thread.pr ? `, PR #${thread.pr.number} ${thread.pr.checks}` : ''}) → ${threadJournalFile(headers.get(thread.id) ?? thread)}`);
+    const open = threads.filter(thread => !['done', 'stopped', 'failed'].includes(thread.state)).map(thread => `- Thread "${thread.title.replace(/[\r\n]/gu, ' ')}" (${thread.runtime} ${thread.modelLabel}, ${thread.state}${thread.pr ? `, PR #${thread.pr.number} ${thread.pr.checks}` : ''})${headers.has(thread.id) ? ` → ${threadJournalFile(headers.get(thread.id)!)}` : ' (no journal yet)'}`);
     const questions = (await this.o.hub.decisions(project.id)).filter(question => !question.answer && !question.withdrawnAt).sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
     for (const [index, question] of questions.entries()) {
       const source = records.findLast(record => record.event.type === 'journal-document' && JournalDocumentSchema.parse(record.event.data).collection === 'question' && JournalDocumentSchema.parse(record.event.data).key === question.id);
