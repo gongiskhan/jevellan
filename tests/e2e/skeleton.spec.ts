@@ -151,6 +151,8 @@ test('Settings account, login, Rigging and configuration flows work without hori
 });
 
 test('Projects and a manual planned change render the full plan, stream, Why and verified Changes', async ({ page }, info) => {
+  // The first writing step of this new project waits for its first Basic Memory sync (D321 budget below), so the journey gets longer.
+  test.setTimeout(300_000);
   const errors: string[] = []; page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
@@ -177,7 +179,8 @@ test('Projects and a manual planned change render the full plan, stream, Why and
   await expectNoStaleJump(page, page.locator('.plan-waiting'));
   await page.evaluate(() => window.scrollTo(0, 0)); await page.screenshot({ path: `docs/acceptance/screenshots/phase2-plan-${info.project.name}.png`, fullPage: true });
   await page.getByRole('button', { name: 'Approve plan', exact: true }).click(); await picker.getByRole('combobox', { name: 'Action', exact: true }).selectOption('implement'); await picker.getByRole('button', { name: 'Continue', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Step 2 · Implement' })).toBeVisible({ timeout: 30_000 }); await expect(picker).toBeVisible({ timeout: 30_000 });
+  // A cold Basic Memory sync of the new project's notes precedes the step: 28.1 s from preparing to the step alone (2026-10-15).
+  await serverWork('first writing step', () => expect(page.getByRole('heading', { name: 'Step 2 · Implement' })).toBeVisible(budget(28.1))); await expect(picker).toBeVisible({ timeout: 30_000 });
   const implementation = page.locator('.stretch-block').filter({ has: page.getByRole('heading', { name: 'Step 2 · Implement' }) });
   await implementation.getByRole('button', { name: 'Why', exact: true }).click(); await expect(dialog).toContainText('This step was picked manually.'); await expect(dialog).toContainText('Account'); await dialog.getByRole('button', { name: 'Close panel' }).click();
   await page.reload(); await expect(page.getByRole('heading', { name: 'Step 2 · Implement' })).toBeVisible(); await expect(page.getByRole('heading', { name: 'The full fixture plan' })).toBeVisible();
@@ -1028,7 +1031,9 @@ test('project, Jev, local Rigging and device Settings recover their hub boundari
   await page.goto('/settings/projects'); const projectSave = await interrupt('/hub/projects', 'PUT'); await page.getByRole('button', { name: 'Add project', exact: true }).click(); await dialog.getByLabel('Name', { exact: true }).fill('Recoverable project'); await (await currentProjectPath(page)).fill(checkout); await dialog.getByRole('button', { name: 'Save project', exact: true }).click(); await projectSave.lost;
   await expect(dialog.getByText(message, { exact: true })).toBeVisible(); await page.screenshot({ path: `docs/acceptance/screenshots/phase4-project-save-wait-${info.project.name}.png` }); await expect(dialog).not.toBeVisible({ timeout: 60_000 }); projectSave.verify();
   const saved = ProjectsListSchema.parse(await (await page.request.get('/hub/projects')).json()).projects.filter(row => row.project.name === 'Recoverable project'); expect(saved).toHaveLength(1);
-  expect(lstatSync(join(checkout, 'CLAUDE.md')).isSymbolicLink()).toBe(true); expect(ContextPanelSchema.parse(await (await page.request.get(`/api/projects/${saved[0]!.project.id}/context/operations`)).json()).operations).toHaveLength(1);
+  // Saving starts the context link as a background operation; the link exists once that operation has completed.
+  await expect.poll(async () => ContextPanelSchema.parse(await (await page.request.get(`/api/projects/${saved[0]!.project.id}/context/operations`)).json()).operations.map(row => row.status), { timeout: 30_000 }).toEqual(['completed']);
+  expect(lstatSync(join(checkout, 'CLAUDE.md')).isSymbolicLink()).toBe(true);
   await page.goto('/settings/decisions'); const jev = await interrupt('/hub/secrets/jev', 'PUT'); await page.getByLabel('Jev key', { exact: true }).fill(`fixture-${randomUUID()}`); await page.getByRole('button', { name: 'Save key', exact: true }).click(); await jev.lost; await expect(page.getByText(message, { exact: true })).toBeVisible(); await expect(page.getByText('Jev key saved.', { exact: true })).toBeVisible(); jev.verify(); await expect(page.getByLabel('Jev key', { exact: true })).toHaveValue('');
   const bundle = join(root, 'user/.jevellan/homes/claude/acc_rigging_claude/skills/browser-wait'); mkdirSync(join(bundle, 'assets'), { recursive: true }); writeFileSync(join(bundle, 'SKILL.md'), '# Waiting fixture\nKeep the bundle.\n'); writeFileSync(join(bundle, 'assets/example.txt'), 'Keep this bundled file.\n');
   await page.goto('/settings/rigging'); const item = RiggingDiskListSchema.parse(await (await page.request.get('/api/rigging/homes')).json()).items.find(row => row.name === 'browser-wait')!;
