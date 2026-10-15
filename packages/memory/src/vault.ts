@@ -94,7 +94,14 @@ export class ProjectVault {
     return run;
   }
   /** Before a memory session or dream: bring in what another hub pushed. Never throws; the error shows in Settings. */
-  async pull(): Promise<void> {
+  pull(): Promise<void> {
+    // On the same chain as sync, so two fetches or rebases never run at once.
+    const previous = this.#running ?? Promise.resolve();
+    const run = previous.then(() => this.#pull(), () => this.#pull());
+    this.#running = run.finally(() => { if (this.#running === run) this.#running = undefined; });
+    return run;
+  }
+  async #pull(): Promise<void> {
     try { const remote = await this.#remote(); if (remote) { await this.#fetch(remote); this.#rebase(); this.#lastSyncAt = new Date(this.o.now()).toISOString(); } }
     catch (error) { this.#failed(error); }
   }
@@ -127,7 +134,8 @@ export class ProjectVault {
   async #remote(): Promise<VaultRemote | null> {
     const remote = await this.o.remote(); this.ensure();
     if (!remote) { this.#remoteUrl = null; return null; }
-    if (!parseGitHubRemote(remote.url)) throw new Error('The vault remote must be a GitHub repository.');
+    // Only a repository named jevellan-vault: the vault must never fetch, rebase onto or push to a project's repository.
+    if (parseGitHubRemote(remote.url)?.repo !== 'jevellan-vault') throw new Error('The vault remote must be a GitHub repository named jevellan-vault.');
     this.o.redactor.add(remote.token);
     const current = this.git('remote').split('\n').includes('origin') ? this.git('remote', 'get-url', 'origin').trim() : null;
     if (current === null) this.git('remote', 'add', 'origin', remote.url); else if (current !== remote.url) this.git('remote', 'set-url', 'origin', remote.url);
@@ -156,12 +164,14 @@ export class ProjectVault {
   #ahead(): boolean { const upstream = this.#upstream(); return !upstream || this.git('rev-list', '--count', `${upstream}..HEAD`).trim() !== '0'; }
   /**
    * Replays local commits onto what GitHub has. Synchronous from start to end, so nothing else touches the working copy meanwhile.
-   * A conflicting note keeps the upstream version and appends this hub's under `## Merged from`, marked unresolved; any other file
-   * keeps this hub's version. Anything else aborts the rebase, which leaves the local history as it was.
+   * A conflicting note keeps the upstream version and appends this hub's under `## Merged from`, marked unresolved; a project
+   * definition keeps the upstream one (this hub re-exports only its own later changes); any other file keeps this hub's version. Anything else aborts the rebase, which leaves the local history as it was.
    */
   #rebase(): void {
     const upstream = this.#upstream(); if (!upstream) return;
     try { this.git('merge-base', '--is-ancestor', upstream, 'HEAD'); return; } catch { /* Upstream has commits this copy lacks. */ }
+    // Unrelated histories mean the remote is not this vault: nothing is replayed onto it.
+    try { this.git('merge-base', upstream, 'HEAD'); } catch { throw new Error('The vault remote has no history in common with this vault. Nothing was synced.'); }
     try { this.git('rebase', '--autostash', '--quiet', upstream); return; } catch { /* Conflicts are resolved below. */ }
     try {
       for (let step = 0; step < 1000; step++) {
@@ -172,7 +182,8 @@ export class ProjectVault {
           if (/\.(?:md|markdown)$/iu.test(path)) {
             writeFileSync(join(this.root, path), preserveBothVersions(side(2), side(3), this.o.deviceId, new Date(this.o.now()).toISOString()));
             this.git('add', '--', path);
-          } else if (side(3) === null) this.git('rm', '--quiet', '--', path);
+          } else if (/(?:^|\/)project\.json$/u.test(path) && side(2) !== null) { this.git('checkout', '--ours', '--', path); this.git('add', '--', path); }
+          else if (side(3) === null) this.git('rm', '--quiet', '--', path);
           else { this.git('checkout', '--theirs', '--', path); this.git('add', '--', path); }
         }
         if (!this.git('diff', '--cached', '--name-only').trim()) { try { this.git('rebase', '--skip'); } catch { /* The next step reports its own conflicts. */ } continue; }

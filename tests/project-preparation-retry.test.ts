@@ -77,3 +77,26 @@ test('a setup command that times out before the first turn is transient and is r
   await f.waitFor(() => f.thread(threadId), thread => thread.turns > 0);
   expect(f.local(threadId).preparationRetry).toBeUndefined();
 });
+
+test('messages that arrive while a preparation waits for its retry follow the task turn instead of replacing it', { timeout: 120_000 }, async () => {
+  // Crucial review: a message delivered after the one restart ran a first turn with only the messages, and the task was never sent.
+  const { f, work, first, read, advance } = await setup();
+  let failing = true; const admit = work.admission.admit.bind(work.admission);
+  vi.spyOn(work.admission, 'admit').mockImplementation(async (projectId, deviceId, threadId) => {
+    const exists = (() => { try { return !!f.thread(threadId); } catch { return false; } })();
+    if (failing && exists) throw new HubProtocolError();
+    return admit(projectId, deviceId, threadId);
+  });
+  await work.pulse(); await work.idle();
+  const threadId = (await f.waitFor(() => read(first), task => !!task.threadId)).threadId!;
+  await f.waitFor(() => f.local(threadId).preparationRetry, retry => retry?.attempts === 1);
+  const runner = work.threads.runner(threadId)!;
+  await runner.deliver({ id: 'msg_one', from: 'owner', text: 'Also mention the changelog.', at: new Date().toISOString(), interrupt: false }); await work.idle();
+  await f.waitFor(() => f.local(threadId).preparationRetry, retry => !!retry);
+  await runner.deliver({ id: 'msg_two', from: 'owner', text: 'And keep it short.', at: new Date().toISOString(), interrupt: false }); await work.idle();
+  expect(f.thread(threadId).turns).toBe(0);
+  failing = false; advance(5); await work.pulse(); await work.idle();
+  await f.waitFor(() => f.thread(threadId), thread => thread.turns > 0);
+  const turns = f.fake.turnStarts.filter(input => input.owner.kind === 'thread' && input.owner.id === threadId);
+  expect(turns[0]!.prompt).toContain('Complete first.');
+});

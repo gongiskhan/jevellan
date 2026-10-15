@@ -880,6 +880,8 @@ export class ThreadRunner {
   async #admit(): Promise<(() => void) | undefined> {
     const thread = this.#thread();
     if (this.#halted() || !atRest(thread.state) || (!thread.queuedMessages.length && !this.#pendingTurn())) return undefined;
+    // A thread whose preparation waits for its retry has not had its task turn yet: the retry runs it, and the messages follow it (B1).
+    if (thread.turns === 0 && this.#c.store.local(thread.id).preparationRetry) return undefined;
     if (atTurnLimit(thread)) { await this.#work(() => this.#atLimit()); return undefined; }
     const admitted = await this.#c.admission.admit(thread.projectId, thread.ownerDeviceId, thread.id);
     if (admitted.ok) return admitted.release;

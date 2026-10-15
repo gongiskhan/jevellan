@@ -8,7 +8,7 @@ import { MemoryDream } from '../packages/memory/dist/index.js';
 import { projectFixture, type ProjectFixture } from './helpers/project-fixture.js';
 
 // Phase 5.7: two disposable hubs (no service, temporary homes, separate ports) and a local bare repository as the vault remote.
-const URL = 'https://github.com/fixture/vault.git', ORIGIN = 'https://github.com/fixture/repo.git';
+const URL = 'https://github.com/fixture/jevellan-vault.git', ORIGIN = 'https://github.com/fixture/repo.git';
 const git = (cwd: string, ...args: string[]) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 const owner: HubMemoryScope = { kind: 'owner', provenance: { source: 'owner', runtime: 'owner', model: 'owner' } };
 const fixtures: ProjectFixture[] = []; let bare: string | undefined;
@@ -46,7 +46,7 @@ test('a second hub restores notes, settings, goals, jobs, dailies and the notebo
   expect((await dream.undo(await project(a))).state).toBe('undone');
   expect(a.app.hubMemory!.list(id).map(row => row.title)).not.toContain('Dream note');
   expect(readFileSync(join(port.path, note.permalink), 'utf8')).toBe(before);
-  await work.pulse(); await a.app.vault!.sync();
+  await a.app.vault!.sync(); await work.pulse(); await a.app.vault!.sync();
   expect(a.app.vault!.status()).toMatchObject({ remote: URL, lastError: null, pending: false });
   const definition = VaultProjectSchema.parse(JSON.parse(git(bare, 'show', 'main:projects/fixture__repo/project.json')));
   expect(definition).toMatchObject({ origin: ORIGIN, work: { threadRules: 'Keep each change small.', maxRunningThreads: 5, requiredChecks: ['result'] }, goals: [{ name: 'Docs and tests', autonomy: 'auto' }] });
@@ -57,7 +57,10 @@ test('a second hub restores notes, settings, goals, jobs, dailies and the notebo
   expect(git(bare, 'show', 'main:projects/fixture__repo/notebook.md')).toBe('Plan: tests before features.');
 
   // Hub B: a fresh hub adds the same origin and restores.
-  const b = await hub(), restored = await b.app.restoreProjectFromVault(b.project.id);
+  // Hub B's sweeps run before the owner restores: they must not push B's empty defaults over A's definition.
+  const b = await hub(); await b.app.vault!.sync(); await b.app.projectWork.pulse(); await b.app.vault!.sync();
+  expect(VaultProjectSchema.parse(JSON.parse(git(bare, 'show', 'main:projects/fixture__repo/project.json'))).goals.map(goal => goal.name)).toEqual(['Docs and tests']);
+  const restored = await b.app.restoreProjectFromVault(b.project.id);
   expect(restored.restored).toBe(true);
   const restoredSettings = await b.app.projectWork.admission.settings(b.project.id);
   expect(restoredSettings).toMatchObject({ threadRules: 'Keep each change small.', maxRunningThreads: 5, requiredChecks: ['result'] });
@@ -73,6 +76,10 @@ test('a second hub restores notes, settings, goals, jobs, dailies and the notebo
   // Restoring again duplicates nothing.
   await b.app.restoreProjectFromVault(b.project.id);
   expect((await b.app.projectWork.goals.list(b.project.id))).toHaveLength(1); expect(await b.app.projectWork.daily.jobs(b.project.id)).toHaveLength(2);
+  // After restoring, B exports only what changes on B.
+  await b.app.projectWork.goals.create(b.project.id, { schema: 'goal-create-request-v1', clientRequestId: 'b_goal', name: 'Faster builds', motivation: 'Wait less.' });
+  await b.app.projectWork.pulse(); await b.app.vault!.sync();
+  expect(VaultProjectSchema.parse(JSON.parse(git(bare, 'show', 'main:projects/fixture__repo/project.json'))).goals.map(goal => goal.name)).toEqual(['Docs and tests', 'Faster builds']);
 
   // The same note edited on both hubs: both versions survive.
   const portB = b.app.hubMemory!.project(await project(b), owner);

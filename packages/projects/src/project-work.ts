@@ -13,8 +13,9 @@ import { EkoaCodeSetupRequestSchema, collectDeviceFacts, deviceResourceRefusal, 
 import { ProjectDailyWork } from './daily.js';
 import { ProjectJobRunner } from './job-runner.js';
 import { join } from 'node:path';
-import { existsSync } from 'node:fs';
-import { deviceAllowsWork } from '@jevellan/core';
+import { existsSync, readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { atomicWrite, deviceAllowsWork } from '@jevellan/core';
 import { setTimeout as delay } from 'node:timers/promises';
 import type { z } from 'zod';
 import type { AccountService } from '@jevellan/accounts';
@@ -519,11 +520,28 @@ export class ProjectWork {
     } catch (error) { if (!(error instanceof HubUnavailable)) throw error; }
   }
   /** Phase 5: the project's definition and coordinator notebook follow every change into its vault folder; the vault pushes them. */
-  async #exportToVault(project: Project): Promise<void> {
-    const vault = this.#o.hubMemory?.vault, folder = vault?.folder(project.id); if (!vault || !folder) return;
+  /**
+   * Phase 5: the project's definition and coordinator notebook follow this hub's changes into its vault folder; the vault pushes them.
+   * Only what changed here since the last export or restore is written, so another hub's newer definition is never overwritten with
+   * an older one, and a folder this hub has neither restored nor written stays untouched until the owner restores it.
+   */
+  async #exportToVault(project: Project, write = true): Promise<void> {
+    const store = this.#o.hubMemory, vault = store?.vault, folder = vault?.folder(project.id); if (!store || !vault || !folder) return;
     const [settings, goals, jobs, dailies, notebook] = await Promise.all([this.admission.settings(project.id), this.goals.list(project.id), this.daily.jobs(project.id), this.daily.dailies(project.id), this.#o.hub.notebook(project.id)]);
-    vault.vault.writeFiles(folder, { 'project.json': vaultDefinitionText(vaultDefinition(project, settings, goals, jobs, dailies)), ...(notebook ? { 'notebook.md': notebook.document.content } : {}) },
-      `owner: ${project.name.replace(/[\r\n]/gu, ' ')} definition and notebook`);
+    const definition = this.#o.redactor.text(vaultDefinitionText(vaultDefinition(project, settings, goals, jobs, dailies))), notes = notebook ? this.#o.redactor.text(notebook.document.content) : undefined;
+    const marker = join(store.root(project.id), 'vault-export.json'), digest = (text?: string) => text === undefined ? null : createHash('sha256').update(text).digest('hex');
+    const prior = existsSync(marker) ? JSON.parse(readFileSync(marker, 'utf8')) as { definition: string | null; notebook: string | null } : null;
+    if (write) {
+      const stored = vault.vault.read(folder, 'project.json');
+      // Before the first export, wait until the vault has seen GitHub once, and leave a definition another hub wrote for Restore.
+      const status = vault.vault.status();
+      if (!prior && (status.remote && !status.lastSyncAt || stored !== null && stored !== definition)) return;
+      const files: Partial<Record<'project.json' | 'notebook.md', string>> = {};
+      if (prior?.definition !== digest(definition)) files['project.json'] = definition;
+      if (notes !== undefined && prior?.notebook !== digest(notes)) files['notebook.md'] = notes;
+      if (Object.keys(files).length) vault.vault.writeFiles(folder, files, `owner: ${project.name.replace(/[\r\n]/gu, ' ')} definition and notebook`);
+    }
+    atomicWrite(marker, `${JSON.stringify({ definition: digest(definition), notebook: digest(notes) })}\n`);
   }
   /** Phase 5.6: recreates this project's work from its vault folder (after a pull). False when the vault has no definition for it. */
   async restoreFromVault(projectId: string): Promise<boolean> {
@@ -532,6 +550,8 @@ export class ProjectWork {
     await vault.vault.pull();
     const text = vault.vault.read(folder, 'project.json'); if (!text) return false;
     await restoreFromVault(this, projectId, folder, JSON.parse(text), vault.vault.read(folder, 'notebook.md'));
+    // What this hub now has came from the vault: later exports write only what changes here after this point.
+    await this.#exportToVault(await this.#project(projectId), false);
     return true;
   }
   /** B3: a question asking the owner to sign in to an account is withdrawn once that account is Ready, so no stale blocker stays open. */

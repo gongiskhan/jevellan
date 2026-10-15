@@ -7,7 +7,7 @@ import { Homes, SecretRedactor } from '../packages/core/dist/index.js';
 import { ProjectVault, vaultFolder } from '../packages/memory/dist/index.js';
 
 // Two hubs share one vault remote: a local bare repository standing in for gongiskhan/jevellan-vault.
-const URL = 'https://github.com/fixture/vault.git';
+const URL = 'https://github.com/fixture/jevellan-vault.git';
 let root: string, bare: string;
 const git = (cwd: string, ...args: string[]) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 beforeEach(() => { root = mkdtempSync(join(tmpdir(), 'jevellan-vault-')); mkdirSync(join(root, 'user')); bare = join(root, 'remote.git'); git(root, 'init', '--bare', '--quiet', '-b', 'main', bare); });
@@ -16,7 +16,7 @@ function hub(name: string, token = 'vault-fixture-token-value') {
   const homes = new Homes(join(root, name), join(root, 'user')); homes.ensure();
   let reachable = true;
   const vault = new ProjectVault({ homes, deviceId: `dev_${name}`, redactor: new SecretRedactor(), now: Date.now, timers: false,
-    remote: async () => reachable ? { url: URL, token } : { url: 'https://github.com/fixture/unreachable.git', token } });
+    remote: async () => reachable ? { url: URL, token } : { url: 'https://github.com/unreachable/jevellan-vault.git', token } });
   vault.ensure(); git(vault.root, 'config', `url.${bare}.insteadOf`, URL);
   const write = (path: string, text: string) => { const file = join(vault.root, path); mkdirSync(join(file, '..'), { recursive: true }); writeFileSync(file, text); git(vault.root, '-c', 'user.name=T', '-c', 'user.email=t@x', 'add', '--', path); git(vault.root, '-c', 'user.name=T', '-c', 'user.email=t@x', 'commit', '--quiet', '-m', `write ${path}`, '--', path); vault.changed(); };
   return { vault, homes, write, read: (path: string) => readFileSync(join(vault.root, path), 'utf8'), offline: () => { reachable = false; }, online: () => { reachable = true; } };
@@ -89,4 +89,19 @@ test('Undo still reverts a dream after a pull rebased its commit onto another hu
     expect(readFileSync(join(a.vault.root, 'projects/other__repo/notes/Elsewhere.md'), 'utf8')).toBe('Other project.\n');
     await a.vault.sync(); expect(a.vault.status().lastError).toBeNull();
   } finally { await manager.close(); }
+});
+
+test('the vault syncs only with a repository named jevellan-vault and never replays onto an unrelated history', async () => {
+  // A misconfigured remote must not let the vault rebase onto, and fast-forward, a project's main branch.
+  const project = join(root, 'project.git'); git(root, 'init', '--bare', '--quiet', '-b', 'main', project);
+  const seed = join(root, 'seed'); git(root, 'clone', '--quiet', project, seed); writeFileSync(join(seed, 'app.ts'), 'export {};\n');
+  git(seed, '-c', 'user.name=T', '-c', 'user.email=t@x', 'add', '-A'); git(seed, '-c', 'user.name=T', '-c', 'user.email=t@x', 'commit', '--quiet', '-m', 'project'); git(seed, 'push', '--quiet', 'origin', 'main');
+  const homes = new Homes(join(root, 'wrong'), join(root, 'user')); homes.ensure();
+  const named = new ProjectVault({ homes, deviceId: 'dev_wrong', redactor: new SecretRedactor(), now: Date.now, timers: false, remote: async () => ({ url: 'https://github.com/fixture/ekoa-code.git', token: 'unrelated-token-value' }) });
+  named.ensure(); await named.sync(); expect(named.status().lastError).toContain('jevellan-vault');
+  const unrelated = new ProjectVault({ homes: new Homes(join(root, 'wrong2'), join(root, 'user')), deviceId: 'dev_wrong2', redactor: new SecretRedactor(), now: Date.now, timers: false,
+    remote: async () => ({ url: 'https://github.com/other/jevellan-vault.git', token: 'unrelated-token-value' }) });
+  unrelated.ensure(); git(unrelated.root, 'config', 'url.' + project + '.insteadOf', 'https://github.com/other/jevellan-vault.git');
+  const before = git(project, 'rev-parse', 'main');
+  await unrelated.sync(); expect(unrelated.status().lastError).toContain('no history in common'); expect(git(project, 'rev-parse', 'main')).toBe(before);
 });
