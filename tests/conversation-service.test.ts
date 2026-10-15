@@ -890,7 +890,8 @@ test('automatic note merging refreshes recall and undo restores the upstream ver
   expect(undone.stretches.map((entry) => entry.status)).toEqual(['undone', 'completed']);
   expect(app.conversations.ledger('conversation').events().filter((event) => event.type === 'verification')).toHaveLength(0);
   expect(git(path, 'status', '--porcelain')).toBe('');
-}, 90_000);
+// Several real Basic Memory syncs (up to about 18 s each when cold on the Linux hub); measured 92 s alone on dev-madrid.
+}, 180_000);
 
 test.each([1, 2])('conflict integration publishes verified code and memory, and undo from step %i preserves upstream intent', async (fromStretch) => {
   await changeProject({ testCommand: 'test "$(cat value.txt)" -ge 2' });
