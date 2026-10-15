@@ -56,10 +56,12 @@ Run log for moving Jevellan to a fresh hub on dev-madrid. Times are UTC on 2026-
 - C2 no stale blockers (live, pass): reply cited no sign-in or account problem ("Accounts ready").
 - C3 task and placement (live, fail then fixed): the task could not be queued without starting, so the coordinator stopped the auto-started thread; held tasks fixed in 0.3.8 (`021b993`). The started copy ran Preparing, Running, Publishing on dev-madrid with Jev's placement (Codex GPT-6 Astra, medium, Ekoa Codex) and opened sandbox PR #17 (README and the required CHANGELOG entry, `result` passing).
 - C3 side finding (live): the sandbox test command chosen in Phase 1 missed `TZ=UTC` and `SANDBOX_DATA_DIR`; the coordinator asked the owner, the setting was corrected and the question answered.
+- C5 steer and stop (live, pass): a steer to a running sandbox thread (one-sentence Contributing section, only README.md and CHANGELOG.md) is what its next turn published (PR #18); Stop from the thread page cancelled the other task ("Stopped by you."), freeing the goal slot, and the task queued on the same goal started at once.
 - C6 failure path (live, pass): an unreachable origin failed preparation with "Retry 1 of 3 at 08:23 UTC"; after restoring the origin the retry prepared and ran the thread.
 - C7 fresh session (live, pass): after Fresh session the coordinator listed both open tasks.
 - C8 journal and phone (live, pass): INDEX lists the sandbox threads and all four links resolve; the sandbox and ekoa-code project pages at 390 px pass the vision check.
 - C9 owner terminal (live, pass): from Settings → Devices at 390 px, `hostname` gave dev-madrid and `pwd` /home/ggomes with exit 0; Copy last command gave `$ pwd` and its output without escape codes (over HTTP the product copies through execCommand); reload reconnected the same terminal.
+- L1 progress (live): code-review PR #259 opened with `result` passing.
 - L1 start (live, pass so far): one message started two tasks, both threads running at the same time within 3 minutes, both placed on Codex.
 
 - Live vault (live, pass): the hub syncs `gongiskhan/jevellan-vault` with no error; ekoa-code's notes, `project.json` (6 goals, 3 jobs, 6 dailies; no device, account or path values) and `notebook.md` are on GitHub, and the sandbox folder too.
