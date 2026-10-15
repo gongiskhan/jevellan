@@ -9,6 +9,8 @@ Run log for moving Jevellan to a fresh hub on dev-madrid. Times are UTC on 2026-
 | 0 Preflight | 05:35 | 05:40 |
 | 1 Fresh hub | 05:40 | 07:58, HTTP only (Tailscale) |
 | 2 Readiness bugs and suites | 06:00 | |
+| 3 Coordinator checks (sandbox) | 08:00 | |
+| 4 Real ekoa-code work | 08:21 | |
 
 ## Environment
 
@@ -49,6 +51,16 @@ Run log for moving Jevellan to a fresh hub on dev-madrid. Times are UTC on 2026-
 - Member uninstall (live, fail): service stopped and disabled, then Tailscale refused to remove the `:443` route. Tailscale's operator is already `ggomes`; the refusal comes from the `:8500` folder share, since tailscaled only lets a user who can run `sudo tailscale` write a serve configuration that contains a folder. Unit file, wrapper and route remain; `~/.jevellan-member` intact.
 - Vault repository (live, pass): `gongiskhan/jevellan-vault` created private; the visibility list before and after differs only by that new private repository.
 - Vault drill by hand (live, pass): two disposable vault homes against GitHub pushed, pulled and kept both versions of a note edited on both; the scratch folder was removed again; the token never entered the repository configuration.
+
+- C1 status (live, pass): reply named nothing running, nothing queued and the one draft waiting for approval, matching the API.
+- C2 no stale blockers (live, pass): reply cited no sign-in or account problem ("Accounts ready").
+- C3 task and placement (live, fail then fixed): the task could not be queued without starting, so the coordinator stopped the auto-started thread; held tasks fixed in 0.3.8 (`021b993`). The started copy ran Preparing, Running, Publishing on dev-madrid with Jev's placement (Codex GPT-6 Astra, medium, Ekoa Codex) and opened sandbox PR #17 (README and the required CHANGELOG entry, `result` passing).
+- C3 side finding (live): the sandbox test command chosen in Phase 1 missed `TZ=UTC` and `SANDBOX_DATA_DIR`; the coordinator asked the owner, the setting was corrected and the question answered.
+- C6 failure path (live, pass): an unreachable origin failed preparation with "Retry 1 of 3 at 08:23 UTC"; after restoring the origin the retry prepared and ran the thread.
+- C7 fresh session (live, pass): after Fresh session the coordinator listed both open tasks.
+- C8 journal and phone (live, pass): INDEX lists the sandbox threads and all four links resolve; the sandbox and ekoa-code project pages at 390 px pass the vision check.
+- C9 owner terminal (live, pass): from Settings → Devices at 390 px, `hostname` gave dev-madrid and `pwd` /home/ggomes with exit 0; Copy last command gave `$ pwd` and its output without escape codes (over HTTP the product copies through execCommand); reload reconnected the same terminal.
+- L1 start (live, pass so far): one message started two tasks, both threads running at the same time within 3 minutes, both placed on Codex.
 
 ## Owner list
 
