@@ -28,7 +28,7 @@ export function imageReferences(text: string, pathsOnly = false): string[] {
   return [...found].slice(0, 200);
 }
 export function turnImages(turn: CursorTurn): string[] {
-  return [...new Set(turn.blocks.flatMap(block => block.type === 'tool' ? [...imageReferences(block.input, true), ...imageReferences(block.output ?? '').filter(ref => ref.includes('/'))] : imageReferences(block.text)))];
+  return [...new Set(turn.blocks.flatMap(block => block.type === 'tool' ? block.output === undefined && block.state !== 'completed' ? [] : [...imageReferences(block.input, true), ...imageReferences(block.output ?? '').filter(ref => ref.includes('/'))] : imageReferences(block.text)))];
 }
 export function sessionImages(turns: readonly CursorTurn[], reports: readonly ThreadReport[]): string[] {
   return [...new Set([...turns.flatMap(turnImages), ...reports.flatMap(report => imageReferences(report.summary))])].slice(0, 200);

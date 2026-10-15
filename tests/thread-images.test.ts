@@ -19,3 +19,9 @@ test('source code and shell templates do not become phantom screenshot entries',
   expect(turnImages({ id: 'listing', role: 'assistant', blocks: [{ type: 'tool', id: 'ls', name: 'Bash', input: '{"command":"ls shots"}', output: 'one.png\ntwo.png', state: 'completed' }] })).toEqual([]);
   expect(imageReferences('`${OUT}debug-task-${scale}x.png`')).toEqual([]);
 });
+
+test('a screenshot path is not offered before its capture tool has finished writing the file', () => {
+  const block = { type: 'tool' as const, id: 'capture', name: 'Screenshot', input: '{"path":"shots/phone.png"}', state: 'running' as const };
+  expect(turnImages({ id: 'turn', role: 'assistant', blocks: [block] })).toEqual([]);
+  expect(turnImages({ id: 'turn', role: 'assistant', blocks: [{ ...block, state: 'completed' }] })).toEqual(['shots/phone.png']);
+});

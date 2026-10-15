@@ -69,5 +69,16 @@
   "finalBrowserAttempt": {
     "label": "blocked",
     "reason": "After main integration the fixture failed to become ready within its unchanged60000ms startup timeout; no journey started."
+  },
+  "referenceRegression": {
+    "label": "simulated",
+    "passed": 5,
+    "includes": "Ignore source-code literals, templates and bare directory listings; wait for captures to finish before listing their files."
+  },
+  "publication": {
+    "label": "live",
+    "commit": "3f531b36",
+    "mainPushed": true,
+    "historySecretScan": "passed"
   }
 }
