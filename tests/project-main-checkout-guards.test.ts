@@ -11,7 +11,7 @@ import { existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ThreadCreatedViewSchema } from '../packages/core/dist/index.js';
 import { forThread } from '../packages/runtime-contract/dist/index.js';
-import { commitStep, expectNoLeaks, projectFixture, type ProjectFixture } from './helpers/project-fixture.js';
+import { commitStep, expectNoLeaks, projectFixture, threadRequestText, withoutFollowupRoute, type ProjectFixture } from './helpers/project-fixture.js';
 
 let fixture: ProjectFixture | undefined;
 afterEach(async () => {
@@ -278,7 +278,7 @@ test('a Stop pressed while the publication waits for its lease stops the push: m
   expect(await claim(f)).toMatchObject({ held: false, conversationId: threadId });
 });
 
-test('messages that waited during a publication that concluded the thread are named as not delivered, and the queue is cleared', { timeout: 120_000 }, async () => {
+test('messages that waited during a publication that concluded the thread run next as the owner\'s follow-up, and the queue is cleared', { timeout: 120_000 }, async () => {
   const f = await setup();
   const leases = f.app.conversations.leases; const acquire = leases.acquire.bind(leases);
   const waiting = deferred(); const release = deferred();
@@ -289,9 +289,9 @@ test('messages that waited during a publication that concluded the thread are na
   expect((await message(f, threadId, 'Also rename the button.')).status).toBe(202);
   expect(f.thread(threadId).queuedMessages.map((queued) => queued.text)).toEqual(['Also rename the button.']);
   release.resolve();
-  const done = await f.waitFor(() => f.thread(threadId), (thread) => thread.state === 'done');
-  expect(done.publishedCommit).toBe(origin(f));
-  expect(done.queuedMessages).toEqual([]);
-  expect(notices(f, threadId)).toContainEqual({ text: 'The thread concluded before these messages reached it: "Also rename the button."', kind: 'error' });
-  expect(threadTurns(f)).toHaveLength(1);
+  // The publication concludes the work; the waiting message then reopens the thread as a follow-up (commit 41d7a2b) instead of being dropped.
+  const followed = await f.waitFor(() => f.thread(threadId), (thread) => thread.state !== 'publishing' && thread.turns === 2 && !thread.queuedMessages.length);
+  expect(followed.queuedMessages).toEqual([]);
+  expect(notices(f, threadId).map(notice => notice.text)).not.toContain('The thread concluded before these messages reached it: "Also rename the button."');
+  expect(threadTurns(f)).toHaveLength(2); expect(withoutFollowupRoute(threadRequestText(threadTurns(f)[1]!.prompt))).toBe('Also rename the button.');
 });
