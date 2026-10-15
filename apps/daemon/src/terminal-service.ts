@@ -5,7 +5,7 @@ import { DeviceOriginSchema, OwnerCommandRunRequestSchema, OwnerCommandRunReceip
   OwnerCommandReceiptRequestSchema, OwnerCommandReceiptViewSchema,
   TerminalHubRequestSchema, TerminalListSchema, TerminalPeerRequestSchema, TerminalPeerResultSchema, TerminalReadInputSchema, TerminalReadResultSchema,
   TerminalSessionSchema, TerminalSnapshotSchema, TerminalTicketSchema, applicationRoot, resolveProjectPath, stableJson,
-  type TerminalAccess, type TerminalCreateRequest, type TerminalHubRequest, type TerminalSession } from '@jevellan/core';
+  parseReply, type TerminalAccess, type TerminalCreateRequest, type TerminalHubRequest, type TerminalSession } from '@jevellan/core';
 import type { Application } from './application.js';
 import { TerminalManager, type TerminalManagerOptions } from './terminal-manager.js';
 import { shellQuote } from './terminal-shell.js';
@@ -86,7 +86,7 @@ export class TerminalService {
     this.app.redactor.add(token);
     const response = await fetch(url, { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(45_000), headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, 'X-Jevellan-Source-Device': this.app.device.deviceId }, body: JSON.stringify(input) });
     if (!response.ok) { const failure = await response.json().catch(() => ({})) as { message?: string }; throw refuse(this.app.redactor.text(failure.message ?? `Can't reach ${device.name}.`), response.status); }
-    const result = TerminalPeerResultSchema.parse(await response.json());
+    const result = parseReply(TerminalPeerResultSchema, await response.json());
     if ((result.schema === 'terminal-session-v1' ? result.deviceId : result.schema === 'terminal-snapshot-v1' ? result.session.deviceId : deviceId) !== deviceId) throw refuse('The terminal device returned an invalid receipt.', 502);
     return result;
   }

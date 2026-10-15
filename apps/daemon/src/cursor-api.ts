@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { CursorListSchema, IdSchema, PeerLoginSessionInputSchema, DeviceOriginSchema } from '@jevellan/core';
+import { CursorListSchema, IdSchema, PeerLoginSessionInputSchema, DeviceOriginSchema, parseReply } from '@jevellan/core';
 import type { Application } from './application.js';
 import { json, requestBody } from './http.js';
 import { forwardOwner } from './owner-proxy.js';
@@ -51,7 +51,7 @@ export async function handleCursorApi(app: Application, request: IncomingMessage
           Authorization: `Bearer ${token!}`, 'X-Jevellan-Source-Device': app.device.deviceId,
         } });
         if (!result.ok) throw new Error();
-        const list = CursorListSchema.parse(await result.json()); cache.set(row.device.id, list); return list;
+        const list = parseReply(CursorListSchema, await result.json()); cache.set(row.device.id, list); return list;
       } catch {
         return { schema: 'cursor-list-v1' as const, observedAt: new Date().toISOString(), unavailable: [`${row.device.name}: Cursor sessions are unavailable.`],
           sessions: (cache.get(row.device.id)?.sessions ?? []).filter(session => Date.now() - Date.parse(session.lastActivityAt) < 5 * 86_400_000)

@@ -244,6 +244,7 @@ test('ledger envelopes are separate from conversation ledgers and payloads are v
   expect(ProjectLedgerEventSchema.safeParse({ ...envelope, data: { schema: 'blob-ref-v1', ref: `blobs/${'a'.repeat(64)}`, sha256: 'a'.repeat(64), bytes: 70000 } }).success).toBe(true);
   expect(Object.keys(ProjectLedgerDataSchemas).sort()).toEqual([...ProjectLedgerEventTypeSchema.options].sort());
   const payloads: Record<string, unknown> = {
+    'journal-config': { schema: 'journal-config-v1', name: 'ekoa-code', timezone: 'Europe/Lisbon' },
     'journal-thread': { schema: 'journal-thread-v1', id: threadId, projectId: 'project', title: 'Fix login', task: 'Keep the task.', taskId: null, goal: null, type: null, runtime: 'codex', model: 'gpt-5', effort: 'high', deviceId: 'dev_a', isolation: 'worktree', branch: null, pr: null, state: 'idle', createdAt: at, endedAt: null },
     'journal-source': { schema: 'project-journal-record-v1', deviceId: 'dev_a', ledgerId: 'coordinator', event: { schema: 'project-ledger-event-v1', t: at, id: 1, type: 'coordinator-text', data: { schema: 'coordinator-text-v1', text: 'Recorded.' } } },
     'journal-document': { schema: 'journal-document-v1', collection: 'question', key: 'question_a', document: { schema: 'project-decision-v1', id: 'question_a', projectId: 'project', revision: 1, from: 'coordinator', question: 'Choose?', options: [], createdAt: at } },
@@ -257,6 +258,7 @@ test('ledger envelopes are separate from conversation ledgers and payloads are v
     'thread-turn-end': { schema: 'thread-turn-end-v1', turn: 2, status: 'steered' },
     'thread-report': report,
     'thread-placement': placement,
+    'thread-message-route': { schema: 'thread-message-route-v1', projectId: 'project', threadId, messageIds: ['message_a'], digest: 'a'.repeat(64), outcome: { schema: 'project-request-outcome-v1', projectId: 'project', eventId: 'cev_1', goal: 'change', source: 'unavailable', calls: [], at }, placement, modelLabel: 'Claude Opus' },
     'thread-state': { schema: 'thread-state-v1', from: null, to: 'queued', reason: 'Queued: the project is at its limit of 6 running threads.', changed: ['state'] },
     'thread-verification': { schema: 'thread-verification-v1', attempt: 1, command: null, status: 'skipped', timedOut: false, commit: 'a'.repeat(40), tail: '' },
     'thread-publication': { schema: 'thread-publication-v1', result: 'pr-opened', prNumber: 7, branch: 'jv/fix-login-q2k9m', pr, files: ['src/login.ts'] },

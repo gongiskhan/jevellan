@@ -102,7 +102,7 @@ export class AgentApiAdapter implements AgentApi {
     const data: unknown = await response.json().catch(() => null);
     if (!response.ok) { const parsed = C.ErrorDocumentSchema.safeParse(data); throw failure(parsed.success ? parsed.data.message : 'The device refused this operation.', response.status); }
     await this.#authorized(signal);
-    return AgentPeerResultSchema.parse(data).data;
+    return C.parseReply(AgentPeerResultSchema, data).data;
   }
   async call(operation: string, raw: Record<string, unknown>, signal: AbortSignal): Promise<unknown> {
     await this.#authorized(signal);

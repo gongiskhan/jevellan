@@ -1,7 +1,7 @@
 import { EkoaRequestSchema, EkoaStateSchema } from '@jevellan/core';
 import { ProjectMemoryRequestSchema, ProjectMemoryResultSchema } from '@jevellan/core';
 import { DeviceTagsRequestSchema, DeviceSettingsRequestSchema } from '@jevellan/core';
-import { AuthStateSchema, ConsumeSwitchSchema, DeviceOriginSchema, DeviceRosterSchema, DeviceSwitchInputSchema, DeviceSwitchSchema, DeviceTokenSchema, DeviceViewSchema, EmptySchema, ErrorDocumentSchema, HeartbeatSchema, IdSchema, JoinedDeviceSchema, JoinDeviceInputSchema, JoinInvitationSchema, MeshSessionInputSchema, MeshSessionResultSchema, MeshSessionStateSchema, PassphraseInputSchema, SwitchedSessionSchema, UiSigningMaterialSchema, stableJson, type DocumentSchema, type SecretRedactor, type UiSigningMaterial } from '@jevellan/core';
+import { AuthStateSchema, ConsumeSwitchSchema, DeviceOriginSchema, DeviceRosterSchema, DeviceSwitchInputSchema, DeviceSwitchSchema, DeviceTokenSchema, DeviceViewSchema, EmptySchema, ErrorDocumentSchema, HeartbeatSchema, IdSchema, JoinedDeviceSchema, JoinDeviceInputSchema, JoinInvitationSchema, MeshSessionInputSchema, MeshSessionResultSchema, MeshSessionStateSchema, PassphraseInputSchema, SwitchedSessionSchema, UiSigningMaterialSchema, parseReply, stableJson, type DocumentSchema, type SecretRedactor, type UiSigningMaterial } from '@jevellan/core';
 import { verifySharedSession } from './auth.js';
 import { AccountHubRequestSchema, AccountHubResultSchema } from '@jevellan/core';
 import { CheckoutStoreRequestSchema, CheckoutStoreResultSchema, PublicationLeaseRequestSchema, PublicationLeaseResultSchema } from '@jevellan/core';
@@ -55,7 +55,8 @@ class HubTransport {
         const error = ErrorDocumentSchema.safeParse(value); if (!error.success) throw new HubProtocolError();
         throw Object.assign(new Error(this.options.redactor.text(error.data.message)), { status: response.status });
       }
-      try { return schema.parse(value); } catch { throw new HubProtocolError(); }
+      // A newer hub may add keys this member does not know yet (B5): drop exactly those, keep every other check.
+      try { return parseReply(schema, value); } catch { throw new HubProtocolError(); }
     } catch (error) {
       if (error instanceof HubProtocolError || error && typeof error === 'object' && 'status' in error) throw error;
       throw new HubUnavailable(this.options.hubName);

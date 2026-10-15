@@ -1,4 +1,4 @@
-import { EkoaCodeSetupRequestSchema, JobCreateRequestSchema, JobUpdateRequestSchema, DailyCreateRequestSchema, DailyUpdateRequestSchema, ProjectRunRequestSchema } from '@jevellan/core';
+import { parseReply, EkoaCodeSetupRequestSchema, JobCreateRequestSchema, JobUpdateRequestSchema, DailyCreateRequestSchema, DailyUpdateRequestSchema, ProjectRunRequestSchema } from '@jevellan/core';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import {
   CoordinatorMessageReceiptSchema, CoordinatorMessageRequestSchema, DecisionAnswerRequestSchema, DecisionAnsweredViewSchema, DeviceOriginSchema, EmptySchema, ErrorDocumentSchema, IdSchema,
@@ -145,7 +145,7 @@ function remoteStart(app: Application, caller: Caller): RemoteStart {
     } catch { throw failure(coordinatorUnreachable(row.device.name), 502); }
     if (answer.status >= 300 && answer.status < 400) { await answer.body?.cancel(); throw failure(COORDINATOR_DEVICE_REDIRECT, 502); }
     const value: unknown = await answer.json().catch(() => null);
-    if (answer.ok) return ThreadCreatedViewSchema.parse(value);
+    if (answer.ok) return parseReply(ThreadCreatedViewSchema, value);
     const refused = ErrorDocumentSchema.safeParse(value);
     throw refused.success ? failure(refused.data.message, answer.status) : failure(coordinatorUnreachable(row.device.name), 502);
   };
