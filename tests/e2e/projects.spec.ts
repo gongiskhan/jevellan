@@ -1010,12 +1010,14 @@ test('PJ7 an attached thread disables its composer', async ({ page }) => {
   // This page fits the screen: nothing under the composer (the copy button's wider target included) may make it scroll.
   expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight)).toBe(true);
 
-  // The prompt folds during terminal ownership; its complete task and live context remain readable on request.
-  const prompt = page.locator('.pw-transcript .pw-prompt').first();
-  await expect(prompt).not.toHaveAttribute('open', ''); await prompt.locator('summary').click();
-  await expect(prompt).toHaveAttribute('open', '');
+  // The prompt folds during terminal ownership (the focused transcript folds every past text block); its complete task and live
+  // context remain readable on request.
+  const prompt = page.locator('.pw-transcript .cursor-turn-user').first(), folds = prompt.locator('.cursor-text-block');
+  await expect(folds.first()).toBeVisible();
+  for (const fold of await folds.all()) { await expect(fold).not.toHaveAttribute('open', ''); await fold.locator('summary').click(); await expect(fold).toHaveAttribute('open', ''); }
   await expect(prompt).toContainText('PJ7: tidy the README wording, then wait for me to look at it in a terminal.');
-  await expect(prompt).toContainText('Project now'); await prompt.locator('summary').click();
+  await expect(prompt).toContainText('Project now');
+  for (const fold of await folds.all()) await fold.locator('summary').click();
 
   // Copying: the Clipboard API on this loopback page; the selection copy that a plain-HTTP Tailnet page falls back to; and, when the
   // browser refuses both, the command shown whole and selected on the page (D304, D305).
