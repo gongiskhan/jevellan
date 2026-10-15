@@ -9,8 +9,8 @@ Run log for moving Jevellan to a fresh hub on dev-madrid. Times are UTC on 2026-
 | 0 Preflight | 05:35 | 05:40 |
 | 1 Fresh hub | 05:40 | 07:58, HTTP only (Tailscale) |
 | 2 Readiness bugs and suites | 06:00 | |
-| 3 Coordinator checks (sandbox) | 08:00 | |
-| 4 Real ekoa-code work | 08:21 | |
+| 3 Coordinator checks (sandbox) | 08:00 | C4 pending |
+| 4 Real ekoa-code work | 08:21 | 10:11 (working-version milestone, 4 h 36 min after start) |
 
 ## Environment
 
@@ -61,7 +61,10 @@ Run log for moving Jevellan to a fresh hub on dev-madrid. Times are UTC on 2026-
 - C7 fresh session (live, pass): after Fresh session the coordinator listed both open tasks.
 - C8 journal and phone (live, pass): INDEX lists the sandbox threads and all four links resolve; the sandbox and ekoa-code project pages at 390 px pass the vision check.
 - C9 owner terminal (live, pass): from Settings → Devices at 390 px, `hostname` gave dev-madrid and `pwd` /home/ggomes with exit 0; Copy last command gave `$ pwd` and its output without escape codes (over HTTP the product copies through execCommand); reload reconnected the same terminal.
-- L1 progress (live): code-review PR #259 opened with `result` passing.
+- L1 (live, pass): the readiness T1 message started two tasks; both threads ran in parallel within 3 minutes (Codex). Code-review PR #259 (8 files) and test-hardening PR #261 (fix, 12 regression tests, finding) opened; both threads merged main and resolved the `docs/findings.md` conflict on their own; `result` concluded SUCCESS on both, the last at about 10:11 (110 minutes). Nobody merged.
+- L2 (live, pass): the coordinator's status answer matched `gh pr view` (#259 passing, #261 checks in progress at the time).
+- L3 (live, pass): both L1 threads ran on Codex; a third test-hardening task with a Claude placement override opened PR #260 (proposal totals tests) with `result` SUCCESS.
+- L4 (live, pass): no question reached the owner from L1 to L3.
 - L1 start (live, pass so far): one message started two tasks, both threads running at the same time within 3 minutes, both placed on Codex.
 
 - Live vault (live, pass): the hub syncs `gongiskhan/jevellan-vault` with no error; ekoa-code's notes, `project.json` (6 goals, 3 jobs, 6 dailies; no device, account or path values) and `notebook.md` are on GitHub, and the sandbox folder too.
