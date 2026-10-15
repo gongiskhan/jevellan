@@ -30,7 +30,13 @@ export class ThreadFollowups {
       note: `Continue this thread in its existing workspace. Choose automatic provider, model, effort and saved account for the new request. Current session: ${current.runtime}, ${current.model}, ${current.effortEffective}, account ${current.accountId}. Prefer its continuity when suitable; changing provider, model or account starts a fresh session with the thread history.`,
       fixed, coordinatorDeviceId: thread.coordinatorDeviceId, ignoreRunningLimit: true, exclude: thread.id, signal });
     if (chosen.kind === 'refused') throw new Error(chosen.message);
+    // With every field fixed Jev is asked nothing: when that lands on the same placement, the recorded one (with Jev's original
+    // probabilities and the owner's changes) stays, so the Why panel keeps explaining it.
+    const next = chosen.record;
+    const unchanged = next.source === 'fixed' && next.runtime === current.runtime && next.modelId === current.modelId && next.model === current.model
+      && next.effortRequested === current.effortRequested && next.effortEffective === current.effortEffective && next.accountId === current.accountId
+      && next.deviceId === current.deviceId && next.isolation === current.isolation;
     return writeDocument(file, ThreadMessageRouteSchema, { schema: 'thread-message-route-v1', projectId: thread.projectId, threadId: thread.id,
-      messageIds, digest, outcome, placement: chosen.record, modelLabel: chosen.labels.modelLabel });
+      messageIds, digest, outcome, placement: unchanged ? current : next, modelLabel: chosen.labels.modelLabel });
   }
 }

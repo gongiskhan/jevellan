@@ -40,3 +40,20 @@ test('owner follow-ups get Jev intent and placement; replay reuses the durable d
   await router.route({ ...thread, placement: { ...record, fixed: ['runtime', 'model', 'account', 'effort'] } }, 'Keep the choices.', ['msg_b'], new AbortController().signal);
   expect(place.mock.calls[1]![0]).toMatchObject({ fixed: { runtimeId: 'claude', modelId: 'sonnet', accountId: 'acc_a', effort: 'low' } });
 });
+
+test('a follow-up whose placement asks Jev nothing and changes nothing keeps the recorded placement and its probabilities', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'jv-followup-')); roots.push(root);
+  const homes = new Homes(join(root, 'data'), join(root, 'user')); homes.ensure();
+  // The owner changed the model, effort and account from the next turn; Jev's original placement and probabilities stay on record.
+  const current = PlacementRecordSchema.parse({ ...record, source: 'jev', fixed: ['model', 'effort', 'account'], probabilities: { pick_model: { sonnet: 0.7, opus: 0.3 } } });
+  const place = vi.fn(async () => ({ kind: 'placed' as const, atLimit: false,
+    record: PlacementRecordSchema.parse({ ...record, source: 'fixed', fixed: ['isolation', 'device', 'model', 'effort', 'account'], decidedAt: '2026-10-14T18:00:00.000Z' }),
+    labels: { modelLabel: 'Sonnet', deviceName: 'Madrid', runtimeName: 'Claude Code' } }));
+  const router = new ThreadFollowups({ paths: new ProjectPaths(homes), placement: { place }, settings: async () => seedConfiguration()['x-jevellan'],
+    project: async () => ProjectSchema.parse({ schema: 'project-v1', id: 'project_a', name: 'App', paths: { dev_a: '/project' }, branchPolicy: 'main', testCommand: 'npm test', memory: { mode: 'device', dir: 'memory' }, context: { state: 'none' } }),
+    workSettings: async () => defaultProjectWorkSettings('project_a') });
+  const result = await router.route({ ...thread, placement: current }, 'Please go on with the wording.', ['msg_c'], new AbortController().signal);
+  expect(place).toHaveBeenCalledTimes(1);
+  expect(result.placement).toEqual(current);
+  expect(result.modelLabel).toBe('Sonnet');
+});
