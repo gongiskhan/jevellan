@@ -387,3 +387,10 @@ export async function queueThread(f: ProjectFixture, turn: FakeTurn, input: { ti
   const task = await f.waitFor(() => f.app.projectWork.tasks.read(f.project.id, receipt.taskId), value => value.threadId !== null);
   return { ...receipt, threadId: task.threadId! };
 }
+
+const LIVE_ACCOUNTS = /\n\nAccounts right now \(live; this replaces anything said earlier about sign-in\):\n(?:- [^\n]+(?:\n|$))+$/u;
+/** Every coordinator turn ends with the accounts' readiness as it is now (B3): checks the block is there and returns the prompt without it. */
+export function withoutLiveAccounts(prompt: string): string {
+  if (!LIVE_ACCOUNTS.test(prompt)) throw new Error(`The coordinator prompt has no live account readiness:\n${prompt}`);
+  return prompt.replace(LIVE_ACCOUNTS, '');
+}

@@ -11,7 +11,7 @@ import { SESSION_NOT_FOUND, type RuntimeAdapter } from '@jevellan/runtime-contra
 import { ProjectTools, type ProjectScope, type ProjectToolHandlers } from './bridge-tools.js';
 import {
   COORDINATOR_PROCESS_UNCONFIRMED, MESSAGE_ID_REUSED, TURN_FAILED, activeThreadLine, coordinatorAccountMovedNotice, coordinatorFailedTwiceNotice, coordinatorMovedNotice, coordinatorSystemAppend,
-  coordinatorTurnTimedOut, coordinatorUnavailableNotice, coordinatorWorking, eventBlock, eventLine, freshContext, coordinatorWaitsForAccount, noCoordinatorAccount, noCoordinatorModel, numberedQuestionLine, OPEN_QUESTIONS,
+  coordinatorTurnTimedOut, coordinatorUnavailableNotice, coordinatorWorking, eventBlock, eventLine, freshContext, coordinatorWaitsForAccount, noCoordinatorAccount, noCoordinatorModel, numberedQuestionLine, OPEN_QUESTIONS, ACCOUNTS_NOW, accountNowLine,
   recentConversation,
 } from './copy.js';
 import { derivedId, type DecisionItems } from './decision-items.js';
@@ -86,6 +86,8 @@ export type CoordinatorPromptInput = {
   decisions: readonly ProjectDecision[];
   /** Owner messages (with their event id) and coordinator replies from the ledger, oldest first. */
   history: ReadonlyArray<{ from: 'owner' | 'coordinator'; text: string; eventId?: string | undefined }>;
+  /** Account readiness per device at this turn (B3), one line per enabled account. */
+  accounts?: readonly string[];
   /** The runtime adapter's display name (D83). */
   runtimeName(runtime: string): string;
   deviceName(deviceId: string): string;
@@ -122,7 +124,8 @@ export function coordinatorFreshContext(input: CoordinatorPromptInput): string {
 /** The turn prompt (brief 8.1): a session that is not resumed gets the fresh context first, then the event block. */
 export function coordinatorPrompt(input: CoordinatorPromptInput, resumed: boolean): string {
   const goals = input.outcomes?.filter(outcome => outcome.source === 'jev').map(outcome => `Requested result for ${outcome.eventId} (${outcome.source}): ${projectOutcomeInstruction(outcome)}`).join('\n');
-  const block = coordinatorEventBlock(input) + (goals ? `\n\n${goals}\nCarry this result into the thread task and check the report against it before concluding.` : '');
+  const block = coordinatorEventBlock(input) + (goals ? `\n\n${goals}\nCarry this result into the thread task and check the report against it before concluding.` : '')
+    + (input.accounts?.length ? `\n\n${ACCOUNTS_NOW}\n${input.accounts.join('\n')}` : '');
   return resumed ? block : `${coordinatorFreshContext(input)}\n\n${block}`;
 }
 
@@ -495,10 +498,13 @@ export class Coordinator {
     const [threads, decisions, notebook, roster, base] = await Promise.all([this.#threads(), this.c.hub.decisions(projectId), this.c.hub.notebook(projectId),
       this.c.roster().catch(() => null), this.#baseBranch(project)]);
     const names = new Map((roster?.devices ?? []).map((view) => [view.device.id, view.device.name]));
+    const name = (id: string) => id === deviceId ? deviceName : names.get(id) ?? id;
+    const accounts = (await this.c.accounts.list()).filter(view => view.account.enabled).map(view => accountNowLine(view.account.label, this.c.runtimes.get(view.account.runtime)?.displayName ?? view.account.runtime,
+      view.statuses.map(status => `${name(status.deviceId)} ${status.auth === 'ready' ? 'Ready' : status.auth}`).join(', ') || 'not checked yet'));
     const outcomes: ProjectRequestOutcome[] = [];
     const memory = await this.c.memoryContext?.(project);
     if (this.c.outcome) for (const event of events) if (event.kind === 'user-message') outcomes.push(await this.c.outcome(projectId, event, recentConversation(this.#conversation()), this.#outcomeAbort.signal));
-    return { kind: 'ready', project, cwd, ...chosen, ...(work.coordinator.accountId ? { requiredAccountId: work.coordinator.accountId } : {}), session, prompt: { events, outcomes, ...(memory ? { memory } : {}), notebook: notebook?.document.content ?? null, threads, decisions, history: this.#conversation(),
+    return { kind: 'ready', project, cwd, ...chosen, ...(work.coordinator.accountId ? { requiredAccountId: work.coordinator.accountId } : {}), session, prompt: { events, outcomes, ...(memory ? { memory } : {}), notebook: notebook?.document.content ?? null, threads, decisions, history: this.#conversation(), accounts,
       runtimeName: (runtime) => this.c.runtimes.get(runtime)?.displayName ?? runtime, deviceName: (id) => id === deviceId ? deviceName : names.get(id) ?? id, base,
       askedDirectly: this.#askedDirectly(events, decisions) } };
   }

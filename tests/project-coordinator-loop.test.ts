@@ -12,6 +12,7 @@ import { StretchBridges } from '../packages/conversations/dist/index.js';
 import { HubDatabase, HubProjectAccess } from '../packages/mesh/dist/index.js';
 import { FakeRuntime, forCoordinator, type FakeTurnStep, type TurnInput } from '../packages/runtime-contract/dist/index.js';
 import { DEFAULT_PROJECT_TIMERS, ProjectWork, coordinatorSystemAppend, derivedId } from '../packages/projects/dist/index.js';
+import { withoutLiveAccounts } from './helpers/project-fixture.js';
 
 // The coordinator turn loop (brief 8.1, 8.6; design 3.2) in-process: the real hub store, FakeRuntime coordinator turns
 // through a small bridge server, and injected timers. Thread events are enqueued directly (threads are covered elsewhere).
@@ -125,9 +126,9 @@ test('one turn at a time: events during a turn arrive batched in the next, which
   expect(first).toMatchObject({ owner: { kind: 'coordinator', projectId: 'proj_a', id: 'proj_a' }, turn: 1, permissions: 'read-only', safetyProfile: 'coordinator', cwd: checkout,
     model: 'scripted-model', effort: 'medium', timeoutMs: 1_200_000, systemAppend: coordinatorSystemAppend('Shop') });
   expect(first!.resume).toBeUndefined();
-  expect(first!.prompt).toMatch(/^Project notebook:\n\(empty\)\n\nActive threads:\n\(none\)\n\nOpen questions to the owner \(numbered as the owner sees them\):\n\(none\)\n\nRecent conversation with the owner:\n\(none\)\n\nProject memory:\nProject memory is unavailable for this turn\.\n\nEvents since your last turn:\n\[owner \d{2}:\d{2}\] add A and fix B$/);
+  expect(withoutLiveAccounts(first!.prompt)).toMatch(/^Project notebook:\n\(empty\)\n\nActive threads:\n\(none\)\n\nOpen questions to the owner \(numbered as the owner sees them\):\n\(none\)\n\nRecent conversation with the owner:\n\(none\)\n\nProject memory:\nProject memory is unavailable for this turn\.\n\nEvents since your last turn:\n\[owner \d{2}:\d{2}\] add A and fix B$/);
   expect(second).toMatchObject({ turn: 2, resume: { sessionId: work.coordinators.get('proj_a').state().session!.nativeSessionId } });
-  expect(second!.prompt).toBe('Events since your last turn:\n[thread "Add A" (thread_a)] Pull request #1 opened.\n[thread "(unknown thread)" (thread_b)] Pull request #2 opened.');
+  expect(withoutLiveAccounts(second!.prompt)).toBe('Events since your last turn:\n[thread "Add A" (thread_a)] Pull request #1 opened.\n[thread "(unknown thread)" (thread_b)] Pull request #2 opened.');
   const state = work.coordinators.get('proj_a').state();
   expect(state).toMatchObject({ state: 'idle', queue: [], failedTurnsInARow: 0, session: { turns: 2, accountId: 'acc_work' } });
   expect(state.lastTurnAt).toBeDefined();
@@ -265,7 +266,7 @@ test('Stop interrupts the running turn, whose events count as delivered; later e
   await work.stopCoordinator('proj_a');
   await work.idle('proj_a');
   expect(turns()).toHaveLength(2);
-  expect(turns()[1]!.prompt).toBe('Events since your last turn:\n[thread "(unknown thread)" (thread_a)] Pull request #3 opened.');
+  expect(withoutLiveAccounts(turns()[1]!.prompt)).toBe('Events since your last turn:\n[thread "(unknown thread)" (thread_a)] Pull request #3 opened.');
   expect(payloads(work, 'coordinator-turn-end').map((data) => data.status)).toEqual(['interrupted', 'completed']);
   expect(payloads(work, 'coordinator-text').map((data) => data.text)).toEqual(['Picked up the publication.']);
   const state = work.coordinators.get('proj_a').state();
@@ -301,7 +302,7 @@ test('without a coordinator model or account the coordinator is unavailable with
   fake.enqueueTurn(say('Caught up.'), forCoordinator);
   await work.pulse(); await work.idle('proj_a');
   expect(turns()).toHaveLength(1);
-  const prompt = turns()[0]!.prompt;
+  const prompt = withoutLiveAccounts(turns()[0]!.prompt);
   expect(prompt.slice(prompt.lastIndexOf('Events since your last turn:')).replace(/\[owner \d{2}:\d{2}\]/gu, '[owner HH:MM]')).toBe(`Events since your last turn:\n[owner HH:MM] first\n[owner HH:MM] second\n[thread "(unknown thread)" (thread_x) reported needs-decision] Need a database choice.\nQuestion: Which database?\nOptions: SQLite; Postgres (Jevellan asked the owner directly.)\n[owner HH:MM] third\n\nOpen questions to the owner (numbered as the owner sees them):\n1. [(unknown thread)] Which database? Options: SQLite, Postgres. (questionId ${derivedId('pdec', 'fallback', 'cev_q')})`);
   expect(work.coordinators.get('proj_a').state()).toMatchObject({ state: 'idle', queue: [] });
   expect('unavailableReason' in work.coordinators.get('proj_a').state()).toBe(false);
@@ -486,4 +487,25 @@ test('a cold coordinator starts from notebook and journal, keeps earlier native 
   expect(JSON.stringify((await work.view('proj_a')).coordinator)).not.toContain(previous);
   await work.journal!.sync('proj_a', true);
   expect((await work.journal!.contents('proj_a')).text).toContain('journal');
+});
+
+test('every turn states account readiness as it is now, and a sign-in question is withdrawn once its account is Ready (B3)', { timeout: 60_000 }, async () => {
+  // Readiness failure: the coordinator cited "the Codex logout" while every account was Ready.
+  accounts = [account('acc_work', 'Work'), account('acc_codex', 'Ekoa Codex')]; ineligible = new Set(['acc_codex']);
+  const work = await started();
+  fake.enqueueTurn(say('Ekoa Codex needs a sign-in.'), forCoordinator); fake.enqueueTurn(say('Nothing is blocking work.'), forCoordinator);
+  await message(work, 'What is blocking work?'); await work.idle('proj_a');
+  expect(turns()[0]!.prompt).toMatch(/\n\nAccounts right now \(live; this replaces anything said earlier about sign-in\):\n- Work \(Scripted test runtime\): Mac mini Ready\n- Ekoa Codex \(Scripted test runtime\): Mac mini needs-login$/u);
+  const asked = await work.decisions.ask('proj_a', { question: 'Sign in to Ekoa Codex on Mac mini?', accountId: 'acc_codex' }, 'coordinator');
+  const other = await work.decisions.ask('proj_a', { question: 'Which database?' }, 'coordinator');
+  await work.pulse(); await work.idle('proj_a');
+  const open = async () => (await new HubProjectAccess(hub, 'dev_a').decisions('proj_a')).filter(decision => !decision.withdrawnAt && !decision.answer).map(decision => decision.id);
+  expect(await open()).toEqual(expect.arrayContaining([asked, other]));
+  ineligible.delete('acc_codex');
+  await work.pulse(); await work.idle('proj_a');
+  expect(await open()).toEqual([other]);
+  await message(work, 'Is anything blocking work right now?'); await work.idle('proj_a');
+  // The resumed turn carries no fresh context, yet it states the current readiness.
+  expect(turns()[1]!.resume).toBeDefined();
+  expect(turns()[1]!.prompt).toMatch(/\n- Ekoa Codex \(Scripted test runtime\): Mac mini Ready$/u);
 });

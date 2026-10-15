@@ -12,7 +12,7 @@ import {
   EVENT_CURSOR_AHEAD, MESSAGE_ID_REUSED, RESTARTED, coordinatorFailedTwiceNotice, coordinatorSystemAppend, coordinatorUnavailableNotice, derivedId, noCoordinatorAccount, noCoordinatorModel,
 } from '../packages/projects/dist/index.js';
 import {
-  FIXTURE_MENU, commitStep, expectNoLeaks, queueThread, holdStep, never, projectFixture, reportStep, threadRequestText, type ProjectFixture, type ProjectFixtureOptions,
+  FIXTURE_MENU, commitStep, expectNoLeaks, queueThread, holdStep, never, projectFixture, reportStep, threadRequestText, withoutLiveAccounts, type ProjectFixture, type ProjectFixtureOptions,
 } from './helpers/project-fixture.js';
 
 let fixture: ProjectFixture | undefined;
@@ -117,11 +117,11 @@ test('PJ2 one owner message starts two threads and the publications arrive batch
   expect(first).toMatchObject({ owner: { kind: 'coordinator', projectId: pid, id: pid }, turn: 1, permissions: 'read-only', safetyProfile: 'coordinator', cwd: f.checkout,
     systemAppend: coordinatorSystemAppend('Shop') + `\n- The project journal at ${f.app.projectWork.journal!.path(pid)} has one file per thread, per day and per night, listed in INDEX.md. Read it when you need to know what other work did.`, readOnlyDirectories: [f.app.projectWork.journal!.path(pid)] });
   expect(first!.resume).toBeUndefined();
-  expect(first!.prompt).toMatch(clocked('Project notebook:\n(empty)\n\nActive threads:\n(none)\n\nOpen questions to the owner (numbered as the owner sees them):\n(none)\n\nRecent conversation with the owner:\n(none)\n\nProject memory:\nRecently updated notes:\nSearch memory with memory_search for more.\n\nEvents since your last turn:\n[owner HH:MM] add A and fix B'));
+  expect(withoutLiveAccounts(first!.prompt)).toMatch(clocked('Project notebook:\n(empty)\n\nActive threads:\n(none)\n\nOpen questions to the owner (numbered as the owner sees them):\n(none)\n\nRecent conversation with the owner:\n(none)\n\nProject memory:\nRecently updated notes:\nSearch memory with memory_search for more.\n\nEvents since your last turn:\n[owner HH:MM] add A and fix B'));
   expect(second!.resume).toEqual({ sessionId: sessionOf(f, first!).sessionId });
   const pr = async (id: string) => (await f.index(id))!.pr!.number;
   const [lineA, lineB] = [`[thread "Add A" (${idA})] Pull request #${await pr(idA)} opened.`, `[thread "Fix B" (${idB})] Pull request #${await pr(idB)} opened.`];
-  const [header, ...lines] = second!.prompt.split('\n');
+  const [header, ...lines] = withoutLiveAccounts(second!.prompt).split('\n');
   expect(header).toBe('Events since your last turn:'); expect(lines).toHaveLength(2); expect(new Set(lines)).toEqual(new Set([lineA, lineB]));
   expect([await pr(idA), await pr(idB)].sort()).toEqual([1, 2]);
 
@@ -214,7 +214,7 @@ test('PJ2b a needs-decision report becomes an owner question and the answer reac
   // The thread waits for the owner with the first line of its question; the coordinator received exactly its report and asked.
   expect(f.thread(threadId)).toMatchObject({ state: 'waiting-for-you', stateReason: 'Which database?', turns: 1 });
   expect(coordinatorTurns(f)).toHaveLength(2);
-  expect(coordinatorTurns(f)[1]!.prompt).toBe(`Events since your last turn:\n[thread "Store data" (${threadId}) reported needs-decision] Need a database choice.\nQuestion: Which database?\nOptions: SQLite; Postgres`);
+  expect(withoutLiveAccounts(coordinatorTurns(f)[1]!.prompt)).toBe(`Events since your last turn:\n[thread "Store data" (${threadId}) reported needs-decision] Need a database choice.\nQuestion: Which database?\nOptions: SQLite; Postgres`);
   const decisionId = asked[0]!.id;
   expect(asked[0]).toMatchObject({ from: 'coordinator', threadId, question, options: [{ label: 'SQLite', detail: 'Single file' }, { label: 'Postgres' }] });
   expect(results[1]).toMatchObject({ schema: 'ask-user-result-v1', decisionId, openQuestions: { schema: 'open-questions-v1', questions: [{ number: 1, questionId: decisionId, threadTitle: 'Store data' }] } });
@@ -228,7 +228,7 @@ test('PJ2b a needs-decision report becomes an owner question and the answer reac
 
   // The coordinator's next turn holds the exact answer line and messages the thread, which resumes its session and finishes.
   const answeredTurn = coordinatorTurns(f)[2]!;
-  expect(answeredTurn.prompt).toBe(`Events since your last turn:\n[owner answered] "${question}" → SQLite`);
+  expect(withoutLiveAccounts(answeredTurn.prompt)).toBe(`Events since your last turn:\n[owner answered] "${question}" → SQLite`);
   // The state is read after the turn was handed to the runner chain, so it may already read `running`.
   expect(results[2]).toEqual({ schema: 'thread-message-result-v1', threadId, state: expect.stringMatching(/^(waiting-for-you|running)$/), delivery: 'started' });
   const [turnOne, turnTwo] = threadTurns(f, threadId);
@@ -240,7 +240,7 @@ test('PJ2b a needs-decision report becomes an owner question and the answer reac
     answer: { optionLabel: 'SQLite', source: 'panel' } })]);
   expect(received(f).filter((event) => event.kind === 'thread-published')).toEqual([expect.objectContaining({ threadId, result: 'pr-opened', prNumber: 1 })]);
   expect(coordinatorTurns(f)).toHaveLength(4);
-  expect(coordinatorTurns(f)[3]!.prompt).toBe(`Events since your last turn:\n[thread "Store data" (${threadId})] Pull request #1 opened.`);
+  expect(withoutLiveAccounts(coordinatorTurns(f)[3]!.prompt)).toBe(`Events since your last turn:\n[thread "Store data" (${threadId})] Pull request #1 opened.`);
   expect(f.coordinatorState()).toMatchObject({ state: 'idle', queue: [], failedTurnsInARow: 0 });
   const view = await work(f);
   expect(view.decisions.open).toEqual([]);
@@ -316,7 +316,7 @@ test('PJ2c after two failed turns the coordinator waits for a message, and threa
   expect(await post(f, 'msg_f2', 'Try again.')).toBe(false);
   await idle(f);
   expect(coordinatorTurns(f)).toHaveLength(3);
-  const prompt = coordinatorTurns(f)[2]!.prompt;
+  const prompt = withoutLiveAccounts(coordinatorTurns(f)[2]!.prompt);
   for (const line of [/\[owner \d{2}:\d{2}\] Plan the release\.\n/, new RegExp(escape(`[owner started thread "Store data" (${threadId})] Store the data.`)),
     new RegExp(escape(`[thread "Store data" (${threadId}) reported needs-decision] Need a database choice.\nQuestion: Which database?\nOptions: SQLite; Postgres (Jevellan asked the owner directly.)`)),
     /\[owner \d{2}:\d{2}\] Try again\.\n\nOpen questions to the owner \(numbered as the owner sees them\):\n1\. \[Store data\] Which database\? Options: SQLite, Postgres\. \(questionId pdec_[A-Za-z0-9_-]+\)$/]) expect(prompt).toMatch(line);
@@ -367,20 +367,20 @@ test('PJ2d the coordinator keeps its session beyond 40 turns and rotates on Fres
   const questionsBlock = `Open questions to the owner (numbered as the owner sees them):\n1. [Coordinator] Which database? Options: SQLite, Postgres. (questionId ${questionId})`;
   const rotated = await next('msg_d2', 'What next?');
   expect(rotated.resume).toEqual({ sessionId: old.nativeSessionId });
-  expect(rotated.prompt).toMatch(clocked(`Events since your last turn:\n[owner HH:MM] What next?\n\n${questionsBlock}`));
+  expect(withoutLiveAccounts(rotated.prompt)).toMatch(clocked(`Events since your last turn:\n[owner HH:MM] What next?\n\n${questionsBlock}`));
   expect(f.coordinatorState().session).toMatchObject({ turns: 41, modelId: 'fixture', nativeSessionId: old.nativeSessionId });
   expect(payloads(f, 'coordinator-turn-start').at(-1)).toMatchObject({ turn: 3, fresh: false, modelLabel: 'Fixture' });
 
   // A normal turn keeps that session and includes the numbered open questions with its events.
   const resumed = await next('msg_d3', 'Go on.');
   expect(resumed.resume).toEqual({ sessionId: sessionOf(f, rotated).sessionId });
-  expect(resumed.prompt).toMatch(clocked(`Events since your last turn:\n[owner HH:MM] Go on.\n\n${questionsBlock}`));
+  expect(withoutLiveAccounts(resumed.prompt)).toMatch(clocked(`Events since your last turn:\n[owner HH:MM] Go on.\n\n${questionsBlock}`));
 
   // Fresh coordinator session: the next turn starts over with the fresh context.
   expect(ProjectWorkViewSchema.parse(await call(f, route(f, '/coordinator/fresh'), 'POST', { schema: 'empty-request-v1' }, 202)).coordinator.session).toBeNull();
   const fresh = await next('msg_d4', 'Start over.');
   expect(fresh.resume).toBeUndefined(); expect(fresh.prompt.startsWith(context)).toBe(true);
-  expect(fresh.prompt.slice(fresh.prompt.lastIndexOf('Events since your last turn:'))).toMatch(clocked(`Events since your last turn:\n[owner HH:MM] Start over.\n\n${questionsBlock}`));
+  expect(withoutLiveAccounts(fresh.prompt).slice(fresh.prompt.lastIndexOf('Events since your last turn:'))).toMatch(clocked(`Events since your last turn:\n[owner HH:MM] Start over.\n\n${questionsBlock}`));
   expect((await next('msg_d5', 'Carry on.')).resume).toEqual({ sessionId: sessionOf(f, fresh).sessionId });
 
   // Another coordinator model in the work settings: a fresh session on that model.
@@ -454,7 +454,7 @@ test('a restart drops the running coordinator turn; its events stay queued and t
   const next = coordinatorTurns(f)[1]!;
   // A normal new turn: the dropped turn's session carries on, and the turn sends the undelivered events.
   expect(next.resume).toEqual({ sessionId: coordinatorGroup.sessionId });
-  expect(next.prompt).toMatch(clocked(`Events since your last turn:\n[owner HH:MM] Build the cache.\n[thread "Add cache" (${threadId}) interrupted: restart] ${RESTARTED}`));
+  expect(withoutLiveAccounts(next.prompt)).toMatch(clocked(`Events since your last turn:\n[owner HH:MM] Build the cache.\n[thread "Add cache" (${threadId}) interrupted: restart] ${RESTARTED}`));
   expect(f.coordinatorState()).toMatchObject({ state: 'idle', queue: [], failedTurnsInARow: 0 });
   expect(f.app.projectWork.coordinators.store.local(pid).process).toBeUndefined();
   expect((await f.app.projectHub.coordinatorStatus(pid))?.document).toMatchObject({ state: 'idle' });

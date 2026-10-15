@@ -508,11 +508,18 @@ export class ProjectWork {
           this.#cachePublished.set(project.id, version);
         }
         await this.memoryProgramme?.sweep(project);
-        if ((await this.#o.hub.coordinator(project.id))?.document.deviceId === this.#o.deviceId) { await this.reviews.sweep(project.id); await this.daily.sweep(project.id); await this.dispatcher.sweep(project.id); await this.goals.sweep(project.id); }
+        if ((await this.#o.hub.coordinator(project.id))?.document.deviceId === this.#o.deviceId) { await this.#withdrawSignIns(project.id); await this.reviews.sweep(project.id); await this.daily.sweep(project.id); await this.dispatcher.sweep(project.id); await this.goals.sweep(project.id); }
         await this.memoryProgramme?.sweep(project);
       }
       this.mergeGate.sweep();
     } catch (error) { if (!(error instanceof HubUnavailable)) throw error; }
+  }
+  /** B3: a question asking the owner to sign in to an account is withdrawn once that account is Ready, so no stale blocker stays open. */
+  async #withdrawSignIns(projectId: string): Promise<void> {
+    const waiting = (await this.#o.hub.decisions(projectId)).filter(decision => decision.accountId && !decision.answer && !decision.withdrawnAt);
+    if (!waiting.length) return;
+    const ready = new Set((await this.#o.accounts.list()).filter(view => view.statuses.some(status => status.auth === 'ready')).map(view => view.account.id));
+    for (const decision of waiting) if (ready.has(decision.accountId!)) await this.decisions.withdraw(projectId, decision.id);
   }
   /** Resolves when no start, sweep, thread step or coordinator turn is in flight or scheduled (test seam; checks every 20 ms, twice in a row). */
   async idle(projectId?: string): Promise<void> {

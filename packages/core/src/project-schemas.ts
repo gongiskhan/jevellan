@@ -224,6 +224,8 @@ export const ProjectDecisionSchema = z.strictObject({ schema: z.literal('project
   id: IdSchema, projectId: IdSchema, threadId: IdSchema.optional(), from: z.enum(['coordinator', 'thread']),
   question: z.string().min(1).max(2000), options: z.array(OptionSchema).max(4).default([]),
   ownerCommands: OwnerCommandsSchema.optional(),
+  // B3: a question that asks the owner to sign in to this account; withdrawn once the account is Ready.
+  accountId: IdSchema.optional(),
   createdAt: TimestampSchema, answeredAt: TimestampSchema.optional(), answer: DecisionAnswerSchema.optional(),
   merge: z.strictObject({ commit: z.string().regex(/^[a-f0-9]{40,64}$/u), prNumber: positive, reason: z.string().max(1200).optional(), failures: z.array(z.strictObject({ what: z.string().max(500), output: z.string().max(2000) })).max(50).optional() }).optional(),
   withdrawnAt: TimestampSchema.optional() });

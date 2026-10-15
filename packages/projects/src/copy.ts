@@ -51,6 +51,9 @@ export function activeThreadLine(thread: ActiveThreadLine): string {
 }
 export const openQuestionLine = (question: string): string => `- ${oneLine(question)}`;
 export const OPEN_QUESTIONS = 'Open questions to the owner (numbered as the owner sees them):';
+/** B3: every coordinator turn states account readiness as it is now, so an old sign-in problem is never cited as current. */
+export const ACCOUNTS_NOW = 'Accounts right now (live; this replaces anything said earlier about sign-in):';
+export const accountNowLine = (label: string, runtime: string, devices: string): string => `- ${label} (${runtime}): ${devices}`;
 export function numberedQuestionLine(decision: Pick<ProjectDecision, 'id' | 'question' | 'options'>, number: number, title: string): string {
   return `${number}. [${oneLine(title)}] ${oneLine(decision.question)} Options: ${decision.options.map(option => oneLine(option.label)).join(', ') || '(none)'}. (questionId ${decision.id})`;
 }
