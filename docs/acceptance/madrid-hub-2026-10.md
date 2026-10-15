@@ -62,6 +62,8 @@ Run log for moving Jevellan to a fresh hub on dev-madrid. Times are UTC on 2026-
 - C9 owner terminal (live, pass): from Settings → Devices at 390 px, `hostname` gave dev-madrid and `pwd` /home/ggomes with exit 0; Copy last command gave `$ pwd` and its output without escape codes (over HTTP the product copies through execCommand); reload reconnected the same terminal.
 - L1 start (live, pass so far): one message started two tasks, both threads running at the same time within 3 minutes, both placed on Codex.
 
+- Live vault (live, pass): the hub syncs `gongiskhan/jevellan-vault` with no error; ekoa-code's notes, `project.json` (6 goals, 3 jobs, 6 dailies; no device, account or path values) and `notebook.md` are on GitHub, and the sandbox folder too.
+
 ## Owner list
 
 - Run `sudo tailscale serve --https=8500 off` on dev-madrid. Tailscale refuses every route change by a non-root user while any route serves a folder, and `:8500` serves `~/Documents/Codex/2026-09-03/so-i-used-to-play-this`. Re-add it afterwards, if wanted, with `sudo tailscale serve --bg --https=8500 /home/ggomes/Documents/Codex/2026-09-03/so-i-used-to-play-this` (that again blocks later Jevellan route changes).
