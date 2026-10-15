@@ -43,7 +43,7 @@ test('reapplying the earlier preset upgrades only shared memory and the independ
 });
 
 test('restore from the vault and the preset, in either order, never duplicate goals, jobs or dailies', { timeout: 120_000 }, async () => {
-  const menu = [{ id: 'discovered_opus', runtime: 'claude', model: 'reported-native-model', label: 'Claude Opus 5.5', description: 'Fixture model discovery', efforts: ['high'], enabled: true }];
+  const menu = [{ id: 'discovered_opus', runtime: 'claude', model: 'reported-native-model', label: 'Claude Opus 5.5', description: 'Fixture model discovery', efforts: ['high' as const], enabled: true }];
   const request = { schema: 'ekoa-code-setup-request-v1', modelId: 'discovered_opus', workflowPull: 208 };
   const ekoa = async (f: ProjectFixture) => {
     const current = await f.app.state.projects.get('project');
