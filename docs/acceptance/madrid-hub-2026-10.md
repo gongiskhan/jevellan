@@ -8,10 +8,11 @@ Run log for moving Jevellan to a fresh hub on dev-madrid. Times are UTC on 2026-
 | --- | --- | --- |
 | 0 Preflight | 05:35 | 05:40 |
 | 1 Fresh hub | 05:40 | 07:58, HTTP only (Tailscale) |
-| 2 Readiness bugs and suites | 06:00 | |
+| 2 Readiness bugs and suites | 06:00 | 13:50 (fixes by 08:00; suites until the end) |
 | 3 Coordinator checks (sandbox) | 08:00 | 10:40 |
-| 5 Disposable hub (vault) | 06:30 | 11:33 code, drill and install; final suites in Phase 6 |
+| 5 Disposable hub (vault) | 06:30 | 11:33 |
 | 4 Real ekoa-code work | 08:21 | 10:11 (working-version milestone, 4 h 36 min after start) |
+| 6 Final review, suites, 0.4.1 and last task | 11:33 | |
 
 ## Environment
 
@@ -36,6 +37,8 @@ Run log for moving Jevellan to a fresh hub on dev-madrid. Times are UTC on 2026-
 - The old member was uninstalled with the checkout's 0.3.7 uninstall (its own 0.3.6 one stops halfway); the hub installed over HTTP while Tailscale refuses route changes.
 - Restore runs on the hub only (`POST /api/projects/:id/vault-restore`); a member's add-project form does not offer it.
 - Tests written before commit 41d7a2b (classified owner follow-ups, threads kept open) were updated to that behavior instead of reverting it.
+- A Codex session on the MacBook pushed two thread-page commits to main at 12:10 and 12:33; they were rebased under this run's commits (roadmap entries from both kept), checked with typecheck, lint and their tests, and shipped in 0.4.1.
+- The stdio MCP test lost its last progress chunk under load because the MCP SDK drops progress that reaches the client in the same read as its response; the test now proves each chunk causally and no longer depends on the final one (`602015a`).
 - The owner terminal drops other terminals' integration variables (VTE, WezTerm, iTerm, VS Code); inherited `VTE_VERSION` broke exit status capture on Linux.
 
 ## Live results
@@ -83,4 +86,4 @@ Run log for moving Jevellan to a fresh hub on dev-madrid. Times are UTC on 2026-
 
 - Second review (minor): a `project.json` edit made on two hubs at once keeps the upstream copy and the losing hub does not re-export until its next change; the first export can run before the first pull on a cold start (GitHub stays safe); termination signals pids from a snapshot that is older on a busy machine.
 
-- The old member is half uninstalled until the `:8500` folder share is removed; the hub install, Phase 1 from step 4, and Phases 3 and 4 wait on it.
+- The hub has no HTTPS route yet and the old member's `:443` route still forwards to port 9771; both wait on the Owner list command, then `JEVELLAN_HOME=$HOME/.jevellan-member node bin/jevellan.mjs uninstall` from the checkout and `jevellan install --https`.
