@@ -37,27 +37,30 @@ test('the real stdio command proxies an isolated HTTP daemon, streams formatted 
     expect(guide && 'text' in guide ? guide.text : '').toContain('cursor');
     const ledger = app.projectWork.coordinatorLedger('fixture_project');
     ledger.append({ type: 'coordinator-text', data: { schema: 'coordinator-text-v1', text: 'Formatted output from the actual daemon.' } });
-    // The second chunk is appended from the first progress callback; the watch ends as soon as it has both events, so a wide stream
-    // window only removes the race with a loaded machine delivering that callback late.
+    // Each chunk is appended from the previous progress callback, so the second progress is seen before the third event exists. The
+    // last progress is not asserted: the MCP SDK handles responses at once but notifications a microtask later and drops progress
+    // that reaches the client in the same read as its response. The result carries every event either way.
     const messages: string[] = []; const progressCursors: string[] = [];
-    const watched = await external.callTool({ name: 'jevellan_watch', arguments: { target: { kind: 'project', projectId: 'fixture_project' }, limit: 2, streamMs: 20_000 } }, undefined,
+    const watched = await external.callTool({ name: 'jevellan_watch', arguments: { target: { kind: 'project', projectId: 'fixture_project' }, limit: 3, streamMs: 20_000 } }, undefined,
       { onprogress: progress => {
         messages.push(progress.message ?? '');
         const meta = (progress as { _meta?: Record<string, unknown> })._meta;
         const streamed = AgentWatchResultSchema.safeParse(meta?.['jevellan/output']); if (streamed.success) progressCursors.push(streamed.data.cursor);
         if (messages.length === 1) ledger.append({ type: 'coordinator-text', data: { schema: 'coordinator-text-v1', text: ' A second live chunk.' } });
+        if (messages.length === 2) ledger.append({ type: 'coordinator-text', data: { schema: 'coordinator-text-v1', text: ' A third live chunk.' } });
       } });
     expect(watched.isError).not.toBe(true);
     const result = AgentWatchResultSchema.parse((watched.structuredContent as { data: unknown }).data);
-    expect(result.markdown).toContain('Formatted output from the actual daemon.'); expect(messages.join('\n')).toContain(' A second live chunk.'); expect(progressCursors).toHaveLength(2);
-    expect(result.events.map(row => row.id)).toEqual([1, 2]); expect(progressCursors.at(-1)).toBe(result.cursor);
+    expect(result.markdown).toContain('Formatted output from the actual daemon.'); expect(result.markdown).toContain(' A third live chunk.');
+    expect(messages.slice(0, 2)).toEqual(['Formatted output from the actual daemon.', ' A second live chunk.']); expect(progressCursors.length).toBeGreaterThanOrEqual(2);
+    expect(result.events.map(row => row.id)).toEqual([1, 2, 3]); if (progressCursors.length === 3) expect(progressCursors.at(-1)).toBe(result.cursor);
     const control = vi.spyOn(app.projectWork, 'postMessage'); const stop = vi.spyOn(app.projectWork, 'stopCoordinator');
     const controller = new AbortController();
     const waiting = external.callTool({ name: 'jevellan_watch', arguments: { target: result.target, cursor: result.cursor, waitMs: 30_000 } }, undefined, { signal: controller.signal });
     setTimeout(() => controller.abort(), 100);
     await expect(waiting).rejects.toThrow();
     expect(control).not.toHaveBeenCalled(); expect(stop).not.toHaveBeenCalled();
-    expect(ledger.events().at(-1)?.id).toBe(2);
+    expect(ledger.events().at(-1)?.id).toBe(3);
     expect(stderr).not.toContain(created.token!); expect(stderr).not.toContain('JEVELLAN_MCP_TOKEN');
   } finally {
     await external.close(); server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve())); await app.close(); await rm(root, { recursive: true, force: true });
