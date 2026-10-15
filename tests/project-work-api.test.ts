@@ -15,7 +15,7 @@ import {
 import { HubProjectAccess, HubUnavailable } from '../packages/mesh/dist/index.js';
 import { FakeRuntime, forThread, type FakeTurnStep } from '../packages/runtime-contract/dist/index.js';
 import {
-  DISCARD_REFUSED, MESSAGE_ID_REUSED, NO_PULL_REQUEST, PROJECT_NOT_FOUND, START_REQUEST_REUSED, STOPPED_BY_YOU, THREAD_DEVICE_GONE, THREAD_ENDED, THREAD_NOT_FOUND, isDiscarded,
+  DISCARD_REFUSED, MESSAGE_ID_REUSED, NO_PULL_REQUEST, PROJECT_NOT_FOUND, START_REQUEST_REUSED, STOPPED_BY_YOU, THREAD_DEVICE_GONE, THREAD_NOT_FOUND, isDiscarded,
 } from '../packages/projects/dist/index.js';
 import { Application, createDaemon, projectWorkRoute } from '../apps/daemon/dist/index.js';
 import { startGitHubFixture, type GitHubFixture } from './fixtures/github-server.mjs';
@@ -263,9 +263,12 @@ test('Projects routes need the session, answer versioned documents, run a thread
   expect(MergeResultViewSchema.parse(await call(`/api/projects/project/threads/${threadId}/pr/merge`, 'POST', empty, 200))).toMatchObject({ merged: true });
   await app.projectWork.idle('project');
   expect(app.projectWork.store.get(threadId)).toMatchObject({ state: 'done', pr: { state: 'merged' } });
-  expect(await call(`/api/projects/project/threads/${threadId}/messages`, 'POST', message('msg_late', 'More.'), 409)).toEqual(refused('conflict', THREAD_ENDED));
   expect(await call(`/api/projects/project/threads/${threadId}/discard`, 'POST', empty, 409)).toEqual(refused('conflict', DISCARD_REFUSED));
   expect(ThreadViewSchema.parse(await call(`/api/projects/project/threads/${threadId}/stop`, 'POST', { schema: 'thread-stop-request-v1' }, 202)).thread.state).toBe('done');
+  // A concluded thread keeps taking the owner's follow-ups: the message reopens it on a follow-up branch, and its turn concludes again.
+  expect(ThreadMessageReceiptSchema.parse(await call(`/api/projects/project/threads/${threadId}/messages`, 'POST', message('msg_late', 'More.'), 202))).toEqual({ schema: 'thread-message-receipt-v1', repeated: false });
+  await app.projectWork.idle('project');
+  expect(app.projectWork.store.get(threadId)).toMatchObject({ state: 'idle', queuedMessages: [] });
   expect({ head: git(checkout, 'rev-parse', 'HEAD'), status: git(checkout, 'status', '--porcelain=v1') }).toEqual(before);
 
   // A running thread: messages wait and repeat by client id, stop and discard answer the view, allow-turns is a no-op there.
@@ -283,7 +286,7 @@ test('Projects routes need the session, answer versioned documents, run a thread
   expect(await call(`${route}/stop`, 'POST', { schema: 'thread-stop-request-v1' }, 503)).toEqual({ schema: 'error-v1', code: 'hub-unavailable', retryable: false, message: outage.message });
   stop.mockRestore();
   const stopped = ThreadViewSchema.parse(await call(`${route}/stop`, 'POST', { schema: 'thread-stop-request-v1' }, 202));
-  expect(stopped).toMatchObject({ thread: { state: 'stopped', stateReason: STOPPED_BY_YOU }, canMessage: false, canDiscard: true });
+  expect(stopped).toMatchObject({ thread: { state: 'stopped', stateReason: STOPPED_BY_YOU }, canMessage: true, canDiscard: true });
   expect(ThreadViewSchema.parse(await call(`${route}/allow-turns`, 'POST', empty, 202)).turnAllowance).toBe(stopped.turnAllowance);
   expect(ThreadViewSchema.parse(await call(`${route}/pr/refresh`, 'POST', empty, 202)).thread.state).toBe('stopped');
   const discarded = ThreadViewSchema.parse(await call(`${route}/discard`, 'POST', empty, 202));

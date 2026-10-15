@@ -11,7 +11,7 @@ import { FakeRuntime, fakeNativeSessionFile, forThread } from '../packages/runti
 import { THREAD_ATTACHED, THREAD_WORKING, attachCommand, ownerWorkedLine } from '../packages/projects/dist/index.js';
 import { composerBlock } from '../apps/web/src/project-work-model.js';
 import { attachedNotice } from '../apps/web/src/project-work-copy.js';
-import { expectNoLeaks, holdStep, projectFixture, reportStep, type ProjectFixture } from './helpers/project-fixture.js';
+import { expectNoLeaks, holdStep, projectFixture, reportStep, type ProjectFixture, withoutFollowupRoute } from './helpers/project-fixture.js';
 import { ATTACH_MENU, BACK_ADOPTED, CANARY, agents, claudeAccount, finished, jevellan, named, rest, start, stopCommands, worked } from './helpers/attach-cli.js';
 
 let fixture: ProjectFixture | undefined;
@@ -83,7 +83,7 @@ test('PJ7 terminal takeover adopts the new session and delivers waiting messages
 
   // 6. The waiting message is the next turn, on the adopted session, and the thread is back to taking messages.
   await f.waitFor(() => claude.turnStarts.length, (count) => count === 2); await rest(f, threadId);
-  expect(claude.turnStarts[1]!.resume).toEqual({ sessionId: run.sessionId }); expect(claude.turnStarts[1]!.prompt).toMatch(/^Project now \([\d:]+\):/u); expect(claude.turnStarts[1]!.prompt.endsWith('Also rename the cancel button.')).toBe(true);
+  expect(claude.turnStarts[1]!.resume).toEqual({ sessionId: run.sessionId }); expect(claude.turnStarts[1]!.prompt).toMatch(/^Project now \([\d:]+\):/u); expect(withoutFollowupRoute(claude.turnStarts[1]!.prompt).endsWith('Also rename the cancel button.')).toBe(true);
   const after = await f.json(thread, ThreadViewSchema);
   expect(after).toMatchObject({ canMessage: true, queuedMessages: [], thread: { state: 'idle', turns: 2 } }); expect(after.attach).toBeUndefined();
   expect(composerBlock(after)).toBeNull();

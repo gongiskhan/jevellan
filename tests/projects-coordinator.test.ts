@@ -12,8 +12,7 @@ import {
   EVENT_CURSOR_AHEAD, MESSAGE_ID_REUSED, RESTARTED, coordinatorFailedTwiceNotice, coordinatorSystemAppend, coordinatorUnavailableNotice, derivedId, noCoordinatorAccount, noCoordinatorModel,
 } from '../packages/projects/dist/index.js';
 import {
-  FIXTURE_MENU, commitStep, expectNoLeaks, queueThread, holdStep, never, projectFixture, reportStep, threadRequestText, withoutLiveAccounts, type ProjectFixture, type ProjectFixtureOptions,
-} from './helpers/project-fixture.js';
+  FIXTURE_MENU, commitStep, expectNoLeaks, queueThread, holdStep, never, projectFixture, reportStep, threadRequestText, withoutLiveAccounts, type ProjectFixture, type ProjectFixtureOptions, withoutFollowupRoute } from './helpers/project-fixture.js';
 
 let fixture: ProjectFixture | undefined;
 afterEach(async () => {
@@ -278,7 +277,7 @@ test('PJ2c without a coordinator account the thread question goes to the owner d
   // Answering with an option reaches the thread as the owner's message, which the coordinator queue also records.
   expect(await call(f, route(f, `/decisions/${open[0]!.id}/answer`), 'POST', answer('ans_c', 'SQLite'), 202)).toEqual({ schema: 'decision-answered-view-v1', repeated: false });
   await f.waitFor(() => f.thread(threadId), (thread) => thread.state === 'idle' && thread.turns === 2); await idle(f);
-  expect(threadTurns(f, threadId).map((input) => threadRequestText(input.prompt))).toEqual(['Task: Store data\n\nStore the data.', 'SQLite']);
+  expect(threadTurns(f, threadId).map((input) => withoutFollowupRoute(threadRequestText(input.prompt)))).toEqual(['Task: Store data\n\nStore the data.', 'SQLite']);
   expect(f.coordinatorState().queue.map((event) => event.kind)).toEqual(['user-message', 'user-message', 'thread-user-message', 'thread-report', 'thread-user-message', 'thread-report']);
   expect(f.coordinatorState().queue[4]).toMatchObject({ kind: 'thread-user-message', threadId, text: 'SQLite' });
   // Nothing ran on the coordinator runtime, and the reason was told once however many events arrived and sweeps ran.

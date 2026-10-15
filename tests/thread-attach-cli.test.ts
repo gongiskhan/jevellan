@@ -15,7 +15,7 @@ import { FakeRuntime, fakeNativeSessionFile, forThread, writeFakeNativeSession }
 import { THREAD_NOT_FOUND, THREAD_WORKING, ownerWorkedLine, threadRunsOn } from '../packages/projects/dist/index.js';
 import { attachThread, detachThread, prepareClaudeInteractiveHome, staysAttached } from '../packages/cli/dist/thread-attach.js';
 import { runningDiagnostics } from '../packages/cli/dist/doctor.js';
-import { holdStep, projectFixture, reportStep, type ProjectFixture, type ProjectFixtureOptions } from './helpers/project-fixture.js';
+import { holdStep, projectFixture, reportStep, type ProjectFixture, type ProjectFixtureOptions, withoutFollowupRoute } from './helpers/project-fixture.js';
 import { ATTACH_MENU, BACK, BACK_ADOPTED, CANARY, agents, claudeAccount, finished, jevellan, named, rest, start, stopCommands, worked, type AgentRecord } from './helpers/attach-cli.js';
 
 const STACK = /^\s+at /mu;
@@ -148,7 +148,7 @@ test('a Claude thread is refused while it works, then resumes in the terminal wi
   // The waiting message runs next, on the adopted session.
   await f.waitFor(() => claude.turnStarts.length, (count) => count === 2); await rest(f, threadId);
   expect(claude.turnStarts[1]!.resume).toEqual({ sessionId: run.sessionId }); expect(claude.turnStarts[1]!.prompt).toMatch(/^Project now \([\d:]+\):/u);
-  expect(claude.turnStarts[1]!.prompt.endsWith('Also rename the cancel button.')).toBe(true);
+  expect(withoutFollowupRoute(claude.turnStarts[1]!.prompt).endsWith('Also rename the cancel button.')).toBe(true);
   expect(`${result.output}${result.errors}`).not.toContain(secret); expect(`${result.output}${result.errors}`).not.toContain(CANARY);
 });
 

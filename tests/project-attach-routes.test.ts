@@ -14,7 +14,7 @@ import {
   threadRunsOn,
 } from '../packages/projects/dist/index.js';
 import { createDaemon } from '../apps/daemon/dist/index.js';
-import { FIXTURE_MENU, commitStep, expectNoLeaks, holdStep, projectFixture, reportStep, type ProjectFixture, type ProjectFixtureOptions } from './helpers/project-fixture.js';
+import { FIXTURE_MENU, commitStep, expectNoLeaks, holdStep, projectFixture, reportStep, type ProjectFixture, type ProjectFixtureOptions, withoutFollowupRoute } from './helpers/project-fixture.js';
 
 let fixture: ProjectFixture | undefined;
 afterEach(async () => { await fixture?.close(); fixture = undefined; });
@@ -207,7 +207,7 @@ test('a Claude thread attaches at rest with its session and account, queues owne
   expect(worked(f, threadId).map((event) => event.kind === 'thread-user-message' && event.text)).toEqual([ownerWorkedLine('Rename button')]);
   await f.waitFor(() => claude.turnStarts.length, (count) => count === 3); await rest(f, threadId);
   expect(claude.turnStarts[2]!.resume).toEqual({ sessionId: adopted });
-  expect(claude.turnStarts[2]!.prompt).toMatch(/^Project now \([\d:]+\):/u); expect(claude.turnStarts[2]!.prompt.endsWith('Also rename the cancel button.')).toBe(true);
+  expect(claude.turnStarts[2]!.prompt).toMatch(/^Project now \([\d:]+\):/u); expect(withoutFollowupRoute(claude.turnStarts[2]!.prompt).endsWith('Also rename the cancel button.')).toBe(true);
   expect(states(f, threadId).slice(-4)).toEqual(['attached', 'idle', 'running', 'idle']);
   expect(f.thread(threadId).queuedMessages).toEqual([]);
 

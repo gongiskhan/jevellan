@@ -12,7 +12,7 @@ import {
 } from '../packages/core/dist/index.js';
 import { forThread, groupAlive, processIdentity, type FakeTurnStep } from '../packages/runtime-contract/dist/index.js';
 import { eventLine } from '../packages/projects/dist/index.js';
-import { commitStep, expectNoLeaks, holdStep, never, projectFixture, reportStep, threadRequestText, type ProjectFixture, type ProjectFixtureOptions } from './helpers/project-fixture.js';
+import { commitStep, expectNoLeaks, holdStep, never, projectFixture, reportStep, threadRequestText, type ProjectFixture, type ProjectFixtureOptions, withoutFollowupRoute } from './helpers/project-fixture.js';
 
 let fixture: ProjectFixture | undefined;
 afterEach(async () => {
@@ -237,8 +237,9 @@ test('PJ1 done without commits concludes without changes', { timeout: 120_000 },
   await f.app.projectWork.idle('project');
   const thread = f.thread(threadId);
   expect(thread).toMatchObject({ state: 'done', stateReason: 'Concluded without changes.' }); expect(thread.endedAt).toBeDefined();
-  expect(existsSync(thread.cwd)).toBe(false);
-  expect(fails(() => f.git(f.checkout, 'rev-parse', '--verify', `refs/heads/${thread.branch}`))).toBe(true);
+  // A thread that concluded without changes keeps its worktree for owner follow-ups; Discard or a replacement removes it.
+  expect(existsSync(thread.cwd)).toBe(true);
+  expect(fails(() => f.git(f.checkout, 'rev-parse', '--verify', `refs/heads/${thread.branch}`))).toBe(false);
   expect(payloads(f, threadId, 'thread-verification')).toEqual([]);
   expect(queue(f).at(-1)).toMatchObject({ kind: 'thread-published', threadId, result: 'no-changes' });
   expect(f.github.requests).toEqual([]);
@@ -400,7 +401,7 @@ test('limits: a full device queues the start; an in-review fix turn waits for a 
   expect(queued.state).toBe('queued');
   expect(f.thread(queued.threadId).stateReason).toBe(`Queued: ${f.deviceName} is at its limit of 1 running threads.`);
   // A fix request for the reviewed thread waits too, and the thread keeps its pull request state.
-  f.fake.enqueueTurn(commitStep({ 'greeting.txt': 'hello again\n' }, { status: 'done', summary: 'Changed the greeting.' }), forThread((input) => threadRequestText(input.prompt) === 'Change the greeting.'));
+  f.fake.enqueueTurn(commitStep({ 'greeting.txt': 'hello again\n' }, { status: 'done', summary: 'Changed the greeting.' }), forThread((input) => withoutFollowupRoute(threadRequestText(input.prompt)) === 'Change the greeting.'));
   const receipt = await f.request(`/api/projects/project/threads/${reviewed}/messages`, 'POST', { schema: 'thread-message-request-v1', clientMessageId: 'msg_fix', text: 'Change the greeting.', interrupt: false });
   expect(receipt.status).toBe(202);
   expect(f.thread(reviewed)).toMatchObject({ state: 'in-review', stateReason: `Waiting for a free slot: ${f.deviceName} is at its limit of 1 running threads.`, turns: 1 });
@@ -413,7 +414,7 @@ test('limits: a full device queues the start; an in-review fix turn waits for a 
   release();
   await f.waitFor(() => f.thread(reviewed).turns, (turns) => turns === 2);
   await f.app.projectWork.idle('project'); await f.app.projectWork.pulse(); await f.app.projectWork.idle('project');
-  expect(f.fake.turnStarts.map((input) => threadRequestText(input.prompt))).toEqual(['Task: Reviewed\n\nCreate greeting.txt.', 'Task: Busy\n\nHold the slot.', 'Task: Queued\n\nWait for a slot.', 'Change the greeting.']);
+  expect(f.fake.turnStarts.map((input) => withoutFollowupRoute(threadRequestText(input.prompt)))).toEqual(['Task: Reviewed\n\nCreate greeting.txt.', 'Task: Busy\n\nHold the slot.', 'Task: Queued\n\nWait for a slot.', 'Change the greeting.']);
   expect(f.thread(queued.threadId)).toMatchObject({ state: 'idle', lastReport: { summary: 'Queued work ran.' } });
   const updated = f.thread(reviewed);
   expect(updated).toMatchObject({ state: 'in-review', turns: 2, queuedMessages: [], pr: { number: 1, state: 'open' } }); expect(updated.stateReason).toBeUndefined();
@@ -436,7 +437,7 @@ test('account pinning: later turns resume on the placed account; an ineligible a
   };
   await message('Second.');
   expect(f.fake.turnStarts[1]).toMatchObject({ resume: { sessionId: session }, account: { account: { id: 'acc_fixture' } } });
-  expect(threadRequestText(f.fake.turnStarts[1]!.prompt)).toBe('Second.');
+  expect(withoutFollowupRoute(threadRequestText(f.fake.turnStarts[1]!.prompt))).toBe('Second.');
   // The placed account cools down; another account takes the next turn in a fresh session.
   f.app.hub.put('accounts', 'acc_second', AccountSchema, { schema: 'account-v1', id: 'acc_second', runtime: 'fake', label: 'Second', kind: 'subscription', enabled: true, ceilingPct: 90, credential: 'per-device' }, 0);
   await f.app.accounts.check('acc_second');
@@ -444,7 +445,7 @@ test('account pinning: later turns resume on the placed account; an ineligible a
   await message('Third.');
   const third = f.fake.turnStarts[2]!;
   expect(third).toMatchObject({ account: { account: { id: 'acc_second' } } });
-  expect(threadRequestText(third.prompt)).toBe('Task: Pinned\n\nDo the pinned work.\n\n---\n\nThird.');
+  expect(withoutFollowupRoute(threadRequestText(third.prompt))).toBe('Task: Pinned\n\nDo the pinned work.\n\n---\n\nThird.');
   expect(third.resume).toBeUndefined();
   const thread = f.thread(threadId);
   expect(thread.placement.accountId).toBe('acc_second'); expect(thread.nativeSessionId).not.toBe(session);
@@ -454,7 +455,7 @@ test('account pinning: later turns resume on the placed account; an ineligible a
   // The new account's session continues from there.
   await message('Fourth.');
   expect(f.fake.turnStarts[3]).toMatchObject({ resume: { sessionId: thread.nativeSessionId }, account: { account: { id: 'acc_second' } } });
-  expect(threadRequestText(f.fake.turnStarts[3]!.prompt)).toBe('Fourth.');
+  expect(withoutFollowupRoute(threadRequestText(f.fake.turnStarts[3]!.prompt))).toBe('Fourth.');
 });
 
 test('explicit account overrides stay strict and a next-turn account change starts in its own home without resuming the old session', { timeout: 120_000 }, async () => {
@@ -482,7 +483,8 @@ test('explicit account overrides stay strict and a next-turn account change star
   const auto = { schema: 'thread-override-request-v1', clientRequestId: 'return_auto', mode: 'next-turn', runtimeId: null, accountId: null, modelId: null, effort: null };
   const returned = await f.request(`/api/projects/project/threads/${threadId}/override`, 'POST', auto);
   expect(returned.status, await returned.text()).toBe(200);
-  expect(f.thread(threadId).placement).toMatchObject({ runtime: 'fake', accountId: 'acc_fixture', fixed: [] });
+  // Back to automatic choice; an existing thread keeps its device and isolation (its workspace never moves).
+  expect(f.thread(threadId).placement).toMatchObject({ runtime: 'fake', accountId: 'acc_fixture', fixed: ['isolation', 'device'] });
   expect(f.thread(threadId).nativeSessionId).toBeUndefined();
   expect((await f.app.projectHub.recentOverrides('project', 8))[0]?.changes).toEqual(expect.arrayContaining([
     { field: 'account', from: 'acc_second', to: 'auto' }, { field: 'model', from: 'fixture', to: 'auto' }, { field: 'effort', from: 'high', to: 'auto' },

@@ -14,7 +14,7 @@ import {
   ASK_USER_OPTIONS, NO_PULL_REQUEST, QUESTION_NOT_FOUND, THREAD_ATTACHED, THREAD_ENDED, THREAD_NOT_FOUND, TOOL_NOT_IN_TURN,
   UNKNOWN_PLACEMENT_DEVICE, coordinatorToolSummary, firstSentence, notebookConflict, transcriptStaysOn,
 } from '../packages/projects/dist/index.js';
-import { commitStep, expectNoLeaks, holdStep, never, projectFixture, reportStep, type ProjectFixture } from './helpers/project-fixture.js';
+import { commitStep, expectNoLeaks, holdStep, never, projectFixture, reportStep, type ProjectFixture, withoutFollowupRoute } from './helpers/project-fixture.js';
 
 let fixture: ProjectFixture | undefined;
 /** Every bridge result and refusal the coordinator read, checked with the API responses for native session ids and tokens. */
@@ -332,7 +332,7 @@ test('questions, the notebook with its revision conflict, pull request status, q
   const cache = deferred();
   f.fake.enqueueTurn(commitStep({ 'cache.txt': 'cache\n' }, { status: 'done', summary: 'Cache added.' }, () => cache.promise), forThread((input) => input.prompt.startsWith('Task: Add cache')));
   f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'Tests planned.' }), forThread((input) => input.prompt.startsWith('Task: Write tests')));
-  f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'Cache covered.' }), forThread((input) => input.prompt.endsWith('Cover the cache too.')));
+  f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'Cache covered.' }), forThread((input) => withoutFollowupRoute(input.prompt).endsWith('Cover the cache too.')));
   f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'Changelog drafted.' }), forThread((input) => input.prompt.startsWith('Task: Owner task')));
   const c = await hold(f, 'Add a cache and tests for it.');
 

@@ -177,6 +177,7 @@ export class ThreadRunner {
   #execution: TurnExecution | undefined;
   #turn: number | undefined;
   #steer = false;
+  #accountMoved = false;
   #abort = new AbortController();
   #stopping: string | undefined;
   #concluding = 0;
@@ -396,6 +397,8 @@ export class ThreadRunner {
       if (this.#halted()) return null;
       const old = thread.placement;
       if (old.runtime !== route.placement.runtime || old.model !== route.placement.model || old.accountId !== route.placement.accountId) this.#freshSession();
+      // The owner hears when a follow-up moved the thread to another account, as when its account stopped being eligible.
+      if (old.accountId !== route.placement.accountId) this.#accountMoved = true;
       thread = this.#set(current => ({ ...current, placement: route.placement }), { type: 'thread-placement', data: route.placement });
       this.#c.store.setLabels(thread.id, { modelLabel: route.modelLabel });
       const ledger = this.#c.ledgers.thread(thread.projectId, thread.id);
@@ -526,7 +529,8 @@ export class ThreadRunner {
           ...(started.accountChoice ? { accountChoice: started.accountChoice, probabilities: { ...current.placement.probabilities, account: started.accountChoice.probabilities ?? {} } } : {}) } }; delete moved.nativeSessionId; return moved; });
         if (started.accountChoice) ledger.append({ type: 'thread-placement', data: this.#thread().placement });
         this.#notice(thread, accountMovedNotice(started.accountLabel), 'info');
-      }
+      } else if (this.#accountMoved) this.#notice(thread, accountMovedNotice(started.accountLabel), 'info');
+      this.#accountMoved = false;
       this.#c.store.setLabels(thread.id, { accountLabel: started.accountLabel });
       if (started.gitIdentity && stableJson(this.#c.store.local(thread.id).gitIdentity ?? null) !== stableJson(started.gitIdentity)) {
         const identity = started.gitIdentity; this.#c.store.updateLocal(thread.id, (local) => ({ ...local, gitIdentity: identity }));

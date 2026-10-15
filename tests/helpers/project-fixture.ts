@@ -397,3 +397,6 @@ export function withoutLiveAccounts(prompt: string): string {
   if (!LIVE_ACCOUNTS.test(prompt)) throw new Error(`The coordinator prompt has no live account readiness:\n${prompt}`);
   return prompt.replace(LIVE_ACCOUNTS, '');
 }
+
+/** An owner follow-up carries Jev's requested result and the previous report after the owner's words; this is the prompt without them. */
+export function withoutFollowupRoute(prompt: string): string { return prompt.replace(/\n\nRequested result \(Jev\): [\s\S]*$/u, ''); }
