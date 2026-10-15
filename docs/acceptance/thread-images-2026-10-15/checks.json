@@ -55,8 +55,71 @@
     "imageBytes": 193562
   },
   "live": {
-    "label": "blocked",
-    "reason": "The installed runtime loads separate bundled module copies; corrected bundle activation waits for the active thread to finish."
+    "label": "live",
+    "activatedAt": "2026-10-15T17:27:07.386Z",
+    "source": "87f5e3ec",
+    "version": "0.3.6-compatible-overlay",
+    "ownerApprovedRestart": true,
+    "normalStop": true,
+    "oldProcessExited": true,
+    "exclusiveMaintenanceAfterStop": true,
+    "loadedAndPackagedCopiesUpdated": true,
+    "health": "local and tailnet ok",
+    "galleryReferences": 39,
+    "decodedImages": [
+      {
+        "name": "home-phone.png",
+        "width": 780,
+        "height": 1688
+      },
+      {
+        "name": "login-phone.png",
+        "width": 780,
+        "height": 1688
+      }
+    ],
+    "navigation": [
+      "next",
+      "previous",
+      "Escape"
+    ],
+    "otherCodingThread": {
+      "state": "in-review",
+      "turns": 1,
+      "completedReportPreserved": true
+    },
+    "originalThemeAndViewportRestored": true,
+    "layouts": [
+      {
+        "layout": "desktop-light",
+        "label": "live",
+        "screenshot": "docs/acceptance/thread-images-2026-10-15/live-gallery-desktop-light.png",
+        "sha256": "4971bed20e61036975c707c427334f3baba4df616e5ddeae6079c0e70a06ae7f",
+        "inspection": "direct visual inspection; browser viewport, not physical phone"
+      },
+      {
+        "layout": "desktop-dark",
+        "label": "live",
+        "screenshot": "docs/acceptance/thread-images-2026-10-15/live-gallery-desktop-dark.png",
+        "sha256": "b7b1d73f5745286bab8ea487e89e37fd944eb550de421819eeeaca5ad032c3db",
+        "inspection": "direct visual inspection; browser viewport, not physical phone"
+      },
+      {
+        "layout": "phone-light",
+        "label": "live",
+        "screenshot": "docs/acceptance/thread-images-2026-10-15/live-gallery-phone-light.png",
+        "sha256": "4ef2cf6693d003f7346a3465e862566b32785b31a0efcb9184e861ba7f233daa",
+        "inspection": "direct visual inspection; browser viewport, not physical phone"
+      },
+      {
+        "layout": "phone-dark",
+        "label": "live",
+        "screenshot": "docs/acceptance/thread-images-2026-10-15/live-gallery-phone-dark.png",
+        "sha256": "58aa2a73109b1c89d985f24a9034e0191af42368c552f250213c65cdf42404fa",
+        "inspection": "direct visual inspection; browser viewport, not physical phone"
+      }
+    ],
+    "captureNote": "Desktop light capture repeated after paint settled; initial capture was taken before the image appeared."
   },
   "vision": {
     "label": "not run",
@@ -79,6 +142,19 @@
     "label": "live",
     "commit": "3f531b36",
     "mainPushed": true,
-    "historySecretScan": "passed"
-  }
+    "historySecretScan": "passed",
+    "followupCommit": "87f5e3ec"
+  },
+  "activationHistory": [
+    {
+      "label": "live",
+      "result": "failed",
+      "reason": "Initial image404 exposed unused package copies; web restored while idle activation was blocked."
+    },
+    {
+      "label": "live",
+      "result": "passed",
+      "reason": "Owner-approved normal restart activates loaded bundle; actual browser image decoding passes."
+    }
+  ]
 }

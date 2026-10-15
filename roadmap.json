@@ -758,7 +758,7 @@
   {
     "id": "thread-images-and-outcomes",
     "title": "Browse thread screenshots and understand completed work",
-    "why": "Decisions840–841: saved worktree screenshot thumbnails, mobile gallery and outcome-focused reports with how-to-check and limitations. Preserve folded history. Scoped Pro0.3.6 compatible activation; source on current main. Acceptance evidence distinguishes simulated checks and live UI from physical-phone/provider acceptance.",
-    "status": "complete-with-blockers"
+    "why": "Decisions840–841: saved worktree screenshot thumbnails, mobile gallery and outcome-focused reports with how-to-check and limitations. Preserve folded history. Scoped Pro0.3.6 compatible activation; source on current main. Acceptance evidence distinguishes simulated checks and live UI from physical-phone/provider acceptance. Approved Pro restart activates both loaded and packaged module copies; live saved-image decoding and four viewport/theme checks pass. Provider reporting behaviour and physical phone acceptance remain not run.",
+    "status": "complete"
   }
 ]
