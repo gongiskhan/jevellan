@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "test": "Thread images open from folded history and reports, with mobile swiping and useful report previews",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/screenshots/Thread-thread-image-gallery-desktop-light.png",
+  "expected": "the Jevellan web app \"Thread thread image gallery\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"Thread images open from folded history and reports, with mobile swiping and useful report previews\"; the other steps are judged in their own screenshots)"
+}

@@ -14,9 +14,10 @@ import type { Application } from './application.js';
 import { streamLedger, type LedgerStreamFrame } from './conversation-events.js';
 import { json, requestBody } from './http.js';
 import { OWNER_REQUEST_TIMEOUT_MS, forwardOwner } from './owner-proxy.js';
+import { readProjectImage } from '@jevellan/conversations';
 
 export type ProjectWorkRouteName = 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'fresh' | 'move' | 'settings' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
-  | 'thread-events' | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'pr-merge' | 'pr-refresh' | 'pr-route' | 'pr-correction' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'job-list' | 'job-create' | 'job-update' | 'job-run' | 'job-runs' | 'daily-list' | 'daily-create' | 'daily-update' | 'daily-run' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
+  | 'thread-image' | 'thread-events' | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'pr-merge' | 'pr-refresh' | 'pr-route' | 'pr-correction' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'job-list' | 'job-create' | 'job-update' | 'job-run' | 'job-runs' | 'daily-list' | 'daily-create' | 'daily-update' | 'daily-run' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
 /** Where a route runs: this device (`local`), the project's coordinator device, the thread's owner device, or any device. */
 export type ProjectWorkRoute = { name: ProjectWorkRouteName; projectId?: string; threadId?: string; decisionId?: string; taskId?: string; goalId?: string; jobId?: string; dailyId?: string;
   target: 'local' | 'coordinator' | 'owner' | 'any'; stream?: boolean };
@@ -57,6 +58,7 @@ const rows: readonly Row[] = [
   { name: 'notebook', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/notebook$/, methods: ['GET', 'PUT'], target: 'any' },
   { name: 'thread-create', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads$/, methods: ['POST'], target: 'coordinator' },
   { name: 'thread', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)$/, methods: ['GET'], target: 'owner' },
+  { name: 'thread-image', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/image$/, methods: ['GET'], target: 'owner' },
   { name: 'thread-events', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/events$/, methods: ['GET'], target: 'owner', stream: true },
   { name: 'thread-message', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/messages$/, methods: ['POST'], target: 'owner' },
   { name: 'thread-stop', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/stop$/, methods: ['POST'], target: 'owner' },
@@ -271,6 +273,14 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
     }
     case 'thread-create': send(await work.createThread(projectId, ThreadCreateRequestSchema.parse(await requestBody(request))), 201); return true;
     case 'thread': send(url.searchParams.has('session') ? await work.sessionTranscript(projectId, url.searchParams.get('session')!, threadId) : await work.threadView(projectId, threadId)); return true;
+    case 'thread-image': {
+      const thread = work.store.get(threadId);
+      if (!thread || thread.projectId !== projectId) throw failure(THREAD_NOT_FOUND, 404);
+      if (!thread.cwd) throw failure('This thread has no worktree yet.', 409);
+      const ref = url.searchParams.get('ref');
+      if (!ref || ref.length > 4096) throw failure('Choose an image from this thread.', 400);
+      send(await readProjectImage(thread.cwd, ref)); return true;
+    }
     case 'thread-message': {
       const { repeated } = await work.threadMessage(projectId, threadId, ThreadMessageRequestSchema.parse(await requestBody(request)));
       send(ThreadMessageReceiptSchema.parse({ schema: 'thread-message-receipt-v1', repeated }), 202); return true;

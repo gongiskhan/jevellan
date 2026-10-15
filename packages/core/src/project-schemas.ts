@@ -78,7 +78,7 @@ export const ThreadReportStatusSchema = z.enum(['progress', 'done', 'needs-decis
 export const ThreadReportFieldsSchema = z.strictObject({
   schema: z.literal('thread-report-v1'), turn: positive,
   status: ThreadReportStatusSchema,
-  summary: z.string().min(1).max(1200), question: z.string().max(1000).optional(),
+  summary: z.string().min(1).max(4000), question: z.string().max(1000).optional(),
   options: z.array(OptionSchema).min(2).max(4).optional(),
   testsRun: z.strictObject({ command: z.string(), passed: z.boolean(), summary: z.string().max(600) }).optional(),
   changedFiles: z.array(z.string()).max(200).default([]), synthesized: z.boolean(),

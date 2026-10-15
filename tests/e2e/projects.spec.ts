@@ -1137,6 +1137,48 @@ test('Thread history folds while current work and thinking stay expanded', async
   await page.screenshot({ path: `/tmp/jevellan-tool-groups-${info.project.name}.png`, fullPage: true }); expect(errors).toEqual([]);
 });
 
+test('Thread images open from folded history and reports, with mobile swiping and useful report previews', async ({ page }, info) => {
+  const errors = await begin(page);
+  const created = await page.request.post(`${PROJECT}/threads`, { data: { schema: 'thread-create-request-v1', clientRequestId: `request_images_${info.project.name}`, title: 'Make the customer screen clearer', task: 'Improve the customer screen.', isolation: 'worktree', modelId: 'claude-fable', effort: 'high' } });
+  expect(created.ok(), await created.text()).toBe(true); const started = await created.json();
+  await expect.poll(async () => (await threadView(page, started.threadId)).thread.state, LONG).not.toBe('preparing');
+  const view = await threadView(page, started.threadId); const thread = view.thread; view.thread.state = 'idle';
+  const files = ['shots/desktop.png', 'shots/phone.png', 'shots/removed.png'];
+  const turns: CursorTurn[] = files.map((file, i) => ({ id: `image_${i}`, role: 'assistant', blocks: [{ type: 'tool', id: `read_${i}`, name: 'Read', input: JSON.stringify({ file_path: file }), output: '[Image attachment]', state: 'completed' }] }));
+  view.transcript = { schema: 'cursor-transcript-v1', session: { schema: 'cursor-session-v1', id: 'claude_00000000000000000000000000000000', ownerDeviceId: thread.ownerDeviceId, deviceName: view.deviceName, title: thread.title, cwd: null, project: 'Projects fixture', state: 'idle', lastActivityAt: new Date().toISOString(), connected: false, canSteer: false, canSend: false }, turns, messages: [], activity: [], truncated: false, observedAt: new Date().toISOString() };
+  view.reports = [{ schema: 'thread-report-v1', turn: 1, status: 'done', summary: 'Customers now see one clear next step.\n\nOpen Customers to try the new screen.\n\n![Phone result](shots/phone.png)', changedFiles: ['src/customers.tsx'], synthesized: false }];
+  await page.context().route(`**${PROJECT}/threads/${thread.id}`, route => route.fulfill({ json: view }));
+  const pixel = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aWQAAAABJRU5ErkJggg==';
+  await page.context().route(`**${PROJECT}/threads/${thread.id}/image?*`, route => new URL(route.request().url()).searchParams.get('ref') === files[2]
+    ? route.fulfill({ status: 404, json: { schema: 'error-v1', code: 'not-found', message: 'This file is no longer in the working copy.' } })
+    : route.fulfill({ json: { schema: 'conversation-file-v1', path: 'screen.png', source: 'working-tree', kind: 'image', encoding: 'base64', mime: 'image/png', content: pixel, bytes: 70 } }));
+  await page.goto(`/projects/projects_fixture/threads/${thread.id}`);
+  await expect(page.getByRole('button', { name: 'Images 3', exact: true })).toBeVisible();
+  await expect(page.locator('details.cursor-tool[open]')).toHaveCount(0);
+  await expect(page.locator('.pw-report-preview')).toContainText('Customers now see one clear next step.');
+  await page.getByRole('button', { name: 'Images 3', exact: true }).click();
+  const gallery = page.getByRole('dialog', { name: 'Session images', exact: true });
+  await expect(gallery.getByRole('img')).toHaveAttribute('alt', 'desktop.png');
+  await expect.poll(() => gallery.getByRole('img').evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
+  await expect(gallery.getByRole('button', { name: 'Previous image' })).toBeDisabled();
+  await page.keyboard.press('ArrowRight'); await expect(gallery.getByRole('img')).toHaveAttribute('alt', 'phone.png');
+  await gallery.locator('.thread-image-stage').dispatchEvent('touchstart', { touches: [{ identifier: 0, clientX: 250, clientY: 200 }] });
+  await gallery.locator('.thread-image-stage').dispatchEvent('touchend', { changedTouches: [{ identifier: 0, clientX: 100, clientY: 202 }] });
+  await expect(gallery).toContainText('Image unavailable.'); await expect(gallery).toContainText('3 / 3');
+  await gallery.getByRole('button', { name: 'Previous image' }).click(); await expect(gallery.getByRole('img')).toHaveAttribute('alt', 'phone.png');
+  await shot(page, 'thread-image-gallery', true);
+  await page.keyboard.press('Escape'); await expect(gallery).toHaveCount(0);
+  await page.locator('.pw-report-disclosure > summary').click();
+  await page.getByRole('button', { name: 'Phone result', exact: true }).click();
+  await expect(gallery.getByRole('img')).toHaveAttribute('alt', 'phone.png');
+  await gallery.getByRole('button', { name: 'Close panel', exact: true }).click();
+  await expect(page.locator('.pw-report-disclosure')).toHaveAttribute('open', '');
+  await page.locator('.pw-report-disclosure > summary').click();
+  await page.getByRole('button', { name: 'Open image desktop.png', exact: true }).click();
+  await expect(gallery.getByRole('img')).toHaveAttribute('alt', 'desktop.png');
+  expect(errors).toEqual([]);
+});
+
 test('LJ2 native setup remains visible and merge routing explains its ask-owner choice', async ({ page }, info) => {
   const errors = await begin(page);
   await page.goto('/settings/runtimes');

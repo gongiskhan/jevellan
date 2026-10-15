@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { SecretRedactor } from '../packages/core/dist/index.js';
-import { MAX_FILE_BYTES, readProjectFile } from '../packages/conversations/dist/index.js';
+import { MAX_FILE_BYTES, readProjectImage, readProjectFile } from '../packages/conversations/dist/index.js';
 import { decodeReference, filePointer, remarkFilePaths, storedPointer } from '../apps/web/src/evidence-refs.js';
 
 let root: string; let project: string; let before: string; let after: string;
@@ -69,4 +69,17 @@ test('bare absolute paths in prose become local references; fenced code and exis
   const tree = { type: 'root', children: [{ type: 'paragraph', children: [{ type: 'text', value: 'See /project/docs/report.md and /project/screens/shot.png.' }] }, { type: 'code', value: '/project/code.ts' }, { type: 'link', url: 'https://example.test', children: [{ type: 'text', value: '/project/label.ts' }] }] };
   const code = structuredClone(tree.children[1]); const link = structuredClone(tree.children[2]); remarkFilePaths()(tree);
   expect(tree.children[0]!.children?.filter((node) => node.type === 'link')).toHaveLength(2); expect(tree.children[1]).toEqual(code); expect(tree.children[2]).toEqual(link);
+});
+
+test('thread screenshots reuse confinement and accept tall images up to 8 MB without widening ordinary file reads', async () => {
+  const large = Buffer.concat([pixel, Buffer.alloc(3 * 1024 * 1024)]); writeFileSync(join(project, 'tall.png'), large);
+  expect(await readProjectImage(project, 'tall.png')).toMatchObject({ kind: 'image', bytes: large.length, content: large.toString('base64') });
+  await expect(read('tall.png')).rejects.toMatchObject({ status: 413 });
+  writeFileSync(join(project, 'huge.png'), Buffer.alloc(8 * 1024 * 1024 + 1));
+  await expect(readProjectImage(project, 'huge.png')).rejects.toMatchObject({ status: 413 });
+  await expect(readProjectImage(project, 'value.ts')).rejects.toMatchObject({ status: 415 });
+  await expect(readProjectImage(project, '../outside.png')).rejects.toMatchObject({ status: 403 });
+  symlinkSync('pixel.png', join(project, 'alias.png'));
+  await expect(readProjectImage(project, 'alias.png')).rejects.toMatchObject({ status: 403 });
+  await expect(readProjectImage(project, 'missing.png')).rejects.toMatchObject({ status: 404 });
 });

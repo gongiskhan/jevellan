@@ -754,5 +754,11 @@
     "title": "Disposable hub: project memory, definitions and notebooks in a private GitHub vault",
     "why": "gongiskhan/jevellan-vault holds projects/<owner>__<repo>/notes, project.json (vault-project-v1) and notebook.md; pull with rebase, debounced push, conflict preservation, retries; Restore from the vault when adding a project; drill passes in tests and by hand. 0.4.0 installed.",
     "status": "complete"
+  },
+  {
+    "id": "thread-images-and-outcomes",
+    "title": "Browse thread screenshots and understand completed work",
+    "why": "Decisions840–841: saved worktree screenshot thumbnails, mobile gallery and outcome-focused reports with how-to-check and limitations. Preserve folded history. Scoped Pro0.3.6 compatible activation; source on current main. Acceptance evidence distinguishes simulated checks and live UI from physical-phone/provider acceptance.",
+    "status": "complete-with-blockers"
   }
 ]

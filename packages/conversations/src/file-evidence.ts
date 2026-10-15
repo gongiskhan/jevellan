@@ -34,7 +34,7 @@ async function committed(root: string, path: string, commit: string): Promise<Bu
   if (!Number.isSafeInteger(size) || size > MAX_FILE_BYTES) throw failure(413, 'This file is too large to open in the browser (2 MB maximum).');
   return git(root, ['cat-file', 'blob', match[2]!]);
 }
-async function working(root: string, path: string): Promise<Buffer> {
+async function working(root: string, path: string, maxBytes = MAX_FILE_BYTES): Promise<Buffer> {
   let current = root;
   for (const segment of path.split('/')) {
     current = join(current, segment);
@@ -45,12 +45,20 @@ async function working(root: string, path: string): Promise<Buffer> {
   try {
     const stat = await handle.stat();
     if (!stat.isFile()) throw failure(415, 'Only regular project files can be opened.');
-    if (stat.size > MAX_FILE_BYTES) throw failure(413, 'This file is too large to open in the browser (2 MB maximum).');
-    const bytes = Buffer.alloc(MAX_FILE_BYTES + 1); let size = 0;
+    if (stat.size > maxBytes) throw failure(413, `This file is too large to open in the browser (${maxBytes / 1024 / 1024} MB maximum).`);
+    const bytes = Buffer.alloc(maxBytes + 1); let size = 0;
     while (size < bytes.length) { const result = await handle.read(bytes, size, bytes.length - size, null); if (!result.bytesRead) break; size += result.bytesRead; }
-    if (size > MAX_FILE_BYTES) throw failure(413, 'This file is too large to open in the browser (2 MB maximum).');
+    if (size > maxBytes) throw failure(413, `This file is too large to open in the browser (${maxBytes / 1024 / 1024} MB maximum).`);
     return bytes.subarray(0, size);
   } finally { await handle.close(); }
+}
+/** Screenshots may be tall. Keep the existing path/symlink guards and accept raster images only. */
+export async function readProjectImage(root: string, ref: string) {
+  const { path } = fileReference(root, ref);
+  const bytes = await working(root, path, 8 * 1024 * 1024);
+  const mime = imageMime(bytes);
+  if (!mime) throw failure(415, 'This file is not a supported image (PNG, JPEG, GIF or WebP).');
+  return ConversationFileSchema.parse({ schema: 'conversation-file-v1', path, source: 'working-tree', kind: 'image', encoding: 'base64', mime, content: bytes.toString('base64'), bytes: bytes.length });
 }
 function imageMime(bytes: Buffer) {
   if (bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) return 'image/png' as const;

@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   ProjectWorkViewSchema, RESTARTED_PREFIX, SAVED_COMMITS_SENTENCE, ThreadMessageReceiptSchema, ThreadOverrideViewSchema, ThreadViewSchema, type PlacementField, type ProjectWorkView,
   type QueuedMessage, type ThreadIndex, type ThreadReport, type ThreadView,
@@ -22,6 +22,8 @@ import { TranscriptTurn } from './session-transcript.js';
 import { shortTime } from './time.js';
 import { SessionHistory } from './session-history.js';
 import { SessionCache } from './session-cache.js';
+import { imageReferences, sessionImages, turnImages } from './thread-image-refs.js';
+import { ThreadImageGallery, ThreadImageStrip } from './thread-images.js';
 
 /**
  * The thread page (12.3): the header with the state, its reason, the placement and the pull request; the native transcript
@@ -40,6 +42,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
   const [why, setWhy] = useState(false);
   const [overriding, setOverriding] = useState(false);
   const [sessionOpen, setSessionOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string>();
   const latest = useRef<ThreadView | undefined>(undefined);
   const fastUntil = useRef(0);
   const kick = useRef(() => {});
@@ -129,6 +132,9 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
   const items = useMemo(() => withoutEchoedSummaries(withoutReportCalls(alignReports(turns ?? [], reports ?? [], state === 'running' ? finished + 1 : finished), reports ?? [])),
     [turns, reports, state, finished]);
 
+  const images = useMemo(() => sessionImages(turns ?? [], reports ?? []), [turns, reports]);
+  const openImage = useCallback((ref: string) => { if (imageReferences(ref).length) { following.current = false; setBehind(true); setSelectedImage(ref); } }, []);
+
   const transcriptItems = useMemo(() => mergeThreadToolTurns(items), [items]);
   const activeTurn = state === 'running' ? transcriptItems.at(-1) : undefined;
   const activeTurnId = activeTurn?.kind === 'turn' ? activeTurn.turn.id : undefined;
@@ -178,6 +184,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
             aria-expanded={sessionOpen} aria-controls="thread-session-information" onClick={() => { if (!sessionOpen) { following.current = false; setBehind(true); } setSessionOpen(!sessionOpen); }}>
             <Icon name="settings" size={16} /><span className="pw-head-label">Session</span>
           </button>
+          {images.length > 0 && <button type="button" className="secondary pw-head-button pw-keep-label" onClick={() => openImage(images[0]!)}>Images <span className="chip">{images.length}</span></button>}
           {actions.stop && (
             <button type="button" className="secondary pw-head-button" disabled={!!actions.stopRefusal} title={actions.stopRefusal ?? undefined}
               aria-describedby={actions.stopRefusal ? stopNoteId : undefined} onClick={() => setConfirming('stop')}>
@@ -247,8 +254,8 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
       <div className="cursor-transcript pw-transcript" aria-label={copy.TRANSCRIPT_LABEL}>
         {notice && <p className="pw-transcript-note">{notice}</p>}
         {transcriptItems.map((item) => item.kind === 'turn'
-          ? <TranscriptTurn key={item.turn.id} turn={item.turn} focus active={item.turn.id === activeTurnId} userLabel={copy.PROMPT} collapseLongUser={thread.state === 'attached' ? 0 : copy.PROMPT_COLLAPSE_CHARACTERS} />
-          : <ReportCard key={`report-${item.report.turn}-${item.report.synthesized ? 'synthesized' : 'recorded'}`} report={item.report} />)}
+          ? <Fragment key={item.turn.id}><TranscriptTurn turn={item.turn} onOpenImage={openImage} focus active={item.turn.id === activeTurnId} userLabel={copy.PROMPT} collapseLongUser={thread.state === 'attached' ? 0 : copy.PROMPT_COLLAPSE_CHARACTERS} /><ThreadImageStrip base={base} files={turnImages(item.turn)} open={openImage} /></Fragment>
+          : <ReportCard key={`report-${item.report.turn}-${item.report.synthesized ? 'synthesized' : 'recorded'}`} report={item.report} base={base} openImage={openImage} />)}
         {view.queuedMessages.length > 0 && (
           <section className="pw-queued" aria-labelledby={queuedId}>
             <h3 id={queuedId}>{copy.QUEUED_MESSAGES}</h3>
@@ -259,6 +266,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
       <ThreadComposer base={base} view={view} behind={behind} jump={jump} onError={onError}
         sent={() => { following.current = true; kick.current(); }} refused={() => kick.current()} />
       <div ref={bottom} />
+      {selectedImage && <ThreadImageGallery base={base} files={images.includes(selectedImage) ? images : [...images, selectedImage]} selected={selectedImage} select={setSelectedImage} close={() => setSelectedImage(undefined)} />}
       {why && <WhyPanel view={view} data={data} close={() => setWhy(false)} />}
       {overriding && (
         <OverrideDialog props={props} view={view} projectId={projectId} close={() => setOverriding(false)} applied={() => { updated(); kick.current(); }} />
@@ -313,7 +321,7 @@ function ConfirmAction({ title, action, body, run, close, onError }: {
 }
 
 /** A report card (12.3): the turn and status, the summary, a question with its options, and the tests the turn ran. */
-function ReportCard({ report }: { report: ThreadReport }) {
+function ReportCard({ report, base, openImage }: { report: ThreadReport; base: string; openImage(ref: string): void }) {
   const headingId = useId();
   const badge = reportBadge(report.status);
   const tests = report.testsRun; const options = report.options ?? [];
@@ -324,8 +332,10 @@ function ReportCard({ report }: { report: ThreadReport }) {
         <h3 id={headingId}>{copy.reportHeading(report.turn)}</h3>
         {report.synthesized && <span className="pw-report-note">{copy.SYNTHESIZED_REPORT}</span>}
         <span className={`chip pw-badge pw-tone-${badge.tone}`}>{badge.text}</span>
+        <span className="pw-report-preview">{report.summary.split('\n').find(line => line.trim())?.slice(0, 220)}</span>
       </summary>
-      <Markdown>{report.summary}</Markdown>
+      <Markdown onOpenImage={openImage}>{report.summary}</Markdown>
+      <ThreadImageStrip base={base} files={imageReferences(report.summary)} open={openImage} />
       <OwnerCommands commands={report.ownerCommands} />
       {(report.question || options.length > 0) && (
         <div className="pw-report-question">

@@ -1,0 +1,73 @@
+{
+  "schema": "thread-images-evidence-v1",
+  "at": "2026-10-15",
+  "sourceBase": "a4c0faf1",
+  "unit": {
+    "label": "simulated",
+    "files": 7,
+    "passed": 82
+  },
+  "browser": [
+    {
+      "label": "simulated",
+      "layout": "desktop-light",
+      "passed": true,
+      "source": "before final reference filtering and independent main rebase",
+      "screenshot": "docs/acceptance/screenshots/Thread-thread-image-gallery-desktop-light.png",
+      "sha256": "ac8efbf250070f88444b2afcd8ca775755423df698632a82e6819bc82c95944f",
+      "duration": "1.5m"
+    },
+    {
+      "label": "simulated",
+      "layout": "phone-light",
+      "passed": true,
+      "source": "before final reference filtering and independent main rebase",
+      "screenshot": "docs/acceptance/screenshots/Thread-thread-image-gallery-phone-light.png",
+      "sha256": "165d65aa28646726eac72f3cdca94e39e828544b308ac20e7aebfb6deb9d3ba3",
+      "duration": "1.3m"
+    },
+    {
+      "label": "simulated",
+      "layout": "desktop-dark",
+      "passed": true,
+      "source": "before final reference filtering and independent main rebase",
+      "screenshot": "docs/acceptance/screenshots/Thread-thread-image-gallery-desktop-dark.png",
+      "sha256": "ba790142aed200023435f60d7525a6cb1032547d52173dab5bf9f15e4a3cb915",
+      "duration": "1.5m"
+    },
+    {
+      "label": "simulated",
+      "layout": "phone-dark",
+      "passed": true,
+      "source": "before final reference filtering and independent main rebase",
+      "screenshot": "docs/acceptance/screenshots/Thread-thread-image-gallery-phone-dark.png",
+      "sha256": "fc28c7e73713d07b5a97fd25402100ad9b097233fb8aeb3287bcd321b396e89d",
+      "duration": "2.1m"
+    }
+  ],
+  "compatibleSmoke": {
+    "schema": "thread-images-compatible-smoke-v1",
+    "label": "simulated",
+    "route": "thread-image",
+    "ownerRoute": "owner",
+    "reportCharacters": 4000,
+    "imageMime": "image/png",
+    "imageBytes": 193562
+  },
+  "live": {
+    "label": "blocked",
+    "reason": "The installed runtime loads separate bundled module copies; corrected bundle activation waits for the active thread to finish."
+  },
+  "vision": {
+    "label": "not run",
+    "reason": "Dedicated test credential unavailable."
+  },
+  "fullSuites": {
+    "label": "not run",
+    "reason": "Scoped correction; prior wider failures are preserved."
+  },
+  "finalBrowserAttempt": {
+    "label": "blocked",
+    "reason": "After main integration the fixture failed to become ready within its unchanged60000ms startup timeout; no journey started."
+  }
+}

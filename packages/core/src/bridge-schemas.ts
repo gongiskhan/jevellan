@@ -203,7 +203,7 @@ export function bridgeTools(names: BridgeTool[]): z.infer<typeof BridgeToolsSche
     jevellan_mail_inbox: 'Read unread mail addressed to this thread or to all, and mark it read.',
     jevellan_reserve: 'Reserve repository paths (files, or directories ending in /) for up to 120 minutes, 60 by default, before editing them. Other threads see the reservation; a refusal lists the conflicting threads.',
     jevellan_release: 'Release one reservation by id, or every reservation of this thread when no id is given.',
-    jevellan_thread_report: 'Report this turn’s outcome exactly once, at the end of the turn. needs-decision requires a question; options are two to four short choices. Include the tests you ran and the files you changed.',
+    jevellan_thread_report: 'Report this turn’s outcome exactly once, at the end of the turn. needs-decision requires a question; options are two to four short choices. Explain the result for the owner, what they can see or do and how to try it. Include limitations, tests actually run and changed files. For visual work include captioned Markdown links to screenshots saved in the worktree. summary accepts up to 4,000 characters.',
   };
   return BridgeToolsSchema.parse({ schema: 'bridge-tools-v1', tools: names.map((name) => {
     const schema = z.toJSONSchema(BridgeToolSchemas[name], { io: 'input' });

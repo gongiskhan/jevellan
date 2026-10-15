@@ -18,15 +18,15 @@ const preview = (text: string) => { const line = text.trim().split('\n')[0]!.tri
  * `Prompt`), and `collapseLongUser` folds user turns longer than that many characters behind their first line. Without
  * them the output is the conversation and session rendering.
  */
-export const TranscriptTurn = memo(function TranscriptTurn({ turn, onOpen, userLabel, collapseLongUser, focus = false, active = false }: {
-  focus?: boolean; active?: boolean; turn: CursorTurn; onOpen?(ref: string): void; userLabel?: string | undefined; collapseLongUser?: number | undefined;
+export const TranscriptTurn = memo(function TranscriptTurn({ turn, onOpen, onOpenImage, userLabel, collapseLongUser, focus = false, active = false }: {
+  focus?: boolean; active?: boolean; turn: CursorTurn; onOpen?(ref: string): void; onOpenImage?(ref: string): void; userLabel?: string | undefined; collapseLongUser?: number | undefined;
 }) {
   const groups = transcriptGroups(turn.blocks);
   const blocks = groups.map((block, index) => {
     const current = active && turn.role === 'assistant' && index === groups.length - 1;
-    if (block.type === 'thinking') return <details className="cursor-thinking" key={index} open><summary>Thinking</summary><Markdown {...(onOpen ? { onOpen } : {})}>{block.text}</Markdown></details>;
+    if (block.type === 'thinking') return <details className="cursor-thinking" key={index} open><summary>Thinking</summary><Markdown {...(onOpen ? { onOpen } : {})} {...(onOpenImage ? { onOpenImage } : {})}>{block.text}</Markdown></details>;
     if (block.type === 'text') {
-      const body = <Markdown {...(onOpen ? { onOpen } : {})}>{block.text}</Markdown>;
+      const body = <Markdown {...(onOpen ? { onOpen } : {})} {...(onOpenImage ? { onOpenImage } : {})}>{block.text}</Markdown>;
       return focus ? <details className="cursor-text-block" key={index} open={current}><summary>{preview(block.text) || 'Message'}</summary>{body}</details> : <Fragment key={index}>{body}</Fragment>;
     }
     const running = current && toolAwaitingResult(block.calls.at(-1)!);
@@ -54,5 +54,5 @@ export const TranscriptTurn = memo(function TranscriptTurn({ turn, onOpen, userL
       ? <details className="pw-prompt"><summary><span>{preview(text)}</span></summary>{blocks}</details>
       : blocks}
   </article>;
-}, (previous, next) => previous.focus === next.focus && previous.active === next.active && previous.onOpen === next.onOpen && previous.userLabel === next.userLabel && previous.collapseLongUser === next.collapseLongUser
+}, (previous, next) => previous.focus === next.focus && previous.active === next.active && previous.onOpen === next.onOpen && previous.onOpenImage === next.onOpenImage && previous.userLabel === next.userLabel && previous.collapseLongUser === next.collapseLongUser
   && JSON.stringify(previous.turn) === JSON.stringify(next.turn));

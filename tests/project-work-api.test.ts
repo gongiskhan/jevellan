@@ -28,6 +28,7 @@ test('the Projects route table is closed: exact paths, ids validated, 405 for kn
   expect(projectWorkRoute('/api/projects/proj_a/work', 'GET')).toEqual({ name: 'view', target: 'any', projectId: 'proj_a' });
   expect(projectWorkRoute('/api/projects/proj_a/threads', 'POST')).toEqual({ name: 'thread-create', target: 'coordinator', projectId: 'proj_a' });
   expect(projectWorkRoute(thread(''), 'GET')).toEqual({ name: 'thread', target: 'owner', projectId: 'proj_a', threadId: 'thread_1' });
+  expect(projectWorkRoute(thread('/image'), 'GET')).toEqual({ name: 'thread-image', target: 'owner', projectId: 'proj_a', threadId: 'thread_1' });
   expect(projectWorkRoute(thread('/events'), 'GET')).toEqual({ name: 'thread-events', target: 'owner', stream: true, projectId: 'proj_a', threadId: 'thread_1' });
   for (const [suffix, name] of [['/messages', 'thread-message'], ['/stop', 'thread-stop'], ['/discard', 'thread-discard'], ['/allow-turns', 'thread-allow'], ['/override', 'thread-override'], ['/pr/merge', 'pr-merge'], ['/pr/refresh', 'pr-refresh']]) {
     expect(projectWorkRoute(thread(suffix!), 'POST')).toEqual({ name, target: 'owner', projectId: 'proj_a', threadId: 'thread_1' });
@@ -300,4 +301,22 @@ test('Projects routes need the session, answer versioned documents, run a thread
     state: 'idle', isolation: 'worktree', ownerDeviceId: 'dev_other', runtime: 'fake', modelLabel: 'Fixture', effort: 'high', accountLabel: 'Fixture', turns: 1, createdAt: at, updatedAt: at }), 1);
   expect(await call('/api/projects/project/threads/thread_remote', 'GET', undefined, 409)).toEqual(refused('conflict', THREAD_DEVICE_GONE));
   expect(await call('/api/projects/other/threads/thread_remote', 'GET', undefined, 404)).toEqual(refused('not-found', THREAD_NOT_FOUND));
+});
+
+test('thread images are authenticated, confined to that thread and available through the existing peer route', async () => {
+  fake.enqueueTurn(hold(), forThread());
+  const started = ThreadCreatedViewSchema.parse(await call('/api/projects/project/threads', 'POST', create('Screenshot task', 'request_images'), 201));
+  await vi.waitFor(() => expect(app.projectWork.store.get(started.threadId)?.cwd).toBeTruthy(), { timeout: 15000 });
+  const thread = app.projectWork.store.get(started.threadId)!;
+  const pixel = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aWQAAAABJRU5ErkJggg==', 'base64');
+  writeFileSync(join(thread.cwd, 'screen.png'), pixel);
+  const route = `/api/projects/project/threads/${thread.id}/image?ref=screen.png`;
+  const response = await request(route); expect(response.status).toBe(200); expect(await response.json()).toMatchObject({ schema: 'conversation-file-v1', kind: 'image', content: pixel.toString('base64') });
+  expect((await fetch(base + route)).status).toBe(401);
+  expect((await request(route.replace('project/threads', 'other/threads'))).status).toBe(404);
+  expect((await request(route.replace('screen.png', '../outside.png'))).status).toBe(403);
+  expect((await request(route.replace('screen.png', 'value.txt'))).status).toBe(415);
+  vi.spyOn(app, 'peerLoginAuthenticated').mockResolvedValue(true);
+  const peer = await fetch(base + route.replace('/api/projects/', '/api/mesh/projects/'), { headers: { Authorization: 'Bearer fixture.session', 'X-Jevellan-Source-Device': 'dev_source' } });
+  expect(peer.status).toBe(200); expect(await peer.json()).toMatchObject({ kind: 'image', content: pixel.toString('base64') });
 });

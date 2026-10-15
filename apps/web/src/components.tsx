@@ -27,10 +27,10 @@ export type PageProps = {
 export const dateTime = (value: string) =>
   new Date(value).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 const MarkdownContent = lazy(() => import('./markdown.js'));
-export function Markdown({ children, onOpen }: { children: string; onOpen?(ref: string): void }) {
+export function Markdown({ children, onOpen, onOpenImage }: { children: string; onOpen?(ref: string): void; onOpenImage?(ref: string): void }) {
   return (
     <Suspense fallback={<p className="muted">Rendering…</p>}>
-      <MarkdownContent {...(onOpen ? { onOpen } : {})}>{children}</MarkdownContent>
+      <MarkdownContent {...(onOpen ? { onOpen } : {})} {...(onOpenImage ? { onOpenImage } : {})}>{children}</MarkdownContent>
     </Suspense>
   );
 }

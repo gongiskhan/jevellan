@@ -105,7 +105,8 @@ test('a report input needs a question for needs-decision and leaves turn and syn
   expect(ThreadReportInputSchema.safeParse({ status: 'needs-decision', summary: 'Which database?', question: 'SQLite or Postgres?', options: [{ label: 'SQLite' }, { label: 'Postgres' }] }).success).toBe(true);
   for (const key of ['schema', 'turn', 'synthesized']) expect(ThreadReportInputSchema.safeParse({ status: 'done', summary: 'Done.', [key]: report[key as keyof typeof report] }).success).toBe(false);
   expect(ThreadReportInputSchema.safeParse({ status: 'done', summary: 'Done.', options: [{ label: 'Only one' }] }).success).toBe(false);
-  expect(ThreadReportInputSchema.safeParse({ status: 'done', summary: 'x'.repeat(1201) }).success).toBe(false);
+  expect(ThreadReportInputSchema.safeParse({ status: 'done', summary: 'x'.repeat(4000) }).success).toBe(true);
+  expect(ThreadReportInputSchema.safeParse({ status: 'done', summary: 'x'.repeat(4001) }).success).toBe(false);
   expect(ThreadReportInputSchema.safeParse({ status: 'done', summary: 'Done.', changedFiles: Array(201).fill('a') }).success).toBe(false);
 });
 

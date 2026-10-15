@@ -9,7 +9,7 @@ function ShellPre({ children }: { children?: ReactNode }) {
     return <ShellCommand command={child.props.children}><pre>{children}</pre></ShellCommand>;
   return <pre>{children}</pre>;
 }
-export default function Markdown({ children, onOpen }: { children: string; onOpen?(ref: string): void }) {
+export default function Markdown({ children, onOpen, onOpenImage }: { children: string; onOpen?(ref: string): void; onOpenImage?(ref: string): void }) {
   return (
     <div className="markdown">
       <ReactMarkdown
@@ -19,8 +19,8 @@ export default function Markdown({ children, onOpen }: { children: string; onOpe
         components={{
           pre: ShellPre,
           a: ({ href, children }) =>
-            onOpen && href && !/^(?:https?:|mailto:|#)/i.test(href) ? (
-              <button className="text-button evidence-link" onClick={() => onOpen(decodeReference(href))}>
+            (onOpen || onOpenImage && /\.(png|jpe?g|gif|webp)$/iu.test(href ?? '')) && href && !/^(?:https?:|mailto:|#)/i.test(href) ? (
+              <button className="text-button evidence-link" onClick={() => (onOpen ?? onOpenImage)?.(decodeReference(href))}>
                 {children}
               </button>
             ) : (
@@ -33,16 +33,16 @@ export default function Markdown({ children, onOpen }: { children: string; onOpe
               </a>
             ),
           code: ({ children, className }) =>
-            onOpen && !className && typeof children === 'string' && filePointer(children) ? (
-              <button className="text-button evidence-link" onClick={() => onOpen(children)}>
+            (onOpen || onOpenImage && typeof children === 'string' && /\.(png|jpe?g|gif|webp)$/iu.test(children)) && !className && typeof children === 'string' && filePointer(children) ? (
+              <button className="text-button evidence-link" onClick={() => (onOpen ?? onOpenImage)?.(children)}>
                 <code>{children}</code>
               </button>
             ) : (
               <code className={className}>{children}</code>
             ),
           img: ({ src, alt }) =>
-            onOpen && src && !/^https?:/i.test(src) ? (
-              <button className="text-button evidence-link" onClick={() => onOpen(decodeReference(src))}>
+            (onOpen || onOpenImage) && src && !/^https?:/i.test(src) ? (
+              <button className="text-button evidence-link" onClick={() => (onOpen ?? onOpenImage)?.(decodeReference(src))}>
                 {alt || src}
               </button>
             ) : (
