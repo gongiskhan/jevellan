@@ -502,6 +502,10 @@ export class ThreadService {
       && (thread.queuedMessages.length || this.#o.store.local(thread.id).pendingTurn))
       .sort((a, b) => oldestMessage(a).localeCompare(oldestMessage(b)));
     for (const thread of waiting) { if (this.#closed) return; await this.runner(thread.id)?.resume(); }
+    // A preparation that failed for a transient reason before the first turn is due again (B1).
+    for (const thread of this.#o.store.all().filter(thread => thread.state === 'idle' && thread.turns === 0 && this.#o.store.local(thread.id).preparationRetry)) {
+      if (this.#closed) return; await this.runner(thread.id)?.retryPreparation();
+    }
   }
   /**
    * The sweeps (the periodic timer and `pulse`): the queue of every project with queued threads here or a coordinator here, threads

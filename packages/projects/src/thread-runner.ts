@@ -8,6 +8,7 @@ import {
 } from '@jevellan/core';
 import { projectOutcomeInstruction } from '@jevellan/decisions';
 import { SESSION_NOT_FOUND } from '@jevellan/runtime-contract';
+import { HubProtocolError } from '@jevellan/mesh';
 import type { Admission } from './admission.js';
 import type { ProjectMemoryReader, ProjectToolHandlers } from './bridge-tools.js';
 import { ProjectTools } from './bridge-tools.js';
@@ -16,7 +17,7 @@ import {
   RESTART_PUBLISHED_TO_MAIN, SESSION_REPLACED, TESTS_FAILED_THREE_TIMES, THREAD_ALREADY_RESTARTED, THREAD_ENDED, THREAD_NOT_FOUND, THREAD_WORKING, TOOL_NOT_IN_TURN, TURN_FAILED,
   TURN_LIMIT_REACHED, TURN_TIMED_OUT, TURN_WITHOUT_REPORT, VERIFICATION_ATTEMPTS, WAITING_FOR_HUB, WAITING_FOR_MAIN, WORKTREE_DISCARDED, accountMovedNotice, alreadyAttached,
   attachedRefusal, cleanupFailed, commitsSavedReason, isRestarted, mainCheckoutKept, mainConflictPrompt, messagesNotDelivered, messagesPrompt, ownerWorkedLine, savedCommitsRef,
-  sessionNotAdopted, taskPrompt, threadPrompt, threadStepFailed, threadSystemAppend, verificationFailurePrompt, worktreeSetupFailed, type ThreadTurnReason,
+  preparationRetrying, preparationTaskFailed, sessionNotAdopted, taskPrompt, threadPrompt, threadStepFailed, threadSystemAppend, verificationFailurePrompt, worktreeSetupFailed, type ThreadTurnReason,
 } from './copy.js';
 import type { DecisionItems } from './decision-items.js';
 import { firstLine } from './git.js';
@@ -90,6 +91,14 @@ export function discardedReason(reason: string | undefined): string {
 export const isDiscarded = (reason: string | undefined): boolean => !!reason?.endsWith(WORKTREE_DISCARDED.trim()) || isRestarted(reason);
 /** Completion releases resources; only explicit discard/replacement closes the owner's conversation. */
 export const canContinueThread = (thread: Pick<Thread, 'stateReason' | 'restartedAs'>): boolean => !thread.restartedAs && !isDiscarded(thread.stateReason);
+/** Minutes before each retry of a preparation that failed for a transient reason (B1). */
+export const PREPARATION_RETRY_MINUTES = [1, 5, 15] as const;
+const TRANSIENT = /\b(?:fetch|network|could not resolve|unable to access|connection|timed out|temporar(?:y|ily)|ECONN\w+|ETIMEDOUT|EAI_AGAIN|not ready|sign in again)\b/iu;
+/** A failure before the first turn that may pass by itself: the hub, an account, the network or git fetch, a setup timeout (B1). */
+export function transientPreparationFailure(error: unknown): boolean {
+  if (error instanceof HubUnavailable || error instanceof HubProtocolError) return true;
+  return TRANSIENT.test(error instanceof Error ? error.message : String(error));
+}
 /**
  * Why Restart is not allowed (brief 10): an open pull request, a publication to main, or an earlier restart (D252); for now, the owner's
  * terminal session on the thread (phase 8).
@@ -222,6 +231,10 @@ export class ThreadRunner {
   async #unexpected(error: unknown): Promise<void> {
     try {
       const thread = this.#thread();
+      // Before the first turn a failed step must not keep the task's goal slot: it retries when transient, else the thread fails (B1).
+      if (thread.turns === 0 && this.#stopping === undefined && (liveWork(thread.state) || thread.state === 'queued')) {
+        await this.#preparationFailed(threadStepFailed(this.#message(error)), transientPreparationFailure(error)); return;
+      }
       // The hub is unreachable before a turn with waiting messages starts (D273): no failure. The thread rests with its messages
       // and the waiting sweep starts them once the hub answers; the notice is written once per wait, not at every sweep.
       if (error instanceof HubUnavailable && thread.queuedMessages.length && this.#stopping === undefined && (liveWork(thread.state) || atRest(thread.state))) {
@@ -236,6 +249,36 @@ export class ThreadRunner {
       const rested = this.#set((current) => withState(current, 'idle', text));
       await this.#tell(rested.projectId, { kind: 'thread-interrupted', threadId: rested.id, reason: 'failed', message: clipRedacted(text, 1000) });
     } catch { /* The thread files themselves failed; restart recovery repairs the state. */ }
+  }
+  /**
+   * A step before the first turn failed (B1). A transient failure rests the thread and the waiting sweep prepares it again after 1, 5
+   * and 15 minutes; after that, or at once for any other failure, the thread fails, so its task fails and frees the goal's slot, and
+   * the coordinator hears which task failed and why.
+   */
+  async #preparationFailed(reason: string, transient: boolean): Promise<void> {
+    const thread = this.#thread(), attempts = this.#c.store.local(thread.id).preparationRetry?.attempts ?? 0;
+    if (transient && attempts < PREPARATION_RETRY_MINUTES.length) {
+      const retryAt = new Date(this.#c.now() + PREPARATION_RETRY_MINUTES[attempts]! * 60_000).toISOString();
+      this.#c.store.updateLocal(thread.id, local => ({ ...local, preparationRetry: { attempts: attempts + 1, retryAt } }));
+      this.#notice(thread, reason, 'error');
+      this.#set(current => withState(current, 'idle', preparationRetrying(reason, attempts + 1, PREPARATION_RETRY_MINUTES.length, retryAt)));
+      return;
+    }
+    this.#clearRetry(thread.id);
+    this.#notice(thread, reason, 'error');
+    const failed = this.#set((current) => ({ ...withState(current, 'failed', reason), endedAt: current.endedAt ?? this.#at() }));
+    await this.#releaseReservations(failed);
+    await this.#tell(failed.projectId, { kind: 'thread-interrupted', threadId: failed.id, reason: 'failed', message: redactWithin(PATTERNS, preparationTaskFailed(failed.title, reason), 1000) });
+  }
+  #clearRetry(threadId: string): void {
+    if (this.#c.store.local(threadId).preparationRetry) this.#c.store.updateLocal(threadId, local => { const next = { ...local }; delete next.preparationRetry; return next; });
+  }
+  /** The waiting sweep: a thread whose transient preparation failure is due prepares again (B1). */
+  retryPreparation(): Promise<void> {
+    const thread = this.#thread(), retry = this.#c.store.local(thread.id).preparationRetry;
+    if (this.#halted() || !retry || thread.turns !== 0 || thread.state !== 'idle' || Date.parse(retry.retryAt) > this.#c.now()) return Promise.resolve();
+    this.#set(current => withState(current, 'queued'));
+    return this.prepare();
   }
   async #fail(reason: string): Promise<void> {
     const thread = this.#set((current) => ({ ...withState(current, 'failed', reason), endedAt: current.endedAt ?? this.#at() }));
@@ -304,7 +347,7 @@ export class ThreadRunner {
         // A stop that arrives meanwhile settles the claim once this step ends (its own step on the chain).
         const made = await this.#c.main.prepare(project, thread);
         if (this.#halted()) return false;
-        this.#set((current) => ({ ...current, cwd: made.cwd, baseBranch: made.baseBranch, baseCommit: made.baseCommit, gitPolicy: project.branchPolicy }));
+        this.#set((current) => ({ ...current, cwd: made.cwd, baseBranch: made.baseBranch, baseCommit: made.baseCommit, gitPolicy: project.branchPolicy })); this.#clearRetry(thread.id);
         return true;
       }
       const ledger = this.#c.ledgers.thread(thread.projectId, thread.id);
@@ -316,10 +359,14 @@ export class ThreadRunner {
         const setup = await this.#c.worktrees.setup({ ...thread, ...fields }, command, ledger, { timeoutMs: this.#c.timers.setupTimeoutMs, signal });
         if (this.#halted()) return false;
         // A failed thread keeps its worktree fields, so its branch shows and Discard can remove it.
-        if (!setup.ok) { this.#set((current) => ({ ...current, ...fields })); await this.#fail(setup.reason); return false; }
+        if (!setup.ok) {
+          this.#set((current) => ({ ...current, ...fields }));
+          if (thread.turns === 0) await this.#preparationFailed(setup.reason, setup.timedOut); else await this.#fail(setup.reason);
+          return false;
+        }
       }
       if (this.#halted()) return false;
-      this.#set((current) => ({ ...current, ...fields }));
+      this.#set((current) => ({ ...current, ...fields })); this.#clearRetry(thread.id);
       return true;
     } catch (error) {
       // A claim that could not be given back after a failed preparation is settled by the sweeps (D291, phase 8).
@@ -327,6 +374,8 @@ export class ThreadRunner {
       if (thread.isolation === 'main' && kept) this.#kept(thread, 'unchanged', this.#c.redactor.text(kept));
       if (this.#halted()) return false;
       // Main preparation failures are already in thread words (D44): the refusal itself is the reason.
+      const reason = thread.isolation === 'main' ? this.#message(error) || TURN_FAILED : worktreeSetupFailed(firstLine(this.#message(error)) || TURN_FAILED);
+      if (thread.turns === 0) { await this.#preparationFailed(reason, transientPreparationFailure(error)); return false; }
       await this.#fail(thread.isolation === 'main' ? this.#message(error) || TURN_FAILED : worktreeSetupFailed(firstLine(this.#message(error)) || TURN_FAILED));
       return false;
     } finally { release(); }
@@ -776,6 +825,22 @@ export class ThreadRunner {
     const message: QueuedMessage = { ...raw, text: this.#c.redactor.text(raw.text) }; const hash = digest(message.text);
     const seen = this.#c.store.local(thread.id).seenMessages?.find((entry) => entry.id === message.id);
     if (seen) { if (seen.digest !== hash) throw refuse(MESSAGE_ID_REUSED, 409); return { delivery: 'queued', repeated: true }; }
+    // A message restarts a preparation that failed or waits for its retry, once per thread (B1); the first turn is still the task's.
+    const restart = thread.turns === 0 && !this.#c.store.local(thread.id).preparationRestarted && this.#stopping === undefined && canContinueThread(thread)
+      && (thread.state === 'failed' || thread.state === 'idle' && !!this.#c.store.local(thread.id).preparationRetry);
+    if (restart) {
+      const queued = await this.#serial(async () => {
+        const current = this.#thread(); if (current.turns !== 0 || (current.state !== 'failed' && current.state !== 'idle')) return false;
+        this.#abort = new AbortController();
+        this.#c.store.updateLocal(current.id, local => { const next = { ...local, preparationRestarted: true }; delete next.preparationRetry; return next; });
+        this.#c.store.update(current.id, latest => { const next = { ...withState(latest, 'queued'), queuedMessages: [...latest.queuedMessages, message] }; delete next.endedAt; return next; },
+          { type: 'journal-message', data: { schema: 'journal-message-v1', ...message } });
+        this.#c.store.updateLocal(current.id, local => ({ ...local, seenMessages: [...(local.seenMessages ?? []), { id: message.id, digest: hash }].slice(-SEEN_MESSAGES) }));
+        return true;
+      });
+      if (queued) { void this.prepare(); return { delivery: 'started', repeated: false }; }
+      thread = this.#thread();
+    }
     if (isTerminal(thread.state)) {
       if (raw.from !== 'owner') throw refuse(THREAD_ENDED, 409);
       await this.#serial(async () => { if (isTerminal(this.#thread().state)) await this.#reopen(); });

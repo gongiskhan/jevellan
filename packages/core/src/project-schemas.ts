@@ -277,7 +277,11 @@ export const ThreadLocalSchema = z.strictObject({ schema: z.literal('thread-loca
   unsettledCheckout: z.strictObject({ settle: z.enum(['published', 'unchanged', 'stop']), message: z.string().max(400).optional(),
     seen: z.strictObject({ main: z.string().regex(/^[0-9a-f]{40,64}$/), tree: z.string().regex(/^[0-9a-f]{64}$/).optional() }).optional() }).optional(),
   // phase 8: a turn that waited because a terminal holds its account; it runs first when the thread takes its next turn
-  pendingTurn: z.strictObject({ reason: z.enum(['task', 'verification', 'conflict']), body: z.string().min(1).max(40_000) }).optional() });
+  pendingTurn: z.strictObject({ reason: z.enum(['task', 'verification', 'conflict']), body: z.string().min(1).max(40_000) }).optional(),
+  // A step before the first turn failed for a transient reason: the next preparation attempt and how many retries were scheduled (B1).
+  preparationRetry: z.strictObject({ attempts: z.number().int().min(1).max(10), retryAt: TimestampSchema }).optional(),
+  // A message already restarted this thread's failed preparation; a later failure stays failed (B1).
+  preparationRestarted: z.boolean().optional() });
 export type ThreadLocal = z.infer<typeof ThreadLocalSchema>;
 // <home>/projects/<pid>/coordinator-local.json
 export const CoordinatorLocalSchema = z.strictObject({ schema: z.literal('coordinator-local-v1'),

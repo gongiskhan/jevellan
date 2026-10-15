@@ -26,7 +26,7 @@ export function parseWorktrees(output: string): WorktreeEntry[] {
 const present = (path: string) => { try { lstatSync(path); return true; } catch { return false; } };
 const isFile = (path: string) => { try { return lstatSync(path).isFile(); } catch { return false; } };
 export type PreparedWorktree = { cwd: string; branch: string; baseBranch: string; baseCommit: string; contextNote?: string };
-export type SetupResult = { ok: true; outputRef: string } | { ok: false; reason: string; outputRef: string };
+export type SetupResult = { ok: true; outputRef: string } | { ok: false; reason: string; outputRef: string; timedOut: boolean };
 
 /**
  * A thread's own git worktree under `<home>/worktrees/<pid>/<tid>` (brief 8.3). Git runs in the owner checkout only to
@@ -119,7 +119,7 @@ export class ThreadWorktree {
     const outputRef = ledger.putBlob({ stdout: result.stdout, stderr: result.stderr, timedOut: result.timedOut }).ref;
     if (result.code === 0 && !result.timedOut) return { ok: true, outputRef };
     const line = result.timedOut ? commandTimedOut(timeoutMs) : firstLine(result.stderr) || firstLine(result.stdout) || exitCodeLine(result.code);
-    return { ok: false, reason: worktreeSetupFailed(line), outputRef };
+    return { ok: false, reason: worktreeSetupFailed(line), outputRef, timedOut: result.timedOut };
   }
   async exists(project: Project, thread: Thread): Promise<boolean> {
     const path = this.#paths.worktree(thread.projectId, thread.id); const entry = await this.#entry(this.repository(project), path);

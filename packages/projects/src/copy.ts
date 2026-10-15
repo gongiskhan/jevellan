@@ -249,6 +249,9 @@ export const TURN_FAILED = 'The turn failed.';
 export const PROCESS_UNCONFIRMED = "Jevellan could not confirm this thread's process stopped.";
 /** An unexpected failure of a thread step, so no thread is left in a live state (D156). */
 export const threadStepFailed = (message: string): string => clipRedacted(`This step failed: ${message}`, 400);
+export const preparationRetrying = (reason: string, attempt: number, total: number, retryAt: string): string =>
+  clipRedacted(`Preparation failed: ${reason.replace(/^This step failed: /u, '')} Retry ${attempt} of ${total} at ${retryAt.slice(11, 16)} UTC.`, 400);
+export const preparationTaskFailed = (title: string, reason: string): string => clipRedacted(`Task "${title}" failed before its first turn: ${reason}`, 1000);
 export const THREAD_MEMORY_READ_ONLY = 'Threads cannot write project memory.';
 /** D9 running limits: `device` is null for the project limit. */
 export function queuedReason(limit: number, device: string | null): string {
