@@ -7,7 +7,7 @@ Run log for moving Jevellan to a fresh hub on dev-madrid. Times are UTC on 2026-
 | Phase | Start | End |
 | --- | --- | --- |
 | 0 Preflight | 05:35 | 05:40 |
-| 1 Fresh hub | 05:40 | blocked at step 4 (Tailscale) |
+| 1 Fresh hub | 05:40 | 07:58, HTTP only (Tailscale) |
 | 2 Readiness bugs and suites | 06:00 | |
 
 ## Environment
@@ -28,11 +28,21 @@ Run log for moving Jevellan to a fresh hub on dev-madrid. Times are UTC on 2026-
 - Vault layout: one working copy and branch (`main`), git root above the notes folders, commits scoped to the project folder; dreams and imports copy the whole working copy. No branch per project was needed.
 - The vault remote is `<login of the shared GitHub token>/jevellan-vault` (override `JEVELLAN_VAULT_REMOTE`); the root commit is identical on every hub so two hubs share history.
 - Restore and the Ekoa Code preset match goals, jobs and dailies by name; the memory dream daily is one per project under the shared request id.
+- Jev's configured model `jev-1.13.0` was not offered; the hub uses `jev-latest`.
+- The Opus menu entry (`claude-opus-5-5`) is labelled Claude Opus 5.5, as on the Pro, so the preset accepts it.
+- The old member was uninstalled with the checkout's 0.3.7 uninstall (its own 0.3.6 one stops halfway); the hub installed over HTTP while Tailscale refuses route changes.
 - Restore runs on the hub only (`POST /api/projects/:id/vault-restore`); a member's add-project form does not offer it.
 - Tests written before commit 41d7a2b (classified owner follow-ups, threads kept open) were updated to that behavior instead of reverting it.
 - The owner terminal drops other terminals' integration variables (VTE, WezTerm, iTerm, VS Code); inherited `VTE_VERSION` broke exit status capture on Linux.
 
 ## Live results
+
+- Hub install (live, partial): 0.3.7 at `http://100.88.165.46:9771`, home `~/.jevellan-hub`, command `~/.local/bin/jevellan`, user service `jevellan.service`; no HTTPS route (Owner list). The old member's `:443` route still forwards to port 9771, so it reaches the hub too; it is not recorded by the hub and not used.
+- Old member uninstall (live, pass with one remainder): run from the checkout with the fixed uninstall; unit, command and applications removed, `~/.jevellan-member` kept; only the `:443` route remains, recorded.
+- Seed written (live, pass): Jev key, shared and both project GitHub tokens, Claude Gmail and Ekoa (shared), Ekoa Codex with its `auth.json` moved (not copied); all three accounts Ready, Codex included. `seed.json` overwritten and removed.
+- Projects (live, pass): ekoa-code from `/home/ggomes/jevellan-projects/ekoa-code` with the fast checks, project token and dev-madrid only; protected path `/home/ggomes/dev/ekoa-code` added by the hub; Ekoa Code preset applied (auto-merge off, worktree, coordinator Opus 5.5 high, workflowPull 208). jevellan-live-sandbox with worktree isolation, auto-merge off, setup `npm ci` and the active goal Docs and tests.
+- Doctor (live, pass): all ten checks OK after setting Jev's model to `jev-latest`.
+- Phase 1 screens (live): devices, accounts and the ekoa-code page pass the vision check on desktop; the projects screen failed it (a long test command pushed the Edit button out of its card), fixed with a browser regression in `e65277b`, installed with the next version.
 
 - Seed read from the Pro hub (live, pass): Jev key, ekoa-code project GitHub token, Claude subscriptions Gmail and Ekoa (shared), Codex subscription Ekoa Codex (per-device auth.json present), workflowPull 208.
 - Pro stood down over SSH (live, pass): launchctl disable and bootout; `dev.jevellan.daemon` no longer listed; Pro `/api/health` returns 502.
