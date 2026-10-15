@@ -2,10 +2,12 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import type { Homes } from '@jevellan/core';
 
+const FOREIGN_TERMINAL = /^(?:VTE_VERSION|TERM_PROGRAM(?:_VERSION)?|WEZTERM_(?!SHELL_SKIP_).*|KONSOLE_.*|ITERM_.*|KITTY_.*|ALACRITTY_.*|GNOME_TERMINAL_.*|VSCODE_.*|WT_SESSION|WT_PROFILE_ID)$/u;
 export const shellQuote = (text: string) => `'${text.replaceAll("'", "'\\''")}'`;
 /** Temporary startup files load the owner's files; no native shell file is written. */
 export function terminalShell(homes: Homes, sessionId: string, base: NodeJS.ProcessEnv = process.env) {
-  const env = Object.fromEntries(Object.entries(base).filter((entry): entry is [string, string] => entry[1] !== undefined && !entry[0].startsWith('JEVELLAN_')));
+  // The PTY is its own terminal: another emulator's variables would make system startup files add a second set of prompt markers.
+  const env = Object.fromEntries(Object.entries(base).filter((entry): entry is [string, string] => entry[1] !== undefined && !entry[0].startsWith('JEVELLAN_') && !FOREIGN_TERMINAL.test(entry[0])));
   env.HOME = homes.userHome; env.JEVELLAN_HOME = homes.root; env.TERM = 'xterm-256color'; env.COLORTERM = 'truecolor';
   // System WezTerm startup hooks otherwise replace Bash's DEBUG trap after the first prompt.
   // This PTY supplies its own semantic boundaries; leave the owner's startup files unchanged.

@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Homes, SecretRedactor, TerminalSessionSchema, type TerminalSnapshot } from '../packages/core/dist/index.js';
 import { TerminalBuffer, terminalPlain } from '../apps/daemon/dist/terminal-buffer.js';
+import { terminalShell } from '../apps/daemon/dist/terminal-shell.js';
 import { TerminalManager } from '../apps/daemon/dist/terminal-manager.js';
 
 const managers: TerminalManager[] = [], roots: string[] = [];
@@ -152,4 +153,17 @@ test('eight PTYs per device are enforced, owner close and idle close release the
   writeFileSync(f.homes.at('terminals', stale.id, 'session.json'), JSON.stringify({ schema: 'terminal-local-v1', session: stale, requestId: 'stale_request', fingerprint: 'stale', takeover: false }));
   await f.manager.close(); const second = new TerminalManager({ homes: f.homes, deviceId: 'dev_terminal', deviceName: 'Fixture', redactor: new SecretRedactor(), timers: false,
     publish: async () => {}, deliver: async () => {} }); managers.push(second); expect(second.session(stale.id)).toMatchObject({ status: 'closed', closedReason: 'The device daemon restarted.' });
+});
+
+test('the owner terminal is its own terminal: another emulator\'s integration variables do not reach the shell', () => {
+  // A daemon started from a VTE, WezTerm, iTerm or VS Code terminal inherits their variables, and system startup files then add a
+  // second set of prompt markers that hide each command's exit status (seen on Linux with /etc/profile.d/vte-2.91.sh).
+  const root = mkdtempSync(join(tmpdir(), 'jevellan-terminal-env-')); mkdirSync(join(root, 'user'));
+  try {
+    const homes = new Homes(join(root, 'data'), join(root, 'user'));
+    const { env } = terminalShell(homes, 'term_env', { PATH: '/usr/bin:/bin', SHELL: '/bin/bash', VTE_VERSION: '7600', TERM_PROGRAM: 'vscode', TERM_PROGRAM_VERSION: '1.99', WEZTERM_PANE: '3',
+      KONSOLE_VERSION: '230800', ITERM_SESSION_ID: 'w0t0p0', LANG: 'C.UTF-8' });
+    for (const name of ['VTE_VERSION', 'TERM_PROGRAM', 'TERM_PROGRAM_VERSION', 'WEZTERM_PANE', 'KONSOLE_VERSION', 'ITERM_SESSION_ID']) expect(env, name).not.toHaveProperty(name);
+    expect(env).toMatchObject({ LANG: 'C.UTF-8', TERM: 'xterm-256color', WEZTERM_SHELL_SKIP_ALL: '1' });
+  } finally { rmSync(root, { recursive: true, force: true }); }
 });
