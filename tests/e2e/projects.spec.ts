@@ -855,6 +855,8 @@ test('PJ4b the Why panel explains placement and overrides apply', async ({ page 
   await expect(reason).toHaveText(`Restarted as ${restartedId}.`);
   await expect(reason.getByRole('link', { name: restartedId, exact: true })).toHaveAttribute('href', `/projects/projects_placement/threads/${restartedId}`);
   await expect(page.locator('.pw-state-chip')).toHaveText('Stopped');
+  // Thread controls live in the collapsed session panel; open it so their absence is checked where they would appear.
+  await sessionDetails(page);
   for (const name of ['Override', 'Stop', 'Discard']) await expect(button(name)).toHaveCount(0);
   await expect(button('Why')).toBeVisible();
   expect((await view(placedId)).thread.state).toBe('stopped');
