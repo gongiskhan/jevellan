@@ -280,12 +280,18 @@ function App() {
       clearTimeout(timer);
     };
   }, [auth?.authenticated, onError]);
-  const navigate = useCallback((next: string) => {
+  const navigate = useCallback((next: string, replace = false) => {
     hubWaiting.stop();
-    history.pushState({}, '', next);
+    if (replace) history.replaceState({}, '', next);
+    else history.pushState({}, '', next);
     setPath(next);
     setSidebar(false);
   }, []);
+  const openHome = useCallback((projectId?: string) => {
+    // A late sidebar reply must not take the owner away from a page they opened.
+    if (window.location.pathname !== '/') return;
+    navigate(projectId ? `/projects/${projectId}` : '/new', true);
+  }, [navigate]);
   const message = useCallback((text: string) => setNotice({ text, error: false }), []);
   const saveConfig = async (configuration: Configuration, signal?: AbortSignal) => {
     await api(
@@ -329,7 +335,7 @@ function App() {
           done={async (state) => {
             setAuth(state);
             await reload();
-            navigate(auth.configured ? (setup ? path : '/settings/runtimes') : '/setup');
+            navigate(auth.configured ? (setup || path.split('?')[0] === '/' ? path : '/settings/runtimes') : '/setup', true);
           }}
         />
         {feedback}
@@ -449,11 +455,11 @@ function App() {
           </button>
         </div>
         <div className="sidebar-device"><DeviceSwitcher props={props} /></div>
-        <button className="new-conversation" onClick={() => navigate('/')}>
+        <button className="new-conversation" onClick={() => navigate('/new')}>
           <Icon name="plus" />
           New conversation
         </button>
-        <ProjectsSidebar navigate={navigate} onError={onError} selected={path} />
+        <ProjectsSidebar navigate={navigate} onError={onError} selected={path} openHome={openHome} />
         {improver.notice && (
           <button
             className="improver-notice"
@@ -553,6 +559,8 @@ function App() {
             <CursorConversationPage {...props} navigation={navigation} id={path.split('/')[2]!.split('?')[0]!} key={path} />
           ) : path.startsWith('/conversations/') ? (
             <ConversationPage {...props} navigation={navigation} id={path.split('/')[2]!.split('?')[0]!} key={path} />
+          ) : path.split('?')[0] === '/' ? (
+            <p role="status">Opening your projects…</p>
           ) : (
             <NewConversation {...props} />
           )}

@@ -4,7 +4,7 @@ import { ConversationEventSchema, ConversationPublicSchema, HandoffSchema, Stret
 
 test('plans are readable, wait for acceptance, and offer revision with stale-plan context', async ({ page, baseURL }, info) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
-  await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture');
+  await page.goto('/settings/runtimes'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const id = `plan_${randomUUID()}`;

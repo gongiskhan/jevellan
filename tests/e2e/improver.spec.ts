@@ -24,7 +24,7 @@ const layout = (info: TestInfo) => String(info.project.metadata.layout ?? info.p
 const git = (cwd: string, ...args: string[]) => execFileSync('git', ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', ...args], { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
 
 async function signIn(page: Page) {
-  await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await page.goto('/settings/runtimes'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   // Drafts need an eligible account and the judge needs a key; both run against simulated providers.
   expect((await page.request.post('/hub/accounts', { data: { schema: 'add-account-v1', runtime: 'claude', label: `Improver fixture ${randomUUID().slice(0, 8)}`, kind: 'subscription', secret: `fixture-${randomUUID()}` } })).ok()).toBe(true);

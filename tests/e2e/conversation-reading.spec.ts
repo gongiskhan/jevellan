@@ -5,7 +5,7 @@ import { ConversationEventSchema, ConversationPublicSchema, HandoffSchema, Stret
 test('conversation replies read as chat while tools and recorded details remain available', async ({ page, baseURL }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
-  await page.goto('/');
+  await page.goto('/settings/runtimes');
   await page.getByLabel('Passphrase').fill('jevellan-browser-fixture');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();

@@ -1,0 +1,9 @@
+{
+  "schema": "first-project-home-activation-v1",
+  "label": "live",
+  "at": "2026-10-16T14:53:10.790Z",
+  "version": "0.3.6",
+  "serviceRestarted": false,
+  "webIndexSha256": "024aa99543f8d56874eb48eb4d0110fd5e31d0cb5945f491068a166dbdc81954",
+  "rollback": "/Users/ggomes/.jevellan-build/first-project-2026-10-16/web-before"
+}

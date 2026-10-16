@@ -67,7 +67,7 @@ function useSectionExpanded() {
  * Every registered project under New conversation (12.1): name, the magenta count of open questions and a muted count of
  * running threads. Its own navigation landmark inside the Conversations aside (D96), polled like the conversation list.
  */
-export function ProjectsSidebar({ navigate, onError, selected }: Pick<PageProps, 'navigate' | 'onError'> & { selected: string }) {
+export function ProjectsSidebar({ navigate, onError, selected, openHome }: Pick<PageProps, 'navigate' | 'onError'> & { selected: string; openHome(projectId?: string): void }) {
   const section = useSectionExpanded();
   const listId = useId();
   const [view, setView] = useState<ProjectWorkListView>();
@@ -99,6 +99,9 @@ export function ProjectsSidebar({ navigate, onError, selected }: Pick<PageProps,
     };
   }, [onError, selected]);
   const rows = view ? sidebarProjects(view) : [];
+  useEffect(() => {
+    if (view && selected.split('?')[0] === '/') openHome(sidebarProjects(view)[0]?.projectId);
+  }, [view, selected, openHome]);
   const current = projectRoute(selected)?.projectId;
   const waiting = rows.reduce((total, row) => total + row.waiting, 0);
   // The list is capped, so the current project's row may sit below its fold (always in the phone drawer once a few

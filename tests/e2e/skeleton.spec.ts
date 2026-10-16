@@ -79,7 +79,7 @@ async function currentProjectPath(page: Page) {
 }
 
 test('Codex usage shows a reported weekly window and keeps an absent five-hour window unknown', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/settings/runtimes');
   await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const view = AccountViewSchema.parse(await (await page.request.post('/hub/accounts', { data: { schema: 'add-account-v1', runtime: 'codex', kind: 'subscription', label: 'Codex usage fixture' } })).json());
@@ -107,7 +107,7 @@ test('Codex usage shows a reported weekly window and keeps an absent five-hour w
 
 test('Settings account, login, Rigging and configuration flows work without horizontal overflow', async ({ page }, info) => {
   const errors: string[] = []; page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto('/');
+  await page.goto('/settings/runtimes');
   await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const claude = page.locator('.runtime-card').filter({ has: page.getByRole('heading', { name: 'Claude Code', exact: true }) });
@@ -154,7 +154,7 @@ test('Projects and a manual planned change render the full plan, stream, Why and
   // The first writing step of this new project waits for its first Basic Memory sync (D321 budget below), so the journey gets longer.
   test.setTimeout(300_000);
   const errors: string[] = []; page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await page.goto('/settings/runtimes'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const account = await page.request.post('/hub/accounts', { data: { schema: 'add-account-v1', runtime: 'claude', label: 'Conversation fixture', kind: 'subscription', secret: `fixture-${randomUUID()}` } }); expect(account.ok()).toBe(true);
   const config = await (await page.request.get('/hub/config')).json(); config.configuration['x-jevellan'].guards.pauseAfterPlan = true;
@@ -172,7 +172,7 @@ test('Projects and a manual planned change render the full plan, stream, Why and
   await expect(projectSaved).toHaveCount(0);
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: `docs/acceptance/screenshots/phase2-projects-${info.project.name}.png`, fullPage: true });
-  await page.goto('/'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption({ label: 'Manual conversation fixture' }); await page.getByPlaceholder('What should we build or fix?').fill('Change the value to two and verify it.'); await page.getByRole('button', { name: 'Start', exact: true }).click();
+  await page.goto('/new'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption({ label: 'Manual conversation fixture' }); await page.getByPlaceholder('What should we build or fix?').fill('Change the value to two and verify it.'); await page.getByRole('button', { name: 'Start', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Change the value to two and verify it.' })).toBeVisible();
   const picker = page.locator('.manual-picker'); await picker.getByRole('combobox', { name: 'Action', exact: true }).selectOption('plan'); await picker.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'The full fixture plan' })).toBeVisible(); await expect(page.getByRole('button', { name: 'Approve plan', exact: true })).toBeVisible();
@@ -201,10 +201,10 @@ test('Projects and a manual planned change render the full plan, stream, Why and
 
 test('kept checkpoints can be discarded after reload through the confirmation panel', async ({ page }, info) => {
   const errors: string[] = []; page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await page.goto('/settings/runtimes'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const account = await page.request.post('/hub/accounts', { data: { schema: 'add-account-v1', runtime: 'claude', label: 'Discard fixture', kind: 'subscription', secret: `fixture-${randomUUID()}` } }); expect(account.ok()).toBe(true);
-  await page.goto('/'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('browser_fixture');
+  await page.goto('/new'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('browser_fixture');
   await page.getByPlaceholder('What should we build or fix?').fill('Change the value to three, then let me settle this work.'); await page.getByRole('button', { name: 'Start', exact: true }).click();
   const picker = page.locator('.manual-picker'); await picker.getByRole('combobox', { name: 'Action', exact: true }).selectOption('implement'); await picker.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Step 1 · Implement' })).toBeVisible({ timeout: 30_000 }); await expect(picker).toBeVisible({ timeout: 30_000 });
@@ -222,10 +222,10 @@ test('kept checkpoints can be discarded after reload through the confirmation pa
 
 test('step corrections survive reload and undo launches the requested redo with visible history', async ({ page }, info) => {
   const errors: string[] = []; page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await page.goto('/settings/runtimes'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const account = await page.request.post('/hub/accounts', { data: { schema: 'add-account-v1', runtime: 'claude', label: 'Correction fixture', kind: 'subscription', secret: `fixture-${randomUUID()}` } }); expect(account.ok()).toBe(true);
-  await page.goto('/'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('browser_fixture');
+  await page.goto('/new'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('browser_fixture');
   await page.getByPlaceholder('What should we build or fix?').fill('Change the value to three, then redo this step.'); await page.getByRole('button', { name: 'Start', exact: true }).click();
   const picker = page.locator('.manual-picker'); await picker.getByRole('combobox', { name: 'Action', exact: true }).selectOption('implement'); await picker.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Step 1 · Implement' })).toBeVisible({ timeout: 30_000 }); await expect(picker).toBeVisible({ timeout: 30_000 });
@@ -273,10 +273,10 @@ test('step corrections survive reload and undo launches the requested redo with 
 test('blocked files can be reviewed, refreshed and accepted before verified publication', async ({ page }, info) => {
   test.setTimeout(budgetMs(26.2, 120_000));
   const errors: string[] = []; page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await page.goto('/settings/runtimes'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   expect((await page.request.post('/hub/accounts', { data: { schema: 'add-account-v1', runtime: 'claude', label: 'Checkpoint recovery fixture', kind: 'subscription', secret: `fixture-${randomUUID()}` } })).ok()).toBe(true);
-  await page.goto('/'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('adoption_fixture');
+  await page.goto('/new'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('adoption_fixture');
   await page.getByPlaceholder('What should we build or fix?').fill('Exercise reviewed checkpoint recovery with a simulated read-only violation.'); await page.getByRole('button', { name: 'Start', exact: true }).click();
   const picker = page.locator('.manual-picker'); await picker.getByRole('combobox', { name: 'Action', exact: true }).selectOption('reply'); await picker.getByRole('button', { name: 'Continue', exact: true }).click();
   await serverWork('blocked step', () => expect(page.getByRole('heading', { name: 'Changes need your review' })).toBeVisible(budget(3.3))); await expect(picker).not.toBeVisible();
@@ -296,10 +296,10 @@ test('blocked files can be reviewed, refreshed and accepted before verified publ
 
 test('undo from the last closed work includes newer work and preserves both requests after reload', async ({ page }, info) => {
   const errors: string[] = []; page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await page.goto('/settings/runtimes'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const account = await page.request.post('/hub/accounts', { data: { schema: 'add-account-v1', runtime: 'claude', label: 'Undo across works fixture', kind: 'subscription', secret: `fixture-${randomUUID()}` } }); expect(account.ok()).toBe(true);
-  await page.goto('/'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('undo_following');
+  await page.goto('/new'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('undo_following');
   const originalRequest = 'Change the value to two and publish the first work.';
   await page.getByPlaceholder('What should we build or fix?').fill(originalRequest); await page.getByRole('button', { name: 'Start', exact: true }).click();
   const picker = page.locator('.manual-picker'); await expect(picker).toBeVisible(); const id = new URL(page.url()).pathname.split('/')[2]!;
@@ -334,7 +334,7 @@ test('undo from the last closed work includes newer work and preserves both requ
 test('context merge is drafted read-only, survives reload, cancels and applies through verified publication', async ({ page }, info) => {
   test.setTimeout(budgetMs(33.7, 120_000));
   const errors: string[] = []; page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await page.goto('/settings/runtimes'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const account = await page.request.post('/hub/accounts', { data: { schema: 'add-account-v1', runtime: 'claude', label: 'Context fixture', kind: 'subscription', secret: `fixture-${randomUUID()}` } }); expect(account.ok()).toBe(true);
   await page.getByRole('navigation', { name: 'Settings', exact: true }).getByRole('button', { name: 'Projects', exact: true }).click();
@@ -368,9 +368,9 @@ test('context merge is drafted read-only, survives reload, cancels and applies t
 
 test('conversation titles, expanded tools and outside outcomes survive updates and reload', async ({ page }, info) => {
   const errors: string[] = []; page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click(); await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
+  await page.goto('/settings/runtimes'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click(); await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const account = await page.request.post('/hub/accounts', { data: { schema: 'add-account-v1', runtime: 'claude', label: 'Conversation controls fixture', kind: 'subscription', secret: `fixture-${randomUUID()}` } }); expect(account.ok()).toBe(true);
-  await page.goto('/'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('undo_following');
+  await page.goto('/new'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('undo_following');
   const original = 'Prepare the change before I finish the remaining work in my editor.';
   await page.getByPlaceholder('What should we build or fix?').fill(original); await page.getByRole('button', { name: 'Start', exact: true }).click();
   const picker = page.locator('.manual-picker'); await expect(picker).toBeVisible(); const id = new URL(page.url()).pathname.split('/')[2]!;
@@ -402,9 +402,9 @@ test('conversation titles, expanded tools and outside outcomes survive updates a
 });
 test('file and evidence links show recorded versions, source lines, Markdown, images and verification output', async ({ page }, info) => {
   const errors: string[] = []; page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click(); await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
+  await page.goto('/settings/runtimes'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click(); await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const account = await page.request.post('/hub/accounts', { data: { schema: 'add-account-v1', runtime: 'claude', label: 'Evidence fixture', kind: 'subscription', secret: `fixture-${randomUUID()}` } }); expect(account.ok()).toBe(true);
-  await page.goto('/'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('undo_following'); await page.getByPlaceholder('What should we build or fix?').fill('Exercise evidence navigation with two saved versions.'); await page.getByRole('button', { name: 'Start', exact: true }).click();
+  await page.goto('/new'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('undo_following'); await page.getByPlaceholder('What should we build or fix?').fill('Exercise evidence navigation with two saved versions.'); await page.getByRole('button', { name: 'Start', exact: true }).click();
   const picker = page.locator('.manual-picker'); await expect(picker).toBeVisible(); const id = new URL(page.url()).pathname.split('/')[2]!;
   for (const n of [1, 2]) { await picker.getByRole('combobox', { name: 'Action', exact: true }).selectOption('implement'); await picker.getByRole('button', { name: 'Continue', exact: true }).click(); await expect(page.getByRole('heading', { name: `Step ${n} · Implement` })).toBeVisible({ timeout: 30_000 }); await expect(picker).toBeVisible({ timeout: 30_000 }); }
   const first = page.locator('.stretch-block').first(); const panel = page.getByRole('dialog').last();
@@ -441,7 +441,7 @@ test('file and evidence links show recorded versions, source lines, Markdown, im
 
 test('public project memory shows its notice, note update time and read-only rendered content', async ({ page }, info) => {
   const errors: string[] = []; page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await page.goto('/settings/runtimes'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible(); await page.goto('/settings/projects');
   const notice = 'This repository is public. Memory committed here is public too.';
   const card = page.locator('.card').filter({ has: page.getByRole('heading', { name: 'Public memory fixture', exact: true }) });
@@ -468,10 +468,10 @@ test('public project memory shows its notice, note update time and read-only ren
 
 test('Why lists recalled project memory and its selection source after reload', async ({ page }, info) => {
   const errors: string[] = []; page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await page.goto('/settings/runtimes'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   expect((await page.request.post('/hub/accounts', { data: { schema: 'add-account-v1', runtime: 'claude', label: 'Memory recall fixture', kind: 'subscription', secret: `fixture-${randomUUID()}` } })).ok()).toBe(true);
-  await page.goto('/'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('memory_fixture');
+  await page.goto('/new'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('memory_fixture');
   await page.getByPlaceholder('What should we build or fix?').fill('Explain the memorybrowserfixture project knowledge.'); await page.getByRole('button', { name: 'Start', exact: true }).click();
   const picker = page.locator('.manual-picker'); await picker.getByRole('combobox', { name: 'Action', exact: true }).selectOption('reply');
   const started = page.waitForResponse((response) => response.request().method() === 'POST' && new URL(response.url()).pathname.endsWith('/manual'));
@@ -493,7 +493,7 @@ test('Why lists recalled project memory and its selection source after reload', 
 
 test('loose Rigging autosaves, rejects stale edits, parks bundles and restores them across reload', async ({ page }, info) => {
   const errors: string[] = []; page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click(); await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
+  await page.goto('/settings/runtimes'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click(); await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const projects = ProjectsListSchema.parse(await (await page.request.get('/hub/projects')).json()); const project = projects.projects.find((view) => view.project.id === 'browser_fixture')!.project;
   const fixtureRoot = dirname(Object.values(project.paths)[0]!); const home = join(fixtureRoot, 'user/.jevellan/homes/claude/acc_rigging_claude');
   await page.goto('/settings/rigging'); const dialog = page.getByRole('dialog');
@@ -522,7 +522,7 @@ test('loose Rigging becomes managed with bundled files, durable retry and runtim
   // Promotion, autosave and both runtime toggles each allow up to 60 seconds for APM materialization.
   test.setTimeout(240_000);
   const errors: string[] = []; page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click(); await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
+  await page.goto('/settings/runtimes'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click(); await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const projects = ProjectsListSchema.parse(await (await page.request.get('/hub/projects')).json()); const fixtureRoot = dirname(Object.values(projects.projects.find((view) => view.project.id === 'browser_fixture')!.project.paths)[0]!);
   const accountHome = (runtime: string) => join(fixtureRoot, `user/.jevellan/homes/${runtime}/acc_rigging_${runtime}`);
   await page.goto('/settings/rigging'); const loose = page.locator('.rigging-disk-row[data-state="loose"]').filter({ hasText: 'browser-promote' }); const dialog = page.getByRole('dialog');
@@ -551,7 +551,7 @@ test('loose Rigging becomes managed with bundled files, durable retry and runtim
 
 test('automatic decisions can resume from missing configuration and explain their simulated choices', async ({ page }, info) => {
   const errors: string[] = []; page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await page.goto('/settings/runtimes'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const added = await page.request.post('/hub/accounts', { data: { schema: 'add-account-v1', runtime: 'claude', label: 'Automatic account', kind: 'subscription', secret: `fixture-${randomUUID()}` } }); expect(added.ok()).toBe(true);
   const account = await added.json();
@@ -559,7 +559,7 @@ test('automatic decisions can resume from missing configuration and explain thei
   config.configuration['x-jevellan'].menu = [{ id: 'automatic_model', runtime: 'claude', model: 'claude-fable-5-1', label: 'Automatic Fable', description: 'Simulated browser model.', efforts: ['low', 'high'], enabled: true }];
   expect((await page.request.put('/hub/config', { data: { schema: 'config-write-v1', revision: config.revision, configuration: config.configuration } })).ok()).toBe(true);
   // The fixture provider only answers this explicit request; no live Jev or model call is claimed.
-  await page.goto('/'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('automatic_fixture');
+  await page.goto('/new'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('automatic_fixture');
   await page.getByPlaceholder('What should we build or fix?').fill('Exercise automatic decisions: change the value to two.'); await page.getByRole('button', { name: 'Start', exact: true }).click();
   await expect(page.locator('.manual-picker')).toBeVisible(); await expect(page.getByRole('button', { name: 'Try automatic again', exact: true })).toBeVisible();
   const conversationPath = new URL(page.url()).pathname;
@@ -597,14 +597,14 @@ test('automatic decisions can resume from missing configuration and explain thei
 
 test('composer choices apply once, keep conversation pins and explain corrections after reload', async ({ page }, info) => {
   const errors: string[] = []; page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await page.goto('/settings/runtimes'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   expect((await page.request.post('/hub/accounts', { data: { schema: 'add-account-v1', runtime: 'claude', label: 'Composer account', kind: 'subscription', secret: `fixture-${randomUUID()}` } })).ok()).toBe(true);
   const config = await (await page.request.get('/hub/config')).json(); config.configuration['x-jevellan'].guards.pauseAfterPlan = true;
   config.configuration['x-jevellan'].menu = [...config.configuration['x-jevellan'].menu.filter((model: { id: string }) => model.id !== 'composer_model'), { id: 'composer_model', runtime: 'claude', model: 'claude-fable-5-1', label: 'Composer Fable', description: 'Simulated browser model.', efforts: ['low', 'high'], enabled: true }];
   expect((await page.request.put('/hub/config', { data: { schema: 'config-write-v1', revision: config.revision, configuration: config.configuration } })).ok()).toBe(true);
   expect((await page.request.put('/hub/secrets/jev', { data: { schema: 'save-secret-v1', value: `fixture-${randomUUID()}` } })).ok()).toBe(true);
-  await page.goto('/'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('automatic_fixture');
+  await page.goto('/new'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('automatic_fixture');
   await page.getByRole('button', { name: /^Override/ }).click();
   const controls = page.getByRole('group', { name: 'Choices for the next step', exact: true });
   await controls.getByRole('combobox', { name: 'Next step', exact: true }).selectOption('plan');
@@ -635,7 +635,7 @@ test('composer choices apply once, keep conversation pins and explain correction
 
 test('external activity waits, retries, requires Changes review and publishes after reviewed acceptance', async ({ page }, info) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
-  await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await page.goto('/settings/runtimes'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   expect((await page.request.post('/hub/accounts', { data: { schema: 'add-account-v1', runtime: 'claude', label: 'External activity account', kind: 'subscription', secret: `fixture-${randomUUID()}` } })).ok()).toBe(true);
   const projects = ProjectsListSchema.parse(await (await page.request.get('/hub/projects')).json()); const project = projects.projects.find(row => row.project.id === 'activity_fixture')!.project;
@@ -643,7 +643,7 @@ test('external activity waits, retries, requires Changes review and publishes af
   const journalDirectory = join(dirname(projectPath), 'user', '.claude', 'projects', 'external-fixture'); mkdirSync(journalDirectory, { recursive: true }); const journal = join(journalDirectory, 'guard-fixture.jsonl');
   writeFileSync(journal, JSON.stringify({ type: 'user', cwd: projectPath, message: { content: 'Synthetic outside work.' } }) + '\n');
   const quiet = () => { const old = new Date(Date.now() - 10 * 60_000); utimesSync(journal, old, old); };
-  await page.goto('/'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('activity_fixture');
+  await page.goto('/new'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('activity_fixture');
   await page.getByPlaceholder('What should we build or fix?').fill('Exercise external activity guards before and during an implementation.'); await page.getByRole('button', { name: 'Start', exact: true }).click();
   const picker = page.locator('.manual-picker'); await picker.getByRole('combobox', { name: 'Action', exact: true }).selectOption('implement'); await picker.getByRole('button', { name: 'Continue', exact: true }).click();
   const retry = page.getByRole('button', { name: 'Retry', exact: true }); await expect(retry).toBeEnabled({ timeout: 30_000 });
@@ -667,7 +667,7 @@ test('external activity waits, retries, requires Changes review and publishes af
 
 test('context changes interrupted by outside activity require a fresh reviewed diff before publication', async ({ page }, info) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
-  await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await page.goto('/settings/runtimes'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const projects = ProjectsListSchema.parse(await (await page.request.get('/hub/projects')).json()); const project = projects.projects.find(row => row.project.id === 'activity_context')!.project; const projectPath = Object.values(project.paths)[0]!;
   expect(dirname(projectPath)).toContain('/jevellan-browser-');
@@ -692,7 +692,7 @@ const unavailable = { status: 503, contentType: 'application/json', body: JSON.s
 
 test('provider login recovers lost start and accepted-code replies inside its panel', async ({ page }, info) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
-  await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await page.goto('/settings/runtimes'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const account = AccountViewSchema.parse(await (await page.request.post('/hub/accounts', { data: { schema: 'add-account-v1', runtime: 'claude', label: 'Recoverable login', kind: 'subscription' } })).json());
   await page.reload(); const starts: string[] = []; const codes: string[] = []; let loginId = ''; let captured: ReturnType<typeof AccountViewSchema.parse> | undefined;
@@ -726,7 +726,7 @@ test('provider login recovers lost start and accepted-code replies inside its pa
 });
 
 test('provider login waiting can be stopped and the pending login cancelled from its panel', async ({ page }) => {
-  await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await page.goto('/settings/runtimes'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const account = AccountViewSchema.parse(await (await page.request.post('/hub/accounts', { data: { schema: 'add-account-v1', runtime: 'claude', label: 'Cancelled login', kind: 'subscription' } })).json());
   await page.reload(); let polls = 0; let cancels = 0; let loginId = '';
@@ -772,7 +772,7 @@ test('hub recovery resumes sign-in and reconciles a settings save whose reply wa
 
 test('device Settings completes a member login, shows activity, invites and switches without signing in again', async ({ page }, info) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
-  await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await page.goto('/settings/runtimes'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   let member: { id: string; url: string } | undefined;
   await expect.poll(async () => { const roster = await (await page.request.get('/hub/devices/roster')).json(); member = roster.devices.find((row: { device: { name: string } }) => row.device.name === 'Browser member')?.device; return Boolean(member); }).toBe(true);
@@ -822,7 +822,7 @@ test('device Settings completes a member login, shows activity, invites and swit
 });
 
 test('hub recovery stops abandoned settings requests before another write', async ({ page }) => {
-  await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await page.goto('/settings/runtimes'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const tabs = page.getByRole('navigation', { name: 'Settings', exact: true }); await tabs.getByRole('button', { name: 'Decisions', exact: true }).click();
   const before = await (await page.request.get('/hub/config')).json(); let writes = 0;
@@ -835,10 +835,10 @@ test('hub recovery stops abandoned settings requests before another write', asyn
 });
 
 test('hub recovery starts one conversation after admission loss and a lost creation reply', async ({ page }) => {
-  await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await page.goto('/settings/runtimes'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   expect((await page.request.post('/hub/accounts', { data: { schema: 'add-account-v1', runtime: 'claude', label: 'Recovery fixture', kind: 'subscription', secret: `fixture-${randomUUID()}` } })).ok()).toBe(true);
-  await page.goto('/'); const bodies: string[] = []; let conversationId: string | undefined;
+  await page.goto('/new'); const bodies: string[] = []; let conversationId: string | undefined;
   await page.context().route('**/api/conversations', async route => {
     if (route.request().method() !== 'POST') { await route.continue(); return; }
     bodies.push(route.request().postData()!);
@@ -858,7 +858,7 @@ test('hub recovery starts one conversation after admission loss and a lost creat
 
 test('J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work', async ({ page }, info) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message)); const sourceUrl = info.project.use.baseURL!;
-  await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await page.goto('/settings/runtimes'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   // Exercise the fixture's authentication-failure fallback even when this test runs alone.
   expect((await page.request.put('/hub/secrets/jev', { data: { schema: 'save-secret-v1', value: `fixture-${randomUUID()}` } })).ok()).toBe(true);
@@ -900,7 +900,7 @@ test('J8 simulated mesh journey switches, streams, corrects, logs in remotely an
   const journalDir = join(root, 'user', '.claude', 'projects', 'j8-outside'); mkdirSync(journalDir, { recursive: true }); const journal = join(journalDir, 'fixture.jsonl'); writeFileSync(journal, JSON.stringify({ type: 'user', cwd: sourcePath, message: { content: 'Simulated outside agent activity.' } }) + '\n');
   await expect.poll(async () => { const roster = await (await page.request.get('/hub/devices/roster')).json(); return roster.devices.find((row: { device: { id: string } }) => row.device.id === source.id).heartbeat?.externalSessions.some((session: { cwd: string }) => session.cwd === sourcePath); }, { timeout: 45_000 }).toBe(true);
   await page.goto('/settings/devices'); await expect(page.getByRole('main').getByText(/Claude Code active in mesh-a/)).toBeVisible();
-  await page.goto('/'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('mesh_fixture'); await page.getByPlaceholder('What should we build or fix?').fill('J8: implement after the outside agent is quiet.'); await page.getByRole('button', { name: 'Start', exact: true }).click();
+  await page.goto('/new'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('mesh_fixture'); await page.getByPlaceholder('What should we build or fix?').fill('J8: implement after the outside agent is quiet.'); await page.getByRole('button', { name: 'Start', exact: true }).click();
   await picker.getByRole('combobox', { name: 'Action', exact: true }).selectOption('implement'); const sourceModel = configuration.configuration['x-jevellan'].menu.find((model: { runtime: string; enabled: boolean; unavailableReason?: string }) => model.runtime === 'claude' && model.enabled && !model.unavailableReason).id;
   await picker.getByRole('combobox', { name: 'Model', exact: true }).selectOption(sourceModel); await picker.getByRole('button', { name: 'Continue', exact: true }).click();
   const retry = page.getByRole('button', { name: 'Retry', exact: true }); await expect(retry).toBeEnabled(); await expect(page.getByText(/Another agent \(Claude Code\) is active in Mesh journey fixture/).first()).toBeVisible(); await expect(page.locator('.stretch-block')).toHaveCount(0); expect(readFileSync(join(sourcePath, 'value.txt'), 'utf8')).toBe('1\n');
@@ -915,7 +915,7 @@ test('J11 simulated mesh journey publishes memory, recalls after pull and review
   test.setTimeout(budgetMs(73.8, 240_000));
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message)); const sourceUrl = info.project.use.baseURL!;
   const git = (cwd: string, ...args: string[]) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
-  await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await page.goto('/settings/runtimes'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   expect((await page.request.put('/hub/secrets/jev', { data: { schema: 'save-secret-v1', value: `fixture-${randomUUID()}` } })).ok()).toBe(true);
   await expect.poll(async () => ProjectsListSchema.parse(await (await page.request.get('/hub/projects')).json()).projects.some(row => row.project.id === 'j11_context')).toBe(true);
@@ -937,7 +937,7 @@ test('J11 simulated mesh journey publishes memory, recalls after pull and review
   const initial = MemorySearchSchema.parse(await (await page.request.get(`${target.url}/api/projects/j11_fixture/memory?query=existing`, { timeout: 130_000 })).json()); expect(initial.notes).toHaveLength(1);
   await switchTo(source.name, sourceUrl);
   const baseline = git(sourcePath, 'rev-parse', 'HEAD');
-  await page.goto('/'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('j11_fixture'); await page.getByPlaceholder('What should we build or fix?').fill('Remember that this project uses Vitest with globals enabled.'); await page.getByRole('button', { name: 'Start', exact: true }).click();
+  await page.goto('/new'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('j11_fixture'); await page.getByPlaceholder('What should we build or fix?').fill('Remember that this project uses Vitest with globals enabled.'); await page.getByRole('button', { name: 'Start', exact: true }).click();
   const picker = page.locator('.manual-picker'); await expect(picker).toBeVisible(); const sourceId = new URL(page.url()).pathname.split('/')[2]!;
   const read = async (base: string, id: string) => ConversationPublicSchema.parse(await (await page.request.get(`${base}/api/conversations/${id}`)).json());
   const step = async (base: string, id: string, action: 'reply' | 'review' | 'done', model: string, remember = false) => {
@@ -980,7 +980,7 @@ test('Settings saves wait through hub loss, reconcile lost replies and abandon a
   // This fixture has accumulated accounts; both Rigging saves deliver through real APM before losing a reply.
   test.setTimeout(420_000);
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
-  await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click(); await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
+  await page.goto('/settings/runtimes'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click(); await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const dialog = page.getByRole('dialog'); const createdBodies: string[] = [];
   await page.context().route('**/hub/accounts', async route => {
     if (route.request().method() !== 'POST') return route.continue();
@@ -1013,7 +1013,7 @@ test('project, Jev, local Rigging and device Settings recover their hub boundari
   // Promotion delivers the bundle through real APM to this accumulated fixture's account homes.
   test.setTimeout(300_000);
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
-  await page.goto('/'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click(); await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
+  await page.goto('/settings/runtimes'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click(); await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const dialog = page.getByRole('dialog'); const message = "Can't reach the hub (Fixture hub). This will continue when it's back.";
   const unavailable = { status: 503, contentType: 'application/json', body: JSON.stringify({ schema: 'error-v1', code: 'hub-unavailable', message, retryable: true }) };
   const interrupt = async (path: string, method: string, afterSave = true, timeout = 60_000) => {

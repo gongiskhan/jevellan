@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "test": "Home opens the first sidebar project while New conversation stays available",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/first-project-home-2026-10-16/simulated-Home-first-project-home-phone-dark.png",
+  "expected": "the Jevellan web app \"Home first project home\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"Home opens the first sidebar project while New conversation stays available\"; the other steps are judged in their own screenshots)"
+}

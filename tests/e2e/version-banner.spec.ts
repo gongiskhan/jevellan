@@ -4,7 +4,7 @@ import { DeviceRosterSchema } from '../../packages/core/dist/client.js';
 // B5: a member whose version differs from its hub's says so, with the command that fixes it. The fixture server is a hub, so the
 // roster it returns is rewritten into a member's view: this device on 0.3.2, its hub on 0.3.4.
 test('a member on another version than its hub shows the update banner, and a hub shows none', async ({ page }, info) => {
-  await page.goto('/');
+  await page.goto('/settings/runtimes');
   await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   await expect(page.locator('.version-banner')).toHaveCount(0);

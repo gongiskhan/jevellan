@@ -772,5 +772,11 @@
     "title": "Restore the retained Madrid member alongside its independent hub",
     "why": "Decision843: separate enabled member service on9772 restores the Pro thread connection; existing 0.4.1 hub on9771, authentication, worktree and other HTTPS routes remain. Live health and thread UI pass. Historical Codex startup failures and a fresh provider turn remain unverified; see docs/acceptance/madrid-reconnect-2026-10-16/.",
     "status": "complete-with-blockers"
+  },
+  {
+    "id": "first-project-home",
+    "title": "Open the first project when Jevellan starts",
+    "why": "Decision844: Home follows the existing sidebar order, currently ekoa-code on Pro; explicit New conversation and the no-project fallback use /new. Preserve direct links and replace root history. See docs/acceptance/first-project-home-2026-10-16/.",
+    "status": "complete"
   }
 ]

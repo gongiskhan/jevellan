@@ -579,3 +579,11 @@ The gallery lists up to200 saved-file references, accepts PNG/JPEG/GIF/WebP up t
 
 
 Coordinator chat reload (Decision842): the initial history appears together after it reaches the current work snapshot. It shows Loading chat while that read completes; historical turn events do not make an idle coordinator appear to work again. New turns still stream normally. Reconnects resume their cursor, and moving the coordinator starts the correct device history.
+
+
+## First project on opening — 16 October 2026
+
+Decision844 replaces the root New conversation landing with the first project in the existing sidebar order. Root opening waits for that list and replaces its history entry; explicit New conversation uses /new, and no projects falls back there. A late reply cannot redirect a page the owner has already chosen. The current Pro first project is ekoa-code. This is a web-only change with a compatible Pro0.3.6 update and retained rollback; no sessions, accounts or devices need restarting. Evidence: docs/acceptance/first-project-home-2026-10-16/.
+
+
+Decision844 closure:40 focused project UI checks and the final four-layout browser journey pass, including first-project selection, reload, New conversation, Back, fresh sign-in and the empty-list fallback. Typecheck/lint/build and compatible web build pass. Pro0.3.6 web-only activation is live with rollback retained and no session restart. Opening the real root selects ekoa-code; New conversation opens /new and the Jevellan Home button returns to Ekoa Code. The update prompt is cleared in the verification window. Four simulated screenshots directly inspected; dedicated model vision, full suites and physical-phone acceptance are not run. One closing crucial-issues inspection finds no serious issue. The existing Pro latency remains outside this navigation change. Evidence: docs/acceptance/first-project-home-2026-10-16/.

@@ -582,3 +582,11 @@ Decision842 closure:47 focused simulated checks pass, including the regression t
 ## Madrid member connection — 16 October 2026
 
 Decision843 refines the independent Madrid hub's operational status: restore the retained Pro-member service alongside the separate 0.4.1 hub. The Pro UI's offline state was caused by its member daemon being uninstalled, while SSH and the independent hub remained available. Restore the existing 0.3.6 member on9772 as jevellan-member.service and route its original HTTPS address there; keep the 0.4.1 hub on9771, membership identity, accounts, worktree and all other Tailscale routes. No source change or duplicate work. Live health and original-thread UI checks pass; the two historical Codex startup failures remain visible, and no new provider turn is claimed. See docs/acceptance/madrid-reconnect-2026-10-16/README.md.
+
+
+## First project on opening — 16 October 2026
+
+Decision844 replaces the root New conversation landing with the first project in the existing sidebar order. Root opening waits for that list and replaces its history entry; explicit New conversation uses /new, and no projects falls back there. A late reply cannot redirect a page the owner has already chosen. The current Pro first project is ekoa-code. This is a web-only change with a compatible Pro0.3.6 update and retained rollback; no sessions, accounts or devices need restarting. Evidence: docs/acceptance/first-project-home-2026-10-16/.
+
+
+Decision844 closure:40 focused project UI checks and the final four-layout browser journey pass, including first-project selection, reload, New conversation, Back, fresh sign-in and the empty-list fallback. Typecheck/lint/build and compatible web build pass. Pro0.3.6 web-only activation is live with rollback retained and no session restart. Opening the real root selects ekoa-code; New conversation opens /new and the Jevellan Home button returns to Ekoa Code. The update prompt is cleared in the verification window. Four simulated screenshots directly inspected; dedicated model vision, full suites and physical-phone acceptance are not run. One closing crucial-issues inspection finds no serious issue. The existing Pro latency remains outside this navigation change. Evidence: docs/acceptance/first-project-home-2026-10-16/.

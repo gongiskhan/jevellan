@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 import { ConversationPublicSchema } from '../../packages/core/dist/client.js';
 
 test('user messages stay readable and support retry, cancel editing and resend', async ({ page, baseURL }) => {
-  await page.goto('/');
+  await page.goto('/settings/runtimes');
   await page.getByLabel('Passphrase').fill('jevellan-browser-fixture');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();

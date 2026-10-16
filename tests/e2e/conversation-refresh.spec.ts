@@ -57,7 +57,7 @@ test('pending work shows a live stage while controls stay compact', async ({ pag
 
 test('a project can be added directly without losing the new conversation draft', async ({ page }) => {
   await page.request.post('/api/auth/login', { data: { schema: 'passphrase-input-v1', passphrase: 'jevellan-browser-fixture' } });
-  await page.goto('/');
+  await page.goto('/new');
   await page.getByLabel('Message', { exact: true }).fill('Keep my draft while I add a project.');
   await page.getByRole('button', { name: 'Add project', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Add project' })).toBeVisible();
@@ -75,7 +75,7 @@ test('a project can be added directly without losing the new conversation draft'
 
 test('opening a folder in the picker selects it and names the project after it', async ({ page }) => {
   await page.request.post('/api/auth/login', { data: { schema: 'passphrase-input-v1', passphrase: 'jevellan-browser-fixture' } });
-  await page.goto('/');
+  await page.goto('/new');
   await page.getByRole('button', { name: 'Add project', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Add project' });
   const roster = DeviceRosterSchema.parse(await (await page.request.get('/hub/devices/roster')).json());

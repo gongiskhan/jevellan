@@ -1,6 +1,6 @@
 import type { Locator, Page, TestInfo } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
-import { DeviceRosterSchema, MergeDocumentsViewSchema, ProjectDailyListViewSchema, ProjectEventFrameSchema, ProjectWorkViewSchema, RuntimeListSchema, TaskListViewSchema, TaskReceiptSchema, TerminalSnapshotSchema, ThreadViewSchema, WorktreeDiskSchema, type ThreadView, type CursorTurn } from '../../packages/core/dist/client.js';
+import { DeviceRosterSchema, MergeDocumentsViewSchema, ProjectDailyListViewSchema, ProjectEventFrameSchema, ProjectWorkListViewSchema, ProjectWorkViewSchema, RuntimeListSchema, TaskListViewSchema, TaskReceiptSchema, TerminalSnapshotSchema, ThreadViewSchema, WorktreeDiskSchema, type ThreadView, type CursorTurn } from '../../packages/core/dist/client.js';
 import { threadDeviceOffline } from '../../packages/projects/dist/copy.js';
 import { expect, test } from './fixtures.js';
 import { expectClearOfComposer, expectNoStaleJump, openSidebar } from './navigation.js';
@@ -30,6 +30,7 @@ async function begin(page: Page) {
   const errors: string[] = []; page.on('pageerror', (error) => errors.push(error.message));
   expect((await page.request.post('/api/auth/login', { data: { schema: 'passphrase-input-v1', passphrase: 'jevellan-browser-fixture' } })).ok()).toBe(true);
   await page.goto('/');
+  await expect(page).toHaveURL(/\/projects\/[^/]+$/);
   return errors;
 }
 /** The fixture server's control routes listen 200 ports above the page's server; every body is a versioned fixture document. */
@@ -266,6 +267,38 @@ async function openSettings(page: Page) {
   await expect(dialog.getByRole('button', { name: 'Save', exact: true })).toBeEnabled();
   return dialog;
 }
+
+test('Home opens the first sidebar project while New conversation stays available', async ({ page }, info) => {
+  const errors = await begin(page);
+  const section = await projectsSection(page);
+  const first = section.locator('.pw-sidebar-row').first();
+  await expect(first).toHaveAttribute('aria-current', 'page');
+  const name = await first.locator('.pw-sidebar-name').getAttribute('title');
+  await closeDrawer(page, info);
+  await expect(page.getByRole('heading', { level: 1, name: name!, exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('heading', { level: 1, name: name!, exact: true })).toBeVisible();
+  await openSidebar(page);
+  await page.getByRole('button', { name: 'New conversation', exact: true }).click();
+  await expect(page).toHaveURL(/\/new$/);
+  await expect(page.getByRole('heading', { name: 'New conversation', exact: true })).toBeVisible();
+  await page.goBack();
+  await expect(page.getByRole('heading', { level: 1, name: name!, exact: true })).toBeVisible();
+  await shot(page, 'first-project-home', false);
+  await page.request.post('/api/auth/logout', { data: { schema: 'empty-request-v1' } });
+  await page.goto('/');
+  await page.getByLabel('Passphrase').fill('jevellan-browser-fixture');
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1, name: name!, exact: true })).toBeVisible();
+  // A successful empty project list still leaves a usable starting page.
+  const emptyProjects = ProjectWorkListViewSchema.parse({ schema: 'project-work-list-view-v1', projects: [] });
+  await page.route('**/api/project-work', route => route.fulfill({ json: emptyProjects }));
+  await page.goto('/');
+  await expect(page).toHaveURL(/\/new$/);
+  await expect(page.getByRole('heading', { name: 'New conversation', exact: true })).toBeVisible();
+  await page.unrouteAll({ behavior: 'wait' });
+  expect(errors).toEqual([]);
+});
 
 test('PJ3 project page opens from the sidebar and the coordinator chat streams', async ({ page }, info) => {
   const errors = await begin(page);

@@ -3,7 +3,7 @@ import { expect, test } from './fixtures.js';
 import { randomUUID } from 'node:crypto';
 
 async function openLogin(page: Page) {
-  await page.goto('/');
+  await page.goto('/settings/runtimes');
   await page.getByLabel('Passphrase').fill('jevellan-browser-fixture');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   const claude = page.locator('.runtime-card').filter({ has: page.getByRole('heading', { name: 'Claude Code', exact: true }) });

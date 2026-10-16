@@ -8,7 +8,7 @@ test('a question with offered answers shows them as buttons, and a picked answer
   await page.request.post('/api/auth/login', { data: { schema: 'passphrase-input-v1', passphrase: 'jevellan-browser-fixture' } });
   expect((await page.request.post('/hub/accounts', { data: { schema: 'add-account-v1', runtime: 'claude', label: 'Answer options account', kind: 'subscription', secret: `fixture-${randomUUID()}` } })).ok()).toBe(true);
   expect((await page.request.put('/hub/secrets/jev', { data: { schema: 'save-secret-v1', value: `fixture-${randomUUID()}` } })).ok()).toBe(true);
-  await page.goto('/'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('automatic_fixture');
+  await page.goto('/new'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('automatic_fixture');
   await page.getByPlaceholder('What should we build or fix?').fill('Exercise answer options: change the value.'); await page.keyboard.press('Enter');
   const card = page.getByRole('region', { name: 'Answer the question' });
   await expect(card).toContainText('Shall I change the value in value.txt to two?', { timeout: 60_000 });

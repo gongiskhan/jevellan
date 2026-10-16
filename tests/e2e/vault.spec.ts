@@ -2,7 +2,7 @@ import { expect, test } from './fixtures.js';
 
 // Phase 5: Settings → Projects shows the vault, and adding a project whose origin has a vault folder offers to restore it.
 test('Projects shows the vault and offers Restore from the vault for an origin it holds', async ({ page }, info) => {
-  await page.goto('/');
+  await page.goto('/settings/runtimes');
   await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   await page.context().route('**/api/vault', route => route.fulfill({ json: { schema: 'vault-view-v1', remote: 'https://github.com/gongiskhan/jevellan-vault.git', lastSyncAt: new Date(Date.now() - 120_000).toISOString(),
@@ -25,7 +25,7 @@ test('Projects shows the vault and offers Restore from the vault for an origin i
 
 test('a project card keeps a long test command inside the card and its Edit button in view', async ({ page }, info) => {
   // Seen on the live hub: ekoa-code's fast checks ran past the card's border and pushed Edit out of the card.
-  await page.goto('/');
+  await page.goto('/settings/runtimes');
   await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const long = 'npm run build --workspace shared && npm run typecheck && npm run lint && npm run test:unit --workspace server';
