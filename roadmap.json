@@ -766,5 +766,11 @@
     "title": "Load coordinator chat without replaying old activity",
     "why": "Decision842: publish initial history once at its work snapshot boundary and use only newer events for live working state. Retain cursor recovery, device moves and conversation history.",
     "status": "complete"
+  },
+  {
+    "id": "madrid-member-reconnection",
+    "title": "Restore the retained Madrid member alongside its independent hub",
+    "why": "Decision843: separate enabled member service on9772 restores the Pro thread connection; existing 0.4.1 hub on9771, authentication, worktree and other HTTPS routes remain. Live health and thread UI pass. Historical Codex startup failures and a fresh provider turn remain unverified; see docs/acceptance/madrid-reconnect-2026-10-16/.",
+    "status": "complete-with-blockers"
   }
 ]
