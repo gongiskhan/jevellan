@@ -1,0 +1,12 @@
+{
+  "schema": "github-missing-log-check-v1",
+  "label": "live",
+  "at": "2026-10-16T20:19:12.473Z",
+  "module": "staged compatible 0.3.6",
+  "projectId": "project_d65c355d-faee-4fa7-a0a0-cbe67dae3ef2",
+  "jobId": 117098454562,
+  "runId": 38938066981,
+  "url": "https://github.com/gongiskhan/ekoa-code/actions/runs/38938066981/job/117098454562",
+  "credential": "existing project-scoped vault entry; not printed or saved",
+  "output": "No downloadable log is available for job 117098454562.\nresult: completed (failure).\nGitHub check diagnostics (not a downloaded log):\nfailure: The job was not started because recent account payments have failed or your spending limit needs to be increased. Please check the 'Billing & plans' section in your settings\nnotice: \"The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748\""
+}

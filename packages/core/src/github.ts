@@ -177,7 +177,33 @@ export class GitHubClient {
       { ref, return_run_details: true, ...(inputs ? { inputs } : {}) }, { version: '2026-03-10' });
   }
   async workflowJobLog(repository: GitHubRepository, jobId: number): Promise<string> {
-    return this.#request('GET', `${repo(repository)}/actions/jobs/${pullNumber(jobId)}/logs`, z.string(), undefined, { text: true, download: true });
+    const jobPath = `${repo(repository)}/actions/jobs/${pullNumber(jobId)}`;
+    try { return await this.#request('GET', `${jobPath}/logs`, z.string(), undefined, { text: true, download: true }); }
+    catch (error) {
+      if (!(error instanceof GitHubError) || error.status !== 404) throw error;
+    }
+    // A job refused before its first step has no log blob. Its check annotations still explain why it failed.
+    // Confirm that the job is readable before treating a 404 as a missing log, rather than missing access.
+    const job = await this.#request('GET', jobPath, z.object({ name: z.string(), status: z.string(), conclusion: z.string().nullable(),
+      check_run_url: z.string().nullable().optional() }));
+    const lines = [`No downloadable log is available for job ${jobId}.`, `${job.name}: ${job.status} (${job.conclusion ?? 'no conclusion'}).`];
+    if (job.check_run_url) {
+      // Follow only the check id returned for this job, within the configured API and the same repository.
+      const prefix = `${this.#base}${repo(repository)}/check-runs/`, id = job.check_run_url.slice(prefix.length);
+      if (!job.check_run_url.startsWith(prefix) || !/^[1-9]\d*$/u.test(id)) throw invalid();
+      const checkPath = `${repo(repository)}/check-runs/${id}`;
+      const check = await this.#request('GET', checkPath, z.object({ output: z.object({ title: z.string().nullable(), summary: z.string().nullable(), text: z.string().nullable() }) }));
+      const annotations = await this.#request('GET', `${checkPath}/annotations?per_page=100`, z.array(z.object({
+        annotation_level: z.string(), title: z.string().nullable().optional(), message: z.string(),
+      })).max(100));
+      lines.push('GitHub check diagnostics (not a downloaded log):');
+      for (const value of [check.output.title, check.output.summary, check.output.text]) if (value) lines.push(this.#redactor.text(value).slice(0, 2000));
+      // Keep failures before notices so the useful reason survives the overall response bound.
+      for (const annotation of annotations.sort((a, b) => Number(b.annotation_level === 'failure') - Number(a.annotation_level === 'failure')))
+        lines.push(`${annotation.annotation_level}: ${this.#redactor.text([annotation.title, annotation.message].filter(Boolean).join(': ')).slice(0, 2000)}`);
+      if (!annotations.length && !check.output.summary && !check.output.text) lines.push('No check annotations are available.');
+    } else lines.push('No check annotations are available.');
+    return this.#redactor.text(lines.join('\n')).slice(0, 8000);
   }
   async actionsVariable(repository: GitHubRepository, variable: string): Promise<string> {
     if (!/^[A-Za-z0-9_]{1,64}$/u.test(variable)) throw new Error('Invalid Actions variable name.');

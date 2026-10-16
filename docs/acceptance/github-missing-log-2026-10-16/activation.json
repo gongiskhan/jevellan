@@ -1,0 +1,20 @@
+{
+  "schema": "github-log-fallback-activation-v1",
+  "label": "live",
+  "at": "2026-10-16T20:20:52.038Z",
+  "version": "0.3.6",
+  "updated": true,
+  "previousProcessExited": true,
+  "normalServiceRestart": true,
+  "exclusiveMaintenanceAfterStop": true,
+  "rollback": "/Users/ggomes/.jevellan-build/github-404-2026-10-16/before",
+  "files": {
+    "packages/core/dist/github.js": "eb7e03bd1a1be17de5a25727d0eaf20ad9b8acd2eb1c95d81301748faff298ab",
+    "node_modules/@jevellan/core/dist/github.js": "eb7e03bd1a1be17de5a25727d0eaf20ad9b8acd2eb1c95d81301748faff298ab"
+  },
+  "health": {
+    "schema": "health-v1",
+    "status": "ok",
+    "version": "0.3.6"
+  }
+}

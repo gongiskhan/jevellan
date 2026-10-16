@@ -1,0 +1,33 @@
+{
+  "schema": "github-missing-log-checks-v1",
+  "label": "simulated",
+  "before": {
+    "newTests": 7,
+    "passed": 1,
+    "failed": 6
+  },
+  "initialSandboxedRun": {
+    "passed": 9,
+    "failed": 25,
+    "reason": "Localhost fixture listen EPERM; not passing evidence"
+  },
+  "focusedRun": {
+    "files": 4,
+    "passed": 34,
+    "failed": 0,
+    "durationSeconds": 181.88
+  },
+  "laterCacheScopeRegression": {
+    "passed": 1,
+    "otherTestsNotSelected": 6
+  },
+  "distinctPassingTests": 35,
+  "typecheck": "passed",
+  "lint": "passed",
+  "build": "passed; existing Vite chunk warning",
+  "fullBackend": "not run",
+  "fullBrowser": "not run; backend-only change",
+  "physicalPhone": "not run",
+  "modelVision": "not run",
+  "closingCrucialIssuesInspection": "no serious issue"
+}

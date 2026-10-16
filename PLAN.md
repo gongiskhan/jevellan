@@ -1,5 +1,9 @@
 # Projects loop implementation plan
 
+## Missing GitHub job logs — 16 October 2026
+
+Decision845: for a log404 only, confirm the job is readable and return its status plus the check's summary/annotations through the existing bounded, cached job_log result. Use only its same-repository check link. Keep authentication errors, missing jobs, current-head thread confinement and the normal one-request log path. The live Ekoa result job was refused by GitHub's billing/spending gate; this Jevellan repair does not resolve billing or change Ekoa CI. Evidence: docs/acceptance/github-missing-log-2026-10-16/.
+
 Authority: the owner's 13 October cache-aware sessions and project journal brief (Downloads/BRIEF-cache-journal.md), followed by the 12 October coordinator, shared memory and terminal brief, amendment 2, amendment 1 and BRIEF-loop.md. The newest brief wins on conflicts. Main only; phase checkpoints update roadmap and acceptance evidence before commit/push. Preserve completed work outside the amendment.
 
 ## Cache-aware sessions and project journal — prior window closed

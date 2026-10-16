@@ -1,0 +1,20 @@
+{
+  "schema": "github-original-error-evidence-v1",
+  "label": "live",
+  "source": "project ledger/000001.jsonl",
+  "event": {
+    "schema": "project-ledger-event-v1",
+    "t": "2026-10-16T17:17:24.907Z",
+    "id": 3024,
+    "type": "coordinator-tool",
+    "turn": 96,
+    "data": {
+      "schema": "coordinator-tool-v1",
+      "tool": "jevellan_github",
+      "ok": false,
+      "input": "{\"action\":\"job_log\",\"jobId\":117098454562,\"tailChars\":3000}",
+      "inputTruncated": false,
+      "summary": "Could not read GitHub: GitHub answered with HTTP 404."
+    }
+  }
+}

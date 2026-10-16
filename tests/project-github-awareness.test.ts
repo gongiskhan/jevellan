@@ -84,6 +84,28 @@ test('large job logs are streamed to a bounded, redacted tail and smaller tails 
   expect(github.requests.filter(request => request.path.endsWith('/logs'))).toHaveLength(1);
 });
 
+test('logless check diagnostics share the normal cache and remain confined to the thread’s current head', async () => {
+  const run = github.addWorkflow({ head_sha: current.pr!.headSha, jobs: [{ id: 91, name: 'result', status: 'completed', conclusion: 'failure' }] });
+  const requests: string[] = [], redactor = new SecretRedactor();
+  const diagnosed = new GitHubAccess({ credential: async () => token, baseUrl: github.url, redactor, fetch: async (url, init) => {
+    const path = new URL(String(url)).pathname; requests.push(path);
+    if (path.endsWith('/91/logs')) return Response.json({ message: 'Not Found' }, { status: 404 });
+    if (path.endsWith('/jobs/91')) return Response.json({ id: 91, run_id: run.id, name: 'result', status: 'completed', conclusion: 'failure', check_run_url: `${github.url}/repos/fixture/repo/check-runs/92` });
+    if (path.endsWith('/check-runs/92')) return Response.json({ output: { title: null, summary: null, text: null } });
+    if (path.endsWith('/92/annotations')) return Response.json([{ annotation_level: 'failure', message: 'Job did not start: spending limit.' }]);
+    return fetch(url, init);
+  } });
+  const project = ProjectSchema.parse({ schema: 'project-v1', id: coordinator.projectId, name: 'Fixture', remoteUrl: 'https://github.com/fixture/repo.git', paths: {},
+    branchPolicy: 'main', memory: { mode: 'device', dir: 'memory' }, context: { state: 'none' } });
+  const aware = new ProjectGithub({ github: diagnosed, redactor, now: () => time, project: async () => project, thread: async () => current, baseBranch: async () => 'main' });
+  expect(await aware.read(thread, { action: 'job_log', jobId: 91 }, signal)).toMatchObject({ schema: 'github-job-log-v1', output: expect.stringContaining('spending limit') });
+  const count = requests.length;
+  await aware.read(coordinator, { action: 'job_log', jobId: 91, tailChars: 3000 }, signal); expect(requests).toHaveLength(count);
+  current.pr!.headSha = 'b'.repeat(40);
+  await expect(aware.read(thread, { action: 'job_log', jobId: 91 }, signal)).rejects.toMatchObject({ status: 403 });
+  expect(requests).toHaveLength(count);
+});
+
 test('inputs enforce action-specific limits and refuse unrecognised or acting operations', () => {
   for (const input of [{ action: 'merge', number: 1 }, { action: 'runs', limit: 21 }, { action: 'pulls', state: 'all' }, { action: 'commits', limit: 31 },
     { action: 'job_log', jobId: 1, tailChars: 8001 }, { action: 'run', runId: -1 }, { action: 'pull', number: 1, merge: true }]) expect(GithubInputSchema.safeParse(input).success).toBe(false);

@@ -778,5 +778,11 @@
     "title": "Open the first project when Jevellan starts",
     "why": "Decision844: Home follows the existing sidebar order, currently ekoa-code on Pro; explicit New conversation and the no-project fallback use /new. Preserve direct links and replace root history. See docs/acceptance/first-project-home-2026-10-16/.",
     "status": "complete"
+  },
+  {
+    "id": "github-logless-job-diagnostics",
+    "title": "Explain failed GitHub jobs whose logs do not exist",
+    "why": "Decision845: fall back from a log404 to the readable job's same-repository check annotations, preserving scope, cache, redaction and budgets. Live Ekoa billing/spending refusal is exposed; billing and Ekoa CI are unchanged. Compatible Pro0.3.6 activation retains rollback. See docs/acceptance/github-missing-log-2026-10-16/.",
+    "status": "complete-with-blockers"
   }
 ]

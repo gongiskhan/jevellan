@@ -1,6 +1,8 @@
 <!-- Owner cache/journal brief, 2026-10-13, has highest precedence; its prior-scenario start condition was met by the original ten-hour stop on 2026-10-14. Implementation evidence stays separate. -->
 # Goals, tasks and the daily loop
 
+Decision845 (16 October 2026) refines GitHub-awareness diagnostics: when a job's downloadable log returns404, read the existing job and its same-repository check annotations. Return the real reason through job_log, preserving redaction, bounds, current-head scope, the60-second cache and request accounting. Normal logs use no additional request; authentication failures and missing jobs remain errors. Live Ekoa PR277's result job never started because GitHub refused it for billing/spending. The Pro0.3.6 compatible module update retains rollback; Ekoa CI/billing are unchanged. See acceptance/github-missing-log-2026-10-16/.
+
 Projects connects a coordinator, coding threads, pull requests and the owner's decisions. Its loop keeps useful work moving between owner messages: goals explain what matters, a visible task queue holds the work, nightly items run recurring review and checks before a gated deploy.
 
 This document describes the intended complete product. Implementation and live evidence are tracked separately in the roadmap and acceptance report.
